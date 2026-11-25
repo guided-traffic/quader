@@ -57,15 +57,20 @@ function npmCaps(over: Record<string, unknown> = {}): Record<string, unknown> {
   };
 }
 
+/** A hit as the API answers it to whoever may set rules: its package level, what it inherits and its version rules (R-CUR-024). */
 function hit(name: string, over: Record<string, unknown> = {}): Record<string, unknown> {
-  return { name, description: '', latest: '1.0.0', updated: at(-60 * 24 * 3), flags: [], delivery: notAllowed, stored: 'none', request: null, ...over };
+  const delivery = over['delivery'] ?? notAllowed;
+  return {
+    name, description: '', latest: '1.0.0', updated: at(-60 * 24 * 3), flags: [], delivery, stored: 'none', request: null,
+    level: delivery, inherited: notAllowed, versionRules: { allow: 0, block: 0 }, ...over,
+  };
 }
 
 /** The hits of "gitlab" on the npm registry: every state of a hit, a long name and a long description. */
 function npmHits(): Record<string, unknown>[] {
   return [
     hit('@gitlab/ui', { description: 'GitLab UI Components', latest: '124.0.3', delivery: allowedBy('@gitlab/*', 'section'), stored: 'partial' }),
-    hit('gitlab-ai-provider', { description: 'An AI SDK provider for GitLab Duo and the GitLab language server', latest: '4.98.1', stored: 'partial' }),
+    hit('gitlab-ai-provider', { description: 'An AI SDK provider for GitLab Duo and the GitLab language server', latest: '4.98.1', stored: 'partial', versionRules: { allow: 1, block: 1 } }),
     hit('@gitbeaker/rest', { description: 'Cross Platform implementation of the GitLab API', latest: '43.8.0', request: { id: 'req-1', askers: 2, refusals: 14 } }),
     hit('gitlab', { description: 'GitLab API Nodejs library.', latest: '14.2.2', flags: ['deprecated'], delivery: blockedBy('gitlab') }),
     hit('@customer-portal-release-engineering/gitlab-merge-request-pipeline-status-reporter-for-the-frontend-monorepo', {
@@ -82,16 +87,16 @@ function npmHits(): Record<string, unknown>[] {
  * 3,893 versions, the newest 24 on the first page, with every state a version can have. The API answers 100 a page; the walk answers
  * fewer, since the screen's paging reads the same with 24 rows and a page of 100 stacked at 390 px is a picture of 20,000 px.
  */
-function npmVersions(name: string): Record<string, unknown>[] {
+function npmVersions(name: string, level: Record<string, unknown> = notAllowed): Record<string, unknown>[] {
   const out: Record<string, unknown>[] = [];
   for (let i = 0; i < 24; i++) {
     const minor = 99 - i;
-    const version = i === 0 ? '5.0.0-beta.2' : `4.${minor}.${i % 3}`;
-    let delivery: Record<string, unknown> = notAllowed;
+    const version = i === 0 ? '5.0.0-beta.2' : i === 8 ? '4.91.0-canary.bfb9accdc' : `4.${minor}.${i % 3}`;
+    let delivery: Record<string, unknown> = level;
     let stored = 'none';
     let queued: Record<string, unknown> | null = null;
     let request: Record<string, unknown> | null = null;
-    const flags: string[] = i === 0 ? ['prerelease'] : [];
+    const flags: string[] = i === 0 || i === 8 ? ['prerelease'] : [];
     if (i === 1) delivery = allowedBy(`${name}@${version}`, 'version');
     if (i === 1) stored = 'whole';
     if (i === 2) stored = 'whole'; // examined: stored, not delivered
@@ -112,6 +117,7 @@ function npmVersions(name: string): Record<string, unknown>[] {
       stored,
       queued,
       request,
+      inherited: level,
     });
   }
   return out;
@@ -136,6 +142,9 @@ function npmPackage(name: string, over: Record<string, unknown> = {}): Record<st
     delivery: notAllowed,
     stored: 'partial',
     request: null,
+    level: notAllowed,
+    inherited: notAllowed,
+    versionRules: { allow: 1, block: 1 },
     versions: npmVersions(name),
     total: 3893,
     nextCursor: 'bW9yZQ',
@@ -318,7 +327,7 @@ async function answerNpm(p: Page, over: { caps?: (r: Route) => Promise<void>; se
     return json(r, { hits: npmHits(), total: 11235, nextCursor: 'bW9yZQ', done: false, truncated: true, note: null, withheld: null, withheldNote: null });
   }));
   await p.route(levelsUrl, (r) => json(r, { levels: [], packages: [], total: null, nextCursor: null, done: true, withheld: null, withheldNote: null, unknown: null }));
-  await p.route(packageUrl, over.pkg ?? ((r) => json(r, npmPackage(new URL(r.request().url()).searchParams.get('name') ?? 'gitlab-ai-provider'))));
+  await p.route(packageUrl, over.pkg ?? ((r) => json(r, packageOf(new URL(r.request().url()).searchParams.get('name') ?? 'gitlab-ai-provider'))));
   await p.route(verdictsUrl, (r) => json(r, verdicts(r.request().postDataJSON())));
   await p.route(requestsUrl, (r) => {
     if (r.request().method() !== 'GET') return r.fallback();
@@ -327,6 +336,23 @@ async function answerNpm(p: Page, over: { caps?: (r: Route) => Promise<void>; se
   });
   await p.route(rulesUrl, (r) => (r.request().method() === 'GET' ? json(r, { items: rules(), nextCursor: null }) : r.fallback()));
   await p.route(previewUrl, (r) => json(r, previewOf(r.request().postDataJSON() as Record<string, unknown> | null)));
+}
+
+/**
+ * The package a lookup answers: `axios` allowed by its package rule with one version blocked (R-CUR-024's mixed switches), every other
+ * name the not allowed `gitlab-ai-provider` of the search.
+ */
+function packageOf(name: string): Record<string, unknown> {
+  if (name !== 'axios') return npmPackage(name);
+  const level = allowedBy('axios');
+  return npmPackage(name, { delivery: level, level, inherited: notAllowed, versionRules: { allow: 1, block: 1 }, versions: npmVersions(name, level) });
+}
+
+/** The package and the hits of a repository in mode `allExceptBlocked` without a rule: every switch on, the cache's Download. */
+function deliveredByMode(name: string): Record<string, unknown> {
+  const all = { delivered: true, decidedBy: { mode: 'allExceptBlocked' } };
+  const versions = npmVersions(name, all).map((v, i) => ({ ...v, delivery: all, inherited: all, stored: i === 1 ? 'whole' : 'none', request: null }));
+  return npmPackage(name, { delivery: all, level: all, inherited: all, versionRules: { allow: 0, block: 0 }, versions });
 }
 
 /** A query of the tab's address, the page reloaded with the answers in place. */
@@ -383,6 +409,17 @@ export async function* upstreamTabWalk(p: Page): AsyncGenerator<string> {
   await open(p, '?name=axios');
   await expect(p.locator(`${tab} [data-testid="upstream-lookup"] quader-upstream-package tbody tr`).first()).toBeVisible();
   yield 'lookup';
+  // Mode allExceptBlocked without a rule: the package's switch and every version's on, the cache's Download (R-CUR-024).
+  await answerNpm(p, {
+    caps: (r) => json(r, npmCaps({ mode: 'allExceptBlocked', rules: 0, openRequests: 0 })),
+    search: (r) => json(r, { hits: npmHits().map((h) => ({ ...h, delivery: { delivered: true, decidedBy: { mode: 'allExceptBlocked' } }, level: { delivered: true, decidedBy: { mode: 'allExceptBlocked' } } })), total: 11235, nextCursor: null, done: true, truncated: true, note: null, withheld: null, withheldNote: null }),
+    pkg: (r) => json(r, deliveredByMode(new URL(r.request().url()).searchParams.get('name') ?? 'gitlab-ai-provider')),
+  });
+  await open(p, '?q=gitlab');
+  await p.locator(`${tab} button[aria-controls="up-gitlab-ai-provider"]`).click();
+  await expect(p.locator(`${tab} quader-upstream-package tbody tr`).first()).toBeVisible();
+  yield 'package-delivered';
+  await answerNpm(p);
   await open(p, '?q=zzqx');
   await expect(p.locator(`${tab} quader-data-table`)).toBeVisible();
   yield 'no-hit';

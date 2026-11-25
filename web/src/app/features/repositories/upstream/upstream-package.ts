@@ -1,4 +1,3 @@
-import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ApiError } from '../../../api/problem';
@@ -12,6 +11,7 @@ import {
 import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
+import { Switch } from '../../../shared/ui/switch';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { DistTags, tagsByVersion } from '../../packages/dist-tags';
 import { formatSize } from '../../packages/format-size';
@@ -19,10 +19,10 @@ import { versionCommands } from '../../packages/package-links';
 import { downloadStateText } from '../downloads/download-words';
 import { UpstreamActions } from './upstream-actions';
 import { LIVE_FAST_MS, LIVE_IDLE_MS, live } from '../../../core/live-refresh';
-import { catalogueState, decidedByText, flagText, notCoveredText, stateBadge, verdictText } from './upstream-words';
+import { catalogueState, decidedByText, flagText, notCoveredText, stateBadge, switchLabel, verdictText } from './upstream-words';
 
-/** What a version row offers (R-CUR-018): one is the row's word, several are its menu (R-UI-163). */
-export type VersionAct = 'download' | 'examine' | 'allow' | 'block' | 'remove-rule' | 'discard' | 'request';
+/** The one act of a version's cache cell (R-CUR-024): it changes what the cell shows. */
+export type CacheAct = 'download' | 'examine' | 'discard';
 
 /** How long the version filter waits after the last key before it asks the upstream. */
 export const FILTER_DEBOUNCE_MS = 300;
@@ -33,17 +33,18 @@ export function groupedCount(n: number): string {
 }
 
 /**
- * A package of the upstream opened in place (remote-curation.md R-CUR-018): its description and its state in this repository where no
- * row above shows them (Q-UI-1192), with the package's acts (**Download every version…** with its preview, **Allow every version**, **Block every version**, **Remove
- * rule**; **Request every version** for a reader), and its versions newest first, 100 at a time with **Load more** and a filter:
- * per version its published time, its size or that the upstream does not tell it, its flags and the npm tags that name it (Q-UI-1190; the
- * filter finds a version by a tag's name, Q-CUR-182), its delivery state and the rule that
- * decided it, whether the cache holds it or downloads it, its vulnerability verdict where it is not stored (a stored version's
- * verdicts are its version page's, Q-CUR-61), and its acts.
+ * A package of the upstream opened in place (remote-curation.md R-CUR-018, R-CUR-024): its description and its state in this repository
+ * where no row above shows them (Q-UI-1192); **Download every version…** with its preview at the left and the package's switch at the
+ * right for those who decide (**Request every version** for a reader); and its versions newest first, 100 at a time with **Load more**
+ * and a filter: per version its published time, its size or that the upstream does not tell it, its flags and the npm tags that name it
+ * (Q-UI-1190; the filter finds a version by a tag's name, Q-CUR-182), its switch beside its delivery's badge with the rule that decided
+ * under it (a reader's **Request** there), whether the cache holds it or downloads it with the cache's one act on that line, and its
+ * vulnerability verdict where it is not stored (a stored version's verdicts are its version page's, Q-CUR-61). No row has a menu or an
+ * action cell (Q-CUR-201).
  */
 @Component({
   selector: 'quader-upstream-package',
-  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DataTable, DistTags, ErrorNotice, RouterLink, TimeAgo],
+  imports: [DataTable, DistTags, ErrorNotice, RouterLink, Switch, TimeAgo],
   templateUrl: './upstream-package.html',
   styleUrl: './upstream-package.scss',
 })
@@ -110,29 +111,39 @@ export class UpstreamPackageView {
   protected readonly noVersions = $localize`:@@upstream.versions.empty:The upstream lists no version of this package.`;
   protected readonly noVersionMatches = $localize`:@@upstream.versions.empty-filtered:No version matches.`;
 
-  protected readonly hasActions = computed(() => this.versions().some((v) => this.acts(v).length > 0));
-  // Three columns and the acts (Q-CUR-157): the published time and the size stand under the version, the rule that decided under the
-  // delivery, the verdicts under the cache, so that the list keeps the form of a table at 1,024 px beside the side bar; with seven
-  // columns it stood as blocks of five lines per version there. A format without vulnerability verdicts says so once, above the
+  // Three columns (Q-CUR-157 as revised by Q-CUR-201): the published time and the size stand under the version, the switch beside the
+  // delivery's badge and the rule that decided under it, the cache's one act on its state's line and the verdicts under it, so that the
+  // list keeps the form of a table at 1,024 px beside the side bar. A format without vulnerability verdicts says so once, above the
   // list (R-CUR-014); a stored version still leads to its malware and signature verdicts.
   protected readonly columns = computed<readonly TableColumn[]>(() => [
     { id: 'version', label: this.versionLabel() },
     { id: 'delivery', label: $localize`:@@upstream.col.delivery:Delivery` },
     { id: 'cache', label: $localize`:@@upstream.col.cache:Cache` },
-    ...(this.hasActions() ? [{ id: 'actions', label: $localize`:@@upstream.col.actions:Actions`, hideLabel: true }] : []),
   ]);
 
   /** A download of a version shown waits or runs: the versions are read every few seconds until it has ended (R-UI-213). */
   protected readonly downloading = computed(() => this.versions().some((v) => v.queued !== null));
+
+  /** The name and the filter the versions shown were read for: a write reads them again in place, a new query from the first page. */
+  private shownFor = '';
 
   constructor() {
     effect(() => {
       const name = this.name();
       const filter = this.appliedFilter();
       this.actions.changed();
-      untracked(() => void this.load(name, filter, true));
+      untracked(() => {
+        const key = JSON.stringify([name, filter]);
+        if (key === this.shownFor && this.pkg() !== null && !this.loading()) {
+          // A write (a switch, a download, a request): the pages shown are read again, so Load more and the place stay (R-UI-213).
+          this.refresh().catch((e: unknown) => this.failure.set(asApiError(e)));
+          return;
+        }
+        this.shownFor = key;
+        void this.load(name, filter, true);
+      });
     });
-    live({ reload: () => this.refresh(), every: () => (this.downloading() ? LIVE_FAST_MS : LIVE_IDLE_MS) });
+    live({ reload: () => this.refresh(), every: () => (this.downloading() || this.actions.unsettled() > 0 ? LIVE_FAST_MS : LIVE_IDLE_MS) });
   }
 
   /**
@@ -154,8 +165,8 @@ export class UpstreamPackageView {
       versions.push(...page.versions.filter((v) => !versions.some((x) => x.version === v.version)));
       cursor = page.done ? null : page.nextCursor;
     } while (cursor !== null && versions.length < shown);
-    this.pkg.set(page);
-    this.versions.set(versions);
+    this.pkg.set(this.settle(page));
+    this.versions.set(versions.map((v) => this.settleVersion(v)));
     this.next.set(cursor);
     void this.readVerdicts(name, versions.filter((v) => !this.verdicts().has(v.version)), generation);
   }
@@ -164,7 +175,7 @@ export class UpstreamPackageView {
     const generation = fresh ? ++this.generation : this.generation;
     this.loading.set(true);
     try {
-      const page = await this.api.package(this.actions.repository(), name, fresh ? null : this.next(), filter);
+      const page = this.settle(await this.api.package(this.actions.repository(), name, fresh ? null : this.next(), filter));
       if (generation !== this.generation) return;
       this.pkg.set(page);
       this.versions.update((vs) => (fresh ? page.versions : [...vs, ...page.versions.filter((v) => !vs.some((x) => x.version === v.version))]));
@@ -176,6 +187,19 @@ export class UpstreamPackageView {
     } finally {
       if (generation === this.generation) this.loading.set(false);
     }
+  }
+
+  /** A page as the rows show it: a switch's answer stands until the catalogue's read agrees with it (UpstreamActions.settled). */
+  private settle(page: UpstreamPackage): UpstreamPackage {
+    return {
+      ...page,
+      ...(page.level ? { level: this.actions.settled(this.name(), page.level) } : {}),
+      versions: page.versions.map((v) => this.settleVersion(v)),
+    };
+  }
+
+  private settleVersion(v: UpstreamVersion): UpstreamVersion {
+    return { ...v, delivery: this.actions.settled(`${this.name()} ${v.version}`, v.delivery) };
   }
 
   /** The verdicts of a page's versions that are not stored, 50 at a time; a failure leaves them unsaid. */
@@ -235,96 +259,101 @@ export class UpstreamPackageView {
     return this.verdicts().get(v.version)?.verdict === 'blocked';
   }
 
-  /** The acts of a version for this caller (R-CUR-005, R-CUR-018); the server decides each call again. */
-  acts(v: UpstreamVersion): readonly VersionAct[] {
-    if (!this.actions.known()) return [];
-    const out: VersionAct[] = [];
-    const delivered = v.delivery.delivered;
+  /**
+   * The cache's one act of a version (R-CUR-024, Q-CUR-201), by the state it changes: **Download** where it is not stored and delivered
+   * (a holder of `manage`, or a reader who may fill the repository), **Download for examination** where it is not stored and not
+   * delivered, **Discard** where it is stored for examination (both `manage`); none while a download waits or runs. The server decides
+   * each call again.
+   */
+  cacheAct(v: UpstreamVersion): CacheAct | null {
+    if (!this.actions.known() || v.queued) return null;
     const manager = this.actions.manager();
-    if (v.stored === 'none' && !v.queued) {
-      if (delivered && (manager || this.actions.mayFill())) out.push('download');
-      else if (!delivered && manager) out.push('examine');
+    if (v.stored === 'none') {
+      if (v.delivery.delivered) return manager || this.actions.mayFill() ? 'download' : null;
+      return manager ? 'examine' : null;
     }
-    if (manager) {
-      // Allow and Block on every version: an explicit rule of the version is narrower than the package's and the sections' and
-      // outlasts a change of the mode (R-CUR-001), so both mean something whatever the version's state; the effect its own rule
-      // has already is Remove rule instead. So every row of a holder of manage has two acts or more, one menu in every row.
-      const own = v.delivery.decidedBy.kind === 'version' ? v.delivery.decidedBy.effect : null;
-      out.push(own === 'allow' ? 'remove-rule' : 'allow');
-      out.push(own === 'block' ? 'remove-rule' : 'block');
-      if (v.stored !== 'none' && !delivered) out.push('discard');
-    } else if (!delivered && !v.request && v.delivery.reason !== 'blocked') {
-      out.push('request');
-    }
-    return out;
+    return manager && !v.delivery.delivered ? 'discard' : null;
   }
 
-  protected actText(act: VersionAct): string {
+  protected cacheActText(act: CacheAct): string {
     switch (act) {
       case 'download':
         return $localize`:@@upstream.act.download:Download`;
       case 'examine':
         return $localize`:@@upstream.act.examine:Download for examination`;
-      case 'allow':
-        return $localize`:@@upstream.act.allow:Allow`;
-      case 'block':
-        return $localize`:@@upstream.act.block:Block`;
-      case 'remove-rule':
-        return $localize`:@@upstream.act.remove-rule:Remove rule`;
       case 'discard':
         return $localize`:@@upstream.act.discard:Discard`;
-      case 'request':
-        return $localize`:@@upstream.act.request:Request`;
     }
   }
 
-  protected menuLabel(v: UpstreamVersion): string {
-    return $localize`:@@upstream.version.menu:Actions for ${this.name()}:name: ${v.version}:version:`;
-  }
-
-  protected run(act: VersionAct, v: UpstreamVersion): void {
+  protected runCache(act: CacheAct, v: UpstreamVersion): void {
     const s = { name: this.name(), version: v.version };
-    const label = `${s.name} ${s.version}`;
-    switch (act) {
-      case 'download':
-      case 'examine':
-        void this.actions.downloadVersion(s, act === 'download');
-        return;
-      case 'allow':
-      case 'block':
-        void this.actions.setRule({ kind: 'version', name: s.name, version: s.version, effect: act }, label);
-        return;
-      case 'remove-rule':
-        void this.actions.removeRule('version', v.delivery.decidedBy.subject ?? `${s.name}@${s.version}`);
-        return;
-      case 'discard':
-        void this.actions.discard(s);
-        return;
-      case 'request':
-        void this.actions.ask(s);
-        return;
-    }
+    if (act === 'discard') void this.actions.discard(s);
+    else void this.actions.downloadVersion(s, act === 'download');
+  }
+
+  /** A reader may ask for a version that is not delivered, that no block holds and whose request is not open (R-CUR-015). */
+  mayRequest(v: UpstreamVersion): boolean {
+    return this.actions.known() && !this.actions.manager() && !v.delivery.delivered && !v.request && v.delivery.reason !== 'blocked';
+  }
+
+  protected request(v: UpstreamVersion): void {
+    void this.actions.ask({ name: this.name(), version: v.version });
+  }
+
+  /** The switch's name for assistive technology: what it delivers ("Deliver lodash 4.17.21"). */
+  protected switchLabel(v: UpstreamVersion): string {
+    return switchLabel(this.name(), v.version);
+  }
+
+  protected busyVersion(v: UpstreamVersion): boolean {
+    return this.actions.isBusy({ name: this.name(), version: v.version });
+  }
+
+  /**
+   * A version's switch turned (R-CUR-024): the row takes the server's decision at once and the versions are read again in place; a
+   * refused write leaves the row, and so the switch, as it was.
+   */
+  protected async switchVersion(v: UpstreamVersion, on: boolean): Promise<void> {
+    const out = await this.actions.switchVersion({ name: this.name(), version: v.version }, on);
+    if (out === null) return;
+    this.versions.update((vs) => vs.map((x) => (x.version === v.version ? { ...x, delivery: out.decision } : x)));
   }
 
   // ---- The package's acts ----
 
-  /** The effect of the package's own rule, where it has one. */
-  protected readonly packageRule = computed(() => {
-    const d = this.pkg()?.delivery.decidedBy;
-    return d?.kind === 'package' ? (d.effect ?? null) : null;
+  /** The package level's decision, which the package's switch shows (R-CUR-024); the package's for a reader, who has no switch. */
+  protected readonly level = computed(() => {
+    const p = this.pkg();
+    return p ? (p.level ?? p.delivery) : null;
   });
+
+  /** The rule under the package's switch: the package's own, or a sub-section's pattern; none where the mode decides. */
+  protected readonly levelRule = computed(() => {
+    const level = this.level();
+    const by = level?.decidedBy;
+    if (by?.kind === 'package') return $localize`:@@upstream.rule.this-package:Rule: this package`;
+    if (level && by?.kind === 'section' && by.subject) return decidedByText(level);
+    return null;
+  });
+
+  protected readonly packageSwitchLabel = computed(() => switchLabel(this.name()));
+
+  /** The package's switch is shown to whoever may set rules, once the catalogue answered the package level. */
+  protected readonly hasPackageSwitch = computed(() => this.actions.manager() && !!this.pkg()?.level);
 
   protected downloadEvery(): void {
     const name = this.name();
     void this.actions.downloadBulk({ level: 'package', name }, $localize`:@@upstream.preview.title-package:Every version of ${name}:name:`);
   }
 
-  protected setPackageRule(effect: 'allow' | 'block'): void {
-    void this.actions.setRule({ kind: 'package', name: this.name(), effect }, this.name());
-  }
-
-  protected removePackageRule(): void {
-    void this.actions.removeRule('package', this.name());
+  /** The package's switch turned (R-CUR-024): its head takes the server's decision at once; the versions are read again. */
+  protected async switchPackage(on: boolean): Promise<void> {
+    const p = this.pkg();
+    if (!p) return;
+    const out = await this.actions.switchPackage(this.name(), on, p.versionRules);
+    if (out === null) return;
+    this.pkg.update((x) => (x ? { ...x, level: out.decision } : x));
   }
 
   protected requestPackage(): void {

@@ -157,3 +157,11 @@ tr.expansion > td {
   padding: 0;
   border-block-end: 0;
 }
+
+// A closed row's state: the package's switch beside the package level's badge, on one line (R-CUR-024).
+.state-line {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--quader-space-2);
+  white-space: nowrap;
+}

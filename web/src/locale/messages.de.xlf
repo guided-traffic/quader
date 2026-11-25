@@ -33003,42 +33003,6 @@
         <target>Verworfen: <ph id="0" equiv="versions" disp="out.versions.length"/> Versionen, <ph id="1" equiv="files" disp="out.files"/> Dateien.</target>
       </segment>
     </unit>
-    <unit id="upstream.rule.allowed-package">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:212</note>
-      </notes>
-      <segment>
-        <source><ph id="0" equiv="subject" disp="subject"/> is allowed with every version, future ones included.</source>
-        <target><ph id="0" equiv="subject" disp="subject"/> ist mit jeder Version erlaubt, künftige eingeschlossen.</target>
-      </segment>
-    </unit>
-    <unit id="upstream.rule.allowed">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:213</note>
-      </notes>
-      <segment>
-        <source><ph id="0" equiv="subject" disp="subject"/> is allowed.</source>
-        <target><ph id="0" equiv="subject" disp="subject"/> ist erlaubt.</target>
-      </segment>
-    </unit>
-    <unit id="upstream.rule.blocked-package">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:216</note>
-      </notes>
-      <segment>
-        <source><ph id="0" equiv="subject" disp="subject"/> is blocked with every version, future ones included.</source>
-        <target><ph id="0" equiv="subject" disp="subject"/> ist mit jeder Version gesperrt, künftige eingeschlossen.</target>
-      </segment>
-    </unit>
-    <unit id="upstream.rule.blocked">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:217</note>
-      </notes>
-      <segment>
-        <source><ph id="0" equiv="subject" disp="subject"/> is blocked.</source>
-        <target><ph id="0" equiv="subject" disp="subject"/> ist gesperrt.</target>
-      </segment>
-    </unit>
     <unit id="upstream.package.download-every">
       <notes>
         <note category="location">src/app/features/repositories/upstream/upstream-package.html:34,35</note>
@@ -33046,42 +33010,6 @@
       <segment>
         <source>Download every version…</source>
         <target>Jede Version in den Cache laden …</target>
-      </segment>
-    </unit>
-    <unit id="upstream.package.remove-allow">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:36,38</note>
-      </notes>
-      <segment>
-        <source>Remove the allow</source>
-        <target>Erlaubnis entfernen</target>
-      </segment>
-    </unit>
-    <unit id="upstream.package.allow-every">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:38,40</note>
-      </notes>
-      <segment>
-        <source>Allow every version</source>
-        <target>Jede Version erlauben</target>
-      </segment>
-    </unit>
-    <unit id="upstream.package.remove-block">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:41,43</note>
-      </notes>
-      <segment>
-        <source>Remove the block</source>
-        <target>Sperre entfernen</target>
-      </segment>
-    </unit>
-    <unit id="upstream.package.block-every">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:43,45</note>
-      </notes>
-      <segment>
-        <source>Block every version</source>
-        <target>Jede Version sperren</target>
       </segment>
     </unit>
     <unit id="upstream.package.request">
@@ -33210,15 +33138,6 @@
         <target>Cache</target>
       </segment>
     </unit>
-    <unit id="upstream.col.actions">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:122</note>
-      </notes>
-      <segment>
-        <source>Actions</source>
-        <target>Aktionen</target>
-      </segment>
-    </unit>
     <unit id="upstream.versions.showing">
       <notes>
         <note category="location">src/app/features/repositories/upstream/upstream-package.ts:222</note>
@@ -33239,38 +33158,11 @@
     </unit>
     <unit id="upstream.act.examine">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:267</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:283</note>
       </notes>
       <segment>
         <source>Download for examination</source>
-        <target>Zur Prüfung in den Cache laden</target>
-      </segment>
-    </unit>
-    <unit id="upstream.act.allow">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:269</note>
-      </notes>
-      <segment>
-        <source>Allow</source>
-        <target>Erlauben</target>
-      </segment>
-    </unit>
-    <unit id="upstream.act.block">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:271</note>
-      </notes>
-      <segment>
-        <source>Block</source>
-        <target>Sperren</target>
-      </segment>
-    </unit>
-    <unit id="upstream.act.remove-rule">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:273</note>
-      </notes>
-      <segment>
-        <source>Remove rule</source>
-        <target>Regel entfernen</target>
+        <target>Zur Prüfung holen</target>
       </segment>
     </unit>
     <unit id="upstream.act.discard">
@@ -33289,15 +33181,6 @@
       <segment>
         <source>Request</source>
         <target>Beantragen</target>
-      </segment>
-    </unit>
-    <unit id="upstream.version.menu">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:282</note>
-      </notes>
-      <segment>
-        <source>Actions for <ph id="0" equiv="name" disp="this.name()"/> <ph id="1" equiv="version" disp="v.version"/></source>
-        <target>Aktionen für <ph id="0" equiv="name" disp="this.name()"/> <ph id="1" equiv="version" disp="v.version"/></target>
       </segment>
     </unit>
     <unit id="upstream.preview.title-package">
@@ -58538,6 +58421,312 @@
       <segment>
         <source>Open findings</source>
         <target>Offene Befunde</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.only-title">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:39,41</note>
+      </notes>
+      <segment>
+        <source>Deliver only what is allowed?</source>
+        <target>Nur Erlaubtes ausliefern?</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.all-title">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:41,43</note>
+      </notes>
+      <segment>
+        <source>Deliver everything except what is blocked?</source>
+        <target>Alles außer Gesperrtem ausliefern?</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.reading">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:47,49</note>
+      </notes>
+      <segment>
+        <source>Reading what the repository stores.</source>
+        <target>Es wird gelesen, was das Repository speichert.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.only-what">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:51,52</note>
+      </notes>
+      <segment>
+        <source>From then on a package or a version is delivered only where a rule allows it.</source>
+        <target>Danach wird ein Paket oder eine Version nur ausgeliefert, wo eine Regel es erlaubt.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.only-none">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:53,55</note>
+      </notes>
+      <segment>
+        <source>No package the repository stores is delivered by the mode alone, so none of them is refused after the change.</source>
+        <target>Kein Paket, das das Repository speichert, wird allein durch den Modus ausgeliefert; nach der Änderung wird also keines verweigert.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.offer-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:58,59</note>
+      </notes>
+      <segment>
+        <source>One allow rule each, written before the mode, so that no client is refused in between. Each can be switched off on the tab Upstream.</source>
+        <target>Je eine Regel, die erlaubt, geschrieben vor dem Modus, damit dazwischen kein Client abgewiesen wird. Jede lässt sich im Reiter Upstream ausschalten.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.no-right">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:60,62</note>
+      </notes>
+      <segment>
+        <source>Only those who manage the repository may allow them. Ask them before you change the mode, or allow the packages afterwards.</source>
+        <target>Nur wer das Repository verwaltet, darf sie erlauben. Fragen Sie diese Personen, bevor Sie den Modus ändern, oder erlauben Sie die Pakete danach.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.beyond">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:62,63</note>
+      </notes>
+      <segment>
+        <source>The repository may hold <ph id="0" equiv="INTERPOLATION" disp="{{ roomText() }}"/> more rules (proxy.delivery.max_rules), too few to allow every one of them. Allow the packages you need on the tab Upstream, before or after the change.</source>
+        <target>Das Repository kann noch <ph id="0" equiv="INTERPOLATION" disp="{{ roomText() }}"/> Regeln aufnehmen (proxy.delivery.max_rules), zu wenige, um jedes davon zu erlauben. Erlauben Sie die Pakete, die Sie brauchen, im Reiter Upstream, vor oder nach der Änderung.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.all-what">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:66,67</note>
+      </notes>
+      <segment>
+        <source>From then on every package and every version that no rule blocks is delivered, also those no rule allows.</source>
+        <target>Danach wird jedes Paket und jede Version ausgeliefert, die keine Regel sperrt, auch was keine Regel erlaubt.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.confirm">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:75,79</note>
+      </notes>
+      <segment>
+        <source>Change the mode</source>
+        <target>Modus ändern</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.unruled-uncounted">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:132</note>
+      </notes>
+      <segment>
+        <source>The repository stores more than <ph id="0" equiv="max" disp="groupedCount(s.maxRules)"/> packages that no rule allows or blocks, among them <ph id="1" equiv="names" disp="names"/>. They are delivered today because of the mode and refused after the change.</source>
+        <target>Das Repository speichert mehr als <ph id="0" equiv="max" disp="groupedCount(s.maxRules)"/> Pakete, die keine Regel erlaubt oder sperrt, darunter <ph id="1" equiv="names" disp="names"/>. Sie werden heute wegen des Modus ausgeliefert und nach der Änderung verweigert.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.unruled-one">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:135</note>
+      </notes>
+      <segment>
+        <source>The repository stores one package that no rule allows or blocks, <ph id="0" equiv="names" disp="names"/>. It is delivered today because of the mode and refused after the change.</source>
+        <target>Das Repository speichert ein Paket, das keine Regel erlaubt oder sperrt, <ph id="0" equiv="names" disp="names"/>. Es wird heute wegen des Modus ausgeliefert und nach der Änderung verweigert.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.unruled-more">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:138</note>
+      </notes>
+      <segment>
+        <source>The repository stores <ph id="0" equiv="count" disp="count"/> packages that no rule allows or blocks: <ph id="1" equiv="names" disp="names"/> and <ph id="2" equiv="more" disp="groupedCount(more)"/> more. They are delivered today because of the mode and refused after the change.</source>
+        <target>Das Repository speichert <ph id="0" equiv="count" disp="count"/> Pakete, die keine Regel erlaubt oder sperrt: <ph id="1" equiv="names" disp="names"/> und <ph id="2" equiv="more" disp="groupedCount(more)"/> weitere. Sie werden heute wegen des Modus ausgeliefert und nach der Änderung verweigert.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.unruled">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:139</note>
+      </notes>
+      <segment>
+        <source>The repository stores <ph id="0" equiv="count" disp="count"/> packages that no rule allows or blocks: <ph id="1" equiv="names" disp="names"/>. They are delivered today because of the mode and refused after the change.</source>
+        <target>Das Repository speichert <ph id="0" equiv="count" disp="count"/> Pakete, die keine Regel erlaubt oder sperrt: <ph id="1" equiv="names" disp="names"/>. Sie werden heute wegen des Modus ausgeliefert und nach der Änderung verweigert.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.offer-one">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:145</note>
+      </notes>
+      <segment>
+        <source>Allow this package with every version, so that it stays delivered</source>
+        <target>Dieses Paket mit jeder Version erlauben, damit es ausgeliefert bleibt</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.offer">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:146</note>
+      </notes>
+      <segment>
+        <source>Allow these <ph id="0" equiv="count" disp="groupedCount(n)"/> packages with every version, so that they stay delivered</source>
+        <target>Diese <ph id="0" equiv="count" disp="groupedCount(n)"/> Pakete mit jeder Version erlauben, damit sie ausgeliefert bleiben</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.allows-one">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:152</note>
+      </notes>
+      <segment>
+        <source>The one allow rule stays; it decides again when the repository delivers only what is allowed once more.</source>
+        <target>Die eine Regel, die erlaubt, bleibt; sie entscheidet wieder, wenn das Repository erneut nur Erlaubtes ausliefert.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.change.allows">
+      <notes>
+        <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:153</note>
+      </notes>
+      <segment>
+        <source>The <ph id="0" equiv="count" disp="groupedCount(n)"/> allow rules stay; they decide again when the repository delivers only what is allowed once more.</source>
+        <target>Die <ph id="0" equiv="count" disp="groupedCount(n)"/> Regeln, die erlauben, bleiben; sie entscheiden wieder, wenn das Repository erneut nur Erlaubtes ausliefert.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.saved-only-allowed">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:830</note>
+      </notes>
+      <segment>
+        <source>Saved. <ph id="0" equiv="count" disp="allowed"/> stored packages are allowed, and the repository delivers only what is allowed.</source>
+        <target>Gespeichert. <ph id="0" equiv="count" disp="allowed"/> gespeicherte Pakete sind erlaubt, und das Repository liefert nur Erlaubtes aus.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.switch.package-on-title">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:211</note>
+      </notes>
+      <segment>
+        <source>Allow every version of <ph id="0" equiv="name" disp="name"/>?</source>
+        <target>Jede Version von <ph id="0" equiv="name" disp="name"/> erlauben?</target>
+      </segment>
+    </unit>
+    <unit id="upstream.switch.package-off-title">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:212</note>
+      </notes>
+      <segment>
+        <source>Block every version of <ph id="0" equiv="name" disp="name"/>?</source>
+        <target>Jede Version von <ph id="0" equiv="name" disp="name"/> sperren?</target>
+      </segment>
+    </unit>
+    <unit id="upstream.switch.reset">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:214</note>
+      </notes>
+      <segment>
+        <source>Reset them: every version follows the package</source>
+        <target>Zurücksetzen: jede Version folgt dem Paket</target>
+      </segment>
+    </unit>
+    <unit id="upstream.switch.allow">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:216</note>
+      </notes>
+      <segment>
+        <source>Allow</source>
+        <target>Erlauben</target>
+      </segment>
+    </unit>
+    <unit id="upstream.switch.block">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:216</note>
+      </notes>
+      <segment>
+        <source>Block</source>
+        <target>Sperren</target>
+      </segment>
+    </unit>
+    <unit id="upstream.switch.delivered">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:259</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="subject" disp="subject"/> is delivered.</source>
+        <target><ph id="0" equiv="subject" disp="subject"/> wird ausgeliefert.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.switch.not-delivered">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:260</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="subject" disp="subject"/> is not delivered.</source>
+        <target><ph id="0" equiv="subject" disp="subject"/> wird nicht ausgeliefert.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.switch.package-delivered">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:266</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="name"/> is delivered with every version that has no setting of its own, future ones included.</source>
+        <target><ph id="0" equiv="name" disp="name"/> wird mit jeder Version ausgeliefert, die keine eigene Einstellung hat, künftige eingeschlossen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.switch.package-not-delivered">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:267</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="name"/> is not delivered, apart from the versions that have a setting of their own.</source>
+        <target><ph id="0" equiv="name" disp="name"/> wird nicht ausgeliefert, außer den Versionen mit eigener Einstellung.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.switch.own-one-allowed">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:274</note>
+      </notes>
+      <segment>
+        <source>One version has a setting of its own: it is allowed. It is kept unless you reset it.</source>
+        <target>Eine Version hat eine eigene Einstellung: Sie ist erlaubt. Die Einstellung bleibt, wenn Sie sie nicht zurücksetzen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.switch.own-one-blocked">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:275</note>
+      </notes>
+      <segment>
+        <source>One version has a setting of its own: it is blocked. It is kept unless you reset it.</source>
+        <target>Eine Version hat eine eigene Einstellung: Sie ist gesperrt. Die Einstellung bleibt, wenn Sie sie nicht zurücksetzen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.switch.own-many">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:277</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="own"/> versions have settings of their own: <ph id="1" equiv="allowed" disp="allow"/> allowed, <ph id="2" equiv="blocked" disp="block"/> blocked. They are kept unless you reset them.</source>
+        <target><ph id="0" equiv="count" disp="own"/> Versionen haben eigene Einstellungen: <ph id="1" equiv="allowed" disp="allow"/> erlaubt, <ph id="2" equiv="blocked" disp="block"/> gesperrt. Sie bleiben, wenn Sie sie nicht zurücksetzen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.rule.this-package">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:335</note>
+      </notes>
+      <segment>
+        <source>Rule: this package</source>
+        <target>Regel: dieses Paket</target>
+      </segment>
+    </unit>
+    <unit id="upstream.switch.version-label">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:50</note>
+      </notes>
+      <segment>
+        <source>Deliver <ph id="0" equiv="name" disp="name"/> <ph id="1" equiv="version" disp="version"/></source>
+        <target><ph id="0" equiv="name" disp="name"/> <ph id="1" equiv="version" disp="version"/> ausliefern</target>
+      </segment>
+    </unit>
+    <unit id="upstream.switch.package-label">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:51</note>
+      </notes>
+      <segment>
+        <source>Deliver <ph id="0" equiv="name" disp="name"/> with every version</source>
+        <target><ph id="0" equiv="name" disp="name"/> mit jeder Version ausliefern</target>
       </segment>
     </unit>
   </file>

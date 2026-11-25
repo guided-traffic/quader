@@ -169,6 +169,9 @@ test('R-UI-163 two word actions in one row fail the check, one word, a menu with
     '<td class="actions with-setup"><a class="btn btn-tertiary row-setup">Set up client</a><button class="btn btn-tertiary btn-icon" aria-label="Actions for x">…</button></td>',
     '<td>@if (a) {<button class="btn btn-tertiary">Reinstate</button>} @else {<button class="btn btn-tertiary">Clear</button>}</td>',
     '<div class="toolbar"><a class="btn btn-confirm">New mapping</a><a class="btn btn-default">Test with claims</a></div>',
+    // A state's cell with its switch, its one word and a link under it (Q-CUR-201): the switch is no word.
+    '<td class="cache-cell"><span class="state-line"><quader-switch [checked]="on" [label]="l" /><span class="muted">Not stored</span>'
+      + '<button class="btn btn-tertiary on-line" type="button">Download</button></span><div class="verdict-line"><a routerLink="v">Open the version</a></div></td>',
   ];
   for (const t of good) assert.deepEqual(wordActionsSideBySide(t), [], t);
   assert.equal(wordActionsSideBySide('<table>\n<tr><td>\n<a class="btn">A</a>\n<a class="btn">B</a></td>')[0].line, 4);

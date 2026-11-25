@@ -73,8 +73,9 @@ import { RepositorySignaturesSection, SignatureSettingsChange } from './reposito
 import { RepositoryDownloadLinksSection } from './repository-download-links';
 // <<< download-links
 // >>> T-24 delivery
-import { DeliverySettings, RepositoryDeliverySection } from './repository-delivery';
+import { DeliverySave, RepositoryDeliverySection } from './repository-delivery';
 import { RepositorySyncsSection, SyncSettings } from './repository-syncs';
+import { DeliveryRulesApi } from '../../api/delivery-rules-api';
 // <<< T-24 delivery
 
 /** The closed sections whose content loads when it is first opened (a list read from the server). */
@@ -128,6 +129,7 @@ type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombs
 })
 export class RepositoryDetail implements HasUnsavedChanges {
   private readonly api = inject(RepositoriesApi);
+  private readonly deliveryRules = inject(DeliveryRulesApi);
   private readonly projectsApi = inject(ProjectsApi);
   private readonly router = inject(Router);
   private readonly session = inject(SessionStore);
@@ -808,17 +810,29 @@ export class RepositoryDetail implements HasUnsavedChanges {
   protected readonly deliveryFailure = signal<ApiError | null>(null);
 
   /** Stores `remote.delivery` with the loaded `ETag`; the merge patch carries that member only, so other unsaved edits stay. */
-  protected async saveDelivery(delivery: DeliverySettings): Promise<void> {
+  /**
+   * Saves `remote.delivery` (R-CUR-020). A change to `onlyAllowed` whose dialog kept the offer allows the stored packages the mode
+   * decides first, then saves the mode, so no client is refused between the two writes (R-CUR-025, Q-CUR-204); a refused allow saves
+   * nothing and is said with every fact it carried.
+   */
+  protected async saveDelivery(change: DeliverySave): Promise<void> {
     if (this.deliverySaving() || !this.stored()) return;
+    const delivery = change.settings;
     this.deliverySaving.set(true);
     this.deliveryFailure.set(null);
     try {
+      let allowed: number | null = null;
+      if (change.allowStored) {
+        allowed = (await this.deliveryRules.allowStored(`${this.project()}/${this.key()}`, newIdempotencyKey())).created;
+      }
       const saved = await this.api.patch(this.ref(), { remote: { delivery } }, this.etag);
       this.takeStored(saved.value, saved.etag);
       this.notifier.status(
-        delivery.mode === 'onlyAllowed'
-          ? $localize`:@@delivery.saved-only:Saved. The repository delivers only what is allowed.`
-          : $localize`:@@delivery.saved-all:Saved. The repository delivers everything except what is blocked.`,
+        allowed !== null
+          ? $localize`:@@delivery.saved-only-allowed:Saved. ${allowed}:count: stored packages are allowed, and the repository delivers only what is allowed.`
+          : delivery.mode === 'onlyAllowed'
+            ? $localize`:@@delivery.saved-only:Saved. The repository delivers only what is allowed.`
+            : $localize`:@@delivery.saved-all:Saved. The repository delivers everything except what is blocked.`,
       );
     } catch (e) {
       this.deliveryFailure.set(asApiError(e));

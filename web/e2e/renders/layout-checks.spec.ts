@@ -291,6 +291,22 @@ test.describe('a table\'s row (R-UI-176)', () => {
     });
   }
 
+  // A version's delivery on the tab Upstream (Q-CUR-201): the switch beside the state's badge on one line, the rule under them. The
+  // switch (24 px) stands on the middle of the line by its margins, as quader-switch places itself.
+  test('R-UI-163 R-UI-172 a switch beside its badge on one line passes', async ({ page }) => {
+    const cell = (switchCss: string): [string, string] => [
+      `<table class="data"><tbody><tr><th scope="row">4.98.1<span class="secondary">5 days ago</span></th>
+         <td><span class="state-line"><button type="button" role="switch" aria-checked="true" aria-label="Deliver acme 4.98.1" class="switch"></button><span class="badge">Allowed</span></span><span class="secondary">Rule: this version</span></td>
+         <td><span class="state-line"><span class="muted">Not stored</span><button type="button" class="btn btn-tertiary on-line">Download</button></span></td></tr></tbody></table>`,
+      `.state-line { display: inline-flex; align-items: flex-start; gap: 8px; }
+       .switch { inline-size: 2.5rem; block-size: 1.5rem; padding: 0; border: 0; border-radius: 12px; ${switchCss} }
+       tbody td .badge { margin-block: calc((1rem - 20px) / 2); } .secondary { display: block; font-size: 12px; }
+       .on-line { margin-block: calc((1rem - 32px) / 2); }`,
+    ];
+    const ok = await check(page, ...cell('margin-block: calc((1rem - 1.5rem) / 2);'));
+    expect(ok, describe(ok)).toEqual([]);
+  });
+
   test('R-UI-176 a stacked row: the menu on the name\'s line passes, the menu at the block\'s top is found', async ({ page }) => {
     const stacked = (menuCss: string): [string, string] => [
       `<table class="data" style="display:block"><tbody style="display:block"><tr style="display:flex;flex-wrap:wrap;align-items:center">

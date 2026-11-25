@@ -13,40 +13,54 @@
     @if (p.description && !inRow()) {
       <p class="package-description" translate="no">{{ p.description }}</p>
     }
-    <!-- The package's state and its acts: a holder of manage downloads every version after a preview and sets the package's rule
-         (every version, future ones included); a reader asks for the package (R-CUR-005, R-CUR-015). Opened in a row, the row's column
-         State shows the badge already: the line stands only for the rule that decided, which the row does not name (Q-UI-1192). The
-         package's npm tags stand on the rows of the versions they name, not here (Q-UI-1190). -->
-    @if (!inRow()) {
-      <p class="package-state" data-testid="upstream-package-badge">
-        @let b = badge(p.delivery, !!p.request);
-        <span [class]="b.look"><span class="material-icons" aria-hidden="true">{{ b.icon }}</span>{{ b.text }}</span>
-        @if (ruleLine(p.delivery); as rule) {
-          &ngsp;<span class="muted" translate="no">{{ rule }}</span>
-        }
-      </p>
-    } @else if (ruleLine(p.delivery); as rule) {
-      <p class="package-state muted" data-testid="upstream-package-rule" translate="no">{{ rule }}</p>
-    }
-    @if (actions.manager() || mayRequestPackage()) {
-      <div class="acts-row">
+    <!-- The package's acts at the left and its switch at the right, apart (R-CUR-024, Q-CUR-201): a holder of manage downloads every
+         version after a preview and turns the package level (every version that has no setting of its own, future ones included); a
+         reader asks for the package (R-CUR-015). Opened in a row, the row's column State shows the badge already: the head says only the
+         rule that decided, which the row does not name (Q-UI-1192). The package's npm tags stand on the rows of the versions they name
+         (Q-UI-1190). -->
+    <div class="head-row">
+      <div class="head-acts">
         @if (actions.manager()) {
           <button class="btn btn-default" type="button" data-testid="upstream-download-every" (click)="downloadEvery()" i18n="@@upstream.package.download-every">Download every version…</button>
-          @if (packageRule() === 'allow') {
-            <button class="btn btn-default" type="button" [disabled]="actions.isBusy(name())" (click)="removePackageRule()" i18n="@@upstream.package.remove-allow">Remove the allow</button>
-          } @else {
-            <button class="btn btn-default" type="button" [disabled]="actions.isBusy(name())" (click)="setPackageRule('allow')" i18n="@@upstream.package.allow-every">Allow every version</button>
+        } @else {
+          @if (!inRow()) {
+            <p class="package-state" data-testid="upstream-package-badge">
+              @let b = badge(p.delivery, !!p.request);
+              <span [class]="b.look"><span class="material-icons" aria-hidden="true">{{ b.icon }}</span>{{ b.text }}</span>
+              @if (ruleLine(p.delivery); as rule) {
+                &ngsp;<span class="muted" translate="no">{{ rule }}</span>
+              }
+            </p>
+          } @else if (ruleLine(p.delivery); as rule) {
+            <p class="package-state muted" data-testid="upstream-package-rule" translate="no">{{ rule }}</p>
           }
-          @if (packageRule() === 'block') {
-            <button class="btn btn-default" type="button" [disabled]="actions.isBusy(name())" (click)="removePackageRule()" i18n="@@upstream.package.remove-block">Remove the block</button>
-          } @else {
-            <button class="btn btn-default" type="button" [disabled]="actions.isBusy(name())" (click)="setPackageRule('block')" i18n="@@upstream.package.block-every">Block every version</button>
+          @if (mayRequestPackage()) {
+            <button class="btn btn-default" type="button" [disabled]="actions.isBusy(name())" (click)="requestPackage()" i18n="@@upstream.package.request">Request every version</button>
           }
-        } @else if (mayRequestPackage()) {
-          <button class="btn btn-default" type="button" [disabled]="actions.isBusy(name())" (click)="requestPackage()" i18n="@@upstream.package.request">Request every version</button>
         }
       </div>
-    }
+      @if (hasPackageSwitch() && level(); as l) {
+        <div class="package-switch" data-testid="upstream-package-switch">
+          <span class="switch-line">
+            <quader-switch [checked]="l.delivered" [showWord]="false" [label]="packageSwitchLabel()" [busy]="actions.isBusy(name())" (checkedChange)="switchPackage($event)" />
+            @if (!inRow()) {
+              @let lb = badge(l, !!p.request);
+              <span [class]="lb.look" data-testid="upstream-package-badge"><span class="material-icons" aria-hidden="true">{{ lb.icon }}</span>{{ lb.text }}</span>
+            }
+            @if (levelRule(); as rule) {
+              <span class="muted rule" data-testid="upstream-package-rule">
+                @if (l.decidedBy.kind === 'section') {
+                  <ng-container i18n="@@upstream.rule.label">Rule:</ng-container>&ngsp;<code translate="no">{{ l.decidedBy.subject }}</code>
+                } @else {
+                  {{ rule }}
+                }
+              </span>
+            }
+          </span>
+          <!-- The line under the switch is kept for the range of versions of a package's allow (W-28, package P2). -->
+        </div>
+      }
+    </div>
     @if (notCovered()) {
       <p class="hint" data-testid="upstream-not-covered">{{ notCoveredSentence() }}</p>
     }
@@ -80,8 +94,9 @@
   >
     @for (v of versions(); track v.version) {
       <tr>
-        <!-- The version with its published time and size under it, the rule that decided under the delivery, the verdicts under
-             the cache: the list keeps the form of a table at 1,024 px (Q-CUR-157). -->
+        <!-- The version with its published time and size under it; the switch, the badge and the rule that decided in the delivery's
+             cell; the cache's state with its one act, and the verdicts under it: the list keeps the form of a table at 1,024 px
+             (Q-CUR-157 as revised by Q-CUR-201). No action cell, no menu. -->
         <th scope="row">
           <!-- The version, its flags and the npm tags that name it, wrapping between them (Q-UI-1190, Q-UI-1191). -->
           <span class="version-line">
@@ -104,12 +119,22 @@
             }
           </span>
           @if (v.platforms.length > 0) {
-            <span class="secondary" translate="no">{{ v.platforms.join(', ') }}</span>
+            <span class="secondary platforms-line" translate="no">{{ v.platforms.join(', ') }}</span>
           }
         </th>
         <td class="delivery-cell">
           @let vb = badge(v.delivery, !!v.request);
-          <span [class]="vb.look"><span class="material-icons" aria-hidden="true">{{ vb.icon }}</span>{{ vb.text }}</span>
+          <span class="state-line">
+            @if (actions.manager()) {
+              <quader-switch [checked]="v.delivery.delivered" [showWord]="false" [label]="switchLabel(v)" [busy]="busyVersion(v)" (checkedChange)="switchVersion(v, $event)" />
+            }
+            <span [class]="vb.look"><span class="material-icons" aria-hidden="true">{{ vb.icon }}</span>{{ vb.text }}</span>
+            @if (mayRequest(v)) {
+              <button class="btn btn-tertiary on-line" type="button" [disabled]="busyVersion(v)" (click)="request(v)">
+                <ng-container i18n="@@upstream.act.request">Request</ng-container><span class="visually-hidden" translate="no">&ngsp;{{ name() }} {{ v.version }}</span>
+              </button>
+            }
+          </span>
           @if (ruleOf(v); as rule) {
             <span class="secondary rule-line">
               @if (rule.pattern) {
@@ -120,50 +145,31 @@
             </span>
           }
         </td>
-        <!-- The cache, and under it the verdicts: a stored version's page, or the vulnerability verdict of one that is not stored. -->
+        <!-- The cache with its one act on the state's line, and under it the verdicts: a stored version's page, or the vulnerability
+             verdict of one that is not stored. -->
         <td class="cache-cell">
-          @if (v.queued; as q) {
-            <span class="badge"><span class="material-icons" aria-hidden="true">{{ q.state === 'running' ? 'sync' : 'hourglass_empty' }}</span>{{ queuedText(q.state) }}</span>
-          } @else if (v.stored === 'whole' && !v.delivery.delivered) {
-            <span class="badge"><span class="material-icons" aria-hidden="true">science</span><ng-container i18n="@@upstream.cache.for-examination">Stored for examination</ng-container></span>
-          } @else if (v.stored === 'whole') {
-            <span class="badge"><span class="material-icons" aria-hidden="true">inventory_2</span><ng-container i18n="@@upstream.cache.stored">Stored</ng-container></span>
-          } @else {
-            <span class="muted" i18n="@@upstream.cache.not-stored">Not stored</span>
-          }
+          <span class="state-line">
+            @if (v.queued; as q) {
+              <span class="badge"><span class="material-icons" aria-hidden="true">{{ q.state === 'running' ? 'sync' : 'hourglass_empty' }}</span>{{ queuedText(q.state) }}</span>
+            } @else if (v.stored === 'whole' && !v.delivery.delivered) {
+              <span class="badge"><span class="material-icons" aria-hidden="true">science</span><ng-container i18n="@@upstream.cache.for-examination">Stored for examination</ng-container></span>
+            } @else if (v.stored === 'whole') {
+              <span class="badge"><span class="material-icons" aria-hidden="true">inventory_2</span><ng-container i18n="@@upstream.cache.stored">Stored</ng-container></span>
+            } @else {
+              <span class="muted" i18n="@@upstream.cache.not-stored">Not stored</span>
+            }
+            @if (cacheAct(v); as act) {
+              <button class="btn btn-tertiary on-line" type="button" [disabled]="busyVersion(v)" (click)="runCache(act, v)">
+                {{ cacheActText(act) }}<span class="visually-hidden" translate="no">&ngsp;{{ name() }} {{ v.version }}</span>
+              </button>
+            }
+          </span>
           @if (v.stored === 'whole') {
             <div class="verdict-line"><a [routerLink]="versionLink(v.version)" i18n="@@upstream.verdicts.open">Open the version</a></div>
           } @else if (verdictOf(v); as verdict) {
             <div class="verdict-line"><span [class.bad]="blockedVerdict(v)">{{ verdict }}</span></div>
           }
         </td>
-        @if (hasActions()) {
-          <td class="actions">
-            @let list = acts(v);
-            @if (list.length === 1 && list[0]; as only) {
-              <button class="btn btn-tertiary" type="button" [disabled]="actions.isBusy(name() + ' ' + v.version)" (click)="run(only, v)">
-                {{ actText(only) }}<span class="visually-hidden" translate="no">&ngsp;{{ name() }} {{ v.version }}</span>
-              </button>
-            } @else if (list.length > 1) {
-              <button
-                class="btn btn-tertiary btn-icon"
-                type="button"
-                [disabled]="actions.isBusy(name() + ' ' + v.version)"
-                [attr.aria-label]="menuLabel(v)"
-                [cdkMenuTriggerFor]="versionMenu"
-              >
-                <span class="material-icons" aria-hidden="true">more_vert</span>
-              </button>
-              <ng-template #versionMenu>
-                <div class="menu" cdkMenu>
-                  @for (a of list; track a) {
-                    <button class="menu-item" type="button" cdkMenuItem (cdkMenuItemTriggered)="run(a, v)">{{ actText(a) }}</button>
-                  }
-                </div>
-              </ng-template>
-            }
-          </td>
-        }
       </tr>
     }
   </quader-data-table>

@@ -5,13 +5,14 @@ import { firstValueFrom, map } from 'rxjs';
 import { ApiError } from '../../../api/problem';
 import { UpstreamCatalogue, UpstreamCatalogueApi, UpstreamHit, UpstreamUnknownLevel } from '../../../api/upstream-catalogue-api';
 import { SessionStore } from '../../../core/session-store';
-import { LIVE_IDLE_MS, live, refreshResource } from '../../../core/live-refresh';
+import { LIVE_FAST_MS, LIVE_IDLE_MS, live, refreshResource } from '../../../core/live-refresh';
 import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError, failureOf, valueOf } from '../../../shared/paged-resource';
 import { Checkbox } from '../../../shared/ui/checkbox';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { QuaderDialog } from '../../../shared/ui/dialog';
 import { NoValue } from '../../../shared/ui/no-value';
+import { Switch } from '../../../shared/ui/switch';
 import { ContentShape } from '../content/content-shape';
 import { DeliveryRequestsPanel } from './delivery-requests-panel';
 import { DeliveryRulesData, DeliveryRulesDialog } from './delivery-rules-dialog';
@@ -26,6 +27,7 @@ import {
   sectionExample,
   stateBadge,
   suggestionText,
+  switchLabel,
   unknownLevelText,
 } from './upstream-words';
 
@@ -62,7 +64,7 @@ function levelOf(param: string | null): readonly string[] {
  */
 @Component({
   selector: 'quader-remote-upstream',
-  imports: [Checkbox, DataTable, DeliveryRequestsPanel, ErrorNotice, NoValue, RouterLink, UpstreamPackageView],
+  imports: [Checkbox, DataTable, DeliveryRequestsPanel, ErrorNotice, NoValue, RouterLink, Switch, UpstreamPackageView],
   providers: [UpstreamActions],
   templateUrl: './remote-upstream.html',
   styleUrl: './remote-upstream.scss',
@@ -211,7 +213,7 @@ export class RemoteUpstream {
         const repository = this.repository();
         await Promise.all([refreshResource(this.capsRead, () => this.api.caps(repository)), this.refreshList()]);
       },
-      every: () => LIVE_IDLE_MS,
+      every: () => (this.actions.unsettled() > 0 ? LIVE_FAST_MS : LIVE_IDLE_MS),
     });
     // The field shows what the address holds: a search's text, else the name looked up.
     effect(() => {
@@ -238,11 +240,11 @@ export class RemoteUpstream {
   private async readPage(listing: 'search' | 'level', q: string, level: readonly string[], namesOnly: boolean, cursor: string | null): Promise<ListPage> {
     if (listing === 'search') {
       const p = await this.api.search(this.repository(), { q, namesOnly, cursor });
-      return { hits: p.hits, levels: [], total: p.total, truncated: p.truncated, withheld: p.withheld, next: p.done ? null : p.nextCursor, unknown: null };
+      return { hits: this.settle(p.hits), levels: [], total: p.total, truncated: p.truncated, withheld: p.withheld, next: p.done ? null : p.nextCursor, unknown: null };
     }
     const p = await this.api.level(this.repository(), level, cursor);
     return {
-      hits: p.packages,
+      hits: this.settle(p.packages),
       levels: p.levels,
       total: p.total,
       truncated: false,
@@ -250,6 +252,11 @@ export class RemoteUpstream {
       next: p.done ? null : p.nextCursor,
       unknown: p.unknown,
     };
+  }
+
+  /** The hits as the rows show them: a package switch's answer stands until the catalogue's read agrees with it. */
+  private settle(hits: readonly UpstreamHit[]): readonly UpstreamHit[] {
+    return hits.map((h) => (h.level ? { ...h, level: this.actions.settled(h.name, h.level) } : h));
   }
 
   private async load(listing: 'search' | 'level', q: string, level: readonly string[], namesOnly: boolean, fresh: boolean): Promise<void> {
@@ -393,6 +400,22 @@ export class RemoteUpstream {
 
   protected openLabel(h: UpstreamHit): string {
     return $localize`:@@upstream.row.open:Versions of ${h.name}:name:`;
+  }
+
+  /** The name of a package's switch in its row: what it delivers (R-CUR-024). */
+  protected switchLabel(h: UpstreamHit): string {
+    return switchLabel(h.name);
+  }
+
+  /**
+   * A package's switch turned in its row (R-CUR-024): the row takes the server's decision at once; the list is read again in place
+   * through the counter of writes, and a refusal leaves the row as it was.
+   */
+  protected async switchPackage(h: UpstreamHit, on: boolean): Promise<void> {
+    const out = await this.actions.switchPackage(h.name, on, h.versionRules);
+    if (out === null) return;
+    const p = this.page();
+    if (p) this.page.set({ ...p, hits: p.hits.map((x) => (x.name === h.name ? { ...x, level: out.decision } : x)) });
   }
 
   protected rowId(h: UpstreamHit): string {

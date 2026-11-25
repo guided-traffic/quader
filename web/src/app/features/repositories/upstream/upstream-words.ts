@@ -41,6 +41,16 @@ export function stateBadge(delivery: DeliveryDecision, requested: boolean): Stat
   return { text: $localize`:@@upstream.state.delivered:Delivered`, look: 'badge', icon: 'check' };
 }
 
+/**
+ * The name of a package's or a version's switch for assistive technology (R-CUR-024): what it delivers, "Deliver lodash" or "Deliver
+ * lodash 4.17.21"; its state is the switch's own "on" or "off".
+ */
+export function switchLabel(name: string, version?: string): string {
+  return version
+    ? $localize`:@@upstream.switch.version-label:Deliver ${name}:name: ${version}:version:`
+    : $localize`:@@upstream.switch.package-label:Deliver ${name}:name: with every version`;
+}
+
 /** The rule that made a decision, in one muted line ("Rule: @acme/*"); nothing where the mode decided. */
 export function decidedByText(delivery: DeliveryDecision): string | null {
   const by = delivery.decidedBy;

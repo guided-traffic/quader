@@ -5,11 +5,20 @@ import { ApiError } from '../../api/problem';
 import { Schema } from '../../api/types';
 import { ErrorNotice } from '../../shared/error-notice';
 import { Checkbox } from '../../shared/ui/checkbox';
+import { QuaderDialog } from '../../shared/ui/dialog';
 import { Disclosure } from '../../shared/ui/disclosure';
+import { firstValueFrom } from 'rxjs';
+import { DeliveryModeChoice, DeliveryModeData, DeliveryModeDialog } from './delivery-mode-dialog';
 import { DeliveryMode, modeName } from './upstream/upstream-words';
 
 /** `remote.delivery` of a remote repository (R-CUR-001, R-CUR-020). */
 export type DeliverySettings = Schema<'DeliverySettings'>;
+
+/** What the section saves: `remote.delivery`, and whether the stored packages are allowed first (R-CUR-025). */
+export interface DeliverySave {
+  readonly settings: DeliverySettings;
+  readonly allowStored: boolean;
+}
 
 /** The values a remote without the member holds (R-CUR-020): every member's default. */
 export const DELIVERY_DEFAULTS: Required<DeliverySettings> = { mode: 'allExceptBlocked', examineOnRequest: true, examinedRetentionDays: 30 };
@@ -24,7 +33,8 @@ export function deliveryOf(stored: Partial<DeliverySettings> | undefined | null)
  * (R-UI-067). The mode as two choices with their sentences, **Fetch for examination when someone asks** and the days after which what
  * was examined and not allowed is removed, saved on their own with the page's `ETag`; the rules themselves are set on the tab
  * **Upstream**, which a link opens. The address's fragment `#delivery` (the tab's **Change**) opens the section. A caller who may not
- * change the configuration reads the values.
+ * change the configuration reads the values. A change of the mode first opens the dialog of R-CUR-025, which says what follows and,
+ * towards **Only what is allowed**, offers to allow the stored packages the mode decides.
  */
 @Component({
   selector: 'quader-repository-delivery',
@@ -163,6 +173,7 @@ export function deliveryOf(stored: Partial<DeliverySettings> | undefined | null)
 export class RepositoryDeliverySection {
   private readonly route = inject(ActivatedRoute);
   private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly dialog = inject(QuaderDialog);
 
   /** `remote.delivery` as stored; absent members hold their defaults. */
   readonly stored = input<Partial<DeliverySettings> | undefined | null>(undefined);
@@ -172,7 +183,7 @@ export class RepositoryDeliverySection {
   readonly canChange = input(false);
   readonly saving = input(false);
   readonly failure = input<ApiError | null>(null);
-  readonly save = output<DeliverySettings>();
+  readonly save = output<DeliverySave>();
 
   protected readonly modes: readonly DeliveryMode[] = ['allExceptBlocked', 'onlyAllowed'];
   protected readonly name = modeName;
@@ -226,9 +237,20 @@ export class RepositoryDeliverySection {
     this.days.set(c.examinedRetentionDays);
   }
 
-  protected submit(event: Event): void {
+  protected async submit(event: Event): Promise<void> {
     event.preventDefault();
     if (!this.dirty() || this.saving() || this.daysError()) return;
-    this.save.emit({ mode: this.mode(), examineOnRequest: this.examine(), examinedRetentionDays: this.daysValue() });
+    const settings: DeliverySettings = { mode: this.mode(), examineOnRequest: this.examine(), examinedRetentionDays: this.daysValue() };
+    let allowStored = false;
+    if (settings.mode !== this.current().mode) {
+      const ref = this.dialog.open<DeliveryModeDialog, DeliveryModeData, DeliveryModeChoice>(DeliveryModeDialog, {
+        data: { repository: `${this.project()}/${this.repositoryKey()}`, to: this.mode() },
+        width: '36rem',
+      });
+      const choice = await firstValueFrom(ref.closed);
+      if (!choice) return;
+      allowStored = choice.allowStored;
+    }
+    this.save.emit({ settings, allowStored });
   }
 }

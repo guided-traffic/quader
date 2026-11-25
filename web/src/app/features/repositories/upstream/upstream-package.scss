@@ -22,12 +22,68 @@
   }
 }
 
-// The package's acts in a row of their own under its state, wrapping where narrow.
-.acts-row {
+// The package's acts at the left and its switch at the right, apart (Q-CUR-201); narrow, the switch goes under the acts, at the left.
+.head-row {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--quader-space-2);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--quader-space-2) var(--quader-space-4);
   margin-block-end: var(--quader-space-2);
+}
+
+.head-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-2);
+  min-inline-size: 0;
+
+  p {
+    margin: 0;
+  }
+}
+
+// The switch, the level's badge and under them the rule that decided; the line under them is kept for a range (W-28, P2).
+.package-switch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quader-space-1);
+  min-inline-size: 0;
+}
+
+// A state's line in a cell (a switch, a badge, an act) stands on one line where the column has room and wraps between its items where it
+// has not (1,024 px with a long version, 390 px): the row gap keeps a wrapped act's 32 px box off the line above, so the layout checks
+// read it as a wrapped row (Q-CUR-201). The quiet act's padding hangs into the gap and the cell's padding, so its text lines up with
+// the state's beside it or under it and a long German word does not widen the cell.
+.state-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--quader-space-3);
+  max-inline-size: 100%;
+
+  > * {
+    white-space: nowrap;
+  }
+
+  > .btn {
+    margin-inline: calc(-1 * var(--quader-space-3));
+  }
+}
+
+// The package's switch, its badge and the rule that decided on one line beside **Download every version…**, all on the middle of the
+// button's line; narrow, the rule goes under them.
+.switch-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-1) var(--quader-space-2);
+  min-block-size: var(--quader-control-height);
+
+  > :not(.rule) {
+    white-space: nowrap;
+  }
 }
 
 .versions-head {
@@ -69,11 +125,9 @@
   max-inline-size: 100%;
 }
 
-// The version, the delivery's badge, the cache's state and the link to a stored version never break (Q-UI-563): the facts, the rule and
-// the verdict under them are what wraps.
+// The version and the link to a stored version never break (Q-UI-563), nor does an item of a state's line: the facts, the rule and the
+// verdict under them are what wraps.
 .version,
-.delivery-cell > :first-child,
-.cache-cell > :first-child,
 .verdict-line a {
   white-space: nowrap;
 }
@@ -92,4 +146,25 @@
 .rule-line,
 .verdict-line {
   margin-block-start: calc((20px - 1rem) / 2);
+}
+
+// The rule under a switch and a badge is its own line, as the facts under the version are.
+.rule-line,
+.platforms-line {
+  display: block;
+}
+
+// The switch and its badge belong together: the delivery's line does not wrap between them, so the badge stays the cell's first line.
+.delivery-cell .state-line {
+  flex-wrap: nowrap;
+  gap: var(--quader-space-2);
+}
+
+.delivery-cell .state-line > .btn {
+  margin-inline: 0;
+}
+
+// A verdict is a status and stays on its line, as the state above it does (R-UI-171).
+.verdict-line > span {
+  white-space: nowrap;
 }

@@ -131,20 +131,25 @@ describe('The tab Upstream of a remote repository', () => {
     await expectAccessible(root);
   });
 
-  it('R-CUR-018 R-CUR-005 a package opens in place to its versions, and a holder of manage downloads, allows, blocks and discards', async () => {
-    const { root, fixture, catalogue, downloads, rules } = await open({
+  it('R-CUR-018 R-CUR-024 R-UI-163 a package opens in place; a holder of manage turns switches and the one act of the cache, with no menu and no action column', async () => {
+    const allowedHere = { delivered: true, decidedBy: { kind: 'version' as const, subject: 'gitlab-ai-provider@1.3.8', effect: 'allow' as const } };
+    const { root, fixture, catalogue, downloads, rules, requests } = await open({
       manage: true,
       url: '/projects/web/repositories/npmjs/upstream?q=gitlab',
       fake: (c) => {
         c.capsAnswer = catalogueCaps({ mode: 'onlyAllowed', maySetRules: true });
-        c.hits = SEARCH_HITS;
+        c.hits = SEARCH_HITS.map((h) => ({ ...h, level: h.delivery, inherited: NOT_ALLOWED, versionRules: { allow: 0, block: 0 } }));
         c.packages['gitlab-ai-provider'] = upstreamPackage({
           name: 'gitlab-ai-provider',
           delivery: NOT_ALLOWED,
+          level: NOT_ALLOWED,
+          inherited: NOT_ALLOWED,
+          versionRules: { allow: 1, block: 0 },
           versions: [
             upstreamVersion({ version: '1.4.0', delivery: NOT_ALLOWED }),
             upstreamVersion({ version: '1.3.9', delivery: NOT_ALLOWED, stored: 'whole' }),
-            upstreamVersion({ version: '1.3.8', delivery: { delivered: true, decidedBy: { kind: 'version', subject: 'gitlab-ai-provider@1.3.8', effect: 'allow' } }, size: 2_412_448 }),
+            upstreamVersion({ version: '1.3.8', delivery: allowedHere, size: 2_412_448 }),
+            upstreamVersion({ version: '1.3.7', delivery: NOT_ALLOWED, queued: { id: 'q-1', state: 'waiting', origin: 'person', attempts: 0, maxAttempts: 5, nextAttemptAt: null } }),
           ],
           total: 3893,
           done: false,
@@ -152,43 +157,94 @@ describe('The tab Upstream of a remote repository', () => {
         });
       },
     });
-    hitRow(root, 'gitlab-ai-provider').querySelector<HTMLButtonElement>('button[aria-expanded]')!.click();
+    // A closed row holds the package's switch beside the package level's badge in its column State.
+    const row = hitRow(root, 'gitlab-ai-provider');
+    const rowSwitch = row.querySelector<HTMLButtonElement>('td.state-cell button[role="switch"]')!;
+    expect(rowSwitch.getAttribute('aria-checked')).toBe('false');
+    expect(rowSwitch.getAttribute('aria-label')).toBe('Deliver gitlab-ai-provider with every version');
+    expect(text(row.querySelector('td.state-cell')!)).toContain('Not allowed');
+    row.querySelector<HTMLButtonElement>('button[aria-expanded]')!.click();
     await settle(fixture);
     expect(catalogue.calls).toContain('package gitlab-ai-provider');
     expect(root.querySelector('#up-gitlab-ai-provider')!.classList).toContain('open');
-    expect(text(root.querySelector('quader-upstream-package')!)).toContain('Showing 3 of 3,893');
-    // A version that is not stored has its vulnerability verdict under the cache; a stored one leads to its version page.
-    expect(text(versionRow(root, '1.4.0').querySelector('td.cache-cell .verdict-line')!)).toBe('No known vulnerability');
-    // Three columns and the acts (Q-CUR-157): the size under the version, the rule under the delivery, the verdicts under the cache.
-    const heads = [...root.querySelectorAll('quader-upstream-package thead th')].map((th) => text(th));
-    expect(heads).toEqual(['Version', 'Delivery', 'Cache', 'Actions']);
-    expect(text(versionRow(root, '1.4.0').querySelector('th .secondary')!)).toMatch(/ · Size not told$/);
-    expect(versionRow(root, '1.3.9').querySelector('td.cache-cell a')?.getAttribute('href')).toBe('/projects/web/packages/npm/gitlab-ai-provider@1.3.9');
-    expect(text(versionRow(root, '1.3.9'))).toContain('Stored for examination');
+    // Opened, the switch stands at the right of the package's head, apart from Download every version… at the left (Q-CUR-201).
+    expect(hitRow(root, 'gitlab-ai-provider').querySelector('td.state-cell button[role="switch"]')).toBeNull();
+    const pkg = root.querySelector<HTMLElement>('quader-upstream-package')!;
+    expect(pkg.querySelector('.head-acts [data-testid="upstream-download-every"]')).not.toBeNull();
+    expect(pkg.querySelector('.package-switch button[role="switch"]')).not.toBeNull();
+    for (const gone of ['Allow every version', 'Block every version', 'Remove the allow', 'Remove the block']) expect(text(pkg)).not.toContain(gone);
+    expect(text(pkg)).toContain('Showing 4 of 3,893');
+    // Three columns, no menu and no action cell (Q-CUR-201, R-UI-163).
+    const heads = [...pkg.querySelectorAll('thead th')].map((th) => text(th));
+    expect(heads).toEqual(['Version', 'Delivery', 'Cache']);
+    expect(pkg.querySelector('td.actions')).toBeNull();
+    expect(pkg.querySelector('button[aria-haspopup]')).toBeNull();
+    // Per version: the switch beside its badge, the rule under it; the cache's one act on the state's line.
+    const sw = (version: string) => versionRow(root, version).querySelector<HTMLButtonElement>('td.delivery-cell button[role="switch"]')!;
+    expect(sw('1.4.0').getAttribute('aria-checked')).toBe('false');
+    expect(sw('1.4.0').getAttribute('aria-label')).toBe('Deliver gitlab-ai-provider 1.4.0');
+    expect(sw('1.3.8').getAttribute('aria-checked')).toBe('true');
     expect(text(versionRow(root, '1.3.8').querySelector('td.delivery-cell .rule-line')!)).toBe('Rule: this version');
+    const act = (version: string) => [...versionRow(root, version).querySelectorAll<HTMLButtonElement>('td.cache-cell button')].map((x) => text(x));
+    expect(act('1.4.0')).toEqual(['Download for examination gitlab-ai-provider 1.4.0']);
+    expect(act('1.3.9')).toEqual(['Discard gitlab-ai-provider 1.3.9']);
+    expect(act('1.3.8')).toEqual(['Download gitlab-ai-provider 1.3.8']);
+    expect(act('1.3.7')).toEqual([]);
+    expect(text(versionRow(root, '1.3.7').querySelector('td.cache-cell')!)).toContain('Waiting');
+    expect(text(versionRow(root, '1.4.0').querySelector('td.cache-cell .verdict-line')!)).toBe('No known vulnerability');
+    expect(versionRow(root, '1.3.9').querySelector('td.cache-cell a')?.getAttribute('href')).toBe('/projects/web/packages/npm/gitlab-ai-provider@1.3.9');
     expect(text(versionRow(root, '1.3.8').querySelector('th .secondary')!)).toContain('2.3 MiB');
-    // Several acts are the row's menu (R-UI-163).
-    const menu = versionRow(root, '1.4.0').querySelector<HTMLButtonElement>('td.actions button[aria-haspopup]')!;
-    expect(menu.getAttribute('aria-label')).toBe('Actions for gitlab-ai-provider 1.4.0');
-    menu.click();
-    await settle(fixture);
-    const entries = [...document.querySelectorAll<HTMLButtonElement>('.menu .menu-item')];
-    expect(entries.map((e) => text(e))).toEqual(['Download for examination', 'Allow', 'Block']);
-    entries[0]!.click();
+    expect(requests.calls).toEqual([]);
+    versionRow(root, '1.4.0').querySelector<HTMLButtonElement>('td.cache-cell button')!.click();
     await settle(fixture);
     expect(downloads.calls).toContain('start web/npmjs version gitlab-ai-provider 1.4.0');
-    versionRow(root, '1.3.8').querySelector<HTMLButtonElement>('td.actions button[aria-haspopup]')!.click();
+    // A version switched on: the server's answer stands in the row at once (R-UI-213).
+    sw('1.4.0').click();
+    await waitUntil(fixture, () => rules.calls.includes('switch gitlab-ai-provider@1.4.0 on'), 'the switch to be written');
     await settle(fixture);
-    // The version's own allow is Remove rule in the place of Allow.
-    expect([...document.querySelectorAll('.menu .menu-item')].map((e) => text(e))).toEqual(['Download', 'Remove rule', 'Block']);
-    button(document.querySelector('.menu')!, 'Block').click();
+    expect(sw('1.4.0').getAttribute('aria-checked')).toBe('true');
+    // A refused write leaves the switch as it was.
+    rules.switchError = new ApiError(403, { code: 'forbidden', detail: 'Not yours.' }, 'rid-9');
+    sw('1.3.8').click();
     await settle(fixture);
-    expect(rules.calls).toContain('put version gitlab-ai-provider@1.3.8 block');
-    // The package's acts: every version, future ones included.
-    button(root.querySelector('quader-upstream-package')!, 'Allow every version').click();
-    await settle(fixture);
-    expect(rules.calls).toContain('put package gitlab-ai-provider allow');
+    expect(rules.calls).toContain('switch gitlab-ai-provider@1.3.8 off');
+    expect(sw('1.3.8').getAttribute('aria-checked')).toBe('true');
+    rules.switchError = null;
     await expectAccessible(root);
+  });
+
+  it('R-CUR-024 the package switch asks Keep or Reset only where its versions have rules of their own', async () => {
+    const { root, fixture, rules } = await open({
+      manage: true,
+      url: '/projects/web/repositories/npmjs/upstream?name=lodash',
+      fake: (c) => {
+        c.capsAnswer = catalogueCaps({ mode: 'onlyAllowed', maySetRules: true });
+        c.packages['lodash'] = upstreamPackage({ delivery: NOT_ALLOWED, level: NOT_ALLOWED, inherited: NOT_ALLOWED, versionRules: { allow: 1, block: 2 } });
+        c.packages['left-pad'] = upstreamPackage({ name: 'left-pad', delivery: NOT_ALLOWED, level: NOT_ALLOWED, inherited: NOT_ALLOWED, versionRules: { allow: 0, block: 0 } });
+      },
+    });
+    const head = root.querySelector<HTMLElement>('[data-testid="upstream-package-switch"]')!;
+    expect(text(head)).toContain('Not allowed');
+    head.querySelector<HTMLButtonElement>('button[role="switch"]')!.click();
+    await settle(fixture);
+    const d = dialog();
+    expect(text(d)).toContain('Allow every version of lodash?');
+    expect(text(d)).toContain('3 versions have settings of their own: 1 allowed, 2 blocked. They are kept unless you reset them.');
+    const reset = d.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+    expect(reset.checked).toBe(false);
+    reset.click();
+    button(d, 'Allow').click();
+    await waitUntil(fixture, () => rules.calls.includes('switch lodash on reset'), 'the switch with the reset');
+    await settle(fixture);
+    expect(head.querySelector('button[role="switch"]')!.getAttribute('aria-checked')).toBe('true');
+    // Without version rules nothing is asked.
+    const other = await open({ manage: true, url: '/projects/web/repositories/npmjs/upstream?name=left-pad', fake: (c) => {
+      c.capsAnswer = catalogueCaps({ mode: 'onlyAllowed', maySetRules: true });
+      c.packages['left-pad'] = upstreamPackage({ name: 'left-pad', delivery: NOT_ALLOWED, level: NOT_ALLOWED, inherited: NOT_ALLOWED, versionRules: { allow: 0, block: 0 } });
+    } });
+    other.root.querySelector<HTMLButtonElement>('[data-testid="upstream-package-switch"] button[role="switch"]')!.click();
+    await waitUntil(other.fixture, () => other.rules.calls.includes('switch left-pad on'), 'the switch without a question');
+    expect(document.querySelector('.quader-dialog')).toBeNull();
   });
 
   it('R-CUR-018 R-CUR-009 an npm tag stands as a badge on the row of the version it names, and the filter finds a version by its tag', async () => {
@@ -247,8 +303,8 @@ describe('The tab Upstream of a remote repository', () => {
       url: '/projects/web/repositories/npmjs/upstream?q=gitlab',
       fake: (c) => {
         c.hits = SEARCH_HITS;
-        c.packages['@gitlab/ui'] = upstreamPackage({ name: '@gitlab/ui', delivery: allowed, tags: {} });
-        c.packages['gitlab-ai-provider'] = upstreamPackage({ name: 'gitlab-ai-provider', delivery: NOT_ALLOWED, tags: {} });
+        c.packages['@gitlab/ui'] = upstreamPackage({ name: '@gitlab/ui', delivery: allowed, level: allowed, tags: {} });
+        c.packages['gitlab-ai-provider'] = upstreamPackage({ name: 'gitlab-ai-provider', delivery: NOT_ALLOWED, level: NOT_ALLOWED, tags: {} });
       },
     });
     for (const name of ['@gitlab/ui', 'gitlab-ai-provider']) hitRow(root, name).querySelector<HTMLButtonElement>('button[aria-expanded]')!.click();
@@ -262,10 +318,16 @@ describe('The tab Upstream of a remote repository', () => {
     // Without tags the field is the versions' filter alone.
     expect(text(provider!.querySelector('label.field-label')!)).toBe('Filter versions');
     // A lookup by name has no row above it: the badge and the rule stand in its head.
-    const lookup = await open({ manage: true, url: '/projects/web/repositories/npmjs/upstream?name=lodash', fake: (c) => (c.packages['lodash'] = upstreamPackage({ delivery: allowed })) });
-    const head = lookup.root.querySelector<HTMLElement>('[data-testid="upstream-lookup"] [data-testid="upstream-package-badge"]')!;
-    expect(text(head.querySelector('.badge')!)).toContain('Allowed');
-    expect(text(head.querySelector('.muted')!)).toBe('Rule: @gitlab/*');
+    const lookup = await open({ manage: true, url: '/projects/web/repositories/npmjs/upstream?name=lodash', fake: (c) => (c.packages['lodash'] = upstreamPackage({ delivery: allowed, level: allowed })) });
+    const head = lookup.root.querySelector<HTMLElement>('[data-testid="upstream-lookup"] [data-testid="upstream-package-switch"]')!;
+    expect(text(head.querySelector('[data-testid="upstream-package-badge"]')!)).toContain('Allowed');
+    expect(text(head.querySelector('[data-testid="upstream-package-rule"]')!)).toBe('Rule: @gitlab/*');
+    // A reader's lookup has the badge and the rule in its head, without a switch.
+    const reader = await open({ url: '/projects/web/repositories/npmjs/upstream?name=lodash', fake: (c) => (c.packages['lodash'] = upstreamPackage({ delivery: allowed })) });
+    const badge = reader.root.querySelector<HTMLElement>('[data-testid="upstream-lookup"] [data-testid="upstream-package-badge"]')!;
+    expect(text(badge.querySelector('.badge')!)).toContain('Allowed');
+    expect(text(badge.querySelector('.muted')!)).toBe('Rule: @gitlab/*');
+    expect(reader.root.querySelector('button[role="switch"]')).toBeNull();
   });
 
   it('R-CUR-010 Download every version opens the preview of the bulk; a lowered bound is previewed again and the bulk started with it', async () => {
@@ -430,7 +492,10 @@ describe('The tab Upstream of a remote repository', () => {
     const pkg = root.querySelector<HTMLElement>('quader-upstream-package')!;
     expect(pkg.querySelector('[data-testid="upstream-download-every"]')).toBeNull();
     expect(button(pkg, 'Request every version')).toBeDefined();
-    const one = versionRow(root, '124.0.3').querySelector<HTMLButtonElement>('td.actions button')!;
+    // A reader has no switch: the badge, and Request in the delivery's cell (R-CUR-024).
+    expect(versionRow(root, '124.0.3').querySelector('button[role="switch"]')).toBeNull();
+    expect(pkg.querySelector('[data-testid="upstream-package-switch"]')).toBeNull();
+    const one = versionRow(root, '124.0.3').querySelector<HTMLButtonElement>('td.delivery-cell button')!;
     expect(text(one)).toBe('Request @gitlab/ui 124.0.3');
     one.click();
     await settle(fixture);
@@ -617,8 +682,8 @@ describe('The tab Upstream of a remote repository', () => {
     const target = (id: string): string => new RegExp(`<unit id="${id.replace(/\./g, '\\.')}">[\\s\\S]*?<target>([\\s\\S]*?)</target>`).exec(german)?.[1] ?? '';
     expect(target('upstream.state.allowed')).toBe('Erlaubt');
     expect(target('upstream.state.blocked')).toBe('Gesperrt');
-    expect(target('upstream.act.allow')).toBe('Erlauben');
-    expect(target('upstream.act.block')).toBe('Sperren');
+    expect(target('upstream.switch.allow')).toBe('Erlauben');
+    expect(target('upstream.switch.block')).toBe('Sperren');
     expect(target('upstream.act.request')).toBe('Beantragen');
     expect(target('upstream.act.discard')).toBe('Verwerfen');
     expect(target('upstream.act.download')).toBe('In den Cache laden');

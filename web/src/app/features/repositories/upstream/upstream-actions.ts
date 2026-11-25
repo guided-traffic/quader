@@ -3,7 +3,8 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { newIdempotencyKey } from '../../../api/client';
 import { DeliveryRequestsApi } from '../../../api/delivery-requests-api';
-import { DeliveryEffect, DeliveryRuleInput, DeliveryRulesApi } from '../../../api/delivery-rules-api';
+import { DeliveryRuleCounts, DeliveryRulesApi, DeliverySwitchResult } from '../../../api/delivery-rules-api';
+import { DeliveryDecision } from '../../../api/upstream-catalogue-api';
 import { RemoteDownloadRequest, RemoteDownloadsApi } from '../../../api/remote-downloads-api';
 import { Notifier } from '../../../core/notifier';
 import { SessionStore } from '../../../core/session-store';
@@ -13,6 +14,9 @@ import { QuaderDialog } from '../../../shared/ui/dialog';
 import { AskDialog, AskDialogData } from './request-dialogs';
 import { DownloadPreviewDialog, DownloadPreviewData, DownloadPreviewResult } from './download-preview-dialog';
 import { FailureToasts } from '../../../shared/failure-dialog';
+
+/** How long a switch's answer stands in its row while the catalogue's read does not agree with it yet (R-CUR-006's bound and more). */
+export const SETTLE_MS = 30_000;
 
 /** The subject of an act: a package with every version, one version of it, or a sub-section (a name pattern or a level). */
 export interface Subject {
@@ -159,24 +163,75 @@ export class UpstreamActions {
     );
   }
 
-  /** **Allow** or **Block** a subject: the rule of the package (every version, future ones included), of a version, or of a pattern. */
-  async setRule(rule: DeliveryRuleInput, label: string): Promise<boolean> {
-    const out = await this.run(label, () => this.rules.put(this.repository(), rule, newIdempotencyKey()));
-    if (out === null) return false;
-    this.notifier.status(ruleSaved(rule.effect, label, rule.kind));
-    return true;
+  /**
+   * A version's switch turned (R-CUR-024): the server writes the version's rule where the asked state departs from what the version
+   * inherits and removes it where it equals it. The answer is returned, so the row shows it at once (R-UI-213); a refusal is said with
+   * every fact it carried (R-UI-216) and the row stays as it was.
+   */
+  async switchVersion(s: Required<Subject>, on: boolean): Promise<DeliverySwitchResult | null> {
+    const out = await this.run(s, async () => {
+      const answer = await this.rules.switch(this.repository(), { name: s.name, version: s.version, delivered: on, resetVersions: false }, newIdempotencyKey());
+      this.remember(this.key(s), answer.decision);
+      return answer;
+    });
+    if (out !== null) this.notifier.status(switched(subjectText(s), out.decision.delivered));
+    return out;
   }
 
-  /** **Remove rule** of a subject: the rule is found by its subject in the list, then removed. */
-  async removeRule(kind: DeliveryRuleInput['kind'], subject: string): Promise<void> {
-    const out = await this.run(subject, async () => {
-      const page = await this.rules.list(this.repository(), { kind, q: subject }, null);
-      const rule = page.items.find((r) => r.kind === kind && r.subject === subject);
-      if (!rule) return false;
-      await this.rules.remove(this.repository(), rule.id);
-      return true;
+  /**
+   * The answers of the switches whose catalogue rows may still lag: the catalogue reads the replica's snapshot, which takes the write
+   * within its bound (R-CUR-006), so a row read at once could show the state before the switch. Until a read agrees with the answer, at
+   * most {@link SETTLE_MS}, the row shows the answer, and the views read every few seconds meanwhile (R-UI-213).
+   */
+  private readonly settling = new Map<string, { readonly decision: DeliveryDecision; readonly until: number }>();
+  /** How many switches' answers are not yet read back: the views read fast while some are. */
+  readonly unsettled = signal(0);
+
+  private remember(key: string, decision: DeliveryDecision): void {
+    this.settling.set(key, { decision, until: Date.now() + SETTLE_MS });
+    this.unsettled.set(this.settling.size);
+  }
+
+  /**
+   * The decision a row shows of a subject (`name` or `name version`) the catalogue answered `read` for: the switch's answer while the
+   * read does not agree with it yet, else the read. Called where the rows are read, not in a template.
+   */
+  settled(key: string, read: DeliveryDecision): DeliveryDecision {
+    const pending = this.settling.get(key);
+    if (!pending) return read;
+    if (pending.until > Date.now() && pending.decision.delivered !== read.delivered) return pending.decision;
+    this.settling.delete(key);
+    this.unsettled.set(this.settling.size);
+    return read;
+  }
+
+  /**
+   * A package's switch turned (R-CUR-024): where its versions have rules of their own, a confirmation first asks whether they are kept
+   * (the default) or reset with it (Q-CUR-203). Null when cancelled or refused.
+   */
+  async switchPackage(name: string, on: boolean, versionRules: DeliveryRuleCounts | undefined): Promise<DeliverySwitchResult | null> {
+    let reset = false;
+    const own = (versionRules?.allow ?? 0) + (versionRules?.block ?? 0);
+    if (own > 0) {
+      const answer = await this.confirm.ask({
+        title: on
+          ? $localize`:@@upstream.switch.package-on-title:Allow every version of ${name}:name:?`
+          : $localize`:@@upstream.switch.package-off-title:Block every version of ${name}:name:?`,
+        lines: [ownSettingsText(own, versionRules?.allow ?? 0, versionRules?.block ?? 0)],
+        choice: $localize`:@@upstream.switch.reset:Reset them: every version follows the package`,
+        choiceChecked: false,
+        confirmLabel: on ? $localize`:@@upstream.switch.allow:Allow` : $localize`:@@upstream.switch.block:Block`,
+      });
+      if (answer === null) return null;
+      reset = answer.checked;
+    }
+    const out = await this.run(name, async () => {
+      const answer = await this.rules.switch(this.repository(), { name, delivered: on, resetVersions: reset }, newIdempotencyKey());
+      this.remember(name, answer.decision);
+      return answer;
     });
-    if (out) this.notifier.status($localize`:@@upstream.rule.removed:The rule for ${subject}:subject: is removed.`);
+    if (out !== null) this.notifier.status(switchedPackage(name, out.decision.delivered));
+    return out;
   }
 
   /** **Request** a package or a version (R-CUR-015): a dialog for the optional note, then the ask. */
@@ -205,14 +260,26 @@ export class UpstreamActions {
   }
 }
 
-/** The status after a rule was written. */
-function ruleSaved(effect: DeliveryEffect, subject: string, kind: DeliveryRuleInput['kind']): string {
-  if (effect === 'allow') {
-    return kind === 'package'
-      ? $localize`:@@upstream.rule.allowed-package:${subject}:subject: is allowed with every version, future ones included.`
-      : $localize`:@@upstream.rule.allowed:${subject}:subject: is allowed.`;
+/** The status after a version's switch: what the server decided. */
+function switched(subject: string, delivered: boolean): string {
+  return delivered
+    ? $localize`:@@upstream.switch.delivered:${subject}:subject: is delivered.`
+    : $localize`:@@upstream.switch.not-delivered:${subject}:subject: is not delivered.`;
+}
+
+/** The status after a package's switch. */
+function switchedPackage(name: string, delivered: boolean): string {
+  return delivered
+    ? $localize`:@@upstream.switch.package-delivered:${name}:name: is delivered with every version that has no setting of its own, future ones included.`
+    : $localize`:@@upstream.switch.package-not-delivered:${name}:name: is not delivered, apart from the versions that have a setting of their own.`;
+}
+
+/** The sentence of the confirmation: how many versions have settings of their own, and that they are kept unless reset. */
+function ownSettingsText(own: number, allow: number, block: number): string {
+  if (own === 1) {
+    return allow === 1
+      ? $localize`:@@upstream.switch.own-one-allowed:One version has a setting of its own: it is allowed. It is kept unless you reset it.`
+      : $localize`:@@upstream.switch.own-one-blocked:One version has a setting of its own: it is blocked. It is kept unless you reset it.`;
   }
-  return kind === 'package'
-    ? $localize`:@@upstream.rule.blocked-package:${subject}:subject: is blocked with every version, future ones included.`
-    : $localize`:@@upstream.rule.blocked:${subject}:subject: is blocked.`;
+  return $localize`:@@upstream.switch.own-many:${own}:count: versions have settings of their own: ${allow}:allowed: allowed, ${block}:blocked: blocked. They are kept unless you reset them.`;
 }

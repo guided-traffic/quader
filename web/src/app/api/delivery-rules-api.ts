@@ -11,6 +11,15 @@ export type DeliveryRuleWritten = Schema<'DeliveryRuleWritten'>;
 export type DeliveryRulePage = Schema<'DeliveryRulePage'>;
 export type DeliveryRuleKind = DeliveryRule['kind'];
 export type DeliveryEffect = DeliveryRule['effect'];
+/** A package's or a version's switch turned (R-CUR-024). */
+export type DeliverySwitchInput = Schema<'DeliverySwitchInput'>;
+/** What a switch did: the subject's decision after it, its rule or none, the rules it removed (R-CUR-024). */
+export type DeliverySwitchResult = Schema<'DeliverySwitchResult'>;
+/** A package's version rules by effect (R-CUR-024). */
+export type DeliveryRuleCounts = Schema<'DeliveryRuleCounts'>;
+/** What a change of the delivery mode affects (R-CUR-025). */
+export type DeliveryRulesSummary = Schema<'DeliveryRulesSummary'>;
+export type DeliveryAllowStoredResult = Schema<'DeliveryAllowStoredResult'>;
 
 /** The filters of the rule list; absent members filter nothing. */
 export interface DeliveryRuleFilters {
@@ -32,6 +41,12 @@ export abstract class DeliveryRulesApi {
   abstract put(repository: string, rule: DeliveryRuleInput, idempotencyKey: string): Promise<DeliveryRuleWritten>;
   /** `DELETE …/delivery-rules/{ruleId}`. */
   abstract remove(repository: string, id: string): Promise<void>;
+  /** `POST …/delivery-rules/switch`: the server writes or removes the subject's rule by what it inherits (R-CUR-024). */
+  abstract switch(repository: string, input: DeliverySwitchInput, idempotencyKey: string): Promise<DeliverySwitchResult>;
+  /** `GET …/delivery-rules/summary`: the counts of the rules and the stored packages the mode decides (R-CUR-025). */
+  abstract summary(repository: string): Promise<DeliveryRulesSummary>;
+  /** `POST …/delivery-rules/allow-stored`: one allowing package rule for each of those packages (R-CUR-025). */
+  abstract allowStored(repository: string, idempotencyKey: string): Promise<DeliveryAllowStoredResult>;
 }
 
 @Injectable()
@@ -53,5 +68,17 @@ export class HttpDeliveryRulesApi extends DeliveryRulesApi {
 
   async remove(repository: string, id: string): Promise<void> {
     await this.client.delete(`${repositoryBase(repository)}/delivery-rules/${encodeURIComponent(id)}`);
+  }
+
+  async switch(repository: string, input: DeliverySwitchInput, idempotencyKey: string): Promise<DeliverySwitchResult> {
+    return (await this.client.post<DeliverySwitchResult>(`${repositoryBase(repository)}/delivery-rules/switch`, input, { idempotencyKey })).body;
+  }
+
+  async summary(repository: string): Promise<DeliveryRulesSummary> {
+    return (await this.client.getJson<DeliveryRulesSummary>(`${repositoryBase(repository)}/delivery-rules/summary`)).body;
+  }
+
+  async allowStored(repository: string, idempotencyKey: string): Promise<DeliveryAllowStoredResult> {
+    return (await this.client.post<DeliveryAllowStoredResult>(`${repositoryBase(repository)}/delivery-rules/allow-stored`, undefined, { idempotencyKey })).body;
   }
 }

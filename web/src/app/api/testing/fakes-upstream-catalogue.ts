@@ -1,6 +1,17 @@
 import { Injectable, Provider } from '@angular/core';
 import { DeliveryRequest, DeliveryRequestAllow, DeliveryRequestAllowed, DeliveryRequestDeclined, DeliveryRequestFilters, DeliveryRequestPage, DeliveryRequestsApi, ExaminationDiscarded } from '../delivery-requests-api';
-import { DeliveryRule, DeliveryRuleFilters, DeliveryRuleInput, DeliveryRulePage, DeliveryRulesApi, DeliveryRuleWritten } from '../delivery-rules-api';
+import {
+  DeliveryAllowStoredResult,
+  DeliveryRule,
+  DeliveryRuleFilters,
+  DeliveryRuleInput,
+  DeliveryRulePage,
+  DeliveryRulesApi,
+  DeliveryRulesSummary,
+  DeliveryRuleWritten,
+  DeliverySwitchInput,
+  DeliverySwitchResult,
+} from '../delivery-rules-api';
 import { ApiError } from '../problem';
 import {
   DeliveryDecision,
@@ -181,6 +192,42 @@ export class FakeDeliveryRulesApi extends DeliveryRulesApi {
   override async remove(repository: string, id: string): Promise<void> {
     this.calls.push(`remove ${id}`);
     this.rules = this.rules.filter((r) => r.id !== id);
+  }
+
+  /** The answer of a switch; by default the asked state, decided by a rule of the subject. */
+  switchAnswer: ((input: DeliverySwitchInput) => DeliverySwitchResult) | null = null;
+  switchError: ApiError | null = null;
+
+  override async switch(repository: string, input: DeliverySwitchInput): Promise<DeliverySwitchResult> {
+    const subject = input.version ? `${input.name}@${input.version}` : input.name;
+    this.calls.push(`switch ${subject} ${input.delivered ? 'on' : 'off'}${input.resetVersions ? ' reset' : ''}`);
+    if (this.switchError) throw this.switchError;
+    if (this.switchAnswer) return this.switchAnswer(input);
+    const kind = input.version ? ('version' as const) : ('package' as const);
+    const effect = input.delivered ? ('allow' as const) : ('block' as const);
+    return {
+      decision: input.delivered ? { delivered: true, decidedBy: { kind, subject, effect } } : { delivered: false, reason: 'blocked', decidedBy: { kind, subject, effect } },
+      rule: deliveryRule({ id: `rule-${subject}`, kind, subject, effect }),
+      removed: [],
+      revision: 1,
+    };
+  }
+
+  summaryAnswer: DeliveryRulesSummary = { mode: 'allExceptBlocked', rules: { allow: 0, block: 0, sections: 0 }, maxRules: 50000, unruled: { count: 0, names: [], counted: true } };
+  summaryError: ApiError | null = null;
+
+  override async summary(): Promise<DeliveryRulesSummary> {
+    this.calls.push('summary');
+    if (this.summaryError) throw this.summaryError;
+    return this.summaryAnswer;
+  }
+
+  allowStoredError: ApiError | null = null;
+
+  override async allowStored(): Promise<DeliveryAllowStoredResult> {
+    this.calls.push('allow-stored');
+    if (this.allowStoredError) throw this.allowStoredError;
+    return { created: this.summaryAnswer.unruled.count, revision: 2 };
   }
 }
 

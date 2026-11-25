@@ -1,5 +1,10 @@
 import { describe, it } from 'vitest';
-import { DeliveryRulesApi } from '../../api/delivery-rules-api';
+import { DeliveryRulesApi, DeliveryRulesSummary } from '../../api/delivery-rules-api';
+import { SessionApi } from '../../api/session-api';
+import { FakeSessionApi } from '../../api/testing/fakes';
+import { FakeDeliveryRulesApi } from '../../api/testing/fakes-upstream-catalogue';
+import { ConfirmDialog } from '../../shared/confirm-dialog';
+import { DeliveryModeData, DeliveryModeDialog } from './delivery-mode-dialog';
 import { FilesApi } from '../../api/files-api';
 import { ApiError } from '../../api/problem';
 import { RemoteDownloadsApi } from '../../api/remote-downloads-api';
@@ -151,5 +156,70 @@ describe('dialogs of repositories in a browser (R-CUR-005, R-CUR-010, R-CUR-015,
       await fill(panel, 'Folder name', 'bereitstellungsverantwortlichkeitsuebertragung/rc-12');
       await click(panel, 'Create folder');
     });
+  });
+
+  // The package's switch where its versions have settings of their own (upstream-actions.ts switchPackage, Q-CUR-203).
+  it('A package switched on whose versions have settings of their own: Keep or Reset', async () => {
+    await expectState('upstream-switch-package-reset', () =>
+      openDialog(ConfirmDialog, {
+        maxWidth: '40rem',
+        data: {
+          title: 'Allow every version of @platform-engineering/kubernetes-infrastructure-operators?',
+          lines: ['3 versions have settings of their own: 1 allowed, 2 blocked. They are kept unless you reset them.'],
+          choice: 'Reset them: every version follows the package',
+          choiceChecked: false,
+          confirmLabel: 'Allow',
+        },
+      }),
+    );
+  });
+
+  // The change of the delivery mode (repository-delivery.ts submit, R-CUR-025).
+  const NAMES = Array.from({ length: 100 }, (_, i) => `@platform-engineering/kubernetes-infrastructure-operator-${String(i).padStart(3, '0')}`);
+  const summary = (over: Partial<DeliveryRulesSummary['unruled']>, rules = { allow: 12, block: 3, sections: 1 }, maxRules = 50000): DeliveryRulesSummary => ({
+    mode: 'allExceptBlocked',
+    rules,
+    maxRules,
+    unruled: { count: 3412, names: NAMES, counted: true, ...over },
+  });
+  const mode = (to: DeliveryModeData['to'], answer: DeliveryRulesSummary, manage = true) =>
+    openDialog(DeliveryModeDialog, {
+      width: '36rem',
+      data: { repository: 'platform-engineering/npmjs-remote', to },
+      ...(manage ? {} : { capabilities: ['repositories:write-config'] }),
+      setup: (get) => {
+        (get(DeliveryRulesApi) as FakeDeliveryRulesApi).summaryAnswer = answer;
+        if (!manage) (get(SessionApi) as FakeSessionApi).allow = (c) => c.action !== 'manage';
+      },
+    });
+
+  it('The mode changed to Only what is allowed: the stored packages named and the offer ticked', async () => {
+    await expectState('delivery-mode-offer', () => mode('onlyAllowed', summary({})));
+  });
+
+  it('The mode changed by a writer of the configuration who may not set rules: the list without the offer', async () => {
+    await expectState('delivery-mode-no-right', () => mode('onlyAllowed', summary({}), false));
+  });
+
+  it('The mode changed where the repository cannot hold a rule for every stored package: no offer, the sentence why', async () => {
+    await expectState('delivery-mode-beyond', () => mode('onlyAllowed', summary({ count: 50001, counted: false }, { allow: 40000, block: 3, sections: 1 })));
+  });
+
+  it('The mode changed where no stored package is delivered by the mode alone', async () => {
+    await expectState('delivery-mode-none', () => mode('onlyAllowed', summary({ count: 0, names: [] })));
+  });
+
+  it('The mode changed to Everything except what is blocked: the allow rules stay', async () => {
+    await expectState('delivery-mode-all', () => mode('allExceptBlocked', summary({ count: 0, names: [] })));
+  });
+
+  it('The mode dialog whose summary could not be read: the error notice with its request ID', async () => {
+    await expectState('delivery-mode-failed', () =>
+      openDialog(DeliveryModeDialog, {
+        width: '36rem',
+        data: { repository: 'platform-engineering/npmjs-remote', to: 'onlyAllowed' },
+        setup: (get) => failAlways(get(DeliveryRulesApi), 'summary', serverFailure()),
+      }),
+    );
   });
 });

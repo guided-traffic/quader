@@ -186,9 +186,21 @@
                 <quader-no-value />
               }
             </td>
-            <td class="keep">
-              @let b = badge(h.delivery, !!h.request);
-              <span [class]="b.look"><span class="material-icons" aria-hidden="true">{{ b.icon }}</span>{{ b.text }}</span>
+            <!-- The state: for those who decide the package's switch beside the package level's badge while the row is closed; opened,
+                 the switch stands at the right of the package's head (R-CUR-024, Q-CUR-201). A reader reads the package's badge. -->
+            <td class="keep state-cell">
+              @if (actions.manager() && h.level; as level) {
+                @let lb = badge(level, !!h.request);
+                <span class="state-line">
+                  @if (!isOpen(h)) {
+                    <quader-switch [checked]="level.delivered" [showWord]="false" [label]="switchLabel(h)" [busy]="actions.isBusy(h.name)" (checkedChange)="switchPackage(h, $event)" />
+                  }
+                  <span [class]="lb.look"><span class="material-icons" aria-hidden="true">{{ lb.icon }}</span>{{ lb.text }}</span>
+                </span>
+              } @else {
+                @let b = badge(h.delivery, !!h.request);
+                <span [class]="b.look"><span class="material-icons" aria-hidden="true">{{ b.icon }}</span>{{ b.text }}</span>
+              }
             </td>
             <td class="keep">
               @if (h.stored === 'partial') {
