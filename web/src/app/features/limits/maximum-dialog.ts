@@ -48,6 +48,12 @@ export interface MaximumDialogData {
             [(value)]="project"
             [error]="projectError()"
           />
+        } @else {
+          <!-- The project whose maximum changes, where Set maximum asks for it: the dialog named no project (Q-UI-1148). -->
+          <div class="field">
+            <span class="field-label" i18n="@@limits.maximum.project">Project</span>
+            <span translate="no">{{ data.project }}</span>
+          </div>
         }
         <quader-select-field
           i18n-label="@@limits.rule.profile"
@@ -72,6 +78,12 @@ export interface MaximumDialogData {
     </form>
   `,
   styles: `
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: var(--quader-space-1);
+      margin-block-end: var(--quader-space-3);
+    }
     .hint {
       margin: 0 0 var(--quader-space-3);
     }

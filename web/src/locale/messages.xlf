@@ -11974,7 +11974,7 @@
       <notes>
         <note category="location">src/app/features/limits/limit-mode.ts:96,97</note>
         <note category="location">src/app/features/limits/limits-rules-tab.ts:55,57</note>
-        <note category="location">src/app/features/limits/maximum-dialog.ts:69,70</note>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:75,76</note>
         <note category="location">src/app/features/limits/rule-dialog.ts:187,188</note>
       </notes>
       <segment>
@@ -12839,6 +12839,7 @@
     <unit id="limits.maximum.project">
       <notes>
         <note category="location">src/app/features/limits/maximum-dialog.ts:46,47</note>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:54,55</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -12846,7 +12847,7 @@
     </unit>
     <unit id="limits.rule.profile">
       <notes>
-        <note category="location">src/app/features/limits/maximum-dialog.ts:55,56</note>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:61,62</note>
         <note category="location">src/app/features/limits/rule-dialog.ts:140,141</note>
       </notes>
       <segment>
@@ -12855,7 +12856,7 @@
     </unit>
     <unit id="limits.rule.single">
       <notes>
-        <note category="location">src/app/features/limits/maximum-dialog.ts:63,64</note>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:69,70</note>
         <note category="location">src/app/features/limits/rule-dialog.ts:165,166</note>
       </notes>
       <segment>
@@ -12864,7 +12865,7 @@
     </unit>
     <unit id="limits.maximum.save">
       <notes>
-        <note category="location">src/app/features/limits/maximum-dialog.ts:70,72</note>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:76,78</note>
       </notes>
       <segment>
         <source>Save maximum</source>
@@ -12872,7 +12873,7 @@
     </unit>
     <unit id="limits.rule.loading-profiles">
       <notes>
-        <note category="location">src/app/features/limits/maximum-dialog.ts:91</note>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:103</note>
         <note category="location">src/app/features/limits/rule-dialog.ts:238</note>
       </notes>
       <segment>
@@ -12881,7 +12882,7 @@
     </unit>
     <unit id="limits.maximum.choose-project">
       <notes>
-        <note category="location">src/app/features/limits/maximum-dialog.ts:94</note>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:106</note>
       </notes>
       <segment>
         <source>Choose a project</source>
@@ -12889,7 +12890,7 @@
     </unit>
     <unit id="limits.rule.choose-profile">
       <notes>
-        <note category="location">src/app/features/limits/maximum-dialog.ts:101</note>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:113</note>
         <note category="location">src/app/features/limits/rule-dialog.ts:273</note>
       </notes>
       <segment>
@@ -12898,7 +12899,7 @@
     </unit>
     <unit id="limits.maximum.project-required">
       <notes>
-        <note category="location">src/app/features/limits/maximum-dialog.ts:150</note>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:162</note>
       </notes>
       <segment>
         <source>Choose a project.</source>

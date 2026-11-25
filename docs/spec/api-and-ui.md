@@ -24566,6 +24566,23 @@ digits and the check), against R-UI-085.
 
 **Applied in the spec:** R-UI-085. Code: [token-secret.ts](../../web/src/app/shared/access/token-secret.ts).
 
+### Q-UI-1148 · Change maximum names the project it changes
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: **Change maximum** of the tab Projects of **Download limits** (R-UI-177) opened with the title, the sentence of what a
+maximum does and the profile: no word said which project's maximum it changes. **Set maximum** asks for the project in its first
+field.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Where Set maximum has its field **Project**, Change maximum shows the project as the field's value, read only (chosen) | The same place in both | The reader sees what changes; the two dialogs alike | — |
+| (b) The project in the title ("Change the maximum of web") | | Short | A long key in a title of two lines; the two dialogs differ |
+
+**Choice:** (a).
+
+**Applied in the spec:** R-UI-177. Code: [maximum-dialog.ts](../../web/src/app/features/limits/maximum-dialog.ts).
+
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 
 Status: **Decided by the owner, 2026-11-23** (T-25, 19:30, whole: "Ich finde Projects und Repositories haben im Admin-Mneü nichts

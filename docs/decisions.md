@@ -12202,10 +12202,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-563 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+564 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 563 questions</summary>
+<summary>Q-UI: 564 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12772,6 +12772,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1145](spec/api-and-ui.md#q-ui-1145--a-comparison-of-two-versions-is-one-table-of-the-dialogs-look-and-a-block-per-field-on-a-phone) | A comparison of two versions is one table of the dialogs' look, and a block per field on a phone | Decided by the development agent | (a) One table of the dialogs' look (`.compare` in `_dialog.scss`) for both: a field's name on one line, values that break anywhere, every cell at its row's top; below 32 rem of the dialog's width (a container query) each field a block, its name and each value under its column's name (`data-label`); both dialogs 48 rem wide, not as wide as their content | — |
 | [Q-UI-1146](spec/api-and-ui.md#q-ui-1146--the-person-searchs-list-stands-in-the-top-layer-under-its-field-not-inside-the-box-that-holds-the-field) | The person search's list stands in the top layer under its field, not inside the box that holds the field | Decided by the development agent | (a) The list is a popover (`popover="manual"`) in the top layer, fixed under its field and as wide as it, at most half the window or 24 rem high, above the field where the window has more room there; placed again on every scroll and resize while it is open | — |
 | [Q-UI-1147](spec/api-and-ui.md#q-ui-1147--a-tokens-secret-shown-once-stands-in-a-field-as-wide-as-a-token) | A token's secret shown once stands in a field as wide as a token | Decided by the development agent | (a) The field grows to 36 rem at most and shrinks with the line; Show and Copy stand beside it, under it where the line is narrower | — |
+| [Q-UI-1148](spec/api-and-ui.md#q-ui-1148--change-maximum-names-the-project-it-changes) | Change maximum names the project it changes | Decided by the development agent | (a) Where Set maximum has its field **Project**, Change maximum shows the project as the field's value, read only | — |
 
 </details>
 
