@@ -221,7 +221,9 @@ Q-NPM-17), and a screen reads its README with the bounded reader of every archiv
 version on the screens, decide nothing that is served, and treat a tarball they refuse as one without those facts
 ([R-NPM-050](../spec/formats/npm.md#r-npm-050--a-version-a-remote-cached-is-described-as-a-published-one),
 [R-NPM-051](../spec/formats/npm.md#r-npm-051--the-readme-of-a-version-is-read-from-its-tarball-when-it-is-not-stored)). The README is
-rendered and sanitized as a published one's (R-UI-008). Under the
+rendered and sanitized as a published one's (R-UI-008). The task `remote-describe` queues those jobs for what a remote cached before
+them; neither it nor the jobs send a request to an upstream, and its bounds (100 packages a batch, 1,000 a run, none while 200 jobs
+wait, Q-NPM-92) keep a store of many cached packages from filling the queue of the fills. Under the
 default policy a version whose document announces neither digest is stored as the upstream sent it; `require` refuses it before a byte is
 fetched, because it asks for a SHA-256 or stronger digest ([internal/proxy/integrity.go](../../internal/proxy/integrity.go) `admitsDigests`).
 

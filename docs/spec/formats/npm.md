@@ -1609,6 +1609,12 @@ description, the keywords, the licences, the dependencies, the runtimes, the aut
   the shrinkwrap and the README's file name come from one read of the cached tarball with the reader of a publish (R-NPM-007 step 3).
   A tarball that reader refuses (an upstream's archive may break a rule Quader applies to a publish) keeps the facts its entry announces
   (`dist.fileCount`, `dist.unpackedSize`, `hasInstallScript` or the entry's `scripts`, `_hasShrinkwrap`) and has no README.
+- **Once, whatever is readable.** A version without a row gets one in the run of the job that first reaches it: from its entry, else
+  (the stored document does not list it any more, is lost or is no JSON) from the `package.json` of its tarball, else from its name and
+  number alone; so no version is tried again for ever. Only a blob store that fails makes the job try again (5 attempts).
+- **The dist-tags.** A remote's version shows the dist-tags of the stored package document that name a version the reader may read: the
+  screens read them from the stored document, up to its member `dist-tags`, which the registry writes before the versions (a document
+  that holds them after the versions shows none). Nothing is written for them.
 - **The job.** The job `npm-remote-describe` (queue `index`, coalesce per repository and package, key
   `npm-describe:<repository id>:<name>`, 5 attempts, 10 minutes) writes the rows of one package: it reads the stored document by
   streaming it, keeps the entries and times of the versions the repository holds, and reads the tarball of each version that has no row
@@ -1616,9 +1622,17 @@ description, the keywords, the licences, the dependencies, the runtimes, the aut
   keeps the tarball's facts and takes the entry's manifest, deprecation and time again.
 - **When it runs.** The commit of a cached tarball queues it in the fill's transaction; the row exists seconds later, and a package page
   that is open reads it again by itself (R-UI-213). The fill that replaces a package's stored document (R-NPM-024) queues it while the
-  repository holds a live version of the package, so a deprecation the upstream adds later reaches the screens with the next document,
-  and a version cached before the job existed is described at its package's next changed document. A revalidation the upstream answers
-  `304` stores no document and queues nothing.
+  repository holds a live version of the package, so a deprecation the upstream adds later reaches the screens with the next document.
+  A revalidation the upstream answers `304` stores no document and queues nothing.
+- **What was cached before.** The task `remote-describe` ([operations-and-observability.md](../operations-and-observability.md) R-OPS-019)
+  queues the job for every package of an npm (and Debian, R-DEB-037) remote that holds a version without its row, so what a remote cached
+  before the job existed, and a version whose job failed, is described without a change at the upstream and without a request to it
+  ([Q-NPM-92](#q-npm-92--what-a-remote-cached-before-its-description-existed-is-described-by-a-maintenance-task-a-starting-worker-queues)). A
+  worker that starts queues a run while such a package exists; the scheduler runs it once a day (`23 4 * * *`,
+  `maintenance.tasks.remote-describe`); an operator runs it with `POST /api/v1/system/tasks/remote-describe/run`. A run selects 100
+  packages a batch by id, queues their jobs at priority 200, after the jobs a fill queues (100), and stops after 1,000 jobs, or at once
+  while 200 describe jobs wait; the run after it follows in 5 minutes from its cursor. A package whose rows exist is not selected, and the
+  jobs coalesce per package, so a run over a described store queues nothing.
 - **What does not change.** A cached version stays a cached version: no `npm_packages` row, no dist-tags of the repository's own (the
   served document is the upstream's, R-NPM-025), no tombstone, and the code of the local class (the documents of R-NPM-010, the dist-tag
   writes, the unpublish, the signing of R-SIG-050) reads the rows of local repositories only. The row goes with its version when the
@@ -1627,8 +1641,12 @@ description, the keywords, the licences, the dependencies, the runtimes, the aut
 Acceptance criteria:
 
 - A version of a corpus package installed through `npm-remote` answers, in the package API, the description, the licence, the
-  dependencies and the deprecation of its entry and `hasReadme: true`, and its README renders
-  (`TestR_NPM_050_ACachedVersionIsDescribedByItsEntryInTheStoredDocument`, integration area `npm`).
+  dependencies, the deprecation and the dist-tags of its entry and `hasReadme: true`, and its README renders; with its row removed, as
+  for a version cached before the job existed, a run of `remote-describe` writes it again without a request to the upstream, and the
+  run after it queues nothing (`TestR_NPM_050_ACachedVersionIsDescribedByItsEntryInTheStoredDocument`, integration area `npm`).
+- The fallbacks of a version (`TestR_NPM_050_AVersionIsDescribedOnceWhateverIsReadable`), the dist-tags of the stored document
+  (`TestR_NPM_050_ARemotesVersionShowsTheTagsOfItsStoredDocument`) and the bounds of the task
+  (`TestR_NPM_050_TheTaskQueuesWhatIsLeftInBatchesAndStopsAtItsBounds`), unit.
 
 ### R-NPM-051 · The README of a version is read from its tarball when it is not stored
 Priority: **P1** · Covers: quader-only
@@ -5349,6 +5367,30 @@ Code: [describe.go](../../../internal/formatdata/npm/describe.go), `commitFill` 
 `OnFill` in [remote.go](../../../internal/formats/npm/remote.go). Tests: `TestR_NPM_050_…` (unit, in `internal/formats/npm` and
 `internal/formatdata/npm`, and integration, area `npm`), `TestR_NPM_051_…` (unit).
 
+### Q-NPM-92 · What a remote cached before its description existed is described by a maintenance task a starting worker queues
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Asked by the
+development agent's coordinator on 2026-11-25: the owner's profile and installation hold npm and Debian packages cached before
+R-NPM-050 and R-DEB-037, and a package whose upstream never changes would stay without its description ("metadata that is there is used
+and shown").
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A background data migration of R-HA-022 (the pattern of the sort-key fill, Q-HA-492) | Queued by a starting worker until its completion is recorded and no row is left | Runs by itself after the upgrade; reported by `GET /api/v1/system/migrations` | No operator can start it; its rule "complete when no row is left" queues the run after it every minute while a version no job can describe exists; a description is no schema step |
+| (b) The reindex of R-REPO-016 for remote repositories | An operator's `POST …/reindex` per repository | The operation that rebuilds a repository's derived rows | Answers 405 for every remote today; nothing runs it after an upgrade; one call per repository |
+| (c) A maintenance task (R-OPS-019) that a starting worker queues while something is left, daily by the scheduler and by an operator through the tasks API (chosen) | `remote-describe`: batches, a cap and a pause, the jobs below a fill's priority | Runs by itself after the upgrade and every day after; an operator starts it; bounded on a store of tens of thousands of packages; idempotent | One more task |
+
+**Choice:** (c). **Rationale:** the work is a repair of derived rows that a store may need again (a job that failed for a blob store
+that was away), not a one-time step; the task runs after the upgrade by itself (the start-up rule of R-HA-022), daily after that and
+when an operator asks, and its bounds keep the queue of `index` free for the fills. The jobs it queues describe a version once whatever
+its store holds (R-NPM-050), so a run never loops on a version no job can describe. Revisit if the reindex of R-REPO-016 gains remote
+repositories.
+
+**Applied in the spec:** R-NPM-050, R-DEB-037, [operations-and-observability.md](../operations-and-observability.md) R-OPS-019's table of
+tasks. Code: [remotedescribe.go](../../../internal/packages/remotedescribe/remotedescribe.go), `QueueUndescribed` and `HasUndescribed` in
+[formatdata/npm/describe.go](../../../internal/formatdata/npm/describe.go) and
+[formatdata/deb/describe.go](../../../internal/formatdata/deb/describe.go), [wire_remote_describe.go](../../../internal/app/wire_remote_describe.go).
+
 ## What this does not cover
 
 
@@ -5430,13 +5472,14 @@ restore, repeat the `npm.dist_tag.set`, `npm.dist_tag.delete` and `npm.deprecate
 audit log stream between the snapshot and the restore, and delete or reinstate every version the
 replay output lists as withheld.
 
-### H-2090 · A version cached before R-NPM-050 is described only when its package's document changes
+### H-2090 · A store with many packages cached before R-NPM-050 is described over hours, not at once
 
-Component: the job `npm-remote-describe` (R-NPM-050). Subject: a remote repository that cached tarballs before the job existed. Its
-versions have no row of `npm_versions` and show no description, licence, dependencies or README until the fill of a changed package
-document queues the job; a revalidation answered `304` stores nothing and queues nothing, so a package whose upstream never changes keeps
-showing nothing until its cached tarball is evicted and fetched again. Live on an installation that cached npm tarballs before this change (pre-alpha:
-the owner's playground); nothing queues the job for all held packages at once.
+Component: the task `remote-describe` (R-NPM-050, Q-NPM-92). Subject: an installation whose npm or Debian remotes cached tens of
+thousands of packages before the jobs existed. The first run after the upgrade queues at most 1,000 packages and none while 200 describe
+jobs wait, and continues every 5 minutes; until a package's job ran, its versions show no description, licence or README. The jobs run
+after a fill's, so the time is that of the `index` queue's spare capacity: a package costs one read of its stored document and one read
+of each tarball without a row (npm), a few ranged reads of a package file's head (Debian). Live once after the upgrade of such an
+installation; a version whose job failed for a blob store that stayed away is described at the next daily run.
 
 ### H-2091 · The row of a cached version is written seconds after its fill
 

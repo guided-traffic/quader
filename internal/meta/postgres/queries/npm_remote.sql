@@ -198,3 +198,19 @@ ON CONFLICT (version_id) DO UPDATE
 SELECT EXISTS (
   SELECT 1 FROM packages p JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
    WHERE p.repo_id = sqlc.arg(repo_id)::bigint AND p.name = sqlc.arg(name)::text)::boolean;
+
+-- name: NPMUndescribedPackages :many
+-- The packages of npm remote repositories after the cursor (by package id) that hold a live version with a live cached tarball and no
+-- row of npm_versions (R-NPM-050): what the task remote-describe queues the job npm-remote-describe for, at most row_limit of them. A
+-- version without a live tarball is no candidate: nothing could describe it.
+SELECT p.id, p.repo_id, p.name
+  FROM packages p
+  JOIN repositories r ON r.id = p.repo_id AND r.class = 'remote' AND r.format = 'npm'
+ WHERE p.id > sqlc.arg(after)::bigint
+   AND EXISTS (SELECT 1
+                 FROM package_versions pv
+                 JOIN items i ON i.id = pv.lead_item_id AND i.trashed_at IS NULL
+                WHERE pv.package_id = p.id AND pv.trashed_at IS NULL
+                  AND NOT EXISTS (SELECT 1 FROM npm_versions nv WHERE nv.version_id = pv.id))
+ ORDER BY p.id
+ LIMIT sqlc.arg(row_limit)::int;

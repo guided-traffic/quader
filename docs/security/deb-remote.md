@@ -51,7 +51,8 @@ when the operator gives it the upstream's keys.
 ([R-DEB-037](../spec/formats/debian.md#r-deb-037--a-package-file-a-remote-cached-is-described-by-its-control-paragraph)): the reader of an
 upload, with the bounds of R-DEB-034, never the data archive. Its ranged reads of the stored blob are not verified against the digest: the
 paragraph is display text, the file was verified against its index when it was stored, and a paragraph the reader refuses leaves the
-version undescribed. Nothing it reads decides what is served.
+version described only by its parsed index row. Nothing it reads decides what is served. The task `remote-describe` queues the job for
+files cached before it existed, with the bounds of [formats/npm.md](../spec/formats/npm.md) Q-NPM-92 and no request to an upstream.
 
 The order of the rules matters in one place: **the anti-rollback**. `floor_date` holds the newest `Date` of any release that was ever
 verified for a directory, rises only, and survives the removal of the key that verified it. While keys are set a received release

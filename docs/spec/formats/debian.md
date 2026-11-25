@@ -1463,20 +1463,26 @@ regularly carries is shown wherever it is present
 - **The job.** The job `deb-remote-describe` (queue `index`, coalesce per repository and package, key
   `deb-describe:<repository id>:<package>`, 5 attempts, 10 minutes) reads, for every live file of the package that has no row yet, the
   ar headers and the control archive of the stored file with ranged reads (no transaction is held while it reads), and writes the row.
-  A file whose control data Quader refuses (one an upload would be refused for, R-DEB-007) gets no row and stays listed by its generic
-  rows. The row of another file of the same package, version and architecture that the repository no longer holds (one fetched again is a
-  new item) is replaced.
+  A file whose control data Quader refuses (one an upload would be refused for, R-DEB-007), or whose stored object is lost, gets the
+  paragraph its parsed index row gives (`Package`, `Version`, the architecture of the index, else of the file name, and the short
+  description), so no file is tried again for ever; only a blob store that fails makes the job try again. The row of another file of the
+  same package, version and architecture that the repository no longer holds (one fetched again is a new item) is replaced.
 - **When it runs.** The commit of a cached package file queues it in the fill's transaction (R-DEB-022); the row exists seconds later, and
-  a package page that is open reads it again by itself (R-UI-213). A file cached before the job existed is described the next time a file
-  of its package is fetched.
+  a package page that is open reads it again by itself (R-UI-213). What a remote cached before the job existed, and a file whose job
+  failed, is described by the task `remote-describe`, which a starting worker queues while such a file exists, the scheduler runs daily and
+  an operator runs at any time, with the bounds of [formats/npm.md](npm.md) R-NPM-050 and Q-NPM-92; it requests nothing of the upstream.
 - **The removal.** The removal of a cached file deletes its row in the removal's transaction (R-API-081), and a restore without remote
   caches erases the cached files through the same path (R-DEB-032).
 
 Acceptance criteria:
 
 - The package file of `quader-hello` fetched through a remote answers, in the package API, the paragraph's first line as the package's
-  description, `Depends`, `Maintainer`, the architecture `amd64` and the coordinate `stable/main`; its removal deletes the row
-  (`TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph`, integration area `debremote`).
+  description, `Depends`, `Maintainer`, the architecture `amd64` and the coordinate `stable/main`; with its row removed, as for a file
+  cached before the job existed, a run of `remote-describe` writes it again without a request to the upstream, and the run after it
+  queues nothing; its removal deletes the row (`TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph`, integration area
+  `debremote`).
+- The paragraph of a refused file, of one without an index row and the error that is tried again
+  (`TestR_DEB_037_ACachedFileIsDescribedOnceWhateverIsReadable`, unit).
 
 ### R-DEB-031 · Debian on n replicas, without Valkey and during a drain
 Priority: **P2** · Covers: quader-only
@@ -3983,7 +3989,8 @@ commit write the row from the parsed index row; that row holds the package, the 
 | (c) A fill hook reads the `.deb` before it is stored | The pattern of NuGet's `.nupkg` | The row exists with the commit | The engine holds every byte of a package file with a hook until the whole of it is fetched; apt waits for a large file with no byte arriving |
 | (d) A job queued by the fill reads the stored file's ar headers and control archive with ranged reads and writes the row (chosen) | `deb-remote-describe` (R-DEB-037) | The paragraph of the file itself, read as an upload's is (R-DEB-007) and never the data archive; no blob read in a transaction; the fill path unchanged | The row exists seconds after the fill; one more job kind |
 
-**Choice:** (d). **Rationale:** the file's own control archive is the paragraph a local version shows, the read costs a few ranged
+**Choice:** (d); what was cached before the job existed is described by the task `remote-describe`
+([formats/npm.md](npm.md) Q-NPM-92). **Rationale:** the file's own control archive is the paragraph a local version shows, the read costs a few ranged
 requests at the head of the file, and the fill keeps streaming. The ranged reads are not verified against the file's digest: the
 paragraph is display text, and the file was checked against its index's digest when it was stored (R-DEB-022). Revisit if the parse of
 R-DEB-023 keeps paragraphs for another reason.
@@ -4114,12 +4121,12 @@ name hides the version from the package screens and version lists; a pattern tha
 package, or one architecture's file name, hides the file, which stays hidden on the pool route, but not the version. Live today for
 local repositories with such patterns; the file is never exposed by it.
 
-### H-2093 · A package file cached before R-DEB-037 is described only when a file of its package is fetched again
+### H-2093 · A refused package file shows the index row's facts only
 
-Component: the job `deb-remote-describe` (R-DEB-037). Subject: a Debian remote that cached package files before the job existed. Such a
-version is listed without its control fields until the fill of another file of its package queues the job, which then describes every
-file of the package without a row; a package nobody fetches again stays undescribed. Live on an installation that cached Debian files
-before this change (pre-alpha: the owner's playground).
+Component: the job `deb-remote-describe` (R-DEB-037). Subject: a cached package file whose control archive Quader refuses (one an upload
+would be refused for) or whose stored object is lost. It is described once by the paragraph its parsed index row gives: the package, the
+version, the architecture and the short description, without Maintainer, Depends or Homepage, which the index row does not keep. Live for
+such a file; the store of many files cached before the job existed is H-2090 of [formats/npm.md](npm.md).
 
 ### H-2094 · The row of a cached package file is written seconds after its fill
 

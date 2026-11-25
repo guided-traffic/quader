@@ -366,7 +366,10 @@ for the package (`RemoteStore.QueueDescribe`, coalesced per repository and packa
 reads of the stored blob (`Options.Blobs`, the composition root's `blobRanges`), and writes the row (`DebForgetCachedRow`, `DebPutCachedRow`). No
 `deb_coordinates` row is written: `Describe` in [view_store.go](../../internal/formatdata/deb/view_store.go) reads a cached file's coordinates from the parsed
 entries that list its path (`DebViewRemoteCoordinates`). `removeCached` deletes the rows of the removed files (`RemoteStore.ForgetCached`). The handler is
-built by `startRemoteDescribe` ([wire_remote_describe.go](../../internal/app/wire_remote_describe.go)) on a replica that claims jobs.
+built by `startRemoteDescribe` ([wire_remote_describe.go](../../internal/app/wire_remote_describe.go)) on a replica that claims jobs. A file
+the reader refuses gets the paragraph of its parsed index row (`cachedParagraph`). The task `remote-describe`
+([internal/packages/remotedescribe](../../internal/packages/remotedescribe/remotedescribe.go)) queues the job for the packages with a file
+without its row (`QueueUndescribed`, `DebUndescribedPackages`), as for npm ([npm.md](npm.md)).
 
 **Repository rules** ([validate_deb.go](../../internal/repository/validate_deb.go), [members.go](../../internal/repository/members.go),
 [journal_replay.go](../../internal/repository/journal_replay.go), [keys_hooks.go](../../internal/repository/keys_hooks.go), [narrowed.go](../../internal/repository/narrowed.go)):

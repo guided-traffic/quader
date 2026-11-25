@@ -107,9 +107,11 @@ func (s *Store) QueueDescribe(ctx context.Context, tx meta.Tx, repoID int64, nam
 	return err
 }
 
-// DescribeCached writes the row of npm_versions of every live version a remote repository holds of the package (R-NPM-050): from the
-// version's entry in the stored document, and, for a version without a row yet, from one read of its cached tarball. A package without a
-// stored document or without a live version, and a version its document does not list (any more), are left as they are.
+// DescribeCached writes the row of npm_versions of every live version a remote repository holds of the package (R-NPM-050). A version
+// without a row gets one in this run, whatever is readable (describedRow): the version's entry in the stored document, else the
+// package.json of its cached tarball, else its name and number; and the facts of its tarball when the reader of a publish accepted it. So
+// a version is tried once, not for ever. A version that has its row takes the entry's manifest, deprecation and time again while the
+// document lists it. A blob store that fails is an error, and the job tries again.
 func (s *Store) DescribeCached(ctx context.Context, repoID int64, name string) error {
 	if s.o.Blobs == nil {
 		return jobs.Permanent(errors.New("npm-remote-describe: this replica reads no blob"))
@@ -127,30 +129,34 @@ func (s *Store) DescribeCached(ctx context.Context, repoID int64, name string) e
 		vs, err = qs.NPMDescribeVersions(ctx, q.NPMDescribeVersionsParams{RepoID: repoID, Name: name})
 		return err
 	})
-	if err != nil || len(doc) == 0 || len(vs) == 0 {
+	if err != nil || len(vs) == 0 {
 		return err
 	}
 	want := make(map[string]bool, len(vs))
 	for _, v := range vs {
 		want[v.Version] = true
 	}
-	entries, times, err := s.readEntries(ctx, doc[0].Sha256, doc[0].Size, want)
-	if err != nil {
-		return err
+	var entries map[string]json.RawMessage
+	var times map[string]string
+	if len(doc) > 0 {
+		if entries, times, err = s.readEntries(ctx, doc[0].Sha256, doc[0].Size, want); err != nil && !permanent(err) {
+			return err
+		}
 	}
 	for _, v := range vs {
-		raw, ok := entries[v.Version]
-		if !ok {
+		entry := entries[v.Version]
+		if v.Described && entry == nil {
 			continue
 		}
-		row, err := cachedRow(raw, times[v.Version])
-		if err != nil {
-			continue // an entry that is no manifest within the bounds of R-ARCH-028 describes nothing
-		}
+		var res *tarball.Result
 		if !v.Described && len(v.Sha256) == 32 {
-			if err := s.scan(ctx, v.Sha256, v.Size, &row); err != nil {
+			if res, err = s.scan(ctx, v.Sha256, v.Size); err != nil && !permanent(err) {
 				return err
 			}
+		}
+		row, err := describedRow(name, v.Version, entry, times[v.Version], res)
+		if err != nil {
+			return err
 		}
 		row.VersionID = v.VersionID
 		if err := s.o.DB.InTx(ctx, func(tx meta.Tx) error {
@@ -167,6 +173,90 @@ func (s *Store) DescribeCached(ctx context.Context, repoID int64, name string) e
 	return nil
 }
 
+// permanent reports whether a read failed for a reason a second read does not change: a refusal of the reader, a document that does not
+// read, a stored object that is lost. A blob store that is unavailable (errs.Unavailable) and an error nobody classified are not.
+func permanent(err error) bool {
+	e, ok := errs.As(err)
+	return ok && e.Kind != errs.Unavailable
+}
+
+// describedRow is the row of a cached version: the facts of its entry in the stored document (entry, nil when the document does not
+// list the version or none is stored), else of the tarball's package.json (res, nil when the tarball was not read or the reader refused
+// it), else the name and the number alone; and the tarball's facts when it was read. An entry that is no manifest within the bounds of
+// R-ARCH-028 counts as none.
+func describedRow(name, version string, entry json.RawMessage, published string, res *tarball.Result) (q.NPMPutCachedVersionParams, error) {
+	var row q.NPMPutCachedVersionParams
+	err := errNoEntry
+	if entry != nil {
+		row, err = cachedRow(entry, published)
+	}
+	if err != nil && res != nil {
+		raw, merr := json.Marshal(res.Manifest)
+		if merr != nil {
+			return row, merr
+		}
+		row, err = cachedRow(raw, "")
+	}
+	if err != nil {
+		raw, merr := json.Marshal(map[string]string{"name": name, "version": version})
+		if merr != nil {
+			return row, merr
+		}
+		if row, err = cachedRow(raw, ""); err != nil {
+			return row, err
+		}
+	}
+	if res != nil {
+		row.Scanned = true
+		row.FileCount, row.UnpackedSize = clampInt32(res.FileCount), res.UnpackedSize
+		row.HasInstallScript = manifest.HasInstallScript(res.Manifest, res.Facts)
+		row.HasShrinkwrap = res.HasShrinkwrap
+		row.ReadmeFilename = ""
+		if res.Readme != "" {
+			row.ReadmeFilename = clean(res.ReadmeFilename, 255) // an empty README is none, as for a publish (R-NPM-051)
+		}
+	}
+	return row, nil
+}
+
+// errNoEntry stands for a version its stored document does not list.
+var errNoEntry = errors.New("npm-remote-describe: the document lists no entry of the version")
+
+// QueueUndescribed queues npm-remote-describe for at most limit packages of npm remote repositories after the cursor that hold a live
+// version without its row, at the priority given, in one transaction (the task remote-describe, R-NPM-050). It returns the cursor of the
+// last package read, how many it queued, and done when it read fewer than limit.
+func (s *Store) QueueUndescribed(ctx context.Context, after int64, limit, priority int) (next int64, queued int, done bool, err error) {
+	err = s.o.DB.InTx(ctx, func(tx meta.Tx) error {
+		next, queued, done = after, 0, false
+		qs, err := queries(tx)
+		if err != nil {
+			return err
+		}
+		list, err := qs.NPMUndescribedPackages(ctx, q.NPMUndescribedPackagesParams{After: after, RowLimit: int32(min(limit, 1<<20))}) //nolint:gosec // bounded above
+		if err != nil {
+			return err
+		}
+		done = len(list) < limit
+		for _, p := range list {
+			if s.o.Jobs != nil {
+				r, err := s.o.Jobs.Enqueue(ctx, tx, jobs.EnqueueSpec{
+					Kind: DescribeJobKind, Args: DescribeArgs{RepoID: p.RepoID, Name: p.Name}, DedupKey: DescribeKey(p.RepoID, p.Name),
+					Priority: priority,
+				})
+				if err != nil {
+					return err
+				}
+				if r.Created {
+					queued++ // a package whose job waits already is not queued again
+				}
+			}
+			next = p.ID
+		}
+		return nil
+	})
+	return next, queued, done, err
+}
+
 // readEntries reads the stored document by streaming it and keeps the entries of the wanted versions and the time map. The document
 // passed the checks of R-NPM-024 when it was stored; one that does not read now (a blob store that fails) is an error, and the job tries
 // again.
@@ -181,7 +271,7 @@ func (s *Store) readEntries(ctx context.Context, sha256 []byte, size int64, want
 	dec := json.NewDecoder(bufio.NewReaderSize(io.LimitReader(body, maxDocumentBytes), 64<<10))
 	entries, times := map[string]json.RawMessage{}, map[string]string{}
 	if tok, err := dec.Token(); err != nil || tok != json.Delim('{') {
-		return nil, nil, fmt.Errorf("npm-remote-describe: the stored document is no JSON object: %w", err)
+		return nil, nil, undecodable(err)
 	}
 	for dec.More() {
 		keyTok, err := dec.Token()
@@ -216,11 +306,26 @@ func (s *Store) readEntries(ctx context.Context, sha256 []byte, size int64, want
 			err = dec.Decode(&skip)
 		}
 		if err != nil {
-			return nil, nil, fmt.Errorf("npm-remote-describe: the stored document does not read: %w", err)
+			return nil, nil, undecodable(err)
 		}
 	}
 	return entries, times, nil
 }
+
+// undecodable classifies an error of the read of a stored document: a document that is no JSON (a syntax error, a member of another
+// shape, a cut stream) is a permanent refusal, as a tarball the reader refuses; any other error (the blob store's) is returned as it came,
+// and the job tries again.
+func undecodable(err error) error {
+	var syntax *json.SyntaxError
+	var shape *json.UnmarshalTypeError
+	if err == nil || errors.Is(err, errNotObject) || errors.As(err, &syntax) || errors.As(err, &shape) || errors.Is(err, io.ErrUnexpectedEOF) {
+		return errs.E(errs.Invalid, errs.CodeInternal, "npm-remote-describe: the stored document does not read as JSON", errs.WithCause(err))
+	}
+	return fmt.Errorf("npm-remote-describe: the stored document does not read: %w", err)
+}
+
+// errNotObject is a member of the document that should be an object and is not.
+var errNotObject = errors.New("not an object")
 
 // readObject reads the object at the decoder's position member by member; a null is an empty object.
 func readObject(dec *json.Decoder, member func(key string) error) error {
@@ -229,7 +334,7 @@ func readObject(dec *json.Decoder, member func(key string) error) error {
 		return err
 	}
 	if tok != json.Delim('{') {
-		return errors.New("not an object")
+		return errNotObject
 	}
 	for dec.More() {
 		k, err := dec.Token()
@@ -290,29 +395,30 @@ func count(v any) int64 {
 }
 
 // scan reads the cached tarball once with the reader of a publish (R-NPM-007 step 3) for the facts only the tarball holds. A tarball the
-// reader refuses (an upstream's archive may break a rule Quader applies to a publish) keeps the facts its entry announces; a blob store
-// that fails is an error, and the job tries again.
-func (s *Store) scan(ctx context.Context, sha256 []byte, size int64, row *q.NPMPutCachedVersionParams) error {
+// reader refuses (an upstream's archive may break a rule Quader applies to a publish) is a permanent error (permanent): the version keeps
+// the facts its entry announces; a blob store that fails is another error, and the job tries again.
+func (s *Store) scan(ctx context.Context, sha256 []byte, size int64) (*tarball.Result, error) {
 	var sum [32]byte
 	copy(sum[:], sha256)
 	body, err := s.o.Blobs.Open(ctx, sum, size)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() { _ = body.Close() }()
-	res, err := tarball.Validate(ctx, body, tarball.Limits{})
-	if err != nil {
-		if _, refused := errs.As(err); refused {
-			return nil
+	return tarball.Validate(ctx, body, tarball.Limits{})
+}
+
+// HasUndescribed reports whether an npm remote repository holds a live version without its row (the start of the task remote-describe).
+func (s *Store) HasUndescribed(ctx context.Context) (bool, error) {
+	var left bool
+	err := s.o.DB.InTx(ctx, func(tx meta.Tx) error {
+		qs, err := queries(tx)
+		if err != nil {
+			return err
 		}
+		list, err := qs.NPMUndescribedPackages(ctx, q.NPMUndescribedPackagesParams{After: 0, RowLimit: 1})
+		left = len(list) > 0
 		return err
-	}
-	row.Scanned = true
-	row.FileCount, row.UnpackedSize = clampInt32(res.FileCount), res.UnpackedSize
-	row.HasInstallScript = manifest.HasInstallScript(res.Manifest, res.Facts)
-	row.HasShrinkwrap = res.HasShrinkwrap
-	if res.Readme != "" {
-		row.ReadmeFilename = clean(res.ReadmeFilename, 255) // an empty README is none, as for a publish (R-NPM-051)
-	}
-	return nil
+	})
+	return left, err
 }

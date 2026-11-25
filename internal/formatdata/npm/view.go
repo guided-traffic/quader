@@ -3,6 +3,7 @@ package npm
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"math"
 	"time"
 
@@ -58,12 +59,13 @@ func nonEmpty(in []string) []string {
 // ViewDetails reads the manifest, the deprecation and the dist-tags of the versions,
 // and their README text when asked: the stored text of a publish, else the file the
 // read of the tarball named, read from the stored tarball outside the transaction
-// (R-NPM-051).
+// (R-NPM-051). The dist-tags of a remote's version are those of the stored package
+// document, read outside the transaction up to its member dist-tags (R-NPM-050).
 func (s *Store) ViewDetails(ctx context.Context, ids []int64, withReadme bool) ([]rows.ViewDetail, error) {
 	var out []rows.ViewDetail
-	var blobs []blobRef
+	var blobs, docs []blobRef
 	err := s.o.DB.InTx(ctx, func(tx meta.Tx) error {
-		out, blobs = out[:0], blobs[:0]
+		out, blobs, docs = out[:0], blobs[:0], docs[:0]
 		qs, err := queries(tx)
 		if err != nil {
 			return err
@@ -82,11 +84,25 @@ func (s *Store) ViewDetails(ctx context.Context, ids []int64, withReadme bool) (
 				HasReadme: r.HasReadme, Readme: r.Readme, ReadmeFilename: r.ReadmeFilename, DistTags: tags,
 			})
 			blobs = append(blobs, blobRef{sha256: r.Sha256, size: r.Size})
+			docs = append(docs, blobRef{sha256: r.DocSha256, size: r.DocSize})
 		}
 		return nil
 	})
-	if err != nil || !withReadme {
+	if err != nil {
 		return out, err
+	}
+	read := map[string]map[string]string{}
+	for i := range out {
+		if d := &out[i]; len(d.DistTags) == 0 && len(docs[i].sha256) == 32 {
+			k := string(docs[i].sha256)
+			if _, ok := read[k]; !ok {
+				read[k] = s.storedTags(ctx, docs[i])
+			}
+			d.DistTags = read[k]
+		}
+	}
+	if !withReadme {
+		return out, nil
 	}
 	for i := range out {
 		if d := &out[i]; d.HasReadme && d.Readme == "" && d.ReadmeFilename != "" {
@@ -94,6 +110,57 @@ func (s *Store) ViewDetails(ctx context.Context, ids []int64, withReadme bool) (
 		}
 	}
 	return out, nil
+}
+
+// storedTags reads the dist-tags of a stored package document by streaming it up to that member, which the registry writes before the
+// versions; a document that holds them after the versions, cannot be read or is no JSON object gives none. A tag is shown only for a
+// version the reader may read (the format's visibleTags).
+func (s *Store) storedTags(ctx context.Context, b blobRef) map[string]string {
+	if s.o.Blobs == nil {
+		return nil
+	}
+	var sum [32]byte
+	copy(sum[:], b.sha256)
+	body, err := s.o.Blobs.Open(ctx, sum, b.size)
+	if err != nil {
+		return nil
+	}
+	defer func() { _ = body.Close() }()
+	return tagsOf(json.NewDecoder(io.LimitReader(body, maxDocumentBytes)))
+}
+
+// tagsOf reads the top-level member dist-tags of a document at the decoder, and stops at the member versions.
+func tagsOf(dec *json.Decoder) map[string]string {
+	if tok, err := dec.Token(); err != nil || tok != json.Delim('{') {
+		return nil
+	}
+	for dec.More() {
+		k, err := dec.Token()
+		if err != nil {
+			return nil
+		}
+		switch k {
+		case "dist-tags":
+			var tags map[string]any
+			if dec.Decode(&tags) != nil {
+				return nil
+			}
+			out := map[string]string{}
+			for t, v := range tags {
+				if s, ok := v.(string); ok {
+					out[t] = s
+				}
+			}
+			return out
+		case "versions":
+			return nil
+		}
+		var skip json.RawMessage
+		if dec.Decode(&skip) != nil {
+			return nil
+		}
+	}
+	return nil
 }
 
 // blobRef names the stored tarball of a version.

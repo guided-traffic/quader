@@ -8,6 +8,11 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/npm/manifest"
+	"github.com/guided-traffic/quader/internal/formats/npm/tarball"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 type docBlob []byte
@@ -61,5 +66,76 @@ func TestR_NPM_050_ACachedVersionIsDescribedByItsEntryOfTheStoredDocument(t *tes
 	}
 	if _, err := cachedRow(json.RawMessage(`"not an object"`), ""); err == nil {
 		t.Error("an entry that is no object made a row")
+	}
+}
+
+// TestR_NPM_050_AVersionIsDescribedOnceWhateverIsReadable: a cached version gets a row in one run whatever its store holds: the entry
+// of the document, else the package.json of the tarball the reader accepted, else its name and number; the tarball's facts when it was
+// read. A blob store that fails is the one error that is tried again; a refusal or a document that is no JSON is not. Unit, microseconds.
+func TestR_NPM_050_AVersionIsDescribedOnceWhateverIsReadable(t *testing.T) {
+	res := &tarball.Result{
+		Manifest:  manifest.Manifest{"name": "acme", "version": "2.0.0", "description": "From the tarball", "scripts": map[string]any{"install": "node-gyp rebuild"}},
+		FileCount: 7, UnpackedSize: 900, Readme: "# acme\n", ReadmeFilename: "README.md",
+	}
+	entry := json.RawMessage(`{"name":"acme","version":"2.0.0","description":"From the document","deprecated":"Use 3"}`)
+	manifestOf := func(row q.NPMPutCachedVersionParams) map[string]any {
+		t.Helper()
+		var m map[string]any
+		if err := json.Unmarshal([]byte(row.Manifest), &m); err != nil {
+			t.Fatal(err)
+		}
+		return m
+	}
+	for _, c := range []struct {
+		name     string
+		entry    json.RawMessage
+		res      *tarball.Result
+		want     string
+		scanned  bool
+		readme   string
+		deprecat string
+	}{
+		{"the entry and the tarball", entry, res, "From the document", true, "README.md", "Use 3"},
+		{"the entry, the tarball refused", entry, nil, "From the document", false, "", "Use 3"},
+		{"no entry: the tarball's package.json", nil, res, "From the tarball", true, "README.md", ""},
+		{"an entry that is no object: the tarball's package.json", json.RawMessage(`"x"`), res, "From the tarball", true, "README.md", ""},
+		{"neither: name and number", nil, nil, "", false, "", ""},
+	} {
+		row, err := describedRow("acme", "2.0.0", c.entry, "", c.res)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		m := manifestOf(row)
+		if m["name"] != "acme" || m["version"] != "2.0.0" || (c.want != "" && m["description"] != c.want) || (c.want == "" && m["description"] != nil) {
+			t.Errorf("%s: manifest %s", c.name, row.Manifest)
+		}
+		if row.Scanned != c.scanned || row.ReadmeFilename != c.readme || row.Deprecated != c.deprecat || (c.scanned && (row.FileCount != 7 || !row.HasInstallScript)) {
+			t.Errorf("%s: row %+v", c.name, row)
+		}
+	}
+	for _, c := range []struct {
+		err  error
+		want bool
+	}{
+		{errs.E(errs.Invalid, errs.CodeNPMBadPublish, "refused"), true},
+		{undecodable(&json.SyntaxError{}), true},
+		{errs.E(errs.Unavailable, errs.CodeObjectStoreUnavail, "down"), false},
+		{undecodable(io.ErrClosedPipe), false},
+	} {
+		if got := permanent(c.err); got != c.want {
+			t.Errorf("permanent(%v) = %v, want %v", c.err, got, c.want)
+		}
+	}
+}
+
+// TestR_NPM_050_ARemotesVersionShowsTheTagsOfItsStoredDocument: the dist-tags are read up to the member versions, which the registry
+// writes after them; a document that holds them later shows none rather than reading every version. Unit, microseconds.
+func TestR_NPM_050_ARemotesVersionShowsTheTagsOfItsStoredDocument(t *testing.T) {
+	got := tagsOf(json.NewDecoder(strings.NewReader(`{"_id":"acme","name":"acme","dist-tags":{"latest":"2.0.0","next":3},"versions":{}}`)))
+	if !reflect.DeepEqual(got, map[string]string{"latest": "2.0.0"}) {
+		t.Errorf("tags %v", got)
+	}
+	if got := tagsOf(json.NewDecoder(strings.NewReader(`{"name":"acme","versions":{},"dist-tags":{"latest":"2.0.0"}}`))); got != nil {
+		t.Errorf("tags after the versions %v, want none", got)
 	}
 }

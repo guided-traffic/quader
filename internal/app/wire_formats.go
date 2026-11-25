@@ -87,7 +87,7 @@ func (a *App) wireFormatPorts(ctx context.Context, in infra) (formatPortsArea, e
 		if err := a.startAnsibleReindex(in, ports); err != nil {
 			return formatPortsArea{}, err
 		}
-		if err := a.startRemoteDescribe(ports); err != nil {
+		if err := a.startRemoteDescribe(ctx, in, ports); err != nil {
 			return formatPortsArea{}, err
 		}
 		a.startSignatureFetch(in)
@@ -198,6 +198,7 @@ func (a *App) registerFormatJobs(r *jobs.Registry) {
 	ansibledata.RegisterJobs(r, ansibledata.Handlers{Reindex: a.ansibleReindexHandler(), DocsFill: a.ansibleDocsFillHandler(), ImportTaskKeep: a.cfg.Ansible.ImportTaskKeep})
 	npm.RegisterJobs(r, a.npmDescribe.handler("npm remote describe", runLate))
 	debdata.RegisterDescribeJob(r, a.debDescribe.handler("Debian remote describe", runLate))
+	a.registerRemoteDescribeTask(r)
 	a.registerDownloadJobs(r)
 	sigfetch.RegisterKind(r, a.signatureFetchHandler())
 }

@@ -5,6 +5,7 @@ package debremote
 import (
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 )
@@ -59,9 +60,46 @@ func TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph(t *testing
 		t.Errorf("coordinates %v, want [stable/main]: the index that listed the file", md["coordinates"])
 	}
 
+	// A file cached before the job existed has no row: the task remote-describe, which an operator runs (and a worker queues when it
+	// starts), describes it from the stored file without a request to the upstream; a second run finds nothing left and queues nothing.
+	e.st.Exec(`DELETE FROM deb_binaries WHERE repo_id = $1`, e.repoID(repo))
+	upstream := e.stub.Counts().Total()
+	// The run queues the package, unless a run the scheduler queued (on a new database its latest due slot) queued it already.
+	if res := runTask(t, e, "remote-describe"); !strings.Contains(res, `"queued": 1`) && !strings.Contains(res, `"queued": 0`) {
+		t.Errorf("the first run's result %s, want one package queued or none", res)
+	}
+	eventually(t, 30*time.Second, "the row of the file cached before", func() bool { return e.rows("deb_binaries", repo) == 1 })
+	if res := runTask(t, e, "remote-describe"); !strings.Contains(res, `"queued": 0`) {
+		t.Errorf("the second run's result %s, want nothing queued", res)
+	}
+	if after := e.stub.Counts().Total(); after != upstream {
+		t.Errorf("the description of the cached file made %d requests to the upstream", after-upstream)
+	}
+
 	// The removal of the cached file takes its row.
 	if a := e.st.Do(e.r, "DELETE", "/api/v1/projects/"+project+"/repositories/"+repo+"/items?path="+url.QueryEscape(path), e.admin, nil); a.Status >= 300 {
 		t.Fatalf("delete the cached file: %d %s", a.Status, a.Body)
 	}
 	eventually(t, 20*time.Second, "the row to go", func() bool { return e.rows("deb_binaries", repo) == 0 })
+}
+
+// runTask runs a maintenance task as an operator does and returns the result of its job once it succeeded.
+func runTask(t *testing.T, e *denv, task string) string {
+	t.Helper()
+	// A run the scheduler queued (on a new database its latest due slot) ends first: a task runs once at a time.
+	eventually(t, 60*time.Second, "the task to be idle", func() bool {
+		return e.st.Number(`SELECT count(*) FROM job WHERE kind = $1 AND state IN ('queued', 'running')`, task) == 0
+	})
+	before := e.st.Number(`SELECT count(*) FROM job WHERE kind = $1`, task)
+	if a := e.st.Do(e.r, http.MethodPost, "/api/v1/system/tasks/"+task+"/run", e.admin, nil); a.Status != http.StatusAccepted {
+		t.Fatalf("run %s: %d %s", task, a.Status, a.Body)
+	}
+	eventually(t, 60*time.Second, "the run of "+task, func() bool {
+		return e.st.Number(`SELECT count(*) FROM job WHERE kind = $1`, task) > before &&
+			e.st.Number(`SELECT count(*) FROM job WHERE kind = $1 AND state IN ('queued', 'running')`, task) == 0
+	})
+	if s := e.st.Text(`SELECT state::text FROM job WHERE kind = $1 ORDER BY created_at DESC LIMIT 1`, task); s != "succeeded" {
+		t.Fatalf("the run of %s ended %s: %s", task, s, e.st.Text(`SELECT COALESCE(error::text, '') FROM job WHERE kind = $1 ORDER BY created_at DESC LIMIT 1`, task))
+	}
+	return e.st.Text(`SELECT COALESCE(result::text, '') FROM job WHERE kind = $1 ORDER BY created_at DESC LIMIT 1`, task)
 }

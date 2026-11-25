@@ -598,3 +598,51 @@ func (q *Queries) NPMRemoteUpsertVersions(ctx context.Context, arg NPMRemoteUpse
 	)
 	return err
 }
+
+const nPMUndescribedPackages = `-- name: NPMUndescribedPackages :many
+SELECT p.id, p.repo_id, p.name
+  FROM packages p
+  JOIN repositories r ON r.id = p.repo_id AND r.class = 'remote' AND r.format = 'npm'
+ WHERE p.id > $1::bigint
+   AND EXISTS (SELECT 1
+                 FROM package_versions pv
+                 JOIN items i ON i.id = pv.lead_item_id AND i.trashed_at IS NULL
+                WHERE pv.package_id = p.id AND pv.trashed_at IS NULL
+                  AND NOT EXISTS (SELECT 1 FROM npm_versions nv WHERE nv.version_id = pv.id))
+ ORDER BY p.id
+ LIMIT $2::int
+`
+
+type NPMUndescribedPackagesParams struct {
+	After    int64
+	RowLimit int32
+}
+
+type NPMUndescribedPackagesRow struct {
+	ID     int64
+	RepoID int64
+	Name   string
+}
+
+// The packages of npm remote repositories after the cursor (by package id) that hold a live version with a live cached tarball and no
+// row of npm_versions (R-NPM-050): what the task remote-describe queues the job npm-remote-describe for, at most row_limit of them. A
+// version without a live tarball is no candidate: nothing could describe it.
+func (q *Queries) NPMUndescribedPackages(ctx context.Context, arg NPMUndescribedPackagesParams) ([]NPMUndescribedPackagesRow, error) {
+	rows, err := q.db.Query(ctx, nPMUndescribedPackages, arg.After, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []NPMUndescribedPackagesRow{}
+	for rows.Next() {
+		var i NPMUndescribedPackagesRow
+		if err := rows.Scan(&i.ID, &i.RepoID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

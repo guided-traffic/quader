@@ -24,13 +24,20 @@ SELECT nv.version_id,
        COALESCE(nv.readme_filename, '')::text AS readme_filename,
        COALESCE(np.dist_tags, '{}'::jsonb)::text AS dist_tags,
        COALESCE(i.blob_sha256, ''::bytea)::bytea AS sha256,
-       COALESCE(i.size, 0)::bigint AS size
+       COALESCE(i.size, 0)::bigint AS size,
+       COALESCE(d.sha256, ''::bytea)::bytea AS doc_sha256,
+       COALESCE(d.size, 0)::bigint AS doc_size
   FROM npm_versions nv
   JOIN package_versions pv ON pv.id = nv.version_id
   JOIN packages p ON p.id = pv.package_id
   JOIN repositories r ON r.id = p.repo_id
   LEFT JOIN npm_packages np ON np.package_id = pv.package_id
   LEFT JOIN items i ON i.id = pv.lead_item_id AND i.trashed_at IS NULL
+  -- A remote's version: the blob of the stored package document, whose dist-tags the screens read (R-NPM-050).
+  LEFT JOIN LATERAL (SELECT e.blob_sha256 AS sha256, b.size
+                       FROM remote_cache_entries e JOIN blobs b ON b.sha256 = e.blob_sha256
+                      WHERE r.class = 'remote' AND e.repo_id = p.repo_id AND e.path = p.name COLLATE "C"
+                        AND e.variant = 'full' AND e.kind = 'metadata') d ON true
  WHERE nv.version_id = ANY(sqlc.arg(ids)::bigint[]);
 
 -- name: NPMViewFind :many

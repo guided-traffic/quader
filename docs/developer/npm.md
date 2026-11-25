@@ -280,7 +280,13 @@ package (`QueueDescribe` with `ifHeld`). The handler (`DescribeCached` in [descr
 streaming it and keeps the entries and times of the versions held, reads each tarball without a row once with `tarball.Validate`, and writes `NPMPutCachedVersion`
 (the digests from the blob, the facts of the tarball only when it was read). The composition root registers the kind in `registerFormatJobs` and builds the handler
 on a replica that claims jobs (`startRemoteDescribe` in [wire_remote_describe.go](../../internal/app/wire_remote_describe.go)); the data port reads blobs through
-`Options.Blobs` and queues through `Options.Jobs`.
+`Options.Blobs` and queues through `Options.Jobs`. A version gets its row in the first run that reaches it whatever is readable
+(`describedRow`: the entry, else the tarball's `package.json`, else name and number; `permanent` tells a refusal from a blob store that
+fails). What was cached before the job existed is queued by the task `remote-describe`
+([internal/packages/remotedescribe](../../internal/packages/remotedescribe/remotedescribe.go), Q-NPM-92): `QueueUndescribed` selects a
+batch of packages with a version without its row (`NPMUndescribedPackages`) and queues their jobs at priority 200; `HasUndescribed` is the
+start-up check. The dist-tags of a remote's version are read from the stored document by `storedTags` in
+[formatdata/npm/view.go](../../internal/formatdata/npm/view.go), up to the member `versions`.
 
 | Question | Answer |
 |---|---|

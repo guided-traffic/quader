@@ -103,4 +103,55 @@ func TestR_NPM_050_ACachedVersionIsDescribedByItsEntryInTheStoredDocument(t *tes
 	if n := r.st.Number(`SELECT count(*) FROM npm_packages np JOIN packages pk ON pk.id = np.package_id WHERE pk.repo_id = $1`, repoID); n != 0 {
 		t.Errorf("the remote holds %d rows of npm_packages: a cache has no dist-tags of its own", n)
 	}
+	// The dist-tags are the stored document's, for the versions the reader may read: those that name the cached version.
+	tags, _ := md["distTags"].(map[string]any)
+	for tag, ver := range p.DistTags {
+		if (ver == v.Version) != (tags[tag] == ver) {
+			t.Errorf("dist-tag %s at %s: the version answers %v", tag, ver, md["distTags"])
+		}
+	}
+	if len(tags) > len(p.DistTags) {
+		t.Errorf("dist-tags %v, the document has %v", tags, p.DistTags)
+	}
+
+	// A version cached before the job existed has no row: the task remote-describe, which an operator runs (and a worker queues when it
+	// starts), describes it without a request to the upstream; a second run finds nothing left and queues nothing.
+	r.st.Exec(`DELETE FROM npm_versions WHERE version_id IN (SELECT pv.id FROM package_versions pv JOIN packages pk ON pk.id = pv.package_id
+		WHERE pk.repo_id = $1)`, repoID)
+	upstream := r.stub.Counts().Total()
+	// The run queues the package, unless a run the scheduler queued (on a new database its latest due slot) queued it already.
+	if res := runTask(t, r.st, rep, r.opsPAT, "remote-describe"); !strings.Contains(res, `"queued": 1`) && !strings.Contains(res, `"queued": 0`) {
+		t.Errorf("the first run's result %s, want one package queued or none", res)
+	}
+	testenv.WaitFor(t, "the row of the version cached before", 30*time.Second, func() bool {
+		return r.st.Number(`SELECT count(*) FROM npm_versions nv JOIN package_versions pv ON pv.id = nv.version_id
+			JOIN packages pk ON pk.id = pv.package_id WHERE pk.repo_id = $1`, repoID) == 1
+	})
+	if res := runTask(t, r.st, rep, r.opsPAT, "remote-describe"); !strings.Contains(res, `"queued": 0`) {
+		t.Errorf("the second run's result %s, want nothing queued", res)
+	}
+	if after := r.stub.Counts().Total(); after != upstream {
+		t.Errorf("the description of the cached version made %d requests to the upstream", after-upstream)
+	}
+}
+
+// runTask runs a maintenance task as an operator does and returns the result of its job once it succeeded.
+func runTask(t *testing.T, st *testenv.Stack, rep *testenv.Replica, token, task string) string {
+	t.Helper()
+	// A run the scheduler queued (on a new database its latest due slot) ends first: a task runs once at a time.
+	testenv.WaitFor(t, "the task to be idle", 60*time.Second, func() bool {
+		return st.Number(`SELECT count(*) FROM job WHERE kind = $1 AND state IN ('queued', 'running')`, task) == 0
+	})
+	before := st.Number(`SELECT count(*) FROM job WHERE kind = $1`, task)
+	if a := st.Do(rep, http.MethodPost, "/api/v1/system/tasks/"+task+"/run", token, nil); a.Status != http.StatusAccepted {
+		t.Fatalf("run %s: %d %s", task, a.Status, a.Body)
+	}
+	testenv.WaitFor(t, "the run of "+task, 60*time.Second, func() bool {
+		return st.Number(`SELECT count(*) FROM job WHERE kind = $1`, task) > before &&
+			st.Number(`SELECT count(*) FROM job WHERE kind = $1 AND state IN ('queued', 'running')`, task) == 0
+	})
+	if s := st.Text(`SELECT state::text FROM job WHERE kind = $1 ORDER BY created_at DESC LIMIT 1`, task); s != "succeeded" {
+		t.Fatalf("the run of %s ended %s: %s", task, s, st.Text(`SELECT COALESCE(error::text, '') FROM job WHERE kind = $1 ORDER BY created_at DESC LIMIT 1`, task))
+	}
+	return st.Text(`SELECT COALESCE(result::text, '') FROM job WHERE kind = $1 ORDER BY created_at DESC LIMIT 1`, task)
 }

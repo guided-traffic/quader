@@ -41,6 +41,7 @@ import (
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/observability/health"
+	"github.com/guided-traffic/quader/internal/packages/remotedescribe"
 	"github.com/guided-traffic/quader/internal/packages/sortkey"
 	"github.com/guided-traffic/quader/internal/proxy/invalidation"
 	"github.com/guided-traffic/quader/internal/repository"
@@ -190,6 +191,8 @@ type App struct {
 	npmDescribe late[jobs.Handler]
 	// debDescribe is the handler of the job deb-remote-describe (wire_remote_describe.go).
 	debDescribe late[jobs.Handler]
+	// remoteDescribe is the task remote-describe (wire_remote_describe.go).
+	remoteDescribe late[*remotedescribe.Task]
 	// signatureFetch is the handler of the job signature-fetch (wire_signature_fetch.go).
 	signatureFetch late[jobs.Handler]
 	shipper        late[journal.Shipper]

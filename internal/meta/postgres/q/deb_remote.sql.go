@@ -31,11 +31,16 @@ func (q *Queries) DebDeleteCachedRows(ctx context.Context, arg DebDeleteCachedRo
 }
 
 const debDescribeFiles = `-- name: DebDescribeFiles :many
-SELECT i.id AS item_id, i.path::text AS path, COALESCE(i.blob_sha256, ''::bytea)::bytea AS sha256, COALESCE(i.size, 0)::bigint AS size
+SELECT i.id AS item_id, i.path::text AS path, COALESCE(i.blob_sha256, ''::bytea)::bytea AS sha256, COALESCE(i.size, 0)::bigint AS size,
+       p.name::text AS package, pv.version::text AS version,
+       COALESCE(e.architecture, '')::text AS architecture, COALESCE(e.description, '')::text AS description
   FROM packages p
   JOIN repositories r ON r.id = p.repo_id AND r.class = 'remote' AND r.format = 'deb'
   JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
   JOIN items i ON i.version_id = pv.id AND i.trashed_at IS NULL AND i.kind = 'file'
+  LEFT JOIN LATERAL (SELECT x.architecture, x.description FROM deb_remote_entries x
+                      WHERE x.repo_id = p.repo_id AND x.path = i.path::text
+                      ORDER BY x.dir, x.index_path LIMIT 1) e ON true
  WHERE p.repo_id = $1::bigint AND p.name = $2::text
    AND NOT EXISTS (SELECT 1 FROM deb_binaries b WHERE b.item_id = i.id)
  ORDER BY i.id
@@ -47,14 +52,19 @@ type DebDescribeFilesParams struct {
 }
 
 type DebDescribeFilesRow struct {
-	ItemID int64
-	Path   string
-	Sha256 []byte
-	Size   int64
+	ItemID       int64
+	Path         string
+	Sha256       []byte
+	Size         int64
+	Package      string
+	Version      string
+	Architecture string
+	Description  string
 }
 
 // The live package files a remote repository cached of a package that have no row of deb_binaries yet (R-DEB-037): the files of its
-// live versions, with their blobs, for the job deb-remote-describe to read the control paragraph of.
+// live versions, with their blobs, for the job deb-remote-describe to read the control paragraph of, and what the parsed index row of
+// the file's path says (the paragraph of a file whose control archive Quader refuses is made from it).
 func (q *Queries) DebDescribeFiles(ctx context.Context, arg DebDescribeFilesParams) ([]DebDescribeFilesRow, error) {
 	rows, err := q.db.Query(ctx, debDescribeFiles, arg.RepoID, arg.Package)
 	if err != nil {
@@ -69,6 +79,10 @@ func (q *Queries) DebDescribeFiles(ctx context.Context, arg DebDescribeFilesPara
 			&i.Path,
 			&i.Sha256,
 			&i.Size,
+			&i.Package,
+			&i.Version,
+			&i.Architecture,
+			&i.Description,
 		); err != nil {
 			return nil, err
 		}
@@ -1156,4 +1170,51 @@ func (q *Queries) DebRemoteVerify(ctx context.Context, arg DebRemoteVerifyParams
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const debUndescribedPackages = `-- name: DebUndescribedPackages :many
+SELECT p.id, p.repo_id, p.name
+  FROM packages p
+  JOIN repositories r ON r.id = p.repo_id AND r.class = 'remote' AND r.format = 'deb'
+ WHERE p.id > $1::bigint
+   AND EXISTS (SELECT 1
+                 FROM package_versions pv
+                 JOIN items i ON i.version_id = pv.id AND i.trashed_at IS NULL AND i.kind = 'file'
+                WHERE pv.package_id = p.id AND pv.trashed_at IS NULL
+                  AND NOT EXISTS (SELECT 1 FROM deb_binaries b WHERE b.item_id = i.id))
+ ORDER BY p.id
+ LIMIT $2::int
+`
+
+type DebUndescribedPackagesParams struct {
+	After    int64
+	RowLimit int32
+}
+
+type DebUndescribedPackagesRow struct {
+	ID     int64
+	RepoID int64
+	Name   string
+}
+
+// The packages of Debian remote repositories after the cursor (by package id) that hold a live package file of a live version without a
+// row of deb_binaries (R-DEB-037): what the task remote-describe queues the job deb-remote-describe for, at most row_limit of them.
+func (q *Queries) DebUndescribedPackages(ctx context.Context, arg DebUndescribedPackagesParams) ([]DebUndescribedPackagesRow, error) {
+	rows, err := q.db.Query(ctx, debUndescribedPackages, arg.After, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DebUndescribedPackagesRow{}
+	for rows.Next() {
+		var i DebUndescribedPackagesRow
+		if err := rows.Scan(&i.ID, &i.RepoID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

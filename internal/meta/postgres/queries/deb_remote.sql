@@ -218,12 +218,18 @@ SELECT DISTINCT r.dir, r.document, r.sha256, r.release_date, COALESCE(r.verified
 
 -- name: DebDescribeFiles :many
 -- The live package files a remote repository cached of a package that have no row of deb_binaries yet (R-DEB-037): the files of its
--- live versions, with their blobs, for the job deb-remote-describe to read the control paragraph of.
-SELECT i.id AS item_id, i.path::text AS path, COALESCE(i.blob_sha256, ''::bytea)::bytea AS sha256, COALESCE(i.size, 0)::bigint AS size
+-- live versions, with their blobs, for the job deb-remote-describe to read the control paragraph of, and what the parsed index row of
+-- the file's path says (the paragraph of a file whose control archive Quader refuses is made from it).
+SELECT i.id AS item_id, i.path::text AS path, COALESCE(i.blob_sha256, ''::bytea)::bytea AS sha256, COALESCE(i.size, 0)::bigint AS size,
+       p.name::text AS package, pv.version::text AS version,
+       COALESCE(e.architecture, '')::text AS architecture, COALESCE(e.description, '')::text AS description
   FROM packages p
   JOIN repositories r ON r.id = p.repo_id AND r.class = 'remote' AND r.format = 'deb'
   JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
   JOIN items i ON i.version_id = pv.id AND i.trashed_at IS NULL AND i.kind = 'file'
+  LEFT JOIN LATERAL (SELECT x.architecture, x.description FROM deb_remote_entries x
+                      WHERE x.repo_id = p.repo_id AND x.path = i.path::text
+                      ORDER BY x.dir, x.index_path LIMIT 1) e ON true
  WHERE p.repo_id = sqlc.arg(repo_id)::bigint AND p.name = sqlc.arg(package)::text
    AND NOT EXISTS (SELECT 1 FROM deb_binaries b WHERE b.item_id = i.id)
  ORDER BY i.id;
@@ -249,3 +255,18 @@ ON CONFLICT (item_id) DO NOTHING;
 -- name: DebDeleteCachedRows :execrows
 -- The rows of package files a remote repository removed from its cache (R-DEB-037): they go with the file, in the removal's transaction.
 DELETE FROM deb_binaries WHERE repo_id = sqlc.arg(repo_id)::bigint AND item_id = ANY(sqlc.arg(item_ids)::bigint[]);
+
+-- name: DebUndescribedPackages :many
+-- The packages of Debian remote repositories after the cursor (by package id) that hold a live package file of a live version without a
+-- row of deb_binaries (R-DEB-037): what the task remote-describe queues the job deb-remote-describe for, at most row_limit of them.
+SELECT p.id, p.repo_id, p.name
+  FROM packages p
+  JOIN repositories r ON r.id = p.repo_id AND r.class = 'remote' AND r.format = 'deb'
+ WHERE p.id > sqlc.arg(after)::bigint
+   AND EXISTS (SELECT 1
+                 FROM package_versions pv
+                 JOIN items i ON i.version_id = pv.id AND i.trashed_at IS NULL AND i.kind = 'file'
+                WHERE pv.package_id = p.id AND pv.trashed_at IS NULL
+                  AND NOT EXISTS (SELECT 1 FROM deb_binaries b WHERE b.item_id = i.id))
+ ORDER BY p.id
+ LIMIT sqlc.arg(row_limit)::int;
