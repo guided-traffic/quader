@@ -31,7 +31,8 @@
 #   - The claim stays through `make ui-dev-down` (the data is kept for the checkout) and ends with `make ui-dev-down PURGE=1`.
 #
 # It sets (and exports, for docker compose and the dev server) UI_INSTANCE, UI_PROJECT, UI_STATE, UI_WEB_PORT, UI_BACKEND_PORT,
-# UI_OPS_PORT, UI_IDP_PORT, UI_PG_PORT, UI_VALKEY_PORT and UI_S3_PORT. The names carry no QUADER_ prefix: a quader process refuses
+# UI_OPS_PORT, UI_IDP_PORT, UI_PG_PORT, UI_VALKEY_PORT, UI_S3_PORT and the scanners' UI_SCAN_PORT, UI_TRIVY_PORT, UI_TRIVY_OPS_PORT and
+# UI_TRIVY_DB_OPS_PORT (19082 to 19085 in instance 1). The names carry no QUADER_ prefix: a quader process refuses
 # every QUADER_ variable that is not a setting. UI_CLAIMS names another directory for the claims (a test of this file).
 
 # ui_main <checkout> prints the main checkout of the checkout's repository, and the checkout itself outside git.
@@ -172,7 +173,14 @@ ui_instance() {
   UI_PG_PORT=$((25432 + off))
   UI_VALKEY_PORT=$((26390 + off))
   UI_S3_PORT=$((28333 + off))
+  # The scanners of the profile (deploy/ui-dev/scanners.sh, Q-ARCH-1064): quader's scan listener, vuln-scanner-trivy's listener and
+  # operations listener, and the operations listener of its database's loader.
+  UI_SCAN_PORT=$((19082 + off))
+  UI_TRIVY_PORT=$((19083 + off))
+  UI_TRIVY_OPS_PORT=$((19084 + off))
+  UI_TRIVY_DB_OPS_PORT=$((19085 + off))
   export UI_INSTANCE UI_PROJECT UI_STATE UI_WEB_PORT UI_BACKEND_PORT UI_OPS_PORT UI_IDP_PORT UI_PG_PORT UI_VALKEY_PORT UI_S3_PORT
+  export UI_SCAN_PORT UI_TRIVY_PORT UI_TRIVY_OPS_PORT UI_TRIVY_DB_OPS_PORT
 }
 
 # ui_release <checkout> ends the checkout's claim of UI_INSTANCE, as ui_instance set it; instance 1 has no claim.

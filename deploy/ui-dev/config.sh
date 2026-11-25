@@ -22,6 +22,23 @@ for f in "$certs/ca.crt" "$certs/server.crt" "$certs/server.key" "$secrets/db-us
 done
 mkdir -p "$state/spool"
 
+# The image scanner of the profile (deploy/ui-dev/scanners.sh, Q-ARCH-1064), unless UI_SCANNERS=0: quader opens its scan listener,
+# calls vuln-scanner-trivy, records that scanner's report of itself by its name, and fetches the analyser's database on the task's
+# schedule. Without it the profile names no scanner and fetches no database.
+if [ "${UI_SCANNERS:-1}" != 0 ]; then
+  scan_listen="  scan_listen: 127.0.0.1:$UI_SCAN_PORT"
+  images="  images:
+    scanner:
+      url: https://127.0.0.1:$UI_TRIVY_PORT
+      server_name: vuln-scanner-trivy.quader.test
+    registry:
+      client_name: vuln-scanner-trivy.quader.test"
+  trivy_db="vuln-sync-trivy-db: {enabled: true, schedule: \"23 */6 * * *\"}"
+else
+  scan_listen="" images=""
+  trivy_db="vuln-sync-trivy-db: {enabled: false, schedule: \"23 */6 * * *\"}"
+fi
+
 cat > "$state/quader.yaml.tmp" <<YAML
 # Written by deploy/ui-dev/config.sh at every make ui-dev-up and make ui-dev-backend, so edit the script, not this file.
 server:
@@ -38,12 +55,14 @@ server:
     certificates:
       - cert_file: "$certs/server.crt"
         key_file: "$certs/server.key"
-  # The trust anchor of the links between quader's pods (R-ARCH-038). The role all builds no scanner of any kind (Q-ARCH-563) and
-  # this file names none and opens no scan listener, so no link of the scanning runs in the profile; the screens' scanner replicas
-  # are rows the render seed writes (web/e2e/renders/scanners.ts). A link started beside it would present server.crt and verify the
-  # other end against the profile's CA under 127.0.0.1, which server.crt lists; in the role all the CA alone admits (Q-ARCH-553).
+  # The trust anchor of the links between quader's pods (R-ARCH-038). The role all builds no scanner of any kind (Q-ARCH-563); the
+  # profile runs vuln-scanner-trivy beside it in containers (deploy/ui-dev/scanners.sh, Q-ARCH-1064), which this process calls and
+  # which pull from the scan listener below; quader presents server.crt (localhost), and in the role all the CA alone admits a scanner
+  # (Q-ARCH-553). With UI_SCANNERS=0 no link of the scanning runs, and the render seed's scanner replicas are rows it writes
+  # (web/e2e/renders/scanners.ts).
   internal_tls:
     ca_file: "$certs/ca.crt"
+$scan_listen
 database:
   host: 127.0.0.1
   port: $UI_PG_PORT
@@ -120,6 +139,7 @@ vulnerabilities:
       ecosystems: [npm]
     kev:
       mode: "off"
+$images
 signatures:
   trust_root:
     # Nor does it refresh the public Sigstore root from tuf-repo-cdn.sigstore.dev (R-SIG-017), which nine requests at every start did:
@@ -128,9 +148,10 @@ signatures:
     refresh: false
 maintenance:
   tasks:
-    # Nor does it fetch the image scanning's database on a schedule: about 142 MB from mirror.gcr.io through upstream/scanner-trivy every
-    # sixth hour (R-VULN-044). "Fetch the image database now" on Admin area > Advisory sources runs the task once.
-    vuln-sync-trivy-db: {enabled: false, schedule: "23 */6 * * *"}
+    # The image scanning's database: about 142 MB from mirror.gcr.io through upstream/scanner-trivy the first time, then a check of
+    # the tag's document every sixth hour (R-VULN-044); scanners.sh starts it once at every start. Off with UI_SCANNERS=0, where
+    # "Fetch the image database now" on Admin area > Advisory sources runs it once.
+    $trivy_db
 api:
   rate_limits:
     # make ui-renders opens three pages of one user at a time (UI_RENDERS_WORKERS): a full run reached 197 reads of one

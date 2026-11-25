@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Writes quader.yaml again (config.sh), builds quader and the profile's sign-in provider (test/devidp) from the working tree,
-# applies the migrations, starts the provider in the background and runs one replica of role all in the foreground against
-# the services of deploy/ui-dev/up.sh. Ctrl-C stops both; run it again after a change of the Go code. UI_INSTANCE picks the
-# instance (deploy/ui-dev/instance.sh), as for up.sh.
+# applies the migrations, starts the provider in the background and the image scanner in containers (scanners.sh; UI_SCANNERS=0 runs
+# none), and runs one replica of role all in the foreground against the services of deploy/ui-dev/up.sh. Ctrl-C stops them all; run it
+# again after a change of the Go code. UI_INSTANCE picks the instance (deploy/ui-dev/instance.sh), as for up.sh.
 # docs/developer/web-ui.md#local-ui-development
 set -euo pipefail
 
@@ -30,7 +30,21 @@ CGO_ENABLED=0 go build -trimpath -o "$idp" ./test/devidp/cmd/devidp
   -tls-cert "$state/certs/server.crt" -tls-key "$state/certs/server.key" \
   -client-id quader-ui-dev -client-secret-file "$state/secrets/idp-client-secret" -client-base "https://localhost:$UI_WEB_PORT" &
 idp_pid=$!
-trap 'kill "$idp_pid" 2>/dev/null || true' EXIT
+# The image scanner vuln-scanner-trivy and its database's loader, the role scanner of the kinds trivy and trivy-db (Q-ARCH-1064), each
+# logging to its own file, and the task that fetches the database once quader is ready; they end with this script. UI_SCANNERS=0 runs
+# none of them.
+pids=("$idp_pid")
+trap 'kill "${pids[@]}" 2>/dev/null || true; deploy/ui-dev/scanners.sh down' EXIT
+if [ "${UI_SCANNERS:-1}" != 0 ]; then
+  deploy/ui-dev/scanners.sh prepare
+  "$bin" serve --role scanner --config "$state/scanners/trivy.yaml" > "$state/scanners/trivy.log" 2>&1 &
+  pids+=("$!")
+  "$bin" serve --role scanner --config "$state/scanners/trivy-db.yaml" > "$state/scanners/trivy-db.log" 2>&1 &
+  pids+=("$!")
+  deploy/ui-dev/scanners.sh database &
+  pids+=("$!")
+  echo "scanners: vuln-scanner-trivy on https://127.0.0.1:$UI_TRIVY_PORT with its loader (logs: $state/scanners/trivy.log, trivy-db.log)"
+fi
 
 cat <<EOF
 

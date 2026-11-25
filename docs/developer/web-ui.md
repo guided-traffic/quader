@@ -123,6 +123,7 @@ through the dev server works only against a Quader whose base URL is `https://lo
 | Quader's configuration | `.dev/ui-dev/quader.yaml`, rewritten from the paths of the state directory by every `up.sh` and every `serve.sh`, so a change of the profile's configuration reaches an existing `.dev/ui-dev` at the next `make ui-dev-backend`; it creates no certificate, secret or container, and fails naming the file when one `up.sh` writes is missing | [config.sh](../../deploy/ui-dev/config.sh), run by `up.sh` and `serve.sh` |
 | Quader binary | `.dev/ui-dev/bin/quader` | [serve.sh](../../deploy/ui-dev/serve.sh) |
 | The sign-in provider `ui-dev`: `https://localhost:19090`, the loopback address only, the certificate `server.crt` of the profile; the client secret | `.dev/ui-dev/bin/devidp`, `.dev/ui-dev/secrets/idp-client-secret` | `serve.sh` starts and stops it with Quader; `up.sh` writes the secret, `config.sh` the provider into `quader.yaml` |
+| The image scanner `vuln-scanner-trivy` (Q-ARCH-1064): the role `scanner` of the kind `trivy` on `https://127.0.0.1:19083` (ops `:19084`) and the loader of its database, the kind `trivy-db` (ops `:19085`), both Quader from the working tree; Quader's scan listener on `127.0.0.1:19082`; the analyser Trivy of `TRIVY_IMAGE`, one container per call; the pair `trivy.crt` for `vuln-scanner-trivy.quader.test` from the profile's CA | `.dev/ui-dev/scanners/` (configurations, logs `trivy.log` and `trivy-db.log`, the analyser's wrapper `trivy`, the spool, the database's copy `trivy-db`) | [scanners.sh](../../deploy/ui-dev/scanners.sh) prepares, `serve.sh` starts and stops both processes and starts the task `vuln-sync-trivy-db` once; `config.sh` writes the scanner's address and the scan listener; `UI_SCANNERS=0` runs none |
 
 **Where it differs from an installation**, so a finding is checked in the embedded build before it is called a defect:
 
@@ -141,14 +142,30 @@ through the dev server works only against a Quader whose base URL is `https://lo
 - The outbound clients trust the profile's CA and may reach the loopback addresses (`proxy.outbound.tls.ca_files`,
   `proxy.outbound.address_policy.allow_cidrs`), so that Quader reaches the provider; a remote repository of this profile can
   therefore reach a service on this machine, which an installation's default egress policy refuses (R-REPO-038).
-- No link of the scanning runs. The role `all` builds no scanner of any kind
-  ([Q-ARCH-563](../spec/architecture.md#q-arch-563--the-role-all-builds-no-image-scanner)), and `deploy/ui-dev/config.sh` names no
-  scanner and opens no scan listener, so the images read `pending_scan`; the scanner replicas the screens show are rows the render
-  seed writes (`web/e2e/renders/scanners.ts`). `server.internal_tls.ca_file` names the profile's CA all the same: a link started
-  beside the profile presents `server.crt` and verifies the other end under `127.0.0.1`, which `server.crt` lists with the usages
-  server and client authentication, and in the role `all` no name of a kind of pod is required (Q-ARCH-553), so any certificate of
-  the profile's CA is admitted; an installation admits only the worker at the scanner and only the scanners at the scan listener
-  ([helm-chart.md](helm-chart.md#the-scanner)).
+- **The image scanning runs as in an installation, the malware scanning does not**
+  ([Q-ARCH-1064](../spec/architecture.md#q-arch-1064--the-ui-development-profile-runs-the-image-scanner-beside-the-backend)). The role
+  `all` builds no scanner ([Q-ARCH-563](../spec/architecture.md#q-arch-563--the-role-all-builds-no-image-scanner)); `serve.sh` starts
+  `vuln-scanner-trivy` beside it as two processes of the role `scanner`, the kinds `trivy` and `trivy-db`, the chart's two containers of
+  the pod, and `config.sh` points Quader at it and opens its scan listener. The analyser is the pinned Trivy of `TRIVY_IMAGE`, whose
+  binary is built for Linux only: `vulnerabilities.images.binary` is a wrapper that runs each call in a container of that image with no
+  network and the scanner's directory mounted at the same path, the database read-only. The database comes as in an installation,
+  through `upstream/scanner-trivy` from `mirror.gcr.io` (143 MB, 1.7 GB unpacked in `.dev/ui-dev/scanners/trivy-db`); `serve.sh` starts
+  the task once when Quader is ready (a check of the tag's document when the database is there), and its schedule runs every sixth
+  hour. An image stored on the profile is then queued, scanned and graded as R-VULN-050 says, and the lists say each step (R-VULN-039).
+  Measured from nothing on 2026-11-25 (instance 6, the Go build cache warm): `up.sh` 8 s, Quader ready after 10 s, the database
+  recorded after 17 s and loaded after 22 s; `quay.io/prometheus/busybox:latest` fetched ahead through `upstream/quay` read **Queued**
+  5 s later, **Scanning** after its 30 s `scan_delay` and **S · no findings** 2 s after that. The two processes hold about 68 MB each
+  while idle. The links: Quader presents `server.crt` (`localhost`), which the scanner admits by that name; the scanner presents its own
+  pair for `vuln-scanner-trivy.quader.test` (issued by `scanners.sh` from the profile's CA), which the scan listener records the
+  scanner's report by, so the System page lists a real replica; in the role `all` the CA alone admits at the scan listener
+  (Q-ARCH-553). Everything listens on `127.0.0.1`.
+  No ClamAV runs: the malware scanner reaches `clamd` only by a Unix socket, which a container of Docker Desktop cannot share with
+  macOS, so it would have to run inside the container beside `clamd`, from where Quader's scan listener on the host's loopback is not
+  reachable; a file of the profile reads **No signatures** (no signature database) or **No scanner**
+  ([architecture.md](../spec/architecture.md#h-1891--the-ui-development-profile-runs-no-malware-scanner) H-1891 has the options and their costs).
+  `UI_SCANNERS=0 make ui-dev-backend` runs no scanner and fetches no database: then the images read **No database**. The render runs
+  set it (`renders.sh`, unless a walk needs them): the scanner replicas their screens show are rows the render seed writes
+  (`web/e2e/renders/scanners.ts`).
 - The public Sigstore root is not refreshed (`signatures.trust_root.refresh: false`): the profile's root is the snapshot the
   release embeds, and no request goes to `tuf-repo-cdn.sigstore.dev`; the walk of **Settings › Signatures** answers a refreshed
   root in the browser ([Q-UI-1047](../spec/api-and-ui.md#q-ui-1047--the-ui-development-profile-keeps-the-releases-sigstore-root-and-the-walk-answers-a-refreshed-one)).
@@ -252,6 +269,7 @@ shape of the integration stack's instances, [build-and-test.md](build-and-test.m
 | Volumes | `quader-ui-dev_<service>` | `quader-ui-dev<n>_<service>` |
 | State (certificates, secrets, key ring, `quader.yaml`, binaries) | `<checkout>/.dev/ui-dev/` | `<checkout>/.dev/ui-dev-<n>/` |
 | Dev server, quader, ops, sign-in provider | 4200, 19080, 19081, 19090 | each plus `(n - 1) * 100` (instance 2: 4300, 19180, 19181, 19190) |
+| The scan listener, `vuln-scanner-trivy`, its ops, its loader's ops ([scanners.sh](../../deploy/ui-dev/scanners.sh)) | 19082, 19083, 19084, 19085 | each plus `(n - 1) * 100` |
 | PostgreSQL, Valkey, S3 | 25432, 26390, 28333 | each plus `(n - 1) * 100` |
 
 ```shell

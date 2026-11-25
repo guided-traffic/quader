@@ -12652,6 +12652,9 @@ work needs scanning without a cluster, which the integration stack's scanner rep
 **Applied in the spec:** R-ARCH-036; [ha-and-helm.md](ha-and-helm.md) R-HA-067; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-025;
 [operations-and-observability.md](operations-and-observability.md) R-OPS-048 (`inProcess` goes); [api-and-ui.md](api-and-ui.md) R-UI-038.
 
+**Revisited 2026-11-25** by [Q-ARCH-1064](#q-arch-1064--the-ui-development-profile-runs-the-image-scanner-beside-the-backend): the role
+`all` still builds no scanner, but the UI development profile runs `vuln-scanner-trivy` beside it, as processes of the role `scanner`.
+
 ### Q-ARCH-564 · The loader of the analyser's database is a kind of the role `scanner`, `trivy-db`
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -12935,6 +12938,31 @@ configuration), R-HA-058 (preflight's five settings and the cancel requests thro
 `TestR_ARCH_019_AStatementWhoseCancelIsDroppedEndsWhenItsClientIsGone` ([cancel_test.go](../../test/integration/postgres/cancel_test.go),
 integration, `postgres`, about 2 s).
 
+### Q-ARCH-1064 · The UI development profile runs the image scanner beside the backend
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It takes back
+[Q-ARCH-563](#q-arch-563--the-role-all-builds-no-image-scanner)'s "the profile runs none" for the UI development profile; the role `all`
+still builds no scanner. Found by the owner on 2026-11-25 on that profile: the tags of an image fetched through `upstream/docker-hub`
+read "not scanned" for good ("ich habe auch keine Ahnung ob hier eine geplant ist"), because the profile scanned nothing. What the owner
+looks at must behave as the product does: an image stored there is scanned as R-VULN-050 says.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `serve.sh` starts `vuln-scanner-trivy` beside the backend: the role `scanner` of the kinds `trivy` and `trivy-db`, Quader from the working tree for this machine; the analyser Trivy of `TRIVY_IMAGE` in a container per call (its binary is Linux only); the database through `upstream/scanner-trivy` as in an installation; `UI_SCANNERS=0` for none, the render runs' default (chosen) | Two processes and a wrapper | The chart's processes, links, names and database path; the one pin of the analyser; everything on `127.0.0.1`; measured from nothing: Quader ready after 10 s, the database loaded after 22 s, an image graded 33 s after its fill (its 30 s `scan_delay`); 68 MB per idle process, 143 MB fetched once, 1.7 GB on disk | A container start per call of the analyser (about a second); a call killed at its deadline leaves its container to finish (`down.sh` removes it); no malware scanning |
+| (b) Both processes in a container of `TRIVY_IMAGE` with a Linux build of Quader | The analyser beside them as in the pod | Closer to the pod's file system | Built and tried on 2026-11-25: Docker Desktop does not forward `host.docker.internal` to the host's loopback, so the scanner could not reach the scan listener; that listener would have to listen on every interface (the LAN, and macOS asks to admit each new build) |
+| (c) The kind profile `vuln` ([local-profile.md](../developer/local-profile.md)) | The chart on kind | The whole product | Minutes of start, GiBs of memory and an image build per change: not what a person looking at a screen should wait for |
+| (d) Keep Q-ARCH-563: no scanner in the profile | Nothing | No cost | The owner's objection stands: what he looks at scans nothing |
+
+**Choice:** (a). The malware scanning is not part of it (gap H-1891): its scanner reaches `clamd` only by a Unix socket, which a
+container of Docker Desktop cannot share with macOS, so the scanner would have to run in the container beside `clamd`, where (b)'s
+loopback problem returns. **Rationale:** the processes are the product's, only the analyser's binary comes from its image, which the chart
+does as well. The development agent would revisit the malware part when the malware scanner reaches `clamd` over a link the host can
+publish, or when the profile's scan listener may listen beyond the loopback.
+
+**Applied:** [deploy/ui-dev/scanners.sh](../../deploy/ui-dev/scanners.sh), `config.sh`, `serve.sh`, `renders.sh`, `down.sh`,
+`instance.sh` (four ports per instance); [web-ui.md](../developer/web-ui.md#local-ui-development),
+[build-and-test.md](../developer/build-and-test.md#instances-and-their-ports).
+
 ## What this does not cover
 
 
@@ -13212,3 +13240,17 @@ again and are not part of this. What makes it real: a test that asserts the age 
 profiles across two stacks, or connects as `quader_app` to a stack. No test on the harness is known to do so: the areas run for the change passed
 ([test-cost.md](../developer/test-cost.md#11-an-integration-tests-own-installation-before-and-after-the-harnesss-three-changes-2026-11-23)), and the
 areas that connect as `quader_app` (`postgres`, `audit`) keep databases of their own. What would close it: drawing these values again in `NewStack` as the identity rows are, once a test needs it.
+
+### H-1891 · The UI development profile runs no malware scanner
+
+Component: the UI development profile ([deploy/ui-dev/](../../deploy/ui-dev/), Q-ARCH-1064). Subject: whoever looks at the profile, the
+owner first. Live since the profile runs the image scanner: an artifact stored there is scanned for vulnerabilities, not for malware;
+its files read **No signatures** (no signature database is imported) or **No scanner** (R-MAL-024), and where only checked artifacts may
+be downloaded they wait and are refused as unchecked. What keeps it out: the malware scanner reaches `clamd` only by a Unix socket
+(`malware.scanner.socket`), which a container of Docker Desktop cannot share with macOS, so the scanner would run in the container of
+`CLAMAV_IMAGE` beside `clamd`, from where the profile's scan listener on the host's loopback is not reachable. The options, each with
+its cost: the scan listener on every interface (reachable from the LAN behind the profile's CA and scan tokens; macOS asks to admit
+every new build), with `clamd` at 1.0 to 1.1 GiB resident (the chart's measurement) and 113 MB of signatures fetched by an updater of the
+kind `freshclam` from ClamAV's network, which limits whole downloads per address; the same on Linux hosts only, where the containers can
+share the host's network; or a link to `clamd` over TCP in the product, which the chart does not need. Until one is chosen, R-MAL-035 is
+not seen on the profile.

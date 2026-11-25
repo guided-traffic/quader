@@ -15,6 +15,8 @@ cd "$root"
 UI_DOWN=1 ui_instance "$root"
 # compose.yaml requires the variables up.sh sets; the values do not matter for down.
 export POSTGRES_IMAGE=unused VALKEY_IMAGE=unused SEAWEEDFS_IMAGE=unused CERT_DIR="$UI_STATE/certs"
+# An analyser's container of the image scanner (scanners.sh) that a killed call left behind.
+docker ps -aq --filter "label=quader-ui-dev-analyser=$UI_PROJECT" | xargs docker rm -f >/dev/null 2>&1 || true
 
 if [ "${1:-}" = "--purge" ]; then
   docker compose -f deploy/ui-dev/compose.yaml down -v --remove-orphans

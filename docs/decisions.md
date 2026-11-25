@@ -9203,10 +9203,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-ARCH
 
-281 questions on [spec/architecture.md](spec/architecture.md).
+282 questions on [spec/architecture.md](spec/architecture.md).
 
 <details>
-<summary>Q-ARCH: 281 questions</summary>
+<summary>Q-ARCH: 282 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9491,6 +9491,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-1061](spec/architecture.md#q-arch-1061--the-actions-cache-writes-zstd-on-every-runner-kind-from-a-zstd-built-at-its-pin) | The Actions cache writes zstd on every runner kind, from a zstd built at its pin | Decided by the development agent | (c) A composite action puts zstd at a pin on PATH before the job's first cache step: the hosted image's own when it reports the pin, else the program restored from the cache, else built once from the release's source archive (SHA-256 pinned) as the hosted image builds it, and saved | — |
 | [Q-ARCH-1062](spec/architecture.md#q-arch-1062--a-nightly-leg-records-the-jobs-of-test-and-release-that-ran-beside-it-and-nothing-holds-a-push) | A nightly leg records the jobs of Test and Release that ran beside it, and nothing holds a push | Decided by the development agent | (c), with `make nightly-load-guard` kept for the one case where the quiet is the point: a single set the development agent dispatches itself to measure goes with no push beside it. | — |
 | [Q-ARCH-1063](spec/architecture.md#q-arch-1063--where-the-minutes-of-the-suite-are-each-of-the-six-ranked-costs-decided) | Where the minutes of the suite are: each of the six ranked costs decided | Decided by the development agent | as in the table. | — |
+| [Q-ARCH-1064](spec/architecture.md#q-arch-1064--the-ui-development-profile-runs-the-image-scanner-beside-the-backend) | The UI development profile runs the image scanner beside the backend | Decided by the development agent | (a) `serve.sh` starts `vuln-scanner-trivy` beside the backend: the role `scanner` of the kinds `trivy` and `trivy-db`, Quader from the working tree for this machine; the analyser Trivy of `TRIVY_IMAGE` in a container per call (its binary is Linux only); the database through `upstream/scanner-trivy` as in an installation; `UI_SCANNERS=0` for none, the render runs' default | — |
 
 </details>
 

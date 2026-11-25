@@ -54,6 +54,9 @@ wait_for() { # wait_for <what> <seconds> <url> <log> <pid>: until the URL answer
   return 1
 }
 
+# A backend the run starts runs no scanner (Q-ARCH-1064): the screens' scanner replicas are rows the seed writes, and no render fetches
+# the analyser's database. UI_SCANNERS=1 starts them for a walk that needs them.
+export UI_SCANNERS="${UI_SCANNERS:-0}"
 if ! curl -skf -o /dev/null "https://127.0.0.1:$UI_OPS_PORT/readyz"; then
   echo "ui-renders: starting quader and the sign-in provider (log: $backend_log)"
   deploy/ui-dev/serve.sh > "$backend_log" 2>&1 &
