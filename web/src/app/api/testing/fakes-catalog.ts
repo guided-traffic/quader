@@ -154,6 +154,32 @@ export const GENERIC_FORMAT: FormatDescriptor = {
   signatureKinds: [{ name: 'signature file', role: 'publisher' }],
 };
 
+/**
+ * ClamAV's definitions as the catalog lists them (internal/formats/clamav/format.go, R-CLAMAV-001): the class local only, and system
+ * only, so no creation offers it. The fake's catalog holds it by default, so that every screen's test meets a system-only format.
+ */
+export const CLAMAV_DEFINITIONS_FORMAT: FormatDescriptor = {
+  name: 'clamav',
+  displayName: 'ClamAV definitions',
+  classes: ['local'],
+  clients: [{ id: 'freshclam', displayName: 'freshclam' }],
+  layout: 'clamav',
+  protocolBasePath: '/api/clamav/{project}/{key}/',
+  upstreamPresets: [],
+  defaultMetadataTtlSeconds: null,
+  defaultNotFoundTtlSeconds: null,
+  patternSubject: 'path',
+  priorityMembers: false,
+  pinsAndClaims: false,
+  caps: false,
+  vulnerabilityScanning: false,
+  mirror: false,
+  settingsSchema: null,
+  wiki: false,
+  systemOnly: true,
+  signatureKinds: [],
+};
+
 /** The settings schema npm registers (internal/formats/npm/settings.schema.json), as the catalog serves it. */
 export const NPM_SETTINGS_SCHEMA = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -452,7 +478,7 @@ export const ANSIBLE_FORMAT: FormatDescriptor = {
 export type FakeRepository = { -readonly [K in keyof Repository]: Repository[K] };
 
 export class FakeRepositoriesApi extends RepositoriesApi {
-  formatsResult: readonly FormatDescriptor[] = [GENERIC_FORMAT];
+  formatsResult: readonly FormatDescriptor[] = [GENERIC_FORMAT, CLAMAV_DEFINITIONS_FORMAT];
   formatsError: ApiError | null = null;
   /** The `baseUrl` of the formats answer. */
   baseUrlResult: string | null = 'https://quader.example.net';
@@ -514,7 +540,7 @@ export class FakeRepositoriesApi extends RepositoriesApi {
   private summaries(filters: RepositoryFilters): RepositorySummary[] {
     return this.repositories
       .filter((r) => !filters.class || r.class === filters.class)
-      .filter((r) => !filters.format || r.format === filters.format)
+      .filter((r) => !filters.format || filters.format.split(',').includes(r.format))
       .filter((r) => filters.state !== 'inactive' || r.disabled === true)
       .filter((r) => !filters.project || r.project === filters.project)
       .filter((r) => !filters.name?.length || filters.name.includes(refOf(r)))

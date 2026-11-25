@@ -9,7 +9,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { PageHeader } from '../../shared/ui/page-header';
 import { VisibilityIcon } from '../../shared/ui/visibility-level';
 import { ProjectLink } from '../../shared/ui/project-mark';
-import { classIcon, classLabel } from '../repositories/repository-class';
+import { classIcon, classLabel, shownClass } from '../repositories/repository-class';
 
 /**
  * The repositories of one format the reader may use (R-UI-124, Q-UI-481): a tile of **Guides** leads here. The rows are built from
@@ -61,7 +61,8 @@ import { classIcon, classLabel } from '../repositories/repository-class';
             </th>
             <td class="project-cell"><quader-project-link [key]="r.project" /></td>
             <td class="class-cell">
-              <span class="class-name"><span class="material-icons" aria-hidden="true">{{ classIcon(r.class) }}</span>{{ classText(r.class) }}</span>
+              @let k = kind(r);
+              <span class="class-name"><span class="material-icons" aria-hidden="true">{{ classIcon(k) }}</span>{{ classText(k) }}</span>
             </td>
             <td class="actions with-setup">
               <!-- The row's action (Q-UI-487): a quiet button, its accessible name ending with the key, as in a project's list. Every
@@ -83,7 +84,7 @@ import { classIcon, classLabel } from '../repositories/repository-class';
         <ul>
           @for (c of d.classes; track c) {
             <li>
-              <a [routerLink]="['/guides', d.name, c]">{{ classGuideText(c) }}</a>
+              <a [routerLink]="['/guides', d.name, c]">{{ classGuideText(d.systemOnly ? 'system' : c) }}</a>
             </li>
           }
         </ul>
@@ -164,9 +165,15 @@ export class GuideFormat {
 
   protected readonly classText = classLabel;
   protected readonly classIcon = classIcon;
+  /** What a row's class cell shows: System for a repository of a system-only format (Q-UI-1203), else its class. */
+  protected kind(r: RepositorySummary): string {
+    return shownClass(r, valueOf(this.formats));
+  }
 
   protected classGuideText(cls: string): string {
     switch (cls) {
+      case 'system':
+        return $localize`:@@guides.format.class.system:The system repository: filled by this installation itself`;
       case 'local':
         return $localize`:@@guides.format.class.local:A local repository: what you publish to`;
       case 'remote':

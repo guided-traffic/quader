@@ -6,7 +6,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { ProjectsApi } from '../../api/projects-api';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { FakeSessionApi, provideFakeApis } from '../../api/testing/fakes';
-import { FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT, PACKAGE_FORMAT } from '../../api/testing/fakes-catalog';
+import { CLAMAV_DEFINITIONS_FORMAT, FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT, PACKAGE_FORMAT } from '../../api/testing/fakes-catalog';
 import { FakeProjectsApi, sampleProject } from '../../api/testing/fakes-projects';
 import { SessionApi } from '../../api/session-api';
 import { SessionStore } from '../../core/session-store';
@@ -22,7 +22,7 @@ const fixed = { artifacts: 'private', wiki: 'private' } as const;
  * both system repositories; and a team's repository, which the project's page never lists.
  */
 function seed(fake: FakeRepositoriesApi, system = true): void {
-  fake.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT, OCI_FORMAT];
+  fake.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT, OCI_FORMAT, CLAMAV_DEFINITIONS_FORMAT];
   fake.repositories = [
     { key: 'debian', project: 'upstream', class: 'remote', format: 'generic', description: 'Debian', disabled: true, visibility: internal },
     { key: 'docker-hub', project: 'upstream', class: 'remote', format: 'oci', description: 'Docker Hub', disabled: true, visibility: internal },
@@ -163,8 +163,15 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     const row = (key: string) => [...root.querySelectorAll('tbody tr')].find((tr) => text(tr.querySelector('th a')!) === key)!;
     const badges = (key: string) => [...row(key).querySelectorAll('th .badge')].map((b) => text(b));
     expect(badges('scanner-trivy')).toEqual(['System']);
-    expect(badges('clamav')).toEqual(['System']);
+    // The repository of a system-only format says System in its class cell, which is its mark; no second one by its key (Q-UI-1203).
+    expect(badges('clamav')).toEqual([]);
     expect(badges('npmjs')).toEqual([]);
+    const cls = (key: string) => row(key).querySelector<HTMLElement>('td.class-cell .class-name')!;
+    expect(text(cls('clamav'))).toBe('settingsSystem');
+    expect(cls('clamav').getAttribute('tabindex')).toBe('0');
+    expect(spokenText(cls('clamav'))).toContain('System');
+    expect(text(cls('scanner-trivy'))).toBe('cloud_downloadRemote');
+    expect(cls('scanner-trivy').getAttribute('tabindex')).toBeNull();
     expect(row('scanner-trivy').querySelector('a.row-setup')).toBeNull();
     expect(row('npmjs').querySelector('a.row-setup')?.getAttribute('href')).toBe('/projects/upstream/repositories/npmjs/setup');
     const menuOf = async (key: string): Promise<string[]> => {
@@ -182,6 +189,30 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     // No section on the list of every project: the badge sets them apart there (Q-UI-902).
     expect(section(root)).toBeNull();
     await expectAccessible(root);
+  });
+
+  it('R-UI-020 the filter by class has System of its own: Local holds no repository nobody publishes to, System the system-only formats', async () => {
+    const local = await open('/repositories?class=local');
+    const rows = (root: HTMLElement) => [...root.querySelectorAll('tbody th[scope="row"] a')].map((a) => text(a));
+    expect(rows(local.root)).toEqual(['generic-local']);
+    // The server is asked for the class local of every format that is not system only.
+    expect(local.fake.listFilters.at(-1)).toMatchObject({ class: 'local', format: 'generic,npm,oci' });
+
+    const system = await open('/repositories?class=system');
+    expect(rows(system.root)).toEqual(['clamav']);
+    expect(system.fake.listFilters.at(-1)).toMatchObject({ class: 'local', format: 'clamav' });
+    expect(text(system.root.querySelector('quader-list-head')!)).toContain('System');
+
+    // A format that is not system only and the class System exclude each other: nothing is asked, nothing listed.
+    const none = await open('/repositories?class=system&format=npm');
+    expect(none.fake.listFilters.filter((f) => !f.name)).toEqual([]);
+    expect(text(none.root)).toContain('No repository matches.');
+
+    // The section of the project upstream follows the same values.
+    const section_ = await open('/projects/upstream/repositories?class=system');
+    expect(keys(sectionTable(section_.root))).toEqual(['clamav']);
+    const localSection = await open('/projects/upstream/repositories?class=local');
+    expect(text(sectionTable(localSection.root)!)).toContain('No system repository matches.');
   });
 
   it('R-UI-192 a caller who reads no system repository sees no section', async () => {

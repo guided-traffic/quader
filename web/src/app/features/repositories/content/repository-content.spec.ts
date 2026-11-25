@@ -437,6 +437,15 @@ describe('Repository content page', () => {
       },
     });
     await settle(clamav.fixture);
+    // A repository of a system-only format is shown as System, says that the installation fills it, and its badge says it again as
+    // the tooltip (Q-UI-1203); the remote system repository keeps its class.
+    const badge = clamav.root.querySelector<HTMLElement>('quader-page-header .class-badge')!;
+    expect(text(badge)).toBe('settings System');
+    expect(badge.getAttribute('tabindex')).toBe('0');
+    expect(text(clamav.root.querySelector('.page-header-description')!)).toBe(
+      'Filled by this installation itself, on a schedule; nobody publishes to it.',
+    );
+    expect(text(trivy.root.querySelector('quader-page-header .class-badge')!)).toBe('cloud_download Remote');
     expect(clamav.root.querySelector('.files-actions')?.textContent ?? '').not.toMatch(/Upload files|New folder/);
     expect(text(clamav.root.querySelector('quader-clamav-databases quader-empty-state')!)).toBe(
       "Quader has stored no ClamAV definitions yet. The malware scan's updater fills this repository.",

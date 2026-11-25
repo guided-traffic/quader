@@ -666,11 +666,13 @@ func errCIRestricted() error {
 
 // nameIn finds a name in its ownership domain, normalized with the format's name
 // rule. ok is false where ownership does not exist: a repository the index does
-// not hold, a remote or virtual repository, a format without package names, or a
-// string that is no name of the format. norm is the name to decide on either way.
+// not hold, a remote or virtual repository, a format without package names, a
+// format that is system only (its one repository is written by the product alone,
+// R-CLAMAV-001: ownership none), or a string that is no name of the format. norm is
+// the name to decide on either way.
 func (o *Ownership) nameIn(idx *Index, repoKey qname.Repo, name string) (k ownKey, norm string, ok bool) {
 	r := idx.repo(repoKey)
-	if r == nil || r.Class != repository.Local {
+	if r == nil || r.Class != repository.Local || o.e.systemOnly(r.Format) {
 		return ownKey{}, name, false
 	}
 	names := o.e.namesOf(r.Format)

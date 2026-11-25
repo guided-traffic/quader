@@ -85,7 +85,8 @@ export class TooltipBubble {
 /**
  * A tooltip for an element, shown under the pointer and on keyboard focus, hidden by Escape, by leaving, and by blur
  * (WCAG 1.4.13: dismissible, hoverable, persistent while it is pointed at). The element is described by it
- * (a hidden message the CDK links with `aria-describedby`); an element whose name already says everything needs no tooltip.
+ * (a hidden message the CDK links with `aria-describedby`); an element whose name already says everything needs no tooltip. An empty
+ * text is no tooltip: neither a bubble nor a description, so one cell of a list may carry it where its value needs one (Q-UI-1203).
  */
 @Directive({
   selector: '[quaderTooltip]',
@@ -115,14 +116,15 @@ export class Tooltip implements OnDestroy {
       const text = this.quaderTooltip();
       const el = this.host.nativeElement;
       if (this.described !== null) this.describer.removeDescription(el, this.described);
-      this.describer.describe(el, text);
-      this.described = text;
+      if (text) this.describer.describe(el, text);
+      this.described = text || null;
+      if (!text) this.hide();
     });
   }
 
   protected show(): void {
     clearTimeout(this.timer);
-    if (this.ref) return;
+    if (this.ref || !this.quaderTooltip()) return;
     // Above the element, and under it where the window has no room above, as the reference places its tooltip; the arrow fills
     // the 4 px between the bubble and the element.
     const position = this.overlay

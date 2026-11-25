@@ -6,6 +6,9 @@ import (
 
 	"github.com/guided-traffic/quader/internal/auth/scope"
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 // ownershipFixture is the publishing side of the team example: npm-internal
@@ -263,4 +266,39 @@ func TestR_AUTHZ_019_ANarrowedTokenChangesOwnersOnlyWhereItsScopeListsManage(t *
 			t.Fatal("admitted")
 		}
 	})
+}
+
+// TestR_CLAMAV_001_ASystemOnlyFormatHasNoOwnership: the repository of a system-only format has no package ownership (R-CLAMAV-001,
+// ownership none; Q-CLAMAV-19): an owner change of one of its names is the 404 of a name without ownership for an administrator, who
+// manages every repository, while a local repository of a format with package names keeps its owners. Under a millisecond, no data.
+func TestR_CLAMAV_001_ASystemOnlyFormatHasNoOwnership(t *testing.T) {
+	reg := testRegistry()
+	// A system-only format with package names, as the format clamav declares its three databases.
+	reg.Register(catalog.Entry{
+		Facts: catalog.Facts{
+			ID: "clamav", Classes: []catalog.Class{catalog.Local}, Layout: "clamav",
+			PatternSubject: catalog.SubjectPath, PackageNames: true, SystemOnly: true,
+		},
+		Names:    exactNames{},
+		Exposure: catalog.Exposure{Exposable: true},
+	})
+	f := newFixture().repo("clamav", "local", "clamav", "").repo("npm-internal", "local", "npm", `{"local":{"packageOwnership":"enforce"}}`)
+	f.project(pUpstream, wellknown.ProjectKey).assign("clamav", pUpstream)
+	f.bind(RoleAdmin, idOps)
+	e := newTestEngine(t, f, func(o *Options) { o.Formats = reg })
+	o, err := NewOwnership(OwnershipOptions{Engine: e})
+	if err != nil {
+		t.Fatal(err)
+	}
+	idx, err := e.Begin(t.Context(), adminSub)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = o.changeTarget(t.Context(), idx, adminSub, upClamav, "daily")
+	if pe, ok := errs.As(err); !ok || pe.Status() != 404 {
+		t.Fatalf("an owner change on upstream/clamav: %v, want 404", err)
+	}
+	if _, err := o.changeTarget(t.Context(), idx, adminSub, qname.Repo{Project: "it", Key: "npm-internal"}, "@web/lib"); err != nil {
+		t.Fatalf("an owner change on a local npm repository: %v", err)
+	}
 }

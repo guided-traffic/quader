@@ -170,6 +170,12 @@ func New(o Options) (*Engine, error) {
 // namesOf returns the name rule of a format, nil when it has none.
 func (e *Engine) namesOf(format string) catalog.Names { return namesIn(e.o.Formats, format) }
 
+// systemOnly reports the catalog fact Facts.SystemOnly of a format (R-CLAMAV-001): only the product writes its repository.
+func (e *Engine) systemOnly(format string) bool {
+	f, _ := e.o.Formats.Lookup(format)
+	return f.SystemOnly
+}
+
 // Name implements the composition root's Component.
 func (e *Engine) Name() string { return "authz" }
 

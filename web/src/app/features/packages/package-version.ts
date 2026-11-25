@@ -7,7 +7,8 @@ import { VulnerabilitiesApi, VulnerabilityVersionReport } from '../../api/vulner
 import { CopyButton } from '../../shared/copy-button';
 import { ErrorNotice } from '../../shared/error-notice';
 import { FormatIconView } from '../../shared/format-icon';
-import { formatName } from '../../core/format-names';
+import { FormatCatalog, formatName } from '../../core/format-names';
+import { classLabel, isSystemOnly } from '../repositories/repository-class';
 import { failureOf, valueOf } from '../../shared/paged-resource';
 import { failureMayPass, noneOnRefusal } from '../../shared/none-on-refusal';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
@@ -546,11 +547,12 @@ export class PackageVersionPage {
   protected shortSha(sha: string): string {
     return sha.slice(0, 12);
   }
-  protected readonly classLabels: Record<string, string> = {
-    local: $localize`:@@repo.class.local:Local`,
-    remote: $localize`:@@repo.class.remote:Remote`,
-    virtual: $localize`:@@repo.class.virtual:Virtual`,
-  };
+  private readonly formatCatalog = inject(FormatCatalog);
+  private readonly catalog = resource({ loader: () => this.formatCatalog.formats() });
+  /** The class of a repository that holds the version: System where the format is system only (Q-UI-1203), else its class. */
+  protected classText(cls: string): string {
+    return classLabel(isSystemOnly(this.format(), valueOf(this.catalog)) ? 'system' : cls);
+  }
 
   /**
    * Something of the version has not answered yet (R-UI-213): a file's malware scan, a signature check, or an image's vulnerability

@@ -10239,10 +10239,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CLAMAV
 
-18 questions on [spec/formats/clamav.md](spec/formats/clamav.md).
+19 questions on [spec/formats/clamav.md](spec/formats/clamav.md).
 
 <details>
-<summary>Q-CLAMAV: 18 questions</summary>
+<summary>Q-CLAMAV: 19 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10264,6 +10264,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CLAMAV-16](spec/formats/clamav.md#q-clamav-16--the-snippet-writes-the-address-without-its-trailing-slash) | The snippet writes the address without its trailing slash | Decided by the development agent | (a) A template function `trimslash` beside `schemeless` and `hostname` | — |
 | [Q-CLAMAV-17](spec/formats/clamav.md#q-clamav-17--a-commit-without-its-metadata-is-refused) | A commit without its metadata is refused | Decided by the development agent | (a) `OnCommit` refuses a commit at a path outside the layout and one without the payload of its kind (`rows.Container`, `rows.Signature`) whose database and version agree with the path | — |
 | [Q-CLAMAV-18](spec/formats/clamav.md#q-clamav-18--the-guide-names-the-endpoints-on-which-a-certificate-reads-the-repository-now) | The guide names the endpoints on which a certificate reads the repository now | Decided by the development agent | (a) A field `GuideData.CertificateURLs`: the registry URL on every endpoint with `auth.client_certificates` on which a certificate subject reads the repository now, asked of the decision point | [ADR-232](#adr-232--the-guide-data-names-the-addresses-on-which-a-client-certificate-reads-the-repository) |
+| [Q-CLAMAV-19](spec/formats/clamav.md#q-clamav-19--a-system-only-format-has-no-package-ownership) | A system-only format has no package ownership | Decided by the development agent | (a) Ownership does not exist on a system-only format: the owner operations answer as for a format without package names (404 for a caller who manages the repository, the refusal of the change for every other) | — |
 
 </details>
 
@@ -12247,10 +12248,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-595 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+599 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 595 questions</summary>
+<summary>Q-UI: 599 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12849,6 +12850,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1197](spec/api-and-ui.md#q-ui-1197--the-notice-says-trying-again-after-the-persons-retry-too-and-a-list-shows-no-loading-under-it) | The notice says "Trying again." after the person's Retry too, and a list shows no "Loading." under it | Decided by the development agent | (a) "Trying again." for every read again, until a failure of the notice's group changes; the data table shows "Loading." only without a failure | — |
 | [Q-UI-1198](spec/api-and-ui.md#q-ui-1198--a-wait-of-one-second-is-singular) | A wait of one second is singular | Decided by the development agent | — | — |
 | [Q-UI-1199](spec/api-and-ui.md#q-ui-1199--a-read-the-page-works-without-lets-a-failure-that-may-pass-through-and-a-store-reads-again-after-one) | A read the page works without lets a failure that may pass through, and a store reads again after one | Decided by the development agent | (a) A refusal (403, 404) and `503 unavailable` of a service a replica has not wired stay "none"; a failure that may pass (`passes`) is thrown, so the page shows it and reads it again; a store reads again after one with the notice's back-off, only while the window is seen | — |
+| [Q-UI-1200](spec/api-and-ui.md#q-ui-1200--a-system-only-format-is-left-out-of-every-choice-for-something-new-and-kept-wherever-something-is-found-or-shown) | A system-only format is left out of every choice for something new, and kept wherever something is found or shown | Decided by the development agent | (a) A choice for something new leaves a system-only format out unless the server accepts it there; a filter and a display keep it | — |
+| [Q-UI-1201](spec/api-and-ui.md#q-ui-1201--the-forms-address-of-a-system-only-format-shows-the-chooser-with-one-sentence-and-its-repository) | The form's address of a system-only format shows the chooser with one sentence and its repository | Decided by the development agent | (a) The chooser, titled **New repository**, under a note that the installation creates the format's repository itself, with "It is upstream/clamav." linked where the reader sees it | — |
+| [Q-UI-1202](spec/api-and-ui.md#q-ui-1202--the-filter-by-class-has-system-as-a-value-of-its-own) | The filter by class has System as a value of its own | Decided by the development agent | (a), `classFilterQuery` of [repository-class.ts](../web/src/app/features/repositories/repository-class.ts). | — |
+| [Q-UI-1203](spec/api-and-ui.md#q-ui-1203--a-repository-of-a-system-only-format-is-shown-as-system-not-as-local) | A repository of a system-only format is shown as System, not as Local | Decided by the owner | (a) A badge of its own, **System**, instead of **Local**, wherever a repository's class is shown (recommended, chosen) | — |
 
 </details>
 

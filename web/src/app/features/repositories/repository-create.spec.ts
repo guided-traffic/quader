@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 import { ApiError } from '../../api/problem';
 import { FormatDescriptor, RepositoriesApi, Repository } from '../../api/repositories-api';
 import {
+  CLAMAV_DEFINITIONS_FORMAT,
   DEB_FORMAT,
   FakeRepositoriesApi,
   GENERIC_FORMAT,
@@ -14,7 +15,8 @@ import {
 } from '../../api/testing/fakes-catalog';
 import { button, expectAccessible, renderScreen, settle, sleep, storedText, text, type } from '../../testing/screen';
 import { DraftStore } from '../../shared/drafts';
-import { RepositoryCreate } from './repository-create';
+import { RepositoryCreate, newRepositoryTitle } from './repository-create';
+import { ActivatedRouteSnapshot, convertToParamMap } from '@angular/router';
 
 const NO_VIRTUAL: FormatDescriptor = { ...NUGET_FORMAT, classes: ['local', 'remote'] };
 /** A format with a remote class and no presets: its URL is typed. */
@@ -93,6 +95,36 @@ describe('The creation form of a repository', () => {
     expect(text($(r, 'h1'))).toBe('New repository');
     expect(text(r.root)).toContain('This installation has no format rpm.');
     expect(r.root.querySelectorAll('a.tile').length).toBe(5);
+  });
+
+  it('R-UI-080 R-CLAMAV-001 a system-only format at the address offers no form: one sentence, a link to its repository, the chooser', async () => {
+    const formats = [GENERIC_FORMAT, NUGET_FORMAT, CLAMAV_DEFINITIONS_FORMAT];
+    const r = await openForm('clamav', {
+      formats,
+      setup: (fake) => fake.repositories.push({ key: 'clamav', project: 'upstream', class: 'local', format: 'clamav' }),
+    });
+    expect(text($(r, 'h1'))).toBe('New repository');
+    expect(text($(r, '[role="note"] > span:last-child'))).toBe(
+      'This installation creates the repository of ClamAV definitions itself; it is not created here. It is upstream/clamav.',
+    );
+    expect($<HTMLAnchorElement>(r, '[role="note"] a').getAttribute('href')).toBe('/projects/upstream/repositories/clamav');
+    expect(r.root.querySelector('form, input[name="class"], #f-key')).toBeNull();
+    expect([...r.root.querySelectorAll('a.tile')].map((t) => t.getAttribute('href'))).toEqual([
+      '/projects/web/repositories/new/generic',
+      '/projects/web/repositories/new/nuget',
+    ]);
+    expect(r.fake.listFilters.at(-1)?.format).toBe('clamav');
+    await expectAccessible(r.root);
+
+    // A reader who sees no repository of the format gets the sentence without the link.
+    const unseen = await openForm('clamav', { formats });
+    expect(text($(unseen, '[role="note"] > span:last-child'))).toBe('This installation creates the repository of ClamAV definitions itself; it is not created here.');
+    expect(unseen.root.querySelector('[role="note"] a')).toBeNull();
+
+    // The title of the address is the chooser's.
+    (TestBed.inject(RepositoriesApi) as FakeRepositoriesApi).formatsResult = formats;
+    const route = { paramMap: convertToParamMap({ format: 'clamav' }) } as ActivatedRouteSnapshot;
+    expect(await TestBed.runInInjectionContext(() => newRepositoryTitle(route, {} as never))).toBe('New repository');
   });
 
   it('R-UI-081 R-UI-084 R-UI-086 the key starts with the free suggestion and the opened form shows no error', async () => {

@@ -15,7 +15,8 @@ import { ProjectLevel, ProjectLink, ProjectMark } from '../../shared/ui/project-
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { packageCommands } from '../packages/package-links';
 import { projectRoleLabel } from '../projects/project-roles';
-import { classIcon, classLabel } from '../repositories/repository-class';
+import { classIcon, classLabel, classTip, shownClass } from '../repositories/repository-class';
+import { Tooltip } from '../../shared/ui/tooltip';
 
 /** The tabs of the page, in their order (R-UI-098). */
 export const RESULT_KINDS = ['repository', 'package', 'project'] as const;
@@ -35,7 +36,7 @@ const PAGE = 25;
  */
 @Component({
   selector: 'quader-search-results',
-  imports: [RouterLink, DataTable, FormatIconView, PageHeader, NoValue, ProjectLevel, ProjectLink, ProjectMark, TabContent, TabGroup, TabPage, TimeAgo, VisibilityIcon],
+  imports: [RouterLink, DataTable, FormatIconView, PageHeader, NoValue, ProjectLevel, ProjectLink, ProjectMark, TabContent, TabGroup, TabPage, TimeAgo, Tooltip, VisibilityIcon],
   template: `
     <quader-page-header [heading]="heading" [description]="description()" />
 
@@ -64,8 +65,8 @@ const PAGE = 25;
                     <span class="icon-name-text">
                       <a [routerLink]="['/projects', row.project, 'repositories', row.key]" translate="no">{{ row.key }}</a>
                       <!-- A system repository of upstream is found and marked, so that it does not read as one more repository of
-                           its project (R-UI-193, Q-UI-902). -->
-                      @if (system(row)) {
+                           its project (R-UI-193, Q-UI-902); where its class cell says System, that is the mark (Q-UI-1203). -->
+                      @if (system(row) && shownClassOf(row) !== 'system') {
                         &ngsp;<span class="badge">{{ systemText }}</span>
                       }
                       @if (row.description) {
@@ -81,8 +82,9 @@ const PAGE = 25;
                   >
                 </td>
                 <td class="class-cell">
-                  <span class="class-name"
-                    ><span class="material-icons" aria-hidden="true">{{ classIcon(row.class) }}</span>{{ classText(row.class) }}</span
+                  @let k = shownClassOf(row);
+                  <span class="class-name" [quaderTooltip]="classTip(k)" [attr.tabindex]="classTip(k) ? 0 : null"
+                    ><span class="material-icons" aria-hidden="true">{{ classIcon(k) }}</span>{{ classText(k) }}</span
                   >
                 </td>
               </tr>
@@ -333,6 +335,11 @@ export class SearchResults {
   }
 
   protected readonly classIcon = classIcon;
+  protected readonly classTip = classTip;
+  /** What a row's class cell shows: System for a repository of a system-only format (Q-UI-1203), else its class. */
+  protected shownClassOf(row: { readonly class: string; readonly format: string }): string {
+    return shownClass(row, valueOf(this.formats));
+  }
 
   protected readonly builtIn = isUpstreamProject;
   /** A system repository of the project `upstream`, with its mark (R-UI-193, Q-UI-902). */

@@ -14,7 +14,7 @@ import {
 import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../api/client';
-import { JobReference, RepositoriesApi, RepositoryFilters, RepositorySummary, refOf } from '../../api/repositories-api';
+import { FormatDescriptor, JobReference, RepositoriesApi, RepositoryFilters, RepositorySummary, refOf } from '../../api/repositories-api';
 import { ApiError } from '../../api/problem';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
@@ -49,19 +49,25 @@ import { collectAll } from '../../api/pagination';
 import { FormatIconView } from '../../shared/format-icon';
 import { FrequentPlaces } from '../../core/frequent-places';
 import { setupCommands } from '../../core/project-links';
-import { classIcon, classLabel } from './repository-class';
+import { Tooltip } from '../../shared/ui/tooltip';
+import { classFilterQuery, classFilterValues, classIcon, classLabel, classTip, shownClass } from './repository-class';
 
 /**
  * Whether the list's filters admit a repository, by the rules the server applies to the list (R-REPO-012): `q` a case-insensitive
- * substring of `<project>/<key>` or of the description (Q-API-279, `queryMatches` of internal/repository/service.go), `class` and
- * `format` the value, `state=inactive` a disabled repository. The section of the system repositories filters its rows with it in
- * the browser, so the head's filter covers both tables (Q-UI-893, Q-UI-894).
+ * substring of `<project>/<key>` or of the description (Q-API-279, `queryMatches` of internal/repository/service.go), `class` the
+ * shown class (System for a repository of a system-only format, Q-UI-1203), `format` the value, `state=inactive` a disabled
+ * repository. The section of the system repositories filters its rows with it in the browser, so the head's filter covers both
+ * tables (Q-UI-893, Q-UI-894).
  */
-export function listAdmits(r: RepositorySummary, f: RepositoryFilters): boolean {
+export function listAdmits(
+  r: RepositorySummary,
+  f: RepositoryFilters,
+  formats?: readonly Pick<FormatDescriptor, 'name' | 'systemOnly'>[] | null,
+): boolean {
   const q = (f.q ?? '').toLowerCase();
   return (
     (!q || refOf(r).toLowerCase().includes(q) || r.description.toLowerCase().includes(q)) &&
-    (!f.class || r.class === f.class) &&
+    (!f.class || shownClass(r, formats) === f.class) &&
     (!f.format || r.format === f.format) &&
     (f.state !== 'inactive' || r.disabled)
   );
@@ -103,6 +109,7 @@ export function listAdmits(r: RepositorySummary, f: RepositoryFilters): boolean 
     PageHeader,
     ProjectLink,
     TimeAgo,
+    Tooltip,
     VisibilityIcon,
   ],
   templateUrl: './repository-list.html',
@@ -223,6 +230,37 @@ export class RepositoryList {
   protected readonly formatOptions = computed(() =>
     (valueOf(this.formats) ?? []).map((f) => f.name),
   );
+  /** The values of the filter by class: System beside the three where the catalog has a system-only format (Q-UI-1203). */
+  protected readonly classOptions = computed(() => classFilterValues(valueOf(this.formats)));
+  /**
+   * The class and the format the list asks the server for (Q-UI-1203): Local and System are the class `local` of the formats that are
+   * not, and that are, system only, so they wait for the catalog; `null` where no repository can match. The other classes ask
+   * without it, so a list filtered by them, or by none, is not read twice when the catalog arrives.
+   */
+  private readonly classQuery = computed<{ readonly class?: string; readonly format?: string } | null | undefined>(() => {
+    const cls = this.class();
+    if (cls !== 'local' && cls !== 'system') return { class: cls, format: this.format() };
+    if (this.formats.isLoading()) return undefined;
+    return classFilterQuery(cls, this.format(), valueOf(this.formats));
+  });
+  /** The filters of the list's request; `null` while the class waits for the catalog. */
+  private serverFilters(): RepositoryFilters | null {
+    const cq = this.classQuery();
+    if (cq === undefined) return null;
+    return {
+      q: this.q(),
+      class: cq?.class,
+      format: cq === null ? undefined : cq.format,
+      state: this.state(),
+      project: this.projectKey() ?? undefined,
+    };
+  }
+  /** The list's rows from the server, or none at all where the class and the format exclude each other (System with npm). */
+  private startList(): void {
+    const filters = this.serverFilters();
+    if (filters === null) return;
+    void this.list.start(this.classQuery() === null ? () => Promise.resolve({ items: [], nextCursor: null }) : this.api.list(filters));
+  }
   /** The project filter of the panel: the list of every project only, the project's list is that project whatever the filter says. */
   protected readonly filterProject = computed(() => (this.inProject() ? undefined : this.project()));
   /**
@@ -264,7 +302,7 @@ export class RepositoryList {
   /** The section's rows: those the filters of the head admit, by the list's own rules (Q-UI-894). */
   protected readonly systemRows = computed(() => {
     const filters = { q: this.q(), class: this.class(), format: this.format(), state: this.state() };
-    return (valueOf(this.systemLoad) ?? []).filter((r) => listAdmits(r, filters));
+    return (valueOf(this.systemLoad) ?? []).filter((r) => listAdmits(r, filters, valueOf(this.formats)));
   });
   /** The section stands where the caller reads a system repository, or where their read failed and says so. */
   protected readonly showSystem = computed(
@@ -294,16 +332,15 @@ export class RepositoryList {
   protected readonly searchLabel = $localize`:@@repo.list.search:Filter repositories`;
   constructor() {
     effect(() => {
-      const filters = {
-        q: this.q(),
-        class: this.class(),
-        format: this.format(),
-        state: this.state(),
-        project: this.projectKey() ?? undefined,
-      };
+      this.q();
+      this.class();
+      this.format();
+      this.state();
+      this.projectKey();
+      this.classQuery();
       untracked(() => {
         this.restage();
-        void this.list.start(this.api.list(filters));
+        this.startList();
       });
     });
     // The rows carry what the server changes (the size, the last push, a disabled repository): read again every minute in place
@@ -372,6 +409,11 @@ export class RepositoryList {
   ]);
 
   protected readonly classIcon = classIcon;
+  protected readonly classTip = classTip;
+  /** What a row's class cell shows: its class, or System for a repository of a system-only format (Q-UI-1203). */
+  protected kind(row: RepositorySummary): string {
+    return shownClass(row, valueOf(this.formats));
+  }
   /**
    * Set up client of a row's repository (R-UI-126); none for a system repository while it answers no client (Q-UI-896), and for
    * `upstream/clamav` while ClamAV definition updates is on (R-UI-192, Q-UI-908).
@@ -496,15 +538,7 @@ export class RepositoryList {
     this.notifier.alert(
       $localize`:@@repo.delete.failed:Deleting repository ${ref}:key: failed. Its row is kept; try again.`,
     );
-    void this.list.start(
-      this.api.list({
-        q: this.q(),
-        class: this.class(),
-        format: this.format(),
-        state: this.state(),
-        project: this.projectKey() ?? undefined,
-      }),
-    );
+    this.startList();
   }
 
   protected jobEnded(ref: string, state: string): void {

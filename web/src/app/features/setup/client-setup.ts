@@ -24,7 +24,8 @@ import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
 import { VisibilityIcon } from '../../shared/ui/visibility-level';
 import { GuideView } from '../guides/guide-view';
-import { classIcon, classLabel } from '../repositories/repository-class';
+import { classIcon, classLabel, classTip, isSystemOnly } from '../repositories/repository-class';
+import { Tooltip } from '../../shared/ui/tooltip';
 import { reportedBastions } from './bastion-targets';
 import { SnippetText, snippetText } from './clients';
 import { SetupFlowArt } from './setup-flow-art';
@@ -92,6 +93,7 @@ type Step = 'configure' | 'install' | 'publish' | 'verify';
     SetupSnippet,
     SetupFlowArt,
     GuideView,
+    Tooltip,
   ],
   templateUrl: './client-setup.html',
   styleUrl: './client-setup.scss',
@@ -159,7 +161,13 @@ export class ClientSetupPage {
     const cls = this.class();
     return cls && (this.descriptor()?.classes as readonly string[] | undefined)?.includes(cls) ? cls : null;
   });
-  protected readonly classText = computed(() => classLabel(this.activeClass() ?? ''));
+  /** The class the badge shows: System for a repository, or the guide of a class, of a system-only format (Q-UI-1203). */
+  protected readonly shownClass = computed(() => {
+    const cls = this.activeClass();
+    return cls && isSystemOnly(this.formatName(), valueOf(this.formats)) ? 'system' : cls;
+  });
+  protected readonly classText = computed(() => classLabel(this.shownClass() ?? ''));
+  protected readonly classTip = computed(() => classTip(this.shownClass() ?? ''));
   protected readonly classIcon = classIcon;
   protected readonly visibility = computed(() => this.repository()?.visibility?.artifacts ?? null);
   protected readonly disabled = computed(() => {

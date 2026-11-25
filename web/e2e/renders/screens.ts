@@ -438,11 +438,14 @@ async function* systemFileView(page: Page): AsyncGenerator<string> {
 
 /**
  * The repositories of the project upstream on the list of every project (R-UI-193, Q-UI-896, Q-UI-902, Q-UI-1042): every registry
- * with Set up client and its menu, the two system repositories with the badge **System** and the menu alone; then the menu of
+ * with Set up client and its menu, the two system repositories marked **System** (scanner-trivy's badge, clamav's class) and the menu
+ * alone; then the menu of
  * `scanner-trivy`.
  */
 async function* systemRows(page: Page): AsyncGenerator<string> {
-  await expect(page.locator('main tbody th[scope="row"] .badge', { hasText: /^System$/ })).toHaveCount(2);
+  // scanner-trivy by the badge after its key, clamav by its class cell, a system-only format's one mark (Q-UI-1203).
+  await expect(page.locator('main tbody th[scope="row"] .badge', { hasText: /^System$/ })).toHaveCount(1);
+  await expect(page.locator('main tbody td.class-cell', { hasText: /^\s*settings\s*System\s*$/ })).toHaveCount(1);
   yield '';
   await page.getByRole('button', { name: 'Actions for scanner-trivy' }).click();
   await expect(page.locator('.menu').getByRole('menuitem', { name: 'Files' })).toBeVisible();
@@ -2793,6 +2796,8 @@ export const screens: readonly Screen[] = [
   // drawer's filters open; the row menu; the rows of upstream with the badge System (R-UI-193); a filter that matches nothing.
   { id: 'all-repositories', path: '/ui/repositories', kinds: all, walk: filtersOpen(projectFilter), widths: [1100, 1280] },
   { id: 'all-repositories-menu', path: '/ui/repositories', kinds: ['admin'], walk: rowMenuOpen },
+  // The filter by class System: the repository of a system-only format, its class cell System (Q-UI-1203).
+  { id: 'all-repositories-system', path: '/ui/repositories?class=system', kinds: ['admin'], de: true },
   { id: 'all-repositories-upstream', path: '/ui/repositories?project=upstream', kinds: admins, walk: systemRows },
   { id: 'all-repositories-none', path: '/ui/repositories?q=zzqx', kinds: ['plain'] },
   // The search field and its list on the start page; anonymous while the seed makes a project public (R-UI-095).
@@ -3067,7 +3072,9 @@ export const screens: readonly Screen[] = [
   { id: 'repository-settings-generic', path: `${P}/repositories/assets/settings`, kinds: owners, walk: allSections },
   { id: 'repository-settings-generic-advanced', path: `${P}/repositories/assets/settings`, kinds: admins, walk: advancedOpen },
   { id: 'repository-settings-oci', path: `${P}/repositories/images/settings`, kinds: all, walk: allSections },
-  { id: 'repository-new', path: `${P}/repositories/new`, kinds: owners, walk: chooser },
+  { id: 'repository-new', path: `${P}/repositories/new`, kinds: owners, walk: chooser, de: ['power'] },
+  // The form's address with a system-only format: no form, the sentence and its repository's link, the chooser (Q-UI-1201).
+  { id: 'repository-new-system-only', path: `${P}/repositories/new/clamav`, kinds: ['power', 'admin'], de: ['admin'] },
   { id: 'policies', path: `${P}/policies`, kinds: owners },
   { id: 'policy-new', path: `${P}/policies/new`, kinds: owners },
   { id: 'project-service-accounts', path: `${P}/service-accounts`, kinds: owners },
@@ -3172,7 +3179,7 @@ export const screens: readonly Screen[] = [
   { id: 'admin-upstream-clamav', path: '/ui/admin/upstream/clamav', kinds: admins, walk: clamavRegistry },
   // The ClamAV definitions as their reader sees them while the switch is on (R-UI-194, R-CLAMAV-006): the databases with the version in
   // use, a database's versions with their states, a version's files with its members and its details, and the client setup.
-  { id: 'clamav-databases', path: '/ui/projects/upstream/repositories/clamav', kinds: ['plain', 'admin'], walk: clamavDatabases, expected: definitionsExpected },
+  { id: 'clamav-databases', path: '/ui/projects/upstream/repositories/clamav', kinds: ['plain', 'admin'], walk: clamavDatabases, expected: definitionsExpected, de: ['admin'] },
   { id: 'clamav-database', path: '/ui/projects/upstream/packages/clamav/daily', kinds: ['plain', 'admin'], walk: definitionsWith('on'), expected: definitionsExpected },
   { id: 'clamav-version-files', path: '/ui/projects/upstream/packages/clamav/daily@28190?tab=files', kinds: ['plain', 'admin'], walk: definitionsWith('on'), expected: definitionsExpected },
   { id: 'clamav-version-details', path: '/ui/projects/upstream/packages/clamav/daily@28190?tab=details', kinds: ['plain', 'admin'], walk: definitionsWith('on', openChecksums), expected: definitionsExpected },

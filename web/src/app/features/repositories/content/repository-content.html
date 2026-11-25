@@ -1,11 +1,11 @@
 @if (failure(); as f) {
   <quader-error-notice [error]="f" (retry)="failure.retry()" />
 } @else if (repository(); as r) {
-  <quader-page-header [heading]="r.key" [name]="true" [description]="sentence()" [descriptionAsWritten]="!!r.description">
+  <quader-page-header [heading]="r.key" [name]="true" [description]="sentence()" [descriptionAsWritten]="sentenceAsWritten()">
     <div meta class="header-facts">
       <span class="badge format-badge" translate="no"><quader-format-icon [format]="r.format" />{{ formatName() }}</span>
-      <span class="badge class-badge">
-        <span class="material-icons" aria-hidden="true">{{ classIcon(r.class) }}</span>
+      <span class="badge class-badge" [quaderTooltip]="classTip()" [attr.tabindex]="classTip() ? 0 : null">
+        <span class="material-icons" aria-hidden="true">{{ classIcon(kind()) }}</span>
         {{ classText() }}
       </span>
       @if (r.visibility; as levels) {

@@ -1,5 +1,7 @@
 @if (unknownFormat(); as name) {
   <quader-repository-format-chooser [project]="project()" [unknownFormat]="name" />
+} @else if (systemOnlyFormat(); as f) {
+  <quader-repository-format-chooser [project]="project()" [systemOnly]="f" />
 } @else if (loadFailure(); as f) {
   <quader-page-header i18n-heading="@@repo.new.heading" heading="New repository" />
   <quader-error-notice [error]="f" (retry)="loadFailure.retry()" />

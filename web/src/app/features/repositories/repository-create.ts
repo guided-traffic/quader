@@ -72,7 +72,8 @@ export const newRepositoryTitle: ResolveFn<string> = async (route: ActivatedRout
   } catch {
     format = undefined;
   }
-  return format ? createHeading(format) : $localize`:@@route.repositories.new.title:New repository`;
+  // A system-only format has no form: its address shows the chooser, under the chooser's title (Q-UI-1201).
+  return format && !format.systemOnly ? createHeading(format) : $localize`:@@route.repositories.new.title:New repository`;
 };
 
 /** "New <display name> repository". */
@@ -155,6 +156,11 @@ export class RepositoryCreate implements HasUnsavedChanges {
   protected readonly descriptor = computed<FormatDescriptor | null>(
     () => (valueOf(this.formats) ?? []).find((f) => f.name === this.format()) ?? null,
   );
+  /**
+   * The format of the address when it is system only: the chooser is shown with the sentence that the installation creates its
+   * repository, and no form (Q-UI-1201). The defaults are not asked for it.
+   */
+  protected readonly systemOnlyFormat = computed(() => (this.descriptor()?.systemOnly ? this.descriptor() : null));
   /** The format of the address when the installation does not have it: the chooser is shown with a notice (R-UI-080). */
   protected readonly unknownFormat = computed(() =>
     valueOf(this.formats) !== undefined && this.descriptor() === null ? (this.format() ?? '') : null,
@@ -186,7 +192,7 @@ export class RepositoryCreate implements HasUnsavedChanges {
   });
   protected readonly defaults = resource({
     params: () => {
-      const format = this.descriptor()?.name;
+      const format = this.systemOnlyFormat() ? undefined : this.descriptor()?.name;
       const project = this.chosenProject();
       return format && project ? { project, format, cls: this.cls() } : undefined;
     },

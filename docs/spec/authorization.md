@@ -2122,7 +2122,8 @@ an encoded `/` in that segment.
   ([api-and-ui.md](api-and-ui.md) R-API-007), like a policy change: adding an owner widens who may
   publish a name. An added owner answers 201 with `Location` of the name's owners, the resource a GET
   then shows it in. Where ownership does not exist (a remote or virtual
-  repository, a format without package names) a caller holding `manage` gets 404. Reading the owners
+  repository, a format without package names, a system-only format,
+  [formats/clamav.md](formats/clamav.md#q-clamav-19--a-system-only-format-has-no-package-ownership) Q-CLAMAV-19) a caller holding `manage` gets 404. Reading the owners
   is a read: 404 for a caller without `read`, byte-identical to a missing name; an unclaimed name
   reads back `"state": "unclaimed"` with no owners.
 - CI tokens never change owners. Adding, removing and releasing answer 403 `ci_token_restricted`

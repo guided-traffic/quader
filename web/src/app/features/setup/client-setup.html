@@ -18,8 +18,10 @@
       @if (descriptor(); as d) {
         <span class="badge format-badge" translate="no"><quader-format-icon [format]="d.name" />{{ d.displayName ?? d.name }}</span>
       }
-      @if (activeClass(); as c) {
-        <span class="badge class-badge"><span class="material-icons" aria-hidden="true">{{ classIcon(c) }}</span>{{ classText() }}</span>
+      @if (shownClass(); as c) {
+        <span class="badge class-badge" [quaderTooltip]="classTip()" [attr.tabindex]="classTip() ? 0 : null"
+          ><span class="material-icons" aria-hidden="true">{{ classIcon(c) }}</span>{{ classText() }}</span
+        >
       }
     </div>
     <!-- The picture of the flow (Q-UI-800): the machine, the token, the repository; from about 1,200 px. -->

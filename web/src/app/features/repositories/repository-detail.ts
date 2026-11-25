@@ -43,7 +43,7 @@ import { FormatSettings, formatPartNodes } from './format-settings';
 import { MirrorSettings, mirrorPointerLabel, mirrorTarget } from './mirror-settings';
 import { MirrorStatusPanel } from './mirror-status';
 import { FrequentPlaces } from '../../core/frequent-places';
-import { classLabel } from './repository-class';
+import { classLabel, shownClass } from './repository-class';
 import { RepositoryFields } from './repository-fields';
 import {
   FormatMemberOf,
@@ -180,7 +180,10 @@ export class RepositoryDetail implements HasUnsavedChanges {
     const repo = this.stored();
     return !!repo && repo.format !== 'generic' && repo.class !== 'virtual';
   });
-  protected readonly classText = classLabel;
+  /** A repository's class as a fact: System for one of a system-only format (Q-UI-1203), else its class. */
+  protected classText(r: { readonly class: string; readonly format: string }): string {
+    return classLabel(shownClass(r, valueOf(this.formats)));
+  }
 
   // ---- A repository of the built-in project `upstream` (R-UI-190, R-REPO-069) ----
 

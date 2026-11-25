@@ -7,6 +7,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { failureOf, valueOf } from '../../shared/paged-resource';
 import { GateArtifact, SignatureGate } from '../../shared/signatures/signature-gate';
 import { SignatureReport } from '../../shared/signatures/signature-report';
+import { classLabel } from '../repositories/repository-class';
 
 /**
  * The tab **Signatures** of a version (R-SIG-035, R-SIG-024): what `GET …/versions/{version}/signatures` answers, per repository that
@@ -28,7 +29,7 @@ import { SignatureReport } from '../../shared/signatures/signature-report';
       @for (rep of r.repositories; track rep.repository) {
         @if (r.repositories.length > 1) {
           <h2 class="sig-repository">
-            <span translate="no">{{ rep.repository }}</span>&ngsp;<span class="muted">· {{ classLabels[rep.class] }}</span>
+            <span translate="no">{{ rep.repository }}</span>&ngsp;<span class="muted">· {{ classText(rep.class) }}</span>
           </h2>
         }
         @if (rep.gate; as g) {
@@ -85,11 +86,8 @@ export class VersionSignatures {
   private readonly filesStamp = computed(() => JSON.stringify(this.files().map((f) => f.signatures ?? null)));
   /** The signatures' failure, kept while its notice reads them again (R-UI-216). */
   protected readonly failure = failureOf(this.answer);
-  protected readonly classLabels: Record<string, string> = {
-    local: $localize`:@@repo.class.local:Local`,
-    remote: $localize`:@@repo.class.remote:Remote`,
-    virtual: $localize`:@@repo.class.virtual:Virtual`,
-  };
+  /** A system-only format declares no signatures (R-CLAMAV-001), so a report here never holds a repository of one. */
+  protected readonly classText = classLabel;
 
   /** The files a repository's gate judges: those it holds, and for a virtual repository those its members hold. */
   protected artifactsOf(rep: SignatureRepositoryReport): readonly GateArtifact[] {

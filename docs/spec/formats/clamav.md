@@ -57,7 +57,7 @@ Priority: **P1** · Covers: quader-only
 | `patternSubject` | `path` | |
 | package names | `main`, `daily`, `bytecode`, compared as written | One package per database ([Q-CLAMAV-1](#q-clamav-1--one-package-per-database)) |
 | `priorityMembers`, `pinsAndClaims`, `caps`, `wiki` | `false` | |
-| ownership | none | Nothing but the database task writes the repository |
+| ownership | none | Nothing but the database task writes the repository; an owner change of one of its names answers the 404 of a name without ownership ([Q-CLAMAV-19](#q-clamav-19--a-system-only-format-has-no-package-ownership)) |
 | settings | none | |
 | `clients` | `[{"id": "freshclam", "displayName": "freshclam"}]` | R-CLAMAV-006 |
 
@@ -67,13 +67,34 @@ Priority: **P1** · Covers: quader-only
   `/format` in every project; `GET /api/v1/formats` lists the format with `systemOnly: true`, and the creation form does not offer it;
   `Register` refuses a format that is system only and declares the class `remote` or `virtual`, or a route of the kind `Upload`. The per-class
   enums of the OpenAPI document (`TestR_ARCH_010_PerClassFormatEnums`) leave a system-only format out of the create schemas.
+- **Not offered where something new is chosen, kept where something is found** ([api-and-ui.md](../api-and-ui.md)
+  [Q-UI-1200](../api-and-ui.md#q-ui-1200--a-system-only-format-is-left-out-of-every-choice-for-something-new-and-kept-wherever-something-is-found-or-shown)):
+  the chooser of **New repository** has no tile of the format and does not count it; the form's address
+  `/projects/{project}/repositories/new/clamav` offers no form, says "This installation creates the repository of ClamAV definitions
+  itself; it is not created here." and links `upstream/clamav` where the reader sees it
+  ([Q-UI-1201](../api-and-ui.md#q-ui-1201--the-forms-address-of-a-system-only-format-shows-the-chooser-with-one-sentence-and-its-repository));
+  the filters by format, the search, the repository's page and its client setup keep the format.
+- **Shown as System** (the owner's choice of 2026-11-25,
+  [Q-UI-1203](../api-and-ui.md#q-ui-1203--a-repository-of-a-system-only-format-is-shown-as-system-not-as-local)): wherever a
+  repository's class is shown, `upstream/clamav` is **System**, not **Local**, with "Filled by this installation itself, on a schedule;
+  nobody publishes to it."; its class stays `local` in the API, the catalog and the database. A list's filter by class has System as
+  a value of its own (Q-UI-1202).
+- **The writes a person could aim at it**, audited on 2026-11-25: a create answers `format_system_only`; key, class and format are
+  immutable (`immutable`); the document of a repository of the project `upstream` is replaced by nobody (`managed_by_product`) and patched
+  in `adminNotes` and `excludePatterns` alone (R-REPO-069); a move from or into `upstream` and a deploy or delete of its files are
+  refused (`managed_by_product`, `/files/` 409 `conflict`); a virtual repository of another format refuses it as a member
+  (`invalid_member`); a registry preset of the format answers `unsupported_class`; claims, signature releases, delivery rules and
+  requests, a rescan, a reindex, a cache invalidation, a mirror pass and an upstream test answer `not_applicable`; an owner change answers
+  404 (Q-CLAMAV-19). A limit rule on it is stored: it caps reads and writes nothing into the repository.
 - The format declares no signatures ([signatures.md](../signatures.md) R-SIG-002,
   [Q-SIG-96](../signatures.md#q-sig-96--the-clamav-definitions-declare-no-signature-their-containers-signature-is-the-imports)): the
   verification of a container is this format's own metadata (R-CLAMAV-003), decided by the import before the container is stored.
 
 Acceptance criteria: unit (`internal/formats/clamav`, under a second): the descriptor; `Register` refuses a system-only test format with a
-remote class or an `Upload` route; integration (area `upstream`, about 1 s): a create of a `clamav` repository in `web` answers 422 with
-`format_system_only`.
+remote class or an `Upload` route; unit (`internal/authz`, under a millisecond): an owner change of a name of a system-only format's
+repository is 404 for an administrator (`TestR_CLAMAV_001_ASystemOnlyFormatHasNoOwnership`); integration (area `upstream`, about 1 s): a
+create of a `clamav` repository in `web` answers 422 with `format_system_only`; web unit (milliseconds): the chooser and the form's address
+of Q-UI-1200 and Q-UI-1201, the class **System** of Q-UI-1203 (`repository-class.spec.ts`).
 
 ### R-CLAMAV-002 · Packages, versions and the layout
 Priority: **P1** · Covers: quader-only
@@ -749,6 +770,24 @@ is frozen (R-ARCH-025).
 [guide.go](../../../internal/formats/guide.go), `certificateURLs` in [guide_api.go](../../../internal/api/v1/guide_api.go),
 `Access.ReadableByCertificate` in [access.go](../../../internal/api/edge/access.go); the kit runs every guide over a variant with an address
 ([formattest/guide.go](../../../internal/formats/formattest/guide.go)).
+
+### Q-CLAMAV-19 · A system-only format has no package ownership
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-CLAMAV-001 says "ownership: none", but the audit of 2026-11-25 found that `POST …/packages/{name}/owners` on
+`upstream/clamav` was accepted for `main`, `daily` and `bytecode`: the format has package names, and the owner operations
+(R-AUTHZ-019) asked nothing more. The change wrote a claim and an owner row and the event `authz.ownership.added`; it gave nobody a way
+to write the repository, which has no upload route.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Ownership does not exist on a system-only format: the owner operations answer as for a format without package names (404 for a caller who manages the repository, the refusal of the change for every other) (chosen) | One condition in the authorization's `nameIn`, read from the catalog's fact | The specification holds; no row a reader of the repository's page would misread as a person's | |
+| (b) A refusal of its own, `managed_by_product` | | Names the reason | A new answer on an operation that already says "no ownership here" |
+| (c) Leave it | | | Rows that contradict the specification |
+
+**Choice:** (a). **Applied in the spec:** R-CLAMAV-001. Code: `nameIn` of
+[ownership.go](../../../internal/authz/ownership.go).
 
 ## What this does not cover
 

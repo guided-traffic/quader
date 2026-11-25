@@ -11,7 +11,13 @@ product declares and the malware scanning's database task writes in process. The
 - **System only.** `catalog.Facts.SystemOnly` is a fact of the catalog: no caller creates a repository of the format (`422
   validation_failed` with `format_system_only` at `/format`, `createTx` in [service.go](../../internal/repository/service.go)), `GET
   /api/v1/formats` says `systemOnly: true`, and the per-class enums of the create schemas leave it out. The catalog refuses a system-only
-  format with the class `remote` or `virtual`, `formats.Validate` one with a route of the kind `Upload`.
+  format with the class `remote` or `virtual`, `formats.Validate` one with a route of the kind `Upload`. Its names have no ownership
+  (`nameIn` of [ownership.go](../../internal/authz/ownership.go), Q-CLAMAV-19). The UI reads the fact in one place,
+  [repository-class.ts](../../web/src/app/features/repositories/repository-class.ts): `creatableFormats` leaves it out of the chooser of
+  **New repository** (its form's address shows the chooser with a note, Q-UI-1201), `shownClass` shows its repository as **System**
+  instead of **Local** (Q-UI-1203), `classFilterQuery` maps a list's filter Local or System onto the API's `class` and `format`
+  (Q-UI-1202). No code compares the name `clamav` for any of it; `CLAMAV_DEFINITIONS_FORMAT` of
+  [fakes-catalog.ts](../../web/src/app/api/testing/fakes-catalog.ts) is in the fake's catalog by default.
 - **A package is a database, a version one version of its container.** The stored layout is `<db>/<version>/<db>.cvd` (or `.cud`) with
   `<db>/<version>/<db>-<version>.cvd.sign` beside it ([format.go](../../internal/formats/clamav/format.go) `ParsePath`,
   `ContainerPath`, `SignaturePath`). Nothing but the database task commits into the repository.

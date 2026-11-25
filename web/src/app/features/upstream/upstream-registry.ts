@@ -1,5 +1,7 @@
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { failureMayPass } from '../../shared/none-on-refusal';
+import { Tooltip } from '../../shared/ui/tooltip';
+import { classHelp, isSystemOnly } from '../repositories/repository-class';
 import { Component, LOCALE_ID, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -86,6 +88,7 @@ function needsAccount(e: ApiError): boolean {
     Switch,
     TechnicalDetails,
     TextField,
+    Tooltip,
     VisibilityIcon,
     VisibilityLevelControl,
   ],
@@ -136,6 +139,9 @@ export class UpstreamRegistry {
   private readonly choices = resource({ loader: () => this.actions.choices() });
   protected readonly reasons = computed(() => installationReasons(valueOf(this.choices) ?? null));
   private readonly formats = resource({ loader: () => this.repositories.formats() });
+  /** A repository of a system-only format is a system repository, not a local one, by the catalog's fact (Q-UI-1203). */
+  protected readonly systemOnly = computed(() => isSystemOnly(this.item()?.format, valueOf(this.formats)));
+  protected readonly systemTip = classHelp('system');
   protected readonly formatLabel = computed(() => {
     const f = this.item()?.format ?? '';
     return (valueOf(this.formats) ?? []).find((x) => x.name === f)?.displayName ?? f;

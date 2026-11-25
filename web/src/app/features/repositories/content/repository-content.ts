@@ -32,7 +32,8 @@ import { PageHeader } from '../../../shared/ui/page-header';
 import { AddressField } from '../../../shared/address-field';
 import { FrequentPlaces } from '../../../core/frequent-places';
 import { clientAddress } from '../repository-model';
-import { classIcon, classLabel } from '../repository-class';
+import { classIcon, classLabel, classHelp, classTip, shownClass } from '../repository-class';
+import { Tooltip } from '../../../shared/ui/tooltip';
 import { contentShapeOf } from './content-shape';
 import { FilePermissions, NO_FILE_PERMISSIONS, nameOf, parentOf } from './file-paths';
 import { RepositoryFile } from './repository-file';
@@ -83,6 +84,7 @@ export const TYPE_TO_CONFIRM_ABOVE = 100;
     RepositoryTabs,
     RemoteDownloads,
     RemoteUpstream,
+    Tooltip,
   ],
   templateUrl: './repository-content.html',
   styleUrl: './repository-content.scss',
@@ -154,7 +156,15 @@ export class RepositoryContent {
   protected readonly isGeneric = computed(() => this.repository()?.format === 'generic');
   protected readonly scanned = computed(() => this.descriptor()?.vulnerabilityScanning ?? false);
   protected readonly shape = computed(() => contentShapeOf(this.repository()?.format ?? '', this.repository()?.class ?? ''));
-  protected readonly classText = computed(() => classLabel(this.repository()?.class ?? 'local'));
+  /** The class the header shows: System for a repository of a system-only format (Q-UI-1203), else its class. */
+  protected readonly kind = computed(() => {
+    const r = this.repository();
+    return r ? shownClass(r, valueOf(this.formats)) : 'local';
+  });
+  protected readonly classText = computed(() => classLabel(this.kind()));
+  protected readonly classTip = computed(() => classTip(this.kind()));
+  /** The header's sentence is the repository's description as its author wrote it; a system repository's says what it is. */
+  protected readonly sentenceAsWritten = computed(() => !!this.repository()?.description && this.kind() !== 'system');
   /** The settings exist for whoever can read the configuration: the capability, or an Owner of the project. */
   protected readonly canConfigure = computed(
     () => this.session.has('repositories:read-config') || this.session.canWriteRepositories(this.project()),
@@ -164,6 +174,9 @@ export class RepositoryContent {
   protected readonly sentence = computed(() => {
     const r = this.repository();
     if (!r) return '';
+    // A repository of a system-only format says that the installation fills it (Q-UI-1203): its description is the product's, the
+    // format's name, which the badge beside it shows.
+    if (this.kind() === 'system') return classHelp('system');
     if (r.description) return r.description;
     switch (r.class) {
       case 'remote':

@@ -511,7 +511,7 @@
                 @for (r of d.repositories; track r.key) {
                   <tr>
                     <th scope="row" translate="no"><a [routerLink]="repositoryLink(r.key)">{{ r.key }}</a></th>
-                    <td>{{ classLabels[r.class] }}</td>
+                    <td>{{ classText(r.class) }}</td>
                     <td>
                       <quader-time-ago [at]="r.publishedAt" absolute="title" />
                     </td>

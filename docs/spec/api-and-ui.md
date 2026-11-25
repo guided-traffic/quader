@@ -4082,7 +4082,10 @@ its settings moved to `…/settings`. One shell serves every format; what differ
 not a screen per format ([content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts)).
 
 - Header (the shared page header of R-UI-067): the key (the `h1`), one muted sentence (the repository's description, else what
-  the class means), the format and the class as badges (and **Disabled** for a disabled repository); no address field: the client
+  the class means), the format and the class as badges (and **Disabled** for a disabled repository); a repository of a system-only
+  format has the badge **System** with its sentence as the tooltip, and its header's sentence is "Filled by this installation itself,
+  on a schedule; nobody publishes to it." in place of its description, which is the product's and names the format the badge beside
+  it names (Q-UI-1203); no address field: the client
   address is Set up client's (R-UI-169, [Q-UI-664](#q-ui-664--the-repositorys-header-leads-to-set-up-client-and-holds-no-address)).
   At the right, the page's actions: **Set up client** (R-UI-126; not for a disabled repository), **Settings** for a
   caller who can read the configuration (`repositories:read-config`, or the Owner of the project) and a `more_vert` menu with
@@ -4624,10 +4627,18 @@ Priority: **MVP** · Covers: UI-030, REPO-007
     `repositories:read-config`, so an administrator sees all of them), with the project's list's columns and, after the
     repository, **Project** (its mark and its name, linked to it, R-UI-102); a holder of `repositories:write-config` also sees
     **Last activity** (relative, R-UI-103) while a loaded row has one. A system repository of the built-in project `upstream`
-    carries the badge **System** after its key (R-UI-193). There is no **New repository** on this list: a repository is created
+    carries the badge **System** after its key (R-UI-193), unless its class cell says **System** already, which is then its one mark
+    ([Q-UI-1203](#q-ui-1203--a-repository-of-a-system-only-format-is-shown-as-system-not-as-local)). There is no **New repository** on this list: a repository is created
     in its project, and the line under the heading says so.
+  - **Class** is the class's icon and name (`classLabel`, `classIcon` of `repository-class.ts`, the one place that names a class); a
+    repository of a format that is system only (`systemOnly` of `GET /api/v1/formats`, [formats/clamav.md](formats/clamav.md)
+    R-CLAMAV-001) is shown as **System** with the icon `settings` and, as the tooltip, "Filled by this installation itself, on a schedule;
+    nobody publishes to it." (Q-UI-1203). The catalog's fact decides, never a format's name.
 - The head of the list (R-UI-100): the search by key or description (`q`, **Filter repositories**); the drawer's filters: project
-  (the list of every project; a choice of the projects the caller sees, by display name), format, class, disabled only. The list is ordered by key; the API takes
+  (the list of every project; a choice of the projects the caller sees, by display name), format, class (Local, Remote, Virtual and,
+  where the catalog holds a system-only format, System: Local asks the API for the class `local` of every format that is not system
+  only, System for that of the system-only formats, so that a reader who filters for Local to find where to publish meets no
+  repository nobody publishes to, [Q-UI-1202](#q-ui-1202--the-filter-by-class-has-system-as-a-value-of-its-own)), disabled only. The list is ordered by key; the API takes
   no `sort` parameter yet, so the table has no sort control (sorting by creation arrives with the
   API, and the creation time with the summary, Q-UI-18). "Recently opened" (browser storage, 20) is the side bar's (R-UI-167): neither
   list shows it ([Q-UI-329](#q-ui-329--recently-opened-is-the-start-pages-only-the-admin-areas-repository-list-leaves-it-out-too)); a project's list says under its heading what the project is and, to a plain user,
@@ -4649,6 +4660,8 @@ Acceptance criteria:
 
 - Filtering by `format=npm` and `class=remote` shows only npm remote repositories; deleting one shows
   the job's progress until it disappears.
+- `/repositories?class=local` asks for `class=local` with the formats that are not system only and lists no `upstream/clamav`;
+  `?class=system` lists it, its class cell **System**; `?class=system&format=npm` asks nothing and lists nothing (Q-UI-1202).
 - `/repositories` as `sam` lists the repositories `sam` may read, of every project, each naming its project; as `ada` every
   repository; neither list has a link whose path starts with `/admin` (Q-UI-1040).
 
@@ -6442,7 +6455,9 @@ Priority: **MVP** · Covers: UI-031
 - **The format chooser.** `/projects/{project}/repositories/new` is a page titled **New
   repository**, with the sentence "Choose the package format. It decides what the repository can do." and the tiles of the
   installed formats from `GET /api/v1/formats` (the format's icon, Q-UI-225, and its display name) under the field **Search by
-  package type** (Q-UI-115). A tile is a link to the form of its format; Enter in the search field opens the one format that is
+  package type** (Q-UI-115). A format that is system only (`systemOnly`, [formats/clamav.md](formats/clamav.md) R-CLAMAV-001) is no
+  tile, no part of the count "N of N formats" and found by no search: the installation creates its one repository itself
+  ([Q-UI-1200](#q-ui-1200--a-system-only-format-is-left-out-of-every-choice-for-something-new-and-kept-wherever-something-is-found-or-shown)). A tile is a link to the form of its format; Enter in the search field opens the one format that is
   left. There is no Next button ([Q-UI-340](#q-ui-340--a-new-repository-is-a-format-chooser-and-one-form-as-the-references-new-project)).
 - **The form.** `/projects/{project}/repositories/new/{format}` is one page titled
   **New <display name> repository** ("New OCI (Docker) repository", "New npm repository", Q-UI-353) with a link **Change format**
@@ -6456,6 +6471,11 @@ Priority: **MVP** · Covers: UI-031
   starts its own group and the Advanced settings from the defaults of that class (R-REPO-063, [Q-UI-341](#q-ui-341--the-class-is-a-radio-group-of-the-form-preset-to-local)).
 - **Change format** returns to the chooser; what was typed is not carried over, and the unsaved guard asks first when something was.
 - An unknown format in the address shows the chooser with the notice "This installation has no format <name>."
+- A system-only format in the address (`/projects/{project}/repositories/new/clamav`) offers no form: the page is the chooser, titled
+  **New repository**, under the note "This installation creates the repository of ClamAV definitions itself; it is not created here.",
+  followed by "It is upstream/clamav." with the link to the repository's page where the reader sees a repository of the format (the
+  first of `GET /api/v1/repositories?format=<format>`; nothing is said of one the reader does not see). The defaults of the form are not
+  asked ([Q-UI-1201](#q-ui-1201--the-forms-address-of-a-system-only-format-shows-the-chooser-with-one-sentence-and-its-repository)).
 - **Create repository** sends the document with the `Idempotency-Key` generated when the form opened (R-UI-042) and opens the new
   repository's content page (R-UI-052). **Show as API request** shows the body (a typed password as `<the password>`, R-UI-043)
   and the same request as `curl`. A form that asks for a recent sign-in keeps its draft without secrets, as before.
@@ -6469,6 +6489,9 @@ Acceptance criteria:
   `<h1>` is "New NuGet repository", with no step list and no Next button.
 - With a test format whose classes lack `virtual`, the class Virtual is disabled with "<Format> does not implement the class
   Virtual." and Local is chosen.
+- With ClamAV's definitions in the catalog, the chooser counts "6 of 6 formats", has no tile of it and "clam" finds nothing; its form's
+  address shows the note with the link to `upstream/clamav` and no form (Vitest, `repository-format-chooser.spec.ts` and
+  `repository-create.spec.ts`, milliseconds; rendered: `repository-new`, `repository-new-system-only`).
 - Double-clicking **Create repository** creates one repository.
 
 ### R-UI-081 · The standard fields of each class
@@ -9062,7 +9085,8 @@ nacharbeiten. Das ist alles wichtig und muss umgesetzt werden." A system reposit
 - **Still found, and marked** ([Q-UI-902](#q-ui-902--where-a-system-repository-is-listed-among-others-it-carries-the-badge-system)): the
   list of every project's repositories (`/repositories`), the top bar's suggestions (also its frequently visited repositories) and the tab **Repositories** of
   the search's results show them with the neutral badge **System** after the key, part of a suggestion's spoken name ("scanner-trivy ·
-  upstream, System"). The project's own section has its heading and no badge in its rows.
+  upstream, System"). The project's own section has its heading and no badge in its rows. Where a row's class cell says **System**
+  (a repository of a system-only format, `upstream/clamav`), that cell is its mark and the key carries no second badge (Q-UI-1203).
 - **While ClamAV definition updates is on** ([Q-UI-908](#q-ui-908--upstreamclamav-answers-its-clients-while-its-switch-is-on-and-every-screen-treats-it-so)):
   `upstream/clamav` answers its clients (R-REPO-075), and every screen treats it as a repository the reader reads: its row and its page offer
   **Set up client**, its page and its files their addresses and **Download**, the install panel the sentence of R-UI-194, and its setup page
@@ -24800,6 +24824,102 @@ once per page load.
 **Applied in the spec:** R-UI-216. Code: [none-on-refusal.ts](../../web/src/app/shared/none-on-refusal.ts),
 [read-again.ts](../../web/src/app/core/read-again.ts), [server-address.ts](../../web/src/app/core/server-address.ts).
 
+### Q-UI-1200 · A system-only format is left out of every choice for something new, and kept wherever something is found or shown
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's finding of 2026-11-25: the page **New repository** offered **ClamAV definitions**, a format with one public source
+that the product has already, and its form did not even offer the class Remote. The specification had it right
+([formats/clamav.md](formats/clamav.md) R-CLAMAV-001: "the creation form does not offer it"), but no screen read `systemOnly`, and the
+UI's fake catalog held no system-only format, so no test met one. Every consumer of `GET /api/v1/formats` was audited for what it does:
+
+| Place | What it does with the formats | Rule |
+|---|---|---|
+| The chooser of **New repository** (tiles, count, search) | A choice for something new | Left out (R-UI-080) |
+| The form's address `new/<format>` | A choice for something new | No form (Q-UI-1201) |
+| **Upstream registries**, a new preset's format | A choice for something new | Only formats with the class remote; a system-only format has none (`Register` refuses it, R-CLAMAV-001), and the server answers `unsupported_class` |
+| A virtual repository's members, the deployment target | A choice among existing repositories of the virtual's format | A system-only format has no virtual class, so none of its repositories is ever offered |
+| The exposure rule editor's repository | A choice of an existing repository | System repositories are left out already (Q-UI-901) |
+| The repository lists' filters by format, the package list's, the vulnerability report's, the search | A filter of what exists | Kept: `upstream/clamav` stays findable |
+| The repository's page, its settings, its client setup, the guides of the format, the version's page, the storage and endpoint pages | A display of what exists | Kept |
+| Permission policies, limits | Free text and repositories, no list of formats | Nothing to do |
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A choice for something new leaves a system-only format out unless the server accepts it there; a filter and a display keep it (chosen) | One rule per kind of place, read from the catalog's fact | Nobody is offered what the server refuses; an existing `upstream/clamav` stays findable, and its client setup stays | Each new place has to be put in one of the two kinds |
+| (b) The catalog answer leaves system-only formats out | The UI never sees one | No screen can forget | The repository's page, its filters and its guide would not know the format of a repository that exists |
+| (c) The chooser alone | The finding's place | Smallest | The form's address still leads into the refusal |
+
+**Choice:** (a). `creatableFormats` of [repository-class.ts](../../web/src/app/features/repositories/repository-class.ts) is the one
+filter of a choice; no code compares a format's name, so a future system-only format is covered by the same lines.
+
+**Applied in the spec:** R-UI-080; [formats/clamav.md](formats/clamav.md) R-CLAMAV-001. Code:
+[repository-format-chooser.ts](../../web/src/app/features/repositories/repository-format-chooser.ts),
+[fakes-catalog.ts](../../web/src/app/api/testing/fakes-catalog.ts) (`CLAMAV_DEFINITIONS_FORMAT`, in the fake's catalog by default).
+
+### Q-UI-1201 · The form's address of a system-only format shows the chooser with one sentence and its repository
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `/projects/{project}/repositories/new/clamav` is an address a person can type or keep; the form behind it led into
+`422 format_system_only`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The chooser, titled **New repository**, under a note that the installation creates the format's repository itself, with "It is upstream/clamav." linked where the reader sees it (chosen) | As an unknown format shows the chooser with its notice | The reader learns why and where the repository is, and chooses another format in the same place | One read of the list by format |
+| (b) A page of its own with the sentence and no chooser | | Says only what is asked | A dead end |
+| (c) The form, refused at **Create repository** | Today's | | The refusal comes after the work |
+
+**Choice:** (a). The repository is found by its format (`GET /api/v1/repositories?format=<format>`, the first of the answer), never by
+its name; a reader who sees none gets the first sentence alone. **Applied in the spec:** R-UI-080. Code:
+[repository-create.ts](../../web/src/app/features/repositories/repository-create.ts) (`systemOnlyFormat`, `newRepositoryTitle`).
+
+### Q-UI-1202 · The filter by class has System as a value of its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Q-UI-1203 shows a repository of a system-only format as **System**. The lists filter by class on the server (`class` of
+`GET /api/v1/repositories`, R-REPO-012), where `upstream/clamav` is of the class `local`. The owner's brief: a reader who filters for
+Local to find where to publish should not get a repository nobody can publish to.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) System is a value of the filter where the catalog has a system-only format; Local asks for `class=local` with the formats that are not system only, System with those that are; a format that excludes the class asks nothing (chosen) | The UI maps its value onto the API's `class` and `format`, which take lists | The filter shows what the cell says; the API stays as it is; paging stays the server's | Local waits for the catalog; the address `?class=system` is the UI's word, not the API's |
+| (b) Local keeps `upstream/clamav` | No change | | A filter for Local shows a row that says System |
+| (c) A value `system` of the API's filter | The server decides | One rule in one place | `class=local` would then not list a repository whose `class` is `local`; the API's class would mean two things |
+
+**Choice:** (a), `classFilterQuery` of [repository-class.ts](../../web/src/app/features/repositories/repository-class.ts). The section of
+the system repositories on the project `upstream`'s page applies the same values in the browser (`listAdmits`). **Applied in the
+spec:** R-UI-020.
+
+### Q-UI-1203 · A repository of a system-only format is shown as System, not as Local
+
+Status: **Decided by the owner** (2026-11-25, from the three options below: "Nimm A, ich folge deiner Empfehlung").
+
+Context: `upstream/clamav` is of the class `local` in the API, the catalog and the database, and the screens called it **Local**, the
+class whose sentence is "Holds content that is deployed to Quader". Nobody deploys to it: the malware scan's updater fills it on a
+schedule ([formats/clamav.md](formats/clamav.md) R-CLAMAV-001, R-CLAMAV-002).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A badge of its own, **System**, instead of **Local**, wherever a repository's class is shown (recommended, chosen) | A word of the screens; the class stays `local` in the API, the catalog and the database | Says what the repository is; the decision is the catalog's fact `systemOnly`, so a future system-only format gets it | A fourth word beside the three classes |
+| (b) **Local**, with a sentence that says that the installation fills it | | No new word | The badge says what the repository is not |
+| (c) The class remote | The repository rebuilt as a remote of ClamAV's network | Matches a cache of another source | A remote asks its upstream at its readers' pace, which ClamAV's network limits per address; refused |
+
+**Choice:** (a). The word is **System** (German "System"), its icon `settings`, the icon of the caller **System** on the usage pages,
+the installation's own background work (no new colour, no green; the admin area's `dns` of its group **System** was rendered first and
+read at 20 px like Local's `storage`). It stands as the class's badge or cell on the repository's page, the repository lists of a project and of every project,
+the project `upstream`'s section, the search's results, a format's guide, the client setup, a version's repositories and the settings'
+facts; the admin area's page of the registry says **System repository** where it said **Local repository**. Where it stands as a
+badge or a cell its tooltip says "Filled by this installation itself, on a schedule; nobody publishes to it." (German "Von dieser
+Installation selbst befüllt, nach Zeitplan; niemand veröffentlicht dorthin."), and the repository's page says the same sentence under
+its key. Where a row's class cell says **System**, the key's badge **System** of R-UI-193 is left out (one mark, not two). A format's
+guide names its class link "The system repository: filled by this installation itself". The admin dashboard counts repositories by the
+API's class and counts it under **Local** (H-1980). Decided by the catalog's fact, never by a format's name; one place names every class
+(`classLabel`, `classIcon`, `classHelp`, `shownClass` of [repository-class.ts](../../web/src/app/features/repositories/repository-class.ts)).
+
+**Applied in the spec:** R-UI-020, R-UI-052, R-UI-193; [formats/clamav.md](formats/clamav.md) R-CLAMAV-001.
+
 ### Q-UI-1120 · N/A says its state in a word, and its sentence is the cell's description
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It follows the
@@ -25909,6 +26029,15 @@ so for that reason.
 ## What this does not cover
 
 ### H-1964 · A read that fails alone while its page stands is read again only by the person or its next use
+
+### H-1980 · The admin dashboard counts the repository of a system-only format as Local
+
+Stage: the card **Repositories** of `/admin/dashboard` (`GET /api/v1/system/overview`, `counts.repositories.byClass`). Subject: an
+administrator who compares its count **Local** with the list filtered by Local (Q-UI-1202). The server counts by the API's class, so
+`upstream/clamav` is one of **Local** there and not in the list. Live today, one repository off. The remedy would be a count by the
+catalog's fact in the overview (Q-UI-1203); not built, because the card's counts are of the API's classes and lead to no filter.
+
+### H-1962 · A read that fails without a notice of its own is not read again with its page
 
 Stage: the reads of a page beside its own (R-UI-216, Q-UI-1196). Subject: a page that stands while one of its other reads failed. A
 read whose absence leaves something out and says nothing wrong has no notice of its own: the help's contents, the format names of the

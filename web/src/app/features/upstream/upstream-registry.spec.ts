@@ -112,8 +112,11 @@ describe("A well-known repository's page (R-UI-188)", () => {
     expect(text(root)).toContain('In use by the malware scan.');
     expect(root.querySelector('#wk-address, #wk-account')).toBeNull();
     expect(text(root)).not.toContain('aquasec/trivy-db');
-    // A local repository listed by nobody and downloaded by no client: its badge and its Details say so (Q-UI-883).
-    expect(text(root.querySelector('.subject')!)).toContain('Local repository');
+    // A repository listed by nobody and downloaded by no client: its badge and its Details say so (Q-UI-883). Its format is system
+    // only, so the badge says System repository, and what that means as its tooltip (Q-UI-1203).
+    const badge = [...root.querySelectorAll<HTMLElement>('.subject .badge')].find((b) => text(b) === 'System repository')!;
+    expect(badge.getAttribute('tabindex')).toBe('0');
+    expect(text(root.querySelector('.subject')!)).not.toContain('Local repository');
     expect(text(root.querySelector('.subject')!)).not.toContain('Upstream registry');
     expect(text(root)).toContain('Its settings page and its dates.');
     expect(text(root)).not.toContain('Who lists the registry');

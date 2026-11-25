@@ -8,7 +8,9 @@
     <p meta class="subject">
       <quader-format-icon [format]="r.format" /><span class="format-label" translate="no">{{ formatLabel() }}</span>
       <span class="dot-before" translate="no">{{ r.name }}</span>
-      @if (noAddress()) {
+      @if (systemOnly()) {
+        <span class="badge" tabindex="0" [quaderTooltip]="systemTip" i18n="@@wellknown.badge.system">System repository</span>
+      } @else if (noAddress()) {
         <span class="badge" i18n="@@wellknown.badge.local">Local repository</span>
       } @else {
         <span class="badge" i18n="@@wellknown.badge">Upstream registry</span>

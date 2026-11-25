@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { RepositoriesApi } from '../../api/repositories-api';
 import {
   ANSIBLE_FORMAT,
+  CLAMAV_DEFINITIONS_FORMAT,
   DEB_FORMAT,
   FakeRepositoriesApi,
   GENERIC_FORMAT,
@@ -14,7 +15,8 @@ import { spokenText } from '../../testing/axe';
 import { expectAccessible, inProject, renderScreen, settle, text, type } from '../../testing/screen';
 import { RepositoryFormatChooser, matchingFormats } from './repository-format-chooser';
 
-const ALL = [GENERIC_FORMAT, PACKAGE_FORMAT, NUGET_FORMAT, OCI_FORMAT, DEB_FORMAT, ANSIBLE_FORMAT];
+/** The catalog as the server lists it, with the system-only format of ClamAV's definitions among the others. */
+const ALL = [GENERIC_FORMAT, PACKAGE_FORMAT, NUGET_FORMAT, CLAMAV_DEFINITIONS_FORMAT, OCI_FORMAT, DEB_FORMAT, ANSIBLE_FORMAT];
 
 async function chooser(url = '/projects/web/repositories/new', inputs: Record<string, unknown> = {}) {
   return renderScreen(
@@ -75,9 +77,20 @@ describe('The format chooser of a new repository (R-UI-080)', () => {
     expect(tiles(r.root)[0]!.getAttribute('href')).toBe('/projects/web/repositories/new/generic');
   });
 
+  it('R-UI-080 R-CLAMAV-001 a system-only format is no tile, no part of the count, and no search finds it', async () => {
+    const r = await chooser();
+    expect(tiles(r.root).some((t) => t.getAttribute('href')?.endsWith('/clamav'))).toBe(false);
+    expect(text(r.root.querySelector('#format-count')!)).toBe('6 of 6 formats');
+    const search = r.root.querySelector<HTMLInputElement>('#f-format-search')!;
+    type(search, 'clam');
+    await settle(r.fixture);
+    expect(tiles(r.root)).toEqual([]);
+    expect(text(r.root.querySelector('#format-count')!)).toBe('No format matches the search.');
+  });
+
   it('R-UI-080 matches by display name and by name, whatever the case', () => {
     expect(matchingFormats(ALL, 'DOCKER').map((f) => f.name)).toEqual(['oci']);
     expect(matchingFormats(ALL, 'deb').map((f) => f.name)).toEqual(['deb']);
-    expect(matchingFormats(ALL, ' ').length).toBe(6);
+    expect(matchingFormats(ALL, ' ').length).toBe(7);
   });
 });
