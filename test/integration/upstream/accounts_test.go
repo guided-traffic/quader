@@ -87,6 +87,18 @@ func TestR_REPO_077_AnAccountTheConfigurationDeclares(t *testing.T) {
 	}}
 	f.start()
 
+	t.Run("R-REPO-073 a registry whose recent downloads all completed answers its last download and no failure", func(t *testing.T) {
+		f.e.Exec(`INSERT INTO upstream_download_finished (id, repo_id, name, version, path, bytes, started_at, finished_at, duration_ms, outcome,
+		          origin, replica_name) VALUES (gen_random_uuid(), $1, 'library/alpine', '3.19', 'library/alpine/_manifests/latest', 512,
+		          now() - interval '2 seconds', now() - interval '1 second', 1000, 'completed', 'client', 'quader-packages-0')`, f.id("docker-hub"))
+		defer f.e.Exec(`DELETE FROM upstream_download_finished WHERE repo_id = $1`, f.id("docker-hub"))
+		got := f.do(f.admin, "GET", items+"/docker-hub", nil)
+		wantStatus(t, got, 200, "")
+		if acct := got.JSON(t)["account"].(map[string]any); acct["lastDownloadAt"] == nil || acct["lastFailure"] != nil {
+			t.Fatalf("%v", acct)
+		}
+	})
+
 	t.Run("the item shows the declaration read-only with the files' state on the answering replica, and the writes are refused", func(t *testing.T) {
 		got := f.do(f.admin, "GET", items+"/docker-hub", nil)
 		wantStatus(t, got, 200, "")

@@ -310,7 +310,10 @@ func (q *Queries) UpstreamListedByNames(ctx context.Context, arg UpstreamListedB
 const upstreamRepositoryLastDownloads = `-- name: UpstreamRepositoryLastDownloads :many
 SELECT (max(finished_at) FILTER (WHERE outcome = 'completed'))::timestamptz AS last_download_at,
        ((array_agg(finished_at ORDER BY finished_at DESC) FILTER (WHERE outcome = 'failed'))[1])::timestamptz AS last_failure_at,
-       ((array_agg(COALESCE(failure_code, '') ORDER BY finished_at DESC) FILTER (WHERE outcome = 'failed'))[1])::text AS last_failure_code
+       -- '' without a failed one: the aggregate of no row is NULL, which the row's string does not take (seen 2026-11-25: every read
+       -- of a registry whose recent downloads all completed answered 500).
+       COALESCE(((array_agg(COALESCE(failure_code, '') ORDER BY finished_at DESC) FILTER (WHERE outcome = 'failed'))[1]), '')::text
+         AS last_failure_code
   FROM upstream_download_finished
  WHERE repo_id = $1::bigint
 HAVING count(*) > 0
