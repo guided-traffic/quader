@@ -9271,7 +9271,10 @@ shows state the server changes without the viewer's own act reads it again by it
   page and the tab Upstream two, and one more per package opened in the tab Upstream); while something runs, 20 a minute per fast
   view (a version's page with a pending scan reads the version and its report: 40). The top bar adds the banner and the mode (four a
   minute) and, for an administrator, the Downloads summary (six). A hidden tab costs nothing. A list read again costs as many pages as
-  it shows ([H-1847](#h-1847--a-live-list-reads-its-rows-again-there-is-no-answer-of-what-changed)).
+  it shows ([H-1847](#h-1847--a-live-list-reads-its-rows-again-there-is-no-answer-of-what-changed)). Measured in a browser on
+  2026-11-25 ([web-ui.md](../developer/web-ui.md#what-an-open-tab-asks-of-the-server-measured)): a seen list or package page 6 to 7
+  calls a minute with the top bar, a version's page whose scan waits 37 to 41, the administrators' dashboard and System status 27 to
+  28 (their six reads every 15 s), every measured screen none while hidden.
 
 Acceptance criteria (Vitest, with fake timers in milliseconds): [live-refresh.spec.ts](../../web/src/app/core/live-refresh.spec.ts),
 about 0.7 s: a view reads every interval while seen, not while hidden, at once when seen again; failed reads double the wait up to
@@ -24235,6 +24238,14 @@ every live view; real with many open tabs (a hundred people with a repository op
 read a cheap summary first and the rest only on a change (a package's page, the ClamAV databases). A change counter per repository and
 kind of row, scoped like the list a reader may see, would let a view ask one cheap question instead.
 
+Measured on 2026-11-25 ([web-ui.md](../developer/web-ui.md#what-an-open-tab-asks-of-the-server-measured)): only a
+seen tab reads, so what counts is the windows people see, not their tabs. A seen list costs 6 calls and about 26 statements a minute
+(a page of 50 packages is 9 statements and 3.5 ms of CPU), an administrator's dashboard 28 calls and about 130 statements; fifty people
+each with a list seen cost a replica under 1 % of a core and 22 statements a second. What a change counter would save is that idle cost;
+the largest cost measured is a fast view that stays fast ([H-1870](#h-1870--a-versions-page-reads-every-3-s-for-as-long-as-its-scan-waits),
+H-1848). The development agent would build the answer of what changed when the reads of live views are a tenth of a replica's API
+requests or of PostgreSQL's statements in an installation's metrics, or when a live list's refresh costs more than about 50 statements.
+
 ### H-1848 · A signature check that failed keeps a version's page on the fast reads
 
 A version's page reads every 3 s while a file's malware scan has not answered, an image's scan waits, or a signature reads
@@ -24242,6 +24253,28 @@ A version's page reads every 3 s while a file's malware scan has not answered, a
 `SignatureBadgeState`), so a version whose check failed keeps its page on the fast reads (40 requests a minute of that tab) for as long
 as it is open and seen. Live today for a version whose signature check failed; it costs requests, not correctness. A state of its own
 for a failed check in the badge would let the page drop to its 60 s.
+
+### H-1870 · A version's page reads every 3 s for as long as its scan waits
+
+A version's page reads its version and its report every 3 s while an image's scan or a file's malware scan has not answered
+(R-UI-213), and there is no end to the wait: a scan that waits for hours keeps every page of it that is seen on the fast reads.
+Measured on 2026-11-25 ([web-ui.md](../developer/web-ui.md#what-an-open-tab-asks-of-the-server-measured)): 37 to 41 calls, about 330
+statements and 115 ms of a replica's CPU a minute per seen tab, ten times a list's; fifty people with such a page seen cost a replica
+about 10 % of a core and PostgreSQL 275 statements a second. Live where a scan waits long: the image scanner or ClamAV down or not
+deployed while the scanning is on, a backlog after an advisory sync; on the UI development profile always, which runs no scanner. It costs
+requests, not correctness. A fast cadence that slows after some minutes of waiting (3 s, then 15 s, then the page's 60 s) would bound it
+without a change on the server.
+
+### H-1871 · Two live lists were not read again while seen in a browser
+
+In the measurement of 2026-11-25 ([web-ui.md](../developer/web-ui.md#what-an-open-tab-asks-of-the-server-measured)) the audit log (every
+30 s, its range moved to now) and the security dashboard's findings (every 60 s) sent no read during 60 s and then 75 s of a seen tab in
+headless Chromium, while the dashboards beside them (the summary, the trend, the sources) and every other list measured did, and both
+lists read at once when the tab was seen again. Their unit tests with fake timers pass (`audit-log.spec.ts`, R-UI-213's case of the
+moving range). Not explained: whether `PagedResource.refresh` returns early for these two lists in a browser (a list still marked as
+loading), or a timer of the view is set again before it fires. Live, as far as measured, for an administrator who keeps the audit log
+or the security dashboard open: a new event or finding shows only when the tab is seen again or the page is opened again, which is
+what R-UI-213 forbids.
 
 ### H-43 · General API rate limits are per replica
 

@@ -178,6 +178,66 @@ a browser that restores tabs at once stays within the burst up to about 13 tabs 
 that the class refills 50 a second, about three tabs, and a tab beyond it meets a `429` for a moment. Not measured: a browser that
 restores tabs, and whether the screens retry such a `429`.
 
+### What an open tab asks of the server, measured
+
+Measured once on 2026-11-25 from 06:44 to 07:08, a measurement and not a test
+([H-1847](../spec/api-and-ui.md#h-1847--a-live-list-reads-its-rows-again-there-is-no-answer-of-what-changed)). The calls a tab sends while
+it is seen, while it is hidden and in the first 3 s after it is seen again, with the renders' seed on instance 3 of the profile in
+headless Chromium, one tab per screen, 60 s each, three tabs at a time (the hidden state is the page's `document.visibilityState`, as a
+browser reports a tab in the background); fourteen screens on the code before the fix of the same day, then four of them again for 75 s
+each with every call traced, on the code after it (a version's page, the tab Downloads, the audit log, the security dashboard):
+
+```shell
+UI_RENDERS_LIVE_COST=60 make ui-renders GREP='live cost'                          # UI_RENDERS_LIVE_COST_TRACE=1 prints every call
+QUADER_TEST_MEASURE_LIVE=50 test/integration/run.sh -run TestMeasureTheServerCostOfALiveRefresh -v ./test/integration/querybudget/
+```
+
+([live-cost.spec.ts](../../web/e2e/renders/live-cost.spec.ts), [live_cost_test.go](../../test/integration/querybudget/live_cost_test.go);
+both are skipped without their variable.) The second gives the server's cost of each call: one replica of the integration stack with the
+request tracer, 20 npm packages, each call 50 times one after the other; statements per call (the median, the same in every repetition),
+and the process's CPU per call (the replica and the test's plain client together). The host had 20 cores at a load average of 10 to 16
+from two other builders.
+
+| Screen (as) | Seen: calls a minute, bytes | Hidden | Statements a minute | CPU a minute |
+|---|---|---|---|---|
+| A version's page whose image scan has not answered (plain): the version and its report every 3 s | 37 to 41, 35 KiB | 0 | about 330 | about 115 ms |
+| The tab Downloads with a running queue (power): the queue and the bulks every 5 s | 27, 94 KiB | 24 until the fix, 0 after it | about 70 | about 50 ms |
+| The administrators' dashboard (admin): six reads every 15 s | 28, 18 KiB | 0 | about 130 | about 40 ms |
+| System status (admin): six reads every 15 s | 27, 71 KiB | 0 | about 105 | about 35 ms |
+| Storage (admin) | 17, 38 KiB | 0 | about 45 | about 15 ms |
+| Security dashboard (admin) | 11, 11 KiB | 0 | about 30 | about 10 ms |
+| Jobs, Audit log (without its own reads, H-1871), Home (admin) | 8 to 9, 1 to 25 KiB | 0 | 20 to 25 | about 8 ms |
+| A repository's content, a package's page, the tab Upstream, Vulnerabilities (plain) | 6 to 7, 1 to 36 KiB | 0 | 11 to 26 | 5 to 10 ms |
+| Home (plain): the banner and the mode | 2 to 4, under 1 KiB | 0 | 8 | 2 ms |
+
+The calls by their cost: a version's detail 14 statements and 5 ms of CPU, System status's `info` 13 and 4.5 ms, a repository's page of
+50 packages 9 and 3.5 ms, a package's lookup 6, the encryption's status and the backups' summary 8 each, a version's report 4, every
+other call 0 to 3 statements and about 1 ms; the top bar (banner and mode every 30 s, an administrator's Downloads summary every 10 s)
+8 statements a minute, 26 for an administrator. The tab Upstream's level is the catalogue's, cached per replica for 300 s (R-CUR-008),
+and answered 400 in the integration stack, whose stub has no catalogue: its cost there is not measured.
+
+What it means:
+
+- **A hidden tab costs nothing** for every screen measured once the tab Downloads and a job's progress stop as well (both built on
+  2026-11-25; before, the tab Downloads read the queue and the bulks every 5 s in a hidden window, 24 calls and 94 KiB a minute, and a
+  job's progress every 2 s). A tab seen again reads at once: up to seven calls (System status), up to about 100 KiB (the audit log's
+  page of 100 events).
+- **How many tabs of one user fit the read class** (R-API-016, 50 a second and 200 in 4 s, per session or token): only the tabs that
+  are seen read, so the number that counts is the windows a person sees at once, not the tabs. A seen window of the heaviest screen
+  asks 41 calls a minute, so 73 seen windows reach the class's rate; a list asks 6, so 500 do. A window seen again sends at most seven
+  calls at once against the burst of 200.
+- **50 users with 5 tabs each**, one window seen per user: 50 seen tabs. All on a list: 300 calls, 1,300 statements and 0.5 s of CPU a
+  minute, under 1 % of a core. All administrators on System status: 1,350 calls (23 a second), 5,250 statements (90 a second) and 1.7 s
+  of CPU a minute, 3 % of a core. All on a version's page whose scan waits: 2,050 calls (34 a second), 16,500 statements (275 a second),
+  5.7 s of CPU a minute, about 10 % of a core. With all 250 tabs seen at once (five windows each), five times that; the version's page
+  then asks 1,375 statements a second of PostgreSQL, which is the one number that would show in an installation.
+- **H-1847 stays a gap**, with these numbers: a "what changed since" answer would save the idle reads (a list's 9 statements every 30 s),
+  but no idle view costs more than about 130 statements a minute; the cost that shows is a fast view that stays fast, which is
+  [H-1870](../spec/api-and-ui.md#h-1870--a-versions-page-reads-every-3-s-for-as-long-as-its-scan-waits) and H-1848, not a list.
+- **Seen, not explained** ([H-1871](../spec/api-and-ui.md#h-1871--two-live-lists-were-not-read-again-while-seen-in-a-browser)): the
+  audit log (every 30 s) and the security dashboard's findings (every 60 s) sent no read during 75 s of a seen tab, in two runs, while
+  the dashboards beside them did and both lists read at once when the tab was seen again; their unit tests pass.
+
 ### Instances, one per builder
 
 `UI_INSTANCE=<n>` (2 to 8) starts another instance of the profile beside instance 1, with its own containers, volumes, ports and
