@@ -459,7 +459,8 @@ describe('The tab Downloads of a remote repository', () => {
     expect(text(details)).toContain('RateLimit-Remaining: 0;w=3600');
     expect(text(details)).toContain('TOOMANYREQUESTS');
     expect(text(details)).toContain("(Quader's wait: the upstream named no time)");
-    expect(text(rowOf(root, '3.8.50'))).toMatch(/Rate limit until \d/);
+    // The limit ends 40 minutes from now: a time of today, or a date and a time when that is past midnight (the case failed from 23:20 on).
+    expect(text(rowOf(root, '3.8.50'))).toMatch(/Rate limit until (\d|[A-Z][a-z]{2} \d)/);
     expect(text(rowOf(root, '3.8.49'))).not.toContain('Rate limit');
     expect(text(root.querySelector('[data-testid="download-bulks"]')!)).toContain("Waits for Docker Hub's rate limit until");
     await expectAccessible(root);
