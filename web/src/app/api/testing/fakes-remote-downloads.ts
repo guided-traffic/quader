@@ -8,6 +8,7 @@ import {
   RemoteDownloadFailure,
   RemoteDownloadFailureClass,
   RemoteDownloadFilters,
+  RemoteDownloadLimit,
   RemoteDownloadPage,
   RemoteDownloadPreview,
   RemoteDownloadRequest,
@@ -64,6 +65,35 @@ export function downloadFailure(over: Partial<RemoteDownloadFailure> = {}): Remo
   };
 }
 
+/**
+ * The rate limit of Docker Hub without an account as it held the owner's queue on 2026-11-25: a 429 without a time of its own, the
+ * third wait in a row; `over` sets what a case needs.
+ */
+export function downloadLimit(over: Partial<RemoteDownloadLimit> = {}): RemoteDownloadLimit {
+  return {
+    since: '2026-11-25T05:30:51Z',
+    until: '2026-11-25T06:12:00Z',
+    holds: true,
+    hinted: false,
+    waits: 3,
+    upstream: 'Docker Hub',
+    failure: downloadFailure({
+      class: 'upstream_rate_limited',
+      code: 'upstream_rate_limited',
+      file: null,
+      address: 'https://registry-1.docker.io/v2/guidedtraffic/s3-encryption-proxy/manifests/3.8.50',
+      status: 429,
+      excerpt: '{"errors":[{"code":"TOOMANYREQUESTS","message":"You have reached your unauthenticated pull rate limit."}]}',
+      headers: { 'RateLimit-Limit': '100;w=3600', 'RateLimit-Remaining': '0;w=3600' },
+      detail:
+        'registry-1.docker.io is rate limiting Quader (status 429); Quader asks again after the wait, and the wait is no failed attempt of the file.',
+      attempt: 1,
+      at: '2026-11-25T05:41:00Z',
+    }),
+    ...over,
+  };
+}
+
 /** A bulk of every version of a package that expands. */
 export function downloadBulk(over: Partial<RemoteDownloadBulk> = {}): RemoteDownloadBulk {
   return {
@@ -91,6 +121,8 @@ export class FakeRemoteDownloadsApi extends RemoteDownloadsApi {
   bulks: RemoteDownloadBulk[] = [];
   /** The counts the list answers; computed from the rows when null. */
   counts: RemoteDownloadCounts | null = null;
+  /** The upstream's rate limit the list answers; none when null. */
+  limit: RemoteDownloadLimit | null = null;
   /** Answers every list with this error, where set. */
   listError: ApiError | null = null;
   /** Answers every retry or cancel with this error, where set. */
@@ -117,6 +149,7 @@ export class FakeRemoteDownloadsApi extends RemoteDownloadsApi {
       items,
       nextCursor: next,
       counts: this.counts ?? { waiting: count('waiting'), running: count('running'), failed: count('failed'), done: count('done') },
+      limit: this.limit,
     };
   }
 

@@ -147,15 +147,20 @@ func firstErr(err, otherwise error) error {
 	return otherwise
 }
 
-// fill starts the waiting rows of a repository whose next attempt came, as many as it has free places, in the order of R-CUR-011.
-// The caller holds the repository's lock. It answers the started rows' jobs by row.
+// fill starts the waiting rows of a repository whose next attempt came, as many as it has free places, in the order of R-CUR-011:
+// none while an upstream's rate limit holds the repository, one at a time after it until an attempt ends it (Q-CUR-170). The caller
+// holds the repository's lock. It answers the started rows' jobs by row.
 func (s *Service) fill(ctx context.Context, t Tx, repoID int64) (map[string]string, error) {
 	_, running, err := t.Counts(ctx, repoID)
 	if err != nil {
 		return nil, err
 	}
+	l, limited, err := t.Limit(ctx, repoID)
+	if err != nil {
+		return nil, err
+	}
 	now := s.o.Now()
-	due, err := t.Due(ctx, repoID, now, freePlaces(s.o.Settings().PerRepository, running))
+	due, err := t.Due(ctx, repoID, now, limitPlaces(s.o.Settings().PerRepository, running, l, limited, now))
 	if err != nil {
 		return nil, err
 	}
@@ -203,6 +208,9 @@ func (s *Service) Finish(ctx context.Context, row Row, jobID, repo string, res R
 		if found, err := t.LockRepository(ctx, row.RepoID); err != nil || !found {
 			return err
 		}
+		if err := s.limitAfter(ctx, t, row, &set, now); err != nil {
+			return err
+		}
 		ok, err := t.Settle(ctx, row.ID, jobID, set, res, now)
 		if err != nil || !ok {
 			return err
@@ -223,6 +231,45 @@ func (s *Service) Finish(ctx context.Context, row Row, jobID, repo string, res R
 		s.o.Metrics.ended(repo, row.Origin, string(set.State))
 	}
 	return set, nil
+}
+
+// limitAfter writes what the end of an attempt tells of the repository's rate limit (Q-CUR-170): a limited attempt holds the
+// repository and waits for the limit's time; an attempt that the upstream answered without a limit, begun after the limit's last
+// answer, ends it. The caller holds the repository's lock.
+func (s *Service) limitAfter(ctx context.Context, t Tx, row Row, set *settlement, now time.Time) error {
+	l, found, err := t.Limit(ctx, row.RepoID)
+	if err != nil {
+		return err
+	}
+	switch {
+	case set.Limited:
+		next := nextLimit(l, found, row.RepoID, *set.Failure, now, s.o.Jitter())
+		set.NotBefore = next.Until
+		return t.PutLimit(ctx, next)
+	case found && endsLimit(row, *set, l):
+		return t.ClearLimit(ctx, row.RepoID)
+	}
+	return nil
+}
+
+// Limit is the upstream's rate limit that holds a repository's queue or held it last; found is false for none (R-CUR-012).
+func (s *Service) Limit(ctx context.Context, repoID int64) (Limit, bool, error) {
+	return s.o.Store.Limit(ctx, repoID)
+}
+
+// holdLimit records an upstream's rate limit that a step of a bulk's expansion met (Q-CUR-170): the repository's rows wait for it as
+// for a row's.
+func (s *Service) holdLimit(ctx context.Context, repoID int64, f remotecuration.Failure) error {
+	return s.o.Store.InTx(ctx, func(t Tx) error {
+		if found, err := t.LockRepository(ctx, repoID); err != nil || !found {
+			return err
+		}
+		l, found, err := t.Limit(ctx, repoID)
+		if err != nil {
+			return err
+		}
+		return t.PutLimit(ctx, nextLimit(l, found, repoID, f, s.o.Now(), s.o.Jitter()))
+	})
 }
 
 // Active implements [remotecuration.Queue].

@@ -16,6 +16,11 @@ export type RemoteDownloadFailureClass = Schema<'RemoteDownloadFailureClass'>;
 export type RemoteDownloadFailureStep = RemoteDownloadFailure['step'];
 /** One page of the queue with the counts of its rows by state. */
 export type RemoteDownloadPage = Schema<'RemoteDownloadPage'>;
+/**
+ * The upstream's rate limit that holds the repository's queue, or held it last (R-CUR-011, Q-CUR-170): since when, until when no row
+ * starts, whether that time is the upstream's own, and its last answer.
+ */
+export type RemoteDownloadLimit = Schema<'RemoteDownloadLimit'>;
 /** The rows of the queue by state: waiting, running, failed, done. */
 export type RemoteDownloadCounts = Schema<'RemoteDownloadCounts'>;
 /** A bulk download with its counters and its rows by state (R-CUR-010, R-CUR-012). */

@@ -2,6 +2,7 @@ import { Component, computed, inject, input, resource } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DeliveryRequestsApi } from '../../../api/delivery-requests-api';
 import { RemoteDownloadCounts, RemoteDownloadsApi } from '../../../api/remote-downloads-api';
+import { LIVE_SLOW_MS, live, refreshResource } from '../../../core/live-refresh';
 import { SessionStore } from '../../../core/session-store';
 import { valueOf } from '../../../shared/paged-resource';
 import { TabStrip } from '../../../shared/ui/tab-strip';
@@ -21,8 +22,8 @@ const REQUESTS_COUNTED = 100;
  * **Downloads** at `…/downloads`; and **Details** at `…/details` where the repository has any, always last. The tabs are links with
  * `aria-current="page"` as the page System status has them (R-UI-164); the page shows the strip only where it holds two tabs or more
  * (Q-UI-652). **Upstream** carries the count of open requests for those who may answer them (`Upstream 3`), **Downloads** the count
- * of failed rows when there are any (`Downloads · 2 failed`): the tab that read them passes its own counts after every answer, the
- * others read them once.
+ * of failed rows when there are any (`Downloads · 2 failed`): the tab Downloads (and Upstream) passes the counts it read after every
+ * answer while it is open; on every other tab the strip reads them itself, again every 30 s while the window is seen (R-UI-213).
  */
 @Component({
   selector: 'quader-repository-tabs',
@@ -84,9 +85,20 @@ export class RepositoryTabs {
   protected readonly downloadsLink = computed(() => [...this.base(), 'downloads']);
   protected readonly detailsLink = computed(() => [...this.base(), 'details']);
 
-  /** One row of the queue answers the counts; a failure of the read leaves the label without them. */
+  /**
+   * The tab that is open passes the counts it read (Downloads after every read of its own, Upstream with its strip's counts); on any
+   * other tab, or before that tab answered, the strip reads them itself.
+   */
+  private readonly given = computed(() => {
+    const t = this.current();
+    return t === 'downloads' || t === 'upstream' ? this.counts() : null;
+  });
+  /** The repository whose counts the strip reads itself; null while the open tab passes them. */
+  private readonly readsItself = computed(() => (this.remote() && this.given() === null ? `${this.project()}/${this.key()}` : null));
+
+  /** One row of the queue answers the counts; a failure of the read leaves the label as it was. */
   private readonly read = resource({
-    params: () => (this.remote() && this.counts() === null ? `${this.project()}/${this.key()}` : null),
+    params: () => this.readsItself(),
     loader: async ({ params }) => {
       if (!params) return null;
       try {
@@ -97,8 +109,20 @@ export class RepositoryTabs {
     },
   });
 
+  constructor() {
+    // The label follows the queue while the strip reads the counts itself (R-CUR-018, R-UI-213, Q-UI-1103): a failed download shows as
+    // "Downloads · 1 failed" on the content and on Details too, read in place while the window is seen.
+    live({
+      reload: () => {
+        const repository = this.readsItself();
+        return repository ? refreshResource(this.read, async () => (await this.api.list(repository, {}, null, 1)).counts) : undefined;
+      },
+      every: () => (this.readsItself() ? LIVE_SLOW_MS : null),
+    });
+  }
+
   protected readonly failed = computed(() => {
-    const c = this.counts() ?? valueOf(this.read) ?? null;
+    const c = this.given() ?? valueOf(this.read) ?? this.counts();
     return c && c.failed > 0 ? c.failed : null;
   });
 

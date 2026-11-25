@@ -1,5 +1,53 @@
 <p class="downloads-note" i18n="@@downloads.note">What this repository downloads ahead of its clients, and the fetches of clients that failed, with the cause in the upstream's own words.</p>
 
+@if (limit(); as l) {
+  @if (limitText(); as sentence) {
+    <!-- An upstream's rate limit holds the queue (R-CUR-011, Q-UI-1100): one plain sentence, the upstream's answer folded under it. -->
+    <div class="banner-warning limit-notice" role="status" data-testid="download-limit">
+      <p class="limit-sentence">
+        <span class="material-icons inline warn" aria-hidden="true">hourglass_empty</span>
+        <span>{{ sentence }}</span>
+      </p>
+      <quader-technical-details class="technical" [text]="l.failure.detail">
+        <dl class="facts limit-facts">
+          @if (l.failure.status) {
+            <dt i18n="@@downloads.limit.last">Last answer</dt>
+            <dd>HTTP {{ l.failure.status }}&ngsp;<ng-container i18n="@@downloads.limit.at">at</ng-container>&ngsp;<time [attr.datetime]="l.failure.at">{{ clock(l.failure.at) }}</time></dd>
+          }
+          <dt i18n="@@downloads.limit.waits">Waits in a row</dt>
+          <dd>{{ l.waits }}</dd>
+          <dt i18n="@@downloads.limit.until">Waiting until</dt>
+          <dd>
+            <time [attr.datetime]="l.until">{{ clock(l.until) }}</time>&ngsp;<span class="muted">
+              @if (l.hinted) {
+                <ng-container i18n="@@downloads.limit.until-hinted">(the upstream's time)</ng-container>
+              } @else {
+                <ng-container i18n="@@downloads.limit.until-backoff">(Quader's wait: the upstream named no time)</ng-container>
+              }
+            </span>
+          </dd>
+          @if (l.failure.address) {
+            <dt i18n="@@downloads.failure.address">Address</dt>
+            <dd><code translate="no">{{ l.failure.address }}</code>&ngsp;<span class="muted" i18n="@@downloads.failure.query-removed">(shown without its query, which can carry a credential)</span></dd>
+          }
+          @if (l.failure.headers; as h) {
+            <dt i18n="@@downloads.failure.headers">Headers of the limit</dt>
+            <dd class="limit-headers">
+              @for (e of headerList(h); track e.name) {
+                <code translate="no">{{ e.name }}: {{ e.value }}</code>
+              }
+            </dd>
+          }
+        </dl>
+        @if (l.failure.excerpt) {
+          <p class="excerpt-label" i18n="@@downloads.failure.excerpt">The start of the upstream's answer</p>
+          <pre class="code-block excerpt" translate="no">{{ l.failure.excerpt }}</pre>
+        }
+      </quader-technical-details>
+    </div>
+  }
+}
+
 @if (showsBulkList()) {
   <!-- The repository's bulks, newest first, above its rows (Q-CUR-168): a bulk whose expansion failed before it queued a row is seen
        here with its cause, and a person's failed bulk starts again. The title opens the bulk with its rows. -->
@@ -41,6 +89,9 @@
             }
             @if (bulkRowsLine(b); as line) {
               <span class="secondary">{{ line }}</span>
+            }
+            @if (bulkLimitLine(b); as wait) {
+              <span class="limit-line wraps under">{{ wait }}</span>
             }
           </td>
           <td class="failure-cell">
@@ -154,6 +205,9 @@
         @for (x of bulkRows(b); track x.state) {
           <span>{{ stateText(x.state) }} {{ x.n }}</span>
         }
+        @if (bulkLimitLine(b); as wait) {
+          <span class="limit-line wraps">{{ wait }}</span>
+        }
       </p>
       <p class="bulk-facts dot-separated muted">
         <span>{{ bulkBounds(b) }}</span>
@@ -257,8 +311,12 @@
         @let p = progressText(r);
         @let a = attemptText(r);
         @let o = outcomeText(r.outcome);
+        @let w = limitLine(r);
         @if (p) {
           <span>{{ p }}</span>
+        }
+        @if (w) {
+          <span class="limit-line" [class.secondary]="!!p">{{ w }}</span>
         }
         @if (a) {
           <span [class.secondary]="!!p"
@@ -271,7 +329,7 @@
         @if (r.refused > 0) {
           <span class="secondary"><ng-container i18n="@@downloads.progress.refused">{{ r.refused }} refused by a gate</ng-container></span>
         }
-        @if (!p && !a && !o) {
+        @if (!p && !a && !o && !w) {
           <quader-no-value />
         }
       </td>
@@ -332,6 +390,14 @@
                     @if (f.retryAfter) {
                       <dt i18n="@@downloads.failure.retry-after">Retry-After</dt>
                       <dd i18n="@@downloads.failure.seconds">{{ f.retryAfter }} s</dd>
+                    }
+                    @if (f.headers; as h) {
+                      <dt i18n="@@downloads.failure.headers">Headers of the limit</dt>
+                      <dd class="limit-headers">
+                        @for (e of headerList(h); track e.name) {
+                          <code translate="no">{{ e.name }}: {{ e.value }}</code>
+                        }
+                      </dd>
                     }
                   </dl>
                   @if (f.excerpt) {

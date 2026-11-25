@@ -252,7 +252,7 @@ func (t *pgTx) Settle(ctx context.Context, id, jobID string, s settlement, res R
 	n, err := t.qs.RemoteDownloadSettle(ctx, q.RemoteDownloadSettleParams{
 		ID: id, JobID: jobID, State: string(s.State), Outcome: string(s.Outcome), Failure: failure,
 		Files: int32(res.Files), Stored: int32(res.Stored), Present: int32(res.Present), Refused: int32(res.Refused), //nolint:gosec // bounded by MaxProbeFiles
-		Bytes: res.Bytes, NotBeforeUs: us(s.NotBefore), NowUs: us(now),
+		Bytes: res.Bytes, NotBeforeUs: us(s.NotBefore), NowUs: us(now), Uncounted: s.Limited,
 	})
 	if err != nil || n == 0 || res.Examination == nil {
 		return n > 0, err
@@ -267,6 +267,37 @@ func (t *pgTx) Settle(ctx context.Context, id, jobID string, s settlement, res R
 	return true, t.qs.RemoteExaminationPut(ctx, q.RemoteExaminationPutParams{
 		RepoID: row.RepoID, Name: ex.Name, Version: ex.Version, RequestID: row.RequestID, Files: nonNil(ex.Files),
 	})
+}
+
+func (t *pgTx) Limit(ctx context.Context, repoID int64) (Limit, bool, error) {
+	return firstLimit(t.qs.RemoteDownloadLimitGet(ctx, repoID))
+}
+
+func (t *pgTx) PutLimit(ctx context.Context, l Limit) error {
+	failure, err := jsonText(l.Failure)
+	if err != nil {
+		return err
+	}
+	return t.qs.RemoteDownloadLimitPut(ctx, q.RemoteDownloadLimitPutParams{
+		RepoID: l.RepoID, SinceUs: us(l.Since), UntilUs: us(l.Until), Waits: int32(max(l.Waits, 1)), Hinted: l.Hinted, //nolint:gosec // a count of waits
+		Failure: failure,
+	})
+}
+
+func (t *pgTx) ClearLimit(ctx context.Context, repoID int64) error {
+	return t.qs.RemoteDownloadLimitClear(ctx, repoID)
+}
+
+// firstLimit decodes the limit a statement answered; found is false for none.
+func firstLimit(docs []string, err error) (Limit, bool, error) {
+	if err != nil || len(docs) == 0 {
+		return Limit{}, false, err
+	}
+	var l Limit
+	if err := json.Unmarshal([]byte(docs[0]), &l); err != nil {
+		return Limit{}, false, fmt.Errorf("queue: a limit does not decode: %w", err)
+	}
+	return l, true, nil
 }
 
 func nonNil(s []string) []string {
@@ -490,6 +521,28 @@ func (s *PGStore) Waiting(ctx context.Context, repoID int64) (n int, err error) 
 		v, e := qs.RemoteDownloadWaiting(ctx, repoID)
 		n = int(v)
 		return e
+	})
+	return n, err
+}
+
+// Limit implements [Reader].
+func (s *PGStore) Limit(ctx context.Context, repoID int64) (l Limit, found bool, err error) {
+	err = s.read(ctx, func(qs *q.Queries) error {
+		l, found, err = firstLimit(qs.RemoteDownloadLimitGet(ctx, repoID))
+		return err
+	})
+	return l, found, err
+}
+
+// PruneLimits implements [Maintenance].
+func (s *PGStore) PruneLimits(ctx context.Context, now time.Time) (n int64, err error) {
+	err = s.db.InTx(ctx, func(tx meta.Tx) error {
+		ptx, ok := postgres.Unwrap(tx)
+		if !ok {
+			return errNotPostgres
+		}
+		n, err = q.New(ptx).RemoteDownloadLimitsPrune(ctx, us(now))
+		return err
 	})
 	return n, err
 }

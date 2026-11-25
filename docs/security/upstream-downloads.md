@@ -16,7 +16,10 @@ package A), and the top bar's button and its panel (T-26 package B). The perspec
 - A project's Owner, a `security-admin`, a `repository-admin` and a plain user get `403`; a caller without a session or token `401`. A
   Maintainer does not see the fills of their own repository here; the repository's tab Downloads shows its queue.
 - No upstream address is shown or kept: a signed address of a content network carries a credential in its query. A client's network
-  address and the headers of either side are not kept. What is kept of a download is listed in R-OPS-049's table of facts.
+  address and the headers of either side are not kept. What is kept of a download is listed in R-OPS-049's table of facts. A download
+  queue an upstream's rate limit holds is listed with the upstream's name: its preset's ("Docker Hub"), else the host of the remote's
+  upstream address, never a path or a query, read from the repository's configuration that both roles read already
+  ([remote-curation.md](../spec/remote-curation.md) Q-CUR-176).
 - An anonymous caller's fill reads as nobody's: the principals `anonymous` and `authenticated` are not named.
 - Reading is not audited, as reading a package list is not.
 

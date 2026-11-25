@@ -33,13 +33,19 @@ type throttle struct {
 	halted      bool
 	haltCh      chan struct{} // closed with halted: a sleeping acquire wakes at once
 	wake        chan struct{}
+	// longWait is the wait beyond which the throttle halts instead of sleeping: LongWait for a pass, shorter for a run of the
+	// download queue (Window.EndAfter).
+	longWait time.Duration
 }
 
 // ticket is the right to send one request, with the number of the wait that was in force when it was given.
 type ticket struct{ gen uint64 }
 
 func newThrottle(c Clock, j Jitter, ceiling int, onWindow func(int)) *throttle {
-	t := &throttle{clock: c, jitter: j, ceiling: max(1, ceiling), window: 1, slowStart: true, wake: make(chan struct{}), haltCh: make(chan struct{}), onWindow: onWindow}
+	t := &throttle{
+		clock: c, jitter: j, ceiling: max(1, ceiling), window: 1, slowStart: true, wake: make(chan struct{}), haltCh: make(chan struct{}),
+		onWindow: onWindow, longWait: LongWait,
+	}
 	if onWindow != nil {
 		onWindow(1)
 	}
@@ -213,7 +219,7 @@ func (t *throttle) rateLimited(tk ticket, hint time.Duration, hinted bool) (wait
 	// A wait of nothing would send the request again at once and loop on an upstream that keeps asking for it.
 	wait = max(wait, time.Second)
 	t.until = t.clock.Now().Add(wait)
-	if wait > LongWait {
+	if wait > t.longWait {
 		// A wait that ends the attempt halts the throttle before the end of the wait is visible to a worker: nobody sleeps it.
 		t.haltLocked()
 	}

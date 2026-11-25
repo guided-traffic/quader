@@ -110,7 +110,7 @@ func (s *Store) Sweep(ctx context.Context, olderThan time.Duration) (int, error)
 }
 
 // ReadUpstreamDownloads reads what the API answers (R-OPS-052): every live row with its age, the newest MaxFinished finished downloads,
-// and the current names of the repositories and principals they name. The statements run on one connection outside a transaction; a row
+// the download queues an upstream's rate limit holds (Q-CUR-176), and the current names of the repositories and principals they name. The statements run on one connection outside a transaction; a row
 // that changes between them is read as it is then, which the next poll corrects.
 func (s *Store) ReadUpstreamDownloads(ctx context.Context) (View, error) {
 	var v View
@@ -146,6 +146,16 @@ func (s *Store) ReadUpstreamDownloads(ctx context.Context) (View, error) {
 				return err
 			}
 			v.Finished = append(v.Finished, f)
+		}
+		limited, err := qs.UpstreamDownloadLimited(ctx)
+		if err != nil {
+			return err
+		}
+		for _, r := range limited {
+			v.Limited = append(v.Limited, Limited{
+				Repo: RepoName{Project: r.Project, Key: r.Key, Format: r.Format}, URL: r.Url, Hinted: r.Hinted, Status: int(r.Status),
+				Since: time.UnixMicro(r.SinceUs).UTC(), Until: time.UnixMicro(r.UntilUs).UTC(), Waiting: r.Waiting,
+			})
 		}
 		return s.names(ctx, qs, &v)
 	})

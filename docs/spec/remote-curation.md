@@ -794,15 +794,51 @@ Priority: **P1** · Covers: RMT-027
 - **The run** (in `internal/formathost/background_download.go`, R-REPO-065's run, which this generalizes): the probe of the row, else the
   format's `Catalogue.VersionProbe` (its documents read and stored through the worker's upstream; the step `plan`); then
   `RemoteAdapter.ProbeContent` and each file through the format's gate, the vulnerability miss gate (R-CUR-014), the integrity checks and
-  the store, as a background request (a slot of the background share, the circuit read and never moved, a rate limit waited out,
-  R-REPO-054, R-REPO-055). The rules are not asked (R-CUR-014). A file another fetch stored meanwhile costs nothing.
+  the store, as a background request (a slot of the background share, the circuit read and never moved, R-REPO-054, R-REPO-055). A rate
+  limit of at most 10 s is waited out inside the run; a longer one ends the attempt and holds the repository's queue (below). The rules
+  are not asked (R-CUR-014). A file another fetch stored meanwhile costs nothing.
+- **An upstream's rate limit holds the queue** (the owner's report of 2026-11-25: Docker Hub answered every manifest request `429` after
+  105 of 315 versions, and four rows read "Running" for half an hour each, asking again every minute or so, while the top bar said
+  nothing ran; [Q-CUR-170](#q-cur-170--a-rate-limited-attempt-hands-its-row-back-and-the-upstreams-limit-holds-the-repositorys-queue)
+  to [Q-CUR-173](#q-cur-173--the-limit-is-a-row-per-repository-of-a-table-of-its-own-transient-and-apart-from-the-mirrors)). A rate-limit
+  answer is R-REPO-054's (`429`; `503` with `Retry-After` or S3's `SlowDown`; `403`, `429` or `503` with a remaining quota of 0) and the
+  same for every format: the queue's run is the shared engine's, so npmjs, nuget.org, a Debian mirror, Galaxy, a generic host and an OCI
+  registry are treated alike.
+  - A run waits out a limit of at most 10 s inside itself, as R-REPO-054's window does; a longer wait ends the attempt at once
+    ([Q-CUR-171](#q-cur-171--a-run-waits-out-a-limit-of-at-most-10-s-a-longer-one-ends-its-attempt)). Its row waits again with the
+    failure of the answer (class and code `upstream_rate_limited`, the status, the address, the excerpt and the headers of the limit),
+    and the attempt is not counted: a limit is no failure of the artifact, and `max_attempts` counts only those.
+  - The repository's limit (one row of `remote_download_limits`) says since when the upstream limits, until when no row of the repository
+    starts, and the upstream's last answer. Its time is the upstream's own (its `Retry-After` or the reset of its quota, at most 6 h)
+    where it names one; otherwise the queue's back-off over the waits in a row, `min(30 s × 2^(k−1), 1 h)` ±20 %
+    ([Q-CUR-172](#q-cur-172--the-limits-time-is-the-upstreams-else-the-queues-back-off-then-one-row-asks-first)). An answer of a row
+    that was running when the limit began keeps the count and the later time.
+  - While the limit holds, no row of the repository starts (at an insert, at another row's end, by the dispatch) and a bulk's expansion
+    asks the upstream nothing; the rows that run end at their own next answer. After its time one row runs, the first in the queue's
+    order; the first attempt begun after the limit's last answer that the upstream answers without a limit (done, or failed with another
+    answer of the upstream) removes the limit, and the places it frees fill at once. A limit that ended in a repository whose queue is
+    empty is removed by the dispatch.
+  - A client's fetch is not held by the queue's limit: it keeps R-REPO-029's classification and the circuit.
+
+  ```sql
+  CREATE TABLE remote_download_limits (     -- migration 00120, export class transient
+    repo_id    bigint      PRIMARY KEY REFERENCES repositories (id) ON DELETE CASCADE,
+    since      timestamptz NOT NULL,        -- the answer that began the first of the waits in a row
+    until      timestamptz NOT NULL,        -- no row of the repository starts before
+    waits      integer     NOT NULL CHECK (waits >= 1),
+    hinted     boolean     NOT NULL,        -- the upstream named until
+    failure    jsonb       NOT NULL,        -- the last rate-limit answer, in a row's failure form
+    updated_at timestamptz NOT NULL DEFAULT now()
+  );
+  ```
 - **Waiting rows are bounded:** at most `proxy.downloads.max_waiting_per_repository` (10,000) rows of a repository are `waiting`; a
   person's `POST` beyond it answers `429 download_queue_full` with the count; a bulk's expansion pauses until rows drain, and a probe that
   finds the queue full starts nothing (the outcome `queue_full` of R-REPO-065 stays only for this bound). Rows are never refused because
   others run: they wait.
-- **Retries.** A failed attempt of a class that a later attempt can overcome (`upstream_rate_limited`, `upstream_error`, `network`,
-  `circuit_open`, `storage`, `internal`) waits `min(30 s × 2^(attempt−1), 1 h)`, ±20 %, or the upstream's `Retry-After` when it names
-  one, up to `proxy.downloads.max_attempts` (5); a failure of another class ends the row `failed` at once.
+- **Retries.** A failed attempt of a class that a later attempt can overcome (`upstream_rate_limited` for a client's pre-emption,
+  `upstream_error`, `network`, `circuit_open`, `storage`, `internal`) waits `min(30 s × 2^(attempt−1), 1 h)`, ±20 %, up to
+  `proxy.downloads.max_attempts` (5); a failure of another class ends the row `failed` at once. An upstream's rate limit is no failed
+  attempt: it holds the queue (above).
 - **The failure** (`failure`, Q-CUR-20), written by the run for the attempt that failed, every member a script can filter on:
 
   | Member | Holds |
@@ -816,6 +852,7 @@ Priority: **P1** · Covers: RMT-027
   | `status` | the upstream's status, when an answer came |
   | `excerpt` | the first 512 bytes of a non-success answer's body as text, characters outside printable ASCII and line ends replaced by `?`; none for a body the upstream declared as binary |
   | `retryAfter` | the upstream's `Retry-After` in seconds, when it named one |
+  | `headers` | the headers of a rate-limit answer that say the limit, by name: `Retry-After`, `RateLimit`, `RateLimit-Policy`, `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` and the `X-RateLimit-` three, each at most 200 bytes; no other header is kept, since a registry's own one can name the address the limit counts ([Q-CUR-174](#q-cur-174--a-limits-failure-keeps-the-upstreams-answer-and-the-headers-of-the-limit-and-no-other)) |
   | `detail` | Quader's English sentence for a script and an administrator: what failed, where, and what helps ("The TLS certificate of `registry.example.com:443` is not trusted by this installation; add its CA to `outbound.tls.ca_file`."). A screen does not show it as the failure's words: it writes its own sentence from `code` and the members above, in its language, and folds `detail` under it (Q-CUR-169) |
   | `attempt`, `at` | the attempt's number and time |
 
@@ -848,6 +885,16 @@ Acceptance criteria:
   task through the system tasks' API instead of waiting for the backoff): the stub answers `503` twice and then `200`: the row shows `upstream_error`,
   step `status`, the stub's address without its query, status 503 and the excerpt, then `done` after the third attempt; a stub that
   answers `401` ends the row `failed` at once with `upstream_auth`.
+- An upstream's rate limit. Unit (`internal/mirror`, `TestR_CUR_011_ARunOfTheQueueWaitsOutOnlyAShortRateLimit`, a fake clock): a hint of
+  7 s is slept, one of 30 s ends the run with its time, five answers without a hint end it. Unit (`internal/remotecuration/queue`,
+  `TestR_CUR_011_AnUpstreamsRateLimitHoldsTheQueueWithoutCountingTheAttempt`, `…ARowThatRanBeforeTheLimitDoesNotEndIt`,
+  `…TheLimitsTime`, milliseconds): the attempt is not counted, nothing starts while it holds, one row asks after it, an answer in
+  flight is no second wait, a pre-emption is no limit, the times. Unit (`internal/proxy/upstream`,
+  `TestR_CUR_011_ARateLimitKeepsOnlyTheHeadersOfTheLimit`; `internal/proxy`, `TestR_CUR_011_TheFailureOfAnExchangeInPreciseWords`): the
+  headers kept and dropped, the excerpt and address of a 429. Integration (area `npm`, `TestR_CUR_011_AnUpstreamsRateLimitHoldsTheQueue`,
+  about 2 s, two tarballs of a few hundred bytes): the stub answers `429` with `Retry-After: 30`: the row waits with attempt 0 and the
+  answer's words, the list answers the limit to a reader, a second row and the dispatch start nothing and ask the stub nothing; once the
+  test moves the limit's time, one row completes, the limit goes, and the second runs in the place it frees.
 
 ### R-CUR-012 · The queue's API
 Priority: **P1** · Covers: RMT-027
@@ -856,7 +903,7 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
 
 | Method and path | What | Answers |
 |---|---|---|
-| `GET downloads?state=&class=&origin=&bulk=&name=&cursor=&limit=` | the rows, newest first within `waiting` and `running` first; `class` filters failures | `200`, cursor paging; `"counts": {"waiting", "running", "failed", "done"}` |
+| `GET downloads?state=&class=&origin=&bulk=&name=&cursor=&limit=` | the rows, newest first within `waiting` and `running` first; `class` filters failures | `200`, cursor paging; `"counts": {"waiting", "running", "failed", "done"}`; `"limit"`: the upstream's rate limit of the queue or `null` (below) |
 | `GET downloads/{id}` | one row with its failure | `200` |
 | `POST downloads/{id}/retry` | a `failed` or `cancelled` row waits again with its attempts reset; a row of origin `client` becomes a download ahead of that file's version by the caller (R-CUR-010) | `200` with the row; `409 not_retryable` for another state |
 | `POST downloads/retry` | `{"class"?, "bulk"?}`: every failed row of the repository that matches, at most 10,000 | `200` `{"retried": <n>}` |
@@ -875,6 +922,11 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
   `bulk_max_bytes`, `bulk_stored_bytes`); `rows` counts its rows by state.
 - A failure's `code` and its members are what a client says the failure from; `detail` is an English sentence for a script and an
   administrator, and `target` names the address Quader refused to ask (R-CUR-011, Q-CUR-169).
+- The list's `limit` ([Q-CUR-175](#q-cur-175--the-list-answers-the-limit-beside-its-counts-for-every-reader)): `{"since", "until",
+  "holds", "hinted", "waits", "upstream", "failure"}`, the repository's limit while it has one (R-CUR-011): `holds` while `until` lies
+  ahead, `hinted` where the upstream named it, `upstream` the name of the format's preset whose address the remote has ("Docker Hub"),
+  else the host of its address, and `failure` the last answer in a failure's form. Every reader of the queue gets it, as the rows'
+  failures.
 - Retry and cancel write `remote.download.retried` and `remote.download.cancelled` (R-CUR-019).
 
 Acceptance criteria:
@@ -1207,7 +1259,8 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
   the row opens to the whole failure: step, code, address (with "query removed"), status, the excerpt in a code block, the detail, and
   **Retry**; **Retry all failed** (with the class filter) and **Cancel** for those who may. A bulk's line shows its counters and
   **Cancel bulk**. The tab refreshes every 5 s while something waits or runs and the window is seen, at once when it is seen again
-  ([api-and-ui.md](api-and-ui.md) R-UI-213), with **Pause automatic refresh** as the page System status has it.
+  ([api-and-ui.md](api-and-ui.md) R-UI-213), with **Pause automatic refresh** as the page System status has it; every 30 s otherwise
+  ([Q-UI-1102](api-and-ui.md#q-ui-1102--the-tab-downloads-is-live-by-the-shared-poll-5-s-while-something-moves-30-s-otherwise)).
   - **As built (R5a).** One muted sentence says what the tab lists. The head: **All** and the four states as pressed buttons with their
     counts, **Failure** as a select of the fifteen classes, and at the row's end **Retry all failed** and **Pause automatic refresh**;
     the address carries `state`, `failure` (the class) and `bulk`
@@ -1241,6 +1294,22 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
     ([Q-CUR-168](#q-cur-168--the-tab-downloads-lists-the-repositorys-bulks-over-its-rows-a-failed-one-says-what-failed-and-starts-again)). The
     refresh reads as many rows and bulks as are shown, and runs while a bulk shown expands or waits, so **Load more** and the opened rows stay
     ([Q-CUR-133](#q-cur-133--the-tab-reads-the-queue-again-while-the-repository-has-a-row-that-waits-or-runs-keeping-what-is-shown)).
+    It is the shared poll of R-UI-213: every 5 s while a row waits or runs or a bulk shown expands or waits, every 30 s while nothing does
+    or while an upstream's limit holds the queue and nothing runs, at once when the window is seen again or the refresh resumed, never in a
+    hidden window; a read that fails keeps the rows and waits longer
+    ([Q-UI-1102](api-and-ui.md#q-ui-1102--the-tab-downloads-is-live-by-the-shared-poll-5-s-while-something-moves-30-s-otherwise)). The
+    strip's label "Downloads · 2 failed" follows the queue on every tab: the tab Downloads passes its counts after each read, every other
+    tab's strip reads them every 30 s
+    ([Q-UI-1103](api-and-ui.md#q-ui-1103--the-strips-label-reads-the-queues-counts-itself-on-every-other-tab-every-30-s)).
+    **An upstream's rate limit** (R-CUR-011, [Q-UI-1100](api-and-ui.md#q-ui-1100--a-limit-is-one-sentence-above-the-list-a-line-on-its-waiting-rows-and-on-a-bulk-its-answer-folded)):
+    while the list's `limit` holds, one warning line above the bulks says it in the screen's language, "Docker Hub limits how often Quader
+    may ask it, since 06:30, and does not say until when. Quader asks again at 06:47; the downloads that wait start once Docker Hub allows
+    it." (where the upstream named its time: "… since 06:30. The downloads that wait start at 08:12, the time Docker Hub named."), with
+    **Technical details** folded under it: the last answer ("HTTP 429 at 06:41"), the waits in a row, until when and whose time that is,
+    the address without its query, the headers of the limit and the start of the upstream's answer, and the server's English sentence.
+    A waiting row reads "Rate limit until 06:47" under its state's column of progress, and a bulk whose rows wait reads "Waits for Docker
+    Hub's rate limit until 06:47" under its versions, in the list of bulks and on its own line. A row that met the limit shows its
+    failure, the headers of the limit among its facts.
     The excerpt is shown to every reader of the repository, as the API answers it
     ([H-1728](../security/remote-curation.md#h-1728--the-excerpt-of-an-upstreams-error-answer-is-shown-to-every-reader-of-the-repository)).
 - **The settings page** (R-UI-087): a closed section **Delivery** (details on demand, R-UI-067) with the mode as two radio choices and
@@ -2973,6 +3042,151 @@ R-CUR-018 (the opened row and bulk, the dash); the API's `RemoteDownloadFailure.
 [download-words.ts](../../web/src/app/features/repositories/downloads/download-words.ts), the tab in
 [remote-downloads.html](../../web/src/app/features/repositories/downloads/remote-downloads.html).
 
+### Q-CUR-170 · A rate-limited attempt hands its row back, and the upstream's limit holds the repository's queue
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's report of 2026-11-25 (06:31, the bulk "Every version of guidedtraffic/s3-encryption-proxy", 315 versions, on a remote
+of Docker Hub without a credential): "Ich glaube der Download ist fertig aber das UI für Downloads spiegelt das nicht." The tab was not
+stale. From 05:30:51 Docker Hub answered every manifest request `429` without a `Retry-After`; R-REPO-054's window of each of the four
+running rows waited 1, 2, 4 … up to 300 s and asked again, never longer than `mirror.LongWait` (300 s), so no run ended: each row read
+"Running" for the job's 30 minutes and would then have ended `failed` with `download_timeout`, and the next four would have started into
+the same limit. A limit the upstream named longer than 300 s ended the attempt, counted it, set the row's own `not_before`, and the same
+settle started the next waiting row at once, which met the limit too: one refused request per waiting row in a burst, and a row that met
+it five times ended `failed`. The limit is the address's, not the repository's: the same morning a CI job behind the same site address
+was refused `429` by Docker Hub because the profile's queue had used the hour's pulls, so a queue that keeps asking into a limit takes it
+from every neighbour of its address.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) As built: the run waits inside itself | A row holds its job and a worker's place while the limit lasts | Nothing new | Four places held for hours; requests every few minutes per row; the rows end `download_timeout`; "Running" for what waits |
+| (b) The row waits again with its own `not_before` and the attempt counted | R-CUR-011's retry, the upstream's time per row | Small | Every waiting row asks once into the limit when its turn comes; five limits end a row `failed`; the queue has no "since" or "until" to say |
+| (c) The row waits again, the attempt not counted, and the repository's queue is held: no row starts until the limit's time, then one asks first, and the first answer without a limit ends it (chosen) | A limit is the upstream's state, not the artifact's | The places are free and the counts true; one request per probe instead of one per row; the screens can say since when and until when | A table more; the hold of the queue and a mirror pass's of the same upstream are two (H-1880) |
+
+**Choice:** (c), in the shared engine (`internal/remotecuration/queue`), for every format: npmjs, nuget.org, a Debian mirror, Galaxy,
+a generic host and an OCI registry answer R-REPO-054's rate limits alike, and the queue's run is the same for each, so no format has a
+case of its own. A bulk's expansion asks nothing while the limit holds and holds it when it meets one. **Rationale:** the limit is shared by
+everything behind the installation's address (the CI job of 2026-11-25), a refused request can count against it at some registries, and a
+limit says nothing about the version, so neither the neighbours, the places nor the attempts should pay for it. The development agent would revisit the separate hold (H-1880) if a mirror pass and the queue of one repository are
+seen meeting the same limit by turns.
+
+**Applied in the spec:** R-CUR-011 ("An upstream's rate limit", "Retries"), R-CUR-012 (`limit`), R-CUR-018. Code:
+[limit.go](../../internal/remotecuration/queue/limit.go), `Finish`, `fill` and `limitAfter` in
+[service.go](../../internal/remotecuration/queue/service.go), [dispatch.go](../../internal/remotecuration/queue/dispatch.go),
+`bulkFailure` in [bulk.go](../../internal/remotecuration/queue/bulk.go).
+
+### Q-CUR-171 · A run waits out a limit of at most 10 s; a longer one ends its attempt
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) R-REPO-054's 300 s, as a pass | The window's long wait | One bound | A wait without the upstream's time never passes 300 s (the back-off is capped there): the run never ends, as on 2026-11-25 |
+| (b) None: every limit ends the attempt | The queue alone waits | Simplest | A burst limit of a second (a registry's per-second quota) costs a whole dispatch minute |
+| (c) 10 s (`queue.RunLimitWait`, `mirror.Window.EndAfter`) (chosen) | Short waits inside the run, a longer one to the queue | A second's burst is waited out; without the upstream's time a run sends at most five requests (waits of about 1, 2, 4 and 8 s) before it gives up | The five requests of a probe after each hold |
+
+**Choice:** (c). **Rationale:** a run should hold a worker's place only for a wait shorter than the queue's own minute; the development
+agent would revisit the five requests of a probe if a registry is seen counting refused requests against its limit.
+
+**Applied in the spec:** R-CUR-011. Code: `EndAfter` in [window.go](../../internal/mirror/window.go), `downloadUpstream` in
+[background_download.go](../../internal/formathost/background_download.go).
+
+### Q-CUR-172 · The limit's time is the upstream's, else the queue's back-off; then one row asks first
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Docker Hub counts the pulls of a caller without an account per address over a rolling window; on 2026-11-25 it reported the
+development machine's address at 0 of 100 pulls per hour (`ratelimit-limit: 100;w=3600`), and its `429` named no time that Quader reads
+(the waits in the log doubled from one second, R-REPO-054's back-off without a hint). A registry behind a CDN and S3 name one with
+`Retry-After` or a reset header.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The upstream's time where it names one (at most 6 h, R-REPO-054's cap); else `min(30 s × 2^(k−1), 1 h)` ±20 % over the waits in a row, the queue's back-off of R-CUR-011; after it, one row runs until an answer without a limit (chosen) | The queue's own words for a wait | The upstream's time is kept; without one the requests thin out to one probe an hour, the length of Docker Hub's window; the slow start of R-REPO-054 at the queue's level | A probe may start up to an hour after the window freed |
+| (b) The window's back-off, capped at 300 s | R-REPO-054 | One rule | About 72 probes in six hours, each of up to five requests |
+| (c) The window's length for a quota header without a reset (the `w` of `RateLimit-Limit`, an hour on 2026-11-25) | The window's length | One probe per window | The window rolls: the first pulls are free long before; a guess from a parameter no standard fixes |
+
+**Choice:** (a). An answer that comes while the limit holds (a row that was running when it began) keeps the count and the later time,
+as R-REPO-054 counts only the answer that begins a wait (Q-REPO-160). The limit ends at the first attempt begun after its last answer that
+the upstream answers without a limit. **Rationale:** the upstream's time is the only one that is known; the development agent would
+revisit the cap of an hour if the owner wants the queue to resume sooner after a limit without a time.
+
+**Applied in the spec:** R-CUR-011. Code: `nextLimit`, `endsLimit` and `limitPlaces` in [limit.go](../../internal/remotecuration/queue/limit.go).
+
+### Q-CUR-173 · The limit is a row per repository of a table of its own, transient, and apart from the mirror's
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `remote_download_limits`, one row per repository, transient (chosen) | The queue's state of an upstream | A primary-key read under the repository's lock; the drawer reads a handful of rows | A table more; the purge of a retired repository names it (migration 00120 replaces the function) |
+| (b) The waiting rows' `not_before` | No table | Nothing new | No "since" or answer to say; an update of up to 10,000 rows per limit; a new row would start at once |
+| (c) The mirror's `rate_limited_until` of `mirror_state` | One hold per upstream | The pass and the queue would share it | A repository without a mirror has no state row; the pass's state carries its counters and events; two writers of one row |
+
+**Choice:** (a). Transient: a limit is a live state of an upstream, and the first row that meets it after a restore writes it anew.
+**Rationale:** the smallest store that holds what the screens say; the development agent would revisit (c) with H-1880.
+
+**Applied in the spec:** R-CUR-011; [database.md](../developer/database.md). Code: [00120_remote_download_limits.sql](../../internal/meta/postgres/migrations/00120_remote_download_limits.sql),
+[tables_remote_curation.go](../../internal/meta/postgres/tables_remote_curation.go).
+
+### Q-CUR-174 · A limit's failure keeps the upstream's answer and the headers of the limit, and no other
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the failure of a rate limit carried its class, its code and a `Retry-After` only; the address, the status, the body and the
+headers of the answer were dropped, so the screen could not show the upstream's own words. Docker Hub documents `RateLimit-Limit`,
+`RateLimit-Remaining` and `Docker-RateLimit-Source` on its answers, the last one the address the limit counts, which is the
+installation's own address on the internet.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The address, status and excerpt as every failure's, and a member `headers` with a fixed list: `Retry-After`, `RateLimit`, `RateLimit-Policy`, `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, each at most 200 bytes (chosen) | The standard headers of a limit | The person sees what the upstream said; nothing that names an address | A registry's own header of its limit is not shown |
+| (b) Every header whose name holds `ratelimit` | Wider | A registry's own header shows | Docker Hub's names the installation's address to every reader of the repository |
+| (c) No headers | As before | Nothing new | The upstream's own figures (`0;w=3600`) are not seen |
+
+**Choice:** (a). **Rationale:** the excerpt is already shown to every reader (H-1728); a fixed list keeps an address out. The development
+agent would add a header to the list when a registry's own header of its limit is shown to carry no address.
+
+**Applied in the spec:** R-CUR-011 (the failure's `headers`); the API's `RemoteDownloadFailure.headers`. Code: `LimitHeaders` in
+[ratelimit.go](../../internal/proxy/upstream/ratelimit.go), `limitAnswer` in [failure.go](../../internal/proxy/failure.go).
+
+### Q-CUR-175 · The list answers the limit beside its counts, for every reader
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET downloads` answers `limit` beside `counts` (chosen) | One read for the tab | The tab reads one answer per refresh; the strip and a script see it too | A primary-key read more per list |
+| (b) An operation `GET download-limit` of its own | Separate | Clean | A second request every 5 s per open tab |
+| (c) Each waiting row names the limit | Per row | A row alone says it | 206 copies of one fact; a row that never ran has no answer to name |
+
+**Choice:** (a), to every reader of the queue, as the rows' failures: the upstream's name, the times and its answer, no credential.
+**Rationale:** the tab reads the list anyway; the development agent would revisit (b) if another view needs the limit without the rows.
+
+**Applied in the spec:** R-CUR-012; the API's `RemoteDownloadPage.limit`, `RemoteDownloadLimit`. Code: `limitView` in
+[remote_downloads_api.go](../../internal/api/v1/remote_downloads_api.go).
+
+### Q-CUR-176 · The top bar's panel lists the queues a limit holds, from the limits' rows
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the panel of T-26 lists the downloads whose bodies are in flight (R-OPS-049); a queue a limit holds has none, so it said "No
+download from an upstream is running" while 206 rows waited, which read as "done".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The list answers `waiting`: the repositories whose limit holds, with their waiting rows, the upstream's name, since and until (chosen) | A statement over `remote_download_limits` (a handful of rows) and an index count of each one's waiting rows | Cheap at every administrator's poll; says why | The waiting rows of a queue without a limit are not listed (they wait for a place, which Running shows) |
+| (b) Every repository's waiting rows | All that waits | Complete | A count over the whole queue table at every poll of every administrator |
+| (c) Nothing on the panel; the tab says it | As built | Nothing new | The owner's reading stands |
+
+**Choice:** (a), at most 100 queues, the longest held first. **Rationale:** what the panel lacked is the reason nothing runs; the
+development agent would revisit (b) if a queue that waits for a place is ever mistaken for one that is stuck.
+
+**Applied in the spec:** [operations-and-observability.md](operations-and-observability.md) R-OPS-052 (`waiting`),
+[api-and-ui.md](api-and-ui.md) R-UI-211. Code: `UpstreamDownloadLimited` in
+[upstream_downloads.sql](../../internal/meta/postgres/queries/upstream_downloads.sql), [store_pg.go](../../internal/fills/store_pg.go),
+[upstream_downloads_api.go](../../internal/api/v1/upstream_downloads_api.go).
+
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 
 Status: **Decided by the development agent** — selected from the options below while building the download queue (R4); the owner reviews
@@ -3399,8 +3613,19 @@ more expensively than its plan.
   [H-1730](../security/remote-curation.md#h-1730--a-catalogue-call-holds-a-whole-document-in-memory),
   [H-1840](../security/remote-curation.md#h-1840--clients-failures-of-many-files-write-as-many-rows-a-minute) and
   [H-1841](../security/remote-curation.md#h-1841--the-usage-overview-does-not-name-who-started-a-bulk) and
-  [H-1842](../security/remote-curation.md#h-1842--a-discard-leaves-what-a-version-shares-by-its-digest): the gaps of this page's
-  mechanisms, on its security page.
+  [H-1842](../security/remote-curation.md#h-1842--a-discard-leaves-what-a-version-shares-by-its-digest),
+  [H-1880](../security/remote-curation.md#h-1880--the-queue-and-a-mirror-pass-of-one-repository-meet-an-upstreams-limit-apart) to
+  [H-1883](../security/remote-curation.md#h-1883--a-reader-of-the-queue-sees-how-much-of-the-upstreams-quota-is-left): the gaps of this
+  page's mechanisms, on its security page.
 - The conditions of a curation policy and their wizard (SEC-009 to SEC-011), curation across sites (SEC-040, REPL-061).
 - Rules of a local or a virtual repository.
 - PyPI and every other format that does not exist (R-CUR-023).
+
+### H-1884 · An account that lifts an upstream's limit is not offered
+
+Component: the limit's sentence on the tab Downloads ([api-and-ui.md](api-and-ui.md)
+[Q-UI-1104](api-and-ui.md#q-ui-1104--the-limits-sentence-offers-no-account-the-presets-do-not-say-which-upstream-an-account-lifts)).
+Subject: a person whose remote of Docker Hub has no credential. Live. Docker Hub lifts its limit for callers with an account, but no
+format's preset says so, and the sentence names no account and links no setting: the person learns why the queue stands, not that a
+credential in the repository's settings would let it go on. What makes it real: a remote of a registry whose anonymous limit is the
+reason a bulk stands for hours.

@@ -6,7 +6,8 @@ import { Disclosure } from './ui/disclosure';
  * the reader's language, and the text the server recorded (an error as a handler or a host returned it, the English sentence of a
  * failure, a format's note) stays one click away for whoever has to give it to an administrator or search a log for it. The text
  * is the server's English and is marked so (`lang="en"`, not translated); it is never the only thing the screen says. `code` adds
- * the code the text belongs to, as code, so a report carries both.
+ * the code the text belongs to, as code, so a report carries both. A screen may put the facts of the answer before the text (its
+ * content: the download queue's rate limit puts the upstream's status, headers and excerpt there, remote-curation.md Q-UI-1100).
  *
  * A template hands the text in as an input and never interpolates a server's sentence itself: the rule R-UI-214 of
  * scripts/check-rules.mjs (server-text-rule.mjs) refuses an interpolation of `x.detail` and its kin outside this component.
@@ -16,7 +17,10 @@ import { Disclosure } from './ui/disclosure';
   imports: [Disclosure],
   template: `
     <quader-disclosure [inline]="true" [heading]="heading">
-      <p class="raw" lang="en" translate="no" data-testid="technical-details">{{ text() }}@if (code(); as c) {@if (text()) {&ngsp;}<code>{{ c }}</code>}</p>
+      <ng-content />
+      @if (text() || code()) {
+        <p class="raw" lang="en" translate="no" data-testid="technical-details">{{ text() }}@if (code(); as c) {@if (text()) {&ngsp;}<code>{{ c }}</code>}</p>
+      }
     </quader-disclosure>
   `,
   styles: `

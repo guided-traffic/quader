@@ -246,12 +246,40 @@ function hundredFinished(): Json[] {
   return [...first, ...rest];
 }
 
+/**
+ * The download queues an upstream's rate limit holds (remote-curation.md R-CUR-011, Q-UI-1101): the owner's Docker Hub queue of
+ * 2026-11-25 with 206 rows and no time of the upstream's own, and one row of a long project's npm remote whose upstream named its time.
+ */
+function heldQueues(): Json[] {
+  return [
+    {
+      repository: { project: 'upstream', key: 'docker-hub', format: 'oci' },
+      waiting: 206,
+      upstream: 'Docker Hub',
+      since: ago(3600),
+      until: new Date(Date.now() + 17 * 60_000).toISOString(),
+      hinted: false,
+      status: 429,
+    },
+    {
+      repository: { project: 'customer-portal-release-delivery', key: 'npm-registry-of-the-release-candidates', format: 'npm' },
+      waiting: 1,
+      upstream: 'registry.npmjs.org',
+      since: ago(300),
+      until: new Date(Date.now() + 2 * 3600_000).toISOString(),
+      hinted: true,
+      status: 429,
+    },
+  ];
+}
+
 /** What the two endpoints answer now; the walk changes it between its states. */
 interface Answers {
   running: Json[];
   runningCount: number;
   finished: Json[];
   listStatus: number;
+  waiting?: Json[];
 }
 
 const listUrl = '**/api/v1/system/upstream-downloads';
@@ -267,7 +295,14 @@ async function answer(page: Page, a: Answers): Promise<void> {
           status: 200,
           contentType: 'application/json',
           headers: { 'Cache-Control': 'no-store' },
-          body: JSON.stringify({ asOf: new Date().toISOString(), pollSeconds: 2, runningCount: a.runningCount, running: a.running, finished: a.finished }),
+          body: JSON.stringify({
+            asOf: new Date().toISOString(),
+            pollSeconds: 2,
+            runningCount: a.runningCount,
+            running: a.running,
+            finished: a.finished,
+            waiting: a.waiting ?? [],
+          }),
         })
       : route.fulfill({ status: a.listStatus, contentType: 'application/problem+json', body: JSON.stringify({ type: 'about:blank', title: 'Service Unavailable', status: a.listStatus }) }),
   );
@@ -373,6 +408,13 @@ export async function* downloadsPanelWalk(page: Page): AsyncGenerator<string> {
   await openPanel(page);
   await expect(drawer(page).locator('.dl-empty')).toHaveCount(2);
   yield 'empty';
+  // Nothing runs while two queues wait for their upstream's rate limit (R-CUR-011, Q-UI-1101): the panel says so above Running.
+  a.waiting = heldQueues();
+  a.finished = hundredFinished().slice(0, 3);
+  await closePanel(page);
+  await openPanel(page);
+  await expect(drawer(page).locator('[data-testid="upstream-downloads-waiting"] li.dl-row')).toHaveCount(2);
+  yield 'limited';
   await closePanel(page);
   await page.unroute(listUrl);
   await page.unroute(summaryUrl);

@@ -153,6 +153,39 @@ func TestR_OPS_052_TheDownloadsFromUpstreams(t *testing.T) {
 		}
 	})
 
+	// A queue an upstream's rate limit holds is no running download, and the list says so with the upstream's name (remote-curation.md
+	// R-CUR-011, Q-CUR-176): the preset's name where the remote's address is one, else the host.
+	t.Run("R-CUR-011 the list names the queues an upstream's rate limit holds", func(t *testing.T) {
+		limited := upstreamDownloadView()
+		t0 := limited.Now
+		limited.Limited = []fills.Limited{
+			{
+				Repo: fills.RepoName{Project: "upstream", Key: "docker-hub", Format: "oci"}, URL: "https://registry-1.docker.io/", Status: 429,
+				Since: t0.Add(-10 * time.Minute), Until: t0.Add(30 * time.Minute), Waiting: 206,
+			},
+			{
+				Repo: fills.RepoName{Project: "web", Key: "npm-remote", Format: "npm"}, URL: "https://npm.example.com/", Hinted: true,
+				Since: t0.Add(-time.Minute), Until: t0.Add(time.Minute), Waiting: 3,
+			},
+		}
+		s := upstreamDownloadSetup(t, callers["auditor"], limited)
+		h := newValidator(t).Handler(t, s.handler)
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/system/upstream-downloads", nil))
+		var got gen.UpstreamDownloadList
+		if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil || w.Code != http.StatusOK || len(got.Waiting) != 2 {
+			t.Fatalf("%d %v %s", w.Code, err, w.Body.String())
+		}
+		hub, npm := got.Waiting[0], got.Waiting[1]
+		if hub.Upstream != "Docker Hub" || hub.Waiting != 206 || hub.Status == nil || *hub.Status != 429 || !hub.Until.Equal(t0.Add(30*time.Minute)) ||
+			hub.Repository.Key != "docker-hub" || hub.Hinted {
+			t.Errorf("the held queue of a preset: %+v", hub)
+		}
+		if npm.Upstream != "npm.example.com" || npm.Status != nil || !npm.Hinted {
+			t.Errorf("the held queue of another upstream: %+v", npm)
+		}
+	})
+
 	t.Run("R-OPS-052 a replica without the reader answers 503", func(t *testing.T) {
 		s := upstreamDownloadSetup(t, callers["admin"], view, func(o *Options) { o.UpstreamDownloads = nil })
 		if w := s.get("/api/v1/system/upstream-downloads"); w.Code != http.StatusServiceUnavailable {

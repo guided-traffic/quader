@@ -192,7 +192,8 @@ user do not; a repository's own queue of downloads is its tab **Downloads**.
   down); **interrupted** (the replica that ran it stopped without saying so; a replica that was only slow writes the real end later).
 - **How fresh:** every replica writes its running downloads every 2 seconds; a replica that has not written for three of those intervals
   is left out. The last 100 are kept until 100 newer downloads push them out, whatever their age. Neither list is in a backup.
-- **What is never kept:** the upstream's address (a signed address can hold a credential), headers, the client's address.
+- **What is never kept:** the upstream's address (a signed address can hold a credential), headers, the client's address. A queue
+  that waits for an upstream's limit names the upstream by its preset's name or its host only.
 - **No one clears the finished list** for everybody: no operation removes its rows.
 
 The API is `GET /api/v1/system/upstream-downloads` and `GET /api/v1/system/upstream-downloads/summary` (the count only). One setting
@@ -213,6 +214,10 @@ every 10 seconds while the window is in view. On a phone below 440 px the bar dr
 
 The button opens a panel from the right:
 
+- **Waiting for an upstream**, above **Running** while there is any: each repository whose download queue an upstream's rate limit
+  holds, with how many downloads wait, who limits ("Docker Hub limits requests"), and until when, or when Quader asks again where the
+  upstream named no time; **Show in queue** opens the repository's tab **Downloads**. Its downloads run nowhere while they wait, which is
+  why **Running** can be empty although a queue is not done.
 - **Running**, the oldest first: the package and its version (an image layer without a version shows its digest's first 12 digits), a
   bar where the upstream announced the size, the bytes so far of the size, the speed (a dash in the first second), the time since it
   began, the format, the repository, and what caused it: **Client** with the person who asked, the person who started a queue row (or

@@ -177,3 +177,11 @@
 .dl-foot {
   margin: 0;
 }
+
+// A queue an upstream's rate limit holds (Q-UI-1101): its sentence beside the warning's mark, which stands on its first line.
+.dl-wait {
+  display: flex;
+  align-items: flex-start;
+  margin: 0;
+  overflow-wrap: anywhere;
+}

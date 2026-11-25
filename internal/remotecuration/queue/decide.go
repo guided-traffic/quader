@@ -36,12 +36,15 @@ type settlement struct {
 	Outcome   remotecuration.Outcome
 	Failure   *remotecuration.Failure
 	NotBefore time.Time
+	// Limited reports an attempt that ended at an upstream's rate limit: the row waits again, the attempt is not counted, and the
+	// repository's limit sets NotBefore (Q-CUR-170).
+	Limited bool
 }
 
 // settle decides the end of an attempt of row (whose Attempts counts it) from what the run reported (R-CUR-011): a cancelled run ends
-// cancelled; a failure whose class a later attempt can overcome waits for the next attempt until the row's attempts are spent; any
-// other failure ends the row failed; a run without a failure ends done with its outcome, keeping the last refusal of a file as the
-// row's failure.
+// cancelled; an upstream's rate limit waits again without counting the attempt, for the time of the repository's limit (Q-CUR-170);
+// a failure whose class a later attempt can overcome waits for the next attempt until the row's attempts are spent; any other failure
+// ends the row failed; a run without a failure ends done with its outcome, keeping the last refusal of a file as the row's failure.
 func settle(row Row, res Result, now time.Time, jitter float64) settlement {
 	switch {
 	case res.Cancelled:
@@ -50,6 +53,9 @@ func settle(row Row, res Result, now time.Time, jitter float64) settlement {
 		f := res.Failure
 		if f == nil {
 			f = &remotecuration.Failure{Class: remotecuration.ClassInternal, Step: remotecuration.StepPlan, Code: "internal"}
+		}
+		if isLimit(f) {
+			return settlement{State: remotecuration.StateWaiting, Failure: f, Limited: true}
 		}
 		if f.Class.Retryable() && row.Attempts < row.MaxAttempts {
 			wait := backoff(row.Attempts, time.Duration(f.RetryAfter)*time.Second, jitter)

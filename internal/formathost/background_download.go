@@ -24,7 +24,9 @@ import (
 // The run of a row of the download queue (remote-curation.md R-CUR-011, R-CUR-013; R-REPO-065's run of a probe's background
 // download, which it generalizes): one attempt of one version, run through the same gate and engine as a mirror pass. Its requests
 // take a background slot within the repository's background share and yield to client fetches (R-REPO-055); they read the upstream's
-// circuit without moving it and wait out a rate limit (R-REPO-054); every file goes through the format's gate, the vulnerability
+// circuit without moving it and wait out a rate limit of at most queue.RunLimitWait, while a longer one ends the attempt and the queue
+// holds the repository's rows until the upstream's time (R-REPO-054, R-CUR-011, Q-CUR-170); every file goes through the format's gate,
+// the vulnerability
 // scanning's rule for a miss (R-CUR-014: a download ahead does not ask the delivery rules) and the populate record of
 // system:background-download. A person's download is charged to the person's budget key with the ticket the API took, a probe's to the
 // probe's (usage-and-limits.md R-LIM-037); a bulk's, a request's and an allow's to nobody: system work (Q-LIM-19).
@@ -260,7 +262,9 @@ func (m *MirrorHost) downloadUpstream(repo repository.Repository, jobID string, 
 		return nil, err
 	}
 	pu.charge, pu.fill, pu.queue = charge, fill, queueCause(row)
-	return &backgroundUpstream{passUpstream: pu, win: mirror.NewWindow(nil, nil, share)}, nil
+	// A rate limit longer than a few seconds ends the run instead of holding a worker's place through it: the queue holds the
+	// repository's rows until the upstream's time (R-CUR-011, Q-CUR-170, Q-CUR-171).
+	return &backgroundUpstream{passUpstream: pu, win: mirror.NewWindow(nil, nil, share).EndAfter(queue.RunLimitWait)}, nil
 }
 
 // queueCause is what a row's run hands the engine for the downloads of its fills (R-OPS-049): the row's origin, id and version and the

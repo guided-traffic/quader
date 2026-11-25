@@ -7,6 +7,7 @@ import {
   UpstreamDownloadFinished,
   UpstreamDownloadList,
   UpstreamDownloadRunning,
+  UpstreamDownloadWaiting,
   UpstreamDownloadsApi,
 } from '../../api/upstream-downloads-api';
 import { FormatCatalog } from '../../core/format-names';
@@ -17,6 +18,7 @@ import { valueOf } from '../paged-resource';
 import { QuaderDrawer } from '../ui/drawer';
 import { TimeAgo } from '../ui/time-ago';
 import { finishedFigures, originText, outcomeBadge, runningFigures, subjectOf } from './download-words';
+import { limitQueueText } from './limit-words';
 
 /** Where this device keeps the newest end of the finished downloads **Hide all** hid (R-UI-212). */
 export const HIDDEN_BEFORE_KEY = 'quader.upstream-downloads.hidden-before';
@@ -25,8 +27,9 @@ const DEFAULT_POLL_SECONDS = 2;
 
 /**
  * The downloads from upstreams (api-and-ui.md R-UI-211, R-UI-212; operations-and-observability.md R-OPS-049 to R-OPS-052) in Quader's
- * drawer from the right: a filter for both sections, the running downloads with their progress, speed and time, the last 100
- * finished with their duration and average, **Hide all** for this device, and a link to the manual. While it is open and the window
+ * drawer from the right: a filter for both sections, the download queues an upstream's rate limit holds (remote-curation.md R-CUR-011,
+ * Q-UI-1101), the running downloads with their progress, speed and time, the last 100 finished with their duration and average,
+ * **Hide all** for this device, and a link to the manual. While it is open and the window
  * is seen it reads the whole list every `pollSeconds`; closing it stops the refresh. It announces nothing (the button's name carries
  * the count). A row has no actions: a queued one links its repository's tab Downloads.
  */
@@ -66,6 +69,15 @@ export class UpstreamDownloadsPanel {
   private readonly query = computed(() => this.filter().trim().toLowerCase());
   protected readonly filtering = computed(() => this.query() !== '');
 
+  /** The queues an upstream's rate limit holds (Q-UI-1101), filtered by the repository and the upstream's name. */
+  protected readonly waiting = computed(() => this.list()?.waiting ?? []);
+  protected readonly waitingShown = computed(() => {
+    const q = this.query();
+    return this.waiting().filter((w) => q === '' || [`${w.repository.project}/${w.repository.key}`, w.upstream].some((t) => t.toLowerCase().includes(q)));
+  });
+  protected readonly waitingHeading = computed(() =>
+    this.sectionHeading($localize`:@@upstream-downloads.waiting:Waiting for an upstream`, this.waitingShown().length, this.waiting().length),
+  );
   protected readonly running = computed(() => this.list()?.running ?? []);
   protected readonly runningCount = computed(() => this.list()?.runningCount ?? 0);
   protected readonly runningShown = computed(() => this.running().filter((d) => this.matches(d)));
@@ -199,6 +211,15 @@ export class UpstreamDownloadsPanel {
 
   protected queueLink(d: UpstreamDownload): readonly string[] {
     return [...this.repositoryLink(d), 'downloads'];
+  }
+
+  /** A held queue in one sentence: how many wait, who limits, and until when (Q-UI-1101). */
+  protected waitText(w: UpstreamDownloadWaiting): string {
+    return limitQueueText({ ...w, repository: `${w.repository.project}/${w.repository.key}` });
+  }
+
+  protected waitingQueueLink(w: UpstreamDownloadWaiting): readonly string[] {
+    return ['/projects', w.repository.project, 'repositories', w.repository.key, 'downloads'];
   }
 
   protected isFinished(d: UpstreamDownload): d is UpstreamDownloadFinished {

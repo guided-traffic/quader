@@ -29,6 +29,32 @@
         <p class="dl-empty" role="status" i18n="@@upstream-downloads.loading">Loading the downloads.</p>
       }
     } @else {
+      @if (waitingShown().length > 0) {
+        <!-- The queues an upstream's rate limit holds (remote-curation.md R-CUR-011, Q-UI-1101): their rows wait and run nowhere, so
+             the section Running alone would read as nothing left to do. -->
+        <section class="dl-section" aria-labelledby="upstream-downloads-waiting" data-testid="upstream-downloads-waiting">
+          <div class="dl-section-head">
+            <h3 id="upstream-downloads-waiting" class="dl-section-title">{{ waitingHeading() }}</h3>
+          </div>
+          <ul class="dl-rows">
+            @for (w of waitingShown(); track w.repository.project + '/' + w.repository.key) {
+              <li class="dl-row">
+                <p class="dl-wait">
+                  <span class="material-icons inline warn" aria-hidden="true">hourglass_empty</span>
+                  <span>{{ waitText(w) }}</span>
+                </p>
+                <p class="dl-facts dot-separated">
+                  <span>{{ formatLabel(w.repository.format) }}</span>
+                  <span
+                    ><a [routerLink]="waitingQueueLink(w)" (click)="close()" i18n="@@upstream-downloads.show-in-queue">Show in queue</a></span
+                  >
+                </p>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
       <section class="dl-section" aria-labelledby="upstream-downloads-running" data-testid="upstream-downloads-running">
         <div class="dl-section-head">
           <h3 id="upstream-downloads-running" class="dl-section-title">{{ runningHeading() }}</h3>

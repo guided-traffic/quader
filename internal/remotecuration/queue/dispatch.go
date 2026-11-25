@@ -26,7 +26,8 @@ const maxPruneBatches = 50
 
 // Dispatch is one run of the task remote-downloads-dispatch (R-CUR-011, R-CUR-021): it finds the running rows whose job ended and
 // lets them wait again without counting the attempt, starts the waiting rows whose next attempt came in every repository with a free
-// place, goes one step on with every bulk that expands, ends the bulks whose rows all ended and removes finished rows after their
+// place and no upstream's rate limit in force, goes one step on with every bulk that expands where no limit holds, ends the bulks
+// whose rows all ended, removes the limits of the repositories whose queue is empty and removes finished rows after their
 // retention. describe turns a planner's error into a failure in words (internal/proxy). A failure of one repository's start or one
 // bulk's step is logged and the run goes on.
 func (s *Service) Dispatch(ctx context.Context, describe func(error) remotecuration.Failure) (DispatchResult, error) {
@@ -58,6 +59,9 @@ func (s *Service) Dispatch(ctx context.Context, describe func(error) remotecurat
 		return res, err
 	}
 	for _, ref := range bulks {
+		if l, found, err := s.o.Store.Limit(ctx, ref.RepoID); err != nil || (found && l.Holds(now)) {
+			continue // the upstream limits requests: the expansion asks it nothing until the limit's time (Q-CUR-170)
+		}
 		b, _, found, err := s.o.Store.GetBulk(ctx, ref.ID, ref.RepoID)
 		if err != nil || !found || b.State != BulkExpanding {
 			continue
@@ -69,6 +73,9 @@ func (s *Service) Dispatch(ctx context.Context, describe func(error) remotecurat
 		res.Expanded++
 	}
 	if res.Settled, err = m.SettleBulks(ctx); err != nil {
+		return res, err
+	}
+	if _, err := m.PruneLimits(ctx, now); err != nil {
 		return res, err
 	}
 	st := s.o.Settings()

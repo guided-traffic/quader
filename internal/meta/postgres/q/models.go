@@ -1338,6 +1338,16 @@ type RemoteDownloadBulk struct {
 	Ticket             json.RawMessage
 }
 
+type RemoteDownloadLimit struct {
+	RepoID    int64
+	Since     pgtype.Timestamptz
+	Until     pgtype.Timestamptz
+	Waits     int32
+	Hinted    bool
+	Failure   json.RawMessage
+	UpdatedAt pgtype.Timestamptz
+}
+
 type RemoteExamination struct {
 	RepoID    int64
 	Name      string

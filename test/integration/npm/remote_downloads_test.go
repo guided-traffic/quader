@@ -302,3 +302,62 @@ func TestR_CUR_011_AFailureInItsOwnWordsAndTheRetries(t *testing.T) {
 		}
 	})
 }
+
+// An upstream's rate limit holds the repository's queue (R-CUR-011 "An upstream's rate limit", R-CUR-012, Q-CUR-170): the stub answers
+// the next document request 429 with Retry-After: 30, which is longer than a run waits out. The row waits again without counting the
+// attempt and names the upstream's answer; the list answers the limit; a second row and the dispatch start nothing and the stub is not
+// asked while it holds; once its time came (set by the test instead of waited for), one row asks, completes, ends the limit, and the
+// other starts in the place it frees. The shared engine runs every format's queue, so this one case stands for all of them. Data: two
+// tarballs of the stub's corpus, a few hundred bytes each; about 4 s.
+func TestR_CUR_011_AnUpstreamsRateLimitHoldsTheQueue(t *testing.T) {
+	r, rep := downloadsEnv(t)
+	p := upstreamPackage(t, 2)
+	v, v2 := p.Versions[0].Version, p.Versions[1].Version
+	if err := r.stub.SetMode(npmstub.Mode{Throttle: &npmstub.Throttle{Kind: npmstub.Throttle429, Class: npmstub.KindDocument, RetryAfterSeconds: 30}}); err != nil {
+		t.Fatal(err)
+	}
+	a := r.startDownload(rep, r.tokL, map[string]any{"level": "version", "name": p.Name, "version": v})
+	if a.Status != http.StatusAccepted {
+		t.Fatalf("the download: %d %s", a.Status, a.Body)
+	}
+	id := a.JSON(t)["download"].(map[string]any)["id"].(string)
+
+	got := waitRow(t, r, rep, id, "the row met the limit", func(m map[string]any) bool { return m["state"] == "waiting" && m["failure"] != nil })
+	f := got["failure"].(map[string]any)
+	headers, _ := f["headers"].(map[string]any)
+	if f["class"] != "upstream_rate_limited" || f["status"] != float64(429) || f["retryAfter"] != float64(30) || headers["Retry-After"] != "30" ||
+		got["attempts"] != float64(0) || got["nextAttemptAt"] == nil {
+		t.Fatalf("the limited row: %v", got)
+	}
+	list := r.st.Do(rep, http.MethodGet, downloadsPath+"/downloads", r.tokC, nil).JSON(t)
+	limit, _ := list["limit"].(map[string]any)
+	if limit["holds"] != true || limit["hinted"] != true || limit["waits"] != float64(1) || limit["upstream"] == "" {
+		t.Fatalf("the list's limit, as a reader reads it: %v", list["limit"])
+	}
+
+	documents := r.stub.Counts().Documents(p.Name)
+	b := r.startDownload(rep, r.tokL, map[string]any{"level": "version", "name": p.Name, "version": v2})
+	if b.Status != http.StatusAccepted {
+		t.Fatalf("the second download: %d %s", b.Status, b.Body)
+	}
+	id2 := b.JSON(t)["download"].(map[string]any)["id"].(string)
+	r.runDispatch(rep)
+	time.Sleep(time.Second)
+	if a, b := r.row(rep, id), r.row(rep, id2); a["state"] != "waiting" || b["state"] != "waiting" || b["attempts"] != float64(0) ||
+		r.stub.Counts().Documents(p.Name) != documents {
+		t.Fatalf("under the limit: %v %v, documents asked %d more", a["state"], b["state"], r.stub.Counts().Documents(p.Name)-documents)
+	}
+
+	if err := r.stub.SetMode(npmstub.Mode{}); err != nil {
+		t.Fatal(err)
+	}
+	r.st.Exec(`UPDATE remote_download_limits SET until = now()`)
+	done := dispatchUntil(t, r, rep, id, "the first row done after the limit", func(m map[string]any) bool { return m["state"] == "done" })
+	if done["attempts"] != float64(1) {
+		t.Errorf("the limited attempt counted: %v", done["attempts"])
+	}
+	waitRow(t, r, rep, id2, "the second row done in the place the first freed", func(m map[string]any) bool { return m["state"] == "done" })
+	if list := r.st.Do(rep, http.MethodGet, downloadsPath+"/downloads", r.tokL, nil).JSON(t); list["limit"] != nil {
+		t.Errorf("the limit stays after an answer without it: %v", list["limit"])
+	}
+}

@@ -246,8 +246,10 @@ export interface paths {
          *     included; `finished` holds at most 100, the newest first. A replica publishes its running downloads every `pollSeconds`
          *     (`proxy.upstream_downloads.publish_interval`), and a reader leaves out a replica whose last write is older than three of
          *     them. Every replica answers alike from PostgreSQL; the repository and the person are resolved by id at the read, and an
-         *     entry whose repository no longer exists is left out. No upstream address, header or client address is kept. Reading is not
-         *     audited.
+         *     entry whose repository no longer exists is left out. No upstream address, header or client address is kept. `waiting` lists
+         *     the download queues an upstream's rate limit holds, with the upstream's name (its preset's, else its host) and until when
+         *     (remote-curation.md R-CUR-011, Q-CUR-176): rows that wait there run nowhere, so `running` alone would read as nothing to do.
+         *     Reading is not audited.
          */
         get: operations["listUpstreamDownloads"];
         put?: never;
@@ -16484,7 +16486,10 @@ export interface components {
             items: components["schemas"]["LimitProjectRow"][];
             nextCursor: string | null;
         };
-        /** @description The running and the last finished downloads from the upstreams of remote repositories (R-OPS-052). */
+        /**
+         * @description The running and the last finished downloads from the upstreams of remote repositories (R-OPS-052), and the download queues an
+         *     upstream's rate limit holds (remote-curation.md R-CUR-011, Q-CUR-176).
+         */
         UpstreamDownloadList: {
             /**
              * Format: date-time
@@ -16505,6 +16510,36 @@ export interface components {
             running: components["schemas"]["UpstreamDownloadRunning"][];
             /** @description At most 100, the newest end first. */
             finished: components["schemas"]["UpstreamDownloadFinished"][];
+            /**
+             * @description The remote repositories whose download queue an upstream's rate limit holds at the read, the longest held first, at most
+             *     100: their rows wait and none runs until `until` (Q-CUR-176). A repository that is gone is left out.
+             */
+            waiting: components["schemas"]["UpstreamDownloadWaiting"][];
+        };
+        /** @description A download queue an upstream's rate limit holds (remote-curation.md R-CUR-011). */
+        UpstreamDownloadWaiting: {
+            repository: components["schemas"]["UpstreamDownloadRepository"];
+            /**
+             * Format: int64
+             * @description The rows of the queue that wait.
+             */
+            waiting: number;
+            /** @description The name of the format's upstream preset whose address the remote has ("Docker Hub"), else the host of its address. */
+            upstream: string;
+            /**
+             * Format: date-time
+             * @description The answer that began the first of the waits in a row.
+             */
+            since: string;
+            /**
+             * Format: date-time
+             * @description No row of the repository starts before; then one asks first.
+             */
+            until: string;
+            /** @description The upstream named `until`; otherwise it is the queue's back-off. */
+            hinted: boolean;
+            /** @description The status of the upstream's last answer of the limit. */
+            status: number | null;
         };
         /** @description The number of running downloads from upstreams (R-OPS-052). */
         UpstreamDownloadSummary: {
@@ -16666,10 +16701,44 @@ export interface components {
             excerpt?: string | null;
             /** @description Seconds. */
             retryAfter?: number | null;
+            /**
+             * @description The headers of a rate-limit answer that say the limit, by their names: `Retry-After`, `RateLimit`, `RateLimit-Policy`,
+             *     `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` and the `X-RateLimit-` ones, each at most 200 bytes; no other
+             *     header is kept (a registry's own one can name the caller's address). Null for another failure (Q-CUR-174).
+             */
+            headers?: {
+                [key: string]: string;
+            } | null;
             detail: string;
             attempt: number;
             /** Format: date-time */
             at: string;
+        };
+        /**
+         * @description The upstream's rate limit that holds the repository's queue, or held it last (R-CUR-011 "An upstream's rate limit", R-CUR-012,
+         *     Q-CUR-170 to Q-CUR-175). While it holds, no row of the repository starts and a bulk's expansion asks nothing; after `until` one
+         *     row asks first, and the first attempt the upstream answers without a limit removes it.
+         */
+        RemoteDownloadLimit: {
+            /**
+             * Format: date-time
+             * @description The answer that began the first of the waits in a row.
+             */
+            since: string;
+            /**
+             * Format: date-time
+             * @description No row of the repository starts before; then one asks first.
+             */
+            until: string;
+            /** @description `until` lies ahead at the read. */
+            holds: boolean;
+            /** @description The upstream named `until` (its `Retry-After` or the reset of its quota); otherwise it is the queue's back-off. */
+            hinted: boolean;
+            /** @description The waits in a row, without an attempt between that the upstream answered without a limit. */
+            waits: number;
+            /** @description The name of the format's upstream preset whose address the remote has ("Docker Hub"), else the host of its address. */
+            upstream: string;
+            failure: components["schemas"]["RemoteDownloadFailure"];
         };
         /** @description The person who started a row, its bulk or its request; both members are null for a reader who may not see the name. */
         RemoteDownloadStarter: {
@@ -16733,6 +16802,8 @@ export interface components {
             items: components["schemas"]["RemoteDownload"][];
             nextCursor: string | null;
             counts: components["schemas"]["RemoteDownloadCounts"];
+            /** @description The upstream's rate limit of the repository's queue; null for none (Q-CUR-175). */
+            limit: components["schemas"]["RemoteDownloadLimit"] | null;
         };
         /**
          * @description A download ahead of a client (R-CUR-010): `version` with `name` and `version`; `package` with `name`; `section` with `section`,
@@ -17663,6 +17734,21 @@ export interface operations {
                      *             "name": "sam"
                      *           },
                      *           "replica": "quader-packages-7d9f-abc12"
+                     *         }
+                     *       ],
+                     *       "waiting": [
+                     *         {
+                     *           "repository": {
+                     *             "project": "upstream",
+                     *             "key": "docker-hub",
+                     *             "format": "oci"
+                     *           },
+                     *           "waiting": 206,
+                     *           "upstream": "Docker Hub",
+                     *           "since": "2026-11-24T08:30:51Z",
+                     *           "until": "2026-11-24T08:46:51Z",
+                     *           "hinted": false,
+                     *           "status": 429
                      *         }
                      *       ]
                      *     }

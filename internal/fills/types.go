@@ -101,6 +101,23 @@ type View struct {
 	Finished   []Finished
 	Repos      map[int64]RepoName
 	Principals map[string]string
+	// Limited are the download queues an upstream's rate limit holds at the read (remote-curation.md R-CUR-011, Q-CUR-176).
+	Limited []Limited
+}
+
+// Limited is a remote repository whose download queue an upstream's rate limit holds: what waits, since when the upstream limits and
+// until when no row starts, with the repository and its upstream's address resolved at the read.
+type Limited struct {
+	Repo RepoName
+	// URL is the remote's upstream address: the name the panel says ("Docker Hub", else the host).
+	URL          string
+	Since, Until time.Time
+	// Hinted reports that the upstream named Until.
+	Hinted bool
+	// Status is the status of the upstream's last limit answer, 0 when none came (a reset header of a 403 is one).
+	Status int
+	// Waiting are the rows of the queue that wait.
+	Waiting int64
 }
 
 // Interrupted turns the downloads of a swept live row into finished downloads of the outcome interrupted (R-OPS-051): ended at the row's

@@ -1147,14 +1147,26 @@ Priority: **P1** · Covers: quader-only
       "origin": "client", "queueOrigin": null, "queueRow": null, "by": {"id": "…", "name": "sam"},
       "replica": "quader-packages-7d9f-abc12"
     }
+  ],
+  "waiting": [
+    {
+      "repository": {"project": "upstream", "key": "docker-hub", "format": "oci"}, "waiting": 206, "upstream": "Docker Hub",
+      "since": "…", "until": "…", "hinted": false, "status": 429
+    }
   ]
 }
 ```
 
 - **The schemas** of the API document: `UpstreamDownloadList`, `UpstreamDownloadSummary`, `UpstreamDownloadRunning`,
   `UpstreamDownloadFinished`, `UpstreamDownloadRepository`, `UpstreamDownloadPrincipal`, `UpstreamDownloadFailure` (its `class` is the
-  queue's `RemoteDownloadFailureClass`) and `UpstreamDownloadOrigin`. A finished download's `bytesPerSecond` is its average, null for a
-  duration of 0.
+  queue's `RemoteDownloadFailureClass`), `UpstreamDownloadOrigin` and `UpstreamDownloadWaiting`. A finished download's `bytesPerSecond`
+  is its average, null for a duration of 0.
+- **`waiting`** ([remote-curation.md](remote-curation.md) R-CUR-011,
+  [Q-CUR-176](remote-curation.md#q-cur-176--the-top-bars-panel-lists-the-queues-a-limit-holds-from-the-limits-rows)): the download queues
+  an upstream's rate limit holds at the read, the longest held first, at most 100: the repository, its waiting rows, the upstream's name
+  (its preset's, else the host of the remote's address), since when, until when, whether the upstream named that time, and the status of
+  its last answer. Their rows run nowhere, so `running` alone would read as nothing left to do. Read from `remote_download_limits` (a
+  handful of rows) with an index count of each one's waiting rows.
 - **Who** ([Q-OPS-423](#q-ops-423--the-holders-of-contentmetadata-read-see-the-downloads-of-every-repository-and-nobody-else)): the
   holders of `content:metadata-read`, which are the administrator and the auditor ([authorization.md](authorization.md) R-AUTHZ-010).
   A project's Owner or Maintainer, a `security-admin`, a `repository-admin` and a plain user get `403`; a caller without a session or

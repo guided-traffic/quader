@@ -50,7 +50,7 @@ func text(t *testing.T, conn *pgx.Conn, sql string) string {
 }
 
 // purged and kept are the tables whose rows reference a repository by a cascading foreign key, as the purge of a retired well-known
-// repository treats them (upstream_repository_purge of migration 00086, replaced last by 00119, Q-REPO-376, Q-CUR-111): content goes,
+// repository treats them (upstream_repository_purge of migration 00086, replaced last by 00120, Q-REPO-376, Q-CUR-111): content goes,
 // configuration stays. A table a later migration adds fails this test until it is put into one of the lists and, when purged, into the function.
 // What the purge does with the rows is TestR_REPO_067_ThePurgeOfARetiredRepository's (area upstream).
 var (
@@ -59,7 +59,7 @@ var (
 		"ansible_version_docs", "deb_binaries", "deb_remote_files", "deb_remote_indexes", "deb_remote_releases", "deb_suites", "deb_tombstones",
 		"items", "mirror_pending", "mirror_state", "npm_packages", "npm_remote_packages", "npm_tombstones", "nuget_symbol_file",
 		"nuget_tombstone", "nuget_version", "oci_manifests", "oci_tombstones", "packages", "remote_cache_entries", "remote_download",
-		"remote_download_bulks", "remote_examinations",
+		"remote_download_bulks", "remote_download_limits", "remote_examinations",
 		"remote_cache_invalidations", "remote_upstream_state", "remote_url_map", "repository_usage", "signature_attachments", "signature_fetches",
 		"signature_refusals",
 		"upload_sessions", "upstream_download_finished", "usage_bucket", "usage_daily_summary", "usage_limit_event", "vuln_finding",

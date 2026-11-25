@@ -461,6 +461,7 @@ func (e *Engine) requestToken(ctx context.Context, h handshake, treq *http.Reque
 		if h.background {
 			body, _ := io.ReadAll(io.LimitReader(resp.Body, rateSniffBytes))
 			if rl, ok := upstream.RateLimitOf(resp.StatusCode, resp.Header, body, e.now()); ok {
+				rl.Address, rl.Body = addressOf(answeredURL(resp, treq.URL)), body[:min(len(body), excerptBytes)]
 				he.rate = &upstream.RateLimitError{RateLimit: rl, Repo: name}
 			}
 		}

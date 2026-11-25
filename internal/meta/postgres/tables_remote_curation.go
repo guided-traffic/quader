@@ -24,6 +24,9 @@ func init() {
 	} {
 		tables.Register(t, tables.Data, tables.Options{})
 	}
+	// remote_download_limits (00120): an upstream's rate limit that holds a repository's queue (R-CUR-011, Q-CUR-173) is a live state
+	// of an upstream, no decision: it is empty after a restore, and the first row that meets the limit again writes it anew.
+	tables.Register("remote_download_limits", tables.Transient, tables.Options{})
 	// The revision of a repository's rule set is the key and the validator of a filtered document (R-CUR-003) and an answer of the
 	// rules' API: a restore raises it like every client-held revision, so that no document rendered under rules after the restore
 	// point is answered 304 under the restored ones (R-BAK-022).

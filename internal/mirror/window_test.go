@@ -213,3 +213,37 @@ func TestR_REPO_054_ACallWaitingForTheWindowEndsWithItsContext(t *testing.T) {
 	}
 	close(release)
 }
+
+// A run of the download queue waits out a short rate limit and hands a longer one back to the queue (remote-curation.md R-CUR-011):
+// a hint of 7 s is slept and the request sent again; a hint of 30 s ends the run at once with the time the upstream named; without a
+// hint the run sleeps the back-off until a wait passes the bound.
+func TestR_CUR_011_ARunOfTheQueueWaitsOutOnlyAShortRateLimit(t *testing.T) {
+	c := newClock()
+	w := newTestWindow(c, 4).EndAfter(10 * time.Second)
+	var calls atomic.Int32
+	if err := w.Do(t.Context(), func(context.Context) error {
+		if calls.Add(1) == 1 {
+			return &limited{after: 7 * time.Second, hinted: true}
+		}
+		return nil
+	}); err != nil || calls.Load() != 2 || sleptTotal(c) != 7*time.Second {
+		t.Fatalf("a short hint: %v after %d calls, slept %v", err, calls.Load(), sleptTotal(c))
+	}
+	err := w.Do(t.Context(), failing(&limited{after: 30 * time.Second, hinted: true}))
+	var d *DeferredError
+	if !errors.As(err, &d) || !d.Until.Equal(c.Now().Add(30*time.Second)) || sleptTotal(c) != 7*time.Second {
+		t.Fatalf("a long hint: %v, slept %v", err, sleptTotal(c))
+	}
+
+	c2 := newClock()
+	w2 := newTestWindow(c2, 4).EndAfter(10 * time.Second)
+	calls.Store(0)
+	err = w2.Do(t.Context(), func(context.Context) error {
+		calls.Add(1)
+		return &limited{}
+	})
+	// The draw 0.5 waits 0.75 d of 1, 2, 4 and 8 s (at least a second); 16 s × 0.75 = 12 s passes the bound: five requests.
+	if !errors.As(err, &d) || calls.Load() != 5 || len(c2.slept()) != 4 {
+		t.Fatalf("no hint: %v after %d calls, waits %v", err, calls.Load(), c2.slept())
+	}
+}

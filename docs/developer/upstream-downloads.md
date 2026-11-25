@@ -32,7 +32,7 @@ R-UI-212), which read the schemas named below through `web/src/app/api/upstream-
 | [internal/fills/tracker.go](../../internal/fills/tracker.go) | `Tracker`: the running set, the counting reader, the buffer of ended downloads (the newest 100), `snapshot` and `requeue` |
 | [internal/fills/window.go](../../internal/fills/window.go) | The speed over 10 s from the samples of the publications (Q-OPS-421) |
 | [internal/fills/publisher.go](../../internal/fills/publisher.go) | `Publisher`, a component: the loop of `Tick`, the sweep at most every 30 s, `Flush` in the close step, the failure count and its warning once a minute |
-| [internal/fills/store_pg.go](../../internal/fills/store_pg.go) | `Store`: `Publish` (upsert or delete of the live row, insert and trim of the finished rows, one transaction), `Sweep`, `ReadUpstreamDownloads` (the live rows with their age, the newest 100, the names by id) |
+| [internal/fills/store_pg.go](../../internal/fills/store_pg.go) | `Store`: `Publish` (upsert or delete of the live row, insert and trim of the finished rows, one transaction), `Sweep`, `ReadUpstreamDownloads` (the live rows with their age, the newest 100, the names by id, and `Limited`: the download queues an upstream's rate limit holds, from `remote_download_limits`, remote-curation.md Q-CUR-176) |
 | [internal/fills/metrics.go](../../internal/fills/metrics.go) | The four families of R-OPS-052, the label `repo` capped by R-OPS-007, `Tracker.Forget` |
 | [internal/meta/postgres/migrations/00118_upstream_downloads.sql](../../internal/meta/postgres/migrations/00118_upstream_downloads.sql), [queries/upstream_downloads.sql](../../internal/meta/postgres/queries/upstream_downloads.sql), [tables_upstream_downloads.go](../../internal/meta/postgres/tables_upstream_downloads.go) | The two tables, their statements (rows cross as JSON text, so the package needs no driver types) and their export class |
 | [internal/app/wire_upstream_downloads.go](../../internal/app/wire_upstream_downloads.go) | The area `upstream_downloads`: one tracker and one publisher per process, the store |
@@ -55,8 +55,10 @@ R-UI-212), which read the schemas named below through `web/src/app/api/upstream-
    inserted (`ON CONFLICT (id) DO UPDATE`) and the table is trimmed to the newest 100 by `(finished_at, id)`, in the same transaction. A
    publication that fails hands its ended downloads back to the buffer.
 5. **The read.** `Store.ReadUpstreamDownloads` reads PostgreSQL's clock, every live row with its age on that clock, the newest 100
-   finished rows and the names of the repositories (project, key, format) and principals (not `anonymous`, not `authenticated`) they
-   name. The handler leaves out a row older than three intervals, adds the age to the elapsed time, leaves out an entry whose repository
+   finished rows, the queues an upstream's rate limit holds (`UpstreamDownloadLimited`: at most 100 rows of `remote_download_limits` whose
+   time lies ahead, each with an index count of its waiting rows, the repository's name and its upstream URL, which the handler turns
+   into the preset's name or the host, `waiting` of the answer) and the names of the repositories (project, key, format) and principals
+   (not `anonymous`, not `authenticated`) they name. The handler leaves out a row older than three intervals, adds the age to the elapsed time, leaves out an entry whose repository
    is gone (it still counts in `runningCount`), and orders the running entries by their begin.
 
 ## Speed and the samples
@@ -100,7 +102,7 @@ of its 200 get no end.
 | Unit | `internal/fills` `TestR_OPS_050_TheSpeedOfARunningDownload`, `TestR_OPS_050_APublicationWritesWhatRunsAndWhatEnded`, `TestR_OPS_051_AStaleLiveRowEndsInterrupted`, `TestR_OPS_049_AFinishedDownloadKeepsOnlyWhatItCanStore` (a fake clock and sink) | none | ~0.1 s |
 | Unit | `internal/proxy` `TestR_OPS_049_TheEngineReportsEachArtifactBody` (the begin, the counted body, every outcome) | 64 KiB | ms |
 | Unit | `internal/formathost` `TestR_OPS_049_TheCauseOfABackgroundFill` | none | ms |
-| Unit | `internal/api/v1` `TestR_OPS_052_TheDownloadsFromUpstreams` (seven callers on both operations, the shape, freshness, elapsed, gone repository and principal) | in-memory view | ~0.3 s |
+| Unit | `internal/api/v1` `TestR_OPS_052_TheDownloadsFromUpstreams` (seven callers on both operations, the shape, freshness, elapsed, gone repository and principal, the queues a limit holds with the upstream's name) | in-memory view | ~0.3 s |
 | Integration | area `proxy` `TestR_OPS_050_TwoReplicasShowOneRunningDownload`: the engine's path of R-OPS-049 (three concurrent misses are one download, a hit, a `HEAD`, a `404` and a document none, no length, a digest mismatch), a held 64 KiB artifact read by another replica, the trim of 101, the sweep and its replacement, the cascade | one 64 KiB artifact, ~105 tiny rows | ~3 s |
 
 The engine's path is tested in the integration area because the unit tier of `internal/proxy` has no item store; the mapping of every

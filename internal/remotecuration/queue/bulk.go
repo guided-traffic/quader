@@ -229,6 +229,11 @@ func (s *Service) bulkFailure(ctx context.Context, b Bulk, err error, describe f
 	}
 	f := describe(err)
 	f.At = s.o.Now()
+	if isLimit(&f) {
+		// The upstream limits requests: the repository's queue waits for it, the expansion included, and goes on after (Q-CUR-170).
+		s.o.Log.Info("a step of a bulk download met the upstream's rate limit; the repository's queue waits for it", "bulk", b.ID)
+		return s.holdLimit(ctx, b.RepoID, f)
+	}
 	if f.Class.Retryable() {
 		s.o.Log.Warn("a step of a bulk download failed; the next dispatch goes on", "bulk", b.ID, "class", f.Class, "error", err)
 		return nil

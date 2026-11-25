@@ -130,8 +130,17 @@ a cache while it is being built and to find out why a client's fetch failed.
 - **Bulk** (a row's origin) and the name of a bulk in **Bulk downloads** open the rows of that bulk with its line above them: how many
   versions it found and queued, its rows by state, its bounds, what failed, and **Cancel bulk** for the person who started it and for
   Maintainers, Owners and administrators, or **Start again** for a failed one. **Show every download** returns to the whole queue.
-- While something waits or runs, or a bulk is still finding versions, the tab reads the queue again every five seconds; **Pause
-  automatic refresh** stops that until you resume it.
+- **When the upstream limits requests.** Some registries answer only so many requests from one address (Docker Hub without an
+  account, for example). Then a line above the list says who limits, since when, and when the downloads go on: at the time the upstream
+  named, or, where it named none, when Quader asks again ("Docker Hub limits how often Quader may ask it, since 06:30, and does not say
+  until when. Quader asks again at 06:47; …"). The waiting rows read **Rate limit until 06:47**, and a bulk whose rows wait says it
+  under its versions. Nothing starts before that time, so the queue does not keep asking into the limit; after it, one download asks
+  first, and the others follow once the upstream answers it. Waiting for a limit is no failed attempt: a download does not fail because
+  of it. **Technical details** under the line show the upstream's last answer, its headers about the limit and the start of its text.
+- The tab reads the queue again by itself while the window is in view: every five seconds while something waits or runs, or a bulk is
+  still finding versions, every 30 seconds otherwise and while a limit holds the queue; at once when you come back to the window.
+  **Pause automatic refresh** stops that until you resume it. The count on the tab's label (**Downloads · 2 failed**) follows the queue
+  on the repository's other tabs as well, within 30 seconds.
 
 By default, finished and cancelled downloads leave the list a week after they ended, failed ones after 30 days.
 

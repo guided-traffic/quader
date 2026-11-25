@@ -2,9 +2,36 @@ package upstream
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 )
+
+// A rate limit keeps the headers that say the limit and no other (remote-curation.md R-CUR-011, Q-CUR-174): the standard ones and the
+// X-RateLimit family, each cut to 200 bytes; a registry's own header, which can name the caller's address, is dropped.
+func TestR_CUR_011_ARateLimitKeepsOnlyTheHeadersOfTheLimit(t *testing.T) {
+	h := http.Header{}
+	h.Set("Retry-After", "21600")
+	h.Set("RateLimit-Limit", "100;w=3600")
+	h.Set("RateLimit-Remaining", "0;w=3600")
+	h.Set("X-RateLimit-Reset", strings.Repeat("9", 300))
+	h.Set("Docker-RateLimit-Source", "203.0.113.7")
+	h.Set("Content-Type", "application/json")
+	rl, ok := RateLimitOf(http.StatusTooManyRequests, h, nil, time.Unix(1_793_786_400, 0))
+	if !ok {
+		t.Fatal("a 429 is a rate limit")
+	}
+	if len(rl.Headers) != 4 || rl.Headers["Retry-After"] != "21600" || rl.Headers["RateLimit-Remaining"] != "0;w=3600" ||
+		len(rl.Headers["X-RateLimit-Reset"]) != 200 || rl.ContentType != "application/json" {
+		t.Fatalf("headers %v, type %q", rl.Headers, rl.ContentType)
+	}
+	if _, kept := rl.Headers["Docker-RateLimit-Source"]; kept {
+		t.Fatal("a registry's own header that names an address is kept")
+	}
+	if LimitHeaders(http.Header{"Content-Type": {"text/plain"}}) != nil {
+		t.Fatal("an answer without a header of the limit keeps some")
+	}
+}
 
 // Contract test of R-REPO-054 (the mirror mode, not built yet): the IDs stay out of the test names, so the
 // coverage evidence does not count a requirement whose engine is missing (Q-ROAD-5).

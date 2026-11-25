@@ -223,6 +223,27 @@ func TestR_CUR_011_TheFailureOfAnExchangeInPreciseWords(t *testing.T) {
 			t.Errorf("a failure without a refused address has the target %q", plain.Target)
 		}
 	})
+
+	// A rate limit says what the upstream told (Q-CUR-174): its status, the address asked, the start of its answer and the headers of
+	// the limit, through the deferral that ended the run.
+	t.Run("a rate limit keeps the upstream's answer and the headers of its limit", func(t *testing.T) {
+		body := `{"errors":[{"code":"TOOMANYREQUESTS","message":"You have reached your pull rate limit."}]}`
+		rl := upstream.RateLimit{
+			Status: 429, Reason: upstream.ReasonQuotaHeader, Wait: 30 * time.Second, Hinted: true,
+			Address: "https://registry.example.com/v2/acme/app/manifests/1.0", Body: []byte(body), ContentType: "application/json",
+			Headers: map[string]string{"RateLimit-Remaining": "0;w=3600", "Retry-After": "30"},
+		}
+		got := Describe(&mirror.DeferredError{Until: time.Now().Add(30 * time.Second), Cause: &upstream.RateLimitError{RateLimit: rl, Repo: "r"}})
+		check(t, "rate limit", got, want{remotecuration.ClassUpstreamRateLimited, remotecuration.StepStatus, errs.CodeUpstreamRateLimited, 429})
+		if got.Address != rl.Address || got.Excerpt != body || got.RetryAfter != 30 || got.Headers["RateLimit-Remaining"] != "0;w=3600" {
+			t.Errorf("the failure: %+v", got)
+		}
+		rl.ContentType, rl.Address = "application/octet-stream", ""
+		bin := Describe(&upstream.RateLimitError{RateLimit: rl, Repo: "r"})
+		if bin.Excerpt != "" || bin.Address != "" {
+			t.Errorf("a binary answer has the excerpt %q", bin.Excerpt)
+		}
+	})
 }
 
 type testRateLimit struct{ d time.Duration }

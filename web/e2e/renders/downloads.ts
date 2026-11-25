@@ -6,7 +6,9 @@ import { Page, expect } from '@playwright/test';
  * browser with the rows a cache that is being built shows: a running and a waiting row, a bulk's rows, a client's failure repeated
  * fourteen times, a failure with a long sentence and the 512 bytes of an upstream's error page, a row stopped at a bound and a
  * cancelled one; above them the repository's bulks (Q-CUR-168): one that finds versions, one whose rows run, and one whose expansion
- * failed before it queued a row, with the engine's long sentence. Nothing is changed on the server.
+ * failed before it queued a row, with the engine's long sentence; and the queue an upstream's rate limit holds (R-CUR-011, Q-UI-1100):
+ * the sentence above the list, the line of its waiting rows and of its bulk, and the upstream's answer folded under the sentence.
+ * Nothing is changed on the server.
  */
 
 const BULK = '0193a1b2-0000-7000-8000-0000000000b1';
@@ -217,6 +219,51 @@ const expandingBulk = {
 
 const bulks = [expandingBulk, failedBulk, bulk];
 
+/** The bulk of a queue an upstream's rate limit holds, as the owner's of 2026-11-25: 315 versions found, 105 done, 206 wait. */
+const heldBulk = {
+  ...bulk,
+  id: BULK,
+  subject: '@types/node',
+  versionsFound: 315,
+  versionsQueued: 315,
+  rows: { waiting: 206, done: 105 },
+  createdAt: at(-64),
+};
+
+/** The upstream's limit of that queue: a 429 without a time of its own, the third wait in a row; Quader asks again in 17 minutes. */
+const heldLimit = {
+  since: at(-61),
+  until: at(17),
+  holds: true,
+  hinted: false,
+  waits: 3,
+  upstream: 'registry.npmjs.org',
+  failure: failure({
+    class: 'upstream_rate_limited',
+    step: 'status',
+    code: 'upstream_rate_limited',
+    address: 'https://registry.npmjs.org/@types%2fnode',
+    status: 429,
+    excerpt: '{"error":"Too Many Requests","reason":"You have exceeded the rate limit for anonymous requests; sign in or wait before you retry."}',
+    headers: { 'RateLimit-Limit': '100;w=3600', 'RateLimit-Remaining': '0;w=3600', 'X-RateLimit-Reset': String(Math.floor(Date.now() / 1000) + 21_000) },
+    detail: 'registry.npmjs.org is rate limiting Quader (status 429); Quader asks again after the wait, and the wait is no failed attempt of the file.',
+    attempt: 1,
+    at: at(-4),
+  }),
+};
+
+/** The rows of the held queue: the newest waiting rows of the bulk, one that met the limit, and the done ones under them. */
+function heldRows(): Record<string, unknown>[] {
+  const waiting = ['24.10.1', '24.10.0', '24.9.2', '24.9.1', '24.9.0'].map((v, i) =>
+    row({ id: `0193a1b2-0000-7000-8000-0000000001${i}0`, name: '@types/node', version: v, origin: 'bulk', bulk: BULK, createdAt: at(-64) }),
+  );
+  waiting[0] = { ...waiting[0], failure: heldLimit.failure };
+  const done = ['22.19.0', '22.18.13'].map((v, i) =>
+    row({ id: `0193a1b2-0000-7000-8000-0000000002${i}0`, name: '@types/node', version: v, origin: 'bulk', bulk: BULK, state: 'done', outcome: 'completed', attempts: 1, files: 1, stored: 1, bytes: 2_412_544, finishedAt: at(-62) }),
+  );
+  return [...waiting, ...done];
+}
+
 const listUrl = (url: URL): boolean => /^\/api\/v1\/projects\/[^/]+\/repositories\/[^/]+\/downloads$/.test(url.pathname);
 const bulkUrl = (url: URL): boolean => /^\/api\/v1\/projects\/[^/]+\/repositories\/[^/]+\/download-bulks\/[^/]+$/.test(url.pathname);
 const bulksUrl = (url: URL): boolean => /^\/api\/v1\/projects\/[^/]+\/repositories\/[^/]+\/download-bulks$/.test(url.pathname);
@@ -230,20 +277,27 @@ const rowsOfTab = 'main quader-remote-downloads [data-testid="download-rows"] tb
 export async function* downloadsWalk(p: Page): AsyncGenerator<string> {
   await expect(p.locator('main quader-remote-downloads [data-testid="download-rows"]')).toBeVisible();
   yield '';
+  // The queue an upstream's limit holds is answered once the walk reaches it.
+  let held = false;
   await p.route(listUrl, (route) => {
     if (route.request().method() !== 'GET') return route.fallback();
     const params = new URL(route.request().url()).searchParams;
     const bulkOnly = params.get('bulk');
     const nameOnly = params.get('name');
+    if (held) {
+      const counts = { waiting: 206, running: 0, failed: 0, done: 105 };
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: heldRows(), nextCursor: 'more', counts, limit: heldLimit }) });
+    }
     const items = queueRows().filter((r) => (!bulkOnly || r['bulk'] === bulkOnly) && (!nameOnly || r['name'] === nameOnly));
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(page(items, !bulkOnly && !nameOnly)) });
   });
   await p.route(bulkUrl, (route) => {
     const id = new URL(route.request().url()).pathname.split('/').at(-1);
-    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(bulks.find((b) => b.id === id) ?? bulk) });
+    const answer = held ? heldBulk : (bulks.find((b) => b.id === id) ?? bulk);
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(answer) });
   });
   await p.route(bulksUrl, (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: bulks, nextCursor: null }) }),
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: held ? [heldBulk] : bulks, nextCursor: null }) }),
   );
   await p.reload();
   await expect(p.locator(rowsOfTab)).toHaveCount(9);
@@ -270,6 +324,20 @@ export async function* downloadsWalk(p: Page): AsyncGenerator<string> {
   await expect(p.locator('main [data-testid="download-name-filter"]')).toBeVisible();
   await expect(p.locator(rowsOfTab)).toHaveCount(1);
   yield 'name';
+  // The queue an upstream's rate limit holds (R-CUR-011, Q-UI-1100): the sentence above the list, the waiting rows' and the bulk's line,
+  // then the upstream's answer folded under the sentence, and the bulk's own line.
+  held = true;
+  const tab = new URL(p.url()).pathname;
+  await p.goto(tab);
+  await expect(p.locator('main [data-testid="download-limit"]')).toBeVisible();
+  await expect(p.locator(rowsOfTab)).toHaveCount(7);
+  yield 'limited';
+  await p.locator('main [data-testid="download-limit"] quader-technical-details button').click();
+  await expect(p.locator('main [data-testid="download-limit"] quader-technical-details .collapse-region.open')).toBeVisible();
+  yield 'limited-technical';
+  await p.goto(`${tab}?bulk=${BULK}`);
+  await expect(p.locator('main [data-testid="download-bulk"] .limit-line')).toBeVisible();
+  yield 'limited-bulk';
   await p.unroute(listUrl);
   await p.unroute(bulkUrl);
   await p.unroute(bulksUrl);

@@ -10,8 +10,9 @@ import (
 	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
-// DeferredError is returned by a [Window] once an upstream asked for a wait longer than [LongWait] (R-REPO-054): the run holds no
-// slot through it, so it ends and its caller runs again at Until. Cause is the rate-limit answer.
+// DeferredError is returned by a [Window] once an upstream asked for a wait longer than [LongWait] (R-REPO-054), or than the window's
+// own bound ([Window.EndAfter]): the run holds no slot through it, so it ends and its caller runs again at Until. Cause is the
+// rate-limit answer.
 type DeferredError struct {
 	Until time.Time
 	Cause error
@@ -47,6 +48,16 @@ func NewWindow(c Clock, j Jitter, ceiling int) *Window {
 		j = SystemJitter{}
 	}
 	return &Window{th: newThrottle(c, j, ceiling, nil), clock: c}
+}
+
+// EndAfter makes a wait longer than d end the run with a *DeferredError instead of the window's [LongWait], and returns the window. The
+// download queue's runs wait out only a short rate limit inside the run (remote-curation.md R-CUR-011, Q-CUR-171): a longer one hands
+// the row back to the queue, which holds the repository until the upstream's time. Call it before the first request.
+func (w *Window) EndAfter(d time.Duration) *Window {
+	w.th.mu.Lock()
+	w.th.longWait = max(d, 0)
+	w.th.mu.Unlock()
+	return w
 }
 
 // Size returns the current window.
@@ -96,7 +107,7 @@ func (w *Window) Do(ctx context.Context, fn func(context.Context) error) error {
 		if rl, ok := discover.AsRateLimited(err); ok {
 			hint, hinted := rl.RetryAfter()
 			waitFor, started := w.th.rateLimited(tk, hint, hinted)
-			if started && waitFor > LongWait {
+			if started && waitFor > w.longWait() {
 				d := &DeferredError{Until: w.clock.Now().Add(waitFor), Cause: err}
 				w.mu.Lock()
 				w.deferred = d
@@ -108,4 +119,11 @@ func (w *Window) Do(ctx context.Context, fn func(context.Context) error) error {
 		w.th.failed(tk)
 		return err
 	}
+}
+
+// longWait is the wait beyond which the window ends its run.
+func (w *Window) longWait() time.Duration {
+	w.th.mu.Lock()
+	defer w.th.mu.Unlock()
+	return w.th.longWait
 }

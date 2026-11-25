@@ -616,8 +616,10 @@ paths:
         included; `finished` holds at most 100, the newest first. A replica publishes its running downloads every `pollSeconds`
         (`proxy.upstream_downloads.publish_interval`), and a reader leaves out a replica whose last write is older than three of
         them. Every replica answers alike from PostgreSQL; the repository and the person are resolved by id at the read, and an
-        entry whose repository no longer exists is left out. No upstream address, header or client address is kept. Reading is not
-        audited.
+        entry whose repository no longer exists is left out. No upstream address, header or client address is kept. `waiting` lists
+        the download queues an upstream's rate limit holds, with the upstream's name (its preset's, else its host) and until when
+        (remote-curation.md R-CUR-011, Q-CUR-176): rows that wait there run nowhere, so `running` alone would read as nothing to do.
+        Reading is not audited.
       x-quader-permission:
         permission: content:metadata-read
       responses:
@@ -672,6 +674,14 @@ paths:
                     queueRow: null
                     by: {id: 0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a11, name: sam}
                     replica: quader-packages-7d9f-abc12
+                waiting:
+                  - repository: {project: upstream, key: docker-hub, format: oci}
+                    waiting: 206
+                    upstream: Docker Hub
+                    since: "2026-11-24T08:30:51Z"
+                    until: "2026-11-24T08:46:51Z"
+                    hinted: false
+                    status: 429
         "401":
           $ref: "#/components/responses/Unauthenticated"
         "403":
@@ -33765,8 +33775,10 @@ components:
     UpstreamDownloadList:
       type: object
       additionalProperties: false
-      description: The running and the last finished downloads from the upstreams of remote repositories (R-OPS-052).
-      required: [asOf, pollSeconds, runningCount, running, finished]
+      description: |
+        The running and the last finished downloads from the upstreams of remote repositories (R-OPS-052), and the download queues an
+        upstream's rate limit holds (remote-curation.md R-CUR-011, Q-CUR-176).
+      required: [asOf, pollSeconds, runningCount, running, finished, waiting]
       properties:
         asOf:
           type: string
@@ -33790,6 +33802,42 @@ components:
           description: At most 100, the newest end first.
           items:
             $ref: "#/components/schemas/UpstreamDownloadFinished"
+        waiting:
+          type: array
+          description: |
+            The remote repositories whose download queue an upstream's rate limit holds at the read, the longest held first, at most
+            100: their rows wait and none runs until `until` (Q-CUR-176). A repository that is gone is left out.
+          items:
+            $ref: "#/components/schemas/UpstreamDownloadWaiting"
+    UpstreamDownloadWaiting:
+      type: object
+      additionalProperties: false
+      description: A download queue an upstream's rate limit holds (remote-curation.md R-CUR-011).
+      required: [repository, waiting, upstream, since, until, hinted, status]
+      properties:
+        repository:
+          $ref: "#/components/schemas/UpstreamDownloadRepository"
+        waiting:
+          type: integer
+          format: int64
+          description: The rows of the queue that wait.
+        upstream:
+          type: string
+          description: The name of the format's upstream preset whose address the remote has ("Docker Hub"), else the host of its address.
+        since:
+          type: string
+          format: date-time
+          description: The answer that began the first of the waits in a row.
+        until:
+          type: string
+          format: date-time
+          description: No row of the repository starts before; then one asks first.
+        hinted:
+          type: boolean
+          description: The upstream named `until`; otherwise it is the queue's back-off.
+        status:
+          type: [integer, "null"]
+          description: The status of the upstream's last answer of the limit.
     UpstreamDownloadSummary:
       type: object
       additionalProperties: false
@@ -34016,6 +34064,15 @@ components:
         retryAfter:
           type: [integer, "null"]
           description: Seconds.
+        headers:
+          type: [object, "null"]
+          description: |
+            The headers of a rate-limit answer that say the limit, by their names: `Retry-After`, `RateLimit`, `RateLimit-Policy`,
+            `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` and the `X-RateLimit-` ones, each at most 200 bytes; no other
+            header is kept (a registry's own one can name the caller's address). Null for another failure (Q-CUR-174).
+          additionalProperties:
+            type: string
+            maxLength: 200
         detail:
           type: string
         attempt:
@@ -34024,6 +34081,38 @@ components:
         at:
           type: string
           format: date-time
+    RemoteDownloadLimit:
+      type: object
+      additionalProperties: false
+      description: |
+        The upstream's rate limit that holds the repository's queue, or held it last (R-CUR-011 "An upstream's rate limit", R-CUR-012,
+        Q-CUR-170 to Q-CUR-175). While it holds, no row of the repository starts and a bulk's expansion asks nothing; after `until` one
+        row asks first, and the first attempt the upstream answers without a limit removes it.
+      required: [since, until, holds, hinted, waits, upstream, failure]
+      properties:
+        since:
+          type: string
+          format: date-time
+          description: The answer that began the first of the waits in a row.
+        until:
+          type: string
+          format: date-time
+          description: No row of the repository starts before; then one asks first.
+        holds:
+          type: boolean
+          description: "`until` lies ahead at the read."
+        hinted:
+          type: boolean
+          description: The upstream named `until` (its `Retry-After` or the reset of its quota); otherwise it is the queue's back-off.
+        waits:
+          type: integer
+          minimum: 1
+          description: The waits in a row, without an attempt between that the upstream answered without a limit.
+        upstream:
+          type: string
+          description: The name of the format's upstream preset whose address the remote has ("Docker Hub"), else the host of its address.
+        failure:
+          $ref: "#/components/schemas/RemoteDownloadFailure"
     RemoteDownloadStarter:
       type: object
       additionalProperties: false
@@ -34129,7 +34218,7 @@ components:
     RemoteDownloadPage:
       type: object
       additionalProperties: false
-      required: [items, nextCursor, counts]
+      required: [items, nextCursor, counts, limit]
       properties:
         items:
           type: array
@@ -34139,6 +34228,11 @@ components:
           type: [string, "null"]
         counts:
           $ref: "#/components/schemas/RemoteDownloadCounts"
+        limit:
+          description: The upstream's rate limit of the repository's queue; null for none (Q-CUR-175).
+          oneOf:
+            - $ref: "#/components/schemas/RemoteDownloadLimit"
+            - type: "null"
     RemoteDownloadRequest:
       type: object
       additionalProperties: false

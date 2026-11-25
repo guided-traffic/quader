@@ -66,9 +66,11 @@ SELECT to_jsonb(d.*)::text AS doc
 
 -- name: RemoteDownloadSettle :execrows
 -- The end of an attempt, written by its run: the state, the counters, the failure and the next attempt. Fenced by the attempt's job,
--- so that a run whose row was cancelled or found orphaned meanwhile writes nothing.
+-- so that a run whose row was cancelled or found orphaned meanwhile writes nothing. An attempt that ended at an upstream's rate limit
+-- is not counted (uncounted, Q-CUR-170).
 UPDATE remote_download
    SET state = sqlc.arg(state)::text, outcome = NULLIF(sqlc.arg(outcome)::text, ''),
+       attempts = CASE WHEN sqlc.arg(uncounted)::bool THEN GREATEST(attempts - 1, 0) ELSE attempts END,
        failure = NULLIF(sqlc.arg(failure)::text, '')::jsonb,
        files = sqlc.arg(files)::int, stored = stored + sqlc.arg(stored)::int, present = sqlc.arg(present)::int,
        refused = sqlc.arg(refused)::int, bytes = bytes + sqlc.arg(bytes)::bigint,
@@ -293,3 +295,26 @@ SELECT DISTINCT dir
   FROM deb_remote_releases
  WHERE repo_id = sqlc.arg(repo_id)::bigint AND document <> 'absent' AND verified_by IS NOT NULL
  ORDER BY dir;
+
+-- name: RemoteDownloadLimitGet :many
+-- The upstream's rate limit that holds a repository's queue, or held it last (remote_download_limits, migration 00120, Q-CUR-170).
+SELECT to_jsonb(l.*)::text AS doc FROM remote_download_limits l WHERE l.repo_id = sqlc.arg(repo_id)::bigint;
+
+-- name: RemoteDownloadLimitPut :exec
+-- Writes a repository's limit; the caller holds the repository's lock and computed every member from the one it read.
+INSERT INTO remote_download_limits (repo_id, since, until, waits, hinted, failure, updated_at)
+VALUES (sqlc.arg(repo_id)::bigint, to_timestamp(sqlc.arg(since_us)::bigint / 1000000.0), to_timestamp(sqlc.arg(until_us)::bigint / 1000000.0),
+        sqlc.arg(waits)::int, sqlc.arg(hinted)::bool, sqlc.arg(failure)::text::jsonb, now())
+ON CONFLICT (repo_id) DO UPDATE
+   SET since = EXCLUDED.since, until = EXCLUDED.until, waits = EXCLUDED.waits, hinted = EXCLUDED.hinted, failure = EXCLUDED.failure,
+       updated_at = now();
+
+-- name: RemoteDownloadLimitClear :exec
+-- The first attempt the upstream answered without a limit ends the repository's limit.
+DELETE FROM remote_download_limits WHERE repo_id = sqlc.arg(repo_id)::bigint;
+
+-- name: RemoteDownloadLimitsPrune :execrows
+-- A limit that ended, of a repository whose queue has no waiting or running row left (the task remote-downloads-dispatch).
+DELETE FROM remote_download_limits l
+ WHERE l.until < to_timestamp(sqlc.arg(now_us)::bigint / 1000000.0)
+   AND NOT EXISTS (SELECT 1 FROM remote_download d WHERE d.repo_id = l.repo_id AND d.state IN ('waiting', 'running'));

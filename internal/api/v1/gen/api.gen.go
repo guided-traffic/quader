@@ -13705,6 +13705,11 @@ type RemoteDownloadFailure struct {
 	Excerpt *string `json:"excerpt,omitempty"`
 	File    *string `json:"file,omitempty"`
 
+	// Headers The headers of a rate-limit answer that say the limit, by their names: `Retry-After`, `RateLimit`, `RateLimit-Policy`,
+	// `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` and the `X-RateLimit-` ones, each at most 200 bytes; no other
+	// header is kept (a registry's own one can name the caller's address). Null for another failure (Q-CUR-174).
+	Headers *map[string]string `json:"headers,omitempty"`
+
 	// RetryAfter Seconds.
 	RetryAfter *int                      `json:"retryAfter,omitempty"`
 	Status     *int                      `json:"status,omitempty"`
@@ -13721,10 +13726,43 @@ type RemoteDownloadFailureStep string
 // RemoteDownloadFailureClass The class of a failure (remote-curation.md R-CUR-011, Q-CUR-20).
 type RemoteDownloadFailureClass string
 
+// RemoteDownloadLimit The upstream's rate limit that holds the repository's queue, or held it last (R-CUR-011 "An upstream's rate limit", R-CUR-012,
+// Q-CUR-170 to Q-CUR-175). While it holds, no row of the repository starts and a bulk's expansion asks nothing; after `until` one
+// row asks first, and the first attempt the upstream answers without a limit removes it.
+type RemoteDownloadLimit struct {
+	// Failure The failure of a row's attempt in its own words (R-CUR-011, Q-CUR-20): the class and the step a script filters on, the engine's
+	// code, the file, the address asked without its query (a signed address of a CDN carries a credential in it), the address the
+	// upstream named and Quader refused to ask, the upstream's status, the first 512 bytes of a non-success answer as text, the
+	// upstream's Retry-After and an English sentence for a script and an administrator. A screen writes its own sentence from the
+	// code and these members, in its language (Q-CUR-169).
+	Failure RemoteDownloadFailure `json:"failure"`
+
+	// Hinted The upstream named `until` (its `Retry-After` or the reset of its quota); otherwise it is the queue's back-off.
+	Hinted bool `json:"hinted"`
+
+	// Holds `until` lies ahead at the read.
+	Holds bool `json:"holds"`
+
+	// Since The answer that began the first of the waits in a row.
+	Since time.Time `json:"since"`
+
+	// Until No row of the repository starts before; then one asks first.
+	Until time.Time `json:"until"`
+
+	// Upstream The name of the format's upstream preset whose address the remote has ("Docker Hub"), else the host of its address.
+	Upstream string `json:"upstream"`
+
+	// Waits The waits in a row, without an attempt between that the upstream answered without a limit.
+	Waits int `json:"waits"`
+}
+
 // RemoteDownloadPage defines model for RemoteDownloadPage.
 type RemoteDownloadPage struct {
-	Counts     RemoteDownloadCounts `json:"counts"`
-	Items      []RemoteDownload     `json:"items"`
+	Counts RemoteDownloadCounts `json:"counts"`
+	Items  []RemoteDownload     `json:"items"`
+
+	// Limit The upstream's rate limit of the repository's queue; null for none (Q-CUR-175).
+	Limit      *RemoteDownloadLimit `json:"limit"`
 	NextCursor *string              `json:"nextCursor"`
 }
 
@@ -16610,7 +16648,8 @@ type UpstreamDownloadFinished struct {
 // background fill, the job was cancelled, or the request ended. `interrupted`: the replica stopped publishing while it ran.
 type UpstreamDownloadFinishedOutcome string
 
-// UpstreamDownloadList The running and the last finished downloads from the upstreams of remote repositories (R-OPS-052).
+// UpstreamDownloadList The running and the last finished downloads from the upstreams of remote repositories (R-OPS-052), and the download queues an
+// upstream's rate limit holds (remote-curation.md R-CUR-011, Q-CUR-176).
 type UpstreamDownloadList struct {
 	// AsOf The time of the read on PostgreSQL's clock.
 	AsOf time.Time `json:"asOf"`
@@ -16626,6 +16665,10 @@ type UpstreamDownloadList struct {
 
 	// RunningCount Every running download of the replicas that published within three intervals, those left out of `running` included.
 	RunningCount int64 `json:"runningCount"`
+
+	// Waiting The remote repositories whose download queue an upstream's rate limit holds at the read, the longest held first, at most
+	// 100: their rows wait and none runs until `until` (Q-CUR-176). A repository that is gone is left out.
+	Waiting []UpstreamDownloadWaiting `json:"waiting"`
 }
 
 // UpstreamDownloadOrigin What caused a download - a client's miss, a row of the download queue, a mirror's pass, the vulnerability scanning's database.
@@ -16698,6 +16741,30 @@ type UpstreamDownloadSummary struct {
 
 	// Running The same count as `runningCount` of the list.
 	Running int64 `json:"running"`
+}
+
+// UpstreamDownloadWaiting A download queue an upstream's rate limit holds (remote-curation.md R-CUR-011).
+type UpstreamDownloadWaiting struct {
+	// Hinted The upstream named `until`; otherwise it is the queue's back-off.
+	Hinted bool `json:"hinted"`
+
+	// Repository The remote repository a download fills, resolved by its id at the read.
+	Repository UpstreamDownloadRepository `json:"repository"`
+
+	// Since The answer that began the first of the waits in a row.
+	Since time.Time `json:"since"`
+
+	// Status The status of the upstream's last answer of the limit.
+	Status *int `json:"status"`
+
+	// Until No row of the repository starts before; then one asks first.
+	Until time.Time `json:"until"`
+
+	// Upstream The name of the format's upstream preset whose address the remote has ("Docker Hub"), else the host of its address.
+	Upstream string `json:"upstream"`
+
+	// Waiting The rows of the queue that wait.
+	Waiting int64 `json:"waiting"`
 }
 
 // UpstreamHit A package of a search or a level (R-CUR-009): the upstream's facts as plain text and the repository's state: `delivery` (the

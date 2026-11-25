@@ -96,6 +96,66 @@ func (q *Queries) UpstreamDownloadInterruptedInsert(ctx context.Context, rows st
 	return err
 }
 
+const upstreamDownloadLimited = `-- name: UpstreamDownloadLimited :many
+SELECT l.repo_id, p.key AS project, r.key, r.format, COALESCE(r.config -> 'remote' ->> 'url', '')::text AS url,
+       (extract(epoch FROM l.since) * 1000000)::bigint AS since_us, (extract(epoch FROM l.until) * 1000000)::bigint AS until_us,
+       l.hinted, COALESCE((l.failure ->> 'status')::int, 0)::int AS status,
+       (SELECT count(*) FROM remote_download d WHERE d.repo_id = l.repo_id AND d.state = 'waiting')::bigint AS waiting
+  FROM remote_download_limits l
+  JOIN repositories r ON r.id = l.repo_id
+  JOIN project p ON p.id = r.project_id
+ WHERE l.until > now()
+ ORDER BY l.since, l.repo_id
+ LIMIT 100
+`
+
+type UpstreamDownloadLimitedRow struct {
+	RepoID  int64
+	Project string
+	Key     string
+	Format  string
+	Url     string
+	SinceUs int64
+	UntilUs int64
+	Hinted  bool
+	Status  int32
+	Waiting int64
+}
+
+// The download queues an upstream's rate limit holds at the read (remote_download_limits of 00120, remote-curation.md R-CUR-011,
+// Q-CUR-176): what the panel says beside what runs. A limit is one row per repository that an upstream limits, so the statement reads
+// a handful of rows and counts each one's waiting rows by the index of the list (at most proxy.downloads.max_waiting_per_repository).
+func (q *Queries) UpstreamDownloadLimited(ctx context.Context) ([]UpstreamDownloadLimitedRow, error) {
+	rows, err := q.db.Query(ctx, upstreamDownloadLimited)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []UpstreamDownloadLimitedRow{}
+	for rows.Next() {
+		var i UpstreamDownloadLimitedRow
+		if err := rows.Scan(
+			&i.RepoID,
+			&i.Project,
+			&i.Key,
+			&i.Format,
+			&i.Url,
+			&i.SinceUs,
+			&i.UntilUs,
+			&i.Hinted,
+			&i.Status,
+			&i.Waiting,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upstreamDownloadLiveDelete = `-- name: UpstreamDownloadLiveDelete :exec
 DELETE FROM upstream_download_live WHERE instance_uid = $1::text::uuid
 `

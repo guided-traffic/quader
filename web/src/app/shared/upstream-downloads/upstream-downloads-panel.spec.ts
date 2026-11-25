@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import { UpstreamDownloadsApi } from '../../api/upstream-downloads-api';
-import { FakeUpstreamDownloadsApi, finishedDownload, runningDownload } from '../../api/testing/fakes-upstream-downloads';
+import { FakeUpstreamDownloadsApi, finishedDownload, runningDownload, waitingQueue } from '../../api/testing/fakes-upstream-downloads';
 import { BrowserStorage } from '../../core/storage';
 import { expectAccessible, renderScreen, settle, text } from '../../testing/screen';
 import { DOWNLOADS_CAPABILITY, UpstreamDownloadsButton } from './upstream-downloads-button';
@@ -145,6 +145,30 @@ describe('The Downloads panel: what runs', () => {
     fixture.nativeElement.querySelector('button.downloads-button').click();
     await settle(fixture);
     expect(text(section('running'))).toContain('No download from an upstream is running.');
+  });
+
+  // The owner's panel of 2026-11-25 said "No download from an upstream is running" while 206 rows waited for Docker Hub's limit: a queue
+  // an upstream's rate limit holds is said above Running, with the upstream, the time and the way to the queue (R-CUR-011, Q-UI-1101).
+  it("R-CUR-011 R-UI-211 a queue an upstream's rate limit holds is said above what runs, and leads to its queue", async () => {
+    await open({
+      setup: (f) => {
+        f.waiting = [
+          waitingQueue(),
+          waitingQueue({ repository: { project: 'web', key: 'npmjs', format: 'npm' }, waiting: 1, upstream: 'registry.npmjs.org', hinted: true }),
+        ];
+      },
+    });
+    const held = drawer()!.querySelector<HTMLElement>('[data-testid="upstream-downloads-waiting"]')!;
+    expect(text(held.querySelector('h3')!)).toBe('Waiting for an upstream (2)');
+    const [hub, npm] = [...held.querySelectorAll<HTMLElement>('li.dl-row')];
+    expect(text(hub!.querySelector('.dl-wait')!)).toMatch(
+      /206 downloads of upstream\/docker-hub wait: Docker Hub limits requests; Quader asks again at .+\.$/,
+    );
+    expect(text(npm!.querySelector('.dl-wait')!)).toMatch(/1 download of web\/npmjs waits: registry\.npmjs\.org limits requests until .+\.$/);
+    const queue = [...hub!.querySelectorAll('a')].find((a) => text(a) === 'Show in queue')!;
+    expect(queue.getAttribute('href')).toBe('/projects/upstream/repositories/docker-hub/downloads');
+    expect(text(section('running'))).toContain('No download from an upstream is running.');
+    await expectAccessible(drawer()!);
   });
 
   it('R-UI-211 the open panel reads the list every pollSeconds and stops when it closes; a failed read keeps the rows and says so', async () => {

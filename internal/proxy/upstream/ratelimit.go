@@ -43,6 +43,43 @@ type RateLimit struct {
 	// caller's back-off applies.
 	Wait   time.Duration
 	Hinted bool
+	// Address is the address asked, without its query (a signed address carries a credential); Headers are the answer's headers of
+	// the limit ([LimitHeaders]); Body is the start of its body as it came and ContentType its declared type. A row of the download
+	// queue says them in its failure (remote-curation.md R-CUR-011, Q-CUR-174); the caller sets them, RateLimitOf sets Headers.
+	Address     string
+	Headers     map[string]string
+	Body        []byte
+	ContentType string
+}
+
+// limitHeaders are the headers of an answer that say a limit: the standard Retry-After, the RateLimit fields of the IETF draft and
+// the X-RateLimit fields many registries send. A header outside the list is never kept: a registry's own header of the limit can name
+// the caller's address (Docker Hub's names the address the limit counts), which a reader of the repository is not shown.
+var limitHeaders = [...]string{
+	"Retry-After", "RateLimit", "RateLimit-Policy", "RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset",
+	"X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset",
+}
+
+// maxLimitHeaderBytes bounds one kept header's value.
+const maxLimitHeaderBytes = 200
+
+// LimitHeaders are the headers of h that say a limit, by their canonical names, each value cut to 200 bytes; nil for none.
+func LimitHeaders(h http.Header) map[string]string {
+	var out map[string]string
+	for _, k := range limitHeaders {
+		v := strings.TrimSpace(h.Get(k))
+		if v == "" {
+			continue
+		}
+		if len(v) > maxLimitHeaderBytes {
+			v = v[:maxLimitHeaderBytes]
+		}
+		if out == nil {
+			out = map[string]string{}
+		}
+		out[k] = v
+	}
+	return out
 }
 
 // RateLimitOf classifies an answer as a rate limit (R-REPO-054): 429; 503 with a Retry-After header or with the S3 code
@@ -76,6 +113,7 @@ func RateLimitOf(status int, h http.Header, body []byte, now time.Time) (RateLim
 	if rl.Wait > MaxRateLimitWait {
 		rl.Wait = MaxRateLimitWait
 	}
+	rl.Headers, rl.ContentType = LimitHeaders(h), h.Get("Content-Type")
 	return rl, true
 }
 

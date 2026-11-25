@@ -58,6 +58,8 @@ type downloadTarget struct {
 	Key qname.Repo
 	// Format is the repository's format.
 	Format string
+	// Upstream is the remote's upstream URL: the name a limit's sentence says (Q-CUR-175).
+	Upstream string
 }
 
 // downloadAccess resolves the request's decisions on the repository; 503 without a decision point.
@@ -112,7 +114,11 @@ func (s *Server) downloadRemote(ctx context.Context, key qname.Repo) (downloadTa
 	if err != nil {
 		return downloadTarget{}, err
 	}
-	return downloadTarget{ID: id, Key: key, Format: st.Repository.Format}, nil
+	t := downloadTarget{ID: id, Key: key, Format: st.Repository.Format}
+	if rs, ok := st.Repository.Remote(); ok {
+		t.Upstream = rs.URL
+	}
+	return t, nil
 }
 
 // downloadsQueue is the queue's service; 503 without it.
@@ -450,8 +456,28 @@ func failureView(f *remotecuration.Failure) any {
 	}
 	return map[string]any{
 		"class": f.Class, "step": f.Step, "code": f.Code, "file": nullString(f.File), "address": nullString(f.Address), "target": nullString(f.Target),
-		"status": nullInt(f.Status), "excerpt": nullString(f.Excerpt), "retryAfter": nullInt(f.RetryAfter), "detail": f.Detail,
-		"attempt": f.Attempt, "at": f.At.UTC(),
+		"status": nullInt(f.Status), "excerpt": nullString(f.Excerpt), "retryAfter": nullInt(f.RetryAfter), "headers": nullHeaders(f.Headers),
+		"detail": f.Detail, "attempt": f.Attempt, "at": f.At.UTC(),
+	}
+}
+
+func nullHeaders(h map[string]string) any {
+	if len(h) == 0 {
+		return nil
+	}
+	return h
+}
+
+// limitView is the upstream's rate limit that holds the repository's queue, or held it last, as the list answers it (R-CUR-012,
+// Q-CUR-175): since when the upstream limits, until when no row starts, whether that time is the upstream's own, the waits in a row,
+// the upstream's name ("Docker Hub", else its host) and its last answer in a failure's form; nil for none.
+func limitView(t downloadTarget, l queue.Limit, found bool, now time.Time) any {
+	if !found {
+		return nil
+	}
+	return map[string]any{
+		"since": l.Since.UTC(), "until": l.Until.UTC(), "holds": l.Holds(now), "hinted": l.Hinted, "waits": l.Waits,
+		"upstream": upstreamName(t.Format, t.Upstream), "failure": failureView(&l.Failure),
 	}
 }
 
@@ -520,6 +546,11 @@ func (s *Server) ListRemoteDownloads(w http.ResponseWriter, r *http.Request, pro
 	if err == nil {
 		counts, err = svc.Reader().StateCounts(ctx, t.ID, f.BulkID)
 	}
+	var limit queue.Limit
+	var limited bool
+	if err == nil {
+		limit, limited, err = svc.Limit(ctx, t.ID)
+	}
 	if err != nil {
 		httpserver.Problem(w, r, errs.Wrap(err, "api.listRemoteDownloads"))
 		return
@@ -539,6 +570,7 @@ func (s *Server) ListRemoteDownloads(w http.ResponseWriter, r *http.Request, pro
 	writeJSON(w, r, http.StatusOK, map[string]any{
 		"items": items, "nextCursor": next,
 		"counts": map[string]int64{"waiting": counts.Waiting, "running": counts.Running, "failed": counts.Failed, "done": counts.Done},
+		"limit":  limitView(t, limit, limited, time.Now()),
 	})
 }
 

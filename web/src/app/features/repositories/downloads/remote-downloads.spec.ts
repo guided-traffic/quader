@@ -7,13 +7,19 @@ import { RepositoriesApi } from '../../../api/repositories-api';
 import { SessionApi } from '../../../api/session-api';
 import { FakeRepositoriesApi, PACKAGE_FORMAT } from '../../../api/testing/fakes-catalog';
 import { FakeSessionApi } from '../../../api/testing/fakes';
-import { FakeRemoteDownloadsApi, downloadBulk, downloadFailure, downloadRow } from '../../../api/testing/fakes-remote-downloads';
+import { FakeRemoteDownloadsApi, downloadBulk, downloadFailure, downloadLimit, downloadRow } from '../../../api/testing/fakes-remote-downloads';
+import { LIVE_SLOW_MS } from '../../../core/live-refresh';
 import { Notifier } from '../../../core/notifier';
 import { expectAccessible, renderScreen, settle, text } from '../../../testing/screen';
 import { RepositoryContent } from '../content/repository-content';
 import { RemoteDownloads, DOWNLOADS_REFRESH_MS } from './remote-downloads';
 
 const SELF = '00000000-0000-0000-0000-000000000001';
+
+function setVisibility(state: 'visible' | 'hidden'): void {
+  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+  document.dispatchEvent(new Event('visibilitychange'));
+}
 const REMOTE = { key: 'npmjs', project: 'web', class: 'remote', format: 'npm', description: '', remote: { url: 'https://registry.npmjs.org', cacheFillAction: 'read' } };
 const LOCAL = { key: 'npm-local', project: 'web', class: 'local', format: 'npm', description: '' };
 
@@ -299,7 +305,7 @@ describe('The tab Downloads of a remote repository', () => {
   });
 
   it('R-CUR-018 R-CUR-012 the tab reads the bulks again while one expands, and shows its failure without a reload', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
       const expanding = downloadBulk({ id: 'b-hub', subject: 'guidedtraffic/valkey-operator', state: 'expanding', versionsFound: 0, versionsQueued: 0, rows: {} });
       const { root, fixture, fake } = await open({ rows: (f) => ((f.rows = []), (f.bulks = [expanding])) });
@@ -340,7 +346,7 @@ describe('The tab Downloads of a remote repository', () => {
   });
 
   it('R-CUR-018 the tab reads the queue every five seconds while a row waits or runs, and Pause automatic refresh stops it (WCAG 2.2.2)', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
       const { root, fixture, fake } = await open();
       const calls = fake.listCalls.length;
@@ -360,43 +366,105 @@ describe('The tab Downloads of a remote repository', () => {
     }
   });
 
-  it('R-CUR-018 R-UI-213 a hidden window does not read the queue, and reads it at once when it is seen again', async () => {
-    const setVisibility = (state: 'visible' | 'hidden'): void => {
-      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
-      document.dispatchEvent(new Event('visibilitychange'));
-    };
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+  it('R-UI-213 a queue where nothing waits or runs is read every 30 s, so that a bulk another person starts shows without a reload', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
-      const { fixture, fake } = await open();
+      const { root, fixture, fake } = await open({ rows: (f) => ((f.rows = [downloadRow({ state: 'done', outcome: 'completed' })]), (f.bulks = [])) });
       const calls = fake.listCalls.length;
-      setVisibility('hidden');
-      await settle(fixture);
-      vi.advanceTimersByTime(DOWNLOADS_REFRESH_MS * 6);
+      vi.advanceTimersByTime(DOWNLOADS_REFRESH_MS * 3);
       await settle(fixture);
       expect(fake.listCalls.length).toBe(calls);
+      fake.bulks = [downloadBulk({ id: 'b-new', subject: 'guidedtraffic/s3-encryption-proxy' })];
+      fake.rows = [...fake.rows, downloadRow({ id: 'r-new', name: 'guidedtraffic/s3-encryption-proxy', version: '3.8.50', origin: 'bulk', bulk: 'b-new' })];
+      vi.advanceTimersByTime(LIVE_SLOW_MS);
+      await settle(fixture);
+      expect(fake.listCalls.length).toBe(calls + 1);
+      expect(text(root.querySelector('[data-testid="download-bulks"]')!)).toContain('guidedtraffic/s3-encryption-proxy');
+      expect(text(rowOf(root, 'guidedtraffic/s3-encryption-proxy'))).toContain('Waiting');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('R-UI-213 a hidden window is not read, and is read at once when it is seen again; a failed read keeps the rows', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const { root, fixture, fake } = await open();
+      const calls = fake.listCalls.length;
+      setVisibility('hidden');
+      vi.advanceTimersByTime(DOWNLOADS_REFRESH_MS * 4);
+      await settle(fixture);
+      expect(fake.listCalls.length).toBe(calls);
+      fake.rows = fake.rows.map((r) => (r.id === 'r-run' ? { ...r, state: 'done' as const, outcome: 'completed' as const } : r));
       setVisibility('visible');
       await settle(fixture);
       expect(fake.listCalls.length).toBe(calls + 1);
+      expect(text(rowOf(root, '@acme/a'))).toContain('Done');
+      fake.listError = new ApiError(503, { code: 'unavailable', detail: 'down' }, 'rid-503');
       vi.advanceTimersByTime(DOWNLOADS_REFRESH_MS);
       await settle(fixture);
-      expect(fake.listCalls.length).toBe(calls + 2);
+      expect(rowOf(root, 'lodash')).toBeTruthy();
+      expect(root.querySelector('[data-testid="download-rows"] quader-error-notice')).toBeNull();
     } finally {
       setVisibility('visible');
       vi.useRealTimers();
     }
   });
 
-  it('R-CUR-018 a queue where nothing waits or runs is not read again by itself', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+  /** The owner's queue of 2026-11-25: Docker Hub's limit holds 206 rows of a bulk, 105 are done, nothing runs. */
+  function heldQueue(f: FakeRemoteDownloadsApi): void {
+    f.rows = [
+      downloadRow({ id: 'r-h1', name: 'guidedtraffic/s3-encryption-proxy', version: '3.8.50', origin: 'bulk', bulk: 'b-hub' }),
+      downloadRow({ id: 'r-h2', name: 'guidedtraffic/s3-encryption-proxy', version: '3.8.49', origin: 'bulk', bulk: 'b-hub', state: 'done', outcome: 'completed' }),
+    ];
+    f.bulks = [downloadBulk({ id: 'b-hub', subject: 'guidedtraffic/s3-encryption-proxy', versionsFound: 315, versionsQueued: 315, rows: { waiting: 206, done: 105 } })];
+    f.counts = { waiting: 206, running: 0, failed: 0, done: 105 };
+    f.limit = downloadLimit({ until: new Date(Date.now() + 40 * 60_000).toISOString() });
+  }
+
+  it("R-CUR-011 R-CUR-018 an upstream's rate limit is said above the list, on its waiting rows and on the bulk, with its answer folded", async () => {
+    const { root } = await open({ rows: heldQueue });
+    const notice = root.querySelector<HTMLElement>('[data-testid="download-limit"]')!;
+    expect(text(notice.querySelector('.limit-sentence span:last-child')!)).toMatch(
+      /^Docker Hub limits how often Quader may ask it, since .+, and does not say until when\. Quader asks again at .+; the downloads that wait start once Docker Hub allows it\./,
+    );
+    const details = notice.querySelector('quader-technical-details')!;
+    expect(text(details)).toContain('HTTP 429');
+    expect(text(details)).toContain('RateLimit-Remaining: 0;w=3600');
+    expect(text(details)).toContain('TOOMANYREQUESTS');
+    expect(text(details)).toContain("(Quader's wait: the upstream named no time)");
+    expect(text(rowOf(root, '3.8.50'))).toMatch(/Rate limit until \d/);
+    expect(text(rowOf(root, '3.8.49'))).not.toContain('Rate limit');
+    expect(text(root.querySelector('[data-testid="download-bulks"]')!)).toContain("Waits for Docker Hub's rate limit until");
+    await expectAccessible(root);
+  });
+
+  it('R-UI-213 a queue a limit holds with nothing running is read every 30 s, and the sentence goes when the limit ends', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
-      const { fixture, fake } = await open({ rows: (f) => (f.rows = [downloadRow({ state: 'done', outcome: 'completed' })]) });
+      const { root, fixture, fake } = await open({ rows: heldQueue });
       const calls = fake.listCalls.length;
       vi.advanceTimersByTime(DOWNLOADS_REFRESH_MS * 3);
       await settle(fixture);
       expect(fake.listCalls.length).toBe(calls);
+      fake.limit = null;
+      fake.counts = { waiting: 205, running: 1, failed: 0, done: 105 };
+      vi.advanceTimersByTime(LIVE_SLOW_MS);
+      await settle(fixture);
+      expect(fake.listCalls.length).toBe(calls + 1);
+      expect(root.querySelector('[data-testid="download-limit"]')).toBeNull();
+      expect(text(rowOf(root, '3.8.50'))).not.toContain('Rate limit');
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('R-CUR-011 a limit the upstream named a time for says that time', async () => {
+    const until = new Date(Date.now() + 2 * 3600_000).toISOString();
+    const { root } = await open({ rows: (f) => ((f.rows = []), (f.limit = downloadLimit({ hinted: true, until, upstream: 'registry.npmjs.org' }))) });
+    expect(text(root.querySelector('[data-testid="download-limit"] .limit-sentence span:last-child')!)).toMatch(
+      /^registry\.npmjs\.org limits how often Quader may ask it, since .+\. The downloads that wait start at .+, the time registry\.npmjs\.org named\./,
+    );
   });
 });
 
@@ -427,6 +495,21 @@ describe('The tab strip of a remote repository', () => {
     expect(links[2]!.getAttribute('href')).toBe('/projects/web/repositories/npmjs/downloads');
     expect(links[3]!.getAttribute('href')).toBe('/projects/web/repositories/npmjs/details');
     await expectAccessible(root);
+  });
+
+  it('R-UI-213 the strip reads the queue itself on the content, every 30 s, so that a failed download shows without a reload', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const { root, fixture, get } = await page(REMOTE);
+      const label = (): string => text([...root.querySelectorAll<HTMLAnchorElement>('quader-repository-tabs a.tab-link')][2]!);
+      expect(label()).toBe('Downloads');
+      (get(RemoteDownloadsApi) as FakeRemoteDownloadsApi).counts = { waiting: 0, running: 0, failed: 1, done: 3 };
+      vi.advanceTimersByTime(LIVE_SLOW_MS);
+      await settle(fixture);
+      expect(label()).toBe('Downloads · 1 failed');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('R-CUR-018 the tab Downloads shows the queue under the strip, with Downloads current, and no content list', async () => {

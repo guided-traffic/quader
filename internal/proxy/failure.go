@@ -191,6 +191,10 @@ func Describe(err error) remotecuration.Failure {
 		if d, ok := rl.RetryAfter(); ok && d > 0 {
 			f.RetryAfter = int(d / time.Second)
 		}
+		var answer *upstream.RateLimitError
+		if errors.As(err, &answer) {
+			limitAnswer(&f, answer.RateLimit)
+		}
 		f.Detail = describeDetail(f, "")
 		return f
 	}
@@ -211,6 +215,22 @@ func Describe(err error) remotecuration.Failure {
 	}
 	f.Detail = describeDetail(f, ee.Detail)
 	return f
+}
+
+// limitAnswer adds what a rate-limit answer told to its failure (R-CUR-011, Q-CUR-174): its status, the address asked without its
+// query, the excerpt of its body (none for a body the upstream declared binary) and the headers of the limit, where the exchange did
+// not name them already.
+func limitAnswer(f *remotecuration.Failure, rl upstream.RateLimit) {
+	if f.Status == 0 {
+		f.Status = rl.Status
+	}
+	if f.Address == "" {
+		f.Address = rl.Address
+	}
+	if f.Excerpt == "" && len(rl.Body) > 0 && !binaryMedia(rl.ContentType) {
+		f.Excerpt = cleanExcerpt(rl.Body)
+	}
+	f.Headers = rl.Headers
 }
 
 // classOf maps the engine's code to the class of R-CUR-011 and, where no exchange named it, the step.
@@ -277,10 +297,13 @@ func describeDetail(f remotecuration.Failure, engine string) string {
 		s = orUpstream(where) + " refused the repository's credentials (status " + strconv.Itoa(f.Status) + "); check the remote's credentials."
 	case remotecuration.ClassUpstreamRateLimited:
 		s = orUpstream(where) + " is rate limiting Quader"
+		if f.Status != 0 {
+			s += " (status " + strconv.Itoa(f.Status) + ")"
+		}
 		if f.RetryAfter > 0 {
 			s += " and asked to wait " + strconv.Itoa(f.RetryAfter) + " s"
 		}
-		s += "; the next attempt waits for it."
+		s += "; Quader asks again after the wait, and the wait is no failed attempt of the file."
 	case remotecuration.ClassUpstreamError:
 		s = orUpstream(where) + " answered with an error"
 		if f.Status != 0 {

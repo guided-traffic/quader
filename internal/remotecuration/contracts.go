@@ -210,9 +210,12 @@ type Failure struct {
 	Status     int          `json:"status,omitempty"`
 	Excerpt    string       `json:"excerpt,omitempty"`
 	RetryAfter int          `json:"retryAfter,omitempty"`
-	Detail     string       `json:"detail"`
-	Attempt    int          `json:"attempt"`
-	At         time.Time    `json:"at"`
+	// Headers are the headers of a rate-limit answer that say the limit (Retry-After, RateLimit-*, X-RateLimit-*; Q-CUR-174); nil for
+	// another failure.
+	Headers map[string]string `json:"headers,omitempty"`
+	Detail  string            `json:"detail"`
+	Attempt int               `json:"attempt"`
+	At      time.Time         `json:"at"`
 }
 
 // QueuedDownload is what a row that waits or runs tells about the version it fetches: the catalogue's state queued of a version

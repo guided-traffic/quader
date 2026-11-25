@@ -55,14 +55,26 @@ func (s *Server) readUpstreamDownloads(w http.ResponseWriter, r *http.Request) (
 
 // upstreamDownloadList builds the answer from a read (R-OPS-050 to R-OPS-052): a live row older than three publish intervals is left
 // out (its replica stalled or stopped); the elapsed time is the one at the write plus the age of the write; an entry whose repository is
-// gone is left out; running entries in the order of their begin, finished ones as read (newest first).
+// gone is left out; running entries in the order of their begin, finished ones as read (newest first); the queues an upstream's rate
+// limit holds as read, the longest held first, with the upstream's name (remote-curation.md Q-CUR-176).
 func upstreamDownloadList(v fills.View, interval time.Duration) gen.UpstreamDownloadList {
 	if interval <= 0 {
 		interval = 2 * time.Second
 	}
 	out := gen.UpstreamDownloadList{
 		AsOf: v.Now.UTC(), PollSeconds: interval.Seconds(),
-		Running: []gen.UpstreamDownloadRunning{}, Finished: []gen.UpstreamDownloadFinished{},
+		Running: []gen.UpstreamDownloadRunning{}, Finished: []gen.UpstreamDownloadFinished{}, Waiting: []gen.UpstreamDownloadWaiting{},
+	}
+	for _, l := range v.Limited {
+		w := gen.UpstreamDownloadWaiting{
+			Repository: gen.UpstreamDownloadRepository{Project: l.Repo.Project, Key: l.Repo.Key, Format: l.Repo.Format},
+			Waiting:    l.Waiting, Upstream: upstreamName(l.Repo.Format, l.URL), Since: l.Since, Until: l.Until, Hinted: l.Hinted,
+		}
+		if l.Status != 0 {
+			st := l.Status
+			w.Status = &st
+		}
+		out.Waiting = append(out.Waiting, w)
 	}
 	fresh := fills.FreshIntervals * interval
 	for _, l := range v.Live {

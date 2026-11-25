@@ -5,8 +5,23 @@ import {
   UpstreamDownloadList,
   UpstreamDownloadRunning,
   UpstreamDownloadSummary,
+  UpstreamDownloadWaiting,
   UpstreamDownloadsApi,
 } from '../upstream-downloads-api';
+
+/** A download queue an upstream's rate limit holds: Docker Hub's, with 206 rows that wait; `over` sets what a case needs. */
+export function waitingQueue(over: Partial<UpstreamDownloadWaiting> = {}): UpstreamDownloadWaiting {
+  return {
+    repository: { project: 'upstream', key: 'docker-hub', format: 'oci' },
+    waiting: 206,
+    upstream: 'Docker Hub',
+    since: '2026-11-25T05:30:51Z',
+    until: '2026-11-25T06:12:00Z',
+    hinted: false,
+    status: 429,
+    ...over,
+  };
+}
 
 /** A running download: an npm tarball a client's miss fetches, halfway; `over` sets what a case needs. */
 export function runningDownload(over: Partial<UpstreamDownloadRunning> = {}): UpstreamDownloadRunning {
@@ -60,6 +75,8 @@ export function finishedDownload(over: Partial<UpstreamDownloadFinished> = {}): 
 export class FakeUpstreamDownloadsApi extends UpstreamDownloadsApi {
   running: UpstreamDownloadRunning[] = [];
   finished: UpstreamDownloadFinished[] = [];
+  /** The queues an upstream's rate limit holds. */
+  waiting: UpstreamDownloadWaiting[] = [];
   /** The count the API reports; the length of `running` when null. */
   runningCount: number | null = null;
   pollSeconds = 2;
@@ -76,6 +93,7 @@ export class FakeUpstreamDownloadsApi extends UpstreamDownloadsApi {
       runningCount: this.runningCount ?? this.running.length,
       running: [...this.running],
       finished: [...this.finished],
+      waiting: [...this.waiting],
     };
   }
 

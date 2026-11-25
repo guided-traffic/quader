@@ -838,6 +838,18 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
+## An upstream's rate limit of a download queue (00120)
+
+[00120_remote_download_limits](../../internal/meta/postgres/migrations/00120_remote_download_limits.sql) adds `remote_download_limits`:
+one row per remote repository whose download queue an upstream's rate limit holds or held last (remote-curation.md R-CUR-011,
+Q-CUR-170 to Q-CUR-173): since, until, the waits in a row, whether the upstream named the time, and its last answer as a failure's JSON.
+The queue reads and writes it under the repository's row lock (`RemoteDownloadLimitGet`, `…Put`, `…Clear` of
+[remote_downloads.sql](../../internal/meta/postgres/queries/remote_downloads.sql)); the dispatch removes an ended one of an empty queue
+(`RemoteDownloadLimitsPrune`); the top bar's panel reads the ones whose time lies ahead (`UpstreamDownloadLimited` of
+[upstream_downloads.sql](../../internal/meta/postgres/queries/upstream_downloads.sql)). `RemoteDownloadSettle` gains `uncounted`, which takes
+back the attempt a limit ended. Export class `transient`. The step replaces `upstream_repository_purge` (the one of 00119) with one more
+delete, since the table references a repository by a cascading key.
+
 ## The purge of a retired repository takes its finished downloads (00119)
 
 [00119_upstream_purge_downloads](../../internal/meta/postgres/migrations/00119_upstream_purge_downloads.sql) replaces

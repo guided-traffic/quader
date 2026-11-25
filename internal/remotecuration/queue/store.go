@@ -51,6 +51,12 @@ type Tx interface {
 	CancelWaiting(ctx context.Context, id string, repoID int64) (Row, bool, error)
 	// CancelBulk cancels a bulk and its waiting rows.
 	CancelBulk(ctx context.Context, b Bulk) error
+	// Limit reads the upstream's rate limit of a repository (remote_download_limits); found is false for none.
+	Limit(ctx context.Context, repoID int64) (l Limit, found bool, err error)
+	// PutLimit writes the repository's limit.
+	PutLimit(ctx context.Context, l Limit) error
+	// ClearLimit removes the repository's limit.
+	ClearLimit(ctx context.Context, repoID int64) error
 	// Meta is the transaction for a statement of another package (the audit event of the act); nil in memory.
 	Meta() meta.Tx
 }
@@ -72,6 +78,8 @@ type Reader interface {
 	ListBulks(ctx context.Context, f BulkFilter) ([]Bulk, map[string]map[string]int64, error)
 	// Waiting is the count of waiting rows of a repository.
 	Waiting(ctx context.Context, repoID int64) (int, error)
+	// Limit reads the upstream's rate limit of a repository; found is false for none (Q-CUR-170).
+	Limit(ctx context.Context, repoID int64) (l Limit, found bool, err error)
 }
 
 // Maintenance is what the dispatch task does outside a repository's start.
@@ -90,6 +98,8 @@ type Maintenance interface {
 	Gauge(ctx context.Context) ([]GaugeRow, error)
 	// ClientFailure records a client's failed fetch of a file; trim bounds the client rows of the repository.
 	ClientFailure(ctx context.Context, r Row, file string, trim int) error
+	// PruneLimits removes the limits that ended before now of the repositories that have no waiting or running row left.
+	PruneLimits(ctx context.Context, now time.Time) (int64, error)
 }
 
 // Filter selects a page of the list (R-CUR-012).

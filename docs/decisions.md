@@ -10202,10 +10202,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-81 questions on [spec/remote-curation.md](spec/remote-curation.md).
+88 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 81 questions</summary>
+<summary>Q-CUR: 88 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10290,6 +10290,13 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-167](spec/remote-curation.md#q-cur-167--a-bulks-expansion-reaches-the-hosts-the-catalogue-reaches-a-rows-fetch-reaches-no-more) | A bulk's expansion reaches the hosts the catalogue reaches; a row's fetch reaches no more | Decided by the development agent on 2026-11-24 | (a) The expansion's upstream reaches the hosts of `catalogueHosts` (the mirror's hosts and the preset's catalogue hosts), as hosts without a credential; a row's run keeps the mirror's hosts | — |
 | [Q-CUR-168](spec/remote-curation.md#q-cur-168--the-tab-downloads-lists-the-repositorys-bulks-over-its-rows-a-failed-one-says-what-failed-and-starts-again) | The tab Downloads lists the repository's bulks over its rows; a failed one says what failed and starts again | Decided by the development agent on 2026-11-24 | (a) `GET download-bulks` lists a repository's bulks newest first; the tab shows them in a table over its rows (five and **Load more**), with the state, the counters, the failure in words and one action; the notice of a start says that the bulk reads the versions first and leads to the bulk | — |
 | [Q-CUR-169](spec/remote-curation.md#q-cur-169--a-download-failure-is-said-in-the-screens-language-from-its-code-the-servers-english-sentence-folds-under-it) | A download failure is said in the screen's language from its code; the server's English sentence folds under it | Decided by the development agent on 2026-11-24 | (a) The screen writes the sentence from `code` and the members with `$localize`; a code it does not know reads as its class's sentence; the failure gains `target` (the address the upstream named and Quader refused, without its query); a bulk's bounds get a code each and a bulk without a planner `catalogue_unavailable`; `detail` stays the API's English sentence and folds under **Technical details** | — |
+| [Q-CUR-170](spec/remote-curation.md#q-cur-170--a-rate-limited-attempt-hands-its-row-back-and-the-upstreams-limit-holds-the-repositorys-queue) | A rate-limited attempt hands its row back, and the upstream's limit holds the repository's queue | Decided by the development agent | (c), in the shared engine (`internal/remotecuration/queue`), for every format: npmjs, nuget.org, a Debian mirror, Galaxy, a generic host and an OCI registry answer R-REPO-054's rate limits alike, and the queue's run is the same for each, so no format has a case of its own. | — |
+| [Q-CUR-171](spec/remote-curation.md#q-cur-171--a-run-waits-out-a-limit-of-at-most-10-s-a-longer-one-ends-its-attempt) | A run waits out a limit of at most 10 s; a longer one ends its attempt | Decided by the development agent | (c) 10 s (`queue.RunLimitWait`, `mirror.Window.EndAfter`) | — |
+| [Q-CUR-172](spec/remote-curation.md#q-cur-172--the-limits-time-is-the-upstreams-else-the-queues-back-off-then-one-row-asks-first) | The limit's time is the upstream's, else the queue's back-off; then one row asks first | Decided by the development agent | (a) The upstream's time where it names one (at most 6 h, R-REPO-054's cap); else `min(30 s × 2^(k−1), 1 h)` ±20 % over the waits in a row, the queue's back-off of R-CUR-011; after it, one row runs until an answer without a limit | — |
+| [Q-CUR-173](spec/remote-curation.md#q-cur-173--the-limit-is-a-row-per-repository-of-a-table-of-its-own-transient-and-apart-from-the-mirrors) | The limit is a row per repository of a table of its own, transient, and apart from the mirror's | Decided by the development agent | (a) `remote_download_limits`, one row per repository, transient | — |
+| [Q-CUR-174](spec/remote-curation.md#q-cur-174--a-limits-failure-keeps-the-upstreams-answer-and-the-headers-of-the-limit-and-no-other) | A limit's failure keeps the upstream's answer and the headers of the limit, and no other | Decided by the development agent | (a) The address, status and excerpt as every failure's, and a member `headers` with a fixed list: `Retry-After`, `RateLimit`, `RateLimit-Policy`, `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, each at most 200 bytes | — |
+| [Q-CUR-175](spec/remote-curation.md#q-cur-175--the-list-answers-the-limit-beside-its-counts-for-every-reader) | The list answers the limit beside its counts, for every reader | Decided by the development agent | (a), to every reader of the queue, as the rows' failures: the upstream's name, the times and its answer, no credential. | — |
+| [Q-CUR-176](spec/remote-curation.md#q-cur-176--the-top-bars-panel-lists-the-queues-a-limit-holds-from-the-limits-rows) | The top bar's panel lists the queues a limit holds, from the limits' rows | Decided by the development agent | (a), at most 100 queues, the longest held first. | — |
 
 </details>
 
@@ -12160,10 +12167,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-541 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+546 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 541 questions</summary>
+<summary>Q-UI: 546 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12708,6 +12715,11 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1076](spec/api-and-ui.md#q-ui-1076--a-status-too-long-for-a-pill-puts-its-verdict-on-the-badge-and-the-rest-after-it) | A status too long for a pill puts its verdict on the badge and the rest after it | Decided by the development agent on 2026-11-24 | (a), for the untrusted state only. | — |
 | [Q-UI-1077](spec/api-and-ui.md#q-ui-1077--below-36-rem-of-content-a-facts-term-stands-above-its-value) | Below 36 rem of content a fact's term stands above its value | Decided by the development agent on 2026-11-24 | (a) Every `dl.facts` puts each term above its value below 36 rem of the content panel, and a dialog's below 36 rem of the window | — |
 | [Q-UI-1080](spec/api-and-ui.md#q-ui-1080--a-server-sends-a-code-the-screen-says-it-and-a-raw-text-folds-under-technical-details) | A server sends a code, the screen says it, and a raw text folds under Technical details | Decided by the development agent | (a) A code for a case, said by the screen; a raw text folded under **Technical details** below the screen's own sentence, by one shared component | — |
+| [Q-UI-1100](spec/api-and-ui.md#q-ui-1100--a-limit-is-one-sentence-above-the-list-a-line-on-its-waiting-rows-and-on-a-bulk-its-answer-folded) | A limit is one sentence above the list, a line on its waiting rows and on a bulk, its answer folded | Decided by the development agent | (a) One warning line above the bulks while the limit holds: who limits, since when, until when and whose time that is, in the screen's language; **Technical details** folded under it (the last answer, the waits in a row, the address, the headers of the limit, the upstream's words, the server's sentence); "Rate limit until 06:47" on each waiting row; "Waits for Docker Hub's rate limit until 06:47" on a bulk whose rows wait | — |
+| [Q-UI-1101](spec/api-and-ui.md#q-ui-1101--the-top-bars-panel-says-the-queues-a-limit-holds-above-running) | The top bar's panel says the queues a limit holds above Running | Decided by the development agent | (a) A section **Waiting for an upstream (n)** above **Running**: per queue "206 downloads of upstream/docker-hub wait: Docker Hub limits requests; Quader asks again at 06:47." with the format's name and **Show in queue** | — |
+| [Q-UI-1102](spec/api-and-ui.md#q-ui-1102--the-tab-downloads-is-live-by-the-shared-poll-5-s-while-something-moves-30-s-otherwise) | The tab Downloads is live by the shared poll: 5 s while something moves, 30 s otherwise | Decided by the development agent | (a); `DOWNLOADS_REFRESH_MS` stays 5 s, the tab's own interval of R-CUR-018. | — |
+| [Q-UI-1103](spec/api-and-ui.md#q-ui-1103--the-strips-label-reads-the-queues-counts-itself-on-every-other-tab-every-30-s) | The strip's label reads the queue's counts itself on every other tab, every 30 s | Decided by the development agent | (a) The open tab Downloads (or Upstream) passes its counts; on every other tab the strip reads one row of the list for its counts, at once and every 30 s while the window is seen | — |
+| [Q-UI-1104](spec/api-and-ui.md#q-ui-1104--the-limits-sentence-offers-no-account-the-presets-do-not-say-which-upstream-an-account-lifts) | The limit's sentence offers no account: the presets do not say which upstream an account lifts | Decided by the development agent | (a) No such sentence while no preset carries the fact | — |
 
 </details>
 

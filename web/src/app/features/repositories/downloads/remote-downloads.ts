@@ -9,6 +9,7 @@ import {
   DOWNLOAD_FAILURE_CLASSES,
   RemoteDownload,
   RemoteDownloadBulk,
+  RemoteDownloadLimit,
   RemoteDownloadRequest,
   RemoteDownloadCounts,
   RemoteDownloadFailureClass,
@@ -19,8 +20,8 @@ import {
   downloadRetryable,
 } from '../../../api/remote-downloads-api';
 import { describeProblem } from '../../../core/http/problem-messages';
+import { LIVE_SLOW_MS, live, refreshResource } from '../../../core/live-refresh';
 import { Notifier } from '../../../core/notifier';
-import { PageVisibility } from '../../../core/page-visibility';
 import { SessionStore } from '../../../core/session-store';
 import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError, valueOf } from '../../../shared/paged-resource';
@@ -28,6 +29,7 @@ import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { TechnicalDetails } from '../../../shared/technical-details';
 import { NoValue } from '../../../shared/ui/no-value';
 import { TimeAgo } from '../../../shared/ui/time-ago';
+import { clockText, limitBulkText, limitRowText, limitSentence } from '../../../shared/upstream-downloads/limit-words';
 import { formatSize } from '../../packages/format-size';
 import {
   downloadOutcomeText,
@@ -40,7 +42,11 @@ import {
   queueOriginText,
 } from './download-words';
 
-/** How often the tab reads the queue again while a row waits or runs (R-CUR-018; WCAG 2.2.2: with a pause control). */
+/**
+ * How often the tab reads the queue again while a row waits or runs (R-CUR-018; WCAG 2.2.2: with a pause control); while nothing
+ * does, or while an upstream's rate limit holds the queue and nothing runs, it reads every `LIVE_SLOW_MS` (api-and-ui.md R-UI-213,
+ * Q-UI-1102).
+ */
 export const DOWNLOADS_REFRESH_MS = 5_000;
 
 /** The bulks the tab shows at first and adds per **Show more** (Q-CUR-168). */
@@ -58,9 +64,10 @@ type FilterState = (typeof FILTER_STATES)[number];
  * status, the excerpt of its answer and Quader's sentence. A row offers **Retry** or **Cancel** to whoever may (R-CUR-005); a
  * holder of `manage` retries every failed row that matches. Above the rows, the repository's bulk downloads, newest first, each with
  * its state, its counters and, where its expansion failed, the cause in words, so that a bulk that failed before it queued a row is
- * seen (Q-CUR-168); a failed bulk of a person can be started again. The list reads itself again every five seconds while a row waits
- * or runs or a bulk expands, until **Pause automatic refresh** (the form of the page System status, Q-UI-651), and only while the window
- * is seen: a hidden window reads nothing and reads at once when it is seen again (R-UI-213).
+ * seen (Q-CUR-168); a failed bulk of a person can be started again. An upstream's rate limit that holds the queue is said in one
+ * sentence above the list, on its waiting rows and on a bulk's line (R-CUR-011, Q-UI-1100). The list reads itself again in place every
+ * five seconds while a row waits or runs or a bulk expands, every 30 s otherwise, only while the window is seen and until **Pause
+ * automatic refresh** (the form of the page System status, Q-UI-651; `live()` of R-UI-213, Q-UI-1102).
  */
 @Component({
   selector: 'quader-remote-downloads',
@@ -74,9 +81,6 @@ export class RemoteDownloads {
   private readonly notifier = inject(Notifier);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly visibility = inject(PageVisibility);
-  /** The window was hidden while the list was live: it reads at once when it is seen again. */
-  private away = false;
 
   /** The qualified name `<project>/<key>` of the remote repository. */
   readonly repository = input.required<string>();
@@ -122,6 +126,15 @@ export class RemoteDownloads {
 
   protected readonly rows = signal<readonly RemoteDownload[]>([]);
   protected readonly counts = signal<RemoteDownloadCounts | null>(null);
+  /** The upstream's rate limit of the queue as the list answered it last (R-CUR-012, Q-CUR-175); null for none. */
+  protected readonly limit = signal<RemoteDownloadLimit | null>(null);
+  /** The limit holds the queue: its rows wait, none starts until its time (Q-CUR-170). */
+  protected readonly holds = computed(() => this.limit()?.holds === true);
+  /** The one sentence above the list while the limit holds the queue (Q-UI-1100). */
+  protected readonly limitText = computed(() => {
+    const l = this.limit();
+    return l && l.holds ? limitSentence(l) : null;
+  });
   protected readonly loaded = signal(false);
   protected readonly loading = signal(false);
   protected readonly listError = signal<ApiError | null>(null);
@@ -193,6 +206,20 @@ export class RemoteDownloads {
       (this.showsBulkList() && this.bulkList().some(bulkActive))
     );
   });
+  /**
+   * The wait between two reads (R-UI-213, Q-UI-1102): fast while something waits or runs, slow while nothing does (a bulk another
+   * person starts, a client's failed fetch) and while an upstream's limit holds the queue with nothing running, which changes nothing
+   * before the limit's time.
+   */
+  private readonly every = computed(() => {
+    const standing = this.holds() && (this.counts()?.running ?? 0) === 0;
+    return this.live() && !standing ? DOWNLOADS_REFRESH_MS : LIVE_SLOW_MS;
+  });
+  /**
+   * The tab is live (R-UI-213): read again in place while the window is seen and the refresh is not paused, at once when either
+   * returns, and with the back-off of a failed read, which keeps what is shown.
+   */
+  private readonly liveReads = live({ reload: () => this.reread(), every: () => this.every(), when: () => !this.paused() });
 
   protected readonly states = FILTER_STATES;
   protected readonly classes = DOWNLOAD_FAILURE_CLASSES;
@@ -249,26 +276,24 @@ export class RemoteDownloads {
       const repository = this.repository();
       untracked(() => void this.loadBulks(repository, true));
     });
-    effect((onCleanup) => {
-      if (this.paused() || !this.live()) return;
-      if (!this.visibility.visible()) {
-        this.away = true;
-        return;
-      }
-      if (this.away) {
-        this.away = false;
-        untracked(() => this.refresh());
-      }
-      const timer = setInterval(() => this.refresh(), DOWNLOADS_REFRESH_MS);
-      onCleanup(() => clearInterval(timer));
-    });
+  }
+
+  /** A live read: the rows as far as they are shown, the bulk the list shows or the repository's bulks; a failure is thrown. */
+  private async reread(): Promise<void> {
+    const repository = this.repository();
+    const bulk = this.bulkId();
+    await Promise.all([
+      this.load(repository, this.filters(), false, true),
+      bulk ? refreshResource(this.bulkRead, () => this.api.bulk(repository, bulk)) : this.loadBulks(repository, false, true),
+    ]);
   }
 
   /**
    * Reads the first page again: as many rows as are shown (at least one page, at most the largest), so a refresh keeps what
-   * **Load more** added and the rows that are open. A new filter starts over with one page.
+   * **Load more** added and the rows that are open. A new filter starts over with one page. A quiet read (a live one) keeps what is
+   * shown when it fails and throws, so that the next read waits longer (R-UI-213).
    */
-  private async load(repository: string, filters: RemoteDownloadFilters, fresh: boolean): Promise<void> {
+  private async load(repository: string, filters: RemoteDownloadFilters, fresh: boolean, quiet = false): Promise<void> {
     const generation = fresh ? ++this.generation : this.generation;
     if (fresh) {
       this.loaded.set(false);
@@ -283,25 +308,28 @@ export class RemoteDownloads {
       this.rows.set(page.items);
       this.nextCursor.set(page.nextCursor);
       this.counts.set(page.counts);
+      this.limit.set(page.limit ?? null);
       this.countsChange.emit(page.counts);
       this.listError.set(null);
       this.loaded.set(true);
     } catch (e) {
+      if (quiet && this.loaded()) throw e;
       if (generation === this.generation) this.listError.set(asApiError(e));
     } finally {
       if (generation === this.generation) this.loading.set(false);
     }
   }
 
-  /** The automatic refresh and the one after an action: the rows, the bulk the list shows, and the repository's bulks. */
+  /** The read after the person's own act: the rows, the bulk the list shows, and the repository's bulks, at once (R-UI-213). */
   protected refresh(): void {
-    void this.load(this.repository(), this.filters(), false);
-    if (this.bulkId()) this.bulkRead.reload();
-    else void this.loadBulks(this.repository(), false);
+    void this.liveReads.now();
   }
 
-  /** Reads the repository's bulks again, as many as are shown (at least one page); a new repository starts over. */
-  private async loadBulks(repository: string, fresh: boolean): Promise<void> {
+  /**
+   * Reads the repository's bulks again, as many as are shown (at least one page); a new repository starts over. A quiet read keeps
+   * the bulks shown when it fails and throws.
+   */
+  private async loadBulks(repository: string, fresh: boolean, quiet = false): Promise<void> {
     const generation = fresh ? ++this.bulkGeneration : this.bulkGeneration;
     if (fresh) {
       this.bulkList.set([]);
@@ -318,6 +346,7 @@ export class RemoteDownloads {
       this.bulkListError.set(null);
       this.bulkListLoaded.set(true);
     } catch (e) {
+      if (quiet && this.bulkListLoaded()) throw e;
       if (generation === this.bulkGeneration) this.bulkListError.set(asApiError(e));
     } finally {
       if (generation === this.bulkGeneration) this.bulkListLoading.set(false);
@@ -432,6 +461,31 @@ export class RemoteDownloads {
     if (!by?.id) return null;
     if (by.id === this.self()) return $localize`:@@downloads.origin.you:You`;
     return by.name ?? null;
+  }
+
+  /** A waiting row's line while an upstream's rate limit holds the queue (Q-UI-1100): "Rate limit until 08:12"; null otherwise. */
+  protected limitLine(r: RemoteDownload): string | null {
+    const l = this.limit();
+    return r.state === 'waiting' && l?.holds ? limitRowText(l.until) : null;
+  }
+
+  /** A bulk's line while the limit holds the rows it waits for (Q-UI-1100); null otherwise. */
+  protected bulkLimitLine(b: RemoteDownloadBulk): string | null {
+    const l = this.limit();
+    if (!l?.holds || !bulkActive(b) || (b.state === 'queued' && (b.rows['waiting'] ?? 0) === 0)) return null;
+    return limitBulkText(l);
+  }
+
+  /** A time of day of the limit's facts, with the day where it is not today. */
+  protected clock(iso: string): string {
+    return clockText(iso);
+  }
+
+  /** The headers of a rate-limit answer in their names' order (Q-CUR-174). */
+  protected headerList(h: Readonly<Record<string, string>>): readonly { readonly name: string; readonly value: string }[] {
+    return Object.entries(h)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, value]) => ({ name, value }));
   }
 
   /** The attempt of a row: "Attempt 2 of 5", for a row that has made one. */

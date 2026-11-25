@@ -72,6 +72,20 @@ who can make Quader download how much, and what is kept of content that no clien
   address and the sentence as text (Angular's interpolation into a `pre` and a `code`), never as markup, so an upstream's error page
   cannot put an element or a script into the screen (R-CUR-018)
   ([H-1728](#h-1728--the-excerpt-of-an-upstreams-error-answer-is-shown-to-every-reader-of-the-repository)).
+- A rate-limit answer keeps, besides its excerpt, only the headers of a fixed list (`Retry-After`, the `RateLimit` fields and the
+  `X-RateLimit-` three, each at most 200 bytes): a registry's own header of its limit can name the address the limit counts, which is the
+  installation's address on the internet, and is never kept (Q-CUR-174). The limit, its times and its last answer are shown to every
+  reader of the queue, as a row's failure is ([H-1883](#h-1883--a-reader-of-the-queue-sees-how-much-of-the-upstreams-quota-is-left)).
+
+## What an upstream's rate limit holds back
+
+- A rate-limit answer longer than 10 s ends a run of the queue and holds the repository's queue until the upstream's time, or the queue's
+  back-off of up to an hour (R-CUR-011, Q-CUR-170 to Q-CUR-172): no row starts and a bulk's expansion asks nothing, so the installation does
+  not send a request per waiting row into a limit, and after the time one row asks first. The attempt is not counted, so a limit cannot
+  end a row `failed`. The hold is the queue's alone: a mirror pass and a client's fetch of the same upstream do not read it
+  ([H-1880](#h-1880--the-queue-and-a-mirror-pass-of-one-repository-meet-an-upstreams-limit-apart),
+  [H-1882](#h-1882--a-clients-fetch-asks-an-upstream-whose-limit-holds-the-queue)), and a probe after a limit without a time sends up to
+  five requests ([H-1881](#h-1881--a-probe-after-a-limit-without-a-time-sends-up-to-five-requests-into-it)).
 
 ## What a rule keeps from a client, and what it does not
 
@@ -254,3 +268,36 @@ by its digest ([H-1724](#h-1724--a-blob-of-a-refused-tag-can-be-fetched-by-its-d
 client fetched before a rule refused it has no examination row and no version row, so a discard of it removes nothing. What makes it real:
 an image examined and declined whose layers no allowed image shares, on an installation that counts its storage.
 
+### H-1880 · The queue and a mirror pass of one repository meet an upstream's limit apart
+
+Component: the queue's limit (R-CUR-011, [Q-CUR-173](../spec/remote-curation.md#q-cur-173--the-limit-is-a-row-per-repository-of-a-table-of-its-own-transient-and-apart-from-the-mirrors))
+and the mirror's `rate_limited_until` (R-REPO-054). Subject: the upstream's quota of the installation's address. Live for a remote with a
+mirror and a download queue. Each holds its own requests: a pass that waits for a limit does not stop the queue's rows, and a queue that
+waits does not stop a pass, so each spends its own refused requests to learn of the same limit. What makes it real: a mirror and a bulk of
+one registry with a pull limit, at the same time.
+
+### H-1881 · A probe after a limit without a time sends up to five requests into it
+
+Component: the run's wait and the queue's back-off ([Q-CUR-171](../spec/remote-curation.md#q-cur-171--a-run-waits-out-a-limit-of-at-most-10-s-a-longer-one-ends-its-attempt),
+[Q-CUR-172](../spec/remote-curation.md#q-cur-172--the-limits-time-is-the-upstreams-else-the-queues-back-off-then-one-row-asks-first)).
+Subject: the upstream's quota of the installation's address. Live. Where the upstream names no time (Docker Hub's `429` of 2026-11-25),
+the probe after each hold waits about 1, 2, 4 and 8 s inside its run and asks five times before it hands the row back; the holds grow to an
+hour, so about twelve probes, sixty requests, fall into the first six hours of a limit. Whether a refused request counts against a
+registry's limit is not known for Docker Hub. A limit counts per address, so these requests are taken from every caller behind it: on
+2026-11-25 a CI job of the same site address was refused `429` while the profile's queue had used Docker Hub's hour. What makes it real:
+a registry that counts refused requests and names no time, and neighbours behind the installation's address.
+
+### H-1882 · A client's fetch asks an upstream whose limit holds the queue
+
+Component: the client's fill (R-REPO-029) beside the queue's limit (R-CUR-011). Subject: the upstream's quota and the clients of the
+remote. By design: a client's miss is never held by the background's state, and it gets the upstream's answer as R-REPO-029 classifies it
+(`upstream_rate_limited` with its `Retry-After`). A client that retries at once spends the limit the queue waits out. What makes it real: a
+build that pulls through the remote while a bulk waits for the same limit.
+
+### H-1883 · A reader of the queue sees how much of the upstream's quota is left
+
+Component: the list's `limit` and a row's failure ([Q-CUR-174](../spec/remote-curation.md#q-cur-174--a-limits-failure-keeps-the-upstreams-answer-and-the-headers-of-the-limit-and-no-other),
+[Q-CUR-175](../spec/remote-curation.md#q-cur-175--the-list-answers-the-limit-beside-its-counts-for-every-reader)). Subject: the installation's
+use of an upstream. Live. The headers of a limit (`RateLimit-Limit: 100;w=3600`, `RateLimit-Remaining: 0`) and the time the queue waits
+show every reader of the repository the quota of the installation's address and that it is used up; the address itself is not kept. What
+makes it real: an upstream account whose quota is a commercial figure.

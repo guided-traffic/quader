@@ -24,6 +24,8 @@ type memStore struct {
 	written []Row // the client failures written
 	// examined are the examination rows the ends of attempts wrote, with the request of their row.
 	examined []examinedRow
+	// limits are the repositories' upstream rate limits (remote_download_limits).
+	limits map[int64]Limit
 }
 
 type examinedRow struct {
@@ -32,7 +34,7 @@ type examinedRow struct {
 }
 
 func newMemStore(now func() time.Time) *memStore {
-	return &memStore{bulks: map[string]*Bulk{}, now: now}
+	return &memStore{bulks: map[string]*Bulk{}, now: now, limits: map[int64]Limit{}}
 }
 
 var (
@@ -124,10 +126,12 @@ func (t memTx) find(id string) *Row {
 	return nil
 }
 
-func (t memTx) Start(_ context.Context, r Row, _ time.Time) (string, error) {
+func (t memTx) Start(_ context.Context, r Row, now time.Time) (string, error) {
 	x := t.find(r.ID)
 	t.m.jobs++
 	x.State, x.Attempts, x.JobID, x.NotBefore = remotecuration.StateRunning, x.Attempts+1, fmt.Sprintf("job-%d", t.m.jobs), nil
+	at := now
+	x.StartedAt = &at
 	return x.JobID, nil
 }
 
@@ -144,6 +148,9 @@ func (t memTx) Settle(_ context.Context, id, jobID string, s settlement, res Res
 		return false, nil
 	}
 	x.State, x.Outcome, x.Failure, x.JobID = s.State, s.Outcome, s.Failure, ""
+	if s.Limited {
+		x.Attempts = max(x.Attempts-1, 0)
+	}
 	x.Files, x.Stored, x.Present, x.Refused, x.Bytes = res.Files, x.Stored+res.Stored, res.Present, res.Refused, x.Bytes+res.Bytes
 	x.NotBefore = nil
 	if !s.NotBefore.IsZero() {
@@ -220,6 +227,43 @@ func (t memTx) CancelBulk(_ context.Context, b Bulk) error {
 	}
 	t.m.bulks[b.ID].State = BulkCancelled
 	return nil
+}
+
+func (t memTx) Limit(_ context.Context, repoID int64) (Limit, bool, error) {
+	l, ok := t.m.limits[repoID]
+	return l, ok, nil
+}
+
+func (t memTx) PutLimit(_ context.Context, l Limit) error {
+	t.m.limits[l.RepoID] = l
+	return nil
+}
+
+func (t memTx) ClearLimit(_ context.Context, repoID int64) error {
+	delete(t.m.limits, repoID)
+	return nil
+}
+
+func (m *memStore) Limit(ctx context.Context, repoID int64) (Limit, bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return memTx{m}.Limit(ctx, repoID)
+}
+
+func (m *memStore) PruneLimits(_ context.Context, now time.Time) (int64, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var n int64
+	for id, l := range m.limits {
+		if l.Holds(now) {
+			continue
+		}
+		if w, r, _ := (memTx{m}).Counts(context.Background(), id); w+r == 0 {
+			delete(m.limits, id)
+			n++
+		}
+	}
+	return n, nil
 }
 
 func (m *memStore) List(context.Context, Filter) ([]Row, error) { return nil, nil }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"slices"
 	"strconv"
 	"sync"
@@ -97,6 +98,8 @@ func (f *fetcher) rateLimited(resp *http.Response) (flightResult, bool, []byte) 
 	case http.StatusServiceUnavailable:
 		body, _ = io.ReadAll(io.LimitReader(resp.Body, upstream.SlowDownSniffBytes))
 	case http.StatusTooManyRequests, http.StatusForbidden:
+		// The start of the answer is the failure's excerpt of a row of the download queue (R-CUR-011): the upstream's own words.
+		body, _ = io.ReadAll(io.LimitReader(resp.Body, excerptBytes))
 	default:
 		return flightResult{}, false, nil
 	}
@@ -104,7 +107,16 @@ func (f *fetcher) rateLimited(resp *http.Response) (flightResult, bool, []byte) 
 	if !ok {
 		return flightResult{}, false, body
 	}
+	rl.Address, rl.Body = addressOf(answeredURL(resp, f.target)), body
 	return flightResult{own: &upstream.RateLimitError{RateLimit: rl, Repo: f.rq.Remote.Repo.Name.String()}, status: resp.StatusCode}, true, body
+}
+
+// answeredURL is the address an answer came from, after redirects; fallback where the answer does not say (nil for none).
+func answeredURL(resp *http.Response, fallback *url.URL) *url.URL {
+	if resp != nil && resp.Request != nil && resp.Request.URL != nil {
+		return resp.Request.URL
+	}
+	return fallback
 }
 
 // roleMirror is the flight_role of the upstream log record of a background request (R-REPO-057).

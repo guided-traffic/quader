@@ -16,6 +16,8 @@ export type UpstreamDownloadOrigin = Schema<'UpstreamDownloadOrigin'>;
 export type UpstreamDownloadQueueOrigin = Schema<'UpstreamDownloadQueueOrigin'>;
 /** How a download ended: `completed`, `failed`, `cancelled`, `interrupted`. */
 export type UpstreamDownloadOutcome = UpstreamDownloadFinished['outcome'];
+/** A download queue an upstream's rate limit holds (remote-curation.md R-CUR-011, Q-CUR-176): its rows wait, none runs. */
+export type UpstreamDownloadWaiting = Schema<'UpstreamDownloadWaiting'>;
 /** A running or a finished download: the facts both carry. */
 export type UpstreamDownload = UpstreamDownloadRunning | UpstreamDownloadFinished;
 

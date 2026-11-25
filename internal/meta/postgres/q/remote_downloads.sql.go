@@ -731,6 +731,87 @@ func (q *Queries) RemoteDownloadInsert(ctx context.Context, arg RemoteDownloadIn
 	return items, nil
 }
 
+const remoteDownloadLimitClear = `-- name: RemoteDownloadLimitClear :exec
+DELETE FROM remote_download_limits WHERE repo_id = $1::bigint
+`
+
+// The first attempt the upstream answered without a limit ends the repository's limit.
+func (q *Queries) RemoteDownloadLimitClear(ctx context.Context, repoID int64) error {
+	_, err := q.db.Exec(ctx, remoteDownloadLimitClear, repoID)
+	return err
+}
+
+const remoteDownloadLimitGet = `-- name: RemoteDownloadLimitGet :many
+SELECT to_jsonb(l.*)::text AS doc FROM remote_download_limits l WHERE l.repo_id = $1::bigint
+`
+
+// The upstream's rate limit that holds a repository's queue, or held it last (remote_download_limits, migration 00120, Q-CUR-170).
+func (q *Queries) RemoteDownloadLimitGet(ctx context.Context, repoID int64) ([]string, error) {
+	rows, err := q.db.Query(ctx, remoteDownloadLimitGet, repoID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var doc string
+		if err := rows.Scan(&doc); err != nil {
+			return nil, err
+		}
+		items = append(items, doc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const remoteDownloadLimitPut = `-- name: RemoteDownloadLimitPut :exec
+INSERT INTO remote_download_limits (repo_id, since, until, waits, hinted, failure, updated_at)
+VALUES ($1::bigint, to_timestamp($2::bigint / 1000000.0), to_timestamp($3::bigint / 1000000.0),
+        $4::int, $5::bool, $6::text::jsonb, now())
+ON CONFLICT (repo_id) DO UPDATE
+   SET since = EXCLUDED.since, until = EXCLUDED.until, waits = EXCLUDED.waits, hinted = EXCLUDED.hinted, failure = EXCLUDED.failure,
+       updated_at = now()
+`
+
+type RemoteDownloadLimitPutParams struct {
+	RepoID  int64
+	SinceUs int64
+	UntilUs int64
+	Waits   int32
+	Hinted  bool
+	Failure string
+}
+
+// Writes a repository's limit; the caller holds the repository's lock and computed every member from the one it read.
+func (q *Queries) RemoteDownloadLimitPut(ctx context.Context, arg RemoteDownloadLimitPutParams) error {
+	_, err := q.db.Exec(ctx, remoteDownloadLimitPut,
+		arg.RepoID,
+		arg.SinceUs,
+		arg.UntilUs,
+		arg.Waits,
+		arg.Hinted,
+		arg.Failure,
+	)
+	return err
+}
+
+const remoteDownloadLimitsPrune = `-- name: RemoteDownloadLimitsPrune :execrows
+DELETE FROM remote_download_limits l
+ WHERE l.until < to_timestamp($1::bigint / 1000000.0)
+   AND NOT EXISTS (SELECT 1 FROM remote_download d WHERE d.repo_id = l.repo_id AND d.state IN ('waiting', 'running'))
+`
+
+// A limit that ended, of a repository whose queue has no waiting or running row left (the task remote-downloads-dispatch).
+func (q *Queries) RemoteDownloadLimitsPrune(ctx context.Context, nowUs int64) (int64, error) {
+	result, err := q.db.Exec(ctx, remoteDownloadLimitsPrune, nowUs)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const remoteDownloadList = `-- name: RemoteDownloadList :many
 SELECT to_jsonb(d.*)::text AS doc,
        (CASE d.state WHEN 'running' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END)::int AS rank
@@ -1011,19 +1092,21 @@ func (q *Queries) RemoteDownloadRetryMatching(ctx context.Context, arg RemoteDow
 const remoteDownloadSettle = `-- name: RemoteDownloadSettle :execrows
 UPDATE remote_download
    SET state = $1::text, outcome = NULLIF($2::text, ''),
-       failure = NULLIF($3::text, '')::jsonb,
-       files = $4::int, stored = stored + $5::int, present = $6::int,
-       refused = $7::int, bytes = bytes + $8::bigint,
-       not_before = CASE WHEN $9::bigint = 0 THEN NULL ELSE to_timestamp($9::bigint / 1000000.0) END,
-       job_id = NULL, updated_at = to_timestamp($10::bigint / 1000000.0),
+       attempts = CASE WHEN $3::bool THEN GREATEST(attempts - 1, 0) ELSE attempts END,
+       failure = NULLIF($4::text, '')::jsonb,
+       files = $5::int, stored = stored + $6::int, present = $7::int,
+       refused = $8::int, bytes = bytes + $9::bigint,
+       not_before = CASE WHEN $10::bigint = 0 THEN NULL ELSE to_timestamp($10::bigint / 1000000.0) END,
+       job_id = NULL, updated_at = to_timestamp($11::bigint / 1000000.0),
        finished_at = CASE WHEN $1::text IN ('done', 'failed', 'cancelled')
-                          THEN to_timestamp($10::bigint / 1000000.0) ELSE NULL END
- WHERE id = $11::text::uuid AND state = 'running' AND job_id = $12::text::uuid
+                          THEN to_timestamp($11::bigint / 1000000.0) ELSE NULL END
+ WHERE id = $12::text::uuid AND state = 'running' AND job_id = $13::text::uuid
 `
 
 type RemoteDownloadSettleParams struct {
 	State       string
 	Outcome     string
+	Uncounted   bool
 	Failure     string
 	Files       int32
 	Stored      int32
@@ -1037,11 +1120,13 @@ type RemoteDownloadSettleParams struct {
 }
 
 // The end of an attempt, written by its run: the state, the counters, the failure and the next attempt. Fenced by the attempt's job,
-// so that a run whose row was cancelled or found orphaned meanwhile writes nothing.
+// so that a run whose row was cancelled or found orphaned meanwhile writes nothing. An attempt that ended at an upstream's rate limit
+// is not counted (uncounted, Q-CUR-170).
 func (q *Queries) RemoteDownloadSettle(ctx context.Context, arg RemoteDownloadSettleParams) (int64, error) {
 	result, err := q.db.Exec(ctx, remoteDownloadSettle,
 		arg.State,
 		arg.Outcome,
+		arg.Uncounted,
 		arg.Failure,
 		arg.Files,
 		arg.Stored,

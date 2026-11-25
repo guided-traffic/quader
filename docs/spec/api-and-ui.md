@@ -9129,7 +9129,14 @@ template, its words in [download-words.ts](../../web/src/app/shared/upstream-dow
 - **The filter.** A field **Filter downloads** (as wide as a name, R-UI-085) filters both sections at once, in the browser, by name,
   version, path and repository `project/key` (case-insensitive, part of the text). A section's heading says "Running (1 of 145)" while
   the filter is set, and a section with rows of which none matches says "No download matches the filter."
-- **The section Running (n)** (`runningCount`), first. One row per running download, the oldest first, as the API orders them; the
+- **The section Waiting for an upstream (n)**, first while the list's `waiting` holds a queue
+  ([Q-UI-1101](#q-ui-1101--the-top-bars-panel-says-the-queues-a-limit-holds-above-running), [remote-curation.md](remote-curation.md)
+  R-CUR-011): one row per repository whose download queue an upstream's rate limit holds, the warning's hourglass before one sentence,
+  "206 downloads of upstream/docker-hub wait: Docker Hub limits requests; Quader asks again at 06:47." ("… limits requests until 08:12."
+  where the upstream named the time; "1 download of … waits: …"), and under it the format's name and **Show in queue** to the
+  repository's tab Downloads. The filter narrows it by the repository and the upstream's name. German: "Warten auf einen Upstream",
+  "206 Downloads von upstream/docker-hub warten: Docker Hub begrenzt die Anfragen; Quader fragt um 06:47 erneut an.".
+- **The section Running (n)** (`runningCount`), first without a held queue. One row per running download, the oldest first, as the API orders them; the
   rows keep their place across refreshes (tracked by `id`):
   - Line 1: the format's icon (`<quader-format-icon>`) on the middle of the name's first line (R-UI-175), the **name** (wrapping inside
     itself, R-UI-145) and the version muted beside it. Without a version, the file in the version's place: the last path segment, a
@@ -9255,7 +9262,9 @@ shows state the server changes without the viewer's own act reads it again by it
   | A package's page | 60 s: its summary and grades; its versions when the summary changed | a push, a download, a grade |
   | The tab Upstream: the strip's counts, the list's rows, the requests panel | 60 s; the panel when the counts change | a download, a request, an allow |
   | A package opened in the tab Upstream | 3 s while one of its versions downloads, 60 s after | the queue |
-  | The tab Downloads, the top bar's Downloads | as built (R-CUR-018, R-UI-210, R-UI-211) | the queue |
+  | The tab Downloads | 5 s while a row waits or runs or a bulk shown expands or waits, 30 s otherwise and while a rate limit holds the queue with nothing running ([Q-UI-1102](#q-ui-1102--the-tab-downloads-is-live-by-the-shared-poll-5-s-while-something-moves-30-s-otherwise)) | the queue, a client's failed fetch |
+  | The label "Downloads · 2 failed" of a remote's strip, on every tab but Downloads | 30 s ([Q-UI-1103](#q-ui-1103--the-strips-label-reads-the-queues-counts-itself-on-every-other-tab-every-30-s)) | the queue |
+  | The top bar's Downloads | as built (R-UI-210, R-UI-211) | the downloads, the queues an upstream's rate limit holds |
   | The ClamAV databases | 60 s: the list of databases; the versions and the set when it changed | the updater |
   | Vulnerabilities (summary, trend, findings), Advisory sources | 60 s | a scan, a sync |
   | Malware finds | 30 s | a scan |
@@ -23890,7 +23899,8 @@ ran and some in a hidden tab too; every other view showed what it read once.
 
 **Choice:** (a). The existing polls move onto it where that is a pure simplification (System status, Jobs, Backups, Storage, the admin
 dashboard, Mirror status, a Debian repository's indexes, the banner); the top bar's Downloads (R-UI-210, R-UI-211) and the tab Downloads
-(R-CUR-018) keep their own. **Rationale:** the only option that needs nothing on the server and keeps every view's state; the views
+(R-CUR-018) keep their own. The tab Downloads moved onto it on 2026-11-25
+([Q-UI-1102](#q-ui-1102--the-tab-downloads-is-live-by-the-shared-poll-5-s-while-something-moves-30-s-otherwise)). **Rationale:** the only option that needs nothing on the server and keeps every view's state; the views
 that changed most often already polled, and (d) is what made the jobs list and the backups' runs jump every few seconds. A view whose
 change is cheap to detect (a package's summary, the list of ClamAV databases) reads that first and the rest only on a change. The
 development agent would revisit (c) when the idle cost of many open tabs shows in the replicas' request rate, and (b) if the app gains
@@ -23996,6 +24006,105 @@ settings in German, and the lint rule's list of names when a new English member 
 **Applied in the spec:** R-UI-214; the OpenAPI document: `RemoteDownloadPreview.note`, `RepositoryWarning.code`, `CiWarning.code` and
 `MirrorErrors.lastCode` as enums, `CiWarning.names`, `ValkeyView.reasonCode`. Code:
 [technical-details.ts](../../web/src/app/shared/technical-details.ts), [server-text-rule.mjs](../../web/scripts/server-text-rule.mjs).
+
+### Q-UI-1100 · A limit is one sentence above the list, a line on its waiting rows and on a bulk, its answer folded
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's tab of 2026-11-25 showed "315 of 315 versions found are queued · Running 4 · Waiting 206 · Done 105" and rows that
+read "Waiting" with a dash under Progress and Failure, while Docker Hub refused every request; nothing on the screen said why, so he read
+the tab as stale ([remote-curation.md](remote-curation.md) Q-CUR-170).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One warning line above the bulks while the limit holds: who limits, since when, until when and whose time that is, in the screen's language; **Technical details** folded under it (the last answer, the waits in a row, the address, the headers of the limit, the upstream's words, the server's sentence); "Rate limit until 06:47" on each waiting row; "Waits for Docker Hub's rate limit until 06:47" on a bulk whose rows wait (chosen) | The three places the person looks | The plain sentence first, the raw answer for who wants it (R-UI-067); the row and the bulk say it where the eye lands | Three texts of one fact |
+| (b) A badge "Rate limited" instead of "Waiting" | A state of its own | Seen at once | A row is not in a state the API has; the filters would not match it |
+| (c) Only the sentence above the list | One place | Least | A person who opens a bulk's rows (`?bulk=`) does not see why they wait |
+
+**Choice:** (a). The sentence's time is a time of day in the viewer's language, with the day where it is not today; the upstream is its
+preset's name where the remote's address is one ("Docker Hub"), else the host. The facts reuse the mirror's words ("Last answer",
+"Waits", "Waiting until"), and the headers stand among a row's facts too. **Rationale:** the sentence answers "is it done, and when does
+it go on"; the development agent would revisit (b) if the queue gains a state of its own for a held row.
+
+**Applied in the spec:** [remote-curation.md](remote-curation.md) R-CUR-018. Code:
+[limit-words.ts](../../web/src/app/shared/upstream-downloads/limit-words.ts),
+[remote-downloads.html](../../web/src/app/features/repositories/downloads/remote-downloads.html).
+
+### Q-UI-1101 · The top bar's panel says the queues a limit holds above Running
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A section **Waiting for an upstream (n)** above **Running**: per queue "206 downloads of upstream/docker-hub wait: Docker Hub limits requests; Quader asks again at 06:47." with the format's name and **Show in queue** (chosen) | The panel's own form: a section, rows, a link | "No download from an upstream is running" stands beside the reason; the filter narrows it | A third section |
+| (b) A line under the empty sentence of Running | Smaller | One line | Not there while something else runs |
+| (c) A badge on the top bar's button for waiting queues | Seen with the panel closed | Seen at once | The button counts what runs (Q-UI-1070); a number of queues beside it reads as downloads |
+
+**Choice:** (a). With nothing held there is no section. **Rationale:** the panel's question is "what is Quader loading"; a queue that
+stands answers it with "nothing, and here is why". The development agent would revisit (c) if a held queue is missed with the panel
+closed.
+
+**Applied in the spec:** R-UI-211. Code: [upstream-downloads-panel.html](../../web/src/app/shared/upstream-downloads/upstream-downloads-panel.html),
+`limitQueueText` in [limit-words.ts](../../web/src/app/shared/upstream-downloads/limit-words.ts).
+
+### Q-UI-1102 · The tab Downloads is live by the shared poll: 5 s while something moves, 30 s otherwise
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It changes
+Q-UI-1075's exception for the tab, and R-CUR-018's "every 5 s while something waits or runs" gains the reads in between.
+
+Context: the owner's sentence of 2026-11-25, "Ich will nirgends F5 drücken müssen". The tab kept its own `setInterval` beside `live()`
+(Q-UI-1075): it read every 5 s while a row waited or ran, also in a hidden window, never on its return, and not at all while nothing
+waited or ran, so a bulk another person started or a client's failed fetch did not show until a reload; a failed read replaced the rows
+with an error.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `live()` with 5 s while a row waits or runs or a bulk shown expands or waits, 30 s otherwise and while a limit holds the queue with nothing running; **Pause automatic refresh** is its `when`; a read keeps the rows, a failure keeps them and waits longer (chosen) | R-UI-213's rule | Nothing missed while the tab is open; a hidden window costs nothing and reads at once on return; a held queue is not read every 5 s for hours | One request per 30 s for an idle tab |
+| (b) Keep the timer and add an idle read | Two mechanisms | Small | The hidden window and the return stay unsolved |
+| (c) As built | — | Nothing new | Needs a reload for what changes while nothing ran |
+
+**Choice:** (a); `DOWNLOADS_REFRESH_MS` stays 5 s, the tab's own interval of R-CUR-018. **Rationale:** R-UI-213's three rules (seen,
+at once on return, in place) are the owner's; the development agent would revisit the 30 s if idle tabs show in the replicas' request
+rate (Q-UI-1075 (c)).
+
+**Applied in the spec:** R-UI-213 (the table); [remote-curation.md](remote-curation.md) R-CUR-018. Code:
+[remote-downloads.ts](../../web/src/app/features/repositories/downloads/remote-downloads.ts).
+
+### Q-UI-1103 · The strip's label reads the queue's counts itself on every other tab, every 30 s
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the label "Downloads · 2 failed" took the counts the tab Downloads passed last; on the content, Upstream and Details the strip
+read them once, and not at all after the tab Downloads had passed some, so a row that failed meanwhile did not show until a reload.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The open tab Downloads (or Upstream) passes its counts; on every other tab the strip reads one row of the list for its counts, at once and every 30 s while the window is seen (chosen) | The strip owns its label | One small read per 30 s; the label is never older than half a minute | A read the content page did not make before |
+| (b) The content page reads the queue for the strip | A second owner | — | The page and the strip would both read at the start |
+
+**Choice:** (a). **Rationale:** the strip already read the counts once; the development agent would revisit the interval with Q-UI-1075's
+idle cost.
+
+**Applied in the spec:** R-UI-213 (the table); [remote-curation.md](remote-curation.md) R-CUR-018. Code:
+[repository-tabs.ts](../../web/src/app/features/repositories/content/repository-tabs.ts).
+
+### Q-UI-1104 · The limit's sentence offers no account: the presets do not say which upstream an account lifts
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Docker Hub lifts its limit for callers with an account, and the remote of 2026-11-25 had no credential. A sentence "Add a Docker
+Hub account in the repository's settings to raise the limit" would help, if the screen knew it of the upstream.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No such sentence while no preset carries the fact (chosen) | The screen says what the server knows | No vendor's terms in the UI | The person does not learn the remedy (H-1884) |
+| (b) A preset fact "an account lifts the limit" (the format contract's `UpstreamPreset`), and the sentence with a link to the settings where the remote has no credential | A fact of the format | The remedy where it applies | A contract change for one sentence; the fact may change with the vendor's terms |
+| (c) A sentence for every remote without a credential | Generic | Small | Wrong for an upstream that limits everyone alike |
+
+**Choice:** (a). **Rationale:** the brief of the package allowed the sentence only where the presets carry the fact, and they do not;
+the development agent would build (b) if the owner wants the remedy said.
+
+**Applied in the spec:** [remote-curation.md](remote-curation.md) H-1884.
 
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 
