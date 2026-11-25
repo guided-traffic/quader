@@ -9,6 +9,7 @@
 #                         makes upstream/scanner-trivy hold the database (about 142 MB from mirror.gcr.io the first time, a check of
 #                         the tag's document after that); serve.sh runs it in the background
 #   scanners.sh down      removes an analyser's container that a killed call left behind
+#   scanners.sh pair <name> <file>  a pair of a scanner unit from the instance's CA (malware.sh issues the malware units' with it)
 #
 # UI_SCANNERS=0 runs none: config.sh then writes no scan listener and no scanner's address, and the profile's images say "No database"
 # or "No scanner" (R-VULN-039). The render runs set it (renders.sh): their screens' scanner replicas are rows the seed writes.
@@ -24,7 +25,7 @@
 # 2026-11-25; the repository upstream/scanner-trivy holds the layer, 143 MB, in the instance's S3 store). Measured from nothing on
 # instance 6 that day: up.sh 8 s, quader ready 10 s after serve.sh started (binaries from the build cache), the database recorded after
 # 17 s (143,486,506 bytes from mirror.gcr.io in 1.8 s) and loaded after 22 s; the two processes hold about 68 MB each while idle, the
-# analyser's container lives for one call. ClamAV is not run (docs/developer/web-ui.md, gap H-1891 of docs/spec/architecture.md).
+# analyser's container lives for one call. The malware scanner is malware.sh's (Q-ARCH-1065); `scanners.sh pair` issues its pairs.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -41,30 +42,32 @@ dir="$state/scanners"
 name=vuln-scanner-trivy.quader.test
 label="quader-ui-dev-analyser=$UI_PROJECT"
 
-# pair: the scanner's certificate from the instance's CA, issued once and again when the CA is newer.
+# pair <name> <file>: the certificate of a scanner unit from the instance's CA, <dir>/<file>.crt and .key for <name> and 127.0.0.1, issued
+# once and again when the CA is newer; serverAuth and clientAuth, as the chart's pairs of the scanner units.
 pair() {
-  if [ -f "$dir/trivy.crt" ] && [ "$dir/trivy.crt" -nt "$state/certs/ca.crt" ]; then
+  local cn="$1" f="$2"
+  if [ -f "$dir/$f.crt" ] && [ "$dir/$f.crt" -nt "$state/certs/ca.crt" ]; then
     return 0
   fi
-  cat > "$dir/trivy.cnf" <<CNF
+  cat > "$dir/$f.cnf" <<CNF
 [req]
 distinguished_name = dn
 req_extensions = ext
 prompt = no
 [dn]
-CN = $name
+CN = $cn
 [ext]
-subjectAltName = DNS:$name, IP:127.0.0.1
+subjectAltName = DNS:$cn, IP:127.0.0.1
 extendedKeyUsage = serverAuth, clientAuth
 keyUsage = digitalSignature, keyEncipherment
 CNF
   openssl() { docker run --rm --user "$(id -u):$(id -g)" -v "$dir:$dir" -v "$state/certs:$state/certs:ro" -w "$dir" "$OPENSSL_IMAGE" "$@"; }
-  openssl genrsa -out trivy.key 2048 2>/dev/null
-  openssl req -new -key trivy.key -config trivy.cnf -out trivy.csr
-  openssl x509 -req -in trivy.csr -CA "$state/certs/ca.crt" -CAkey "$state/certs/ca.key" -CAcreateserial -CAserial trivy.srl \
-    -days 365 -sha256 -extfile trivy.cnf -extensions ext -out trivy.crt 2>/dev/null
-  chmod 0600 "$dir/trivy.key"
-  rm -f "$dir/trivy.csr" "$dir/trivy.cnf" "$dir/trivy.srl"
+  openssl genrsa -out "$f.key" 2048 2>/dev/null
+  openssl req -new -key "$f.key" -config "$f.cnf" -out "$f.csr"
+  openssl x509 -req -in "$f.csr" -CA "$state/certs/ca.crt" -CAkey "$state/certs/ca.key" -CAcreateserial -CAserial "$f.srl" \
+    -days 365 -sha256 -extfile "$f.cnf" -extensions ext -out "$f.crt" 2>/dev/null
+  chmod 0600 "$dir/$f.key"
+  rm -f "$dir/$f.csr" "$dir/$f.cnf" "$dir/$f.srl"
 }
 
 # wrapper: vulnerabilities.images.binary. The scanner starts it with an empty environment but HOME, TMPDIR and GOMEMLIMIT, so the
@@ -123,7 +126,7 @@ prepare() {
     docker pull -q "$TRIVY_IMAGE" >/dev/null
   }
   mkdir -p "$dir/spool" "$dir/tmp" "$dir/trivy-db"
-  pair
+  pair "$name" trivy
   wrapper
   config trivy "$UI_TRIVY_OPS_PORT"
   config trivy-db "$UI_TRIVY_DB_OPS_PORT"
@@ -151,7 +154,8 @@ database() {
 
 case "${1:-}" in
   prepare) prepare ;;
+  pair) mkdir -p "$dir"; pair "$2" "$3" ;;
   down) down ;;
   database) database ;;
-  *) echo "usage: scanners.sh prepare | database | down" >&2; exit 2 ;;
+  *) echo "usage: scanners.sh prepare | database | down | pair <name> <file>" >&2; exit 2 ;;
 esac

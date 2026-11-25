@@ -113,6 +113,27 @@ subject `malware-updater-freshclam` (`registrytoken.UpdaterSubject`, `malwareDat
 [wire_malware_scanlisten.go](../../internal/app/wire_malware_scanlisten.go)) and records its report as the kind `freshclam`: the set its
 directory holds with the daily's build time, no slots (migration 00095, `scanreport.Report.DatabaseBuiltAt`).
 
+## The UI development profile's way to `clamd`
+
+The product reaches `clamd` by one way, the Unix socket of the malware scanner's pod (`malware.scanner.socket`,
+[clamd.go](../../internal/malware/clamd/clamd.go) dials the network `unix` and nothing else; R-MAL-007). `clamd` opens no TCP socket in
+the chart, so a taken-over `clamd` has no listener, and the pod needs none: both ends of the socket are in one pod. The owner's condition
+of 2026-11-25, when ClamAV was to run on his development machine, keeps it so: "Ich will dass davon nichts in die ausgelieferten Images
+wandert und ich will keinen neuen offenen Port im produktiven quader."
+`TestR_MAL_007_TheProductReachesClamdByTheSocketOfThePodOnly` ([clamdlink.go](../../internal/archtest/clamdlink.go)) fails when a package
+of the binary dials `clamd` by another network or by a network from the configuration, replaces the client's dial (`SetDialer`, the
+client's own tests only), or speaks `clamd`'s protocol past the client.
+
+The UI development profile ([web-ui.md](web-ui.md#the-malware-scanner),
+[Q-ARCH-1065](../spec/architecture.md#q-arch-1065--the-ui-development-profile-runs-the-malware-scanner-as-the-charts-pod-on-docker))
+therefore runs the chart's pod on Docker rather than a link of its own: the scanner's Quader and `clamd` in two containers that share the
+socket's directory and the database directory as volumes, inside Docker Desktop's VM, which shares files with macOS but no socket. The
+scanner cannot run on the host in any case: its loader writes the database into the constant `database.ClamdDir`, `/var/lib/clamav`,
+which no key changes and which a developer's machine does not have. The profile's `clamd.conf` and `freshclam.conf` are the chart's with
+the default values (`TestR_HA_068_TheUIProfileRunsTheChartsClamdConf`, `TestR_HA_069_TheUIProfileRunsTheChartsFreshclamConf`), and the
+signatures come through the updater, the database task and `upstream/clamav` as in an installation, from a cache that `freshclam` fills at
+most once a day per machine.
+
 ## Measured on a kind cluster
 
 A measurement, not a test (R-CLAMAV-009, Q-CLAMAV-7), made once on 2026-11-21 by the development agent before the change went to the

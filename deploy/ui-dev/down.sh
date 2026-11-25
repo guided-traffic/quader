@@ -17,9 +17,14 @@ UI_DOWN=1 ui_instance "$root"
 export POSTGRES_IMAGE=unused VALKEY_IMAGE=unused SEAWEEDFS_IMAGE=unused CERT_DIR="$UI_STATE/certs"
 # An analyser's container of the image scanner (scanners.sh) that a killed call left behind.
 docker ps -aq --filter "label=quader-ui-dev-analyser=$UI_PROJECT" | xargs docker rm -f >/dev/null 2>&1 || true
+# The malware scanner's two containers and its three volumes (malware.sh), which a killed serve.sh left behind; with --purge also its image.
+# The machine's signature cache (<main checkout>/.dev/clamav-signatures) is never removed here.
+docker ps -aq --filter "label=quader-ui-dev-malware=$UI_PROJECT" | xargs docker rm -f >/dev/null 2>&1 || true
+docker volume ls -q --filter "label=quader-ui-dev-malware=$UI_PROJECT" | xargs docker volume rm >/dev/null 2>&1 || true
 
 if [ "${1:-}" = "--purge" ]; then
   docker compose -f deploy/ui-dev/compose.yaml down -v --remove-orphans
+  docker image rm "localhost/$UI_PROJECT/quader:dev" >/dev/null 2>&1 || true
   rm -rf "$UI_STATE"
   ui_release "$root"
   echo "UI development services of instance $UI_INSTANCE ($UI_PROJECT) removed with their data and $UI_STATE"

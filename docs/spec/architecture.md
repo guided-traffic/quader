@@ -12949,19 +12949,95 @@ looks at must behave as the product does: an image stored there is scanned as R-
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `serve.sh` starts `vuln-scanner-trivy` beside the backend: the role `scanner` of the kinds `trivy` and `trivy-db`, Quader from the working tree for this machine; the analyser Trivy of `TRIVY_IMAGE` in a container per call (its binary is Linux only); the database through `upstream/scanner-trivy` as in an installation; `UI_SCANNERS=0` for none, the render runs' default (chosen) | Two processes and a wrapper | The chart's processes, links, names and database path; the one pin of the analyser; everything on `127.0.0.1`; measured from nothing: Quader ready after 10 s, the database loaded after 22 s, an image graded 33 s after its fill (its 30 s `scan_delay`); 68 MB per idle process, 143 MB fetched once, 1.7 GB on disk | A container start per call of the analyser (about a second); a call killed at its deadline leaves its container to finish (`down.sh` removes it); no malware scanning |
-| (b) Both processes in a container of `TRIVY_IMAGE` with a Linux build of Quader | The analyser beside them as in the pod | Closer to the pod's file system | Built and tried on 2026-11-25: Docker Desktop does not forward `host.docker.internal` to the host's loopback, so the scanner could not reach the scan listener; that listener would have to listen on every interface (the LAN, and macOS asks to admit each new build) |
+| (b) Both processes in a container of `TRIVY_IMAGE` with a Linux build of Quader | The analyser beside them as in the pod | Closer to the pod's file system | Built and tried on 2026-11-25 and recorded then as Docker Desktop not forwarding `host.docker.internal` to the host's loopback. Measured again the same day for [Q-ARCH-1065](#q-arch-1065--the-ui-development-profile-runs-the-malware-scanner-as-the-charts-pod-on-docker), on the same machine, it does: a container of `CLAMAV_IMAGE` reached a plain HTTP server bound to the host's `127.0.0.1` through `host.docker.internal`, and a container of `OPENSSL_IMAGE` a TLS server bound there, with the name `localhost` verified against its CA; the malware scanner reaches the profile's scan listener so since. Why the first attempt failed was not found |
 | (c) The kind profile `vuln` ([local-profile.md](../developer/local-profile.md)) | The chart on kind | The whole product | Minutes of start, GiBs of memory and an image build per change: not what a person looking at a screen should wait for |
 | (d) Keep Q-ARCH-563: no scanner in the profile | Nothing | No cost | The owner's objection stands: what he looks at scans nothing |
 
-**Choice:** (a). The malware scanning is not part of it (gap H-1891): its scanner reaches `clamd` only by a Unix socket, which a
-container of Docker Desktop cannot share with macOS, so the scanner would have to run in the container beside `clamd`, where (b)'s
-loopback problem returns. **Rationale:** the processes are the product's, only the analyser's binary comes from its image, which the chart
-does as well. The development agent would revisit the malware part when the malware scanner reaches `clamd` over a link the host can
-publish, or when the profile's scan listener may listen beyond the loopback.
+**Choice:** (a). The malware scanning was not part of it at first: its scanner reaches `clamd` only by a Unix socket, which a container
+of Docker Desktop cannot share with macOS, and (b)'s loopback problem was taken to keep the scanner out of a container. That problem does
+not exist (the row of (b)), and the profile runs the malware scanner as the chart's pod on Docker since
+[Q-ARCH-1065](#q-arch-1065--the-ui-development-profile-runs-the-malware-scanner-as-the-charts-pod-on-docker). **Rationale:** the processes
+are the product's, only the analyser's binary comes from its image, which the chart does as well. The image scanner stays two processes on
+the host by this decision, although the reason recorded against (b) no longer holds; whether it moves into the same form as the malware
+scanner is what the development agent would revisit, not built now.
 
 **Applied:** [deploy/ui-dev/scanners.sh](../../deploy/ui-dev/scanners.sh), `config.sh`, `serve.sh`, `renders.sh`, `down.sh`,
 `instance.sh` (four ports per instance); [web-ui.md](../developer/web-ui.md#local-ui-development),
 [build-and-test.md](../developer/build-and-test.md#instances-and-their-ports).
+
+### Q-ARCH-1065 · The UI development profile runs the malware scanner as the chart's pod on Docker
+
+Status: **Decided by the owner on 2026-11-25: the conditions (only on his development machine, nothing of it in the shipped images, no
+new open port in the product) and, after the link to `clamd` over the loopback he had first agreed to proved to need a change of the
+product or an administrator's step, the form: the chart's pod on Docker.** His words, whole. At 09:17, offered a link to `clamd` over TCP
+in the product, for a loopback address only: "Ja, bau A, auf loopback beschränken. Das soll aber ein Setting sein, welches nur hier auf
+meinem Mac zur Deveopmentzeit angewendet wird. Ich will dass davon nichts in die ausgelieferten Images wandert und ich will keinen neuen
+offenen Port im produktiven quader. Bekommen wir das so bescheränkt?" At 09:52, told why the link could not be built without a change of
+the product or an administrator's step, and that `host.docker.internal` reaches the host's loopback after all: "Ja, bau die Pod Form".
+The details of the form are the development agent's. It narrows [H-1891](#h-1891--the-ui-development-profiles-malware-scanner-is-proven-on-docker-desktop-for-macos-only)
+to Linux hosts.
+
+Context: the profile runs Quader of the role `all` on the host, which builds no scanner of any kind
+([Q-ARCH-563](#q-arch-563--the-role-all-builds-no-image-scanner)), and the image scanner beside it
+([Q-ARCH-1064](#q-arch-1064--the-ui-development-profile-runs-the-image-scanner-beside-the-backend)). The malware scanner reaches `clamd`
+only by the Unix socket `malware.scanner.socket` ([malware-scanning.md](malware-scanning.md) R-MAL-007), and its loader writes the
+signature database into the constant directory `database.ClamdDir`, `/var/lib/clamav` ([loader.go](../../internal/malware/database/loader.go)),
+which no key changes. On the owner's Mac `clamd` exists only as the pinned Linux image, in Docker Desktop's VM, which shares files with
+macOS but no socket. A link to `clamd` over the loopback (a relay of the profile from a socket on the host to `clamd`'s port published on
+`127.0.0.1`, the form first chosen) was proven on 2026-11-25 to carry `clamd`'s protocol (`PING`, `VERSION`, `INSTREAM` from a host process
+through `127.0.0.1`, the LAN address refused) and then found to need the scanner on the host, where the loader cannot write
+`/var/lib/clamav`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A setting of the product for a TCP link to `clamd` | `malware.scanner` takes a TCP address beside the socket | One process on the host, one `clamd` in a container | A setting in every shipped image and a port the product may open: refused by the owner's conditions |
+| (b) The relay, with `/var/lib/clamav` made by an administrator | The scanner on the host writes `/var/lib/clamav`, which `sudo install -d -o <user> /var/lib/clamav` makes once; `clamd` in a container reads it through a mount and is reached by the relay | No change of the product | An administrator's step outside the repository on the owner's machine; one directory per machine, so only one instance of the profile may scan for malware at a time; a relay and a port of `clamd` that the chart does not have |
+| (c) A configuration key for the loader's directory | `database.ClamdDir` becomes a key, and the relay as in (b) | No administrator's step | A key of the product that only this profile needs, in every shipped image: against the owner's second condition |
+| (d) The scan listener on every interface | The scanner in the container reaches the scan listener over the LAN address | Nothing of the product changes | The listener reachable from the LAN, behind the profile's CA and its scan tokens; macOS asks to admit each new build; not needed, as the measurement below shows |
+| (e) Linux hosts only | Containers share the host's network there | No Docker Desktop in the way | The owner works on a Mac |
+| (f) The pod's shape on Docker (chosen) | `malware-scanner-clamav` as the chart's Deployment renders it: a container of Quader's scanner, the binary built from the working tree, and a container of `clamd` of `CLAMAV_IMAGE`, sharing the socket's directory, `clamd`'s database directory and its temporary directory as volumes; the scanner reaches the scan listener on the host's `127.0.0.1` through `host.docker.internal`; Quader calls the scanner on a port Docker publishes on `127.0.0.1` only; the updater `malware-updater-freshclam` a process on the host | No change of the product, no administrator's step, an instance of its own per checkout; the socket, the marker of the load, the start order, the limits and `clamd.conf` are the chart's; `clamd` has no network at all | An image of the profile per start (the binary on the pinned `RUNTIME_BASE_IMAGE`, a few seconds); the scanner's two listeners published on the loopback, as the image scanner's are |
+
+**Choice:** (f). **Rationale:** it does not work around the reason the scanner and `clamd` were apart, it removes it: both ends of the
+socket are in Docker's VM, as both are in one pod, and the one link that crosses from the VM to the host is the scanner's read from the
+scan listener, which Docker Desktop hands to the host's loopback. Measured on 2026-11-25: a container of `CLAMAV_IMAGE` reached a plain
+HTTP server bound to the host's `127.0.0.1` through `host.docker.internal`, and a container of `OPENSSL_IMAGE` a TLS server bound there,
+with the name `localhost` verified against its CA (`s_client -verify_hostname localhost -verify_return_error`). Nothing listens beyond the
+host's loopback: `lsof` lists the scan listener, the updater's two listeners and Docker's two published ports of the scanner on
+`127.0.0.1` alone, and each of them refuses a connection on the LAN address. The product's link to `clamd` stays the socket and nothing
+else, held by `TestR_MAL_007_TheProductReachesClamdByTheSocketOfThePodOnly` ([clamdlink.go](../../internal/archtest/clamdlink.go)); the
+profile's `clamd.conf` and `freshclam.conf` are the chart's, held by `TestR_HA_068_TheUIProfileRunsTheChartsClamdConf` and
+`TestR_HA_069_TheUIProfileRunsTheChartsFreshclamConf` (`test/chart`). The development agent would revisit it if Docker Desktop stopped
+handing `host.docker.internal` to the host's loopback, or if the product's malware scanner had to run outside a container image.
+
+The details, decided by the development agent:
+
+- **The image** `localhost/<project>/quader:dev` is the profile's, never the product's `Containerfile`: `quader` cross-built from the
+  working tree for the VM's platform (`CGO_ENABLED=0`, the Go of `go.mod`) on `RUNTIME_BASE_IMAGE`, the shipped image's pinned base,
+  as UID 65532. It differs from a shipped image in what does not reach the scanner: no Angular bundle (the placeholder of
+  `internal/webui/dist`), the version `dev`, the working tree's uncommitted changes. It is never pushed (the `localhost/` prefix names no
+  registry), replaced at every start, and removed with `make ui-dev-down PURGE=1`. The builder resolves the base (from gcr.io): a
+  `docker pull` of it was refused on the owner's machine that day ("authentication failed"), where Docker Desktop holds a stored
+  credential of gcr.io and pulls through its own proxy, while an anonymous read of the same manifest answered `200`.
+- **Two containers, as in the pod**, not one with both processes: `clamd`'s container is to start it again after the loader's `SHUTDOWN`
+  (Q-MAL-89, `--restart unless-stopped`; a refused reload was not provoked on the profile), and the scanner stays the first process of its container (Q-ARCH-530). Both run as 65532 with a
+  read-only root, no capability and no new privileges, with the chart's memory limits (512 MiB and 2 GiB); `clamd` has no network at
+  all. The three volumes are made new at every start (the pod's emptyDirs), handed to 65532 first (the chart's `fsGroup`) and mounted
+  `nocopy`, so that Docker does not copy the ClamAV image's own `/var/lib/clamav` (UID 1000, mode 0700) over them.
+- **The signatures** come the product's way: the updater, the role `scanner` of the kind `freshclam`, lists its directory to the worker,
+  whose task `malware-sync-db` verifies and stores them in `upstream/clamav`, from where the scanner's loader loads them. `freshclam`
+  itself runs in a container of `CLAMAV_IMAGE` with the chart's `freshclam.conf`, into one cache per machine,
+  `<main checkout>/.dev/clamav-signatures`, at most once a day under a lock, because ClamAV's network limits whole downloads per address
+  and this site's address is shared with the pipeline's runners and the owner's cluster; each instance copies the containers into its
+  updater's directory and writes nothing into the cache.
+- **Switches:** `UI_SCANNERS=0` runs no scanner (the render runs' default), `UI_MALWARE=0` leaves out the malware scanner alone.
+- **Names:** the containers `<project>-malware-scanner-clamav-quader` and `-clamd`, the replicas `<project>-malware-scanner-clamav` and
+  `<project>-malware-updater-freshclam` (`QUADER_POD_NAME`), as the System page and the malware settings list them (Q-HA-373).
+
+**Applied:** [deploy/ui-dev/malware.sh](../../deploy/ui-dev/malware.sh), [clamd.conf](../../deploy/ui-dev/clamd.conf),
+[freshclam.conf](../../deploy/ui-dev/freshclam.conf), `config.sh`, `serve.sh`, `down.sh`, `instance.sh` (four ports per instance),
+`scanners.sh` (the pairs); [web-ui.md](../developer/web-ui.md#the-malware-scanner),
+[build-and-test.md](../developer/build-and-test.md#instances-and-their-ports), [clamav.md](../developer/clamav.md#the-ui-development-profiles-way-to-clamd),
+[security/malware-scanning.md](../security/malware-scanning.md).
 
 ## What this does not cover
 
@@ -13241,16 +13317,14 @@ profiles across two stacks, or connects as `quader_app` to a stack. No test on t
 ([test-cost.md](../developer/test-cost.md#11-an-integration-tests-own-installation-before-and-after-the-harnesss-three-changes-2026-11-23)), and the
 areas that connect as `quader_app` (`postgres`, `audit`) keep databases of their own. What would close it: drawing these values again in `NewStack` as the identity rows are, once a test needs it.
 
-### H-1891 · The UI development profile runs no malware scanner
+### H-1891 · The UI development profile's malware scanner is proven on Docker Desktop for macOS only
 
-Component: the UI development profile ([deploy/ui-dev/](../../deploy/ui-dev/), Q-ARCH-1064). Subject: whoever looks at the profile, the
-owner first. Live since the profile runs the image scanner: an artifact stored there is scanned for vulnerabilities, not for malware;
-its files read **No signatures** (no signature database is imported) or **No scanner** (R-MAL-024), and where only checked artifacts may
-be downloaded they wait and are refused as unchecked. What keeps it out: the malware scanner reaches `clamd` only by a Unix socket
-(`malware.scanner.socket`), which a container of Docker Desktop cannot share with macOS, so the scanner would run in the container of
-`CLAMAV_IMAGE` beside `clamd`, from where the profile's scan listener on the host's loopback is not reachable. The options, each with
-its cost: the scan listener on every interface (reachable from the LAN behind the profile's CA and scan tokens; macOS asks to admit
-every new build), with `clamd` at 1.0 to 1.1 GiB resident (the chart's measurement) and 113 MB of signatures fetched by an updater of the
-kind `freshclam` from ClamAV's network, which limits whole downloads per address; the same on Linux hosts only, where the containers can
-share the host's network; or a link to `clamd` over TCP in the product, which the chart does not need. Until one is chosen, R-MAL-035 is
-not seen on the profile.
+Component: the UI development profile ([deploy/ui-dev/](../../deploy/ui-dev/), Q-ARCH-1065). Subject: a developer who runs the profile on
+a Linux host. Until 2026-11-25 the profile ran no malware scanner; [Q-ARCH-1065](#q-arch-1065--the-ui-development-profile-runs-the-malware-scanner-as-the-charts-pod-on-docker)
+closed that on macOS, where the chart's pod runs on Docker Desktop and an artifact stored on the profile is scanned at once (R-MAL-035,
+measured: an EICAR file found about half a second after its upload). What stays open is a Linux host, not tried on one: by Docker's
+documentation Docker Engine there resolves `host.docker.internal` only for a container started with
+`--add-host host.docker.internal:host-gateway`, which `malware.sh` does not pass, and that name leads to the bridge's address, not the
+host's loopback, where the scan listener is bound; so the scanner's container would not reach it, and no blob would be read. Live for nobody
+known today: the owner and the builders run the profile on macOS, and the render runs of CI run no scanner (`UI_SCANNERS=0`). What
+would close it: the container on the host's network on Linux (`--network host`, where `127.0.0.1` is the host's), proven there.

@@ -31,8 +31,9 @@
 #   - The claim stays through `make ui-dev-down` (the data is kept for the checkout) and ends with `make ui-dev-down PURGE=1`.
 #
 # It sets (and exports, for docker compose and the dev server) UI_INSTANCE, UI_PROJECT, UI_STATE, UI_WEB_PORT, UI_BACKEND_PORT,
-# UI_OPS_PORT, UI_IDP_PORT, UI_PG_PORT, UI_VALKEY_PORT, UI_S3_PORT and the scanners' UI_SCAN_PORT, UI_TRIVY_PORT, UI_TRIVY_OPS_PORT and
-# UI_TRIVY_DB_OPS_PORT (19082 to 19085 in instance 1). The names carry no QUADER_ prefix: a quader process refuses
+# UI_OPS_PORT, UI_IDP_PORT, UI_PG_PORT, UI_VALKEY_PORT, UI_S3_PORT, the scanners' UI_SCAN_PORT, UI_TRIVY_PORT, UI_TRIVY_OPS_PORT and
+# UI_TRIVY_DB_OPS_PORT (19082 to 19085 in instance 1), and the malware scanning's UI_CLAMAV_PORT, UI_CLAMAV_OPS_PORT, UI_FRESHCLAM_PORT and
+# UI_FRESHCLAM_OPS_PORT (19086 to 19089 in instance 1). The names carry no QUADER_ prefix: a quader process refuses
 # every QUADER_ variable that is not a setting. UI_CLAIMS names another directory for the claims (a test of this file).
 
 # ui_main <checkout> prints the main checkout of the checkout's repository, and the checkout itself outside git.
@@ -179,8 +180,14 @@ ui_instance() {
   UI_TRIVY_PORT=$((19083 + off))
   UI_TRIVY_OPS_PORT=$((19084 + off))
   UI_TRIVY_DB_OPS_PORT=$((19085 + off))
+  # The malware scanning of the profile (deploy/ui-dev/malware.sh, Q-ARCH-1065): the listener and the operations listener of
+  # malware-scanner-clamav, which Docker publishes on 127.0.0.1 from the scanner's container, and those of malware-updater-freshclam.
+  UI_CLAMAV_PORT=$((19086 + off))
+  UI_CLAMAV_OPS_PORT=$((19087 + off))
+  UI_FRESHCLAM_PORT=$((19088 + off))
+  UI_FRESHCLAM_OPS_PORT=$((19089 + off))
   export UI_INSTANCE UI_PROJECT UI_STATE UI_WEB_PORT UI_BACKEND_PORT UI_OPS_PORT UI_IDP_PORT UI_PG_PORT UI_VALKEY_PORT UI_S3_PORT
-  export UI_SCAN_PORT UI_TRIVY_PORT UI_TRIVY_OPS_PORT UI_TRIVY_DB_OPS_PORT
+  export UI_SCAN_PORT UI_TRIVY_PORT UI_TRIVY_OPS_PORT UI_TRIVY_DB_OPS_PORT UI_CLAMAV_PORT UI_CLAMAV_OPS_PORT UI_FRESHCLAM_PORT UI_FRESHCLAM_OPS_PORT
 }
 
 # ui_release <checkout> ends the checkout's claim of UI_INSTANCE, as ui_instance set it; instance 1 has no claim.

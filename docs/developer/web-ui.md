@@ -124,6 +124,7 @@ through the dev server works only against a Quader whose base URL is `https://lo
 | Quader binary | `.dev/ui-dev/bin/quader` | [serve.sh](../../deploy/ui-dev/serve.sh) |
 | The sign-in provider `ui-dev`: `https://localhost:19090`, the loopback address only, the certificate `server.crt` of the profile; the client secret | `.dev/ui-dev/bin/devidp`, `.dev/ui-dev/secrets/idp-client-secret` | `serve.sh` starts and stops it with Quader; `up.sh` writes the secret, `config.sh` the provider into `quader.yaml` |
 | The image scanner `vuln-scanner-trivy` (Q-ARCH-1064): the role `scanner` of the kind `trivy` on `https://127.0.0.1:19083` (ops `:19084`) and the loader of its database, the kind `trivy-db` (ops `:19085`), both Quader from the working tree; Quader's scan listener on `127.0.0.1:19082`; the analyser Trivy of `TRIVY_IMAGE`, one container per call; the pair `trivy.crt` for `vuln-scanner-trivy.quader.test` from the profile's CA | `.dev/ui-dev/scanners/` (configurations, logs `trivy.log` and `trivy-db.log`, the analyser's wrapper `trivy`, the spool, the database's copy `trivy-db`) | [scanners.sh](../../deploy/ui-dev/scanners.sh) prepares, `serve.sh` starts and stops both processes and starts the task `vuln-sync-trivy-db` once; `config.sh` writes the scanner's address and the scan listener; `UI_SCANNERS=0` runs none |
+| The malware scanner `malware-scanner-clamav` (Q-ARCH-1065): the chart's pod on Docker, the containers `quader-ui-dev-malware-scanner-clamav-quader` (the role `scanner` of the kind `clamav`, Quader from the working tree on `RUNTIME_BASE_IMAGE`, published on `https://127.0.0.1:19086`, ops `:19087`) and `-clamd` (`clamd` of `CLAMAV_IMAGE` with [clamd.conf](../../deploy/ui-dev/clamd.conf), the chart's), joined by the socket of three volumes; the updater `malware-updater-freshclam`, the role `scanner` of the kind `freshclam` on the host (`https://127.0.0.1:19088`, ops `:19089`); the pairs `clamav.crt` and `freshclam.crt` | `.dev/ui-dev/scanners/` (the configurations `clamav.yaml` and `freshclam.yaml`, the logs `clamav-quader.log`, `clamav-clamd.log`, `freshclam.log`, the updater's directory `freshclam-db`); the signatures in `<main checkout>/.dev/clamav-signatures` | [malware.sh](../../deploy/ui-dev/malware.sh) prepares and builds, `serve.sh` starts and stops both units; `config.sh` writes their addresses; `UI_SCANNERS=0` or `UI_MALWARE=0` runs neither, `down.sh` removes the containers and volumes and with `PURGE=1` the image, never the signatures |
 
 **Where it differs from an installation**, so a finding is checked in the embedded build before it is called a defect:
 
@@ -142,8 +143,9 @@ through the dev server works only against a Quader whose base URL is `https://lo
 - The outbound clients trust the profile's CA and may reach the loopback addresses (`proxy.outbound.tls.ca_files`,
   `proxy.outbound.address_policy.allow_cidrs`), so that Quader reaches the provider; a remote repository of this profile can
   therefore reach a service on this machine, which an installation's default egress policy refuses (R-REPO-038).
-- **The image scanning runs as in an installation, the malware scanning does not**
-  ([Q-ARCH-1064](../spec/architecture.md#q-arch-1064--the-ui-development-profile-runs-the-image-scanner-beside-the-backend)). The role
+- **The image scanning and the malware scanning run as in an installation**
+  ([Q-ARCH-1064](../spec/architecture.md#q-arch-1064--the-ui-development-profile-runs-the-image-scanner-beside-the-backend),
+  [Q-ARCH-1065](../spec/architecture.md#q-arch-1065--the-ui-development-profile-runs-the-malware-scanner-as-the-charts-pod-on-docker)). The role
   `all` builds no scanner ([Q-ARCH-563](../spec/architecture.md#q-arch-563--the-role-all-builds-no-image-scanner)); `serve.sh` starts
   `vuln-scanner-trivy` beside it as two processes of the role `scanner`, the kinds `trivy` and `trivy-db`, the chart's two containers of
   the pod, and `config.sh` points Quader at it and opens its scan listener. The analyser is the pinned Trivy of `TRIVY_IMAGE`, whose
@@ -159,11 +161,9 @@ through the dev server works only against a Quader whose base URL is `https://lo
   pair for `vuln-scanner-trivy.quader.test` (issued by `scanners.sh` from the profile's CA), which the scan listener records the
   scanner's report by, so the System page lists a real replica; in the role `all` the CA alone admits at the scan listener
   (Q-ARCH-553). Everything listens on `127.0.0.1`.
-  No ClamAV runs: the malware scanner reaches `clamd` only by a Unix socket, which a container of Docker Desktop cannot share with
-  macOS, so it would have to run inside the container beside `clamd`, from where Quader's scan listener on the host's loopback is not
-  reachable; a file of the profile reads **No signatures** (no signature database) or **No scanner**
-  ([architecture.md](../spec/architecture.md#h-1891--the-ui-development-profile-runs-no-malware-scanner) H-1891 has the options and their costs).
-  `UI_SCANNERS=0 make ui-dev-backend` runs no scanner and fetches no database: then the images read **No database**. The render runs
+  The malware scanner runs as the chart's pod on Docker beside it ([The malware scanner](#the-malware-scanner)).
+  `UI_SCANNERS=0 make ui-dev-backend` runs no scanner and fetches no database: then the images read **No database** and the files
+  **No scanner**; `UI_MALWARE=0` leaves out the malware scanner alone, whose `clamd` holds about 1 GiB. The render runs
   set it (`renders.sh`, unless a walk needs them): the scanner replicas their screens show are rows the render seed writes
   (`web/e2e/renders/scanners.ts`).
 - The public Sigstore root is not refreshed (`signatures.trust_root.refresh: false`): the profile's root is the snapshot the
@@ -194,6 +194,65 @@ as the auditor and 15 as the administrator. Against the default class `read` of 
 a browser that restores tabs at once stays within the burst up to about 13 tabs of the heaviest screen and 25 of the lightest; past
 that the class refills 50 a second, about three tabs, and a tab beyond it meets a `429` for a moment. Not measured: a browser that
 restores tabs, and whether the screens retry such a `429`.
+
+### The malware scanner
+
+What the profile runs so that an artifact stored on it is scanned for malware at once (R-MAL-035), decided in
+[Q-ARCH-1065](../spec/architecture.md#q-arch-1065--the-ui-development-profile-runs-the-malware-scanner-as-the-charts-pod-on-docker) under
+the owner's conditions: only on the development machine, nothing of it in the shipped images, no new open port in the product. Nothing of
+the product changes; [malware.sh](../../deploy/ui-dev/malware.sh) builds and starts it, `serve.sh` runs it beside Quader and ends it with
+Quader.
+
+```mermaid
+flowchart LR
+  subgraph vm["Docker Desktop's VM"]
+    q["quader serve --role scanner<br/>kind clamav (…-malware-scanner-clamav-quader)"]
+    c["clamd of CLAMAV_IMAGE<br/>(…-malware-scanner-clamav-clamd, no network)"]
+    q -- "Unix socket on the volume clamd-run" --> c
+    q -- "writes clamd-db, the marker .quader-loaded" --> c
+  end
+  subgraph host["the Mac, 127.0.0.1 only"]
+    all["quader serve --role all<br/>scan listener :19082"]
+    upd["malware-updater-freshclam<br/>:19088, ops :19089"]
+    cache[(".dev/clamav-signatures<br/>of the main checkout")]
+  end
+  all -- "the call, 127.0.0.1:19086 (published)" --> q
+  q -- "blob and database, host.docker.internal:19082" --> all
+  all -- "malware-sync-db" --> upd
+  cache -- "copied at start" --> upd
+```
+
+| Piece | What | Where |
+|---|---|---|
+| `<project>-malware-scanner-clamav-quader` | The role `scanner` of the kind `clamav`, the working tree's binary cross-built for the VM's platform on `RUNTIME_BASE_IMAGE`, as the image `localhost/<project>/quader:dev`; UID 65532, read-only root, no capability, 512 MiB. Its listener is published on `127.0.0.1:19086`, its ops listener on `127.0.0.1:19087`; it reads the scan listener through `host.docker.internal` and requires the name `localhost` of `server.crt` | `.dev/ui-dev/scanners/clamav.yaml` (mounted at `/etc/quader/quader.yaml`), the pair `clamav.crt` for `malware-scanner-clamav.quader.test`; log `clamav-quader.log` |
+| `<project>-malware-scanner-clamav-clamd` | `clamd` of `CLAMAV_IMAGE` with [clamd.conf](../../deploy/ui-dev/clamd.conf), the chart's line for line (`TestR_HA_068_TheUIProfileRunsTheChartsClamdConf`); it waits for the marker of the first load, as in the pod; UID 65532, read-only root, no capability, no network, 2 GiB | log `clamav-clamd.log` |
+| The volumes `<project>-clamd-run`, `-clamd-db`, `-clamd-tmp` | The socket's directory, the database directory (read-only for `clamd`) and `clamd`'s temporary directory; made new at every start, handed to 65532 first, mounted `nocopy` | Docker's VM |
+| `malware-updater-freshclam` | The role `scanner` of the kind `freshclam`, a process on the host, the replica `<project>-malware-updater-freshclam`; its directory holds a copy of the machine's signature cache | `.dev/ui-dev/scanners/freshclam.yaml`, `freshclam-db/`, the pair `freshclam.crt`; log `freshclam.log` |
+| The signature cache | `freshclam` of `CLAMAV_IMAGE` with [freshclam.conf](../../deploy/ui-dev/freshclam.conf), the chart's (`TestR_HA_069_TheUIProfileRunsTheChartsFreshclamConf`): one run at most every 24 hours per machine, under a lock, for every instance and checkout; freshclam's state (`freshclam.dat`, its cool-down) stays in it; `PURGE=1` never removes it | `<main checkout>/.dev/clamav-signatures/` (the stamp `.quader-ui-dev-run`, the log `freshclam.log`) |
+
+The variables: `UI_SCANNERS=0` runs no scanner at all (the render runs' default), `UI_MALWARE=0` leaves out the malware scanner alone.
+Quader's side of the links is `config.sh`'s `malware` section: the scanner's and the updater's addresses and names, and the names the scan
+listener's malware routes admit.
+
+**The signatures, and what ClamAV's network sees.** ClamAV's network limits whole downloads per address and blocks an address that fetches
+too often, and this site's address is shared with the pipeline's runners and the owner's cluster. The first start of the day on the
+machine runs `freshclam`: measured on 2026-11-25, 6 s, `daily.cvd` 28194 (23,446,329 bytes), `main.cvd` 63 (89,072,577) and `bytecode.cvd`
+339 (281,702), each with its `.cvd.sign` (9,078 bytes each), 112,827,842 bytes in all: one DNS query for the versions and at least six
+downloads (the requests were not traced one by one). Every later start within 24 hours, of any instance in any checkout, fetches nothing
+("refreshed within 24 hours; nothing is fetched"). After 24 hours `freshclam` asks the DNS record again and fetches a database whole only
+when it is newer than the cached one (`daily` changes about daily, about 23 MB; `main` rarely); patches are off as in the chart, because
+the updater lists whole containers only. No test and no render run starts it. The way to the scanner is then the product's: the worker's
+task `malware-sync-db` reads the updater's listing, verifies each container against ClamAV's key and stores it in `upstream/clamav`, and
+the scanner's loader loads the set from the scan listener into `clamd-db`.
+
+**Measured from nothing on 2026-11-25** (instance 3, after `make ui-dev-down PURGE=1`, the signature cache of the day and the Go build cache
+warm): `up.sh` 10 s; after `serve.sh` started, Quader ready after 25 s (the scanner's image built first), the updater after 30 s, the malware
+scanner after 49 s with `main-63.daily-28194.bytecode-339`. `clamd` holds 959 MiB resident, the scanner's Quader 33 MiB, the updater
+63 MB. On disk for the malware part: the cache 108 MB once per machine, the updater's copy 108 MB per instance (a clone on APFS, which `du`
+counts again; not measured whether the blocks are shared), `clamd-db` 108 MB in the VM, `upstream/clamav` in the instance's S3 store, and
+the image 115 MB. An EICAR file uploaded to a generic repository read **Malware found** (`Eicar-Test-Signature`) about half a second after
+its upload, a plain file **clean**, and the download of the first was refused (`403 malware_found`); an npm version whose tarball holds it
+was found 38 ms after its publish.
 
 ### What an open tab asks of the server, measured
 
@@ -270,6 +329,9 @@ shape of the integration stack's instances, [build-and-test.md](build-and-test.m
 | State (certificates, secrets, key ring, `quader.yaml`, binaries) | `<checkout>/.dev/ui-dev/` | `<checkout>/.dev/ui-dev-<n>/` |
 | Dev server, quader, ops, sign-in provider | 4200, 19080, 19081, 19090 | each plus `(n - 1) * 100` (instance 2: 4300, 19180, 19181, 19190) |
 | The scan listener, `vuln-scanner-trivy`, its ops, its loader's ops ([scanners.sh](../../deploy/ui-dev/scanners.sh)) | 19082, 19083, 19084, 19085 | each plus `(n - 1) * 100` |
+| `malware-scanner-clamav`, its ops, `malware-updater-freshclam`, its ops ([malware.sh](../../deploy/ui-dev/malware.sh)) | 19086, 19087, 19088, 19089 | each plus `(n - 1) * 100` |
+| The malware scanner's containers, volumes and image | `quader-ui-dev-malware-scanner-clamav-quader`, `-clamd`; volumes `quader-ui-dev-clamd-run`, `-clamd-db`, `-clamd-tmp`; image `localhost/quader-ui-dev/quader:dev` | `quader-ui-dev<n>-…`, `localhost/quader-ui-dev<n>/quader:dev` |
+| ClamAV's signatures, fetched at most once a day | `<main checkout>/.dev/clamav-signatures/`, one for every instance and checkout | the same |
 | PostgreSQL, Valkey, S3 | 25432, 26390, 28333 | each plus `(n - 1) * 100` |
 
 ```shell

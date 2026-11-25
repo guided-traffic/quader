@@ -9233,10 +9233,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-ARCH
 
-282 questions on [spec/architecture.md](spec/architecture.md).
+283 questions on [spec/architecture.md](spec/architecture.md).
 
 <details>
-<summary>Q-ARCH: 282 questions</summary>
+<summary>Q-ARCH: 283 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9522,6 +9522,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-1062](spec/architecture.md#q-arch-1062--a-nightly-leg-records-the-jobs-of-test-and-release-that-ran-beside-it-and-nothing-holds-a-push) | A nightly leg records the jobs of Test and Release that ran beside it, and nothing holds a push | Decided by the development agent | (c), with `make nightly-load-guard` kept for the one case where the quiet is the point: a single set the development agent dispatches itself to measure goes with no push beside it. | — |
 | [Q-ARCH-1063](spec/architecture.md#q-arch-1063--where-the-minutes-of-the-suite-are-each-of-the-six-ranked-costs-decided) | Where the minutes of the suite are: each of the six ranked costs decided | Decided by the development agent | as in the table. | — |
 | [Q-ARCH-1064](spec/architecture.md#q-arch-1064--the-ui-development-profile-runs-the-image-scanner-beside-the-backend) | The UI development profile runs the image scanner beside the backend | Decided by the development agent | (a) `serve.sh` starts `vuln-scanner-trivy` beside the backend: the role `scanner` of the kinds `trivy` and `trivy-db`, Quader from the working tree for this machine; the analyser Trivy of `TRIVY_IMAGE` in a container per call (its binary is Linux only); the database through `upstream/scanner-trivy` as in an installation; `UI_SCANNERS=0` for none, the render runs' default | — |
+| [Q-ARCH-1065](spec/architecture.md#q-arch-1065--the-ui-development-profile-runs-the-malware-scanner-as-the-charts-pod-on-docker) | The UI development profile runs the malware scanner as the chart's pod on Docker | Decided by the owner on 2026-11-25: the conditions (only on his development machine, nothing of it in the shipped images, no new open port in the product) and, after the link to `clamd` over the loopback he had first agreed to proved to need a change of the product or an administrator's step, the form: the chart's pod on Docker | (f) The pod's shape on Docker | — |
 
 </details>
 

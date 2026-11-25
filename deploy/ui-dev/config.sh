@@ -38,6 +38,24 @@ else
   scan_listen="" images=""
   trivy_db="vuln-sync-trivy-db: {enabled: false, schedule: \"23 */6 * * *\"}"
 fi
+# The malware scanning of the profile (deploy/ui-dev/malware.sh, Q-ARCH-1065), unless UI_SCANNERS=0 or UI_MALWARE=0: quader calls
+# malware-scanner-clamav, whose container Docker publishes on 127.0.0.1, admits it and the updater malware-updater-freshclam on the scan
+# listener's malware routes by their names, and asks the updater for ClamAV's databases. Without it the section names no scanner and no
+# updater, and the profile's files read "No scanner" (R-MAL-024).
+if [ "${UI_SCANNERS:-1}" != 0 ] && [ "${UI_MALWARE:-1}" != 0 ]; then
+  malware="malware:
+  scanner:
+    url: https://127.0.0.1:$UI_CLAMAV_PORT
+    server_name: malware-scanner-clamav.quader.test
+  scan_listener:
+    client_name: malware-scanner-clamav.quader.test
+    updater_client_name: malware-updater-freshclam.quader.test
+  updater:
+    url: https://127.0.0.1:$UI_FRESHCLAM_PORT
+    server_name: malware-updater-freshclam.quader.test"
+else
+  malware=""
+fi
 
 cat > "$state/quader.yaml.tmp" <<YAML
 # Written by deploy/ui-dev/config.sh at every make ui-dev-up and make ui-dev-backend, so edit the script, not this file.
@@ -56,9 +74,9 @@ server:
       - cert_file: "$certs/server.crt"
         key_file: "$certs/server.key"
   # The trust anchor of the links between quader's pods (R-ARCH-038). The role all builds no scanner of any kind (Q-ARCH-563); the
-  # profile runs vuln-scanner-trivy beside it in containers (deploy/ui-dev/scanners.sh, Q-ARCH-1064), which this process calls and
-  # which pull from the scan listener below; quader presents server.crt (localhost), and in the role all the CA alone admits a scanner
-  # (Q-ARCH-553). With UI_SCANNERS=0 no link of the scanning runs, and the render seed's scanner replicas are rows it writes
+  # profile runs vuln-scanner-trivy beside it in containers (deploy/ui-dev/scanners.sh, Q-ARCH-1064) and malware-scanner-clamav as the
+  # chart's pod on Docker (deploy/ui-dev/malware.sh, Q-ARCH-1065), which this process calls and which read from the scan listener below;
+  # quader presents server.crt (localhost), and in the role all the CA alone admits a scanner (Q-ARCH-553). With UI_SCANNERS=0 no link of the scanning runs, and the render seed's scanner replicas are rows it writes
   # (web/e2e/renders/scanners.ts).
   internal_tls:
     ca_file: "$certs/ca.crt"
@@ -140,6 +158,7 @@ vulnerabilities:
     kev:
       mode: "off"
 $images
+$malware
 signatures:
   trust_root:
     # Nor does it refresh the public Sigstore root from tuf-repo-cdn.sigstore.dev (R-SIG-017), which nine requests at every start did:
