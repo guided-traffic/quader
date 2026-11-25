@@ -5,6 +5,8 @@
 // A further Debian entry queues deb-contents, the reading of a package file's data archive (R-DEB-039, Q-DEB-144), for every package of
 // a local or a remote Debian repository with a file the current reader has not read: the task walks stored files, whatever class holds
 // them.
+// An OCI entry queues oci-describe (R-OCI-040, Q-OCI-271) for every manifest of a local or a remote OCI repository stored before its
+// blobs were kept or whose stored configuration is not read: it reads the stored manifest and configuration, never an upstream.
 //
 // A worker that starts queues a run when such a package exists (the start-up rule of R-HA-022's background data migrations); the
 // scheduler runs it once a day, and an operator runs it with POST /api/v1/system/tasks/remote-describe/run (R-OPS-019). A run walks the

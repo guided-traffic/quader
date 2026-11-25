@@ -8,19 +8,23 @@ import (
 	"github.com/guided-traffic/quader/internal/blob"
 	debdata "github.com/guided-traffic/quader/internal/formatdata/deb"
 	npmdata "github.com/guided-traffic/quader/internal/formatdata/npm"
+	ocidata "github.com/guided-traffic/quader/internal/formatdata/oci"
 	"github.com/guided-traffic/quader/internal/formats"
 	debformat "github.com/guided-traffic/quader/internal/formats/deb"
 	npmformat "github.com/guided-traffic/quader/internal/formats/npm"
+	ociformat "github.com/guided-traffic/quader/internal/formats/oci"
 	"github.com/guided-traffic/quader/internal/jobs"
 	"github.com/guided-traffic/quader/internal/packages/remotedescribe"
 )
 
-// The jobs that describe what a remote repository cached (npm R-NPM-050, Debian R-DEB-037): their kinds are registered with the format
-// jobs (registerFormatJobs), with handlers that find the data port's handler built here on a replica that claims jobs.
+// The jobs that describe what a remote repository cached (npm R-NPM-050, Debian R-DEB-037) and what an OCI repository stored (R-OCI-040):
+// their kinds are registered with the format jobs (registerFormatJobs), with handlers that find the data port's handler built here on a
+// replica that claims jobs.
 
-// startRemoteDescribe builds the handlers of npm-remote-describe, deb-remote-describe and deb-contents over the data ports, and the
-// task remote-describe, which it queues when a remote holds a cached version or file without its row (R-NPM-050, R-DEB-037), or a
-// Debian repository a package file whose data archive the current reader has not read (R-DEB-039): what was stored before the jobs
+// startRemoteDescribe builds the handlers of npm-remote-describe, deb-remote-describe, deb-contents and oci-describe over the data
+// ports, and the task remote-describe, which it queues when a remote holds a cached version or file without its row (R-NPM-050,
+// R-DEB-037), a Debian repository a package file whose data archive the current reader has not read (R-DEB-039), or an OCI repository a
+// stored manifest without its blobs or with a stored configuration not read (R-OCI-040): what was stored before the jobs
 // existed is described after the upgrade without a change at the upstream.
 func (a *App) startRemoteDescribe(ctx context.Context, in infra, ports map[formats.ID]any) error {
 	npm, ok := ports[npmformat.ID].(*npmdata.Store)
@@ -31,9 +35,14 @@ func (a *App) startRemoteDescribe(ctx context.Context, in infra, ports map[forma
 	if !ok {
 		return fmt.Errorf("formats: the Debian data port is not the PostgreSQL store")
 	}
+	oci, ok := ports[ociformat.ID].(*ocidata.Store)
+	if !ok {
+		return fmt.Errorf("formats: the OCI data port is not the PostgreSQL store")
+	}
 	a.npmDescribe.set(npmdata.DescribeHandler(npm))
 	a.debDescribe.set(debdata.DescribeHandler(deb))
 	a.debContents.set(debdata.ContentsHandler(deb))
+	a.ociDescribe.set(ocidata.DescribeHandler(oci))
 	task, err := remotedescribe.New(remotedescribe.Options{
 		DB: in.db, Jobs: in.queue,
 		Formats: []remotedescribe.Format{
@@ -41,6 +50,9 @@ func (a *App) startRemoteDescribe(ctx context.Context, in infra, ports map[forma
 			{Kind: debdata.DescribeJobKind, Port: deb},
 			// The data archives of Debian package files a local or a remote repository stored before the reader existed (R-DEB-039).
 			{Kind: debdata.ContentsJobKind, Port: debdata.ContentsPort{S: deb}},
+			// The manifests of local and remote OCI repositories stored before their blobs were kept or whose stored configuration is not
+			// read (R-OCI-040).
+			{Kind: ocidata.DescribeJobKind, Port: oci},
 		},
 	})
 	if err != nil {

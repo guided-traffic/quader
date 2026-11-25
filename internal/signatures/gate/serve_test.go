@@ -143,3 +143,58 @@ func TestR_SIG_069_OneDecisionOneWait(t *testing.T) {
 		}
 	})
 }
+
+// TestR_OCI_040_AScreenIsHeldByTheDecisionOfTheDownload: Hold answers the code Run answers for every refusal in its order, from the same
+// decision, and the code of the check a download would wait for, at once; it records no event and waits for nothing, so that a screen
+// that shows what a stored file holds (an image's configuration, formats/oci.md R-OCI-040) shows a caller nothing a download of the file
+// would not give the same caller. Unit, milliseconds, fakes of the three checks.
+func TestR_OCI_040_AScreenIsHeldByTheDecisionOfTheDownload(t *testing.T) {
+	clean := malware.Verdict{Known: true, State: malware.StateClean}
+	infected := malware.Verdict{Known: true, State: malware.StateInfected, Signature: "Eicar-Test-Signature"}
+	unscannable := malware.Verdict{Known: true, State: malware.StateUnscannable, Reason: "encrypted"}
+	passing := valid(fileBlob, TrustInternal, 3)
+	for _, tc := range []struct {
+		name   string
+		mv     malware.Verdict
+		block  vuln.Block
+		rows   []Row
+		rules  error
+		want   string
+		served bool
+	}{
+		{"infected", infected, vuln.Block{}, []Row{passing}, nil, errs.CodeMalwareFound, false},
+		{"blocked", clean, vuln.Block{Reason: vuln.BlockTriage, Enforced: true}, []Row{passing}, nil, errs.CodeVulnerabilityBlocked, false},
+		{
+			"not delivered", clean,
+			vuln.Block{},
+			[]Row{passing},
+			errs.E(errs.Forbidden, errs.CodeNotAllowedInRepository, "not delivered"), errs.CodeNotAllowedInRepository, false,
+		},
+		{"unsigned", clean, vuln.Block{}, nil, nil, errs.CodeSignatureNotVerified, false},
+		{"unscannable", unscannable, vuln.Block{}, []Row{passing}, nil, errs.CodeMalwareNotChecked, false},
+		{"missing data", clean, vuln.Block{Reason: vuln.BlockMissingData, Enforced: true}, []Row{passing}, nil, errs.CodeVulnerabilityDataMissing, false},
+		{"clean and signed", clean, vuln.Block{}, []Row{passing}, nil, "", true},
+		{"a scan pending", malware.Verdict{}, vuln.Block{}, []Row{passing}, nil, errs.CodeMalwareCheckPending, true},
+		{"a signature pending", clean, vuln.Block{}, []Row{{Subject: fileBlob, State: signatures.StatePending}}, nil, errs.CodeSignatureCheckPending, true},
+	} {
+		st := &fakeStore{}
+		st.set(tc.rows...)
+		rec := &recorder{}
+		s := serveOf(&malwareStore{v: tc.mv}, tc.mv, tc.block, st)
+		s.Signatures = newGate(st, rec, Options{Wait: 5 * time.Second, Poll: 10 * time.Millisecond})
+		s.Rules = tc.rules
+		started := time.Now()
+		got, err := s.Hold(context.Background())
+		if err != nil || got != tc.want || time.Since(started) > time.Second {
+			t.Errorf("%s: Hold %q, %v after %s, want %q at once", tc.name, got, err, time.Since(started), tc.want)
+		}
+		if rec.count() != 0 {
+			t.Errorf("%s: Hold recorded %d events", tc.name, rec.count())
+		}
+		if !tc.served {
+			if run := codeOf(t, s.Run(context.Background())); run != tc.want {
+				t.Errorf("%s: Run answers %q, Hold %q", tc.name, run, got)
+			}
+		}
+	}
+}

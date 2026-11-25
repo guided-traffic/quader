@@ -2031,19 +2031,19 @@ func (e LimitExplainStepOutcome) Valid() bool {
 
 // Defines values for LimitExplainStepStep.
 const (
-	Groups LimitExplainStepStep = "groups"
-	Kind   LimitExplainStepStep = "kind"
-	Single LimitExplainStepStep = "single"
+	LimitExplainStepStepGroups LimitExplainStepStep = "groups"
+	LimitExplainStepStepKind   LimitExplainStepStep = "kind"
+	LimitExplainStepStepSingle LimitExplainStepStep = "single"
 )
 
 // Valid indicates whether the value is a known member of the LimitExplainStepStep enum.
 func (e LimitExplainStepStep) Valid() bool {
 	switch e {
-	case Groups:
+	case LimitExplainStepStepGroups:
 		return true
-	case Kind:
+	case LimitExplainStepStepKind:
 		return true
-	case Single:
+	case LimitExplainStepStepSingle:
 		return true
 	default:
 		return false
@@ -7480,6 +7480,7 @@ func (e ListPackagesParamsSort) Valid() bool {
 // Defines values for ListPackageVersionsParamsInclude.
 const (
 	ListPackageVersionsParamsIncludeDigest ListPackageVersionsParamsInclude = "digest"
+	ListPackageVersionsParamsIncludeKind   ListPackageVersionsParamsInclude = "kind"
 	ListPackageVersionsParamsIncludeState  ListPackageVersionsParamsInclude = "state"
 )
 
@@ -7487,6 +7488,8 @@ const (
 func (e ListPackageVersionsParamsInclude) Valid() bool {
 	switch e {
 	case ListPackageVersionsParamsIncludeDigest:
+		return true
+	case ListPackageVersionsParamsIncludeKind:
 		return true
 	case ListPackageVersionsParamsIncludeState:
 		return true
@@ -13668,9 +13671,14 @@ type PackageSummary struct {
 	Format string `json:"format"`
 
 	// Id Server-generated and opaque.
-	Id            string   `json:"id"`
-	Keywords      []string `json:"keywords"`
-	LatestVersion string   `json:"latestVersion"`
+	Id       string   `json:"id"`
+	Keywords []string `json:"keywords"`
+
+	// Kind What `latestVersion` is in its format's words, from the format's metadata: an OCI artifact's kind (`image`, `helm-chart`,
+	// `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041), so that a list offers the commands of its kind;
+	// absent for a format without kinds.
+	Kind          *string `json:"kind,omitempty"`
+	LatestVersion string  `json:"latestVersion"`
 
 	// Name The name as the format stores it; NuGet IDs in their original casing.
 	Name string `json:"name"`
@@ -13873,6 +13881,11 @@ type PackageVersionSummary struct {
 	// version's format counts as its fetch - npm's tarball, NuGet's .nupkg, an Ansible collection archive, a Debian package file of
 	// any architecture, an OCI tag's manifest by the tag or by its digest. A metadata document, a HEAD and a 304 are not fetches.
 	DownloadCount int64 `json:"downloadCount"`
+
+	// Kind With `include=kind` only, what the version is in its format's words (the member `kind` of its details): an OCI artifact's
+	// kind (`image`, `helm-chart`, `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041); with `group=content`
+	// the kind of the entry's leading version; absent for a format without kinds.
+	Kind *string `json:"kind,omitempty"`
 
 	// LastDownloadedAt When a client last fetched the version through one of `repositories`, by the rule of `downloadCount` (R-API-065,
 	// R-API-079), as the download statistics of R-STOR-015 record it, which a replica flushes with a delay of up to its flush
@@ -20049,7 +20062,7 @@ type ListPackageVersionsParams struct {
 	// Repository Repeat the parameter for several repository keys.
 	Repository *[]string `form:"repository,omitempty" json:"repository,omitempty"`
 
-	// Include `digest`: also read each version's content digest from the format (`digest`); `state`: its state (`state`).
+	// Include `digest`: also read each version's content digest from the format (`digest`); `state`: its state (`state`); `kind`: its kind (`kind`, an OCI artifact's).
 	Include *[]ListPackageVersionsParamsInclude `form:"include,omitempty" json:"include,omitempty"`
 	Sort    *ListPackageVersionsParamsSort      `form:"sort,omitempty" json:"sort,omitempty"`
 

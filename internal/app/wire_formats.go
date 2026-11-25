@@ -199,6 +199,7 @@ func (a *App) registerFormatJobs(r *jobs.Registry) {
 	npm.RegisterJobs(r, a.npmDescribe.handler("npm remote describe", runLate))
 	debdata.RegisterDescribeJob(r, a.debDescribe.handler("Debian remote describe", runLate))
 	debdata.RegisterContentsJob(r, a.debContents.handler("the reading of a Debian data archive", runLate))
+	ocidata.RegisterDescribeJob(r, a.ociDescribe.handler("OCI describe", runLate))
 	a.registerRemoteDescribeTask(r)
 	a.registerDownloadJobs(r)
 	sigfetch.RegisterKind(r, a.signatureFetchHandler())
@@ -281,8 +282,13 @@ func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nu
 		ociOpts.Signatures = fetches
 	}
 	if blobs != nil {
-		// A Helm chart's page reads its README and values from its content layer (formats/oci.md R-OCI-042).
+		// A Helm chart's page reads its README and values from its content layer (formats/oci.md R-OCI-042), and the job oci-describe
+		// a stored manifest and its configuration (R-OCI-040).
 		ociOpts.Blobs = ansibleBlobReader{blobs}
+	}
+	// The description of a stored manifest (R-OCI-040), queued by the commit of a config blob or a manifest; a restore stores nothing.
+	if queue != nil {
+		ociOpts.Jobs = queue
 	}
 	oci, err := ocidata.New(ociOpts)
 	if err != nil {

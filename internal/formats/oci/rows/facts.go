@@ -184,10 +184,16 @@ type TagFacts struct {
 // ManifestFacts are the facts of one manifest row. Blobs and ConfigFacts are nil when they were not asked for or are not known.
 type ManifestFacts struct {
 	// Platform is the platform the index names the child with; "" for the tag's own manifest.
-	Platform     string
-	Digest       [32]byte
+	Platform string
+	Digest   [32]byte
+	// MediaType and ArtifactType are the manifest's media type and its artifact type (its own, else its config's), which name its kind.
+	MediaType    string
+	ArtifactType string
 	Annotations  json.RawMessage
 	ConfigDigest *[32]byte
 	Blobs        json.RawMessage
 	ConfigFacts  json.RawMessage
+	// ConfigStored is whether the repository holds the configuration's blob, asked only while the configuration is not read: a stored
+	// one waits for the job that reads it, one that is not stored is read once a client pulls the image through the repository.
+	ConfigStored bool
 }

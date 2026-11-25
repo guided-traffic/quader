@@ -49,7 +49,7 @@ names what is missing.
 | [view_facts.go](../../internal/formats/oci/view_facts.go) | An image's facts on the screens (R-OCI-039 to R-OCI-041): the keys `org.opencontainers.image.*` of the annotations, then of the first platform, then of its labels (`annotationFacts`, `labelFacts`); the word for the kind (`artifactKind`); `describeFacts`, which names the configurations and the labels' facts as content of the config blobs |
 | [image-facts.ts](../../web/src/app/features/packages/image-facts.ts), [image-details.ts](../../web/src/app/features/packages/image-details.ts) | The web application's reading of an image's and a chart's metadata (the parts, the configuration, the history matched to its layers, the chart's facts and values) and the details of one image opened from its platform's row; `clientsOfKind` of [clients.ts](../../web/src/app/features/setup/clients.ts) offers Helm for a chart only (Q-UI-1250) |
 | [chart/](../../internal/formats/oci/chart/chart.go), [manifest/chart.go](../../internal/formats/oci/manifest/chart.go) | A Helm chart (R-OCI-042): its Chart.yaml read from the config blob, its README and values read on demand from its package by the bounded archive reader (`chartDocs` in `view_facts.go`, through the data port's `OpenBlob`), and the client `helm` of `setup.go` |
-| [image_facts.go](../../internal/formats/oci/image_facts.go), [manifest/config.go](../../internal/formats/oci/manifest/config.go) | Reading an image's configuration: before a push commits (`readStoredConfig`) and after a fetch of a blob that a row names as its unread config (`completeConfig`, Q-OCI-271); the bounded strict reader (`ReadConfig`, Q-OCI-272); a Helm chart's config is a kind a later reader adds beside `rows.ConfigImage` |
+| [image_facts.go](../../internal/formats/oci/image_facts.go), [manifest/config.go](../../internal/formats/oci/manifest/config.go) | Reading an image's configuration: before a push commits (`readStoredConfig`); every other stored config is read by the data port's job `oci-describe` that the blob's commit queues (Q-OCI-271); the bounded strict reader (`ReadConfig`, Q-OCI-272) and its stored forms (`ReadStoredConfig`, `ImageBlobs` of [manifest/stored.go](../../internal/formats/oci/manifest/stored.go)), a leaf the data port shares |
 | [handlers_upload.go](../../internal/formats/oci/handlers_upload.go) | The blob upload protocol over the host's session port: start, monolithic `POST`, `PATCH`, `PUT`, status, abort; `chunkStart` (the strict `Content-Range`), `outOfOrder` (the headers of a 416) |
 | [virtual.go](../../internal/formats/oci/virtual.go) | The virtual adapter: `Strategy` (the tags list is the one merged document), `Merge` (the union of the members' tags lists, each tag attributed to the member the tier resolution picks) |
 | [virtual_read.go](../../internal/formats/oci/virtual_read.go) | What a client reads through a virtual repository: the plan (`members`), the `walk` over the members, a manifest by tag, a manifest and a blob by digest in three tiers, the tags list and the referrers as unions |
@@ -893,9 +893,15 @@ integration `ocilocal` [signatures_test.go](../../test/integration/ocilocal/sign
 An image manifest's row keeps its config and layers in the manifest's order (`oci_manifests.blobs`), the digest of an image's
 configuration (`config_digest`) and what the reader read of it (`config_facts`, migration 00132). A push reads the config from the
 repository before it commits (`pushed.config`, written by `manifestInput`); a remote's fill writes the row with the configuration unread,
-and the first `GET` of the config through the repository (`handleBlobGet`, `remoteBlobGet`) asks `ConfigUnread`, a read of the partial
-index `oci_manifests_config_unread`, and writes `PutConfigFacts`. `OCIPutManifest` takes a configuration another row of the name read
-already, and a row recorded again keeps what it holds and takes what it lacks.
+and the commit of the config blob, whatever stores it (a fill, a mirror's download, a download ahead, a mount), queues the data port's
+job `oci-describe` for the manifests that wait for it (`OnCommit` → `QueueConfigRead`, one read of the partial index
+`oci_manifests_config_unread`); `PutManifest` queues it for a manifest whose config is stored already. The job
+([describe.go](../../internal/formatdata/oci/describe.go)) reads the repository's own items: the stored manifest of a row without blobs
+(`manifest.ImageBlobs`, `OCIPutBlobs`), then the stored config (`manifest.ReadStoredConfig`, `OCIPutConfigFacts`); `next` decides what is
+left. The task `remote-describe` queues it for every manifest left (`QueueUndescribed`, `OCIUndescribedManifests`, by the id of the
+manifest's item). `OCIPutManifest` takes a configuration another row of the name read already, and a row recorded again keeps what it holds
+and takes what it lacks. A configuration not read shows `not-read` while its blob is stored and `not-stored` while it is not
+(`ManifestFacts.ConfigStored`).
 
 The view reads the facts with `TagFacts`: the annotations for a list's summary, and with `full` the blobs and the configurations for the
 version's page (`formats.ViewFacts`). The members `configs` and `labeled` are content of the config blobs (`ContentMetadata`,

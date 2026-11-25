@@ -154,7 +154,7 @@ describe('Repository content page', () => {
     const packages = r.get(PackagesApi) as FakePackagesApi;
     r.root.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
     await settle(r.fixture);
-    expect(packages.versionFilters.at(-1)).toEqual({ repository: ['web/oci-local'], sort: '-version', group: 'content' });
+    expect(packages.versionFilters.at(-1)).toEqual({ repository: ['web/oci-local'], sort: '-version', group: 'content', include: ['kind'] });
     expect(packages.versionPages.at(-1)).toEqual({ cursor: null, limit: 10 });
     const opened = r.root.querySelector('quader-repository-item-versions')!;
     const rows = [...opened.querySelectorAll(':scope table > tbody > tr')];
@@ -281,6 +281,31 @@ describe('Repository content page', () => {
     expect(setup.calls.every((c) => c.repository === 'web/oci-local')).toBe(true);
     expect(commands(older)[2]).toMatch(/^podman pull \S*web\/oci-local\/team\/app:1\.1\.0$/);
     expect(commands(older)[3]).toMatch(/^podman pull \S*web\/oci-local\/team\/app@sha256:[0-9a-f]{64}$/);
+  });
+
+  it('R-OCI-042 a Helm chart\'s rows offer Helm\'s commands alone: its package row by the kind of its latest version, its images by theirs', async () => {
+    let fake: FakePackagesApi | undefined;
+    const r = await open(OCI_REPO, ({ packages }) => {
+      fake = packages;
+      ociFixture(packages);
+      packages.packages = packages.packages.map((p) => (p.format === 'oci' ? { ...p, kind: 'helm-chart' } : p));
+      for (const v of packages.versionList) {
+        if (v.format === 'oci') (v.metadata as Record<string, unknown>)['kind'] = 'helm-chart';
+      }
+    });
+    const imageRow = [...r.root.querySelectorAll('tbody tr')].find((tr) => tr.textContent?.includes('team/app'))!;
+    const latest = await openMenu(r, imageRow.querySelector<HTMLButtonElement>('quader-client-command-menu button')!);
+    expect([...latest.querySelectorAll('.menu-heading')].map((h) => text(h))).toEqual(['Helm']);
+    expect(commands(latest).some((c) => c.startsWith('docker') || c.startsWith('podman'))).toBe(false);
+    imageRow.querySelector<HTMLButtonElement>('quader-client-command-menu button')!.click();
+    await settle(r.fixture);
+
+    imageRow.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
+    await settle(r.fixture);
+    expect(fake!.versionFilters.at(-1)).toMatchObject({ group: 'content', include: ['kind'] });
+    const rows = [...r.root.querySelectorAll('quader-repository-item-versions tbody tr')];
+    const tag = await openMenu(r, rows[0]!.querySelector<HTMLButtonElement>('quader-client-command-menu button')!);
+    expect([...tag.querySelectorAll('.menu-heading')].map((h) => text(h))).toEqual(['Helm']);
   });
 
   it('R-UI-052 R-UI-094 R-UI-143 an npm repository shows the packages with the grade of their latest version and the install command of the version, and grades each version of an opened row, in the words of the versions table', async () => {

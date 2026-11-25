@@ -68,6 +68,19 @@ func (s *Store) PutManifest(ctx context.Context, tx meta.Tx, in rows.ManifestInp
 	}); err != nil {
 		return err
 	}
+	// A manifest whose configuration the repository holds already and that was stored without reading it (a remote's manifest a mirror
+	// stores after the config, a manifest whose config another of the name names) queues its read here (R-OCI-040, Q-OCI-271).
+	if in.ConfigDigest != nil && len(in.ConfigFacts) == 0 && s.o.Jobs != nil {
+		have, err := qs.OCIExistingItems(ctx, q.OCIExistingItemsParams{RepoID: in.RepoID, Paths: []string{configPath(in.Name, *in.ConfigDigest)}})
+		if err != nil {
+			return err
+		}
+		if len(have) > 0 {
+			if _, err := s.queueDescribe(ctx, tx, in.RepoID, in.Name, in.Digest, 0); err != nil {
+				return err
+			}
+		}
+	}
 	if len(in.References) == 0 {
 		return nil
 	}
@@ -312,25 +325,28 @@ func nilIfEmpty(raw json.RawMessage) json.RawMessage {
 	return raw
 }
 
-// ConfigUnread is the media type of the blob when a manifest of the name names it as a configuration not read yet, "" otherwise.
-func (s *Store) ConfigUnread(ctx context.Context, repoID int64, name string, config [32]byte) (string, error) {
-	var out string
-	err := s.read(ctx, nil, func(qs *q.Queries) (err error) {
-		out, err = qs.OCIConfigUnread(ctx, q.OCIConfigUnreadParams{RepoID: repoID, Name: name, ConfigDigest: config[:]})
+// QueueConfigRead queues, in the transaction that commits a blob, the job oci-describe of every manifest of the name that names the
+// blob as a configuration not read yet (R-OCI-040, Q-OCI-271). A data port without a queue queues nothing.
+func (s *Store) QueueConfigRead(ctx context.Context, tx meta.Tx, repoID int64, name string, config [32]byte) error {
+	if s.o.Jobs == nil {
+		return nil
+	}
+	qs, err := txQueries(tx)
+	if err != nil {
 		return err
-	})
-	return out, err
-}
-
-// PutConfigFacts records what the reader read of a configuration in the manifests of the name that name it and have none yet.
-func (s *Store) PutConfigFacts(ctx context.Context, repoID int64, name string, config [32]byte, facts json.RawMessage) error {
-	return s.o.DB.InTx(ctx, func(tx meta.Tx) error {
-		qs, err := txQueries(tx)
-		if err != nil {
-			return err
+	}
+	waiting, err := qs.OCIConfigWaiting(ctx, q.OCIConfigWaitingParams{RepoID: repoID, Name: name, ConfigDigest: config[:]})
+	if err != nil {
+		return err
+	}
+	for _, d := range waiting {
+		if m, ok := digestOf(d); ok {
+			if _, err := s.queueDescribe(ctx, tx, repoID, name, m, 0); err != nil {
+				return err
+			}
 		}
-		return qs.OCIPutConfigFacts(ctx, q.OCIPutConfigFactsParams{RepoID: repoID, Name: name, ConfigDigest: config[:], ConfigFacts: facts})
-	})
+	}
+	return nil
 }
 
 // TagFacts reads, for the tags with the given version ids, the facts of the manifests they point at and of the children an index
@@ -348,7 +364,10 @@ func (s *Store) TagFacts(ctx context.Context, versionIDs []int64, full bool) ([]
 		}
 		at := map[int64]int{}
 		for _, r := range rs {
-			f := rows.ManifestFacts{Platform: r.Platform, Annotations: r.Annotations, Blobs: r.Blobs, ConfigFacts: r.ConfigFacts}
+			f := rows.ManifestFacts{
+				Platform: r.Platform, MediaType: r.MediaType, ArtifactType: r.ArtifactType, Annotations: r.Annotations, Blobs: r.Blobs,
+				ConfigFacts: r.ConfigFacts, ConfigStored: r.ConfigStored,
+			}
 			copy(f.Digest[:], r.Digest)
 			if d, ok := digestOf(r.ConfigDigest); ok {
 				f.ConfigDigest = &d

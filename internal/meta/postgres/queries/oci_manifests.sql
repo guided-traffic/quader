@@ -27,15 +27,60 @@ ON CONFLICT (repo_id, name, digest) DO UPDATE
  WHERE (oci_manifests.blobs IS NULL AND EXCLUDED.blobs IS NOT NULL)
     OR (oci_manifests.config_facts IS NULL AND EXCLUDED.config_facts IS NOT NULL);
 
--- name: OCIConfigUnread :one
--- The media type of the blob when a manifest of the name names it as a configuration that is not read yet (an image's, R-OCI-040, or
--- a Helm chart's, R-OCI-042), '' otherwise: the question of every fetch of a blob, answered from the partial index of such manifests.
-SELECT COALESCE((
-  SELECT blobs -> 'config' ->> 'mediaType' FROM oci_manifests
-   WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND config_digest = sqlc.arg(config_digest)::bytea
-     AND config_facts IS NULL
-   LIMIT 1
-), '')::text AS media_type;
+-- name: OCIConfigWaiting :many
+-- The manifests of the name that name the blob as a configuration not read yet (an image's, R-OCI-040, or a Helm chart's, R-OCI-042):
+-- the question of every commit of a blob, answered from the partial index of such manifests, whose answer is the read the commit queues.
+SELECT digest FROM oci_manifests
+ WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND config_digest = sqlc.arg(config_digest)::bytea
+   AND config_facts IS NULL
+ ORDER BY digest
+ LIMIT 64;
+
+-- name: OCIDescribeTarget :many
+-- What the job oci-describe reads of a manifest (R-OCI-040, Q-OCI-271): its media type, whether its blobs are recorded, its
+-- configuration's digest and media type and whether it is read, and the stored sizes of the manifest's and the configuration's items
+-- under the name (-1 for one the repository does not hold).
+SELECT m.media_type::text AS media_type, (m.blobs IS NULL)::boolean AS blobs_unread, m.config_digest,
+       (m.config_facts IS NULL)::boolean AS facts_unread, COALESCE(m.blobs -> 'config' ->> 'mediaType', '')::text AS config_media_type,
+       COALESCE((SELECT i.size FROM items i
+                  WHERE i.repo_id = m.repo_id AND i.path = m.name || '/_manifests/sha256:' || encode(m.digest, 'hex')
+                    AND i.kind = 'file' AND i.trashed_at IS NULL), -1)::bigint AS manifest_size,
+       COALESCE((SELECT i.size FROM items i
+                  WHERE i.repo_id = m.repo_id AND i.path = m.name || '/_blobs/sha256:' || encode(m.config_digest, 'hex')
+                    AND i.kind = 'file' AND i.trashed_at IS NULL), -1)::bigint AS config_size
+  FROM oci_manifests m
+ WHERE m.repo_id = sqlc.arg(repo_id)::bigint AND m.name = sqlc.arg(name)::text AND m.digest = sqlc.arg(digest)::bytea;
+
+-- name: OCIPutBlobs :exec
+-- Records the blobs and the configuration's digest of a manifest stored before they were kept (R-OCI-040, the job oci-describe), and
+-- takes over the facts of a configuration another manifest of the name names and that was read already.
+UPDATE oci_manifests m
+   SET blobs = sqlc.arg(blobs)::jsonb, config_digest = sqlc.narg(config_digest)::bytea,
+       config_facts = (SELECT s.config_facts FROM oci_manifests s
+                        WHERE s.repo_id = m.repo_id AND s.name = m.name AND s.config_digest = sqlc.narg(config_digest)::bytea
+                          AND s.config_facts IS NOT NULL
+                        LIMIT 1)
+ WHERE m.repo_id = sqlc.arg(repo_id)::bigint AND m.name = sqlc.arg(name)::text AND m.digest = sqlc.arg(digest)::bytea
+   AND m.blobs IS NULL;
+
+-- name: OCIUndescribedManifests :many
+-- The manifests after the cursor (by the id of the manifest's item) that the job oci-describe has to describe, at most row_limit of them
+-- (the task remote-describe, R-OCI-040, Q-OCI-271), in local and remote repositories alike: an image manifest stored before its blobs
+-- were kept, and a manifest whose configuration is stored and not read. Each half is answered from a partial index of its own; a
+-- configuration the repository does not hold is no candidate, since nothing could read it without a request to an upstream.
+SELECT i.id, m.repo_id, m.name::text AS name, m.digest
+  FROM oci_manifests m
+  JOIN items i ON i.repo_id = m.repo_id AND i.path = m.name || '/_manifests/sha256:' || encode(m.digest, 'hex')
+              AND i.kind = 'file' AND i.trashed_at IS NULL
+ WHERE i.id > sqlc.arg(after)::bigint
+   AND ((m.blobs IS NULL
+         AND m.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json'))
+     OR (m.config_digest IS NOT NULL AND m.config_facts IS NULL
+         AND EXISTS (SELECT 1 FROM items c
+                      WHERE c.repo_id = m.repo_id AND c.path = m.name || '/_blobs/sha256:' || encode(m.config_digest, 'hex')
+                        AND c.kind = 'file' AND c.trashed_at IS NULL)))
+ ORDER BY i.id
+ LIMIT sqlc.arg(row_limit)::int;
 
 -- name: OCIPutConfigFacts :exec
 -- Records what the reader read of a configuration in every manifest of the name that names it and has none yet (R-OCI-040).
@@ -201,8 +246,8 @@ WHERE pv.trashed_at IS NULL AND (rp.key || '/' || r.key) = ANY(sqlc.arg(repos)::
 
 -- name: OCITagFacts :many
 -- The facts of the manifests the tags with the given version ids point at, for the package screens (R-OCI-039, R-OCI-040): the tag's own
--- manifest (child false) and, for an index, every child the repository holds, in platform order. The annotations are read always (the
--- description of a package list); the blobs and the configuration only with with_facts, which the version page asks for: a configuration can
+-- manifest (child false) and, for an index, every child the repository holds, in platform order. The media types and the annotations are
+-- read always (the kind and the description of a package list, R-OCI-041); the blobs and the configuration only with with_facts, which the version page asks for: a configuration can
 -- hold what only a caller who may read its blob may see.
 WITH tags AS (
   SELECT pv.id, pv.package_id, i.blob_sha256 AS manifest_sha256
@@ -214,22 +259,32 @@ WITH tags AS (
     JOIN packages p ON p.repo_id = e.repo_id AND p.name = e.tag_name
    WHERE e.id = ANY(SELECT -x FROM unnest(sqlc.arg(version_ids)::bigint[]) AS x)
 ), facts AS (
-  SELECT t.id AS version_id, p.repo_id, false AS child, ''::text AS platform, m.digest, m.annotations, m.config_digest,
+  SELECT t.id AS version_id, p.repo_id, false AS child, ''::text AS platform, m.digest, m.media_type, COALESCE(m.artifact_type, '') AS artifact_type,
+         m.annotations, m.config_digest,
          CASE WHEN sqlc.arg(with_facts)::boolean THEN m.blobs END AS blobs,
-         CASE WHEN sqlc.arg(with_facts)::boolean THEN m.config_facts END AS config_facts
+         CASE WHEN sqlc.arg(with_facts)::boolean THEN m.config_facts END AS config_facts,
+         (sqlc.arg(with_facts)::boolean AND m.config_facts IS NULL AND m.config_digest IS NOT NULL
+          AND EXISTS (SELECT 1 FROM items ci
+                       WHERE ci.repo_id = m.repo_id AND ci.path = m.name || '/_blobs/sha256:' || encode(m.config_digest, 'hex')
+                         AND ci.kind = 'file' AND ci.trashed_at IS NULL)) AS config_stored
     FROM tags t
     JOIN packages p ON p.id = t.package_id
     JOIN oci_manifests m ON m.repo_id = p.repo_id AND m.name = p.name AND m.digest = t.manifest_sha256
   UNION ALL
-  SELECT t.id, p.repo_id, true, COALESCE(r.platform, ''), c.digest, c.annotations, c.config_digest,
+  SELECT t.id, p.repo_id, true, COALESCE(r.platform, ''), c.digest, c.media_type, COALESCE(c.artifact_type, ''), c.annotations, c.config_digest,
          CASE WHEN sqlc.arg(with_facts)::boolean THEN c.blobs END,
-         CASE WHEN sqlc.arg(with_facts)::boolean THEN c.config_facts END
+         CASE WHEN sqlc.arg(with_facts)::boolean THEN c.config_facts END,
+         (sqlc.arg(with_facts)::boolean AND c.config_facts IS NULL AND c.config_digest IS NOT NULL
+          AND EXISTS (SELECT 1 FROM items ci
+                       WHERE ci.repo_id = c.repo_id AND ci.path = c.name || '/_blobs/sha256:' || encode(c.config_digest, 'hex')
+                         AND ci.kind = 'file' AND ci.trashed_at IS NULL))
     FROM tags t
     JOIN packages p ON p.id = t.package_id
     JOIN oci_references r ON r.repo_id = p.repo_id AND r.name = p.name AND r.manifest = t.manifest_sha256 AND r.kind = 'manifest'
     JOIN oci_manifests c ON c.repo_id = r.repo_id AND c.name = r.name AND c.digest = r.target
 )
-SELECT version_id::bigint AS version_id, repo_id::bigint AS repo_id, child::boolean AS child, platform::text AS platform, digest, annotations, config_digest, blobs::jsonb AS blobs,
-       config_facts::jsonb AS config_facts
+SELECT version_id::bigint AS version_id, repo_id::bigint AS repo_id, child::boolean AS child, platform::text AS platform, digest,
+       media_type::text AS media_type, artifact_type::text AS artifact_type, annotations, config_digest, blobs::jsonb AS blobs,
+       config_facts::jsonb AS config_facts, config_stored::boolean AS config_stored
 FROM facts
 ORDER BY version_id, child, platform = '', platform, digest;

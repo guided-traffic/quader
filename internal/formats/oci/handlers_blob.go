@@ -34,10 +34,5 @@ func (f *Format) handleBlobGet(ctx context.Context, rq *formats.Request, w http.
 	if err := rq.Host.Authorize(ctx, rq, formats.Target{Package: name, Path: path, Actions: []formats.Action{formats.ActionRead}}); err != nil {
 		return err
 	}
-	if err := serveStored(ctx, rq, w, path, blobContentType, errBlobUnknown); err != nil {
-		return err
-	}
-	// A manifest pushed while its config could not be opened is completed by the next fetch of the config (R-OCI-040).
-	completeConfig(ctx, rq, name, digest)
-	return nil
+	return serveStored(ctx, rq, w, path, blobContentType, errBlobUnknown)
 }

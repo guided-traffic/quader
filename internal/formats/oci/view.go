@@ -157,8 +157,8 @@ func (viewAdapter) Describe(ctx context.Context, ports formats.DataPorts, vs []f
 		d, held := out[id]
 		describeFacts(&d, names[tf.VersionID], tf, want)
 		chartDocs(ctx, st, &d, names[tf.VersionID], tf, want)
-		// A summary of an image without a description is no data: the list shows none.
-		if held || d.Description != "" {
+		// A summary carries the description and the kind; a tag whose manifest is not recorded is no data.
+		if held || d.Description != "" || d.Metadata != nil {
 			out[id] = d
 		}
 	}

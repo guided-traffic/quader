@@ -7,6 +7,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/malware"
 	mgate "github.com/guided-traffic/quader/internal/malware/gate"
+	"github.com/guided-traffic/quader/internal/vuln"
 	"github.com/guided-traffic/quader/internal/vuln/enforce"
 )
 
@@ -58,42 +59,123 @@ func (s Serve) RunDecided(ctx context.Context) (bool, error) {
 	return decided, err
 }
 
-// run is Run's decision and wait; it returns the signature gate's verdict, nil where the gate was not asked, and whether every check
-// passed on a decided state.
-func (s Serve) run(ctx context.Context) (*Verdict, bool, error) {
-	mdec := s.malwareDecision()
-	block := s.VulnOf.Block
-	if mdec == malware.RefuseFound {
-		return nil, false, s.Malware.Refuse(ctx, s.MalwareOf, mdec)
+// stop is the check of the order of Run whose refusal ends a download at once.
+type stop int
+
+const (
+	stopNone stop = iota
+	stopMalwareFound
+	stopVulnBlocked
+	stopRules
+	stopSignature
+	stopMalwareNotChecked
+)
+
+// decision is what the checks decided of a download before anything is recorded or waited for: the malware gate's decision, the
+// vulnerability block, the signature gate's verdict (nil where it was not asked) and the first refusal in Run's order.
+type decision struct {
+	mdec  malware.Decision
+	block vuln.Block
+	sv    *Verdict
+	at    stop
+}
+
+// decide decides the checks in Run's order and stops at the first refusal. It records nothing and waits for nothing: Run and Hold both
+// take their answer from it, so that a screen's question and a download's answer cannot drift apart. The signature gate reads its rows
+// only when no check above it in the order refuses already.
+func (s Serve) decide(ctx context.Context) (decision, error) {
+	d := decision{mdec: s.malwareDecision(), block: s.VulnOf.Block}
+	switch {
+	case d.mdec == malware.RefuseFound:
+		d.at = stopMalwareFound
+		return d, nil
+	case d.block.Refused() && d.block.Code() == errs.CodeVulnerabilityBlocked:
+		d.at = stopVulnBlocked
+		return d, nil
+	case s.Rules != nil:
+		// After what was found in the content, before everything that is missing (Q-CUR-7).
+		d.at = stopRules
+		return d, nil //nolint:nilerr // the rules' refusal is the answer Run returns, not a failure of this decision
 	}
-	if block.Refused() && block.Code() == errs.CodeVulnerabilityBlocked {
-		return nil, false, s.Enforce.Refuse(ctx, s.VulnOf)
-	}
-	// After what was found in the content, before everything that is missing (Q-CUR-7).
-	if s.Rules != nil {
-		return nil, false, s.Rules
-	}
-	var sv *Verdict
 	if s.Signatures != nil && s.Signatures.Applies(s.SignaturesOf.Addressed, s.SignaturesOf.Holder) {
 		v, err := s.Signatures.Decide(ctx, s.SignaturesOf)
 		if err != nil {
-			return nil, false, err
+			return d, err
 		}
-		sv = v
+		d.sv = v
 	}
-	if sv != nil && sv.Outcome == Refused {
-		return sv, false, s.Signatures.Refuse(ctx, sv)
+	switch {
+	case d.sv != nil && d.sv.Outcome == Refused:
+		d.at = stopSignature
+	case d.mdec == malware.RefuseNotChecked:
+		d.at = stopMalwareNotChecked
 	}
-	if mdec == malware.RefuseNotChecked {
-		return sv, false, s.Malware.Refuse(ctx, s.MalwareOf, mdec)
+	return d, nil
+}
+
+// Hold is what Run would answer the download now, decided by decide and with nothing recorded and nothing waited for: the code of the
+// first refusal in Run's order (malware_found, vulnerability_blocked, the delivery rules' not_allowed_in_repository,
+// signature_not_verified, malware_not_checked, vulnerability_data_missing), else the code of a check still pending
+// (malware_check_pending, signature_check_pending), else "" when the download would be served. A screen that shows what a stored file
+// holds asks it, so that it shows a caller nothing a download of that file would not give the same caller (formats/oci.md R-OCI-040).
+func (s Serve) Hold(ctx context.Context) (string, error) {
+	d, err := s.decide(ctx)
+	if err != nil {
+		return "", err
 	}
+	switch d.at {
+	case stopMalwareFound:
+		return errs.CodeMalwareFound, nil
+	case stopVulnBlocked:
+		return errs.CodeVulnerabilityBlocked, nil
+	case stopRules:
+		if e, ok := errs.As(s.Rules); ok && e.Code != "" {
+			return e.Code, nil
+		}
+		return errs.CodeNotAllowedInRepository, nil
+	case stopSignature:
+		return errs.CodeSignatureNotVerified, nil
+	case stopMalwareNotChecked:
+		return errs.CodeMalwareNotChecked, nil
+	}
+	switch {
+	case d.block.Active() && d.block.Refused():
+		return d.block.Code(), nil
+	case d.mdec == malware.Wait:
+		return errs.CodeMalwareCheckPending, nil
+	case d.sv != nil && d.sv.Outcome == Pending:
+		return errs.CodeSignatureCheckPending, nil
+	}
+	return "", nil
+}
+
+// run is Run's decision and wait; it returns the signature gate's verdict, nil where the gate was not asked, and whether every check
+// passed on a decided state.
+func (s Serve) run(ctx context.Context) (*Verdict, bool, error) {
+	d, err := s.decide(ctx)
+	if err != nil {
+		return nil, false, err
+	}
+	switch d.at {
+	case stopMalwareFound:
+		return nil, false, s.Malware.Refuse(ctx, s.MalwareOf, d.mdec)
+	case stopVulnBlocked:
+		return nil, false, s.Enforce.Refuse(ctx, s.VulnOf)
+	case stopRules:
+		return nil, false, s.Rules
+	case stopSignature:
+		return d.sv, false, s.Signatures.Refuse(ctx, d.sv)
+	case stopMalwareNotChecked:
+		return d.sv, false, s.Malware.Refuse(ctx, s.MalwareOf, d.mdec)
+	}
+	sv, block := d.sv, d.block
 	if block.Active() {
 		// vulnerability_data_missing refuses here; a block in the mode report is recorded and serves.
 		if err := s.Enforce.Refuse(ctx, s.VulnOf); err != nil {
 			return sv, false, err
 		}
 	}
-	mPending, sPending := mdec == malware.Wait, sv != nil && sv.Outcome == Pending
+	mPending, sPending := d.mdec == malware.Wait, sv != nil && sv.Outcome == Pending
 	if !mPending && !sPending {
 		return sv, s.malwareDecided() && !block.Active() && (sv == nil || sv.Outcome == Pass), nil
 	}

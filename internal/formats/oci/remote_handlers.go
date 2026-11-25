@@ -320,8 +320,6 @@ func (f *Format) remoteBlobGet(ctx context.Context, rq *formats.Request, w http.
 		return missing(err, errBlobUnknown)
 	}
 	probeFile(ctx, rq, name, "", path)
-	// The manifest was fetched before its config: the fetch of the config reads it (R-OCI-040).
-	completeConfig(ctx, rq, name, digest)
 	return nil
 }
 

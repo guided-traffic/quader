@@ -9,6 +9,7 @@ import (
 	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/malware/gate"
 	rc "github.com/guided-traffic/quader/internal/remotecuration"
@@ -90,6 +91,20 @@ func (s *Service) Stat(ctx context.Context, c Caller, repoKey qname.Repo, p repo
 	// The three checks of a stored item, after authorization and the format's own check, so that a version the caller may not read
 	// stays a 404 and a tombstoned one the format's: the malware gate (R-MAL-013; every file of /files/ is a download), the block of the
 	// vulnerability scanning (R-VULN-015) and the gate of signatures (R-SIG-064), decided together before one wait (R-SIG-069).
+	srv := s.serveOf(c, repoKey, repo, it, t.class)
+	decided, err := srv.RunDecided(ctx)
+	if err != nil {
+		if rf, ok := rules.RefusalOf(err); ok {
+			s.refusals.Refused(ctx, rf, rulestore.RefusalContext{Actor: c.Actor, Source: c.Source, Endpoint: c.Subject.Endpoint})
+		}
+		return Resolved{}, err
+	}
+	return Resolved{Repo: repo, Item: it, Decided: decided}, nil
+}
+
+// serveOf is the decision of the checks of a stored file of /files/ for the caller (sgate.Serve), built once for Stat, which runs it,
+// and for Hold, which asks it, so that the two cannot drift apart.
+func (s *Service) serveOf(c Caller, repoKey qname.Repo, repo repository.Repository, it items.Item, class PathClass) sgate.Serve {
 	srv := sgate.Serve{
 		Enforce: s.enforce,
 		VulnOf: enforce.Download{
@@ -114,15 +129,38 @@ func (s *Service) Stat(ctx context.Context, c Caller, repoKey qname.Repo, p repo
 			Actor: c.Actor, Source: c.Source, Endpoint: c.Subject.Endpoint,
 		}
 	}
-	srv.Rules = s.rulesRefusal(c, repo, it.Path, t.class)
-	decided, err := srv.RunDecided(ctx)
+	srv.Rules = s.rulesRefusal(c, repo, it.Path, class)
+	return srv
+}
+
+// Hold is what a download of the stored file at the path of the repository would answer the caller now (sgate.Serve.Hold, formats/oci.md
+// R-OCI-040): the code of the check that would refuse it or that it would wait for, "" when it would be served, decided by the checks of
+// Stat and with nothing recorded and nothing waited for. A path the repository does not hold, or that the format's own serve check hides,
+// answers "": there is nothing to hold. The caller's read of the path is the asker's own question; a screen decided it already.
+func (s *Service) Hold(ctx context.Context, c Caller, repoKey qname.Repo, path string) (string, error) {
+	t := s.locate(ctx, repoKey, path, false)
+	repo, err := t.resolved(true)
 	if err != nil {
-		if rf, ok := rules.RefusalOf(err); ok {
-			s.refusals.Refused(ctx, rf, rulestore.RefusalContext{Actor: c.Actor, Source: c.Source, Endpoint: c.Subject.Endpoint})
-		}
-		return Resolved{}, err
+		return "", err
 	}
-	return Resolved{Repo: repo, Item: it, Decided: decided}, nil
+	ref := items.RepoOf(repo)
+	ref.Vuln = s.enforce.PolicyOf(repo)
+	if s.formats != nil {
+		ref.Facts = s.formats.ServeFactsKey(repo, path)
+	}
+	it, found, err := s.items.Live(ctx, ref, path)
+	if err != nil || !found || it.Kind != items.KindFile {
+		return "", err
+	}
+	if s.formats != nil {
+		if err := s.formats.ServeCheck(ctx, repo, it); err != nil {
+			if errs.KindOf(err) == errs.NotFound {
+				return "", nil
+			}
+			return "", err
+		}
+	}
+	return s.serveOf(c, repoKey, repo, it, t.class).Hold(ctx)
 }
 
 // rulesRefusal is the fourth check of a file of /files/ (remote-curation.md R-CUR-003 point 2): the refusal of a remote repository's

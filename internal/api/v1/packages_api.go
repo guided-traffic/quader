@@ -183,11 +183,16 @@ func (s *Server) addVulnerabilityGrades(r *http.Request, lq ListQuery, page []vi
 }
 
 func summaryOf(p view.Package) gen.PackageSummary {
-	return gen.PackageSummary{
+	out := gen.PackageSummary{
 		Id: p.ID, Format: p.Format, Name: p.Name, Description: p.Description, LatestVersion: p.LatestVersion,
 		Keywords: p.Keywords, Repositories: repoTexts(p.Repositories), CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
 		VersionCount: p.VersionCount, DownloadCount: p.DownloadCount,
 	}
+	if p.Kind != "" {
+		kind := p.Kind
+		out.Kind = &kind
+	}
+	return out
 }
 
 // repoFilter reads the repositories a filter names. A text that is no repository name stands for nothing, as an unknown
@@ -424,6 +429,7 @@ func versionListQuery(r *http.Request, cfg config.API) (ListQuery, view.VersionF
 	}
 	f.WithDigest = includes(lq, "digest")
 	f.WithState = includes(lq, "state")
+	f.WithKind = includes(lq, "kind")
 	grouped := false
 	if g, ok := lq.Filter["group"]; ok {
 		switch {
@@ -454,6 +460,10 @@ func versionSummaryOf(v view.VersionSummary, sig *gen.SignatureStatus) gen.Packa
 		state := v.State
 		summary.State = &state
 	}
+	if v.Kind != "" {
+		kind := v.Kind
+		summary.Kind = &kind
+	}
 	if v.Aliases != nil {
 		aliases, more := v.Aliases, v.AliasesMore
 		summary.Aliases, summary.AliasesMore = &aliases, &more
@@ -478,7 +488,7 @@ func (s *Server) GetPackageVersion(w http.ResponseWriter, r *http.Request, id ge
 	var d view.VersionDetail
 	found := false
 	if err == nil {
-		d, found, err = ps.View.Version(ctx, sc, format, name, version)
+		d, found, err = ps.View.Version(ctx, s.withContentHold(r, sc), format, name, version)
 	}
 	if err == nil && !found {
 		err = errs.E(errs.NotFound, errs.CodeNotFound, "The version does not exist.")
@@ -506,6 +516,26 @@ func (s *Server) GetPackageVersion(w http.ResponseWriter, r *http.Request, id ge
 		out.Metadata.Docs = s.docsAnnouncement(r, id, version)
 	}
 	writeTagged(w, r, out)
+}
+
+// withContentHold gives the scope of a version's page the question of the serve point of stored content (view.Scope.WithHold,
+// formats/oci.md R-OCI-040): what the format read from a file's content (an image's configuration, a chart's values) goes to the caller
+// only while a download of that file through /files/ would be served to the same caller, decided by the checks of that download
+// (files.Service.Hold over sgate.Serve.Hold) and recording nothing. A replica without the files service asks nothing.
+func (s *Server) withContentHold(r *http.Request, sc view.Scope) view.Scope {
+	svc := s.o.Files
+	if svc == nil {
+		return sc
+	}
+	base := httpserver.InfoFrom(r.Context()).BaseURL
+	return sc.WithHold(func(ctx context.Context, repo qname.Repo, path string) (string, error) {
+		c, err := s.filesCaller(r, repo)
+		if err != nil {
+			return "", err
+		}
+		c.BaseURL = base
+		return svc.Hold(ctx, c, repo, path)
+	})
 }
 
 // addAvailable marks the repositories a client gets the version through, from the replica's snapshot (Q-UI-965): a disabled

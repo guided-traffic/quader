@@ -499,6 +499,10 @@
                 }
               }
               <!-- A Helm chart's facts from its Chart.yaml (R-OCI-042): the facts, its maintainers and its dependencies as every format's. -->
+              @if (chartHeld(); as held) {
+                <h2 i18n="@@pkg.chart.heading">Chart</h2>
+                <p class="hint" data-testid="chart-held"><ng-container i18n="@@pkg.chart.held">The chart's facts and values are not shown: a download of its files would not be served to you now.</ng-container>&ngsp;{{ held }}</p>
+              }
               @if (chart(); as c) {
                 <h2 i18n="@@pkg.chart.heading">Chart</h2>
                 <dl class="facts" data-testid="chart-facts">

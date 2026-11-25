@@ -679,6 +679,7 @@ export class FakePackagesApi extends PackagesApi {
             ...(v.signatures ? { signatures: v.signatures } : {}),
             ...(withDigest && digest ? { digest } : {}),
             ...(filters.include?.includes('state') && typeof v.metadata['state'] === 'string' ? { state: v.metadata['state'] } : {}),
+            ...(filters.include?.includes('kind') && typeof v.metadata['kind'] === 'string' ? { kind: v.metadata['kind'] } : {}),
           };
           return { digest, summary };
         })

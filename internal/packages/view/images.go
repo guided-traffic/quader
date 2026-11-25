@@ -81,7 +81,7 @@ func (s *Service) Images(ctx context.Context, sc Scope, format, name string, f V
 		any, err := s.anyVersion(ctx, sc, a, hs, name, withheld)
 		return []VersionSummary{}, nil, any, err
 	}
-	out, err := s.imageSummaries(ctx, sc, a, format, hs, w, entries)
+	out, err := s.imageSummaries(ctx, sc, a, format, hs, w, entries, f)
 	return out, next, true, err
 }
 
@@ -244,9 +244,10 @@ func earlier(x, y pageKey) bool {
 }
 
 // imageSummaries builds the entries of a page: the leading version's summary (its rows, its size), the content's digest, its other
-// versions in the order of the versions, the repositories that hold any of them and the downloads of the content.
+// versions in the order of the versions, the repositories that hold any of them and the downloads of the content, and with
+// VersionFilter.WithKind the kind of the leading version.
 func (s *Service) imageSummaries(ctx context.Context, sc Scope, a Adapter, format string, hs []q.PackageViewHoldersRow, w *walk,
-	entries []imageCandidate,
+	entries []imageCandidate, f VersionFilter,
 ) ([]VersionSummary, error) {
 	if len(entries) == 0 {
 		// A page the budget ended before any image led: nothing to read (PackageViewVersions reads every version for no version).
@@ -303,7 +304,15 @@ func (s *Service) imageSummaries(ctx context.Context, sc Scope, a Adapter, forma
 		}
 		out = append(out, v)
 	}
-	return out, s.adapterSizes(ctx, sc, a, format, groupOf, out)
+	if err := s.adapterSizes(ctx, sc, a, format, groupOf, out); err != nil {
+		return nil, err
+	}
+	if f.WithKind {
+		// The kind of each entry's leading version (R-OCI-041), read as the list by version reads it; the digest is the entry's own.
+		f.WithDigest, f.WithState = false, false
+		return out, s.fillFromMetadata(ctx, sc, a, format, groupOf, out, f)
+	}
+	return out, nil
 }
 
 type imageDownloads struct {

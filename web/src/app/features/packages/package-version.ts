@@ -28,7 +28,7 @@ import { clamavInstallNote, versionCommand } from './version-command';
 import { contentShapeOf, leadsWithDocumentation } from '../repositories/content/content-shape';
 import { EXTERNAL_REL, packageCommands, versionCommands } from './package-links';
 import { ImageDetails } from './image-details';
-import { ImagePart, chartOf, chartValues, cutDigest, imageFact, imageFactList, imageLinks, imageParts, kindWord } from './image-facts';
+import { ImagePart, chartOf, chartValues, cutDigest, heldReason, imageFact, imageFactList, imageLinks, imageParts, kindWord } from './image-facts';
 import { CodeWindow } from '../../shared/code/code-window';
 import { PackageMemory } from './package-memory';
 import { PackageReadmeView } from './package-readme';
@@ -407,6 +407,10 @@ export class PackageVersionPage {
   );
   /** A Helm chart's facts (R-OCI-042); null for anything else. */
   protected readonly chart = computed(() => (this.format() === 'oci' ? chartOf(this.metadata()) : null));
+  /** Why a chart's facts and values are held (R-OCI-040): a download of its files would not be served to this reader now. */
+  protected readonly chartHeld = computed(() =>
+    this.format() === 'oci' && this.metadata()['kind'] === 'helm-chart' && !this.chart() ? heldReason(this.metadata()) : null,
+  );
   /** A Helm chart's values.yaml (R-OCI-042). */
   protected readonly chartValues = computed(() => (this.format() === 'oci' ? chartValues(this.metadata()) : null));
   protected readonly copyValues = $localize`:@@pkg.chart.copy-values:Copy values.yaml`;
@@ -771,10 +775,11 @@ export class PackageVersionPage {
   }
 
   /**
-   * Something of the version has not answered yet (R-UI-213): a file's malware scan, a signature check, or an image's vulnerability
-   * scan. The page reads the version again every few seconds until it has, and every minute after. A scan waits only while its state
-   * passes on its own (R-VULN-039, Q-UI-1122): a file queued for its malware scan, an image queued or being scanned; one that waits for
-   * what the installation lacks (no scanner, no database) reads every minute, as a page with nothing in flight.
+   * Something of the version has not answered yet (R-UI-213): a file's malware scan, a signature check, an image's vulnerability
+   * scan, or the read of an image's stored configuration (R-OCI-040). The page reads the version again every few seconds until it has,
+   * and every minute after. A scan waits only while its state passes on its own (R-VULN-039, Q-UI-1122): a file queued for its malware
+   * scan, an image queued or being scanned; one that waits for what the installation lacks (no scanner, no database) reads every minute,
+   * as a page with nothing in flight, and so does a configuration the repository does not hold.
    */
   protected readonly inFlight = computed(() => {
     const d = this.detail();
@@ -783,6 +788,7 @@ export class PackageVersionPage {
     if (signaturePending(d.signatures)) return true;
     if (this.debContentsValue()?.state === 'pending') return true;
     if (d.files.some((f) => f.malware?.waiting === 'queued' || signaturePending(f.signatures))) return true;
+    if (this.parts().some((p) => p.configuration?.state === 'not-read')) return true;
     return (this.vulnerabilityReport()?.repositories ?? []).some((r) => checkWaits(r.grade.state));
   });
 

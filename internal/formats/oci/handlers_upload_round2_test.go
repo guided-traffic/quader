@@ -136,7 +136,7 @@ func TestTheBlobHookRefusesWhatItCannotVerify(t *testing.T) {
 			t.Errorf("%s: %v", name, err)
 		}
 	}
-	ok := formats.CommitEvent{Path: formats.Path{Path: "app/_blobs/" + digestOf(good)}, Digests: formats.Digests{SHA256: good}}
+	ok := formats.CommitEvent{Path: formats.Path{Path: "app/_blobs/" + digestOf(good)}, Digests: formats.Digests{SHA256: good}, Data: newTwin()}
 	if err := f.OnCommit(context.Background(), nil, ok); err != nil {
 		t.Errorf("a blob of its digest: %v", err)
 	}

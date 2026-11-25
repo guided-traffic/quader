@@ -51,7 +51,7 @@ export interface VersionFilters {
   readonly prerelease?: boolean;
   readonly repository?: readonly string[];
   readonly sort?: '-publishedAt' | 'publishedAt' | '-version' | 'version';
-  /** `digest` adds each version's content digest from the format (R-UI-052). */
+  /** `digest` adds each version's content digest from the format (R-UI-052), `state` its state, `kind` its kind (R-OCI-041). */
   readonly include?: readonly string[];
   /**
    * `content`: one entry per content, led by its highest version, with the other versions that name it as `aliases` (an image and

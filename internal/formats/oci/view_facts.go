@@ -54,8 +54,13 @@ const (
 	memberChartFiles = "chartFiles"
 )
 
-// configNotRead is the reason of a configuration whose blob no fetch read yet (a remote's manifest is fetched before its config).
-const configNotRead = "not-read"
+// The reasons of a configuration that is not read: configNotRead while the repository holds its blob and the job oci-describe reads it
+// (Q-OCI-271), configNotStored while it does not (a remote's manifest is stored before its config, and the config is stored once a
+// client pulls the image through the repository).
+const (
+	configNotRead   = "not-read"
+	configNotStored = "not-stored"
+)
 
 // annotationsOf reads the stored annotations of a manifest row; none for a row without.
 func annotationsOf(raw json.RawMessage) map[string]string {
@@ -267,13 +272,20 @@ func artifactKind(mediaType, artifactType string) string {
 	return "other"
 }
 
-// describeFacts adds the facts of a tag to its view data (R-OCI-039, R-OCI-040): with summary the description of the annotations; with
-// details and facts the annotations' facts, the licences, every held manifest's blobs and, as content of the config blobs, the
-// configurations and the labels' facts with the paths of the blobs they were read from.
+// describeFacts adds the facts of a tag to its view data (R-OCI-039, R-OCI-040): with summary the description of the annotations and
+// the kind of the artifact (the member kind, R-OCI-041: a list offers a chart's commands for a chart); with details and facts the
+// annotations' facts, the licences, every held manifest's blobs and, as content of the config blobs, the configurations and the labels'
+// facts with the paths of the blobs they were read from.
 func describeFacts(d *formats.ViewData, name string, tf rows.TagFacts, want formats.ViewFields) {
 	given := annotationFacts(tf)
 	if want.Has(formats.ViewSummary) {
 		d.Description = given["description"]
+		if tf.Image.MediaType != "" {
+			if d.Metadata == nil {
+				d.Metadata = map[string]any{}
+			}
+			d.Metadata["kind"] = artifactKind(tf.Image.MediaType, tf.Image.ArtifactType)
+		}
 	}
 	if !want.Has(formats.ViewDetails | formats.ViewFacts) {
 		return
@@ -302,7 +314,10 @@ func describeFacts(d *formats.ViewData, name string, tf rows.TagFacts, want form
 		}
 		cf := imageConfigOf(m.ConfigFacts)
 		if cf == nil {
-			cf = &rows.ConfigFacts{Kind: rows.ConfigImage, Unreadable: configNotRead}
+			cf = &rows.ConfigFacts{Kind: rows.ConfigImage, Unreadable: configNotStored}
+			if m.ConfigStored {
+				cf.Unreadable = configNotRead
+			}
 		}
 		configs[digest] = cf
 		paths = append(paths, BlobPath(name, "sha256:"+hex.EncodeToString(m.ConfigDigest[:])))

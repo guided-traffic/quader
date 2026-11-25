@@ -3842,7 +3842,8 @@ export interface paths {
          *     every version, newest first by its time (push or fetch), and a cursor after it carries that time (Q-API-431);
          *     `version` is the reverse. `-publishedAt` and `publishedAt` order by publication. `include=digest` also reads each version's `digest` from
          *     the format's metadata (an OCI tag: `sha256:…` of its manifest, R-UI-052); a format without one
-         *     has no `digest`. `include=state` reads each version's `state` from the format's metadata the same way (the ClamAV
+         *     has no `digest`. `include=kind` reads each version's `kind` the same way (an OCI artifact's: `image`, `helm-chart`, …, R-OCI-041).
+         *     `include=state` reads each version's `state` from the format's metadata the same way (the ClamAV
          *     definitions: `in_use`, `previous`, `superseded`, `files_removed`, R-UI-194); a format without one has no `state`.
          *     `group=content` lists one entry per content (an image's manifest digest) with the content's other versions as `aliases`; its
          *     `downloadCount`, `lastDownloadedAt` and `repositories` are the content's (Q-API-432).
@@ -12320,6 +12321,12 @@ export interface components {
             /** @description The description of the latest version. */
             description: string | null;
             latestVersion: string;
+            /**
+             * @description What `latestVersion` is in its format's words, from the format's metadata: an OCI artifact's kind (`image`, `helm-chart`,
+             *     `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041), so that a list offers the commands of its kind;
+             *     absent for a format without kinds.
+             */
+            kind?: string;
             keywords: string[];
             /** @description The keys of the repositories that hold a visible version. */
             repositories: string[];
@@ -12393,6 +12400,12 @@ export interface components {
              *     without one.
              */
             state?: string;
+            /**
+             * @description With `include=kind` only, what the version is in its format's words (the member `kind` of its details): an OCI artifact's
+             *     kind (`image`, `helm-chart`, `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041); with `group=content`
+             *     the kind of the entry's leading version; absent for a format without kinds.
+             */
+            kind?: string;
             /** @description The keys of the repositories that hold this version and that the caller may read. */
             repositories: string[];
             /**
@@ -26799,8 +26812,8 @@ export interface operations {
                 prerelease?: boolean;
                 /** @description Repeat the parameter for several repository keys. */
                 repository?: string[];
-                /** @description `digest`: also read each version's content digest from the format (`digest`); `state`: its state (`state`). */
-                include?: ("digest" | "state")[];
+                /** @description `digest`: also read each version's content digest from the format (`digest`); `state`: its state (`state`); `kind`: its kind (`kind`, an OCI artifact's). */
+                include?: ("digest" | "state" | "kind")[];
                 sort?: "-publishedAt" | "publishedAt" | "-version" | "version";
                 /**
                  * @description `content`: one entry per content instead of per version, for a format whose version names a content (an OCI image: one

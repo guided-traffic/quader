@@ -1,3 +1,5 @@
+import { ApiError } from '../../api/problem';
+import { describeProblem } from '../../core/http/problem-messages';
 import { MetadataLink } from './version-metadata';
 import { safeHttpUrl } from './package-links';
 
@@ -36,12 +38,17 @@ export interface HistoryStep {
   readonly cut: boolean;
 }
 
-/** Why a configuration is not shown: not read yet, too large, unreadable, or not for this reader. */
-export type ConfigState = 'read' | 'not-read' | 'too-large' | 'invalid' | 'hidden';
+/**
+ * Why a configuration is not shown: not read yet, not stored, too large, unreadable, not for this reader, or held because a download of
+ * its blob would not be served to this reader now (a gate refuses it or a check is pending).
+ */
+export type ConfigState = 'read' | 'not-read' | 'not-stored' | 'too-large' | 'invalid' | 'hidden' | 'held';
 
 /** What the reader read of one image's configuration. */
 export interface ImageConfigView {
   readonly state: ConfigState;
+  /** Why a held configuration is held, in the words of the refused download; '' for any other state. */
+  readonly held?: string;
   /** The facts of how the image runs, as label and text; `code` marks a command or a path shown as code. */
   readonly facts: readonly ImageFact[];
   readonly env: readonly ImageVar[];
@@ -195,7 +202,8 @@ function configurationOf(v: unknown, layers: readonly ImageBlob[]): ImageConfigV
   const reason = text(c['unreadable']);
   const img = record(c['image']);
   if (reason !== '' || c['image'] === undefined) {
-    const state: ConfigState = reason === 'too-large' ? 'too-large' : reason === 'not-read' ? 'not-read' : 'invalid';
+    const state: ConfigState =
+      reason === 'too-large' || reason === 'not-read' || reason === 'not-stored' ? reason : 'invalid';
     return { state, facts: [], env: [], labels: [], history: [], omitted: none };
   }
   const om = record(img['omitted']);
@@ -238,7 +246,16 @@ export function imageParts(
     // A Helm chart's configuration is its Chart.yaml, which the chart's own block shows (R-OCI-042): no image configuration here.
     if (cfg !== undefined && record(cfg)['kind'] !== 'chart') configuration = configurationOf(cfg, layers);
     else if (configs === undefined && kind === 'image') {
-      configuration = { state: 'hidden', facts: [], env: [], labels: [], history: [], omitted: { env: 0, labels: 0, history: 0, cut: false } };
+      const held = heldReason(m);
+      configuration = {
+        state: held === null ? 'hidden' : 'held',
+        held: held ?? '',
+        facts: [],
+        env: [],
+        labels: [],
+        history: [],
+        omitted: { env: 0, labels: 0, history: 0, cut: false },
+      };
     }
     return [
       { digest: c.digest, platform: c.platform, manifestSize: c.size, config: blob(b['config']), layers, moreLayers: num(b['more']) ?? 0, configuration },
@@ -293,6 +310,18 @@ export interface ChartView {
 }
 
 /** The chart of a version whose kind is a Helm chart; null for anything else or a chart whose Chart.yaml the reader may not see. */
+/**
+ * Why the content the server read from a version's files is held (`metadata.contentHeld`, R-OCI-040): a download of one of those files
+ * would not be served to this reader now. The reason is the product's words for that refused download (the malware scan, a vulnerability
+ * finding, the delivery rules, the signature gate, a check still running); null when nothing is held.
+ */
+export function heldReason(m: Record<string, unknown>): string | null {
+  const code = text(record(m['contentHeld'])['code']);
+  if (code === '') return null;
+  const words = describeProblem(new ApiError(403, { status: 403, code }, null));
+  return words.known ? words.text : $localize`:@@pkg.content.held-other:A download of it would not be served to you now.`;
+}
+
 export function chartOf(m: Record<string, unknown>): ChartView | null {
   if (m['kind'] !== 'helm-chart') return null;
   const c = record(record(record(m['configs'])[text(m['digest'])])['chart']);

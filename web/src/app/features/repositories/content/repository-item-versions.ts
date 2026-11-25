@@ -108,6 +108,7 @@ export const OPENED_OTHER_TAGS = 4;
                 [name]="pkg().name"
                 [version]="v.version"
                 [digest]="v.digest ?? null"
+                [kind]="v.kind ?? null"
                 [repository]="repository()"
                 [verb]="shape().commandVerb"
               />
@@ -248,9 +249,10 @@ export class RepositoryItemVersions {
       const images = this.shape().digest;
       untracked(() => {
         // The newest first by the format's order (R-API-029); an image's list by content, one row per manifest with its digest
-        // (Q-API-432). A short or empty page with a cursor is read on until the ten are there (R-API-010, `PagedList`).
+        // (Q-API-432) and its kind, so that a chart's row offers Helm's commands (R-OCI-042). A short or empty page with a cursor is
+        // read on until the ten are there (R-API-010, `PagedList`).
         void this.versions.start(
-          this.api.versions(id, { repository: [repository], sort: '-version', ...(images ? { group: 'content' as const } : {}) }),
+          this.api.versions(id, { repository: [repository], sort: '-version', ...(images ? { group: 'content' as const, include: ['kind'] } : {}) }),
         );
       });
     });

@@ -2,7 +2,6 @@ package oci
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"time"
 
@@ -68,15 +67,13 @@ type Store interface {
 	// the repository holds, in platform order: the annotations always, the blobs and the configuration with full (R-OCI-039, R-OCI-040).
 	// A version that is not a stored tag of a recorded manifest is absent.
 	TagFacts(ctx context.Context, versionIDs []int64, full bool) ([]rows.TagFacts, error)
-	// ConfigUnread is the media type of the blob when a manifest of the name names it as a configuration that is not read yet (an
-	// image's, R-OCI-040; a Helm chart's, R-OCI-042), "" otherwise.
-	ConfigUnread(ctx context.Context, repoID int64, name string, config [32]byte) (string, error)
+	// QueueConfigRead queues, in the transaction that commits a blob, the read of the configuration of every manifest of the name that
+	// names the blob as an image's or a chart's configuration not read yet (R-OCI-040, R-OCI-042, Q-OCI-271); a blob no such manifest
+	// waits for queues nothing.
+	QueueConfigRead(ctx context.Context, tx formats.Tx, repoID int64, name string, config [32]byte) error
 	// OpenBlob opens a stored blob by its digest and size, verified as it is read: the content layer of a Helm chart, whose README and
 	// values its page reads on demand (R-OCI-042). A store that reads no blobs answers not found.
 	OpenBlob(ctx context.Context, sha256 [32]byte, size int64) (io.ReadCloser, error)
-	// PutConfigFacts records what the reader read of a configuration (the JSON of rows.ConfigFacts) in every manifest of the name that
-	// names it and has none yet, in a transaction of its own.
-	PutConfigFacts(ctx context.Context, repoID int64, name string, config [32]byte, facts json.RawMessage) error
 	// TagSizes reads, for the tags with the given version ids, what the size of the image each points at is made of: the content
 	// size of its manifest and, for an index, its children and the ones the repository holds (R-OCI-031, Q-OCI-221). One read for
 	// any number of tags; a version that is not a stored tag of a recorded manifest is absent.

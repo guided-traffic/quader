@@ -83,11 +83,17 @@ export const HISTORY_SHOWN = 50;
             <p class="hint" i18n="@@pkg.config.labels-more">{c.omitted.labels, plural, =1 {1 more label is not shown.} other {{{ c.omitted.labels }} more labels are not shown.}}</p>
           }
         }
+        @case ('held') {
+          <p class="hint"><ng-container i18n="@@pkg.config.held">The configuration is not shown: a download of it would not be served to you now.</ng-container>&ngsp;{{ c.held }}</p>
+        }
         @case ('hidden') {
           <p class="hint" i18n="@@pkg.config.hidden">The configuration, its environment and its labels are shown to whoever may pull this image.</p>
         }
         @case ('not-read') {
-          <p class="hint" i18n="@@pkg.config.not-read">The configuration is read when a client first pulls this image through Quader.</p>
+          <p class="hint" i18n="@@pkg.config.not-read">The configuration is being read.</p>
+        }
+        @case ('not-stored') {
+          <p class="hint" i18n="@@pkg.config.not-stored">The image's configuration is read when the image is pulled through this repository.</p>
         }
         @case ('too-large') {
           <p class="hint" i18n="@@pkg.config.too-large">The configuration is larger than 1 MiB and is not read.</p>

@@ -8,7 +8,7 @@
 -- an image's configuration, never a Helm chart's or an artifact's), NULL for anything else. config_facts is what the bounded reader of
 -- the format read of that configuration (the format's rows.ConfigFacts: the environment, the entrypoint and the command, the ports, the
 -- user, the working directory, the labels and the history, or why it could not be read); NULL while the configuration was not read: a
--- remote's manifest is fetched before its config, and the first fetch of the config through the repository reads it.
+-- remote's manifest is fetched before its config, and the commit of the config queues the job that reads it.
 --
 -- The environment and the labels can hold what a builder baked into an image (a token in ENV): the column is read by the version page
 -- for a caller who may read the config blob, never by a list or a search (R-OCI-040, docs/security/oci-registry.md). Both are bounded
@@ -18,7 +18,14 @@ ALTER TABLE oci_manifests
     ADD COLUMN blobs         jsonb CHECK (blobs IS NULL OR octet_length(blobs::text) <= 262144),
     ADD COLUMN config_facts  jsonb CHECK (config_facts IS NULL OR octet_length(config_facts::text) <= 262144);
 
--- The manifests whose configuration is still to be read: a fetch of a blob asks whether it is one (internal/formats/oci, R-OCI-040).
--- Once read, a row leaves the index, so it stays as small as the images whose config no client fetched yet.
+-- The manifests whose configuration is still to be read: the commit of a blob asks whether it is one, and the task remote-describe
+-- walks them (internal/formatdata/oci, R-OCI-040). Once read, a row leaves the index, so it stays as small as the images whose config the
+-- repository does not hold.
 CREATE INDEX oci_manifests_config_unread ON oci_manifests (repo_id, name, config_digest)
     WHERE config_digest IS NOT NULL AND config_facts IS NULL;
+
+-- The image manifests stored before their blobs were kept, which the task remote-describe walks once; every manifest stored since is
+-- recorded with them, so the index is empty after that walk.
+CREATE INDEX oci_manifests_blobs_unread ON oci_manifests (repo_id, name, digest)
+    WHERE blobs IS NULL
+      AND media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json');

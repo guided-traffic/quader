@@ -119,6 +119,9 @@ type Package struct {
 	Key           string
 	Description   *string
 	LatestVersion string
+	// Kind is what the latest version is in the format's words, from the summary's metadata (an OCI artifact's kind: image,
+	// helm-chart, …, formats/oci.md R-OCI-041); "" for a format without kinds.
+	Kind          string
 	Keywords      []string
 	Repositories  []qname.Repo
 	CreatedAt     time.Time
@@ -141,7 +144,10 @@ type VersionSummary struct {
 	Digest string
 	// State is the version's state from the format's metadata (the ClamAV definitions: in_use, previous, superseded, files_removed,
 	// R-UI-194), read when the caller asks (VersionFilter.WithState); "" for none.
-	State         string
+	State string
+	// Kind is what the version is in the format's words (an OCI artifact's kind, R-OCI-041), read when the caller asks
+	// (VersionFilter.WithKind); "" for none.
+	Kind          string
 	Repositories  []qname.Repo
 	DownloadCount int64
 	// LastDownloadedAt is the latest fetch of the version by a client, by its format's rule, in any repository that holds it (R-API-065,

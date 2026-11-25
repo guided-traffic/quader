@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { expectAccessible, settle } from '../../testing/screen';
 import { HISTORY_SHOWN, ImageDetails } from './image-details';
-import { ImagePart, cutDigest, duration, imageFact, imageFactList, imageLinks, imageParts, kindWord } from './image-facts';
+import { ImagePart, cutDigest, duration, heldReason, imageFact, imageFactList, imageLinks, imageParts, kindWord } from './image-facts';
 
 const D = (n: number): string => `sha256:${String(n).padStart(2, '0').repeat(32)}`;
 
@@ -84,9 +84,22 @@ describe('Image facts', () => {
     expect(imageParts(m, platforms)[0]!.configuration?.state).toBe('hidden');
     const unread = { ...indexMetadata(), configs: { [D(2)]: { kind: 'image', unreadable: 'not-read' } } };
     expect(imageParts(unread, platforms)[0]!.configuration?.state).toBe('not-read');
+    const unstored = { ...indexMetadata(), configs: { [D(2)]: { kind: 'image', unreadable: 'not-stored' } } };
+    expect(imageParts(unstored, platforms)[0]!.configuration?.state).toBe('not-stored');
     const chart: Record<string, unknown> = { ...indexMetadata(), kind: 'helm-chart' };
     delete chart['configs'];
     expect(imageParts(chart, platforms)[0]!.configuration).toBeNull();
+  });
+
+  it('R-OCI-040 a configuration whose download a gate would refuse is held, in the words of the refused download', () => {
+    const m: Record<string, unknown> = { ...indexMetadata(), contentHeld: { code: 'malware_found' } };
+    delete m['configs'];
+    const c = imageParts(m, platforms)[0]!.configuration!;
+    expect(c.state).toBe('held');
+    expect(c.held).toContain('malware');
+    expect(heldReason({ contentHeld: { code: 'vulnerability_blocked' } })).toContain('vulnerability finding');
+    expect(heldReason({ contentHeld: { code: 'something_new' } })).toBe('A download of it would not be served to you now.');
+    expect(heldReason(indexMetadata())).toBeNull();
   });
 
   it('R-OCI-041 the word for the kind, the digest cut in the middle, a duration as docker inspect writes it', () => {

@@ -1748,41 +1748,61 @@ Priority: **P1** · Covers: PKG-DOCKER-041
   working directory, the stop signal, the entrypoint, the command, the shell, `ONBUILD`, the exposed ports, the volumes, the health check,
   the environment in its order, the labels by key, and the history oldest first (`created`, `created_by`, `comment`, `author`,
   `empty_layer`). What a bound left out is counted per list, a cut string is marked.
-- **When it is read** ([Q-OCI-271](#q-oci-271--an-images-configuration-is-read-where-the-registry-holds-it-at-a-push-and-at-the-first-fetch-of-a-remotes-config)):
+- **When it is read** ([Q-OCI-271](#q-oci-271--an-images-configuration-is-read-where-the-registry-holds-it-at-a-push-and-by-a-job-queued-when-the-config-is-stored)):
   a push reads it from the repository before it commits (the client uploaded it before the manifest) and writes it with the manifest's
-  row, for every platform manifest of an index as it is pushed. A remote's manifest is fetched before its config, so its row waits with
-  the configuration unread; the first fetch of the config through the repository (a client's pull, a pull through a virtual repository)
-  reads the stored blob and completes every row of the name that names it. A manifest whose config another row of the name read already
-  takes that reading. Each fetch of a blob asks one indexed question whether it is an unread config; a layer's fetch reads nothing else.
-  A config the store cannot open now stays unread for the next fetch; one that cannot be read is recorded with the reason (`too-large`,
+  row, for every platform manifest of an index as it is pushed. Every other way a configuration comes to be stored (a remote's fill, whose
+  client fetches the manifest before the config; a mirror's download and a download ahead, which no client fetches; a mount) passes the
+  commit of the blob, which queues the job `oci-describe` (queue `index`, coalesce per repository, name and manifest, key
+  `oci-describe:<repository id>:<name>:<hex>`, 5 attempts, 2 minutes) for every manifest of the name that waits for it, in the commit's
+  transaction; a manifest stored while its config is stored already queues it in its own commit. The job reads the stored blob, never an
+  upstream, and completes every row of the name that names it. A manifest whose config another row of the name read already takes that
+  reading. Each commit of a blob asks one indexed question whether a manifest waits for it; a client's fetch reads nothing. A config the
+  store cannot open now stays unread, and the job tries again; one that cannot be read is recorded with the reason (`too-large`,
   `invalid`) and not read again.
 - **Who sees it** ([Q-OCI-273](#q-oci-273--an-images-configuration-and-labels-go-to-a-caller-who-may-read-its-config-blob)): the
   configurations are the member `metadata.configs` (the digest of each held image manifest to `{kind, unreadable, image}`; `unreadable`
-  `not-read` while no fetch read it), sent with `labeled` only to a caller who may read every config blob they were read from, the
+  `not-read` while the repository holds the config and the job has not read it, `not-stored` while the repository does not hold it: a
+  remote's config is stored when a client pulls the image through the repository), sent with `labeled` only to a caller who may read every config blob they were read from, the
   decision of a `GET` of `<name>/_blobs/<digest>` (the view's `ContentMetadata` and `ContentPaths`,
-  [api-and-ui.md](../api-and-ui.md) R-API-058). The environment and the labels can hold what a builder baked into an image: they are in
-  no list, no search hit, no audit event and no log
+  [api-and-ui.md](../api-and-ui.md) R-API-058), and only while a download of each of those config blobs would be served to that caller
+  now: the serve point decides it with the checks of the download (the malware gate, the vulnerability block, the delivery rules, the
+  signature gate), and a configuration held so is absent with `metadata.contentHeld` naming the code the download would answer; the page
+  says it is held, in the words of that refused download. The environment and the labels can hold what a builder baked into an image:
+  they are in no list, no search hit, no audit event and no log
   ([docs/security/oci-image-facts.md](../../security/oci-image-facts.md)).
 - **On the screen** (details on demand): the layers and the configuration with the history stand on the tab **Details**, per platform,
   each opened from the platform's row; nothing of them scrolls on its own, a long list grows the page.
-- **An image stored before the change** has neither layers nor configuration on its page: a push of the same manifest again writes them
-  (a row keeps what it holds and takes what it lacks), and a remote's row gets them when its manifest is stored again (after an
-  eviction of its entry), followed by a fetch of its config. No job fills them: the reindex of R-REPO-016 does not serve the format (pre-alpha, no data
-  migration).
+- **An image stored before the change** gets its layers and its configuration from what the repository holds: the task
+  `remote-describe` ([operations-and-observability.md](../operations-and-observability.md) R-OPS-019), which a worker queues when it
+  starts while such a manifest exists, queues `oci-describe` for every manifest of a local or a remote repository whose blobs are not
+  recorded or whose stored configuration is not read, within its bounds (batches of 100 by the id of the manifest's item, at most 1,000
+  a run, none while 200 describe jobs wait, the run after it in 5 minutes from its cursor, priority 200 after the jobs a commit queues).
+  The job reads the stored manifest for its blobs, as a push parses it, and then the stored configuration. A run over a described store
+  queues nothing.
 
 Acceptance criteria:
 
 - Unit (`internal/formats/oci/manifest`, milliseconds): `TestR_OCI_040_ReadsTheConfigurationBuildxWrote` reads the configuration Docker
   Buildx of Docker 28 wrote (`testdata/buildx-config.json`); `…_RefusesWhatTwoReadersCouldReadDifferently`, `…_ReadsKeysAsTheRuntimeDoes`
   and `…_BoundsWhatItKeeps` pin the strict reading and the bounds.
-- Unit (`internal/formats/oci`, milliseconds, `TestR_OCI_040_APushReadsTheConfigAndAFetchCompletesARowWithout`): a push records the
-  configuration and the blobs; a row without a configuration is completed by the fetch of its config and not by a layer's.
+- Unit (`internal/formats/oci`, milliseconds, `TestR_OCI_040_APushReadsTheConfigAndTheConfigsCommitQueuesARowWithout`): a push records
+  the configuration and the blobs; for a row without a configuration, the commit of its config queues the read, a layer's commit and a
+  client's fetch do not.
+- Unit (`internal/formatdata/oci`, milliseconds, `TestR_OCI_040_TheDescriptionReadsOnlyWhatTheRepositoryHolds`): the job reads a stored
+  image manifest without blobs, then a stored configuration not read, and nothing of an index, an artifact's config, a config the
+  repository does not hold or a manifest that is gone.
 - Unit (`internal/authz`, milliseconds, `TestR_OCI_040_AFileOfAVersionIsDecidedOnItsPath`): the read of a file by its path follows a
   grant's path pattern while the version stays readable.
 - Integration (area `oci`, about 2 s): the pushed configuration of the Buildx fixture stands on the version's page; a person whose grant
   excludes `**/_blobs/**` reads the version, its layers and its annotations and none of `configs` or `labeled`.
-- Integration (area `ociremote`, `TestR_OCI_040_ARemotesConfigurationIsReadByItsFirstFetch`, about 2 s): `not-read` after the tag's
-  fetch, the stub's labels and history after the fetch of the config.
+- Integration (area `oci`, `TestR_OCI_040_AnImageStoredBeforeItsFactsIsDescribedFromWhatTheRepositoryHolds`, about 9 s with a worker's
+  start): a row stored without blobs and configuration gets both from the task a starting worker queues; a second run queues nothing.
+- Unit (`internal/signatures/gate`, milliseconds, `TestR_OCI_040_AScreenIsHeldByTheDecisionOfTheDownload`): the hold answers the code a
+  download answers for every refusal, and a pending check's code, at once and without recording; (`internal/packages/view`,
+  `TestR_OCI_040_ContentGoesOnlyWhereItsDownloadWouldBeServed`) a held config drops `configs` and `labeled` and names the code.
+- Integration (area `ociremote`, `TestR_OCI_040_ARemotesConfigurationIsReadOnceItIsStored`, about 5 s with a worker): `not-stored` after
+  the tag's fetch, the stub's labels and history once the fetch of the config stored it, and the configuration held with
+  `not_allowed_in_repository` once the remote's rules block the image.
 
 ### R-OCI-041 · The version page's head, the commands and the files of an image
 Priority: **P1** · Covers: quader-only
@@ -1819,8 +1839,8 @@ a Helm chart an OCI repository holds is shown as a chart, read-only, with Helm's
 - **What a chart is.** A manifest whose config is of the media type `application/vnd.cncf.helm.config.v1+json` and whose layer is the
   chart's package (`application/vnd.cncf.helm.chart.content.v1.tar+gzip`), as `helm push` writes it. Its kind is `helm-chart`, the word
   "Helm chart" (R-OCI-041). A provenance layer (`…provenance.v1.prov`) is listed among its files and not read.
-- **Its facts** are its Chart.yaml, which `helm push` stores as the config blob in JSON, read at the push and at a remote's first fetch
-  of the config by the reader of R-OCI-040 (the same strict reading, the same bounds of a string and of the kept JSON; at most 64
+- **Its facts** are its Chart.yaml, which `helm push` stores as the config blob in JSON, read at the push and by the job `oci-describe`
+  once a remote's config is stored, by the reader of R-OCI-040 (the same strict reading, the same bounds of a string and of the kept JSON; at most 64
   keywords, 32 sources, 64 maintainers, 128 dependencies and 128 annotations): the name, the version, the app version, the description,
   the type, the Kubernetes version, the keywords, the home, the sources, the maintainers, the dependencies (name, version range,
   repository, condition, alias), the annotations and `deprecated`. They are `metadata.configs[<digest>].chart`, content of the config blob
@@ -4354,28 +4374,34 @@ and the refill of the stored rows in migration [00126](../../../internal/meta/po
 `TestR_API_029_AnImageTagIsAPrereleaseByTheTagOrder` (unit), kit check 11 (`TestR_ARCH_010_Conformance`, the sample holds `2.0-rc.1` and the
 variant `1.0-alpine`), the SQL-against-Go table of `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit` (area `ociremote`).
 
-### Q-OCI-271 · An image's configuration is read where the registry holds it: at a push, and at the first fetch of a remote's config
+### Q-OCI-271 · An image's configuration is read where the registry holds it: at a push, and by a job queued when the config is stored
 
-Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** on 2026-11-25, revised on 2026-11-26 at the review of the package (W-30, G7) — selected
+from the options below; the owner reviews it at the walkthrough.
 
-Context: the version page is to show an image's configuration, layers and history (R-OCI-040, working paper W-30, G7). The config is a
-blob; a push uploads it before the manifest, a remote's client fetches the manifest before the config, and the remote engine holds a
-fetch's stream to its client while a fill hook reads it, so a hook on every blob would hold every layer's stream.
+Context: the version page is to show an image's configuration, layers and history (R-OCI-040, working paper W-30, G7), and the owner's
+rule is that what is there is shown. The config is a blob; a push uploads it before the manifest, a remote's client fetches the manifest
+before the config, a mirror's download and a download ahead store it without a client's fetch, and the remote engine holds a fetch's
+stream to its client while a fill hook reads it, so a hook on every blob would hold every layer's stream.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The push reads the stored config before it commits and writes the facts with the manifest's row; a remote's row waits unread, and the fetch of a blob asks one partial index whether it is an unread config and, if so, reads the stored blob after the answer went out (chosen) | Written once, where the bytes are | No request to an upstream for it, no new job, no stream held; a layer costs one indexed read | A remote's image whose config no client fetched through the repository (a mirror's download, a cache filled before the change) shows `not-read` |
+| (a) The push reads the stored config before it commits; a remote's row waits unread, and a client's fetch of a blob asks one partial index whether it is an unread config and reads it after the answer went out (chosen on 2026-11-25) | Read on the client's read path | No new job | A mirror's download and a download ahead store configs no client fetched: their images show nothing; an image stored before the change shows nothing |
 | (b) Read the config on every view of the version page | Nothing stored | Works for every image already stored | A blob read from the object store per platform and per view; six platforms are six reads for one page |
 | (c) A fill hook on every blob of a remote | The fill reads the config | Complete for a remote | Every layer's stream to its client would wait for the whole layer (`fillHeld`) |
-| (d) A job that fills the facts from the stored config blobs | A queue of its own | Old images get them | A new job kind for a pre-alpha installation without images (the owner's rule: no data migration); the reindex of R-REPO-016 does not serve the format |
+| (d) The push reads it before it commits; the commit of a blob, the one place every stored blob passes, queues a job for the manifests that wait for it, a manifest stored after its config queues it in its own commit, and the task `remote-describe` queues it for what was stored before (chosen) | A job kind `oci-describe` beside npm's and Debian's | Every way a config is stored is covered, a client's read path reads nothing, and an image stored before the change is described from what the repository holds | A job per image a remote fills; the facts stand a moment after the commit, and the page reads again while one is read |
 
-**Choice:** (a). A row that is recorded keeps what it holds and takes only what it lacks (`OCIPutManifest`'s `ON CONFLICT … DO UPDATE` of
-the three columns), so a push of the same manifest again completes a row stored before the change. **Rationale:** the bytes are in the
-registry at the two moments; reading them there costs a read of a few KiB, while every other place costs a stream, a job or a read per
-view. The development agent would revisit it if the owner wants the facts of a mirror's images before a client pulls them (then (d), or
-the mirror's download reading the config as the fetch does). **Applied in the spec:** R-OCI-040. Code:
-[image_facts.go](../../../internal/formats/oci/image_facts.go) (`readStoredConfig`, `completeConfig`), the statements `OCIPutManifest`,
-`OCIConfigUnread` and `OCIPutConfigFacts` of [oci_manifests.sql](../../../internal/meta/postgres/queries/oci_manifests.sql), migration
+**Choice:** (d). A row that is recorded keeps what it holds and takes only what it lacks (`OCIPutManifest`'s `ON CONFLICT … DO UPDATE`
+of the three columns); the job writes the blobs of a row stored before them and then the configuration (`OCIPutBlobs`,
+`OCIPutConfigFacts`). **Rationale:** (a) left the images of a mirror and of a download ahead, and every image stored before the change,
+without what the repository holds; the commit of the blob is where every one of them passes, and a job there holds no client's stream.
+The job reads a few KiB of the repository's own items, never an upstream. The development agent would revisit it if the jobs of a large
+mirror's pass crowd the queue `index` (then a batch per pass). **Applied in the spec:** R-OCI-040, R-OCI-042. Code:
+[image_facts.go](../../../internal/formats/oci/image_facts.go) (`readStoredConfig`), `OnCommit` of
+[hooks.go](../../../internal/formats/oci/hooks.go), [describe.go](../../../internal/formatdata/oci/describe.go) (`Describe`,
+`QueueUndescribed`), `QueueConfigRead` and `PutManifest` of [store_manifests.go](../../../internal/formatdata/oci/store_manifests.go), the
+statements `OCIConfigWaiting`, `OCIDescribeTarget`, `OCIPutBlobs`, `OCIPutConfigFacts` and `OCIUndescribedManifests` of
+[oci_manifests.sql](../../../internal/meta/postgres/queries/oci_manifests.sql), migration
 [00132](../../../internal/meta/postgres/migrations/00132_oci_image_facts.sql).
 
 ### Q-OCI-272 · An image's configuration is read by the strict reader of the manifests, within bounds of its own
@@ -4683,28 +4709,11 @@ The package list shows an image's description from its annotations (R-OCI-039), 
 list and of the top bar finds an image by its name alone. Live since R-OCI-039; real for a person who searches for what an image does. The
 labels are never searched (Q-OCI-273).
 
-### H-2111 · A remote's image whose config no client fetched through the repository shows its configuration as not read
-
-A remote's manifest is stored before its config, and the configuration is read at the first fetch of the config through the repository
-(Q-OCI-271). A mirror's download and a download ahead store the config without that fetch, so their images show `not-read` until a client
-pulls them through Quader. Live since R-OCI-040; real for the images of a repository in mode `mirror` that nobody pulled yet.
-
-### H-2113 · An image stored before the change shows no layers and no configuration until it is stored again
-
-The layers and the configuration are written with a manifest's row (migration 00132); a row stored before has neither, and no job fills
-them (pre-alpha: no data migration). A push of the same manifest again completes a local row, a fetch of an evicted remote entry and of its
-config a remote's. Its annotations' facts show at once. Live on an installation that holds images from before R-OCI-040.
-
 ### H-2115 · A chart's README and values are read from its package on every view of its page
 
 R-OCI-042 reads a chart's package from the object store each time its version page or its README is asked for, and keeps nothing. A
 package is a few KiB to a few MiB, bounded by the reader at 256 MiB declared. Live since R-OCI-042; real for a page of a large chart that
 many readers open at once, which reads the package once per view.
-
-### H-2116 · The command menu of a repository's list offers Docker and Podman for a chart
-
-The list of a repository's versions does not carry an artifact's kind, so its command menu offers an image's clients for a chart's
-version; the version page's panel offers Helm alone. Live since R-OCI-042; real for a reader who copies a command from the list.
 
 ### H-2117 · A deprecated chart is marked on its page and not in the lists
 

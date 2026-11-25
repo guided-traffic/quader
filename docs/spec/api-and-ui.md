@@ -1596,7 +1596,7 @@ remain as their owners define them.)
 | GET | `/api/v1/packages` | Packages; filters `format`, `repository` (both repeatable; the qualified name `<projectKey>/<repoKey>`), `project`, `q` (name and description), `namePrefix`, `keyword`, `createdFrom` / `createdTo` (first visible version); `sort` `name`, `createdAt`, `updatedAt` and their descending forms (default `name`); `include=vulnerabilities` (R-UI-052) | visible versions (below); anonymous where allowed |
 | GET | `/api/v1/packages/lookup?format=npm&name=@team-a/ui` | Resolve a name to the package | as list |
 | GET | `/api/v1/packages/{packageId}` | Package summary | as list |
-| GET | `/api/v1/packages/{packageId}/versions` | Versions; filters `prerelease`, `repository`; `sort` `-version` (default, the format's version precedence, newest first), `version`, `-publishedAt`, `publishedAt`; `group=content` (one entry per content, below); `include=digest` (R-UI-052), `include=state` (R-UI-194) | as list |
+| GET | `/api/v1/packages/{packageId}/versions` | Versions; filters `prerelease`, `repository`; `sort` `-version` (default, the format's version precedence, newest first), `version`, `-publishedAt`, `publishedAt`; `group=content` (one entry per content, below); `include=digest` (R-UI-052), `include=state` (R-UI-194), `include=kind` ([formats/oci.md](formats/oci.md) R-OCI-041) | as list |
 | GET | `/api/v1/packages/{packageId}/versions/{version}` | Version details | as list |
 | GET | `/api/v1/packages/{packageId}/versions/{version}/readme` | Sanitized README HTML; wiki content (`x-quader-part: wiki`, R-API-058) | as list, then the wiki check ([authorization.md](authorization.md) R-AUTHZ-034) |
 | GET | `/api/v1/packages/{packageId}/versions/{version}/docs`, `…/docs/entries/{type}/{name}`, `…/docs/files/{file}` | The documentation of a version of a format that has one (Ansible Galaxy: the tree with search, one plugin's page, a Markdown file): `getPackageVersionDocs`, `getPackageVersionDocEntry`, `getPackageVersionDocFile`, [formats/ansible.md](formats/ansible.md) R-ANS-036; wiki content (Q-API-260, Q-API-261); 404 for a format without documentation | as list, then the wiki check of R-AUTHZ-034 ([formats/ansible.md](formats/ansible.md) R-ANS-037) |
@@ -1640,7 +1640,11 @@ remain as their owners define them.)
   `digest`, the content digest the format's version metadata names (an OCI tag: `sha256:…` of its manifest, R-UI-052), absent for a format without one;
   with `include=state` also `state`, the member `state` of the format's version metadata (the ClamAV definitions: `in_use`, `previous`,
   `superseded`, `files_removed`, R-UI-194), read in the same one read of the page as the digest and absent for a format without one
-  ([Q-API-384](#q-api-384--the-version-list-reads-a-versions-state-from-the-formats-metadata-behind-includestate)).
+  ([Q-API-384](#q-api-384--the-version-list-reads-a-versions-state-from-the-formats-metadata-behind-includestate)); with `include=kind`
+  also `kind`, the member `kind` of the format's version metadata (an OCI artifact's: `image`, `helm-chart`, …,
+  [formats/oci.md](formats/oci.md) R-OCI-041), in the same read, with `group=content` the kind of the entry's leading version. An entry of
+  `GET /api/v1/packages` carries `kind`, what its `latestVersion` is, from the summary the list reads for its description, absent for a
+  format without kinds: a row's command menu offers the clients of the kind (Helm for a chart, Q-UI-1250).
   With `include=vulnerabilities`, `GET /api/v1/packages` adds `vulnerabilityGrade` to each entry for a signed-in caller of an installation
   that scans: the grade of the entry's `latestVersion` over the repositories the filter names ([vulnerability-scanning.md](vulnerability-scanning.md)
   R-VULN-038, R-VULN-039), in a fixed number of statements per page; a caller who is anonymous or a failure to read the grades leaves the
@@ -2570,8 +2574,14 @@ elsewhere; it is read into `Operation.Part`, as `x-quader-maintenance` is read i
   marked, so that the API, not the format, drops them.
 - A member a format read from the content of a version's files beyond its document (an OCI image's configuration and the facts of its
   labels, [formats/oci.md](formats/oci.md) R-OCI-040) is decided with the read of those files' paths (`authz.PathReader.MayReadPath`, the
-  protocol's decision of a read of the path) and is absent when one is refused. The view adapter names the members and the paths
-  (`ContentMetadata`, `ContentPaths`), and the API drops them; a list and a search carry no such member.
+  protocol's decision of a read of the path) and is absent when one is refused. It is absent as well while a download of one of those
+  files would not be served to the caller now: the serve point of stored content decides it with the checks of the download (the malware
+  gate, the vulnerability block, the delivery rules, the signature gate; `files.Service.Hold` over `sgate.Serve.Hold`, which takes its
+  answer from the decision `Run` takes its own from and records nothing), and `metadata.contentHeld` (`{"code": …}`) names the code the
+  download would answer (`malware_found`, `vulnerability_blocked`, `not_allowed_in_repository`, `signature_not_verified`,
+  `malware_not_checked`, `vulnerability_data_missing`, or `malware_check_pending` and `signature_check_pending` while a check runs). The
+  view adapter names the members and the paths (`ContentMetadata`, `ContentPaths`), and the API drops them; a list and a search carry no
+  such member.
 - Today's operations with `x-quader-part: wiki`: `getPackageVersionReadme`; the documentation operations of
   [formats/ansible.md](formats/ansible.md) (T-19) join with their requirement.
 - A test walks the document and fails when an operation whose response schema holds a README or a documentation body lacks
@@ -26994,13 +27004,16 @@ Status: **Decided by the development agent** on 2026-11-25 — selected from the
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The pickers of a version offer the clients of its kind (`clientsOfKind`): a Helm chart Helm alone, an image every client but Helm; **Set up client** lists all three; an image's panel adds the pull by digest under the pull by tag (chosen) | One command that works per kind | A reader never copies a `docker pull` of a chart or a `helm pull` of an image | The kind must be known: a list row that does not carry it offers an image's clients (H-2116) |
+| (a) The pickers of a version offer the clients of its kind (`clientsOfKind`): a Helm chart Helm alone, an image every client but Helm; **Set up client** lists all three; an image's panel adds the pull by digest under the pull by tag (chosen) | One command that works per kind | A reader never copies a `docker pull` of a chart or a `helm pull` of an image | The kind must be known: the package list's entries carry `kind` and a repository's list by content asks `include=kind` |
 | (b) Every client for every artifact | One list | Nothing to decide | Two of three commands fail for each artifact |
 | (c) A format of its own for charts | Separate pages | Clear | A new format, which the owner excluded (Q-OCI-275) |
 
 **Choice:** (a). **Applied in the spec:** R-OCI-041, R-OCI-042. Code: `clientsOfKind` in
 [clients.ts](../../web/src/app/features/setup/clients.ts), [install-panel.ts](../../web/src/app/features/packages/install-panel.ts),
-[client-command.ts](../../web/src/app/features/packages/client-command.ts) (the digest line).
+[client-command.ts](../../web/src/app/features/packages/client-command.ts) (the digest line), the menus of a repository's rows
+[repository-items.ts](../../web/src/app/features/repositories/content/repository-items.ts) and
+[repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts) (`[kind]`). The product-wide
+package list and the search offer no command and need no kind.
 
 ### Q-UI-1270 · A Debian package's relations are the dependency block, one line per group, its alternatives side by side
 

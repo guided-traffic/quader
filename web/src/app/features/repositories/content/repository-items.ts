@@ -110,6 +110,7 @@ export const GRADE_SORT_MAX = 1000;
                 [format]="p.format"
                 [name]="p.name"
                 [version]="p.latestVersion"
+                [kind]="p.kind ?? null"
                 [repository]="repository()"
                 [verb]="shape().commandVerb"
               />

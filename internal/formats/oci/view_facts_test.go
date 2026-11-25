@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci/manifest"
 	"github.com/guided-traffic/quader/internal/formats/oci/rows"
 )
 
@@ -57,8 +58,16 @@ func TestR_OCI_039_AnnotationsWinOverLabelsAndLabelsAreContent(t *testing.T) {
 	if len(configs) != 2 {
 		t.Fatalf("configs of the two platforms: %v", configs)
 	}
-	if c, _ := configs[digestText(arm)].(*rows.ConfigFacts); c == nil || c.Unreadable != configNotRead {
-		t.Errorf("a configuration no fetch read yet says so: %+v", c)
+	if c, _ := configs[digestText(arm)].(*rows.ConfigFacts); c == nil || c.Unreadable != configNotStored {
+		t.Errorf("a configuration the repository does not hold says so: %+v", c)
+	}
+	for i := range tf.Children {
+		tf.Children[i].ConfigStored = tf.Children[i].Digest == arm
+	}
+	var stored formats.ViewData
+	describeFacts(&stored, "acme/app", tf, formats.ViewSummary|formats.ViewDetails|formats.ViewFacts)
+	if c, _ := stored.Metadata[memberConfigs].(map[string]any)[digestText(arm)].(*rows.ConfigFacts); c == nil || c.Unreadable != configNotRead {
+		t.Errorf("a stored configuration the job did not read yet says so: %+v", c)
 	}
 	if !slices.Equal(d.ContentMetadata, []string{memberConfigs, memberLabeled}) || len(d.ContentPaths) != 2 ||
 		d.ContentPaths[0] != BlobPath("acme/app", digestText(cfg)) {
@@ -69,6 +78,13 @@ func TestR_OCI_039_AnnotationsWinOverLabelsAndLabelsAreContent(t *testing.T) {
 	describeFacts(&summary, "acme/app", tf, formats.ViewSummary)
 	if summary.Description != "From the index" || summary.Metadata != nil || summary.ContentPaths != nil {
 		t.Errorf("a summary is the annotations' description alone: %+v", summary)
+	}
+	// R-OCI-041: a summary names the kind of the tag's manifest, so that a list offers a chart's commands for a chart.
+	tf.Image.MediaType, tf.Image.ArtifactType = manifest.MediaTypeImageManifest, manifest.MediaTypeHelmConfig
+	var chartSummary formats.ViewData
+	describeFacts(&chartSummary, "acme/app", tf, formats.ViewSummary)
+	if chartSummary.Metadata["kind"] != "helm-chart" || len(chartSummary.Metadata) != 1 || chartSummary.ContentPaths != nil {
+		t.Errorf("a chart's summary: %+v", chartSummary)
 	}
 }
 

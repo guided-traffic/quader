@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -90,5 +91,19 @@ func TestR_OCI_042_AChartsPageShowsItsFactsReadmeAndValues(t *testing.T) {
 	r := p.st.Do(p.reps[0], http.MethodGet, "/api/v1/packages/"+id+"/versions/0.3.0/readme", p.admin, nil)
 	if r.Status != http.StatusOK || !strings.Contains(r.JSON(t)["html"].(string), "<table>") {
 		t.Errorf("the README: %d %s", r.Status, r.Body)
+	}
+
+	// The lists name the kind, so that a chart's row offers Helm's commands (R-OCI-041, R-OCI-042): the package list by its latest
+	// version, the list by content with include=kind by each entry's leading version.
+	list := p.st.Do(p.reps[0], http.MethodGet, "/api/v1/packages?repository="+url.QueryEscape(project+"/"+repoLocal), p.admin, nil)
+	for _, it := range list.JSON(t)["items"].([]any) {
+		if pkg := it.(map[string]any); pkg["name"] == "charts/web" && pkg["kind"] != "helm-chart" {
+			t.Errorf("the package list's kind of the chart: %v", pkg["kind"])
+		}
+	}
+	vs := p.st.Do(p.reps[0], http.MethodGet, "/api/v1/packages/"+id+"/versions?group=content&include=kind", p.admin, nil)
+	items, _ := vs.JSON(t)["items"].([]any)
+	if len(items) != 1 || items[0].(map[string]any)["kind"] != "helm-chart" {
+		t.Errorf("the list by content's kind: %d %s", vs.Status, vs.Body)
 	}
 }

@@ -11,7 +11,7 @@ import (
 type layer int
 
 const (
-	layerLeaf   layer = iota // config, errs, buildinfo, qname, observability, cache, meta, backup/tables, backup/target, tlsfiles, formats/catalog, wellknown, formats/untrusted, formats/versionkey, servefacts, formats/nuget/{id,version,nupkg,nuspec}, formats/deb/{control,debfile,version,index,archivekeys}, formats/<id>/rows, auth/scope, ci/{reason,claims,subject}, auth/jws, vuln/{advisory,match,osv,metrics}, mirror/discover, docs/manual: usable from every layer
+	layerLeaf   layer = iota // config, errs, buildinfo, qname, observability, cache, meta, backup/tables, backup/target, tlsfiles, formats/catalog, wellknown, formats/untrusted, formats/versionkey, servefacts, formats/nuget/{id,version,nupkg,nuspec}, formats/deb/{control,debfile,version,index,archivekeys}, formats/oci/manifest, formats/<id>/rows, auth/scope, ci/{reason,claims,subject}, auth/jws, vuln/{advisory,match,osv,metrics}, mirror/discover, docs/manual: usable from every layer
 	layerInfra               // meta/postgres, blob, cluster, outbound, secrets
 	layerDomain              // repository, proxy, virtual, formatdata, authz, project, auth, jobs, audit, backup, manual, mirror, remotecuration/{rules/store,catalogue,queue,requests,retention}
 	layerEdge                // httpserver, api/v1, webui, formats
@@ -135,6 +135,10 @@ func layerTable() []layerRule {
 		// (edge), its data port and the malware scanning's database task share one parser (R-CLAMAV-003, R-MAL-033). The values of the
 		// data port are internal/formats/clamav/rows, a leaf by the rule below.
 		{"internal/formats/clamav/cvd", layerLeaf},
+		// The OCI manifest and configuration reader imports only errs, internal/formats/untrusted, the format's rows and the standard
+		// library. A leaf so that the format (edge) and its data port's job oci-describe read a stored manifest and its configuration one
+		// way (R-OCI-040, Q-OCI-271).
+		{"internal/formats/oci/manifest", layerLeaf},
 		{"internal/auth/scope", layerLeaf},
 		// The CI federation's pure parts (R-CI-004, R-CI-010 to R-CI-014): reason names, the claim engine
 		// and the subject-token validation import only the standard library and each other, so that the

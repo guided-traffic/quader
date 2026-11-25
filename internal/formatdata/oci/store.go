@@ -36,8 +36,11 @@ type Options struct {
 	// Signatures queues the background fetch of a remote's signatures (signatures.md R-SIG-026); nil queues nothing.
 	Signatures SignatureFetchQueue
 	// Blobs opens a stored blob by its digest, verified as it is read: the content layer of a Helm chart, whose README and values a
-	// chart's page reads on demand (formats/oci.md R-OCI-042). Nil opens none, and a chart then shows neither.
+	// chart's page reads on demand (formats/oci.md R-OCI-042), and the manifest and the configuration the job oci-describe reads
+	// (R-OCI-040). Nil opens none: a chart then shows neither, and the job fails for good.
 	Blobs BlobOpener
+	// Jobs queues the job oci-describe (describe.go) in the transaction of a commit; nil queues none (a restore stores nothing).
+	Jobs Jobs
 }
 
 // BlobOpener opens a stored blob by its SHA-256 and size.

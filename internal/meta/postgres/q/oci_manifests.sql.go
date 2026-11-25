@@ -72,28 +72,100 @@ func (q *Queries) OCIChildPlatforms(ctx context.Context, versionIds []int64) ([]
 	return items, nil
 }
 
-const oCIConfigUnread = `-- name: OCIConfigUnread :one
-SELECT COALESCE((
-  SELECT blobs -> 'config' ->> 'mediaType' FROM oci_manifests
-   WHERE repo_id = $1::bigint AND name = $2::text AND config_digest = $3::bytea
-     AND config_facts IS NULL
-   LIMIT 1
-), '')::text AS media_type
+const oCIConfigWaiting = `-- name: OCIConfigWaiting :many
+SELECT digest FROM oci_manifests
+ WHERE repo_id = $1::bigint AND name = $2::text AND config_digest = $3::bytea
+   AND config_facts IS NULL
+ ORDER BY digest
+ LIMIT 64
 `
 
-type OCIConfigUnreadParams struct {
+type OCIConfigWaitingParams struct {
 	RepoID       int64
 	Name         string
 	ConfigDigest []byte
 }
 
-// The media type of the blob when a manifest of the name names it as a configuration that is not read yet (an image's, R-OCI-040, or
-// a Helm chart's, R-OCI-042), ” otherwise: the question of every fetch of a blob, answered from the partial index of such manifests.
-func (q *Queries) OCIConfigUnread(ctx context.Context, arg OCIConfigUnreadParams) (string, error) {
-	row := q.db.QueryRow(ctx, oCIConfigUnread, arg.RepoID, arg.Name, arg.ConfigDigest)
-	var media_type string
-	err := row.Scan(&media_type)
-	return media_type, err
+// The manifests of the name that name the blob as a configuration not read yet (an image's, R-OCI-040, or a Helm chart's, R-OCI-042):
+// the question of every commit of a blob, answered from the partial index of such manifests, whose answer is the read the commit queues.
+func (q *Queries) OCIConfigWaiting(ctx context.Context, arg OCIConfigWaitingParams) ([][]byte, error) {
+	rows, err := q.db.Query(ctx, oCIConfigWaiting, arg.RepoID, arg.Name, arg.ConfigDigest)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := [][]byte{}
+	for rows.Next() {
+		var digest []byte
+		if err := rows.Scan(&digest); err != nil {
+			return nil, err
+		}
+		items = append(items, digest)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const oCIDescribeTarget = `-- name: OCIDescribeTarget :many
+SELECT m.media_type::text AS media_type, (m.blobs IS NULL)::boolean AS blobs_unread, m.config_digest,
+       (m.config_facts IS NULL)::boolean AS facts_unread, COALESCE(m.blobs -> 'config' ->> 'mediaType', '')::text AS config_media_type,
+       COALESCE((SELECT i.size FROM items i
+                  WHERE i.repo_id = m.repo_id AND i.path = m.name || '/_manifests/sha256:' || encode(m.digest, 'hex')
+                    AND i.kind = 'file' AND i.trashed_at IS NULL), -1)::bigint AS manifest_size,
+       COALESCE((SELECT i.size FROM items i
+                  WHERE i.repo_id = m.repo_id AND i.path = m.name || '/_blobs/sha256:' || encode(m.config_digest, 'hex')
+                    AND i.kind = 'file' AND i.trashed_at IS NULL), -1)::bigint AS config_size
+  FROM oci_manifests m
+ WHERE m.repo_id = $1::bigint AND m.name = $2::text AND m.digest = $3::bytea
+`
+
+type OCIDescribeTargetParams struct {
+	RepoID int64
+	Name   string
+	Digest []byte
+}
+
+type OCIDescribeTargetRow struct {
+	MediaType       string
+	BlobsUnread     bool
+	ConfigDigest    []byte
+	FactsUnread     bool
+	ConfigMediaType string
+	ManifestSize    int64
+	ConfigSize      int64
+}
+
+// What the job oci-describe reads of a manifest (R-OCI-040, Q-OCI-271): its media type, whether its blobs are recorded, its
+// configuration's digest and media type and whether it is read, and the stored sizes of the manifest's and the configuration's items
+// under the name (-1 for one the repository does not hold).
+func (q *Queries) OCIDescribeTarget(ctx context.Context, arg OCIDescribeTargetParams) ([]OCIDescribeTargetRow, error) {
+	rows, err := q.db.Query(ctx, oCIDescribeTarget, arg.RepoID, arg.Name, arg.Digest)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []OCIDescribeTargetRow{}
+	for rows.Next() {
+		var i OCIDescribeTargetRow
+		if err := rows.Scan(
+			&i.MediaType,
+			&i.BlobsUnread,
+			&i.ConfigDigest,
+			&i.FactsUnread,
+			&i.ConfigMediaType,
+			&i.ManifestSize,
+			&i.ConfigSize,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const oCIExistingItems = `-- name: OCIExistingItems :many
@@ -210,6 +282,38 @@ func (q *Queries) OCILockExistingItems(ctx context.Context, arg OCILockExistingI
 		return nil, err
 	}
 	return items, nil
+}
+
+const oCIPutBlobs = `-- name: OCIPutBlobs :exec
+UPDATE oci_manifests m
+   SET blobs = $1::jsonb, config_digest = $2::bytea,
+       config_facts = (SELECT s.config_facts FROM oci_manifests s
+                        WHERE s.repo_id = m.repo_id AND s.name = m.name AND s.config_digest = $2::bytea
+                          AND s.config_facts IS NOT NULL
+                        LIMIT 1)
+ WHERE m.repo_id = $3::bigint AND m.name = $4::text AND m.digest = $5::bytea
+   AND m.blobs IS NULL
+`
+
+type OCIPutBlobsParams struct {
+	Blobs        json.RawMessage
+	ConfigDigest []byte
+	RepoID       int64
+	Name         string
+	Digest       []byte
+}
+
+// Records the blobs and the configuration's digest of a manifest stored before they were kept (R-OCI-040, the job oci-describe), and
+// takes over the facts of a configuration another manifest of the name names and that was read already.
+func (q *Queries) OCIPutBlobs(ctx context.Context, arg OCIPutBlobsParams) error {
+	_, err := q.db.Exec(ctx, oCIPutBlobs,
+		arg.Blobs,
+		arg.ConfigDigest,
+		arg.RepoID,
+		arg.Name,
+		arg.Digest,
+	)
+	return err
 }
 
 const oCIPutConfigFacts = `-- name: OCIPutConfigFacts :exec
@@ -406,23 +510,33 @@ WITH tags AS (
     JOIN packages p ON p.repo_id = e.repo_id AND p.name = e.tag_name
    WHERE e.id = ANY(SELECT -x FROM unnest($1::bigint[]) AS x)
 ), facts AS (
-  SELECT t.id AS version_id, p.repo_id, false AS child, ''::text AS platform, m.digest, m.annotations, m.config_digest,
+  SELECT t.id AS version_id, p.repo_id, false AS child, ''::text AS platform, m.digest, m.media_type, COALESCE(m.artifact_type, '') AS artifact_type,
+         m.annotations, m.config_digest,
          CASE WHEN $2::boolean THEN m.blobs END AS blobs,
-         CASE WHEN $2::boolean THEN m.config_facts END AS config_facts
+         CASE WHEN $2::boolean THEN m.config_facts END AS config_facts,
+         ($2::boolean AND m.config_facts IS NULL AND m.config_digest IS NOT NULL
+          AND EXISTS (SELECT 1 FROM items ci
+                       WHERE ci.repo_id = m.repo_id AND ci.path = m.name || '/_blobs/sha256:' || encode(m.config_digest, 'hex')
+                         AND ci.kind = 'file' AND ci.trashed_at IS NULL)) AS config_stored
     FROM tags t
     JOIN packages p ON p.id = t.package_id
     JOIN oci_manifests m ON m.repo_id = p.repo_id AND m.name = p.name AND m.digest = t.manifest_sha256
   UNION ALL
-  SELECT t.id, p.repo_id, true, COALESCE(r.platform, ''), c.digest, c.annotations, c.config_digest,
+  SELECT t.id, p.repo_id, true, COALESCE(r.platform, ''), c.digest, c.media_type, COALESCE(c.artifact_type, ''), c.annotations, c.config_digest,
          CASE WHEN $2::boolean THEN c.blobs END,
-         CASE WHEN $2::boolean THEN c.config_facts END
+         CASE WHEN $2::boolean THEN c.config_facts END,
+         ($2::boolean AND c.config_facts IS NULL AND c.config_digest IS NOT NULL
+          AND EXISTS (SELECT 1 FROM items ci
+                       WHERE ci.repo_id = c.repo_id AND ci.path = c.name || '/_blobs/sha256:' || encode(c.config_digest, 'hex')
+                         AND ci.kind = 'file' AND ci.trashed_at IS NULL))
     FROM tags t
     JOIN packages p ON p.id = t.package_id
     JOIN oci_references r ON r.repo_id = p.repo_id AND r.name = p.name AND r.manifest = t.manifest_sha256 AND r.kind = 'manifest'
     JOIN oci_manifests c ON c.repo_id = r.repo_id AND c.name = r.name AND c.digest = r.target
 )
-SELECT version_id::bigint AS version_id, repo_id::bigint AS repo_id, child::boolean AS child, platform::text AS platform, digest, annotations, config_digest, blobs::jsonb AS blobs,
-       config_facts::jsonb AS config_facts
+SELECT version_id::bigint AS version_id, repo_id::bigint AS repo_id, child::boolean AS child, platform::text AS platform, digest,
+       media_type::text AS media_type, artifact_type::text AS artifact_type, annotations, config_digest, blobs::jsonb AS blobs,
+       config_facts::jsonb AS config_facts, config_stored::boolean AS config_stored
 FROM facts
 ORDER BY version_id, child, platform = '', platform, digest
 `
@@ -438,15 +552,18 @@ type OCITagFactsRow struct {
 	Child        bool
 	Platform     string
 	Digest       []byte
+	MediaType    string
+	ArtifactType string
 	Annotations  json.RawMessage
 	ConfigDigest []byte
 	Blobs        json.RawMessage
 	ConfigFacts  json.RawMessage
+	ConfigStored bool
 }
 
 // The facts of the manifests the tags with the given version ids point at, for the package screens (R-OCI-039, R-OCI-040): the tag's own
-// manifest (child false) and, for an index, every child the repository holds, in platform order. The annotations are read always (the
-// description of a package list); the blobs and the configuration only with with_facts, which the version page asks for: a configuration can
+// manifest (child false) and, for an index, every child the repository holds, in platform order. The media types and the annotations are
+// read always (the kind and the description of a package list, R-OCI-041); the blobs and the configuration only with with_facts, which the version page asks for: a configuration can
 // hold what only a caller who may read its blob may see.
 func (q *Queries) OCITagFacts(ctx context.Context, arg OCITagFactsParams) ([]OCITagFactsRow, error) {
 	rows, err := q.db.Query(ctx, oCITagFacts, arg.VersionIds, arg.WithFacts)
@@ -463,10 +580,13 @@ func (q *Queries) OCITagFacts(ctx context.Context, arg OCITagFactsParams) ([]OCI
 			&i.Child,
 			&i.Platform,
 			&i.Digest,
+			&i.MediaType,
+			&i.ArtifactType,
 			&i.Annotations,
 			&i.ConfigDigest,
 			&i.Blobs,
 			&i.ConfigFacts,
+			&i.ConfigStored,
 		); err != nil {
 			return nil, err
 		}
@@ -603,6 +723,63 @@ func (q *Queries) OCITagViews(ctx context.Context, versionIds []int64) ([]OCITag
 			&i.ArtifactType,
 			&i.Size,
 			&i.ContentSize,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const oCIUndescribedManifests = `-- name: OCIUndescribedManifests :many
+SELECT i.id, m.repo_id, m.name::text AS name, m.digest
+  FROM oci_manifests m
+  JOIN items i ON i.repo_id = m.repo_id AND i.path = m.name || '/_manifests/sha256:' || encode(m.digest, 'hex')
+              AND i.kind = 'file' AND i.trashed_at IS NULL
+ WHERE i.id > $1::bigint
+   AND ((m.blobs IS NULL
+         AND m.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json'))
+     OR (m.config_digest IS NOT NULL AND m.config_facts IS NULL
+         AND EXISTS (SELECT 1 FROM items c
+                      WHERE c.repo_id = m.repo_id AND c.path = m.name || '/_blobs/sha256:' || encode(m.config_digest, 'hex')
+                        AND c.kind = 'file' AND c.trashed_at IS NULL)))
+ ORDER BY i.id
+ LIMIT $2::int
+`
+
+type OCIUndescribedManifestsParams struct {
+	After    int64
+	RowLimit int32
+}
+
+type OCIUndescribedManifestsRow struct {
+	ID     int64
+	RepoID int64
+	Name   string
+	Digest []byte
+}
+
+// The manifests after the cursor (by the id of the manifest's item) that the job oci-describe has to describe, at most row_limit of them
+// (the task remote-describe, R-OCI-040, Q-OCI-271), in local and remote repositories alike: an image manifest stored before its blobs
+// were kept, and a manifest whose configuration is stored and not read. Each half is answered from a partial index of its own; a
+// configuration the repository does not hold is no candidate, since nothing could read it without a request to an upstream.
+func (q *Queries) OCIUndescribedManifests(ctx context.Context, arg OCIUndescribedManifestsParams) ([]OCIUndescribedManifestsRow, error) {
+	rows, err := q.db.Query(ctx, oCIUndescribedManifests, arg.After, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []OCIUndescribedManifestsRow{}
+	for rows.Next() {
+		var i OCIUndescribedManifestsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.RepoID,
+			&i.Name,
+			&i.Digest,
 		); err != nil {
 			return nil, err
 		}

@@ -843,11 +843,13 @@ in `internal/remotecuration` holds the CHECK lists to the domain package's const
 [00133_oci_image_facts](../../internal/meta/postgres/migrations/00133_oci_image_facts.sql) adds three columns to `oci_manifests`
 ([formats/oci.md](../spec/formats/oci.md) R-OCI-040, Q-OCI-271): `blobs` (an image manifest's config and layers in its order, jsonb,
 at most 256 KiB), `config_digest` (the digest of an image's configuration) and `config_facts` (what the format's bounded reader read of
-it, jsonb, at most 256 KiB; NULL while unread), and the partial index `oci_manifests_config_unread` of the rows whose configuration is
-still to be read, which the fetch of a blob asks. The rows are derived from the manifest's and the config's bytes; the table keeps its
-export class `data` ([tables.go](../../internal/formatdata/oci/tables.go)). Expand phase only; a row stored before stays without them until
-its manifest is stored again (no data migration, pre-alpha). The statements are `OCIPutManifest`, `OCIConfigUnread`, `OCIPutConfigFacts`
-and `OCITagFacts` in [oci_manifests.sql](../../internal/meta/postgres/queries/oci_manifests.sql).
+it, jsonb, at most 256 KiB; NULL while unread), and two partial indexes: `oci_manifests_config_unread` of the rows whose
+configuration is still to be read, which the commit of a blob asks, and `oci_manifests_blobs_unread` of the image manifests stored before
+their blobs were kept. The task `remote-describe` walks both, and the job `oci-describe` fills the rows from the repository's own items
+([describe.go](../../internal/formatdata/oci/describe.go)), so the second is empty after one walk. The rows are derived from the manifest's
+and the config's bytes; the table keeps its export class `data` ([tables.go](../../internal/formatdata/oci/tables.go)). Expand phase only.
+The statements are `OCIPutManifest`, `OCIConfigWaiting`, `OCIDescribeTarget`, `OCIPutBlobs`, `OCIPutConfigFacts`,
+`OCIUndescribedManifests` and `OCITagFacts` in [oci_manifests.sql](../../internal/meta/postgres/queries/oci_manifests.sql).
 
 ## What the reader of a Debian data archive kept (00132)
 

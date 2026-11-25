@@ -96,6 +96,21 @@ type Scope struct {
 	wiki func(repo qname.Repo, pkg, version string) bool
 	// path is the question of a file of a version by its path (authz.PathReader.MayReadPath); nil answers no.
 	path func(repo qname.Repo, pkg, version, path string) bool
+	// hold is the question of the serve point of stored content whether a download of the file would be served to the caller now
+	// (WithHold); nil asks nothing.
+	hold Hold
+}
+
+// Hold answers what a download of the stored file at a path of a repository would answer the caller now: the code of the check that
+// would refuse it or that it would wait for (the malware gate, the vulnerability block, the delivery rules, the signature gate), ""
+// when it would be served (internal/files Service.Hold over sgate.Serve.Hold).
+type Hold func(ctx context.Context, repo qname.Repo, path string) (string, error)
+
+// WithHold returns the scope with the question of the serve point (formats/oci.md R-OCI-040): a member the format read from a file's
+// content goes to a caller only while a download of every such file would be served to the caller.
+func (sc Scope) WithHold(h Hold) Scope {
+	sc.hold = h
+	return sc
 }
 
 // MayReadPath reports whether the caller may read the file at a canonical path of a version in a repository: the decision the
@@ -539,6 +554,9 @@ func (s *Service) packages(ctx context.Context, sc Scope, p q.PackageViewListPar
 	for i := range pkgs {
 		if d, ok := data[latests[i].row.VersionID]; ok {
 			pkgs[i].Keywords = d.Keywords
+			if kind, ok := d.Metadata["kind"].(string); ok {
+				pkgs[i].Kind = kind
+			}
 			if d.Description != "" {
 				desc := d.Description
 				pkgs[i].Description = &desc
@@ -734,6 +752,8 @@ type VersionFilter struct {
 	WithDigest bool
 	// WithState asks for the state of each listed version from the format's metadata (R-UI-194).
 	WithState bool
+	// WithKind asks for the kind of each listed version from the format's metadata (an OCI artifact's, formats/oci.md R-OCI-041).
+	WithKind bool
 }
 
 // VersionOrder is the sort of the version list: publishedAt or version.
@@ -850,7 +870,7 @@ func (s *Service) Versions(ctx context.Context, sc Scope, format, name string, f
 	if err := s.adapterSizes(ctx, sc, a, format, groupOf, out); err != nil {
 		return nil, true, err
 	}
-	if f.WithDigest || f.WithState {
+	if f.WithDigest || f.WithState || f.WithKind {
 		if err := s.fillFromMetadata(ctx, sc, a, format, groupOf, out, f); err != nil {
 			return nil, true, err
 		}
@@ -1252,10 +1272,10 @@ func sizeOf(n Size) (*int64, bool) {
 	return &b, n.Partial
 }
 
-// fillFromMetadata sets the digest and the state of the listed versions from the format's metadata (the members `digest` and `state` of
-// Describe's details, R-UI-052, R-UI-194): the adapter is asked once for the page, after the cut; a version absent from the answer, or
-// a format whose metadata has no such member, has none. Only a caller that asks pays for the read (VersionFilter.WithDigest,
-// VersionFilter.WithState).
+// fillFromMetadata sets the digest, the state and the kind of the listed versions from the format's metadata (the members `digest`,
+// `state` and `kind` of Describe's details, R-UI-052, R-UI-194, R-OCI-041): the adapter is asked once for the page, after the cut; a
+// version absent from the answer, or a format whose metadata has no such member, has none. Only a caller that asks pays for the read
+// (VersionFilter.WithDigest, VersionFilter.WithState, VersionFilter.WithKind).
 func (s *Service) fillFromMetadata(ctx context.Context, sc Scope, a Adapter, format string, groupOf map[string]versionGroup, page []VersionSummary, f VersionFilter) error {
 	if len(page) == 0 {
 		return nil
@@ -1276,6 +1296,9 @@ func (s *Service) fillFromMetadata(ctx context.Context, sc Scope, a Adapter, for
 		}
 		if state, ok := md["state"].(string); ok && f.WithState {
 			page[i].State = state
+		}
+		if kind, ok := md["kind"].(string); ok && f.WithKind {
+			page[i].Kind = kind
 		}
 	}
 	return nil
@@ -1347,7 +1370,7 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 			d.Licenses = data.Licenses
 		}
 		if data.Metadata != nil {
-			d.Metadata = readableMetadata(sc, sc.topo.Name(pri.RepoID), name, version, data, wiki)
+			d.Metadata = readableMetadata(ctx, sc, sc.topo.Name(pri.RepoID), name, version, data, wiki)
 		}
 	}
 	if a.Fetch() == FetchDocument {
@@ -1416,25 +1439,56 @@ func (s *Service) otherVersions(ctx context.Context, sc Scope, a Adapter, held o
 
 // readableMetadata is the metadata of a version without the members the caller may not read: the wiki's for a caller who may not read
 // the wiki (R-API-058), and those the format read from a file's content beyond the version's document for a caller who may not read
-// that file (an image's configuration, formats/oci.md R-OCI-040).
-func readableMetadata(sc Scope, repo qname.Repo, name, version string, data Data, wiki bool) map[string]any {
+// that file (an image's configuration, formats/oci.md R-OCI-040) or to whom a download of it would not be served now. Such content
+// that is held is named by the member contentHeld ({"code": …}, the code a download of the file would answer, see heldCode).
+func readableMetadata(ctx context.Context, sc Scope, repo qname.Repo, name, version string, data Data, wiki bool) map[string]any {
 	var drop []string
 	if !wiki {
 		drop = data.WikiMetadata
 	}
+	held := ""
 	if !mayReadAll(sc, repo, name, version, data.ContentPaths) {
+		drop = append(slices.Clone(drop), data.ContentMetadata...)
+	} else if held = heldCode(ctx, sc, repo, data); held != "" {
 		drop = append(slices.Clone(drop), data.ContentMetadata...)
 	}
 	if len(drop) == 0 {
 		return data.Metadata
 	}
-	out := make(map[string]any, len(data.Metadata))
+	out := make(map[string]any, len(data.Metadata)+1)
 	for k, v := range data.Metadata {
 		if !slices.Contains(drop, k) {
 			out[k] = v
 		}
 	}
+	if held != "" {
+		out[MemberContentHeld] = map[string]any{"code": held}
+	}
 	return out
+}
+
+// MemberContentHeld is the member of a version's metadata that says why the content the format read from its files is not shown.
+const MemberContentHeld = "contentHeld"
+
+// heldCode is the code of the first file of the version's content whose download would not be served to the caller now, "" when
+// every one would be (or the scope asks nothing). A question that fails holds the content as unavailable: it fails closed.
+func heldCode(ctx context.Context, sc Scope, repo qname.Repo, data Data) string {
+	if sc.hold == nil || len(data.ContentMetadata) == 0 {
+		return ""
+	}
+	for _, p := range data.ContentPaths {
+		code, err := sc.hold(ctx, repo, p)
+		if err != nil {
+			if e, ok := errs.As(err); ok && e.Code != "" {
+				return e.Code
+			}
+			return errs.CodeUnavailable
+		}
+		if code != "" {
+			return code
+		}
+	}
+	return ""
 }
 
 // sha256Digest reads "sha256:<64 hex digits>"; ok is false for anything else.
