@@ -10778,7 +10778,7 @@
         <note category="location">src/app/features/repositories/content/repository-files.ts:192</note>
         <note category="location">src/app/features/repositories/content/repository-item-versions.ts:225</note>
         <note category="location">src/app/features/repositories/content/repository-items.ts:212</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:409</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:411</note>
         <note category="location">src/app/features/system/backups/backups-page.html:156,158</note>
         <note category="location">src/app/features/system/job-table.ts:151</note>
         <note category="location">src/app/features/system/storage/storage-page.ts:98</note>
@@ -12636,7 +12636,7 @@
     <unit id="repo.col.repository">
       <notes>
         <note category="location">src/app/features/guides/guide-format.ts:156</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:391</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:393</note>
         <note category="location">src/app/features/search/search-results.ts:253</note>
         <note category="location">src/app/features/search/search-results.ts:267</note>
       </notes>
@@ -12650,8 +12650,8 @@
         <note category="location">src/app/features/guides/guide-format.ts:157</note>
         <note category="location">src/app/features/repositories/repository-list.html:37,39</note>
         <note category="location">src/app/features/repositories/repository-list.html:42</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:323</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:394</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:325</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:396</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -12665,8 +12665,8 @@
         <note category="location">src/app/features/repositories/repository-detail.html:484,485</note>
         <note category="location">src/app/features/repositories/repository-list.html:65,66</note>
         <note category="location">src/app/features/repositories/repository-list.html:69</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:327</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:398</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:329</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:400</note>
         <note category="location">src/app/features/search/search-results.ts:258</note>
       </notes>
       <segment>
@@ -29389,8 +29389,8 @@
         <note category="location">src/app/features/repositories/repository-detail.html:486,487</note>
         <note category="location">src/app/features/repositories/repository-list.html:52,53</note>
         <note category="location">src/app/features/repositories/repository-list.html:56</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:325</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:395</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:327</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:397</note>
         <note category="location">src/app/features/search/search-results.ts:255</note>
       </notes>
       <segment>
@@ -29684,7 +29684,7 @@
     <unit id="repo.col.activity">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:503,504</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:403</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:405</note>
       </notes>
       <segment>
         <source>Last activity</source>
@@ -30133,7 +30133,7 @@
     <unit id="repo.delete.title">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:1037</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:491</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:493</note>
       </notes>
       <segment>
         <source>Delete repository <ph id="0" equiv="key" disp="this.ref()"/>?</source>
@@ -30143,7 +30143,7 @@
     <unit id="repo.delete.text">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:1039</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:493</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:495</note>
       </notes>
       <segment>
         <source>The repository and everything in it are deleted for good. Deletion runs as a background job; the key stays taken until it has finished.</source>
@@ -30153,7 +30153,7 @@
     <unit id="repo.delete.confirm">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:1041</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:495</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:497</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -30208,7 +30208,7 @@
     <unit id="repo.delete.failed">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:1120</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:540</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:542</note>
       </notes>
       <segment>
         <source>Deleting repository <ph id="0" equiv="key" disp="this.ref()"/> failed. Its row is kept; try again.</source>
@@ -30218,7 +30218,7 @@
     <unit id="repo.delete.done">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:1125</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:530</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:532</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="this.ref()"/> deleted.</source>
@@ -30228,7 +30228,7 @@
     <unit id="repo.delete.progress">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:1130</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:442</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:444</note>
       </notes>
       <segment>
         <source>Repository deletion</source>
@@ -30535,7 +30535,7 @@
     <unit id="repo.filter.state">
       <notes>
         <note category="location">src/app/features/repositories/repository-list.html:78</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:329</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:331</note>
       </notes>
       <segment>
         <source>State</source>
@@ -30545,7 +30545,7 @@
     <unit id="repo.filter.inactive">
       <notes>
         <note category="location">src/app/features/repositories/repository-list.html:84,86</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:329</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:331</note>
       </notes>
       <segment>
         <source>Disabled only</source>
@@ -30618,7 +30618,7 @@
     </unit>
     <unit id="repo.system.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:316</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:318</note>
         <note category="location">src/app/features/upstream/upstream-registries.ts:239</note>
       </notes>
       <segment>
@@ -30628,7 +30628,7 @@
     </unit>
     <unit id="repo.system.hint-clamav">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:317</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:319</note>
       </notes>
       <segment>
         <source>Quader writes these repositories itself. Its scanners read them, and an administrator can offer the ClamAV definitions to your ClamAV installations.</source>
@@ -30637,7 +30637,7 @@
     </unit>
     <unit id="repo.system.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:318</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:320</note>
       </notes>
       <segment>
         <source>No system repository matches.</source>
@@ -30646,7 +30646,7 @@
     </unit>
     <unit id="repo.list.search">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:333</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:335</note>
       </notes>
       <segment>
         <source>Filter repositories</source>
@@ -30655,7 +30655,7 @@
     </unit>
     <unit id="repo.list.caption">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:359</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:361</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -30664,7 +30664,7 @@
     </unit>
     <unit id="repo.list.empty">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:360</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:362</note>
       </notes>
       <segment>
         <source>There is no repository yet.</source>
@@ -30673,7 +30673,7 @@
     </unit>
     <unit id="repo.list.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:361</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:363</note>
       </notes>
       <segment>
         <source>No repository matches.</source>
@@ -30682,7 +30682,7 @@
     </unit>
     <unit id="repo.help.class">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:399</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:401</note>
         <note category="location">src/app/features/search/search-results.ts:259</note>
       </notes>
       <segment>
@@ -30692,7 +30692,7 @@
     </unit>
     <unit id="repo.help.activity">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:404</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:406</note>
       </notes>
       <segment>
         <source>The last time a client read from or wrote to the repository. A dash means nothing has been recorded yet.</source>
@@ -30701,7 +30701,7 @@
     </unit>
     <unit id="repo.actions-of">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:451</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:453</note>
       </notes>
       <segment>
         <source>Actions for <ph id="0" equiv="key" disp="row.key"/></source>
@@ -30710,7 +30710,7 @@
     </unit>
     <unit id="repo.delete.detach">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:498</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:500</note>
       </notes>
       <segment>
         <source>Also remove it from the virtual repositories that include it</source>
