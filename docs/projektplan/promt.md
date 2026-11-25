@@ -299,10 +299,12 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | S14 · What the product says about its scanners' replicas is true | a "Lost" row of the previous replica after every restart; "1 scan running" beside no place in use; the image scanner's processes under the host's name on the profile (whether two containers of one pod's name register side by side); no malware state in a remote's lists | landed and pushed at 15:11 (eight commits, migration 00127; Q-HA-495, Q-HA-496, Q-MAL-110, Q-MAL-111; gap H-1995; its builder worked from 13:55 to 14:57) |
 | S15 · A connection test says what it learned, and reads a token handshake right | the owner's finding of 14:15 (section 8, Product): the registry's test calls an accepted account an error (the challenge's 401 fails the screen's own rule) and shows one sentence of an answer that holds the status, the duration, the token service, the certificate and an error's code; one verdict at one place, the facts shown as R-UI-216 shows a failed call, for every place that tests something | landed and pushed at 15:50 |
 | W3 · A download ahead takes a range of versions (W-28, package 3) | the owner's task of 15:55 (section 8, Product): `fromVersion`, `toVersion`, `toInclusive` at a package's bulk and its preview, in the format's own order, the dialog's two fields, the bulk's line on the tab Downloads | landed and pushed at 17:41 |
-| W1 · Switches for the delivery, the cache's acts, the mode's dialog (W-28, package 1) | R-CUR-024, R-CUR-025 of the plan `.dev/w28-plan.md`; with it the attestation that an upstream version's line lists as a platform | in work since 17:05 |
+| W1 · Switches for the delivery, the cache's acts, the mode's dialog (W-28, package 1) | R-CUR-024, R-CUR-025 of the plan `.dev/w28-plan.md`; with it the attestation that an upstream version's line lists as a platform | landed and pushed at 20:13 |
 | W4 · Downloads kept in sync (W-28, package 4) | R-CUR-027 of the plan | landed and pushed at 19:11 |
-| W2 · A range of versions in a package's allow (W-28, package 2) | R-CUR-026 of the plan | waits for W1 |
+| W2 · A range of versions in a package's allow (W-28, package 2) | R-CUR-026 of the plan | in work since 20:13 |
 | S16 · A retired system repository is removed, and a retired preset says so | the owner's finding of 19:09 (section 8, Product): `upstream/scanner-clamav` stays listed as "Off" | in work since 19:09 |
+| S17 · Every load shows the spinner the owner picked (W-29) | the owner's task of 19:15 and his choice of 19:19 (section 8, Product): the mark's six stones, lighting up in sandstone | in work since 19:19 |
+| S18 · No signed address in a log or a record | my finding of 19:23 (section 8, Product): the upstream log writes redirect targets with their signatures | in work since 19:23 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
 | G3 · Page and shell states on the stack | the 10 menus, 3 drawers, the person search's list in a drawer, about 19 sections, 11 routes, the banner and the maintenance notice, a failure of an action inside a section, the editors' refusals with their summary, two selection states, the command menus of NuGet, Ansible Galaxy and generic | 5 to 6 minutes of the render step (the job at about 61 to 64 of its 75 minutes), about 3 s per format | in work since 14:57 (after G1; the inventory of the morning is brought up to what landed today first) |
 
@@ -1055,6 +1057,16 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **Closed on 2026-11-25, 20:13: `integration (shard b)` was red on the push of 19:12 (W4), by an expectation the
+  landing had made stale; no release was held (Q-ARCH-457).** `TestRemoteSettings`, the case "a remote created with only
+  url reads back every member with its default" (`test/integration/repository/remote_test.go`), compares the whole
+  stored document; W4 added the member `syncs` with its three defaults, and the expectation did not name it. The
+  expectation names it now; run against the stack, 1 s, green; it goes out with W1's landing. Mine: the landing ran the
+  integration cases of the sync by name (`-run`), not the area whose document it widened, and the rule of 16:58 (grep
+  for the old value) cannot find a member that is added. The rule, widened: a landing that changes a stored document,
+  an API answer or a sentence of a screen runs the whole integration area of that resource, without `-run`, and greps
+  the journeys for the old value. The other legs of that run were green; `UI layout checks` was still running when
+  read at 19:46.
 - **Closed on 2026-11-25, 16:58: `integration` was red on every push from 11:38 to 16:49, and `e2e (access-long)` from
   15:51, by two expectations today's landings had made stale; no release was held (Q-ARCH-457).** Read at the start of
   the pipeline window (17:00), eleven runs. (1) `TestR_ANS_026_ThePackageScreensShowACollection` (shard a, every run from
@@ -1198,6 +1210,68 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **Open since 2026-11-25, 20:12, the owner's question at an Ansible collection's tab Vulnerabilities ("Not scanned.
+  Packages of this type are not scanned for vulnerabilities."): "Ansible package werden nicht gescant? Sind das keine
+  Python implementierungen die auch Schwachstellen enthalten können oder wieso hast du hier so entschieden?"** The
+  decision is mine (Q-ANS-15 of 2026-11-10, gap H-841), not his: the check matches a package's name and version
+  against advisory data, and no source lists collections. Read again today: the advisory database's list of
+  ecosystems names none for Ansible or Galaxy; of the 134 advisories of the Python package `ansible`, one (under two
+  identifiers) names a collection (`amazon.aws`), with the Python package's versions and not the collection's; a
+  keyword search of the national database finds 17 records for "ansible collection", 12 of them without a product
+  identifier and the rest under seven different ones (one names a collection: `community.crypto`). His objection
+  holds: a collection is code, and collections have had vulnerabilities. Put to him as one decision: (a) the state
+  stays and the screen says why (my recommendation); (b) a source of our own from the national database, matched by
+  text; (c) a scan of the archive's content by the image scanner, which finds lock files a collection does not
+  carry. Waits for his answer; nothing is built.
+
+- **Open since 2026-11-25, 19:23, found by me in the owner's development profile's log: the upstream log writes
+  signed addresses with their signatures (S18, in work).** The log `upstream` holds every request's whole URL; a
+  download an upstream redirects to a signed address leaves the signature in clear (two lines with `X-Amz-Signature=`,
+  one with Galaxy's `validate_token=` in that log; the scrubber's list of query parameters does not name them). Such
+  an address fetches the file for its lifetime without the upstream's account: harmless for a public collection, not
+  for a private upstream reached with a stored account. The builder finds every place an upstream's address is
+  written, kept or shown (logs, failures, events, usage rows, traces, the connection test's report), brings them to one
+  function (the names of the query's parameters stay, a value only where the product wrote it), and checks the
+  product's own signed links the same way. Not verified: whether the installation's logs hold such lines (same code,
+  so they do wherever a download was redirected).
+
+- **Open since 2026-11-25, 19:15, the owner's task: every load of remote content is accompanied by a spinner he
+  picks (working paper W-29; built once he has chosen).** His words, at an opened upstream package that reads "Reading
+  the package from the upstream.": "Es gibt verschiedene Stellen in unserem Frontend, die remote Inhalte nachladen und
+  dafür einige Zeit brauchen. Ich hätte gerne dass das Laden immer von einem Spinner begleitet wird. Den Spinner will
+  ich mir aber aussuchen und du sollst mir dazu vorschläge präsentieren und dann umsetzen". Verified: the UI has no
+  spinner component; about 50 places say that something loads in a sentence. Presented at 19:16 as his private page
+  with four animated candidates, each at the same three places (beside the sentence in an opened row, in a busy button,
+  large for a page): (a) a ring with a running arc, my favourite, because it fits the look the screens copy and reads at
+  16 px; (b) three dots; (c) four bricks of the mark that light up in sandstone; (d) a running bar at the area's edge.
+  Decided by me and listed there for his objection: one component in three sizes; the sentence stays beside it; it
+  appears after 300 ms; reduced motion shows it slow; a lint refuses a load without it; a view that reads again by
+  itself shows none while it re-reads. His choice is the document `choices/s1` of the page's store, or a letter in the
+  chat.
+  **Read at 19:19** ("Einlesen"): `choice: c`, against my favourite, with his note, whole: "Quader spinner sieht gut aus,
+  aber bitte 3 reihen Steine und damit viereckig." Three rows and a square is the product's mark itself
+  (`web/public/brand/quader-mark.svg`, six stones), so the spinner is the mark whose stones light up in sandstone one
+  after another, clockwise. What follows from the choice: sandstone moves at this one place and must never read as the
+  amber of a warning (the builder checks it in a picture and tunes the resting tone); at 16 px the stones are drawn as
+  SVG to stay crisp. The page shows the square form now. The builder (S17) started at 19:19: the component in three
+  sizes, the delay of 300 ms, every place that loads remote content, a lint rule, a requirement, the whole render set.
+  **Added by the owner at 19:20**, at the tab Upstream of `upstream/galaxy`, whose results' frame shows only "Loading.":
+  "Hier auch loading ohne Spinner. Finde selbstständig alle Stellen die einen Spinner brauchen. Tip: der OIDC Login
+  ebenso". Handed to the builder the same minute: the shared table's loading box, the whole sign-in path (the provider's
+  button, the return from the provider, the first paint before the app's data is read, the pages the server renders,
+  where the mark is inline SVG within what the content security policy allows), and the inventory of every place as the
+  main deliverable, found through the routes, dialogs and every call that waits, and by clicking through the app with
+  slowed answers, not by the word "loading" alone.
+  **Added at 19:23**, two more pictures of `upstream/galaxy`: "Hier suche nach upstream repos in ansibil galaxy,
+  spinner" and "spinner" at the opened row. The first shows a defect beside the missing spinner, found by me in the
+  picture: while the search for "common" ran (5.9 s by the profile's log), the screen said "38,655 hits" and "No package
+  of the upstream matches “common”", though Galaxy answered 392 hits and 50 rows. Cause, read in `remote-upstream.ts`:
+  a fresh read keeps the previous page until the answer arrives while the mode and the query are the new ones, so the
+  level's total is worded as the search's hits and the empty sentence of the new query is printed. Handed to the
+  spinner's builder as a rule of the package: a read that answers a new question shows the loading state, never the
+  previous answer under the new question's words and never the empty sentence; the shared table makes "loading a new
+  question" win over "empty"; every list with a filter or a search is checked for it.
+
 - **Open since 2026-11-25, 19:09, the owner's finding on his development profile: a retired system repository stays in
   the list as "Off" (S16, in work).** His words: "Wieso sehe ich auf localhost noch das Uplink repo scanner-clamav Off".
   Verified: `upstream/scanner-clamav` (generic, local) was the product's repository of ClamAV's database for half a day
@@ -1209,7 +1283,7 @@ records the recorder that tells such a stall apart).
   removed by the reconcile; a retired preset stays and reads "Retired" wherever it is listed. Not verified: whether his
   installation holds the same row (the same history says it does).
 
-- **Closed on 2026-11-25, LANDTIMEW1, by W1 (W-28, package 1; R-CUR-024, R-CUR-025; Q-CUR-200 to Q-CUR-209; gaps H-2020
+- **Closed on 2026-11-25, 20:13, by W1 (W-28, package 1; R-CUR-024, R-CUR-025; Q-CUR-200 to Q-CUR-209; gaps H-2020
   to H-2023; no migration): an upstream package and each of its versions have a switch, and a change of the delivery
   mode says what follows.** The owner's d1 = b and his words on the place (the switch at the right, apart from the
   download; one per version; the row's menu dissolved). The switch shows what holds and writes a rule only where its
@@ -1229,7 +1303,16 @@ records the recorder that tells such a stall apart).
   it: the upstream catalogue leaves an image's attestation manifests out of its platforms (the finding of 15:40,
   `unknown/unknown`). Departed from the plan: a version's `inherited` goes only to those who may set rules; the mode's
   dialog names six packages, not 100; a switch's answer stays in its row until the catalogue agrees, at most 30 s
-  (the snapshot's lag flipped it back); "Zur Prüfung holen" for the act in German. Landed LANDNOTEW1 Open: a restore
+  (the snapshot's lag flipped it back); "Zur Prüfung holen" for the act in German. Landed and pushed at 20:13. The landing split `SwitchTx` into three functions (the write of the subject's own rule, the reset of a
+  package's version rules, the answer): the complexity gate refused it with 37 over 33, and the builder's gate list
+  lacked that gate, which is mine. It joined the conflicts with W4 (the generated API, the settings page's imports, the
+  two translation files unit by unit, the count of requirements: 1,280) and ran the 13 gates, the dialog states, the
+  renders in English and German and the whole integration areas `repository`, `npm`, `nuget`, `ociremote`,
+  `ansibleremote` and `debvirtual` green; in `mirror`,
+  `TestR_REPO_054_ALongWaitEndsTheJobDeferredAndTheNextJobContinuesAtThatTime` failed once in the area's run and
+  passed alone (the package touches no code of the mirror; open, not read to its cause).
+  Looked at: the opened package with its switches wide in light and narrow in dark, the settings' section Delivery,
+  the mode's dialog with its offer (1,440 px) and the change back (390 px). Open: a restore
   to a point before `allow-stored` replays the mode and not the allows, so those packages are refused, fail closed
   (H-2020); a large `allow-stored` writes as many audit events and webhook deliveries (H-2021); a row shows a switch's
   answer for at most 30 s while the catalogue lags (H-2022); the dialog's count and what `allow-stored` writes come
