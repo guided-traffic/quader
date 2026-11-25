@@ -549,6 +549,24 @@ The access-long leg's Playwright part is per journey [V]; the four format specs 
 
 The step "Render every screen and check its layout" is 1,733 s in run 2 and 1,868 s in run 1 [V]. The report holds 378 screens (9 anonymous, 90 plain, 115 power, 164 admin) with 6 to 48 shots each (light and dark at three widths, 12 shots for most), 4,590 shots in all, and has **no timings** [V]. A per-screen time is therefore [I]: step time / shots = 0.378 s per shot in run 2 (0.407 in run 1). Screens whose name carries one format: npm 68 screens / 804 shots, oci 53 / 696, ansible 30 / 384, deb 21 / 294, nuget 19 / 252, generic 9 / 72; 178 screens / 2,088 shots name no format (shared screens and admin). Format-named screens are 200 of 378 screens and 2,502 of 4,590 shots (54.5 %), 945 s of the 1,733 s if every shot costs the same [I]. I class a rendered screen of a format as repeated (the same journey walked per format) [J]; the per-shot assumption is not verified (admin screens may cost more than a list).
 
+### 3.5a Dialog states (`make ui-states`, measured 2026-11-25 on the development machine)
+
+The states of the overlays at the component tier ([web-ui.md](web-ui.md#dialog-states), Q-UI-1140): 69 states and the harness's
+proof, 13 spec files, each state opened twice (390x844 and 1440x900) and measured by `layoutFindings` once per window, 138 measurements
+[V]. Measured with `/usr/bin/time` on the 20-core development machine at a load of 15 to 27 (other builders' runs beside it) [V]:
+
+| Part | Time |
+|---|---|
+| The build (the target's esbuild bundle of the specs; warm cache / empty `.angular` and `node_modules/.vite`) | 1.5 to 2.9 s / 5.6 s |
+| The 70 tests in the browser (Vitest's `Duration`) | 12.1 to 13.7 s, about 0.18 s per state with both windows |
+| The whole target, wall | 16.6 to 23.4 s; with `UI_STATES_PICTURES=1` (138 pictures) 18.1 s |
+
+Data: no state sends a byte over a network; each renders one dialog or one component against the in-memory fakes. The job `UI
+layout checks` gains this step before its stack starts; the browser is the one the job installs already, and the step adds no
+download (the provider package is a few hundred kilobytes of the workspace's `npm ci`). The runner's figure is the first CI run's
+[I: about 30 to 60 s on the job's runner of the class `self-hosted`, from the development machine's 17 to 23 s]. Per format: 0 (no state is a
+format's; a new format's dialog adds its own states once, a fraction of a second each).
+
 ### 3.6 Nightly legs, per test
 
 

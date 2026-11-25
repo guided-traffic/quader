@@ -12202,10 +12202,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-555 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+559 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 555 questions</summary>
+<summary>Q-UI: 559 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12764,6 +12764,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1122](spec/api-and-ui.md#q-ui-1122--a-versions-page-reads-fast-only-while-its-scan-passes-on-its-own) | A version's page reads fast only while its scan passes on its own | Decided by the development agent | (a) Every 3 s while an image is `queued` or `scanning`, or a file's malware scan is `queued`; every minute when it waits for what the installation lacks (`no_scanner`, `no_database`) | — |
 | [Q-UI-1123](spec/api-and-ui.md#q-ui-1123--a-pending-file-says-why-it-waits-and-one-that-cannot-be-checked-now-is-a-warning) | A pending file says why it waits, and one that cannot be checked now is a warning | Decided by the development agent | (a) The word of `waiting` ("Queued", "No scanner", "No signatures"; German "Wartet", "Kein Scanner", "Keine Signaturen") with its icon (hourglass, plug off, cloud off) and the sentence under it; neutral for queued, the warning's colour for no scanner and no signatures | — |
 | [Q-UI-1130](spec/api-and-ui.md#q-ui-1130--an-image-is-one-row-with-its-tags-on-the-opened-item-and-on-the-packages-page) | An image is one row with its tags, on the opened item and on the package's page | The owner's word of 2026-11-25 | (a) The leading tag as the row's link, the other tags muted after it (on the opened item at most four, then "+N more"; on the package's page all, "+ more" past 100), the signature badge on the row, **Pull** of the leading tag; the filter matches any tag | [ADR-280](#adr-280--a-version-that-names-content-stores-its-digest-and-a-list-of-versions-groups-by-it) |
+| [Q-UI-1140](spec/api-and-ui.md#q-ui-1140--the-states-of-the-overlays-are-measured-at-the-component-tier-in-the-unit-test-builders-browser-mode) | The states of the overlays are measured at the component tier, in the unit-test builder's browser mode | Decided by the development agent | (a) The Angular unit-test builder's browser mode in headless Chromium, a target of its own (`states`, `make ui-states`), each state opened through the real dialog service or the real component against the in-memory fakes and measured by `layoutFindings` imported from the render set | — |
+| [Q-UI-1141](spec/api-and-ui.md#q-ui-1141--the-runners-browser-is-configured-in-a-runner-file-of-its-own-with-the-one-playwright-and-text-without-hinting) | The runner's browser is configured in a runner file of its own, with the one Playwright and text without hinting | Decided by the development agent | (a) `runnerConfig` of the target names [vitest.states.config.mts](../web/vitest.states.config.mts): the provider with `CHROMIUM_TEXT` from the renders' [paths.ts](../web/e2e/renders/paths.ts), the light scheme, English and UTC, scale 1 | — |
+| [Q-UI-1142](spec/api-and-ui.md#q-ui-1142--a-state-is-measured-in-two-windows-in-the-light-scheme-and-fails-on-any-finding) | A state is measured in two windows, in the light scheme, and fails on any finding | Decided by the development agent | (a) Each state opened afresh at 390x844 and at 1440x900, light, the page behind an open dialog hidden, `layoutFindings` once per window; any finding fails, nothing is allowed by a list; a picture only with `UI_STATES_PICTURES=1` | — |
+| [Q-UI-1143](spec/api-and-ui.md#q-ui-1143--a-dialogs-failure-is-shown-in-its-longest-shape-and-its-validation-by-the-refusal-a-person-meets) | A dialog's failure is shown in its longest shape, and its validation by the refusal a person meets | Decided by the development agent | (a) A failure is a 500 with a code the screen has no sentence for: the shared error notice shows the server's English text, the request ID of 32 characters and Copy (`serverFailure()`); a validation is the dialog's own rule after a submit, or the server's 422 with its sentences under the fields where the dialog checks nothing itself (`fieldRefusal()`) | — |
 
 </details>
 

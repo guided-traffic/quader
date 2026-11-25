@@ -165,6 +165,10 @@ ui-dev-down: ## Stop the UI development services; PURGE=1 also removes their dat
 ui-layout-test: ## The layout checks of the renders on fixture pages in Chromium, Firefox and WebKit: no stack, seconds (after web-ci and `npx playwright install chromium firefox webkit`; web/e2e/playwright.layout.config.ts)
 	cd web && npx playwright test -c e2e/playwright.layout.config.ts
 
+.PHONY: ui-states
+ui-states: ## Every dialog, its failure and its validation, the confirm shapes, the token's secret and tooltips at the edge, measured by the layout checks in headless Chromium at 390 and 1440 px: no stack, seconds (after web-ci and `npx playwright install chromium`; UI_STATES_PICTURES=1 writes .out/ui-states; docs/developer/web-ui.md#dialog-states)
+	cd web && npx ng run web:states --no-watch
+
 .PHONY: ui-renders
 ui-renders: ## Render every screen as the three kinds of user, light and dark, at 1440, 1024 and 390 px into .out/ui-renders (after web-ci; GREP=<regex> limits the screens; deploy/ui-dev/renders.sh)
 	deploy/ui-dev/renders.sh $(if $(GREP),--grep '$(GREP)')

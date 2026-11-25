@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.spec.json",
+  "compilerOptions": {
+    "types": ["vitest/globals", "@angular/localize", "@vitest/browser-playwright"]
+  },
+  "include": ["src/**/*.d.ts", "src/**/*.ts", "e2e/renders/layout.ts"]
+}

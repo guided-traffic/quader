@@ -316,6 +316,7 @@ release ([Q-ARCH-510](../spec/architecture.md#q-arch-510--the-layout-checks-of-t
 ```shell
 make web-ci                       # once, and after a change of web/package-lock.json
 make ui-layout-test               # the layout checks on their own fixture pages: seconds, no stack (also the first step of ui-renders)
+make ui-states                    # the dialogs' and the overlays' states, measured by the same checks without a stack (Dialog states, below)
 make ui-renders                   # every screen, into an empty .out/ui-renders
 make ui-renders GREP=repositories # the screens whose test title matches; the other pictures stay
 UI_RENDERS_LOCALE=de make ui-renders            # the screens marked `de`, in German, into .out/ui-renders-de
@@ -528,6 +529,44 @@ job `ui-layout` renders, with 0 failed and 0 layout findings: 1440, 1024 and 390
 the start page's projects and a project's repositories, 1,100 and 1,280 px for the list of every project's repositories and the
 start page's administrator's columns); a change rendered at 1440 and 390 px alone left the admin area's former list of repositories
 7 px wider than its region at 1,280 px (2026-11-21).
+
+### Dialog states
+
+`make ui-states` opens the states of the overlays that no walk of the render set opens and measures each with the render set's
+own `layoutFindings` ([layout.ts](../../web/e2e/renders/layout.ts), imported, not copied): every dialog in its long shapes, its
+failure and its validation, the confirm dialog's shapes, the token's secret shown once, and tooltips at the window's right edge. No
+stack, no backend: the Angular unit-test builder's browser mode (the target `states` of [angular.json](../../web/angular.json))
+runs the `*.states.spec.ts` in headless Chromium with the app's global stylesheet and fonts, and each state is opened through the
+real dialog service or the real component against the in-memory fakes of `api/testing`
+([Q-UI-1140](../spec/api-and-ui.md#q-ui-1140--the-states-of-the-overlays-are-measured-at-the-component-tier-in-the-unit-test-builders-browser-mode),
+R-UI-176). A state fails when the function reports any finding; nothing is allowed by a list.
+
+```shell
+make web-ci && (cd web && npx playwright install chromium)   # once; the Chromium of the locked Playwright, the renders' own
+make ui-states                                                # every state at 390x844 and 1440x900, light: seconds
+UI_STATES_PICTURES=1 make ui-states                           # and a picture of each into .out/ui-states/<state>-<width>.png
+(cd web && npx ng run web:states --no-watch --include src/app/features/limits/limits.states.spec.ts)   # one area
+```
+
+| Part | Where |
+|---|---|
+| The runner's browser | [vitest.states.config.mts](../../web/vitest.states.config.mts): the provider `@vitest/browser-playwright` of the workspace's Vitest, the Chromium of the locked Playwright (no second browser), `--font-render-hinting=none` as the renders (`CHROMIUM_TEXT` of [paths.ts](../../web/e2e/renders/paths.ts)), the light scheme, English, UTC ([Q-UI-1141](../spec/api-and-ui.md#q-ui-1141--the-runners-browser-is-configured-in-a-runner-file-of-its-own-with-the-one-playwright-and-text-without-hinting)) |
+| The helper | [testing/states.ts](../../web/src/app/testing/states.ts): `expectState(name, open)` opens the state afresh in each window, hides the page behind an open dialog, measures, writes the picture with `UI_STATES_PICTURES=1`; `openDialog` opens through `QuaderDialog` with the options of the dialog's call site; `openInPage` renders a component inside the shell's panel (`quader-root > main.content`); `serverFailure()` and `fieldRefusal()` are the two refusals a state shows, `failNext` and `failAlways` make a fake's method give them ([Q-UI-1142](../spec/api-and-ui.md#q-ui-1142--a-state-is-measured-in-two-windows-in-the-light-scheme-and-fails-on-any-finding), [Q-UI-1143](../spec/api-and-ui.md#q-ui-1143--a-dialogs-failure-is-shown-in-its-longest-shape-and-its-validation-by-the-refusal-a-person-meets)) |
+| The states | one `*.states.spec.ts` per area beside its code: `shared/` (the confirm shapes; conflict, diff and both session dialogs; tooltips), `features/projects`, `users` (users, groups, service accounts), `tokens` (Rotate, the secret, Bastions, an issued CI token), `limits`, `upstream`, `settings` (signing), `repositories`, `permissions`, `vulnerabilities` (triage, malware, signatures) |
+| The proof | [testing/states.states.spec.ts](../../web/src/app/testing/states.states.spec.ts): a copy of a dialog whose Copy stands 8 px under its name must report `off-line` in this browser, and the same button on its line nothing |
+
+**Add a state.** A new dialog gets its states in its area's file: as it opens, with long realistic data (a long name, a word of
+German length where the text is data, many items); after a submit with invalid fields; with the shared error notice of a failure
+the screen has no sentence for (`serverFailure()`: the server's text, the request ID and Copy). The open options are those of the
+dialog's call site, named in a comment. Look at each picture (`UI_STATES_PICTURES=1`) against the
+[checklist](ui-style-guide.md#checklist): a state passes the checks and can still be wrong to the eye.
+
+**What it does not do.** It is English only: a German dialog is seen in the render set's German pass. The page behind a dialog is
+hidden for the measurement; whether an overlay stands inside the window and whether a region of a dialog scrolls sideways is
+measured by no check yet (`sideways` looks at `main` only), so a list cut by a dialog and a table wider than its dialog were found in
+the pictures, not by the checks. Focus rings show where a state's dialog put the focus (the CDK's
+first tabbable element): what a keyboard user sees. Pictures are never written in the pipeline and never committed. The gaps are
+H-1910 to H-1912 of [api-and-ui.md](../spec/api-and-ui.md#h-1910--the-dialog-states-are-measured-in-english-only).
 
 ## How the build reaches the binary
 
@@ -1061,7 +1100,7 @@ Two checks hold it, neither of which sees everything:
 | Tier | State |
 |---|---|
 | Unit | In place: Vitest through the Angular builder, specs next to code (`*.spec.ts`), requirement IDs in test names. Covers the interceptors (`HttpTestingController`), the session store, pagination, problem messages, the status model |
-| Component | In place with `TestBed` on jsdom; screens run against the fakes of `api/testing/fakes.ts` and `fakes-catalog.ts` through `testing/screen.ts`. Vitest browser mode (real Chromium) is **not** set up: it needs a browser provider package and browser binaries in CI. A spec that uses fake timers switches back to real timers before it calls axe, which schedules its own |
+| Component | In place with `TestBed` on jsdom; screens run against the fakes of `api/testing/fakes.ts` and `fakes-catalog.ts` through `testing/screen.ts`. A spec that uses fake timers switches back to real timers before it calls axe, which schedules its own. In a real browser for the layout of the overlays: the `*.states.spec.ts` run in Vitest's browser mode in headless Chromium against the same fakes (`make ui-states`, [Dialog states](#dialog-states)); `make web-test` leaves them out (the target `test` excludes them) |
 | Contract | Partly: the clients are typed against `schema.d.ts` and compile with it. Mock answers validated against the document are not written yet |
 | Accessibility | Two tiers. On jsdom: `axe-core` (pinned in the lockfile) through `src/app/testing/axe.ts`; `app.routes.spec.ts` renders every routed screen and fails on a serious or critical violation (Q-UI-11). axe cannot compute colours on jsdom, so [palette.spec.ts](../../web/src/styles/palette.spec.ts) computes the contrast of the accent, link, container and status pairs from the stylesheets (4.5:1 for text, 3:1 for marks, both schemes). In the browser: `@axe-core/playwright` on every screen a journey visits (`expectAccessible` in [web/e2e/support.ts](../../web/e2e/support.ts)), with `color-contrast` and the document-level rules, in English with the light theme and in German with the dark theme (Q-UI-66). Focus order across a real navigation, reflow at 320 CSS px and the manual pass of R-UI-044 are not automated |
 | End-to-end, security | In place: the Playwright journeys in [web/e2e](../../web/e2e) against the chart-installed build in the `scatter` profile, run by `TestE1_11Journeys` ([e2e.md](e2e.md#browser-journeys)). Every page is watched for `securitypolicyviolation`; one fails the test. Chromium only (Firefox and WebKit are not run), and the README XSS corpus is not part of the journeys |

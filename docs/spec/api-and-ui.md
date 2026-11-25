@@ -8286,10 +8286,16 @@ its pictures.
 - Every kind of table or list row with a control is in the render set with at least one row (an expandable row, a row with a check
   box, a menu, a copy button, an avatar, a project's mark, a chip or a badge beside a name), so the checks see it
   ([Q-UI-726](#q-ui-726--the-render-set-opens-an-items-row-and-shows-the-public-remote-as-the-visitor-sees-it)).
+- The states of the overlays that no walk opens are measured by the same function in a real browser without the stack (`make
+  ui-states`, [Q-UI-1140](#q-ui-1140--the-states-of-the-overlays-are-measured-at-the-component-tier-in-the-unit-test-builders-browser-mode)):
+  every dialog as it opens with long data, after a submit with invalid fields and with the shared error notice of a failure; the
+  confirm dialog's shapes; the token's secret shown once; tooltips at the window's right edge. A state fails on any finding, and a
+  copy of a dialog whose button stands 8 px under its name must report `off-line` there.
 
 Acceptance criteria:
 
 - `make ui-layout-test` passes (`web/e2e/renders/layout-checks.spec.ts`), its test names carry R-UI-175 and R-UI-176.
+- `make ui-states` passes (`web/src/app/**/*.states.spec.ts`), the harness's test name carries R-UI-175 and R-UI-176.
 - `make web-lint` passes; the rule's own test fails on both declarations (`web/scripts/lint-rules.test.mjs`).
 - A full render run names no layout finding.
 
@@ -24412,6 +24418,78 @@ tags). The Upstream tab stays one row per tag: its acts (a delivery rule, a down
 spec:** R-UI-007, R-UI-052, R-UI-110, [signatures.md](signatures.md) R-SIG-035. The API is
 [Q-API-432](#q-api-432--the-list-by-content-one-entry-per-manifest-on-the-walk-of-the-order-of-the-versions-with-a-lead-check-per-batch-and-a-scan-budget).
 
+### Q-UI-1140 · The states of the overlays are measured at the component tier, in the unit-test builder's browser mode
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It revisits
+[Q-UI-723](#q-ui-723--the-checks-are-tested-on-fixture-pages-in-the-playwright-chromium-not-in-the-angular-test-runner) option (b)
+for this target only: the checks' own fixtures stay in Playwright.
+
+Context: about 120 states of the web application were in no picture of the render set, most of them overlays: 21 of 36 dialogs, the
+confirm dialog's shapes "type to confirm" and "choice", every failure notice and all but one validation inside a dialog, the conflict
+dialog, both session dialogs, the token's secret and tooltips at the window's edge; nine of the layout defects found by eye between
+2026-11-12 and 2026-11-25 were such states. A dialog's layout does not depend on the page behind it. Q-UI-723 had refused the Angular
+test runner because jsdom lays nothing out and Vitest's browser mode was not installed.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The Angular unit-test builder's browser mode in headless Chromium, a target of its own (`states`, `make ui-states`), each state opened through the real dialog service or the real component against the in-memory fakes and measured by `layoutFindings` imported from the render set (chosen) | One new development dependency, the provider of the workspace's Vitest | Real layout, the app's global stylesheet and fonts, the same function as the renders; about 20 s for 69 states, no stack, nothing per format; a failure or a refusal is one line of a fake, not a routed answer | A state of the fakes, not of a running server; English only |
+| (b) The same states as walks of the render set at 1,440 and 390 px | Routed failing answers and clicks in the full stack | The real server | About 3 minutes more of the longest job, a walk per state, a seed per dialog |
+| (c) Playwright's component testing | Another runner | A browser | A second test runner beside Vitest and Playwright's |
+
+**Choice:** (a). **Rationale:** "once, at the cheapest tier" (CLAUDE.md, "Tests stay runnable"): the overlays are measured where they
+cost seconds, the pages stay the render set's. The target `test` excludes the `*.states.spec.ts`, so `make web-test` is unchanged.
+
+**Applied in the spec:** R-UI-176. Code: the target `states` of [angular.json](../../web/angular.json),
+[states.ts](../../web/src/app/testing/states.ts), the `*.states.spec.ts`, the `Makefile` target `ui-states`.
+
+### Q-UI-1141 · The runner's browser is configured in a runner file of its own, with the one Playwright and text without hinting
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the builder's own option `browsers: ["chromiumHeadless"]` makes the provider without launch arguments, and the renders set
+Chromium's text without hinting (`CHROMIUM_TEXT`, Q-UI-1045), without which the runner's Linux measures text up to 3 % wider than the
+development machine. The provider `@vitest/browser-playwright` 5.0.5 (the workspace's Vitest) takes `playwright` as a peer of any
+version and downloads no browser.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `runnerConfig` of the target names [vitest.states.config.mts](../../web/vitest.states.config.mts): the provider with `CHROMIUM_TEXT` from the renders' [paths.ts](../../web/e2e/renders/paths.ts), the light scheme, English and UTC, scale 1 (chosen) | The builder's browser setting unused | The renders' text, the one Playwright of the lockfile and its Chromium | A file beside `angular.json` |
+| (b) The builder's `browsers` | One line | Simplest | Text with hinting: a state could pass on the development machine and fail on the runner |
+
+**Choice:** (a). The provider is pinned exactly in `web/package.json`; `npm ls` shows one `playwright` (1.64.1, the renders'),
+deduplicated.
+
+**Applied in the spec:** R-UI-176. Code: [vitest.states.config.mts](../../web/vitest.states.config.mts).
+
+### Q-UI-1142 · A state is measured in two windows, in the light scheme, and fails on any finding
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each state opened afresh at 390x844 and at 1440x900, light, the page behind an open dialog hidden, `layoutFindings` once per window; any finding fails, nothing is allowed by a list; a picture only with `UI_STATES_PICTURES=1` (chosen) | A dialog is at most 52 rem wide: the widths between show nothing these two do not | The narrow and the wide shape of every state; the checks measure the light scheme only; a defect is never allowed away | A component without the shell behind a dialog is not measured as a page |
+| (b) The render set's three widths and both schemes | | Like the screens | 1,024 px adds nothing to a dialog; dark is colour, which no check measures |
+| (c) `judge` with the render set's `allowed` list | | One rule for both | An entry for the screens would allow a dialog's defect unseen |
+
+**Choice:** (a). **Rationale:** a state stands for what a person meets at a phone's and a desktop's width; the pictures are for the
+look of rule 11 and never written in the pipeline.
+
+**Applied in the spec:** R-UI-176. Code: `expectState` in [states.ts](../../web/src/app/testing/states.ts).
+
+### Q-UI-1143 · A dialog's failure is shown in its longest shape, and its validation by the refusal a person meets
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A failure is a 500 with a code the screen has no sentence for: the shared error notice shows the server's English text, the request ID of 32 characters and Copy (`serverFailure()`); a validation is the dialog's own rule after a submit, or the server's 422 with its sentences under the fields where the dialog checks nothing itself (`fieldRefusal()`) (chosen) | One shape of each | The longest notice, the one that pushed Copy past a panel before (G5-20); the field errors a person sees | A known code's short sentence is not pictured |
+| (b) Every code a dialog says in words | | Every sentence | Dozens of states that differ in one sentence |
+
+**Choice:** (a).
+
+**Applied in the spec:** R-UI-176. Code: `serverFailure`, `fieldRefusal`, `failNext` and `failAlways` in
+[states.ts](../../web/src/app/testing/states.ts).
+
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 
 Status: **Decided by the owner, 2026-11-23** (T-25, 19:30, whole: "Ich finde Projects und Repositories haben im Admin-Mneü nichts
@@ -24906,6 +24984,29 @@ the older tags wait, the row changes and the versions are read again; once the l
 to scanning to checked) shows at the next change of the row, or when the item is opened again. What makes it real: an image whose latest
 tag is scanned first, then a hundred older tags in turn. The rows of one image with all its tags (S5 of the plan) rebuild this list; the
 fix belongs there: the opened item read again while one of its versions waits (`checkWaits`).
+
+### H-1910 · The dialog states are measured in English only
+
+Component: `make ui-states` ([web-ui.md](../developer/web-ui.md#dialog-states), Q-UI-1140). Subject: a German reader of a dialog. Live
+since the target. The target builds the source locale; a German word is longer and breaks a line where the English one fits, so a
+dialog can pass here and break in German. What keeps it seen: the render set's German pass renders the dialogs its walks open; a
+dialog no walk opens is not seen in German. What would close it: a second build of the target in the locale `de`, about the time of
+the first.
+
+### H-1911 · The dialog states measure the light scheme only
+
+Component: `make ui-states` (Q-UI-1142). Subject: a reader in the dark scheme. Live since the target. No check measures a colour, and
+a layout that differs by scheme has not been seen; a colour that is wrong only in dark (the pale tooltip of 2026-11-13) is seen in the
+render set's dark pictures of the states it opens, not in these. What would close it: a picture of each state in dark beside the light
+one with `UI_STATES_PICTURES=1`, looked at, at about a tenth of a second per state.
+
+### H-1912 · An overlay outside the window and a dialog's region that scrolls sideways are found by eye only
+
+Component: the layout checks ([layout.ts](../../web/e2e/renders/layout.ts)) as the dialog states run them. Subject: every reader of a
+dialog, a drawer or a list that opens over the page. Live: `sideways` measures `main` alone, and no check measures whether an overlay
+stands inside the window or inside its dialog, so the states' pictures, not their checks, showed a dialog's table wider than the
+dialog and a person-search list cut by a dialog's body (2026-11-25). What would close it: the checks of the overlays planned for the
+render set, imported here as they land.
 
 ### H-43 · General API rate limits are per replica
 
