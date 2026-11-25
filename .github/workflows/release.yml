@@ -689,6 +689,12 @@ jobs:
       - name: Check the layout checks on their fixture pages
         run: make ui-layout-test
 
+      # The dialogs, their failures and validations, the confirm shapes, the token's secret and tooltips at the window's edge, in
+      # the installed Chromium against the web workspace's fakes: no stack, about 20 s (Q-UI-1140, docs/developer/web-ui.md#dialog-states).
+      - name: Check the layout of every dialog state without the stack
+        timeout-minutes: 10
+        run: make ui-states
+
       - name: Render every screen and check its layout
         run: make ui-renders
 

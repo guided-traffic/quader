@@ -539,7 +539,8 @@ stack, no backend: the Angular unit-test builder's browser mode (the target `sta
 runs the `*.states.spec.ts` in headless Chromium with the app's global stylesheet and fonts, and each state is opened through the
 real dialog service or the real component against the in-memory fakes of `api/testing`
 ([Q-UI-1140](../spec/api-and-ui.md#q-ui-1140--the-states-of-the-overlays-are-measured-at-the-component-tier-in-the-unit-test-builders-browser-mode),
-R-UI-176). A state fails when the function reports any finding; nothing is allowed by a list.
+R-UI-176). A state fails when the function reports any finding; nothing is allowed by a list. The job `ui-layout` ("UI layout
+checks") runs it on every push after the checks' fixtures and before it starts its stack, bounded at 10 minutes.
 
 ```shell
 make web-ci && (cd web && npx playwright install chromium)   # once; the Chromium of the locked Playwright, the renders' own
