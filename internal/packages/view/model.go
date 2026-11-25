@@ -145,6 +145,10 @@ type VersionSummary struct {
 	// Unranked says that the format does not rank the version (an image tag such as latest): in the order of the versions it comes after
 	// the ranked ones by its time, and a cursor after it carries the time (Q-API-431).
 	Unranked bool
+	// Aliases are, in the list by content (Q-API-432), the other versions that name the entry's content, in the order of the versions, at
+	// most 100; AliasesMore says that it has more. Nil outside that list.
+	Aliases     []string
+	AliasesMore bool
 }
 
 // RepositoryEntry is a repository that holds a version.

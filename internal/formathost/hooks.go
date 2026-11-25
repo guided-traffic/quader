@@ -48,7 +48,12 @@ func (d Deps) newWriter(tx meta.Tx, rq *formats.Request, bound *formats.RepoRef,
 		desc = f.Descriptor()
 		order = orderOf(f)
 	}
-	pw, err := packages.NewWriter(tx, desc.PropertyPrefix, packages.WithRaised(packageRaised(d.Signals)))
+	opts := []packages.Option{packages.WithRaised(packageRaised(d.Signals))}
+	if desc.VersionFetch == formats.FetchDocument {
+		// A version of the format names its document's content: the list by content groups by it (api-and-ui.md Q-API-432, ADR-280).
+		opts = append(opts, packages.WithDocuments())
+	}
+	pw, err := packages.NewWriter(tx, desc.PropertyPrefix, opts...)
 	if err != nil {
 		return nil, err
 	}

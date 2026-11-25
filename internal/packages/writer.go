@@ -46,6 +46,11 @@ type Option func(*Writer)
 // WithRaised sets the function called when a package is raised.
 func WithRaised(fn Raised) Option { return func(w *Writer) { w.raised = fn } }
 
+// WithDocuments makes the writer store, with a version and whenever its lead item changes, the digest of its lead item's content
+// (package_versions.document_sha256): the version names that content, as a format whose version is fetched as its document declares
+// (formats.FetchDocument, OCI). The list by content groups versions by it (api-and-ui.md Q-API-432, ADR-280).
+func WithDocuments() Option { return func(w *Writer) { w.documents = true } }
+
 // Writer writes the package rows inside one transaction. Writers made for the same
 // transaction share the record of which revisions were raised, so a revision is
 // raised once per package per transaction however many writers (a hook of the
@@ -55,6 +60,8 @@ type Writer struct {
 	qs     *q.Queries
 	prefix string
 	raised Raised
+	// documents says that a version names its lead item's content (WithDocuments).
+	documents bool
 }
 
 // NewWriter binds a writer to tx. propertyPrefix is the namespace SetProperties
@@ -186,7 +193,7 @@ func (w *Writer) InsertVersion(ctx context.Context, pkg Ref, v NewVersion) (int6
 	}
 	ids, err := w.qs.InsertPackageVersion(ctx, q.InsertPackageVersionParams{
 		PackageID: pkg.ID, Version: v.Version, DisplayVersion: v.DisplayVersion, LeadItemID: v.LeadItem,
-		Attributes: attrs, CreatedBy: v.CreatedBy, SortKey: v.SortKey, Prerelease: v.Prerelease,
+		Attributes: attrs, CreatedBy: v.CreatedBy, SortKey: v.SortKey, Prerelease: v.Prerelease, Document: w.documents,
 	})
 	if err != nil {
 		return 0, err
@@ -261,7 +268,7 @@ func (w *Writer) LinkItem(ctx context.Context, item, version int64, lead bool) e
 		return errs.E(errs.NotFound, errs.CodeNotFound, "The item or the version does not exist in the repository.")
 	}
 	if lead {
-		if _, err := w.qs.SetLeadItem(ctx, q.SetLeadItemParams{ItemID: item, VersionID: version}); err != nil {
+		if _, err := w.qs.SetLeadItem(ctx, q.SetLeadItemParams{ItemID: item, VersionID: version, Document: w.documents}); err != nil {
 			return err
 		}
 	}

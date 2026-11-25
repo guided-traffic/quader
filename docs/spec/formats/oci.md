@@ -1162,7 +1162,9 @@ at any depth) and `artifactType` (the manifest's own, else the media type of its
 of the format (Q-OCI-17, Q-OCI-64) for the versions; a tag that is no version and a string that is no tag are no version of the format
 (`versionkey.NotVersion`) and sort before every version and among themselves by their bytes, and the lists order them by their time
 (Q-OCI-269); a tag whose manifest the journal replay withheld is not listed (R-OCI-033).
-The tags of a remote repository are listed the same way, read from its cache entries (R-OCI-036).
+The tags of a remote repository are listed the same way, read from its cache entries (R-OCI-036). With `group=content` the version list holds one entry per
+manifest, led by its first tag in this order, with the image's other tags as `aliases` ([api-and-ui.md](../api-and-ui.md) R-API-029,
+Q-API-432); a local tag's version row stores its manifest's digest for it (ADR-280).
 
 Acceptance criteria:
 

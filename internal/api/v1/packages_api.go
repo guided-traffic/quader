@@ -19,6 +19,7 @@ import (
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/httpserver"
@@ -353,34 +354,32 @@ func (s *Server) ListPackageVersions(w http.ResponseWriter, r *http.Request, id 
 		httpserver.Problem(w, r, packageNotFound())
 		return
 	}
-	lq, err := ParseList(r, ListSpec{
-		Filters: []string{"prerelease", "repository", "include"}, Sorts: []string{"publishedAt", "version"}, DefaultSort: "-version",
-	}, s.o.API.Config)
-	var f view.VersionFilter
-	if err == nil {
-		if raw := lq.First("prerelease"); raw != "" {
-			b, perr := strconv.ParseBool(raw)
-			if perr != nil || (raw != "true" && raw != "false") {
-				err = badParam("prerelease", "must be true or false")
-			}
-			f.Prerelease = &b
-		}
-		if reps, ok := lq.Filter["repository"]; ok {
-			f.Repositories, f.HasRepositories = repoFilter(splitValues(reps)), true
-		}
-		f.WithDigest = includes(lq, "digest")
-		f.WithState = includes(lq, "state")
-	}
+	lq, f, grouped, err := versionListQuery(r, s.o.API.Config)
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return
 	}
 	order := view.VersionOrder{Sort: lq.Sort, Desc: lq.Desc}
 	ctx, sc, err := s.packageScope(r, ps, view.ScopeRequest{Formats: []string{format}, ExactName: name})
-	var rows []view.VersionSummary
+	var page Page[view.VersionSummary]
 	found := false
 	if err == nil {
-		rows, found, err = ps.View.Versions(ctx, sc, format, name, f, order, lq.After, lq.Limit)
+		var rows []view.VersionSummary
+		var next []string
+		if grouped {
+			rows, next, found, err = ps.View.Images(ctx, sc, format, name, f, lq.After, lq.Limit)
+			page = Page[view.VersionSummary]{Items: rows}
+			if next != nil {
+				c := lq.EncodeCursor(next)
+				page.NextCursor = &c
+			}
+			if page.Items == nil {
+				page.Items = []view.VersionSummary{}
+			}
+		} else {
+			rows, found, err = ps.View.Versions(ctx, sc, format, name, f, order, lq.After, lq.Limit)
+			page = NewPage(lq, rows, order.VersionKey)
+		}
 		if view.IsBadCursor(err) {
 			err = invalidCursor()
 		}
@@ -393,27 +392,73 @@ func (s *Server) ListPackageVersions(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 	// The member signatures of each row (R-SIG-034): one statement for the page's files and one count per project, none per row.
-	sigs, err := s.versionListSignatures(ctx, name, rows)
+	sigs, err := s.versionListSignatures(ctx, name, page.Items)
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return
 	}
-	WritePage(w, r, MapPage(NewPage(lq, rows, order.VersionKey), func(v view.VersionSummary) gen.PackageVersionSummary {
-		summary := gen.PackageVersionSummary{
-			Version: v.Version, Prerelease: v.Prerelease, PublishedAt: v.PublishedAt, SizeBytes: v.SizeBytes, SizePartial: v.SizePartial,
-			Repositories: repoTexts(v.Repositories), DownloadCount: v.DownloadCount, LastDownloadedAt: v.LastDownloadedAt,
-			Signatures: sigs[v.Version],
-		}
-		if v.Digest != "" {
-			digest := v.Digest
-			summary.Digest = &digest
-		}
-		if v.State != "" {
-			state := v.State
-			summary.State = &state
-		}
-		return summary
+	WritePage(w, r, MapPage(page, func(v view.VersionSummary) gen.PackageVersionSummary {
+		return versionSummaryOf(v, sigs[v.Version])
 	}))
+}
+
+// versionListQuery reads the parameters of the version list (R-API-029): the filters, the sort and group=content, the list by content
+// (Q-API-432), which takes the order of the versions newest first and no pre-release filter.
+func versionListQuery(r *http.Request, cfg config.API) (ListQuery, view.VersionFilter, bool, error) {
+	var f view.VersionFilter
+	lq, err := ParseList(r, ListSpec{
+		Filters: []string{"prerelease", "repository", "include", "group"}, Sorts: []string{"publishedAt", "version"}, DefaultSort: "-version",
+	}, cfg)
+	if err != nil {
+		return lq, f, false, err
+	}
+	if raw := lq.First("prerelease"); raw != "" {
+		b, perr := strconv.ParseBool(raw)
+		if perr != nil || (raw != "true" && raw != "false") {
+			return lq, f, false, badParam("prerelease", "must be true or false")
+		}
+		f.Prerelease = &b
+	}
+	if reps, ok := lq.Filter["repository"]; ok {
+		f.Repositories, f.HasRepositories = repoFilter(splitValues(reps)), true
+	}
+	f.WithDigest = includes(lq, "digest")
+	f.WithState = includes(lq, "state")
+	grouped := false
+	if g, ok := lq.Filter["group"]; ok {
+		switch {
+		case len(g) != 1 || g[0] != "content":
+			return lq, f, false, badParam("group", "must be content")
+		case lq.Sort != "version" || !lq.Desc:
+			return lq, f, false, badParam("group", "takes sort=-version only")
+		case f.Prerelease != nil:
+			return lq, f, false, badParam("group", "takes no prerelease filter")
+		}
+		grouped = true
+	}
+	return lq, f, grouped, nil
+}
+
+// versionSummaryOf is an entry of the version list as the API answers it; an entry of the list by content carries its aliases.
+func versionSummaryOf(v view.VersionSummary, sig *gen.SignatureStatus) gen.PackageVersionSummary {
+	summary := gen.PackageVersionSummary{
+		Version: v.Version, Prerelease: v.Prerelease, PublishedAt: v.PublishedAt, SizeBytes: v.SizeBytes, SizePartial: v.SizePartial,
+		Repositories: repoTexts(v.Repositories), DownloadCount: v.DownloadCount, LastDownloadedAt: v.LastDownloadedAt,
+		Signatures: sig,
+	}
+	if v.Digest != "" {
+		digest := v.Digest
+		summary.Digest = &digest
+	}
+	if v.State != "" {
+		state := v.State
+		summary.State = &state
+	}
+	if v.Aliases != nil {
+		aliases, more := v.Aliases, v.AliasesMore
+		summary.Aliases, summary.AliasesMore = &aliases, &more
+	}
+	return summary
 }
 
 // GetPackageVersion implements GET /api/v1/packages/{packageId}/versions/{version}

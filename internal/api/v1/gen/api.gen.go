@@ -7168,6 +7168,21 @@ func (e ListPackageVersionsParamsSort) Valid() bool {
 	}
 }
 
+// Defines values for ListPackageVersionsParamsGroup.
+const (
+	ListPackageVersionsParamsGroupContent ListPackageVersionsParamsGroup = "content"
+)
+
+// Valid indicates whether the value is a known member of the ListPackageVersionsParamsGroup enum.
+func (e ListPackageVersionsParamsGroup) Valid() bool {
+	switch e {
+	case ListPackageVersionsParamsGroupContent:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListPermissionPoliciesParamsSort.
 const (
 	ListPermissionPoliciesParamsSortMinusName ListPermissionPoliciesParamsSort = "-name"
@@ -13181,7 +13196,16 @@ type PackageVersionRepositoryUnavailableReason string
 
 // PackageVersionSummary defines model for PackageVersionSummary.
 type PackageVersionSummary struct {
-	// Digest With `include=digest` only, the version's content digest from the format's metadata (an OCI tag - `sha256:` and the hex digest of its manifest); absent for a format without one.
+	// Aliases With `group=content` only: the other versions that name the entry's content (an image's other tags), in the order of the
+	// versions, at most 100 (Q-API-432); empty for an entry that is its content's only version, absent without `group`.
+	Aliases *[]string `json:"aliases,omitempty"`
+
+	// AliasesMore With `group=content` only, `aliases` names 100 versions and the content has more.
+	AliasesMore *bool `json:"aliasesMore,omitempty"`
+
+	// Digest With `include=digest`, the version's content digest from the format's metadata (an OCI tag - `sha256:` and the hex digest
+	// of its manifest); absent for a format without one. With `group=content`, always the entry's content (an image's manifest
+	// digest) where the format's version names one.
 	Digest *string `json:"digest,omitempty"`
 
 	// DownloadCount How often clients fetched the version through one of `repositories` (R-API-079): the downloads of R-STOR-015 that the
@@ -19105,6 +19129,13 @@ type ListPackageVersionsParams struct {
 	Include *[]ListPackageVersionsParamsInclude `form:"include,omitempty" json:"include,omitempty"`
 	Sort    *ListPackageVersionsParamsSort      `form:"sort,omitempty" json:"sort,omitempty"`
 
+	// Group `content`: one entry per content instead of per version, for a format whose version names a content (an OCI image: one
+	// entry per manifest digest with its tags), led by the content's first version in the order of the versions, with the others
+	// as `aliases` (Q-API-432). Only with `sort=-version` and without `prerelease` (else 400 naming the parameter); for a format
+	// whose versions name no content every version is its own entry. A page may hold fewer entries than `limit`, or none, while
+	// `nextCursor` is set: one request reads at most 1,024 versions (R-API-010).
+	Group *ListPackageVersionsParamsGroup `form:"group,omitempty" json:"group,omitempty"`
+
 	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 
@@ -19117,6 +19148,9 @@ type ListPackageVersionsParamsInclude string
 
 // ListPackageVersionsParamsSort defines parameters for ListPackageVersions.
 type ListPackageVersionsParamsSort string
+
+// ListPackageVersionsParamsGroup defines parameters for ListPackageVersions.
+type ListPackageVersionsParamsGroup string
 
 // GetPackageVersionParams defines parameters for GetPackageVersion.
 type GetPackageVersionParams struct {
@@ -27263,6 +27297,19 @@ func (siw *ServerInterfaceWrapper) ListPackageVersions(w http.ResponseWriter, r 
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "sort"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "group" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "group", r.URL.Query(), &params.Group, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "group"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "group", Err: err})
 		}
 		return
 	}

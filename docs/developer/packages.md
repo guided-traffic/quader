@@ -94,6 +94,39 @@ oldest copy as the primary one, ask the adapter for summary and details, and rea
 may ask about (npm's dist-tags) is read only when it asks. `ReadmeOf` asks for details and README. The repositories of a version are the physical
 repositories that hold it plus the virtual repositories that contain one of them and that the caller may read, local first.
 
+## The list by content (Q-API-432)
+
+`GET …/versions?group=content` (`Service.Images` in [images.go](../../internal/packages/view/images.go), the handler's `versionListQuery` in
+[packages_api.go](../../internal/api/v1/packages_api.go)) lists one entry per content for a format whose fetch rule is the document
+(`Adapter.Fetch() == FetchDocument`: OCI); every other format answers its plain list in the order of the versions with empty `aliases`.
+
+1. The content of a version is `package_versions.document_sha256` (written by the host's package writer with `packages.WithDocuments`, kept by
+   the trigger `items_document_follow` when a tag's item is overwritten in place, migration 00124, ADR-280) and a remote tag's `blob_sha256`.
+   The walk's statements return it (`digest`); `pageKey.digests` holds a version's contents over its holders, each once (`keyBatch` merges
+   them when two holders hold one version).
+2. `imageWalk` reads the walk of the order of the versions (`order.go`) in batches of 64 and turns each into `(version, content)` pairs
+   (`candidatesOf`). `imagesSeen` asks of every admitted holder which pairs an earlier visible version names (`PackageViewImageSeen`, one
+   statement per holder and batch; a ranked candidate is seen by a sibling of a higher key, an unranked one by a ranked sibling or, for one
+   holder, by an unranked sibling of a later time; each a probe of `package_versions_by_document`, `package_versions_document_unranked`,
+   `remote_cache_entries_tag_digest` or `…_unranked`, kept a check per candidate by `OFFSET 0`; the candidates come as rows of the joined
+   ordinalities of four arrays, a `MATERIALIZED` CTE). The measurement of four shapes of 100,000 tags is in
+   [oci.md](oci.md#the-list-by-content-of-an-image-with-100000-tags-q-api-432-h-1900-measured). Siblings without a stored key
+   (`PackageViewImageUnkeyed`) are placed in Go by the key their format gives them (Q-API-430). For several holders the unranked part is read
+   whole (H-1901), and its candidates are ordered among themselves by their place in it (`walk.firstOf`).
+3. A pair nobody earlier names leads an entry. The walk stops when the page holds `limit + 1` entries (`cutAtVersion` then keeps whole versions
+   up to `limit`, at least the first), when the walk ends, or when it read `imageBudget` (1,024) versions: then the page is what it found and
+   the cursor the walk's position (`positionOf`), a short or empty page with a cursor (R-API-010, H-1900).
+4. `imageSummaries` builds the page: the leading versions' rows (`PackageViewVersions`) and sizes (`adapterSizes`), and per holder
+   `PackageViewImageTags` (each content's visible versions, at most 101 ranked and 101 unranked per holder, ordered by `earlier` into
+   `aliases`, at most 100, `aliasesMore` past them) and `PackageViewImageDownloads` (the package's files holding the content's bytes, a tag
+   item only while its version is visible, H-1902). The handler adds the leading version's `signatures`.
+
+Tests: `TestR_API_029_TheListByContentGroupsAndCutsAtAVersion` (unit, microseconds), `TestR_API_029_TheListByContentIsTheGroupingOfTheListByTag`
+(area `ociremote`, about 7 s, 2,206 tiny tag entries and 1,103 manifests by SQL: the grouped pages equal the grouping of the per-tag list, the
+budget cuts the trailing commit tags into a short page, and the lead check of 64 candidates reads at most three entries each),
+`TestR_API_029_AMovedTagMovesBetweenImagesOfTheListByContent` (area `oci`, about 3 s, three pushes), the `group=content` subtest of
+`TestR_API_029_VersionList` (area `packages`).
+
 ## The fill of the sort keys (Q-HA-492)
 
 Migration 00116 adds `package_versions.sort_key` and `prerelease` as nullable columns (a row has both or neither, the check

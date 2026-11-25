@@ -228,6 +228,10 @@ Fuzz targets: `FuzzR_OCI_020_Parse`, `FuzzR_ARCH_028_Inspect`, `FuzzR_OCI_031_Co
 withheld manifests, `Describe` the digest, media type, size and (for an index) the platform table, `Compare` is `tagorder.Compare` for the tags
 that are versions; a tag that is no version (`latest`, `sha-5ccfd1a`) is no version of the format (`isVersion`, its `SortKey` of the class
 `versionkey.NotVersion`), so the lists put it below the versions, newest first by push or fetch time (Q-OCI-269, api-and-ui.md Q-API-431).
+The format's fetch rule is the document, so its versions name a content: a local tag's version row stores its manifest's digest
+(`document_sha256`, ADR-280) and a remote tag's cache entry has it, and the version list's `group=content` lists one entry per manifest led
+by its first tag with the others as `aliases` (api-and-ui.md Q-API-432, [packages.md](packages.md#the-list-by-content-q-api-432)); the
+format writes nothing for it.
 The format also implements the optional `formats.ViewSizer` (`Format.ViewSizes`, ADR-177, ADR-205): the package view asks it, once for a page of the
 version list and once for the details, for the `sizeBytes` of a tag, a `formats.ViewSize`. `Store.TagSizes` reads, in one statement for a page, the
 content size of the tag's manifest (an image manifest's config and layers) and, for an index, how many children it names, how many the repository
@@ -500,6 +504,32 @@ the latest tag is `PackageViewLatest`, the first visible entry of `remote_cache_
 `PackageViewTagKeyDesc` (51 entries a page), and the downloads of the page's images come from the files that were downloaded, not from a second read
 of the tags. `PackageViewList` took 0.49 s under `EXPLAIN ANALYZE`: 0.27 s reading the 100,001 tag entries with their listing rules, 0.18 s sorting
 them for the count (an external merge of 6.5 MB), 0.2 ms the downloads. The count is what is left ([H-829](../spec/formats/oci.md#h-829--the-package-list-of-a-remote-reads-every-tag-entry-of-an-image-to-count-it)).
+
+### The list by content of an image with 100,000 tags (Q-API-432, H-1900), measured
+
+Measured on 2026-11-25, a measurement and not a test (it is not in the repository): the integration stack (instance 1), one replica, the
+remote `oci-anon` of [test/integration/ociremote](../../test/integration/ociremote) after one pull of `library/alpine:3.19` from the
+stub (no public registry asked), the tags written by one `INSERT … SELECT … generate_series` each (3.6 to 7.8 s), then `ANALYZE` of the
+cache entries, the version rows, `oci_manifests`, `blobs`, `packages` and `items`. Requests as the administrator, `limit=50`; the first page
+the median of three; then the list by content read to its end. The machine has 20 cores and ran other builders: load average 7 to 10
+over the minute.
+
+| Shape | Per tag, first page | By content, first page | By content to its end |
+|---|---|---|---|
+| **one manifest**: 100,000 version tags `0.<g/1000>.<g%1000>` on the pulled manifest | 26 ms | 133 ms (one entry, the budget's cursor) | 98 requests, 1 image, 97 short pages; a page 108 ms median (66 to 184 ms), 10.9 s in all |
+| **100,000 manifests**, one version tag each | 24 ms | 36 ms | 2,001 requests, 100,001 images, no short page; median 26 ms, the middle request 24 ms, max 126 ms |
+| **CI**: 50,000 manifests with a version tag and a `sha-` tag each | 25 ms | 33 ms | 1,049 requests, 50,001 images, 48 short pages at the end (the 50,000 commit tags); median 26 ms, the short pages 178 to 231 ms |
+| **CI, local**: the same as version rows of a local repository | 53 ms | 59 ms | 1,048 requests, 50,000 images, 47 short pages; median 49 ms, the middle 45 ms, max 296 ms |
+
+A page of images whose tags each lead their own manifest costs about what the plain page costs (one batch of the walk, one lead check of
+64 probes, one read of the page's aliases and downloads). The tags that lead nothing cost one request per 1,024 of them, 100 to 230 ms each:
+16 batches of 64, each a keyset batch, a lead check and a read of siblings without a key, in their own short transactions
+([H-1900](../spec/api-and-ui.md#h-1900--the-end-of-a-list-by-content-whose-versions-lead-no-image-costs-a-request-per-1024-of-them)).
+Two defects the measurement found were repaired before it was taken again: the lead check took the candidates by subscripting the four
+arrays per row (55 ms for 64 candidates; joined unnests now, 0.7 ms), and a page the budget ended before any image led read every
+version of the package for its summaries (`PackageViewVersions` reads every version when it is asked for none; about 1 s a page). A first
+run also left `oci_manifests` without statistics, and the plain per-tag page then took 562 ms: the numbers hold for a database whose
+statistics are current, as autovacuum keeps them.
 
 ## The mirror (R-OCI-026)
 

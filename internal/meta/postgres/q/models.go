@@ -1165,6 +1165,7 @@ type PackageVersion struct {
 	TrashedAt      pgtype.Timestamptz
 	SortKey        []byte
 	Prerelease     pgtype.Bool
+	DocumentSha256 []byte
 }
 
 type PackageVersionListing struct {

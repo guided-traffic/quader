@@ -2655,6 +2655,30 @@ R-UI-212 the button and its panel, and R-CUR-018's tab Downloads takes a package
 [security/upstream-downloads.md](security/upstream-downloads.md); the code is described in
 [developer/upstream-downloads.md](developer/upstream-downloads.md).
 
+### ADR-280 · A version that names content stores its digest, and a list of versions groups by it
+
+**Status:** Decided by the development agent on the owner's word of 2026-11-25 — owner review at the walkthrough
+([Q-API-432](spec/api-and-ui.md#q-api-432--the-list-by-content-one-entry-per-manifest-on-the-walk-of-the-order-of-the-versions-with-a-lead-check-per-batch-and-a-scan-budget),
+[Q-UI-1130](spec/api-and-ui.md#q-ui-1130--an-image-is-one-row-with-its-tags-on-the-opened-item-and-on-the-packages-page)). The frozen
+format contract does not change.
+
+**Context.** The owner asked one row per image on an OCI repository's screens, with the image's tags on it. An image is a manifest
+digest; its tags are versions. A remote's tags are cache entries that store the digest; a local tag is a version row whose lead item holds
+the manifest's bytes, and that row did not hold the digest, so no index found a digest's other tags.
+
+**Decision.**
+- `package_versions.document_sha256` holds the digest of a version's document for a format whose version is fetched as its document
+  (`formats.FetchDocument`, R-API-079); the host's package writer writes it from the lead item at the insert and whenever the lead item
+  changes (`packages.WithDocuments`, set by `formathost` from the descriptor), and a trigger on `items` keeps it when the lead item's content
+  is overwritten in place (a tag pushed again). Migration 00124 fills it for the stored OCI rows and adds the indexes by document of the
+  version rows and of the remote tag entries; the view `package_version_listing` returns it for local rows as it did for remote tags.
+- The version list's `group=content` groups by it on the walk of the order of the versions, with a lead check per batch and a scan budget
+  per request (Q-API-432).
+
+**Consequences.** A new format whose versions name content gets the grouping by declaring its fetch rule; no format code changes. A row
+written by a replica of the release before during an upgrade has no digest and is listed as an image of its own until it is written again
+(pre-alpha: no fill for it). The end of a list whose versions lead no image costs a request per 1,024 versions (H-1900).
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -9039,10 +9063,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-API
 
-157 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
+158 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-API: 157 questions</summary>
+<summary>Q-API: 158 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9203,6 +9227,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-API-429](spec/api-and-ui.md#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) | The order of a format's versions is a sort key stored with every version row | Decided by the development agent | (a) A sort key of the format's order stored with every version row | [ADR-278](#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) |
 | [Q-API-430](spec/api-and-ui.md#q-api-430--a-version-row-without-a-stored-sort-key-is-ordered-by-the-key-its-format-gives-it) | A version row without a stored sort key is ordered by the key its format gives it | Decided by the development agent | (a) The statements return a package's rows without a key after their keyed batch, and the service gives each the key its format gives it | [ADR-278](#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) |
 | [Q-API-431](spec/api-and-ui.md#q-api-431--every-list-of-versions-is-newest-first-by-its-formats-order-and-a-version-the-format-does-not-rank-comes-below-by-its-time) | Every list of versions is newest first by its format's order, and a version the format does not rank comes below by its time | Decided by the development agent on the owner's word of 2026-11-25 ("Nächstes Thema, ich wünsche eine Erkennung von semantic-versioning. Ich wünsche, dass unsere Software automatisch erkennt, dass 4.16.6 höher ist als 4.2.8, die Darstellung von Versionen ist default von der neusten zur ältesten.") | (a) The default `sort` is `-version`; the order has two parts, the ranked versions by key, then the versions of the class `NotVersion` newest first by time, each part a keyset | [ADR-278](#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) |
+| [Q-API-432](spec/api-and-ui.md#q-api-432--the-list-by-content-one-entry-per-manifest-on-the-walk-of-the-order-of-the-versions-with-a-lead-check-per-batch-and-a-scan-budget) | The list by content: one entry per manifest, on the walk of the order of the versions, with a lead check per batch and a scan budget | Decided by the development agent | (a) `group=content` on the version list: the walk of the order of the versions in batches of 64; after each batch one statement per holder asks which of the batch's (version, digest) pairs a visible version earlier in the order names (`PackageViewImageSeen`, an index probe per candidate on the indexes by document); the others lead an entry; the page is cut after a version's last entry; one request reads at most 1,024 versions, so a page may be short with a cursor | [ADR-280](#adr-280--a-version-that-names-content-stores-its-digest-and-a-list-of-versions-groups-by-it) |
 
 </details>
 
@@ -12177,10 +12202,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-554 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+555 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 554 questions</summary>
+<summary>Q-UI: 555 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12738,6 +12763,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1121](spec/api-and-ui.md#q-ui-1121--a-packages-versions-keep-the-column-vulnerabilities-unless-its-format-is-not-scanned) | A package's versions keep the column Vulnerabilities unless its format is not scanned | Decided by the development agent | (a) The column is left out only when every version's state is `format_not_scanned` (Debian, Ansible Galaxy, generic files) | — |
 | [Q-UI-1122](spec/api-and-ui.md#q-ui-1122--a-versions-page-reads-fast-only-while-its-scan-passes-on-its-own) | A version's page reads fast only while its scan passes on its own | Decided by the development agent | (a) Every 3 s while an image is `queued` or `scanning`, or a file's malware scan is `queued`; every minute when it waits for what the installation lacks (`no_scanner`, `no_database`) | — |
 | [Q-UI-1123](spec/api-and-ui.md#q-ui-1123--a-pending-file-says-why-it-waits-and-one-that-cannot-be-checked-now-is-a-warning) | A pending file says why it waits, and one that cannot be checked now is a warning | Decided by the development agent | (a) The word of `waiting` ("Queued", "No scanner", "No signatures"; German "Wartet", "Kein Scanner", "Keine Signaturen") with its icon (hourglass, plug off, cloud off) and the sentence under it; neutral for queued, the warning's colour for no scanner and no signatures | — |
+| [Q-UI-1130](spec/api-and-ui.md#q-ui-1130--an-image-is-one-row-with-its-tags-on-the-opened-item-and-on-the-packages-page) | An image is one row with its tags, on the opened item and on the package's page | The owner's word of 2026-11-25 | (a) The leading tag as the row's link, the other tags muted after it (on the opened item at most four, then "+N more"; on the package's page all, "+ more" past 100), the signature badge on the row, **Pull** of the leading tag; the filter matches any tag | [ADR-280](#adr-280--a-version-that-names-content-stores-its-digest-and-a-list-of-versions-groups-by-it) |
 
 </details>
 

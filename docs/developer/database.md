@@ -838,6 +838,18 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
+## A version that names content stores its digest (00124)
+
+[00124_version_document](../../internal/meta/postgres/migrations/00124_version_document.sql) adds `package_versions.document_sha256` (32
+bytes or NULL): the digest of the lead item's content of a version of a format whose fetch rule is the document (OCI), written by the host's
+package writer (`InsertPackageVersion`, `SetLeadItem` with `document`) and filled for the stored OCI rows from their lead items. The row
+trigger `items_document_follow` (`AFTER UPDATE OF blob_sha256 ON items`, `WHEN` the content changed and the item belongs to a version) keeps
+it when a tag's item is overwritten in place. Indexes of the list by content ([api-and-ui.md](../spec/api-and-ui.md) Q-API-432, ADR-280):
+`package_versions_by_document (package_id, document_sha256, sort_key)`, `package_versions_document_unranked (package_id, document_sha256,
+created_at, version)`, `remote_cache_entries_tag_digest (repo_id, tag_name, blob_sha256, tag_sort_key)` and
+`remote_cache_entries_tag_digest_unranked (repo_id, tag_name, blob_sha256, fetched_at, tag)`. The view `package_version_listing` returns
+the column for local rows.
+
 ## The versions a format does not rank (00123)
 
 [00123_unranked_versions](../../internal/meta/postgres/migrations/00123_unranked_versions.sql) makes an image tag that is no version

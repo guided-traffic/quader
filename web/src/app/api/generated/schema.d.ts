@@ -3844,6 +3844,8 @@ export interface paths {
          *     the format's metadata (an OCI tag: `sha256:…` of its manifest, R-UI-052); a format without one
          *     has no `digest`. `include=state` reads each version's `state` from the format's metadata the same way (the ClamAV
          *     definitions: `in_use`, `previous`, `superseded`, `files_removed`, R-UI-194); a format without one has no `state`.
+         *     `group=content` lists one entry per content (an image's manifest digest) with the content's other versions as `aliases`; its
+         *     `downloadCount`, `lastDownloadedAt` and `repositories` are the content's (Q-API-432).
          *     `downloadCount` and `lastDownloadedAt` count the fetches of the version by clients
          *     through any of the listed repositories, by the format's rule, read with the rows in the same statement (R-API-065,
          *     R-API-079); `sizeBytes` is `null` when the size is not known (R-API-080).
@@ -12021,8 +12023,19 @@ export interface components {
              *     platforms and not others (R-API-080, Q-OCI-221). `false` when `sizeBytes` is the whole version's or `null`.
              */
             sizePartial: boolean;
-            /** @description With `include=digest` only, the version's content digest from the format's metadata (an OCI tag - `sha256:` and the hex digest of its manifest); absent for a format without one. */
+            /**
+             * @description With `include=digest`, the version's content digest from the format's metadata (an OCI tag - `sha256:` and the hex digest
+             *     of its manifest); absent for a format without one. With `group=content`, always the entry's content (an image's manifest
+             *     digest) where the format's version names one.
+             */
             digest?: string;
+            /**
+             * @description With `group=content` only: the other versions that name the entry's content (an image's other tags), in the order of the
+             *     versions, at most 100 (Q-API-432); empty for an entry that is its content's only version, absent without `group`.
+             */
+            aliases?: string[];
+            /** @description With `group=content` only, `aliases` names 100 versions and the content has more. */
+            aliasesMore?: boolean;
             signatures?: components["schemas"]["SignatureStatus"];
             /**
              * @description With `include=state` only, the version's state from the format's metadata (the member `state` of its details): for the
@@ -25994,6 +26007,14 @@ export interface operations {
                 /** @description `digest`: also read each version's content digest from the format (`digest`); `state`: its state (`state`). */
                 include?: ("digest" | "state")[];
                 sort?: "-publishedAt" | "publishedAt" | "-version" | "version";
+                /**
+                 * @description `content`: one entry per content instead of per version, for a format whose version names a content (an OCI image: one
+                 *     entry per manifest digest with its tags), led by the content's first version in the order of the versions, with the others
+                 *     as `aliases` (Q-API-432). Only with `sort=-version` and without `prerelease` (else 400 naming the parameter); for a format
+                 *     whose versions name no content every version is its own entry. A page may hold fewer entries than `limit`, or none, while
+                 *     `nextCursor` is set: one request reads at most 1,024 versions (R-API-010).
+                 */
+                group?: "content";
                 /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
                 limit?: components["parameters"]["Limit"];
                 /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */

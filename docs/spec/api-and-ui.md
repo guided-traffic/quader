@@ -557,6 +557,10 @@ the exceptions.
 - Every sort order ends with the item's unique identifier as tie-breaker, so a traversal returns
   no duplicates and skips nothing among items that do not change during it; items created or
   deleted meanwhile may or may not appear.
+- **A page may hold fewer items than `limit`, or none, while `nextCursor` is set**: a list whose request bounds what it reads (the list by
+  content of a package's versions reads at most 1,024 versions a request,
+  [Q-API-432](#q-api-432--the-list-by-content-one-entry-per-manifest-on-the-walk-of-the-order-of-the-versions-with-a-lead-check-per-batch-and-a-scan-budget))
+  answers what it found and the position it reached. A client reads on while `nextCursor` is set; only a `null` cursor ends the list.
 - Totals are not returned by default. Administrative lists whose content does not depend on the
   caller's permissions (users, groups, policies, audit events, jobs) MAY accept
   `includeTotal=true` and add `total`.
@@ -1592,7 +1596,7 @@ remain as their owners define them.)
 | GET | `/api/v1/packages` | Packages; filters `format`, `repository` (both repeatable; the qualified name `<projectKey>/<repoKey>`), `project`, `q` (name and description), `namePrefix`, `keyword`, `createdFrom` / `createdTo` (first visible version); `sort` `name`, `createdAt`, `updatedAt` and their descending forms (default `name`); `include=vulnerabilities` (R-UI-052) | visible versions (below); anonymous where allowed |
 | GET | `/api/v1/packages/lookup?format=npm&name=@team-a/ui` | Resolve a name to the package | as list |
 | GET | `/api/v1/packages/{packageId}` | Package summary | as list |
-| GET | `/api/v1/packages/{packageId}/versions` | Versions; filters `prerelease`, `repository`; `sort` `-version` (default, the format's version precedence, newest first), `version`, `-publishedAt`, `publishedAt`; `include=digest` (R-UI-052), `include=state` (R-UI-194) | as list |
+| GET | `/api/v1/packages/{packageId}/versions` | Versions; filters `prerelease`, `repository`; `sort` `-version` (default, the format's version precedence, newest first), `version`, `-publishedAt`, `publishedAt`; `group=content` (one entry per content, below); `include=digest` (R-UI-052), `include=state` (R-UI-194) | as list |
 | GET | `/api/v1/packages/{packageId}/versions/{version}` | Version details | as list |
 | GET | `/api/v1/packages/{packageId}/versions/{version}/readme` | Sanitized README HTML; wiki content (`x-quader-part: wiki`, R-API-058) | as list, then the wiki check ([authorization.md](authorization.md) R-AUTHZ-034) |
 | GET | `/api/v1/packages/{packageId}/versions/{version}/docs`, `…/docs/entries/{type}/{name}`, `…/docs/files/{file}` | The documentation of a version of a format that has one (Ansible Galaxy: the tree with search, one plugin's page, a Markdown file): `getPackageVersionDocs`, `getPackageVersionDocEntry`, `getPackageVersionDocFile`, [formats/ansible.md](formats/ansible.md) R-ANS-036; wiki content (Q-API-260, Q-API-261); 404 for a format without documentation | as list, then the wiki check of R-AUTHZ-034 ([formats/ansible.md](formats/ansible.md) R-ANS-037) |
@@ -1684,7 +1688,19 @@ remain as their owners define them.)
   second part first. A cursor of the first part is the version, one of the second its time and the version. What "newest" is per format:
   npm SemVer precedence (a pre-release below its release), NuGet normalized SemVer 2.0, Debian the dpkg order (epoch, upstream version,
   revision, `~` lowest), Ansible Galaxy SemVer, OCI the tag order ([formats/oci.md](formats/oci.md) R-OCI-031); none of npm, NuGet,
-  Debian and Ansible stores a string it does not rank, so their lists have no second part; the generic format has no versions. The `downloadUrl` of a file is the protocol URL of the repository
+  Debian and Ansible stores a string it does not rank, so their lists have no second part; the generic format has no versions.
+- **The list by content** (`group=content`, the owner's word of 2026-11-25, [Q-API-432](#q-api-432--the-list-by-content-one-entry-per-manifest-on-the-walk-of-the-order-of-the-versions-with-a-lead-check-per-batch-and-a-scan-budget),
+  [ADR-280](../decisions.md#adr-280--a-version-that-names-content-stores-its-digest-and-a-list-of-versions-groups-by-it)): for a format
+  whose version names a content (its fetch rule is the document, R-API-079: an OCI image's tags name its manifest), one entry per content
+  instead of per version, in the order of the versions, led by the content's first version there; a version that names two contents
+  (two repositories with two manifests under one tag) leads or joins both. Only with `sort=-version` and without `prerelease` (else
+  `400` naming `group`); `repository`, `include`, `limit` and `cursor` work as on the plain list, the filter narrowing which repositories'
+  versions are grouped. An entry is the leading version's summary (`version`, `prerelease`, `publishedAt`, `sizeBytes`, `sizePartial`,
+  `signatures`) with the content's `digest` always, `aliases` (the content's other visible versions in the order of the versions, at
+  most 100), `aliasesMore` (it has more), and the content's `repositories` (every repository that holds one of its versions) and
+  `downloadCount` and `lastDownloadedAt` (its manifest by digest once and each version's own file by name, R-API-079). For a format
+  whose versions name no content every version is its own entry with empty `aliases`. One request reads at most 1,024 versions, so a
+  page may be short or empty with a cursor (R-API-010). The `downloadUrl` of a file is the protocol URL of the repository
   that holds it where the format has a protocol, else its `/files/` URL, built on the configured base URL of the
   endpoint and never on the `Host` of the request. Its `contentUrl` is the relative URL of the content route of R-API-025
   for the item that holds the file (Q-UI-106): `PackageFile.path` is the path of the file item in the repository that
@@ -3911,7 +3927,8 @@ The owner's walk of 2026-11-18 (W-7): a package's page is its versions. A versio
 - `/packages/{format}/{name…}` resolves through `GET /api/v1/packages/lookup`; the name keeps its slash
   as a path separator (`/packages/npm/@team-a/ui`) and is one breadcrumb step (Q-UI-73).
 - Header: the name, the format (its icon of Q-UI-225 and its name), the package's description (the latest version's) as the muted
-  sentence, the number of versions and the latest version as a link to its page.
+  sentence, the number of versions and the latest version as a link to its page. For an image the number counts its tags and says so
+  ("204 tags · Latest 5.4.7"), while the table lists its images (R-UI-110, Q-UI-1130).
 - Then the versions as one table (R-UI-110), then the README of the latest version under the heading "README of <version>"
   (R-UI-008; not requested when the latest version has none for the caller, R-UI-057). For the format `ansible`, whose README is
   the first page of its documentation (R-UI-060), a link "Documentation of <version>" to the version page's Documentation tab
@@ -4078,12 +4095,16 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
   (`vulnerabilityGrade` from `include=vulnerabilities`, R-VULN-039, Q-VULN-154) as `<quader-grade>` (R-UI-094) and sorts by grade
   (`sort=grade`, worst first as `-grade`, in the browser, Q-UI-373). The versions list of an item is `…/versions?repository=…` with its
   `…/vulnerabilities?repository=…` report, one request each per opened item.
-- The row of an item opens in place (`collapse-region`) to its ten newest versions under a head of their own, with no scroll and no
-  "Load more"; where the item holds more, a link under them, **All 103 tags** or **All 33 versions** (the count of the row), leads to
-  the package's page, which lists every version with filter, sort and "Load more" (R-UI-110, R-UI-215,
-  [Q-UI-1111](#q-ui-1111--an-opened-item-shows-its-ten-newest-versions-and-links-all-of-them)): for an image, the tags with digest
-  (`include=digest`), size and pushed time; for a package, its versions with size and published time; each with the grade of the
-  version in this repository.
+- The row of an item opens in place (`collapse-region`) to its ten newest versions, newest first by the format's order (R-API-029),
+  under a head of their own, with no scroll and no "Load more"; where the item holds more, a link under them, **All 103 tags** or **All 33
+  versions** (the count of the row), leads to the package's page, which lists every version with filter, sort and "Load more" (R-UI-110,
+  R-UI-215, [Q-UI-1111](#q-ui-1111--an-opened-item-shows-its-ten-newest-versions-and-links-all-of-them)). For an image the ten are its
+  newest images (`group=content`, one row per manifest, the owner's word of 2026-11-25,
+  [Q-UI-1130](#q-ui-1130--an-image-is-one-row-with-its-tags-on-the-opened-item-and-on-the-packages-page)): the leading tag as the link,
+  **Pre-release** where it is one, the image's other tags muted after it (at most four, then "+N more"), the signature badge (R-SIG-035),
+  the digest (`include=digest`), size and pushed (or fetched) time of the leading tag, and **Pull** of the leading tag; the tags that are no
+  version (`latest`, `sha-…`) lead an image only when no version tag names it, below the versions by their time. For a package, its
+  versions with size and published time. Each row with the grade of its version in this repository.
   No box of a command stands in the list. At the end of each version's row, and of each item's row for its latest version, a button
   with the format's client verb and a chevron (**Pull** for an image, **Install** for a package, **Download** for a file;
   [Q-UI-1066](#q-ui-1066--a-versions-commands-are-a-menu-hung-from-a-button-with-the-formats-client-verb)) opens a menu hung from the
@@ -4123,7 +4144,8 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
 Acceptance criteria:
 
 - `/projects/web` opens the repositories of the project; the sidebar lists Repositories first; the project switcher and the start page lead there.
-- `/projects/web/repositories/<oci-key>` lists the images; opening one shows its tags with digest, size and pushed time, and a tag's
+- `/projects/web/repositories/<oci-key>` lists the images; opening one shows one row per manifest, led by its highest tag with the other
+  tags muted after it, with digest, size and pushed time, and a row's
   **Pull** opens a menu with the sections **Docker CLI (with Buildx)** and **Podman**, each a copyable
   `docker pull <host>/web/<oci-key>/<image>:<tag>` or `podman pull …`; Escape closes it and the focus is on **Pull** again.
 - `/projects/web/repositories/<oci-remote-key>`, after a pull through it, lists the pulled image with its tag, the digest and a **Fetched** time; before any pull it says
@@ -7204,14 +7226,18 @@ case is a user who looks for one version of a dependency, or for the vulnerabili
 owner's reference screen's; its look is Quader's own.
 
 - The table holds every version the reader may read (`GET …/versions?sort=-version`, read once, every page), with the grades of
-  the package report (`GET …/vulnerabilities`, R-VULN-039) and the distribution tags of the latest version's details.
+  the package report (`GET …/vulnerabilities`, R-VULN-039) and the distribution tags of the latest version's details. **For an image a row
+  is an image, not a tag** (the owner's word of 2026-11-25, which changes his word of W-7 "one row per version" for OCI,
+  [Q-UI-1130](#q-ui-1130--an-image-is-one-row-with-its-tags-on-the-opened-item-and-on-the-packages-page)): `group=content`, the leading tag
+  as the version with every other tag of the image muted after it ("+ more" where the answer has more than 100), the signature badge on
+  the row; the column is headed **Tag**, the field **Filter tags** also matches the other tags, and the count reads "M of N images".
 - **Columns, in the owner's order** ([Q-UI-450](#q-ui-450--a-row-of-the-versions-table-is-the-version-its-size-its-vulnerabilities-and-two-times)):
   **Version** (a link to the version's page, R-UI-111; after it its distribution tags as badges, `latest`, `next`, and the mark
   **Pre-release**), **Size** (R-API-080: a size that is not known is the shared no-value with a title that says why, a partial size has **≥** before it and a title that says what it counts), **Vulnerabilities** (R-UI-112; only when the answer carries a grade other than N/A: a format that is not scanned and a package of internal names are N/A in every row, Q-UI-377), **Published**,
   **Last download** (R-API-065, R-API-079; "Never" for a version no client downloaded, with a help text and a title, Q-API-342), and
   **Repositories** only when the versions differ in the
   repositories that hold them ([Q-UI-457](#q-ui-457--the-column-repositories-appears-only-when-the-versions-are-held-by-different-repositories)).
-  No digest: an image's row is its tag (Q-UI-453).
+  No digest: an image's row is led by its tag (Q-UI-453, Q-UI-1130).
 - **Sort**: the highest version first by the format's precedence (the server's order); every column but Repositories sorts both
   ways in the browser over the whole list; equal keys keep the highest version first. The sort is the address's `sort`
   (`-published`, `vulnerabilities`, …), the default left out ([Q-UI-452](#q-ui-452--the-versions-are-searched-sorted-and-paged-in-the-browser-over-the-whole-list)).
@@ -17134,7 +17160,9 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (a). An image's tag is its version, so the row leads with the tag; the digest is in the version's **Details**
 (the owner: "nobody actually reads them"). **Rationale:** the plain path shows everything and the search narrows it. The
 development agent revisits a switch if a package with hundreds of nightlies makes the table useless. **Applied in the spec:**
-R-UI-110, R-UI-111.
+R-UI-110, R-UI-111. **Revised on 2026-11-25** by the owner's word of
+[Q-UI-1130](#q-ui-1130--an-image-is-one-row-with-its-tags-on-the-opened-item-and-on-the-packages-page): an image's row is the image, led by
+its tag, its other tags on the row; still no digest column.
 
 ### Q-UI-454 · A version says its grade, total and fixable findings once; the tab carries no count
 
@@ -24361,6 +24389,28 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) **Checking** for all three, the cause under it | One word as before | — | The cell's first line tells nothing apart |
 
 **Choice:** (a).
+### Q-UI-1130 · An image is one row with its tags, on the opened item and on the package's page
+
+Status: **The owner's word of 2026-11-25**, as the development agent read it and told him: one row per image (manifest digest) with all its
+tags, the version first, found by any of them, the signature state as a mark on the row. His words, on the tab Images of the remote
+`upstream/docker-hub` with the image `guidedtraffic/s3-encryption-proxy` opened: "Außerdem sehe ich die Signaturen für Images neben den
+Images. Anstatt also die Images als Signiert anzuzeigen indem sie einen passenden Icon bekommen, habe ich Signatur-Tags die ein Suchen in den
+Images sehr unübersichtlich machen." It changes his word of W-7 (2026-11-18) "one row per version" (R-UI-110) for OCI: a row of an image's
+list is an image, not a tag; for every other format a row stays a version. It revises
+[Q-UI-453](#q-ui-453--pre-releases-and-distribution-tags-are-marks-in-the-row-no-switch)'s "an image's row is its tag" and R-UI-052's
+opened item that listed tags. The screens are package B of the work; the details below are the development agent's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The leading tag as the row's link, the other tags muted after it (on the opened item at most four, then "+N more"; on the package's page all, "+ more" past 100), the signature badge on the row, **Pull** of the leading tag; the filter matches any tag (chosen) | `group=content` on both screens | One row per image; every tag is still on the screen and found by the filter; Pull, the link and the grade are the leading tag's, the one a reader looks for | A row whose tags wrap takes two lines at 390 px |
+| (b) The digest as the row, the tags in a column | Rows keyed by content | Exact | The owner: nobody reads digests (Q-UI-453) |
+| (c) Hide the tags that are no version | Fewer names | Short rows | `latest` and `main` are what many pulls name; hiding them hides an image whose only tag they are |
+
+**Choice:** (a). The header keeps counting tags ("204 tags · Latest 5.4.7", R-UI-007): an image count would read every tag again
+(H-829). Delete and retention stay where they are (the Files view's item delete removes a tag or, by its manifest, the image with its
+tags). The Upstream tab stays one row per tag: its acts (a delivery rule, a download ahead) are per tag (Q-CUR-10). **Applied in the
+spec:** R-UI-007, R-UI-052, R-UI-110, [signatures.md](signatures.md) R-SIG-035. The API is
+[Q-API-432](#q-api-432--the-list-by-content-one-entry-per-manifest-on-the-walk-of-the-order-of-the-versions-with-a-lead-check-per-batch-and-a-scan-budget).
 
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 
@@ -24711,6 +24761,44 @@ default), `TestR_API_029_LatestOfAPackageWithoutARankedVersionIsItsNewest` (unit
 (area `ociremote`, the second part's statements read no entry past their page), `TestR_HA_020_TheUnrankedVersionsStepPassesOnADatabaseOfThePreviousRelease`
 (area `postgres`).
 
+### Q-API-432 · The list by content: one entry per manifest, on the walk of the order of the versions, with a lead check per batch and a scan budget
+
+Status: **Decided by the development agent**, carrying out the owner's word of 2026-11-25 for the server (his objection on the tab Images of
+`upstream/docker-hub`: "Außerdem sehe ich die Signaturen für Images neben den Images. Anstatt also die Images als Signiert anzuzeigen indem
+sie einen passenden Icon bekommen, habe ich Signatur-Tags die ein Suchen in den Images sehr unübersichtlich machen."). The rows he meant
+are commit tags (`sha-5ccfd1a`) his pipeline pushes beside each version on the same manifest; his image's 315 tags held no signature tag.
+What stands: one image was two to five rows. The development agent's answer, told to him: one row per image (manifest digest) with all
+its tags, the version first, found by any of them, the signature as a mark on the row
+([Q-UI-1130](#q-ui-1130--an-image-is-one-row-with-its-tags-on-the-opened-item-and-on-the-packages-page),
+[ADR-280](../decisions.md#adr-280--a-version-that-names-content-stores-its-digest-and-a-list-of-versions-groups-by-it)). The owner
+reviews the options at the walkthrough.
+
+Context: a version list is a keyset walk of the order of the versions (Q-API-429, Q-API-431); an image with 100,000 tags must stay a
+page of tens of milliseconds (H-829). Grouping by digest means: an entry for each digest at its first tag in that order, and every other
+tag of the digest left out of the walk but named on that entry.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `group=content` on the version list: the walk of the order of the versions in batches of 64; after each batch one statement per holder asks which of the batch's (version, digest) pairs a visible version earlier in the order names (`PackageViewImageSeen`, an index probe per candidate on the indexes by document); the others lead an entry; the page is cut after a version's last entry; one request reads at most 1,024 versions, so a page may be short with a cursor (chosen) | One more mode of the list, the same cursor | No state kept beside the versions: a page is right after any push, move or eviction; an image whose tags each name their own manifest costs what the plain page costs; the walk, the cursor and the visibility are the plain list's | The tags that lead nothing are read again by a later request: a run of 100,000 tags on one manifest costs one request per 1,024 of them at the end of the list (H-1900) |
+| (b) A table of images kept by the commit and the fill, each with its leading tag | One row per image to page over | A page reads its images and nothing else | A write path in every tag write, every move, every eviction and every remote listing rule that changes with a download (R-OCI-036); the leading tag changes with any of them |
+| (c) Group in the browser over every tag | No server change | — | Reads every tag for every opened image; the opened item shows ten |
+| (d) `GROUP BY` the digest in SQL, ordered by the group's highest key | One statement | — | A sort over every tag of the image for every page; no keyset over an aggregate |
+
+**Choice:** (a). The entry is the leading version's summary with the digest always, `aliases` (at most 100, from
+`PackageViewImageTags`: of each holder at most 101 ranked versions by key and 101 unranked by time), `aliasesMore`, the image's
+holders as `repositories` and its downloads (`PackageViewImageDownloads`: the files of the package that hold the manifest's bytes, each
+once, a tag item only while its version is visible). Only `sort=-version` and no `prerelease`: another order would need another lead
+than the first in the list, and the package's page sorts and filters in the browser. A format whose versions name no content (every
+format but OCI today) answers its plain list with empty `aliases`. **Rationale:** grouping is a reading of the same order, so it is
+built on the same walk and needs nothing kept; the bound per request keeps a pathological image from costing one request more than
+its share. The development agent would revisit (b) if the end of a list of commit tags is a measured cost (H-1900). **Applied in the
+spec:** R-API-010, R-API-029, R-UI-052, R-UI-110. Code: `Images`, `imageWalk`, `imagesSeen`, `imageFacts` in
+[images.go](../../internal/packages/view/images.go); the statements `PackageViewImageSeen`, `PackageViewImageUnkeyed`,
+`PackageViewImageTags`, `PackageViewImageDownloads` in [package_view.sql](../../internal/meta/postgres/queries/package_view.sql);
+`versionListQuery` in [packages_api.go](../../internal/api/v1/packages_api.go). Tests: `TestR_API_029_TheListByContentGroupsAndCutsAtAVersion`
+(unit), `TestR_API_029_TheListByContentIsTheGroupingOfTheListByTag` (area `ociremote`, the oracle and the budget),
+`TestR_API_029_AMovedTagMovesBetweenImagesOfTheListByContent` (area `oci`), `TestR_API_029_VersionList` (area `packages`).
+
 ## What this does not cover
 
 ### H-1683 · The version list of a package several repositories hold, in the order of publication, reads every version, and the package list counts every version
@@ -24739,6 +24827,24 @@ order of publication. Live today; real only for an image that two physical repos
 no version (a CI's commit tags); npm, NuGet, Debian and Ansible store no such version, and a virtual repository over one member is one
 holder. Not measured. The remedy would be the same as H-1683's: a time per version kept across its holders.
 
+
+### H-1900 · The end of a list by content whose versions lead no image costs a request per 1,024 of them
+
+The list by content (Q-API-432) walks the order of the versions and asks, a batch at a time, which of them lead an image; a version that
+names an image an earlier version leads is read and left out. One request reads at most 1,024 versions, so a run of versions that lead
+nothing (an image's commit tags after its versions, a CI's `x.y.z` and `sha-…` on one manifest; 100,000 tags on one manifest) costs one
+request per 1,024 of them, each answering a short or empty page with a cursor; a client that reads to the end pays them. Live today; real
+for an OCI image with thousands of tags per manifest. Measured on 2026-11-25 ([oci.md](../developer/oci.md#the-list-by-content-of-an-image-with-100000-tags-q-api-432-h-1900-measured)):
+100,000 tags on one manifest are 98 requests of about 108 ms each; the 50,000 commit tags after a CI image's 50,000 versions are 48
+requests of 178 to 231 ms; an image whose tags each name their own manifest pages at 24 to 36 ms, as the plain list.
+The remedy would be a table of images kept by the commit and the fill (Q-API-432 (b)); not built.
+
+### H-1902 · The downloads of a page of a local image's list by content read the items that hold each image's manifest
+
+The list by content sums an image's downloads from the files of the package that hold its manifest's bytes (`PackageViewImageDownloads`):
+of a local image its manifest under its digest and one tag item per tag. For an image with tens of thousands of tags on one manifest the
+page reads that many tag items for the image's row, once per page that shows it. Live today; not measured; real only for a local image with
+that many tags on one manifest. A remote image's tags are cache entries and hold no item, so its read is its manifest alone.
 
 ### H-1847 · A live list reads its rows again; there is no answer of what changed
 

@@ -51,8 +51,10 @@ type walk struct {
 	// sorted is the unranked part of several holders, read whole and sorted once (H-1901); pos is the next of it.
 	sorted []pageKey
 	loaded bool
-	pos    int
-	done   bool
+	// firstOf is, for each content of the unranked part read whole, the place of its first version there (the list by content).
+	firstOf map[string]int
+	pos     int
+	done    bool
 	// read counts the version rows the walk's statements returned: the scan budget of the list by content (Q-API-432).
 	read int
 }
@@ -195,12 +197,22 @@ func (w *walk) loadUnranked(ctx context.Context, hs []q.PackageViewHoldersRow) e
 		if r.CreatedAt.Time.Before(all[i].published) {
 			all[i].published = r.CreatedAt.Time
 		}
+		all[i].withDigest(r.Digest)
 		if slices.Contains(w.only, r.RepoID) {
 			inOnly[r.Version] = true
 		}
 	}
 	all = slices.DeleteFunc(all, func(k pageKey) bool { return w.hasOnly && !inOnly[k.version] })
 	slices.SortFunc(all, w.timeOrder)
+	w.firstOf = map[string]int{}
+	for i := range all {
+		all[i].pos = i
+		for _, d := range all[i].digests {
+			if _, ok := w.firstOf[string(d)]; !ok {
+				w.firstOf[string(d)] = i
+			}
+		}
+	}
 	w.sorted, w.loaded = all, true
 	pos := pageKey{version: w.ver}
 	if t, err := time.Parse(time.RFC3339Nano, w.at); err == nil {
@@ -248,8 +260,8 @@ func (s *Service) unrankedRows(ctx context.Context, a Adapter, k keysetQuery, at
 		}
 		return (k.desc && c < 0) || (!k.desc && c > 0)
 	}
-	add := func(version string, created time.Time, key []byte) {
-		p := pageKey{version: version, published: created, unranked: true}
+	add := func(version string, created time.Time, key, digest []byte) {
+		p := pageKey{version: version, published: created, unranked: true, digests: digestsOf(digest)}
 		if key != nil {
 			keyed++
 			out = append(out, p)
@@ -266,7 +278,7 @@ func (s *Service) unrankedRows(ctx context.Context, a Adapter, k keysetQuery, at
 				PackageID: k.holder.PackageID, AfterAt: at, AfterVersion: cur, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
 			})
 			for _, r := range rs {
-				add(r.Version, r.CreatedAt.Time, r.SortKey)
+				add(r.Version, r.CreatedAt.Time, r.SortKey, r.Digest)
 			}
 			if err != nil || !k.remote {
 				return err
@@ -275,7 +287,7 @@ func (s *Service) unrankedRows(ctx context.Context, a Adapter, k keysetQuery, at
 				RepoID: k.holder.RepoID, Name: k.name, AfterAt: at, AfterVersion: cur, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
 			})
 			for _, r := range ts {
-				add(r.Version, r.CreatedAt.Time, r.SortKey)
+				add(r.Version, r.CreatedAt.Time, r.SortKey, r.Digest)
 			}
 			return err
 		}
@@ -283,7 +295,7 @@ func (s *Service) unrankedRows(ctx context.Context, a Adapter, k keysetQuery, at
 			PackageID: k.holder.PackageID, AfterAt: at, AfterVersion: cur, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
 		})
 		for _, r := range rs {
-			add(r.Version, r.CreatedAt.Time, r.SortKey)
+			add(r.Version, r.CreatedAt.Time, r.SortKey, r.Digest)
 		}
 		if err != nil || !k.remote {
 			return err
@@ -292,7 +304,7 @@ func (s *Service) unrankedRows(ctx context.Context, a Adapter, k keysetQuery, at
 			RepoID: k.holder.RepoID, Name: k.name, AfterAt: at, AfterVersion: cur, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
 		})
 		for _, r := range ts {
-			add(r.Version, r.CreatedAt.Time, r.SortKey)
+			add(r.Version, r.CreatedAt.Time, r.SortKey, r.Digest)
 		}
 		return err
 	})

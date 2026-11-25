@@ -1474,6 +1474,9 @@ default, details on demand" ([CLAUDE.md](../../CLAUDE.md)): the plain user sees 
 - **Origin:** the file's and version's details carry **Uploaded by** (a user, a service account, or "CI job <project path> · <ref> ·
   pipeline <id>" with `ref_protected`) or **Fetched from** the remote's upstream and time (R-SIG-010).
 - **OCI:** the image's section lists signatures and, apart, **Attestations and SBOMs** with their types and sizes (R-SIG-024).
+  In the lists by content of an image ([api-and-ui.md](api-and-ui.md) R-UI-052 and R-UI-110, the opened image in the content list and the
+  package's page, one row per manifest, Q-UI-1130) the badge stands on the image's row, after its tags: the signatures of a manifest
+  are the image's, whichever of its tags leads the row; the API carries them as the leading version's `signatures` (R-SIG-034).
 - The screens are rendered and looked at before they land (rule 11 of the plan): light and dark, wide and narrow, a version of each of the
   four states, one with seven signatures and long identities, a Debian package with its covering release, a generic file with three
   siblings, and a version with no signature.

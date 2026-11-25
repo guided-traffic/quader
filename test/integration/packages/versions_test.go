@@ -50,6 +50,22 @@ func TestR_API_029_VersionList(t *testing.T) {
 			t.Fatal(got)
 		}
 	})
+	t.Run("the list by content of a format whose versions name no content is the list in the order of the versions (R-API-029)", func(t *testing.T) {
+		items := e.all(e.tokE, base+"?group=content&limit=1")
+		if got := versionsOf(items); !slices.Equal(got, []string{"2.0.0-beta.1", "1.5.0", "1.4.0", "1.3.0"}) {
+			t.Fatalf("got %v", got)
+		}
+		for _, it := range items {
+			if a, ok := it["aliases"].([]any); !ok || len(a) != 0 {
+				t.Errorf("%v: aliases %v, want an empty list", it["version"], it["aliases"])
+			}
+		}
+		for _, q := range []string{"group=content&sort=publishedAt", "group=content&sort=version", "group=content&prerelease=true", "group=tags"} {
+			if a := e.get(e.tokE, base+"?"+q); a.Status != 400 {
+				t.Errorf("%s: %d, want 400", q, a.Status)
+			}
+		}
+	})
 	t.Run("an entry holds the members of the contract", func(t *testing.T) {
 		items := e.all(e.tokE, base+"?sort=version")
 		v := items[1] // 1.4.0, stored in both repositories

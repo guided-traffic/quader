@@ -142,6 +142,356 @@ func (q *Queries) PackageViewHolders(ctx context.Context, arg PackageViewHolders
 	return items, nil
 }
 
+const packageViewImageDownloads = `-- name: PackageViewImageDownloads :many
+SELECT i.blob_sha256::bytea AS digest, COALESCE(sum(st.downloads), 0)::bigint AS downloads, max(st.last_download_at)::timestamptz AS last_download_at
+  FROM items i
+  JOIN item_download_stats st ON st.item_id = i.id
+ WHERE i.repo_id = $1::bigint AND i.kind = 'file' AND i.blob_sha256 = ANY($2::bytea[])
+   AND starts_with(i.path, $3::text || '/')
+   AND (i.version_id IS NULL
+        OR EXISTS (SELECT 1 FROM package_versions s
+                    WHERE s.id = i.version_id AND s.trashed_at IS NULL
+                      AND NOT (s.id = ANY($4::bigint[]))
+                      AND ($5::boolean OR s.version = ANY($6::text[]))))
+ GROUP BY i.blob_sha256
+`
+
+type PackageViewImageDownloadsParams struct {
+	RepoID   int64
+	Digests  [][]byte
+	Name     string
+	Withheld []int64
+	Whole    bool
+	Allowed  []string
+}
+
+type PackageViewImageDownloadsRow struct {
+	Digest         []byte
+	Downloads      int64
+	LastDownloadAt pgtype.Timestamptz
+}
+
+// The list by content (R-API-029, Q-API-432, R-API-079): the downloads of each of the given contents in one holder: the files of the
+// package that hold the content's bytes, each counted once, a file linked to a version only while that version is visible (a local image's
+// manifest under its digest and each of its tag items; a remote image's manifest). PackageViewList's rule of a document, per content.
+func (q *Queries) PackageViewImageDownloads(ctx context.Context, arg PackageViewImageDownloadsParams) ([]PackageViewImageDownloadsRow, error) {
+	rows, err := q.db.Query(ctx, packageViewImageDownloads,
+		arg.RepoID,
+		arg.Digests,
+		arg.Name,
+		arg.Withheld,
+		arg.Whole,
+		arg.Allowed,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PackageViewImageDownloadsRow{}
+	for rows.Next() {
+		var i PackageViewImageDownloadsRow
+		if err := rows.Scan(&i.Digest, &i.Downloads, &i.LastDownloadAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const packageViewImageSeen = `-- name: PackageViewImageSeen :many
+WITH c AS MATERIALIZED (
+  SELECT v.i, v.version, d.digest, k.key, a.at::timestamptz AS at
+    FROM unnest($9::text[]) WITH ORDINALITY AS v(version, i)
+    JOIN unnest($10::bytea[]) WITH ORDINALITY AS d(digest, i) ON d.i = v.i
+    JOIN unnest($11::bytea[]) WITH ORDINALITY AS k(key, i) ON k.i = v.i
+    JOIN unnest($12::text[]) WITH ORDINALITY AS a(at, i) ON a.i = v.i
+)
+SELECT c.i::int AS idx
+  FROM c
+ WHERE (c.key >= '\x01'::bytea
+        AND (EXISTS (SELECT 1 FROM package_versions s
+                      WHERE s.package_id = $1::bigint AND s.trashed_at IS NULL AND s.document_sha256 = c.digest
+                        AND s.sort_key > c.key
+                        AND NOT (s.id = ANY($2::bigint[]))
+                        AND ($3::boolean OR s.version = ANY($4::text[])) OFFSET 0)
+             OR ($5::boolean AND EXISTS (SELECT 1 FROM remote_cache_entries e
+                      WHERE e.repo_id = $6::bigint AND e.tag_name = $7::text AND e.blob_sha256 = c.digest
+                       AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+                        AND e.tag_sort_key > c.key
+                        AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
+                        AND NOT (-e.id = ANY($2::bigint[]))
+                        AND ($3::boolean OR e.tag = ANY($4::text[]))
+                        AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)
+                        AND (EXISTS (SELECT 1 FROM mirror_state ms WHERE ms.repo_id = e.repo_id OFFSET 0)
+                             OR e.background_sha256 = e.blob_sha256
+                             OR EXISTS (SELECT 1 FROM items i JOIN item_download_stats st ON st.item_id = i.id
+                                         WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+                                           AND i.trashed_at IS NULL AND st.downloads > 0 OFFSET 0)) OFFSET 0))))
+    OR (c.key < '\x01'::bytea
+        AND (EXISTS (SELECT 1 FROM package_versions s
+                      WHERE s.package_id = $1::bigint AND s.trashed_at IS NULL AND s.document_sha256 = c.digest
+                        AND s.sort_key >= '\x01'::bytea
+                        AND NOT (s.id = ANY($2::bigint[]))
+                        AND ($3::boolean OR s.version = ANY($4::text[])) OFFSET 0)
+             OR ($8::boolean AND EXISTS (SELECT 1 FROM package_versions s
+                      WHERE s.package_id = $1::bigint AND s.trashed_at IS NULL AND s.document_sha256 = c.digest
+                        AND s.sort_key < '\x01'::bytea
+                        AND (s.created_at, (s.version COLLATE "C")) > (c.at, (c.version COLLATE "C"))
+                        AND NOT (s.id = ANY($2::bigint[]))
+                        AND ($3::boolean OR s.version = ANY($4::text[])) OFFSET 0))
+             OR ($5::boolean AND EXISTS (SELECT 1 FROM remote_cache_entries e
+                      WHERE e.repo_id = $6::bigint AND e.tag_name = $7::text AND e.blob_sha256 = c.digest
+                       AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+                        AND e.tag_sort_key >= '\x01'::bytea
+                        AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
+                        AND NOT (-e.id = ANY($2::bigint[]))
+                        AND ($3::boolean OR e.tag = ANY($4::text[]))
+                        AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)
+                        AND (EXISTS (SELECT 1 FROM mirror_state ms WHERE ms.repo_id = e.repo_id OFFSET 0)
+                             OR e.background_sha256 = e.blob_sha256
+                             OR EXISTS (SELECT 1 FROM items i JOIN item_download_stats st ON st.item_id = i.id
+                                         WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+                                           AND i.trashed_at IS NULL AND st.downloads > 0 OFFSET 0)) OFFSET 0))
+             OR ($5::boolean AND $8::boolean AND EXISTS (SELECT 1 FROM remote_cache_entries e
+                      WHERE e.repo_id = $6::bigint AND e.tag_name = $7::text AND e.blob_sha256 = c.digest
+                       AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+                        AND e.tag_sort_key < '\x01'::bytea
+                        AND (e.fetched_at, e.tag) > (c.at, (c.version COLLATE "C"))
+                        AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
+                        AND NOT (-e.id = ANY($2::bigint[]))
+                        AND ($3::boolean OR e.tag = ANY($4::text[]))
+                        AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)
+                        AND (EXISTS (SELECT 1 FROM mirror_state ms WHERE ms.repo_id = e.repo_id OFFSET 0)
+                             OR e.background_sha256 = e.blob_sha256
+                             OR EXISTS (SELECT 1 FROM items i JOIN item_download_stats st ON st.item_id = i.id
+                                         WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+                                           AND i.trashed_at IS NULL AND st.downloads > 0 OFFSET 0)) OFFSET 0))))
+`
+
+type PackageViewImageSeenParams struct {
+	PackageID int64
+	Withheld  []int64
+	Whole     bool
+	Allowed   []string
+	Remote    bool
+	RepoID    int64
+	Name      string
+	ByTime    bool
+	Versions  []string
+	Digests   [][]byte
+	Keys      [][]byte
+	Ats       []string
+}
+
+// The list by content (R-API-029, Q-API-432): of the candidates of one batch of the walk, the ones whose content a visible version of this
+// holder that comes earlier in the order of the versions names already, so that the candidate leads no image: for a ranked candidate a
+// version of a higher key; for an unranked one a ranked version or, with by_time (one holder), an unranked one of a later time and
+// version. Of the holder's version rows (package_id) and, with remote, its tag entries (repo_id, name) under the listing rules of
+// oci_remote_tags as checks per entry. Each check is the first visible entry of a range of package_versions_by_document,
+// package_versions_document_unranked, remote_cache_entries_tag_digest or remote_cache_entries_tag_digest_unranked; OFFSET 0 keeps each a
+// check per candidate, which the planner otherwise turns into a semi-join that reads every tag of the name (measured: 1,001 entries for 64
+// candidates). The candidates come as one row each from the joined ordinalities of the arrays: subscripting the arrays per row cost 55 ms
+// for 64 candidates (measured on 2026-11-25). A sibling without a stored key is not seen here (PackageViewImageUnkeyed, Q-API-430). The
+// answer is the candidates' positions in the arrays, from 1.
+func (q *Queries) PackageViewImageSeen(ctx context.Context, arg PackageViewImageSeenParams) ([]int32, error) {
+	rows, err := q.db.Query(ctx, packageViewImageSeen,
+		arg.PackageID,
+		arg.Withheld,
+		arg.Whole,
+		arg.Allowed,
+		arg.Remote,
+		arg.RepoID,
+		arg.Name,
+		arg.ByTime,
+		arg.Versions,
+		arg.Digests,
+		arg.Keys,
+		arg.Ats,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int32{}
+	for rows.Next() {
+		var idx int32
+		if err := rows.Scan(&idx); err != nil {
+			return nil, err
+		}
+		items = append(items, idx)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const packageViewImageTags = `-- name: PackageViewImageTags :many
+SELECT d.digest::bytea AS digest, t.version::text AS version, t.created_at::timestamptz AS created_at, t.sort_key::bytea AS sort_key
+  FROM unnest($1::bytea[]) AS d(digest)
+  CROSS JOIN LATERAL (
+       (SELECT s.version::text AS version, s.created_at, s.sort_key FROM package_versions s
+         WHERE s.package_id = $2::bigint AND s.trashed_at IS NULL AND s.document_sha256 = d.digest
+           AND s.sort_key >= '\x01'::bytea
+           AND NOT (s.id = ANY($3::bigint[]))
+           AND ($4::boolean OR s.version = ANY($5::text[]))
+         ORDER BY s.sort_key DESC LIMIT 101)
+       UNION ALL
+       (SELECT s.version::text, s.created_at, s.sort_key FROM package_versions s
+         WHERE s.package_id = $2::bigint AND s.trashed_at IS NULL AND s.document_sha256 = d.digest
+           AND s.sort_key < '\x01'::bytea
+           AND NOT (s.id = ANY($3::bigint[]))
+           AND ($4::boolean OR s.version = ANY($5::text[]))
+         ORDER BY s.created_at DESC, (s.version COLLATE "C") DESC LIMIT 101)
+       UNION ALL
+       (SELECT s.version::text, s.created_at, s.sort_key FROM package_versions s
+         WHERE s.package_id = $2::bigint AND s.trashed_at IS NULL AND s.document_sha256 = d.digest AND s.sort_key IS NULL
+           AND NOT (s.id = ANY($3::bigint[]))
+           AND ($4::boolean OR s.version = ANY($5::text[])))
+       UNION ALL
+       (SELECT e.tag::text, e.fetched_at, e.tag_sort_key FROM remote_cache_entries e
+         WHERE $6::boolean AND e.repo_id = $7::bigint AND e.tag_name = $8::text AND e.blob_sha256 = d.digest
+           AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+           AND e.tag_sort_key >= '\x01'::bytea
+           AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
+           AND NOT (-e.id = ANY($3::bigint[]))
+           AND ($4::boolean OR e.tag = ANY($5::text[]))
+           AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)
+           AND (EXISTS (SELECT 1 FROM mirror_state ms WHERE ms.repo_id = e.repo_id OFFSET 0)
+                OR e.background_sha256 = e.blob_sha256
+                OR EXISTS (SELECT 1 FROM items i JOIN item_download_stats st ON st.item_id = i.id
+                            WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+                              AND i.trashed_at IS NULL AND st.downloads > 0 OFFSET 0))
+         ORDER BY e.tag_sort_key DESC LIMIT 101)
+       UNION ALL
+       (SELECT e.tag::text, e.fetched_at, e.tag_sort_key FROM remote_cache_entries e
+         WHERE $6::boolean AND e.repo_id = $7::bigint AND e.tag_name = $8::text AND e.blob_sha256 = d.digest
+           AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+           AND e.tag_sort_key < '\x01'::bytea
+           AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
+           AND NOT (-e.id = ANY($3::bigint[]))
+           AND ($4::boolean OR e.tag = ANY($5::text[]))
+           AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)
+           AND (EXISTS (SELECT 1 FROM mirror_state ms WHERE ms.repo_id = e.repo_id OFFSET 0)
+                OR e.background_sha256 = e.blob_sha256
+                OR EXISTS (SELECT 1 FROM items i JOIN item_download_stats st ON st.item_id = i.id
+                            WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+                              AND i.trashed_at IS NULL AND st.downloads > 0 OFFSET 0))
+         ORDER BY e.fetched_at DESC, e.tag DESC LIMIT 101)
+  ) t
+`
+
+type PackageViewImageTagsParams struct {
+	Digests   [][]byte
+	PackageID int64
+	Withheld  []int64
+	Whole     bool
+	Allowed   []string
+	Remote    bool
+	RepoID    int64
+	Name      string
+}
+
+type PackageViewImageTagsRow struct {
+	Digest    []byte
+	Version   string
+	CreatedAt pgtype.Timestamptz
+	SortKey   []byte
+}
+
+// The list by content (R-API-029, Q-API-432): the visible versions of one holder that name the given contents, the leader and the aliases
+// of a page's images. Per content at most 101 ranked ones by key, highest first, at most 101 unranked ones by time, newest first, and every
+// one without a stored key (Q-API-430); of the version rows and, with remote, of the tag entries under the listing rules. Each part is the
+// first entries of a range of the indexes by document.
+func (q *Queries) PackageViewImageTags(ctx context.Context, arg PackageViewImageTagsParams) ([]PackageViewImageTagsRow, error) {
+	rows, err := q.db.Query(ctx, packageViewImageTags,
+		arg.Digests,
+		arg.PackageID,
+		arg.Withheld,
+		arg.Whole,
+		arg.Allowed,
+		arg.Remote,
+		arg.RepoID,
+		arg.Name,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PackageViewImageTagsRow{}
+	for rows.Next() {
+		var i PackageViewImageTagsRow
+		if err := rows.Scan(
+			&i.Digest,
+			&i.Version,
+			&i.CreatedAt,
+			&i.SortKey,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const packageViewImageUnkeyed = `-- name: PackageViewImageUnkeyed :many
+SELECT s.version::text AS version, s.created_at, s.document_sha256::bytea AS digest
+  FROM package_versions s
+ WHERE s.package_id = $1::bigint AND s.trashed_at IS NULL AND s.document_sha256 = ANY($2::bytea[])
+   AND s.sort_key IS NULL
+   AND NOT (s.id = ANY($3::bigint[]))
+   AND ($4::boolean OR s.version = ANY($5::text[]))
+`
+
+type PackageViewImageUnkeyedParams struct {
+	PackageID int64
+	Digests   [][]byte
+	Withheld  []int64
+	Whole     bool
+	Allowed   []string
+}
+
+type PackageViewImageUnkeyedRow struct {
+	Version   string
+	CreatedAt pgtype.Timestamptz
+	Digest    []byte
+}
+
+// The list by content (Q-API-432, Q-API-430): the visible version rows of one holder without a stored key that name the given contents,
+// which PackageViewImageSeen cannot place; the caller gives each the key its format gives it. Empty once the background migration
+// version_sort_key has filled the rows (package_versions_by_document holds the NULL keys).
+func (q *Queries) PackageViewImageUnkeyed(ctx context.Context, arg PackageViewImageUnkeyedParams) ([]PackageViewImageUnkeyedRow, error) {
+	rows, err := q.db.Query(ctx, packageViewImageUnkeyed,
+		arg.PackageID,
+		arg.Digests,
+		arg.Withheld,
+		arg.Whole,
+		arg.Allowed,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PackageViewImageUnkeyedRow{}
+	for rows.Next() {
+		var i PackageViewImageUnkeyedRow
+		if err := rows.Scan(&i.Version, &i.CreatedAt, &i.Digest); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const packageViewLatest = `-- name: PackageViewLatest :many
 SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_id, l.version_id, l.version, l.created_at
   FROM packages p
@@ -547,7 +897,7 @@ func (q *Queries) PackageViewList(ctx context.Context, arg PackageViewListParams
 }
 
 const packageViewTagKeyAsc = `-- name: PackageViewTagKeyAsc :many
-SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sort_key
+SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sort_key, e.blob_sha256 AS digest
   FROM remote_cache_entries e
  WHERE e.repo_id = $1::bigint AND e.tag_name = $2::text
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
@@ -580,6 +930,7 @@ type PackageViewTagKeyAscRow struct {
 	Version   string
 	CreatedAt pgtype.Timestamptz
 	SortKey   []byte
+	Digest    []byte
 }
 
 // PackageViewTagKeyDesc lowest first.
@@ -600,7 +951,12 @@ func (q *Queries) PackageViewTagKeyAsc(ctx context.Context, arg PackageViewTagKe
 	items := []PackageViewTagKeyAscRow{}
 	for rows.Next() {
 		var i PackageViewTagKeyAscRow
-		if err := rows.Scan(&i.Version, &i.CreatedAt, &i.SortKey); err != nil {
+		if err := rows.Scan(
+			&i.Version,
+			&i.CreatedAt,
+			&i.SortKey,
+			&i.Digest,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -612,7 +968,7 @@ func (q *Queries) PackageViewTagKeyAsc(ctx context.Context, arg PackageViewTagKe
 }
 
 const packageViewTagKeyDesc = `-- name: PackageViewTagKeyDesc :many
-SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sort_key
+SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sort_key, e.blob_sha256 AS digest
   FROM remote_cache_entries e
  WHERE e.repo_id = $1::bigint AND e.tag_name = $2::text
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
@@ -645,6 +1001,7 @@ type PackageViewTagKeyDescRow struct {
 	Version   string
 	CreatedAt pgtype.Timestamptz
 	SortKey   []byte
+	Digest    []byte
 }
 
 // PackageViewVersionKeyDesc for the tags of a name in a remote OCI repository (R-OCI-036): in the order of the index
@@ -667,7 +1024,12 @@ func (q *Queries) PackageViewTagKeyDesc(ctx context.Context, arg PackageViewTagK
 	items := []PackageViewTagKeyDescRow{}
 	for rows.Next() {
 		var i PackageViewTagKeyDescRow
-		if err := rows.Scan(&i.Version, &i.CreatedAt, &i.SortKey); err != nil {
+		if err := rows.Scan(
+			&i.Version,
+			&i.CreatedAt,
+			&i.SortKey,
+			&i.Digest,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -815,7 +1177,7 @@ func (q *Queries) PackageViewTagPageDesc(ctx context.Context, arg PackageViewTag
 }
 
 const packageViewTagUnrankedAsc = `-- name: PackageViewTagUnrankedAsc :many
-SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sort_key
+SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sort_key, e.blob_sha256 AS digest
   FROM remote_cache_entries e
  WHERE e.repo_id = $1::bigint AND e.tag_name = $2::text
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL AND e.tag_sort_key < '\x01'::bytea
@@ -849,6 +1211,7 @@ type PackageViewTagUnrankedAscRow struct {
 	Version   string
 	CreatedAt pgtype.Timestamptz
 	SortKey   []byte
+	Digest    []byte
 }
 
 // PackageViewTagUnrankedDesc oldest first.
@@ -870,7 +1233,12 @@ func (q *Queries) PackageViewTagUnrankedAsc(ctx context.Context, arg PackageView
 	items := []PackageViewTagUnrankedAscRow{}
 	for rows.Next() {
 		var i PackageViewTagUnrankedAscRow
-		if err := rows.Scan(&i.Version, &i.CreatedAt, &i.SortKey); err != nil {
+		if err := rows.Scan(
+			&i.Version,
+			&i.CreatedAt,
+			&i.SortKey,
+			&i.Digest,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -882,7 +1250,7 @@ func (q *Queries) PackageViewTagUnrankedAsc(ctx context.Context, arg PackageView
 }
 
 const packageViewTagUnrankedDesc = `-- name: PackageViewTagUnrankedDesc :many
-SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sort_key
+SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sort_key, e.blob_sha256 AS digest
   FROM remote_cache_entries e
  WHERE e.repo_id = $1::bigint AND e.tag_name = $2::text
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL AND e.tag_sort_key < '\x01'::bytea
@@ -916,6 +1284,7 @@ type PackageViewTagUnrankedDescRow struct {
 	Version   string
 	CreatedAt pgtype.Timestamptz
 	SortKey   []byte
+	Digest    []byte
 }
 
 // PackageViewVersionUnrankedDesc for the tags of a name in a remote OCI repository (R-OCI-036): the tags that are no version, by their
@@ -939,7 +1308,12 @@ func (q *Queries) PackageViewTagUnrankedDesc(ctx context.Context, arg PackageVie
 	items := []PackageViewTagUnrankedDescRow{}
 	for rows.Next() {
 		var i PackageViewTagUnrankedDescRow
-		if err := rows.Scan(&i.Version, &i.CreatedAt, &i.SortKey); err != nil {
+		if err := rows.Scan(
+			&i.Version,
+			&i.CreatedAt,
+			&i.SortKey,
+			&i.Digest,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -951,7 +1325,7 @@ func (q *Queries) PackageViewTagUnrankedDesc(ctx context.Context, arg PackageVie
 }
 
 const packageViewUnrankedNames = `-- name: PackageViewUnrankedNames :many
-SELECT pv.version::text AS version, pv.created_at, p.repo_id, pv.sort_key
+SELECT pv.version::text AS version, pv.created_at, p.repo_id, pv.sort_key, pv.document_sha256 AS digest
   FROM package_versions pv
   JOIN packages p ON p.id = pv.package_id
  WHERE pv.package_id = ANY($1::bigint[]) AND pv.trashed_at IS NULL AND pv.sort_key < '\x01'::bytea
@@ -959,7 +1333,7 @@ SELECT pv.version::text AS version, pv.created_at, p.repo_id, pv.sort_key
    AND (p.repo_id = ANY($3::bigint[])
         OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($4::text[]))
 UNION ALL
-SELECT pv.version::text, pv.created_at, p.repo_id, pv.sort_key
+SELECT pv.version::text, pv.created_at, p.repo_id, pv.sort_key, pv.document_sha256
   FROM package_versions pv
   JOIN packages p ON p.id = pv.package_id
  WHERE pv.package_id = ANY($1::bigint[]) AND pv.trashed_at IS NULL AND pv.sort_key IS NULL
@@ -967,7 +1341,7 @@ SELECT pv.version::text, pv.created_at, p.repo_id, pv.sort_key
    AND (p.repo_id = ANY($3::bigint[])
         OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($4::text[]))
 UNION ALL
-SELECT e.tag::text, e.fetched_at, e.repo_id, e.tag_sort_key
+SELECT e.tag::text, e.fetched_at, e.repo_id, e.tag_sort_key, e.blob_sha256
   FROM packages p
   JOIN remote_cache_entries e ON e.repo_id = p.repo_id AND e.tag_name = p.name
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL AND e.tag_sort_key < '\x01'::bytea
@@ -997,6 +1371,7 @@ type PackageViewUnrankedNamesRow struct {
 	CreatedAt pgtype.Timestamptz
 	RepoID    int64
 	SortKey   []byte
+	Digest    []byte
 }
 
 // The visible versions of the given packages (by id) that their format does not rank, one row per version per repository, with their
@@ -1022,6 +1397,7 @@ func (q *Queries) PackageViewUnrankedNames(ctx context.Context, arg PackageViewU
 			&i.CreatedAt,
 			&i.RepoID,
 			&i.SortKey,
+			&i.Digest,
 		); err != nil {
 			return nil, err
 		}
@@ -1034,7 +1410,7 @@ func (q *Queries) PackageViewUnrankedNames(ctx context.Context, arg PackageViewU
 }
 
 const packageViewVersionKeyAsc = `-- name: PackageViewVersionKeyAsc :many
-(SELECT pv.version::text AS version, pv.created_at, pv.sort_key
+(SELECT pv.version::text AS version, pv.created_at, pv.sort_key, pv.document_sha256 AS digest
    FROM package_versions pv
   WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL
     AND pv.sort_key > $2::bytea AND pv.sort_key >= '\x01'::bytea
@@ -1043,7 +1419,7 @@ const packageViewVersionKeyAsc = `-- name: PackageViewVersionKeyAsc :many
   ORDER BY pv.sort_key
   LIMIT $6::int)
 UNION ALL
-(SELECT pv.version::text, pv.created_at, pv.sort_key
+(SELECT pv.version::text, pv.created_at, pv.sort_key, pv.document_sha256
    FROM package_versions pv
   WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL AND pv.sort_key IS NULL
     AND NOT (pv.id = ANY($3::bigint[]))
@@ -1063,6 +1439,7 @@ type PackageViewVersionKeyAscRow struct {
 	Version   string
 	CreatedAt pgtype.Timestamptz
 	SortKey   []byte
+	Digest    []byte
 }
 
 // PackageViewVersionKeyDesc lowest first: the keyset above the cursor's; the first page passes the empty key, below every key. The rows
@@ -1083,7 +1460,12 @@ func (q *Queries) PackageViewVersionKeyAsc(ctx context.Context, arg PackageViewV
 	items := []PackageViewVersionKeyAscRow{}
 	for rows.Next() {
 		var i PackageViewVersionKeyAscRow
-		if err := rows.Scan(&i.Version, &i.CreatedAt, &i.SortKey); err != nil {
+		if err := rows.Scan(
+			&i.Version,
+			&i.CreatedAt,
+			&i.SortKey,
+			&i.Digest,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1095,7 +1477,7 @@ func (q *Queries) PackageViewVersionKeyAsc(ctx context.Context, arg PackageViewV
 }
 
 const packageViewVersionKeyDesc = `-- name: PackageViewVersionKeyDesc :many
-(SELECT pv.version::text AS version, pv.created_at, pv.sort_key
+(SELECT pv.version::text AS version, pv.created_at, pv.sort_key, pv.document_sha256 AS digest
    FROM package_versions pv
   WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL
     AND pv.sort_key < $2::bytea AND pv.sort_key >= '\x01'::bytea
@@ -1104,7 +1486,7 @@ const packageViewVersionKeyDesc = `-- name: PackageViewVersionKeyDesc :many
   ORDER BY pv.sort_key DESC
   LIMIT $6::int)
 UNION ALL
-(SELECT pv.version::text, pv.created_at, pv.sort_key
+(SELECT pv.version::text, pv.created_at, pv.sort_key, pv.document_sha256
    FROM package_versions pv
   WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL AND pv.sort_key IS NULL
     AND NOT (pv.id = ANY($3::bigint[]))
@@ -1124,6 +1506,7 @@ type PackageViewVersionKeyDescRow struct {
 	Version   string
 	CreatedAt pgtype.Timestamptz
 	SortKey   []byte
+	Digest    []byte
 }
 
 // One page of the visible versions of one package of one repository in the order of the versions, highest first (R-API-010, Q-API-429):
@@ -1150,7 +1533,12 @@ func (q *Queries) PackageViewVersionKeyDesc(ctx context.Context, arg PackageView
 	items := []PackageViewVersionKeyDescRow{}
 	for rows.Next() {
 		var i PackageViewVersionKeyDescRow
-		if err := rows.Scan(&i.Version, &i.CreatedAt, &i.SortKey); err != nil {
+		if err := rows.Scan(
+			&i.Version,
+			&i.CreatedAt,
+			&i.SortKey,
+			&i.Digest,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1346,7 +1734,7 @@ func (q *Queries) PackageViewVersionPageDesc(ctx context.Context, arg PackageVie
 }
 
 const packageViewVersionUnrankedAsc = `-- name: PackageViewVersionUnrankedAsc :many
-(SELECT pv.version::text AS version, pv.created_at, pv.sort_key
+(SELECT pv.version::text AS version, pv.created_at, pv.sort_key, pv.document_sha256 AS digest
    FROM package_versions pv
   WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL AND pv.sort_key < '\x01'::bytea
     AND (pv.created_at, (pv.version COLLATE "C")) > ($2::text::timestamptz, ($3::text COLLATE "C"))
@@ -1355,7 +1743,7 @@ const packageViewVersionUnrankedAsc = `-- name: PackageViewVersionUnrankedAsc :m
   ORDER BY pv.created_at, (pv.version COLLATE "C")
   LIMIT $7::int)
 UNION ALL
-(SELECT pv.version::text, pv.created_at, pv.sort_key
+(SELECT pv.version::text, pv.created_at, pv.sort_key, pv.document_sha256
    FROM package_versions pv
   WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL AND pv.sort_key IS NULL
     AND NOT (pv.id = ANY($4::bigint[]))
@@ -1376,6 +1764,7 @@ type PackageViewVersionUnrankedAscRow struct {
 	Version   string
 	CreatedAt pgtype.Timestamptz
 	SortKey   []byte
+	Digest    []byte
 }
 
 // PackageViewVersionUnrankedDesc oldest first: the keyset above the cursor's; the first page passes '-infinity' and an empty version.
@@ -1396,7 +1785,12 @@ func (q *Queries) PackageViewVersionUnrankedAsc(ctx context.Context, arg Package
 	items := []PackageViewVersionUnrankedAscRow{}
 	for rows.Next() {
 		var i PackageViewVersionUnrankedAscRow
-		if err := rows.Scan(&i.Version, &i.CreatedAt, &i.SortKey); err != nil {
+		if err := rows.Scan(
+			&i.Version,
+			&i.CreatedAt,
+			&i.SortKey,
+			&i.Digest,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1408,7 +1802,7 @@ func (q *Queries) PackageViewVersionUnrankedAsc(ctx context.Context, arg Package
 }
 
 const packageViewVersionUnrankedDesc = `-- name: PackageViewVersionUnrankedDesc :many
-(SELECT pv.version::text AS version, pv.created_at, pv.sort_key
+(SELECT pv.version::text AS version, pv.created_at, pv.sort_key, pv.document_sha256 AS digest
    FROM package_versions pv
   WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL AND pv.sort_key < '\x01'::bytea
     AND (pv.created_at, (pv.version COLLATE "C")) < ($2::text::timestamptz, ($3::text COLLATE "C"))
@@ -1417,7 +1811,7 @@ const packageViewVersionUnrankedDesc = `-- name: PackageViewVersionUnrankedDesc 
   ORDER BY pv.created_at DESC, (pv.version COLLATE "C") DESC
   LIMIT $7::int)
 UNION ALL
-(SELECT pv.version::text, pv.created_at, pv.sort_key
+(SELECT pv.version::text, pv.created_at, pv.sort_key, pv.document_sha256
    FROM package_versions pv
   WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL AND pv.sort_key IS NULL
     AND NOT (pv.id = ANY($4::bigint[]))
@@ -1438,6 +1832,7 @@ type PackageViewVersionUnrankedDescRow struct {
 	Version   string
 	CreatedAt pgtype.Timestamptz
 	SortKey   []byte
+	Digest    []byte
 }
 
 // The second part of the order of the versions, newest first (R-API-029, Q-API-431): one page of the visible versions of one package of one
@@ -1463,7 +1858,12 @@ func (q *Queries) PackageViewVersionUnrankedDesc(ctx context.Context, arg Packag
 	items := []PackageViewVersionUnrankedDescRow{}
 	for rows.Next() {
 		var i PackageViewVersionUnrankedDescRow
-		if err := rows.Scan(&i.Version, &i.CreatedAt, &i.SortKey); err != nil {
+		if err := rows.Scan(
+			&i.Version,
+			&i.CreatedAt,
+			&i.SortKey,
+			&i.Digest,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

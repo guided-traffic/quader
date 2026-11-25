@@ -747,6 +747,24 @@ type pageKey struct {
 	key       []byte
 	// unranked says that the format does not rank the version: it is in the second part of the order of the versions (Q-API-431).
 	unranked bool
+	// digests are the contents the version names in its holders (package_versions.document_sha256, a remote tag's manifest), each once:
+	// what the list by content groups by (Q-API-432); empty for a version of a format whose version is no document.
+	digests [][]byte
+	// pos is the version's place in the unranked part of several holders, read whole (walk.sorted).
+	pos int
+}
+
+// withDigest adds a content to the version's, once.
+func (k *pageKey) withDigest(d []byte) {
+	if d == nil {
+		return
+	}
+	for _, have := range k.digests {
+		if bytes.Equal(have, d) {
+			return
+		}
+	}
+	k.digests = append(k.digests, d)
 }
 
 // keysetBatch is the least number of versions one statement of a keyset page asks for: a filter the statement cannot apply (the
@@ -1049,9 +1067,13 @@ func (s *Service) keyBatch(ctx context.Context, a Adapter, ks []keysetQuery, at 
 	})
 	distinct := out[:1]
 	for _, k := range out[1:] {
-		if !bytes.Equal(k.key, distinct[len(distinct)-1].key) {
-			distinct = append(distinct, k)
+		if last := &distinct[len(distinct)-1]; bytes.Equal(k.key, last.key) {
+			for _, d := range k.digests {
+				last.withDigest(d)
+			}
+			continue
 		}
+		distinct = append(distinct, k)
 	}
 	if more && len(distinct) > n {
 		distinct = distinct[:n]
@@ -1066,15 +1088,17 @@ func (s *Service) keyBatch(ctx context.Context, a Adapter, ks []keysetQuery, at 
 // takes its place in the order of the versions on every page, and none is dropped or listed twice.
 func keyRows(ctx context.Context, qs *q.Queries, a Adapter, k keysetQuery, at []byte, n int, out []pageKey) ([]pageKey, int, error) {
 	keyed := 0
-	add := func(version string, created time.Time, key []byte) {
+	add := func(version string, created time.Time, key, digest []byte) {
+		p := pageKey{version: version, published: created, key: key}
+		p.withDigest(digest)
 		if key != nil {
 			keyed++
-			out = append(out, pageKey{version: version, published: created, key: key})
+			out = append(out, p)
 			return
 		}
 		// The ranked part of the order alone: a row its format does not rank is read by the unranked part (Q-API-431).
-		if key = a.SortKey(version); key[0] == versionkey.Version && keyAfter(key, at, k.desc) {
-			out = append(out, pageKey{version: version, published: created, key: key})
+		if p.key = a.SortKey(version); p.key[0] == versionkey.Version && keyAfter(p.key, at, k.desc) {
+			out = append(out, p)
 		}
 	}
 	if k.desc {
@@ -1082,7 +1106,7 @@ func keyRows(ctx context.Context, qs *q.Queries, a Adapter, k keysetQuery, at []
 			PackageID: k.holder.PackageID, AfterKey: at, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
 		})
 		for _, r := range rs {
-			add(r.Version, r.CreatedAt.Time, r.SortKey)
+			add(r.Version, r.CreatedAt.Time, r.SortKey, r.Digest)
 		}
 		return out, keyed, err
 	}
@@ -1090,7 +1114,7 @@ func keyRows(ctx context.Context, qs *q.Queries, a Adapter, k keysetQuery, at []
 		PackageID: k.holder.PackageID, AfterKey: at, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
 	})
 	for _, r := range rs {
-		add(r.Version, r.CreatedAt.Time, r.SortKey)
+		add(r.Version, r.CreatedAt.Time, r.SortKey, r.Digest)
 	}
 	return out, keyed, err
 }
@@ -1102,7 +1126,7 @@ func keyTags(ctx context.Context, qs *q.Queries, k keysetQuery, at []byte, n int
 			RepoID: k.holder.RepoID, Name: k.name, AfterKey: at, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
 		})
 		for _, r := range rs {
-			out = append(out, pageKey{version: r.Version, published: r.CreatedAt.Time, key: r.SortKey})
+			out = append(out, pageKey{version: r.Version, published: r.CreatedAt.Time, key: r.SortKey, digests: digestsOf(r.Digest)})
 		}
 		return out, err
 	}
@@ -1110,9 +1134,17 @@ func keyTags(ctx context.Context, qs *q.Queries, k keysetQuery, at []byte, n int
 		RepoID: k.holder.RepoID, Name: k.name, AfterKey: at, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
 	})
 	for _, r := range rs {
-		out = append(out, pageKey{version: r.Version, published: r.CreatedAt.Time, key: r.SortKey})
+		out = append(out, pageKey{version: r.Version, published: r.CreatedAt.Time, key: r.SortKey, digests: digestsOf(r.Digest)})
 	}
 	return out, err
+}
+
+// digestsOf is the content of a version row as pageKey.digests holds it.
+func digestsOf(d []byte) [][]byte {
+	if d == nil {
+		return nil
+	}
+	return [][]byte{d}
 }
 
 // sortedPage reads the names of every visible version of the package, one cheap row per version per repository, groups them, filters

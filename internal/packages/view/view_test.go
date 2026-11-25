@@ -425,3 +425,67 @@ func TestR_VULN_028_TopologyKeysRepositoriesByIDNotByParsedNames(t *testing.T) {
 		t.Errorf("Repos %v", got)
 	}
 }
+
+// R-API-029 (Q-API-432): the list by content takes each (version, content) pair of a batch once, a version that names two contents (two
+// holders) as two pairs and one without a stored content as one; the order the lead check compares is the order of the versions (a ranked
+// version before an unranked one, the ranked by key, the unranked by time and name); a page is cut after a version's last entry, never
+// between two entries of one version; and the cursor of a position is the version, or for an unranked one its time and the version.
+// Microseconds, pure functions.
+func TestR_API_029_TheListByContentGroupsAndCutsAtAVersion(t *testing.T) {
+	a, b := []byte("a"), []byte("b")
+	t0 := time.Date(2026, 11, 25, 7, 0, 0, 0, time.UTC)
+	k := func(v string, ds ...[]byte) pageKey {
+		p := pageKey{version: v, key: fakeAdapter{}.SortKey(v), published: t0}
+		for _, d := range ds {
+			p.withDigest(d)
+		}
+		p.withDigest(a) // a second time: once
+		return p
+	}
+	cands := candidatesOf([]pageKey{k("2.0", b), k("1.0"), {version: "latest", unranked: true, published: t0}})
+	var got []string
+	for _, c := range cands {
+		got = append(got, c.key.version+":"+string(c.digest))
+	}
+	if !slices.Equal(got, []string{"2.0:b", "2.0:a", "1.0:a", "latest:"}) {
+		t.Errorf("the pairs of a batch: %v", got)
+	}
+
+	ranked1, ranked2 := pageKey{version: "1.0", key: fakeAdapter{}.SortKey("1.0")}, pageKey{version: "2.0", key: fakeAdapter{}.SortKey("2.0")}
+	older := pageKey{version: "main", unranked: true, published: t0}
+	newer := pageKey{version: "latest", unranked: true, published: t0.Add(time.Minute)}
+	sameTime := pageKey{version: "sha-1", unranked: true, published: t0}
+	for _, tc := range []struct {
+		x, y pageKey
+		want bool
+	}{
+		{ranked2, ranked1, true},
+		{ranked1, ranked2, false},
+		{ranked1, newer, true},
+		{newer, ranked1, false},
+		{newer, older, true},
+		{older, newer, false},
+		{sameTime, older, true},
+		{older, sameTime, false},
+	} {
+		if got := earlier(tc.x, tc.y); got != tc.want {
+			t.Errorf("earlier(%s, %s) = %v", tc.x.version, tc.y.version, got)
+		}
+	}
+
+	entries := []imageCandidate{{key: k("3.0")}, {key: k("2.0"), digest: a}, {key: k("2.0"), digest: b}, {key: k("1.0")}}
+	for limit, want := range map[int]int{1: 1, 2: 1, 3: 3, 4: 4} {
+		if got := len(cutAtVersion(entries, limit)); got != want {
+			t.Errorf("limit %d: %d entries, want %d", limit, got, want)
+		}
+	}
+	if got := len(cutAtVersion(entries[1:], 1)); got != 2 {
+		t.Errorf("a first version with two entries and limit 1: %d entries, want the version whole", got)
+	}
+	if got := positionOf(older); !slices.Equal(got, []string{t0.Format(time.RFC3339Nano), "main"}) {
+		t.Errorf("the position of an unranked version: %v", got)
+	}
+	if got := positionOf(ranked1); !slices.Equal(got, []string{"1.0"}) {
+		t.Errorf("the position of a ranked version: %v", got)
+	}
+}
