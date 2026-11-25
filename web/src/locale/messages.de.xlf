@@ -55348,7 +55348,7 @@
     </unit>
     <unit id="visibility.restrict.private">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:314</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:319</note>
       </notes>
       <segment>
         <source>Only an administrator can make a project or a repository private.</source>
@@ -55357,7 +55357,7 @@
     </unit>
     <unit id="visibility.restrict.internal">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:316</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:321</note>
       </notes>
       <segment>
         <source>Only an administrator can make a project or a repository internal.</source>
@@ -55366,7 +55366,7 @@
     </unit>
     <unit id="visibility.restrict.public">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:318</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:323</note>
       </notes>
       <segment>
         <source>Only an administrator can make a project or a repository public.</source>

@@ -303,7 +303,8 @@ The button has `aria-expanded` and `aria-controls`. A closed region is `visibili
   their options say ([Q-UI-320](../spec/api-and-ui.md#q-ui-320--every-value-to-copy-of-one-line-is-a-field-with-its-joined-copy-button-a-page-shows-one-client-address-and-a-panels-selects-share-one-width)).
 - A choice among the values of a list (the version of a package) is a select, so it looks like the choice it is.
 - A check box is `<quader-checkbox>`, its box a direct child of `.check-row`, which keeps it at 16 px beside a label of several
-  lines ([Q-UI-575](../spec/api-and-ui.md#q-ui-575--a-check-box-keeps-its-size-beside-a-long-label)).
+  lines ([Q-UI-575](../spec/api-and-ui.md#q-ui-575--a-check-box-keeps-its-size-beside-a-long-label)); so does a radio of
+  `<quader-visibility-level>` beside a sentence of two lines (its box shrank to 13 px and pulled its option 3 px left, 2026-11-25).
 - A thing that is on or off and changes at once, without a save (a public registry of **Upstream registries**), is a switch,
   `<quader-switch [checked] [label] (checkedChange)>` ([switch.ts](../../web/src/app/shared/ui/switch.ts),
   [Q-UI-830](../spec/api-and-ui.md#q-ui-830--upstream-registries-is-one-list-grouped-by-format-with-a-switch-and-a-level-in-each-row)).

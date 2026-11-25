@@ -193,6 +193,11 @@ const LEVEL_STYLES = `
       gap: var(--quader-space-2);
       margin-block-end: var(--quader-space-3);
     }
+    /* The box keeps its 16 px beside a sentence of two lines, as a check box of .check-row does (Q-UI-575): shrunk to 13 px, it
+       pulled its option's name and sentence 3 px left of the others (New project at 1,440 px). */
+    .level > input {
+      flex: none;
+    }
     .text {
       display: flex;
       flex-direction: column;
