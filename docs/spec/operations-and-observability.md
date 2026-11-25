@@ -1020,7 +1020,10 @@ Priority: **P1** · Covers: quader-only
     deletes its row.
   - The close step of a clean shutdown ([architecture.md](architecture.md) R-ARCH-024) writes the finished downloads (R-OPS-051) and
     deletes the row.
-  - **Cost bound:** at most one upsert of at most about 100 KiB per replica and interval, whatever the number of downloads.
+  - **Cost bound:** at most one upsert of at most about 100 KiB per replica and interval, whatever the number of downloads. Measured on
+    2026-11-25: a row of 200 downloads is about 49 KB of JSON, 10.6 KB stored, and its upsert about 22.5 KB of WAL; with the insert and
+    trim of 100 ended downloads a publication writes at most about 78 KB of WAL
+    ([upstream-downloads.md](../developer/upstream-downloads.md#the-write-load-measured)).
 - **Speed** ([Q-OPS-421](#q-ops-421--the-speed-is-the-last-ten-seconds-the-average-is-bytes-over-duration)):
   - The bytes of the last 10 s over those 10 s, from the samples taken at each publication by the replica that reads the body.
   - In the first 10 s: the bytes over the time since the begin. None in the first second.
@@ -7056,7 +7059,9 @@ Hundreds can run at once (a bulk's rows, an `npm install` of a thousand packages
 **Choice:** (a). At most 200 entries per replica (the longest running first) and the count of the rest. Readers take rows at most three
 intervals old. **Rationale:** the only option whose cost does not grow with the number of downloads and that holds the platform's rules
 on Valkey. The development agent would revisit it if a measurement under the reference load shows the writes in PostgreSQL's top
-statements.
+statements. Measured on 2026-11-25 on the integration stack (4,000 misses at about 350 a second, 300 downloads held open): at most three
+statements per replica every 2 s, no statement and no measurable latency on a fetch's path, at most about 39 KB of WAL a second per replica,
+about 3 % of the fills' own WAL at that rate; the condition is not met ([upstream-downloads.md](../developer/upstream-downloads.md#the-write-load-measured)).
 
 **Applied in the spec:** R-OPS-050, [architecture.md](architecture.md) R-ARCH-030 (the row of the map). Code:
 [internal/fills](../../internal/fills/).

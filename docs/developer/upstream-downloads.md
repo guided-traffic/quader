@@ -106,8 +106,48 @@ of its 200 get no end.
 The engine's path is tested in the integration area because the unit tier of `internal/proxy` has no item store; the mapping of every
 result is a unit test. No format's client and no e2e set: the hook sits in the engine every format shares, so a format adds nothing.
 
-## Not verified
+## The write load, measured
 
-- The write load under the reference load: one upsert of up to about 100 KiB per active replica every 2 s, plus an insert and a trim per
-  publication with ends. It is bounded, not measured; a measurement belongs to [test-cost.md](test-cost.md)'s kind, run once and written
-  down.
+Measured once on 2026-11-25 at 06:30, a measurement and not a test, repeated by
+
+```shell
+QUADER_TEST_MEASURE_UPSTREAM_DOWNLOADS=4x500 test/integration/run.sh -run TestMeasureTheWriteLoadOfTheDownloadOverview -v ./test/integration/proxy/
+```
+
+([upstream_downloads_load_test.go](../../test/integration/proxy/upstream_downloads_load_test.go); without the variable it is skipped). The set-up:
+instance 1 of the integration stack (PostgreSQL 18 in its container, the stack's SeaweedFS), the development host of 20 cores at a load average
+of 10 rising to 20 during the run (two other builders), two in-process replicas of the area `proxy` on one upstream stub: one without the
+overview (no tracker: the engine's path before T-26, `beginDownload` returns at once) and one with its tracker and its publisher at the default
+interval of 2 s, a remote repository each. The reference load of [R-ARCH-027](../spec/architecture.md#r-arch-027--performance-targets) names no
+rate of misses; P-10 asks 500 concurrent transfers of a replica. The run takes both ends: 2,000 misses of distinct 1 KiB artifacts per replica,
+32 at a time, in four rounds alternating the two replicas, and then 300 downloads held open at once (64 KiB each, 1 KiB every 100 ms).
+
+| What | Without the overview | With it |
+|---|---|---|
+| 2,000 misses, 32 at a time | 6.0 s, 333 a second | 5.6 s, 360 a second |
+| A miss's latency, p50 / p95 / p99 | 85 / 126 / 374 ms | 84 / 117 / 160 ms |
+| WAL per miss (the instance's `pg_current_wal_lsn`, the fill's own rows included) | 4,083 B | 3,715 B |
+
+The overview costs a fetch nothing that shows above the host's noise: its path is a map entry and an atomic addition per read, and no statement
+runs on it (the p99 without the overview is the one round whose first fetches warmed the replica). What it writes runs on its own loop:
+
+- **Statements.** Over the 4,000 misses the publisher wrote 6 publications: 3 upserts of the live row, 2 deletes of it, 5 inserts of ended
+  downloads with their trims, 1 sweep; at most 32 downloads ran in one publication. That is at most three statements (and the transaction's
+  `BEGIN` and `COMMIT`) per replica every 2 s, whatever the number of downloads: Q-OPS-420's bound holds.
+- **Rows.** A publication writes at most the newest 100 ended downloads (`keepNewest`): of the 2,000 misses of the replica with the overview,
+  500 ended rows were written, 0.25 per miss. At 360 misses a second the list shows the last 100 of the last two seconds.
+- **WAL of one publication**, measured alone (50 of each in a row, no fetch beside them): an upsert of a full live row of 200 downloads
+  22,540 B; an insert of 100 ended downloads with the trim 56,008 B (560 B a row). A replica that keeps 200 downloads running and ends 100
+  every 2 s writes about 39 KB of WAL a second, the most the overview can write per replica; at 360 misses a second the fills' own WAL is
+  about 1.3 MB a second, so the overview's share at that bound is about 3 %.
+- **The live row.** With 300 downloads held open, the row holds 200 (56 counted in `omitted` at the moment read): 48,987 B of JSON text,
+  10,636 B stored (`pg_column_size`, compressed in TOAST), not the "about 100 KiB" estimated before. Every one of its 55 updates was HOT.
+- **The tables' size.** After the run `upstream_download_finished` held its 100 rows in 200 KiB, and after the 50 inserts of 100 rows in a
+  row 1,608 KiB with 5,300 dead rows: the trim deletes as many rows as the insert adds, and autovacuum (one run in the measurement) gives the
+  space back. At the most a replica writes, 3,000 dead rows a minute, about 1.5 MiB between two runs of autovacuum at its default naptime of a
+  minute. `upstream_download_live` held one row in 1,192 KiB after the 55 upserts (old TOAST chunks of the JSON until autovacuum).
+
+Nothing is repaired: no statement runs per chunk or per fetch, both tables are bounded (200 entries per replica, 100 rows), and the indexes
+serve the trim and the list. Q-OPS-420's revisit condition (the writes among PostgreSQL's top statements) is not met. Not measured: the
+same on PostgreSQL of the reference environment and through PgBouncer, and with five replicas publishing at once (the bound multiplies by the
+replicas, five at most about 200 KB of WAL a second).
