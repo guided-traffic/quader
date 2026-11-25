@@ -14,6 +14,12 @@ cd "$root"
 . deploy/ui-dev/instance.sh
 ui_instance "$root"
 state="$UI_STATE"
+# A second start beside a running one failed on the port only after it had started scanners of its own, and its end stopped the
+# running one's malware scanner (seen 2026-11-25): it is refused here, before anything is touched.
+if (exec 3<>"/dev/tcp/127.0.0.1/$UI_BACKEND_PORT") 2>/dev/null; then
+  echo "serve: the backend of instance $UI_INSTANCE answers on port $UI_BACKEND_PORT already; stop it first (Ctrl-C where it runs, or TERM to its serve.sh)" >&2
+  exit 1
+fi
 # quader.yaml is written again from the state directory of up.sh, so a change of the profile's configuration reaches it at this
 # start; config.sh creates no certificate, secret or container and fails when up.sh has not run.
 deploy/ui-dev/config.sh "$state"
