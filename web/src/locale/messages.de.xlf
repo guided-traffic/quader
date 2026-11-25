@@ -25123,7 +25123,7 @@
         <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:44,45</note>
         <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:111,112</note>
         <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:203,204</note>
-        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:113,114</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:114,115</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -32899,7 +32899,7 @@
     <unit id="upstream.preview.from-version">
       <notes>
         <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:203,205</note>
-        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:50,52</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:51,53</note>
       </notes>
       <segment>
         <source>From version</source>
@@ -32909,7 +32909,7 @@
     <unit id="upstream.preview.from-version.empty">
       <notes>
         <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:211,212</note>
-        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:58,59</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:59,60</note>
       </notes>
       <segment>
         <source>The oldest</source>
@@ -32919,7 +32919,7 @@
     <unit id="upstream.preview.to-version">
       <notes>
         <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:223,224</note>
-        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:71,73</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:72,74</note>
       </notes>
       <segment>
         <source>Up to version</source>
@@ -32929,7 +32929,7 @@
     <unit id="upstream.preview.to-version.empty">
       <notes>
         <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:232,233</note>
-        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:80,81</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:81,82</note>
       </notes>
       <segment>
         <source>The newest</source>
@@ -32948,7 +32948,7 @@
     <unit id="upstream.preview.to-inclusive.included">
       <notes>
         <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:245,246</note>
-        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:95,96</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:96,97</note>
       </notes>
       <segment>
         <source>included</source>
@@ -32958,7 +32958,7 @@
     <unit id="upstream.preview.to-inclusive.below">
       <notes>
         <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:246,248</note>
-        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:96,99</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:97,100</note>
       </notes>
       <segment>
         <source>below it</source>
@@ -34735,7 +34735,7 @@
     </unit>
     <unit id="upstream.range.title">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:39,40</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:40,41</note>
       </notes>
       <segment>
         <source>Limit the versions of <ph id="0" equiv="INTERPOLATION" disp="{{ data.name }}"/></source>
@@ -34744,7 +34744,7 @@
     </unit>
     <unit id="upstream.range.lead">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:42,43</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:43,44</note>
       </notes>
       <segment>
         <source>The package is delivered with the versions in the range; a version outside it is not, unless its own switch is on. Leave both fields empty to deliver every version.</source>
@@ -34753,7 +34753,7 @@
     </unit>
     <unit id="upstream.range.turns-on">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:44,46</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:45,47</note>
       </notes>
       <segment>
         <source>Saving allows the package with these versions.</source>
@@ -34762,7 +34762,7 @@
     </unit>
     <unit id="upstream.range.oci-tags">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:47,49</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:48,50</note>
       </notes>
       <segment>
         <source>A tag that is no version, such as latest, lies outside every range: docker pull without a tag asks for latest and is refused until latest&apos;s own switch is on.</source>
@@ -34771,7 +34771,7 @@
     </unit>
     <unit id="upstream.range.to-inclusive.label">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:90,91</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:91,92</note>
       </notes>
       <segment>
         <source>Whether the version itself is delivered</source>
@@ -34780,7 +34780,7 @@
     </unit>
     <unit id="upstream.range.save">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:114,116</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:115,117</note>
       </notes>
       <segment>
         <source>Save</source>
