@@ -3059,6 +3059,45 @@
             "additionalProperties": false
           }
         },
+        "upstreamAccounts": {
+          "type": "object",
+          "default": {},
+          "propertyNames": {
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "maxLength": 64
+          },
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "existingSecret"
+            ],
+            "properties": {
+              "existingSecret": {
+                "type": "string",
+                "minLength": 1
+              },
+              "authMode": {
+                "type": "string",
+                "enum": [
+                  "basic",
+                  "bearer"
+                ],
+                "default": "basic"
+              },
+              "usernameKey": {
+                "type": "string",
+                "minLength": 1,
+                "default": "username"
+              },
+              "passwordKey": {
+                "type": "string",
+                "minLength": 1,
+                "default": "password"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
         "breakGlass": {
           "type": "object",
           "properties": {

@@ -259,6 +259,12 @@ th.wrap-name > a {
   margin: 0;
 }
 
+// The offer of an account (Q-UI-1160) continues the sentence: it starts where the sentence's text starts, after its icon.
+.limit-offer {
+  margin: 0;
+  padding-inline-start: calc(1.125rem + var(--quader-space-1));
+}
+
 @container download-limit (max-width: 30rem) {
   .limit-notice dl.facts {
     grid-template-columns: minmax(0, 1fr);

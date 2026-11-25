@@ -239,6 +239,13 @@
           @if (addressError(); as e) {
             <quader-error-notice [error]="e" />
           }
+          <!-- A declared account's hosts are the configuration's (Q-REPO-486): the save is refused before it is sent. -->
+          @if (addressHeld(); as held) {
+            <p class="banner-warning" role="alert">
+              <span class="material-icons inline warn" aria-hidden="true">lock</span>
+              <span>{{ held }}</span>
+            </p>
+          }
           <fieldset class="plain" [disabled]="!canWrite()">
             <quader-text-field
               width="full"
@@ -355,47 +362,93 @@
           @if (accountError(); as e) {
             <quader-error-notice [error]="e" />
           }
-          <fieldset class="plain" [disabled]="!canWrite()">
-            <quader-select-field
-              i18n-label="@@upstream.auth"
-              label="Authentication"
-              name="wkAuth"
-              [options]="authModes"
-              [value]="authMode()"
-              (valueChange)="authMode.set($any($event))"
-            />
-            @if (authMode() === 'basic') {
-              <quader-text-field width="name" i18n-label="@@upstream.username" label="Username" name="wkUser" [readonly]="!canWrite()" [value]="username()" (valueChange)="username.set($event)" />
-            }
-            <!-- The secret is written and never read (Q-UI-123): a reader has no field for it. -->
-            @if (authMode() !== 'none' && canWrite()) {
-              <quader-text-field
-                width="name"
-                type="password"
-                [secret]="true"
-                autocomplete="new-password"
-                i18n-label="@@upstream.password"
-                label="Password or token"
-                name="wkPassword"
-                [value]="password()"
-                (valueChange)="password.set($event)"
-                [hint]="passwordStored() ? storedHint : ''"
-              />
+          <!-- A registry whose vendor allows more requests with an account, while it has none (Q-UI-1160). -->
+          @if (raisesText(); as raises) {
+            <p class="hint raises">{{ raises }}</p>
+          }
+          @if (configured()) {
+            <!-- An account the configuration declares (R-REPO-077, Q-UI-1161): read-only, never a value, never the username read from a file. -->
+            <p class="source-note" role="note">
+              <span class="material-icons inline" aria-hidden="true">lock</span>
+              @if (secretName(); as secret) {
+                <span i18n="@@wellknown.account.configured-helm">From the Helm values: Secret <code class="secret-name" translate="no">{{ secret }}</code>. Change or remove it there.</span>
+              } @else {
+                <span i18n="@@wellknown.account.configured-file">From the installation's configuration file. Change or remove it there.</span>
+              }
+            </p>
+            <dl class="facts account-facts">
+              <dt i18n="@@upstream.auth">Authentication</dt>
+              <dd>{{ modeLabel() }}</dd>
+              <dt i18n="@@wellknown.account.files">Files</dt>
+              <dd>{{ filesText() }}</dd>
+              @if (r.account.lastDownloadAt; as at) {
+                <dt i18n="@@wellknown.account.last-download">Last download</dt>
+                <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
+              }
+              @if (r.account.lastFailure; as failed) {
+                <dt i18n="@@wellknown.account.last-failure">Last failed download</dt>
+                <dd>
+                  <time [attr.datetime]="failed.at">{{ failed.at | date: 'medium' }}</time>
+                  @if (failed.code) {
+                    &ngsp;<code translate="no">{{ failed.code }}</code>
+                  }
+                </dd>
+              }
+            </dl>
+            @if (filesWarning(); as warning) {
+              <p class="banner-warning" role="alert">
+                <span class="material-icons inline warn" aria-hidden="true">warning</span>
+                <span>{{ warning }}</span>
+              </p>
             }
             @if (credentialLine(); as line) {
               <p class="hint credential-line">{{ line }}</p>
             }
-          </fieldset>
+          } @else {
+            <fieldset class="plain" [disabled]="!canWrite()">
+              <quader-select-field
+                i18n-label="@@upstream.auth"
+                label="Authentication"
+                name="wkAuth"
+                [options]="authModes"
+                [value]="authMode()"
+                (valueChange)="authMode.set($any($event))"
+              />
+              @if (authMode() === 'basic') {
+                <quader-text-field width="name" i18n-label="@@upstream.username" label="Username" name="wkUser" [readonly]="!canWrite()" [value]="username()" (valueChange)="username.set($event)" />
+              }
+              <!-- The secret is written and never read (Q-UI-123): a reader has no field for it. -->
+              @if (authMode() !== 'none' && canWrite()) {
+                <quader-text-field
+                  width="name"
+                  type="password"
+                  [secret]="true"
+                  autocomplete="new-password"
+                  i18n-label="@@upstream.password"
+                  label="Password or token"
+                  name="wkPassword"
+                  [value]="password()"
+                  (valueChange)="password.set($event)"
+                  [hint]="passwordStored() ? storedHint : ''"
+                />
+              }
+              @if (credentialLine(); as line) {
+                <p class="hint credential-line">{{ line }}</p>
+              }
+            </fieldset>
+          }
           <!-- Testing, saving and removing are a writer's: the upstream test needs the right to change the repository. -->
           @if (canWrite()) {
             <div class="actions">
               <button class="btn btn-default" type="button" [disabled]="testing()" (click)="test()" i18n="@@upstream.test">Test connection</button>
-              <button class="btn btn-confirm" type="submit" [disabled]="!accountDirty() || busy() !== null" i18n="@@wellknown.account.save">Save account</button>
-              @if (accountDirty()) {
-                <button class="btn btn-tertiary" type="button" (click)="discardAccount()" i18n="@@repo.edit.reset">Discard changes</button>
-              }
-              @if (accountStored()) {
-                <button class="btn btn-default" type="button" [disabled]="busy() !== null" (click)="removeAccount()" i18n="@@wellknown.account.remove">Remove account</button>
+              @if (!configured()) {
+                <button class="btn btn-confirm" type="submit" [disabled]="!accountDirty() || busy() !== null" i18n="@@wellknown.account.save">Save account</button>
+                @if (accountDirty()) {
+                  <button class="btn btn-tertiary" type="button" (click)="discardAccount()" i18n="@@repo.edit.reset">Discard changes</button>
+                }
+                @if (accountStored()) {
+                  <button class="btn btn-default" type="button" [disabled]="busy() !== null" (click)="removeAccount()" i18n="@@wellknown.account.remove">Remove account</button>
+                }
               }
             </div>
           }

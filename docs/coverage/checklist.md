@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,274 spec requirements:
-787 cover catalog features, 487 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,276 spec requirements:
+787 cover catalog features, 489 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>487 requirements</summary>
+<summary>489 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3262,6 +3262,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-HA-067 | Where the scanner runs outside the chart | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-069 | The updater Deployment `malware-updater-freshclam` | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-071 | The signing identity's Secret, in the worker pods only | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
+| R-HA-073 | The accounts of the upstream registries from existing Secrets | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-072 | The object-store connections in the chart | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-056 | Valkey with Sentinel: connection and supported topologies | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
 | R-HA-057 | Valkey failover, outage and degraded mode | MVP | [ha-and-helm.md](../spec/ha-and-helm.md) |
@@ -3337,6 +3338,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-REPO-073 | The operations of the well-known repositories | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-074 | The tests of the built-in project, their tier and their cost | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-076 | The installation's registry presets | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
+| R-REPO-077 | An account from the installation's configuration | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-026 | Collapsing concurrent misses (single-flight and Valkey flight lock) | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-038 | Egress address rules for remote repositories | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-040 | Size and concurrency limits | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |

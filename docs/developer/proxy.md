@@ -48,9 +48,9 @@ the only place that builds an HTTP client, R-ARCH-002), `internal/repository` (t
 
 | File | Responsibility |
 |---|---|
-| [clients.go](../../internal/proxy/upstream/clients.go) | `Clients`, `New`, `For` (cached per repository and `config_version`), `Ephemeral` (uncached, for the unsaved test), the build of an outbound client from the settings, the registered cache `proxy_upstream_clients` |
+| [clients.go](../../internal/proxy/upstream/clients.go) | `Clients`, `New`, `For` (cached per repository and `config_version`), `Ephemeral` (uncached, for the unsaved test), the build of an outbound client from the settings, `buildConfigured` (an account of `repositories.upstream_accounts` for a repository of the project `upstream`, `Options.Accounts`, R-REPO-077: the declaration's `authMode` in the client's settings, the username and the password from their files), the registered cache `proxy_upstream_clients` |
 | [client.go](../../internal/proxy/upstream/client.go) | `Client` (`HTTP`, `Settings`, `Origin`, `Allowed`, `Close`), the `guard` transport that fails a request whose credential cannot be resolved |
-| [secret.go](../../internal/proxy/upstream/secret.go) | the credential: `secretValue` (fixed, or a reference read again after `RefreshInterval`), `resolver` (file under `config_as_code.secrets_dir`, `QUADER_CAC_` variable), the `Authorization` header, `secretUnavailable` |
+| [secret.go](../../internal/proxy/upstream/secret.go) | the credential: `secretValue` (fixed, or a value read again after `RefreshInterval`: a reference, or a declared account's file, `newFileSecret`), `resolver` (file under `config_as_code.secrets_dir`, `QUADER_CAC_` variable), the `Authorization` header (a username from a file where the account is declared), `secretUnavailable` |
 | [probe.go](../../internal/proxy/upstream/probe.go) | `TestSaved`, `TestUnsaved`, the probe request, `Classify` and the codes of the result |
 
 ### How a client is built

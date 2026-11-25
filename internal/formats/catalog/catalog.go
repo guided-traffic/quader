@@ -201,6 +201,10 @@ type UpstreamPreset struct {
 	// search or a listing (remote-curation.md R-CUR-008, Q-CUR-15: Docker Hub's hub.docker.com, GitLab's gitlab.com API), with whether
 	// each receives the repository's credential. A person never types such a host; a repository whose URL is no preset's has none.
 	CatalogueHosts []PresetHost
+	// AccountRaisesLimit marks an upstream whose vendor documents a higher request limit for a caller with an account: the
+	// sentence of its limit offers an account where the repository sends none (Q-UI-1160). The number is not kept here; it has
+	// changed before, and the upstream's own limit headers are in the limit's technical details.
+	AccountRaisesLimit bool
 }
 
 // PresetHost is one entry of a preset's ExtraHosts: a host pattern of R-REPO-024 and whether the repository's credential

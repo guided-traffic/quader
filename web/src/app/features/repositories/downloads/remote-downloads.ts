@@ -29,7 +29,15 @@ import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { TechnicalDetails } from '../../../shared/technical-details';
 import { NoValue } from '../../../shared/ui/no-value';
 import { TimeAgo } from '../../../shared/ui/time-ago';
-import { clockText, limitBulkText, limitRowText, limitSentence } from '../../../shared/upstream-downloads/limit-words';
+import { UPSTREAM_PROJECT, isUpstreamProject } from '../../../core/upstream-project';
+import {
+  AccountOfferReader,
+  accountOfferText,
+  clockText,
+  limitBulkText,
+  limitRowText,
+  limitSentence,
+} from '../../../shared/upstream-downloads/limit-words';
 import { formatSize } from '../../packages/format-size';
 import {
   downloadOutcomeText,
@@ -135,6 +143,29 @@ export class RemoteDownloads {
     const l = this.limit();
     return l && l.holds ? limitSentence(l) : null;
   });
+  /**
+   * The project and the key of the repository: a key of the project `upstream` is a well-known repository, whose account an administrator
+   * adds on its page in the admin area or in the Helm values (Q-UI-1160).
+   */
+  private readonly qualified = computed(() => {
+    const ref = this.repository();
+    const at = ref.indexOf('/');
+    return { project: ref.slice(0, at), key: ref.slice(at + 1) };
+  });
+  private readonly wellKnown = computed(() => isUpstreamProject(this.qualified().project));
+  /** Who reads the offer of an account: the administrator of a well-known repository, the writer of a project's remote, or another reader. */
+  protected readonly offerReader = computed((): AccountOfferReader => {
+    if (this.wellKnown()) return this.session.has('repositories:write-config') ? 'upstream-admin' : 'upstream-reader';
+    return this.session.canWriteRepositories(this.qualified().project) ? 'remote-writer' : 'remote-reader';
+  });
+  /** The sentence that offers an account while the limit holds and an account would lift it (Q-UI-1160); null otherwise. */
+  protected readonly accountOffer = computed(() => {
+    const l = this.limit();
+    return l && l.holds && l.accountRaisesLimit ? accountOfferText(l.upstream, this.offerReader()) : null;
+  });
+  /** The page of the well-known repository in the admin area, where its account is added (R-UI-188 section 3). */
+  protected readonly accountLink = computed(() => ['/admin/upstream', this.qualified().key]);
+  protected readonly upstreamProject = UPSTREAM_PROJECT;
   protected readonly loaded = signal(false);
   protected readonly loading = signal(false);
   protected readonly listError = signal<ApiError | null>(null);

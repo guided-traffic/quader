@@ -5557,7 +5557,7 @@
         <note category="location">src/app/features/repositories/repository-create.html:221,223</note>
         <note category="location">src/app/features/repositories/repository-detail.html:46,47</note>
         <note category="location">src/app/features/repositories/repository-format-chooser.ts:41,43</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:475,478</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:528,531</note>
       </notes>
       <segment>
         <source>Loading.</source>
@@ -11138,8 +11138,8 @@
         <note category="location">src/app/features/repositories/repository-download-links.ts:79,81</note>
         <note category="location">src/app/features/repositories/repository-malware.ts:65,67</note>
         <note category="location">src/app/features/repositories/repository-signatures.ts:215,217</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:336,338</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:395,397</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:343,345</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:447,449</note>
       </notes>
       <segment>
         <source>Discard changes</source>
@@ -24857,9 +24857,18 @@
         <target>Was dieses Repository vor seinen Clients in den Cache lädt, und die fehlgeschlagenen Abrufe von Clients, mit der Ursache in den Worten des Upstreams.</target>
       </segment>
     </unit>
+    <unit id="downloads.limit.account-link">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:16,20</note>
+      </notes>
+      <segment>
+        <source>Add an account</source>
+        <target>Konto hinzufügen</target>
+      </segment>
+    </unit>
     <unit id="downloads.limit.last">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:14,15</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:23,24</note>
       </notes>
       <segment>
         <source>Last answer</source>
@@ -24868,7 +24877,7 @@
     </unit>
     <unit id="downloads.limit.at">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:15</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:24</note>
       </notes>
       <segment>
         <source>at</source>
@@ -24877,7 +24886,7 @@
     </unit>
     <unit id="downloads.limit.waits">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:17,18</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:26,27</note>
       </notes>
       <segment>
         <source>Waits in a row</source>
@@ -24886,7 +24895,7 @@
     </unit>
     <unit id="downloads.limit.until">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:19,21</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:28,30</note>
       </notes>
       <segment>
         <source>Waiting until</source>
@@ -24895,7 +24904,7 @@
     </unit>
     <unit id="downloads.limit.until-hinted">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:23,25</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:32,34</note>
       </notes>
       <segment>
         <source>(the upstream&apos;s time)</source>
@@ -24904,7 +24913,7 @@
     </unit>
     <unit id="downloads.limit.until-backoff">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:25,27</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:34,36</note>
       </notes>
       <segment>
         <source>(Quader&apos;s wait: the upstream named no time)</source>
@@ -24913,8 +24922,8 @@
     </unit>
     <unit id="downloads.failure.address">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:30,31</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:383,384</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:39,40</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:392,393</note>
       </notes>
       <segment>
         <source>Address</source>
@@ -24923,8 +24932,8 @@
     </unit>
     <unit id="downloads.failure.query-removed">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:31,33</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:384,386</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:40,42</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:393,395</note>
       </notes>
       <segment>
         <source>(shown without its query, which can carry a credential)</source>
@@ -24933,8 +24942,8 @@
     </unit>
     <unit id="downloads.failure.headers">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:34,35</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:395,396</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:43,44</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:404,405</note>
       </notes>
       <segment>
         <source>Headers of the limit</source>
@@ -24943,8 +24952,8 @@
     </unit>
     <unit id="downloads.failure.excerpt">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:43,44</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:404,405</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:52,53</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:413,414</note>
       </notes>
       <segment>
         <source>The start of the upstream&apos;s answer</source>
@@ -24953,7 +24962,7 @@
     </unit>
     <unit id="downloads.bulks.title">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:55,57</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:64,66</note>
       </notes>
       <segment>
         <source>Bulk downloads</source>
@@ -24962,8 +24971,8 @@
     </unit>
     <unit id="downloads.bulk.started-by">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:75</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:215</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:84</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:224</note>
       </notes>
       <segment>
         <source>Started by <ph id="0" equiv="INTERPOLATION" disp="{{ who }}"/></source>
@@ -24972,7 +24981,7 @@
     </unit>
     <unit id="downloads.rows.title">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:125,128</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:134,137</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -24981,7 +24990,7 @@
     </unit>
     <unit id="downloads.filter.all">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:132,133</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:141,142</note>
       </notes>
       <segment>
         <source>All</source>
@@ -24990,7 +24999,7 @@
     </unit>
     <unit id="downloads.filter.failure">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:143,144</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:152,153</note>
       </notes>
       <segment>
         <source>Failure</source>
@@ -24999,7 +25008,7 @@
     </unit>
     <unit id="downloads.filter.any-class">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:145,146</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:154,155</note>
       </notes>
       <segment>
         <source>Any class</source>
@@ -25008,7 +25017,7 @@
     </unit>
     <unit id="downloads.retry-all">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:153,155</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:162,164</note>
       </notes>
       <segment>
         <source>Retry all failed</source>
@@ -25017,7 +25026,7 @@
     </unit>
     <unit id="downloads.resume">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:157,158</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:166,167</note>
       </notes>
       <segment>
         <source>Resume automatic refresh</source>
@@ -25026,7 +25035,7 @@
     </unit>
     <unit id="downloads.pause">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:159,161</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:168,170</note>
       </notes>
       <segment>
         <source>Pause automatic refresh</source>
@@ -25035,7 +25044,7 @@
     </unit>
     <unit id="downloads.name-filter">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:168</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:177</note>
       </notes>
       <segment>
         <source>Only the downloads of <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;name-filter-name&quot; translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ n }}"/></pc>.</source>
@@ -25044,8 +25053,8 @@
     </unit>
     <unit id="downloads.bulk.show-all">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:173,178</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:195,197</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:182,187</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:204,206</note>
       </notes>
       <segment>
         <source>Show every download</source>
@@ -25054,7 +25063,7 @@
     </unit>
     <unit id="downloads.bulk.cancel">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:191,192</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:200,201</note>
       </notes>
       <segment>
         <source>Cancel bulk</source>
@@ -25063,8 +25072,8 @@
     </unit>
     <unit id="downloads.bulk.start-again">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:193,195</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:602</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:202,204</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:633</note>
       </notes>
       <segment>
         <source>Start again</source>
@@ -25073,7 +25082,7 @@
     </unit>
     <unit id="downloads.bulk.versions-found">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:203</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:212</note>
       </notes>
       <segment>
         <source>Versions found</source>
@@ -25082,7 +25091,7 @@
     </unit>
     <unit id="downloads.bulk.loading">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:232,237</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:241,246</note>
       </notes>
       <segment>
         <source>Loading the bulk download.</source>
@@ -25091,7 +25100,7 @@
     </unit>
     <unit id="downloads.not-delivered">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:270,272</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:279,281</note>
       </notes>
       <segment>
         <source>Not delivered here: stored for examination</source>
@@ -25100,7 +25109,7 @@
     </unit>
     <unit id="downloads.occurrences">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:282</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:291</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.occurrences }}"/> times</source>
@@ -25109,7 +25118,7 @@
     </unit>
     <unit id="downloads.next-attempt">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:323</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:332</note>
       </notes>
       <segment>
         <source>next</source>
@@ -25118,7 +25127,7 @@
     </unit>
     <unit id="downloads.progress.refused">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:330</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:339</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.refused }}"/> refused by a gate</source>
@@ -25127,7 +25136,7 @@
     </unit>
     <unit id="downloads.failure.title">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:366</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:375</note>
       </notes>
       <segment>
         <source>Failure of attempt <ph id="0" equiv="INTERPOLATION" disp="{{ f.attempt }}"/></source>
@@ -25136,7 +25145,7 @@
     </unit>
     <unit id="downloads.failure.class">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:372,373</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:381,382</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -25145,7 +25154,7 @@
     </unit>
     <unit id="downloads.failure.step">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:374,375</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:383,384</note>
       </notes>
       <segment>
         <source>Step</source>
@@ -25154,7 +25163,7 @@
     </unit>
     <unit id="downloads.failure.code">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:376,377</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:385,386</note>
       </notes>
       <segment>
         <source>Code</source>
@@ -25163,7 +25172,7 @@
     </unit>
     <unit id="downloads.failure.file">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:379,380</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:388,389</note>
       </notes>
       <segment>
         <source>File</source>
@@ -25172,7 +25181,7 @@
     </unit>
     <unit id="downloads.failure.status">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:387,388</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:396,397</note>
       </notes>
       <segment>
         <source>Upstream status</source>
@@ -25181,7 +25190,7 @@
     </unit>
     <unit id="downloads.failure.retry-after">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:391,392</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:400,401</note>
       </notes>
       <segment>
         <source>Retry-After</source>
@@ -25190,7 +25199,7 @@
     </unit>
     <unit id="downloads.failure.seconds">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:392,393</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:401,402</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ f.retryAfter }}"/> s</source>
@@ -25199,7 +25208,7 @@
     </unit>
     <unit id="downloads.fact.started-by">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:410,411</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:419,420</note>
       </notes>
       <segment>
         <source>Started by</source>
@@ -25208,7 +25217,7 @@
     </unit>
     <unit id="downloads.fact.queued">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:413,414</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:422,423</note>
       </notes>
       <segment>
         <source>Queued</source>
@@ -25217,7 +25226,7 @@
     </unit>
     <unit id="downloads.fact.started">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:416,417</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:425,426</note>
       </notes>
       <segment>
         <source>Started</source>
@@ -25226,7 +25235,7 @@
     </unit>
     <unit id="downloads.fact.finished">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:420,421</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:429,430</note>
       </notes>
       <segment>
         <source>Finished</source>
@@ -25235,7 +25244,7 @@
     </unit>
     <unit id="downloads.fact.files">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:424,425</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:433,434</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -25244,7 +25253,7 @@
     </unit>
     <unit id="downloads.fact.files-value">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:425,426</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:434,435</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.files }}"/> named, <ph id="1" equiv="INTERPOLATION_1" disp="{{ r.stored }}"/> stored, <ph id="2" equiv="INTERPOLATION_2" disp="{{ r.present }}"/> already stored, <ph id="3" equiv="INTERPOLATION_3" disp="{{ r.refused }}"/> refused</source>
@@ -25253,7 +25262,7 @@
     </unit>
     <unit id="downloads.fact.bytes">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:428,429</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:437,438</note>
       </notes>
       <segment>
         <source>Stored</source>
@@ -25262,7 +25271,7 @@
     </unit>
     <unit id="downloads.bulks.caption">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:176</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:207</note>
       </notes>
       <segment>
         <source>Bulk downloads of this repository, newest first</source>
@@ -25271,7 +25280,7 @@
     </unit>
     <unit id="downloads.caption">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:236</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:267</note>
       </notes>
       <segment>
         <source>Downloads of this repository, running and waiting first</source>
@@ -25280,7 +25289,7 @@
     </unit>
     <unit id="downloads.empty">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:237</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:268</note>
       </notes>
       <segment>
         <source>There is no download yet.</source>
@@ -25289,7 +25298,7 @@
     </unit>
     <unit id="downloads.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:238</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:269</note>
       </notes>
       <segment>
         <source>No download matches.</source>
@@ -25298,7 +25307,7 @@
     </unit>
     <unit id="downloads.filter.state">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:239</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:270</note>
       </notes>
       <segment>
         <source>State</source>
@@ -25307,7 +25316,7 @@
     </unit>
     <unit id="downloads.col.subject">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:248</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:279</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -25316,7 +25325,7 @@
     </unit>
     <unit id="downloads.col.origin">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:249</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:280</note>
       </notes>
       <segment>
         <source>Origin</source>
@@ -25325,8 +25334,8 @@
     </unit>
     <unit id="downloads.col.state">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:250</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:260</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:281</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:291</note>
       </notes>
       <segment>
         <source>State</source>
@@ -25335,7 +25344,7 @@
     </unit>
     <unit id="downloads.col.progress">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:251</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:282</note>
       </notes>
       <segment>
         <source>Progress</source>
@@ -25344,8 +25353,8 @@
     </unit>
     <unit id="downloads.col.failure">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:252</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:262</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:283</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:293</note>
       </notes>
       <segment>
         <source>Failure</source>
@@ -25354,8 +25363,8 @@
     </unit>
     <unit id="downloads.col.actions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:253</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:263</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:284</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:294</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -25364,7 +25373,7 @@
     </unit>
     <unit id="downloads.bulks.col.bulk">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:259</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:290</note>
       </notes>
       <segment>
         <source>Bulk download</source>
@@ -25373,7 +25382,7 @@
     </unit>
     <unit id="downloads.bulks.col.versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:261</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:292</note>
       </notes>
       <segment>
         <source>Versions</source>
@@ -25382,7 +25391,7 @@
     </unit>
     <unit id="downloads.row.open">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:448</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:479</note>
       </notes>
       <segment>
         <source>Details of <ph id="0" equiv="subject" disp="downloadSubject(r)"/></source>
@@ -25391,8 +25400,8 @@
     </unit>
     <unit id="downloads.origin.you">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:455</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:462</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:486</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:493</note>
       </notes>
       <segment>
         <source>You</source>
@@ -25401,7 +25410,7 @@
     </unit>
     <unit id="downloads.attempt">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:494</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:525</note>
       </notes>
       <segment>
         <source>Attempt <ph id="0" equiv="attempt" disp="r.attempts"/> of <ph id="1" equiv="max" disp="r.maxAttempts"/></source>
@@ -25410,7 +25419,7 @@
     </unit>
     <unit id="downloads.progress.files">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:501</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:532</note>
       </notes>
       <segment>
         <source>Files: <ph id="0" equiv="done" disp="done"/> of <ph id="1" equiv="files" disp="r.files"/></source>
@@ -25419,7 +25428,7 @@
     </unit>
     <unit id="downloads.retried">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:534</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:565</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="downloadSubject(r)"/> waits for its download again.</source>
@@ -25428,7 +25437,7 @@
     </unit>
     <unit id="downloads.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:535</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:566</note>
       </notes>
       <segment>
         <source>The download of <ph id="0" equiv="subject" disp="downloadSubject(r)"/> is cancelled.</source>
@@ -25437,7 +25446,7 @@
     </unit>
     <unit id="downloads.retry">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:550</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:581</note>
       </notes>
       <segment>
         <source>Retry</source>
@@ -25446,8 +25455,8 @@
     </unit>
     <unit id="downloads.cancel">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:550</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:603</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:581</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:634</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -25456,7 +25465,7 @@
     </unit>
     <unit id="downloads.retried-all">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:568</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:599</note>
       </notes>
       <segment>
         <source>Failed downloads that wait again: <ph id="0" equiv="count" disp="n"/>.</source>
@@ -25465,7 +25474,7 @@
     </unit>
     <unit id="downloads.bulk.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:617</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:648</note>
       </notes>
       <segment>
         <source>The bulk download of <ph id="0" equiv="subject" disp="b.subject"/> is cancelled.</source>
@@ -25474,7 +25483,7 @@
     </unit>
     <unit id="downloads.bulk.started-again">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:621</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:652</note>
       </notes>
       <segment>
         <source>The bulk download of <ph id="0" equiv="subject" disp="b.subject"/> starts again: Quader reads its versions from the upstream.</source>
@@ -25483,7 +25492,7 @@
     </unit>
     <unit id="downloads.bulk.failed-versions-of">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:654</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:685</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="name"/>&apos;s version list could not be read</source>
@@ -25492,7 +25501,7 @@
     </unit>
     <unit id="downloads.bulk.failed-versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:655</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:686</note>
       </notes>
       <segment>
         <source>The upstream&apos;s version list could not be read</source>
@@ -25501,7 +25510,7 @@
     </unit>
     <unit id="downloads.bulk.failed-section-of">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:658</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:689</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="name"/>&apos;s list of the sub-section could not be read</source>
@@ -25510,7 +25519,7 @@
     </unit>
     <unit id="downloads.bulk.failed-section">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:659</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:690</note>
       </notes>
       <segment>
         <source>The upstream&apos;s list of the sub-section could not be read</source>
@@ -25519,7 +25528,7 @@
     </unit>
     <unit id="downloads.bulk.open">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:670</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:701</note>
       </notes>
       <segment>
         <source>The downloads of the bulk: <ph id="0" equiv="title" disp="this.bulkTitle(b)"/></source>
@@ -25528,7 +25537,7 @@
     </unit>
     <unit id="downloads.bulk.package">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:676</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:707</note>
       </notes>
       <segment>
         <source>Every version of <ph id="0" equiv="subject" disp="b.subject"/></source>
@@ -25537,7 +25546,7 @@
     </unit>
     <unit id="downloads.bulk.section">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:677</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:708</note>
       </notes>
       <segment>
         <source>The sub-section <ph id="0" equiv="subject" disp="b.subject"/></source>
@@ -25546,7 +25555,7 @@
     </unit>
     <unit id="downloads.bulk.state.expanding">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:701</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:732</note>
       </notes>
       <segment>
         <source>Finding versions</source>
@@ -25555,7 +25564,7 @@
     </unit>
     <unit id="downloads.bulk.state.queued">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:703</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:734</note>
       </notes>
       <segment>
         <source>Queued</source>
@@ -25564,7 +25573,7 @@
     </unit>
     <unit id="downloads.bulk.state.done">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:705</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:736</note>
       </notes>
       <segment>
         <source>Done</source>
@@ -25573,7 +25582,7 @@
     </unit>
     <unit id="downloads.bulk.state.bounded">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:707</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:738</note>
       </notes>
       <segment>
         <source>Stopped at a bound</source>
@@ -25582,7 +25591,7 @@
     </unit>
     <unit id="downloads.bulk.state.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:709</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:740</note>
       </notes>
       <segment>
         <source>Cancelled</source>
@@ -25591,7 +25600,7 @@
     </unit>
     <unit id="downloads.bulk.state.failed">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:711</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:742</note>
       </notes>
       <segment>
         <source>Failed</source>
@@ -25600,7 +25609,7 @@
     </unit>
     <unit id="downloads.bulks.versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:717</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:748</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="queued" disp="b.versionsQueued"/> of <ph id="1" equiv="found" disp="b.versionsFound"/> queued</source>
@@ -25609,7 +25618,7 @@
     </unit>
     <unit id="downloads.bulk.counts">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:721</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:752</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="queued" disp="b.versionsQueued"/> of <ph id="1" equiv="found" disp="b.versionsFound"/> versions found are queued</source>
@@ -25618,7 +25627,7 @@
     </unit>
     <unit id="downloads.bulk.bounds">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:727</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:758</note>
       </notes>
       <segment>
         <source>At most <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> versions and <ph id="1" equiv="bytes" disp="bytes"/>, pre-releases included</source>
@@ -25627,7 +25636,7 @@
     </unit>
     <unit id="downloads.bulk.bounds-no-pre">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:728</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:759</note>
       </notes>
       <segment>
         <source>At most <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> versions and <ph id="1" equiv="bytes" disp="bytes"/>, without pre-releases</source>
@@ -27453,7 +27462,7 @@
         <note category="location">src/app/features/repositories/upstream-settings.ts:68</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:150,152</note>
         <note category="location">src/app/features/upstream/registry-preset-dialog.ts:64,65</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:246,247</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:253,254</note>
       </notes>
       <segment>
         <source>Upstream URL</source>
@@ -27749,7 +27758,7 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:105,106</note>
         <note category="location">src/app/features/repositories/repository-visibility.ts:43,44</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:190</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:193</note>
       </notes>
       <segment>
         <source>Visibility</source>
@@ -27793,7 +27802,7 @@
         <note category="location">src/app/features/repositories/upstream-settings.ts:351,352</note>
         <note category="location">src/app/features/upstream/registry-preset-dialog.ts:70,71</note>
         <note category="location">src/app/features/upstream/registry-presets.ts:210</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:261,262</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:268,269</note>
       </notes>
       <segment>
         <source>Further hosts</source>
@@ -27805,7 +27814,7 @@
         <note category="location">src/app/features/repositories/repository-detail.html:160,162</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:386,388</note>
         <note category="location">src/app/features/upstream/registry-preset-dialog.ts:100,103</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:289,291</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:296,298</note>
       </notes>
       <segment>
         <source>No further host.</source>
@@ -27815,7 +27824,7 @@
     <unit id="wellknown.account.heading">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:163,164</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:347,348</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:354,355</note>
       </notes>
       <segment>
         <source>Account</source>
@@ -27971,8 +27980,8 @@
     <unit id="repo.settings.details">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:471</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:434</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:453</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:487</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:506</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -28009,7 +28018,7 @@
     <unit id="repo.detail.created">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:486,487</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:482,483</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:535,536</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -28019,7 +28028,7 @@
     <unit id="repo.detail.updated">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:490,491</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:486,487</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:539,540</note>
       </notes>
       <segment>
         <source>Last changed</source>
@@ -29504,7 +29513,8 @@
         <note category="location">src/app/features/repositories/upstream-settings.ts:69</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:187,189</note>
         <note category="location">src/app/features/upstream/account-again-dialog.ts:34,35</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:361,362</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:380,381</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:411,412</note>
       </notes>
       <segment>
         <source>Authentication</source>
@@ -29516,7 +29526,7 @@
         <note category="location">src/app/features/repositories/upstream-settings.ts:70</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:205,207</note>
         <note category="location">src/app/features/upstream/account-again-dialog.ts:41</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:368</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:418</note>
       </notes>
       <segment>
         <source>Username</source>
@@ -29528,7 +29538,7 @@
         <note category="location">src/app/features/repositories/upstream-settings.ts:71</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:224,226</note>
         <note category="location">src/app/features/upstream/account-again-dialog.ts:50,51</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:378,379</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:428,429</note>
       </notes>
       <segment>
         <source>Password or token</source>
@@ -29649,7 +29659,7 @@
     <unit id="upstream.password.stored">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:240,242</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:624</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:658</note>
       </notes>
       <segment>
         <source>A password is stored and is not shown. Leave the field empty to keep it; type one to replace it.</source>
@@ -29686,7 +29696,7 @@
     <unit id="upstream.test">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:276,277</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:392,393</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:443,444</note>
       </notes>
       <segment>
         <source>Test connection</source>
@@ -29705,7 +29715,7 @@
     <unit id="upstream.test.running">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:286,288</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:404,406</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:457,459</note>
       </notes>
       <segment>
         <source>Testing the connection.</source>
@@ -29815,7 +29825,7 @@
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:357,359</note>
         <note category="location">src/app/features/upstream/registry-preset-dialog.ts:76,78</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:265,267</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:272,274</note>
       </notes>
       <segment>
         <source>Host pattern</source>
@@ -29826,7 +29836,7 @@
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:376,378</note>
         <note category="location">src/app/features/upstream/registry-preset-dialog.ts:90,92</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:279,280</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:286,287</note>
       </notes>
       <segment>
         <source>Receives the credential</source>
@@ -29837,7 +29847,7 @@
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:379</note>
         <note category="location">src/app/features/upstream/registry-preset-dialog.ts:93</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:283,284</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:290,291</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -29848,7 +29858,7 @@
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:390,391</note>
         <note category="location">src/app/features/upstream/registry-preset-dialog.ts:103,105</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:293,295</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:300,302</note>
       </notes>
       <segment>
         <source>Add host</source>
@@ -29912,7 +29922,7 @@
     <unit id="upstream.credential-hosts">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:658</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:271</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:296</note>
       </notes>
       <segment>
         <source>The credential is sent to <ph id="0" equiv="hosts" disp="list"/>.</source>
@@ -29922,7 +29932,7 @@
     <unit id="upstream.test.unreachable">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:672</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:282</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:307</note>
       </notes>
       <segment>
         <source>The upstream could not be reached.</source>
@@ -29941,7 +29951,7 @@
     <unit id="upstream.test.denied">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:676</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:283</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:308</note>
       </notes>
       <segment>
         <source>The upstream answered and refused the credentials.</source>
@@ -29951,7 +29961,7 @@
     <unit id="upstream.test.ok-credentials">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:678</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:284</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:309</note>
       </notes>
       <segment>
         <source>The upstream answered and accepted the credentials.</source>
@@ -29961,7 +29971,7 @@
     <unit id="upstream.test.ok">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:680</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:285</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:310</note>
       </notes>
       <segment>
         <source>The upstream answered.</source>
@@ -29971,7 +29981,7 @@
     <unit id="upstream.test.answered-error">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:682</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:286</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:311</note>
       </notes>
       <segment>
         <source>The upstream answered with an error.</source>
@@ -43319,7 +43329,7 @@
     <unit id="wellknown.account.remove">
       <notes>
         <note category="location">src/app/features/upstream/account-again-dialog.ts:59,60</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:398,400</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:450,452</note>
       </notes>
       <segment>
         <source>Remove account</source>
@@ -43851,7 +43861,7 @@
       <notes>
         <note category="location">src/app/features/upstream/upstream-registries.ts:297</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:27,28</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:458,459</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:511,512</note>
       </notes>
       <segment>
         <source>Listed by</source>
@@ -44113,7 +44123,7 @@
     </unit>
     <unit id="wellknown.scanner.hint">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:255,257</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:262,264</note>
       </notes>
       <segment>
         <source> The registry must serve the image aquasec/trivy-db. For a registry that names it otherwise, see <pc id="0" equivStart="START_LINK" equivEnd="CLOSE_LINK" type="link" dispStart="&lt;a routerLink=&quot;/help/admin/vulnerability-sources&quot; fragment=&quot;container-images&quot;&gt;" dispEnd="&lt;/a&gt;">the image scanning&apos;s database setting</pc>. </source>
@@ -44122,7 +44132,7 @@
     </unit>
     <unit id="wellknown.hosts.hint">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:262,263</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:269,270</note>
       </notes>
       <segment>
         <source>Hosts the registry&apos;s documents and its login may lead to. Only a host that receives the credential gets it.</source>
@@ -44131,7 +44141,7 @@
     </unit>
     <unit id="wellknown.keys.heading">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:300,301</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:307,308</note>
       </notes>
       <segment>
         <source>Archive keys</source>
@@ -44140,7 +44150,7 @@
     </unit>
     <unit id="wellknown.keys.hint">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:301,302</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:308,309</note>
       </notes>
       <segment>
         <source>The keys that sign the archive&apos;s indexes. Quader checks every index it fetches against them.</source>
@@ -44149,7 +44159,7 @@
     </unit>
     <unit id="wellknown.keys.none">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:303,305</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:310,312</note>
       </notes>
       <segment>
         <source>No key is stored.</source>
@@ -44158,7 +44168,7 @@
     </unit>
     <unit id="wellknown.keys.replace">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:315,316</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:322,323</note>
       </notes>
       <segment>
         <source>Replace the keys</source>
@@ -44167,7 +44177,7 @@
     </unit>
     <unit id="wellknown.keys.block">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:320,321</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:327,328</note>
       </notes>
       <segment>
         <source>Armored public keys</source>
@@ -44176,7 +44186,7 @@
     </unit>
     <unit id="wellknown.keys.block-hint">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:323,324</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:330,331</note>
       </notes>
       <segment>
         <source>Paste the archive&apos;s public keys as one armored block. Empty keeps the keys above.</source>
@@ -44185,7 +44195,7 @@
     </unit>
     <unit id="wellknown.address.save">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:334,335</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:341,342</note>
       </notes>
       <segment>
         <source>Save address</source>
@@ -44194,7 +44204,7 @@
     </unit>
     <unit id="wellknown.address.reset">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:339,341</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:346,348</note>
       </notes>
       <segment>
         <source>Reset to Quader&apos;s address</source>
@@ -44203,7 +44213,7 @@
     </unit>
     <unit id="wellknown.account.hint">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:348,349</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:355,356</note>
       </notes>
       <segment>
         <source>An account counts the pulls of every project against this account&apos;s allowance, and whoever can read this registry pulls with it.</source>
@@ -44212,16 +44222,61 @@
     </unit>
     <unit id="wellknown.account.removed-by-update">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:352,353</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:359,360</note>
       </notes>
       <segment>
         <source>The account was removed when Quader&apos;s address moved to another host on <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time [attr.datetime]=&quot;at&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ at | date: &apos;mediumDate&apos; }}"/></pc>; enter it again.</source>
         <target>Das Konto wurde entfernt, als Quaders Adresse am <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time [attr.datetime]=&quot;at&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ at | date: &apos;mediumDate&apos; }}"/></pc> auf einen anderen Host wechselte; geben Sie es erneut ein.</target>
       </segment>
     </unit>
+    <unit id="wellknown.account.configured-helm">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:374,375</note>
+      </notes>
+      <segment>
+        <source>From the Helm values: Secret <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code class=&quot;secret-name&quot; translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ secret }}"/></pc>. Change or remove it there.</source>
+        <target>Aus den Helm-Values: Secret <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code class=&quot;secret-name&quot; translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ secret }}"/></pc>. Ändern oder entfernen Sie es dort.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.configured-file">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:376,379</note>
+      </notes>
+      <segment>
+        <source>From the installation&apos;s configuration file. Change or remove it there.</source>
+        <target>Aus der Konfigurationsdatei der Installation. Ändern oder entfernen Sie es dort.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.files">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:382,383</note>
+      </notes>
+      <segment>
+        <source>Files</source>
+        <target>Dateien</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.last-download">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:385,386</note>
+      </notes>
+      <segment>
+        <source>Last download</source>
+        <target>Letzter Download</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.last-failure">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:389,391</note>
+      </notes>
+      <segment>
+        <source>Last failed download</source>
+        <target>Letzter fehlgeschlagener Download</target>
+      </segment>
+    </unit>
     <unit id="wellknown.account.save">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:393,394</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:445,446</note>
       </notes>
       <segment>
         <source>Save account</source>
@@ -44230,7 +44285,7 @@
     </unit>
     <unit id="wellknown.details.hint-local">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:435,437</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:488,490</note>
       </notes>
       <segment>
         <source>Its settings page and its dates.</source>
@@ -44239,8 +44294,8 @@
     </unit>
     <unit id="wellknown.details.narrowing">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:439,441</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:460,462</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:492,494</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:513,515</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -44249,7 +44304,7 @@
     </unit>
     <unit id="wellknown.details.settings-link">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:441,443</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:494,496</note>
       </notes>
       <segment>
         <source>The repository&apos;s settings page</source>
@@ -44258,7 +44313,7 @@
     </unit>
     <unit id="wellknown.details.hint">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:454,455</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:507,508</note>
       </notes>
       <segment>
         <source>Who lists the registry, its settings for teams, its limits and its dates.</source>
@@ -44267,7 +44322,7 @@
     </unit>
     <unit id="wellknown.details.narrowing-link">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:462,464</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:515,517</note>
       </notes>
       <segment>
         <source>Offline and the administrator&apos;s notes</source>
@@ -44276,7 +44331,7 @@
     </unit>
     <unit id="wellknown.details.limits">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:464,466</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:517,519</note>
       </notes>
       <segment>
         <source>Download limits</source>
@@ -44285,7 +44340,7 @@
     </unit>
     <unit id="wellknown.details.limits-link">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:466,468</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:519,521</note>
       </notes>
       <segment>
         <source>The repository&apos;s limits, on its settings page</source>
@@ -44294,7 +44349,7 @@
     </unit>
     <unit id="clamav.setup.without">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:181</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:184</note>
       </notes>
       <segment>
         <source>Without freshclam</source>
@@ -44303,7 +44358,7 @@
     </unit>
     <unit id="clamav.cert.address">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:182</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:185</note>
       </notes>
       <segment>
         <source>Address of the endpoint for client certificates</source>
@@ -44312,7 +44367,7 @@
     </unit>
     <unit id="clamav.cert.address.copy">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:183</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:186</note>
       </notes>
       <segment>
         <source>Copy the address of the endpoint for client certificates</source>
@@ -44321,7 +44376,7 @@
     </unit>
     <unit id="clamav.setup.copy-script">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:184</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:187</note>
       </notes>
       <segment>
         <source>Copy the script</source>
@@ -44330,7 +44385,7 @@
     </unit>
     <unit id="clamav.setup.copy-certificate">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:185</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:188</note>
       </notes>
       <segment>
         <source>Copy the setup</source>
@@ -44339,7 +44394,7 @@
     </unit>
     <unit id="clamav.address">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:186</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:189</note>
       </notes>
       <segment>
         <source>Address of the endpoint</source>
@@ -44348,7 +44403,7 @@
     </unit>
     <unit id="clamav.address.copy">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:187</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:190</note>
       </notes>
       <segment>
         <source>Copy the address of the endpoint</source>
@@ -44357,7 +44412,7 @@
     </unit>
     <unit id="clamav.setup.copy">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:188</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:191</note>
       </notes>
       <segment>
         <source>Copy the line</source>
@@ -44366,7 +44421,7 @@
     </unit>
     <unit id="clamav.setup.authenticate">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:189</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:192</note>
       </notes>
       <segment>
         <source>Authenticate</source>
@@ -44375,7 +44430,7 @@
     </unit>
     <unit id="clamav.updater.repository">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:226</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:229</note>
       </notes>
       <segment>
         <source>No updater runs: this installation takes its definitions from <ph id="0" equiv="repository" disp="repo"/>.</source>
@@ -44384,7 +44439,7 @@
     </unit>
     <unit id="clamav.updater.off">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:228</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:231</note>
       </notes>
       <segment>
         <source>The malware scan is off, so the definitions are not updated.</source>
@@ -44393,16 +44448,25 @@
     </unit>
     <unit id="clamav.updater.none">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:229</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:232</note>
       </notes>
       <segment>
         <source>No updater reports: the definitions are not updated.</source>
         <target>Kein Updater meldet sich: Die Definitionen werden nicht aktualisiert.</target>
       </segment>
     </unit>
+    <unit id="wellknown.address.held">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:501</note>
+      </notes>
+      <segment>
+        <source>The account of this registry comes from the installation&apos;s configuration, so an address that sends it to other hosts is changed there too.</source>
+        <target>Das Konto dieser Registry kommt aus der Konfiguration der Installation, daher wird eine Adresse, die es an andere Hosts sendet, ebenfalls dort geändert.</target>
+      </segment>
+    </unit>
     <unit id="wellknown.address.saved">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:481</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:514</note>
       </notes>
       <segment>
         <source>Address saved.</source>
@@ -44411,8 +44475,8 @@
     </unit>
     <unit id="wellknown.address.reset-done">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:497</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:515</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:530</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:548</note>
       </notes>
       <segment>
         <source>The address is Quader&apos;s again.</source>
@@ -44421,7 +44485,7 @@
     </unit>
     <unit id="wellknown.reset.title">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:508</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:541</note>
       </notes>
       <segment>
         <source>Reset the address and remove the account?</source>
@@ -44430,7 +44494,7 @@
     </unit>
     <unit id="wellknown.reset.text">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:509</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:542</note>
       </notes>
       <segment>
         <source>The account goes to <ph id="0" equiv="hosts" disp="hosts"/> only, and Quader&apos;s address uses other hosts. The reset removes it; enter it again afterwards if Quader&apos;s address needs one.</source>
@@ -44439,7 +44503,7 @@
     </unit>
     <unit id="wellknown.reset.confirm">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:510</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:543</note>
       </notes>
       <segment>
         <source>Reset and remove the account</source>
@@ -44448,7 +44512,7 @@
     </unit>
     <unit id="wellknown.account.saved">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:566</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:599</note>
       </notes>
       <segment>
         <source>Account saved.</source>
@@ -44457,7 +44521,7 @@
     </unit>
     <unit id="wellknown.account.removed">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:581</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:614</note>
       </notes>
       <segment>
         <source>Account removed.</source>
@@ -44466,7 +44530,7 @@
     </unit>
     <unit id="wellknown.listed.none">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:628</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:662</note>
       </notes>
       <segment>
         <source>No virtual repository lists it.</source>
@@ -44475,7 +44539,7 @@
     </unit>
     <unit id="wellknown.listed.one">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:629</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:663</note>
       </notes>
       <segment>
         <source>1 virtual repository lists it.</source>
@@ -44484,7 +44548,7 @@
     </unit>
     <unit id="wellknown.listed.many-one-project">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:631</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:665</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> virtual repositories in 1 project list it.</source>
@@ -44493,7 +44557,7 @@
     </unit>
     <unit id="wellknown.listed.many">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:632</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:666</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> virtual repositories in <ph id="1" equiv="projects" disp="projects"/> projects list it.</source>
@@ -44502,7 +44566,7 @@
     </unit>
     <unit id="wellknown.listed.other">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:638</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:672</note>
       </notes>
       <segment>
         <source>And 1 more virtual repository.</source>
@@ -44511,7 +44575,7 @@
     </unit>
     <unit id="wellknown.listed.others">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:639</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:673</note>
       </notes>
       <segment>
         <source>And <ph id="0" equiv="count" disp="n"/> more virtual repositories.</source>
@@ -44866,9 +44930,90 @@
         <target>Diese Installation erlaubt keine öffentliche Sichtbarkeit, deshalb werden die Definitionen als Intern ausgeliefert: Jedes ClamAV braucht ein Token in seiner Adresse.</target>
       </segment>
     </unit>
-    <unit id="wellknown.public.sentence">
+    <unit id="wellknown.account.files.readable">
       <notes>
         <note category="location">src/app/features/upstream/upstream-words.ts:188</note>
+      </notes>
+      <segment>
+        <source>Readable on this server</source>
+        <target>Auf diesem Server lesbar</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.files.missing">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:190</note>
+      </notes>
+      <segment>
+        <source>Missing on this server</source>
+        <target>Fehlen auf diesem Server</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.files.empty">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:192</note>
+      </notes>
+      <segment>
+        <source>Empty on this server</source>
+        <target>Auf diesem Server leer</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.files.invalid">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:194</note>
+      </notes>
+      <segment>
+        <source>Not usable on this server</source>
+        <target>Auf diesem Server nicht verwendbar</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.warn.missing-secret">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:208</note>
+      </notes>
+      <segment>
+        <source>The Secret&apos;s files are missing on this server, so every request to <ph id="0" equiv="registry" disp="registry"/> fails until the Secret exists with its keys; a Secret reaches the pods within two minutes.</source>
+        <target>Die Dateien des Secrets fehlen auf diesem Server, daher schlägt jede Anfrage an <ph id="0" equiv="registry" disp="registry"/> fehl, bis das Secret mit seinen Schlüsseln existiert; ein Secret erreicht die Pods innerhalb von zwei Minuten.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.warn.missing">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:209</note>
+      </notes>
+      <segment>
+        <source>The account&apos;s files are missing on this server, so every request to <ph id="0" equiv="registry" disp="registry"/> fails until they exist.</source>
+        <target>Die Dateien des Kontos fehlen auf diesem Server, daher schlägt jede Anfrage an <ph id="0" equiv="registry" disp="registry"/> fehl, bis sie existieren.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.warn.empty">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:211</note>
+      </notes>
+      <segment>
+        <source>A file of the account is empty on this server, so every request to <ph id="0" equiv="registry" disp="registry"/> fails until it holds a value.</source>
+        <target>Eine Datei des Kontos ist auf diesem Server leer, daher schlägt jede Anfrage an <ph id="0" equiv="registry" disp="registry"/> fehl, bis sie einen Wert enthält.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.warn.invalid">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:213</note>
+      </notes>
+      <segment>
+        <source>A file of the account cannot be used on this server (it cannot be read, is larger than 8 KiB, holds a line break, or the username holds a colon), so every request to <ph id="0" equiv="registry" disp="registry"/> fails until it is corrected.</source>
+        <target>Eine Datei des Kontos ist auf diesem Server nicht verwendbar (sie ist nicht lesbar, größer als 8 KiB, enthält einen Zeilenumbruch, oder der Benutzername enthält einen Doppelpunkt), daher schlägt jede Anfrage an <ph id="0" equiv="registry" disp="registry"/> fehl, bis sie korrigiert ist.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.raises">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:219</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="registry" disp="registry"/> allows more requests with an account.</source>
+        <target><ph id="0" equiv="registry" disp="registry"/> erlaubt mit einem Konto mehr Anfragen.</target>
+      </segment>
+    </unit>
+    <unit id="wellknown.public.sentence">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:229</note>
       </notes>
       <segment>
         <source>Public: anyone on the internet can pull through this installation, on its bandwidth and on its upstream allowance (Docker Hub&apos;s pull limit, for example).</source>
@@ -55607,6 +55752,42 @@
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> downloads of <ph id="1" equiv="repository" disp="repository"/> wait: <ph id="2" equiv="upstream" disp="upstream"/> limits requests; Quader asks again at <ph id="3" equiv="until" disp="time"/>.</source>
         <target><ph id="0" equiv="count" disp="n"/> Downloads von <ph id="1" equiv="repository" disp="repository"/> warten: <ph id="2" equiv="upstream" disp="upstream"/> begrenzt die Anfragen; Quader fragt um <ph id="3" equiv="until" disp="time"/> erneut an.</target>
+      </segment>
+    </unit>
+    <unit id="downloads.limit.account-admin">
+      <notes>
+        <note category="location">src/app/shared/upstream-downloads/limit-words.ts:87</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> allows more requests with an account. This registry has none: add one on its page, or in the Helm values (secrets.upstreamAccounts).</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> erlaubt mit einem Konto mehr Anfragen. Diese Registry hat keines: Fügen Sie eines auf ihrer Seite oder in den Helm-Values hinzu (secrets.upstreamAccounts).</target>
+      </segment>
+    </unit>
+    <unit id="downloads.limit.account-writer">
+      <notes>
+        <note category="location">src/app/shared/upstream-downloads/limit-words.ts:89</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> allows more requests with an account. This repository has none: add one in the repository&apos;s settings under Upstream.</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> erlaubt mit einem Konto mehr Anfragen. Dieses Repository hat keines: Fügen Sie eines in den Einstellungen des Repositorys unter Upstream hinzu.</target>
+      </segment>
+    </unit>
+    <unit id="downloads.limit.account-reader">
+      <notes>
+        <note category="location">src/app/shared/upstream-downloads/limit-words.ts:91</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> allows more requests with an account; an administrator of Quader can add one.</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> erlaubt mit einem Konto mehr Anfragen; ein Administrator von Quader kann eines hinzufügen.</target>
+      </segment>
+    </unit>
+    <unit id="downloads.limit.account-owner">
+      <notes>
+        <note category="location">src/app/shared/upstream-downloads/limit-words.ts:93</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> allows more requests with an account; an Owner of the project can add one.</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> erlaubt mit einem Konto mehr Anfragen; ein Eigentümer des Projekts kann eines hinzufügen.</target>
       </segment>
     </unit>
     <unit id="upstream-downloads.button.running">

@@ -932,10 +932,12 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
 - A failure's `code` and its members are what a client says the failure from; `detail` is an English sentence for a script and an
   administrator, and `target` names the address Quader refused to ask (R-CUR-011, Q-CUR-169).
 - The list's `limit` ([Q-CUR-175](#q-cur-175--the-list-answers-the-limit-beside-its-counts-for-every-reader)): `{"since", "until",
-  "holds", "hinted", "waits", "upstream", "failure"}`, the repository's limit while it has one (R-CUR-011): `holds` while `until` lies
-  ahead, `hinted` where the upstream named it, `upstream` the name of the format's preset whose address the remote has ("Docker Hub"),
-  else the host of its address, and `failure` the last answer in a failure's form. Every reader of the queue gets it, as the rows'
-  failures.
+  "holds", "hinted", "waits", "upstream", "failure", "accountRaisesLimit"}`, the repository's limit while it has one (R-CUR-011): `holds`
+  while `until` lies ahead, `hinted` where the upstream named it, `upstream` the name of the format's preset whose address the remote has
+  ("Docker Hub"), else the host of its address, `failure` the last answer in a failure's form, and `accountRaisesLimit` true while that
+  preset says its vendor allows a caller with an account more (Docker Hub alone) and the remote sends no credential, neither a stored one
+  nor one the configuration of the answering replica declares ([api-and-ui.md](api-and-ui.md)
+  [Q-UI-1160](api-and-ui.md#q-ui-1160--a-limit-an-account-would-lift-offers-one-to-each-reader-where-that-reader-adds-it)). Every reader of the queue gets it, as the rows' failures.
 - Retry and cancel write `remote.download.retried` and `remote.download.cancelled` (R-CUR-019).
 
 Acceptance criteria:
@@ -1316,6 +1318,9 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
     it." (where the upstream named its time: "… since 06:30. The downloads that wait start at 08:12, the time Docker Hub named."), with
     **Technical details** folded under it: the last answer ("HTTP 429 at 06:41"), the waits in a row, until when and whose time that is,
     the address without its query, the headers of the limit and the start of the upstream's answer, and the server's English sentence.
+    Where `accountRaisesLimit` holds, a sentence after the limit's says that the upstream allows more requests with an account and where
+    this reader adds one: an administrator of a well-known registry on its page or in the Helm values, with the link **Add an account**;
+    the writer of a project's remote in its settings; every other reader whom to ask ([Q-UI-1160](api-and-ui.md#q-ui-1160--a-limit-an-account-would-lift-offers-one-to-each-reader-where-that-reader-adds-it)).
     A waiting row reads "Rate limit until 06:47" under its state's column of progress, and a bulk whose rows wait reads "Waits for Docker
     Hub's rate limit until 06:47" under its versions, in the list of bulks and on its own line. A row that met the limit shows its
     failure, the headers of the limit among its facts.
@@ -3672,11 +3677,11 @@ more expensively than its plan.
 - Rules of a local or a virtual repository.
 - PyPI and every other format that does not exist (R-CUR-023).
 
-### H-1884 · An account that lifts an upstream's limit is not offered
+### H-1884 · An account that lifts an upstream's limit is offered only where the preset says so
 
-Component: the limit's sentence on the tab Downloads ([api-and-ui.md](api-and-ui.md)
-[Q-UI-1104](api-and-ui.md#q-ui-1104--the-limits-sentence-offers-no-account-the-presets-do-not-say-which-upstream-an-account-lifts)).
-Subject: a person whose remote of Docker Hub has no credential. Live. Docker Hub lifts its limit for callers with an account, but no
-format's preset says so, and the sentence names no account and links no setting: the person learns why the queue stands, not that a
-credential in the repository's settings would let it go on. What makes it real: a remote of a registry whose anonymous limit is the
-reason a bulk stands for hours.
+Component: the limit's sentence on the tab Downloads ([api-and-ui.md](api-and-ui.md) [Q-UI-1160](api-and-ui.md#q-ui-1160--a-limit-an-account-would-lift-offers-one-to-each-reader-where-that-reader-adds-it)). Subject: a
+person whose remote of an upstream other than Docker Hub has no credential. Live. Since 2026-11-25 the sentence offers an account where the
+format's preset says that its vendor documents a higher limit with one (`AccountRaisesLimit`), today Docker Hub alone; a remote of another
+upstream that lifts its limit for an account, or of an address that is no preset's, says why the queue stands and not that a credential
+would let it go on. What makes it real: an upstream whose anonymous limit holds a bulk for hours and whose preset does not carry the
+fact.

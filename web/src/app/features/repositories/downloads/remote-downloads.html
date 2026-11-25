@@ -8,6 +8,15 @@
         <span class="material-icons inline warn" aria-hidden="true">hourglass_empty</span>
         <span>{{ sentence }}</span>
       </p>
+      <!-- An account would lift the limit (Q-UI-1160): where this reader adds one; the administrator of a well-known registry gets its page. -->
+      @if (accountOffer(); as offer) {
+        <p class="limit-offer" data-testid="download-limit-account">
+          {{ offer }}
+          @if (offerReader() === 'upstream-admin') {
+            &ngsp;<a [routerLink]="accountLink()" i18n="@@downloads.limit.account-link">Add an account</a>
+          }
+        </p>
+      }
       <quader-technical-details class="technical" [text]="l.failure.detail">
         <dl class="facts limit-facts">
           @if (l.failure.status) {

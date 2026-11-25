@@ -178,6 +178,47 @@ export function clientsLoweredWarning(): string {
   return $localize`:@@clamav.level.lowered:This installation allows no public level, so the definitions are served at Internal: every ClamAV needs a token in its address.`;
 }
 
+/** The state of a declared account's files on the server that answered (R-REPO-073 `account.configuration.files`). */
+export type AccountFiles = 'readable' | 'missing' | 'empty' | 'invalid';
+
+/** The state of the files in a word, as the account's facts show it (Q-UI-1162). */
+export function accountFilesText(files: AccountFiles): string {
+  switch (files) {
+    case 'readable':
+      return $localize`:@@wellknown.account.files.readable:Readable on this server`;
+    case 'missing':
+      return $localize`:@@wellknown.account.files.missing:Missing on this server`;
+    case 'empty':
+      return $localize`:@@wellknown.account.files.empty:Empty on this server`;
+    case 'invalid':
+      return $localize`:@@wellknown.account.files.invalid:Not usable on this server`;
+  }
+}
+
+/**
+ * The warning of files a request cannot use (Q-UI-1162): what fails and what makes it work again; null for readable files. A Secret
+ * reaches the pods within two minutes of its change (R-HA-030). The Secret's name stands in the line above, not here.
+ */
+export function accountFilesWarning(files: AccountFiles, registry: string, fromSecret: boolean): string | null {
+  switch (files) {
+    case 'readable':
+      return null;
+    case 'missing':
+      return fromSecret
+        ? $localize`:@@wellknown.account.warn.missing-secret:The Secret's files are missing on this server, so every request to ${registry}:registry: fails until the Secret exists with its keys; a Secret reaches the pods within two minutes.`
+        : $localize`:@@wellknown.account.warn.missing:The account's files are missing on this server, so every request to ${registry}:registry: fails until they exist.`;
+    case 'empty':
+      return $localize`:@@wellknown.account.warn.empty:A file of the account is empty on this server, so every request to ${registry}:registry: fails until it holds a value.`;
+    case 'invalid':
+      return $localize`:@@wellknown.account.warn.invalid:A file of the account cannot be used on this server (it cannot be read, is larger than 8 KiB, holds a line break, or the username holds a colon), so every request to ${registry}:registry: fails until it is corrected.`;
+  }
+}
+
+/** The note of a registry whose vendor allows more requests with an account, while it has none (Q-UI-1160). */
+export function accountRaisesText(registry: string): string {
+  return $localize`:@@wellknown.account.raises:${registry}:registry: allows more requests with an account.`;
+}
+
 /** The levels of the select of a row, each by its name. */
 export function levelOptions(): readonly { readonly value: VisibilityLevel; readonly label: string }[] {
   return (['private', 'internal', 'public'] as const).map((l) => ({ value: l, label: levelName(l) }));

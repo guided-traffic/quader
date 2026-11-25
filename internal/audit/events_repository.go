@@ -13,7 +13,12 @@ package audit
 // repositoryEventSchema is the data of the three types. changes lists the
 // top-level members of the document that the write changed (key, class and format
 // on a create); phase tells the two events of a deletion apart; project is the key of
-// the repository's project, absent for a repository of none (R-AUTHZ-026).
+// the repository's project, absent for a repository of none (R-AUTHZ-026). block and
+// weakened mark a write that may lift download blocks (Q-VULN-69). reason, bulkId and
+// accountRemoved are those of a write of the product in the project upstream
+// (R-REPO-067, R-REPO-068, Q-API-361); account is where the account of a well-known
+// repository comes from after quader migrate applied repositories.upstream_accounts
+// (R-REPO-077), never a value.
 const repositoryEventSchema = `{
   "type": "object",
   "properties": {
@@ -21,7 +26,21 @@ const repositoryEventSchema = `{
     "format": {"type": "string"},
     "changes": {"type": "array", "maxItems": 1000, "items": {"type": "string"}},
     "phase": {"type": "string", "enum": ["started", "completed"]},
-    "project": {"type": "string"}
+    "project": {"type": "string"},
+    "block": {"type": "string", "enum": ["lifted"]},
+    "weakened": {"type": "array", "maxItems": 16, "items": {"type": "string"}},
+    "reason": {"type": "string"},
+    "bulkId": {"type": "string"},
+    "accountRemoved": {"type": "boolean"},
+    "account": {
+      "type": "object",
+      "properties": {
+        "source": {"type": "string", "enum": ["configuration"]},
+        "authMode": {"type": "string", "enum": ["none", "basic", "bearer"]}
+      },
+      "required": ["source", "authMode"],
+      "additionalProperties": false
+    }
   },
   "required": ["class", "format", "changes"],
   "additionalProperties": false

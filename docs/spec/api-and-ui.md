@@ -8783,7 +8783,18 @@ Priority: **MVP** · Covers: quader-only
      (write-only, Q-UI-123), the line that names where the credential goes (R-UI-082), **Test connection** (`upstream-test` of the
      saved repository after the save; the unsaved test of R-REPO-024 before it), **Save account** and **Remove account**. A muted
      sentence above: "An account counts the pulls of every project against this account's allowance, and whoever can read this
-     registry pulls with it." ([security/data-and-secret-flow.md](../security/data-and-secret-flow.md)).
+     registry pulls with it." ([security/data-and-secret-flow.md](../security/data-and-secret-flow.md)). While the registry has no account
+     and its vendor allows more requests with one (`accountRaisesLimit`), a muted line says "Docker Hub allows more requests with an
+     account." ([Q-UI-1160](#q-ui-1160--a-limit-an-account-would-lift-offers-one-to-each-reader-where-that-reader-adds-it)). **An account the configuration declares** ([repositories-and-proxy.md](repositories-and-proxy.md)
+     R-REPO-077, [Q-UI-1161](#q-ui-1161--an-account-the-configuration-declares-is-read-only-on-the-registrys-page-its-source-and-its-files-state-no-value)) is read-only: no field, no **Save account**, no **Remove account**; a lock line "From the Helm
+     values: Secret quader-upstream-docker-hub. Change or remove it there." ("From the installation's configuration file. …" without a
+     Secret's name), the facts **Authentication** (the mode in the words above), **Files** ("Readable on this server", "Missing …",
+     "Empty …", "Not usable …"), **Last download** and **Last failed download** where the item has them, the line of the credential's
+     hosts and **Test connection** of the saved repository. Files that are not readable add a warning that says what fails until when
+     ([Q-UI-1162](#q-ui-1162--the-files-state-is-a-word-among-the-facts-and-a-warning-that-says-what-fails-until-when)); the username read from a file and the values are never shown. An address whose save would move the hosts
+     receiving such an account is refused before it is sent: "The account of this registry comes from the installation's configuration,
+     so an address that sends it to other hosts is changed there too."; the account-again question is never asked for it. A Secret's name
+     never breaks at one of its hyphens.
   4. **Details**, closed: **Listed by** (the virtual repositories by qualified name, as links to their settings, as far as the caller
      reads them, and the number of the others: `listedByNames` and `listedBy` of the item read,
      [Q-API-363](#q-api-363--the-item-counts-the-listing-virtual-repositories-and-their-projects-and-an-answer-about-one-repository-names-them)), the settings an
@@ -24248,6 +24259,8 @@ the development agent would build (b) if the owner wants the remedy said.
 
 **Applied in the spec:** [remote-curation.md](remote-curation.md) H-1884.
 
+Superseded by [Q-UI-1160](#q-ui-1160--a-limit-an-account-would-lift-offers-one-to-each-reader-where-that-reader-adds-it) on 2026-11-25: the presets carry the fact, and the sentence offers an account.
+
 ### Q-UI-1110 · The page is the one thing that scrolls; a list's head scrolls with it
 
 Status: **The rule decided by the owner, 2026-11-25** (R-UI-215, his words there); **the form decided by the development agent** —
@@ -25162,6 +25175,72 @@ seconds for both formats.
 [screens.ts](../../web/e2e/renders/screens.ts) (`repository-oci-mirror-filled`, `repository-deb-mirror-filled`, as the plain user).
 Docs: [web-ui.md](../developer/web-ui.md#renders-of-every-screen).
 
+### Q-UI-1160 · A limit an account would lift offers one to each reader where that reader adds it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Supersedes
+[Q-UI-1104](#q-ui-1104--the-limits-sentence-offers-no-account-the-presets-do-not-say-which-upstream-an-account-lifts), whose option (b)
+it is.
+
+Context: the owner's wish of 2026-11-25 to give the upstream registries accounts from Secrets
+([repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-483) came the morning Docker Hub's limit without an account held a
+download queue for hours. Q-UI-1104 had left the remedy unsaid because no preset said which upstream an account lifts.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No sentence (Q-UI-1104) | | No vendor's terms | The remedy stays unsaid (H-1884) |
+| (b) A preset fact `AccountRaisesLimit`, true for Docker Hub alone, no number; the server answers `accountRaisesLimit` where the remote sends no credential; the sentence after the limit's, by who reads it (chosen) | A fact of the format, an addition of the frozen contract ([decisions.md](../decisions.md) ADR-281) | The remedy where it applies, and where this reader applies it | The fact follows the vendor's terms; a number would age, so none is kept: the upstream's own limit headers are in **Technical details** |
+| (c) A sentence for every remote without a credential | | Small | Wrong for an upstream that limits everyone alike |
+
+**Choice:** (b). The sentences, English and German (Sie), after the limit's sentence on the tab Downloads:
+
+| Who reads it | Sentence |
+|---|---|
+| A holder of `repositories:write-config`, a repository of the project `upstream` | "Docker Hub allows more requests with an account. This registry has none: add one on its page, or in the Helm values (secrets.upstreamAccounts)." and the link **Add an account** to the registry's page in the admin area |
+| The writer of a project's own remote (`repositories:write-config` or the project's Owner) | "Docker Hub allows more requests with an account. This repository has none: add one in the repository's settings under Upstream." |
+| Any other reader of a repository of the project `upstream` | "Docker Hub allows more requests with an account; an administrator of Quader can add one." |
+| Any other reader of a project's remote | "Docker Hub allows more requests with an account; an Owner of the project can add one." |
+
+The registry's page says "Docker Hub allows more requests with an account." while it has none (R-UI-188). The top bar's downloads panel
+says nothing of it: its line leads to the tab. **Rationale:** the person who meets the limit learns the remedy and who applies it.
+
+**Applied in the spec:** R-UI-188; [remote-curation.md](remote-curation.md) R-CUR-012 (`accountRaisesLimit`), R-CUR-018, H-1884;
+[repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-073. Code:
+[limit-words.ts](../../web/src/app/shared/upstream-downloads/limit-words.ts), [format.go](../../internal/formats/oci/format.go).
+
+### Q-UI-1161 · An account the configuration declares is read-only on the registry's page: its source and its files' state, no value
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: an account from `repositories.upstream_accounts` ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-077) is changed
+in the Helm values, not on the page, and its value is in a Secret the page never reads. A CI issuer of the configuration already shows a
+lock line and a read-only form (R-CI-001).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A lock line that names the Secret, the mode, the files' state, the last download and failure, the credential's hosts and **Test connection**; no field (chosen) | What the page knows, nothing it cannot change | The operator reads where to change it and whether it works on this server | The username is not shown |
+| (b) The form, disabled | The precedent of the issuers | One layout | Empty disabled fields read as "no account" |
+| (c) The username read from the file | | A familiar fact | A token put into the wrong key would be shown |
+
+**Choice:** (a). **Rationale:** the page answers "where does it come from" and "does it work", and shows no secret.
+
+**Applied in the spec:** R-UI-188. Code: [upstream-registry.html](../../web/src/app/features/upstream/upstream-registry.html).
+
+### Q-UI-1162 · The files' state is a word among the facts, and a warning that says what fails until when
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a Secret that does not exist yet starts every pod and fails that registry's fetches
+([repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-485); no alert tells it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The word "Readable / Missing / Empty / Not usable on this server" among the facts; a warning for the three others that says that every request to the registry fails, and until when; the Secret's name stands once, in the lock line above (chosen) | | The cause and its remedy in one place; "on this server" says that another replica may differ | |
+| (b) The state's code (`missing`) | | Short | Not a sentence of the screen's language |
+
+**Choice:** (a). "The Secret's files are missing on this server, so every request to Docker Hub fails until the Secret exists with its
+keys; a Secret reaches the pods within two minutes."
+
+**Applied in the spec:** R-UI-188. Code: [upstream-words.ts](../../web/src/app/features/upstream/upstream-words.ts).
 ## What this does not cover
 
 ### H-1683 · The version list of a package several repositories hold, in the order of publication, reads every version, and the package list counts every version

@@ -78,6 +78,7 @@ Whoever can read the break-glass Secret is an administrator of Quader. Restrict 
 | `secrets.breakGlass` | `password` | optional; without it the break-glass account is switched off | `api` pods only, `api` pools included; never `packages` |
 | `secrets.oidc[]` | `client-secret`, one entry per provider | one per OIDC provider that uses a client secret | `api` pods only, `api` pools included; never `packages` |
 | `secrets.metricsToken` | `token` | with `config.metrics.auth: static` | `api`, `packages`, `worker` |
+| `secrets.upstreamAccounts.<key>`: `existingSecret`, `authMode` | `username` (`usernameKey`; `basic` only), `password` (`passwordKey`) | optional: an account of an upstream registry of Admin area › Upstream registries, by its key (`docker-hub`, …); see [Upstream registries](upstream-registries.md#an-account-from-the-helm-values) | `api`, `packages`, `worker` |
 | `tls.existingSecrets.<kind>` | `tls.crt`, `tls.key`, `ca.crt` | with `tls.enabled` (the default) and no `tls.certManager.issuerRef.name`; with the issuer the chart issues them as `<fullname>-tls-<kind>` | the pods of that kind only (`api`, `packages`, `worker`, `scanner`) |
 | `tls.clientCA.secretName` | `ca.crt` | optional: mutual TLS from the edge | `api` and `packages` |
 | `ingress.backendTLS.caSecret` | `ca.crt` | optional: by default the controller reads the `ca.crt` of the Secret of the pair the backend serves | read by the ingress controller |

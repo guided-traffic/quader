@@ -49,6 +49,9 @@ type UpstreamItem struct {
 	ListedByNames []string
 	ConfigVersion int64
 	Warnings      []Warning
+	// AccountRaisesLimit is whether an account would lift the upstream's limit: the preset its address matches says so and the
+	// repository sends no credential (Q-UI-1160).
+	AccountRaisesLimit bool
 }
 
 // UpstreamClients is whether an administrator switched the clients of a system repository on (R-REPO-075). The address the item
@@ -79,14 +82,42 @@ type ArchiveKey struct {
 	UserID      string
 }
 
-// UpstreamAccount is the stored account without its secret.
+// UpstreamAccount is the account without its secret: the stored one, or the one the replica's configuration declares (R-REPO-077).
 type UpstreamAccount struct {
 	AuthMode string
-	// Username is nil without an account.
+	// Username is nil without an account and for a declared one: the username read from a file is never shown.
 	Username *string
 	// Password is {"set": true}, the reference as stored, or nil.
 	Password          *SecretField
 	RemovedByUpdateAt *time.Time
+	// Source is AccountSourceAPI or AccountSourceConfiguration, from the configuration of the replica that answers.
+	Source string
+	// Configuration is the declaration while Source is configuration; nil otherwise.
+	Configuration *UpstreamAccountConfiguration
+	// LastDownloadAt and LastFailure come from the installation's last 100 ended downloads (R-OPS-051), on the answer about one
+	// repository only; nil when none of them is the repository's.
+	LastDownloadAt *time.Time
+	LastFailure    *UpstreamAccountFailure
+}
+
+// The sources of an account (R-REPO-073 account.source).
+const (
+	AccountSourceAPI           = "api"
+	AccountSourceConfiguration = "configuration"
+)
+
+// UpstreamAccountConfiguration is a declared account as the item shows it: the Secret's name, when quader migrate applied it, and the
+// state of its files on the replica that answers. Nothing of the values.
+type UpstreamAccountConfiguration struct {
+	SecretName string
+	Since      *time.Time
+	Files      string
+}
+
+// UpstreamAccountFailure is the last failed download of the repository: when, and its code.
+type UpstreamAccountFailure struct {
+	At   time.Time
+	Code string
 }
 
 // UpstreamItems lists the well-known repositories: the presets in catalog order, the retired ones by key, then the system
@@ -245,6 +276,19 @@ func (s *Service) upstreamItemTx(ctx context.Context, tx meta.Tx, key string, wa
 	if it.ListedByNames, err = listedByNames(ctx, qs, rows[0].ID); err != nil {
 		return UpstreamItem{}, err
 	}
+	last, err := qs.UpstreamRepositoryLastDownloads(ctx, rows[0].ID)
+	if err != nil {
+		return UpstreamItem{}, err
+	}
+	if len(last) > 0 {
+		if t := last[0].LastDownloadAt; t.Valid {
+			at := t.Time.UTC()
+			it.Account.LastDownloadAt = &at
+		}
+		if t := last[0].LastFailureAt; t.Valid {
+			it.Account.LastFailure = &UpstreamAccountFailure{At: t.Time.UTC(), Code: last[0].LastFailureCode}
+		}
+	}
 	it.Warnings = warnings
 	return it, nil
 }
@@ -296,7 +340,7 @@ func (s *Service) upstreamItem(row q.Repository, facts map[int64]q.UpstreamRepos
 		URL: rs.URL, ExtraHosts: nonNilHosts(rs.ExtraHosts), UpstreamKeys: archiveKeys(deb, stored.Settings), Overridden: f.AddressOverridden,
 		Product: UpstreamProductAddress{URL: product.URL, ExtraHosts: extraHosts(product.ExtraHosts), UpstreamKeys: archiveKeys(deb, product.Settings)},
 	}
-	it.Account = UpstreamAccount{AuthMode: rs.AuthMode, Password: rs.Password}
+	it.Account = UpstreamAccount{AuthMode: rs.AuthMode, Password: rs.Password, Source: AccountSourceAPI}
 	if rs.AuthMode != AuthNone || rs.Password != nil {
 		u := rs.Username
 		it.Account.Username = &u
@@ -305,6 +349,15 @@ func (s *Service) upstreamItem(row q.Repository, facts map[int64]q.UpstreamRepos
 		at := f.AccountRemovedAt.Time.UTC()
 		it.Account.RemovedByUpdateAt = &at
 	}
+	if a, ok := s.accounts.For(wellknown.ProjectKey, row.Key); ok && d.Class == Remote {
+		conf := &UpstreamAccountConfiguration{SecretName: a.SecretName, Files: a.FilesState(s.readFile)}
+		if f.AccountConfiguredAt.Valid {
+			at := f.AccountConfiguredAt.Time.UTC()
+			conf.Since = &at
+		}
+		it.Account = UpstreamAccount{AuthMode: a.AuthMode, Source: AccountSourceConfiguration, Configuration: conf}
+	}
+	it.AccountRaisesLimit = d.Class == Remote && accountRaisesLimit(s.cat, row.Format, rs.URL, it.Account.AuthMode != AuthNone)
 	return it, nil
 }
 
@@ -683,6 +736,10 @@ func (s *Service) ResetUpstreamAddress(ctx context.Context, c Caller, key string
 func (s *Service) writeAddress(ctx context.Context, tx meta.Tx, c Caller, key string, pre Precondition, decl wellknown.Declaration,
 	want wellknown.Address, accountSet bool, account *UpstreamAccountInput,
 ) (UpstreamItem, error) {
+	declared, configured, err := s.declaredAccount(ctx, tx, key)
+	if err != nil {
+		return UpstreamItem{}, err
+	}
 	return s.upstreamWrite(ctx, tx, c, key, pre, "", func(cur Document) (Document, error) {
 		if err := remoteOnly(cur); err != nil {
 			return Document{}, err
@@ -690,6 +747,14 @@ func (s *Service) writeAddress(ctx context.Context, tx meta.Tx, c Caller, key st
 		rs, err := parseStoredRemote(cur.Remote)
 		if err != nil {
 			return Document{}, err
+		}
+		if accountSet && account != nil {
+			if err := valueOnly(account); err != nil {
+				return Document{}, err
+			}
+		}
+		if configured && (accountSet || !slices.Equal(wellknown.CredentialHosts(storedAddress(rs, cur)), wellknown.CredentialHosts(want))) {
+			return Document{}, configuredRefusal(key, declared)
 		}
 		hasAccount := rs.AuthMode != AuthNone || rs.Password != nil
 		if hasAccount && !accountSet && !slices.Equal(wellknown.CredentialHosts(storedAddress(rs, cur)), wellknown.CredentialHosts(want)) {
@@ -733,13 +798,21 @@ func (s *Service) writeAddress(ctx context.Context, tx meta.Tx, c Caller, key st
 	})
 }
 
-// SetUpstreamAccount stores an account for a well-known repository's upstream (R-REPO-033, R-REPO-069).
+// SetUpstreamAccount stores an account for a well-known repository's upstream (R-REPO-033, R-REPO-069). The password is a value: a
+// reference is refused, since an account from a file is the configuration's (R-REPO-077, Q-REPO-487); an account the configuration
+// declares is refused with 409 managed_by_config.
 func (s *Service) SetUpstreamAccount(ctx context.Context, c Caller, key string, pre Precondition, in UpstreamAccountInput) (UpstreamItem, error) {
 	var out UpstreamItem
 	err := s.run.InTx(ctx, func(tx meta.Tx) error {
+		if err := s.refuseDeclared(ctx, tx, key); err != nil {
+			return err
+		}
 		var err error
 		out, err = s.upstreamWrite(ctx, tx, c, key, pre, "", func(cur Document) (Document, error) {
 			if err := remoteOnly(cur); err != nil {
+				return Document{}, err
+			}
+			if err := valueOnly(&in); err != nil {
 				return Document{}, err
 			}
 			nd := cur
@@ -750,10 +823,13 @@ func (s *Service) SetUpstreamAccount(ctx context.Context, c Caller, key string, 
 	return out, err
 }
 
-// RemoveUpstreamAccount removes the stored account.
+// RemoveUpstreamAccount removes the stored account; an account the configuration declares is refused with 409 managed_by_config.
 func (s *Service) RemoveUpstreamAccount(ctx context.Context, c Caller, key string, pre Precondition) (UpstreamItem, error) {
 	var out UpstreamItem
 	err := s.run.InTx(ctx, func(tx meta.Tx) error {
+		if err := s.refuseDeclared(ctx, tx, key); err != nil {
+			return err
+		}
 		var err error
 		out, err = s.upstreamWrite(ctx, tx, c, key, pre, "", func(cur Document) (Document, error) {
 			if err := remoteOnly(cur); err != nil {
@@ -790,6 +866,52 @@ func setAccount(d *Document, a *UpstreamAccountInput) error {
 		password = a.Password
 	}
 	return setRemote(d, map[string]any{"authMode": a.AuthMode, "username": username, "password": password})
+}
+
+// declaredAccount answers whether the configuration declares the account of a well-known repository: the replica's own, or the mark
+// of quader migrate (Q-REPO-484). A key of no repository of the project answers false; the write that follows answers its 404.
+func (s *Service) declaredAccount(ctx context.Context, tx meta.Tx, key string) (ConfiguredAccount, bool, error) {
+	qs, err := queries(tx)
+	if err != nil {
+		return ConfiguredAccount{}, false, err
+	}
+	rows, err := qs.GetRepositoryByName(ctx, q.GetRepositoryByNameParams{Project: wellknown.ProjectKey, Key: key})
+	if err != nil || len(rows) == 0 {
+		return ConfiguredAccount{}, false, err
+	}
+	facts, err := qs.GetUpstreamRepositoryFacts(ctx, rows[0].ID)
+	if err != nil || len(facts) == 0 {
+		return ConfiguredAccount{}, false, err
+	}
+	a, ok := s.configuredAccount(key, facts[0])
+	return a, ok, nil
+}
+
+// refuseDeclared is the 409 managed_by_config of the account's own operations while the configuration declares it.
+func (s *Service) refuseDeclared(ctx context.Context, tx meta.Tx, key string) error {
+	a, ok, err := s.declaredAccount(ctx, tx, key)
+	if err != nil || !ok {
+		return err
+	}
+	return configuredRefusal(key, a)
+}
+
+// valueOnly refuses a password given as a secretRef (Q-REPO-487): the account of a well-known repository is a value an administrator
+// types, or the configuration's files (R-REPO-077). The pointer is the document's, which UpstreamPointers maps to the body's.
+func valueOnly(in *UpstreamAccountInput) error {
+	var probe struct {
+		SecretRef json.RawMessage `json:"secretRef"`
+	}
+	// A member that is no object is the document's validation's to refuse; only a reference is refused here.
+	_ = json.Unmarshal(in.Password, &probe)
+	if len(probe.SecretRef) == 0 {
+		return nil
+	}
+	return addressInvalid(errs.FieldError{
+		Pointer: "/remote/password/secretRef", Code: errs.CodeSecretValueRequired,
+		Detail: "the account of a well-known repository is given as a value; an account read from files is declared in " +
+			"repositories.upstream_accounts (the Helm values' secrets.upstreamAccounts)",
+	})
 }
 
 // addressInvalid is the 422 of a body of the address or the account operation.

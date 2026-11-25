@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
+	"slices"
 
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/auth/principal"
@@ -126,7 +128,40 @@ func ReconcileUpstream(ctx context.Context, s *postgres.MigrationSession, change
 	log.Info("the well-known repositories of the project upstream reconciled with the catalog",
 		"created", res.Keys(wellknown.OpCreate), "written", res.Keys(wellknown.OpWrite), "retired", res.Keys(wellknown.OpRetire),
 		"declared_again", res.Keys(wellknown.OpUnretire), "override_cleared", res.Keys(wellknown.OpClearOverride))
+	return applyUpstreamAccounts(ctx, s, svc, cfg, log)
+}
+
+// applyUpstreamAccounts applies repositories.upstream_accounts after the reconcile, so a preset the release adds exists, in one
+// transaction with the actor system:configuration (R-REPO-077): a declared key's stored account is removed and the declaration marked,
+// a mark whose key is gone is cleared, and a key that names no remote repository of the project upstream fails the run before any pod
+// rolls. The Job reads only the configuration: it never sees the files or their values.
+func applyUpstreamAccounts(ctx context.Context, s *postgres.MigrationSession, svc *repository.Service, cfg *config.Config, log *slog.Logger) error {
+	var res repository.UpstreamAccountsResult
+	if err := s.InTx(ctx, func(tx meta.Tx) error {
+		var err error
+		res, err = svc.ApplyUpstreamAccounts(ctx, tx, repository.Caller{Actor: authz.ConfigurationActor()}, configuredAccounts(cfg))
+		return err
+	}); err != nil {
+		return fmt.Errorf("the accounts of the project upstream: %w", err)
+	}
+	log.Info("the accounts of the project upstream applied from the configuration",
+		"declared", len(cfg.Repositories.UpstreamAccounts), "applied", res.Declared, "removed", res.Removed)
+	for _, key := range slices.Sorted(maps.Keys(res.Overridden)) {
+		log.Warn("a declared account goes to the address an administrator set for the repository, not to Quader's",
+			"repo", "upstream/"+key, "hosts", res.Overridden[key])
+	}
 	return nil
+}
+
+// configuredAccounts is repositories.upstream_accounts as the repository service and the upstream clients read it (R-REPO-077).
+func configuredAccounts(cfg *config.Config) repository.ConfiguredAccounts {
+	out := make(repository.ConfiguredAccounts, len(cfg.Repositories.UpstreamAccounts))
+	for key, a := range cfg.Repositories.UpstreamAccounts {
+		out[key] = repository.ConfiguredAccount{
+			AuthMode: a.EffectiveAuthMode(), UsernameFile: a.UsernameFile, PasswordFile: a.PasswordFile, SecretName: a.SecretName,
+		}
+	}
+	return out
 }
 
 // applyDeclaredCIIssuers applies ci.issuers in one transaction of the migration session (R-CI-001,

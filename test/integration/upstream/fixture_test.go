@@ -3,7 +3,11 @@
 package upstream
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"os"
+	"path/filepath"
 	"slices"
 	"testing"
 	"time"
@@ -14,6 +18,8 @@ import (
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/secrets"
 	"github.com/guided-traffic/quader/test/integration/stack"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
@@ -30,6 +36,8 @@ type fixture struct {
 	cl             *stack.Cluster
 	admin, auditor stack.Person
 	alice, bob     stack.Person
+	// accounts are the accounts the replicas' configuration declares (R-REPO-077); set before start.
+	accounts repository.ConfiguredAccounts
 }
 
 func newFixture(t *testing.T) *fixture {
@@ -47,10 +55,13 @@ func newFixture(t *testing.T) *fixture {
 	return f
 }
 
-// start starts the two replicas; the reconcile of a test runs before.
+// start starts the two replicas; the reconcile of a test runs before. They seal an account's value with a key ring of the test.
 func (f *fixture) start() {
 	f.t.Helper()
-	o := stack.Options{Validator: apitest.New(f.t, v1.EmbeddedYAML())}
+	o := stack.Options{
+		Validator: apitest.New(f.t, v1.EmbeddedYAML()), UpstreamAccounts: f.accounts,
+		Remote: repository.RemoteDeps{Ring: testRing(f.t)},
+	}
 	f.cl = stack.NewCluster(f.e.NewReplica("web-a", o), f.e.NewReplica("web-b", o))
 }
 
@@ -63,7 +74,14 @@ func (f *fixture) do(person stack.Person, method, path string, body any, hdr ...
 // the command composes it; the error is the one the command would exit with.
 func reconcile(t *testing.T, e *stack.Env, cat *catalog.Registry) error {
 	t.Helper()
+	return migrateWith(t, e, cat, nil)
+}
+
+// migrateWith is reconcile with repositories.upstream_accounts declared (R-REPO-077).
+func migrateWith(t *testing.T, e *stack.Env, cat *catalog.Registry, accounts map[string]config.UpstreamAccount) error {
+	t.Helper()
 	cfg := &config.Config{Database: e.Cfg}
+	cfg.Repositories.UpstreamAccounts = accounts
 	cfg.Cluster = config.Cluster{EpochPollInterval: time.Second, EpochMaxStaleness: 20 * time.Second, ChangeRetention: time.Hour}
 	cfg.Health.WatchdogTimeout = 30 * time.Second
 	cfg.Audit = config.Audit{AsyncBuffer: 100, RetentionDays: 365}
@@ -78,6 +96,20 @@ func reconcile(t *testing.T, e *stack.Env, cat *catalog.Registry) error {
 		Declared: app.UpstreamStep(cfg, cat, "it-migrate", testenv.Quiet()),
 	})
 	return err
+}
+
+// testRing is a key ring of one key in a file of the test.
+func testRing(t *testing.T) *secrets.KeyRing {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "k1.key")
+	if err := os.WriteFile(path, []byte(base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{7}, 32))), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ring, err := secrets.Load(config.Secrets{EncryptionKeyFiles: []string{path}, ActiveKeyID: "k1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ring
 }
 
 // catalogWith is a copy of the binary's catalog whose presets change edits.

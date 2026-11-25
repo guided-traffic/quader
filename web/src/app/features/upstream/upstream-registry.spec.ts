@@ -4,7 +4,7 @@ import { SystemApi } from '../../api/system-api';
 import { FakeSystemApi, sampleScanners, withUpdater } from '../../api/testing/fakes';
 import { MalwareApi } from '../../api/malware-api';
 import { FakeMalwareApi, malwareSettings } from '../../api/testing/fakes-malware';
-import { CLAMAV_ENDPOINT, FakeUpstreamApi } from '../../api/testing/fakes-upstream';
+import { CLAMAV_ENDPOINT, FakeUpstreamApi, configuredAccount, noAccount } from '../../api/testing/fakes-upstream';
 import { FakeVisibilityApi } from '../../api/testing/fakes-projects';
 import { button, buttonByText, expectAccessible, renderScreen, settle, text, type } from '../../testing/screen';
 import { UpstreamRegistry } from './upstream-registry';
@@ -71,7 +71,7 @@ describe("A well-known repository's page (R-UI-188)", () => {
   it('R-UI-188 saving a new URL of docker-hub with an account stored asks for the account and sends it with the address in one PUT', async () => {
     const { fixture, root, api } = await render('docker-hub', {
       setup: (a) =>
-        a.set('docker-hub', { account: { authMode: 'basic', username: 'ci-pull', password: { set: true }, removedByUpdateAt: null } }),
+        a.set('docker-hub', { account: { ...noAccount(), authMode: 'basic', username: 'ci-pull', password: { set: true } } }),
     });
     type(urlField(root), 'https://mirror.example.com/');
     await settle(fixture);
@@ -284,5 +284,70 @@ describe("A well-known repository's page (R-UI-188)", () => {
         m.current = { ...s, database: { ...s.database, source: 'repository', sourceRepository: 'ops/clamav-db' } };
       }),
     ).toBe('No updater runs: this installation takes its definitions from ops/clamav-db.');
+  });
+});
+
+describe('An account the configuration declares on a well-known repository (R-UI-188 section 3, R-REPO-077)', () => {
+  const section = (root: HTMLElement): HTMLElement => root.querySelector<HTMLElement>('[aria-labelledby="wk-account"]')!;
+
+  it('R-REPO-077 shows where it comes from, its mode and its files, with Test connection and no field, Save or Remove', async () => {
+    const { fixture, root, api } = await render('docker-hub', {
+      setup: (a) => a.set('docker-hub', { account: configuredAccount('readable'), accountRaisesLimit: false }),
+    });
+    const s = section(root);
+    expect(text(s.querySelector('.source-note > span:last-child')!)).toBe('From the Helm values: Secret quader-upstream-docker-hub. Change or remove it there.');
+    expect(text(s.querySelector('.account-facts')!)).toContain('Username and password');
+    expect(text(s.querySelector('.account-facts')!)).toContain('Readable on this server');
+    expect(text(s)).toContain('The credential is sent to');
+    expect(s.querySelectorAll('input, select')).toHaveLength(0);
+    for (const label of ['Save account', 'Remove account']) {
+      expect([...s.querySelectorAll('button')].some((b) => text(b) === label)).toBe(false);
+    }
+    expect(text(s)).not.toContain('allows more requests');
+    buttonByText(s, 'Test connection').click();
+    await settle(fixture);
+    expect(api.calls).toContainEqual({ op: 'test-saved', key: 'docker-hub' });
+    await expectAccessible(root);
+  });
+
+  it('R-REPO-077 missing files warn that every request fails until the Secret exists; a configuration without the chart names no Secret', async () => {
+    const { root } = await render('docker-hub', {
+      setup: (a) => a.set('docker-hub', { account: configuredAccount('missing'), accountRaisesLimit: false }),
+    });
+    expect(text(section(root).querySelector('.banner-warning > span:last-child')!)).toBe(
+      "The Secret's files are missing on this server, so every request to Docker Hub fails until the Secret exists with its keys; a Secret reaches the pods within two minutes.",
+    );
+    const plain = await render('docker-hub', {
+      setup: (a) =>
+        a.set('docker-hub', {
+          account: configuredAccount('empty', { configuration: { secretName: '', since: null, files: 'empty' } }),
+          accountRaisesLimit: false,
+        }),
+    });
+    expect(text(section(plain.root).querySelector('.source-note > span:last-child')!)).toBe("From the installation's configuration file. Change or remove it there.");
+    expect(text(section(plain.root).querySelector('.banner-warning > span:last-child')!)).toContain('A file of the account is empty on this server');
+  });
+
+  it('R-REPO-077 an address that would send the declared account to other hosts is refused before it is sent', async () => {
+    const { fixture, root, api } = await render('docker-hub', {
+      setup: (a) => a.set('docker-hub', { account: configuredAccount('readable'), accountRaisesLimit: false }),
+    });
+    type(urlField(root), 'https://mirror.example.com/');
+    await settle(fixture);
+    button(root, 'Save address').click();
+    await settle(fixture);
+    expect(api.calls.some((c) => c.op === 'address')).toBe(false);
+    expect(document.querySelector('quader-account-again-dialog')).toBeNull();
+    const held = [...root.querySelectorAll<HTMLElement>('.banner-warning > span:last-child')].map((b) => text(b));
+    expect(held).toContain(
+      "The account of this registry comes from the installation's configuration, so an address that sends it to other hosts is changed there too.",
+    );
+  });
+
+  it('R-REPO-077 a registry whose vendor allows an account more says so while it has none; another registry does not', async () => {
+    const hub = await render('docker-hub');
+    expect(text(section(hub.root))).toContain('Docker Hub allows more requests with an account.');
+    const quay = await render('quay');
+    expect(text(section(quay.root))).not.toContain('allows more requests');
   });
 });

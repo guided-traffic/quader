@@ -4530,8 +4530,10 @@ export interface paths {
          *     from the product's address and `false` when it equals it. A stored account stays only while the hosts that receive it
          *     stay (R-REPO-033): a change of the origin of `url`, a new `extraHosts` entry with `sendCredentials: true`, or
          *     `forwardAuthOnRedirect` while an account is stored answers `422 secret_value_required` at `/account/password` unless the
-         *     body carries `account`, a new one or `null` to remove it. Raises `config_version`, records `repository.updated` (secrets as
-         *     fingerprints) and invalidates the repository's metadata and negative entries (R-REPO-011).
+         *     body carries `account`, a new one or `null` to remove it. While the configuration declares the account
+         *     (`repositories.upstream_accounts`, R-REPO-077), a body with `account` and an address that moves the hosts receiving it answer
+         *     `409 managed_by_config`: only the configuration decides where its account goes (Q-REPO-486). Raises `config_version`, records
+         *     `repository.updated` (secrets as fingerprints) and invalidates the repository's metadata and negative entries (R-REPO-011).
          */
         put: operations["setUpstreamRepositoryAddress"];
         post?: never;
@@ -4540,8 +4542,9 @@ export interface paths {
          * @description Writes the product's address (`url`, `extraHosts` and, for an APT archive, the archive keys) and clears `overridden`
          *     (R-REPO-069). When the product's hosts that receive a credential differ from the override's while an account is stored, the
          *     reset answers `422 secret_value_required` unless it carries `removeAccount=true`, which removes the account in the same
-         *     write. Raises `config_version` and records `repository.updated`; a reset of an address that is the product's changes
-         *     nothing and records nothing.
+         *     write. While the configuration declares the account (R-REPO-077), `removeAccount=true` and a reset that moves its hosts answer
+         *     `409 managed_by_config`. Raises `config_version` and records `repository.updated`; a reset of an address that is the product's
+         *     changes nothing and records nothing.
          */
         delete: operations["resetUpstreamRepositoryAddress"];
         options?: never;
@@ -4565,18 +4568,21 @@ export interface paths {
         get?: never;
         /**
          * Store an account for a well-known repository
-         * @description Stores `authMode`, `username` and `password` of R-REPO-033 for the repository's upstream: the password as a value, or, for a
-         *     holder of `repositories:write-config`, as a `secretRef` of R-OPS-029; it is never returned (`{"set": true}`). The account
-         *     counts the pulls of every project that reads the repository against the account's allowance. Raises `config_version`,
-         *     records `repository.updated` (the secret as a fingerprint), clears the account's removal by a release and invalidates the
-         *     repository's metadata and negative entries. `422 invalid_secret` for a password outside the rules of R-REPO-033.
+         * @description Stores `authMode`, `username` and `password` of R-REPO-033 for the repository's upstream: the password as a value; it is never
+         *     returned (`{"set": true}`). A `secretRef` is refused with `422 secret_value_required` at `/password/secretRef`: an account read
+         *     from files is declared in the configuration (`repositories.upstream_accounts`, R-REPO-077, Q-REPO-487). While the configuration
+         *     declares the repository's account, the operation answers `409 managed_by_config`. The account counts the pulls of every
+         *     project that reads the repository against the account's allowance. Raises `config_version`, records `repository.updated` (the
+         *     secret as a fingerprint), clears the account's removal by a release and invalidates the repository's metadata and negative
+         *     entries. `422 invalid_secret` for a password outside the rules of R-REPO-033.
          */
         put: operations["setUpstreamRepositoryAccount"];
         post?: never;
         /**
          * Remove the account of a well-known repository
          * @description Removes the stored account (`authMode: none`, the secret rows deleted). Raises `config_version` and records
-         *     `repository.updated`; a repository without an account changes nothing and records nothing.
+         *     `repository.updated`; a repository without an account changes nothing and records nothing. While the configuration declares
+         *     the repository's account (R-REPO-077), `409 managed_by_config`: it is removed in the configuration.
          */
         delete: operations["removeUpstreamRepositoryAccount"];
         options?: never;
@@ -11183,11 +11189,16 @@ export interface components {
             overridden: boolean;
             product: components["schemas"]["UpstreamProductAddress"];
         };
-        /** @description The stored account of the repository's upstream, without its secret (R-REPO-033, R-REPO-073). */
+        /**
+         * @description The account of the repository's upstream, without its secret (R-REPO-033, R-REPO-073): the one an administrator stored
+         *     (`source: api`), or the one the configuration of the replica that answers declares in `repositories.upstream_accounts`
+         *     (`source: configuration`, R-REPO-077), which no operation of the API changes. A declared account shows its `authMode` and
+         *     `configuration`; its `username` and `password` are `null`, since the username read from a file is never shown.
+         */
         UpstreamRepositoryAccountInfo: {
             /** @enum {string} */
             authMode: "none" | "basic" | "bearer";
-            /** @description The account name; `null` without an account. */
+            /** @description The account name; `null` without an account and for a declared one. */
             username: string | null;
             /** @description `{"set": true}` for a sealed value, the `secretRef` as stored, or `null` without one. The value is never returned. */
             password: components["schemas"]["SecretField"] | null;
@@ -11196,6 +11207,53 @@ export interface components {
              * @description When the reconcile of a release removed the account because the product moved its hosts (Q-REPO-377); `null` otherwise.
              */
             removedByUpdateAt: string | null;
+            /**
+             * @description Where the account comes from, by the configuration of the replica that answers (Q-REPO-484).
+             * @enum {string}
+             */
+            source: "api" | "configuration";
+            /** @description The declaration while `source` is `configuration`; `null` otherwise. */
+            configuration: components["schemas"]["UpstreamRepositoryAccountConfiguration"] | null;
+            /**
+             * Format: date-time
+             * @description The end of the repository's last completed download among the installation's last 100 ended downloads (R-OPS-051); `null`
+             *     when none of them is the repository's, and on the answer of `listUpstreamRepositories`.
+             */
+            lastDownloadAt: string | null;
+            /** @description The repository's last failed download among the same 100; `null` likewise. */
+            lastFailure: components["schemas"]["UpstreamRepositoryAccountFailure"] | null;
+        };
+        /**
+         * @description An account the configuration declares (R-REPO-077): the Kubernetes Secret the chart mounts its files from, when `quader migrate`
+         *     applied it, and the state of its files on the replica that answers, read for the answer and dropped. Nothing of the values.
+         */
+        UpstreamRepositoryAccountConfiguration: {
+            /**
+             * @description The Secret of `secrets.upstreamAccounts.<key>.existingSecret`; empty for a configuration written without the chart.
+             * @example quader-upstream-docker-hub
+             */
+            secretName: string;
+            /**
+             * Format: date-time
+             * @description When `quader migrate` first applied the declaration; `null` before it ran with it.
+             */
+            since: string | null;
+            /**
+             * @description `readable`: the files hold a value each. `missing`: a file does not exist (the Secret or its key does not exist, or has not
+             *     reached the pod yet). `empty`: a file is empty. `invalid`: a file cannot be read, is larger than 8 KiB, holds a line break
+             *     inside, or the username holds a colon. While not `readable` the repository's fetches answer 502 `upstream_secret_unavailable`.
+             * @enum {string}
+             */
+            files: "readable" | "missing" | "empty" | "invalid";
+        };
+        UpstreamRepositoryAccountFailure: {
+            /** Format: date-time */
+            at: string;
+            /**
+             * @description The failure's code, as the downloads overview shows it (R-OPS-051); empty when the download recorded none.
+             * @example upstream_auth_failed
+             */
+            code: string;
         };
         /**
          * @description A well-known repository as the admin page shows it (R-REPO-073). `state` is `null` and `inUse` a boolean for a system
@@ -11230,6 +11288,11 @@ export interface components {
             listedBy: number;
             /** @description The number of projects those virtual repositories are in. */
             listedByProjects: number;
+            /**
+             * @description An account would lift the upstream's request limit: the preset whose address the repository has says that its vendor allows
+             *     a caller with an account more (Docker Hub), and the repository sends no credential (Q-UI-1160).
+             */
+            accountRaisesLimit: boolean;
             /**
              * @description The qualified names (`<project>/<key>`) of those virtual repositories in byte order, at most 100; `listedBy` minus their
              *     number is the number of the others. Absent on the answer of `listUpstreamRepositories`, which carries the numbers only.
@@ -11309,7 +11372,12 @@ export interface components {
             upstreamKeys?: string;
             account?: components["schemas"]["UpstreamRepositoryAccount"] | null;
         };
-        /** @description An account for the repository's upstream (R-REPO-033). `basic` needs a username or a password, `bearer` a password. */
+        /**
+         * @description An account for the repository's upstream (R-REPO-033). `basic` needs a username or a password, `bearer` a password. The password
+         *     is a value (`{"value": …}`, or `{"set": true}` to keep the stored one): a `secretRef` is refused with 422 `secret_value_required`
+         *     at `/password/secretRef`, since an account read from files is the configuration's (`repositories.upstream_accounts`, R-REPO-077,
+         *     Q-REPO-487).
+         */
         UpstreamRepositoryAccount: {
             /** @enum {string} */
             authMode: "none" | "basic" | "bearer";
@@ -16779,6 +16847,12 @@ export interface components {
              * @description The answer that began the first of the waits in a row.
              */
             since: string;
+            /**
+             * @description An account would lift the limit: the preset whose address the remote has says that its vendor allows a caller with an account
+             *     more (Docker Hub), and the remote sends no credential, neither a stored account nor one the configuration of the replica that
+             *     answers declares (Q-UI-1160).
+             */
+            accountRaisesLimit: boolean;
             /**
              * Format: date-time
              * @description No row of the repository starts before; then one asks first.

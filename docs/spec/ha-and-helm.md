@@ -886,6 +886,45 @@ Acceptance criteria:
   `Certificate` renders with ECDSA 256, `rotationPolicy: Always`, the usages `digital signature` and `code signing` and the base URL as a URI;
   with both the render fails and names both keys; with neither nothing of it renders.
 
+### R-HA-073 · The accounts of the upstream registries from existing Secrets
+Priority: **MVP** · Covers: quader-only
+
+Built (templates/_upstream_accounts.tpl, the mount and the volume in templates/_deployment.tpl, the managed key in templates/_helpers.tpl,
+the check in templates/_validate.tpl). The chart's side of [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-077, the
+owner's wish of 2026-11-25 (Q-REPO-483): the accounts of the registries of the built-in project `upstream` come from Secrets that exist,
+which the chart names and never creates.
+
+- **The value.** `secrets.upstreamAccounts` is a map by the key of a repository of the project `upstream` (the key Admin area ›
+  Upstream registries shows: `docker-hub`, `quay`, `ghcr`, `gitlab`, `npmjs`, …, `scanner-trivy`), each entry `existingSecret`
+  (required), `authMode` (`basic`, the default, or `bearer`), `usernameKey` (`username`; `basic` only) and `passwordKey` (`password`)
+  ([Q-HA-494](#q-ha-494--secretsupstreamaccounts-is-a-map-by-the-registrys-key-and-authmode-defaults-to-basic)). The default `{}` declares none.
+- **The mount** ([Q-HA-493](#q-ha-493--the-accounts-of-the-upstream-registries-are-one-projected-volume-with-optional-sources-in-the-pods-of-api-packages-and-worker)). One projected volume `upstream-accounts`, `defaultMode: 0440`, read-only, without `subPath`, at
+  `/var/run/secrets/quader/upstream-accounts/`, with one source per entry: the Secret, `optional: true`, its items `<key>/username`
+  (`basic` only) and `<key>/password`. Every Deployment of `api`, `packages` and `worker` mounts it (the main Deployments, their pools
+  and their endpoint pools), since each fetches from upstreams (a client's fill, the upstream test and the catalogue, the download queue,
+  the mirror passes and the image scanning's database); no scanner, the updater, the migration Job, a backup, restore or post-restore
+  Job, nor the Bastion's chart mounts it. A Secret or a key that does not exist starts every pod: the source is optional, and that
+  registry's fetches fail until it exists (R-REPO-077).
+- **The configuration.** The chart renders `config.repositories.upstream_accounts.<key>` with `auth_mode`, `password_file`,
+  `username_file` (`basic` only) below the mount path, and `secret_name` (the entry's `existingSecret`), into the configuration file and
+  the migration Job's copy; never a value. `config.repositories.upstream_accounts` set under `config` fails the render.
+- **Rotation without a restart.** A changed Secret reaches the files within the kubelet's sync (R-HA-030's 2 minutes) and every replica
+  reads them again after 10 s. The pod's checksum follows the rendered configuration, so adding or removing an entry rolls the pods
+  once (the scanners' and the updater's too, whose checksum covers the same file, though they mount nothing of it), and a rotation rolls
+  nothing.
+- **Refusals of the render**: `config.repositories.upstream_accounts` set directly; `usernameKey` beside `authMode: bearer`; a key that
+  does not match `^[a-z0-9]+(-[a-z0-9]+)*$` and an entry without `existingSecret` (the schema). Whether the key names a repository is
+  checked by `quader migrate`, which fails the upgrade naming it (R-REPO-077).
+- **No env, no port, no rule.** No variable carries a Secret's value, and no Service, NetworkPolicy or PDB changes: the pods reach the
+  upstreams they reached before.
+
+Acceptance criteria:
+
+- Chart test (`test/chart`, about 1 s): with two entries over `ci/roles-pools.yaml`, the nine Deployments of `api`, `packages` and
+  `worker` mount the projected volume with the two optional sources, their items and `0440`, read-only without `subPath`, and no other
+  Deployment, Job or CronJob mounts it; the configuration file and the migration Job's copy name the paths and the Secrets; without an
+  entry nothing of it renders; the three refusals fail the render.
+
 ### R-HA-072 · The object-store connections in the chart
 Priority: **P1** · Covers: quader-only
 
@@ -4315,6 +4354,7 @@ changes, that default follows.
 | `secrets.backupTargetCA` (backup and restore pods; Q-HA-146) | `ca.crt` | `/var/run/secrets/quader/backup-target-ca/` | `backup.target.ca_file` |
 | `secrets.oidc[]` (one entry per provider ID; only the pods of role `api` (its main Deployment, its pools and its endpoint pools); never a pod of `packages`, worker, backup, migration or restore pods, R-AUTH-042, Q-HA-79) | `client-secret` | `/var/run/secrets/quader/oidc-<id>/` | `client_secret_file` of the provider with that `id` in `config.auth.oidc.providers` |
 | `secrets.breakGlass` (the same pods as `secrets.oidc[]`, R-AUTH-014, R-AUTH-042) | `password` | `/var/run/secrets/quader/break-glass/` | `auth.break_glass.password_file`; empty value → `auth.break_glass.enabled: false` |
+| `secrets.upstreamAccounts.<key>` (the pods of `api`, `packages` and `worker`, R-HA-073; one projected volume, each source optional) | `username` (`basic` only), `password` (`usernameKey`, `passwordKey`) | `/var/run/secrets/quader/upstream-accounts/<key>/` | `repositories.upstream_accounts.<key>.username_file`, `password_file`, `auth_mode`, `secret_name` (R-REPO-077) |
 | `secrets.encryption` | `secrets.encryption.keys` | `/var/run/secrets/quader/encryption/` | `secrets.encryption_key_files` (ordered) and `secrets.active_key_id` (the first entry) |
 | `secrets.metricsToken` | `token` | `/var/run/secrets/quader/metrics/` | `metrics.bearer_token_file` (R-OPS-006) |
 | `trustedCA.*` (Secret or ConfigMap) | listed keys | `/etc/quader/ca/` | `proxy.outbound.tls.ca_files` (R-REPO-035); optionally the `ca_file` of the connections it names |
@@ -5045,6 +5085,12 @@ secrets:
   #  - providerId: corp                 # example; matches config.auth.oidc.providers[].id
   #    existingSecret: quader-oidc-corp  # example
   #    key: client-secret               # example
+  upstreamAccounts: {}                  # no account from the values (R-HA-073); example:
+  #  docker-hub:                        # example; the key of a repository of the project upstream
+  #    existingSecret: quader-upstream-docker-hub   # example
+  #    authMode: basic                  # default; basic | bearer
+  #    usernameKey: username            # default; basic only
+  #    passwordKey: token               # example; default password
   breakGlass:
     existingSecret: ""                  # empty disables the break-glass account; example: quader-break-glass
     key: password                       # plaintext or Argon2id PHC hash
@@ -13248,6 +13294,43 @@ of R-HA-022. **Applied in the spec:** R-HA-022 (the status, the start rule and i
 `TestR_HA_020_TheSortKeyStepPassesOnADatabaseOfThePreviousRelease` ([postgres](../../test/integration/postgres/version_sort_key_test.go)),
 `TestBackgroundMigrations`, the unit tests of [sortkey_test.go](../../internal/packages/sortkey/sortkey_test.go), and the set `upgrade-release`,
 whose check of `GET /api/v1/system/migrations` waits for it to succeed.
+### Q-HA-493 · The accounts of the upstream registries are one projected volume with optional sources in the pods of api, packages and worker
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-HA-073 mounts the Secrets of `secrets.upstreamAccounts`. Every Secret of the chart is mounted only into the pods that read it,
+with items, `0440` and no `subPath` (R-HA-030); several accounts may be declared, each from a Secret of its own or from one Secret.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One projected volume, one optional source per entry, in every pod of `api`, `packages` and `worker` (chosen) | `upstream-accounts` with `<key>/username` and `<key>/password` | One mount whatever the number of accounts; a missing Secret starts the pod; every role that fetches from an upstream reads it | A pod of `api` holds the token though it only tests and lists |
+| (b) One Secret volume per entry | As `secrets.oidc[]` | The precedent | A missing Secret holds the pod in `ContainerCreating` unless each volume is optional; one volume per account |
+| (c) Only the `worker` pods | Fewer holders | | A client's fill runs in `packages` and the upstream test in `api`; both would send no account |
+
+**Choice:** (a). **Rationale:** the account is used wherever the repository's client is built, and that is each of the three roles; the
+scanners, the updater and the Jobs never contact an upstream registry and get nothing.
+
+**Applied in the spec:** R-HA-073, R-HA-030's table. Code: [_upstream_accounts.tpl](../../deploy/helm/quader/templates/_upstream_accounts.tpl).
+
+### Q-HA-494 · `secrets.upstreamAccounts` is a map by the registry's key, and `authMode` defaults to basic
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner names an account for Docker Hub; one registry has one account, and the key Admin area › Upstream registries shows is
+what an operator reads.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A map by the registry's key; `authMode` `basic` by default; `usernameKey` `username`, `passwordKey` `password` (chosen) | `secrets.upstreamAccounts.docker-hub.existingSecret` | One entry per registry by construction; a Helm `--set` and a Flux patch address it by key; `basic` is what the OCI registries and GitLab take | A list like `secrets.oidc[]` is not followed |
+| (b) A list of `{key, existingSecret, …}` | As `secrets.oidc[]` | The precedent | A key twice needs a check; a values overlay replaces the whole list |
+| (c) `bearer` by default | | npm's token | Docker Hub refuses a raw access token without its handshake (R-REPO-033: no handshake for `bearer`) |
+
+**Choice:** (a). **Rationale:** the registry's key is the identity of the account, and `basic` is the mode of the case that made the owner
+ask.
+
+**Applied in the spec:** R-HA-073, R-HA-031's values. Code: [values.yaml](../../deploy/helm/quader/values.yaml),
+[values.schema.json](../../deploy/helm/quader/values.schema.json).
+
 ### H-37 · A database restore revives revoked credentials and removed grants
 
 Restoring PostgreSQL to time *t*, from the platform layer (R-HA-025) or from a Quader backup taken at

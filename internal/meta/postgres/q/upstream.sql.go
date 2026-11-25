@@ -7,7 +7,19 @@ package q
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const clearUpstreamAccountConfigured = `-- name: ClearUpstreamAccountConfigured :exec
+UPDATE upstream_repository SET account_configured_at = NULL WHERE repository_id = $1::bigint
+`
+
+// The configuration no longer declares the account (R-REPO-077).
+func (q *Queries) ClearUpstreamAccountConfigured(ctx context.Context, repositoryID int64) error {
+	_, err := q.db.Exec(ctx, clearUpstreamAccountConfigured, repositoryID)
+	return err
+}
 
 const clearUpstreamAccountRemoved = `-- name: ClearUpstreamAccountRemoved :exec
 UPDATE upstream_repository SET account_removed_at = NULL WHERE repository_id = $1::bigint
@@ -69,7 +81,7 @@ func (q *Queries) CountUpstreamListedBy(ctx context.Context) ([]CountUpstreamLis
 }
 
 const getUpstreamRepositoryFacts = `-- name: GetUpstreamRepositoryFacts :many
-SELECT repository_id, kind, first_switched_on_at, retired_at, address_overridden, account_removed_at, clients_enabled FROM upstream_repository WHERE repository_id = $1::bigint
+SELECT repository_id, kind, first_switched_on_at, retired_at, address_overridden, account_removed_at, clients_enabled, account_configured_at FROM upstream_repository WHERE repository_id = $1::bigint
 `
 
 func (q *Queries) GetUpstreamRepositoryFacts(ctx context.Context, repositoryID int64) ([]UpstreamRepository, error) {
@@ -89,6 +101,7 @@ func (q *Queries) GetUpstreamRepositoryFacts(ctx context.Context, repositoryID i
 			&i.AddressOverridden,
 			&i.AccountRemovedAt,
 			&i.ClientsEnabled,
+			&i.AccountConfiguredAt,
 		); err != nil {
 			return nil, err
 		}
@@ -119,7 +132,7 @@ func (q *Queries) InsertUpstreamRepository(ctx context.Context, arg InsertUpstre
 
 const listUpstreamRepositoryFacts = `-- name: ListUpstreamRepositoryFacts :many
 
-SELECT repository_id, kind, first_switched_on_at, retired_at, address_overridden, account_removed_at, clients_enabled FROM upstream_repository ORDER BY repository_id
+SELECT repository_id, kind, first_switched_on_at, retired_at, address_overridden, account_removed_at, clients_enabled, account_configured_at FROM upstream_repository ORDER BY repository_id
 `
 
 // Queries of the built-in project upstream (repositories-and-proxy.md R-REPO-066 to R-REPO-073): the rows of upstream_repository
@@ -145,6 +158,7 @@ func (q *Queries) ListUpstreamRepositoryFacts(ctx context.Context) ([]UpstreamRe
 			&i.AddressOverridden,
 			&i.AccountRemovedAt,
 			&i.ClientsEnabled,
+			&i.AccountConfiguredAt,
 		); err != nil {
 			return nil, err
 		}
@@ -176,6 +190,18 @@ SELECT upstream_repository_purge($1::bigint)
 // it, while the row stays (upstream_repository_purge, last replaced by 00096).
 func (q *Queries) PurgeUpstreamRepository(ctx context.Context, repositoryID int64) error {
 	_, err := q.db.Exec(ctx, purgeUpstreamRepository, repositoryID)
+	return err
+}
+
+const setUpstreamAccountConfigured = `-- name: SetUpstreamAccountConfigured :exec
+UPDATE upstream_repository
+   SET account_configured_at = COALESCE(account_configured_at, now())
+ WHERE repository_id = $1::bigint
+`
+
+// quader migrate applied a declared account (R-REPO-077); the first application's time is kept.
+func (q *Queries) SetUpstreamAccountConfigured(ctx context.Context, repositoryID int64) error {
+	_, err := q.db.Exec(ctx, setUpstreamAccountConfigured, repositoryID)
 	return err
 }
 
@@ -271,6 +297,43 @@ func (q *Queries) UpstreamListedByNames(ctx context.Context, arg UpstreamListedB
 	for rows.Next() {
 		var i UpstreamListedByNamesRow
 		if err := rows.Scan(&i.ProjectKey, &i.RepositoryKey); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const upstreamRepositoryLastDownloads = `-- name: UpstreamRepositoryLastDownloads :many
+SELECT (max(finished_at) FILTER (WHERE outcome = 'completed'))::timestamptz AS last_download_at,
+       ((array_agg(finished_at ORDER BY finished_at DESC) FILTER (WHERE outcome = 'failed'))[1])::timestamptz AS last_failure_at,
+       ((array_agg(COALESCE(failure_code, '') ORDER BY finished_at DESC) FILTER (WHERE outcome = 'failed'))[1])::text AS last_failure_code
+  FROM upstream_download_finished
+ WHERE repo_id = $1::bigint
+HAVING count(*) > 0
+`
+
+type UpstreamRepositoryLastDownloadsRow struct {
+	LastDownloadAt  pgtype.Timestamptz
+	LastFailureAt   pgtype.Timestamptz
+	LastFailureCode string
+}
+
+// The last completed download of a repository and its last failed one, from the installation's last 100 (R-OPS-051): the account
+// section of a well-known repository's page (R-REPO-073 account.lastDownloadAt and account.lastFailure). No row when none is recent.
+func (q *Queries) UpstreamRepositoryLastDownloads(ctx context.Context, repositoryID int64) ([]UpstreamRepositoryLastDownloadsRow, error) {
+	rows, err := q.db.Query(ctx, upstreamRepositoryLastDownloads, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []UpstreamRepositoryLastDownloadsRow{}
+	for rows.Next() {
+		var i UpstreamRepositoryLastDownloadsRow
+		if err := rows.Scan(&i.LastDownloadAt, &i.LastFailureAt, &i.LastFailureCode); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

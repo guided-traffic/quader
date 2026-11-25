@@ -124,7 +124,17 @@ of the product (`Caller.product`): the managed-member check does not apply, the 
 reason (`switched_on`, `switched_off`) and a bulk ID go into `repository.updated` and `repository.disabled`; switching off adds `listedBy` and its
 count. The bulk operations run in the transaction of their `Idempotency-Key` (Q-API-361). The address and the account keep the account to its hosts
 for every caller (`secret_value_required` at `/account/password`), set `address_overridden` by comparing the stored address with the
-declaration's, and clear `account_removed_at` when an account is set; `UpstreamPointers` maps the refusals to the members of the body.
+declaration's, and clear `account_removed_at` when an account is set; `UpstreamPointers` maps the refusals to the members of the body. The
+account takes a value only (`valueOnly`, Q-REPO-487).
+
+**An account from the configuration** (R-REPO-077, [upstream_accounts.go](../../internal/repository/upstream_accounts.go)). `quader migrate`
+runs `applyUpstreamAccounts` ([migrate_declared.go](../../internal/app/migrate_declared.go)) after the reconcile: `ApplyUpstreamAccounts` checks
+every declared key first (a remote repository of the project, or the run fails naming it), then writes each declared repository whose row is
+not marked or that still stores an account, and each marked one whose key is gone, through `updateTx` with `Caller.product.account` set: the
+write raises `config_version`, records `account: {source, authMode}` and calls `OnUpstreamChanged` even where the document stays. The mark is
+`upstream_repository.account_configured_at` (migration 00125). At use the replica's own `ConfiguredAccounts` decide: the item
+(`source: configuration` and the files' state, read with `Options.ReadFile`), the refusals (`declaredAccount`: the replica's entry or the
+mark), and the client of the upstream (`upstream.Options.Accounts`).
 
 The list's order (`upstreamRank`): the preset repositories in catalog order, a retired one after them by key, the system repositories last.
 The list reads three queries whatever the number of repositories: the rows, `upstreamFactsByID` and `listedByCounts`, whose one statement

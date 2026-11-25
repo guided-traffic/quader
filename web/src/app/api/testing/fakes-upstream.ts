@@ -25,6 +25,42 @@ const CATALOG: readonly (readonly [string, readonly UpstreamPreset[]])[] = [
   ['oci', OCI_PRESETS],
 ];
 
+/** The account of a repository without one (R-REPO-073): stored by nobody, declared by no configuration. */
+export function noAccount(): UpstreamRepository['account'] {
+  return {
+    authMode: 'none',
+    username: null,
+    password: null,
+    removedByUpdateAt: null,
+    source: 'api',
+    configuration: null,
+    lastDownloadAt: null,
+    lastFailure: null,
+  };
+}
+
+/**
+ * An account the installation's configuration declares (R-REPO-077): the Helm values' Secret, applied by quader migrate, its files in the
+ * state `files` on the answering server; `over` sets the rest a case needs.
+ */
+export function configuredAccount(
+  files: 'readable' | 'missing' | 'empty' | 'invalid' = 'readable',
+  over: Partial<UpstreamRepository['account']> = {},
+): UpstreamRepository['account'] {
+  return {
+    ...noAccount(),
+    authMode: 'basic',
+    source: 'configuration',
+    configuration: { secretName: 'quader-upstream-docker-hub', since: '2026-11-25T10:02:11Z', files },
+    ...over,
+  };
+}
+
+/** Docker Hub alone allows a caller with an account more (Q-UI-1160); a repository that sends an account needs none. */
+function raisesLimit(key: string, account: UpstreamRepository['account']): boolean {
+  return key === 'docker-hub' && account.authMode === 'none';
+}
+
 /**
  * One well-known repository of a preset as a fresh installation stores it: off, never switched on, Internal (the owner's decision
  * Q-REPO-388), with the product's address.
@@ -50,7 +86,8 @@ export function presetRepository(format: string, p: UpstreamPreset, over: Partia
       overridden: false,
       product: { url: p.url, extraHosts, upstreamKeys: keys },
     },
-    account: { authMode: 'none', username: null, password: null, removedByUpdateAt: null },
+    account: over.account ?? noAccount(),
+    accountRaisesLimit: raisesLimit(p.id, over.account ?? noAccount()),
     listedBy: 0,
     listedByProjects: 0,
     configVersion: 1,
@@ -73,7 +110,8 @@ export function scannerTrivy(over: Partial<UpstreamRepository> = {}): UpstreamRe
     visibility: 'private',
     fixed: ['state', 'visibility'],
     address: { ...product, overridden: false, product },
-    account: { authMode: 'none', username: null, password: null, removedByUpdateAt: null },
+    account: noAccount(),
+    accountRaisesLimit: false,
     listedBy: 0,
     listedByProjects: 0,
     configVersion: 1,
@@ -102,7 +140,8 @@ export function clamavRepository(over: Partial<UpstreamRepository> = {}): Upstre
     visibility: 'private',
     fixed: ['state', 'visibility', 'address', 'account'],
     address: { ...product, overridden: false, product },
-    account: { authMode: 'none', username: null, password: null, removedByUpdateAt: null },
+    account: noAccount(),
+    accountRaisesLimit: false,
     listedBy: 0,
     listedByProjects: 0,
     configVersion: 1,
@@ -282,7 +321,7 @@ export class FakeUpstreamApi extends UpstreamApi {
     const overridden = url !== r.address.product.url || JSON.stringify(extraHosts) !== JSON.stringify(r.address.product.extraHosts);
     const account =
       address.account === null
-        ? { authMode: 'none' as const, username: null, password: null, removedByUpdateAt: null }
+        ? noAccount()
         : address.account
           ? this.accountOf(address.account)
           : r.account;
@@ -302,7 +341,7 @@ export class FakeUpstreamApi extends UpstreamApi {
     return this.store({
       ...r,
       address: { url: p.url, extraHosts: p.extraHosts, upstreamKeys: p.upstreamKeys, overridden: false, product: p },
-      account: removeAccount ? { authMode: 'none', username: null, password: null, removedByUpdateAt: null } : r.account,
+      account: removeAccount ? noAccount() : r.account,
       configVersion: r.configVersion + 1,
     });
   }
@@ -320,7 +359,7 @@ export class FakeUpstreamApi extends UpstreamApi {
     const r = this.find(key);
     return this.store({
       ...r,
-      account: { authMode: 'none', username: null, password: null, removedByUpdateAt: null },
+      account: noAccount(),
       configVersion: r.configVersion + 1,
     });
   }
@@ -372,10 +411,10 @@ export class FakeUpstreamApi extends UpstreamApi {
 
   private accountOf(a: UpstreamRepositoryAccount): UpstreamRepository['account'] {
     return {
+      ...noAccount(),
       authMode: a.authMode,
       username: a.authMode === 'basic' ? (a.username ?? null) : null,
       password: a.authMode === 'none' ? null : { set: true },
-      removedByUpdateAt: null,
     };
   }
 
@@ -393,7 +432,8 @@ export class FakeUpstreamApi extends UpstreamApi {
     }
   }
 
-  private store(next: UpstreamRepository): LoadedUpstreamRepository {
+  private store(written: UpstreamRepository): LoadedUpstreamRepository {
+    const next = { ...written, accountRaisesLimit: written.kind === 'preset' && raisesLimit(written.key, written.account) };
     this.items = this.items.map((r) => (r.key === next.key ? next : r));
     return this.loaded(next);
   }

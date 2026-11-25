@@ -98,6 +98,10 @@ secrets:
     keys: [2026-10.key, 2026-04.key]
   metricsToken:
     existingSecret: quader-metrics
+  upstreamAccounts:
+    docker-hub:
+      existingSecret: quader-upstream-docker-hub   # example: a Docker Hub username and an access token that reads public images
+      passwordKey: token
 spool:
   type: ephemeral
   sizeLimit: 20Gi

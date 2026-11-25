@@ -137,6 +137,9 @@ a cache while it is being built and to find out why a client's fetch failed.
   under its versions. Nothing starts before that time, so the queue does not keep asking into the limit; after it, one download asks
   first, and the others follow once the upstream answers it. Waiting for a limit is no failed attempt: a download does not fail because
   of it. **Technical details** under the line show the upstream's last answer, its headers about the limit and the start of its text.
+  Where the registry allows more requests with an account (Docker Hub) and the repository has none, a second sentence says where to
+  add one: an administrator of Quader on the registry's page in the admin area (**Add an account**) or in the Helm values, the
+  repository's Owner in its settings under **Upstream**; anyone else reads whom to ask.
 - The tab reads the queue again by itself while the window is in view: every five seconds while something waits or runs, or a bulk is
   still finding versions, every 30 seconds otherwise and while a limit holds the queue; at once when you come back to the window.
   **Pause automatic refresh** stops that until you resume it. The count on the tab's label (**Downloads · 2 failed**) follows the queue

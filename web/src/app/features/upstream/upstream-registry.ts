@@ -38,6 +38,9 @@ import { AccountAgainAnswer, AccountAgainData, AccountAgainDialog } from './acco
 import { AuthMode, HostRow, authOptions, credentialHostsOf, hostOf, sameHosts } from './upstream-account';
 import { UpstreamActions } from './upstream-actions';
 import {
+  accountFilesText,
+  accountFilesWarning,
+  accountRaisesText,
   clientsLevelNotes,
   clientsLoweredWarning,
   clientsSentence,
@@ -257,7 +260,29 @@ export class UpstreamRegistry {
   protected readonly authMode = signal<AuthMode>('none');
   protected readonly username = signal('');
   protected readonly password = signal('');
-  protected readonly accountStored = computed(() => (this.item()?.account.authMode ?? 'none') !== 'none');
+  protected readonly accountStored = computed(() => this.item()?.account.source !== 'configuration' && (this.item()?.account.authMode ?? 'none') !== 'none');
+  /**
+   * The account comes from the installation's configuration (R-REPO-077, Q-UI-1161): read-only, no fields, no Save, no Remove; the
+   * declaration's Secret, the state of its files on the server that answered, and Test connection.
+   */
+  protected readonly configured = computed(() => this.item()?.account.source === 'configuration');
+  /** The Secret of the Helm values the declared account's files come from; empty for a configuration written without the chart. */
+  protected readonly secretName = computed(() => this.item()?.account.configuration?.secretName ?? '');
+  protected readonly filesText = computed(() => accountFilesText(this.item()?.account.configuration?.files ?? 'readable'));
+  protected readonly filesWarning = computed(() => {
+    const r = this.item();
+    const c = r?.account.configuration;
+    return r && c ? accountFilesWarning(c.files, r.displayName, c.secretName !== '') : null;
+  });
+  /** The mode of a declared account in the words of the form's choices. */
+  protected readonly modeLabel = computed(() => this.authModes.find((o) => o.value === this.item()?.account.authMode)?.label ?? '');
+  /** "Docker Hub allows more requests with an account." while the registry has none (Q-UI-1160). */
+  protected readonly raisesText = computed(() => {
+    const r = this.item();
+    return r?.accountRaisesLimit ? accountRaisesText(r.displayName) : null;
+  });
+  /** The refusal of an address that would send a declared account to other hosts, said before anything is sent (Q-REPO-486). */
+  protected readonly addressHeld = signal<string | null>(null);
   protected readonly passwordStored = computed(() => this.item()?.account.password != null);
   protected readonly accountDirty = computed(() => {
     const a = this.item()?.account;
@@ -450,6 +475,7 @@ export class UpstreamRegistry {
     this.hosts.set(r.address.extraHosts.map(row));
     this.keys.set('');
     this.addressError.set(null);
+    this.addressHeld.set(null);
   }
 
   /**
@@ -469,6 +495,13 @@ export class UpstreamRegistry {
     if (this.keys().trim() !== '') body.upstreamKeys = this.keys();
     const before = credentialHostsOf(r.address.url, r.address.extraHosts.map(row));
     const after = credentialHostsOf(body.url ?? '', body.extraHosts ?? []);
+    this.addressHeld.set(null);
+    if (this.configured() && !sameHosts(before, after)) {
+      this.addressHeld.set(
+        $localize`:@@wellknown.address.held:The account of this registry comes from the installation's configuration, so an address that sends it to other hosts is changed there too.`,
+      );
+      return;
+    }
     if (this.accountStored() && !sameHosts(before, after)) {
       const answer = await this.askAccount(before);
       if (!answer) return;
@@ -597,7 +630,8 @@ export class UpstreamRegistry {
     this.testError.set(null);
     this.testResult.set(null);
     try {
-      if (!this.addressDirty() && !this.accountDirty()) {
+      // A declared account is the saved repository's: its files take part on the server only (R-REPO-077).
+      if (this.configured() || (!this.addressDirty() && !this.accountDirty())) {
         this.testResult.set(await this.api.testSaved(r.key));
       } else {
         const mode = this.authMode();

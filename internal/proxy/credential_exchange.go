@@ -56,7 +56,7 @@ type exchangeCall struct {
 // begin finds the realm request for req: ok false when the repository does no exchange for it (another authMode, a request to another
 // host than the upstream's origin, a format without an exchange or a repository without an authUrl).
 func (c exchangeCall) begin(ctx context.Context, req *http.Request) (h *handshake, treq *http.Request, key string, ok bool, err error) {
-	if c.x == nil || c.rem.Settings.AuthMode != repository.AuthBearer || !sameOrigin(req.URL, c.cl.Origin()) {
+	if c.x == nil || c.cl.Settings().AuthMode != repository.AuthBearer || !sameOrigin(req.URL, c.cl.Origin()) {
 		return nil, nil, "", false, nil
 	}
 	cred, has := c.cl.BearerSecret()

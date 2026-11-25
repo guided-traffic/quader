@@ -452,7 +452,7 @@ func upstreamIdentityChanged(before, after Document, secretWritten bool) bool {
 // upstreamChanged calls the invalidation hook inside the transaction of an update.
 func (s *Service) upstreamChanged(ctx context.Context, tx meta.Tx, c Caller, before, after Document, repo Repository) error {
 	hook := s.remoteDeps().OnUpstreamChanged
-	if hook == nil || !upstreamIdentityChanged(before, after, hasSecretWrites(after.pending)) {
+	if hook == nil || (c.product.account == nil && !upstreamIdentityChanged(before, after, hasSecretWrites(after.pending))) {
 		return nil
 	}
 	return hook(ctx, tx, c, repo)

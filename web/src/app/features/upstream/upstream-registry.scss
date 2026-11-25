@@ -168,6 +168,41 @@
   margin: calc(-1 * var(--quader-space-2)) 0 var(--quader-space-3);
 }
 
+// An account the configuration declares (Q-UI-1161): the lock line where it comes from, as a CI issuer of the configuration says it,
+// then its facts; the credential's hosts follow the facts at the section's own distance.
+.source-note {
+  display: flex;
+  align-items: flex-start;
+  margin: 0 0 var(--quader-space-3);
+
+  // A Secret's name is one word: it never breaks at one of its hyphens.
+  .secret-name {
+    white-space: nowrap;
+  }
+}
+
+.account-facts {
+  margin-block: 0 var(--quader-space-3);
+
+  + .credential-line,
+  + .banner-warning {
+    margin-block-start: 0;
+  }
+}
+
+// The warning of files that cannot be used stands between the facts and the credential's hosts, at the section's distance from both.
+.account-facts + .banner-warning {
+  margin-block-end: var(--quader-space-3);
+
+  + .credential-line {
+    margin-block-start: 0;
+  }
+}
+
+.raises {
+  margin-block: calc(-1 * var(--quader-space-2)) var(--quader-space-3);
+}
+
 .test-result {
   margin-block-start: var(--quader-space-3);
 

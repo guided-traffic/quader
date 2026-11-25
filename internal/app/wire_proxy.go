@@ -29,7 +29,8 @@ func (a *App) wireProxy(_ context.Context, in infra, repo repositoryArea, inv in
 	clients, err := upstream.New(upstream.Options{
 		Factory: in.out, Store: repository.NewSecretStore(in.db), Ring: in.ring, Caches: in.caches,
 		Proxy: a.cfg.Proxy, SecretsDir: a.cfg.ConfigAsCode.SecretsDir, SafetyTTL: a.cfg.Cache.SnapshotSafetyTTL,
-		Log: a.log.With("component", "proxy"),
+		Accounts: configuredAccounts(a.cfg),
+		Log:      a.log.With("component", "proxy"),
 	})
 	if err != nil {
 		return proxyArea{}, err

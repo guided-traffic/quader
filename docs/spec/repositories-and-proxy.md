@@ -1993,7 +1993,7 @@ on and off, sets its level, may set its address and an account (owner), and may 
 | `disabled` | an administrator | the state operation (R-REPO-068) |
 | `visibility` (both parts, one level) | an administrator | `setUpstreamRepositoryVisibility`, `setAllUpstreamRepositoriesVisibility` (R-REPO-073) |
 | `remote.url`, `remote.extraHosts`, and for an APT archive `deb.upstreamKeys` | the product; an administrator may override them | `setUpstreamRepositoryAddress`, `resetUpstreamRepositoryAddress` |
-| `remote.authMode`, `remote.username`, `remote.password` | an administrator | `setUpstreamRepositoryAccount`, `removeUpstreamRepositoryAccount` |
+| `remote.authMode`, `remote.username`, `remote.password` | an administrator, unless the installation's configuration declares the account (R-REPO-077): then `quader migrate`, which keeps them empty | `setUpstreamRepositoryAccount`, `removeUpstreamRepositoryAccount`; `repositories.upstream_accounts` ([Q-REPO-483](#q-repo-483--an-account-of-a-well-known-repository-comes-from-a-secret-through-a-declaration-that-quader-migrate-applies-and-the-replicas-read-at-use)) |
 | `adminNotes`, the delivery mode and rules (`remote.delivery`, the rules of [remote-curation.md](remote-curation.md) R-CUR-006; a repository of the kind `system` keeps the product's), `vulnerabilities`, `malware` ([malware-scanning.md](malware-scanning.md) R-MAL-020), `signatures` ([signatures.md](signatures.md) R-SIG-040, R-SIG-061, Q-SIG-128, Q-SIG-138: the whole member, the fetch switch and the gate), offline (`remote.availability.mode`), `remote.cacheFillAction` | an administrator | a merge patch of the document (R-REPO-011, `If-Match`); a system repository's `vulnerabilities`, `malware` and `signatures` are the product's (R-REPO-070, R-REPO-075) |
 | every other member: `hideExistence`, `priorityMember`, `remote.mode` (always `pullThrough`) and `remote.mirror`, the cache periods, `remote.downloadOnProbe`, `remote.headers`, `remote.clientCertificate`, `remote.outboundProxy`, `remote.sourceNetwork`, `remote.forwardAuthOnRedirect`, the size and integrity settings, `storage`, the format members but `deb.upstreamKeys` | the product | fixed at the format's defaults of R-REPO-063 |
 
@@ -2019,8 +2019,10 @@ on and off, sets its level, may set its address and an account (owner), and may 
   `sendCredentials: true`, or `forwardAuthOnRedirect` while an account is stored answers 422 `secret_value_required` at
   `/account/password` unless the body carries `account` (a new one, or `null` to remove it); the rule binds every caller here,
   holders of `repositories:write-config` included, because the account was entered for the product's hosts.
-- **The account**: `authMode`, `username` and `password` of R-REPO-033, the password as a value or, for a holder of
-  `repositories:write-config`, as a `secretRef` of R-OPS-029; never returned (`{"set": true}`).
+- **The account**: `authMode`, `username` and `password` of R-REPO-033, the password as a value only: a `secretRef` is refused with 422
+  `secret_value_required` at `/password/secretRef` (`/account/password/secretRef` in the address's body), since an account read from
+  files is the configuration's (R-REPO-077, [Q-REPO-487](#q-repo-487--the-account-operation-of-a-well-known-repository-takes-a-value-only)); never returned (`{"set": true}`). While the configuration declares
+  the account, the account's operations and an address that moves its hosts answer 409 `managed_by_config` (R-REPO-077).
 - **Every address and account write** raises `config_version`, records `repository.updated` (secrets as fingerprints), invalidates
   the metadata and negative entries (R-REPO-011), clears `account_removed_at` when it sets an account, and needs recent
   authentication ([api-and-ui.md](api-and-ui.md) R-API-007): it redirects every project's traffic through the repository, or puts a
@@ -2279,10 +2281,10 @@ in the OpenAPI document under the tag `upstream`, listed in [api-and-ui.md](api-
 | `switchOnAllUpstreamRepositories` | `POST /api/v1/upstream-repositories/switch-on-all` | — | 200 `{"items": [the repositories it switched on], "bulkId"}` | — |
 | `setUpstreamRepositoryVisibility` | `PUT /api/v1/upstream-repositories/{key}/visibility` | `{"level": "private" \| "internal" \| "public"}` | 200 the item, with `warnings` (`public_populates_remote`, R-AUTHZ-008) | 404; 409 `managed_by_product`; the refusals of R-AUTHZ-038 in its order |
 | `setAllUpstreamRepositoriesVisibility` | `POST /api/v1/upstream-repositories/set-visibility` | `{"level": …}` | 200 `{"items": [...], "bulkId"}`: of the preset repositories that are not retired, the ones whose level it changed (Q-API-361) | the refusals of R-AUTHZ-038 |
-| `setUpstreamRepositoryAddress` | `PUT /api/v1/upstream-repositories/{key}/address` | `{"url", "extraHosts", "upstreamKeys", "account"}`, `If-Match` | 200 the item | 404; 412; 422 (R-REPO-008, `secret_value_required`, `not_applicable` for `upstreamKeys` of another format); 428 |
-| `resetUpstreamRepositoryAddress` | `DELETE /api/v1/upstream-repositories/{key}/address` | `If-Match` | 200 the item | 404; 412; 422 `secret_value_required` (the product's hosts differ from the override's while an account is stored: the reset carries `?removeAccount=true`); 428 |
-| `setUpstreamRepositoryAccount` | `PUT /api/v1/upstream-repositories/{key}/account` | `{"authMode", "username", "password"}`, `If-Match` | 200 the item | 404; 412; 422 (`invalid_secret`, R-REPO-033); 428 |
-| `removeUpstreamRepositoryAccount` | `DELETE /api/v1/upstream-repositories/{key}/account` | `If-Match` | 200 the item | 404; 412; 428 |
+| `setUpstreamRepositoryAddress` | `PUT /api/v1/upstream-repositories/{key}/address` | `{"url", "extraHosts", "upstreamKeys", "account"}`, `If-Match` | 200 the item | 404; 409 `managed_by_config` (a declared account: a body with `account`, or an address that moves its hosts, R-REPO-077); 412; 422 (R-REPO-008, `secret_value_required`, `not_applicable` for `upstreamKeys` of another format); 428 |
+| `resetUpstreamRepositoryAddress` | `DELETE /api/v1/upstream-repositories/{key}/address` | `If-Match` | 200 the item | 404; 409 `managed_by_config` (a declared account: `removeAccount=true`, or a reset that moves its hosts); 412; 422 `secret_value_required` (the product's hosts differ from the override's while an account is stored: the reset carries `?removeAccount=true`); 428 |
+| `setUpstreamRepositoryAccount` | `PUT /api/v1/upstream-repositories/{key}/account` | `{"authMode", "username", "password"}`, `If-Match`; the password a value | 200 the item | 404; 409 `managed_by_config` (a declared account); 412; 422 (`invalid_secret`, R-REPO-033; `secret_value_required` at `/password/secretRef`, Q-REPO-487); 428 |
+| `removeUpstreamRepositoryAccount` | `DELETE /api/v1/upstream-repositories/{key}/account` | `If-Match` | 200 the item | 404; 409 `managed_by_config` (a declared account); 412; 428 |
 | `setUpstreamRepositoryClients` | `PUT /api/v1/upstream-repositories/{key}/clients` | `{"enabled": true \| false, "level": "public" \| "internal" \| "private"}` (`level` only with `enabled: true`, default `public`) | 200 the item, with `warnings` (`public_not_allowed_lowered`) | 404; 409 `managed_by_product` (a repository whose declaration lets no client in); the refusals of R-AUTHZ-038 for the level; 401 `reauthentication_required` when switching on without a recent sign-in |
 
 - **Permission.** The reads need `repositories:read-config` (`admin`, `security-admin`, `auditor`, `repository-admin`); every write
@@ -2321,7 +2323,11 @@ in the OpenAPI document under the tag `upstream`, listed in [api-and-ui.md](api-
       "upstreamKeys": null
     }
   },
-  "account": { "authMode": "none", "username": null, "password": null, "removedByUpdateAt": null },
+  "account": {
+    "authMode": "none", "username": null, "password": null, "removedByUpdateAt": null, "source": "api", "configuration": null,
+    "lastDownloadAt": "2026-11-25T09:58:40Z", "lastFailure": null
+  },
+  "accountRaisesLimit": true,
   "listedBy": 3,
   "listedByProjects": 2,
   "listedByNames": ["ops/docker-all", "web/docker-all", "web/docker-build"],
@@ -2337,7 +2343,16 @@ in the OpenAPI document under the tag `upstream`, listed in [api-and-ui.md](api-
   `state` is `null` and `inUse` a boolean for a system repository; `fixed` names what the product holds beyond the table of R-REPO-069
   (`["state", "visibility"]` for `scanner-trivy`); `upstreamKeys` lists the fingerprints of the keys of an APT archive
   (`[{"fingerprint", "userId"}]`), `null` for another format; `password` is `{"set": true}`, a `secretRef` as stored, or `null`;
-  `removedByUpdateAt` is `account_removed_at`; `listedBy` is the number of virtual repositories whose member lists or pin rules
+  `removedByUpdateAt` is `account_removed_at`; `source` is `api`, or `configuration` while the configuration of the replica that
+  answers declares the account (R-REPO-077), and then `configuration` is `{"secretName", "since", "files"}`: the Secret the chart mounts
+  (`quader-upstream-docker-hub` *(example)*, empty without the chart), when `quader migrate` first applied the declaration, and the state
+  of the files on the answering replica (`readable`, `missing`, `empty`, `invalid`), read for the answer and dropped; `authMode` is the
+  declaration's, and `username` and `password` are `null` (the username read from a file is never shown). `lastDownloadAt` and
+  `lastFailure` (`{"at", "code"}`) are the repository's last completed and last failed download among the installation's last 100
+  ([operations-and-observability.md](operations-and-observability.md) R-OPS-051), on every answer but `listUpstreamRepositories`, `null`
+  when none of them is the repository's. `accountRaisesLimit` is true while the preset whose address the repository has says that its
+  vendor allows a caller with an account more requests (Docker Hub alone) and the repository sends no credential
+  ([api-and-ui.md](api-and-ui.md) Q-UI-1160); `listedBy` is the number of virtual repositories whose member lists or pin rules
   name it and `listedByProjects` the number of their projects, on every item; `listedByNames` names them by qualified name in byte
   order, at most 100, on every answer but `listUpstreamRepositories` (the item above is that of `getUpstreamRepository`), and
   `listedBy` minus their number is the number of the others
@@ -2373,8 +2388,10 @@ and the same 404 shapes as any repository, which every format's set already runs
 | Unit, `internal/virtual` | the 404 sentence of R-REPO-072: which placeholder would have been consulted, for which caller | under 1 s | none |
 | Unit, each format's error writer | the engine's not-found message reaches the format's shape: one case per format, a constant per format | milliseconds | none |
 | Unit, `internal/formats/deb` | each shipped archive key parses and is not within 90 days of its expiry (Q-REPO-379) | under 1 s | the keys in the binary |
+| Unit, `internal/config`, `internal/repository`, `internal/proxy/upstream` | R-REPO-077: the declaration's form; the files' state and the preset fact of the limit; the account read from its files, a rotation on a fake clock, the refusals of a missing, empty or malformed file, the log without a value | milliseconds | bytes |
 | Integration, area `upstream` | R-REPO-066 to R-REPO-073 and the project refusals of R-AUTHZ-041, in process against PostgreSQL with the stub npm upstream of `test/npmstub`; no other upstream is contacted | about 10 s (measured) | rows; one package document and one tarball of the test corpus, about 1 KiB each |
 | Integration, area `limits` | the usage row of a request through a virtual repository at an `upstream` member (Q-LIM-63), and the usage of the virtual repository that holds it (R-LIM-029) | about 3 s | one 1 KiB tarball |
+| Integration, area `proxy` (`TestHandshake`) | R-REPO-077: a declared account goes to the token service on a credential host, the registry gets the token | about 0.3 s | bytes |
 | Web unit (Vitest) | the admin page, the detail page, the member picker's group and the placeholder (R-UI-187 to R-UI-190) | about 5 s | fixtures |
 
 CI cost: the integration shard b, which runs the areas `upstream` and `limits`, gains about 13 s, the unit run about 2 s, the web unit run about 5 s;
@@ -2729,6 +2746,76 @@ row, R-REPO-076 in `test/integration/repository`):
   `/presets/0/url`; an eleventh `npm` preset answers 422 at `/presets`; `format: "generic"` answers `unsupported_class` at
   `/presets/0/format`.
 - `getRepositoryDefaults` with `format=oci&class=remote` answers `registryPresets` with Harbor; with `class=local` it answers `[]`.
+
+### R-REPO-077 · An account from the installation's configuration
+Priority: **MVP** · Covers: quader-only
+
+The owner's wish of 2026-11-25 ([Q-REPO-483](#q-repo-483--an-account-of-a-well-known-repository-comes-from-a-secret-through-a-declaration-that-quader-migrate-applies-and-the-replicas-read-at-use)): the accounts of the upstream registries come from Secrets that exist, named in
+the Helm values, never a value of the values. The installation's configuration declares the account of a repository of the built-in
+project `upstream`, a preset of R-REPO-062 or `scanner-trivy` (R-REPO-070), by its key:
+
+```yaml
+repositories:
+  upstream_accounts:
+    docker-hub:                                     # example: the key of a repository of the project upstream
+      auth_mode: basic                              # default; basic | bearer
+      username_file: /var/run/secrets/quader/upstream-accounts/docker-hub/username   # example; basic only
+      password_file: /var/run/secrets/quader/upstream-accounts/docker-hub/password   # example; the password or the access token
+      secret_name: quader-upstream-docker-hub       # example; the Secret the admin page names, empty outside the chart
+```
+
+The chart renders the map from `secrets.upstreamAccounts` ([ha-and-helm.md](ha-and-helm.md) R-HA-073); as an environment variable it
+is JSON (`QUADER_REPOSITORIES_UPSTREAM_ACCOUNTS`).
+
+- **Only the project `upstream`.** A project's own remote repository keeps its account in its settings (R-REPO-033, R-UI-082);
+  nothing of the configuration reaches it. A project's Owner mounts no Secret, and an account the operator declared on a project's
+  remote would lock that remote's Owner out of it and could be steered by them to another address.
+- **At load** the form is checked and nothing is read: the key's pattern `^[a-z0-9]+(-[a-z0-9]+)*$` (at most 64 characters),
+  `auth_mode` `basic` or `bearer`, `username_file` required with `basic` and refused with `bearer`, both paths clean and absolute. A
+  file that does not exist stops no role.
+- **`quader migrate` applies it** after the reconcile of R-REPO-067, so a preset the release adds exists, in one transaction with the
+  actor `system:configuration` ([authorization.md](authorization.md) R-AUTHZ-041):
+  - a declared key: the stored account goes (`authMode: none`, an empty `username`, the secret rows deleted),
+    `upstream_repository.account_configured_at` is set, `config_version` rises, the repository's metadata and negative entries are
+    invalidated as an account write does (R-REPO-069), and `repository.updated` records `reason: configuration` and
+    `account: {"source": "configuration", "authMode": …}`, never a value or a fingerprint (the Job never sees the files);
+  - a repository marked so whose key is no longer declared: the mark is cleared and `repository.updated` records
+    `reason: configuration_removed` with `authMode: none`;
+  - a second run with the same declaration writes nothing; a change of the `authMode` or of the Secret's name alone writes nothing
+    either: the configuration's history holds it ([Q-REPO-484](#q-repo-484--the-replicas-configuration-decides-at-use-the-row-is-the-migrations-bookkeeping));
+  - a key that names no remote repository of the project (a typo, `clamav`, which is local, R-REPO-075) fails the run with the key
+    named before any write, so the upgrade stops before a pod rolls.
+- **At use the replica's own configuration decides** ([Q-REPO-484](#q-repo-484--the-replicas-configuration-decides-at-use-the-row-is-the-migrations-bookkeeping)), by R-REPO-033's rules for a declared account: the
+  account read from its files, with the declaration's `authMode`. During a rolling update a replica without the entry finds no stored
+  account (the migration removed it) and sends none.
+- **A file that cannot be used** ([Q-REPO-485](#q-repo-485--a-missing-empty-or-wrong-file-fails-that-registrys-fetches-and-stops-nothing-else)) (missing, empty, larger than 8 KiB, a line break or NUL inside, a username with
+  a colon, unreadable) fails that repository's fetches with 502 `upstream_secret_unavailable` before anything is sent, as an unresolved
+  reference does; every other repository and every role go on. No readiness check, no metric and no alert: one registry's account never
+  takes a replica out of service. The replica logs it once per build of the repository's client, with the repository and the file's
+  path, never its content; the admin page shows the state of the files on the replica that answered (R-REPO-073).
+- **Read-only in the API and the UI** (R-REPO-073, [api-and-ui.md](api-and-ui.md) R-UI-188): the item reads `source: configuration`
+  with the Secret's name, the time of the declaration and the files' state. `setUpstreamRepositoryAccount` and
+  `removeUpstreamRepositoryAccount` answer 409 `managed_by_config`, and so do `setUpstreamRepositoryAddress` with `account` or with an
+  address that moves the hosts receiving the account, and `resetUpstreamRepositoryAddress` with `removeAccount=true` or a reset that
+  moves them ([Q-REPO-486](#q-repo-486--a-declared-account-follows-its-registry-an-address-that-moves-its-hosts-is-refused)): only the configuration decides where its account goes. A declared account follows the product's
+  address of its registry; an address an administrator had set before keeps it, and the migration logs the hosts that receive the
+  account. The account counts for the replica that declares it or, while the configuration of a replica of the release before runs,
+  for the mark of the migration.
+
+Acceptance criteria (unit tests of `internal/config`, `internal/repository` and `internal/proxy/upstream`, milliseconds; integration area
+`upstream`, about 2 s, and one sub-case of `TestHandshake` in the area `proxy`, about 0.3 s; files of bytes, no real registry):
+
+- A declaration with files that do not exist loads; each refusal of the form names its key.
+- With `docker-hub` declared and an administrator's account stored, `quader migrate` leaves `authMode: none`, no secret row, the mark,
+  and one `repository.updated` with `reason: configuration` and `account: {"source": "configuration", "authMode": "basic"}`, no value of
+  the files in any audit event; a second run records nothing; a declaration of `clamav` or `docker-hbu` fails naming the key and writes
+  nothing; a run without the declaration records `configuration_removed` and clears the mark.
+- The item reads `source: configuration`, the Secret's name, `files: readable` and no username; an empty file reads `empty`; the
+  account's two operations and an address that moves its hosts answer 409 `managed_by_config`.
+- A replica that declares a `basic` account sends `Basic` of the two files; a password file changed on disk is sent after 10 s on a fake
+  clock, on the same client, and moves the credential's digest that keys the tokens of a handshake; a missing, empty, colon-holding or
+  NUL-holding file answers 502 `upstream_secret_unavailable` and sends nothing; the error names no path and the log names the path and
+  no value. In the area `proxy` the declared account goes to the token service on a credential host and the registry gets the token.
 
 ### R-REPO-025 · Remote request path
 Priority: **MVP** · Covers: RMT-001, RMT-033
@@ -3459,6 +3546,11 @@ Priority: **MVP** · Covers: RMT-005, RMT-006, IAM-045
   [Q-REPO-127](#q-repo-127--a-project-administrator-gives-an-upstream-secret-as-a-value-and-a-stored-one-stays-with-its-hosts)).
   A holder of `repositories:write-config` is not bound by it
   ([H-281](../security/data-and-secret-flow.md#h-281--a-holder-of-repositorieswrite-config-can-send-any-file-of-secrets_dir-to-an-upstream-of-their-choice)).
+- **An account the configuration declares** (R-REPO-077, [Q-REPO-484](#q-repo-484--the-replicas-configuration-decides-at-use-the-row-is-the-migrations-bookkeeping)): for a repository of the project `upstream` whose
+  key `repositories.upstream_accounts` names, the replica sends the account read from the declaration's files, whatever the document
+  stores, with the declaration's `authMode` for every rule above; each file is read again as a reference is (10 s, 1 s after a failure)
+  and under the same rules, and a username holds no colon. The paths are the configuration's, outside `config_as_code.secrets_dir`, so
+  no `secretRef` names them.
 - Secret values MUST never be returned by any API, log line, audit event or error message. Reads show
   `{"set": true}` for sealed values and the reference itself for references. Clients that re-submit a
   document they read therefore cannot blank or leak a secret: `{"set": true}` keeps the stored value,
@@ -10476,6 +10568,100 @@ base the bound is checked against, lag included ([H-527](../security/mirror.md#h
 
 **Applied in the spec:** R-REPO-056 (the bullet on `bound.usedBytes` and the first acceptance criterion). Code:
 [status_test.go](../../test/integration/mirror/status_test.go).
+
+### Q-REPO-483 · An account of a well-known repository comes from a Secret through a declaration that `quader migrate` applies and the replicas read at use
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's wish of 2026-11-25, 09:40: "Ich möchte, dass ich im Helm Chart die Upstream-Repos mit Accounts über existing
+Secrets versorgen kann." He deploys with Flux and SOPS: a Secret he fills is a manifest of its own that the workload names, never a value
+of the chart's values. That morning a bulk download on his development machine had spent Docker Hub's allowance without an account for
+the site's public address. Before, an account of a well-known repository was stored through the admin page only: the password sealed
+with the key ring, or a `secretRef` to a file under `config_as_code.secrets_dir`, which no chart install mounts.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The chart mounts the Secret and a stored `secretRef` names the file | Reuses the reference's reading | Nothing new at use | Nothing declares the reference: someone calls the API after every install or restore, which Flux cannot; `remote.username` is plain text and cannot come from the Secret; a file under `secrets_dir` can be named by any holder of `repositories:write-config` for any address (H-281) |
+| (b) A task imports the Secret's value into the sealed store | The value sealed in PostgreSQL | One way at use | The value lives twice; the migration Job would need the Secret and the key ring, which it never holds; a rotation needs a run; the UI and the import overwrite each other |
+| (c) A declaration in the configuration, applied by `quader migrate`, read from files at every use, shown read-only (chosen) | `repositories.upstream_accounts`, rendered by the chart from `secrets.upstreamAccounts` | The shape of `ci.issuers`, `authz.role_bindings` and `signatures.anchors`; the file handling of the signing identity and the OIDC client secrets: an existing Secret mounted only where it is read, rotated without a restart; the value never in PostgreSQL | A field of the configuration more; a missing Secret is found at use |
+
+**Choice:** (c), with (a)'s reading at use. The scope is the project `upstream` alone (the presets and `scanner-trivy`); a project's own
+remote keeps its account in its settings. **Rationale:** a declaration is what Flux applies, and the value stays in the Secret the owner
+filled.
+
+**Applied in the spec:** R-REPO-077, R-REPO-033, R-REPO-069, R-REPO-073; [ha-and-helm.md](ha-and-helm.md) R-HA-073;
+[api-and-ui.md](api-and-ui.md) R-UI-188. Code: [upstream_accounts.go](../../internal/repository/upstream_accounts.go),
+[clients.go](../../internal/proxy/upstream/clients.go).
+
+### Q-REPO-484 · The replica's configuration decides at use; the row is the migration's bookkeeping
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the declaration is in the configuration every replica loads and in the migration Job's copy; the stored document has to say
+something for a replica of the release before during an upgrade, and the migration has to know what it applied.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The replica's own configuration decides at use; the migration removes the stored account and marks the row (`account_configured_at`) (chosen) | Two sources with one job each | The replica that holds the files is the one that reads them; a replica without the entry sends nothing, never a broken `Basic :` header | The item of a replica that runs a configuration without the entry reads `source: api` until it rolls |
+| (b) The migration writes the declared `authMode` into the document | The document says it | One source for every reader | A replica without the files would build `Basic :` from a document without a password |
+| (c) A replica reads the declaration from the database | | One state | The paths are a pod's; the database cannot know them |
+
+**Choice:** (a). A change of the `authMode` or the Secret's name alone writes no row and no event: the next pod reads it, and the
+configuration's history holds it. **Rationale:** what is sent must follow what the pod can read.
+
+**Applied in the spec:** R-REPO-077, R-REPO-033. Code: [upstream_accounts.go](../../internal/repository/upstream_accounts.go).
+
+### Q-REPO-485 · A missing, empty or wrong file fails that registry's fetches and stops nothing else
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the chart's source of the Secret is optional, so a pod starts before the Secret exists, and a token can be wrong.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) That registry's fetches answer 502 `upstream_secret_unavailable`; the log names the path; the page shows the files' state; no readiness check, metric or alert (chosen) | As an unresolved reference | One registry's account never takes a replica out; every other repository serves | Found at use (H-280) and on the page, not by an alert |
+| (b) A readiness check | The pod is not ready | Found at the rollout | One registry's account takes every replica of a role out of service |
+| (c) The registry is used without an account | | Pulls go on | The installation falls back to the limit the account was declared to avoid, silently |
+
+**Choice:** (a). A wrong token is a refusal of the upstream (`upstream_auth_failed`), which **Test connection** shows.
+
+**Applied in the spec:** R-REPO-077. Code: [clients.go](../../internal/proxy/upstream/clients.go).
+
+### Q-REPO-486 · A declared account follows its registry; an address that moves its hosts is refused
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: an administrator may override a well-known repository's address (R-REPO-069), and a stored account stays only while its hosts
+stay. A declared account was named for a registry by the operator, and its value is not the administrator's to enter again.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The account follows the product's address of its registry; an address or a reset that moves the hosts receiving it answers 409 `managed_by_config` (chosen) | Only the configuration decides where its account goes | The operator's token never reaches a host the operator did not choose | An administrator changes such an address through the operator |
+| (b) The address change drops the account until the configuration is applied again | | | The next migration sends it to the new host anyway |
+| (c) No rule | | | Any holder of `repositories:write-config` steers the token to a host of their own |
+
+**Choice:** (a). An address an administrator had set before the declaration keeps it; the migration logs the hosts that receive the
+account.
+
+**Applied in the spec:** R-REPO-077, R-REPO-069, R-REPO-073.
+
+### Q-REPO-487 · The account operation of a well-known repository takes a value only
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `setUpstreamRepositoryAccount` took the password as a value or as a `secretRef`. A file reference under
+`config_as_code.secrets_dir` is what an account from the configuration now does with a declaration of its own (R-REPO-077), and a
+reference lets any holder of `repositories:write-config` send a mounted file to an address of their choice (H-281).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A value only; a `secretRef` answers 422 `secret_value_required` at `/password/secretRef` (chosen) | One way per place: typed on the page, or declared in the configuration | Narrows H-281 for the well-known repositories; the code the API already has for an Owner's reference (Q-REPO-127) | A change of today's API (pre-alpha: no alias, no deprecation) |
+| (b) Keep the reference | | Nothing changes | Two ways to a file, one of them steerable |
+
+**Choice:** (a). The plan named the refusal `invalid_secret`; it is `secret_value_required`, the code of the same refusal for an Owner, so
+a client reads one code for one meaning.
+
+**Applied in the spec:** R-REPO-069, R-REPO-073; [security/data-and-secret-flow.md](../security/data-and-secret-flow.md) H-281.
 
 ## What this does not cover
 

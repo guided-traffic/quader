@@ -55,6 +55,7 @@ name, labels or selector.
 | PDB, HPA | one per Deployment; the HPA (`autoscaling/v2`, CPU and memory targets, `metrics`, `behavior`) replaces `spec.replicas` | R-HA-032 |
 | NetworkPolicy | one per Deployment, named as it, a rule per port its pods open; none for egress | R-HA-042, Q-HA-76 |
 | Login secrets | `secrets.oidc[]` and `secrets.breakGlass` in `api` pods only (main, pools, endpoint pools) | R-HA-030, Q-HA-79 |
+| Upstream accounts | `secrets.upstreamAccounts.<key>`: one projected volume `upstream-accounts`, a source per entry with `optional: true`, in every pod of `api`, `packages` and `worker` at `/var/run/secrets/quader/upstream-accounts/<key>/{username,password}`; `config.repositories.upstream_accounts` rendered from it ([_upstream_accounts.tpl](../../deploy/helm/quader/templates/_upstream_accounts.tpl)) | R-HA-073, Q-HA-493 |
 | Environment | `QUADER_POOL_NAME` on every pool, `QUADER_JOBS_QUEUES` (a JSON list) on a worker pool, `QUADER_JOBS_EXCLUDE_QUEUES` on the main worker beside pools; the two preflight counts on the migration Job | R-HA-030, R-HA-016, Q-HA-82 |
 
 A **pool** is the role's values with the entry's keys on top, key by key (`quader.poolValues`, so `false` and `0` override, and
@@ -115,6 +116,7 @@ deploy/helm/quader/
     ├── _signatures.tpl     the anchors of signatures.anchors rendered into the configuration, their material mounted into the migration Job
     ├── vuln-scanner-trivy.yaml      the image scanning's scanner (Trivy) and its database's loader: Deployment, budget, autoscaler, Service, policy
     ├── _signing.tpl        the signing identity's source, its Secret, its three files in the configuration, its checks (R-HA-071)
+    ├── _upstream_accounts.tpl  the accounts of the upstream registries: the projected volume, its mount, the configuration's paths, the checks (R-HA-073)
     ├── signing-certificate.yaml   the cert-manager Certificate <fullname>-signing of the signing identity, on request
     ├── malware-scanner-clamav.yaml  the malware scanner with clamd beside it: Deployment, budget, autoscaler, Service, policy, ConfigMap
     ├── malware-updater-freshclam.yaml  the updater with freshclam beside it: Deployment, Service, policy, ConfigMap

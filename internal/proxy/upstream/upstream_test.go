@@ -7,6 +7,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
@@ -199,6 +200,9 @@ type fixtureOpts struct {
 	proxy      config.Proxy
 	interfaces func() ([]netip.Addr, error)
 	now        func() time.Time
+	// accounts and log are Options.Accounts and Options.Log.
+	accounts repository.ConfiguredAccounts
+	log      *slog.Logger
 }
 
 func newFixture(t *testing.T, o fixtureOpts) *fixture {
@@ -219,6 +223,7 @@ func newFixture(t *testing.T, o fixtureOpts) *fixture {
 	f.clients, err = New(Options{
 		Factory: factory, Store: f.store, Ring: f.ring, Caches: f.caches, Catalog: testCatalog(),
 		Proxy: o.proxy, SecretsDir: f.dir, SafetyTTL: time.Minute, Interfaces: o.interfaces, Now: o.now,
+		Accounts: o.accounts, Log: o.log,
 		LookupEnv: func(k string) (string, bool) {
 			f.envMu.Lock()
 			defer f.envMu.Unlock()

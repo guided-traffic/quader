@@ -899,6 +899,7 @@ catalog.RequestKind: type string
 catalog.SettingViolation: field Code string
 catalog.SettingViolation: field Detail string
 catalog.SettingViolation: field Pointer string
+catalog.UpstreamPreset: field AccountRaisesLimit bool
 catalog.UpstreamPreset: field CatalogueHosts []PresetHost
 catalog.UpstreamPreset: field Default bool
 catalog.UpstreamPreset: field DisplayName string

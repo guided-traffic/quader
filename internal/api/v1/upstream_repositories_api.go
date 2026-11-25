@@ -83,10 +83,7 @@ func (s *Server) toUpstream(r *http.Request, it repository.UpstreamItem) gen.Ups
 				Url: it.Address.Product.URL, ExtraHosts: genHosts(it.Address.Product.ExtraHosts), UpstreamKeys: genKeys(it.Address.Product.UpstreamKeys),
 			},
 		},
-		Account: gen.UpstreamRepositoryAccountInfo{
-			AuthMode: gen.UpstreamRepositoryAccountInfoAuthMode(it.Account.AuthMode), Username: it.Account.Username,
-			Password: genSecret(it.Account.Password), RemovedByUpdateAt: it.Account.RemovedByUpdateAt,
-		},
+		Account: genAccount(it.Account), AccountRaisesLimit: it.AccountRaisesLimit,
 	}
 	for _, f := range it.Fixed {
 		out.Fixed = append(out.Fixed, gen.UpstreamRepositoryFixed(f))
@@ -115,6 +112,23 @@ func (s *Server) toUpstream(r *http.Request, it repository.UpstreamItem) gen.Ups
 			ws = append(ws, gen.RepositoryWarning{Code: gen.RepositoryWarningCode(w.Code), Pointer: &p, Detail: w.Detail})
 		}
 		out.Warnings = &ws
+	}
+	return out
+}
+
+// genAccount renders the account: a declared one (R-REPO-077) with its Secret's name and its files' state, never a value.
+func genAccount(a repository.UpstreamAccount) gen.UpstreamRepositoryAccountInfo {
+	out := gen.UpstreamRepositoryAccountInfo{
+		AuthMode: gen.UpstreamRepositoryAccountInfoAuthMode(a.AuthMode), Username: a.Username, Password: genSecret(a.Password),
+		RemovedByUpdateAt: a.RemovedByUpdateAt, Source: gen.UpstreamRepositoryAccountInfoSource(a.Source), LastDownloadAt: a.LastDownloadAt,
+	}
+	if c := a.Configuration; c != nil {
+		out.Configuration = &gen.UpstreamRepositoryAccountConfiguration{
+			SecretName: c.SecretName, Since: c.Since, Files: gen.UpstreamRepositoryAccountConfigurationFiles(c.Files),
+		}
+	}
+	if f := a.LastFailure; f != nil {
+		out.LastFailure = &gen.UpstreamRepositoryAccountFailure{At: f.At, Code: f.Code}
 	}
 	return out
 }

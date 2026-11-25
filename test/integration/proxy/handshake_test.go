@@ -7,6 +7,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -76,7 +78,18 @@ func TestHandshake(t *testing.T) {
 		registry.Challenge(path, realmBase+"/token", func(tok string) bool { return current.Accept(tok) }, r)
 	}
 	doc := proxytest.Route{Body: []byte(`{"name":"x"}`), Type: "application/json"}
-	r := e.newReplica("a", hsReplicaOpts())
+	// The account the configuration declares for upstream/hs-declared (R-REPO-077): the same credential, from two files.
+	accountDir := t.TempDir()
+	for name, v := range map[string]string{"username": "robot\n", "password": "s3cret\n"} {
+		if err := os.WriteFile(filepath.Join(accountDir, name), []byte(v), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	opts := hsReplicaOpts()
+	opts.accounts = repository.ConfiguredAccounts{"hs-declared": {
+		AuthMode: repository.AuthBasic, UsernameFile: filepath.Join(accountDir, "username"), PasswordFile: filepath.Join(accountDir, "password"),
+	}}
+	r := e.newReplica("a", opts)
 	reset := func() { registry.Reset(); realm.Reset(); cdn.Reset() }
 	extra := func(hosts ...repository.ExtraHost) func(*repository.RemoteSettings) {
 		return func(st *repository.RemoteSettings) { st.ExtraHosts = hosts }
@@ -145,6 +158,25 @@ func TestHandshake(t *testing.T) {
 		}
 		if got := authOfAll(registry); len(got) != 2 || got[0] != "" || got[1] != "Bearer tok-1" {
 			t.Errorf("the registry saw %q", got)
+		}
+	})
+
+	t.Run("R-REPO-077 a declared account read from its files goes to the realm on a credential host, the registry gets the token", func(t *testing.T) {
+		reset()
+		use(proxytest.NewTokens(300))
+		challenge("/pkg/declared", doc)
+		// The document stores no account, as after quader migrate applied the declaration; the replica's configuration has it.
+		rem := e.upstreamRemote("hs-declared", registry, extra(repository.ExtraHost{Pattern: "auth.example.com", SendCredentials: true}))
+		s := r.metadata(rem, "pkg/declared", withAdapter(handshakeAdapter(false)))
+		if s.status != 200 || string(s.body) != string(doc.Body) {
+			t.Fatalf("%d %s", s.status, s.body)
+		}
+		if got := authOfAll(realm); len(got) != 1 || got[0] != robotBasic {
+			t.Errorf("the token service saw %q, want the declared account", got)
+		}
+		got := authOfAll(registry)
+		if len(got) != 2 || got[0] != robotBasic || got[1] != "Bearer tok-1" {
+			t.Errorf("the registry saw %q, want the account once and then the token", got)
 		}
 	})
 

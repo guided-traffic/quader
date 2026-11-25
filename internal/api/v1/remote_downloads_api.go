@@ -60,6 +60,9 @@ type downloadTarget struct {
 	Format string
 	// Upstream is the remote's upstream URL: the name a limit's sentence says (Q-CUR-175).
 	Upstream string
+	// RaisesLimit is the limit's accountRaisesLimit: the preset of Upstream says an account allows more, and the remote sends no
+	// credential, stored or declared on this replica (Q-UI-1160).
+	RaisesLimit bool
 }
 
 // downloadAccess resolves the request's decisions on the repository; 503 without a decision point.
@@ -117,6 +120,8 @@ func (s *Server) downloadRemote(ctx context.Context, key qname.Repo) (downloadTa
 	t := downloadTarget{ID: id, Key: key, Format: st.Repository.Format}
 	if rs, ok := st.Repository.Remote(); ok {
 		t.Upstream = rs.URL
+		_, declared := svc.ConfiguredAccountFor(key.Project, key.Key)
+		t.RaisesLimit = svc.AccountRaisesLimit(t.Format, rs.URL, declared || rs.AuthMode != repository.AuthNone)
 	}
 	return t, nil
 }
@@ -477,7 +482,7 @@ func limitView(t downloadTarget, l queue.Limit, found bool, now time.Time) any {
 	}
 	return map[string]any{
 		"since": l.Since.UTC(), "until": l.Until.UTC(), "holds": l.Holds(now), "hinted": l.Hinted, "waits": l.Waits,
-		"upstream": upstreamName(t.Format, t.Upstream), "failure": failureView(&l.Failure),
+		"upstream": upstreamName(t.Format, t.Upstream), "failure": failureView(&l.Failure), "accountRaisesLimit": t.RaisesLimit,
 	}
 }
 

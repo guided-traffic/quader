@@ -67,7 +67,7 @@ export function downloadFailure(over: Partial<RemoteDownloadFailure> = {}): Remo
 
 /**
  * The rate limit of Docker Hub without an account as it held the owner's queue on 2026-11-25: a 429 without a time of its own, the
- * third wait in a row; `over` sets what a case needs.
+ * third wait in a row, an account would lift it (Q-UI-1160); `over` sets what a case needs.
  */
 export function downloadLimit(over: Partial<RemoteDownloadLimit> = {}): RemoteDownloadLimit {
   return {
@@ -77,6 +77,7 @@ export function downloadLimit(over: Partial<RemoteDownloadLimit> = {}): RemoteDo
     hinted: false,
     waits: 3,
     upstream: 'Docker Hub',
+    accountRaisesLimit: true,
     failure: downloadFailure({
       class: 'upstream_rate_limited',
       code: 'upstream_rate_limited',

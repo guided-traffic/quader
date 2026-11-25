@@ -238,6 +238,8 @@ const heldLimit = {
   hinted: false,
   waits: 3,
   upstream: 'registry.npmjs.org',
+  // npm's preset documents no higher limit with an account, so no account is offered (Q-UI-1160).
+  accountRaisesLimit: false,
   failure: failure({
     class: 'upstream_rate_limited',
     step: 'status',

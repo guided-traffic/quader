@@ -1879,13 +1879,14 @@ type UpstreamDownloadLive struct {
 }
 
 type UpstreamRepository struct {
-	RepositoryID      int64
-	Kind              string
-	FirstSwitchedOnAt pgtype.Timestamptz
-	RetiredAt         pgtype.Timestamptz
-	AddressOverridden bool
-	AccountRemovedAt  pgtype.Timestamptz
-	ClientsEnabled    bool
+	RepositoryID        int64
+	Kind                string
+	FirstSwitchedOnAt   pgtype.Timestamptz
+	RetiredAt           pgtype.Timestamptz
+	AddressOverridden   bool
+	AccountRemovedAt    pgtype.Timestamptz
+	ClientsEnabled      bool
+	AccountConfiguredAt pgtype.Timestamptz
 }
 
 type UsageBucket struct {

@@ -247,11 +247,34 @@ func (e *env) remote(key string, up *proxytest.Upstream, mutate ...func(*reposit
 	return e.lookup(key)
 }
 
+// upstreamRemote creates a remote repository of the built-in project upstream, with its upstream_repository row in the same
+// statement (the deferred guard AI010 asks for it), where an account the configuration declares applies (R-REPO-077).
+func (e *env) upstreamRemote(key string, up *proxytest.Upstream, mutate ...func(*repository.RemoteSettings)) proxy.Remote {
+	e.t.Helper()
+	s := remoteSettings(up.URL)
+	for _, m := range mutate {
+		m(&s)
+	}
+	raw, err := json.Marshal(map[string]any{"remote": s})
+	if err != nil {
+		e.t.Fatal(err)
+	}
+	e.exec(`WITH r AS (INSERT INTO repositories (key, format, class, config, project_id)
+	        SELECT $1, 'proxytest', 'remote', $2::jsonb, id FROM project WHERE key = 'upstream' RETURNING id)
+	        INSERT INTO upstream_repository (repository_id, kind) SELECT id, 'preset' FROM r`, key, string(raw))
+	return e.lookupIn("upstream", key)
+}
+
 // lookup reads a repository as a replica's snapshot would.
 func (e *env) lookup(key string) proxy.Remote {
 	e.t.Helper()
+	return e.lookupIn(testenv.DefaultProject, key)
+}
+
+func (e *env) lookupIn(project, key string) proxy.Remote {
+	e.t.Helper()
 	r := e.newReader()
-	repo, err := r.ByName(context.Background(), qname.Repo{Project: testenv.DefaultProject, Key: key})
+	repo, err := r.ByName(context.Background(), qname.Repo{Project: project, Key: key})
 	if err != nil {
 		e.t.Fatalf("ByName(%s): %v", key, err)
 	}
@@ -384,6 +407,8 @@ type replicaOpts struct {
 	// and the environment they name.
 	secrets upstream.SecretSource
 	env     func(string) (string, bool)
+	// accounts are the accounts the replica's configuration declares for the project upstream (R-REPO-077).
+	accounts repository.ConfiguredAccounts
 	// downloads sees the replica's downloads from the upstream (R-OPS-049); nil sees none.
 	downloads proxy.DownloadTracker
 }
@@ -485,7 +510,7 @@ func (e *env) newReplica(name string, o replicaOpts) *replica {
 	}
 	clients, err := upstream.New(upstream.Options{
 		Factory: factory, Caches: r.caches, Proxy: pcfg, SafetyTTL: time.Minute, Log: quiet,
-		Store: o.secrets, LookupEnv: o.env,
+		Store: o.secrets, LookupEnv: o.env, Accounts: o.accounts,
 	})
 	if err != nil {
 		t.Fatal(err)

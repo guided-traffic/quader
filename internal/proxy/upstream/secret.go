@@ -5,9 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -28,7 +26,7 @@ const (
 
 	// maxSecretBytes bounds a file: the value limit of the document, 8 KiB, and a
 	// line break.
-	maxSecretBytes = 8<<10 + 2
+	maxSecretBytes = repository.MaxSecretFileBytes
 )
 
 // errNotConfigured is why a file reference cannot be resolved without a directory.
@@ -79,22 +77,12 @@ func (r resolver) resolve(ref repository.SecretRef) (observability.Secret, error
 	return observability.Secret(val), nil
 }
 
-// readLimited reads a file up to maxSecretBytes.
-func readLimited(name string) ([]byte, error) {
-	f, err := os.Open(name) //nolint:gosec // G304: name is a validated reference joined to config_as_code.secrets_dir
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = f.Close() }()
-	return io.ReadAll(io.LimitReader(f, maxSecretBytes))
-}
-
 // secretValue is one secret of a client: fixed, for a sealed value or an inline
-// one, or a reference that is read again after RefreshInterval.
+// one, or a value read from somewhere (a reference, a declared account's file)
+// that is read again after RefreshInterval, and after RetryInterval once it failed.
 type secretValue struct {
-	ref *repository.SecretRef
-	res resolver
-	now func() time.Time
+	read func() (observability.Secret, error) // nil for a fixed value
+	now  func() time.Time
 
 	mu  sync.Mutex
 	val observability.Secret
@@ -105,22 +93,32 @@ type secretValue struct {
 func newFixedSecret(v observability.Secret) *secretValue { return &secretValue{val: v} }
 
 func newRefSecret(ref repository.SecretRef, res resolver, now func() time.Time) *secretValue {
-	s := &secretValue{ref: &ref, res: res, now: now}
-	s.val, s.err = res.resolve(ref)
+	return newReadSecret(func() (observability.Secret, error) { return res.resolve(ref) }, now)
+}
+
+// newFileSecret is a file of an account the configuration declares (R-REPO-077): an absolute path of the configuration, outside
+// config_as_code.secrets_dir, which no secretRef can name.
+func newFileSecret(read func(string) ([]byte, error), path string, username bool, now func() time.Time) *secretValue {
+	return newReadSecret(func() (observability.Secret, error) { return repository.AccountFileValue(read, path, username) }, now)
+}
+
+func newReadSecret(read func() (observability.Secret, error), now func() time.Time) *secretValue {
+	s := &secretValue{read: read, now: now}
+	s.val, s.err = read()
 	s.at = now()
 	return s
 }
 
-// get returns the current value, resolving a reference again when it is due.
+// get returns the current value, reading it again when it is due.
 func (s *secretValue) get() (observability.Secret, error) {
-	if s.ref == nil {
+	if s.read == nil {
 		return s.val, nil
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	age := s.now().Sub(s.at)
 	if (s.err == nil && age >= RefreshInterval) || (s.err != nil && age >= RetryInterval) {
-		s.val, s.err = s.res.resolve(*s.ref)
+		s.val, s.err = s.read()
 		s.at = s.now()
 	}
 	return s.val, s.err
@@ -132,23 +130,30 @@ func (s *secretValue) get() (observability.Secret, error) {
 type credential struct {
 	mode     string
 	username string
-	secret   *secretValue // nil when no password is configured
+	// user is the username read from a file of a declared account (R-REPO-077); nil takes username.
+	user   *secretValue
+	secret *secretValue // nil when no password is configured
 }
 
 // check reports why the credential cannot be used now: the failure of
 // upstream_secret_unavailable, without the cause in the client-facing text.
 func (c *credential) check(repo string) error {
-	if c == nil || c.secret == nil {
+	if c == nil {
 		return nil
 	}
-	if _, err := c.secret.get(); err != nil {
-		return secretUnavailable(repo, err)
+	for _, v := range []*secretValue{c.user, c.secret} {
+		if v == nil {
+			continue
+		}
+		if _, err := v.get(); err != nil {
+			return secretUnavailable(repo, err)
+		}
 	}
 	return nil
 }
 
 // headers returns the Authorization header of the current secret; none for
-// authMode none, or while the secret cannot be resolved (check has failed the
+// authMode none, or while a secret cannot be resolved (check has failed the
 // request before it gets here).
 func (c *credential) headers() http.Header {
 	if c == nil || c.mode == repository.AuthNone {
@@ -162,10 +167,18 @@ func (c *credential) headers() http.Header {
 		}
 		pw = v.Reveal()
 	}
+	username := c.username
+	if c.user != nil {
+		v, err := c.user.get()
+		if err != nil {
+			return nil
+		}
+		username = v.Reveal()
+	}
 	h := http.Header{}
 	switch c.mode {
 	case repository.AuthBasic:
-		h.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(c.username+":"+pw)))
+		h.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(username+":"+pw)))
 	case repository.AuthBearer:
 		h.Set("Authorization", "Bearer "+pw)
 	}

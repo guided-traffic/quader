@@ -5602,6 +5602,30 @@ func (e UpstreamRepositoryAccountAuthMode) Valid() bool {
 	}
 }
 
+// Defines values for UpstreamRepositoryAccountConfigurationFiles.
+const (
+	UpstreamRepositoryAccountConfigurationFilesEmpty    UpstreamRepositoryAccountConfigurationFiles = "empty"
+	UpstreamRepositoryAccountConfigurationFilesInvalid  UpstreamRepositoryAccountConfigurationFiles = "invalid"
+	UpstreamRepositoryAccountConfigurationFilesMissing  UpstreamRepositoryAccountConfigurationFiles = "missing"
+	UpstreamRepositoryAccountConfigurationFilesReadable UpstreamRepositoryAccountConfigurationFiles = "readable"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamRepositoryAccountConfigurationFiles enum.
+func (e UpstreamRepositoryAccountConfigurationFiles) Valid() bool {
+	switch e {
+	case UpstreamRepositoryAccountConfigurationFilesEmpty:
+		return true
+	case UpstreamRepositoryAccountConfigurationFilesInvalid:
+		return true
+	case UpstreamRepositoryAccountConfigurationFilesMissing:
+		return true
+	case UpstreamRepositoryAccountConfigurationFilesReadable:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UpstreamRepositoryAccountInfoAuthMode.
 const (
 	UpstreamRepositoryAccountInfoAuthModeBasic  UpstreamRepositoryAccountInfoAuthMode = "basic"
@@ -5617,6 +5641,24 @@ func (e UpstreamRepositoryAccountInfoAuthMode) Valid() bool {
 	case UpstreamRepositoryAccountInfoAuthModeBearer:
 		return true
 	case UpstreamRepositoryAccountInfoAuthModeNone:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamRepositoryAccountInfoSource.
+const (
+	UpstreamRepositoryAccountInfoSourceApi           UpstreamRepositoryAccountInfoSource = "api"
+	UpstreamRepositoryAccountInfoSourceConfiguration UpstreamRepositoryAccountInfoSource = "configuration"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamRepositoryAccountInfoSource enum.
+func (e UpstreamRepositoryAccountInfoSource) Valid() bool {
+	switch e {
+	case UpstreamRepositoryAccountInfoSourceApi:
+		return true
+	case UpstreamRepositoryAccountInfoSourceConfiguration:
 		return true
 	default:
 		return false
@@ -13847,6 +13889,11 @@ type RemoteDownloadFailureClass string
 // Q-CUR-170 to Q-CUR-175). While it holds, no row of the repository starts and a bulk's expansion asks nothing; after `until` one
 // row asks first, and the first attempt the upstream answers without a limit removes it.
 type RemoteDownloadLimit struct {
+	// AccountRaisesLimit An account would lift the limit: the preset whose address the remote has says that its vendor allows a caller with an account
+	// more (Docker Hub), and the remote sends no credential, neither a stored account nor one the configuration of the replica that
+	// answers declares (Q-UI-1160).
+	AccountRaisesLimit bool `json:"accountRaisesLimit"`
+
 	// Failure The failure of a row's attempt in its own words (R-CUR-011, Q-CUR-20): the class and the step a script filters on, the engine's
 	// code, the file, the address asked without its query (a signed address of a CDN carries a credential in it), the address the
 	// upstream named and Quader refused to ask, the upstream's status, the first 512 bytes of a non-success answer as text, the
@@ -17003,8 +17050,15 @@ type UpstreamQueuedState string
 // `listedByNames` names them on every answer but `listUpstreamRepositories` (Q-API-363). `warnings` are those of the write that
 // answered.
 type UpstreamRepository struct {
-	// Account The stored account of the repository's upstream, without its secret (R-REPO-033, R-REPO-073).
+	// Account The account of the repository's upstream, without its secret (R-REPO-033, R-REPO-073): the one an administrator stored
+	// (`source: api`), or the one the configuration of the replica that answers declares in `repositories.upstream_accounts`
+	// (`source: configuration`, R-REPO-077), which no operation of the API changes. A declared account shows its `authMode` and
+	// `configuration`; its `username` and `password` are `null`, since the username read from a file is never shown.
 	Account UpstreamRepositoryAccountInfo `json:"account"`
+
+	// AccountRaisesLimit An account would lift the upstream's request limit: the preset whose address the repository has says that its vendor allows
+	// a caller with an account more (Docker Hub), and the repository sends no credential (Q-UI-1160).
+	AccountRaisesLimit bool `json:"accountRaisesLimit"`
 
 	// Address The stored address (`remote.url`, `remote.extraHosts`, for an APT archive the keys of `deb.upstreamKeys`), whether it differs
 	// from the product's, and the product's (R-REPO-069, R-REPO-073).
@@ -17052,7 +17106,10 @@ type UpstreamRepository struct {
 	Warnings   *[]RepositoryWarning `json:"warnings,omitempty"`
 }
 
-// UpstreamRepositoryAccount An account for the repository's upstream (R-REPO-033). `basic` needs a username or a password, `bearer` a password.
+// UpstreamRepositoryAccount An account for the repository's upstream (R-REPO-033). `basic` needs a username or a password, `bearer` a password. The password
+// is a value (`{"value": …}`, or `{"set": true}` to keep the stored one): a `secretRef` is refused with 422 `secret_value_required`
+// at `/password/secretRef`, since an account read from files is the configuration's (`repositories.upstream_accounts`, R-REPO-077,
+// Q-REPO-487).
 type UpstreamRepositoryAccount struct {
 	AuthMode UpstreamRepositoryAccountAuthMode `json:"authMode"`
 
@@ -17072,9 +17129,50 @@ type UpstreamRepositoryAccount struct {
 // UpstreamRepositoryAccountAuthMode defines model for UpstreamRepositoryAccount.AuthMode.
 type UpstreamRepositoryAccountAuthMode string
 
-// UpstreamRepositoryAccountInfo The stored account of the repository's upstream, without its secret (R-REPO-033, R-REPO-073).
+// UpstreamRepositoryAccountConfiguration An account the configuration declares (R-REPO-077): the Kubernetes Secret the chart mounts its files from, when `quader migrate`
+// applied it, and the state of its files on the replica that answers, read for the answer and dropped. Nothing of the values.
+type UpstreamRepositoryAccountConfiguration struct {
+	// Files `readable`: the files hold a value each. `missing`: a file does not exist (the Secret or its key does not exist, or has not
+	// reached the pod yet). `empty`: a file is empty. `invalid`: a file cannot be read, is larger than 8 KiB, holds a line break
+	// inside, or the username holds a colon. While not `readable` the repository's fetches answer 502 `upstream_secret_unavailable`.
+	Files UpstreamRepositoryAccountConfigurationFiles `json:"files"`
+
+	// SecretName The Secret of `secrets.upstreamAccounts.<key>.existingSecret`; empty for a configuration written without the chart.
+	SecretName string `json:"secretName"`
+
+	// Since When `quader migrate` first applied the declaration; `null` before it ran with it.
+	Since *time.Time `json:"since"`
+}
+
+// UpstreamRepositoryAccountConfigurationFiles `readable`: the files hold a value each. `missing`: a file does not exist (the Secret or its key does not exist, or has not
+// reached the pod yet). `empty`: a file is empty. `invalid`: a file cannot be read, is larger than 8 KiB, holds a line break
+// inside, or the username holds a colon. While not `readable` the repository's fetches answer 502 `upstream_secret_unavailable`.
+type UpstreamRepositoryAccountConfigurationFiles string
+
+// UpstreamRepositoryAccountFailure defines model for UpstreamRepositoryAccountFailure.
+type UpstreamRepositoryAccountFailure struct {
+	At time.Time `json:"at"`
+
+	// Code The failure's code, as the downloads overview shows it (R-OPS-051); empty when the download recorded none.
+	Code string `json:"code"`
+}
+
+// UpstreamRepositoryAccountInfo The account of the repository's upstream, without its secret (R-REPO-033, R-REPO-073): the one an administrator stored
+// (`source: api`), or the one the configuration of the replica that answers declares in `repositories.upstream_accounts`
+// (`source: configuration`, R-REPO-077), which no operation of the API changes. A declared account shows its `authMode` and
+// `configuration`; its `username` and `password` are `null`, since the username read from a file is never shown.
 type UpstreamRepositoryAccountInfo struct {
 	AuthMode UpstreamRepositoryAccountInfoAuthMode `json:"authMode"`
+
+	// Configuration The declaration while `source` is `configuration`; `null` otherwise.
+	Configuration *UpstreamRepositoryAccountConfiguration `json:"configuration"`
+
+	// LastDownloadAt The end of the repository's last completed download among the installation's last 100 ended downloads (R-OPS-051); `null`
+	// when none of them is the repository's, and on the answer of `listUpstreamRepositories`.
+	LastDownloadAt *time.Time `json:"lastDownloadAt"`
+
+	// LastFailure The repository's last failed download among the same 100; `null` likewise.
+	LastFailure *UpstreamRepositoryAccountFailure `json:"lastFailure"`
 
 	// Password `{"set": true}` for a sealed value, the `secretRef` as stored, or `null` without one. The value is never returned.
 	Password *SecretField `json:"password"`
@@ -17082,12 +17180,18 @@ type UpstreamRepositoryAccountInfo struct {
 	// RemovedByUpdateAt When the reconcile of a release removed the account because the product moved its hosts (Q-REPO-377); `null` otherwise.
 	RemovedByUpdateAt *time.Time `json:"removedByUpdateAt"`
 
-	// Username The account name; `null` without an account.
+	// Source Where the account comes from, by the configuration of the replica that answers (Q-REPO-484).
+	Source UpstreamRepositoryAccountInfoSource `json:"source"`
+
+	// Username The account name; `null` without an account and for a declared one.
 	Username *string `json:"username"`
 }
 
 // UpstreamRepositoryAccountInfoAuthMode defines model for UpstreamRepositoryAccountInfo.AuthMode.
 type UpstreamRepositoryAccountInfoAuthMode string
+
+// UpstreamRepositoryAccountInfoSource Where the account comes from, by the configuration of the replica that answers (Q-REPO-484).
+type UpstreamRepositoryAccountInfoSource string
 
 // UpstreamRepositoryAddress An administrator's address for a well-known repository (R-REPO-069): every member is optional, and an omitted one is the
 // product's. `account` replaces the stored account in the same write (a new one, or `null` to remove it); it is needed when

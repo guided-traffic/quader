@@ -201,11 +201,16 @@ func TestR_REPO_073_TheOperationsOfTheWellKnownRepositories(t *testing.T) {
 		}
 		wantStatus(t, f.do(f.admin, "PUT", items+"/npmjs/address", map[string]any{"upstreamKeys": "x"}, "If-Match", "*"), 422, "not_applicable")
 	})
-	t.Run("R-REPO-069 an account is stored without its secret and removed", func(t *testing.T) {
-		set := f.do(f.admin, "PUT", items+"/quay/account", map[string]any{"authMode": "basic", "username": "robot", "password": map[string]any{"secretRef": map[string]any{"env": "QUADER_CAC_QUAY"}}}, "If-Match", "*")
+	t.Run("R-REPO-069 an account is stored without its secret and removed; a reference is refused", func(t *testing.T) {
+		// Q-REPO-487: an account from a file is the configuration's (R-REPO-077), so the operation takes a value only.
+		ref := f.do(f.admin, "PUT", items+"/quay/account", map[string]any{"authMode": "basic", "username": "robot", "password": map[string]any{"secretRef": map[string]any{"env": "QUADER_CAC_QUAY"}}}, "If-Match", "*")
+		if !hasField(t, ref, "/password/secretRef", "secret_value_required") {
+			t.Fatalf("a reference: %d %s", ref.Status, ref.Body)
+		}
+		set := f.do(f.admin, "PUT", items+"/quay/account", map[string]any{"authMode": "basic", "username": "robot", "password": map[string]any{"value": "dummy-quay-3c"}}, "If-Match", "*")
 		wantStatus(t, set, 200, "")
 		acct := set.JSON(t)["account"].(map[string]any)
-		if acct["authMode"] != "basic" || acct["username"] != "robot" || fmt.Sprint(acct["password"]) != "map[secretRef:map[env:QUADER_CAC_QUAY]]" {
+		if acct["authMode"] != "basic" || acct["username"] != "robot" || fmt.Sprint(acct["password"]) != "map[set:true]" || acct["source"] != "api" {
 			t.Fatalf("%v", acct)
 		}
 		wantStatus(t, f.do(f.admin, "PUT", items+"/quay/account", map[string]any{"authMode": "basic", "password": map[string]any{"set": false}}, "If-Match", "*"), 422, "invalid_secret")

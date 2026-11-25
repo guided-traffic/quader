@@ -141,6 +141,10 @@ changes once.
 
 ## What is deliberately not here
 
+- The accounts of the well-known repositories that the configuration declares (`repositories.upstream_accounts`, R-REPO-077) are files
+  of an existing Secret, read at use; they are never sealed and never imported into the key ring
+  ([Q-REPO-483](../spec/repositories-and-proxy.md#q-repo-483--an-account-of-a-well-known-repository-comes-from-a-secret-through-a-declaration-that-quader-migrate-applies-and-the-replicas-read-at-use)).
+
 - Key files are read once at `Load`; there is no live reload. A key reaches the pods with a roll-out: the chart's pod
   annotation `checksum/encryption-keys` covers the list `secrets.encryption.keys`
   ([_deployment.tpl](../../deploy/helm/quader/templates/_deployment.tpl)), so adding or removing a key file rolls the pods,

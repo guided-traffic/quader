@@ -358,5 +358,7 @@ without a ca of its own, which quader.storageConnectionsConfig sets.
 {{- include "quader.signaturesManagedConfig" (dict "root" . "managed" $managed) -}}
 {{- /* The files of Quader's signing identity, mounted into the worker pods (R-HA-071, templates/_signing.tpl). */ -}}
 {{- include "quader.signingManagedConfig" (dict "root" . "managed" $managed) -}}
+{{- /* The accounts of the registries of the project upstream, mounted into api, packages and worker (R-HA-073, templates/_upstream_accounts.tpl). */ -}}
+{{- include "quader.upstreamAccountsManagedConfig" (dict "root" . "managed" $managed) -}}
 {{- $managed | mergeOverwrite (deepCopy .Values.config) | toYaml -}}
 {{- end -}}

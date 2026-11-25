@@ -39,7 +39,8 @@ virtual class (members, deploy target, pin rules, claims and their routing) is b
 | [upstream.go](../../internal/repository/upstream.go) | `UpstreamProber`, `UpstreamTestResult`, `Service.UpstreamTest(ctx, name)`, `Service.UpstreamTestUnsaved(ctx, body)` |
 | [wellknown.go](../../internal/repository/wellknown.go) | the repositories of the built-in project `upstream`: `UpstreamFacts` (`Repository.Upstream`, the kind and the state read from `upstream_repository`), `WarningMemberInactive`; the package `internal/wellknown` and the rest are in [wellknown.md](wellknown.md) |
 | [upstream_store.go](../../internal/repository/upstream_store.go) | the reconcile's `wellknown.Store` (`Service.UpstreamStore`), `CatalogActor`, the reasons of the product's writes, the job `upstream-purge` |
-| [upstream_ops.go](../../internal/repository/upstream_ops.go) | the operations of the well-known repositories (R-REPO-073): `UpstreamItem(s)`, the state, the levels, the address, the account; `UpstreamPointers` |
+| [upstream_ops.go](../../internal/repository/upstream_ops.go) | the operations of the well-known repositories (R-REPO-073): `UpstreamItem(s)`, the state, the levels, the address, the account (a value only, `valueOnly`; 409 `managed_by_config` for a declared one, `refuseDeclared`); `UpstreamPointers` |
+| [upstream_accounts.go](../../internal/repository/upstream_accounts.go) | the accounts of `repositories.upstream_accounts` (R-REPO-077): `ConfiguredAccount(s)` (`Options.UpstreamAccounts`), `AccountFileValue` and `FilesState` (the rules of a file, the item's `files`), `ReadSecretFile`, `ApplyUpstreamAccounts` (the step of `quader migrate`), `accountRaisesLimit` (Q-UI-1160) |
 | [upstream_managed.go](../../internal/repository/upstream_managed.go) | what the product manages (R-REPO-069): `managedMembers`, `dropProductHeld`, `applyPresetSettings` (a preset's format members on a create from its URL), `listedBy` |
 | [formats/catalog/catalog.go](../../internal/formats/catalog/catalog.go) | the format catalog (a leaf): `Facts`, `Names`, `Exposure`, `Entry`, `Registry`, `Default` |
 | [formats/formats.go](../../internal/formats/formats.go) | `Descriptor` (the catalog's `Facts` plus the contract's own members), `Format`, `Register` (validates and fills the catalog), `Lookup`, `Descriptors`, and the aliases of the catalog's types; the contract is described in [formats.md](formats.md) |
@@ -286,6 +287,7 @@ name-pattern table of R-AUTHZ-005 through it.
 |---|---|---|
 | `repositories.lookup_wait` | `5s` | how long a lookup of a key that PostgreSQL knows and the snapshot does not waits for the change-log poll before it answers 503 |
 | `repositories.max_virtual_members` | `100` | the most members one virtual repository lists (R-REPO-017) |
+| `repositories.upstream_accounts` | `{}` | the accounts of the repositories of the project `upstream` by key: `auth_mode` (`basic` by default, or `bearer`), `username_file` (basic only), `password_file`, `secret_name`; rendered by the chart from `secrets.upstreamAccounts` (R-REPO-077, R-HA-073) |
 | `cache.snapshot_safety_ttl`, `cache.unknown_repo_keys` | existing | the snapshot's age bound; the size of the negative cache of unknown keys |
 | `storage.delete.batch_size` | existing | items per transaction of the deletion job |
 

@@ -64,13 +64,20 @@ function queue(fake: FakeRemoteDownloadsApi): void {
 }
 
 async function open(
-  options: { manage?: boolean; url?: string; rows?: (fake: FakeRemoteDownloadsApi) => void; upstreamName?: string } = {},
+  options: {
+    manage?: boolean;
+    url?: string;
+    rows?: (fake: FakeRemoteDownloadsApi) => void;
+    upstreamName?: string;
+    repository?: string;
+    capabilities?: readonly string[];
+  } = {},
 ) {
   const r = await renderScreen(RemoteDownloads, {
-    inputs: { repository: 'web/npmjs', ...(options.upstreamName ? { upstreamName: options.upstreamName } : {}) },
+    inputs: { repository: options.repository ?? 'web/npmjs', ...(options.upstreamName ? { upstreamName: options.upstreamName } : {}) },
     setup: async (get) => {
       const session = get(SessionApi) as FakeSessionApi;
-      session.meResult = { capabilities: [], roles: [] };
+      session.meResult = { capabilities: [...(options.capabilities ?? [])] as never, roles: [] };
       session.allow = (c) => c.action !== 'manage' || options.manage === true;
       (options.rows ?? queue)(get(RemoteDownloadsApi) as FakeRemoteDownloadsApi);
       await get(Router).navigateByUrl(options.url ?? '/projects/web/repositories/npmjs/downloads');
@@ -457,6 +464,35 @@ describe('The tab Downloads of a remote repository', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('R-REPO-077 a limit an account would lift offers one where this reader adds it: the administrator of a well-known registry gets its page', async () => {
+    const offer = async (repository: string, capabilities: readonly string[]) => {
+      const { root } = await open({ rows: heldQueue, repository, capabilities });
+      return root.querySelector<HTMLElement>('[data-testid="download-limit-account"]');
+    };
+    const admin = (await offer('upstream/docker-hub', ['repositories:read-config', 'repositories:write-config']))!;
+    expect(text(admin)).toBe(
+      'Docker Hub allows more requests with an account. This registry has none: add one on its page, or in the Helm values (secrets.upstreamAccounts). Add an account',
+    );
+    expect(admin.querySelector('a')!.getAttribute('href')).toBe('/admin/upstream/docker-hub');
+    expect(text((await offer('upstream/docker-hub', []))!)).toBe('Docker Hub allows more requests with an account; an administrator of Quader can add one.');
+    expect(text((await offer('web/hub', ['repositories:write-config']))!)).toBe(
+      "Docker Hub allows more requests with an account. This repository has none: add one in the repository's settings under Upstream.",
+    );
+    const reader = (await offer('web/hub', []))!;
+    expect(text(reader)).toBe('Docker Hub allows more requests with an account; an Owner of the project can add one.');
+    expect(reader.querySelector('a')).toBeNull();
+  });
+
+  it('R-REPO-077 a limit no account lifts, or an upstream that has one, offers nothing', async () => {
+    const { root } = await open({
+      rows: (f) => (heldQueue(f), (f.limit = { ...f.limit!, accountRaisesLimit: false })),
+      repository: 'upstream/docker-hub',
+      capabilities: ['repositories:write-config'],
+    });
+    expect(root.querySelector('[data-testid="download-limit"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="download-limit-account"]')).toBeNull();
   });
 
   it('R-CUR-011 a limit the upstream named a time for says that time', async () => {

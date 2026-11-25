@@ -180,6 +180,8 @@ spec:
             - name: tmp
               mountPath: /tmp
             {{- include "quader.secretVolumeMounts" (dict "root" $ "scope" "runtime" "role" $role "pool" $pool) | nindent 12 }}
+            {{- /* The accounts of the registries of the project upstream (R-HA-073): every pod of api, packages and worker fetches from upstreams. */}}
+            {{- include "quader.upstreamAccountsMount" $ | nindent 12 }}
             {{- with $.Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -215,6 +217,7 @@ spec:
           emptyDir:
             sizeLimit: {{ $.Values.tmp.sizeLimit }}
         {{- include "quader.secretVolumes" (dict "root" $ "scope" "runtime" "role" $role "pool" $pool) | nindent 8 }}
+        {{- include "quader.upstreamAccountsVolume" $ | nindent 8 }}
         {{- with $.Values.extraVolumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

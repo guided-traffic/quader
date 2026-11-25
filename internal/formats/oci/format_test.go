@@ -24,13 +24,15 @@ import (
 // implemented when the work package that builds their behaviour names them in its tests.
 
 // TestR_REPO_062_TheOCIPresetsAreTheFourRegistriesTheOwnerNamed: Docker Hub (the default, its token service auth.docker.io
-// receiving the credential), Quay, GitHub (ghcr.io) and GitLab (its token service gitlab.com receiving it), in that order.
+// receiving the credential), Quay, GitHub (ghcr.io) and GitLab (its token service gitlab.com receiving it), in that order. Docker Hub
+// alone says that an account allows more requests (Q-UI-1160).
 func TestR_REPO_062_TheOCIPresetsAreTheFourRegistriesTheOwnerNamed(t *testing.T) {
 	want := []catalog.UpstreamPreset{
 		{
 			ID: "docker-hub", DisplayName: "Docker Hub", URL: "https://registry-1.docker.io/", Default: true,
-			ExtraHosts:     []catalog.PresetHost{{Pattern: "auth.docker.io", SendCredentials: true}},
-			CatalogueHosts: []catalog.PresetHost{{Pattern: "hub.docker.com"}},
+			ExtraHosts:         []catalog.PresetHost{{Pattern: "auth.docker.io", SendCredentials: true}},
+			CatalogueHosts:     []catalog.PresetHost{{Pattern: "hub.docker.com"}},
+			AccountRaisesLimit: true,
 		},
 		{ID: "quay", DisplayName: "Quay", URL: "https://quay.io/"},
 		{ID: "ghcr", DisplayName: "GitHub (ghcr.io)", URL: "https://ghcr.io/"},

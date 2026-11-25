@@ -38,6 +38,8 @@ func upstreamPresets() []catalog.UpstreamPreset {
 		{
 			ID: "docker-hub", DisplayName: "Docker Hub", URL: "https://registry-1.docker.io/", Default: true,
 			ExtraHosts: []catalog.PresetHost{{Pattern: "auth.docker.io", SendCredentials: true}},
+			// Docker Hub counts pulls without an account per public address and allows an account more (Q-UI-1160).
+			AccountRaisesLimit: true,
 			// The Hub API answers the search, a namespace's images and a tag's facts (remote-curation.md R-CUR-008, R-OCI-038); it gets no
 			// credential.
 			CatalogueHosts: []catalog.PresetHost{{Pattern: hubAPI}},

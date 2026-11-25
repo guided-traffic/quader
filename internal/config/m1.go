@@ -148,4 +148,8 @@ type Repositories struct {
 	MaxVirtualMembers int `yaml:"max_virtual_members" default:"100" validate:"min=1,max=10000" doc:"The most members one virtual repository may list (R-REPO-017)."`
 
 	// <<< M2 virtual
+
+	// UpstreamAccounts is keyed by the key of a repository of the project upstream, the way signatures.anchors is keyed by the
+	// anchor's key: a map of structs may nest, a list element may not (R-ARCH-020).
+	UpstreamAccounts map[string]UpstreamAccount `yaml:"upstream_accounts" default:"{}" doc:"Accounts of the repositories of the built-in project upstream (the presets and scanner-trivy), keyed by the repository's key (R-REPO-077). Each entry names auth_mode (basic, the default, or bearer), username_file (basic only) and password_file, absolute paths read at every use and never at load, and secret_name, the Kubernetes Secret the admin page names. quader migrate applies the map: it removes an account an administrator stored and records the change; the API and the UI show the account read-only. A missing, empty or unreadable file fails that repository's fetches with 502 upstream_secret_unavailable and stops no role. In the chart, secrets.upstreamAccounts renders this map. As an environment variable the map is JSON, for example QUADER_REPOSITORIES_UPSTREAM_ACCOUNTS='{\"docker-hub\":{\"username_file\":\"/run/secrets/docker-hub/username\",\"password_file\":\"/run/secrets/docker-hub/password\"}}'."`
 }

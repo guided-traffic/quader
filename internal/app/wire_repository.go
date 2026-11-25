@@ -34,7 +34,7 @@ func (a *App) wireRepository(_ context.Context, in infra, ex exposureArea) (repo
 	svc, err := repository.NewService(repository.Options{
 		Runner: in.db, Catalog: catalog.Default(), Recorder: in.rec, Notifier: in.changes, Jobs: in.queue,
 		DeleteBatch: a.cfg.Storage.Delete.BatchSize, Log: log, PublicAvailable: a.publicAvailable,
-		MaxVirtualMembers: a.cfg.Repositories.MaxVirtualMembers,
+		MaxVirtualMembers: a.cfg.Repositories.MaxVirtualMembers, UpstreamAccounts: configuredAccounts(a.cfg),
 		// The authorization area records authz.settings.changed in the transaction of an update
 		// (R-AUTHZ-031) and endpoint.exposure.deleted for the rules a deletion takes with it (H-164);
 		// the policy hook moves the epoch and the policy versions the deletion changes (R-AUTHZ-028);

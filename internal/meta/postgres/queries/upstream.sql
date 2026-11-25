@@ -54,6 +54,26 @@ UPDATE upstream_repository SET account_removed_at = now() WHERE repository_id = 
 -- An administrator entered an account again (R-REPO-069).
 UPDATE upstream_repository SET account_removed_at = NULL WHERE repository_id = sqlc.arg(repository_id)::bigint;
 
+-- name: SetUpstreamAccountConfigured :exec
+-- quader migrate applied a declared account (R-REPO-077); the first application's time is kept.
+UPDATE upstream_repository
+   SET account_configured_at = COALESCE(account_configured_at, now())
+ WHERE repository_id = sqlc.arg(repository_id)::bigint;
+
+-- name: ClearUpstreamAccountConfigured :exec
+-- The configuration no longer declares the account (R-REPO-077).
+UPDATE upstream_repository SET account_configured_at = NULL WHERE repository_id = sqlc.arg(repository_id)::bigint;
+
+-- name: UpstreamRepositoryLastDownloads :many
+-- The last completed download of a repository and its last failed one, from the installation's last 100 (R-OPS-051): the account
+-- section of a well-known repository's page (R-REPO-073 account.lastDownloadAt and account.lastFailure). No row when none is recent.
+SELECT (max(finished_at) FILTER (WHERE outcome = 'completed'))::timestamptz AS last_download_at,
+       ((array_agg(finished_at ORDER BY finished_at DESC) FILTER (WHERE outcome = 'failed'))[1])::timestamptz AS last_failure_at,
+       ((array_agg(COALESCE(failure_code, '') ORDER BY finished_at DESC) FILTER (WHERE outcome = 'failed'))[1])::text AS last_failure_code
+  FROM upstream_download_finished
+ WHERE repo_id = sqlc.arg(repository_id)::bigint
+HAVING count(*) > 0;
+
 -- name: PurgeUpstreamRepository :exec
 -- The last transaction of the purge of a retired repository (R-REPO-067 step 5): what the removal of its row would have taken with
 -- it, while the row stays (upstream_repository_purge, last replaced by 00096).

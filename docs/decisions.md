@@ -10541,10 +10541,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-HA
 
-260 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
+262 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
 
 <details>
-<summary>Q-HA: 260 questions</summary>
+<summary>Q-HA: 262 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10808,6 +10808,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-HA-490](spec/ha-and-helm.md#q-ha-490--the-development-profiles-root-ca-is-ready-before-a-leaf-is-requested) | The development profile's root CA is Ready before a leaf is requested | Decided by the development agent on 2026-11-23 | (a) The root first: apply the objects labelled `quader-dev/pki=root`, wait until the root's Certificate and the CA Issuer are Ready, then apply the file | — |
 | [Q-HA-491](spec/ha-and-helm.md#q-ha-491--a-worktrees-kind-cluster-its-edge-port-and-its-kubeconfig-are-its-own) | A worktree's kind cluster, its edge port and its kubeconfig are its own | Decided by the development agent on 2026-11-23 | (a) Derived from the checkout: `quader-<worktree>` (`dev-tag.sh --cluster`), the port picked free by kind at creation (`hostPort` 0) and read back from the node, the kubeconfig `.dev/kubeconfig` of the worktree; the main checkout keeps `quader`, 8080 and the caller's kubeconfig | — |
 | [Q-HA-492](spec/ha-and-helm.md#q-ha-492--the-fill-of-the-versions-sort-keys-records-its-completion-after-a-pass-that-leaves-no-row-without-a-key) | The fill of the versions' sort keys records its completion after a pass that leaves no row without a key | Decided by the development agent on 2026-11-24 | (a) The fill starts at once and records its completion only after a pass that leaves no row without a key | [ADR-278](#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) |
+| [Q-HA-493](spec/ha-and-helm.md#q-ha-493--the-accounts-of-the-upstream-registries-are-one-projected-volume-with-optional-sources-in-the-pods-of-api-packages-and-worker) | The accounts of the upstream registries are one projected volume with optional sources in the pods of api, packages and worker | Decided by the development agent | (a) One projected volume, one optional source per entry, in every pod of `api`, `packages` and `worker` | — |
+| [Q-HA-494](spec/ha-and-helm.md#q-ha-494--secretsupstreamaccounts-is-a-map-by-the-registrys-key-and-authmode-defaults-to-basic) | `secrets.upstreamAccounts` is a map by the registry's key, and `authMode` defaults to basic | Decided by the development agent | (a) A map by the registry's key; `authMode` `basic` by default; `usernameKey` `username`, `passwordKey` `password` | — |
 
 </details>
 
@@ -11475,10 +11477,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-REPO
 
-237 questions on [spec/repositories-and-proxy.md](spec/repositories-and-proxy.md).
+242 questions on [spec/repositories-and-proxy.md](spec/repositories-and-proxy.md).
 
 <details>
-<summary>Q-REPO: 237 questions</summary>
+<summary>Q-REPO: 242 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11719,6 +11721,11 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-REPO-431](spec/repositories-and-proxy.md#q-repo-431--oci-and-debian-record-packagepublished-with-the-guards-of-a-first-version) | OCI and Debian record package.published with the guards of a first version | Decided by the development agent | (a) Both write `package.published` (`package`, `version`, `files`, the guards) and the security event: OCI for a new tag and for the first manifest of a name pushed by its digest, Debian for every package file an upload stores | — |
 | [Q-REPO-481](spec/repositories-and-proxy.md#q-repo-481--the-million-entries-of-r-repo-045s-criterion-are-a-measurement-the-test-holds-the-invalidations-shape-with-2000) | The million entries of R-REPO-045's criterion are a measurement; the test holds the invalidation's shape with 2,000 | Decided by the development agent | (a) The test holds the shape with 2,000 entries and a fold batch of 250 (eight batches); the million and its second are run once with `QUADER_TEST_INVALIDATION_ENTRIES=1000000` and written down | — |
 | [Q-REPO-482](spec/repositories-and-proxy.md#q-repo-482--a-mirrors-boundusedbytes-is-the-folded-counter-and-the-replicas-are-compared-once-the-fold-has-counted-the-pass) | A mirror's `bound.usedBytes` is the folded counter, and the replicas are compared once the fold has counted the pass | Decided by the development agent | (a) `bound.usedBytes` stays the folded counter; the spec says it follows by up to one fold interval, and the test compares the replicas once the fold has taken every delta of the repository | — |
+| [Q-REPO-483](spec/repositories-and-proxy.md#q-repo-483--an-account-of-a-well-known-repository-comes-from-a-secret-through-a-declaration-that-quader-migrate-applies-and-the-replicas-read-at-use) | An account of a well-known repository comes from a Secret through a declaration that `quader migrate` applies and the replicas read at use | Decided by the development agent | (c), with (a)'s reading at use. | — |
+| [Q-REPO-484](spec/repositories-and-proxy.md#q-repo-484--the-replicas-configuration-decides-at-use-the-row-is-the-migrations-bookkeeping) | The replica's configuration decides at use; the row is the migration's bookkeeping | Decided by the development agent | (a) The replica's own configuration decides at use; the migration removes the stored account and marks the row (`account_configured_at`) | — |
+| [Q-REPO-485](spec/repositories-and-proxy.md#q-repo-485--a-missing-empty-or-wrong-file-fails-that-registrys-fetches-and-stops-nothing-else) | A missing, empty or wrong file fails that registry's fetches and stops nothing else | Decided by the development agent | (a) That registry's fetches answer 502 `upstream_secret_unavailable`; the log names the path; the page shows the files' state; no readiness check, metric or alert | — |
+| [Q-REPO-486](spec/repositories-and-proxy.md#q-repo-486--a-declared-account-follows-its-registry-an-address-that-moves-its-hosts-is-refused) | A declared account follows its registry; an address that moves its hosts is refused | Decided by the development agent | (a) The account follows the product's address of its registry; an address or a reset that moves the hosts receiving it answers 409 `managed_by_config` | — |
+| [Q-REPO-487](spec/repositories-and-proxy.md#q-repo-487--the-account-operation-of-a-well-known-repository-takes-a-value-only) | The account operation of a well-known repository takes a value only | Decided by the development agent | (a) A value only; a `secretRef` answers 422 `secret_value_required` at `/password/secretRef` | — |
 
 </details>
 
@@ -12203,10 +12210,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-570 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+573 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 570 questions</summary>
+<summary>Q-UI: 573 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12780,6 +12787,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1149](spec/api-and-ui.md#q-ui-1149--an-upstream-registrys-entry-says-a-refusal-once-and-a-refusal-of-the-whole-entry-at-its-top) | An upstream registry's entry says a refusal once, and a refusal of the whole entry at its top | Decided by the development agent | (a) The notice at the top of the dialog's body, as in every other dialog; under **Add host** only a refusal of the list itself (its pointer exactly) | — |
 | [Q-UI-1150](spec/api-and-ui.md#q-ui-1150--an-images-tags-are-one-line-of-facts-after-the-leading-tag-and-a-line-each-in-a-block) | An image's tags are one line of facts after the leading tag, and a line each in a block | Decided by the development agent | (a). "+N more" counts the tags the row leaves out; where the answer names 100 other tags and the image has more (`aliasesMore`), how many is not known and the row says "+ more" on both screens. | — |
 | [Q-UI-1151](spec/api-and-ui.md#q-ui-1151--an-opened-item-reads-its-versions-again-every-3-s-while-one-it-shows-waits-for-its-scan) | An opened item reads its versions again every 3 s while one it shows waits for its scan | Decided by the development agent | (a) The opened item is live itself while a version it shows waits: every 3 s (`LIVE_FAST_MS`), and not at all while none waits | — |
+| [Q-UI-1160](spec/api-and-ui.md#q-ui-1160--a-limit-an-account-would-lift-offers-one-to-each-reader-where-that-reader-adds-it) | A limit an account would lift offers one to each reader where that reader adds it | Decided by the development agent | (b) A preset fact `AccountRaisesLimit`, true for Docker Hub alone, no number; the server answers `accountRaisesLimit` where the remote sends no credential; the sentence after the limit's, by who reads it | ADR-281 |
+| [Q-UI-1161](spec/api-and-ui.md#q-ui-1161--an-account-the-configuration-declares-is-read-only-on-the-registrys-page-its-source-and-its-files-state-no-value) | An account the configuration declares is read-only on the registry's page: its source and its files' state, no value | Decided by the development agent | (a) A lock line that names the Secret, the mode, the files' state, the last download and failure, the credential's hosts and **Test connection**; no field | — |
+| [Q-UI-1162](spec/api-and-ui.md#q-ui-1162--the-files-state-is-a-word-among-the-facts-and-a-warning-that-says-what-fails-until-when) | The files' state is a word among the facts, and a warning that says what fails until when | Decided by the development agent | (a). "The Secret's files are missing on this server, so every request to Docker Hub fails until the Secret exists with its keys; a Secret reaches the pods within two minutes." | — |
 
 </details>
 

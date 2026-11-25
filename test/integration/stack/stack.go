@@ -424,6 +424,9 @@ type Options struct {
 	// NoPublic closes the anonymous door of the default endpoint: setting a level to public then answers 409 public_not_allowed
 	// (R-AUTHZ-033 rule 5). The zero value leaves it open.
 	NoPublic bool
+	// UpstreamAccounts are the accounts of the project upstream the replica's configuration declares (R-REPO-077); the zero value
+	// declares none.
+	UpstreamAccounts repository.ConfiguredAccounts
 }
 
 // LogSink collects the records of the audit log stream of a replica.
@@ -564,7 +567,7 @@ func (e *Env) NewReplica(name string, o Options) *Replica {
 	r.Visibility = visibility.New(visibility.Options{DB: r.DB, Recorder: rec, PublicAvailable: public})
 	if r.Repos, err = repository.NewService(repository.Options{
 		Runner: r.DB, Catalog: catalog.Default(), Recorder: rec, Notifier: r.Changes, Hooks: authz.NewSettingsHook(rec), Log: quiet(), Remote: o.Remote,
-		PublicAvailable: public,
+		PublicAvailable: public, UpstreamAccounts: o.UpstreamAccounts,
 	}); err != nil {
 		t.Fatal(err)
 	}

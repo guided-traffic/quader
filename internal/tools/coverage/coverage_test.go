@@ -112,9 +112,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// repository (R-CUR-001 to R-CUR-023, R-NPM-049, R-NUGET-035, R-OCI-038, R-DEB-036, R-ANS-047, 28 P1 requirements). 1264 since
 		// the scans after any fill (R-VULN-050, R-MAL-035, two P1 requirements). 1268 since the downloads from upstreams (R-OPS-049 to
 		// R-OPS-052, four P1 requirements). 1273 since a screen says a server's code in its own language (R-UI-214, one P1 requirement).
-		// 1274 since a page has one scrollbar (R-UI-215, one P1 requirement).
-		if len(m.Reqs) != 1274 || count[prioMVP] != 718 || count[prioP1] != 517 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1274 (718, 517, 39)",
+		// 1274 since a page has one scrollbar (R-UI-215, one P1 requirement). 1276 since the accounts of the upstream registries from
+		// existing Secrets (R-REPO-077, R-HA-073, two MVP requirements of the well-known repositories and the chart's secret wiring).
+		if len(m.Reqs) != 1276 || count[prioMVP] != 720 || count[prioP1] != 517 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1276 (720, 517, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

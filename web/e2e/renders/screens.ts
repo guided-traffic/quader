@@ -42,6 +42,7 @@ import { mirrorFilled } from './mirror';
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
 import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { downloadsWalk } from './downloads';
+import { accountOfferWalk, registryAccountWalk } from './upstream-accounts';
 import {
   advisorySourceFailures,
   claimTesterFailure,
@@ -3144,6 +3145,14 @@ export const screens: readonly Screen[] = [
   // their place beside it, a notice with an action and an error.
   { id: 'admin-upstream-toasts', path: '/ui/admin/upstream', kinds: ['admin'], walk: toastsWalk, de: true },
   { id: 'admin-upstream-registry', path: '/ui/admin/upstream/debian', kinds: admins },
+  // Docker Hub's account (R-REPO-077, R-UI-188, Q-UI-1160 to Q-UI-1162): none, with the sentence that an account allows more; one the Helm
+  // values declare, read-only with its files readable; and one whose Secret is missing on the server, answered in the browser
+  // (upstream-accounts.ts).
+  { id: 'admin-upstream-docker-hub', path: '/ui/admin/upstream/docker-hub', kinds: auditors, walk: registryAccountWalk, de: true },
+  // The offer of an account after the sentence of Docker Hub's limit (Q-UI-1160), as its three kinds of reader read it: the administrator
+  // of the well-known registry and its reader, and the writer and the reader of a project's remote of Docker Hub.
+  { id: 'upstream-docker-hub-downloads-account', path: '/ui/projects/upstream/repositories/docker-hub/downloads', kinds: auditors, walk: accountOfferWalk, de: true },
+  { id: 'repository-docker-hub-downloads-account', path: `${O}/repositories/docker-hub-remote/downloads`, kinds: all, walk: accountOfferWalk, de: true },
   { id: 'admin-upstream-menu', path: '/ui/admin/upstream', kinds: ['admin'], walk: rowMenuOpen },
   // The system repository of the image scanning's database: in use while the scanning reads through it (R-REPO-070, R-VULN-044).
   { id: 'admin-upstream-scanner-trivy', path: '/ui/admin/upstream/scanner-trivy', kinds: admins },

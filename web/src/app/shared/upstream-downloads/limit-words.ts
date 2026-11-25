@@ -69,3 +69,27 @@ export function limitQueueText(l: LimitFacts & { readonly waiting: number; reado
     ? $localize`:@@upstream-downloads.limit.many-hinted:${n}:count: downloads of ${repository}:repository: wait: ${upstream}:upstream: limits requests until ${time}:until:.`
     : $localize`:@@upstream-downloads.limit.many:${n}:count: downloads of ${repository}:repository: wait: ${upstream}:upstream: limits requests; Quader asks again at ${time}:until:.`;
 }
+
+/**
+ * Who reads the offer of an account under a limit's sentence (Q-UI-1160), which decides where the sentence sends them: the writer of the
+ * configuration of a well-known repository of the project `upstream` (`upstream-admin`), the writer of a project's own remote
+ * (`remote-writer`), or anyone else, of a well-known repository (`upstream-reader`) or of a project's remote (`remote-reader`).
+ */
+export type AccountOfferReader = 'upstream-admin' | 'remote-writer' | 'upstream-reader' | 'remote-reader';
+
+/**
+ * The sentence after a limit's sentence where an account would lift it (`accountRaisesLimit`, Q-UI-1160): the upstream allows more
+ * requests with an account, and where this reader adds one. The administrator's variant is followed by the link **Add an account**.
+ */
+export function accountOfferText(upstream: string, reader: AccountOfferReader): string {
+  switch (reader) {
+    case 'upstream-admin':
+      return $localize`:@@downloads.limit.account-admin:${upstream}:upstream: allows more requests with an account. This registry has none: add one on its page, or in the Helm values (secrets.upstreamAccounts).`;
+    case 'remote-writer':
+      return $localize`:@@downloads.limit.account-writer:${upstream}:upstream: allows more requests with an account. This repository has none: add one in the repository's settings under Upstream.`;
+    case 'upstream-reader':
+      return $localize`:@@downloads.limit.account-reader:${upstream}:upstream: allows more requests with an account; an administrator of Quader can add one.`;
+    case 'remote-reader':
+      return $localize`:@@downloads.limit.account-owner:${upstream}:upstream: allows more requests with an account; an Owner of the project can add one.`;
+  }
+}

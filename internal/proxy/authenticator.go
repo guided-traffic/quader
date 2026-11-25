@@ -240,7 +240,8 @@ func sameOrigin(a, b *url.URL) bool {
 // the format's TokenRequest then only means the request goes out as it is. stand is the key of a token that was fetched for this
 // request and refused: a challenge that names the same key leaves the 401 as the answer, without a second token request.
 func (e *Engine) token(ctx context.Context, h handshake, orig *http.Request, challenge http.Header, rejected string, soft bool, stand *tokenKey) (a attempt, ok bool, err error) {
-	if h.rem.Settings.AuthMode == repository.AuthBearer {
+	// The client's settings carry the authMode in effect: a declared account's (R-REPO-077) or the document's.
+	if h.cl.Settings().AuthMode == repository.AuthBearer {
 		return attempt{}, false, nil // the stored secret is the token (R-REPO-033): no handshake
 	}
 	treq, key, ok, err := h.auth.TokenRequest(ctx, UpstreamBase{URL: h.cl.Origin()}, orig, h.path, http.StatusUnauthorized, challenge)
@@ -328,7 +329,7 @@ func (e *Engine) forgetChallenge(h handshake) {
 
 // recallChallenge returns a copy of the remembered challenge.
 func (e *Engine) recallChallenge(h *handshake) (http.Header, bool) {
-	if e.challenges == nil || h.rem.Settings.AuthMode == repository.AuthBearer {
+	if e.challenges == nil || h.cl.Settings().AuthMode == repository.AuthBearer {
 		return nil, false
 	}
 	c, ok := e.challenges.Get(challengeKey{repo: h.rem.id, version: h.rem.Repo.Version})

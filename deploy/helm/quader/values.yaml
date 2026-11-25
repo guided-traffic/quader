@@ -655,6 +655,18 @@ secrets:
   #  - providerId: corp                 # the ID of a provider in config.auth.oidc.providers ([a-z0-9-], at most 32)
   #    existingSecret: quader-oidc-corp
   #    key: client-secret
+  # The accounts of the registries of the built-in project upstream (R-HA-073), by the key Admin area › Upstream registries shows
+  # (docker-hub, quay, ghcr, gitlab, npmjs, ..., scanner-trivy). Each entry projects its Secret into the api, packages and worker pods at
+  # /var/run/secrets/quader/upstream-accounts/<key>/ and renders config.repositories.upstream_accounts.<key>, which the migration Job
+  # applies and the admin page shows read-only. The files are read at every use, so a changed Secret reaches every pod within 2 minutes
+  # without a restart; a Secret or key that does not exist fails that registry's fetches with 502 upstream_secret_unavailable and starts
+  # every pod. Whoever can read the registry pulls with its account: give it one that reads public content only.
+  upstreamAccounts: {}                  # no account from the values; example:
+  #  docker-hub:
+  #    existingSecret: quader-upstream-docker-hub
+  #    authMode: basic                  # default; basic: a username and a password or access token (the OCI registries) | bearer: a token alone (npm)
+  #    usernameKey: username            # default; basic only
+  #    passwordKey: token               # default password; the password or the access token
   breakGlass:
     existingSecret: ""                  # empty = config.auth.break_glass.enabled false; example: quader-break-glass. api pods only
     key: password                       # plaintext (at least 20 characters) or an Argon2id PHC hash

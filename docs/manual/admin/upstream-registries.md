@@ -107,7 +107,9 @@ Through the API: `PUT /api/v1/upstream-repositories/<key>/visibility` with `{"le
   it; a release keeps your address. **Save address** changes where every project's requests go, so check the host before you save it.
 - **Account.** **Authentication** (None, Username and password, Bearer token), the username and the password or token, which is never
   shown again. An account counts the pulls of every project against that account's allowance, and whoever can read the registry pulls
-  with it. **Test connection** tests the saved registry with the stored account, or what you typed before you save it.
+  with it. **Test connection** tests the saved registry with the stored account, or what you typed before you save it. Docker Hub's page
+  says "Docker Hub allows more requests with an account." while it has none: without one, Docker Hub counts the pulls of the whole site
+  against its public address. An account from the Helm values shows here read-only, see below.
 - **The account follows its hosts.** A stored account goes only to the hosts it was entered for. When a new address sends it to other
   hosts, the save asks for the account again or removes it, in the same change; a reset to Quader's address on other hosts removes it
   after a question. When a release of Quader moves a registry to another host, the account is removed and the row says so; enter it
@@ -116,9 +118,63 @@ Through the API: `PUT /api/v1/upstream-repositories/<key>/visibility` with `{"le
 Through the API: `PUT /api/v1/upstream-repositories/<key>/address` with `{"url": "https://mirror.example.com/"}` (and `extraHosts`, and
 for a Debian or Ubuntu archive `upstreamKeys`, the armored archive keys); the registry then reads **overridden**, and
 `DELETE …/address` brings back Quader's address. `PUT /api/v1/upstream-repositories/<key>/account` takes `authMode`, `username` and
-`password` (a value, or a `secretRef`). An address on another host answers `422 secret_value_required` at `/account/password` until the
+`password`, a value (`{"value": "…"}`): a `secretRef` answers `422 secret_value_required` at `/password/secretRef`, since an account from
+a file is the Helm values' (below). An address on another host answers `422 secret_value_required` at `/account/password` until the
 request carries `account` (a new one, or `null` to remove it); a reset to Quader's address carries `?removeAccount=true` in that case.
 Both need a recent sign-in and the registry's current `ETag` in `If-Match` (`GET /api/v1/upstream-repositories/<key>`).
+
+## An account from the Helm values
+
+An installation run with Helm can give a registry its account from a Kubernetes Secret that exists, for example one you encrypt with SOPS
+and apply with Flux; the value never enters the chart's values or Quader's database. Only the registries of this page take an account this
+way; a project's own remote repository keeps its account in its settings.
+
+The Secret, a manifest of its own:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: quader-upstream-docker-hub        # example
+  namespace: quader                       # example: the release's namespace
+type: Opaque
+stringData:
+  username: REPLACE_WITH_DOCKER_HUB_USERNAME
+  token: REPLACE_WITH_DOCKER_HUB_ACCESS_TOKEN
+```
+
+The values name it by the registry's key:
+
+```yaml
+secrets:
+  upstreamAccounts:
+    docker-hub:                           # the key the registry's page shows
+      existingSecret: quader-upstream-docker-hub
+      authMode: basic                     # default; bearer sends a token alone (npm)
+      usernameKey: username               # default; basic only
+      passwordKey: token                  # default password
+```
+
+For Docker Hub use a personal access token with the scope **Public Repo Read-only** as the password: whoever can read the registry pulls
+with it. GitHub (ghcr.io) takes a username and a classic token with `read:packages`, GitLab a username and a token with `read_registry`
+(or a deploy token), Quay a robot account; npm takes `authMode: bearer` with a read-only token.
+
+- **What happens at the upgrade.** The migration Job applies the account: an account an administrator had stored on the page is removed,
+  and the change is in the audit log with the actor `system:configuration`. A key that names no registry here stops the upgrade with the
+  key named.
+- **The page** shows "From the Helm values: Secret quader-upstream-docker-hub. Change or remove it there.", the authentication, the state
+  of the Secret's files on the server that answered, the last download and the last failed download, and **Test connection**. Saving or
+  removing the account there, and an address that sends it to other hosts, are refused.
+- **A Secret that does not exist yet** starts every pod. Every request to that registry fails with `502 upstream_secret_unavailable` until
+  the Secret exists with its keys; the page says "Missing on this server" with a warning, and the log names the file's path. A wrong token
+  is refused by the registry: **Test connection** says "The upstream answered and refused the credentials."
+- **Rotation, without a restart:** create the new token at the registry, update the Secret, wait three minutes (the pods receive a
+  changed Secret within two minutes and read it again after ten seconds), then revoke the old token. Adding or removing an entry rolls the
+  pods once.
+- **One allowance.** Every installation that uses the same Docker Hub user shares that user's allowance.
+
+Without Helm, `repositories.upstream_accounts.<key>` of the configuration file takes `auth_mode`, `username_file`, `password_file` and
+`secret_name` (empty) directly; the files are read at every use.
 
 ## What else you may change
 

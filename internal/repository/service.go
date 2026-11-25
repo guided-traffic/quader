@@ -113,6 +113,12 @@ type Options struct {
 	MaxVirtualMembers int
 
 	// <<< M2 virtual
+
+	// UpstreamAccounts are the accounts of the project upstream that the replica's configuration declares (R-REPO-077,
+	// repositories.upstream_accounts): the item shows them read-only, and the account's writes refuse them.
+	UpstreamAccounts ConfiguredAccounts
+	// ReadFile reads a declared account's file for the item's state; nil is ReadSecretFile. A test's seam.
+	ReadFile func(string) ([]byte, error)
 }
 
 // Service is the write and management-read side of the repository model:
@@ -137,6 +143,9 @@ type Service struct {
 	maxMembers int
 	// publicOK is Options.PublicAvailable.
 	publicOK func() bool
+	// accounts and readFile are Options.UpstreamAccounts and Options.ReadFile.
+	accounts ConfiguredAccounts
+	readFile func(string) ([]byte, error)
 }
 
 // NewService creates the service.
@@ -159,9 +168,13 @@ func NewService(o Options) (*Service, error) {
 	if o.MaxVirtualMembers <= 0 {
 		o.MaxVirtualMembers = DefaultMaxVirtualMembers
 	}
+	if o.ReadFile == nil {
+		o.ReadFile = ReadSecretFile
+	}
 	s := &Service{
 		run: o.Runner, cat: catalog.Or(o.Catalog), rec: o.Recorder, notif: o.Notifier, jobs: o.Jobs,
 		hooks: o.Hooks, log: o.Log, batch: o.DeleteBatch, maxMembers: o.MaxVirtualMembers, publicOK: o.PublicAvailable,
+		accounts: o.UpstreamAccounts, readFile: o.ReadFile,
 	}
 	s.Bind(o.Remote)
 	return s, nil
@@ -210,6 +223,9 @@ type productWrite struct {
 	// clients marks the write of the switch "ClamAV definition updates" (R-REPO-075): repository.updated names the member clients
 	// among its changes, and the write raises config_version even where the level stays.
 	clients bool
+	// account marks a write of quader migrate that applies a declared account (R-REPO-077): repository.updated carries it, and the
+	// write raises config_version and invalidates as an account write does, even where the document stays.
+	account *accountChange
 }
 
 // principalID returns the actor id when it is a uuid and "" otherwise (a break-glass
@@ -481,6 +497,10 @@ func (s *Service) updateTx(ctx context.Context, tx meta.Tx, c Caller, name qname
 	}
 	if c.product.clients {
 		changes = append(changes, "clients")
+		sort.Strings(changes)
+	}
+	if c.product.account != nil && !slices.Contains(changes, "remote") {
+		changes = append(changes, "remote")
 		sort.Strings(changes)
 	}
 	if len(changes) == 0 {
@@ -800,6 +820,9 @@ type eventDetails struct {
 	Reason         string `json:"reason,omitempty"`
 	BulkID         string `json:"bulkId,omitempty"`
 	AccountRemoved bool   `json:"accountRemoved,omitempty"`
+	// Account is where the account of a well-known repository comes from after a write of quader migrate that applies
+	// repositories.upstream_accounts, and its authMode (R-REPO-077); never a value or a digest of one.
+	Account *accountChange `json:"account,omitempty"`
 }
 
 // withSecretChange adds "remote" to the changes of a write that sends a new secret value. A new secret value reads like the old
@@ -876,6 +899,7 @@ func (s *Service) recordUpdate(ctx context.Context, tx meta.Tx, c Caller, r Repo
 ) error {
 	details := updateDetails(r, changes, cur, nd)
 	details.Reason, details.BulkID, details.AccountRemoved = c.product.reason, c.product.bulkID, c.product.accountRemoved
+	details.Account = c.product.account
 	if err := s.recordAndNotify(ctx, tx, c, EventUpdated, r, details, strings.TrimPrefix(EventUpdated, "repository.")); err != nil {
 		return err
 	}

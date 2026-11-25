@@ -60,6 +60,9 @@ type Options struct {
 	Proxy config.Proxy
 	// SecretsDir is config_as_code.secrets_dir.
 	SecretsDir string
+	// Accounts are the accounts of the project upstream the replica's configuration declares (R-REPO-077): a repository with an entry
+	// sends the account read from its files, whatever account its document stores.
+	Accounts repository.ConfiguredAccounts
 	// SafetyTTL bounds the age of a cached client (cache.snapshot_safety_ttl).
 	SafetyTTL time.Duration
 	Log       *slog.Logger
@@ -126,7 +129,7 @@ func New(o Options) (*Clients, error) {
 		o.LookupEnv = os.LookupEnv
 	}
 	if o.ReadFile == nil {
-		o.ReadFile = readLimited
+		o.ReadFile = repository.ReadSecretFile
 	}
 	if o.Log == nil {
 		o.Log = slog.New(slog.DiscardHandler)
@@ -181,7 +184,7 @@ func (c *Clients) For(ctx context.Context, r repository.Repository, s repository
 		if cl, ok := c.cache.Get(k); ok {
 			return cl, nil
 		}
-		cl, err := c.buildSaved(ctx, id, r.Name.String(), s)
+		cl, err := c.buildSaved(ctx, id, r, s)
 		if err != nil {
 			return nil, err
 		}
@@ -313,11 +316,16 @@ func (c *Clients) Ephemeral(key string, s repository.RemoteSettings, password *o
 	case s.Password != nil && s.Password.Ref != nil:
 		sec = newRefSecret(*s.Password.Ref, c.res, c.o.Now)
 	}
-	return c.build(key, s, sec)
+	return c.build(key, s, sec, nil)
 }
 
-// buildSaved resolves the secrets of the stored rows and builds the client.
-func (c *Clients) buildSaved(ctx context.Context, id int64, key string, s repository.RemoteSettings) (*Client, error) {
+// buildSaved resolves the secrets of the stored rows and builds the client. A repository of the project upstream whose key the
+// configuration declares an account for sends that account, read from its files (R-REPO-077, Q-REPO-484).
+func (c *Clients) buildSaved(ctx context.Context, id int64, r repository.Repository, s repository.RemoteSettings) (*Client, error) {
+	key := r.Name.String()
+	if a, ok := c.o.Accounts.For(r.Name.Project, r.Name.Key); ok {
+		return c.buildConfigured(key, a, s)
+	}
 	var sec *secretValue
 	if s.AuthMode != repository.AuthNone && s.Password != nil {
 		rows, err := c.o.Store.Secrets(ctx, id)
@@ -331,7 +339,30 @@ func (c *Clients) buildSaved(ctx context.Context, id int64, key string, s reposi
 			return nil, secretUnavailable(key, err)
 		}
 	}
-	return c.build(key, s, sec)
+	return c.build(key, s, sec, nil)
+}
+
+// buildConfigured builds the client of a declared account: the settings' authMode is the declaration's, and the username and the
+// password are files read again after RefreshInterval, so a rotated Secret takes effect without a new configuration version. A file
+// that cannot be read fails the build with 502 upstream_secret_unavailable; the log names the file's path and never its content.
+func (c *Clients) buildConfigured(key string, a repository.ConfiguredAccount, s repository.RemoteSettings) (*Client, error) {
+	s.AuthMode, s.Username, s.Password = a.AuthMode, "", nil
+	var user *secretValue
+	if a.AuthMode == repository.AuthBasic {
+		user = newFileSecret(c.o.ReadFile, a.UsernameFile, true, c.o.Now)
+	}
+	sec := newFileSecret(c.o.ReadFile, a.PasswordFile, false, c.o.Now)
+	for _, v := range []*secretValue{user, sec} {
+		if v == nil {
+			continue
+		}
+		if _, err := v.get(); err != nil {
+			c.o.Log.Warn("upstream: a file of the account the configuration declares cannot be read; the repository's fetches fail until it can",
+				"repo", key, "error", err)
+			return nil, secretUnavailable(key, err)
+		}
+	}
+	return c.build(key, s, sec, user)
 }
 
 // secretOf picks the password row and unseals or resolves it.
@@ -360,8 +391,8 @@ func (c *Clients) secretOf(id int64, key string, rows []repository.StoredSecret)
 	return nil, errors.New("the repository has no stored value for its password")
 }
 
-// build applies the settings to an outbound client.
-func (c *Clients) build(key string, s repository.RemoteSettings, sec *secretValue) (*Client, error) {
+// build applies the settings to an outbound client. user is the username from a declared account's file, nil for the settings'.
+func (c *Clients) build(key string, s repository.RemoteSettings, sec, user *secretValue) (*Client, error) {
 	origin, err := url.Parse(s.URL)
 	if err != nil {
 		return nil, fmt.Errorf("upstream: the url of repository %q: %w", key, err)
@@ -369,7 +400,7 @@ func (c *Clients) build(key string, s repository.RemoteSettings, sec *secretValu
 	if origin.Host == "" {
 		return nil, fmt.Errorf("upstream: the url of repository %q has no host", key)
 	}
-	cred := &credential{mode: s.AuthMode, username: s.Username, secret: sec}
+	cred := &credential{mode: s.AuthMode, username: s.Username, user: user, secret: sec}
 	policy := &outbound.CredentialPolicy{Origin: origin, ForwardOnRedirect: s.ForwardAuthOnRedirect, Headers: cred.headers}
 	for _, h := range s.ExtraHosts {
 		if h.SendCredentials {
