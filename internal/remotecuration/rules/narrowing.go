@@ -51,5 +51,5 @@ const (
 	// MaxSections is the most section rules a repository holds: the bound of a pattern list (R-REPO-005).
 	MaxSections = 100
 	// DefaultMaxRules is proxy.delivery.max_rules's default.
-	DefaultMaxRules = 10000
+	DefaultMaxRules = 50000
 )

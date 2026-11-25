@@ -16761,6 +16761,204 @@ paths:
           $ref: "#/components/responses/Internal"
         "503":
           $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/switch:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    post:
+      operationId: switchDeliveryRule
+      tags: [remote-curation]
+      summary: Turn the switch of a package or a version
+      description: |
+        Turns the switch of a package (no `version`) or of one version to delivered or not (R-CUR-024). The server decides against the
+        rules as stored in the write's transaction: a state equal to what the subject inherits (a version: its package's rule, else the
+        sections, else the mode; a package: the sections, else the mode) removes the subject's own rule; the other state writes the
+        subject's rule, `allow` for delivered and `block` for not, replacing one of the other effect. `resetVersions` (a package only)
+        also removes every version rule of the package in the same transaction. Every rule written or removed records its event; a
+        block added or an allow removed records `repository.narrowed`. The answer is the subject's decision after the write (a
+        package's: its package level), its rule (`null` where it inherits), the rules removed and the revision. Needs `manage` on the
+        repository or the system role `admin` (R-CUR-005); a system repository of the project `upstream` keeps the product's rules
+        (`409 managed_by_product`); a local or virtual repository answers `400 not_applicable`.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliverySwitchInput"
+            example:
+              name: lodash
+              version: 4.17.20
+              delivered: false
+      responses:
+        "200":
+          description: The switch is turned.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliverySwitchResult"
+              example:
+                decision: {delivered: false, reason: blocked, decidedBy: {kind: version, subject: lodash@4.17.20, effect: block}}
+                rule:
+                  id: 0193f2c4-7a7e-7b51-9b1e-2f0d6c9e1a11
+                  kind: version
+                  subject: lodash@4.17.20
+                  name: lodash
+                  version: 4.17.20
+                  effect: block
+                  note: ""
+                  requestId: null
+                  createdBy: {id: 0193f2c4-0000-7000-8000-000000000001, name: priya}
+                  createdAt: "2026-11-25T10:00:00Z"
+                removed: []
+                revision: 12
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/summary:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    get:
+      operationId: getDeliveryRulesSummary
+      tags: [remote-curation]
+      summary: What a change of the delivery mode affects
+      description: |
+        What a change of the delivery mode says before it is saved (R-CUR-025): the mode, the counts of the allowing and blocking
+        package and version rules and of the sections, `maxRules` (`proxy.delivery.max_rules`), and the packages the repository stores
+        whose package level the mode decides today (no package rule, no section matches): their count and the first 100 names in name
+        order. The count stops at `maxRules + 1`; `counted` is false then. Read against this replica's rule set. Needs what reading the
+        rules needs, or `repositories:write-config` or the project's Owner, who set the mode (R-CUR-005); a local or virtual repository
+        answers `400 not_applicable`.
+      x-quader-permission:
+        authenticated: true
+      responses:
+        "200":
+          description: The summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryRulesSummary"
+              example:
+                mode: allExceptBlocked
+                rules: {allow: 2, block: 5, sections: 1}
+                maxRules: 50000
+                unruled: {count: 3, names: [express, left-pad, lodash], counted: true}
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/allow-stored:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    post:
+      operationId: allowStoredPackages
+      tags: [remote-curation]
+      summary: Allow every stored package the mode decides
+      description: |
+        Writes one allowing package rule for every package the repository stores whose package level the mode decides (no package
+        rule, no section matches), in one transaction (R-CUR-025): the step before the mode changes to `onlyAllowed`, so that those
+        packages stay delivered. One statement inserts the rules, every rule records `remote.rule.created`, the revision rises once. In
+        mode `onlyAllowed` it answers `409 conflict`; where the rules would exceed `proxy.delivery.max_rules`, `422 too_many_rules` and
+        nothing is written. Needs `manage` on the repository or the system role `admin` (R-CUR-005); a system repository of the project
+        `upstream` keeps the product's rules (`409 managed_by_product`); a local or virtual repository answers `400 not_applicable`.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: The rules are written.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryAllowStoredResult"
+              example:
+                created: 3
+                revision: 13
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/{ruleId}:
     parameters:
       - $ref: "#/components/parameters/ProjectKey"
@@ -16780,7 +16978,7 @@ paths:
         schema:
           type: string
           format: uuid
-          x-quader-reserved-names: [check]
+          x-quader-reserved-names: [check, switch, summary, allow-stored]
     delete:
       operationId: deleteDeliveryRule
       tags: [remote-curation]
@@ -32436,6 +32634,116 @@ components:
             mode:
               type: string
               enum: [allExceptBlocked, onlyAllowed]
+    DeliverySwitchInput:
+      type: object
+      additionalProperties: false
+      description: The switch of a package (no `version`) or of one version turned to delivered or not (R-CUR-024).
+      required: [name, delivered]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        version:
+          type: string
+          minLength: 1
+          maxLength: 256
+        delivered:
+          type: boolean
+        resetVersions:
+          type: boolean
+          default: false
+          description: A package only; also removes every version rule of the package in the same transaction (**Reset them**).
+        note:
+          type: string
+          maxLength: 1000
+          description: The note of a rule the switch writes; seen only by those who may read the rules.
+    DeliverySwitchResult:
+      type: object
+      additionalProperties: false
+      description: What a switch did (R-CUR-024).
+      required: [decision, rule, removed, revision]
+      properties:
+        decision:
+          $ref: "#/components/schemas/DeliveryDecision"
+        rule:
+          description: The subject's rule after the write; `null` where the subject inherits its state.
+          oneOf:
+            - $ref: "#/components/schemas/DeliveryRule"
+            - type: "null"
+        removed:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeliveryRule"
+          description: The rules the switch removed (the subject's own, and with `resetVersions` the package's version rules).
+        revision:
+          type: integer
+          format: int64
+          description: The revision of the repository's rule set after the write.
+    DeliveryRuleCounts:
+      type: object
+      additionalProperties: false
+      description: The package's version rules by effect (R-CUR-024).
+      required: [allow, block]
+      properties:
+        allow:
+          type: integer
+        block:
+          type: integer
+    DeliveryRulesSummary:
+      type: object
+      additionalProperties: false
+      description: What a change of the delivery mode affects (R-CUR-025).
+      required: [mode, rules, maxRules, unruled]
+      properties:
+        mode:
+          type: string
+          enum: [allExceptBlocked, onlyAllowed]
+        rules:
+          type: object
+          additionalProperties: false
+          required: [allow, block, sections]
+          properties:
+            allow:
+              type: integer
+              description: The package and version rules that allow.
+            block:
+              type: integer
+              description: The package and version rules that block.
+            sections:
+              type: integer
+        maxRules:
+          type: integer
+          description: proxy.delivery.max_rules.
+        unruled:
+          type: object
+          additionalProperties: false
+          required: [count, names, counted]
+          description: The packages the repository stores whose package level the mode decides.
+          properties:
+            count:
+              type: integer
+              description: At most maxRules + 1.
+            names:
+              type: array
+              maxItems: 100
+              items:
+                type: string
+              description: The first 100 in name order.
+            counted:
+              type: boolean
+              description: False when the count stopped at maxRules + 1.
+    DeliveryAllowStoredResult:
+      type: object
+      additionalProperties: false
+      description: The rules allow-stored wrote (R-CUR-025).
+      required: [created, revision]
+      properties:
+        created:
+          type: integer
+        revision:
+          type: integer
+          format: int64
     # <<< T-24 rules
     # >>> T-24 requests
     DeliveryRequestInput:
@@ -35298,6 +35606,14 @@ components:
           x-enum-varnames: [UpstreamHitStoredNone, UpstreamHitStoredPartial]
         request:
           $ref: "#/components/schemas/UpstreamRequestState"
+        level:
+          $ref: "#/components/schemas/DeliveryDecision"
+          description: The package level's decision, which the package's switch shows (R-CUR-024); only to whoever may set rules.
+        inherited:
+          $ref: "#/components/schemas/DeliveryDecision"
+          description: The package level without the package's own rule (R-CUR-024); only to whoever may set rules.
+        versionRules:
+          $ref: "#/components/schemas/DeliveryRuleCounts"
     UpstreamSearchPage:
       type: object
       additionalProperties: false
@@ -35419,6 +35735,9 @@ components:
           $ref: "#/components/schemas/UpstreamQueued"
         request:
           $ref: "#/components/schemas/UpstreamRequestState"
+        inherited:
+          $ref: "#/components/schemas/DeliveryDecision"
+          description: The decision without the version's own rule, its package level's (R-CUR-024); only to whoever may set rules.
     UpstreamPackage:
       type: object
       additionalProperties: false
@@ -35443,6 +35762,14 @@ components:
           x-enum-varnames: [UpstreamPackageStoredNone, UpstreamPackageStoredPartial]
         request:
           $ref: "#/components/schemas/UpstreamRequestState"
+        level:
+          $ref: "#/components/schemas/DeliveryDecision"
+          description: The package level's decision, which the package's switch shows (R-CUR-024); only to whoever may set rules.
+        inherited:
+          $ref: "#/components/schemas/DeliveryDecision"
+          description: The package level without the package's own rule (R-CUR-024); only to whoever may set rules.
+        versionRules:
+          $ref: "#/components/schemas/DeliveryRuleCounts"
         versions:
           type: array
           items:

@@ -56,6 +56,8 @@ var ownerRightsExempt = map[string]string{
 	"putDeliveryRule":     "manage on the repository or the role admin, through the decision point with the scope (R-CUR-005)",
 	"deleteDeliveryRule":  "manage on the repository or the role admin, through the decision point with the scope (R-CUR-005)",
 	"checkDeliveryRules":  "a question that writes nothing: read on the repository through the decision point with the scope (R-CUR-005)",
+	"switchDeliveryRule":  "manage on the repository or the role admin, through the decision point with the scope (R-CUR-005, R-CUR-024)",
+	"allowStoredPackages": "manage on the repository or the role admin, through the decision point with the scope (R-CUR-005, R-CUR-025)",
 	"revokeBastionToken":  "endpoints:write or tokens:revoke through the decision point, with the scope (requireAny)",
 	// >>> T-24 catalogue
 	"evaluateUpstreamVulnerabilities": "a question that writes nothing: read on the repository through the decision point with the scope " +
@@ -113,6 +115,8 @@ var ownerRightsReads = map[string]string{
 	"getAvatar":           "an image by its digest, readable by every authenticated caller (Q-AUTH-195); nothing of the caller's account",
 	"getRepositoryMirror": "decided through the decision point with the scope (requireMirrorReader)",
 	"listDeliveryRules":   "decided through the decision point with the scope (requireRuleReader, R-CUR-005)",
+	"getDeliveryRulesSummary": "decided through the decision point with the scope (readerOrModeWriter: a reader of the rules or a writer " +
+		"of the configuration, R-CUR-005, R-CUR-025)",
 	// >>> T-24 downloads
 	"listRemoteDownloads":     "read on the repository through the decision point with the scope (downloadSetup, R-CUR-005)",
 	"getRemoteDownload":       "as listRemoteDownloads",

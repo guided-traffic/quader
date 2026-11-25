@@ -10,6 +10,7 @@ package rules
 import (
 	"slices"
 	"strconv"
+	"strings"
 
 	rc "github.com/guided-traffic/quader/internal/remotecuration"
 )
@@ -79,16 +80,35 @@ type section struct {
 	match   Matcher
 }
 
-// pkgRules is what a rule set holds of one package name: its package rule and its version rules.
+// versionRule is one version rule of a package as the set holds it.
+type versionRule struct {
+	version string
+	effect  rc.Effect
+}
+
+// pkgRules is what a rule set holds of one package name: its package rule and its version rules, sorted by version. A sorted slice and
+// not a map (Q-CUR-207): the first version rule of a package would allocate a map's header and its first group of eight slots, about
+// 300 bytes, where the slice holds the one rule in 32.
 type pkgRules struct {
 	effect   rc.Effect // "" without a package rule
-	versions map[string]rc.Effect
+	versions []versionRule
 	// allows is true when a version rule of the package allows: the package's decision then delivers (R-CUR-001).
 	allows bool
+	// versionAllows and versionBlocks count the version rules by effect (VersionRuleCounts).
+	versionAllows, versionBlocks int32
+}
+
+// version is the effect of the package's rule of the version; ok is false without one.
+func (p *pkgRules) version(v string) (rc.Effect, bool) {
+	i, ok := slices.BinarySearchFunc(p.versions, v, func(r versionRule, v string) int { return strings.Compare(r.version, v) })
+	if !ok {
+		return "", false
+	}
+	return p.versions[i].effect, true
 }
 
 // Set is the compiled rule set of one remote repository and its mode, immutable once built (R-CUR-006): a map of names to the package
-// rule and the version rules, and the section patterns compiled. About 150 bytes a rule.
+// rule and the version rules, and the section patterns compiled. Its memory is measured in R-CUR-006.
 type Set struct {
 	mode     rc.Mode
 	revision int64
@@ -96,6 +116,8 @@ type Set struct {
 	pkgs     map[string]*pkgRules
 	sections []section
 	rules    int
+	// allows and blocks count the package and version rules by effect; the sections are len(sections).
+	allows, blocks int
 }
 
 // Compile builds the set of a repository in the mode from its rules. It returns nil, a set that delivers everything and costs nothing,
@@ -117,18 +139,33 @@ func Compile(mode rc.Mode, revision int64, list []Rule, compile Compiler, canon 
 				return nil, err
 			}
 			s.sections = append(s.sections, section{pattern: r.Pattern, effect: r.Effect, match: m})
+			continue
 		case rc.KindPackage:
 			s.pkg(r.Name).effect = r.Effect
 		case rc.KindVersion:
 			p := s.pkg(r.Name)
-			if p.versions == nil {
-				p.versions = map[string]rc.Effect{}
-			}
-			p.versions[r.Version] = r.Effect
+			p.versions = append(p.versions, versionRule{version: r.Version, effect: r.Effect})
 			if r.Effect == rc.Allow {
 				p.allows = true
+				p.versionAllows++
+			} else {
+				p.versionBlocks++
 			}
+		default:
+			continue
 		}
+		if r.Effect == rc.Allow {
+			s.allows++
+		} else {
+			s.blocks++
+		}
+	}
+	for _, p := range s.pkgs {
+		if len(p.versions) > 1 {
+			slices.SortFunc(p.versions, func(a, b versionRule) int { return strings.Compare(a.version, b.version) })
+		}
+		// The appends' spare capacity goes: the set lives until the repository's next change.
+		p.versions = slices.Clip(p.versions)
 	}
 	return s, nil
 }
@@ -197,6 +234,26 @@ func (s *Set) VersionRules(name string) bool {
 	return p != nil && len(p.versions) > 0
 }
 
+// VersionRuleCounts is the number of the package's version rules that allow and that block: the package's switch asks whether they are
+// kept when it is turned (R-CUR-024). Zero for a nil set.
+func (s *Set) VersionRuleCounts(name string) (allow, block int) {
+	if s == nil {
+		return 0, 0
+	}
+	if p := s.pkgs[s.canon.name(name)]; p != nil {
+		return int(p.versionAllows), int(p.versionBlocks)
+	}
+	return 0, 0
+}
+
+// Counts is the number of the set's package and version rules that allow and that block, and of its sections (R-CUR-025's summary).
+func (s *Set) Counts() (allow, block, sections int) {
+	if s == nil {
+		return 0, 0, 0
+	}
+	return s.allows, s.blocks, len(s.sections)
+}
+
 // Decide is the decision of R-CUR-001 for one version of a package, steps 1 to 3: the narrowest kind that matches decides, a block
 // wins at equal width, and without a matching rule the mode decides. name and version are folded by the format's rules first.
 func (s *Set) Decide(name, version string) rc.Decision {
@@ -204,13 +261,58 @@ func (s *Set) Decide(name, version string) rc.Decision {
 		return rc.Delivered()
 	}
 	name, version = s.canon.name(name), s.canon.version(version)
-	if p := s.pkgs[name]; p != nil {
-		if e, ok := p.versions[version]; ok && version != "" {
+	if p := s.pkgs[name]; p != nil && version != "" {
+		if e, ok := p.version(version); ok {
 			return decided(rc.KindVersion, SubjectOf(rc.KindVersion, "", name, version), e)
 		}
-		if p.effect != "" {
-			return decided(rc.KindPackage, name, p.effect)
-		}
+	}
+	return s.level(name)
+}
+
+// Inherited is what a version of the package inherits (R-CUR-024): the decision of R-CUR-001 without the version's own rule, which is
+// the package level's, the same for every version. A version's switch writes a rule only where it departs from it.
+func (s *Set) Inherited(name, _ string) rc.Decision {
+	return s.Level(name)
+}
+
+// Level is the decision of the package level (R-CUR-024): the package's rule, else the sections, else the mode. A version's own rule
+// does not move it, unlike [Set.Package]; the package's switch shows it.
+func (s *Set) Level(name string) rc.Decision {
+	if s == nil {
+		return rc.Delivered()
+	}
+	return s.level(s.canon.name(name))
+}
+
+// LevelInherited is what the package level inherits (R-CUR-024): the sections, else the mode, without the package's own rule.
+func (s *Set) LevelInherited(name string) rc.Decision {
+	if s == nil {
+		return rc.Delivered()
+	}
+	if d, ok := s.sectionDecision(s.canon.name(name)); ok {
+		return d
+	}
+	return s.modeDecision()
+}
+
+// ModeDecides reports whether the mode decides the package level (R-CUR-025): no package rule and no section matches the name, so a
+// change of the mode changes what such a package delivers. True for a nil set.
+func (s *Set) ModeDecides(name string) bool {
+	if s == nil {
+		return true
+	}
+	name = s.canon.name(name)
+	if p := s.pkgs[name]; p != nil && p.effect != "" {
+		return false
+	}
+	_, ok := s.sectionDecision(name)
+	return !ok
+}
+
+// level is the package level of a folded name.
+func (s *Set) level(name string) rc.Decision {
+	if p := s.pkgs[name]; p != nil && p.effect != "" {
+		return decided(rc.KindPackage, name, p.effect)
 	}
 	if d, ok := s.sectionDecision(name); ok {
 		return d
@@ -226,25 +328,18 @@ func (s *Set) Package(name string) rc.Decision {
 		return rc.Delivered()
 	}
 	name = s.canon.name(name)
+	level := s.level(name)
 	p := s.pkgs[name]
-	var level rc.Decision
-	switch d, ok := s.sectionDecision(name); {
-	case p != nil && p.effect != "":
-		level = decided(rc.KindPackage, name, p.effect)
-	case ok:
-		level = d
-	default:
-		level = s.modeDecision()
-	}
 	if level.Delivered || p == nil || !p.allows {
 		return level
 	}
-	// Any allowing version rule makes the package delivered; the subject names the least of them, so the answer does not depend on the
-	// map's order.
+	// Any allowing version rule makes the package delivered; the subject names the least of them (the versions are sorted), so the
+	// answer does not depend on the order the rules were read in.
 	best := ""
-	for v, e := range p.versions {
-		if e == rc.Allow && (best == "" || v < best) {
-			best = v
+	for _, r := range p.versions {
+		if r.effect == rc.Allow {
+			best = r.version
+			break
 		}
 	}
 	return decided(rc.KindVersion, SubjectOf(rc.KindVersion, "", name, best), rc.Allow)

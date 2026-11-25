@@ -372,13 +372,29 @@ func (s *Server) hitRows(c catalogueCall, hits []discover.Hit) ([]map[string]any
 		if len(stored[h.Name]) > 0 {
 			st = "partial"
 		}
-		out = append(out, map[string]any{
+		row := map[string]any{
 			"name": h.Name, "description": h.Description, "latest": nullString(h.Latest), "updated": nullTimeValue(h.Updated),
 			"flags": listOf(h.Flags), "delivery": toDeliveryDecision(d, c.repo.Delivery().Mode()), "stored": st,
 			"request": requestRow(opened[h.Name]),
-		})
+		}
+		switchFacts(c, row, h.Name)
+		out = append(out, row)
 	}
 	return out, withheld, nil
+}
+
+// switchFacts adds what the package's switch shows and asks to the row of a package, for whoever may set rules (R-CUR-024): the
+// package level's decision, what it inherits, and the counts of its version rules, from the replica's rule set.
+func switchFacts(c catalogueCall, row map[string]any, name string) {
+	if !c.manager {
+		return
+	}
+	set := c.repo.Delivery()
+	mode := set.Mode()
+	allow, block := set.VersionRuleCounts(name)
+	row["level"] = toDeliveryDecision(set.Level(name), mode)
+	row["inherited"] = toDeliveryDecision(set.LevelInherited(name), mode)
+	row["versionRules"] = map[string]int{"allow": allow, "block": block}
 }
 
 // packageRow is a package with the repository's state of it and of every version of the page.
@@ -421,12 +437,16 @@ func (s *Server) packageRow(c catalogueCall, info discover.PackageInfo) (map[str
 		if held[v.Version] {
 			st = "whole"
 		}
-		rows = append(rows, map[string]any{
+		row := map[string]any{
 			"version": v.Version, "published": nullTimeValue(v.Published), "size": nullInt64(v.Size), "unpackedSize": nullInt64(v.UnpackedSize),
 			"flags": listOf(v.Flags), "platforms": listOf(v.Platforms), "digest": nullString(v.Digest),
 			"delivery": toDeliveryDecision(s.catalogueDecider().Decide(c.ctx, repoID, name, v.Version), mode), "stored": st,
 			"queued": queuedRow(queued, v.Version), "request": requestRow(openOf(open, v.Version)),
-		})
+		}
+		if c.manager {
+			row["inherited"] = toDeliveryDecision(c.repo.Delivery().Inherited(name, v.Version), mode)
+		}
+		rows = append(rows, row)
 	}
 	pst := "none"
 	if len(stored[name]) > 0 {
@@ -436,12 +456,14 @@ func (s *Server) packageRow(c catalogueCall, info discover.PackageInfo) (map[str
 	if tags == nil {
 		tags = map[string]string{}
 	}
-	return map[string]any{
+	out := map[string]any{
 		"name": name, "description": info.Description, "tags": tags,
 		"delivery": toDeliveryDecision(s.catalogueDecider().Package(c.ctx, repoID, name), mode), "stored": pst,
 		"request": requestRow(openOf(open, "")), "versions": rows, "total": nullTotal(info.Total),
 		"nextCursor": catalogueCursor(info.Cursor, info.Done), "done": info.Done,
-	}, nil
+	}
+	switchFacts(c, out, name)
+	return out, nil
 }
 
 func (s *Server) storedOf(c catalogueCall, names []string) (map[string][]string, error) {

@@ -3338,8 +3338,8 @@
               "x-quader-env": "QUADER_PROXY_DELIVERY_MAX_CLIENT_ENTRIES"
             },
             "max_rules": {
-              "default": 10000,
-              "description": "Delivery rules per remote repository, of which at most 100 are sections; one more answers 422 too_many_rules (R-CUR-006). About 150 bytes per rule in each replica's snapshot.",
+              "default": 50000,
+              "description": "Delivery rules per remote repository, of which at most 100 are sections; one more answers 422 too_many_rules (R-CUR-006). Measured in each replica's snapshot: about 130 bytes a package rule and 185 a version rule of a package of its own, 6.5 to 9.5 MB per repository at 50000, twice that while the snapshot is rebuilt.",
               "maximum": 1000000,
               "minimum": 100,
               "type": "integer",

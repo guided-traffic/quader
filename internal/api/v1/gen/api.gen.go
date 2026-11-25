@@ -1375,6 +1375,24 @@ func (e DeliveryRuleWrittenKind) Valid() bool {
 	}
 }
 
+// Defines values for DeliveryRulesSummaryMode.
+const (
+	DeliveryRulesSummaryModeAllExceptBlocked DeliveryRulesSummaryMode = "allExceptBlocked"
+	DeliveryRulesSummaryModeOnlyAllowed      DeliveryRulesSummaryMode = "onlyAllowed"
+)
+
+// Valid indicates whether the value is a known member of the DeliveryRulesSummaryMode enum.
+func (e DeliveryRulesSummaryMode) Valid() bool {
+	switch e {
+	case DeliveryRulesSummaryModeAllExceptBlocked:
+		return true
+	case DeliveryRulesSummaryModeOnlyAllowed:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DeliverySettingsMode.
 const (
 	DeliverySettingsModeAllExceptBlocked DeliverySettingsMode = "allExceptBlocked"
@@ -10459,6 +10477,12 @@ type DebSigningKeyList struct {
 	Keys []DebSigningKey `json:"keys"`
 }
 
+// DeliveryAllowStoredResult The rules allow-stored wrote (R-CUR-025).
+type DeliveryAllowStoredResult struct {
+	Created  int   `json:"created"`
+	Revision int64 `json:"revision"`
+}
+
 // DeliveryCheckInput defines model for DeliveryCheckInput.
 type DeliveryCheckInput struct {
 	Name    string  `json:"name"`
@@ -10633,6 +10657,12 @@ type DeliveryRuleEffect string
 // DeliveryRuleKind defines model for DeliveryRule.Kind.
 type DeliveryRuleKind string
 
+// DeliveryRuleCounts The package's version rules by effect (R-CUR-024).
+type DeliveryRuleCounts struct {
+	Allow int `json:"allow"`
+	Block int `json:"block"`
+}
+
 // DeliveryRuleInput A delivery rule as a request writes it (R-CUR-001, R-CUR-006): a `section` holds a name pattern of R-AUTHZ-005, a `package` a
 // name (every version, future ones included), a `version` a name and one exact version (no range).
 type DeliveryRuleInput struct {
@@ -10689,6 +10719,36 @@ type DeliveryRuleWrittenEffect string
 // DeliveryRuleWrittenKind defines model for DeliveryRuleWritten.Kind.
 type DeliveryRuleWrittenKind string
 
+// DeliveryRulesSummary What a change of the delivery mode affects (R-CUR-025).
+type DeliveryRulesSummary struct {
+	// MaxRules proxy.delivery.max_rules.
+	MaxRules int                      `json:"maxRules"`
+	Mode     DeliveryRulesSummaryMode `json:"mode"`
+	Rules    struct {
+		// Allow The package and version rules that allow.
+		Allow int `json:"allow"`
+
+		// Block The package and version rules that block.
+		Block    int `json:"block"`
+		Sections int `json:"sections"`
+	} `json:"rules"`
+
+	// Unruled The packages the repository stores whose package level the mode decides.
+	Unruled struct {
+		// Count At most maxRules + 1.
+		Count int `json:"count"`
+
+		// Counted False when the count stopped at maxRules + 1.
+		Counted bool `json:"counted"`
+
+		// Names The first 100 in name order.
+		Names []string `json:"names"`
+	} `json:"unruled"`
+}
+
+// DeliveryRulesSummaryMode defines model for DeliveryRulesSummary.Mode.
+type DeliveryRulesSummaryMode string
+
 // DeliverySettings The delivery mode and the switches of the curation of a remote repository (`remote.delivery`, remote-curation.md R-CUR-001,
 // R-CUR-020): configuration, which `repositories:write-config` and the project's Owner set. The rules themselves are written through
 // `…/delivery-rules`.
@@ -10705,6 +10765,34 @@ type DeliverySettings struct {
 
 // DeliverySettingsMode Everything is delivered unless a rule blocks it, or nothing unless a rule allows it.
 type DeliverySettingsMode string
+
+// DeliverySwitchInput The switch of a package (no `version`) or of one version turned to delivered or not (R-CUR-024).
+type DeliverySwitchInput struct {
+	Delivered bool   `json:"delivered"`
+	Name      string `json:"name"`
+
+	// Note The note of a rule the switch writes; seen only by those who may read the rules.
+	Note *string `json:"note,omitempty"`
+
+	// ResetVersions A package only; also removes every version rule of the package in the same transaction (**Reset them**).
+	ResetVersions *bool   `json:"resetVersions,omitempty"`
+	Version       *string `json:"version,omitempty"`
+}
+
+// DeliverySwitchResult What a switch did (R-CUR-024).
+type DeliverySwitchResult struct {
+	// Decision The decision of R-CUR-001 and what made it.
+	Decision DeliveryDecision `json:"decision"`
+
+	// Removed The rules the switch removed (the subject's own, and with `resetVersions` the package's version rules).
+	Removed []DeliveryRule `json:"removed"`
+
+	// Revision The revision of the repository's rule set after the write.
+	Revision int64 `json:"revision"`
+
+	// Rule The subject's rule after the write; `null` where the subject inherits its state.
+	Rule *DeliveryRule `json:"rule"`
+}
 
 // Digests defines model for Digests.
 type Digests struct {
@@ -17273,8 +17361,14 @@ type UpstreamHit struct {
 	Description string           `json:"description"`
 
 	// Flags deprecated, unlisted, official, verified, insecure, unsigned-index.
-	Flags  []string `json:"flags"`
-	Latest *string  `json:"latest"`
+	Flags []string `json:"flags"`
+
+	// Inherited The package level without the package's own rule (R-CUR-024); only to whoever may set rules.
+	Inherited *DeliveryDecision `json:"inherited,omitempty"`
+	Latest    *string           `json:"latest"`
+
+	// Level The package level's decision, which the package's switch shows (R-CUR-024); only to whoever may set rules.
+	Level *DeliveryDecision `json:"level,omitempty"`
 
 	// Name The format's normalized name.
 	Name string `json:"name"`
@@ -17283,6 +17377,9 @@ type UpstreamHit struct {
 	Request *UpstreamRequestState `json:"request"`
 	Stored  UpstreamHitStored     `json:"stored"`
 	Updated *time.Time            `json:"updated"`
+
+	// VersionRules The package's version rules by effect (R-CUR-024).
+	VersionRules *DeliveryRuleCounts `json:"versionRules,omitempty"`
 }
 
 // UpstreamHitStored defines model for UpstreamHit.Stored.
@@ -17309,17 +17406,26 @@ type UpstreamPackage struct {
 	Delivery    DeliveryDecision `json:"delivery"`
 	Description string           `json:"description"`
 	Done        bool             `json:"done"`
-	Name        string           `json:"name"`
-	NextCursor  *string          `json:"nextCursor"`
+
+	// Inherited The package level without the package's own rule (R-CUR-024); only to whoever may set rules.
+	Inherited *DeliveryDecision `json:"inherited,omitempty"`
+
+	// Level The package level's decision, which the package's switch shows (R-CUR-024); only to whoever may set rules.
+	Level      *DeliveryDecision `json:"level,omitempty"`
+	Name       string            `json:"name"`
+	NextCursor *string           `json:"nextCursor"`
 
 	// Request The open request entry of a subject (R-CUR-015), null for none.
 	Request *UpstreamRequestState `json:"request"`
 	Stored  UpstreamPackageStored `json:"stored"`
 
 	// Tags npm's dist-tags, tag to version; empty for every other format (an image's tags are its versions).
-	Tags     map[string]string `json:"tags"`
-	Total    *int              `json:"total"`
-	Versions []UpstreamVersion `json:"versions"`
+	Tags  map[string]string `json:"tags"`
+	Total *int              `json:"total"`
+
+	// VersionRules The package's version rules by effect (R-CUR-024).
+	VersionRules *DeliveryRuleCounts `json:"versionRules,omitempty"`
+	Versions     []UpstreamVersion   `json:"versions"`
 }
 
 // UpstreamPackageStored defines model for UpstreamPackage.Stored.
@@ -17805,9 +17911,12 @@ type UpstreamVersion struct {
 	Digest   *string          `json:"digest"`
 
 	// Flags deprecated, yanked, unlisted, prerelease, vulnerable.
-	Flags     []string   `json:"flags"`
-	Platforms []string   `json:"platforms"`
-	Published *time.Time `json:"published"`
+	Flags []string `json:"flags"`
+
+	// Inherited The decision without the version's own rule, its package level's (R-CUR-024); only to whoever may set rules.
+	Inherited *DeliveryDecision `json:"inherited,omitempty"`
+	Platforms []string          `json:"platforms"`
+	Published *time.Time        `json:"published"`
 
 	// Queued The queue row of a download of the version that waits or runs (R-CUR-011), null for none.
 	Queued *UpstreamQueued `json:"queued"`
@@ -20193,6 +20302,18 @@ type PutDeliveryRuleParams struct {
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
 
+// AllowStoredPackagesParams defines parameters for AllowStoredPackages.
+type AllowStoredPackagesParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// SwitchDeliveryRuleParams defines parameters for SwitchDeliveryRule.
+type SwitchDeliveryRuleParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
 // ListRemoteDownloadBulksParams defines parameters for ListRemoteDownloadBulks.
 type ListRemoteDownloadBulksParams struct {
 	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
@@ -21589,6 +21710,9 @@ type PutDeliveryRuleJSONRequestBody = DeliveryRuleInput
 
 // CheckDeliveryRulesJSONRequestBody defines body for CheckDeliveryRules for application/json ContentType.
 type CheckDeliveryRulesJSONRequestBody = DeliveryCheckInput
+
+// SwitchDeliveryRuleJSONRequestBody defines body for SwitchDeliveryRule for application/json ContentType.
+type SwitchDeliveryRuleJSONRequestBody = DeliverySwitchInput
 
 // CreateRemoteDownloadSyncJSONRequestBody defines body for CreateRemoteDownloadSync for application/json ContentType.
 type CreateRemoteDownloadSyncJSONRequestBody = RemoteDownloadRequest
@@ -23077,9 +23201,18 @@ type ServerInterface interface {
 	// PutDeliveryRule Create or replace the delivery rule of a subject
 	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules)
 	PutDeliveryRule(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params PutDeliveryRuleParams)
+	// AllowStoredPackages Allow every stored package the mode decides
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/allow-stored)
+	AllowStoredPackages(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params AllowStoredPackagesParams)
 	// CheckDeliveryRules Ask which delivery rule decides a package or a version
 	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/check)
 	CheckDeliveryRules(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string)
+	// GetDeliveryRulesSummary What a change of the delivery mode affects
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/summary)
+	GetDeliveryRulesSummary(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string)
+	// SwitchDeliveryRule Turn the switch of a package or a version
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/switch)
+	SwitchDeliveryRule(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params SwitchDeliveryRuleParams)
 	// DeleteDeliveryRule Remove a delivery rule
 	// (DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/{ruleId})
 	DeleteDeliveryRule(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, ruleId openapi_types.UUID)
@@ -32524,6 +32657,65 @@ func (siw *ServerInterfaceWrapper) PutDeliveryRule(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// AllowStoredPackages operation middleware
+func (siw *ServerInterfaceWrapper) AllowStoredPackages(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AllowStoredPackagesParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AllowStoredPackages(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CheckDeliveryRules operation middleware
 func (siw *ServerInterfaceWrapper) CheckDeliveryRules(w http.ResponseWriter, r *http.Request) {
 
@@ -32550,6 +32742,100 @@ func (siw *ServerInterfaceWrapper) CheckDeliveryRules(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CheckDeliveryRules(w, r, projectKey, repoKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDeliveryRulesSummary operation middleware
+func (siw *ServerInterfaceWrapper) GetDeliveryRulesSummary(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDeliveryRulesSummary(w, r, projectKey, repoKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SwitchDeliveryRule operation middleware
+func (siw *ServerInterfaceWrapper) SwitchDeliveryRule(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SwitchDeliveryRuleParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SwitchDeliveryRule(w, r, projectKey, repoKey, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -43326,6 +43612,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules", wrapper.ListDeliveryRules)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules", wrapper.PutDeliveryRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/check", wrapper.CheckDeliveryRules)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/switch", wrapper.SwitchDeliveryRule)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/summary", wrapper.GetDeliveryRulesSummary)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/allow-stored", wrapper.AllowStoredPackages)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/{ruleId}", wrapper.DeleteDeliveryRule)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests", wrapper.ListDeliveryRequests)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests", wrapper.AskDeliveryRequest)

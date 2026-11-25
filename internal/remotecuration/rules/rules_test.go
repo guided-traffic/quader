@@ -250,3 +250,69 @@ func by(d rc.Decision) string {
 	}
 	return string(d.By.Kind) + " " + d.By.Subject
 }
+
+// TestR_CUR_024_WhatASubjectInherits holds what a switch shows and departs from (R-CUR-024): a version inherits its package level (the
+// package's rule, else the sections, else the mode), the level inherits the sections, else the mode; a version's own rule moves neither,
+// and the counts of the version rules are what the package's switch asks about.
+func TestR_CUR_024_WhatASubjectInherits(t *testing.T) {
+	type want struct{ inherited, level, levelInherited string }
+	cases := []struct {
+		name         string
+		mode         rc.Mode
+		rules        []Rule
+		pkg, version string
+		want         want
+		modeDecides  bool
+		allow, block int
+	}{
+		{"no rule, everything", rc.AllExceptBlocked, []Rule{ver("other", "1", rc.Block)}, "lodash", "1.0.0", want{"delivered mode", "delivered mode", "delivered mode"}, true, 0, 0},
+		{"no rule, only allowed", rc.OnlyAllowed, nil, "lodash", "1.0.0", want{"notAllowed mode", "notAllowed mode", "notAllowed mode"}, true, 0, 0},
+		{"a version block does not move the level", rc.AllExceptBlocked, []Rule{ver("lodash", "1.0.0", rc.Block)}, "lodash", "1.0.0", want{"delivered mode", "delivered mode", "delivered mode"}, true, 0, 1},
+		{"a version allow does not move the level", rc.OnlyAllowed, []Rule{ver("lodash", "1.0.0", rc.Allow)}, "lodash", "1.0.0", want{"notAllowed mode", "notAllowed mode", "notAllowed mode"}, true, 1, 0},
+		{"a package allow is what a version inherits", rc.OnlyAllowed, []Rule{pkg("lodash", rc.Allow)}, "lodash", "1.0.0", want{"delivered package lodash", "delivered package lodash", "notAllowed mode"}, false, 0, 0},
+		{"a package block beside a version allow", rc.AllExceptBlocked, []Rule{pkg("lodash", rc.Block), ver("lodash", "1.0.0", rc.Allow), ver("lodash", "2.0.0", rc.Block)}, "lodash", "1.0.0", want{"blocked package lodash", "blocked package lodash", "delivered mode"}, false, 1, 1},
+		{"a section allow beside a package", rc.OnlyAllowed, []Rule{sec("@acme/*", rc.Allow)}, "@acme/ui", "2.0.0", want{"delivered section @acme/*", "delivered section @acme/*", "delivered section @acme/*"}, false, 0, 0},
+		{"a package rule beside a section", rc.OnlyAllowed, []Rule{sec("@acme/*", rc.Allow), pkg("@acme/ui", rc.Block)}, "@acme/ui", "2.0.0", want{"blocked package @acme/ui", "blocked package @acme/ui", "delivered section @acme/*"}, false, 0, 0},
+		{"a section block wins over a section allow", rc.AllExceptBlocked, []Rule{sec("@acme/*", rc.Allow), sec("@acme/u*", rc.Block)}, "@acme/ui", "", want{"blocked section @acme/u*", "blocked section @acme/u*", "blocked section @acme/u*"}, false, 0, 0},
+		{"another package's rules decide nothing here", rc.OnlyAllowed, []Rule{pkg("a", rc.Allow), ver("a", "1", rc.Allow)}, "b", "1", want{"notAllowed mode", "notAllowed mode", "notAllowed mode"}, true, 0, 0},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s := compile(t, c.mode, Canon{}, c.rules...)
+			got := want{
+				outcome(s.Inherited(c.pkg, c.version)) + " " + by(s.Inherited(c.pkg, c.version)),
+				outcome(s.Level(c.pkg)) + " " + by(s.Level(c.pkg)),
+				outcome(s.LevelInherited(c.pkg)) + " " + by(s.LevelInherited(c.pkg)),
+			}
+			if got != c.want {
+				t.Errorf("got %+v, want %+v", got, c.want)
+			}
+			if s.ModeDecides(c.pkg) != c.modeDecides {
+				t.Errorf("ModeDecides = %v", !c.modeDecides)
+			}
+			if a, b := s.VersionRuleCounts(c.pkg); a != c.allow || b != c.block {
+				t.Errorf("VersionRuleCounts = %d, %d; want %d, %d", a, b, c.allow, c.block)
+			}
+		})
+	}
+	// A nil set delivers everything, the mode decides every package, and it counts nothing.
+	var n *Set
+	if !n.Inherited("x", "1").Delivered || !n.Level("x").Delivered || !n.LevelInherited("x").Delivered || !n.ModeDecides("x") {
+		t.Fatal("a nil set refuses")
+	}
+	if a, b, s := n.Counts(); a+b+s != 0 {
+		t.Fatal("a nil set counts rules")
+	}
+	// The counts of a set: package and version rules by effect, and the sections.
+	s := compile(t, rc.OnlyAllowed, Canon{}, pkg("a", rc.Allow), ver("a", "1", rc.Block), ver("b", "2", rc.Allow), sec("c*", rc.Block))
+	if a, b, sec := s.Counts(); a != 2 || b != 1 || sec != 1 {
+		t.Fatalf("Counts = %d, %d, %d", a, b, sec)
+	}
+	// The version rules are found by a binary search over the sorted slice, whatever order they were read in.
+	vs := compile(t, rc.AllExceptBlocked, Canon{}, ver("p", "3.0.0", rc.Block), ver("p", "1.0.0", rc.Allow), ver("p", "2.0.0", rc.Block))
+	for v, w := range map[string]string{"1.0.0": "delivered", "2.0.0": "blocked", "3.0.0": "blocked", "1.5.0": "delivered"} {
+		if got := outcome(vs.Decide("p", v)); got != w {
+			t.Errorf("Decide(p, %s) = %s, want %s", v, got, w)
+		}
+	}
+}

@@ -275,7 +275,7 @@ key of the overview of downloads from upstreams ([outbound.go](../../internal/co
 ```yaml
 proxy:
   delivery:
-    max_rules: 10000                       # default; 100 to 1000000, rules per repository, at most 100 of them sections (R-CUR-006)
+    max_rules: 50000                       # default; 100 to 1000000, rules per repository, at most 100 of them sections (R-CUR-006)
     open_requests_per_person: 20           # default; 1 to 1000, per repository (R-CUR-015)
     examine_versions_per_request: 1        # default; 1 to 100 (R-CUR-015)
     request_retention: 720h                # default; at least 1h (R-CUR-015)

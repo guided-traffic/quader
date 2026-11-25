@@ -15,6 +15,43 @@ SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect
  WHERE r.repo_id = sqlc.arg(repo_id)::bigint
  ORDER BY r.kind, r.id;
 
+-- name: DeliveryRulesOfPackage :many
+-- The package and version rules of one package with what the API answers of them: what a write that decides a package or a version
+-- compiles beside the sections (R-CUR-024, Q-CUR-207), so its cost does not grow with the repository's other rules.
+SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.note, r.request_id, r.created_by, r.created_at,
+       COALESCE(p.name, '')::text AS created_by_name
+  FROM remote_delivery_rules r
+  LEFT JOIN principal p ON p.id = r.created_by
+ WHERE r.repo_id = sqlc.arg(repo_id)::bigint AND r.name = sqlc.arg(name)::text
+ ORDER BY r.kind, r.version;
+
+-- name: DeliveryRuleSections :many
+-- The section rules of one repository, at most 100 (R-CUR-006).
+SELECT r.pattern, r.effect
+  FROM remote_delivery_rules r
+ WHERE r.repo_id = sqlc.arg(repo_id)::bigint AND r.kind = 'section'
+ ORDER BY r.id;
+
+-- name: DeliveryRulesDeleteVersions :many
+-- Removes every version rule of one package and returns them: the package's switch with Reset (R-CUR-024).
+DELETE FROM remote_delivery_rules
+ WHERE repo_id = sqlc.arg(repo_id)::bigint AND kind = 'version' AND name = sqlc.arg(name)::text
+RETURNING id, kind, pattern, name, version, effect, note, request_id, created_by, created_at;
+
+-- name: DeliveryRuleInsertMany :exec
+-- One allowing package rule per name, in one statement (R-CUR-025 allow-stored); the names are the format's normalized ones.
+INSERT INTO remote_delivery_rules (id, repo_id, kind, name, effect, note, created_by)
+SELECT u.id::uuid, sqlc.arg(repo_id)::bigint, 'package', u.name, 'allow', '', NULLIF(sqlc.arg(created_by)::text, '')::uuid
+  FROM (SELECT unnest(sqlc.arg(ids)::text[]) AS id, unnest(sqlc.arg(names)::text[]) AS name) AS u;
+
+-- name: DeliveryStoredPackagesPage :many
+-- One page of the names of the packages a repository stores, in name order after a name (R-CUR-025's summary and allow-stored).
+SELECT p.name
+  FROM packages p
+ WHERE p.repo_id = sqlc.arg(repo_id)::bigint AND p.name > sqlc.arg(after_name)::text
+ ORDER BY p.name
+ LIMIT sqlc.arg(max_rows)::int;
+
 -- name: DeliveryRulesList :many
 -- One page of a repository's rules, newest first (R-CUR-006): the optional kind and effect, q a substring of the subject, and the
 -- keyset of the previous page (created_at, id). The creator's name is joined.
@@ -79,6 +116,14 @@ UPDATE repositories
    SET delivery_rules_revision = delivery_rules_revision + 1
  WHERE id = sqlc.arg(repo_id)::bigint
 RETURNING delivery_rules_revision;
+
+-- name: DeliveryRulesRaiseRevisionMode :one
+-- DeliveryRulesRaiseRevision that also reads the repository's delivery mode under the row lock ('' is allExceptBlocked): a switch and
+-- allow-stored decide against the mode as stored, not as a replica's snapshot holds it (R-CUR-024, R-CUR-025).
+UPDATE repositories
+   SET delivery_rules_revision = delivery_rules_revision + 1
+ WHERE id = sqlc.arg(repo_id)::bigint
+RETURNING delivery_rules_revision, COALESCE(config -> 'remote' -> 'delivery' ->> 'mode', '')::text AS mode;
 
 -- name: DeliveryRefusalCount :execrows
 -- Counts a client's refusals in the request entry of the subject (R-CUR-004 "Record", R-CUR-015): the open entry, else the entry

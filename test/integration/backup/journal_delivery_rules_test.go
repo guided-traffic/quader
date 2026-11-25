@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/qname"
 	rc "github.com/guided-traffic/quader/internal/remotecuration"
 	"github.com/guided-traffic/quader/internal/remotecuration/rules/store"
@@ -59,8 +60,9 @@ func (s *twinSide) rulesOf(key string) string {
 }
 
 // TestR_CUR_006_TheRulesAndTheModeNarrowedAfterARestorePointAreReplayed: after t a block is added, an allow is turned into a block, an
-// allow is removed and the mode is set to onlyAllowed; each is a repository.narrowed entry (parts rules and deliveryMode). The replay
-// applies them to the copy made at t (the allow of left-pad is gone, evil and lodash are blocked, the mode is onlyAllowed), raises the
+// allow is removed, the package's switch with Reset removes a version's allow (R-CUR-024), and the mode is set to onlyAllowed; each is a
+// repository.narrowed entry (parts rules and deliveryMode). The replay applies them to the copy made at t (the allows of left-pad and
+// of left-pad@1.0.0 are gone, evil and lodash are blocked, the mode is onlyAllowed), raises the
 // rule set's revision, writes no audit event, and a second replay applies nothing again. A restored rule set at its bound of sections takes no further
 // section block: the repository is disabled and the entry suspended (fail closed). Data: about 100 rule rows, no artifact; about 1 s.
 func TestR_CUR_006_TheRulesAndTheModeNarrowedAfterARestorePointAreReplayed(t *testing.T) {
@@ -86,6 +88,9 @@ func TestR_CUR_006_TheRulesAndTheModeNarrowedAfterARestorePointAreReplayed(t *te
 	rs := rulesStore(t, w.src)
 	leftPad := put(rs, "npm-remote", rc.KindPackage, "left-pad", rc.Allow)
 	put(rs, "npm-remote", rc.KindPackage, "lodash", rc.Allow)
+	if _, err := rs.Put(ctx, target("npm-remote"), ruleCaller, store.Input{Kind: rc.KindVersion, Name: "left-pad", Version: "1.0.0", Effect: rc.Allow}); err != nil {
+		t.Fatal(err)
+	}
 	w.snapshot()
 
 	rs = rulesStore(t, w.src)
@@ -94,15 +99,22 @@ func TestR_CUR_006_TheRulesAndTheModeNarrowedAfterARestorePointAreReplayed(t *te
 	if err := rs.Delete(ctx, target("npm-remote"), ruleCaller, leftPad); err != nil {
 		t.Fatal(err)
 	}
+	// The package's switch with Reset (R-CUR-024) removes the version's allow: one entry with the allows it removed.
+	if err := w.src.db.InTx(ctx, func(tx meta.Tx) error {
+		_, err := rs.SwitchTx(ctx, tx, target("npm-remote"), ruleCaller, store.SwitchInput{Name: "left-pad", Delivered: true, ResetVersions: true})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := w.svc.Patch(ctx, repoCaller, qname.Repo{Project: "web", Key: "npm-remote"}, repository.Precondition{Any: true}, deliveryMode(string(rc.OnlyAllowed))); err != nil {
 		t.Fatal(err)
 	}
 	put(rs, "npm-full", rc.KindSection, "@evil/*", rc.Block)
-	js := w.ship(5)
+	js := w.ship(6)
 	w.src.close()
 
 	rst := w.tw.open(w.tw.restored)
-	if got := rst.rulesOf("npm-remote"); got != "left-pad:allow,lodash:allow" {
+	if got := rst.rulesOf("npm-remote"); got != "left-pad:allow,left-pad:allow,lodash:allow" {
 		t.Fatalf("the rules at t: %s", got)
 	}
 	// The copy of npm-full holds the bound of a repository's sections (rules.MaxSections): the journaled section block cannot be added.
@@ -111,11 +123,11 @@ func TestR_CUR_006_TheRulesAndTheModeNarrowedAfterARestorePointAreReplayed(t *te
 	revision := rst.number("SELECT delivery_rules_revision FROM repositories WHERE key = 'npm-remote'")
 	sum, _ := rst.replay(js, w.tw.at, rst.changes)
 
-	if o := outcomes(sum)["repository.narrowed web/npm-remote"]; len(o) != 4 || slices.ContainsFunc(o, func(x journal.Outcome) bool { return x != journal.Applied }) {
-		t.Errorf("repository.narrowed web/npm-remote: %v, want four applied", o)
+	if o := outcomes(sum)["repository.narrowed web/npm-remote"]; len(o) != 5 || slices.ContainsFunc(o, func(x journal.Outcome) bool { return x != journal.Applied }) {
+		t.Errorf("repository.narrowed web/npm-remote: %v, want five applied", o)
 	}
 	if got := rst.rulesOf("npm-remote"); got != "evil:block,lodash:block" {
-		t.Errorf("the restored rules: %s, want evil and lodash blocked and the allow of left-pad gone", got)
+		t.Errorf("the restored rules: %s, want evil and lodash blocked and the allows of left-pad and of left-pad@1.0.0 gone", got)
 	}
 	if got := rst.text("SELECT COALESCE(config->'remote'->'delivery'->>'mode', '') FROM repositories WHERE key = 'npm-remote'"); got != string(rc.OnlyAllowed) {
 		t.Errorf("remote.delivery.mode = %q", got)
@@ -141,5 +153,5 @@ func TestR_CUR_006_TheRulesAndTheModeNarrowedAfterARestorePointAreReplayed(t *te
 		}
 	})
 	// The disabled npm-full is in effect too: a disabled repository delivers nothing.
-	secondPass(t, rst, js, w.tw.at, 5)
+	secondPass(t, rst, js, w.tw.at, 6)
 }

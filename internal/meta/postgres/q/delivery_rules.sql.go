@@ -321,6 +321,30 @@ func (q *Queries) DeliveryRuleInsert(ctx context.Context, arg DeliveryRuleInsert
 	return err
 }
 
+const deliveryRuleInsertMany = `-- name: DeliveryRuleInsertMany :exec
+INSERT INTO remote_delivery_rules (id, repo_id, kind, name, effect, note, created_by)
+SELECT u.id::uuid, $1::bigint, 'package', u.name, 'allow', '', NULLIF($2::text, '')::uuid
+  FROM (SELECT unnest($3::text[]) AS id, unnest($4::text[]) AS name) AS u
+`
+
+type DeliveryRuleInsertManyParams struct {
+	RepoID    int64
+	CreatedBy string
+	Ids       []string
+	Names     []string
+}
+
+// One allowing package rule per name, in one statement (R-CUR-025 allow-stored); the names are the format's normalized ones.
+func (q *Queries) DeliveryRuleInsertMany(ctx context.Context, arg DeliveryRuleInsertManyParams) error {
+	_, err := q.db.Exec(ctx, deliveryRuleInsertMany,
+		arg.RepoID,
+		arg.CreatedBy,
+		arg.Ids,
+		arg.Names,
+	)
+	return err
+}
+
 const deliveryRuleReplace = `-- name: DeliveryRuleReplace :exec
 UPDATE remote_delivery_rules
    SET effect = $1::text, note = $2::text,
@@ -344,6 +368,39 @@ func (q *Queries) DeliveryRuleReplace(ctx context.Context, arg DeliveryRuleRepla
 		arg.ID,
 	)
 	return err
+}
+
+const deliveryRuleSections = `-- name: DeliveryRuleSections :many
+SELECT r.pattern, r.effect
+  FROM remote_delivery_rules r
+ WHERE r.repo_id = $1::bigint AND r.kind = 'section'
+ ORDER BY r.id
+`
+
+type DeliveryRuleSectionsRow struct {
+	Pattern pgtype.Text
+	Effect  string
+}
+
+// The section rules of one repository, at most 100 (R-CUR-006).
+func (q *Queries) DeliveryRuleSections(ctx context.Context, repoID int64) ([]DeliveryRuleSectionsRow, error) {
+	rows, err := q.db.Query(ctx, deliveryRuleSections, repoID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DeliveryRuleSectionsRow{}
+	for rows.Next() {
+		var i DeliveryRuleSectionsRow
+		if err := rows.Scan(&i.Pattern, &i.Effect); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const deliveryRulesAll = `-- name: DeliveryRulesAll :many
@@ -382,6 +439,62 @@ func (q *Queries) DeliveryRulesAll(ctx context.Context) ([]DeliveryRulesAllRow, 
 			&i.Name,
 			&i.Version,
 			&i.Effect,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const deliveryRulesDeleteVersions = `-- name: DeliveryRulesDeleteVersions :many
+DELETE FROM remote_delivery_rules
+ WHERE repo_id = $1::bigint AND kind = 'version' AND name = $2::text
+RETURNING id, kind, pattern, name, version, effect, note, request_id, created_by, created_at
+`
+
+type DeliveryRulesDeleteVersionsParams struct {
+	RepoID int64
+	Name   string
+}
+
+type DeliveryRulesDeleteVersionsRow struct {
+	ID        pgtype.UUID
+	Kind      string
+	Pattern   pgtype.Text
+	Name      pgtype.Text
+	Version   pgtype.Text
+	Effect    string
+	Note      string
+	RequestID pgtype.UUID
+	CreatedBy pgtype.UUID
+	CreatedAt pgtype.Timestamptz
+}
+
+// Removes every version rule of one package and returns them: the package's switch with Reset (R-CUR-024).
+func (q *Queries) DeliveryRulesDeleteVersions(ctx context.Context, arg DeliveryRulesDeleteVersionsParams) ([]DeliveryRulesDeleteVersionsRow, error) {
+	rows, err := q.db.Query(ctx, deliveryRulesDeleteVersions, arg.RepoID, arg.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DeliveryRulesDeleteVersionsRow{}
+	for rows.Next() {
+		var i DeliveryRulesDeleteVersionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.Pattern,
+			&i.Name,
+			&i.Version,
+			&i.Effect,
+			&i.Note,
+			&i.RequestID,
+			&i.CreatedBy,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -474,6 +587,68 @@ func (q *Queries) DeliveryRulesList(ctx context.Context, arg DeliveryRulesListPa
 	return items, nil
 }
 
+const deliveryRulesOfPackage = `-- name: DeliveryRulesOfPackage :many
+SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.note, r.request_id, r.created_by, r.created_at,
+       COALESCE(p.name, '')::text AS created_by_name
+  FROM remote_delivery_rules r
+  LEFT JOIN principal p ON p.id = r.created_by
+ WHERE r.repo_id = $1::bigint AND r.name = $2::text
+ ORDER BY r.kind, r.version
+`
+
+type DeliveryRulesOfPackageParams struct {
+	RepoID int64
+	Name   string
+}
+
+type DeliveryRulesOfPackageRow struct {
+	ID            pgtype.UUID
+	Kind          string
+	Pattern       pgtype.Text
+	Name          pgtype.Text
+	Version       pgtype.Text
+	Effect        string
+	Note          string
+	RequestID     pgtype.UUID
+	CreatedBy     pgtype.UUID
+	CreatedAt     pgtype.Timestamptz
+	CreatedByName string
+}
+
+// The package and version rules of one package with what the API answers of them: what a write that decides a package or a version
+// compiles beside the sections (R-CUR-024, Q-CUR-207), so its cost does not grow with the repository's other rules.
+func (q *Queries) DeliveryRulesOfPackage(ctx context.Context, arg DeliveryRulesOfPackageParams) ([]DeliveryRulesOfPackageRow, error) {
+	rows, err := q.db.Query(ctx, deliveryRulesOfPackage, arg.RepoID, arg.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DeliveryRulesOfPackageRow{}
+	for rows.Next() {
+		var i DeliveryRulesOfPackageRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.Pattern,
+			&i.Name,
+			&i.Version,
+			&i.Effect,
+			&i.Note,
+			&i.RequestID,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.CreatedByName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deliveryRulesOfRepository = `-- name: DeliveryRulesOfRepository :many
 SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect
   FROM remote_delivery_rules r
@@ -532,4 +707,60 @@ func (q *Queries) DeliveryRulesRaiseRevision(ctx context.Context, repoID int64) 
 	var delivery_rules_revision int64
 	err := row.Scan(&delivery_rules_revision)
 	return delivery_rules_revision, err
+}
+
+const deliveryRulesRaiseRevisionMode = `-- name: DeliveryRulesRaiseRevisionMode :one
+UPDATE repositories
+   SET delivery_rules_revision = delivery_rules_revision + 1
+ WHERE id = $1::bigint
+RETURNING delivery_rules_revision, COALESCE(config -> 'remote' -> 'delivery' ->> 'mode', '')::text AS mode
+`
+
+type DeliveryRulesRaiseRevisionModeRow struct {
+	DeliveryRulesRevision int64
+	Mode                  string
+}
+
+// DeliveryRulesRaiseRevision that also reads the repository's delivery mode under the row lock (” is allExceptBlocked): a switch and
+// allow-stored decide against the mode as stored, not as a replica's snapshot holds it (R-CUR-024, R-CUR-025).
+func (q *Queries) DeliveryRulesRaiseRevisionMode(ctx context.Context, repoID int64) (DeliveryRulesRaiseRevisionModeRow, error) {
+	row := q.db.QueryRow(ctx, deliveryRulesRaiseRevisionMode, repoID)
+	var i DeliveryRulesRaiseRevisionModeRow
+	err := row.Scan(&i.DeliveryRulesRevision, &i.Mode)
+	return i, err
+}
+
+const deliveryStoredPackagesPage = `-- name: DeliveryStoredPackagesPage :many
+SELECT p.name
+  FROM packages p
+ WHERE p.repo_id = $1::bigint AND p.name > $2::text
+ ORDER BY p.name
+ LIMIT $3::int
+`
+
+type DeliveryStoredPackagesPageParams struct {
+	RepoID    int64
+	AfterName string
+	MaxRows   int32
+}
+
+// One page of the names of the packages a repository stores, in name order after a name (R-CUR-025's summary and allow-stored).
+func (q *Queries) DeliveryStoredPackagesPage(ctx context.Context, arg DeliveryStoredPackagesPageParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, deliveryStoredPackagesPage, arg.RepoID, arg.AfterName, arg.MaxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

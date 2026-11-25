@@ -9,7 +9,7 @@ import "time"
 
 // ProxyDelivery bounds the delivery rules and the requests for an allow of a remote repository (R-CUR-006, R-CUR-015).
 type ProxyDelivery struct {
-	MaxRules                  int           `yaml:"max_rules" default:"10000" validate:"min=100,max=1000000" doc:"Delivery rules per remote repository, of which at most 100 are sections; one more answers 422 too_many_rules (R-CUR-006). About 150 bytes per rule in each replica's snapshot."`
+	MaxRules                  int           `yaml:"max_rules" default:"50000" validate:"min=100,max=1000000" doc:"Delivery rules per remote repository, of which at most 100 are sections; one more answers 422 too_many_rules (R-CUR-006). Measured in each replica's snapshot: about 130 bytes a package rule and 185 a version rule of a package of its own, 6.5 to 9.5 MB per repository at 50000, twice that while the snapshot is rebuilt."`
 	OpenRequestsPerPerson     int           `yaml:"open_requests_per_person" default:"20" validate:"min=1,max=1000" doc:"Open requests for an allow one person may hold in one repository; one more answers 429 too_many_requests (R-CUR-015)."`
 	ExamineVersionsPerRequest int           `yaml:"examine_versions_per_request" default:"1" validate:"min=1,max=100" doc:"Versions a new request for a package downloads for examination: the newest that are no prereleases (R-CUR-015)."`
 	RequestRetention          time.Duration `yaml:"request_retention" default:"720h" validate:"min=1h" doc:"How long an entry with no asker and no client refusal stays before the retention task removes it (R-CUR-015)."`

@@ -249,7 +249,7 @@ func (s *Store) PutTx(ctx context.Context, tx meta.Tx, t Target, c Caller, in In
 				return err
 			}
 		} else {
-			if err := s.withinLimits(ctx, qs, t.ID, r.Kind); err != nil {
+			if err := s.withinLimits(ctx, qs, t.ID, r.Kind, 1); err != nil {
 				return err
 			}
 			id = uuid.Must(uuid.NewV7()).String()
@@ -295,14 +295,18 @@ func (s *Store) PutTx(ctx context.Context, tx meta.Tx, t Target, c Caller, in In
 	return out, err
 }
 
-// withinLimits refuses a rule beyond proxy.delivery.max_rules or a 101st section rule (422 too_many_rules).
-func (s *Store) withinLimits(ctx context.Context, qs *q.Queries, repoID int64, kind rc.RuleKind) error {
+// withinLimits refuses adding rules of the kind beyond proxy.delivery.max_rules or a 101st section rule (422 too_many_rules).
+func (s *Store) withinLimits(ctx context.Context, qs *q.Queries, repoID int64, kind rc.RuleKind, adding int) error {
 	n, err := qs.DeliveryRuleCounts(ctx, repoID)
 	if err != nil {
 		return err
 	}
 	switch {
-	case n.Rules >= int64(s.o.MaxRules):
+	case n.Rules+int64(adding) > int64(s.o.MaxRules) && adding > 1:
+		return errs.E(errs.Unprocessable, errs.CodeTooManyRules,
+			"The repository holds "+strconv.FormatInt(n.Rules, 10)+" delivery rules; "+strconv.Itoa(adding)+" more would exceed the "+
+				strconv.Itoa(s.o.MaxRules)+" it may hold (proxy.delivery.max_rules). Nothing was written.")
+	case n.Rules+int64(adding) > int64(s.o.MaxRules):
 		return errs.E(errs.Unprocessable, errs.CodeTooManyRules,
 			"The repository holds "+strconv.Itoa(s.o.MaxRules)+" delivery rules, the most it may (proxy.delivery.max_rules).")
 	case kind == rc.KindSection && n.Sections >= rules.MaxSections:
@@ -365,27 +369,21 @@ const maxExaminationScan = 100000
 // them (R-CUR-016 "The row goes when the rules come to deliver the version"): an allow written, or a block removed. The rules are
 // compiled from the transaction's rows with the caller's mode, so a narrower rule of the other effect keeps its version's row; the rows
 // are those of the rule's subject: the version, the package's versions, or, for a section, every row of the repository up to
-// maxExaminationScan. What is stored stays: the version is delivered from that moment.
+// maxExaminationScan. What is stored stays: the version is delivered from that moment. A package's or a version's write compiles only
+// the package's rules and the sections, which are all that can decide its versions (Q-CUR-207); a section's write compiles every rule.
 func (s *Store) examinationsDelivered(ctx context.Context, qs *q.Queries, t Target, r rules.Rule) error {
-	list, err := qs.DeliveryRulesOfRepository(ctx, t.ID)
+	var set *rules.Set
+	var err error
+	if r.Kind == rc.KindSection {
+		set, err = s.compileRepository(ctx, qs, t)
+	} else {
+		set, _, err = s.compileSubject(ctx, qs, t, r.Name)
+	}
+	if errors.Is(err, errNoCompile) {
+		return nil // a set that does not compile cannot have been written; the retention task decides on the snapshot
+	}
 	if err != nil {
 		return err
-	}
-	rs := make([]rules.Rule, len(list))
-	for i, row := range list {
-		rs[i] = rules.Rule{Kind: rc.RuleKind(row.Kind), Pattern: row.Pattern.String, Name: row.Name.String, Version: row.Version.String, Effect: rc.Effect(row.Effect)}
-	}
-	mode := t.Mode
-	if !mode.Valid() {
-		mode = rc.AllExceptBlocked
-	}
-	canon := rules.Canon{
-		Name:    func(n string) (string, bool) { return s.o.Catalog.NormalizeName(t.Format, n) },
-		Version: func(v string) (string, bool) { return s.o.Catalog.CanonicalVersion(t.Format, v) },
-	}
-	set, err := rules.Compile(mode, 0, rs, s.o.Compile, canon)
-	if err != nil {
-		return nil //nolint:nilerr // a set that does not compile cannot have been written; the retention task decides on the snapshot
 	}
 	drop := map[string][]string{}
 	consider := func(name, version string) {
@@ -448,6 +446,15 @@ func (s *Store) changed(ctx context.Context, tx meta.Tx, t Target) error {
 
 // record writes the rule's event (R-CUR-019).
 func (s *Store) record(ctx context.Context, tx meta.Tx, t Target, c Caller, event, id string, r rules.Rule, previous rc.Effect, note, requestID string) error {
+	ev, err := eventOf(t, c, event, id, r, previous, note, requestID)
+	if err != nil {
+		return err
+	}
+	return s.o.Recorder.RecordTx(ctx, tx, ev)
+}
+
+// eventOf is the rule's event (R-CUR-019).
+func eventOf(t Target, c Caller, event, id string, r rules.Rule, previous rc.Effect, note, requestID string) (audit.Event, error) {
 	d := map[string]any{"ruleId": id, "kind": string(r.Kind), "subject": r.Subject(), "effect": string(r.Effect), "note": note}
 	if previous != "" && event != audit.EventRemoteRuleCreated {
 		d["previousEffect"] = string(previous)
@@ -464,13 +471,13 @@ func (s *Store) record(ctx context.Context, tx meta.Tx, t Target, c Caller, even
 	}
 	raw, err := json.Marshal(d)
 	if err != nil {
-		return err
+		return audit.Event{}, err
 	}
-	return s.o.Recorder.RecordTx(ctx, tx, audit.Event{
+	return audit.Event{
 		Type: event, Actor: c.Actor, Outcome: audit.Success, Source: c.Source,
 		Subject:    audit.Subject{Kind: "repository", ID: strconv.FormatInt(t.ID, 10), Name: t.Name.String()},
 		Repository: t.Name.String(), Project: t.Name.Project, Details: raw,
-	})
+	}, nil
 }
 
 // narrowedEntry is the journal entry of repository.narrowed as the repository model's replay reads it (narrowedEntry of

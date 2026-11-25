@@ -20,7 +20,7 @@ func TestR_CUR_020_TheKeysHaveTheirDefaults(t *testing.T) {
 	}
 	c := l.Config
 	if d := c.Proxy.Delivery; d != (ProxyDelivery{
-		MaxRules: 10000, OpenRequestsPerPerson: 20, ExamineVersionsPerRequest: 1, RequestRetention: 720 * time.Hour, MaxClientEntries: 10000,
+		MaxRules: 50000, OpenRequestsPerPerson: 20, ExamineVersionsPerRequest: 1, RequestRetention: 720 * time.Hour, MaxClientEntries: 10000,
 	}) {
 		t.Errorf("proxy.delivery %+v", d)
 	}

@@ -264,6 +264,162 @@ func (s *Server) CheckDeliveryRules(w http.ResponseWriter, r *http.Request, proj
 	writeJSON(w, r, http.StatusOK, toDeliveryDecision(d, set.Mode()))
 }
 
+// readerOrModeWriter decides who reads the summary of a change of the mode (R-CUR-025): whoever reads the rules, and whoever sets the
+// configuration (repositories:write-config, the project's Owner), who changes the mode and reads what it affects without the rules.
+func (s *Server) readerOrModeWriter(ctx context.Context, key qname.Repo) error {
+	held, err := s.holds(ctx, capabilityWriteConfig)
+	if err != nil {
+		return err
+	}
+	if !held {
+		if pa, ok := s.o.Access.(ProjectAccess); ok {
+			if held, err = pa.Owns(ctx, key.Project); err != nil {
+				return err
+			}
+		}
+	}
+	if !held {
+		return s.requireRuleReader(ctx, key)
+	}
+	_, acc, err := requestHolder(ctx, s.o.Repositories.Authz, key)
+	if err != nil {
+		return err
+	}
+	if acc == nil {
+		return errNoDecisionPoint()
+	}
+	return exposed(acc, key)
+}
+
+// SwitchDeliveryRule implements POST …/delivery-rules/switch (R-CUR-024): the server decides in the write's transaction what the
+// subject inherits and writes or removes its rule (Q-CUR-202).
+func (s *Server) SwitchDeliveryRule(w http.ResponseWriter, r *http.Request, projectKey, repoKeyText string, _ gen.SwitchDeliveryRuleParams) {
+	key := qname.Repo{Project: projectKey, Key: repoKeyText}
+	ctx := r.Context()
+	var err error
+	if s.o.DeliveryRules.Store == nil || s.idem == nil {
+		err = unavailable("The delivery rules")
+	}
+	if err == nil {
+		err = s.requireRuleWriter(ctx, key)
+	}
+	var body []byte
+	var in gen.DeliverySwitchInput
+	if err == nil {
+		if err = requireJSON(r, MediaJSON); err == nil {
+			body, err = readOptionalBody(w, r, s.bodyLimit())
+		}
+	}
+	if err == nil {
+		err = StrictUnmarshal(body, &in)
+	}
+	var repo repository.Repository
+	var t store.Target
+	if err == nil {
+		repo, t, err = s.deliveryTarget(ctx, key)
+	}
+	if err == nil {
+		err = productRules(repo)
+	}
+	if err != nil {
+		httpserver.Problem(w, r, errs.Wrap(err, "api.switchDeliveryRule"))
+		return
+	}
+	input := store.SwitchInput{Name: in.Name, Version: strOf(in.Version), Delivered: in.Delivered, Note: strOf(in.Note)}
+	if in.ResetVersions != nil {
+		input.ResetVersions = *in.ResetVersions
+	}
+	c := ruleCaller(r)
+	err = s.idem.Do(w, r, body, IdempotentOp{Run: func(ctx context.Context, tx meta.Tx) (Outcome, error) {
+		sw, err := s.o.DeliveryRules.Store.SwitchTx(ctx, tx, t, c, input)
+		if err != nil {
+			return Outcome{}, err
+		}
+		out := gen.DeliverySwitchResult{Decision: toDeliveryDecision(sw.Decision, sw.Decision.By.Mode), Removed: make([]gen.DeliveryRule, 0, len(sw.Removed)), Revision: sw.Revision}
+		if sw.Rule != nil {
+			rule := toDeliveryRule(*sw.Rule)
+			out.Rule = &rule
+		}
+		for _, st := range sw.Removed {
+			out.Removed = append(out.Removed, toDeliveryRule(st))
+		}
+		return Outcome{Status: http.StatusOK, Body: out}, nil
+	}})
+	if err != nil {
+		httpserver.Problem(w, r, errs.Wrap(err, "api.switchDeliveryRule"))
+	}
+}
+
+// GetDeliveryRulesSummary implements GET …/delivery-rules/summary (R-CUR-025): read against this replica's rule set.
+func (s *Server) GetDeliveryRulesSummary(w http.ResponseWriter, r *http.Request, projectKey, repoKeyText string) {
+	key := qname.Repo{Project: projectKey, Key: repoKeyText}
+	ctx := r.Context()
+	var err error
+	if s.o.DeliveryRules.Store == nil {
+		err = unavailable("The delivery rules")
+	}
+	if err == nil {
+		err = s.readerOrModeWriter(ctx, key)
+	}
+	var repo repository.Repository
+	var t store.Target
+	if err == nil {
+		repo, t, err = s.deliveryTarget(ctx, key)
+	}
+	var sum store.Summary
+	if err == nil {
+		sum, err = s.o.DeliveryRules.Store.Summary(ctx, t, repo.Delivery())
+	}
+	if err != nil {
+		httpserver.Problem(w, r, errs.Wrap(err, "api.getDeliveryRulesSummary"))
+		return
+	}
+	out := gen.DeliveryRulesSummary{Mode: gen.DeliveryRulesSummaryMode(sum.Mode), MaxRules: sum.MaxRules}
+	out.Rules.Allow, out.Rules.Block, out.Rules.Sections = sum.Allow, sum.Block, sum.Sections
+	out.Unruled.Count, out.Unruled.Counted, out.Unruled.Names = sum.Unruled, sum.Counted, listOf(sum.Names)
+	writeJSON(w, r, http.StatusOK, out)
+}
+
+// AllowStoredPackages implements POST …/delivery-rules/allow-stored (R-CUR-025, Q-CUR-204).
+func (s *Server) AllowStoredPackages(w http.ResponseWriter, r *http.Request, projectKey, repoKeyText string, _ gen.AllowStoredPackagesParams) {
+	key := qname.Repo{Project: projectKey, Key: repoKeyText}
+	ctx := r.Context()
+	var err error
+	if s.o.DeliveryRules.Store == nil || s.idem == nil {
+		err = unavailable("The delivery rules")
+	}
+	if err == nil {
+		err = s.requireRuleWriter(ctx, key)
+	}
+	var body []byte
+	if err == nil {
+		body, err = readOptionalBody(w, r, s.bodyLimit())
+	}
+	var repo repository.Repository
+	var t store.Target
+	if err == nil {
+		repo, t, err = s.deliveryTarget(ctx, key)
+	}
+	if err == nil {
+		err = productRules(repo)
+	}
+	if err != nil {
+		httpserver.Problem(w, r, errs.Wrap(err, "api.allowStoredPackages"))
+		return
+	}
+	c := ruleCaller(r)
+	err = s.idem.Do(w, r, body, IdempotentOp{Run: func(ctx context.Context, tx meta.Tx) (Outcome, error) {
+		created, rev, err := s.o.DeliveryRules.Store.AllowStoredTx(ctx, tx, t, c)
+		if err != nil {
+			return Outcome{}, err
+		}
+		return Outcome{Status: http.StatusOK, Body: gen.DeliveryAllowStoredResult{Created: created, Revision: rev}}, nil
+	}})
+	if err != nil {
+		httpserver.Problem(w, r, errs.Wrap(err, "api.allowStoredPackages"))
+	}
+}
+
 func toDeliveryRule(st store.Stored) gen.DeliveryRule {
 	out := gen.DeliveryRule{
 		Kind: gen.DeliveryRuleKind(st.Kind), Subject: st.Subject(), Effect: gen.DeliveryRuleEffect(st.Effect), Note: st.Note,
