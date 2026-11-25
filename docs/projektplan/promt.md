@@ -262,8 +262,8 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 | S4 · One scrollbar per page | the owner's finding of 06:45 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | landed and pushed at 09:45 (one commit, Test and Release 45579082289; R-UI-215, Q-UI-1110 to Q-UI-1113; its builder worked from 07:15 to 09:38; the landing's gates each exit 0; the owner's case looked at by the development agent in its picture) |
 | S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | the plan is back at 07:20 (P3, 27 minutes, read-only; kept as `.dev/plans/p3-one-row-per-image-newest-first-plan.md` of the main checkout, not in git): two packages in order, S5a the server and S5b the screens, see below; **S5a landed and pushed at 10:03** (three commits, migrations 00122 to 00124; Q-API-431, Q-API-432, Q-OCI-268, Q-OCI-269, Q-CUR-180, Q-CUR-181, Q-UI-1130, ADR-280, gaps H-1900 to H-1902; its builder worked from 08:12 to 09:50; the landing's gates and five integration areas each exit 0); S5b in work since 10:06 |
 | S6 · "Not scanned" says why and what comes | the owner's finding of 06:55 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | landed and pushed at 08:50 (two commits, migration 00121; Q-VULN-274 to Q-VULN-279, Q-UI-1120 to Q-UI-1123, Q-ARCH-1064, gaps H-1890 and H-1891; its builder worked from 07:19 to 08:25); what it built and left is in section 8, Product |
-| S7 · The UI profile scans for malware, with nothing of it in the product | H-1891 (section 8, Product, under S6): ClamAV on the owner's machine through a relay of the profile's own between a Unix socket on the host and `clamd`'s port published on the host's loopback; the product's binary, its configuration and the chart do not change (the owner's conditions of 09:17, below) | in work since 09:41; its builder stopped at 09:47 before building (the relay's form needs a change of the product or an administrator's step, below) and goes on since 09:48 in another form: the chart's pod on Docker |
-| S8 · An upstream's account from a Secret that exists | the owner's task of 09:40 (below): the chart supplies the upstream registries with accounts from existing Secrets; the development profiles take Docker Hub's account from a file of the machine | the plan is back at 10:04 (P4, 21 minutes, read-only; kept as `.dev/plans/p4-upstream-accounts-from-secrets-plan.md` of the main checkout, not in git): two packages, S8a the product, the chart and the screens, S8b the development profiles after it; see below; S8a when a place is free |
+| S7 · The UI profile scans for malware, with nothing of it in the product | H-1891 (section 8, Product, under S6): ClamAV on the owner's machine through a relay of the profile's own between a Unix socket on the host and `clamd`'s port published on the host's loopback; the product's binary, its configuration and the chart do not change (the owner's conditions of 09:17, below) | landed and pushed at 10:45 (two commits; Q-ARCH-1065, H-1891 narrowed to Linux hosts; its builder worked from 09:41 to 10:24, with a stop from 09:47 to 09:48 for the form; the landing's gates, the chart's tests and shellcheck each exit 0; two of its 44 pictures looked at by the development agent) |
+| S8 · An upstream's account from a Secret that exists | the owner's task of 09:40 (below): the chart supplies the upstream registries with accounts from existing Secrets; the development profiles take Docker Hub's account from a file of the machine | the plan is back at 10:04 (P4, 21 minutes, read-only; kept as `.dev/plans/p4-upstream-accounts-from-secrets-plan.md` of the main checkout, not in git): two packages, S8a the product, the chart and the screens, S8b the development profiles after it; see below; S8a in work since 10:15, in the place of G2; S8b after it |
 | P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows, what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | back at 06:42 (a planner, 25 minutes, read-only; kept in the session's scratch directory as `p1-render-guard-blind-spots-plan.md`); its three packages are G1 to G3 below |
 
 **The render guard's blind spots, as the plan of 06:42 reads them (counted in the code by its planner; the estimates are
@@ -282,7 +282,7 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 
 | Package | What it builds | Cost (the planner's estimate, to be measured by its builder) | State |
 |---|---|---|---|
-| G2 · Every dialog in a real browser, without the stack | the 21 dialogs, the two confirm shapes, 17 failures and 13 validations inside a dialog, the conflict and the session dialogs, the token's secret, tooltips at the window's edge: about 62 states at 390 and 1,440 px, measured by the layout checks' own function in the unit-test builder's browser mode; one new development dependency (the unit-test runner's browser provider, pinned) | 2 to 3 minutes of the job `UI layout checks`, nothing per format | landed and pushed at 10:25 (twelve commits; Q-UI-1140 to Q-UI-1149, gaps H-1910 to H-1912; its builder worked from 08:53 to 10:07; the landing's gates and `make ui-states` each exit 0): 69 states, twelve defects of the product found and repaired (section 8, Product) |
+| G2 · Every dialog in a real browser, without the stack | the 21 dialogs, the two confirm shapes, 17 failures and 13 validations inside a dialog, the conflict and the session dialogs, the token's secret, tooltips at the window's edge: about 62 states at 390 and 1,440 px, measured by the layout checks' own function in the unit-test builder's browser mode; one new development dependency (the unit-test runner's browser provider, pinned) | 2 to 3 minutes of the job `UI layout checks`, nothing per format | landed and pushed at 10:13 (twelve commits; Q-UI-1140 to Q-UI-1149, gaps H-1910 to H-1912; its builder worked from 08:53 to 10:07; the landing's gates and `make ui-states` each exit 0): 69 states, twelve defects of the product found and repaired (section 8, Product) |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | after S1 and S2 have landed (the same files) |
 | G3 · Page and shell states on the stack | the 10 menus, 3 drawers, the person search's list in a drawer, about 19 sections, 11 routes, the banner and the maintenance notice, a failure of an action inside a section, the editors' refusals with their summary, two selection states, the command menus of NuGet, Ansible Galaxy and generic | 5 to 6 minutes of the render step (the job at about 61 to 64 of its 75 minutes), about 3 s per format | after G1 |
 
@@ -363,7 +363,8 @@ the repaired build workflow, its image and chart are out, and **it runs on the o
 0.124.2 deployed, seven Deployments on the image, every pod running, eleven certificates ready, the ingress answers). The
 UI development profile runs the `main` of 08:50 since 08:52, with the vulnerability scanner and the database's loader
 beside the backend.
-**v0.124.3** (S6: the scan state's cause, migration 00121) was cut at 09:06, its image and chart are out, and it runs on
+**v0.124.4** (S4: one scrollbar per page) was cut at 10:01, its image and chart are out, and it runs on the owner's
+installation (read at 10:15: chart 0.124.4 deployed, seven Deployments on the image, every pod running). **v0.124.3** (S6: the scan state's cause, migration 00121) was cut at 09:06, its image and chart are out, and it runs on
 the owner's installation (read at 09:46: chart 0.124.3 deployed, the migration's job complete, seven Deployments on the
 image, every pod running). The run of S3's push (45566184640), which cut v0.124.2, ended with every job green, its kind legs among them (read at
 09:25); no job of it was started again.
@@ -403,6 +404,25 @@ published on the loopback alone. No link to `clamd` over TCP at all, no relay, n
 administrator's step, and it holds per instance; his three conditions hold more strictly than with the relay. First step
 of the builder: the product's scan listener reached from a container, which nobody has shown yet.
 **The owner agreed to the form at 09:52** (whole: "Ja, bau die Pod Form"), told the blocker and the corrected fact.
+**Built and landed at 10:45 (S7).** The profile runs the malware scanner as the chart's pod on Docker: the product's
+scanner, cross-built from the working tree, in one container, `clamd` of the pinned image in a second, the socket and the
+database directory as volumes between them, both as the chart's user with a read-only root and no capabilities, `clamd`
+without any network; the updater of the kind `freshclam` as a host process. **His three conditions, each held:** the diff
+of `cmd`, `internal`, the chart and the `Containerfile` is the new architecture test alone
+(`TestR_MAL_007_TheProductReachesClamdByTheSocketOfThePodOnly`, which failed when the dial was set to TCP for one run);
+the profile's `clamd.conf` and `freshclam.conf` are the chart's, held by two tests; the new ports listen on the host's
+loopback alone and refuse on the LAN address. **Shown on an instance started from nothing:** the scanner reached the
+scan listener through `host.docker.internal`; an EICAR file read `infected` half a second after its upload and its
+download answered 403 `malware_found`; an npm tarball with it 38 ms after its publish (R-MAL-035, seen). **What it costs
+the machine:** `clamd` 959 MiB resident, the scanner 33 MiB, the updater 63 MB; the malware scanner ready 49 s after the
+backend's start; the signatures 113 MB fetched once from ClamAV's network into `.dev/clamav-signatures` of the main
+checkout, then no request for 24 hours; `UI_MALWARE=0` leaves the scanner out. **Left open:** a "Lost" row of the previous
+scanner's replica after every restart of the backend; the settings page said "1 scan running" while the replica showed
+none of its two places in use (not read); the image scanner's two processes show on the System page under the host's
+name, not the unit's (the chart gives both containers the pod's name; whether two processes of one name can register
+side by side was not read, so the line was not added at the landing); a refused reload of `clamd` was not provoked;
+`docker pull` of the pinned base fails on the owner's machine by a stored `gcr.io` credential of Docker Desktop (the
+script lets the build fetch the base; the credential is his: `docker logout gcr.io`).
 
 **The owner's task of 09:40: accounts for the upstreams (S8).** His words, whole: "Ich möchte, dass ich im Helm Chart die
 Upstream-Repos mit Accounts über exsisting Secrets versorgen kann. Für die Dev-Umgebung auf localhost will ich die docker
@@ -1031,7 +1051,7 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
-- **Closed on 2026-11-25, 10:25, by G2: twelve defects in dialogs that no picture had shown, and the tier that shows
+- **Closed on 2026-11-25, 10:13, by G2: twelve defects in dialogs that no picture had shown, and the tier that shows
   them (section 12 A's states, the overlays' part).** `make ui-states` opens 69 states of dialogs in the unit-test
   builder's browser mode, without the stack (every dialog no walk opened, the confirm dialog's shapes "type to confirm"
   and "choice", a failure notice with its request ID in 20 dialogs, 18 validations after a submit, the conflict, diff and
