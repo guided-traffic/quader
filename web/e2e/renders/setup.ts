@@ -24,6 +24,7 @@ import { seedSignatures, seedSignatureSettings } from './signatures';
 import { seedScannerReplicas } from './scanners';
 import { seedBastion } from './bastions';
 import { removeCachedSources, seedCachedVersions } from './cached';
+import { seedDebDocs } from './debdocs';
 
 /**
  * The global setup of `make ui-renders`: waits for the edge (the dev server of the UI development profile), seeds the data
@@ -176,6 +177,7 @@ async function publishAsPowerUser(browser: Browser): Promise<void> {
     try {
       await seedContent(context.request, edge, value);
       await seedCachedVersions(context.request, edge, value);
+      await seedDebDocs(context.request, value);
     } finally {
       await expectStatus(await api.delete(`/api/v1/tokens/${token.id}`), [204, 404], 'revoke the seed token');
     }

@@ -44,6 +44,7 @@ import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalC
 import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { downloadsWalk } from './downloads';
 import { cachedDeb, cachedNpm } from './cached';
+import { brokenDeb, debRelationLookups, docsDeb, manyFilesDeb } from './debdocs';
 import { accountOfferWalk, registryAccountWalk } from './upstream-accounts';
 import {
   advisorySourceFailures,
@@ -3071,12 +3072,21 @@ export const screens: readonly Screen[] = [
   // The tag a background download stored (W-25): its platforms, two stored and one not fetched.
   { id: 'package-version-oci-probed', path: `${ver(O, { format: 'oci', name: remoteImage.name }, probedCache.tag)}?tab=details`, kinds: all },
   { id: 'package-version-nuget', path: ver(O, nugetPackage, nugetPackage.versions[1]), kinds: all },
-  { id: 'package-version-deb', path: ver(O, debPackage, debPackage.versions[1]), kinds: all, de: true },
+  { id: 'package-version-deb', path: ver(O, debPackage, debPackage.versions[1]), kinds: all, de: true, expected: debRelationLookups },
   // A version a remote cached, described as a published one (R-NPM-050, R-NPM-051, R-DEB-037): the remote alone holds it
   // (cached.ts). npm: the description, the dependencies and links, and the README of its tarball with headings, a table and
   // a code block; Debian: the control paragraph with its relation fields and the coordinate of the index that listed it.
   { id: 'package-version-npm-cached', path: ver(P, cachedNpm, cachedNpm.version), kinds: ['plain'], de: true },
-  { id: 'package-version-deb-cached', path: ver(P, cachedDeb, cachedDeb.version), kinds: ['plain'], de: true },
+  { id: 'package-version-deb-cached', path: ver(P, cachedDeb, cachedDeb.version), kinds: ['plain'], de: true, expected: debRelationLookups },
+  { id: 'package-version-deb-cached-files', path: `${ver(P, cachedDeb, cachedDeb.version)}?tab=files`, kinds: ['plain'], expected: debRelationLookups },
+  // What a Debian package tells about itself (W-30 G8, R-DEB-038, R-DEB-039): the relations, the long description and the facts on
+  // Details, the changelog of thirty entries, the files of two architectures, a list over the bound, and a package file Quader could
+  // not read (its reason to whoever reads the configuration).
+  { id: 'package-version-deb-docs', path: `${ver(O, docsDeb, docsDeb.version)}?tab=details`, kinds: all, de: true, expected: debRelationLookups },
+  { id: 'package-version-deb-changelog', path: `${ver(O, docsDeb, docsDeb.version)}?tab=changelog`, kinds: ['plain'], de: true, expected: debRelationLookups },
+  { id: 'package-version-deb-files', path: `${ver(O, docsDeb, docsDeb.version)}?tab=files`, kinds: ['plain'], de: true, expected: debRelationLookups },
+  { id: 'package-version-deb-many-files', path: `${ver(O, manyFilesDeb, manyFilesDeb.version)}?tab=files`, kinds: ['plain'], expected: debRelationLookups },
+  { id: 'package-version-deb-refused', path: `${ver(O, brokenDeb, brokenDeb.version)}?tab=changelog`, kinds: all, de: true, expected: debRelationLookups },
   // In German as the plain user: the strip of the most tabs with the longest labels of every format's version page, the one strip of
   // in-place tabs they share (Q-UI-1090: 13 px wider than its place at 1,024 px before its tabs stood closer).
   { id: 'package-version-ansible', path: ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1]), kinds: all, de: ['plain'] },

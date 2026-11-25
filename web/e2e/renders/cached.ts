@@ -114,7 +114,28 @@ function deb(): Buffer {
   return ar([
     ['debian-binary', Buffer.from('2.0\n')],
     ['control.tar.gz', tarGz([['./', Buffer.alloc(0)], ['./control', Buffer.from(control)]])],
-    ['data.tar.gz', tarGz([['./', Buffer.alloc(0)], ['./usr/', Buffer.alloc(0)], ['./usr/bin/', Buffer.alloc(0)], [`./usr/bin/${name}`, Buffer.from('#!/bin/sh\n')]])],
+    [
+      'data.tar.gz',
+      tarGz([
+        ['./', Buffer.alloc(0)],
+        ['./usr/', Buffer.alloc(0)],
+        ['./usr/bin/', Buffer.alloc(0)],
+        [`./usr/bin/${name}`, Buffer.from('#!/bin/sh\n')],
+        // What Debian puts into every package (R-DEB-039): the changelog and the copyright, read after the file is cached.
+        [
+          `./usr/share/doc/${name}/changelog.Debian.gz`,
+          gzipSync(
+            Buffer.from(
+              `${name} (${version}) unstable; urgency=medium\n\n  * Keep the position in each file across restarts.\n\n` +
+                ` -- Platform engineering <platform@example.invalid>  Mon, 02 Nov 2026 09:00:00 +0000\n\n` +
+                `${name} (3.1.0-1) unstable; urgency=medium\n\n  * New upstream release.\n\n` +
+                ` -- Platform engineering <platform@example.invalid>  Mon, 19 Oct 2026 09:00:00 +0000\n`,
+            ),
+          ),
+        ],
+        [`./usr/share/doc/${name}/copyright`, Buffer.from('Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\n\nFiles: *\nCopyright: 2026 Acme\nLicense: MIT\n')],
+      ]),
+    ],
   ]);
 }
 
