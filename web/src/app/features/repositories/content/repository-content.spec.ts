@@ -119,7 +119,7 @@ describe('Repository content page', () => {
     expect(rows[0]?.textContent).toContain('1.2.0');
     expect(rows[0]?.textContent).toContain('sha256:');
     // No box of a command stands in the opened row: each tag has its button Pull (Q-UI-1066).
-    expect(r.root.querySelector('quader-repository-item-versions quader-address-field, quader-install-command')).toBeNull();
+    expect(r.root.querySelector('quader-repository-item-versions quader-address-field')).toBeNull();
     const panel = await openMenu(r, rows[0]!.querySelector<HTMLButtonElement>('quader-client-command-menu button')!);
     expect(commands(panel)[0]).toMatch(/^docker pull \S*web\/oci-local\/team\/app:1\.2\.0$/);
     await expectAccessible(r.root);
@@ -251,7 +251,7 @@ describe('Repository content page', () => {
     expect(opened.querySelector('.all-versions')).toBeNull();
   });
 
-  it('R-UI-052 a tag\'s Pull opens the commands of that tag, a section per client, and the image row\'s Pull those of its latest tag', async () => {
+  it('R-UI-052 a tag\'s Pull opens the commands of that tag, a tab per client, and the image row\'s Pull those of its latest tag', async () => {
     const r = await open(OCI_REPO, ({ packages }) => ociFixture(packages));
     const setup = r.get(ClientSetupApi) as FakeClientSetupApi;
     const imageRow = [...r.root.querySelectorAll('tbody tr')].find((tr) => tr.textContent?.includes('team/app'))!;
@@ -260,7 +260,7 @@ describe('Repository content page', () => {
     // Nothing is asked before the panel opens.
     expect(setup.calls).toEqual([]);
     const forLatest = await openMenu(r, latest);
-    expect([...forLatest.querySelectorAll('.menu-heading')].map((h) => text(h))).toEqual(['Docker CLI (with Buildx)', 'Podman']);
+    expect([...forLatest.querySelectorAll('[role="tab"]')].map((h) => text(h))).toEqual(['Docker', 'Podman']);
     expect(commands(forLatest).map((c) => c.split(' ').slice(0, 2).join(' '))).toEqual(['docker pull', 'podman pull']);
     expect(commands(forLatest).every((c) => c.endsWith('team/app:1.2.0'))).toBe(true);
     latest.click();
@@ -306,7 +306,7 @@ describe('Repository content page', () => {
     const version = [...r.root.querySelectorAll('quader-repository-item-versions tbody tr')].find((tr) => tr.querySelector('th')?.textContent?.trim() === '1.4.0')!.querySelector<HTMLButtonElement>('quader-client-command-menu button')!;
     expect(spokenText(version)).toBe('1.4.0: Install');
     const panel = await openMenu(r, version);
-    expect([...panel.querySelectorAll('.menu-heading')].map((h) => text(h))).toEqual(['npm', 'pnpm', 'Yarn Berry (2 and later)', 'Yarn Classic (1.x)']);
+    expect([...panel.querySelectorAll('[role="tab"]')].map((h) => text(h))).toEqual(['npm', 'pnpm', 'Yarn Berry', 'Yarn Classic']);
     expect(commands(panel)[0]).toBe('npm install @team-a/ui@1.4.0');
     await expectAccessible(r.root);
     await expectAccessible(panel);
@@ -471,7 +471,7 @@ describe('Repository content page', () => {
     await settle(r.fixture);
     const versions = r.root.querySelector('quader-repository-item-versions')!;
     expect(versions.querySelectorAll('tbody tr').length).toBeGreaterThan(0);
-    expect(r.root.querySelector('quader-client-command-menu, quader-install-command')).toBeNull();
+    expect(r.root.querySelector('quader-client-command-menu')).toBeNull();
     expect(text(r.root)).not.toContain('Pull');
     expect([...r.root.querySelectorAll('thead th')].map((th) => text(th))).not.toContain('Actions');
     expect((r.get(ClientSetupApi) as FakeClientSetupApi).calls).toEqual([]);

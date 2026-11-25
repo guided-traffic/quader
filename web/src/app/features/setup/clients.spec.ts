@@ -86,7 +86,7 @@ describe('Snippet words', () => {
 
 describe('Ansible Galaxy client setup', () => {
   it('R-ANS-025 R-ANS-026 the format offers ansible-galaxy as its one client', () => {
-    expect(clientsOf('ansible')).toEqual([{ id: 'ansible-galaxy', label: 'Ansible Galaxy (ansible-galaxy)' }]);
+    expect(clientsOf('ansible')).toEqual([{ id: 'ansible-galaxy', label: 'Ansible Galaxy (ansible-galaxy)', tab: 'ansible-galaxy' }]);
   });
 
   it('R-ANS-025 the snippets of every shell for the token variable are known, and the API renders exactly the ones the UI knows', () => {

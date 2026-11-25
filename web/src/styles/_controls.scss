@@ -206,6 +206,11 @@ quader-copy-button.on-line {
   &.tight > .tab-link {
     padding-inline: var(--quader-space-2);
   }
+
+  // A strip in a panel hung from a button (the commands of a version, Q-UI-1240): 8 px above and below its labels instead of 16.
+  &.compact > .tab-link {
+    padding-block: var(--quader-space-2);
+  }
 }
 
 // A fade of an edge: 2rem from the page's fill to nothing over the tabs, the chevron at the edge. It sticks to its edge inside the

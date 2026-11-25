@@ -4,6 +4,11 @@ export interface ClientChoice {
   readonly id: string;
   /** A product name; it is not translated, the words beside it are ("Docker CLI (with Buildx)"). */
   readonly label: string;
+  /**
+   * The client's short name, the tab of the panel of a version's commands (Q-UI-1240): "Docker", "Yarn Berry", ".NET CLI", so that four
+   * of npm's tabs and **Set up client** fit a panel at 390 px. A product name, not translated.
+   */
+  readonly tab: string;
 }
 
 /**
@@ -15,25 +20,25 @@ export interface ClientChoice {
  * one source format, so they are one client (R-DEB-029). Ansible Galaxy offers ansible-galaxy (R-ANS-025).
  */
 export const FORMAT_CLIENTS: Readonly<Record<string, readonly ClientChoice[]>> = {
-  generic: [{ id: 'curl', label: 'curl' }],
+  generic: [{ id: 'curl', label: 'curl', tab: 'curl' }],
   npm: [
-    { id: 'npm', label: 'npm' },
-    { id: 'pnpm', label: 'pnpm' },
-    { id: 'yarn', label: $localize`:@@setup.client.yarn-berry:Yarn Berry (2 and later)` },
-    { id: 'yarn-classic', label: 'Yarn Classic (1.x)' },
+    { id: 'npm', label: 'npm', tab: 'npm' },
+    { id: 'pnpm', label: 'pnpm', tab: 'pnpm' },
+    { id: 'yarn', label: $localize`:@@setup.client.yarn-berry:Yarn Berry (2 and later)`, tab: 'Yarn Berry' },
+    { id: 'yarn-classic', label: 'Yarn Classic (1.x)', tab: 'Yarn Classic' },
   ],
   nuget: [
-    { id: 'dotnet', label: '.NET CLI (dotnet)' },
-    { id: 'nuget', label: 'NuGet CLI (nuget.exe)' },
-    { id: 'visual-studio', label: 'Visual Studio' },
+    { id: 'dotnet', label: '.NET CLI (dotnet)', tab: '.NET CLI' },
+    { id: 'nuget', label: 'NuGet CLI (nuget.exe)', tab: 'NuGet CLI' },
+    { id: 'visual-studio', label: 'Visual Studio', tab: 'Visual Studio' },
   ],
   oci: [
-    { id: 'docker', label: $localize`:@@setup.client.docker:Docker CLI (with Buildx)` },
-    { id: 'podman', label: 'Podman' },
+    { id: 'docker', label: $localize`:@@setup.client.docker:Docker CLI (with Buildx)`, tab: 'Docker' },
+    { id: 'podman', label: 'Podman', tab: 'Podman' },
   ],
-  deb: [{ id: 'apt', label: 'APT (apt, apt-get)' }],
-  ansible: [{ id: 'ansible-galaxy', label: 'Ansible Galaxy (ansible-galaxy)' }],
-  clamav: [{ id: 'freshclam', label: 'freshclam' }],
+  deb: [{ id: 'apt', label: 'APT (apt, apt-get)', tab: 'APT' }],
+  ansible: [{ id: 'ansible-galaxy', label: 'Ansible Galaxy (ansible-galaxy)', tab: 'ansible-galaxy' }],
+  clamav: [{ id: 'freshclam', label: 'freshclam', tab: 'freshclam' }],
 };
 
 export function clientsOf(format: string): readonly ClientChoice[] {
