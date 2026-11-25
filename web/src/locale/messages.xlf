@@ -47301,7 +47301,7 @@
     </unit>
     <unit id="banner.maintenance-label">
       <notes>
-        <note category="location">src/app/shared/banner.ts:89</note>
+        <note category="location">src/app/shared/banner.ts:90</note>
       </notes>
       <segment>
         <source>Maintenance notice</source>
@@ -47309,7 +47309,7 @@
     </unit>
     <unit id="banner.label">
       <notes>
-        <note category="location">src/app/shared/banner.ts:90</note>
+        <note category="location">src/app/shared/banner.ts:91</note>
       </notes>
       <segment>
         <source>System notice</source>
@@ -47317,7 +47317,7 @@
     </unit>
     <unit id="banner.maintenance-lead">
       <notes>
-        <note category="location">src/app/shared/banner.ts:96</note>
+        <note category="location">src/app/shared/banner.ts:97</note>
       </notes>
       <segment>
         <source>Read-only maintenance mode.</source>
@@ -47325,7 +47325,7 @@
     </unit>
     <unit id="banner.critical">
       <notes>
-        <note category="location">src/app/shared/banner.ts:102</note>
+        <note category="location">src/app/shared/banner.ts:103</note>
       </notes>
       <segment>
         <source>Critical.</source>
@@ -47333,7 +47333,7 @@
     </unit>
     <unit id="banner.critical-title">
       <notes>
-        <note category="location">src/app/shared/banner.ts:103</note>
+        <note category="location">src/app/shared/banner.ts:104</note>
       </notes>
       <segment>
         <source>Critical: <ph id="0" equiv="title" disp="title"/>.</source>
@@ -47341,7 +47341,7 @@
     </unit>
     <unit id="banner.warning">
       <notes>
-        <note category="location">src/app/shared/banner.ts:106</note>
+        <note category="location">src/app/shared/banner.ts:107</note>
       </notes>
       <segment>
         <source>Warning.</source>
@@ -47349,7 +47349,7 @@
     </unit>
     <unit id="banner.warning-title">
       <notes>
-        <note category="location">src/app/shared/banner.ts:107</note>
+        <note category="location">src/app/shared/banner.ts:108</note>
       </notes>
       <segment>
         <source>Warning: <ph id="0" equiv="title" disp="title"/>.</source>
@@ -47357,7 +47357,7 @@
     </unit>
     <unit id="banner.info">
       <notes>
-        <note category="location">src/app/shared/banner.ts:110</note>
+        <note category="location">src/app/shared/banner.ts:111</note>
       </notes>
       <segment>
         <source>Notice.</source>
@@ -47365,7 +47365,7 @@
     </unit>
     <unit id="banner.info-title">
       <notes>
-        <note category="location">src/app/shared/banner.ts:111</note>
+        <note category="location">src/app/shared/banner.ts:112</note>
       </notes>
       <segment>
         <source>Notice: <ph id="0" equiv="title" disp="title"/>.</source>
