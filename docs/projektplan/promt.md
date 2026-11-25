@@ -259,9 +259,9 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 | S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:17 |
 | M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847). Each is run once and its numbers are written down; a defect a number shows is repaired or entered | in work since 06:17 |
 | S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | in work since 06:40 |
-| S4 · One scrollbar per page | the owner's finding of 06:50 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | the plan is back at 07:20 (P2, 25 minutes, read-only; kept in the session's scratch directory as `p2-one-scrollbar-per-page-plan.md`): one package, see below; a builder when a place is free, ahead of G2 |
-| S5 · One row per image, versions newest first | the owner's findings of 07:00 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | a planner (P3) since 07:08; a builder when a place is free |
-| S6 · "Not scanned" says why and what comes | the owner's finding of 07:00 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | a builder when a place is free |
+| S4 · One scrollbar per page | the owner's finding of 06:45 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | the plan is back at 07:12 (P2, 25 minutes, read-only; kept in the session's scratch directory as `p2-one-scrollbar-per-page-plan.md`): one package, see below; a builder when a place is free, ahead of G2 |
+| S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | a planner (P3) since 06:58; a builder when a place is free |
+| S6 · "Not scanned" says why and what comes | the owner's finding of 06:55 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | a builder when a place is free |
 | P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows, what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | back at 06:42 (a planner, 25 minutes, read-only; kept in the session's scratch directory as `p1-render-guard-blind-spots-plan.md`); its three packages are G1 to G3 below |
 
 **The render guard's blind spots, as the plan of 06:42 reads them (counted in the code by its planner; the estimates are
@@ -288,7 +288,7 @@ Not built, by the plan: hover and loading states, a rule against an overlay cove
 confirm dialog or of the error notice (one component each: its shapes and its containers are rendered). A table of refused
 second words for one thing in the glossary, read by a unit test, is a small item of its own (seven such pairs were seen).
 
-**One scrollbar per page, as the plan of 07:20 reads it (S4; counted in the code by its planner).** The page's scroll
+**One scrollbar per page, as the plan of 07:12 reads it (S4; counted in the code by its planner).** The page's scroll
 container is `main` on every screen and stays it. Fifteen elements in a page and nine in overlays can scroll by
 themselves. What the builder does: the data table (68 component files use it) loses its height cap, its own scroll, its
 tab stop and its sticking head, so a list of any length grows the page and its head scrolls away with it, as the lists of
@@ -855,7 +855,7 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
-- **"Not scanned" without a cause, tags that read as signatures, and versions oldest first (owner, 2026-11-25, 07:00, the
+- **"Not scanned" without a cause, tags that read as signatures, and versions oldest first (owner, 2026-11-25, 06:55, the
   opened image `guidedtraffic/s3-encryption-proxy` on the tab Images of `upstream/docker-hub`, UI profile; his words,
   whole: "Auch hier gibt es wieder keine prüfung der Vulnerabilitiest, ich habe auch keine Ahung ob hier eine geplant
   ist, es gibt keinen hinweis darauf. Außerdem sehe ich die Signaturen für Images neben den Images. Anstatt also die
@@ -881,7 +881,7 @@ records the recorder that tells such a stall apart).
   his picture shows `3.8.51, sha-5ccfd1a, 3.8.52, …`, oldest first with the commit tags between. To do (S5): every list
   of versions defaults to the format's own version order, newest first, in every format.
 
-- **Three scrollbars side by side on a list (owner, 2026-11-25, 06:50, on the UI profile, the tab Images of
+- **Three scrollbars side by side on a list (owner, 2026-11-25, 06:45, on the UI profile, the tab Images of
   `upstream/docker-hub` with an opened image of about a hundred tags; his words, whole: "Ich sehe auf dieser Seite 3
   scrollbars neben einander. Das sieht echt scheiße aus und sollte vermieden werden. Optimal wäre wenn es wirklich nur
   eine Scrollbar pro Seite gibt, die äußerste. Alles andere ist zu vermeiden. Bei kleinen Tabellen, ist evtl mal eine
@@ -893,7 +893,7 @@ records the recorder that tells such a stall apart).
   with a region of its own inside it, and the page scrolls as well. He reverses that decision. **Seen by the development
   agent in the same picture:** the outer table's head stays above the opened image's rows, whose columns are others, so
   "Vulnerabilities" stands over a size and "Updated" over "not scanned". A planner reads every scroll region of the web
-  application and cuts the package (P2, since 06:55); the builder follows when a place is free (S4 of section 1).
+  application and cuts the package (P2, since 06:47); the builder follows when a place is free (S4 of section 1).
 
 - **A download queue that an upstream's rate limit stops reads as running, and the overview reads as done (owner,
   2026-11-25, 06:31, on the UI profile; his words: "Ich glaube der Download ist fertig aber das UI für Downloads spiegelt
