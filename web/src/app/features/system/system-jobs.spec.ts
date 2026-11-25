@@ -234,6 +234,14 @@ describe('Jobs screen', () => {
     await expectAccessible(root);
   });
 
+  it('R-UI-146 a running job without a result yet shows the dash in Result, not an empty cell', async () => {
+    const { root } = await open({}, (jobs) => {
+      jobs.jobList = [sampleJob({ kind: 'gc', state: 'running', result: null, error: null })];
+    });
+    const cell = root.querySelector('tbody tr td:nth-child(6)')!;
+    expect(cell.querySelector('quader-no-value')).not.toBeNull();
+  });
+
   it('R-UI-038 a job queued again after a failed attempt shows the attempt of its error, not its own', async () => {
     const { root } = await open({}, (jobs) => {
       jobs.jobList = [

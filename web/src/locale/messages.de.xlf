@@ -10611,7 +10611,7 @@
         <note category="location">src/app/features/repositories/content/repository-items.ts:210</note>
         <note category="location">src/app/features/repositories/repository-list.ts:371</note>
         <note category="location">src/app/features/system/backups/backups-page.html:154,156</note>
-        <note category="location">src/app/features/system/job-table.ts:149</note>
+        <note category="location">src/app/features/system/job-table.ts:151</note>
         <note category="location">src/app/features/system/storage/storage-page.ts:96</note>
         <note category="location">src/app/features/system/tasks-card.ts:121</note>
       </notes>
@@ -40569,7 +40569,7 @@
     </unit>
     <unit id="jobs.cancel">
       <notes>
-        <note category="location">src/app/features/system/job-table.ts:121,122</note>
+        <note category="location">src/app/features/system/job-table.ts:123,124</note>
       </notes>
       <segment>
         <source> Cancel </source>
@@ -40578,7 +40578,7 @@
     </unit>
     <unit id="jobs.col.kind">
       <notes>
-        <note category="location">src/app/features/system/job-table.ts:143</note>
+        <note category="location">src/app/features/system/job-table.ts:145</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -40587,7 +40587,7 @@
     </unit>
     <unit id="jobs.col.state">
       <notes>
-        <note category="location">src/app/features/system/job-table.ts:144</note>
+        <note category="location">src/app/features/system/job-table.ts:146</note>
       </notes>
       <segment>
         <source>State</source>
@@ -40596,7 +40596,7 @@
     </unit>
     <unit id="jobs.col.enqueued">
       <notes>
-        <note category="location">src/app/features/system/job-table.ts:145</note>
+        <note category="location">src/app/features/system/job-table.ts:147</note>
       </notes>
       <segment>
         <source>Enqueued</source>
@@ -40605,7 +40605,7 @@
     </unit>
     <unit id="jobs.col.progress">
       <notes>
-        <note category="location">src/app/features/system/job-table.ts:146</note>
+        <note category="location">src/app/features/system/job-table.ts:148</note>
       </notes>
       <segment>
         <source>Progress</source>
@@ -40614,7 +40614,7 @@
     </unit>
     <unit id="jobs.col.replica">
       <notes>
-        <note category="location">src/app/features/system/job-table.ts:147</note>
+        <note category="location">src/app/features/system/job-table.ts:149</note>
       </notes>
       <segment>
         <source>Replica</source>
@@ -40623,7 +40623,7 @@
     </unit>
     <unit id="jobs.col.result">
       <notes>
-        <note category="location">src/app/features/system/job-table.ts:148</note>
+        <note category="location">src/app/features/system/job-table.ts:150</note>
       </notes>
       <segment>
         <source>Result</source>
@@ -40632,7 +40632,7 @@
     </unit>
     <unit id="jobs.cancel.label">
       <notes>
-        <note category="location">src/app/features/system/job-table.ts:180</note>
+        <note category="location">src/app/features/system/job-table.ts:178</note>
       </notes>
       <segment>
         <source>Cancel job <ph id="0" equiv="kind" disp="job.kind"/></source>

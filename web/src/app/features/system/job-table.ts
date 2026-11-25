@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, input, output } from '@angular/core';
-import { Job, JobState, jobActive, jobCancellable } from '../../api/jobs-api';
+import { Job, JobState, jobCancellable } from '../../api/jobs-api';
 import { TechnicalDetails } from '../../shared/technical-details';
 import { SessionStore } from '../../core/session-store';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
@@ -106,7 +106,9 @@ export function jobErrorText(code: NonNullable<Job['error']>['code']): string {
               }
             } @else if (summary(j); as text) {
               <span translate="no">{{ text }}</span>
-            } @else if (!active(j)) {
+            } @else {
+              <!-- A job without a result yet, or one that ended without one: the dash, as every cell without a value (R-UI-146). An
+                   empty cell of a running job failed the render check empty-cell whenever a job ran at the picture's moment. -->
               <quader-no-value />
             }
           </td>
@@ -155,10 +157,6 @@ export class JobTable {
 
   protected stateText(job: Job): string {
     return jobStatusText(job.state);
-  }
-
-  protected active(job: Job): boolean {
-    return jobActive(job.state);
   }
 
   /** The progress as "3/10 items", or empty for a job that reports none. */
