@@ -21,6 +21,7 @@ import { QuaderAvatar } from '../../shared/ui/avatar';
 import { TokenManager, TokenOwnerScope } from '../tokens/token-manager';
 import { isLocked, originLabel } from './user-labels';
 import { PageHeader } from '../../shared/ui/page-header';
+import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { PrincipalField, choiceFromRef } from '../../shared/ui/principal-field';
 
 /**
@@ -32,7 +33,7 @@ import { PrincipalField, choiceFromRef } from '../../shared/ui/principal-field';
  */
 @Component({
   selector: 'quader-user-detail',
-  imports: [PageHeader, DatePipe, RouterLink, Checkbox, ErrorNotice, Needs, PrincipalField, PrincipalRoles, Disclosure, TextField, TokenManager, QuaderAvatar],
+  imports: [PageHeader, DataTable, DatePipe, RouterLink, Checkbox, ErrorNotice, Needs, PrincipalField, PrincipalRoles, Disclosure, TextField, TokenManager, QuaderAvatar],
   templateUrl: './user-detail.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
@@ -49,6 +50,13 @@ import { PrincipalField, choiceFromRef } from '../../shared/ui/principal-field';
     }
     .ids {
       margin-block-start: var(--quader-space-5);
+    }
+    .agent {
+      overflow-wrap: anywhere;
+    }
+    /* A date and its time are one value that never breaks (Q-UI-1064), as on the profile's sessions. */
+    time.when {
+      white-space: nowrap;
     }
     @media (max-width: 40rem) {
       .row {
@@ -85,6 +93,14 @@ export class UserDetail {
   protected readonly editError = signal<ApiError | null>(null);
   protected readonly externalError = signal<ApiError | null>(null);
   protected readonly sessions = signal<readonly UserSession[] | null>(null);
+  protected readonly sessionsCaption = $localize`:@@user.sessions-caption:Open sessions of this user`;
+  /** The columns of the profile's own sessions (profile-sessions.ts) that an administrator reads of another user's. */
+  protected readonly sessionColumns: readonly TableColumn[] = [
+    { id: 'created', label: $localize`:@@user.session.created:Created`, width: '11rem' },
+    { id: 'lastSeen', label: $localize`:@@user.session.last-seen:Last seen`, width: '11rem' },
+    { id: 'address', label: $localize`:@@user.session.address:Address`, width: '7rem' },
+    { id: 'agent', label: $localize`:@@user.session.agent:Browser` },
+  ];
   protected readonly sessionError = signal<ApiError | null>(null);
 
   protected readonly external = signal(false);

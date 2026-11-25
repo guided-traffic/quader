@@ -120,7 +120,7 @@
       <ul>
         @for (i of u.identities; track i.provider) {
           <li>
-            <code translate="no">{{ i.provider }}</code>
+            <code translate="no">{{ i.provider }}</code>&ngsp;
             @if (i.linked) {
               <span class="badge"><span class="material-icons" aria-hidden="true">link</span><ng-container i18n="@@user.linked">Linked</ng-container></span>
             } @else {
@@ -224,27 +224,18 @@
       @if (list.length === 0) {
         <p i18n="@@user.no-sessions">No open session.</p>
       } @else {
-        <table class="data">
-          <caption class="visually-hidden" i18n="@@user.sessions-caption">Open sessions of this user</caption>
-          <thead>
+        <!-- The shared data table, as the profile's own sessions (R-UI-029): the long user agent wraps in its cell and the rows stack where
+             the columns do not fit; the raw table scrolled the page 167 px sideways at 390 px (2026-11-25). -->
+        <quader-data-table [caption]="sessionsCaption" [columns]="sessionColumns" [empty]="false">
+          @for (s of list; track s.id) {
             <tr>
-              <th scope="col" i18n="@@user.session.created">Created</th>
-              <th scope="col" i18n="@@user.session.last-seen">Last seen</th>
-              <th scope="col" i18n="@@user.session.address">Address</th>
-              <th scope="col" i18n="@@user.session.agent">Browser</th>
+              <th scope="row"><time class="when" [attr.datetime]="s.createdAt">{{ s.createdAt | date: 'medium' }}</time></th>
+              <td><time class="when" [attr.datetime]="s.lastSeenAt">{{ s.lastSeenAt | date: 'medium' }}</time></td>
+              <td translate="no">{{ s.createdAddr ?? '–' }}</td>
+              <td translate="no" class="wrap agent">{{ s.userAgent ?? '–' }}</td>
             </tr>
-          </thead>
-          <tbody>
-            @for (s of list; track s.id) {
-              <tr>
-                <th scope="row">{{ s.createdAt | date: 'medium' }}</th>
-                <td>{{ s.lastSeenAt | date: 'medium' }}</td>
-                <td translate="no">{{ s.createdAddr ?? '' }}</td>
-                <td translate="no">{{ s.userAgent ?? '' }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
+          }
+        </quader-data-table>
         @if (canWrite()) {
           <div class="row-actions">
             <button class="btn btn-tertiary" type="button" [disabled]="busy()" (click)="endSessions()" i18n="@@user.end-sessions">End all sessions</button>
