@@ -4,9 +4,7 @@
       <quader-format-icon [format]="format()" />
       <span translate="no">{{ formatName() }}</span>
     </span>
-    @for (t of tags(); track t) {
-      <span class="badge info" translate="no">{{ t }}</span>
-    }
+    <quader-dist-tags [tags]="tags()" [package]="name()" [limit]="null" />
     @if (detail()?.prerelease) {
       <span class="badge" i18n="@@pkg.badge.prerelease">Pre-release</span>
     }

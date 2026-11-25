@@ -96,6 +96,8 @@ export class FakeUpstreamCatalogueApi extends UpstreamCatalogueApi {
   withheld: number | null = null;
   levels: Record<string, UpstreamLevelPage> = {};
   packages: Record<string, UpstreamPackage> = { lodash: upstreamPackage() };
+  /** Versions of a package past its first page: only a filter reaches them, as the server's filter reads the whole list. */
+  laterVersions: Record<string, UpstreamVersion[]> = {};
   packageError: ApiError | null = null;
   notCovered = false;
   readonly calls: string[] = [];
@@ -123,7 +125,12 @@ export class FakeUpstreamCatalogueApi extends UpstreamCatalogueApi {
     if (this.packageError) throw this.packageError;
     const p = this.packages[name];
     if (!p) throw new ApiError(404, { code: 'catalogue_not_found', detail: 'not found' }, 'rid-404');
-    return filter ? { ...p, versions: p.versions.filter((v) => v.version.includes(filter)) } : p;
+    if (!filter) return p;
+    // The server's filter (Q-CUR-182): the version's text or the name of a tag that points at it holds the text, case-insensitive.
+    const f = filter.toLowerCase();
+    const named = (v: UpstreamVersion) => Object.entries(p.tags).some(([tag, target]) => target === v.version && tag.toLowerCase().includes(f));
+    const versions = [...p.versions, ...(this.laterVersions[name] ?? [])].filter((v) => v.version.toLowerCase().includes(f) || named(v));
+    return { ...p, versions, total: versions.length, nextCursor: null, done: true };
   }
 
   override async vulnerabilities(repository: string, name: string, versions: readonly string[]): Promise<UpstreamVulnerabilities> {

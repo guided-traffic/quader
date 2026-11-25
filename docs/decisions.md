@@ -10265,10 +10265,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-90 questions on [spec/remote-curation.md](spec/remote-curation.md).
+91 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 90 questions</summary>
+<summary>Q-CUR: 91 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10362,6 +10362,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-176](spec/remote-curation.md#q-cur-176--the-top-bars-panel-lists-the-queues-a-limit-holds-from-the-limits-rows) | The top bar's panel lists the queues a limit holds, from the limits' rows | Decided by the development agent | (a), at most 100 queues, the longest held first. | — |
 | [Q-CUR-180](spec/remote-curation.md#q-cur-180--docker-hubs-and-quays-tags-are-listed-in-the-tag-order) | Docker Hub's and Quay's tags are listed in the tag order | Decided by the development agent | (a) Read Docker Hub's and Quay's tags whole up to five pages of 100 and sort them: versions by the tag order, the other tags newest first by the upstream's time; an image with more tags is listed from the distribution tags list in the tag order, without the API's facts | — |
 | [Q-CUR-181](spec/remote-curation.md#q-cur-181--a-bulks-rows-are-listed-in-the-order-they-run) | A bulk's rows are listed in the order they run | Decided by the development agent | (a) Newest first by creation, then by id ascending: rows queued together in the order they run | — |
+| [Q-CUR-182](spec/remote-curation.md#q-cur-182--the-version-filter-of-the-catalogue-finds-a-version-by-the-name-of-its-tag) | The version filter of the catalogue finds a version by the name of its tag | Decided by the development agent | (a) The server's filter matches the version or the name of a tag that points at it: npm pages its versions with `discover.PageTaggedVersions`, which takes the package's tags beside the versions; every other format keeps `PageVersions` | — |
 
 </details>
 
@@ -12242,10 +12243,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-583 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+586 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 583 questions</summary>
+<summary>Q-UI: 586 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12832,6 +12833,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1187](spec/api-and-ui.md#q-ui-1187--a-compact-place-says-the-sentence-and-opens-the-whole-notice) | A compact place says the sentence and opens the whole notice | Decided by the development agent | (a) The sentence, and **Details** that opens the notice in a dialog | — |
 | [Q-UI-1188](spec/api-and-ui.md#q-ui-1188--the-notices-states-are-measured-in-make-ui-states-and-its-words-in-the-render-sets-german-pass) | The notice's states are measured in make ui-states, and its words in the render set's German pass | Decided by the development agent | (a) Seven states in `make ui-states`, six on the repository's page in the render set, English and German | — |
 | [Q-UI-1189](spec/api-and-ui.md#q-ui-1189--a-forms-error-summary-folds-the-answers-report) | A form's error summary folds the answer's report | Decided by the development agent | (a) The summary keeps its field list and folds the report under Technical details | — |
+| [Q-UI-1190](spec/api-and-ui.md#q-ui-1190--an-npm-tag-is-a-badge-on-the-row-of-the-version-it-names-with-a-tooltip-that-says-what-it-is) | An npm tag is a badge on the row of the version it names, with a tooltip that says what it is | Decided by the development agent | (a) The run goes; a tag is a badge on the row of the version it names, `latest` first and the others by name, in the look of the package's page (`badge info`); each badge takes the focus and says in the shared tooltip "npm tag “next”: npm install @firebase/ai@next installs this version.", which also describes it to assistive technology; one component, `<quader-dist-tags>`, on the package's page, the version's page and the tab Upstream | — |
+| [Q-UI-1191](spec/api-and-ui.md#q-ui-1191--a-version-shows-three-tags-and-n-more-whose-tooltip-names-the-others) | A version shows three tags and "+N more", whose tooltip names the others | Decided by the development agent | (a) At most three badges, then "+N more" in muted text, which takes the focus and whose tooltip names the others ("Further npm tags of this version: next, rc"); the badges wrap between them under the version; a name wider than the cell alone is cut with an ellipsis, the whole in its tooltip; the version's own page shows every tag | — |
+| [Q-UI-1192](spec/api-and-ui.md#q-ui-1192--an-opened-upstream-package-says-its-state-once-the-row-shows-the-badge-the-head-the-rule) | An opened upstream package says its state once: the row shows the badge, the head the rule | Decided by the development agent | (a) Opened in a row the head holds the rule that decided ("Rule: @gitlab/*") where one did, and nothing where the mode did; looked up by name the badge and the rule stand as before | — |
 
 </details>
 

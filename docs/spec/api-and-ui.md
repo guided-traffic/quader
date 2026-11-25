@@ -7249,8 +7249,10 @@ owner's reference screen's; its look is Quader's own.
   as the version with every other tag of the image muted after it ("+ more" where the answer has more than 100), the signature badge on
   the row; the column is headed **Tag**, the field **Filter tags** also matches the other tags, and the count reads "M of N images".
 - **Columns, in the owner's order** ([Q-UI-450](#q-ui-450--a-row-of-the-versions-table-is-the-version-its-size-its-vulnerabilities-and-two-times)):
-  **Version** (a link to the version's page, R-UI-111; after it its distribution tags as badges, `latest`, `next`, and the mark
-  **Pre-release**), **Size** (R-API-080: a size that is not known is the shared no-value with a title that says why, a partial size has **≥** before it and a title that says what it counts), **Vulnerabilities** (R-UI-112; only when the answer carries a grade other than N/A: a format that is not scanned and a package of internal names are N/A in every row, Q-UI-377), **Published**,
+  **Version** (a link to the version's page, R-UI-111; after it its npm tags as badges, `latest` first and the others by name, at most
+  three and "+N more", each saying in its tooltip what it is, the badge and the words of the tab Upstream
+  ([Q-UI-1190](#q-ui-1190--an-npm-tag-is-a-badge-on-the-row-of-the-version-it-names-with-a-tooltip-that-says-what-it-is),
+  [Q-UI-1191](#q-ui-1191--a-version-shows-three-tags-and-n-more-whose-tooltip-names-the-others)), and the mark **Pre-release**), **Size** (R-API-080: a size that is not known is the shared no-value with a title that says why, a partial size has **≥** before it and a title that says what it counts), **Vulnerabilities** (R-UI-112; only when the answer carries a grade other than N/A: a format that is not scanned and a package of internal names are N/A in every row, Q-UI-377), **Published**,
   **Last download** (R-API-065, R-API-079; "Never" for a version no client downloaded, with a help text and a title, Q-API-342), and
   **Repositories** only when the versions differ in the
   repositories that hold them ([Q-UI-457](#q-ui-457--the-column-repositories-appears-only-when-the-versions-are-held-by-different-repositories)).
@@ -7289,8 +7291,10 @@ page's width. Not chosen by the owner: a row that opens inside the table, and a 
   ([Q-UI-451](#q-ui-451--a-versions-address-is-the-packages-with--and-the-version)). The breadcrumb reads
   Packages › the package (a link to its page) › the version. Every link to a version leads here: the versions table, the repository
   content page (R-UI-052), the finding and the advisory pages and the report (R-VULN-022).
-- **Header**: the package name and the version as the `h1` ("image-convert-tools 4.0.1"), the format, the distribution tags that
-  point at the version and the mark **Pre-release**, the package's description.
+- **Header**: the package name and the version as the `h1` ("image-convert-tools 4.0.1"), the format, the npm tags that point at the
+  version (every one, the badge of
+  [Q-UI-1190](#q-ui-1190--an-npm-tag-is-a-badge-on-the-row-of-the-version-it-names-with-a-tooltip-that-says-what-it-is)) and the mark
+  **Pre-release**, the package's description.
 - **Facts**, one line with the style guide's separator: the grade with the total and the fixable findings (R-UI-112), a link to
   the tab Vulnerabilities; when it was published; its size (R-API-080); when a client last downloaded it (R-API-065, "never"); its downloads; its
   licences. Below them the banners **Unlisted.**, **Blocked in <repository>** and **Deprecated.**
@@ -17297,7 +17301,10 @@ Status: **Decided by the development agent** — selected from the options below
 development agent revisits a switch if a package with hundreds of nightlies makes the table useless. **Applied in the spec:**
 R-UI-110, R-UI-111. **Revised on 2026-11-25** by the owner's word of
 [Q-UI-1130](#q-ui-1130--an-image-is-one-row-with-its-tags-on-the-opened-item-and-on-the-packages-page): an image's row is the image, led by
-its tag, its other tags on the row; still no digest column.
+its tag, its other tags on the row; still no digest column. **Revised on 2026-11-25** by
+[Q-UI-1190](#q-ui-1190--an-npm-tag-is-a-badge-on-the-row-of-the-version-it-names-with-a-tooltip-that-says-what-it-is): an npm tag's
+badge says what it is in its tooltip, at most three on a row
+([Q-UI-1191](#q-ui-1191--a-version-shows-three-tags-and-n-more-whose-tooltip-names-the-others)).
 
 ### Q-UI-454 · A version says its grade, total and fixable findings once; the tab carries no count
 
@@ -24955,6 +24962,77 @@ list's message took every problem below the list's pointer.
 **Choice:** (a).
 
 **Applied in the spec:** R-UI-187, R-UI-042. Code: [registry-preset-dialog.ts](../../web/src/app/features/upstream/registry-preset-dialog.ts).
+
+### Q-UI-1190 · An npm tag is a badge on the row of the version it names, with a tooltip that says what it is
+
+Status: **Decided by the development agent** (2026-11-25), on the owner's finding; the owner reviews it at the walkthrough.
+
+Context: on the tab Upstream of `upstream/npmjs` the owner opened `@firebase/ai` and framed two lines above its versions, muted names
+each followed by a version up to the panel's edge (`caching-fdc 2.3.0-caching-fdc.9f17eac6e · canary 2.10.0-canary.bfb9accdc ·
+eap-ai-hybridinference 1.2.2-… · … · latest 3.1.0 · next 3.1.0-2026…`), with the badge **Delivered** under them: "Was soll das denn
+sein? Das ist ja überladen, außerdem habe ich keine Ahnung was das bedeutet und was ich damit anfangen soll." They are the package's npm
+dist-tags: names a maintainer points at one version each, so that `npm install <package>@next` installs the version `next` names. The
+run showed every tag, unbounded, with no word of what they are and nothing to do with them. The package's page showed the same tags as
+badges on their versions' rows (Q-UI-453), without a word either, and the version's page in its header. npm is the one format with
+such names: an image's tags are its versions (Q-CUR-10, Q-UI-1130), and NuGet, Debian, Ansible Galaxy and generic have none (the
+catalogue's `tags` is empty for them, `PackageInfo.Tags` is set by npm alone).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The run goes; a tag is a badge on the row of the version it names, `latest` first and the others by name, in the look of the package's page (`badge info`); each badge takes the focus and says in the shared tooltip "npm tag “next”: npm install @firebase/ai@next installs this version.", which also describes it to assistive technology; one component, `<quader-dist-tags>`, on the package's page, the version's page and the tab Upstream (chosen) | The tags where their versions are | A tag reads as a fact of its version, and the tooltip says what to do with it; one look and one wording on three screens; the filter finds the version (Q-CUR-182) | A tag stands one tab stop per badge; a tag of a version past the first 100 rows shows only once the list reaches it or the filter finds it |
+| (b) Keep a line of tags above the versions, labelled "npm tags:" and bounded | The run with a word | Every tag in one place | Still a second list beside the list of versions, the overload the owner named |
+| (c) A column **Tags** in the versions' table | A column | Aligned | Empty in nearly every row; a fourth column that the table cannot afford at 1,024 px (Q-CUR-157) |
+
+**Choice:** (a). A name the upstream gave is never translated (`translate="no"`). **Applied in the spec:** R-UI-110, R-UI-111;
+[remote-curation.md](remote-curation.md) R-CUR-018. Code: [dist-tags.ts](../../web/src/app/features/packages/dist-tags.ts),
+`tags` of [upstream-package.ts](../../web/src/app/features/repositories/upstream/upstream-package.ts). Tests: `R-CUR-018 R-CUR-009 an npm
+tag stands as a badge on the row of the version it names…`
+([remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts)), `R-UI-110 a row carries its
+distribution tags…` ([package-detail.spec.ts](../../web/src/app/features/packages/package-detail.spec.ts)); rendered
+`repository-npm-remote-upstream` (`-package`), `package-npm`, `package-version-npm`.
+
+### Q-UI-1191 · A version shows three tags and "+N more", whose tooltip names the others
+
+Status: **Decided by the development agent** (2026-11-25), with Q-UI-1190; the owner reviews it at the walkthrough.
+
+Context: a package may point several names at one version (a pre-release that is `next`, `beta`, `canary` and `rc` at once), and a
+tag's name has no length the registry bounds (`eap-ai-hybridinference` is 22 characters). The image rows show at most four other tags
+and "+N more" on an opened item (Q-UI-1130,
+[Q-UI-1150](#q-ui-1150--an-images-tags-are-one-line-of-facts-after-the-leading-tag-and-a-line-each-in-a-block)); a badge is wider than a
+muted name.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) At most three badges, then "+N more" in muted text, which takes the focus and whose tooltip names the others ("Further npm tags of this version: next, rc"); the badges wrap between them under the version; a name wider than the cell alone is cut with an ellipsis, the whole in its tooltip; the version's own page shows every tag (chosen) | `TAGS_PER_ROW` | A row stays two lines at 390 px; no tag is out of reach; nothing pushes the table sideways | "+1 more" where a fourth badge would fit |
+| (b) Every tag on the row | No bound | Nothing hidden | Five badges on one row of a list of 100 |
+| (c) One badge, the rest in "+N more" | Shortest | — | `latest` and `next` on one version hide each other |
+
+**Choice:** (a). The badge asks its column for no least width (a grid of one track `minmax(0, max-content)`): as a badge that never
+breaks, the name of 35 characters made the versions' table stand as blocks at 1,024 px in German, against Q-CUR-157; now it is as wide as
+its name where the cell has the room and cut where it has not. **Applied in the spec:** R-UI-110; [remote-curation.md](remote-curation.md)
+R-CUR-018. Code: `shownDistTags` and
+`TAGS_PER_ROW` of [dist-tags.ts](../../web/src/app/features/packages/dist-tags.ts). Tests: `R-UI-110 R-CUR-018 a version shows
+latest first…` ([dist-tags.spec.ts](../../web/src/app/features/packages/dist-tags.spec.ts)), the five tags of one version in
+remote-upstream.spec.ts; rendered `repository-npm-remote-upstream` with eight tags, five of them on one version and one of 35
+characters.
+
+### Q-UI-1192 · An opened upstream package says its state once: the row shows the badge, the head the rule
+
+Status: **Decided by the development agent** (2026-11-25), on the owner's finding of Q-UI-1190; the owner reviews it at the
+walkthrough.
+
+Context: the paragraph of an opened package's state repeated the badge its row shows in the column **State** (**Delivered** under
+**Delivered**), and its description was left out for the same reason already. A package looked up by its name has no row above it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Opened in a row the head holds the rule that decided ("Rule: @gitlab/*") where one did, and nothing where the mode did; looked up by name the badge and the rule stand as before (chosen) | `inRow` | Every fact once; the rule, which the row does not name, stays | The package's acts stand under no state |
+| (b) Remove the paragraph everywhere | Simplest | — | A lookup loses its state, and the opened row its rule |
+| (c) Keep it | As built | — | The repetition the owner framed |
+
+**Choice:** (a). **Applied in the spec:** [remote-curation.md](remote-curation.md) R-CUR-018. Code: `inRow` of
+[upstream-package.ts](../../web/src/app/features/repositories/upstream/upstream-package.ts). Test: `R-CUR-018 the package state is said
+once…` ([remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts)).
 
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 

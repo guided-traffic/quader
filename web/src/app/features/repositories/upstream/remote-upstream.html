@@ -203,7 +203,7 @@
               <div [id]="rowId(h)" class="collapse-region" [class.open]="isOpen(h)">
                 <div>
                   @if (isOpen(h)) {
-                    <quader-upstream-package [name]="h.name" [project]="project()" [sizes]="c.sizes" [versionLabel]="shape().versionLabel" [showDescription]="false" />
+                    <quader-upstream-package [name]="h.name" [project]="project()" [sizes]="c.sizes" [versionLabel]="shape().versionLabel" [inRow]="true" />
                   }
                 </div>
               </div>

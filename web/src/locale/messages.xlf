@@ -13946,7 +13946,7 @@
     <unit id="pkg.meta.external">
       <notes>
         <note category="location">src/app/features/packages/ansible-doc-entry.html:190,191</note>
-        <note category="location">src/app/features/packages/package-version.html:415,416</note>
+        <note category="location">src/app/features/packages/package-version.html:413,414</note>
       </notes>
       <segment>
         <source>(opens another site)</source>
@@ -14079,8 +14079,8 @@
         <note category="location">src/app/features/packages/ansible-docs.html:139,140</note>
         <note category="location">src/app/features/packages/ansible-import-log.ts:21,22</note>
         <note category="location">src/app/features/packages/package-detail.html:28,29</note>
-        <note category="location">src/app/features/packages/package-version.html:34,35</note>
-        <note category="location">src/app/features/packages/package-version.html:188,189</note>
+        <note category="location">src/app/features/packages/package-version.html:32,33</note>
+        <note category="location">src/app/features/packages/package-version.html:186,187</note>
         <note category="location">src/app/features/packages/version-signatures.ts:47,50</note>
       </notes>
       <segment>
@@ -14435,6 +14435,30 @@
         <source>Copy install command</source>
       </segment>
     </unit>
+    <unit id="pkg.dist-tag.title">
+      <notes>
+        <note category="location">src/app/features/packages/dist-tags.ts:87</note>
+      </notes>
+      <segment>
+        <source>npm tag “<ph id="0" equiv="tag" disp="tag"/>”: <ph id="1" equiv="command" disp="command"/> installs this version.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.dist-tag.more">
+      <notes>
+        <note category="location">src/app/features/packages/dist-tags.ts:90</note>
+      </notes>
+      <segment>
+        <source>+<ph id="0" equiv="count" disp="this.view().hidden.length"/> more</source>
+      </segment>
+    </unit>
+    <unit id="pkg.dist-tag.others">
+      <notes>
+        <note category="location">src/app/features/packages/dist-tags.ts:91</note>
+      </notes>
+      <segment>
+        <source>Further npm tags of this version: <ph id="0" equiv="tags" disp="this.view().hidden.join(&apos;, &apos;)"/></source>
+      </segment>
+    </unit>
     <unit id="docs.tree.documentation">
       <notes>
         <note category="location">src/app/features/packages/docs-model.ts:82</note>
@@ -14502,8 +14526,8 @@
     <unit id="pkg.badge.prerelease">
       <notes>
         <note category="location">src/app/features/packages/image-tags.ts:46,48</note>
-        <note category="location">src/app/features/packages/package-detail.html:91,93</note>
-        <note category="location">src/app/features/packages/package-version.html:11,13</note>
+        <note category="location">src/app/features/packages/package-detail.html:89,91</note>
+        <note category="location">src/app/features/packages/package-version.html:9,11</note>
       </notes>
       <segment>
         <source>Pre-release</source>
@@ -14632,7 +14656,7 @@
     </unit>
     <unit id="pkg.ver.never">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.html:123,125</note>
+        <note category="location">src/app/features/packages/package-detail.html:121,123</note>
       </notes>
       <segment>
         <source>Never</source>
@@ -14640,7 +14664,7 @@
     </unit>
     <unit id="pkg.ansible-docs-link">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.html:141,143</note>
+        <note category="location">src/app/features/packages/package-detail.html:139,141</note>
       </notes>
       <segment>
         <source>Documentation of <ph id="0" equiv="INTERPOLATION" disp="{{ p.latestVersion }}"/></source>
@@ -14648,7 +14672,7 @@
     </unit>
     <unit id="pkg.readme-of">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.html:152</note>
+        <note category="location">src/app/features/packages/package-detail.html:150</note>
       </notes>
       <segment>
         <source>of</source>
@@ -14656,7 +14680,7 @@
     </unit>
     <unit id="pkg.fact.repositories">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.html:161,163</note>
+        <note category="location">src/app/features/packages/package-detail.html:159,161</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -14664,7 +14688,7 @@
     </unit>
     <unit id="pkg.fact.keywords">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.html:170,171</note>
+        <note category="location">src/app/features/packages/package-detail.html:168,169</note>
       </notes>
       <segment>
         <source>Keywords</source>
@@ -14672,7 +14696,7 @@
     </unit>
     <unit id="pkg.fact.downloads">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.html:173,174</note>
+        <note category="location">src/app/features/packages/package-detail.html:171,172</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -14680,7 +14704,7 @@
     </unit>
     <unit id="pkg.fact.first-published">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.html:175,176</note>
+        <note category="location">src/app/features/packages/package-detail.html:173,174</note>
       </notes>
       <segment>
         <source>First published</source>
@@ -14688,7 +14712,7 @@
     </unit>
     <unit id="pkg.ver.tag">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:201</note>
+        <note category="location">src/app/features/packages/package-detail.ts:203</note>
       </notes>
       <segment>
         <source>Tag</source>
@@ -14696,7 +14720,7 @@
     </unit>
     <unit id="pkg.ver.version">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:201</note>
+        <note category="location">src/app/features/packages/package-detail.ts:203</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -14704,7 +14728,7 @@
     </unit>
     <unit id="pkg.ver.size">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:204</note>
+        <note category="location">src/app/features/packages/package-detail.ts:206</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -14712,7 +14736,7 @@
     </unit>
     <unit id="pkg.ver.vulnerabilities">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:206</note>
+        <note category="location">src/app/features/packages/package-detail.ts:208</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -14720,7 +14744,7 @@
     </unit>
     <unit id="pkg.ver.published">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:208</note>
+        <note category="location">src/app/features/packages/package-detail.ts:210</note>
       </notes>
       <segment>
         <source>Published</source>
@@ -14728,7 +14752,7 @@
     </unit>
     <unit id="pkg.ver.last-download">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:211</note>
+        <note category="location">src/app/features/packages/package-detail.ts:213</note>
       </notes>
       <segment>
         <source>Last download</source>
@@ -14736,7 +14760,7 @@
     </unit>
     <unit id="pkg.help.last-download">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:212</note>
+        <note category="location">src/app/features/packages/package-detail.ts:214</note>
       </notes>
       <segment>
         <source>When a client last downloaded this version through Quader. Never for a version nobody downloaded yet, such as one a mirror pass fetched.</source>
@@ -14744,7 +14768,7 @@
     </unit>
     <unit id="pkg.ver.repositories">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:215</note>
+        <note category="location">src/app/features/packages/package-detail.ts:217</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -14752,7 +14776,7 @@
     </unit>
     <unit id="pkg.ver.images">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:217</note>
+        <note category="location">src/app/features/packages/package-detail.ts:219</note>
       </notes>
       <segment>
         <source>Images</source>
@@ -14760,7 +14784,7 @@
     </unit>
     <unit id="pkg.ver.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:218</note>
+        <note category="location">src/app/features/packages/package-detail.ts:220</note>
       </notes>
       <segment>
         <source>Versions</source>
@@ -14768,7 +14792,7 @@
     </unit>
     <unit id="pkg.ver.filter-tags">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:220</note>
+        <note category="location">src/app/features/packages/package-detail.ts:222</note>
       </notes>
       <segment>
         <source>Filter tags</source>
@@ -14776,7 +14800,7 @@
     </unit>
     <unit id="pkg.ver.filter">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:220</note>
+        <note category="location">src/app/features/packages/package-detail.ts:222</note>
       </notes>
       <segment>
         <source>Filter versions</source>
@@ -14784,7 +14808,7 @@
     </unit>
     <unit id="pkg.details">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:222</note>
+        <note category="location">src/app/features/packages/package-detail.ts:224</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -14792,7 +14816,7 @@
     </unit>
     <unit id="pkg.details-hint">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:223</note>
+        <note category="location">src/app/features/packages/package-detail.ts:225</note>
       </notes>
       <segment>
         <source>The repositories that hold the package, its keywords and its downloads.</source>
@@ -14800,7 +14824,7 @@
     </unit>
     <unit id="pkg.ver.none-matching-tags">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:226</note>
+        <note category="location">src/app/features/packages/package-detail.ts:228</note>
       </notes>
       <segment>
         <source>No image has a tag that matches “<ph id="0" equiv="text" disp="this.draft().trim()"/>”.</source>
@@ -14808,7 +14832,7 @@
     </unit>
     <unit id="pkg.ver.none-matching">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:227</note>
+        <note category="location">src/app/features/packages/package-detail.ts:229</note>
       </notes>
       <segment>
         <source>No version matches “<ph id="0" equiv="text" disp="this.draft().trim()"/>”.</source>
@@ -14816,8 +14840,8 @@
     </unit>
     <unit id="pkg.ver.never-title">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:230</note>
-        <note category="location">src/app/features/packages/package-version.ts:538</note>
+        <note category="location">src/app/features/packages/package-detail.ts:232</note>
+        <note category="location">src/app/features/packages/package-version.ts:540</note>
       </notes>
       <segment>
         <source>No client has downloaded this version through Quader yet.</source>
@@ -15189,7 +15213,7 @@
     </unit>
     <unit id="pkg.version.facts">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:36</note>
+        <note category="location">src/app/features/packages/package-version.html:34</note>
       </notes>
       <segment>
         <source>Facts of this version</source>
@@ -15197,7 +15221,7 @@
     </unit>
     <unit id="pkg.fact.published">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:45</note>
+        <note category="location">src/app/features/packages/package-version.html:43</note>
       </notes>
       <segment>
         <source>Published</source>
@@ -15205,7 +15229,7 @@
     </unit>
     <unit id="pkg.fact.last-download">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:49</note>
+        <note category="location">src/app/features/packages/package-version.html:47</note>
       </notes>
       <segment>
         <source>Last download</source>
@@ -15213,7 +15237,7 @@
     </unit>
     <unit id="pkg.fact.never">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:52,54</note>
+        <note category="location">src/app/features/packages/package-version.html:50,52</note>
       </notes>
       <segment>
         <source>never</source>
@@ -15221,7 +15245,7 @@
     </unit>
     <unit id="pkg.fact.download-count">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:55,56</note>
+        <note category="location">src/app/features/packages/package-version.html:53,54</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 download} other {<ph id="0" equiv="INTERPOLATION"/> downloads}}</source>
@@ -15229,7 +15253,7 @@
     </unit>
     <unit id="pkg.unlisted">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:65,66</note>
+        <note category="location">src/app/features/packages/package-version.html:63,64</note>
       </notes>
       <segment>
         <source>Unlisted.</source>
@@ -15237,7 +15261,7 @@
     </unit>
     <unit id="pkg.unlisted-detail">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:67,69</note>
+        <note category="location">src/app/features/packages/package-version.html:65,67</note>
       </notes>
       <segment>
         <source>This version is hidden from search. It is still downloaded when a project asks for exactly this version.</source>
@@ -15245,7 +15269,7 @@
     </unit>
     <unit id="pkg.blocked-in">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:76</note>
+        <note category="location">src/app/features/packages/package-version.html:74</note>
       </notes>
       <segment>
         <source>Blocked in</source>
@@ -15253,7 +15277,7 @@
     </unit>
     <unit id="pkg.malware.found">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:87,88</note>
+        <note category="location">src/app/features/packages/package-version.html:85,86</note>
       </notes>
       <segment>
         <source>Malware found in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> (<pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.malware.signature }}"/></pc>). Downloads are refused.</source>
@@ -15261,7 +15285,7 @@
     </unit>
     <unit id="pkg.malware.not-checked">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:92,93</note>
+        <note category="location">src/app/features/packages/package-version.html:90,91</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> could not be checked for malware. Downloads are refused here.</source>
@@ -15269,7 +15293,7 @@
     </unit>
     <unit id="pkg.gate.banner.missing">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:106,107</note>
+        <note category="location">src/app/features/packages/package-version.html:104,105</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has no signature of its publisher or its build.</source>
@@ -15277,7 +15301,7 @@
     </unit>
     <unit id="pkg.gate.banner.untrusted">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:109,110</note>
+        <note category="location">src/app/features/packages/package-version.html:107,108</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build whose signer no trust anchor this repository accepts knows.</source>
@@ -15285,7 +15309,7 @@
     </unit>
     <unit id="pkg.gate.banner.not-chosen">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:112,113</note>
+        <note category="location">src/app/features/packages/package-version.html:110,111</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is verified only by trust anchors this repository does not accept.</source>
@@ -15293,7 +15317,7 @@
     </unit>
     <unit id="pkg.gate.banner.invalid">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:115,116</note>
+        <note category="location">src/app/features/packages/package-version.html:113,114</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that does not match its content.</source>
@@ -15301,7 +15325,7 @@
     </unit>
     <unit id="pkg.gate.banner.blocked">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:118,119</note>
+        <note category="location">src/app/features/packages/package-version.html:116,117</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is signed by a signer an administrator blocked.</source>
@@ -15309,7 +15333,7 @@
     </unit>
     <unit id="pkg.gate.banner.not-checked">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:121,122</note>
+        <note category="location">src/app/features/packages/package-version.html:119,120</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that Quader cannot read or could not check.</source>
@@ -15317,7 +15341,7 @@
     </unit>
     <unit id="sig.release.action">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:128,129</note>
+        <note category="location">src/app/features/packages/package-version.html:126,127</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:266</note>
         <note category="location">src/app/shared/signatures/signature-gate.ts:79,80</note>
       </notes>
@@ -15327,7 +15351,7 @@
     </unit>
     <unit id="pkg.deprecated">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:140</note>
+        <note category="location">src/app/features/packages/package-version.html:138</note>
       </notes>
       <segment>
         <source>Deprecated.</source>
@@ -15335,7 +15359,7 @@
     </unit>
     <unit id="pkg.file.sha256">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:213</note>
+        <note category="location">src/app/features/packages/package-version.html:211</note>
       </notes>
       <segment>
         <source>SHA-256</source>
@@ -15343,7 +15367,7 @@
     </unit>
     <unit id="sig.gate.refused-here">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:234,235</note>
+        <note category="location">src/app/features/packages/package-version.html:232,233</note>
         <note category="location">src/app/features/repositories/content/repository-file.ts:109,110</note>
         <note category="location">src/app/shared/signatures/signature-gate.ts:69,70</note>
       </notes>
@@ -15353,7 +15377,7 @@
     </unit>
     <unit id="clamav.signature">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:250,252</note>
+        <note category="location">src/app/features/packages/package-version.html:248,250</note>
       </notes>
       <segment>
         <source>Detached signature</source>
@@ -15361,7 +15385,7 @@
     </unit>
     <unit id="clamav.signature.present">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:253,254</note>
+        <note category="location">src/app/features/packages/package-version.html:251,252</note>
       </notes>
       <segment>
         <source>Present, <ph id="0" equiv="INTERPOLATION" disp="{{ c.detachedSignature.signatures ?? 0 }}"/> signatures. Quader passes it on; ClamAV checks it.</source>
@@ -15369,7 +15393,7 @@
     </unit>
     <unit id="clamav.signature.none">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:255,257</note>
+        <note category="location">src/app/features/packages/package-version.html:253,255</note>
       </notes>
       <segment>
         <source>None</source>
@@ -15377,7 +15401,7 @@
     </unit>
     <unit id="clamav.members.hint">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:261,262</note>
+        <note category="location">src/app/features/packages/package-version.html:259,260</note>
       </notes>
       <segment>
         <source>The signature count of the header is the total; lines of a member are not always signatures.</source>
@@ -15385,7 +15409,7 @@
     </unit>
     <unit id="clamav.members.removed">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:282,284</note>
+        <note category="location">src/app/features/packages/package-version.html:280,282</note>
       </notes>
       <segment>
         <source>The files of this version were removed; its metadata stays as history.</source>
@@ -15393,7 +15417,7 @@
     </unit>
     <unit id="clamav.members.not-read">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:284,286</note>
+        <note category="location">src/app/features/packages/package-version.html:282,284</note>
       </notes>
       <segment>
         <source>Members not read: the container holds more than the bounds allow.</source>
@@ -15401,7 +15425,7 @@
     </unit>
     <unit id="clamav.details.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:304,305</note>
+        <note category="location">src/app/features/packages/package-version.html:302,303</note>
       </notes>
       <segment>
         <source>Definitions</source>
@@ -15409,7 +15433,7 @@
     </unit>
     <unit id="clamav.fact.built">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:306,308</note>
+        <note category="location">src/app/features/packages/package-version.html:304,306</note>
       </notes>
       <segment>
         <source>Built</source>
@@ -15417,7 +15441,7 @@
     </unit>
     <unit id="clamav.fact.build-text">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:318,319</note>
+        <note category="location">src/app/features/packages/package-version.html:316,317</note>
       </notes>
       <segment>
         <source>Build time as written</source>
@@ -15425,7 +15449,7 @@
     </unit>
     <unit id="clamav.fact.signatures">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:321,322</note>
+        <note category="location">src/app/features/packages/package-version.html:319,320</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -15433,7 +15457,7 @@
     </unit>
     <unit id="clamav.fact.level">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:323,325</note>
+        <note category="location">src/app/features/packages/package-version.html:321,323</note>
       </notes>
       <segment>
         <source>Functionality level</source>
@@ -15441,7 +15465,7 @@
     </unit>
     <unit id="clamav.fact.builder">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:331,332</note>
+        <note category="location">src/app/features/packages/package-version.html:329,330</note>
       </notes>
       <segment>
         <source>Builder</source>
@@ -15449,7 +15473,7 @@
     </unit>
     <unit id="clamav.fact.verification">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:333,334</note>
+        <note category="location">src/app/features/packages/package-version.html:331,332</note>
       </notes>
       <segment>
         <source>Verification</source>
@@ -15457,7 +15481,7 @@
     </unit>
     <unit id="clamav.fact.files-removed">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:336,337</note>
+        <note category="location">src/app/features/packages/package-version.html:334,335</note>
       </notes>
       <segment>
         <source>Files removed</source>
@@ -15465,7 +15489,7 @@
     </unit>
     <unit id="clamav.fact.header-md5">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:343,344</note>
+        <note category="location">src/app/features/packages/package-version.html:341,342</note>
       </notes>
       <segment>
         <source>MD5 in the header</source>
@@ -15473,7 +15497,7 @@
     </unit>
     <unit id="clamav.fact.computed-md5">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:345,346</note>
+        <note category="location">src/app/features/packages/package-version.html:343,344</note>
       </notes>
       <segment>
         <source>MD5 computed by Quader</source>
@@ -15481,7 +15505,7 @@
     </unit>
     <unit id="pkg.image.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:352,353</note>
+        <note category="location">src/app/features/packages/package-version.html:350,351</note>
       </notes>
       <segment>
         <source>Image</source>
@@ -15489,8 +15513,8 @@
     </unit>
     <unit id="pkg.image.digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:354,356</note>
-        <note category="location">src/app/features/packages/package-version.ts:532</note>
+        <note category="location">src/app/features/packages/package-version.html:352,354</note>
+        <note category="location">src/app/features/packages/package-version.ts:534</note>
       </notes>
       <segment>
         <source>Digest</source>
@@ -15498,8 +15522,8 @@
     </unit>
     <unit id="pkg.image.media-type">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:360,361</note>
-        <note category="location">src/app/features/packages/package-version.ts:533</note>
+        <note category="location">src/app/features/packages/package-version.html:358,359</note>
+        <note category="location">src/app/features/packages/package-version.ts:535</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -15507,7 +15531,7 @@
     </unit>
     <unit id="pkg.image.artifact-type">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:364,365</note>
+        <note category="location">src/app/features/packages/package-version.html:362,363</note>
       </notes>
       <segment>
         <source>Artifact type</source>
@@ -15515,7 +15539,7 @@
     </unit>
     <unit id="pkg.image.total-size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:367,368</note>
+        <note category="location">src/app/features/packages/package-version.html:365,366</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -15523,7 +15547,7 @@
     </unit>
     <unit id="pkg.image.platforms">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:371,372</note>
+        <note category="location">src/app/features/packages/package-version.html:369,370</note>
       </notes>
       <segment>
         <source>Platforms</source>
@@ -15531,7 +15555,7 @@
     </unit>
     <unit id="pkg.image.not-fetched">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:397,398</note>
+        <note category="location">src/app/features/packages/package-version.html:395,396</note>
       </notes>
       <segment>
         <source>Not fetched</source>
@@ -15539,7 +15563,7 @@
     </unit>
     <unit id="pkg.meta.links">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:406,407</note>
+        <note category="location">src/app/features/packages/package-version.html:404,405</note>
       </notes>
       <segment>
         <source>Links</source>
@@ -15547,7 +15571,7 @@
     </unit>
     <unit id="pkg.meta.authors">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:425,426</note>
+        <note category="location">src/app/features/packages/package-version.html:423,424</note>
       </notes>
       <segment>
         <source>Authors</source>
@@ -15555,7 +15579,7 @@
     </unit>
     <unit id="pkg.meta.frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:450,451</note>
+        <note category="location">src/app/features/packages/package-version.html:448,449</note>
       </notes>
       <segment>
         <source>Dependencies by target framework</source>
@@ -15563,7 +15587,7 @@
     </unit>
     <unit id="pkg.meta.all-frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:456,458</note>
+        <note category="location">src/app/features/packages/package-version.html:454,456</note>
       </notes>
       <segment>
         <source>All frameworks</source>
@@ -15571,7 +15595,7 @@
     </unit>
     <unit id="pkg.meta.no-dependencies">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:460,462</note>
+        <note category="location">src/app/features/packages/package-version.html:458,460</note>
       </notes>
       <segment>
         <source>No dependencies.</source>
@@ -15579,9 +15603,9 @@
     </unit>
     <unit id="pkg.meta.facts">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:472,473</note>
-        <note category="location">src/app/features/packages/package-version.html:481,482</note>
-        <note category="location">src/app/features/packages/package-version.html:490,491</note>
+        <note category="location">src/app/features/packages/package-version.html:470,471</note>
+        <note category="location">src/app/features/packages/package-version.html:479,480</note>
+        <note category="location">src/app/features/packages/package-version.html:488,489</note>
       </notes>
       <segment>
         <source>Package details</source>
@@ -15589,7 +15613,7 @@
     </unit>
     <unit id="pkg.meta.engines">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:499,500</note>
+        <note category="location">src/app/features/packages/package-version.html:497,498</note>
       </notes>
       <segment>
         <source>Required runtimes</source>
@@ -15597,7 +15621,7 @@
     </unit>
     <unit id="pkg.repo.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:507,508</note>
+        <note category="location">src/app/features/packages/package-version.html:505,506</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -15605,7 +15629,7 @@
     </unit>
     <unit id="pkg.tab.vulnerabilities">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:224</note>
+        <note category="location">src/app/features/packages/package-version.ts:226</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -15613,7 +15637,7 @@
     </unit>
     <unit id="pkg.tab.documentation">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:229</note>
+        <note category="location">src/app/features/packages/package-version.ts:231</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -15621,7 +15645,7 @@
     </unit>
     <unit id="pkg.tab.contents">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:234</note>
+        <note category="location">src/app/features/packages/package-version.ts:236</note>
       </notes>
       <segment>
         <source>Contents</source>
@@ -15629,7 +15653,7 @@
     </unit>
     <unit id="pkg.tab.readme">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:239</note>
+        <note category="location">src/app/features/packages/package-version.ts:241</note>
       </notes>
       <segment>
         <source>README</source>
@@ -15637,7 +15661,7 @@
     </unit>
     <unit id="pkg.tab.files">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:240</note>
+        <note category="location">src/app/features/packages/package-version.ts:242</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -15645,7 +15669,7 @@
     </unit>
     <unit id="pkg.tab.signatures">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:242</note>
+        <note category="location">src/app/features/packages/package-version.ts:244</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -15653,7 +15677,7 @@
     </unit>
     <unit id="pkg.tab.details">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:243</note>
+        <note category="location">src/app/features/packages/package-version.ts:245</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -15661,7 +15685,7 @@
     </unit>
     <unit id="pkg.tab.import-log">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:245</note>
+        <note category="location">src/app/features/packages/package-version.ts:247</note>
       </notes>
       <segment>
         <source>Import log</source>
@@ -15669,7 +15693,7 @@
     </unit>
     <unit id="clamav.member.name">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:364</note>
+        <note category="location">src/app/features/packages/package-version.ts:366</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -15677,7 +15701,7 @@
     </unit>
     <unit id="pkg.file.size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:365</note>
+        <note category="location">src/app/features/packages/package-version.ts:367</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -15685,7 +15709,7 @@
     </unit>
     <unit id="clamav.member.lines">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:368</note>
+        <note category="location">src/app/features/packages/package-version.ts:370</note>
       </notes>
       <segment>
         <source>Lines</source>
@@ -15693,7 +15717,7 @@
     </unit>
     <unit id="clamav.member.lines-help">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:370</note>
+        <note category="location">src/app/features/packages/package-version.ts:372</note>
       </notes>
       <segment>
         <source>The member&apos;s lines that are neither empty nor a comment.</source>
@@ -15701,7 +15725,7 @@
     </unit>
     <unit id="clamav.members">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:373</note>
+        <note category="location">src/app/features/packages/package-version.ts:375</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -15709,7 +15733,7 @@
     </unit>
     <unit id="clamav.checksums">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:374</note>
+        <note category="location">src/app/features/packages/package-version.ts:376</note>
       </notes>
       <segment>
         <source>Checksums of the archive</source>
@@ -15717,7 +15741,7 @@
     </unit>
     <unit id="clamav.member.digests">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:375</note>
+        <note category="location">src/app/features/packages/package-version.ts:377</note>
       </notes>
       <segment>
         <source>SHA-256 of each member</source>
@@ -15725,7 +15749,7 @@
     </unit>
     <unit id="pkg.file.path">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:492</note>
+        <note category="location">src/app/features/packages/package-version.ts:494</note>
       </notes>
       <segment>
         <source>File</source>
@@ -15733,7 +15757,7 @@
     </unit>
     <unit id="pkg.file.malware">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:493</note>
+        <note category="location">src/app/features/packages/package-version.ts:495</note>
       </notes>
       <segment>
         <source>Malware scan</source>
@@ -15741,7 +15765,7 @@
     </unit>
     <unit id="pkg.file.signature">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:494</note>
+        <note category="location">src/app/features/packages/package-version.ts:496</note>
       </notes>
       <segment>
         <source>Signature</source>
@@ -15749,7 +15773,7 @@
     </unit>
     <unit id="pkg.file.download-link">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:524</note>
+        <note category="location">src/app/features/packages/package-version.ts:526</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -15757,7 +15781,7 @@
     </unit>
     <unit id="pkg.repo.repository">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:526</note>
+        <note category="location">src/app/features/packages/package-version.ts:528</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -15765,7 +15789,7 @@
     </unit>
     <unit id="pkg.repo.class">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:527</note>
+        <note category="location">src/app/features/packages/package-version.ts:529</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -15773,7 +15797,7 @@
     </unit>
     <unit id="pkg.repo.published">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:528</note>
+        <note category="location">src/app/features/packages/package-version.ts:530</note>
       </notes>
       <segment>
         <source>Published</source>
@@ -15781,7 +15805,7 @@
     </unit>
     <unit id="pkg.image.platform">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:531</note>
+        <note category="location">src/app/features/packages/package-version.ts:533</note>
       </notes>
       <segment>
         <source>Platform</source>
@@ -15789,7 +15813,7 @@
     </unit>
     <unit id="pkg.image.size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:534</note>
+        <note category="location">src/app/features/packages/package-version.ts:536</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -15797,7 +15821,7 @@
     </unit>
     <unit id="pkg.image.platforms-caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:536</note>
+        <note category="location">src/app/features/packages/package-version.ts:538</note>
       </notes>
       <segment>
         <source>Platforms of this image index</source>
@@ -15805,7 +15829,7 @@
     </unit>
     <unit id="pkg.image.not-fetched-title">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:537</note>
+        <note category="location">src/app/features/packages/package-version.ts:539</note>
       </notes>
       <segment>
         <source>No client has fetched this platform through Quader yet, so its manifest and its size are not held.</source>
@@ -15813,7 +15837,7 @@
     </unit>
     <unit id="pkg.image.copy-digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:539</note>
+        <note category="location">src/app/features/packages/package-version.ts:541</note>
       </notes>
       <segment>
         <source>Copy digest</source>
@@ -15821,7 +15845,7 @@
     </unit>
     <unit id="pkg.file.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:540</note>
+        <note category="location">src/app/features/packages/package-version.ts:542</note>
       </notes>
       <segment>
         <source>Files of this version</source>
@@ -15829,7 +15853,7 @@
     </unit>
     <unit id="pkg.repo.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:541</note>
+        <note category="location">src/app/features/packages/package-version.ts:543</note>
       </notes>
       <segment>
         <source>Repositories that hold this version</source>
@@ -15837,7 +15861,7 @@
     </unit>
     <unit id="pkg.file.copy-sha">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:542</note>
+        <note category="location">src/app/features/packages/package-version.ts:544</note>
       </notes>
       <segment>
         <source>Copy SHA-256</source>
@@ -15845,7 +15869,7 @@
     </unit>
     <unit id="repo.class.local">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:548</note>
+        <note category="location">src/app/features/packages/package-version.ts:550</note>
         <note category="location">src/app/features/packages/version-signatures.ts:91</note>
         <note category="location">src/app/features/repositories/repository-class.ts:9</note>
       </notes>
@@ -15855,7 +15879,7 @@
     </unit>
     <unit id="repo.class.remote">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:549</note>
+        <note category="location">src/app/features/packages/package-version.ts:551</note>
         <note category="location">src/app/features/packages/version-signatures.ts:92</note>
         <note category="location">src/app/features/repositories/repository-class.ts:11</note>
       </notes>
@@ -15865,7 +15889,7 @@
     </unit>
     <unit id="repo.class.virtual">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:550</note>
+        <note category="location">src/app/features/packages/package-version.ts:552</note>
         <note category="location">src/app/features/packages/version-signatures.ts:93</note>
         <note category="location">src/app/features/repositories/repository-class.ts:13</note>
       </notes>
@@ -27600,7 +27624,7 @@
     <unit id="upstream.cache.stored">
       <notes>
         <note category="location">src/app/features/repositories/upstream/remote-upstream.html:195,196</note>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:122,123</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:130,131</note>
       </notes>
       <segment>
         <source>Stored</source>
@@ -27609,7 +27633,7 @@
     <unit id="upstream.cache.not-stored">
       <notes>
         <note category="location">src/app/features/repositories/upstream/remote-upstream.html:197,199</note>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:124,126</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:132,134</note>
       </notes>
       <segment>
         <source>Not stored</source>
@@ -28089,7 +28113,7 @@
     </unit>
     <unit id="upstream.package.download-every">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:35,36</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:34,35</note>
       </notes>
       <segment>
         <source>Download every version…</source>
@@ -28097,7 +28121,7 @@
     </unit>
     <unit id="upstream.package.remove-allow">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:37,39</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:36,38</note>
       </notes>
       <segment>
         <source>Remove the allow</source>
@@ -28105,7 +28129,7 @@
     </unit>
     <unit id="upstream.package.allow-every">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:39,41</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:38,40</note>
       </notes>
       <segment>
         <source>Allow every version</source>
@@ -28113,7 +28137,7 @@
     </unit>
     <unit id="upstream.package.remove-block">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:42,44</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:41,43</note>
       </notes>
       <segment>
         <source>Remove the block</source>
@@ -28121,7 +28145,7 @@
     </unit>
     <unit id="upstream.package.block-every">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:44,46</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:43,45</note>
       </notes>
       <segment>
         <source>Block every version</source>
@@ -28129,15 +28153,23 @@
     </unit>
     <unit id="upstream.package.request">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:47,51</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:46,50</note>
       </notes>
       <segment>
         <source>Request every version</source>
       </segment>
     </unit>
+    <unit id="upstream.versions.filter-tags">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:59,61</note>
+      </notes>
+      <segment>
+        <source>Filter versions and npm tags</source>
+      </segment>
+    </unit>
     <unit id="upstream.versions.filter">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:58,59</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:61,63</note>
       </notes>
       <segment>
         <source>Filter versions</source>
@@ -28145,7 +28177,7 @@
     </unit>
     <unit id="upstream.size.not-told-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:95,97</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:103,105</note>
       </notes>
       <segment>
         <source>Size not told</source>
@@ -28153,7 +28185,7 @@
     </unit>
     <unit id="upstream.rule.label">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:108</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:116</note>
       </notes>
       <segment>
         <source>Rule:</source>
@@ -28161,7 +28193,7 @@
     </unit>
     <unit id="upstream.cache.for-examination">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:120,121</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:128,129</note>
       </notes>
       <segment>
         <source>Stored for examination</source>
@@ -28169,7 +28201,7 @@
     </unit>
     <unit id="upstream.verdicts.open">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:127,128</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:135,136</note>
       </notes>
       <segment>
         <source>Open the version</source>
@@ -28177,7 +28209,7 @@
     </unit>
     <unit id="upstream.package.loading">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:163,165</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:171,173</note>
       </notes>
       <segment>
         <source>Reading the package from the upstream.</source>
@@ -28185,7 +28217,7 @@
     </unit>
     <unit id="upstream.rule.own-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:86</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:91</note>
       </notes>
       <segment>
         <source>Rule: this version</source>
@@ -28193,7 +28225,7 @@
     </unit>
     <unit id="upstream.rule.package-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:88</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:93</note>
       </notes>
       <segment>
         <source>Rule: the package</source>
@@ -28201,7 +28233,7 @@
     </unit>
     <unit id="upstream.versions.empty">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:105</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:110</note>
       </notes>
       <segment>
         <source>The upstream lists no version of this package.</source>
@@ -28209,7 +28241,7 @@
     </unit>
     <unit id="upstream.versions.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:106</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:111</note>
       </notes>
       <segment>
         <source>No version matches.</source>
@@ -28217,7 +28249,7 @@
     </unit>
     <unit id="upstream.col.delivery">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:115</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:120</note>
       </notes>
       <segment>
         <source>Delivery</source>
@@ -28225,7 +28257,7 @@
     </unit>
     <unit id="upstream.col.cache">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:116</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:121</note>
       </notes>
       <segment>
         <source>Cache</source>
@@ -28233,7 +28265,7 @@
     </unit>
     <unit id="upstream.col.actions">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:117</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:122</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -28241,7 +28273,7 @@
     </unit>
     <unit id="upstream.versions.showing">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:217</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:222</note>
       </notes>
       <segment>
         <source>Showing <ph id="0" equiv="shown" disp="groupedCount(n)"/> of <ph id="1" equiv="total" disp="groupedCount(p.total)"/></source>
@@ -28249,7 +28281,7 @@
     </unit>
     <unit id="upstream.act.download">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:260</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:265</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -28257,7 +28289,7 @@
     </unit>
     <unit id="upstream.act.examine">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:262</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:267</note>
       </notes>
       <segment>
         <source>Download for examination</source>
@@ -28265,7 +28297,7 @@
     </unit>
     <unit id="upstream.act.allow">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:264</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:269</note>
       </notes>
       <segment>
         <source>Allow</source>
@@ -28273,7 +28305,7 @@
     </unit>
     <unit id="upstream.act.block">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:266</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:271</note>
       </notes>
       <segment>
         <source>Block</source>
@@ -28281,7 +28313,7 @@
     </unit>
     <unit id="upstream.act.remove-rule">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:268</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:273</note>
       </notes>
       <segment>
         <source>Remove rule</source>
@@ -28289,7 +28321,7 @@
     </unit>
     <unit id="upstream.act.discard">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:270</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:275</note>
       </notes>
       <segment>
         <source>Discard</source>
@@ -28297,7 +28329,7 @@
     </unit>
     <unit id="upstream.act.request">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:272</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:277</note>
       </notes>
       <segment>
         <source>Request</source>
@@ -28305,7 +28337,7 @@
     </unit>
     <unit id="upstream.version.menu">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:277</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:282</note>
       </notes>
       <segment>
         <source>Actions for <ph id="0" equiv="name" disp="this.name()"/> <ph id="1" equiv="version" disp="v.version"/></source>
@@ -28313,7 +28345,7 @@
     </unit>
     <unit id="upstream.preview.title-package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:314</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:319</note>
       </notes>
       <segment>
         <source>Every version of <ph id="0" equiv="name" disp="name"/></source>

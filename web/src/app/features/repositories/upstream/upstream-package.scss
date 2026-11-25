@@ -22,11 +22,6 @@
   }
 }
 
-.package-tags {
-  display: flex;
-  flex-wrap: wrap;
-}
-
 // The package's acts in a row of their own under its state, wrapping where narrow.
 .acts-row {
   display: flex;
@@ -64,9 +59,19 @@
   font-weight: 600;
 }
 
-// The version with its flags, the delivery's badge, the cache's state and the link to a stored version never break (Q-UI-563): the
-// facts, the rule and the verdict under them are what wraps.
-.version-line,
+// The version, its flags and its npm tags stand on one line where the cell allows and wrap between them, each item whole; a tag wider
+// than the cell alone is cut by its badge (dist-tags.ts, Q-UI-1191). Each item stands at the top of its line, as on the package's page.
+.version-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--quader-space-1) var(--quader-space-2);
+  max-inline-size: 100%;
+}
+
+// The version, the delivery's badge, the cache's state and the link to a stored version never break (Q-UI-563): the facts, the rule and
+// the verdict under them are what wraps.
+.version,
 .delivery-cell > :first-child,
 .cache-cell > :first-child,
 .verdict-line a {

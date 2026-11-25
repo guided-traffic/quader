@@ -51,8 +51,17 @@ what this repository delivers of it.
   that decided it, whether the cache holds it (**Stored**, **Stored for examination**, **Waiting**, **Running**), and its verdicts: for a
   version that is not stored the vulnerability verdict Quader knows without downloading it (npm and NuGet), for a stored version a link
   to its page with the malware, vulnerability and signature verdicts.
+  Above the versions stands only what the package's row does not show already: the rule that decided its state, if a rule did.
 - When the registry cannot be asked, the tab says why: "The upstream is assumed offline until 10:42; Quader retries then.", "The
   upstream catalogue's budget is used up; try again in 40 s.", or that a package's document is too large to read for browsing.
+
+### npm tags
+
+An npm tag is a name the package's maintainer points at one version, such as `latest` or `next`: `npm install <package>@next` installs
+the version `next` names, and a plain `npm install <package>` installs `latest`. On the tab Upstream, as on a package's page, each tag
+stands as a badge on the row of the version it names; point at it to see the command. A version with more than three tags shows "+N
+more", and **Filter versions and npm tags** finds a version by its tag's name, also one past the first 100. Only npm has such tags: an
+image's tags are its versions.
 
 ### Asking for a package
 

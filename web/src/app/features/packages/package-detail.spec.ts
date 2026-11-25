@@ -78,6 +78,10 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect([...row('1.5.0-beta.1').querySelectorAll('th .badge')].map((b) => text(b))).toEqual(['next', 'Pre-release']);
     expect(row('1.3.0').querySelectorAll('th .badge')).toHaveLength(0);
     expect(text(r.root.querySelector('.pkg-versions')!)).not.toMatch(/sha256:/);
+    // The tag's badge is the tab Upstream's (dist-tags.ts, Q-UI-1190): its tooltip says what it is, also to assistive technology.
+    const latest = row('1.4.0').querySelector<HTMLElement>('th .dist-tag')!;
+    const described = document.getElementById(latest.getAttribute('aria-describedby') ?? '')?.textContent ?? '';
+    expect(described).toMatch(/^npm tag “latest”: npm install \S+@latest installs this version\.$/);
   });
 
   it('R-UI-110 R-API-065 a row says how large the version is, when it was published and when a client last downloaded it, or that none did', async () => {

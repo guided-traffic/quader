@@ -506,7 +506,7 @@ Priority: **P1** · Covers: ART-044
   type VersionsRequest struct {
       Cursor Cursor
       Limit  int    // at most 100
-      Filter string // a substring of the version, applied by Quader
+      Filter string // a substring of the version, applied by Quader; npm also finds a version by a tag's name (Q-CUR-182)
   }
   type VersionFacts struct {
       Version   string // canonical (R-CUR-006)
@@ -627,7 +627,7 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
 | `upstream` | the capabilities (R-CUR-007) for this repository, the mode, the counts of rules, open requests (for those who may see them) and of the queue by state, and `"hosts"` |
 | `upstream/search?q=&namesOnly=&level=&cursor=&limit=` | a page of hits; `400 catalogue_not_offered` where the capability is `none` |
 | `upstream/levels?level=&cursor=&limit=` | a page of a level (`level` is the path joined by `/`, each part URL-encoded); `unknown` when the upstream does not have it: `upstream` (the preset's display name, else the URL's host), `rule`, `forbidden`, `suggestion` (Q-CUR-165) |
-| `upstream/package?name=&cursor=&limit=&filter=` | the package and a page of its versions; `404 catalogue_not_found` when the upstream does not have it |
+| `upstream/package?name=&cursor=&limit=&filter=` | the package and a page of its versions; `filter` keeps the versions whose text or whose tag's name holds it, over the whole list ([Q-CUR-182](#q-cur-182--the-version-filter-of-the-catalogue-finds-a-version-by-the-name-of-its-tag)); `404 catalogue_not_found` when the upstream does not have it |
 | `upstream/vulnerabilities` (`POST`, `{"name", "versions": [≤ 50]}`) | the vulnerability verdict of each version that is not stored, computed as the miss gate computes it (`Evaluator.EvaluateMiss`, nothing written, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-015); a format the vulnerability scanning does not cover answers `"notCovered": true` (R-CUR-014) |
 
 - **Quader's state on every row.** A hit, a package and a version carry, beside the upstream's facts, what this repository makes of them:
@@ -1247,11 +1247,19 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
     **Download this sub-section…** at a level that lists
     packages, for those who decide. The results: **Package** (name, the description cut to one line with the whole as its title),
     **Latest**, **State** (**Allowed**, **Delivered**, **Blocked**, **Not allowed**, **Requested**), **Cache** (**Stored** where the
-    repository holds a version: the API answers no count, Q-CUR-61). A package opens in place: its description where nothing showed it,
-    its tags, its state with the rule that decided, **Download every version…**, **Allow every version** and **Block every version** (the
+    repository holds a version: the API answers no count, Q-CUR-61). A package opens in place: its head says only what no row above it
+    shows ([Q-UI-1192](api-and-ui.md#q-ui-1192--an-opened-upstream-package-says-its-state-once-the-row-shows-the-badge-the-head-the-rule)):
+    opened in a row, the rule that decided where one did ("Rule: @gitlab/*"), the row's **State** being the badge; looked up by name,
+    its description and its state with the rule. Then **Download every version…**, **Allow every version** and **Block every version** (the
     one the package's rule has is **Remove the allow** or **Remove the block**) for those who decide, **Request every version** for a
-    reader; **Filter versions** and "Showing 100 of 3,893" with **Load more**; per version **Version** (with the published time and the
-    size under it, "Size not told"), **Delivery** (with the rule that decided under it), **Cache** (**Stored**, **Stored for
+    reader; **Filter versions** (**Filter versions and npm tags** for a package with tags: the filter also finds a version by the name of a
+    tag that points at it, on any page,
+    [Q-CUR-182](#q-cur-182--the-version-filter-of-the-catalogue-finds-a-version-by-the-name-of-its-tag)) and "Showing 100 of 3,893" with
+    **Load more**; per version **Version** (with its flags and the npm tags that name it as badges, `latest` first, at most three and
+    "+N more", each saying what it is in its tooltip,
+    [Q-UI-1190](api-and-ui.md#q-ui-1190--an-npm-tag-is-a-badge-on-the-row-of-the-version-it-names-with-a-tooltip-that-says-what-it-is),
+    [Q-UI-1191](api-and-ui.md#q-ui-1191--a-version-shows-three-tags-and-n-more-whose-tooltip-names-the-others); with the published
+    time and the size under it, "Size not told"), **Delivery** (with the rule that decided under it), **Cache** (**Stored**, **Stored for
     examination**, **Waiting**, **Running**, **Not stored**, with the verdicts under it) and the acts
     ([Q-CUR-152](#q-cur-152--a-versions-acts-are-a-word-for-a-reader-and-a-menu-for-those-who-decide-the-rule-is-a-column-the-verdicts-a-word-or-a-link)),
     a table from 1,024 px on
@@ -3243,6 +3251,33 @@ the queue runs them (`RemoteDownloadDue`: origin, creation, id).
 Code: `RemoteDownloadList` in [remote_downloads.sql](../../internal/meta/postgres/queries/remote_downloads.sql). Test:
 `TestR_CUR_010_ABulkOfADockerHubRemoteReadsTheTagsWhereTheCatalogueReadsThem` (area `ociremote`).
 
+### Q-CUR-182 · The version filter of the catalogue finds a version by the name of its tag
+
+Status: **Decided by the development agent** (2026-11-25), on the owner's finding at the tab Upstream; the owner reviews it at the
+walkthrough.
+
+Context: the owner opened `@firebase/ai` on the tab Upstream of `upstream/npmjs` and found a run of muted names and versions above its
+versions (`caching-fdc 2.3.0-caching-fdc.9f17eac6e · canary 2.10.0-canary.bfb9accdc · … · latest 3.1.0 · next 3.1.0-2026…`): "Was soll
+das denn sein? Das ist ja überladen, außerdem habe ich keine Ahnung was das bedeutet und was ich damit anfangen soll." They are the
+package's npm dist-tags. They now stand on the rows of the versions they name
+([Q-UI-1190](api-and-ui.md#q-ui-1190--an-npm-tag-is-a-badge-on-the-row-of-the-version-it-names-with-a-tooltip-that-says-what-it-is)),
+and a tag that names a version past the first 100 rows stands on no row a person sees until **Load more** reaches it. The filter was a
+substring of the version alone, applied by Quader to the whole list (`PageVersions`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The server's filter matches the version or the name of a tag that points at it: npm pages its versions with `discover.PageTaggedVersions`, which takes the package's tags beside the versions; every other format keeps `PageVersions` (chosen) | A helper of the discovery package; the frozen contract (R-ARCH-025) keeps its types | Typing `next` finds the version `next` names on any page, as the package's page finds it (R-UI-110); no ADR, since no type of the contract changes | A second paging function beside the first |
+| (b) The browser turns a typed tag's name into its version and filters by that | No server change | — | A part of a name (`lts`) finds nothing; two rules for one field |
+| (c) Keep the tags in a list of their own above the versions, each a link that filters | A list per package | Every tag in view | The run the owner refused, larger |
+| (d) The same as (a) with the tags as a field of `VersionFacts` | `VersionFacts.Tags` | Every format could set it | A field of the frozen contract's types, a change that needs an ADR of its own (`TestR_ARCH_025_…` refused it) for what only npm has |
+
+**Choice:** (a). The field is named **Filter versions and npm tags** where the package has tags. **Applied in the spec:** R-CUR-007 (the
+contract's `VersionsRequest`), R-CUR-009, R-CUR-018; [api/openapi.yaml](../../api/openapi.yaml) (`filter` of
+`getUpstreamPackage`). Code: `PageTaggedVersions` of
+[page.go](../../internal/mirror/discover/page.go), `Package` of [npm/catalogue.go](../../internal/formats/npm/catalogue.go). Tests:
+`TestR_CUR_009_TheVersionFilterFindsAVersionByTheNameOfItsTag` (`internal/mirror/discover`), `R-CUR-018 R-CUR-009 an npm tag stands as a
+badge on the row of the version it names…` ([remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts)).
+
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 
 Status: **Decided by the development agent** — selected from the options below while building the download queue (R4); the owner reviews
@@ -3673,9 +3708,21 @@ more expensively than its plan.
   [H-1880](../security/remote-curation.md#h-1880--the-queue-and-a-mirror-pass-of-one-repository-meet-an-upstreams-limit-apart) to
   [H-1883](../security/remote-curation.md#h-1883--a-reader-of-the-queue-sees-how-much-of-the-upstreams-quota-is-left): the gaps of this
   page's mechanisms, on its security page.
+- [H-1975](#h-1975--the-rows-latest-and-the-opened-packages-latest-tag-come-from-two-answers): the column **Latest** and the badge
+  `latest` of an opened npm package read two answers of the registry.
 - The conditions of a curation policy and their wizard (SEC-009 to SEC-011), curation across sites (SEC-040, REPL-061).
 - Rules of a local or a virtual repository.
 - PyPI and every other format that does not exist (R-CUR-023).
+
+### H-1975 · The row's Latest and the opened package's `latest` tag come from two answers
+
+Component: the tab Upstream of an npm remote (R-CUR-018,
+[Q-UI-1190](api-and-ui.md#q-ui-1190--an-npm-tag-is-a-badge-on-the-row-of-the-version-it-names-with-a-tooltip-that-says-what-it-is)).
+Subject: a person who searches and opens a package whose `latest` moved minutes ago. Dormant until a registry's search lags its
+documents. A hit's **Latest** is the version the registry's search answers (`package.version` of `/-/v1/search`, `npm/catalogue.go`),
+the badge `latest` on an opened package's row is its document's dist-tag; the search's index is the registry's own and not the
+document, so the two can name different versions for as long as the index lags, and the screen does not say which is newer. A row of a
+level (an npm scope) has no **Latest** at all. What makes it real: a publish followed at once by a search for the package.
 
 ### H-1884 · An account that lifts an upstream's limit is offered only where the preset says so
 

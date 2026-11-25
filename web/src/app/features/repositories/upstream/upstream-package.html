@@ -10,25 +10,24 @@
 
 @if (pkg(); as p) {
   <div class="package-head">
-    @if (p.description && showDescription()) {
+    @if (p.description && !inRow()) {
       <p class="package-description" translate="no">{{ p.description }}</p>
     }
-    @if (tagEntries(p).length > 0) {
-      <p class="package-tags dot-separated">
-        @for (t of tagEntries(p); track t.tag) {
-          <span translate="no"><span class="muted">{{ t.tag }}</span>&ngsp;{{ t.version }}</span>
+    <!-- The package's state and its acts: a holder of manage downloads every version after a preview and sets the package's rule
+         (every version, future ones included); a reader asks for the package (R-CUR-005, R-CUR-015). Opened in a row, the row's column
+         State shows the badge already: the line stands only for the rule that decided, which the row does not name (Q-UI-1192). The
+         package's npm tags stand on the rows of the versions they name, not here (Q-UI-1190). -->
+    @if (!inRow()) {
+      <p class="package-state" data-testid="upstream-package-badge">
+        @let b = badge(p.delivery, !!p.request);
+        <span [class]="b.look"><span class="material-icons" aria-hidden="true">{{ b.icon }}</span>{{ b.text }}</span>
+        @if (ruleLine(p.delivery); as rule) {
+          &ngsp;<span class="muted" translate="no">{{ rule }}</span>
         }
       </p>
+    } @else if (ruleLine(p.delivery); as rule) {
+      <p class="package-state muted" data-testid="upstream-package-rule" translate="no">{{ rule }}</p>
     }
-    <!-- The package's state and its acts: a holder of manage downloads every version after a preview and sets the package's rule
-         (every version, future ones included); a reader asks for the package (R-CUR-005, R-CUR-015). -->
-    <p class="package-state">
-      @let b = badge(p.delivery, !!p.request);
-      <span [class]="b.look"><span class="material-icons" aria-hidden="true">{{ b.icon }}</span>{{ b.text }}</span>
-      @if (ruleLine(p.delivery); as rule) {
-        &ngsp;<span class="muted" translate="no">{{ rule }}</span>
-      }
-    </p>
     @if (actions.manager() || mayRequestPackage()) {
       <div class="acts-row">
         @if (actions.manager()) {
@@ -55,7 +54,12 @@
 
   <div class="versions-head">
     <div class="filter-field">
-      <label class="field-label" [attr.for]="'vf-' + name()" i18n="@@upstream.versions.filter">Filter versions</label>
+      <!-- A package with npm tags is filtered by them too: typing "next" shows the version "next" names (Q-CUR-182). -->
+      @if (tags().size > 0) {
+        <label class="field-label" [attr.for]="'vf-' + name()" i18n="@@upstream.versions.filter-tags">Filter versions and npm tags</label>
+      } @else {
+        <label class="field-label" [attr.for]="'vf-' + name()" i18n="@@upstream.versions.filter">Filter versions</label>
+      }
       <input [id]="'vf-' + name()" class="text-input field-w-name" type="search" [value]="filter()" (input)="setFilter($any($event.target).value)" />
     </div>
     @if (showing(); as s) {
@@ -79,10 +83,14 @@
         <!-- The version with its published time and size under it, the rule that decided under the delivery, the verdicts under
              the cache: the list keeps the form of a table at 1,024 px (Q-CUR-157). -->
         <th scope="row">
+          <!-- The version, its flags and the npm tags that name it, wrapping between them (Q-UI-1190, Q-UI-1191). -->
           <span class="version-line">
             <span class="version" translate="no">{{ v.version }}</span>
             @for (f of v.flags; track f) {
-              &ngsp;<span class="badge">{{ flag(f) }}</span>
+              <span class="badge">{{ flag(f) }}</span>
+            }
+            @if (tags().get(v.version); as named) {
+              <quader-dist-tags [tags]="named" [package]="name()" />
             }
           </span>
           <span class="secondary facts-line">

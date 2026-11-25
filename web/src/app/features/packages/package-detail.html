@@ -84,9 +84,7 @@
             } @else {
               <span class="version-cell">
                 <a [routerLink]="versionLink(v.version)" translate="no">{{ v.version }}</a>
-                @for (t of v.tags; track t) {
-                  <span class="badge info" translate="no">{{ t }}</span>
-                }
+                <quader-dist-tags [tags]="v.tags" [package]="name()" />
                 @if (v.prerelease) {
                   <span class="badge" i18n="@@pkg.badge.prerelease">Pre-release</span>
                 }

@@ -29,6 +29,7 @@ import {
 } from './package-versions-model';
 import { GradeLabel } from '../../shared/vulnerability/grade';
 import { VersionSize } from './version-size';
+import { DistTags } from './dist-tags';
 import { SignatureBadge } from '../../shared/signatures/signature-badge';
 import { CLAMAV_FORMAT, clamavState, stateRank, stateText } from './clamav-definitions';
 import { ImageTags, listsByContent } from './image-tags';
@@ -64,6 +65,7 @@ function sameVersion(a: { id: string; version: string } | undefined, b: { id: st
     GradeLabel,
     VersionSize,
     ImageTags,
+    DistTags,
   ],
   templateUrl: './package-detail.html',
   styleUrl: './package-detail.scss',

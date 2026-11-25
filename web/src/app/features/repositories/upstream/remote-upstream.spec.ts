@@ -73,6 +73,15 @@ function versionRow(root: HTMLElement, version: string): HTMLTableRowElement {
   return [...root.querySelectorAll<HTMLTableRowElement>('quader-upstream-package tbody tr')].find((tr) => tr.querySelector('th .version')?.textContent === version)!;
 }
 
+/** The text the tooltip describes an element with (the CDK's hidden message, R-UI-044). */
+function describedBy(el: HTMLElement): string {
+  return (el.getAttribute('aria-describedby') ?? '')
+    .split(' ')
+    .map((id) => document.getElementById(id)?.textContent?.trim() ?? '')
+    .join(' ')
+    .trim();
+}
+
 function button(root: Element, label: string): HTMLButtonElement {
   return [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => text(b).startsWith(label))!;
 }
@@ -180,6 +189,83 @@ describe('The tab Upstream of a remote repository', () => {
     await settle(fixture);
     expect(rules.calls).toContain('put package gitlab-ai-provider allow');
     await expectAccessible(root);
+  });
+
+  it('R-CUR-018 R-CUR-009 an npm tag stands as a badge on the row of the version it names, and the filter finds a version by its tag', async () => {
+    const { root, fixture, catalogue } = await open({
+      manage: true,
+      url: '/projects/web/repositories/npmjs/upstream?q=gitlab',
+      fake: (c) => {
+        c.hits = SEARCH_HITS;
+        c.packages['gitlab-ai-provider'] = upstreamPackage({
+          name: 'gitlab-ai-provider',
+          delivery: NOT_ALLOWED,
+          // Six tags: five on one version, one on a version past the first page.
+          tags: { latest: '1.4.0', next: '2.0.0-rc.1', rc: '2.0.0-rc.1', canary: '2.0.0-rc.1', beta: '2.0.0-rc.1', 'eap-ai-hybridinference': '2.0.0-rc.1', 'lts-v0': '0.9.3' },
+          versions: [upstreamVersion({ version: '2.0.0-rc.1', delivery: NOT_ALLOWED }), upstreamVersion({ version: '1.4.0', delivery: NOT_ALLOWED }), upstreamVersion({ version: '1.3.9' })],
+          total: 259,
+          done: false,
+          nextCursor: 'more',
+        });
+        c.laterVersions['gitlab-ai-provider'] = [upstreamVersion({ version: '0.9.3' })];
+      },
+    });
+    hitRow(root, 'gitlab-ai-provider').querySelector<HTMLButtonElement>('button[aria-expanded]')!.click();
+    await settle(fixture);
+    const pkg = root.querySelector<HTMLElement>('quader-upstream-package')!;
+    // No run of every tag above the versions: each stands on its version's row, `latest` first, the others by name (Q-UI-1190).
+    expect(pkg.querySelector('.package-tags')).toBeNull();
+    const badges = (version: string) => [...versionRow(root, version).querySelectorAll<HTMLElement>('th .dist-tag')];
+    expect(badges('1.4.0').map((b) => text(b))).toEqual(['latest']);
+    expect(badges('1.3.9')).toEqual([]);
+    // Five tags on one version: three badges and "+2 more", whose tooltip names the others (Q-UI-1191).
+    expect(badges('2.0.0-rc.1').map((b) => text(b))).toEqual(['beta', 'canary', 'eap-ai-hybridinference']);
+    const more = versionRow(root, '2.0.0-rc.1').querySelector<HTMLElement>('th .more')!;
+    expect(text(more)).toBe('+2 more');
+    expect(describedBy(more)).toBe('Further npm tags of this version: next, rc');
+    // A badge says what it is to a pointer and to assistive technology: the tooltip describes it, and it takes the focus.
+    const latest = badges('1.4.0')[0]!;
+    expect(latest.getAttribute('tabindex')).toBe('0');
+    expect(latest.querySelector('[translate="no"]')).not.toBeNull();
+    expect(describedBy(latest)).toBe('npm tag “latest”: npm install gitlab-ai-provider@latest installs this version.');
+    // The filter finds a version by its tag's name, also one past the first page (Q-CUR-182).
+    expect(text(pkg.querySelector('label[for="vf-gitlab-ai-provider"]')!)).toBe('Filter versions and npm tags');
+    const field = pkg.querySelector<HTMLInputElement>('#vf-gitlab-ai-provider')!;
+    field.value = 'lts';
+    field.dispatchEvent(new Event('input'));
+    await waitUntil(fixture, () => catalogue.calls.includes('package gitlab-ai-provider lts'), 'the filter to ask the upstream');
+    await settle(fixture);
+    expect([...pkg.querySelectorAll('tbody th .version')].map((v) => text(v))).toEqual(['0.9.3']);
+    expect(badges('0.9.3').map((b) => text(b))).toEqual(['lts-v0']);
+    await expectAccessible(root);
+  });
+
+  it('R-CUR-018 the package state is said once: opened in a row only the rule the row does not name, looked up by name the badge too', async () => {
+    const allowed = { delivered: true, decidedBy: { kind: 'section' as const, subject: '@gitlab/*', effect: 'allow' as const } };
+    const { root, fixture } = await open({
+      manage: true,
+      url: '/projects/web/repositories/npmjs/upstream?q=gitlab',
+      fake: (c) => {
+        c.hits = SEARCH_HITS;
+        c.packages['@gitlab/ui'] = upstreamPackage({ name: '@gitlab/ui', delivery: allowed, tags: {} });
+        c.packages['gitlab-ai-provider'] = upstreamPackage({ name: 'gitlab-ai-provider', delivery: NOT_ALLOWED, tags: {} });
+      },
+    });
+    for (const name of ['@gitlab/ui', 'gitlab-ai-provider']) hitRow(root, name).querySelector<HTMLButtonElement>('button[aria-expanded]')!.click();
+    await settle(fixture);
+    const [ui, provider] = [...root.querySelectorAll<HTMLElement>('quader-upstream-package')];
+    // The row's column State shows "Allowed" and "Not allowed": the opened part repeats neither badge.
+    expect(text(hitRow(root, '@gitlab/ui'))).toContain('Allowed');
+    expect(ui!.querySelector('[data-testid="upstream-package-badge"]')).toBeNull();
+    expect(text(ui!.querySelector('[data-testid="upstream-package-rule"]')!)).toBe('Rule: @gitlab/*');
+    expect(provider!.querySelector('.package-state')).toBeNull();
+    // Without tags the field is the versions' filter alone.
+    expect(text(provider!.querySelector('label.field-label')!)).toBe('Filter versions');
+    // A lookup by name has no row above it: the badge and the rule stand in its head.
+    const lookup = await open({ manage: true, url: '/projects/web/repositories/npmjs/upstream?name=lodash', fake: (c) => (c.packages['lodash'] = upstreamPackage({ delivery: allowed })) });
+    const head = lookup.root.querySelector<HTMLElement>('[data-testid="upstream-lookup"] [data-testid="upstream-package-badge"]')!;
+    expect(text(head.querySelector('.badge')!)).toContain('Allowed');
+    expect(text(head.querySelector('.muted')!)).toBe('Rule: @gitlab/*');
   });
 
   it('R-CUR-010 Download every version opens the preview of the bulk; a lowered bound is previewed again and the bulk started with it', async () => {

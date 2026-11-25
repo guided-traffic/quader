@@ -13,6 +13,7 @@ import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { TimeAgo } from '../../../shared/ui/time-ago';
+import { DistTags, tagsByVersion } from '../../packages/dist-tags';
 import { formatSize } from '../../packages/format-size';
 import { versionCommands } from '../../packages/package-links';
 import { downloadStateText } from '../downloads/download-words';
@@ -32,16 +33,17 @@ export function groupedCount(n: number): string {
 }
 
 /**
- * A package of the upstream opened in place (remote-curation.md R-CUR-018): its description, its tags, its state in this repository
- * with the package's acts (**Download every version…** with its preview, **Allow every version**, **Block every version**, **Remove
+ * A package of the upstream opened in place (remote-curation.md R-CUR-018): its description and its state in this repository where no
+ * row above shows them (Q-UI-1192), with the package's acts (**Download every version…** with its preview, **Allow every version**, **Block every version**, **Remove
  * rule**; **Request every version** for a reader), and its versions newest first, 100 at a time with **Load more** and a filter:
- * per version its published time, its size or that the upstream does not tell it, its flags, its delivery state and the rule that
+ * per version its published time, its size or that the upstream does not tell it, its flags and the npm tags that name it (Q-UI-1190; the
+ * filter finds a version by a tag's name, Q-CUR-182), its delivery state and the rule that
  * decided it, whether the cache holds it or downloads it, its vulnerability verdict where it is not stored (a stored version's
  * verdicts are its version page's, Q-CUR-61), and its acts.
  */
 @Component({
   selector: 'quader-upstream-package',
-  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DataTable, ErrorNotice, RouterLink, TimeAgo],
+  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DataTable, DistTags, ErrorNotice, RouterLink, TimeAgo],
   templateUrl: './upstream-package.html',
   styleUrl: './upstream-package.scss',
 })
@@ -55,8 +57,11 @@ export class UpstreamPackageView {
   readonly sizes = input<string>('known');
   /** The words of the list's columns: Version or Tag. */
   readonly versionLabel = input.required<string>();
-  /** The package's description stands in its head: a lookup has no row that shows it already. */
-  readonly showDescription = input(true);
+  /**
+   * Opened in a row of the list, whose columns show the package's description, its newest version and its state already: the head
+   * says only what the row does not (Q-UI-1192). A lookup by name has no row and says all of it.
+   */
+  readonly inRow = input(false);
 
   protected readonly pkg = signal<UpstreamPackage | null>(null);
   protected readonly versions = signal<readonly UpstreamVersion[]>([]);
@@ -332,7 +337,6 @@ export class UpstreamPackageView {
     return !!p && this.actions.known() && !this.actions.manager() && !p.delivery.delivered && !p.request && p.delivery.reason !== 'blocked';
   });
 
-  protected tagEntries(p: UpstreamPackage): readonly { readonly tag: string; readonly version: string }[] {
-    return Object.entries(p.tags ?? {}).map(([tag, version]) => ({ tag, version }));
-  }
+  /** The npm tags of the package by the version they name, `latest` first (Q-UI-1190); empty for every other format. */
+  protected readonly tags = computed(() => tagsByVersion(this.pkg()?.tags));
 }

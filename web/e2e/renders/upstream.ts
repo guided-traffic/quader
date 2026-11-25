@@ -65,7 +65,7 @@ function hit(name: string, over: Record<string, unknown> = {}): Record<string, u
 function npmHits(): Record<string, unknown>[] {
   return [
     hit('@gitlab/ui', { description: 'GitLab UI Components', latest: '124.0.3', delivery: allowedBy('@gitlab/*', 'section'), stored: 'partial' }),
-    hit('gitlab-ai-provider', { description: 'An AI SDK provider for GitLab Duo and the GitLab language server', latest: '1.4.0', stored: 'partial' }),
+    hit('gitlab-ai-provider', { description: 'An AI SDK provider for GitLab Duo and the GitLab language server', latest: '4.98.1', stored: 'partial' }),
     hit('@gitbeaker/rest', { description: 'Cross Platform implementation of the GitLab API', latest: '43.8.0', request: { id: 'req-1', askers: 2, refusals: 14 } }),
     hit('gitlab', { description: 'GitLab API Nodejs library.', latest: '14.2.2', flags: ['deprecated'], delivery: blockedBy('gitlab') }),
     hit('@customer-portal-release-engineering/gitlab-merge-request-pipeline-status-reporter-for-the-frontend-monorepo', {
@@ -121,7 +121,18 @@ function npmPackage(name: string, over: Record<string, unknown> = {}): Record<st
   return {
     name,
     description: 'An AI SDK provider for GitLab Duo and the GitLab language server',
-    tags: { latest: '4.99.1', next: '5.0.0-beta.2' },
+    // Eight npm tags (Q-UI-1190, Q-UI-1191): five on the pre-release, one of them long, so its row shows three and "+2 more"; `latest`
+    // on the row the hit's column Latest names; one on a version past the 24 rows the walk answers, which only the filter reaches.
+    tags: {
+      latest: '4.98.1',
+      next: '5.0.0-beta.2',
+      beta: '5.0.0-beta.2',
+      canary: '5.0.0-beta.2',
+      'eap-ai-hybridinference-experimental': '5.0.0-beta.2',
+      rc: '5.0.0-beta.2',
+      'v4-lts': '4.97.2',
+      'legacy-node16': '3.12.4',
+    },
     delivery: notAllowed,
     stored: 'partial',
     request: null,

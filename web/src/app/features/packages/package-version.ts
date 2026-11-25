@@ -24,6 +24,7 @@ import { EXTERNAL_REL, packageCommands } from './package-links';
 import { PackageMemory } from './package-memory';
 import { PackageReadmeView } from './package-readme';
 import { distTagsOf } from './package-versions-model';
+import { DistTags } from './dist-tags';
 import { GradeLabel } from '../../shared/vulnerability/grade';
 import {
   ansibleFacts,
@@ -121,6 +122,7 @@ interface TabEntry {
     VersionSignatures,
     Disclosure,
     DatePipe,
+    DistTags,
   ],
   templateUrl: './package-version.html',
   styleUrl: './package-version.scss',
