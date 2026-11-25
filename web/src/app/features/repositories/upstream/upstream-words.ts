@@ -28,7 +28,7 @@ export interface StateBadge {
 
 /**
  * The state of a package or a version in this repository (R-CUR-018): **Blocked** by a rule, **Allowed** by a rule, **Requested**
- * while an open request asks for what is not delivered, **Outside the allowed versions** of the range of its package's allow
+ * while an open request asks for what is not delivered, **Outside the range** of versions of its package's allow
  * (R-CUR-026), **Not allowed** in mode `onlyAllowed` without a rule, and **Delivered** by the mode `allExceptBlocked` without a rule.
  */
 export function stateBadge(delivery: DeliveryDecision, requested: boolean): StateBadge {
@@ -36,7 +36,7 @@ export function stateBadge(delivery: DeliveryDecision, requested: boolean): Stat
     if (delivery.reason === 'blocked') return { text: $localize`:@@upstream.state.blocked:Blocked`, look: 'warn', icon: 'block' };
     if (requested) return { text: $localize`:@@upstream.state.requested:Requested`, look: 'badge', icon: 'pending' };
     if (delivery.reason === 'outsideRange') {
-      return { text: $localize`:@@upstream.state.outside-range:Outside the allowed versions`, look: 'badge', icon: 'remove_circle_outline' };
+      return { text: $localize`:@@upstream.state.outside-range:Outside the range`, look: 'badge', icon: 'remove_circle_outline' };
     }
     return { text: $localize`:@@upstream.state.not-allowed:Not allowed`, look: 'badge', icon: 'remove_circle_outline' };
   }

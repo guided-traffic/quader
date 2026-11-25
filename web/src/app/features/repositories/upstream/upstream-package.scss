@@ -179,6 +179,15 @@
   margin-inline: 0;
 }
 
+// A reader's line holds the badge and Request, no switch: where the rows stand as blocks (below 1,024 px) and a long badge (Outside
+// the range, R-CUR-026) leaves no room, Request goes under it rather than past the cell's edge. From 1,024 px the line stays whole, so
+// Request stands on the badge's line (the layout check row-offset).
+@media (width < 1024px) {
+  .delivery-cell .state-line:not(:has(quader-switch)) {
+    flex-wrap: wrap;
+  }
+}
+
 // A verdict is a status and stays on its line, as the state above it does (R-UI-171).
 .verdict-line > span {
   white-space: nowrap;

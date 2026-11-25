@@ -273,12 +273,12 @@ describe('The tab Upstream of a remote repository', () => {
     const line = head.querySelector<HTMLElement>('[data-testid="upstream-package-range"]')!;
     expect(text(line.querySelector('.secondary')!)).toBe('Versions from 2.0.0 below 3.0.0');
     expect(text(button(line, 'Limit versions'))).toBe('Limit versions… lodash');
-    // A version outside the range: its switch off, its own badge, and the rule with the range under it (Q-CUR-222).
+    // A version outside the range: its switch off, its own badge, and the package's range as the rule under it (Q-CUR-222).
     const row = versionRow(root, '3.0.0');
     expect(row.querySelector('td.delivery-cell button[role="switch"]')!.getAttribute('aria-checked')).toBe('false');
-    expect(text(row.querySelector('td.delivery-cell')!)).toContain('Outside the allowed versions');
-    expect(text(row.querySelector('td.delivery-cell .rule-line')!)).toBe('Rule: the package, from 2.0.0 below 3.0.0');
-    expect(text(versionRow(root, '2.10.0-canary.bfb9accdc').querySelector('td.delivery-cell .rule-line')!)).toBe('Rule: the package, from 2.0.0 below 3.0.0');
+    expect(text(row.querySelector('td.delivery-cell')!)).toContain('Outside the range');
+    expect(text(row.querySelector('td.delivery-cell .rule-line')!)).toBe("Rule: the package's range");
+    expect(text(versionRow(root, '2.10.0-canary.bfb9accdc').querySelector('td.delivery-cell .rule-line')!)).toBe('Rule: the package');
 
     button(head, 'Limit versions').click();
     await settle(fixture);

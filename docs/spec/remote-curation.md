@@ -1818,8 +1818,8 @@ bestimmten Version […] Oder blockieren aller Versionen unterhalb einer bestimt
   pull` without a tag asks for `latest` and is refused under a range until `latest` is switched on; the screen says so where the range of
   an image is set.
 - **Outside the range** is the reason `outsideRange` ([Q-CUR-222](#q-cur-222--outside-the-range-is-a-reason-of-its-own)): the client's refusal reads "… is not allowed in
-  `<project>/<repo>`: outside the versions a rule of the repository allows." (R-CUR-004); the catalogue's badge **Outside the allowed
-  versions**, the version's rule line "Rule: the package, from 2.0.0 below 3.0.0", the listing's `unavailableReason` (R-API-081), a
+  `<project>/<repo>`: outside the versions a rule of the repository allows." (R-CUR-004); the catalogue's badge **Outside the range**, the
+  version's rule line "Rule: the package's range" (the range itself stands under the package's switch), the listing's `unavailableReason` (R-API-081), a
   download row's `delivery`, the event `remote.delivery.refused` (`outside_range`) and the metric's label `reason` say it.
 - **The package's decision** of a ranged allow is delivered: no place that decides a package asks the upstream for its versions. The
   documents list the versions inside the range; a document none of whose versions is inside answers the refusal with `outsideRange`

@@ -443,7 +443,7 @@ export async function* upstreamTabWalk(p: Page): AsyncGenerator<string> {
   await expect(p.locator(`${tab} quader-upstream-package tbody tr`).first()).toBeVisible();
   yield 'package-delivered';
   // A range of the package's allow (R-CUR-026): the line under the switch with Limit versions…, the versions outside it with their
-  // badge and the rule with the range; then the dialog as it opens on the range.
+  // badge and the package's range as their rule. The dialog is rendered in the image's walk (upstreamLookupWalk).
   await answerNpm(p, {
     caps: (r) => json(r, npmCaps({ mode: 'allExceptBlocked', rules: 2, openRequests: 0 })),
     pkg: (r) => json(r, rangedPackage(new URL(r.request().url()).searchParams.get('name') ?? 'gitlab-ai-provider')),
@@ -451,14 +451,6 @@ export async function* upstreamTabWalk(p: Page): AsyncGenerator<string> {
   await open(p, '?name=gitlab-ai-provider');
   await expect(p.locator(`${tab} [data-testid="upstream-package-range"]`)).toBeVisible();
   yield 'package-range';
-  const limit = p.locator(`${tab} [data-testid="upstream-limit-versions"]`);
-  if ((await limit.count()) > 0) {
-    await limit.click();
-    await expect(p.locator('quader-version-range-dialog #range-from-version')).toBeVisible();
-    yield 'range-dialog';
-    await p.keyboard.press('Escape');
-    await expect(p.locator('quader-version-range-dialog')).toBeHidden();
-  }
   await answerNpm(p);
   await open(p, '?q=zzqx');
   await expect(p.locator(`${tab} quader-data-table`)).toBeVisible();
@@ -568,6 +560,15 @@ export async function* upstreamLookupWalk(p: Page): AsyncGenerator<string> {
   await p.reload();
   await expect(p.locator(`${tab} [data-testid="upstream-package-range"]`)).toBeVisible();
   yield 'image-range';
+  // Limit versions… of the image: the dialog as it opens on the range, which says that latest lies outside every range.
+  const limit = p.locator(`${tab} [data-testid="upstream-limit-versions"]`);
+  if ((await limit.count()) > 0) {
+    await limit.click();
+    await expect(p.locator('quader-version-range-dialog #range-from-version')).toBeVisible();
+    yield 'range-dialog';
+    await p.keyboard.press('Escape');
+    await expect(p.locator('quader-version-range-dialog')).toBeHidden();
+  }
   await p.unroute(packageUrl);
   await p.route(packageUrl, (r) => problem(r, 503, 'upstream_assumed_offline', 'The upstream is assumed to be offline after repeated failures.', 1320));
   await p.reload();

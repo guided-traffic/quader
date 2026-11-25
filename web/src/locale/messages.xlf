@@ -30207,7 +30207,7 @@
     </unit>
     <unit id="upstream.rule.own-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:106</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:105</note>
       </notes>
       <segment>
         <source>Rule: this version</source>
@@ -30215,15 +30215,15 @@
     </unit>
     <unit id="upstream.rule.package-range-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:109</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:110</note>
       </notes>
       <segment>
-        <source>Rule: the package, <ph id="0" equiv="bounds" disp="rangeBoundsText(by.range)"/></source>
+        <source>Rule: the package&apos;s range</source>
       </segment>
     </unit>
     <unit id="upstream.rule.package-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:110</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:111</note>
       </notes>
       <segment>
         <source>Rule: the package</source>
@@ -30231,7 +30231,7 @@
     </unit>
     <unit id="upstream.versions.empty">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:127</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:128</note>
       </notes>
       <segment>
         <source>The upstream lists no version of this package.</source>
@@ -30239,7 +30239,7 @@
     </unit>
     <unit id="upstream.versions.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:128</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:129</note>
       </notes>
       <segment>
         <source>No version matches.</source>
@@ -30247,7 +30247,7 @@
     </unit>
     <unit id="upstream.col.delivery">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:136</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:137</note>
       </notes>
       <segment>
         <source>Delivery</source>
@@ -30255,7 +30255,7 @@
     </unit>
     <unit id="upstream.col.cache">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:137</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:138</note>
       </notes>
       <segment>
         <source>Cache</source>
@@ -30263,7 +30263,7 @@
     </unit>
     <unit id="upstream.versions.showing">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:267</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:268</note>
       </notes>
       <segment>
         <source>Showing <ph id="0" equiv="shown" disp="groupedCount(n)"/> of <ph id="1" equiv="total" disp="groupedCount(p.total)"/></source>
@@ -30271,7 +30271,7 @@
     </unit>
     <unit id="upstream.act.download">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:302</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:303</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -30279,7 +30279,7 @@
     </unit>
     <unit id="upstream.act.examine">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:304</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:305</note>
       </notes>
       <segment>
         <source>Download for examination</source>
@@ -30287,7 +30287,7 @@
     </unit>
     <unit id="upstream.act.discard">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:306</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:307</note>
       </notes>
       <segment>
         <source>Discard</source>
@@ -30295,7 +30295,7 @@
     </unit>
     <unit id="upstream.rule.this-package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:356</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:357</note>
       </notes>
       <segment>
         <source>Rule: this package</source>
@@ -30303,7 +30303,7 @@
     </unit>
     <unit id="upstream.preview.title-package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:368</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:369</note>
       </notes>
       <segment>
         <source>Every version of <ph id="0" equiv="name" disp="name"/></source>
@@ -30362,7 +30362,7 @@
         <note category="location">src/app/features/repositories/upstream/upstream-words.ts:39</note>
       </notes>
       <segment>
-        <source>Outside the allowed versions</source>
+        <source>Outside the range</source>
       </segment>
     </unit>
     <unit id="upstream.state.not-allowed">

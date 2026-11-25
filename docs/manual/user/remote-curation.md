@@ -97,8 +97,8 @@ For Maintainers, Owners and administrators the tab adds:
   delivers only the versions from one version on (**From version**), up to one (**Up to version** with **included**) or below it
   (**below it**), or between two. This is how you deliver "every version from 5.0.0 on", or keep out every version below or above one.
   The fields offer the versions the package lists, and you may type any version; leave both empty for every version. Saving turns the
-  package's switch on with the range. A version outside the range shows **Outside the allowed versions** and the rule "Rule: the package,
-  from 5.0.0"; switch it on in its row to deliver it anyway. The versions are compared in the format's own order, so a tag that names no
+  package's switch on with the range. A version outside the range shows **Outside the range** and the rule "Rule: the package's range"; switch it
+  on in its row to deliver it anyway. The versions are compared in the format's own order, so a tag that names no
   version, such as an image's `latest`, lies outside every range: `docker pull` without a tag asks for `latest`, so switch `latest` on in
   its row when your clients pull it. A Debian remote's clients see every version in the archive's lists; use a virtual repository over
   the remote, which lists only what is delivered.

@@ -24,7 +24,6 @@ import {
   decidedByText,
   flagText,
   notCoveredText,
-  rangeBoundsText,
   rangeLineText,
   stateBadge,
   switchLabel,
@@ -105,8 +104,10 @@ export class UpstreamPackageView {
       case 'version':
         return { words: $localize`:@@upstream.rule.own-line:Rule: this version`, pattern: false };
       case 'package':
-        return by.range
-          ? { words: $localize`:@@upstream.rule.package-range-line:Rule: the package, ${rangeBoundsText(by.range)}:bounds:`, pattern: false }
+        // A version outside the range of the package's allow names the range, which the line under the package's switch says in
+        // full (R-CUR-026); a version inside it, as every version of a package without a range, the package.
+        return by.range && !v.delivery.delivered
+          ? { words: $localize`:@@upstream.rule.package-range-line:Rule: the package's range`, pattern: false }
           : { words: $localize`:@@upstream.rule.package-line:Rule: the package`, pattern: false };
       case 'section':
         return by.subject ? { words: by.subject, pattern: true } : null;
