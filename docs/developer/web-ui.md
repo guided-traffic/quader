@@ -482,7 +482,12 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    chooser as it opens and with a search that leaves no tile (`repository-new-…`); nothing is created. A repository's settings are
    taken as they open and with every section opened, the fold **Wiki visibility** too (`…-sections-…`), and once with a change of
    the levels that the walk refuses in the browser, so that the server's answer stands under each level's group
-   (`repository-settings-visibility-refused-…`, R-UI-055); nothing is saved. Every list
+   (`repository-settings-visibility-refused-…`, R-UI-055); nothing is saved. An OCI and a Debian remote's list after a mirror pass
+   (`repository-oci-mirror-filled`, `repository-deb-mirror-filled`, the walk `mirrorFilled` of [renders/mirror.ts](../../web/e2e/renders/mirror.ts),
+   W-24, [Q-UI-1092](../spec/api-and-ui.md#q-ui-1092--the-rows-a-mirror-pass-filled-are-rendered-from-answers-changed-in-the-browser)):
+   no pass runs on the render stack, so the list's answers are changed in the browser, each row and version shaped as the server answers
+   one of the format's seeded repository (`image-cache`, the long Debian key) with the values a pass leaves: long tags and names, a count
+   of 214, partial sizes and one not known, 0 downloads where no client fetched, the row of the most versions opened. Every list
    with a filter drawer is taken as it opens and with the drawer open (`<screen>-filters-…`, the walk `filtersOpen`), and the
    repositories, the packages, the findings and the users once more with filters set through the drawer (`<screen>-chips-…`:
    the chips beside **Filters**, at 390 px more than fit); a list whose only filter is the name is taken with a text in its search

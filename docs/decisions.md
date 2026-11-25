@@ -12203,10 +12203,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-567 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+568 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 567 questions</summary>
+<summary>Q-UI: 568 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12753,6 +12753,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1080](spec/api-and-ui.md#q-ui-1080--a-server-sends-a-code-the-screen-says-it-and-a-raw-text-folds-under-technical-details) | A server sends a code, the screen says it, and a raw text folds under Technical details | Decided by the development agent | (a) A code for a case, said by the screen; a raw text folded under **Technical details** below the screen's own sentence, by one shared component | — |
 | [Q-UI-1090](spec/api-and-ui.md#q-ui-1090--a-tab-strip-takes-its-tabs-closer-before-it-scrolls) | A tab strip takes its tabs closer before it scrolls | Decided by the development agent on 2026-11-25 | (a) A strip whose tabs at their own padding are wider than it takes them closer: 8 px at each side of a label instead of 12 (the class `tight` of `quaderTabStrip`); it scrolls with its fades only where they do not fit that way either | — |
 | [Q-UI-1091](spec/api-and-ui.md#q-ui-1091--a-long-german-word-carries-soft-hyphens-at-the-joints-of-its-compound-and-a-heading-never-breaks-inside-a-word) | A long German word carries soft hyphens at the joints of its compound, and a heading never breaks inside a word | Decided by the development agent on 2026-11-25 | (a) A soft hyphen (`&#xAD;`) at a joint of every German compound of more than 20 letters, so that no run of letters is longer; `make web-i18n-check` refuses such a word without one; the render check `heading-broken` refuses a heading broken between two letters | — |
+| [Q-UI-1092](spec/api-and-ui.md#q-ui-1092--the-rows-a-mirror-pass-filled-are-rendered-from-answers-changed-in-the-browser) | The rows a mirror pass filled are rendered from answers changed in the browser | Decided by the development agent on 2026-11-25 | (a) The list's answers changed in the browser: each row and version shaped as the server answers one of the format's seeded repository (`platform/image-cache`, the long Debian key), with the values a pass leaves | — |
 | [Q-UI-1100](spec/api-and-ui.md#q-ui-1100--a-limit-is-one-sentence-above-the-list-a-line-on-its-waiting-rows-and-on-a-bulk-its-answer-folded) | A limit is one sentence above the list, a line on its waiting rows and on a bulk, its answer folded | Decided by the development agent | (a) One warning line above the bulks while the limit holds: who limits, since when, until when and whose time that is, in the screen's language; **Technical details** folded under it (the last answer, the waits in a row, the address, the headers of the limit, the upstream's words, the server's sentence); "Rate limit until 06:47" on each waiting row; "Waits for Docker Hub's rate limit until 06:47" on a bulk whose rows wait | — |
 | [Q-UI-1101](spec/api-and-ui.md#q-ui-1101--the-top-bars-panel-says-the-queues-a-limit-holds-above-running) | The top bar's panel says the queues a limit holds above Running | Decided by the development agent | (a) A section **Waiting for an upstream (n)** above **Running**: per queue "206 downloads of upstream/docker-hub wait: Docker Hub limits requests; Quader asks again at 06:47." with the format's name and **Show in queue** | — |
 | [Q-UI-1102](spec/api-and-ui.md#q-ui-1102--the-tab-downloads-is-live-by-the-shared-poll-5-s-while-something-moves-30-s-otherwise) | The tab Downloads is live by the shared poll: 5 s while something moves, 30 s otherwise | Decided by the development agent | (a); `DOWNLOADS_REFRESH_MS` stays 5 s, the tab's own interval of R-CUR-018. | — |

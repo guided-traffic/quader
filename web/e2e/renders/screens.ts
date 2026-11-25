@@ -38,6 +38,7 @@ import { signingAnswer } from './signing';
 import { withVerify } from './verify';
 import { routeTooMany } from './suggestions';
 import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
+import { mirrorFilled } from './mirror';
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
 import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { downloadsWalk } from './downloads';
@@ -2831,6 +2832,9 @@ export const screens: readonly Screen[] = [
   // platforms of its list, partial, and no client download.
   { id: 'repository-oci-probed', path: `${O}/repositories/${probedCache.key}`, kinds: all, walk: rowOpened },
   { id: 'repository-deb', path: `${O}/repositories/${longDebKey}`, kinds: all },
+  // A remote's list after a mirror pass (W-24, Q-UI-1092): the rows a pass stored, answered in the browser (mirror.ts), as a reader.
+  { id: 'repository-oci-mirror-filled', path: `${O}/repositories/docker-hub-remote`, kinds: ['plain'], walk: mirrorFilled },
+  { id: 'repository-deb-mirror-filled', path: `${O}/repositories/debian`, kinds: ['plain'], walk: mirrorFilled },
   // The menu of a version's commands (Q-UI-1066), hung from its button: an OCI remote's tag (Pull), an npm package's version and a
   // Debian package's version (Install).
   { id: 'repository-oci-cache-menu', path: `${O}/repositories/${remoteCache.key}`, kinds: ['power'], walk: commandMenuOpen, de: true },

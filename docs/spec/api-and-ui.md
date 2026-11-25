@@ -25080,6 +25080,29 @@ word longer than the narrowest heading's line carries a soft hyphen at a joint o
 [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts). Docs: [GLOSSARY.md](../../web/src/locale/GLOSSARY.md),
 [ui-style-guide.md](../developer/ui-style-guide.md), [web-ui.md](../developer/web-ui.md).
 
+### Q-UI-1092 · The rows a mirror pass filled are rendered from answers changed in the browser
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a row of a remote's list that a mirror pass filled was not in the render set (W-24, section 12 C of the plan). Such rows
+differ from a client's: many at once, a version count in the hundreds, the pass's time on every row, the size of an index stored in
+part (the two default platforms, Q-OCI-223), and 0 downloads where no client fetched (R-API-065, R-API-081). No pass runs on the render
+stack. The walk `storedMirror` already renders a mirror's settings by changing the repository's answer in the browser.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The list's answers changed in the browser: each row and version shaped as the server answers one of the format's seeded repository (`platform/image-cache`, the long Debian key), with the values a pass leaves (chosen) | A walk, `mirrorFilled` of [mirror.ts](../../web/e2e/renders/mirror.ts) | No seed time; any data a pass can leave (214 tags, long tags, a size not known); a member the server adds to a row comes along, since the shape is read from the server | The rows are not stored: what the server would list after a real pass is the integration tests' (`mirror`, `packages`), not the picture's |
+| (b) A real pass of a mirror of the installation's own `image-source`, as `image-cache` pulls through it | The seed stores a remote in mode mirror with a bound and runs a pass | The rows are the server's | A pass needs the mirror's queue, its schedule and a bound; a Debian mirror needs a signed upstream of the installation that its keyring trusts; the seed waits for the pass and every worktree's seed pays it; the rows hold only what the seed pushed (two tags, short names) |
+
+**Choice:** (a). **Rationale:** the screen is a list whose cells are what a pass leaves; the shape is read from the server at the walk's
+time, so a routed row cannot drift from a real one's members, and the data that shows what a filled row does to the layout (a long tag
+beside a partial size, a count of three digits) costs nothing. The development agent would revisit (b) if a pass of the profile ended in
+seconds for both formats.
+
+**Applied in the spec:** R-API-081 (rendered). Code: [mirror.ts](../../web/e2e/renders/mirror.ts) (`passRows`, `mirrorFilled`),
+[screens.ts](../../web/e2e/renders/screens.ts) (`repository-oci-mirror-filled`, `repository-deb-mirror-filled`, as the plain user).
+Docs: [web-ui.md](../developer/web-ui.md#renders-of-every-screen).
+
 ## What this does not cover
 
 ### H-1683 · The version list of a package several repositories hold, in the order of publication, reads every version, and the package list counts every version
