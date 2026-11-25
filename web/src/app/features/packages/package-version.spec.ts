@@ -393,11 +393,11 @@ describe('The page of a version (R-UI-111)', () => {
       await expectAccessible(r.root);
     });
 
-    it('R-OCI-031 the Files tab lists the tag item, whose checksum is the manifest digest', async () => {
+    it('R-OCI-041 the Files tab names the tag item the manifest, whose checksum is the manifest digest', async () => {
       const r = await image({ version: '1.1.0', tab: 'files' });
       const rows = cells(r);
       expect(rows).toHaveLength(1);
-      expect([...r.root.querySelectorAll('.version-tabs table tbody th .file-path')].map((e) => text(e))).toEqual(['team/app/_tags/1.1.0']);
+      expect([...r.root.querySelectorAll('.version-tabs table tbody th .file-path')].map((e) => text(e))).toEqual(['Manifest']);
       expect(r.root.querySelector('.file-hash code')?.getAttribute('title')).toContain('a4d64'.padEnd(64, 'f'));
     });
 

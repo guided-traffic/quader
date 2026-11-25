@@ -127,7 +127,7 @@ describe('Image details', () => {
     const base = imageParts(indexMetadata(), platforms)[0]!;
     const steps = Array.from({ length: HISTORY_SHOWN + 10 }, (_, i) => ({
       created: '',
-      createdBy: `RUN step ${i}`,
+      command: `RUN step ${i}`,
       comment: '',
       emptyLayer: true,
       layer: null,
@@ -141,7 +141,7 @@ describe('Image details', () => {
     expect(more.textContent?.trim()).toBe(`Show all ${HISTORY_SHOWN + 10} steps`);
   });
 
-  it('R-OCI-040 Q-OCI-273 a reader who may not pull the image is told whom the configuration is shown to', async () => {
+  it('R-OCI-040 a reader who may not pull the image is told whom the configuration is shown to', async () => {
     const base = imageParts(indexMetadata(), platforms)[0]!;
     const root = await render({ ...base, configuration: { ...base.configuration!, state: 'hidden' } });
     expect(root.textContent).toContain('shown to whoever may pull this image');

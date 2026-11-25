@@ -504,7 +504,14 @@ export class PackageVersionPage {
   protected platformOpenLabel(platform: string): string {
     return $localize`:@@pkg.image.open-platform:Configuration and layers of ${platform}:platform:`;
   }
-  protected readonly imageDetailsHeading = $localize`:@@pkg.image.details:Configuration, layers and history`;
+  /** An image opens its configuration, layers and history; another artifact (a Helm chart) its layers alone. */
+  protected readonly imageDetailsHeading = computed(() =>
+    this.metadata()['kind'] === 'image' ? $localize`:@@pkg.image.details:Configuration, layers and history` : $localize`:@@pkg.layers.heading:Layers`,
+  );
+  /** The heading of the manifest's facts: an image's, or another artifact's (a Helm chart, a signature). */
+  protected readonly imageHeading = computed(() =>
+    this.metadata()['kind'] === 'image' || this.metadata()['kind'] === undefined ? $localize`:@@pkg.image.heading:Image` : $localize`:@@pkg.image.artifact-heading:Artifact`,
+  );
   protected readonly cut = cutDigest;
   protected readonly copyManifest = $localize`:@@pkg.file.copy-manifest:Copy the manifest's digest`;
   protected readonly copyConfig = $localize`:@@pkg.file.copy-config:Copy the config's digest`;

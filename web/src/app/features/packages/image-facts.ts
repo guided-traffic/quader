@@ -26,7 +26,8 @@ export interface ImageVar {
 /** One step of the build, with the layer it added, as `docker history` lists it. */
 export interface HistoryStep {
   readonly created: string;
-  readonly createdBy: string;
+  /** The step's instruction (`created_by` of the configuration). */
+  readonly command: string;
   readonly comment: string;
   /** The step added no layer (ENV, CMD, LABEL): `docker history` shows 0 B. */
   readonly emptyLayer: boolean;
@@ -62,6 +63,8 @@ export interface ImagePart {
   readonly digest: string;
   /** The platform the index names it with; null for the tag's own image. */
   readonly platform: string | null;
+  /** The size of the platform's manifest document; null for the tag's own image, whose file is listed above it. */
+  readonly manifestSize: number | null;
   readonly config: ImageBlob | null;
   readonly layers: readonly ImageBlob[];
   /** Layers past the bound that the row does not keep. */
@@ -177,7 +180,7 @@ function historyOf(v: unknown, layers: readonly ImageBlob[]): HistoryStep[] {
     const layer = emptyLayer ? null : (layers[next++] ?? null);
     return {
       created: text(r['created']),
-      createdBy: text(r['createdBy']),
+      command: text(r['createdBy']),
       comment: text(r['comment']),
       emptyLayer,
       layer,
@@ -211,13 +214,18 @@ function configurationOf(v: unknown, layers: readonly ImageBlob[]): ImageConfigV
  * in the manifest's order and its configuration. `platforms` are the index's children as `imageFacts` read them (digest and label).
  * A configuration the reader may not see (`configs` absent from an image's metadata) is `hidden`.
  */
-export function imageParts(m: Record<string, unknown>, platforms: readonly { digest: string; platform: string; stored: boolean }[]): ImagePart[] {
+export function imageParts(
+  m: Record<string, unknown>,
+  platforms: readonly { digest: string; platform: string; stored: boolean; size?: number | null }[],
+): ImagePart[] {
   const blobs = record(m['blobs']);
   const configs = m['configs'];
   const own = text(m['digest']);
   const kind = text(m['kind']);
-  const candidates: { digest: string; platform: string | null }[] =
-    platforms.length > 0 ? platforms.filter((p) => p.stored).map((p) => ({ digest: p.digest, platform: p.platform })) : [{ digest: own, platform: null }];
+  const candidates: { digest: string; platform: string | null; size: number | null }[] =
+    platforms.length > 0
+      ? platforms.filter((p) => p.stored).map((p) => ({ digest: p.digest, platform: p.platform, size: p.size ?? null }))
+      : [{ digest: own, platform: null, size: null }];
   return candidates.flatMap((c): ImagePart[] => {
     const b = record(blobs[c.digest]);
     if (blobs[c.digest] === undefined) return [];
@@ -227,11 +235,14 @@ export function imageParts(m: Record<string, unknown>, platforms: readonly { dig
     });
     const cfg = record(configs)[c.digest];
     let configuration: ImageConfigView | null = null;
-    if (cfg !== undefined) configuration = configurationOf(cfg, layers);
+    // A Helm chart's configuration is its Chart.yaml, which the chart's own block shows (R-OCI-042): no image configuration here.
+    if (cfg !== undefined && record(cfg)['kind'] !== 'chart') configuration = configurationOf(cfg, layers);
     else if (configs === undefined && kind === 'image') {
       configuration = { state: 'hidden', facts: [], env: [], labels: [], history: [], omitted: { env: 0, labels: 0, history: 0, cut: false } };
     }
-    return [{ digest: c.digest, platform: c.platform, config: blob(b['config']), layers, moreLayers: num(b['more']) ?? 0, configuration }];
+    return [
+      { digest: c.digest, platform: c.platform, manifestSize: c.size, config: blob(b['config']), layers, moreLayers: num(b['more']) ?? 0, configuration },
+    ];
   });
 }
 

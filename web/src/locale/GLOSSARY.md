@@ -131,6 +131,8 @@ unless the line is too short, and then breaks at the joint with a hyphen; withou
 | pull (an image), image index, multi-platform image | ziehen, Image-Index, Multi-Plattform-Image |
 | Pull, Install, Download (the button beside a version that opens its commands, Q-UI-1066) | Pull (the owner's word and the command's, `docker pull`), Installieren, Herunterladen |
 | image (OCI), tag, digest, media type, artifact type, platform (of an image index), image pull secret | Image, Tag, Digest, Medientyp, Artefakttyp, Plattform, Image-Pull-Secret |
+| an image's configuration, environment, label, layer, build history, entrypoint, health check (formats/oci.md R-OCI-040) | Konfiguration, Umgebung, Label, Layer (Docker's word, kept), Build-Verlauf, Entrypoint (the Dockerfile's word, kept), Healthcheck |
+| Helm chart, chart version, app version, values (a chart's `values.yaml`), maintainer (R-OCI-042) | Helm-Chart, Chart-Version, App-Version, Werte, Maintainer |
 | signing key (primary, next, withheld, retired), fingerprint, certificate (public) | Signaturschlüssel (primär, nächster, zurückgehalten, außer Dienst), Fingerabdruck, öffentliches Zertifikat |
 | promote (a next key), reinstate (a withheld key), confirm the retirement | hochstufen, wieder einsetzen, Außerdienststellung bestätigen |
 | suite, component, architecture, index (of a suite), release (APT), generation | Suite, Komponente, Architektur, Index, Release, Generation |

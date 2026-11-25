@@ -246,3 +246,10 @@ tr.expansion td {
 .image-files .digest-cell {
   white-space: nowrap;
 }
+
+// A chart's dependency: its version range, and the repository it comes from on a line of its own, muted (R-OCI-042).
+.dep-repository {
+  display: block;
+  color: var(--quader-text-muted);
+  overflow-wrap: anywhere;
+}

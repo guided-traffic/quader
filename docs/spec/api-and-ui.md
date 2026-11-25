@@ -26987,6 +26987,21 @@ measure of [formats/ansible.md](formats/ansible.md) R-ANS-048 to R-ANS-050, has 
 [ansible-doc-entry.spec.ts](../../web/src/app/features/packages/ansible-doc-entry.spec.ts); the render `ansible-doc-module` declares the
 table (`tables` in `screens.ts`), so a table that stands as blocks from 1,024 px on is a finding.
 
+### Q-UI-1250 · The commands of an OCI artifact are its kind's: Helm for a chart, Docker and Podman for an image
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+[formats/oci.md](formats/oci.md) R-OCI-041, R-OCI-042.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The pickers of a version offer the clients of its kind (`clientsOfKind`): a Helm chart Helm alone, an image every client but Helm; **Set up client** lists all three; an image's panel adds the pull by digest under the pull by tag (chosen) | One command that works per kind | A reader never copies a `docker pull` of a chart or a `helm pull` of an image | The kind must be known: a list row that does not carry it offers an image's clients (H-2116) |
+| (b) Every client for every artifact | One list | Nothing to decide | Two of three commands fail for each artifact |
+| (c) A format of its own for charts | Separate pages | Clear | A new format, which the owner excluded (Q-OCI-275) |
+
+**Choice:** (a). **Applied in the spec:** R-OCI-041, R-OCI-042. Code: `clientsOfKind` in
+[clients.ts](../../web/src/app/features/setup/clients.ts), [install-panel.ts](../../web/src/app/features/packages/install-panel.ts),
+[client-command.ts](../../web/src/app/features/packages/client-command.ts) (the digest line).
+
 ### Q-UI-1270 · A Debian package's relations are the dependency block, one line per group, its alternatives side by side
 
 Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.

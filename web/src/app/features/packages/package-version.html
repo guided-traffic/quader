@@ -340,7 +340,7 @@
                         <code translate="no" [attr.title]="part.digest">{{ cut(part.digest) }}</code>
                         <quader-copy-button [value]="part.digest" [label]="copyManifest" />
                       </td>
-                      <td class="num nowrap"><quader-no-value /></td>
+                      <td class="num nowrap">@if (part.manifestSize !== null) {<span [attr.title]="part.manifestSize + ' B'">{{ size(part.manifestSize) }}</span>} @else {<quader-no-value />}</td>
                     </tr>
                   }
                   @if (part.config; as cfg) {
@@ -523,7 +523,7 @@
                       <dd>
                         {{ dep.range }}
                         @if (dep.repository) {
-                          <span class="secondary block">{{ dep.repository }}</span>
+                          <span class="dep-repository">{{ dep.repository }}</span>
                         }
                       </dd>
                     }
@@ -531,7 +531,7 @@
                 }
               }
               @if (image(); as img) {
-                <h2 i18n="@@pkg.image.heading">Image</h2>
+                <h2>{{ imageHeading() }}</h2>
                 <dl class="facts">
                   @if (kind() !== '') {
                     <dt i18n="@@pkg.image.kind">Kind</dt>
@@ -616,7 +616,7 @@
                     }
                   </quader-data-table>
                 } @else if (parts()[0]; as part) {
-                  <quader-disclosure class="image-details-fold" [heading]="imageDetailsHeading">
+                  <quader-disclosure class="image-details-fold" [heading]="imageDetailsHeading()">
                     <quader-image-details [part]="part" />
                   </quader-disclosure>
                 }

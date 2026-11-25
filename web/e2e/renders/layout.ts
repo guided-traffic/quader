@@ -1406,6 +1406,14 @@ export const allowed: readonly {
     why: 'a code block keeps its lines as they are copied (a request, a command, a configuration) and scrolls a long one in its own region, up to a few screens',
   },
   {
+    // A README's code block is the README renderer's `pre` without a class: it keeps a line as it is copied, as a code block does.
+    check: 'sideways',
+    screen: /^package-version-/,
+    what: /^pre\.$/,
+    atMost: CODE_BLOCK_SCROLL,
+    why: "a README's code block keeps a command as it is copied (a chart's `helm install …`, R-OCI-042) and scrolls a long line in its own region, up to a few screens",
+  },
+  {
     check: 'sideways',
     what: /^div\.readme-table/,
     why: "a document's table (the manual, a README) keeps its columns and scrolls in its own region where the page is narrower",

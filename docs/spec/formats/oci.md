@@ -1805,7 +1805,8 @@ Acceptance criteria:
   Docker image, a Helm chart, a cosign signature, an SPDX document, a Sigstore bundle and an unknown artifact.
 - Integration (area `oci`, in `TestR_OCI_040_AnImagesFactsStandOnItsPageForWhoMayReadItsConfig`): a second tag of the image is the
   version's `aliases`.
-- Web unit (`version-metadata.spec.ts`, milliseconds): the files, the kind and the facts of an image read from the metadata.
+- Web unit (`image-facts.spec.ts`, milliseconds): the facts, the parts, the history matched to its layers, the hidden and the unread
+  configuration, the kind's word, the cut digest; the details component with a history of more steps than it shows at first.
 - Renders (`package-version-oci-*`): the head with the other tags, the panel's digest line, the tab Files and the details per platform.
 
 ### R-OCI-042 · A Helm chart's facts, README and values, and Helm's commands

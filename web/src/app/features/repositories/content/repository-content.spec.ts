@@ -271,12 +271,16 @@ describe('Repository content page', () => {
     const rows = [...r.root.querySelectorAll('quader-repository-item-versions tbody tr')];
     setup.calls = [];
     const older = await openMenu(r, rows.at(-1)!.querySelector<HTMLButtonElement>('quader-client-command-menu button')!);
+    // Each client's command by tag, and by the image's digest after it (R-OCI-041): the image without a version, the digest appended.
     expect(setup.calls.map((c) => c.query)).toEqual([
       expect.objectContaining({ client: 'docker', version: '1.1.0', credentials: 'none' }),
+      expect.objectContaining({ client: 'docker', credentials: 'none' }),
       expect.objectContaining({ client: 'podman', version: '1.1.0', credentials: 'none' }),
+      expect.objectContaining({ client: 'podman', credentials: 'none' }),
     ]);
     expect(setup.calls.every((c) => c.repository === 'web/oci-local')).toBe(true);
-    expect(commands(older)[1]).toMatch(/^podman pull \S*web\/oci-local\/team\/app:1\.1\.0$/);
+    expect(commands(older)[2]).toMatch(/^podman pull \S*web\/oci-local\/team\/app:1\.1\.0$/);
+    expect(commands(older)[3]).toMatch(/^podman pull \S*web\/oci-local\/team\/app@sha256:[0-9a-f]{64}$/);
   });
 
   it('R-UI-052 R-UI-094 R-UI-143 an npm repository shows the packages with the grade of their latest version and the install command of the version, and grades each version of an opened row, in the words of the versions table', async () => {

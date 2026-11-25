@@ -47,8 +47,8 @@ export const HISTORY_SHOWN = 50;
             <quader-data-table class="vars" [caption]="envCaption" [columns]="varColumns" [empty]="false">
               @for (v of c.env; track $index) {
                 <tr>
-                  <th scope="row" translate="no"><code class="wrap">{{ v.name }}</code></th>
-                  <td translate="no">
+                  <th scope="row" class="wrap-name" translate="no"><code class="wrap">{{ v.name }}</code></th>
+                  <td class="wrap" translate="no">
                     <code class="wrap">{{ v.value }}</code>
                     @if (v.cut) {
                       <span class="muted" i18n="@@pkg.config.cut">(cut)</span>
@@ -68,8 +68,8 @@ export const HISTORY_SHOWN = 50;
             <quader-data-table class="vars" [caption]="labelsCaption" [columns]="varColumns" [empty]="false">
               @for (v of c.labels; track $index) {
                 <tr>
-                  <th scope="row" translate="no"><code class="wrap">{{ v.name }}</code></th>
-                  <td translate="no">
+                  <th scope="row" class="wrap-name" translate="no"><code class="wrap">{{ v.name }}</code></th>
+                  <td class="wrap" translate="no">
                     <span class="wrap-text">{{ v.value }}</span>
                     @if (v.cut) {
                       <span class="muted" i18n="@@pkg.config.cut">(cut)</span>
@@ -110,7 +110,7 @@ export const HISTORY_SHOWN = 50;
               <code translate="no" [attr.title]="l.digest">{{ cut(l.digest) }}</code>
               <quader-copy-button [value]="l.digest" [label]="copyLayer(i + 1)" />
             </th>
-            <td class="media-type" translate="no">
+            <td class="media-type wrap" translate="no">
               {{ l.mediaType }}
               @if (l.foreign) {
                 <span class="muted block" i18n="@@pkg.layers.foreign">Not held by a registry</span>
@@ -140,8 +140,8 @@ export const HISTORY_SHOWN = 50;
           @for (h of shownHistory(); track $index) {
             <tr>
               <td class="num">{{ $index + 1 }}</td>
-              <th scope="row" translate="no">
-                <code class="wrap command">{{ h.createdBy }}</code>
+              <th scope="row" class="wrap-name" translate="no">
+                <code class="wrap command">{{ h.command }}</code>
                 @if (h.cut) {
                   <span class="muted" i18n="@@pkg.config.cut">(cut)</span>
                 }
@@ -245,7 +245,7 @@ export class ImageDetails {
     return $localize`:@@pkg.layers.copy:Copy the digest of layer ${n}:number:`;
   }
   protected readonly varColumns: readonly TableColumn[] = [
-    { id: 'name', label: $localize`:@@pkg.config.name:Name`, width: '10rem' },
+    { id: 'name', label: $localize`:@@pkg.config.name:Name`, width: '23rem' },
     { id: 'value', label: $localize`:@@pkg.config.value:Value`, prefer: true },
   ];
   protected readonly layerColumns: readonly TableColumn[] = [
