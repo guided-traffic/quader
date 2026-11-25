@@ -255,13 +255,13 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 
 | Package | What it closes | State |
 |---|---|---|
-| S1 · A screen says a server's failure in its own language | the thirteen screens of section 8, Product ("Thirteen more screens show a server's English text as their own"), from the kept diff `.dev/server-sentences-full-scope.diff`, which no longer applies to `main` as it is | back at 07:18 (one commit, 9efb7e4df; its builder worked from 06:17, every gate exit 0 after one repair); at the landing's gates |
+| S1 · A screen says a server's failure in its own language | the thirteen screens of section 8, Product ("Thirteen more screens show a server's English text as their own"), from the kept diff `.dev/server-sentences-full-scope.diff`, which no longer applies to `main` as it is | landed and pushed at 07:40 (one commit; R-UI-214, Q-UI-1080; its builder worked from 06:17 to 07:18; the landing's gates on its own worktree, each exit 0: build, vet, the whole unit run, lint, the documents' checks, the web's lint, tests, translation check and layout fixtures; two of its pictures looked at by the development agent) |
 | S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:17 |
 | M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847) | landed and pushed at 07:14 (eight commits, Test and Release 45559185462; its builder worked from 06:17 to 07:12, every gate exit 0); what it measured and changed is below |
 | S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | in work since 06:40 |
 | S4 · One scrollbar per page | the owner's finding of 06:45 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | the plan is back at 07:12 (P2, 25 minutes, read-only; kept in the session's scratch directory as `p2-one-scrollbar-per-page-plan.md`): one package, see below; a builder in M1's place since 07:16 |
-| S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | a planner (P3) since 06:58; a builder when a place is free |
-| S6 · "Not scanned" says why and what comes | the owner's finding of 06:55 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | a builder when a place is free |
+| S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | the plan is back at 07:20 (P3, 27 minutes, read-only; kept as `.dev/plans/p3-one-row-per-image-newest-first-plan.md` of the main checkout, not in git): two packages in order, S5a the server and S5b the screens, see below; S5a when a place is free |
+| S6 · "Not scanned" says why and what comes | the owner's finding of 06:55 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | in work since 07:19, in S1's place |
 | P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows, what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | back at 06:42 (a planner, 25 minutes, read-only; kept in the session's scratch directory as `p1-render-guard-blind-spots-plan.md`); its three packages are G1 to G3 below |
 
 **The render guard's blind spots, as the plan of 06:42 reads them (counted in the code by its planner; the estimates are
@@ -327,6 +327,33 @@ normal run).**
   reads every 3 s for as long as its scan waits, without a bound; H-1871, the audit log and the security dashboard's
   findings sent no read in 60 and 75 s of a seen tab in two runs (to read: both intervals may be the slow ones by
   design, 30 and 60 s; section 8).
+
+**One row per image and versions newest first, as the plan of 07:20 reads it (S5; verified in the code and in the
+profile's database by its planner).** **The cause of the order in the owner's picture:** the bulk queued the 315 tags
+in Docker Hub's order (newest push first, each version beside the commit tag pushed with it), the queue ran them in
+that order, and the opened image's list sorts by the time of the fetch, newest first, so the tags fetched last, the
+oldest versions, stood first. Every other list of versions already uses the format's order, except the API's default
+(`-publishedAt`), the Upstream tab for Docker Hub and Quay (the upstream's push order), and the tab Downloads, where a
+bulk's rows stand in the reverse of the order they run. **A defect the planner found beside it:** signature and
+attachment tags are kept out of a local repository's list, but a remote lists them once a client has fetched one
+through it or a mirror pass has stored it, and the Upstream tab and "download every version" take them as versions
+(none in the owner's image; `oci_remote_tags` and the catalogue have no check).
+- **S5a · the server:** every list of versions defaults to the format's order, newest first; a tag that is no version
+  (`latest`, `main`, `sha-…`) stands below the versions, newest first by its time; the version list gets a grouped mode
+  (one entry per manifest digest, led by its highest tag, the other tags as its aliases) on the keyset walk with a read
+  budget per request, so a page may be short and a client reads on; a local version row stores its manifest's digest
+  (a migration, two indexes per side); attachment tags are listed in no remote and no catalogue; Docker Hub's and Quay's
+  tags in the tag order; a bulk's rows in the order they run. New gap H-1849 (the end of a grouped list of an image
+  with very many tags that lead no image). A measurement with 100,000 tags in three shapes.
+- **S5b · the screens, after S5a and S4:** the opened image (the ten newest images, S4's bound and link) and the
+  package's page show one row per image: the leading tag, the other tags muted after it (at most four, then "+N more",
+  in the opened list), the signature's mark on the row, Pull for the leading tag; the filter finds a row by any of its
+  tags; the render seed gets images with several tags.
+- **What it changes of earlier choices:** the owner's own word of W-7, "one row per version" (R-UI-110): for an image a
+  row is the image, which his word of today asks for (told to him at 07:00 with the choice, and again with this plan);
+  and six decisions of the development agent (Q-UI-453, R-UI-052's opened list, R-OCI-031's and Q-OCI-17's order of
+  tags that are no version, R-API-029's default, the catalogue's order for Docker Hub and Quay). Not built: a count of
+  images, grouping on the Upstream tab (its acts are per tag), a version-aware order of generic folders.
 
 **What stays open and is not built by this run, each with its reason:** F-126, F-95, the `npm ci` binding and the
 unreachable github.com of `e2e (bastion)` wait for a recurrence (section 8); the stall without a neighbour is a standing
@@ -948,7 +975,16 @@ records the recorder that tells such a stall apart).
   without signatures" ("no connection of this replica holds a present copy") for manifests the bulk had just stored.
   Given to a builder at 06:40 (package S3 of section 1), for every format's upstream.
 
-- **Thirteen more screens show a server's English text as their own (the audit of 2026-11-24, 13:00):** the download
+- **Closed on 2026-11-25, 07:40, by S1 (R-UI-214, Q-UI-1080):** each of the eleven groups says the server's failure,
+  warning or note in the screen's language from a code the server sends (87 codes, English and German), and the server's
+  own text folds under one shared "Technical details" (`web/src/app/shared/technical-details.ts`, which the download
+  queue's failures use too); Valkey's reasons got a code of their own (`reasonCode`), since the kept diff had taken free
+  text for one; a lint rule and an `english` check of the German render pass hold it; twelve render screens of failure
+  states (78 pictures, about 1.5 minutes of the render job, nothing per format). Found on the renders and repaired: the
+  claim tester's dry-run warnings under "Saved, with warnings", its icons off their line, a CI key error styled as a
+  badge that ran 66 px off a German page at 390 px, the German KEV button 115 px off. Left by its builder: no
+  integration case reads `reasonCode` over the API; the warnings' toast of the upstream registries has no render. As it
+  stood: **Thirteen more screens show a server's English text as their own (the audit of 2026-11-24, 13:00):** the download
   preview's note; repository warnings after a save and the upstream registries' messages; the connection test of a remote
   and of an upstream registry; CI mapping warnings, the claim tester's result and trace, the issuer's key fetch error; the
   jobs' result; the malware database's error; the advisory sources' last error; the signature root's last failure; the
