@@ -259,7 +259,7 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 | S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:17 |
 | M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847). Each is run once and its numbers are written down; a defect a number shows is repaired or entered | in work since 06:17 |
 | S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | in work since 06:40 |
-| S4 · One scrollbar per page | the owner's finding of 06:50 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | a planner (P2) since 06:55; a builder when a place is free, ahead of G2 |
+| S4 · One scrollbar per page | the owner's finding of 06:50 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | the plan is back at 07:20 (P2, 25 minutes, read-only; kept in the session's scratch directory as `p2-one-scrollbar-per-page-plan.md`): one package, see below; a builder when a place is free, ahead of G2 |
 | S5 · One row per image, versions newest first | the owner's findings of 07:00 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | a planner (P3) since 07:08; a builder when a place is free |
 | S6 · "Not scanned" says why and what comes | the owner's finding of 07:00 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | a builder when a place is free |
 | P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows, what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | back at 06:42 (a planner, 25 minutes, read-only; kept in the session's scratch directory as `p1-render-guard-blind-spots-plan.md`); its three packages are G1 to G3 below |
@@ -287,6 +287,24 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 Not built, by the plan: hover and loading states, a rule against an overlay covering a control, a walk per place of the
 confirm dialog or of the error notice (one component each: its shapes and its containers are rendered). A table of refused
 second words for one thing in the glossary, read by a unit test, is a small item of its own (seven such pairs were seen).
+
+**One scrollbar per page, as the plan of 07:20 reads it (S4; counted in the code by its planner).** The page's scroll
+container is `main` on every screen and stays it. Fifteen elements in a page and nine in overlays can scroll by
+themselves. What the builder does: the data table (68 component files use it) loses its height cap, its own scroll, its
+tab stop and its sticking head, so a list of any length grows the page and its head scrolls away with it, as the lists of
+the owner's GitLab do (to be confirmed there by the builder); an opened item of a repository's content shows its ten
+newest versions under a head of its own and links "All N tags" to the package's page, which lists them all; an upstream
+package opened in a row keeps its "Load more", which grows the page; the capped boxes inside a dialog and a drawer and
+the CI snippet lose their caps; a folded command cuts instead of scrolling; the policy's preview and an opened audit
+event stick beside the page only while they fit and never scroll by themselves. **Kept by the plan with a scroll of its
+own, each a choice the owner may refuse:** a navigation column that sticks beside the page (the manual's contents, the
+tree of a collection's documentation), two framed boxes of a fixed height that stand in for charts (the trend's and the
+usage history's table), the list box of a virtual repository's members, and every overlay (a dialog, a drawer, a menu, a
+field's suggestions), one scroll each. A requirement of its own (R-UI-215) and a render check `inner-scroll`, measured in
+the window's first height, with fixtures that fail on his picture; it supersedes the inner scroll of Q-UI-68 and
+Q-UI-427 and revises Q-UI-241, Q-UI-4 and Q-UI-997. Cost by its planner's estimate: fixtures 3 to 5 s, the render step at
+most a minute more, nothing per format. It meets S5 in one file (the opened item's list): S4 sets its bound and its link,
+S5 its rows and their order; the second to land rebases.
 
 **What stays open and is not built by this run, each with its reason:** F-126, F-95, the `npm ci` binding and the
 unreachable github.com of `e2e (bastion)` wait for a recurrence (section 8); the stall without a neighbour is a standing
