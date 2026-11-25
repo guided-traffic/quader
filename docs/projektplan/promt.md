@@ -301,12 +301,13 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W3 · A download ahead takes a range of versions (W-28, package 3) | the owner's task of 15:55 (section 8, Product): `fromVersion`, `toVersion`, `toInclusive` at a package's bulk and its preview, in the format's own order, the dialog's two fields, the bulk's line on the tab Downloads | landed and pushed at 17:41 |
 | W1 · Switches for the delivery, the cache's acts, the mode's dialog (W-28, package 1) | R-CUR-024, R-CUR-025 of the plan `.dev/w28-plan.md`; with it the attestation that an upstream version's line lists as a platform | landed and pushed at 20:13 |
 | W4 · Downloads kept in sync (W-28, package 4) | R-CUR-027 of the plan | landed and pushed at 19:11 |
-| W2 · A range of versions in a package's allow (W-28, package 2) | R-CUR-026 of the plan | in work since 20:13 |
+| W2 · A range of versions in a package's allow (W-28, package 2) | R-CUR-026 of the plan | landed and pushed at 23:00 |
 | S16 · A retired system repository is removed, and a retired preset says so | the owner's finding of 19:09 (section 8, Product): `upstream/scanner-clamav` stays listed as "Off" | landed and pushed at 20:40 |
-| S17 · Every load shows the spinner the owner picked (W-29) | the owner's task of 19:15 and his choice of 19:19 (section 8, Product): the mark's six stones, lighting up in sandstone | in work since 19:19 |
+| S17 · Every load shows the spinner the owner picked (W-29) | the owner's task of 19:15 and his choice of 19:19 (section 8, Product): the mark's six stones, lighting up in sandstone | landed and pushed at 23:00 |
 | S18 · No signed address in a log or a record | my finding of 19:23 (section 8, Product): the upstream log writes redirect targets with their signatures | landed and pushed at 20:40 |
 | S19 · The command behind its button on a version's page, clients as tabs, a collection opens in its documentation (W-30) | the owner's task of 20:39 (section 8, Product): every format's version page, the panel of the command, the target of a collection's name, the sentence why a format is not checked for vulnerabilities | built at 21:25 (four commits on its branch, gates green there); waits for its landing behind G3 |
 | W30-A1 · A collection's documentation reads like the documentation site (W-30) | R-ANS-048 to R-ANS-050 of the plan `.dev/w30-plan.md`: anchors and links, a plugin's configuration, the page's contents, highlighted examples | in work since 21:25 |
+| W30-G7 · An image's facts: annotations and labels, the config, the layers, the history (W-30) | R-OCI-039 to R-OCI-041 of the plan `.dev/w30-plan.md`; a chart's facts wait for the owner's d4 | in work since 22:06 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | in work since 21:09 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1061,6 +1062,14 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **Open since 2026-11-25, 22:33, found by two builders: the lock of the integration stack hands out an instance whose
+  containers are down.** Instance 3's containers had exited 37 hours earlier (exit 255, all at once: the container
+  runtime's restart), its env file stood, and `test/integration/locked.sh` took it as free; every test of two builders'
+  first runs failed with "connection refused", and both pinned instance 2. Done now: instance 3 taken down and up
+  again, all nine containers healthy (a plain `integration-up` over the stale state left the Valkey replica unhealthy).
+  Open, a small change for the next batch of tools: the lock skips an instance whose stack does not answer, and says
+  so.
+
 - **Closed on 2026-11-25, 21:59, by G3 (Q-UI-1231 to Q-UI-1233; gaps H-2005 to H-2007; no Go code): the states of pages
   and of the shell that no walk opened are pictured, and the pictures found 19 defects in 12 components, one of them no
   layout defect: a stored permission policy could not be saved.** The policy editor sent a stored policy to the preview
@@ -1236,6 +1245,61 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **Closed on 2026-11-25, 23:00, by W2 (W-28, package 2; R-CUR-026; Q-CUR-220 to Q-CUR-230; ADR-283; gaps H-2070 to
+  H-2075; migration 00131): a package can be allowed with a range of its versions, from one version up to or below
+  another, and a version outside it is refused with a reason of its own.** The owner's d2 = a and d5 = a. Under a
+  package's switch the tab Upstream says the range ("Versions from 4.80.1 below 5.0.0") and **Limit versions…** sets
+  it; a version outside reads **Outside the range** with the rule line "Rule: the package's range", a version's own
+  rule still decides above the range. Per format: npm, NuGet and Ansible Galaxy list only versions inside the range
+  and answer a file outside with 403 (NuGet stores the bounds in the canonical form; build metadata ranks after its
+  release); OCI: a tag that is no version (`latest`, a branch, cosign's older tags) lies outside every range, so
+  `docker pull` without a tag is refused until `latest` is switched on in its row, and the dialog and the package's
+  head say so; a manifest by digest is decided by the delivered tags that name it; a blob of a tag outside stays
+  reachable by its digest (H-1724, extended); Debian: the remote passes its indexes through unchanged, so APT takes the
+  highest listed version and is refused when it lies outside, and only a virtual repository over the remote filters
+  the list (the remote's guide says so). The mirror counts its newest N among delivered versions; a sync stores nothing
+  outside the range; a download ahead still stores what lies outside, for examination. Departed from the plan: no code
+  `invalid_range` (an empty range is `422 validation_failed` with `out_of_range` at `toVersion`, as a bulk's); one
+  comparison for bulk, sync and allow (`Range`, `Order` in `internal/remotecuration`, the catalogue carries the view
+  adapter's order); the format contract's version is 14 (`formats.ModeReason` removed); the badge's words were shortened
+  until the version table stayed a table at 1,024 px in both languages; a field width `field-w-version` (16 rem). The
+  landing: joined with S17 (the dialog's Save got the busy spinner the new lint rule asks for), the count of
+  requirements 1,282; the 13 gates (the translation files were extracted again after the two series met), the dialog states, the renders (137 in English, 12 in German, no layout finding) and the whole integration areas `repository`, `npm`, `ociremote`, `upstream`, `proxy` and `backup` green; looked at: the search's load with the spinner in dark at 1,440 px and the opened package with its range in light at 1,440 px. Open: an npm tag badge cut with room free beside it at 1,024 px (H-2070); the Debian
+  guide's advice stands on every Debian remote, rules or not (H-2071); a request's allow on a package with a ranged
+  allow replaces it with a plain allow, which widens what is delivered and is not journaled, the spec does not decide
+  it yet (H-2072); the German reader's version table fits at 1,024 px by a small margin (H-2073); the cost of a
+  decision and the rule set's memory under ranges are estimated, not measured (H-2074). Not verified: real `docker`,
+  `apt`, `dotnet` and `ansible-galaxy` clients against a range; the German dialog states.
+
+- **Closed on 2026-11-25, 23:00, by S17 (W-29; R-UI-217; Q-UI-1229, Q-UI-1230, Q-UI-1234 to Q-UI-1239; gaps H-2050 to
+  H-2053): every load shows the spinner the owner picked, the mark's six stones in three rows, lit clockwise in
+  sandstone.** His choice c with "bitte 3 reihen Steine und damit viereckig", and his three pictures of places without
+  one. The pieces (`web/src/app/shared/ui/`): `quader-spinner` (16 px on a line and in a button, 48 px for a page:
+  at 40 the stones fell on half pixels), `quader-loading` (the spinner before the sentence, one `role="status"`), the
+  data table's loading state (a table that loads and holds no row shows its load, never the empty sentence),
+  `[quaderBusy]` on the button a person pressed (by its flag, or bare by the writes its press started), the first
+  paint in `index.html`. A load shows after 300 ms, by the stylesheet, in the place its content takes; under reduced
+  motion the first stone stays lit and the mark breathes; a live view's read again shows no spinner. The defect he
+  showed ("38,655 hits" over "No package of the upstream matches"): a search started from a level kept the level's
+  page, so the total and the empty sentence described the old answer under the new question; a new question now
+  clears the old answer, in that list and in three more with the same fault (the package's version filter, the rules
+  dialog's filter, the usage overview). Found by reading every template that reads the server, by the lint rule and
+  by a measurement that delays every read by 2 s on the 118 screens without a walk: six screens and several sections
+  stood empty while they loaded (a repository's page, a format's guide, the vulnerability summary, the profile's
+  account, the dashboard's four parts, every settings page of the admin area); about 50 tables, about 100 buttons with
+  a flag and 38 acts without one carry the spinner now; the sign-in path from the first paint to "Redirecting to the
+  identity provider." and "Signing out.". Left without one on purpose: counts in a tab's label and the top bar's
+  badge, an avatar's image, a folder upload's own progress, a job's own steps, live reads. The lint rule
+  (`web/scripts/busy-rule.mjs`) refuses a loading sentence outside `quader-loading`, a table that binds `[loading]`
+  without its sentence, a button disabled by an act's flag without `quaderBusy`, and a rotating keyframe. The
+  inventory by screen stands in `docs/developer/web-ui.md`. The landing: three of its decisions renumbered (1231 to
+  1233 became 1237 to 1239, G3 held those numbers), three conflicts joined by hand. Open: the bare `quaderBusy`
+  infers its act from the calls and misses an upload that goes past the HTTP client (H-2050); the lint rule reads
+  text and cannot see a section that stays empty or a flag of another name (H-2051); the first paint's sentence is
+  not in the translation files (H-2052); a scheme switch during a load keeps the old colours until it ends (H-2053).
+  Not verified: screen readers (whether the status is announced when it appears after the delay); Firefox and WebKit;
+  the roughly 170 screens that have a walk under slow reads.
+
 - **Open since 2026-11-25, 21:09: the plan of W-30 is there (`.dev/w30-plan.md` of the main checkout, 83 KB; recovered
   from the planner's record, its worktree was cleaned with the file in it), 14 build packages in four waves and five
   decisions of the owner's.** What it found, read in code and in Galaxy's answers and source (not on screens unless
@@ -1269,7 +1333,16 @@ records the recorder that tells such a stall apart).
   changelog page, frequencies of READMEs and annotations, the client's `download`, `verify` and `role info` against
   Quader, the remote gap on a screen). The working paper with d1 to d5 is his private page since 21:11
   (https://claude.ai/artifact/RWmHZ9r8BrJJ54KCxgCAQ2; his choices are read from its store or come as letters in the
-  chat); A4 waits for d1, the chart's part of G7 for d4, nothing else waits for him.
+  chat); A4 waits for d1, the chart's part of G7 for d4, nothing else waits for him. **His answer at 22:55: "überall Favorit. Genau so
+  umsetzen wie dort im Fav beschrieben"** (the page's store was empty; the chat's sentence is the answer). So: d1 = b,
+  roles are readable through a remote (name, description, README, versions, `role search`), no local publish of a
+  role (A4); d2 = b, a namespace, a scope or a path prefix has a page made from what exists, in every format: its
+  packages and who may publish into the name, no entity of its own (built with A3); d3 = b, the documentation is
+  searched across the newest version of every collection the reader may read, from the global search (A3); d4 = b, a
+  Helm chart in an OCI repository shows its facts, its README and its values, read-only, with the `helm` command, and
+  no Helm repository format (given to the builder of W30-G7 at 22:55; FULL.md's parked item stays as it is); d5 = a, no
+  approval before a publish, nothing is built (his fact, whether an approval is used today, was not given; the
+  favourite's text is what he chose).
 
 - **Open since 2026-11-25, 20:39, the owner's task at `upstream/galaxy` and at `upstream/docker-hub` (W-30; S19 builds
   the three things he named, a planner works out the rest).** His words: "Wenn man auf eine Collection klickt, sollte
@@ -1341,7 +1414,7 @@ records the recorder that tells such a stall apart).
   (H-2063); `remote_url_map` keeps an upstream-named address whole, the fetch needs it, nothing shows it (H-2064). Not
   verified: a redirect to a signed address in an integration test (the guard is the client test in process).
 
-- **Open since 2026-11-25, 19:15, the owner's task: every load of remote content is accompanied by a spinner he
+- **Closed on 2026-11-25, 23:00, by S17 (its entry above); opened at 19:15 as the owner's task: every load of remote content is accompanied by a spinner he
   picks (working paper W-29; built once he has chosen).** His words, at an opened upstream package that reads "Reading
   the package from the upstream.": "Es gibt verschiedene Stellen in unserem Frontend, die remote Inhalte nachladen und
   dafür einige Zeit brauchen. Ich hätte gerne dass das Laden immer von einem Spinner begleitet wird. Den Spinner will
@@ -1400,8 +1473,9 @@ records the recorder that tells such a stall apart).
   this landing: migrate logged `removed:["scanner-clamav"]`, the job `repository-delete` succeeded and no repository of that key is left in its database (read at 20:42; this line stood as a placeholder in the plan commit of the landing, my slip, and is corrected with the next one). Open: the project's list offers **Set up client** on a retired registry's row, which answers 404
   (H-2040); a system key declared again while its deletion runs is created only at the following start (H-2041); the
   integration case runs the job's two statements by hand, the upstream area has no worker (H-2042); older records of
-  decisions and runs still name `scanner-clamav`, left as history (H-2043). Not verified: his installation (the same
-  history says it holds the row; the next release removes it at its start).
+  decisions and runs still name `scanner-clamav`, left as history (H-2043). His installation, read at 22:06: chart 0.134.1 (the first with this change), every pod
+  ready, and its migration job logged `removed: null`: it held no such row to remove, or the plan did not see one;
+  which of the two is not verified (the database was not read).
 
 - **Closed on 2026-11-25, 20:13, by W1 (W-28, package 1; R-CUR-024, R-CUR-025; Q-CUR-200 to Q-CUR-209; gaps H-2020
   to H-2023; no migration): an upstream package and each of its versions have a switch, and a change of the delivery
