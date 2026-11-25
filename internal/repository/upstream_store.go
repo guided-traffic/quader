@@ -84,7 +84,7 @@ func (u *upstreamStore) Stored(ctx context.Context) ([]wellknown.Stored, error) 
 		f := facts[row.ID]
 		st := wellknown.Stored{
 			Key: row.Key, Format: catalog.ID(row.Format), Class: Class(row.Class), Kind: wellknown.Kind(f.Kind),
-			Retired: f.RetiredAt.Valid, Overridden: f.AddressOverridden,
+			Retired: f.RetiredAt.Valid, Overridden: f.AddressOverridden, Deleting: Lifecycle(row.Lifecycle) == Deleting,
 			Fixed: wellknown.Fixed{
 				Private:     d.Visibility.Artifacts == LevelPrivate && d.Visibility.Wiki == LevelPrivate,
 				ScanningOff: d.Vulnerabilities != nil && !d.Vulnerabilities.Enabled,
@@ -93,7 +93,7 @@ func (u *upstreamStore) Stored(ctx context.Context) ([]wellknown.Stored, error) 
 		if st.Fixed.Allow, err = productAllows(ctx, qs, row.ID, d); err != nil {
 			return nil, err
 		}
-		// A local repository (scanner-clamav, R-REPO-075) has no remote section: no address, no account, no cache period.
+		// A local repository (clamav, R-REPO-075) has no remote section: no address, no account, no cache period.
 		if rs, err := parseStoredRemote(d.Remote); d.Class == Remote && err == nil {
 			st.HasAccount = rs.AuthMode != AuthNone || rs.Password != nil
 			st.Address = storedAddress(rs, d)
@@ -123,7 +123,7 @@ func presetHosts(in []ExtraHost) []catalog.PresetHost {
 
 // Create implements wellknown.Store: the document a create of only key, class and format would store, with the declaration's
 // address, its display name as the description, switched off for a preset (R-REPO-066), and the fixed members of a system
-// repository (R-REPO-070). A local system repository (scanner-clamav, R-REPO-075, Q-REPO-411) has no address.
+// repository (R-REPO-070). A local system repository (clamav, R-REPO-075, Q-REPO-411) has no address.
 func (u *upstreamStore) Create(ctx context.Context, decl wellknown.Declaration) error {
 	d := Document{Key: decl.Key, Class: Remote, Format: string(decl.Format)}
 	d.Description = decl.DisplayName
@@ -254,6 +254,36 @@ func (u *upstreamStore) Retire(ctx context.Context, key string) error {
 		Kind: UpstreamPurgeJobKind, DedupKey: UpstreamPurgeJobKind + ":" + strconv.FormatInt(id, 10),
 		Args: UpstreamPurgeArgs{RepoID: id, Key: name.String()}, TargetKind: "repository", TargetKey: name.String(),
 	})
+	return err
+}
+
+// Remove implements wellknown.Store (R-REPO-067 step 5, Q-REPO-490): a system repository the catalog no longer declares is deleted
+// as any repository is (R-REPO-013), retired before or not: lifecycle deleting with repository.deleted, phase started and reason
+// retired (journaled, R-AUTHZ-031), and the deletion job, which removes its items in batches and then, in one transaction, its row of
+// upstream_repository and its repository row with everything that references it. No tombstone stays: no virtual repository lists a
+// system repository (R-REPO-070, Q-REPO-380), and its rules are the product's. A preset repository is retired, never removed.
+func (u *upstreamStore) Remove(ctx context.Context, key string) error {
+	name := upstreamName(key)
+	qs, err := queries(u.tx)
+	if err != nil {
+		return err
+	}
+	rows, err := qs.LockRepositoryByName(ctx, q.LockRepositoryByNameParams{Project: wellknown.ProjectKey, Key: key})
+	if err != nil {
+		return err
+	}
+	if len(rows) == 0 {
+		return notFound(name)
+	}
+	facts, err := qs.GetUpstreamRepositoryFacts(ctx, rows[0].ID)
+	if err != nil {
+		return err
+	}
+	if len(facts) == 0 || wellknown.Kind(facts[0].Kind) != wellknown.KindSystem {
+		return fmt.Errorf("repository: upstream/%s is no system repository; a preset repository is retired, not removed", key)
+	}
+	// detach true: a reference a virtual repository should not hold goes with the repository instead of failing every start.
+	_, err = u.s.deleteLocked(ctx, u.tx, qs, productCaller(u.c, ReasonRetired), rows[0], name, true)
 	return err
 }
 

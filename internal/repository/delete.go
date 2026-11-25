@@ -35,6 +35,9 @@ type DeleteArgs struct {
 	RepoID int64       `json:"repoId"`
 	Key    string      `json:"key"`
 	Actor  audit.Actor `json:"actor"`
+	// Reason is the reason of a deletion of the product, carried into the completion event: retired for a system repository of
+	// the project upstream the catalog no longer declares (R-REPO-067 step 5, Q-REPO-490); empty for a caller's deletion.
+	Reason string `json:"reason,omitempty"`
 }
 
 // DeleteResult is the outcome of [Service.Delete].
@@ -91,10 +94,17 @@ func (s *Service) DeleteTx(ctx context.Context, tx meta.Tx, c Caller, name qname
 		return DeleteResult{}, notFound(name)
 	}
 	row := rows[0]
-	project := name.Project
 	if pre != nil && !pre.Any && pre.Version != row.ConfigVersion {
 		return DeleteResult{}, stale(row.ConfigVersion)
 	}
+	return s.deleteLocked(ctx, tx, qs, c, row, name, detach)
+}
+
+// deleteLocked deletes the locked row of the repository name: a virtual one at once, any other by the deletion job after the
+// transaction that marks it deleting and records repository.deleted with the phase started. The reconcile's removal of a system
+// repository of the project upstream comes here too (Q-REPO-490), with the reason of its caller in both events.
+func (s *Service) deleteLocked(ctx context.Context, tx meta.Tx, qs *q.Queries, c Caller, row q.Repository, name qname.Repo, detach bool) (DeleteResult, error) {
+	project := name.Project
 	var res DeleteResult
 	if Class(row.Class) == Virtual {
 		return res, s.deleteNow(ctx, tx, qs, c, row, project, &res)
@@ -114,8 +124,9 @@ func (s *Service) DeleteTx(ctx context.Context, tx meta.Tx, c Caller, name qname
 		}
 		row = marked[0]
 		r, _ := toRepository(row, project, s.cat)
-		if err := s.recordAndNotify(ctx, tx, c, EventDeleted, r,
-			eventDetails{Class: r.Class, Format: r.Format, Changes: []string{"lifecycle"}, Phase: "started", Project: project}, ChangeOpDeleting); err != nil {
+		if err := s.recordAndNotify(ctx, tx, c, EventDeleted, r, eventDetails{
+			Class: r.Class, Format: r.Format, Changes: []string{"lifecycle"}, Phase: "started", Project: project, Reason: c.product.reason,
+		}, ChangeOpDeleting); err != nil {
 			return DeleteResult{}, err
 		}
 	}
@@ -124,7 +135,7 @@ func (s *Service) DeleteTx(ctx context.Context, tx meta.Tx, c Caller, name qname
 	}
 	job, err := s.jobs.Enqueue(ctx, tx, jobs.EnqueueSpec{
 		Kind: DeleteJobKind, DedupKey: DeleteJobKind + ":" + strconv.FormatInt(row.ID, 10),
-		Args:       DeleteArgs{RepoID: row.ID, Key: name.String(), Actor: c.Actor},
+		Args:       DeleteArgs{RepoID: row.ID, Key: name.String(), Actor: c.Actor, Reason: c.product.reason},
 		TargetKind: "repository", TargetKey: name.String(), CreatedBy: c.principalID(),
 	})
 	if err != nil {
@@ -254,6 +265,11 @@ func (s *Service) finishDelete(ctx context.Context, a DeleteArgs) error {
 			return err
 		}
 		// <<< M2 virtual
+		// A system repository of the project upstream that the catalog no longer declares (Q-REPO-490): its row of
+		// upstream_repository, whose key restricts the deletion, goes first; no other repository has one.
+		if err := qs.DeleteUpstreamRepositoryRow(ctx, a.RepoID); err != nil {
+			return err
+		}
 		n, err := qs.DeleteRepositoryRow(ctx, a.RepoID)
 		if err != nil {
 			return err
@@ -268,7 +284,8 @@ func (s *Service) finishDelete(ctx context.Context, a DeleteArgs) error {
 			}
 		}
 		// <<< M2 virtual
-		return s.recordAndNotify(ctx, tx, Caller{Actor: a.Actor}, EventDeleted, r,
-			eventDetails{Class: r.Class, Format: r.Format, Changes: []string{"lifecycle"}, Phase: "completed", Project: project}, ChangeOpDeleted)
+		return s.recordAndNotify(ctx, tx, Caller{Actor: a.Actor}, EventDeleted, r, eventDetails{
+			Class: r.Class, Format: r.Format, Changes: []string{"lifecycle"}, Phase: "completed", Project: project, Reason: a.Reason,
+		}, ChangeOpDeleted)
 	})
 }

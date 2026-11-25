@@ -164,7 +164,10 @@ removed in the first transaction. A local or remote repository that a virtual re
 ([virtual.md](virtual.md) "Deleting a repository"). Only virtual repositories of the repository's own project can list it (the
 triggers AI006 guarantee it), so `detachReferences` edits the virtual repositories of that project and of no other; the one exception, a
 repository of the built-in project `upstream`, which virtual repositories of every project list (R-REPO-071), is never deleted
-(R-REPO-069). The events of a repository
+by a caller (R-REPO-069). The reconcile removes a system repository of `upstream` the catalog no longer declares through the same path
+(`deleteLocked`, which `DeleteTx` calls after its checks; Q-REPO-490): the caller's reason `retired` goes into both events and the job's
+arguments (`DeleteArgs.Reason`), and the job's last transaction deletes the repository's `upstream_repository` row before the repository
+row, whose key to it restricts the deletion (`DeleteUpstreamRepositoryRow`, a no-op for every other repository). The events of a repository
 carry `project` in their details and the qualified name as their subject; the delete paths resolve the project from the row (`projectKeyOf`).
 
 ## Remote settings

@@ -67,13 +67,19 @@ the project's rows through `Service.UpstreamStore(tx)` ([upstream_store.go](../.
 | 2 the product's address differs and no administrator overrode it; a system repository's fixed members differ | `OpWrite` with `Write{Address, Fixed, RemoveAccount}` | `Write`: one update with `reason: catalog`; the account goes when the hosts that receive it moved (`CredentialHosts`), with `accountRemoved` and `account_removed_at` |
 | 3 overridden, and the product's address caught up | `OpClearOverride` | `SetOverridden(false)`, no event |
 | 4 retired and declared again | `OpUnretire` | `Unretire`: `retired_at` cleared, the repository stays off |
-| 5 stored and no longer declared | `OpRetire` | `Retire`: `retired_at`, `repository.disabled` with `reason: retired` (journaled), the job `upstream-purge` |
+| 5 a preset stored and no longer declared | `OpRetire` | `Retire`: `retired_at`, `repository.disabled` with `reason: retired` (journaled), the job `upstream-purge` |
+| 5 a system repository stored and no longer declared, retired before or not | `OpRemove` | `Remove`: the deletion of every repository (`deleteLocked` in [delete.go](../../internal/repository/delete.go), R-REPO-013) with the caller's reason `retired`: lifecycle `deleting`, `repository.deleted` with `phase: started` (journaled), the job `repository-delete`, whose last transaction deletes the `upstream_repository` row and then the repository row (Q-REPO-490) |
 | 6 a declared key of another format, class or kind | an error naming the key | nothing; `quader migrate` exits 1 |
 
 The level of the create goes through the levels' rules of every create (`resolveLevels` in [visibility.go](../../internal/repository/visibility.go)):
 `Caller.product.level` makes `levelChoice.productLevel` the level an absent member takes instead of the installation's default, lowered to the
 highest level a non-administrator may choose, and `private` where there is none, so a restricted `internal` gives `private` and the reconcile
 never fails on a restriction; a level the declaration names is no choice (Q-REPO-393). The reconcile writes no level after the create.
+
+Step 5 tells a preset from a system repository by the stored row's `upstream_repository.kind` (`Stored.Kind`), not by a declaration, since none
+names the key any more. A row whose lifecycle is `deleting` (`Stored.Deleting`) is left to its job: no step for it, and a declaration of its key is
+created by the first run after the job removed the row. The migration's job registry knows `repository-delete` beside `upstream-purge`, both
+only enqueued there. The admin area's list and item (`UpstreamItems`, `UpstreamItem`) leave out a repository whose deletion runs.
 
 What the reconcile compares is the address and a system repository's fixed members (Q-REPO-390); every other member the product holds is kept by
 the refusals of R-REPO-069. A run against the catalog it wrote writes nothing and records nothing. The tests run the same against a catalog of their
@@ -106,7 +112,8 @@ The guards of migration 00086 answer SQLSTATE `AI010` whatever the API checked:
 | `repositories_upstream_fixed` | a repository of the project keeps its project, key, class and format; none moves into it |
 | `upstream_repository_purge` | purges only a retired repository |
 
-The foreign key `ON DELETE RESTRICT` keeps a well-known repository's row. The same-project guard of the member tables
+The foreign key `ON DELETE RESTRICT` keeps a well-known repository's row from a stray deletion; the one deletion that removes one, of a system
+repository the catalog no longer declares, deletes its `upstream_repository` row first (`DeleteUpstreamRepositoryRow`, Q-REPO-490). The same-project guard of the member tables
 (`virtual_same_project_guard`, `AI006`) admits a repository of the project in `virtual_members` and `virtual_pin_members` and keeps
 `virtual_deploy_targets` to the own project; the move guard (`repository_move_guard`, `AI007`) lets a virtual repository move with its
 members of `upstream` (Q-REPO-389). `upstream_repository` is exported with the class `Data`; the restore truncates the seeded project

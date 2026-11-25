@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/wellknown"
 )
 
 // TestR_REPO_067_Reconcile runs the reconcile of `quader migrate` against the migration session of a test database (R-REPO-066,
@@ -218,6 +219,36 @@ func TestR_REPO_067_Reconcile(t *testing.T) {
 		}
 		if f.e.Number("SELECT count(*) FROM audit_event") != before || f.config("npmjs", "{remote,url}") != "https://registry.npmjs.org/" {
 			t.Fatal("the failed run changed something")
+		}
+	})
+	t.Run("R-REPO-067 step 5 a system repository the catalog no longer declares is removed, not kept as a tombstone", func(t *testing.T) {
+		// The owner's development database: upstream/scanner-clamav of a release that is gone, retired and purged by an earlier run.
+		f.e.Exec(`WITH r AS (
+				INSERT INTO repositories (key, class, format, config, project_id, visibility_artifacts, visibility_wiki)
+				VALUES ('scanner-clamav', 'local', 'generic', '{"description":"Malware scan database","disabled":true}', $1::uuid, 'private', 'private')
+				RETURNING id)
+			INSERT INTO upstream_repository (repository_id, kind, retired_at) SELECT id, 'system', now() FROM r`, wellknown.ProjectID)
+		id := f.id("scanner-clamav")
+		if err := reconcile(t, f.e, nil); err != nil {
+			t.Fatal(err)
+		}
+		if f.e.Text("SELECT lifecycle FROM repositories WHERE id = $1", id) != "deleting" || f.detail("repository.deleted", "scanner-clamav", "reason") != "retired" ||
+			f.detail("repository.deleted", "scanner-clamav", "phase") != "started" {
+			t.Fatalf("lifecycle %s, reason %s", f.e.Text("SELECT lifecycle FROM repositories WHERE id = $1", id), f.detail("repository.deleted", "scanner-clamav", "reason"))
+		}
+		if f.e.Number("SELECT count(*) FROM job WHERE kind = 'repository-delete' AND target_key = 'upstream/scanner-clamav'") != 1 ||
+			f.e.Number("SELECT count(*) FROM revocation_outbox WHERE event = 'repository.deleted'") == 0 {
+			t.Fatal("no deletion job was queued, or the deletion is not journaled")
+		}
+		events := f.e.Number("SELECT count(*) FROM audit_event WHERE repository = 'upstream/scanner-clamav'")
+		if err := reconcile(t, f.e, nil); err != nil || f.e.Number("SELECT count(*) FROM audit_event WHERE repository = 'upstream/scanner-clamav'") != events {
+			t.Fatalf("a run while the deletion runs: err %v, or it recorded again", err)
+		}
+		// The last transaction of the deletion job (finishDelete): the restricting row of upstream_repository first, then the repository.
+		f.e.Exec("DELETE FROM upstream_repository WHERE repository_id = $1", id)
+		f.e.Exec("DELETE FROM repositories WHERE id = $1 AND lifecycle = 'deleting'", id)
+		if f.e.Number("SELECT count(*) FROM repositories WHERE id = $1", id) != 0 {
+			t.Fatal("the row stayed")
 		}
 	})
 }

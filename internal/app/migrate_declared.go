@@ -89,18 +89,22 @@ func UpstreamStep(cfg *config.Config, cat *catalog.Registry, instance string, lo
 
 // ReconcileUpstream brings the well-known repositories of the project upstream in step with the catalog of the binary, in one
 // transaction of the migration session (R-REPO-067, Q-REPO-374): missing ones are created, the product's address follows the catalog
-// unless an administrator overrode it, and a preset the catalog no longer declares is retired. The writers are the ones a replica
-// uses, over the runner's one connection: the repository service with the actor system:catalog, the change log that notes
-// repo_config, the invalidation of a remote whose upstream moved (R-REPO-011), and the job queue that takes a retired repository's
-// purge. It contacts no upstream. A catalog that declares a key the project holds as a repository of another format fails the run
+// unless an administrator overrode it, a preset the catalog no longer declares is retired and a system repository it no longer
+// declares removed (Q-REPO-490). The writers are the ones a replica uses, over the runner's one connection: the repository service
+// with the actor system:catalog, the change log that notes repo_config, the invalidation of a remote whose upstream moved
+// (R-REPO-011), and the job queue that takes a retired repository's purge and a removed one's deletion. It contacts no upstream. A catalog that declares a key the project holds as a repository of another format fails the run
 // and writes nothing (step 6).
 func ReconcileUpstream(ctx context.Context, s *postgres.MigrationSession, changes *cluster.Changes, recorder audit.Recorder,
 	cfg *config.Config, cat *catalog.Registry, log *slog.Logger,
 ) error {
 	reg := jobs.NewRegistry()
-	// The purge runs on a worker; the migration only enqueues it.
+	// The purge of a retired preset and the deletion of a removed system repository (Q-REPO-490) run on a worker; the migration only
+	// enqueues them.
 	reg.RegisterKind(repository.UpstreamPurgeJobKind, repository.UpstreamPurgeJobSpec(func(context.Context, *jobs.Run) error {
 		return errors.New("upstream-purge runs on a worker, not in quader migrate")
+	}))
+	reg.RegisterKind(repository.DeleteJobKind, repository.DeleteJobSpec(func(context.Context, *jobs.Run) error {
+		return errors.New("repository-delete runs on a worker, not in quader migrate")
 	}))
 	svc, err := repository.NewService(repository.Options{
 		Runner: s, Catalog: cat, Recorder: recorder, Notifier: changes, Log: log, PublicAvailable: func() bool { return false },
@@ -127,7 +131,7 @@ func ReconcileUpstream(ctx context.Context, s *postgres.MigrationSession, change
 	}
 	log.Info("the well-known repositories of the project upstream reconciled with the catalog",
 		"created", res.Keys(wellknown.OpCreate), "written", res.Keys(wellknown.OpWrite), "retired", res.Keys(wellknown.OpRetire),
-		"declared_again", res.Keys(wellknown.OpUnretire), "override_cleared", res.Keys(wellknown.OpClearOverride))
+		"removed", res.Keys(wellknown.OpRemove), "declared_again", res.Keys(wellknown.OpUnretire), "override_cleared", res.Keys(wellknown.OpClearOverride))
 	return applyUpstreamAccounts(ctx, s, svc, cfg, log)
 }
 

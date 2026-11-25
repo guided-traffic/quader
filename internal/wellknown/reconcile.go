@@ -46,6 +46,8 @@ type Stored struct {
 	// Retired, Overridden: retired_at is set; address_overridden is true.
 	Retired    bool
 	Overridden bool
+	// Deleting: the repository's lifecycle is deleting, its deletion job runs (the removal of step 5, Q-REPO-490).
+	Deleting bool
 	// HasAccount: an account is stored (an auth mode other than none, or a password).
 	HasAccount bool
 	Address    Address
@@ -72,8 +74,12 @@ type Store interface {
 	Write(ctx context.Context, d Declaration, w Write) error
 	// SetOverridden sets address_overridden (step 3 clears it when the product's address caught up), with no event.
 	SetOverridden(ctx context.Context, key string, overridden bool) error
-	// Retire retires a repository the catalog no longer declares (step 5): retired_at, disabled with repository.disabled, the purge.
+	// Retire retires a preset repository the catalog no longer declares (step 5): retired_at, disabled with repository.disabled, the
+	// purge.
 	Retire(ctx context.Context, key string) error
+	// Remove removes a system repository the catalog no longer declares (step 5, Q-REPO-490): it is deleted as any repository is
+	// (R-REPO-013), with repository.deleted and the deletion job, which removes its items and then its rows.
+	Remove(ctx context.Context, key string) error
 	// Unretire clears retired_at of a repository the catalog declares again (step 4); it stays switched off.
 	Unretire(ctx context.Context, key string) error
 }
@@ -88,6 +94,7 @@ const (
 	OpWrite         Op = "write"
 	OpClearOverride Op = "clear-override"
 	OpRetire        Op = "retire"
+	OpRemove        Op = "remove"
 )
 
 // Step is one write of a plan.
@@ -144,14 +151,20 @@ func apply(ctx context.Context, s Store, st Step) error {
 		return s.SetOverridden(ctx, st.Key, false)
 	case OpRetire:
 		return s.Retire(ctx, st.Key)
+	case OpRemove:
+		return s.Remove(ctx, st.Key)
 	}
 	return fmt.Errorf("unknown step %q", st.Op)
 }
 
 // Plan decides the steps of R-REPO-067 for the declarations against the stored repositories, in the order of the declarations and
-// then the retirements by key. A declaration whose key the project holds as a repository of another format, class or kind (the class
-// the declaration names, Q-REPO-411) is step 6:
-// an error that names the key, and no step. A second plan against the state the first one left is empty.
+// then the retirements and removals by key. A declaration whose key the project holds as a repository of another format, class or
+// kind (the class the declaration names, Q-REPO-411) is step 6: an error that names the key, and no step. A second plan against the
+// state the first one left is empty.
+//
+// Step 5 tells the two kinds apart by the stored row's kind, upstream_repository.kind (Q-REPO-490): a preset repository is retired
+// and stays as a tombstone (Q-REPO-376), a system repository is removed, whether it was retired before or not. A row whose deletion
+// runs is left to its job; a declaration of its key is created by the first run after the job removed the row.
 func Plan(decls []Declaration, stored []Stored) ([]Step, error) {
 	byKey := make(map[string]Stored, len(stored))
 	for _, s := range stored {
@@ -166,6 +179,9 @@ func Plan(decls []Declaration, stored []Stored) ([]Step, error) {
 			steps = append(steps, Step{Op: OpCreate, Key: d.Key, Decl: d})
 			continue
 		}
+		if s.Deleting {
+			continue
+		}
 		if s.Format != d.Format || s.Class != d.Class || s.Kind != d.Kind {
 			return nil, fmt.Errorf("wellknown: the catalog declares upstream/%s as a %s %s repository of the format %s, and the project "+
 				"upstream holds it as a %s %s repository of the format %s; fix the catalog (R-REPO-067 step 6, Q-REPO-387)",
@@ -176,17 +192,18 @@ func Plan(decls []Declaration, stored []Stored) ([]Step, error) {
 		}
 		steps = append(steps, planHeld(d, s)...)
 	}
-	var gone []string
+	var gone []Step
 	for _, s := range stored {
-		if !declared[s.Key] && !s.Retired {
-			gone = append(gone, s.Key)
+		switch {
+		case declared[s.Key] || s.Deleting:
+		case s.Kind == KindSystem:
+			gone = append(gone, Step{Op: OpRemove, Key: s.Key})
+		case !s.Retired:
+			gone = append(gone, Step{Op: OpRetire, Key: s.Key})
 		}
 	}
-	sort.Strings(gone)
-	for _, k := range gone {
-		steps = append(steps, Step{Op: OpRetire, Key: k})
-	}
-	return steps, nil
+	sort.Slice(gone, func(i, j int) bool { return gone[i].Key < gone[j].Key })
+	return append(steps, gone...), nil
 }
 
 // planHeld decides steps 2 and 3 for a repository the catalog declares: the product's address while no administrator overrode it,

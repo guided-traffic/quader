@@ -11549,10 +11549,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-REPO
 
-244 questions on [spec/repositories-and-proxy.md](spec/repositories-and-proxy.md).
+245 questions on [spec/repositories-and-proxy.md](spec/repositories-and-proxy.md).
 
 <details>
-<summary>Q-REPO: 244 questions</summary>
+<summary>Q-REPO: 245 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11800,6 +11800,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-REPO-487](spec/repositories-and-proxy.md#q-repo-487--the-account-operation-of-a-well-known-repository-takes-a-value-only) | The account operation of a well-known repository takes a value only | Decided by the development agent | (a) A value only; a `secretRef` answers 422 `secret_value_required` at `/password/secretRef` | — |
 | [Q-REPO-488](spec/repositories-and-proxy.md#q-repo-488--the-upstream-tests-answer-carries-its-verdict) | The upstream test's answer carries its verdict | Decided by the development agent | (a) The answer carries `verdict`, made by one function on the server from everything the test saw | — |
 | [Q-REPO-489](spec/repositories-and-proxy.md#q-repo-489--the-upstream-tests-answer-names-what-it-asked-and-what-came-back) | The upstream test's answer names what it asked and what came back | Decided by the development agent | (a) The answer gains `probeUrl`, `credential`, the token service's `realm`, `service`, `extraHost` and `httpStatus`, and `body`, the upstream's own error answer as redacted text | — |
+| [Q-REPO-490](spec/repositories-and-proxy.md#q-repo-490--a-system-repository-the-product-no-longer-declares-is-removed-not-retired) | A system repository the product no longer declares is removed, not retired | Decided by the development agent | (a) The reconcile removes it by the deletion of every repository (R-REPO-013): lifecycle `deleting` and `repository.deleted` in its transaction, the job removes the items and then its `upstream_repository` row and its repository row | — |
 
 </details>
 

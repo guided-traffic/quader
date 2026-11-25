@@ -132,7 +132,7 @@ type Declaration struct {
 	// Format is the repository's format.
 	Format catalog.ID
 	// Class is the repository's class (Q-REPO-411): remote for a preset repository, the system repository's own otherwise
-	// (scanner-trivy remote, scanner-clamav local). A local repository has no address and no account.
+	// (scanner-trivy remote, clamav local). A local repository has no address and no account.
 	Class catalog.Class
 	Kind  Kind
 	// DisplayName is the preset's display name, stored as the repository's description ("Docker Hub").

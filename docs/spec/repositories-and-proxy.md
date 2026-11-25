@@ -1853,7 +1853,8 @@ name, description and level do not change; a member, a policy, a service account
 of it exists only with its `upstream_repository` row (a deferred constraint trigger) and its `project_id`, `key`, `class` and
 `format` do not change; a row of `upstream_repository` names a repository of it and of no other project; a repository of another project
 never moves into it; the purge function `upstream_repository_purge` takes only a retired repository (Q-REPO-391). The foreign key `ON DELETE RESTRICT` keeps a
-well-known repository's row. The same-project guard of the member tables (`virtual_same_project_guard`, AI006, migration 00045)
+well-known repository's row from a stray deletion; the one deletion that removes one, of a system repository the catalog no longer declares
+(R-REPO-067 step 5), deletes its `upstream_repository` row first (Q-REPO-490). The same-project guard of the member tables (`virtual_same_project_guard`, AI006, migration 00045)
 admits a member of the built-in project in `virtual_members` and `virtual_pin_members` and keeps `virtual_deploy_targets` to the
 own project (R-REPO-071). `upstream_repository` is exported with the class `Data` (`tables.Register`, R-BAK-004); a restore truncates
 the seeded project row and loads the backup's (R-BAK-021 step 4).
@@ -1893,7 +1894,16 @@ management API above). For each declaration of `wellknown.Declared(catalog)`, an
 3. **Present with `address_overridden` true**: the administrator's address stays. When the catalog's values now equal the stored
    ones, `address_overridden` becomes false, with no event.
 4. **Retired and declared again**: `retired_at` is cleared; the repository stays switched off.
-5. **A row whose key no declaration names, not retired yet**: the repository is retired
+5. **A row whose key no declaration names.** Which kind it is, the stored row says (`upstream_repository.kind`), since no declaration
+   names it any more ([Q-REPO-490](#q-repo-490--a-system-repository-the-product-no-longer-declares-is-removed-not-retired)).
+   **A system repository**, retired before or not, is **removed**: it is deleted as any repository is (R-REPO-013), lifecycle
+   `deleting` with `repository.deleted`, `phase: started` and `reason: retired` (journaled, R-AUTHZ-031), and the deletion job removes
+   its items in batches and then, in one transaction, its row of `upstream_repository` and its repository row with every row that
+   references it, recording `repository.deleted` with `phase: completed` and the same reason. No tombstone stays: no virtual repository
+   lists a system repository (R-REPO-071, Q-REPO-380), and its rules and settings are the product's. A run while the job runs leaves the
+   row to it; a declaration of its key is created by the first run after the row is gone. Its audit events, which name it by its
+   qualified name and carry no key to the row, stay as every deleted repository's do.
+   **A preset repository, not retired yet**, is retired
    ([Q-REPO-376](#q-repo-376--a-preset-the-product-no-longer-offers-leaves-a-tombstone-without-content)): `retired_at` set,
    `disabled: true` with `repository.disabled` and `reason: retired` (journaled, R-AUTHZ-031; also when it was off already), and the job
    `upstream-purge` enqueued that removes its items in batches and then the content rows of every other table
@@ -1922,6 +1932,10 @@ Acceptance criteria (`TestR_REPO_067_Reconcile`, integration area `upstream`, ag
 - With `galaxy` left out of the test catalog, `upstream/galaxy` is disabled with `repository.disabled` and `reason: retired`, a
   purge job of it is queued, and a virtual repository of project `web` that lists it still lists it; with `galaxy` declared again,
   `retired_at` is cleared and the repository stays off.
+- A retired system repository the catalog does not declare (`scanner-clamav`, local, generic, as an installation of 2026-11-21 holds it) is
+  `deleting` after the run, with `repository.deleted` (`phase: started`, `reason: retired`, journaled) and a `repository-delete` job; a
+  second run records nothing more; the deletion job's last statements remove its two rows (Q-REPO-490). The plan's unit test holds the rest:
+  removed whether retired or not, left alone while it is being deleted, created again once declared after its row went.
 - A test catalog that declares the key `npmjs` for the format `oci` while `upstream/npmjs` is an npm repository makes the run exit 1
   and changes nothing.
 
@@ -2151,8 +2165,9 @@ ClamAV-Definition-Updates einschalten, wodurch ein unternehmens-Endpunkt für al
 - **Never a member** of a virtual repository (the format has no virtual class, and a system repository is none, R-REPO-071).
 - **The guards of R-REPO-066** hold for it as for every repository of `upstream`: its key, class and format do not change, and it is not
   deleted. Its key is one of `wellknown.ReservedKeys`, so no preset takes it. `scanner-clamav` is not declared any more: where an
-  installation still has it (the owner's), the reconcile retires it as any repository the product no longer declares (R-REPO-067 step 5),
-  its items are purged and its row stays as a tombstone; nothing migrates its sets, and the updater's first download fills `clamav`.
+  installation still has it (the owner's), the reconcile removes it as any system repository the product no longer declares (R-REPO-067
+  step 5, Q-REPO-490), also where an earlier run had retired it and left a tombstone; nothing migrates its sets, and the updater's first
+  download fills `clamav`.
 
 Acceptance criteria (integration area `upstream`, about 3 s):
 
@@ -9937,6 +9952,9 @@ repository go with its items.
 longer offered" is the owner's own state. A few rows are a small price. The development agent would revisit this if retirements
 became frequent.
 
+**Revised for a system repository** by [Q-REPO-490](#q-repo-490--a-system-repository-the-product-no-longer-declares-is-removed-not-retired)
+(2026-11-25): no team lists one, so it is removed, not kept as a tombstone. This decision holds for a preset repository.
+
 **Applied in the spec:** R-REPO-067 step 5, R-REPO-068, R-REPO-071.
 
 ### Q-REPO-377 · A release follows the product's address unless an administrator set one, and drops an account whose hosts it moves
@@ -10764,6 +10782,46 @@ Q-REPO-127 and Q-REPO-128) and read its successful answers through the cache (H-
 (three probes against a TLS test server: an answer that echoes the bearer token, 6,000 bytes cut at 4,000, a binary answer; about
 0.05 s), `TestAnswerBodyReplacesABasicPassword` (pure), and the facts asserted in `TestR_REPO_064_TheUpstreamTestRunsTheRegistrysLogin`
 and `TestUpstreamTest`.
+
+### Q-REPO-490 · A system repository the product no longer declares is removed, not retired
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner, 2026-11-25, on his development profile, at the repository list of `upstream`: "Wieso sehe ich auf localhost noch das
+Uplink repo scanner-clamav Off". `upstream/scanner-clamav` (generic, local) was the system repository of ClamAV's database for half a day on
+2026-11-21, before `upstream/clamav` replaced it. Step 5 of R-REPO-067 retired it as any repository the product no longer declares
+(Q-REPO-376): disabled, purged, its row kept. A retired system repository has no state (R-REPO-070), so every screen showed it as a
+repository that is **Off**, among the registries an administrator switches, and nothing said that it was the product's and gone.
+Q-REPO-376's reasons for a tombstone are a team's: a virtual repository that lists the preset keeps a placeholder that says "no longer
+offered", and the rules and requests of its administrators and holders stay (Q-CUR-111). None of them holds for a system repository: no
+virtual repository can list one (R-REPO-071, Q-REPO-380), and its rules and fixed members are the product's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The reconcile removes it by the deletion of every repository (R-REPO-013): lifecycle `deleting` and `repository.deleted` in its transaction, the job removes the items and then its `upstream_repository` row and its repository row (chosen) | One step of the plan, by the stored row's `kind`; one statement more in the deletion job's last transaction | Nothing of the product's past stays on a screen; the content goes as with any deletion, the audit events and the journal entry are the deletion's own; a tombstone of an earlier run goes at the next start; no schema change | A key once taken by a system repository could be taken again (no preset may take one, `ReservedKeys`; a later system repository of the same key is a release's choice) |
+| (b) Keep the tombstone and hide it: every list leaves out a retired system repository | No write | No deletion path in `upstream` | Every list, search and count needs the rule; the rows stay forever, and every new screen must remember them |
+| (c) The purge job removes the row at its end, for a system repository | The retirement as before, then the row | The purge's list stays the one place of content | A row retired and purged before (the owner's) is never purged again: a second step for it anyway; the purge function deletes what the cascade would |
+| (d) A migration deletes `scanner-clamav` | One statement | — | A migration path for one development database (no backward compatibility, CLAUDE.md), and the next retired system repository has the same problem |
+
+**Choice:** (a). The kind is the stored row's `upstream_repository.kind`, which the create wrote from the declaration; `scanner-clamav` was
+declared as `system` and stored so. A preset stays retired as Q-REPO-376 says, a system repository is removed whether it was retired before
+or not. The deletion is the product's own maintenance of what it declared: no caller deletes a repository of `upstream` (R-REPO-066,
+R-REPO-069; `DELETE` answers `409 managed_by_product` as before). The removal's events carry `reason: retired` and the actor
+`system:catalog`; `repository.deleted` is journaled as every deletion is, and its replay after a restore disables the repository, which
+the next reconcile removes again. Nothing references a repository by a key that restricts its deletion but `upstream_repository` (deleted
+first) and the member tables of virtual repositories, which cannot name a system repository (the deletion detaches one all the same). Audit
+events, jobs and usage records name a repository by its qualified name or ID without a key; the usage and the findings of the repository
+are content and go with it, as the purge would take them.
+
+**Rationale:** a tombstone is worth its rows only where a team sees it; a system repository has no team, and the owner's question shows
+what it costs. The development agent would revisit this if a system repository came to be listed by teams.
+
+**Applied in the spec:** R-REPO-066 (the guards), R-REPO-067 step 5 and its acceptance, R-REPO-075; revises
+[Q-REPO-376](#q-repo-376--a-preset-the-product-no-longer-offers-leaves-a-tombstone-without-content) for a system repository. Code:
+`Plan` and `OpRemove` ([reconcile.go](../../internal/wellknown/reconcile.go)), `upstreamStore.Remove`
+([upstream_store.go](../../internal/repository/upstream_store.go)), `deleteLocked` and `finishDelete` with `DeleteUpstreamRepositoryRow`
+([delete.go](../../internal/repository/delete.go), [upstream.sql](../../internal/meta/postgres/queries/upstream.sql)). Tests: the cases "step 5 a system
+repository the catalog no longer declares" of `TestR_REPO_067_ThePlanOfTheReconcile` (unit, milliseconds) and of `TestR_REPO_067_Reconcile` (integration area `upstream`).
 
 ## What this does not cover
 

@@ -80,6 +80,18 @@ func (q *Queries) CountUpstreamListedBy(ctx context.Context) ([]CountUpstreamLis
 	return items, nil
 }
 
+const deleteUpstreamRepositoryRow = `-- name: DeleteUpstreamRepositoryRow :exec
+DELETE FROM upstream_repository WHERE repository_id = $1::bigint
+`
+
+// The last transaction of the deletion of a system repository the catalog no longer declares (R-REPO-067 step 5, Q-REPO-490): its
+// row here goes before the repository's, whose foreign key ON DELETE RESTRICT keeps a stray deletion from taking a well-known
+// repository. A repository of another project has no row, and the statement deletes nothing.
+func (q *Queries) DeleteUpstreamRepositoryRow(ctx context.Context, repositoryID int64) error {
+	_, err := q.db.Exec(ctx, deleteUpstreamRepositoryRow, repositoryID)
+	return err
+}
+
 const getUpstreamRepositoryFacts = `-- name: GetUpstreamRepositoryFacts :many
 SELECT repository_id, kind, first_switched_on_at, retired_at, address_overridden, account_removed_at, clients_enabled, account_configured_at FROM upstream_repository WHERE repository_id = $1::bigint
 `

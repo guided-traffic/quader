@@ -33,7 +33,9 @@ Every repository is addressed like any other: `https://quader.example.com/api/np
 
 `quader migrate` creates these repositories and keeps them in step with the release: a registry a new release adds appears switched
 off, a changed address of a registry follows the release unless you set one yourself, and a registry a release no longer offers is
-switched off, its cached content removed, and kept as **No longer offered** so that the virtual repositories that list it say why.
+switched off, its cached content removed, and kept as **No longer offered** so that the virtual repositories that list it say why. A
+system repository a release no longer uses (one of Quader's own, such as the earlier `scanner-clamav`) is deleted instead: no virtual
+repository lists one, so nothing of it stays.
 When a release moves a registry to another host while you stored an account for it, the account is removed, because it was entered for
 the old host; the repository says so, and you enter the account again.
 
@@ -66,8 +68,9 @@ instead.
 - **Switch all on** names every registry that is off and switches them on together, each at the level **Internal** (in a fresh
   installation they are Internal already); a registry that is already on keeps its level. It never makes a registry public. While nothing is off the button is disabled and the page says "Every
   registry is on.".
-- A registry Quader no longer offers says **No longer offered** and has no switch; its cached content is removed, and the virtual
-  repositories that list it are told to remove it.
+- A registry Quader no longer offers says **No longer offered** and has no switch; it serves nothing, its cached content is removed, and
+  the virtual repositories that list it skip it and are told to remove it. Its row in the project's list of repositories and its own page
+  in the project say **No longer offered** too, in place of **Off** and **Disabled**.
 - A registry that was on before and is off again says **Switched off**; one that was never on says **Not switched on**.
 
 Through the API: one registry with `PUT /api/v1/upstream-repositories/<key>/state` and `{"state": "on"}` or `{"state": "off"}`; all at

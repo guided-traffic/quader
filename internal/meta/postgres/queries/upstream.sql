@@ -82,6 +82,12 @@ HAVING count(*) > 0;
 -- it, while the row stays (upstream_repository_purge, last replaced by 00096).
 SELECT upstream_repository_purge(sqlc.arg(repository_id)::bigint);
 
+-- name: DeleteUpstreamRepositoryRow :exec
+-- The last transaction of the deletion of a system repository the catalog no longer declares (R-REPO-067 step 5, Q-REPO-490): its
+-- row here goes before the repository's, whose foreign key ON DELETE RESTRICT keeps a stray deletion from taking a well-known
+-- repository. A repository of another project has no row, and the statement deletes nothing.
+DELETE FROM upstream_repository WHERE repository_id = sqlc.arg(repository_id)::bigint;
+
 -- name: CountUpstreamListedBy :many
 -- For each repository of the project, the number of virtual repositories whose member lists or pin rules name it and the number
 -- of their projects (R-REPO-073 listedBy and listedByProjects, Q-API-363). A repository nothing names has no row.

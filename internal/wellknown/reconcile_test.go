@@ -144,6 +144,47 @@ func TestR_REPO_067_ThePlanOfTheReconcile(t *testing.T) {
 			t.Fatalf("steps = %v", stepsOf(steps))
 		}
 	})
+	t.Run("R-REPO-067 step 5 a system repository the catalog no longer declares is removed, retired before or not, and only once", func(t *testing.T) {
+		// The owner's development database: upstream/scanner-clamav, a local generic system repository of a release that is gone,
+		// retired and purged by an earlier run.
+		old := wellknown.Stored{Key: "scanner-clamav", Format: "generic", Class: catalog.Local, Kind: wellknown.KindSystem, Retired: true}
+		withOld := append(slices.Clone(all), old)
+		if steps := plan(t, decls, withOld); len(stepsOf(steps)) != 1 || stepsOf(steps)[0] != "remove scanner-clamav" {
+			t.Fatalf("steps = %v", stepsOf(steps))
+		}
+		old.Retired = false
+		if steps := plan(t, decls, append(slices.Clone(all), old)); len(steps) != 1 || steps[0].Op != wellknown.OpRemove {
+			t.Fatalf("a system repository not retired yet: steps = %v", stepsOf(steps))
+		}
+		without := slices.DeleteFunc(slices.Clone(decls), func(d wellknown.Declaration) bool { return d.Key == "scanner-trivy" })
+		if got := stepsOf(plan(t, without, all)); !slices.Equal(got, []string{"remove scanner-trivy"}) {
+			t.Fatalf("an undeclared scanner-trivy: steps = %v", got)
+		}
+		// The removal runs as the deletion job: the next run leaves the row to it, and a declaration of its key waits for the row to go.
+		deleting := with("scanner-trivy", func(s *wellknown.Stored) { s.Deleting = true })
+		if steps := plan(t, without, deleting); len(steps) != 0 {
+			t.Fatalf("a system repository being removed is removed again: %v", stepsOf(steps))
+		}
+		if steps := plan(t, decls, deleting); len(steps) != 0 {
+			t.Fatalf("a declaration of a key whose row is being removed: %v", stepsOf(steps))
+		}
+		// Declared again after the row went: created as on a fresh installation.
+		gone := slices.DeleteFunc(slices.Clone(all), func(s wellknown.Stored) bool { return s.Key == "scanner-trivy" })
+		if got := stepsOf(plan(t, decls, gone)); !slices.Equal(got, []string{"create scanner-trivy"}) {
+			t.Fatalf("steps = %v", got)
+		}
+		rec := &recordingStore{stored: withOld}
+		if _, err := wellknown.Reconcile(context.Background(), rec, decls); err != nil || !slices.Equal(rec.calls, []string{"remove scanner-clamav"}) {
+			t.Fatalf("err %v, calls %v", err, rec.calls)
+		}
+	})
+	t.Run("step 5 retirements and removals stand after the declarations, by key", func(t *testing.T) {
+		without := slices.DeleteFunc(slices.Clone(decls), func(d wellknown.Declaration) bool { return d.Key == "galaxy" || d.Key == "clamav" })
+		stored := append(slices.Clone(all), wellknown.Stored{Key: "a-system", Format: "generic", Class: catalog.Local, Kind: wellknown.KindSystem})
+		if got := stepsOf(plan(t, without, stored)); !slices.Equal(got, []string{"remove a-system", "remove clamav", "retire galaxy"}) {
+			t.Fatalf("steps = %v", got)
+		}
+	})
 	t.Run("R-REPO-067 step 6 a declared key of another format writes nothing and names the key", func(t *testing.T) {
 		stored := with("npmjs", func(s *wellknown.Stored) { s.Format = "oci" })
 		_, err := wellknown.Plan(decls, stored)
@@ -221,6 +262,11 @@ func (r *recordingStore) SetOverridden(_ context.Context, key string, _ bool) er
 
 func (r *recordingStore) Retire(_ context.Context, key string) error {
 	r.calls = append(r.calls, "retire "+key)
+	return nil
+}
+
+func (r *recordingStore) Remove(_ context.Context, key string) error {
+	r.calls = append(r.calls, "remove "+key)
 	return nil
 }
 

@@ -142,6 +142,9 @@ func (s *Service) UpstreamItems(ctx context.Context) ([]UpstreamItem, error) {
 			return err
 		}
 		for _, row := range rows {
+			if Lifecycle(row.Lifecycle) == Deleting {
+				continue // a system repository whose removal runs (Q-REPO-490) is gone for every reader
+			}
 			it, err := s.upstreamItem(row, facts, counts)
 			if err != nil {
 				return err
@@ -258,7 +261,7 @@ func (s *Service) upstreamItemTx(ctx context.Context, tx meta.Tx, key string, wa
 	if err != nil {
 		return UpstreamItem{}, err
 	}
-	if len(rows) == 0 {
+	if len(rows) == 0 || Lifecycle(rows[0].Lifecycle) == Deleting {
 		return UpstreamItem{}, notFound(upstreamName(key))
 	}
 	facts, err := upstreamFactsOf(ctx, qs, rows[0].ID)
