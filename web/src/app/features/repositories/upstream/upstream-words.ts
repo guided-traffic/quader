@@ -28,13 +28,16 @@ export interface StateBadge {
 
 /**
  * The state of a package or a version in this repository (R-CUR-018): **Blocked** by a rule, **Allowed** by a rule, **Requested**
- * while an open request asks for what is not delivered, **Not allowed** in mode `onlyAllowed` without a rule, and **Delivered** by the
- * mode `allExceptBlocked` without a rule.
+ * while an open request asks for what is not delivered, **Outside the allowed versions** of the range of its package's allow
+ * (R-CUR-026), **Not allowed** in mode `onlyAllowed` without a rule, and **Delivered** by the mode `allExceptBlocked` without a rule.
  */
 export function stateBadge(delivery: DeliveryDecision, requested: boolean): StateBadge {
   if (!delivery.delivered) {
     if (delivery.reason === 'blocked') return { text: $localize`:@@upstream.state.blocked:Blocked`, look: 'warn', icon: 'block' };
     if (requested) return { text: $localize`:@@upstream.state.requested:Requested`, look: 'badge', icon: 'pending' };
+    if (delivery.reason === 'outsideRange') {
+      return { text: $localize`:@@upstream.state.outside-range:Outside the allowed versions`, look: 'badge', icon: 'remove_circle_outline' };
+    }
     return { text: $localize`:@@upstream.state.not-allowed:Not allowed`, look: 'badge', icon: 'remove_circle_outline' };
   }
   if (delivery.decidedBy.effect === 'allow') return { text: $localize`:@@upstream.state.allowed:Allowed`, look: 'badge', icon: 'check' };
@@ -49,6 +52,38 @@ export function switchLabel(name: string, version?: string): string {
   return version
     ? $localize`:@@upstream.switch.version-label:Deliver ${name}:name: ${version}:version:`
     : $localize`:@@upstream.switch.package-label:Deliver ${name}:name: with every version`;
+}
+
+/** The range of versions of a package's allow (R-CUR-026), as the API answers it. */
+export type DeliveryRange = NonNullable<DeliveryDecision['decidedBy']['range']>;
+
+/**
+ * The bounds of a range in words, after "Versions" or a rule (R-CUR-026), with the download dialog's words (Q-CUR-228): "from 2.0.0 up
+ * to 3.0.0", "from 2.0.0 below 3.0.0", "from 2.0.0", "up to 3.0.0", "below 3.0.0". The versions are not translated.
+ */
+export function rangeBoundsText(r: DeliveryRange): string {
+  const from = r.fromVersion;
+  const to = r.toVersion;
+  if (from && to) {
+    return r.toInclusive
+      ? $localize`:@@upstream.range.from-up-to:from ${from}:from: up to ${to}:to:`
+      : $localize`:@@upstream.range.from-below:from ${from}:from: below ${to}:to:`;
+  }
+  if (from) return $localize`:@@upstream.range.from:from ${from}:from:`;
+  if (to) {
+    return r.toInclusive ? $localize`:@@upstream.range.up-to:up to ${to}:to:` : $localize`:@@upstream.range.below:below ${to}:to:`;
+  }
+  return '';
+}
+
+/**
+ * The line under a package's switch (R-CUR-026): "All versions" where its allow has no range, "Versions from 2.0.0 below 3.0.0" where it
+ * has one.
+ */
+export function rangeLineText(r: DeliveryRange | null | undefined): string {
+  return r && (r.fromVersion || r.toVersion)
+    ? $localize`:@@upstream.range.line:Versions ${rangeBoundsText(r)}:bounds:`
+    : $localize`:@@upstream.range.all:All versions`;
 }
 
 /** The rule that made a decision, in one muted line ("Rule: @acme/*"); nothing where the mode decided. */

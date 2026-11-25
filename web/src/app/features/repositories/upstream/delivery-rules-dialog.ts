@@ -12,6 +12,7 @@ import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../../share
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { FailureToasts } from '../../../shared/failure-dialog';
 import { Busy } from '../../../shared/ui/busy';
+import { rangeLineText } from './upstream-words';
 
 export interface DeliveryRulesData {
   readonly repository: string;
@@ -96,6 +97,10 @@ export function effectText(effect: DeliveryEffect): string {
           <tr>
             <th scope="row" class="wrap-name">
               <span class="subject" translate="no">{{ r.subject }}</span>
+              @if (r.range; as range) {
+                <!-- The range of versions of a package's allow (R-CUR-026), in the words of the line under the package's switch. -->
+                <span class="secondary" translate="no">{{ rangeText(range) }}</span>
+              }
               @if (r.note) {
                 <span class="secondary">{{ r.note }}</span>
               }
@@ -194,6 +199,7 @@ export class DeliveryRulesDialog {
   private generation = 0;
 
   protected readonly kindText = ruleKindText;
+  protected readonly rangeText = rangeLineText;
   protected readonly effect = effectText;
   protected readonly caption = $localize`:@@rules.caption:Delivery rules of this repository, newest first`;
   protected readonly emptyText = $localize`:@@rules.empty:There is no rule yet.`;

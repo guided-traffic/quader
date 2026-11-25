@@ -200,13 +200,22 @@ export class FakeDeliveryRulesApi extends DeliveryRulesApi {
 
   override async switch(repository: string, input: DeliverySwitchInput): Promise<DeliverySwitchResult> {
     const subject = input.version ? `${input.name}@${input.version}` : input.name;
-    this.calls.push(`switch ${subject} ${input.delivered ? 'on' : 'off'}${input.resetVersions ? ' reset' : ''}`);
+    const r = input.range;
+    const range = r ? ` range ${r.fromVersion ?? ''}..${r.toVersion ?? ''}${r.toVersion && r.toInclusive === false ? ' below' : ''}` : '';
+    this.calls.push(`switch ${subject} ${input.delivered ? 'on' : 'off'}${input.resetVersions ? ' reset' : ''}${range}`);
     if (this.switchError) throw this.switchError;
     if (this.switchAnswer) return this.switchAnswer(input);
     const kind = input.version ? ('version' as const) : ('package' as const);
     const effect = input.delivered ? ('allow' as const) : ('block' as const);
+    // The range of a package's allow as the server answers it (R-CUR-026): its bounds, null on a side without one.
+    const answered =
+      r && (r.fromVersion || r.toVersion)
+        ? { range: { fromVersion: r.fromVersion ?? null, toVersion: r.toVersion ?? null, toInclusive: !r.toVersion || r.toInclusive !== false } }
+        : {};
     return {
-      decision: input.delivered ? { delivered: true, decidedBy: { kind, subject, effect } } : { delivered: false, reason: 'blocked', decidedBy: { kind, subject, effect } },
+      decision: input.delivered
+        ? { delivered: true, decidedBy: { kind, subject, effect, ...answered } }
+        : { delivered: false, reason: 'blocked', decidedBy: { kind, subject, effect } },
       rule: deliveryRule({ id: `rule-${subject}`, kind, subject, effect }),
       removed: [],
       revision: 1,

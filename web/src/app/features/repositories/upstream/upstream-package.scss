@@ -86,6 +86,21 @@
   }
 }
 
+// The range of the package's allow under its switch, with Limit versions… on its line (R-CUR-026): the act's padding hangs into the
+// gap, as the quiet acts of a state's line do, and a long range wraps between the words and the act.
+.range-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-1) var(--quader-space-3);
+  overflow-wrap: anywhere;
+
+  > .btn {
+    margin-inline: calc(-1 * var(--quader-space-3));
+    white-space: nowrap;
+  }
+}
+
 .versions-head {
   display: flex;
   flex-wrap: wrap;

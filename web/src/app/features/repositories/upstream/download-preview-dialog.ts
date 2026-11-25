@@ -35,10 +35,11 @@ export type RangePointer = '/fromVersion' | '/toVersion';
 
 /**
  * The sentence of a refused bound, in the screen's language (R-UI-214, Q-CUR-192): the server names the field and its code, the screen
- * says what to type; the server's own sentence stays in the error notice under the facts.
+ * says what to type; the server's own sentence stays in the error notice under the facts. `at` is where the range stands in the body:
+ * '' for a bulk's, `/range` for a package's switch (R-CUR-026), which the store refuses with the same codes.
  */
-export function rangeErrorText(error: ApiError | null, pointer: RangePointer): string | null {
-  const problem = error?.fieldErrors.get(pointer);
+export function rangeErrorText(error: ApiError | null, pointer: RangePointer, at = ''): string | null {
+  const problem = error?.fieldErrors.get(at + pointer);
   if (!problem) return null;
   switch (problem.code) {
     case 'invalid_version':
@@ -202,7 +203,7 @@ function count(n: number): string {
                 <label class="field-label" for="preview-from-version" i18n="@@upstream.preview.from-version">From version</label>
                 <input
                   id="preview-from-version"
-                  class="text-input field-w-bytes"
+                  class="text-input field-w-version"
                   list="preview-versions"
                   autocomplete="off"
                   spellcheck="false"
@@ -223,7 +224,7 @@ function count(n: number): string {
                 <div class="to-row">
                   <input
                     id="preview-to-version"
-                    class="text-input field-w-bytes"
+                    class="text-input field-w-version"
                     list="preview-versions"
                     autocomplete="off"
                     spellcheck="false"

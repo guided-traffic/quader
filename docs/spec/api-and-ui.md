@@ -1975,7 +1975,8 @@ a row is true ([Q-API-343](#q-api-343--a-remote-lists-a-version-once-a-client-fe
   ([remote-curation.md](remote-curation.md) R-CUR-010) or, in mirror mode, a pass stored it; nothing the upstream
   merely knows (the upstream is the upstream catalogue's, another surface, R-CUR-007). A stored version that the repository's delivery
   rules do not deliver (fetched for examination, or blocked after it was fetched) is listed like every stored version, and its
-  repository entry says `available: false` with `unavailableReason` `blocked` or `notAllowed`, so no install command is offered through
+  repository entry says `available: false` with `unavailableReason` `blocked`, `notAllowed` or `outsideRange` (a version outside the
+  range of versions of its package's allow, [remote-curation.md](remote-curation.md) R-CUR-026), so no install command is offered through
   it ([remote-curation.md](remote-curation.md) R-CUR-014, Q-CUR-26). A client that only checked a version lists it once its background download stored the content. Per format:
 
   | Format | A version is listed once | The upstream's metadata alone lists nothing |
@@ -6627,7 +6628,7 @@ Acceptance criteria:
 ### R-UI-085 · A field is as wide as its expected input
 Priority: **MVP** · Covers: UI-031
 
-- The five widths of the style guide's **Forms**, tokens in `_tokens.scss`, classes in `_controls.scss` and the input `width` of
+- The six widths of the style guide's **Forms**, tokens in `_tokens.scss`, classes in `_controls.scss` and the input `width` of
   `<quader-text-field>` and `<quader-select-field>` ([Q-UI-334](#q-ui-334--a-picker-is-one-control-from-the-start-held-while-its-list-loads-and-a-field-is-as-wide-as-its-kind-of-input));
   which field of the repository forms takes which is [Q-UI-349](#q-ui-349--a-field-of-the-repository-forms-takes-the-width-of-its-kind-of-input-and-a-schema-member-the-width-of-its-type):
 
@@ -6636,6 +6637,7 @@ Priority: **MVP** · Covers: UI-031
   | `field-w-number` | `--quader-field-width-number` | 6 rem | a count of up to six digits |
   | `field-w-duration` | `--quader-field-width-duration` | 8 rem | a period in seconds, up to eight digits |
   | `field-w-bytes` | `--quader-field-width-bytes` | 13 rem | a byte count, up to nineteen digits |
+  | `field-w-version` | `--quader-field-width-version` | 16 rem | a version with the list of versions it offers: a bound of a range ([remote-curation.md](remote-curation.md) R-CUR-010, R-CUR-026) |
   | `field-w-name` | `--quader-field-width-name` | 28 rem, half the column | a key, a name, a host, a description, every select and every picker |
   | `field-w-full` | — | the column | a URL, a note, a list, a key block |
 

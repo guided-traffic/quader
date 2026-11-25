@@ -355,6 +355,29 @@ function deliveredByMode(name: string): Record<string, unknown> {
   return npmPackage(name, { delivery: all, level: all, inherited: all, versionRules: { allow: 0, block: 0 }, versions });
 }
 
+/**
+ * A package allowed with a range of versions in mode `allExceptBlocked` (R-CUR-026): from 4.80.1 below 5.0.0, so the newest
+ * pre-release lies above it and the oldest versions below it, each with the badge Outside the allowed versions; one version outside the
+ * range switched on by its own allow.
+ */
+function rangedPackage(name: string): Record<string, unknown> {
+  const range = { fromVersion: '4.80.1', toVersion: '5.0.0', toInclusive: false };
+  const all = { delivered: true, decidedBy: { mode: 'allExceptBlocked' } };
+  const level = { delivered: true, decidedBy: { kind: 'package', subject: name, effect: 'allow', range } };
+  const outside = { delivered: false, reason: 'outsideRange', decidedBy: { kind: 'package', subject: name, effect: 'allow', range } };
+  const inside = (v: string): boolean => {
+    if (v.startsWith('5.')) return false;
+    const minor = Number(v.split('.')[1]);
+    return minor > 80 || (minor === 80 && !v.endsWith('.0'));
+  };
+  const versions = npmVersions(name, level).map((v, i) => {
+    const version = v['version'] as string;
+    const own = i === 1 ? allowedBy(`${name}@${version}`, 'version') : null;
+    return { ...v, delivery: own ?? (inside(version) ? level : outside), inherited: inside(version) ? level : outside, queued: null, request: null };
+  });
+  return npmPackage(name, { delivery: level, level, inherited: all, versionRules: { allow: 1, block: 0 }, versions });
+}
+
 /** A query of the tab's address, the page reloaded with the answers in place. */
 export async function open(p: Page, query: string): Promise<void> {
   const url = new URL(p.url());
@@ -419,6 +442,23 @@ export async function* upstreamTabWalk(p: Page): AsyncGenerator<string> {
   await p.locator(`${tab} button[aria-controls="up-gitlab-ai-provider"]`).click();
   await expect(p.locator(`${tab} quader-upstream-package tbody tr`).first()).toBeVisible();
   yield 'package-delivered';
+  // A range of the package's allow (R-CUR-026): the line under the switch with Limit versions…, the versions outside it with their
+  // badge and the rule with the range; then the dialog as it opens on the range.
+  await answerNpm(p, {
+    caps: (r) => json(r, npmCaps({ mode: 'allExceptBlocked', rules: 2, openRequests: 0 })),
+    pkg: (r) => json(r, rangedPackage(new URL(r.request().url()).searchParams.get('name') ?? 'gitlab-ai-provider')),
+  });
+  await open(p, '?name=gitlab-ai-provider');
+  await expect(p.locator(`${tab} [data-testid="upstream-package-range"]`)).toBeVisible();
+  yield 'package-range';
+  const limit = p.locator(`${tab} [data-testid="upstream-limit-versions"]`);
+  if ((await limit.count()) > 0) {
+    await limit.click();
+    await expect(p.locator('quader-version-range-dialog #range-from-version')).toBeVisible();
+    yield 'range-dialog';
+    await p.keyboard.press('Escape');
+    await expect(p.locator('quader-version-range-dialog')).toBeHidden();
+  }
   await answerNpm(p);
   await open(p, '?q=zzqx');
   await expect(p.locator(`${tab} quader-data-table`)).toBeVisible();
@@ -509,6 +549,25 @@ export async function* upstreamLookupWalk(p: Page): AsyncGenerator<string> {
   await open(p, '?name=fluxcd%2Fflux-cli');
   await expect(p.locator(`${tab} [data-testid="upstream-lookup"] quader-upstream-package tbody tr`).first()).toBeVisible();
   yield 'lookup';
+  // An image allowed from v2.3.0 (R-CUR-026): latest is no version of the tag order and lies outside it, with its own switch off, and
+  // the head says that docker pull without a tag asks for it (Q-CUR-223).
+  const range = { fromVersion: 'v2.3.0', toVersion: null, toInclusive: true };
+  const level = { delivered: true, decidedBy: { kind: 'package', subject: 'fluxcd/flux-cli', effect: 'allow', range } };
+  const outside = { delivered: false, reason: 'outsideRange', decidedBy: { kind: 'package', subject: 'fluxcd/flux-cli', effect: 'allow', range } };
+  const ranged = ociTags().map((t) => {
+    const inside = ['v2.4.0', 'v2.3.1', 'v2.3.0'].includes(t['version'] as string);
+    return { ...t, delivery: inside ? level : outside, inherited: inside ? level : outside };
+  });
+  await p.unroute(packageUrl);
+  await p.route(packageUrl, (r) =>
+    json(r, {
+      name: 'fluxcd/flux-cli', description: '', tags: {}, delivery: level, level, inherited: { delivered: true, decidedBy: { mode: 'allExceptBlocked' } },
+      versionRules: { allow: 0, block: 0 }, stored: 'partial', request: null, versions: ranged, total: 5, nextCursor: null, done: true,
+    }),
+  );
+  await p.reload();
+  await expect(p.locator(`${tab} [data-testid="upstream-package-range"]`)).toBeVisible();
+  yield 'image-range';
   await p.unroute(packageUrl);
   await p.route(packageUrl, (r) => problem(r, 503, 'upstream_assumed_offline', 'The upstream is assumed to be offline after repeated failures.', 1320));
   await p.reload();

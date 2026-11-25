@@ -34,6 +34,10 @@
           } @else if (ruleLine(p.delivery); as rule) {
             <p class="package-state muted" data-testid="upstream-package-rule" translate="no">{{ rule }}</p>
           }
+          @if (level()?.delivered && levelRange(); as r) {
+            <!-- A reader sees a range where the package's allow has one; "All versions" is said only beside Limit versions…. -->
+            <p class="package-state secondary" data-testid="upstream-package-range" translate="no">{{ rangeText(r) }}</p>
+          }
           @if (mayRequestPackage()) {
             <button class="btn btn-default" type="button" [disabled]="actions.isBusy(name())" (click)="requestPackage()" i18n="@@upstream.package.request">Request every version</button>
           }
@@ -57,7 +61,24 @@
               </span>
             }
           </span>
-          <!-- The line under the switch is kept for the range of versions of a package's allow (W-28, package P2). -->
+          <!-- The range of versions of the package's allow under its switch (R-CUR-026): "All versions" or the range, with Limit
+               versions… on the line; where the package is not delivered the act alone, which allows it with a range. -->
+          @if (rangeLine() || mayLimit()) {
+            <span class="range-line" data-testid="upstream-package-range">
+              @if (rangeLine(); as line) {
+                <span class="secondary" translate="no">{{ line }}</span>
+              }
+              @if (mayLimit()) {
+                <button class="btn btn-tertiary on-line" type="button" data-testid="upstream-limit-versions" [disabled]="actions.isBusy(name())" (click)="limitVersions()">
+                  <ng-container i18n="@@upstream.range.limit">Limit versions…</ng-container><span class="visually-hidden" translate="no">&ngsp;{{ name() }}</span>
+                </button>
+              }
+            </span>
+          }
+          @if (latestOutside()) {
+            <!-- An image's latest lies outside every range (Q-CUR-223): docker pull without a tag asks for it. -->
+            <span class="secondary range-hint" data-testid="upstream-range-latest" i18n="@@upstream.range.oci-latest">docker pull without a tag asks for latest, which lies outside the range: switch latest on in its row.</span>
+          }
         </div>
       }
     </div>

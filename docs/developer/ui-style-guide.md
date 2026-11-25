@@ -284,7 +284,7 @@ The button has `aria-expanded` and `aria-controls`. A closed region is `visibili
   or a click on its submit or confirm button). `<quader-text-field>` and `<quader-select-field>` hold this rule
   (`revealRule` in [fields.ts](../../web/src/app/shared/access/fields.ts)), so a form passes its errors in and keeps no state of
   its own; a field outside a form shows its error at once. An error says in words what to type, never the pattern (UI-A-42).
-- A field is as wide as its kind of input, by one of five widths, so the fields of one column line up whatever their content says
+- A field is as wide as its kind of input, by one of six widths, so the fields of one column line up whatever their content says
   ([Q-UI-334](../spec/api-and-ui.md#q-ui-334--a-picker-is-one-control-from-the-start-held-while-its-list-loads-and-a-field-is-as-wide-as-its-kind-of-input)).
   The tokens are in [_tokens.scss](../../web/src/styles/_tokens.scss), the classes in [_controls.scss](../../web/src/styles/_controls.scss).
   `<quader-text-field>` must name its `width` ([Q-UI-335](../spec/api-and-ui.md#q-ui-335--every-text-field-names-the-width-of-its-expected-input-and-a-number-field-is-never-the-column)); `<quader-select-field>` takes `width`
@@ -295,6 +295,7 @@ The button has `aria-expanded` and `aria-controls`. A closed region is `visibili
   | `field-w-number` | `--quader-field-width-number` | 6 rem | a count of up to six digits: a priority, a port, a limit |
   | `field-w-duration` | `--quader-field-width-duration` | 8 rem | a period, up to eight digits: seconds, a TTL, days |
   | `field-w-bytes` | `--quader-field-width-bytes` | 13 rem | a byte count or an ID of up to nineteen digits, a date |
+  | `field-w-version` | `--quader-field-width-version` | 16 rem | a version with the list of the versions it offers (a bound of a range: a canary version such as `2.10.0-canary.bfb9accdc` beside the list's arrow) |
   | `field-w-name` | `--quader-field-width-name` | 28 rem, half the column | a key, a name, a login, a host, a description (one sentence, also as a text area, [Q-UI-551](../spec/api-and-ui.md#q-ui-551--a-description-is-as-wide-as-a-name)), every select and every picker |
   | `field-w-full` | — | the column | a URL, a note, a path, a pattern, a list, a key block; every other text area |
 

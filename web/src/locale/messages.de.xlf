@@ -25119,10 +25119,11 @@
     <unit id="upstream.dialog.cancel">
       <notes>
         <note category="location">src/app/features/repositories/delivery-mode-dialog.ts:75,76</note>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:300,301</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:301,302</note>
         <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:44,45</note>
         <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:111,112</note>
         <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:203,204</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:113,114</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -32346,7 +32347,7 @@
     </unit>
     <unit id="rules.kind.section">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:28</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:29</note>
       </notes>
       <segment>
         <source>Sub-section</source>
@@ -32355,7 +32356,7 @@
     </unit>
     <unit id="rules.kind.package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:30</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:31</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -32364,7 +32365,7 @@
     </unit>
     <unit id="rules.kind.version">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:32</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:33</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -32373,8 +32374,8 @@
     </unit>
     <unit id="rules.effect.allow">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:38</note>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:68,69</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:39</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:69,70</note>
       </notes>
       <segment>
         <source>Allow</source>
@@ -32383,8 +32384,8 @@
     </unit>
     <unit id="rules.effect.block">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:38</note>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:69,71</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:39</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:70,72</note>
       </notes>
       <segment>
         <source>Block</source>
@@ -32393,7 +32394,7 @@
     </unit>
     <unit id="rules.title">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:51,52</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:52,53</note>
       </notes>
       <segment>
         <source>Delivery rules</source>
@@ -32402,7 +32403,7 @@
     </unit>
     <unit id="rules.decides">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:53,54</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:54,55</note>
       </notes>
       <segment>
         <source>The narrowest rule decides; at equal width a block wins. Without a rule, the mode decides.</source>
@@ -32411,7 +32412,7 @@
     </unit>
     <unit id="rules.add.pattern">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:59,61</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:60,62</note>
       </notes>
       <segment>
         <source>Sub-section</source>
@@ -32420,7 +32421,7 @@
     </unit>
     <unit id="rules.add.submit">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:71,73</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:72,74</note>
       </notes>
       <segment>
         <source>Add rule</source>
@@ -32429,7 +32430,7 @@
     </unit>
     <unit id="rules.filter">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:79</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:80</note>
       </notes>
       <segment>
         <source>Filter rules</source>
@@ -32438,7 +32439,7 @@
     </unit>
     <unit id="rules.loading">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:86,87</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:87,88</note>
       </notes>
       <segment>
         <source>Loading the rules.</source>
@@ -32447,7 +32448,7 @@
     </unit>
     <unit id="rules.remove">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:120</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:125</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -32456,7 +32457,7 @@
     </unit>
     <unit id="rules.close">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:129,132</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:134,137</note>
       </notes>
       <segment>
         <source>Close</source>
@@ -32465,7 +32466,7 @@
     </unit>
     <unit id="rules.caption">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:198</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:204</note>
       </notes>
       <segment>
         <source>Delivery rules of this repository, newest first</source>
@@ -32474,7 +32475,7 @@
     </unit>
     <unit id="rules.empty">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:199</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:205</note>
       </notes>
       <segment>
         <source>There is no rule yet.</source>
@@ -32483,7 +32484,7 @@
     </unit>
     <unit id="rules.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:200</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:206</note>
       </notes>
       <segment>
         <source>No rule matches.</source>
@@ -32492,7 +32493,7 @@
     </unit>
     <unit id="rules.add.effect">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:201</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:207</note>
       </notes>
       <segment>
         <source>Effect</source>
@@ -32501,7 +32502,7 @@
     </unit>
     <unit id="rules.add.pattern-hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:202</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:208</note>
       </notes>
       <segment>
         <source>A name pattern, such as <ph id="0" equiv="example" disp="this.data.example"/>.</source>
@@ -32510,7 +32511,7 @@
     </unit>
     <unit id="rules.col.subject">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:204</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:210</note>
       </notes>
       <segment>
         <source>Subject</source>
@@ -32519,7 +32520,7 @@
     </unit>
     <unit id="rules.col.kind">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:205</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:211</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -32528,7 +32529,7 @@
     </unit>
     <unit id="rules.col.effect">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:206</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:212</note>
       </notes>
       <segment>
         <source>Effect</source>
@@ -32537,7 +32538,7 @@
     </unit>
     <unit id="rules.col.by">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:207</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:213</note>
       </notes>
       <segment>
         <source>Set by</source>
@@ -32546,7 +32547,7 @@
     </unit>
     <unit id="rules.col.actions">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:208</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:214</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -32555,7 +32556,7 @@
     </unit>
     <unit id="rules.added-allow">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:269</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:275</note>
       </notes>
       <segment>
         <source>The sub-section <ph id="0" equiv="pattern" disp="pattern"/> is allowed.</source>
@@ -32564,7 +32565,7 @@
     </unit>
     <unit id="rules.added-block">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:270</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:276</note>
       </notes>
       <segment>
         <source>The sub-section <ph id="0" equiv="pattern" disp="pattern"/> is blocked.</source>
@@ -32573,7 +32574,7 @@
     </unit>
     <unit id="upstream.rule.removed">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:289</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:295</note>
       </notes>
       <segment>
         <source>The rule for <ph id="0" equiv="subject" disp="r.subject"/> is removed.</source>
@@ -32627,7 +32628,7 @@
     </unit>
     <unit id="upstream.preview.range.not-a-version">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:45</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:46</note>
       </notes>
       <segment>
         <source>This is no version of the format. Type a version as the format&apos;s clients name it; a tag such as latest has no place in the order of versions.</source>
@@ -32636,7 +32637,7 @@
     </unit>
     <unit id="upstream.preview.range.empty">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:48</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:49</note>
       </notes>
       <segment>
         <source>No version lies between the two versions. Type an upper version above the lower one.</source>
@@ -32645,7 +32646,7 @@
     </unit>
     <unit id="upstream.preview.range.too-long">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:49</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:50</note>
       </notes>
       <segment>
         <source>A version has at most 256 characters.</source>
@@ -32654,7 +32655,7 @@
     </unit>
     <unit id="upstream.preview.mode">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:99,100</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:100,101</note>
       </notes>
       <segment>
         <source>How often</source>
@@ -32663,7 +32664,7 @@
     </unit>
     <unit id="upstream.preview.mode.once">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:102,103</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:103,104</note>
       </notes>
       <segment>
         <source>Once</source>
@@ -32672,7 +32673,7 @@
     </unit>
     <unit id="upstream.preview.mode.once-hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:103,105</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:104,106</note>
       </notes>
       <segment>
         <source>Downloads what the bounds take now.</source>
@@ -32681,7 +32682,7 @@
     </unit>
     <unit id="upstream.preview.mode.sync">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:107,108</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:108,109</note>
       </notes>
       <segment>
         <source>Keep in sync</source>
@@ -32690,7 +32691,7 @@
     </unit>
     <unit id="upstream.preview.mode.sync-hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:108,110</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:109,111</note>
       </notes>
       <segment>
         <source>Downloads it now and again at every interval: what is new and delivered here.</source>
@@ -32699,7 +32700,7 @@
     </unit>
     <unit id="upstream.preview.sync-existing">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:114,116</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:115,117</note>
       </notes>
       <segment>
         <source>This is kept in sync already. The tab Downloads lists it, where it can be run, paused or removed.</source>
@@ -32708,7 +32709,7 @@
     </unit>
     <unit id="upstream.preview.sync-undelivered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:116,118</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:117,119</note>
       </notes>
       <segment>
         <source>This repository does not deliver it, so a sync would store nothing. Allow it first, or download it once for examination.</source>
@@ -32717,7 +32718,7 @@
     </unit>
     <unit id="upstream.preview.sync-rules">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:119,121</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:120,122</note>
       </notes>
       <segment>
         <source>A sync stores only what the rules deliver and removes nothing.</source>
@@ -32726,7 +32727,7 @@
     </unit>
     <unit id="upstream.preview.sync-paused">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:122,126</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:123,127</note>
       </notes>
       <segment>
         <source>The syncs of this repository are paused in its settings: this one runs now and then waits until they are resumed.</source>
@@ -32735,7 +32736,7 @@
     </unit>
     <unit id="upstream.preview.first-run">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:132,134</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:133,135</note>
       </notes>
       <segment>
         <source>First run</source>
@@ -32744,7 +32745,7 @@
     </unit>
     <unit id="upstream.preview.first-run-hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:136,138</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:137,139</note>
       </notes>
       <segment>
         <source>New versions delivered here; each later run downloads what is new since.</source>
@@ -32753,7 +32754,7 @@
     </unit>
     <unit id="upstream.preview.first-run-unknown">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:138,141</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:139,142</note>
       </notes>
       <segment>
         <source>Counted when it runs</source>
@@ -32762,7 +32763,7 @@
     </unit>
     <unit id="upstream.preview.versions">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:142,144</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:143,145</note>
       </notes>
       <segment>
         <source>Versions</source>
@@ -32771,7 +32772,7 @@
     </unit>
     <unit id="upstream.preview.versions-unknown">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:147,150</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:148,151</note>
       </notes>
       <segment>
         <source>Not told by the upstream</source>
@@ -32780,7 +32781,7 @@
     </unit>
     <unit id="upstream.preview.packages">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:151,153</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:152,154</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -32789,7 +32790,7 @@
     </unit>
     <unit id="upstream.preview.packages-unknown">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:156,159</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:157,160</note>
       </notes>
       <segment>
         <source>Not told by the upstream</source>
@@ -32798,7 +32799,7 @@
     </unit>
     <unit id="upstream.preview.size">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:160,162</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:161,163</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -32807,7 +32808,7 @@
     </unit>
     <unit id="upstream.preview.size-unknown">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:165,167</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:166,168</note>
       </notes>
       <segment>
         <source>Not told by the upstream</source>
@@ -32816,7 +32817,7 @@
     </unit>
     <unit id="upstream.preview.size-unknown-of">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:168,169</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:169,170</note>
       </notes>
       <segment>
         <source>Size of <ph id="0" equiv="INTERPOLATION" disp="{{ p.sizeUnknown }}"/> versions not told by the upstream; the bound of <ph id="1" equiv="INTERPOLATION_1" disp="{{ size(p.bounds.maxBytes) }}"/> stops the download when it is reached.</source>
@@ -32825,7 +32826,7 @@
     </unit>
     <unit id="upstream.preview.stored">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:171,172</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:172,173</note>
       </notes>
       <segment>
         <source>Stored already</source>
@@ -32834,7 +32835,7 @@
     </unit>
     <unit id="upstream.preview.not-delivered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:173,175</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:174,176</note>
       </notes>
       <segment>
         <source>Not delivered here</source>
@@ -32843,7 +32844,7 @@
     </unit>
     <unit id="upstream.preview.not-delivered-sync-hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:177,178</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:178,179</note>
       </notes>
       <segment>
         <source>Left out: a sync stores only what the rules deliver.</source>
@@ -32852,7 +32853,7 @@
     </unit>
     <unit id="upstream.preview.not-delivered-hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:179,182</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:180,183</note>
       </notes>
       <segment>
         <source>Fetched for examination: stored and scanned, not delivered until a rule allows them.</source>
@@ -32861,7 +32862,7 @@
     </unit>
     <unit id="upstream.preview.not-versions">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:183,185</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:184,186</note>
       </notes>
       <segment>
         <source>Left out, no version</source>
@@ -32870,7 +32871,7 @@
     </unit>
     <unit id="upstream.preview.not-versions-hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:186,189</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:187,190</note>
       </notes>
       <segment>
         <source>Tags such as latest name no version and lie outside every range of versions.</source>
@@ -32879,7 +32880,7 @@
     </unit>
     <unit id="upstream.preview.loading">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:195,197</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:196,198</note>
       </notes>
       <segment>
         <source>Reading what the download would fetch.</source>
@@ -32888,7 +32889,7 @@
     </unit>
     <unit id="upstream.preview.bounds">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:199,200</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:200,201</note>
       </notes>
       <segment>
         <source>Bounds</source>
@@ -32897,7 +32898,8 @@
     </unit>
     <unit id="upstream.preview.from-version">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:202,204</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:203,205</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:50,52</note>
       </notes>
       <segment>
         <source>From version</source>
@@ -32906,7 +32908,8 @@
     </unit>
     <unit id="upstream.preview.from-version.empty">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:210,211</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:211,212</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:58,59</note>
       </notes>
       <segment>
         <source>The oldest</source>
@@ -32915,7 +32918,8 @@
     </unit>
     <unit id="upstream.preview.to-version">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:222,223</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:223,224</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:71,73</note>
       </notes>
       <segment>
         <source>Up to version</source>
@@ -32924,7 +32928,8 @@
     </unit>
     <unit id="upstream.preview.to-version.empty">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:231,232</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:232,233</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:80,81</note>
       </notes>
       <segment>
         <source>The newest</source>
@@ -32933,7 +32938,7 @@
     </unit>
     <unit id="upstream.preview.to-inclusive.label">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:240,241</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:241,242</note>
       </notes>
       <segment>
         <source>Whether the version itself is downloaded</source>
@@ -32942,7 +32947,8 @@
     </unit>
     <unit id="upstream.preview.to-inclusive.included">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:244,245</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:245,246</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:95,96</note>
       </notes>
       <segment>
         <source>included</source>
@@ -32951,7 +32957,8 @@
     </unit>
     <unit id="upstream.preview.to-inclusive.below">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:245,247</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:246,248</note>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:96,99</note>
       </notes>
       <segment>
         <source>below it</source>
@@ -32960,7 +32967,7 @@
     </unit>
     <unit id="upstream.preview.max-versions-sync">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:261,263</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:262,264</note>
       </notes>
       <segment>
         <source>Keep this many of the newest versions</source>
@@ -32969,7 +32976,7 @@
     </unit>
     <unit id="upstream.preview.max-versions">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:263,265</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:264,266</note>
       </notes>
       <segment>
         <source>At most this many versions</source>
@@ -32978,7 +32985,7 @@
     </unit>
     <unit id="upstream.preview.max-bytes">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:278,280</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:279,281</note>
       </notes>
       <segment>
         <source>At most this many GiB</source>
@@ -32987,7 +32994,7 @@
     </unit>
     <unit id="upstream.preview.prereleases">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:291,292</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:292,293</note>
       </notes>
       <segment>
         <source>Include pre-releases</source>
@@ -32996,7 +33003,7 @@
     </unit>
     <unit id="upstream.preview.start-sync">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:303,305</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:304,306</note>
       </notes>
       <segment>
         <source>Keep in sync</source>
@@ -33005,7 +33012,7 @@
     </unit>
     <unit id="upstream.preview.start">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:305,307</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:306,308</note>
       </notes>
       <segment>
         <source>Start download</source>
@@ -33115,7 +33122,7 @@
     <unit id="upstream.cache.stored">
       <notes>
         <note category="location">src/app/features/repositories/upstream/remote-upstream.html:208,209</note>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:159,160</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:180,181</note>
       </notes>
       <segment>
         <source>Stored</source>
@@ -33125,7 +33132,7 @@
     <unit id="upstream.cache.not-stored">
       <notes>
         <note category="location">src/app/features/repositories/upstream/remote-upstream.html:210,212</note>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:161,163</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:182,184</note>
       </notes>
       <segment>
         <source>Not stored</source>
@@ -33557,7 +33564,7 @@
     </unit>
     <unit id="upstream.show-downloads">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:115</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:117</note>
       </notes>
       <segment>
         <source>Show downloads</source>
@@ -33566,7 +33573,7 @@
     </unit>
     <unit id="upstream.show-bulk">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:123</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:125</note>
       </notes>
       <segment>
         <source>Show bulk download</source>
@@ -33575,7 +33582,7 @@
     </unit>
     <unit id="upstream.download.queued">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:136</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:138</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="subjectText(s)"/> waits for its download into the cache.</source>
@@ -33584,7 +33591,7 @@
     </unit>
     <unit id="upstream.download.queued-examination">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:137</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:139</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="subjectText(s)"/> waits for its download for examination; it is not delivered.</source>
@@ -33593,7 +33600,7 @@
     </unit>
     <unit id="upstream.download.sync-started">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:155</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:157</note>
       </notes>
       <segment>
         <source>Kept in sync: the first run has started, and the tab Downloads lists the sync.</source>
@@ -33602,7 +33609,7 @@
     </unit>
     <unit id="upstream.download.bulk-started">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:161</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:163</note>
       </notes>
       <segment>
         <source>The bulk download has started; Quader reads its versions first, then queues them.</source>
@@ -33611,7 +33618,7 @@
     </unit>
     <unit id="upstream.switch.package-on-title">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:218</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:221</note>
       </notes>
       <segment>
         <source>Allow every version of <ph id="0" equiv="name" disp="name"/>?</source>
@@ -33620,7 +33627,7 @@
     </unit>
     <unit id="upstream.switch.package-off-title">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:219</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:222</note>
       </notes>
       <segment>
         <source>Block every version of <ph id="0" equiv="name" disp="name"/>?</source>
@@ -33629,7 +33636,7 @@
     </unit>
     <unit id="upstream.switch.reset">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:221</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:224</note>
       </notes>
       <segment>
         <source>Reset them: every version follows the package</source>
@@ -33638,7 +33645,7 @@
     </unit>
     <unit id="upstream.switch.allow">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:223</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:226</note>
       </notes>
       <segment>
         <source>Allow</source>
@@ -33647,16 +33654,34 @@
     </unit>
     <unit id="upstream.switch.block">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:223</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:226</note>
       </notes>
       <segment>
         <source>Block</source>
         <target>Sperren</target>
       </segment>
     </unit>
+    <unit id="upstream.range.saved">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:257</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="data.name"/> is delivered with the versions <ph id="1" equiv="bounds" disp="rangeBoundsText(range)"/>.</source>
+        <target><ph id="0" equiv="name" disp="data.name"/> wird mit den Versionen <ph id="1" equiv="bounds" disp="rangeBoundsText(range)"/> ausgeliefert.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.range.saved-all">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:258</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="data.name"/> is delivered with every version.</source>
+        <target><ph id="0" equiv="name" disp="data.name"/> wird mit jeder Version ausgeliefert.</target>
+      </segment>
+    </unit>
     <unit id="upstream.request.created">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:245</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:271</note>
       </notes>
       <segment>
         <source>Your request for <ph id="0" equiv="subject" disp="subjectText(s)"/> is sent to those who may allow it.</source>
@@ -33665,7 +33690,7 @@
     </unit>
     <unit id="upstream.discard.title">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:251</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:277</note>
       </notes>
       <segment>
         <source>Discard <ph id="0" equiv="subject" disp="subjectText(s)"/>?</source>
@@ -33674,7 +33699,7 @@
     </unit>
     <unit id="upstream.discard.text">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:252</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:278</note>
       </notes>
       <segment>
         <source>The files fetched for examination are removed from the cache. A version the rules deliver is never discarded.</source>
@@ -33683,7 +33708,7 @@
     </unit>
     <unit id="upstream.discard.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:253</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:279</note>
       </notes>
       <segment>
         <source>Discard</source>
@@ -33692,7 +33717,7 @@
     </unit>
     <unit id="upstream.discard.done">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:259</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:285</note>
       </notes>
       <segment>
         <source>Discarded: <ph id="0" equiv="versions" disp="out.versions.length"/> versions, <ph id="1" equiv="files" disp="out.files"/> files.</source>
@@ -33701,7 +33726,7 @@
     </unit>
     <unit id="upstream.switch.delivered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:266</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:300</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="subject"/> is delivered.</source>
@@ -33710,7 +33735,7 @@
     </unit>
     <unit id="upstream.switch.not-delivered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:267</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:301</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="subject"/> is not delivered.</source>
@@ -33719,7 +33744,7 @@
     </unit>
     <unit id="upstream.switch.package-delivered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:273</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:307</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="name"/> is delivered with every version that has no setting of its own, future ones included.</source>
@@ -33728,7 +33753,7 @@
     </unit>
     <unit id="upstream.switch.package-not-delivered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:274</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:308</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="name"/> is not delivered, apart from the versions that have a setting of their own.</source>
@@ -33737,7 +33762,7 @@
     </unit>
     <unit id="upstream.switch.own-one-allowed">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:281</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:315</note>
       </notes>
       <segment>
         <source>One version has a setting of its own: it is allowed. It is kept unless you reset it.</source>
@@ -33746,7 +33771,7 @@
     </unit>
     <unit id="upstream.switch.own-one-blocked">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:282</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:316</note>
       </notes>
       <segment>
         <source>One version has a setting of its own: it is blocked. It is kept unless you reset it.</source>
@@ -33755,7 +33780,7 @@
     </unit>
     <unit id="upstream.switch.own-many">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:284</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:318</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="own"/> versions have settings of their own: <ph id="1" equiv="allowed" disp="allow"/> allowed, <ph id="2" equiv="blocked" disp="block"/> blocked. They are kept unless you reset them.</source>
@@ -33773,7 +33798,7 @@
     </unit>
     <unit id="upstream.package.request">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:38,41</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:42,45</note>
       </notes>
       <segment>
         <source>Request every version</source>
@@ -33782,17 +33807,35 @@
     </unit>
     <unit id="upstream.rule.label">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:53</note>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:143</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:57</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:164</note>
       </notes>
       <segment>
         <source>Rule:</source>
         <target>Regel:</target>
       </segment>
     </unit>
+    <unit id="upstream.range.limit">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:73</note>
+      </notes>
+      <segment>
+        <source>Limit versions…</source>
+        <target>Versionen eingrenzen…</target>
+      </segment>
+    </unit>
+    <unit id="upstream.range.oci-latest">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:80,83</note>
+      </notes>
+      <segment>
+        <source>docker pull without a tag asks for latest, which lies outside the range: switch latest on in its row.</source>
+        <target>docker pull ohne Tag fragt nach latest, das außerhalb des Versionsbereichs liegt: Schalten Sie latest in seiner Zeile ein.</target>
+      </segment>
+    </unit>
     <unit id="upstream.versions.filter-tags">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:73,75</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:94,96</note>
       </notes>
       <segment>
         <source>Filter versions and npm tags</source>
@@ -33801,7 +33844,7 @@
     </unit>
     <unit id="upstream.versions.filter">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:75,77</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:96,98</note>
       </notes>
       <segment>
         <source>Filter versions</source>
@@ -33810,7 +33853,7 @@
     </unit>
     <unit id="upstream.versions.loading">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:89,90</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:110,111</note>
       </notes>
       <segment>
         <source>Reading the versions from the upstream.</source>
@@ -33819,7 +33862,7 @@
     </unit>
     <unit id="upstream.size.not-told-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:120,122</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:141,143</note>
       </notes>
       <segment>
         <source>Size not told</source>
@@ -33828,7 +33871,7 @@
     </unit>
     <unit id="upstream.act.request">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:136</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:157</note>
       </notes>
       <segment>
         <source>Request</source>
@@ -33837,7 +33880,7 @@
     </unit>
     <unit id="upstream.cache.for-examination">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:157,158</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:178,179</note>
       </notes>
       <segment>
         <source>Stored for examination</source>
@@ -33846,7 +33889,7 @@
     </unit>
     <unit id="upstream.verdicts.open">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:170,171</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:191,192</note>
       </notes>
       <segment>
         <source>Open the version</source>
@@ -33855,7 +33898,7 @@
     </unit>
     <unit id="upstream.package.loading">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:179,181</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:200,202</note>
       </notes>
       <segment>
         <source>Reading the package from the upstream.</source>
@@ -33864,16 +33907,25 @@
     </unit>
     <unit id="upstream.rule.own-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:95</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:106</note>
       </notes>
       <segment>
         <source>Rule: this version</source>
         <target>Regel: diese Version</target>
       </segment>
     </unit>
+    <unit id="upstream.rule.package-range-line">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:109</note>
+      </notes>
+      <segment>
+        <source>Rule: the package, <ph id="0" equiv="bounds" disp="rangeBoundsText(by.range)"/></source>
+        <target>Regel: das Paket, <ph id="0" equiv="bounds" disp="rangeBoundsText(by.range)"/></target>
+      </segment>
+    </unit>
     <unit id="upstream.rule.package-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:97</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:110</note>
       </notes>
       <segment>
         <source>Rule: the package</source>
@@ -33882,7 +33934,7 @@
     </unit>
     <unit id="upstream.versions.empty">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:114</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:127</note>
       </notes>
       <segment>
         <source>The upstream lists no version of this package.</source>
@@ -33891,7 +33943,7 @@
     </unit>
     <unit id="upstream.versions.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:115</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:128</note>
       </notes>
       <segment>
         <source>No version matches.</source>
@@ -33900,7 +33952,7 @@
     </unit>
     <unit id="upstream.col.delivery">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:123</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:136</note>
       </notes>
       <segment>
         <source>Delivery</source>
@@ -33909,7 +33961,7 @@
     </unit>
     <unit id="upstream.col.cache">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:124</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:137</note>
       </notes>
       <segment>
         <source>Cache</source>
@@ -33918,7 +33970,7 @@
     </unit>
     <unit id="upstream.versions.showing">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:254</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:267</note>
       </notes>
       <segment>
         <source>Showing <ph id="0" equiv="shown" disp="groupedCount(n)"/> of <ph id="1" equiv="total" disp="groupedCount(p.total)"/></source>
@@ -33927,7 +33979,7 @@
     </unit>
     <unit id="upstream.act.download">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:289</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:302</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -33936,7 +33988,7 @@
     </unit>
     <unit id="upstream.act.examine">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:291</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:304</note>
       </notes>
       <segment>
         <source>Download for examination</source>
@@ -33945,7 +33997,7 @@
     </unit>
     <unit id="upstream.act.discard">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:293</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:306</note>
       </notes>
       <segment>
         <source>Discard</source>
@@ -33954,7 +34006,7 @@
     </unit>
     <unit id="upstream.rule.this-package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:343</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:356</note>
       </notes>
       <segment>
         <source>Rule: this package</source>
@@ -33963,7 +34015,7 @@
     </unit>
     <unit id="upstream.preview.title-package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:355</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:368</note>
       </notes>
       <segment>
         <source>Every version of <ph id="0" equiv="name" disp="name"/></source>
@@ -34024,9 +34076,18 @@
         <target>Beantragt</target>
       </segment>
     </unit>
+    <unit id="upstream.state.outside-range">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:39</note>
+      </notes>
+      <segment>
+        <source>Outside the allowed versions</source>
+        <target>Außerhalb der erlaubten Versionen</target>
+      </segment>
+    </unit>
     <unit id="upstream.state.not-allowed">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:38</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:41</note>
       </notes>
       <segment>
         <source>Not allowed</source>
@@ -34035,7 +34096,7 @@
     </unit>
     <unit id="upstream.state.allowed">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:40</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:43</note>
       </notes>
       <segment>
         <source>Allowed</source>
@@ -34044,7 +34105,7 @@
     </unit>
     <unit id="upstream.state.delivered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:41</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:44</note>
       </notes>
       <segment>
         <source>Delivered</source>
@@ -34053,7 +34114,7 @@
     </unit>
     <unit id="upstream.switch.version-label">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:50</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:53</note>
       </notes>
       <segment>
         <source>Deliver <ph id="0" equiv="name" disp="name"/> <ph id="1" equiv="version" disp="version"/></source>
@@ -34062,16 +34123,79 @@
     </unit>
     <unit id="upstream.switch.package-label">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:51</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:54</note>
       </notes>
       <segment>
         <source>Deliver <ph id="0" equiv="name" disp="name"/> with every version</source>
         <target><ph id="0" equiv="name" disp="name"/> mit jeder Version ausliefern</target>
       </segment>
     </unit>
+    <unit id="upstream.range.from-up-to">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:69</note>
+      </notes>
+      <segment>
+        <source>from <ph id="0" equiv="from" disp="from"/> up to <ph id="1" equiv="to" disp="to"/></source>
+        <target>ab <ph id="0" equiv="from" disp="from"/> bis <ph id="1" equiv="to" disp="to"/></target>
+      </segment>
+    </unit>
+    <unit id="upstream.range.from-below">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:70</note>
+      </notes>
+      <segment>
+        <source>from <ph id="0" equiv="from" disp="from"/> below <ph id="1" equiv="to" disp="to"/></source>
+        <target>ab <ph id="0" equiv="from" disp="from"/> bis unter <ph id="1" equiv="to" disp="to"/></target>
+      </segment>
+    </unit>
+    <unit id="upstream.range.from">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:72</note>
+      </notes>
+      <segment>
+        <source>from <ph id="0" equiv="from" disp="from"/></source>
+        <target>ab <ph id="0" equiv="from" disp="from"/></target>
+      </segment>
+    </unit>
+    <unit id="upstream.range.up-to">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:74</note>
+      </notes>
+      <segment>
+        <source>up to <ph id="0" equiv="to" disp="to"/></source>
+        <target>bis <ph id="0" equiv="to" disp="to"/></target>
+      </segment>
+    </unit>
+    <unit id="upstream.range.below">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:74</note>
+      </notes>
+      <segment>
+        <source>below <ph id="0" equiv="to" disp="to"/></source>
+        <target>unter <ph id="0" equiv="to" disp="to"/></target>
+      </segment>
+    </unit>
+    <unit id="upstream.range.line">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:85</note>
+      </notes>
+      <segment>
+        <source>Versions <ph id="0" equiv="bounds" disp="rangeBoundsText(r)"/></source>
+        <target>Versionen <ph id="0" equiv="bounds" disp="rangeBoundsText(r)"/></target>
+      </segment>
+    </unit>
+    <unit id="upstream.range.all">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:86</note>
+      </notes>
+      <segment>
+        <source>All versions</source>
+        <target>Alle Versionen</target>
+      </segment>
+    </unit>
     <unit id="upstream.state.rule">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:58</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:93</note>
       </notes>
       <segment>
         <source>Rule: <ph id="0" equiv="subject" disp="by.subject"/></source>
@@ -34080,7 +34204,7 @@
     </unit>
     <unit id="upstream.hint.docker-hub">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:72</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:107</note>
       </notes>
       <segment>
         <source>Search for an image name, for example nginx; official images are under library/&lt;name&gt;.</source>
@@ -34089,7 +34213,7 @@
     </unit>
     <unit id="upstream.hint.docker-hub-unavailable">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:74</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:109</note>
       </notes>
       <segment>
         <source>Docker Hub&apos;s search is not available at the moment; enter an image&apos;s full name, for example library/nginx, or open a namespace.</source>
@@ -34098,7 +34222,7 @@
     </unit>
     <unit id="upstream.hint.quay">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:76</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:111</note>
       </notes>
       <segment>
         <source>Search for an image name or a word of the description, for example prometheus.</source>
@@ -34107,7 +34231,7 @@
     </unit>
     <unit id="upstream.hint.ghcr">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:78</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:113</note>
       </notes>
       <segment>
         <source>ghcr.io offers no search; enter an image&apos;s full name, for example stefanprodan/podinfo.</source>
@@ -34116,7 +34240,7 @@
     </unit>
     <unit id="upstream.hint.gitlab">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:80</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:115</note>
       </notes>
       <segment>
         <source>GitLab&apos;s registry offers no search; open a project to see its images, or enter an image&apos;s full name.</source>
@@ -34125,7 +34249,7 @@
     </unit>
     <unit id="upstream.hint.oci-registry">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:82</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:117</note>
       </notes>
       <segment>
         <source>This registry offers no search; enter an image&apos;s full name.</source>
@@ -34134,7 +34258,7 @@
     </unit>
     <unit id="upstream.hint.npm-registry">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:84</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:119</note>
       </notes>
       <segment>
         <source>Search for a package name, a keyword or a maintainer, for example express; a search takes 2 to 64 characters.</source>
@@ -34143,7 +34267,7 @@
     </unit>
     <unit id="upstream.hint.npm-no-search">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:86</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:121</note>
       </notes>
       <segment>
         <source>This registry offers no search; enter a package&apos;s exact name, for example express.</source>
@@ -34152,7 +34276,7 @@
     </unit>
     <unit id="upstream.hint.nuget-search">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:88</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:123</note>
       </notes>
       <segment>
         <source>Search for a package ID or a word of the description, for example Serilog; id:, owner: and tags: narrow the search.</source>
@@ -34161,7 +34285,7 @@
     </unit>
     <unit id="upstream.hint.nuget-no-search">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:90</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:125</note>
       </notes>
       <segment>
         <source>This NuGet upstream offers no search; enter a package&apos;s exact ID, for example Serilog.</source>
@@ -34170,7 +34294,7 @@
     </unit>
     <unit id="upstream.hint.galaxy">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:92</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:127</note>
       </notes>
       <segment>
         <source>Search for a namespace, a collection name, a tag or a word of the description, for example docker.</source>
@@ -34179,7 +34303,7 @@
     </unit>
     <unit id="upstream.hint.galaxy-no-search">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:94</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:129</note>
       </notes>
       <segment>
         <source>This Galaxy offers no search; open a namespace or enter a collection&apos;s exact name, for example community.general.</source>
@@ -34188,7 +34312,7 @@
     </unit>
     <unit id="upstream.hint.apt-index">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:96</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:131</note>
       </notes>
       <segment>
         <source>Search for words of a package&apos;s name or short description, for example nginx; Quader searches only the suites whose index it has read.</source>
@@ -34197,7 +34321,7 @@
     </unit>
     <unit id="upstream.hint.no-search">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:98</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:133</note>
       </notes>
       <segment>
         <source>This upstream offers no search; enter a package&apos;s exact name.</source>
@@ -34206,7 +34330,7 @@
     </unit>
     <unit id="upstream.level.scope">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:109</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:144</note>
       </notes>
       <segment>
         <source>Scope</source>
@@ -34215,7 +34339,7 @@
     </unit>
     <unit id="upstream.level.namespace">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:111</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:146</note>
       </notes>
       <segment>
         <source>Namespace</source>
@@ -34224,7 +34348,7 @@
     </unit>
     <unit id="upstream.level.project">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:113</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:148</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -34233,7 +34357,7 @@
     </unit>
     <unit id="upstream.level.suite">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:115</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:150</note>
       </notes>
       <segment>
         <source>Suite</source>
@@ -34242,7 +34366,7 @@
     </unit>
     <unit id="upstream.level.component">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:117</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:152</note>
       </notes>
       <segment>
         <source>Component</source>
@@ -34251,7 +34375,7 @@
     </unit>
     <unit id="upstream.level.architecture">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:119</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:154</note>
       </notes>
       <segment>
         <source>Architecture</source>
@@ -34260,7 +34384,7 @@
     </unit>
     <unit id="upstream.unknown.scope">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:132</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:167</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="upstream"/> has no scope “<ph id="1" equiv="name" disp="name"/>”.</source>
@@ -34269,7 +34393,7 @@
     </unit>
     <unit id="upstream.unknown.namespace">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:134</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:169</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="upstream"/> has no namespace “<ph id="1" equiv="name" disp="name"/>”.</source>
@@ -34278,7 +34402,7 @@
     </unit>
     <unit id="upstream.unknown.project">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:136</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:171</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="upstream"/> has no public project “<ph id="1" equiv="name" disp="name"/>”.</source>
@@ -34287,7 +34411,7 @@
     </unit>
     <unit id="upstream.unknown.suite">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:138</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:173</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="upstream"/> has no suite “<ph id="1" equiv="name" disp="name"/>”.</source>
@@ -34296,7 +34420,7 @@
     </unit>
     <unit id="upstream.unknown.component">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:140</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:175</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="upstream"/> has no component “<ph id="1" equiv="name" disp="name"/>” in this suite.</source>
@@ -34305,7 +34429,7 @@
     </unit>
     <unit id="upstream.unknown.architecture">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:142</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:177</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="upstream"/> has no architecture “<ph id="1" equiv="name" disp="name"/>” in this suite.</source>
@@ -34314,7 +34438,7 @@
     </unit>
     <unit id="upstream.unknown.level">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:144</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:179</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="upstream"/> has no level “<ph id="1" equiv="name" disp="name"/>”.</source>
@@ -34323,7 +34447,7 @@
     </unit>
     <unit id="upstream.rule.char">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:153</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:188</note>
       </notes>
       <segment>
         <source>“<ph id="0" equiv="char" disp="char"/>”</source>
@@ -34332,7 +34456,7 @@
     </unit>
     <unit id="upstream.rule.lowercase-digits">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:157</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:192</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="upstream"/> allows only lowercase letters and digits in this name, no <ph id="1" equiv="chars" disp="chars"/>.</source>
@@ -34341,7 +34465,7 @@
     </unit>
     <unit id="upstream.rule.lowercase-digits-only">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:158</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:193</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="upstream"/> allows only lowercase letters and digits in this name.</source>
@@ -34350,7 +34474,7 @@
     </unit>
     <unit id="upstream.rule.lowercase-digits-underscore">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:161</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:196</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="upstream"/> allows only lowercase letters, digits and underscores in this name, no <ph id="1" equiv="chars" disp="chars"/>.</source>
@@ -34359,7 +34483,7 @@
     </unit>
     <unit id="upstream.rule.lowercase-digits-underscore-only">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:162</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:197</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="upstream"/> allows only lowercase letters, digits and underscores in this name.</source>
@@ -34368,7 +34492,7 @@
     </unit>
     <unit id="upstream.unknown.suggestion">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:170</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:205</note>
       </notes>
       <segment>
         <source>Did you mean “<ph id="0" equiv="name" disp="name"/>”?</source>
@@ -34377,7 +34501,7 @@
     </unit>
     <unit id="upstream.flag.deprecated">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:177</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:212</note>
       </notes>
       <segment>
         <source>Deprecated</source>
@@ -34386,7 +34510,7 @@
     </unit>
     <unit id="upstream.flag.yanked">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:179</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:214</note>
       </notes>
       <segment>
         <source>Yanked</source>
@@ -34395,7 +34519,7 @@
     </unit>
     <unit id="upstream.flag.unlisted">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:181</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:216</note>
       </notes>
       <segment>
         <source>Unlisted</source>
@@ -34404,7 +34528,7 @@
     </unit>
     <unit id="upstream.flag.prerelease">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:183</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:218</note>
       </notes>
       <segment>
         <source>Pre-release</source>
@@ -34413,7 +34537,7 @@
     </unit>
     <unit id="upstream.flag.official">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:185</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:220</note>
       </notes>
       <segment>
         <source>Official</source>
@@ -34422,7 +34546,7 @@
     </unit>
     <unit id="upstream.flag.verified">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:187</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:222</note>
       </notes>
       <segment>
         <source>Verified publisher</source>
@@ -34431,7 +34555,7 @@
     </unit>
     <unit id="upstream.flag.vulnerable">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:189</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:224</note>
       </notes>
       <segment>
         <source>Vulnerable</source>
@@ -34440,7 +34564,7 @@
     </unit>
     <unit id="upstream.flag.insecure">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:191</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:226</note>
       </notes>
       <segment>
         <source>Insecure</source>
@@ -34449,7 +34573,7 @@
     </unit>
     <unit id="upstream.flag.unsigned-index">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:193</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:228</note>
       </notes>
       <segment>
         <source>Unsigned index</source>
@@ -34458,7 +34582,7 @@
     </unit>
     <unit id="upstream.verdict.none-known">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:206</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:241</note>
       </notes>
       <segment>
         <source>No known vulnerability</source>
@@ -34467,7 +34591,7 @@
     </unit>
     <unit id="upstream.verdict.malicious">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:210</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:245</note>
       </notes>
       <segment>
         <source>Known as malicious</source>
@@ -34476,7 +34600,7 @@
     </unit>
     <unit id="upstream.verdict.triage">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:212</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:247</note>
       </notes>
       <segment>
         <source>Blocked in triage</source>
@@ -34485,7 +34609,7 @@
     </unit>
     <unit id="upstream.verdict.missing-data">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:214</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:249</note>
       </notes>
       <segment>
         <source>Vulnerability data incomplete</source>
@@ -34494,7 +34618,7 @@
     </unit>
     <unit id="upstream.verdict.blocked">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:216</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:251</note>
       </notes>
       <segment>
         <source>Blocked: vulnerability</source>
@@ -34503,7 +34627,7 @@
     </unit>
     <unit id="upstream.verdict.not-covered.deb">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:230</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:265</note>
       </notes>
       <segment>
         <source>Debian packages are not analysed for vulnerabilities.</source>
@@ -34512,7 +34636,7 @@
     </unit>
     <unit id="upstream.verdict.not-covered.ansible">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:232</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:267</note>
       </notes>
       <segment>
         <source>Ansible collections are not analysed for vulnerabilities.</source>
@@ -34521,7 +34645,7 @@
     </unit>
     <unit id="upstream.verdict.not-covered.oci">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:234</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:269</note>
       </notes>
       <segment>
         <source>An image is analysed for vulnerabilities once its platforms are stored.</source>
@@ -34530,7 +34654,7 @@
     </unit>
     <unit id="upstream.verdict.not-covered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:236</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:271</note>
       </notes>
       <segment>
         <source>This repository&apos;s versions are not analysed for vulnerabilities.</source>
@@ -34539,7 +34663,7 @@
     </unit>
     <unit id="upstream.state.offline-until">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:272</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:307</note>
       </notes>
       <segment>
         <source>The upstream is assumed offline until <ph id="0" equiv="time" disp="clockAfter(wait)"/>; Quader retries then.</source>
@@ -34548,7 +34672,7 @@
     </unit>
     <unit id="upstream.state.offline-retry">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:273</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:308</note>
       </notes>
       <segment>
         <source>The upstream is busy with a client&apos;s fetch or assumed offline; try again in a moment.</source>
@@ -34557,7 +34681,7 @@
     </unit>
     <unit id="upstream.state.offline-mode">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:275</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:310</note>
       </notes>
       <segment>
         <source>This repository is in offline mode: it asks its upstream nothing.</source>
@@ -34566,7 +34690,7 @@
     </unit>
     <unit id="upstream.state.budget-wait">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:278</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:313</note>
       </notes>
       <segment>
         <source>The upstream catalogue&apos;s budget is used up; try again in <ph id="0" equiv="seconds" disp="wait"/> s.</source>
@@ -34575,7 +34699,7 @@
     </unit>
     <unit id="upstream.state.budget">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:279</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:314</note>
       </notes>
       <segment>
         <source>The upstream catalogue&apos;s budget is used up; try again in a minute.</source>
@@ -34584,7 +34708,7 @@
     </unit>
     <unit id="upstream.state.too-large-package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:282</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:317</note>
       </notes>
       <segment>
         <source>This package&apos;s document is larger than the catalogue reads; Quader does not read it for browsing.</source>
@@ -34593,7 +34717,7 @@
     </unit>
     <unit id="upstream.state.too-large">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:283</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:318</note>
       </notes>
       <segment>
         <source>The upstream&apos;s answer is larger than the catalogue reads; Quader does not read it for browsing.</source>
@@ -34602,11 +34726,65 @@
     </unit>
     <unit id="upstream.state.not-offered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:285</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:320</note>
       </notes>
       <segment>
         <source>The upstream of this repository does not answer this.</source>
         <target>Der Upstream dieses Repositorys beantwortet das nicht.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.range.title">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:39,40</note>
+      </notes>
+      <segment>
+        <source>Limit the versions of <ph id="0" equiv="INTERPOLATION" disp="{{ data.name }}"/></source>
+        <target>Versionen von <ph id="0" equiv="INTERPOLATION" disp="{{ data.name }}"/> eingrenzen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.range.lead">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:42,43</note>
+      </notes>
+      <segment>
+        <source>The package is delivered with the versions in the range; a version outside it is not, unless its own switch is on. Leave both fields empty to deliver every version.</source>
+        <target>Das Paket wird mit den Versionen im Versionsbereich ausgeliefert, eine Version außerhalb nicht, es sei denn, ihr eigener Schalter ist an. Lassen Sie beide Felder leer, um jede Version auszuliefern.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.range.turns-on">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:44,46</note>
+      </notes>
+      <segment>
+        <source>Saving allows the package with these versions.</source>
+        <target>Speichern erlaubt das Paket mit diesen Versionen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.range.oci-tags">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:47,49</note>
+      </notes>
+      <segment>
+        <source>A tag that is no version, such as latest, lies outside every range: docker pull without a tag asks for latest and is refused until latest&apos;s own switch is on.</source>
+        <target>Ein Tag, das keine Version ist, wie latest, liegt außerhalb jedes Versionsbereichs: docker pull ohne Tag fragt nach latest und wird abgewiesen, bis der eigene Schalter von latest an ist.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.range.to-inclusive.label">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:90,91</note>
+      </notes>
+      <segment>
+        <source>Whether the version itself is delivered</source>
+        <target>Ob die Version selbst ausgeliefert wird</target>
+      </segment>
+    </unit>
+    <unit id="upstream.range.save">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/version-range-dialog.ts:114,116</note>
+      </notes>
+      <segment>
+        <source>Save</source>
+        <target>Speichern</target>
       </segment>
     </unit>
     <unit id="virtual.intro-upstream">

@@ -247,6 +247,113 @@ describe('The tab Upstream of a remote repository', () => {
     expect(document.querySelector('.quader-dialog')).toBeNull();
   });
 
+  it('R-CUR-026 a package\'s allow takes a range: its line under the switch, a version outside with its badge and rule, Limit versions… with a refused bound kept at its field', async () => {
+    const range = { fromVersion: '2.0.0', toVersion: '3.0.0', toInclusive: false };
+    const ranged = { delivered: true, decidedBy: { kind: 'package' as const, subject: 'lodash', effect: 'allow' as const, range } };
+    const outside = { delivered: false, reason: 'outsideRange' as const, decidedBy: { kind: 'package' as const, subject: 'lodash', effect: 'allow' as const, range } };
+    const { root, fixture, rules } = await open({
+      manage: true,
+      url: '/projects/web/repositories/npmjs/upstream?name=lodash',
+      fake: (c) => {
+        c.capsAnswer = catalogueCaps({ maySetRules: true });
+        c.packages['lodash'] = upstreamPackage({
+          delivery: ranged,
+          level: ranged,
+          inherited: DELIVERED,
+          versionRules: { allow: 0, block: 0 },
+          versions: [
+            upstreamVersion({ version: '3.0.0', delivery: outside }),
+            upstreamVersion({ version: '2.10.0-canary.bfb9accdc', delivery: ranged }),
+            upstreamVersion({ version: '1.0.0', delivery: outside }),
+          ],
+        });
+      },
+    });
+    const head = root.querySelector<HTMLElement>('[data-testid="upstream-package-switch"]')!;
+    const line = head.querySelector<HTMLElement>('[data-testid="upstream-package-range"]')!;
+    expect(text(line.querySelector('.secondary')!)).toBe('Versions from 2.0.0 below 3.0.0');
+    expect(text(button(line, 'Limit versions'))).toBe('Limit versions… lodash');
+    // A version outside the range: its switch off, its own badge, and the rule with the range under it (Q-CUR-222).
+    const row = versionRow(root, '3.0.0');
+    expect(row.querySelector('td.delivery-cell button[role="switch"]')!.getAttribute('aria-checked')).toBe('false');
+    expect(text(row.querySelector('td.delivery-cell')!)).toContain('Outside the allowed versions');
+    expect(text(row.querySelector('td.delivery-cell .rule-line')!)).toBe('Rule: the package, from 2.0.0 below 3.0.0');
+    expect(text(versionRow(root, '2.10.0-canary.bfb9accdc').querySelector('td.delivery-cell .rule-line')!)).toBe('Rule: the package, from 2.0.0 below 3.0.0');
+
+    button(head, 'Limit versions').click();
+    await settle(fixture);
+    const d = dialog();
+    expect(text(d.querySelector('h2')!)).toBe('Limit the versions of lodash');
+    const from = d.querySelector<HTMLInputElement>('#range-from-version')!;
+    const to = d.querySelector<HTMLInputElement>('#range-to-version')!;
+    expect([from.value, to.value, d.querySelector<HTMLSelectElement>('select.to-inclusive')!.value]).toEqual(['2.0.0', '3.0.0', 'below']);
+    expect([...d.querySelectorAll<HTMLOptionElement>('#range-versions option')].map((o) => o.value)).toEqual(['3.0.0', '2.10.0-canary.bfb9accdc', '1.0.0']);
+    // A refused bound is said at its field; the values stay and the whole answer stands in the notice (R-UI-216).
+    rules.switchError = new ApiError(
+      422,
+      {
+        code: 'invalid_version',
+        detail: 'fromVersion "latest" is no version the format npm orders.',
+        errors: [{ pointer: '/range/fromVersion', code: 'invalid_version', detail: 'fromVersion "latest" is no version the format npm orders.' }],
+      },
+      'rid-range',
+    );
+    from.value = 'latest';
+    from.dispatchEvent(new Event('input'));
+    button(d, 'Save').click();
+    await settle(fixture);
+    expect(rules.calls).toContain('switch lodash on range latest..3.0.0 below');
+    expect(text(d.querySelector('#range-from-version-error')!)).toContain('This is no version of the format.');
+    expect(from.value).toBe('latest');
+    expect(text(d)).toContain('rid-range');
+    // A valid range is saved through the package's switch, and the head shows the answer at once (R-UI-213).
+    rules.switchError = null;
+    from.value = '1.0.0';
+    from.dispatchEvent(new Event('input'));
+    to.value = '';
+    to.dispatchEvent(new Event('input'));
+    button(d, 'Save').click();
+    await waitUntil(fixture, () => rules.calls.includes('switch lodash on range 1.0.0..'), 'the range to be written');
+    await settle(fixture);
+    expect(document.querySelector('.quader-dialog')).toBeNull();
+    expect(text(head.querySelector('[data-testid="upstream-package-range"]')!)).toContain('Versions from 1.0.0');
+    await expectAccessible(root);
+  });
+
+  it('R-CUR-026 a reader reads the range; an image says that latest lies outside it', async () => {
+    const range = { fromVersion: '1.25.0', toVersion: null, toInclusive: true };
+    const ranged = { delivered: true, decidedBy: { kind: 'package' as const, subject: 'library/nginx', effect: 'allow' as const, range } };
+    const reader = await open({
+      url: '/projects/web/repositories/npmjs/upstream?name=lodash',
+      fake: (c) => {
+        c.packages['lodash'] = upstreamPackage({ delivery: ranged });
+      },
+    });
+    expect(text(reader.root.querySelector('[data-testid="upstream-package-range"]')!)).toBe('Versions from 1.25.0');
+    expect(reader.root.querySelector('[data-testid="upstream-limit-versions"]')).toBeNull();
+    const image = await open({
+      manage: true,
+      format: 'oci',
+      url: '/projects/web/repositories/npmjs/upstream?name=library%2Fnginx',
+      fake: (c) => {
+        c.capsAnswer = catalogueCaps({ maySetRules: true, searchHint: 'dockerHub', levels: ['namespace'] });
+        c.packages['library/nginx'] = upstreamPackage({
+          name: 'library/nginx',
+          tags: undefined,
+          delivery: ranged,
+          level: ranged,
+          inherited: DELIVERED,
+          versionRules: { allow: 0, block: 0 },
+          versions: [upstreamVersion({ version: 'latest', delivery: { delivered: false, reason: 'outsideRange', decidedBy: ranged.decidedBy } })],
+        });
+      },
+    });
+    expect(text(image.root.querySelector('[data-testid="upstream-range-latest"]')!)).toContain('docker pull without a tag asks for latest');
+    button(image.root.querySelector('[data-testid="upstream-package-switch"]')!, 'Limit versions').click();
+    await settle(image.fixture);
+    expect(text(dialog().querySelector('[data-testid="version-range-tags"]')!)).toContain('A tag that is no version, such as latest, lies outside every range');
+  });
+
   it('R-CUR-018 R-CUR-009 an npm tag stands as a badge on the row of the version it names, and the filter finds a version by its tag', async () => {
     const { root, fixture, catalogue } = await open({
       manage: true,

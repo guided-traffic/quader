@@ -19,7 +19,17 @@ import { versionCommands } from '../../packages/package-links';
 import { downloadStateText } from '../downloads/download-words';
 import { UpstreamActions } from './upstream-actions';
 import { LIVE_FAST_MS, LIVE_IDLE_MS, live } from '../../../core/live-refresh';
-import { catalogueState, decidedByText, flagText, notCoveredText, stateBadge, switchLabel, verdictText } from './upstream-words';
+import {
+  catalogueState,
+  decidedByText,
+  flagText,
+  notCoveredText,
+  rangeBoundsText,
+  rangeLineText,
+  stateBadge,
+  switchLabel,
+  verdictText,
+} from './upstream-words';
 import { Loading } from '../../../shared/ui/loading';
 
 /** The one act of a version's cache cell (R-CUR-024): it changes what the cell shows. */
@@ -84,6 +94,7 @@ export class UpstreamPackageView {
 
   protected readonly badge = stateBadge;
   protected readonly ruleLine = decidedByText;
+  protected readonly rangeText = rangeLineText;
   /**
    * The rule that decided, the line under the delivery: the version's own and the package's in words (the row names them already),
    * a sub-section's by its pattern after "Rule:"; null where the mode decided.
@@ -94,7 +105,9 @@ export class UpstreamPackageView {
       case 'version':
         return { words: $localize`:@@upstream.rule.own-line:Rule: this version`, pattern: false };
       case 'package':
-        return { words: $localize`:@@upstream.rule.package-line:Rule: the package`, pattern: false };
+        return by.range
+          ? { words: $localize`:@@upstream.rule.package-range-line:Rule: the package, ${rangeBoundsText(by.range)}:bounds:`, pattern: false }
+          : { words: $localize`:@@upstream.rule.package-line:Rule: the package`, pattern: false };
       case 'section':
         return by.subject ? { words: by.subject, pattern: true } : null;
       default:
@@ -360,6 +373,52 @@ export class UpstreamPackageView {
     const p = this.pkg();
     if (!p) return;
     const out = await this.actions.switchPackage(this.name(), on, p.versionRules);
+    if (out === null) return;
+    this.pkg.update((x) => (x ? { ...x, level: out.decision } : x));
+  }
+
+  /**
+   * The line under the package's switch (R-CUR-026): "All versions", or the range of the package's allow in words, where the package is
+   * delivered; nothing where it is not. A reader without a switch reads it from the package's decision.
+   */
+  protected readonly rangeLine = computed(() => {
+    const d = this.level();
+    if (!d?.delivered) return null;
+    return rangeLineText(this.levelRange());
+  });
+
+  /** The range of the package's allow, null where it has none. */
+  protected readonly levelRange = computed(() => {
+    const by = this.level()?.decidedBy;
+    return by?.kind === 'package' && by.effect === 'allow' ? (by.range ?? null) : null;
+  });
+
+  /** **Limit versions…** for those who decide, beside the range's line or in its place where the package is not delivered. */
+  protected readonly mayLimit = computed(() => this.hasPackageSwitch() && this.actions.known());
+
+  /**
+   * An image with a range whose latest is not delivered (Q-CUR-223): `docker pull` without a tag asks for latest and is refused; the head
+   * says so to those who can switch latest on, until a row read shows it delivered.
+   */
+  protected readonly latestOutside = computed(
+    () =>
+      this.actions.format() === 'oci' &&
+      this.hasPackageSwitch() &&
+      !!this.levelRange() &&
+      !!this.level()?.delivered &&
+      !this.versions().some((v) => v.version === 'latest' && v.delivery.delivered),
+  );
+
+  /** **Limit versions…** (R-CUR-026): the dialog's answer stands in the head at once, the versions are read again (R-UI-213). */
+  protected async limitVersions(): Promise<void> {
+    const l = this.level();
+    if (!l) return;
+    const out = await this.actions.limitVersions({
+      name: this.name(),
+      range: this.levelRange(),
+      delivered: l.delivered,
+      versions: this.versions().map((v) => v.version),
+    });
     if (out === null) return;
     this.pkg.update((x) => (x ? { ...x, level: out.decision } : x));
   }

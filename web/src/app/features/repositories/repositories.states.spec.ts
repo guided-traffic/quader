@@ -10,6 +10,7 @@ import { ApiError } from '../../api/problem';
 import { RemoteDownloadsApi } from '../../api/remote-downloads-api';
 import { FakeRemoteDownloadsApi } from '../../api/testing/fakes-remote-downloads';
 import {
+  AppOptions,
   REQUEST_ID,
   app,
   click,
@@ -29,6 +30,7 @@ import { QuaderDialog } from '../../shared/ui/dialog';
 import { FolderDialog } from './content/folder-dialog';
 import { DeliveryRulesDialog } from './upstream/delivery-rules-dialog';
 import { DownloadPreviewDialog } from './upstream/download-preview-dialog';
+import { VersionRangeDialog } from './upstream/version-range-dialog';
 import { AllowDialog, AskDialog, DeclineDialog } from './upstream/request-dialogs';
 
 // The dialogs of a repository's content and of a remote repository's tab Upstream, opened as repository-files.ts,
@@ -141,6 +143,47 @@ describe('dialogs of repositories in a browser (R-CUR-005, R-CUR-010, R-CUR-015,
       await until(() => !!panel.querySelector('#preview-to-version-error'), 'the refusal of the upper bound');
     });
   });
+
+  // The range of a package's allow (R-CUR-026, Q-CUR-228): the dialog as it opens on a range with a long scoped name and a canary
+  // version, an image's (which says that latest lies outside), and the two refusals of the store at their fields with the whole answer.
+  const PKG = '@platform-engineering/kubernetes-infrastructure-operators';
+  const rangeDialog = (format: string, name: string, setup?: AppOptions['setup']) =>
+    openDialog(VersionRangeDialog, {
+      width: '34rem',
+      data: {
+        repository: 'platform-engineering/npmjs-remote',
+        name,
+        format,
+        range: { fromVersion: '2.10.0-canary.bfb9accdc', toVersion: '18.6.0-rc.12', toInclusive: false },
+        delivered: true,
+        versions: ['18.6.0-rc.12', '18.5.3', '2.10.0-canary.bfb9accdc'],
+      },
+      setup,
+    });
+  it('Limit versions of a package, as it opens on a range', async () => {
+    await expectState('version-range', () => rangeDialog('npm', PKG));
+  });
+  it('Limit versions of an image: latest lies outside every range', async () => {
+    await expectState('version-range-image', () => rangeDialog('oci', 'library/nginx'));
+  });
+  for (const [state, ptr, code, detail] of [
+    ['version-range-not-a-version', '/range/fromVersion', 'invalid_version', 'fromVersion "latest" is no version the format npm orders: a range is bounded by versions, not by a tag such as latest or by a range expression.'],
+    ['version-range-empty', '/range/toVersion', 'out_of_range', 'toVersion 2.0.0 lies below fromVersion 2.10.0-canary.bfb9accdc: the range holds no version.'],
+  ] as const) {
+    it(`Limit versions, refused (${code}): the sentence under the field and the whole answer in the notice`, async () => {
+      await expectState(state, async () => {
+        const { panel } = await rangeDialog('npm', PKG, (get) => {
+          (get(DeliveryRulesApi) as FakeDeliveryRulesApi).switchError = new ApiError(
+            422,
+            { code: code === 'invalid_version' ? code : 'validation_failed', status: 422, detail, requestId: REQUEST_ID, errors: [{ pointer: ptr, code, detail }] },
+            REQUEST_ID,
+          );
+        });
+        await submit(panel);
+        await until(() => !!panel.querySelector('.field-error'), 'the refusal at its field');
+      });
+    });
+  }
 
   // A sync chosen (R-CUR-027): the first run's count, the interval in words and that a sync stores only what the rules deliver; and a
   // package the rules do not deliver, said instead of being set up.

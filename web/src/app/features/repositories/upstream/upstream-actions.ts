@@ -14,6 +14,8 @@ import { QuaderDialog } from '../../../shared/ui/dialog';
 import { AskDialog, AskDialogData } from './request-dialogs';
 import { DownloadPreviewDialog, DownloadPreviewData, DownloadPreviewResult } from './download-preview-dialog';
 import { FailureToasts } from '../../../shared/failure-dialog';
+import { VersionRangeData, VersionRangeDialog } from './version-range-dialog';
+import { rangeBoundsText } from './upstream-words';
 
 /** How long a switch's answer stands in its row while the catalogue's read does not agree with it yet (R-CUR-006's bound and more). */
 export const SETTLE_MS = 30_000;
@@ -199,7 +201,8 @@ export class UpstreamActions {
   settled(key: string, read: DeliveryDecision): DeliveryDecision {
     const pending = this.settling.get(key);
     if (!pending) return read;
-    if (pending.until > Date.now() && pending.decision.delivered !== read.delivered) return pending.decision;
+    const agrees = pending.decision.delivered === read.delivered && sameRange(pending.decision, read);
+    if (pending.until > Date.now() && !agrees) return pending.decision;
     this.settling.delete(key);
     this.unsettled.set(this.settling.size);
     return read;
@@ -234,6 +237,29 @@ export class UpstreamActions {
     return out;
   }
 
+  /**
+   * **Limit versions…** of a package (R-CUR-026): the dialog writes the range through the package's switch and closes with the answer,
+   * which the head shows at once (R-UI-213); the versions are read again. A refused save stays in the dialog with its values. Null when
+   * cancelled.
+   */
+  async limitVersions(data: Omit<VersionRangeData, 'repository' | 'format'>): Promise<DeliverySwitchResult | null> {
+    const ref = this.dialog.open<VersionRangeDialog, VersionRangeData, DeliverySwitchResult>(VersionRangeDialog, {
+      data: { ...data, repository: this.repository(), format: this.format() },
+      width: '34rem',
+    });
+    const out = await firstValueFrom(ref.closed);
+    if (!out) return null;
+    this.remember(data.name, out.decision);
+    this.changed.update((n) => n + 1);
+    const range = out.decision.decidedBy.range;
+    this.notifier.status(
+      range
+        ? $localize`:@@upstream.range.saved:${data.name}:name: is delivered with the versions ${rangeBoundsText(range)}:bounds:.`
+        : $localize`:@@upstream.range.saved-all:${data.name}:name: is delivered with every version.`,
+    );
+    return out;
+  }
+
   /** **Request** a package or a version (R-CUR-015): a dialog for the optional note, then the ask. */
   async ask(s: Subject): Promise<void> {
     const ref = this.dialog.open<AskDialog, AskDialogData, string | null>(AskDialog, { data: { subject: subjectText(s), version: !!s.version } });
@@ -258,6 +284,14 @@ export class UpstreamActions {
     );
     if (out !== null) this.notifier.status($localize`:@@upstream.discard.done:Discarded: ${out.versions.length}:versions: versions, ${out.files}:files: files.`);
   }
+}
+
+/** Whether two decisions name the same range of a package's allow (R-CUR-026), or none both. */
+function sameRange(a: DeliveryDecision, b: DeliveryDecision): boolean {
+  const x = a.decidedBy.range;
+  const y = b.decidedBy.range;
+  if (!x || !y) return !x === !y;
+  return x.fromVersion === y.fromVersion && x.toVersion === y.toVersion && x.toInclusive === y.toInclusive;
 }
 
 /** The status after a version's switch: what the server decided. */

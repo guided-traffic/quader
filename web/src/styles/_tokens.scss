@@ -155,10 +155,12 @@
 
   --quader-control-height: 32px;
   // The style guide's field widths (Forms; Q-UI-334), at 14 px Inter: a count of up to six digits, a period in seconds of up to
-  // eight, a byte count of up to nineteen, and a name, a key, a host or a choice: half the form column.
+  // eight, a byte count of up to nineteen, a version with the list of versions it offers (a canary version such as
+  // 2.10.0-canary.bfb9accdc beside the list's arrow), and a name, a key, a host or a choice: half the form column.
   --quader-field-width-number: 6rem;
   --quader-field-width-duration: 8rem;
   --quader-field-width-bytes: 13rem;
+  --quader-field-width-version: 16rem;
   --quader-field-width-name: 28rem;
   --quader-control-radius: var(--quader-radius-m);
   --quader-control-bg: light-dark(#ffffff, rgb(5 5 6 / 40%));

@@ -416,11 +416,12 @@ span.bad:has(> .material-icons) {
   }
 }
 
-// The style guide's five field widths (Forms; Q-UI-334): a field takes the one of its kind of input, so the fields of one column
+// The style guide's six field widths (Forms; Q-UI-334): a field takes the one of its kind of input, so the fields of one column
 // line up whatever their content says. A width is fixed and never wider than its column; a narrower column shrinks it.
 .field-w-number,
 .field-w-duration,
 .field-w-bytes,
+.field-w-version,
 .field-w-name {
   max-inline-size: 100%;
 }
@@ -435,6 +436,10 @@ span.bad:has(> .material-icons) {
 
 .field-w-bytes {
   inline-size: var(--quader-field-width-bytes);
+}
+
+.field-w-version {
+  inline-size: var(--quader-field-width-version);
 }
 
 .field-w-name {
