@@ -122,8 +122,10 @@ export interface AllowDialogData {
       padding: 0;
       border: 0;
 
+      /* Without the browser's 2 px of padding, the label starts where the fields' labels start (Allow at 1,440 and 390 px). */
       legend {
         margin-block-end: var(--quader-space-2);
+        padding: 0;
       }
     }
     // A choice and its sentence, as the mode of a remote's mirror (mirror-settings.ts).

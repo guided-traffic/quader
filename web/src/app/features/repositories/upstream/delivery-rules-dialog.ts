@@ -127,6 +127,11 @@ export function effectText(effect: DeliveryEffect): string {
     </div>
   `,
   styles: `
+    /* The sentence of the decision is the dialog's lead, a step above the first field: as a field's hint (no room under it) it
+       stood against the label Sub-section. */
+    .dialog-body > .hint {
+      margin-block-end: var(--quader-space-3);
+    }
     .add {
       margin-block-end: var(--quader-space-4);
       padding-block-end: var(--quader-space-4);

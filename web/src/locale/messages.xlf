@@ -27073,7 +27073,7 @@
     </unit>
     <unit id="rules.caption">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:187</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:192</note>
       </notes>
       <segment>
         <source>Delivery rules of this repository, newest first</source>
@@ -27081,7 +27081,7 @@
     </unit>
     <unit id="rules.empty">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:188</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:193</note>
       </notes>
       <segment>
         <source>There is no rule yet.</source>
@@ -27089,7 +27089,7 @@
     </unit>
     <unit id="rules.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:189</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:194</note>
       </notes>
       <segment>
         <source>No rule matches.</source>
@@ -27097,7 +27097,7 @@
     </unit>
     <unit id="rules.add.effect">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:190</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:195</note>
       </notes>
       <segment>
         <source>Effect</source>
@@ -27105,7 +27105,7 @@
     </unit>
     <unit id="rules.add.pattern-hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:191</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:196</note>
       </notes>
       <segment>
         <source>A name pattern, such as <ph id="0" equiv="example" disp="this.data.example"/>.</source>
@@ -27113,7 +27113,7 @@
     </unit>
     <unit id="rules.col.subject">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:193</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:198</note>
       </notes>
       <segment>
         <source>Subject</source>
@@ -27121,7 +27121,7 @@
     </unit>
     <unit id="rules.col.kind">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:194</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:199</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -27129,7 +27129,7 @@
     </unit>
     <unit id="rules.col.effect">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:195</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:200</note>
       </notes>
       <segment>
         <source>Effect</source>
@@ -27137,7 +27137,7 @@
     </unit>
     <unit id="rules.col.by">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:196</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:201</note>
       </notes>
       <segment>
         <source>Set by</source>
@@ -27145,7 +27145,7 @@
     </unit>
     <unit id="rules.col.actions">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:197</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:202</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -27153,7 +27153,7 @@
     </unit>
     <unit id="rules.added-allow">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:251</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:256</note>
       </notes>
       <segment>
         <source>The sub-section <ph id="0" equiv="pattern" disp="pattern"/> is allowed.</source>
@@ -27161,7 +27161,7 @@
     </unit>
     <unit id="rules.added-block">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:252</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:257</note>
       </notes>
       <segment>
         <source>The sub-section <ph id="0" equiv="pattern" disp="pattern"/> is blocked.</source>
@@ -27169,7 +27169,7 @@
     </unit>
     <unit id="upstream.rule.removed">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:271</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:276</note>
         <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:170</note>
       </notes>
       <segment>
@@ -27341,7 +27341,7 @@
         <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:144,145</note>
         <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:44,45</note>
         <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:111,112</note>
-        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:201,202</note>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:203,204</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -27776,7 +27776,7 @@
     </unit>
     <unit id="upstream.decline.title">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:181,182</note>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:183,184</note>
       </notes>
       <segment>
         <source>Decline <ph id="0" equiv="INTERPOLATION" disp="{{ data.subject }}"/></source>
@@ -27784,7 +27784,7 @@
     </unit>
     <unit id="upstream.decline.reason">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:189,190</note>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:191,192</note>
       </notes>
       <segment>
         <source>Reason</source>
@@ -27792,7 +27792,7 @@
     </unit>
     <unit id="upstream.decline.reason-hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:194,196</note>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:196,198</note>
       </notes>
       <segment>
         <source>Those who asked read it.</source>
@@ -27800,7 +27800,7 @@
     </unit>
     <unit id="upstream.decline.discard">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:197,198</note>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:199,200</note>
       </notes>
       <segment>
         <source>Discard what was fetched for examination</source>
@@ -27808,7 +27808,7 @@
     </unit>
     <unit id="upstream.decline.submit">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:202,205</note>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:204,207</note>
       </notes>
       <segment>
         <source>Decline</source>
@@ -27816,7 +27816,7 @@
     </unit>
     <unit id="upstream.decline.reason-required">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:213</note>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:215</note>
       </notes>
       <segment>
         <source>Say why, in a sentence.</source>
