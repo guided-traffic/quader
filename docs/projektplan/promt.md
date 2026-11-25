@@ -248,16 +248,17 @@ edit of FULL.md.
 
 **Read at the start (06:13):** `main` clean at fe66711f1; Test and Release green on ee8e41c2c (45480741707); the nightly
 green (45490907494); the newest release is v0.124.0, and 94a99ebca and ee8e41c2c wait for the next code push to be
-released. Two integration instances and the UI profile's stores run; the machine's load is 7.6.
+released. Two integration instances run; the machine's load is 7.6. The UI development profile's backend and web server were down
+and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`).
 
-**What is open and can be built, cut into packages (06:25):**
+**What is open and can be built, cut into packages (06:15):**
 
 | Package | What it closes | State |
 |---|---|---|
-| S1 · A screen says a server's failure in its own language | the thirteen screens of section 8, Product ("Thirteen more screens show a server's English text as their own"), from the kept diff `.dev/server-sentences-full-scope.diff`, which no longer applies to `main` as it is | in work since 06:30 |
-| S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:30 |
-| M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847). Each is run once and its numbers are written down; a defect a number shows is repaired or entered | in work since 06:30 |
-| P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows (dialogs, error states, hover, open menus), what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | a planner since 06:30 |
+| S1 · A screen says a server's failure in its own language | the thirteen screens of section 8, Product ("Thirteen more screens show a server's English text as their own"), from the kept diff `.dev/server-sentences-full-scope.diff`, which no longer applies to `main` as it is | in work since 06:17 |
+| S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:17 |
+| M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847). Each is run once and its numbers are written down; a defect a number shows is repaired or entered | in work since 06:17 |
+| P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows (dialogs, error states, hover, open menus), what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | a planner since 06:17 |
 
 **What stays open and is not built by this run, each with its reason:** F-126, F-95, the `npm ci` binding and the
 unreachable github.com of `e2e (bastion)` wait for a recurrence (section 8); the stall without a neighbour is a standing
