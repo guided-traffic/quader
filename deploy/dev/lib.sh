@@ -28,6 +28,11 @@ else
 fi
 unset default_cluster
 CTX="kind-${CLUSTER}"
+# The files of the upstream registries' accounts this checkout's cluster uses (deploy/dev/upstream-accounts.sh, Q-ARCH-1066): written by
+# up.sh from the main checkout's .dev/credentials/upstream-registries.env, the source of the Secret quader-upstream-docker-hub and of
+# the nodes' Docker Hub account; down.sh removes them.
+# shellcheck disable=SC2034 # read by up.sh and down.sh, which source this file
+UPSTREAM_ACCOUNTS_DIR="$STATE_DIR/upstream-accounts"
 
 # One version per tool: every pin comes from tools/versions.env.
 set -a
@@ -363,6 +368,11 @@ release_values() {
   # (bastion.sh install oci), so the set needs no second switch for its Bastion case.
   [ "$profile" = "oci" ] && RELEASE_VALUES+=(-f "$dir/values-scatter.yaml" -f "$dir/values-bastion.yaml" \
     --set-json "config.server.additional_base_urls=[\"https://quader-api.quader.svc:8080\",\"https://quader-packages.quader.svc:8080\",\"https://bastion-oci.quader.localhost:$EDGE_PORT\"]")
+  # The Docker Hub account of the profile's file (Q-ARCH-1066): declared only while the Secret up.sh applies from it exists, so a cluster
+  # without the file, every CI leg among them, declares none. The copies of older releases have no values-upstream-accounts.yaml.
+  if [ -f "$dir/values-upstream-accounts.yaml" ] && kn get secret quader-upstream-docker-hub -o name >/dev/null 2>&1; then
+    RELEASE_VALUES+=(-f "$dir/values-upstream-accounts.yaml")
+  fi
   return 0
 }
 
@@ -393,6 +403,7 @@ render() {
 # the Secret, never put on a command line of this machine.
 sentinel_cli() {
   local pod="$1"; shift
+  # shellcheck disable=SC2016 # the variable is the pod's, expanded by its shell
   kn exec "$pod" -c sentinel -- sh -c \
     'exec valkey-cli --tls --cacert /tls/ca.crt -h 127.0.0.1 -p 36379 --no-auth-warning -a "$VALKEY_PASSWORD" "$@"' sh "$@"
 }
@@ -400,6 +411,7 @@ sentinel_cli() {
 # valkey_cli <pod> <command...> runs valkey-cli as the default user against the Valkey in <pod> (port 16379).
 valkey_cli() {
   local pod="$1"; shift
+  # shellcheck disable=SC2016 # the variable is the pod's, expanded by its shell
   kn exec "$pod" -c valkey -- sh -c \
     'exec valkey-cli --tls --cacert /tls/ca.crt -h 127.0.0.1 -p 16379 --no-auth-warning -a "$VALKEY_PASSWORD" "$@"' sh "$@"
 }

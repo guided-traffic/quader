@@ -87,6 +87,7 @@ is measured by [the end-to-end suite](e2e.md), which runs them under load.
 | `QUADER_HELM_EXTRA` | unset | extra arguments for the `helm upgrade` of the Quader release. They may not set the image (`image`, `image.registry`, `image.repository`, `image.tag`, `image.digest`): `up.sh` refuses them, because helm applies every `--set` before the `--set-string` of the tag `up.sh` sets from `QUADER_IMAGE`, and the value was dropped without a word ([Q-HA-489](../spec/ha-and-helm.md#q-ha-489--every-image-of-the-development-profiles-carries-the-checkouts-tag-and-the-charts-run-the-image-they-were-given)). Another image is `QUADER_IMAGE` |
 | `QUADER_DEV_CLUSTER`, `QUADER_DEV_NAMESPACE` | `quader` in the main checkout and `quader-<worktree>` in a worktree, `quader` | cluster and namespace names. The certificates name the namespace (`quader.<namespace>.svc`, ...), and the Valkey names in values-dev.yaml are written for `quader`, so change the namespace only with a fresh cluster and matching values |
 | `QUADER_DEV_KUBECONFIG` | the caller's `KUBECONFIG` in the main checkout, `.dev/kubeconfig` of the worktree in a worktree | the kubeconfig kind writes the cluster's context into and every script reads |
+| `UPSTREAM_ACCOUNTS_FILE` | the main checkout's `.dev/credentials/upstream-registries.env`; none in a git worktree | the file of the upstream registries' accounts ([below](#the-docker-hub-account)); `/dev/null` turns the account off in the main checkout |
 
 ### One image tag per checkout
 
@@ -179,8 +180,9 @@ NetworkPolicy admits the scrape from the namespace `monitoring`. Its interface i
    install command (see [Tools](#tools)).
 2. `kind create cluster` with [kind.yaml](../../deploy/dev/kind.yaml) and the pinned node image, then waits for
    every node to be Ready. (Pods scheduled while a worker is still NotReady would all land on the
-   nodes that are up, and the host spreading of the dependencies would be decided by luck.)
-3. Creates the namespace with the restricted labels.
+   nodes that are up, and the host spreading of the dependencies would be decided by luck.) Then the files of
+   [the Docker Hub account](#the-docker-hub-account) and the nodes' Docker Hub credential.
+3. Creates the namespace with the restricted labels, and applies or deletes the Secret `quader-upstream-docker-hub`.
 4. In parallel, with logs in `.dev/logs/<name>.log`: `haproxy` (HAProxy Ingress); `pki` (cert-manager, then the root of
    [pki.yaml](../../deploy/dev/pki.yaml), the objects labelled `quader-dev/pki=root`, waits until the root and the CA Issuer are
    Ready, then the whole file and waits for the leaves; applied at once the root was issued twice at a start and leaves were signed
@@ -219,6 +221,7 @@ Generated or created in namespace `quader`; nothing in `up.sh` makes a random va
 | `quader-edge-tls` | `tls.crt`, `tls.key` | cert-manager | the edge's certificate for `localhost` |
 | `quader-s3-tls` | `tls.crt`, `tls.key`, `ca.crt` | cert-manager | SeaweedFS; Quader mounts its `ca.crt` through the `ca` of the entry `default` of `secrets.storageConnections`, which renders the connection's `ca_file` |
 | `quader-customers-tls`, `quader-customers-wildcard-tls`, `quader-customers-edge-tls` | `tls.crt`, `tls.key`, `ca.crt` | cert-manager | the endpoint `customers` (below) |
+| `quader-upstream-docker-hub` (only with an account in the file of [the Docker Hub account](#the-docker-hub-account)) | `username`, `token` | `up.sh` through [upstream-accounts.sh](../../deploy/dev/upstream-accounts.sh), applied server side from the account's files | chart: `secrets.upstreamAccounts.docker-hub` ([values-upstream-accounts.yaml](../../deploy/dev/values-upstream-accounts.yaml)), mounted into the `api`, `packages` and `worker` pods (R-HA-073) |
 
 **Rotation of `quader-break-glass`.** It is the one rotating Secret of the profile. The operator (1.6.14) takes `rotate` as a
 Go duration plus a `d` suffix, overwrites the field when the interval has passed, and refuses intervals below its
@@ -243,6 +246,64 @@ OIDC sign-in is not affected by a break-glass rotation. Do not set `rotate` on a
 Never set `iso.gtrfc.com/rotate` on `quader-encryption-keys` (a rotation would destroy the encrypted data) or on
 `quader-valkey-auth` (a changed password reaches no running Valkey pod, the operator's documentation). The generator
 writes a field only when it is empty.
+
+### The Docker Hub account
+
+Both development profiles, this one and [the UI profile](web-ui.md#the-docker-hub-account), pull from Docker Hub with the owner's account
+when he keeps one in a file of the main checkout, and without one otherwise
+([Q-ARCH-1066](../spec/architecture.md#q-arch-1066--the-development-profiles-hand-the-owners-upstream-accounts-to-quader-through-the-products-own-mechanism),
+[Q-ARCH-1067](../spec/architecture.md#q-arch-1067--a-git-worktree-and-an-instance-other-than-1-read-no-account-unless-a-variable-names-a-file)).
+They hand it to Quader as an operator would, from outside, through the product's own mechanism (R-REPO-077, R-HA-073): nothing of it is in
+the product, its configuration keys, the chart or an image.
+
+**The file.** `<main checkout>/.dev/credentials/upstream-registries.env`, mode `0600` in a directory of mode `0700`, ignored by git and by
+the image build (`.gitignore` and `.dockerignore` exclude `.dev`). One `KEY=value` per line; one pair of enclosing quotes is dropped;
+the file is read by `sed`, never sourced:
+
+```shell
+DOCKERHUB_USERNAME=REPLACE_WITH_DOCKERHUB_USERNAME                  # example: the Docker Hub user
+DOCKERHUB_TOKEN=REPLACE_WITH_DOCKERHUB_READ_ONLY_ACCESS_TOKEN       # example: a personal access token with the scope "Public Repo Read-only"
+```
+
+A value that is empty or still the placeholder `REPLACE_WITH_…` is no account: the profiles start without one and say so in one line,
+`upstream/docker-hub pulls without an account: … holds no account for it`. To fill it, create a read-only access token at Docker Hub
+(Account settings › Personal access tokens), and put the user and the token in place of the placeholders with an editor; never with a
+command line that names the value (`echo`, `printf`, `sed -i`), which lands in the shell's history and the process list.
+
+**What the kind profile does with it.** [upstream-accounts.sh](../../deploy/dev/upstream-accounts.sh) `files` writes the user and the
+token to `.dev/upstream-accounts/docker-hub/username` and `password` (files `0600`, directories `0700`); `up.sh` then gives the nodes'
+kubelets the account (below) and applies the Secret `quader-upstream-docker-hub` with the keys `username` and `token` (`secret`: `kubectl
+create secret … --from-file … --dry-run=client -o yaml | kubectl apply --server-side`, so no `last-applied-configuration` annotation
+holds the data). `release_values` ([lib.sh](../../deploy/dev/lib.sh)) layers
+[values-upstream-accounts.yaml](../../deploy/dev/values-upstream-accounts.yaml), which names that Secret in
+`secrets.upstreamAccounts.docker-hub`, only while the Secret exists. With a placeholder file or without a file the files and the Secret are
+removed, the values file is not layered, and nothing differs from a cluster before this existed; that is every CI leg, which has no file.
+`make dev-down` removes `.dev/upstream-accounts`, never the file under `.dev/credentials`.
+
+**The nodes' own pulls** (the operators' images; `node_registry_credentials` of `up.sh`,
+[Q-ARCH-1068](../spec/architecture.md#q-arch-1068--the-kind-nodes-take-docker-hubs-account-from-the-hosts-docker-first-and-from-the-profiles-file-second)) take the
+first of two sources: the host Docker's stored Docker Hub entry (CI's login step), else the account of the file, which a Mac needs, whose
+Docker Desktop keeps its secret in a credential store and none in `~/.docker/config.json`. The configuration goes from the program that
+builds it through a pipe into each node's `/var/lib/kubelet/config.json` (mode `0600`), and a kubelet is restarted only when its file
+changes, so a second `up.sh` (the profile switches of the e2e suite) restarts none; without a source an entry left by an earlier run is
+removed.
+
+**A worktree** reads no account of its own accord, not even a file at the same place in the worktree: a builder's cluster never pulls with
+the owner's account by accident. `UPSTREAM_ACCOUNTS_FILE=<file>` names a file for one run, a file with made-up values for a test.
+
+**Rotation.** Edit the file and run `make dev-up` again: the files, the Secret and the nodes' entry are written anew, and the pods read the
+new files within the kubelet's sync and 10 s, without a restart (R-HA-073). Measured once on 2026-11-25 on a one-node kind cluster of the
+pinned node image (Kubernetes 1.37.0), with the projected volume the chart renders from `values-dev.yaml` and
+`values-upstream-accounts.yaml`, in a running pod and with made-up values: the Secret created after the pod had started was in its files
+after 13 s, a changed token after 54 s, and the files of the deleted Secret were gone after 60 s, the pod running throughout with no
+restart ([Q-ARCH-1069](../spec/architecture.md#q-arch-1069--the-kind-profile-names-the-accounts-secret-only-while-it-exists-and-the-kubelet-fills-an-optional-source-that-appears-later)). Adding or removing the account (a filled file
+where a placeholder was, or the reverse) changes the release's values and rolls the pods once. Revoke the old token at Docker Hub three
+minutes after the run ([H-1940](../security/data-and-secret-flow.md#h-1940--replicas-send-the-old-and-the-new-token-of-a-declared-account-side-by-side-for-up-to-two-minutes)).
+
+**What reaches logs and artifacts.** The script writes nothing but its one line per registry; `kubectl apply` prints only the object's name,
+which the script discards. The failure capture of the pipeline never takes a Secret, `helm get values` or a node's `config.json`. The
+admin page names the account's state and never a value. What stays exposed on the machine is on
+[data-and-secret-flow.md](../security/data-and-secret-flow.md#the-development-profiles-docker-hub-account).
 
 ### Trusting the dev CA
 

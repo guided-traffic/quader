@@ -142,6 +142,32 @@ umzugehen"). It is stored and sealed as every remote's credential, in the rows a
   repository pulls with it, as above. A rotation reaches every replica within the kubelet's sync and 10 s
   ([H-1940](#h-1940--replicas-send-the-old-and-the-new-token-of-a-declared-account-side-by-side-for-up-to-two-minutes)) and is not in Quader's audit trail ([H-1941](#h-1941--quaders-audit-trail-does-not-show-a-rotation-of-a-declared-accounts-secret)).
 
+### The development profiles' Docker Hub account
+
+Built for the two development profiles only ([architecture.md](../spec/architecture.md) Q-ARCH-1066 to Q-ARCH-1069,
+[local-profile.md](../developer/local-profile.md#the-docker-hub-account)); nothing of it is in the product, the chart or an image. The owner
+keeps his Docker Hub user and a read-only access token in `<main checkout>/.dev/credentials/upstream-registries.env` (mode `0600` in a
+directory of `0700`, ignored by git and by the image build), and [upstream-accounts.sh](../../deploy/dev/upstream-accounts.sh) hands it to
+Quader the way an operator declares an account above: the UI profile through `repositories.upstream_accounts` of its configuration, the kind
+profile through the Secret `quader-upstream-docker-hub` that `secrets.upstreamAccounts` names.
+
+- **Where the value goes.** `sed` reads it from the file into a file (`umask 077`, renamed into place) under the profile's state:
+  `.dev/ui-dev/upstream-accounts/docker-hub/` or `.dev/upstream-accounts/docker-hub/`. From there `kubectl create secret --from-file` and
+  `base64` read it; the Secret's manifest and the nodes' Docker configuration go through pipes, into `kubectl apply --server-side` (no
+  `last-applied-configuration` annotation holds the data) and into each node's `/var/lib/kubelet/config.json` (mode `0600`). The source
+  file is never sourced. No value becomes a shell word, so a `bash -x` trace, the process list, the profiles' logs and the pipeline's
+  failure capture hold key names and paths only; `TestTheAccountFileReachesTheProfilesAndNoTraceShowsAValue`
+  ([internal/tools/devprofile](../../internal/tools/devprofile/upstream_accounts_test.go)) runs the script with `bash -x` and made-up values
+  and fails on a value, or its base64, in the trace, the output or an argument of `kubectl`.
+- **Who uses it.** The main checkout's instance 1 of the UI profile and its kind cluster; a git worktree and the instances 2 to 8 read no
+  account unless `UPSTREAM_ACCOUNTS_FILE` names a file (Q-ARCH-1067), so a builder's run never pulls with it unasked. A placeholder or an
+  empty value is no account; every CI leg has no file.
+- **What stays exposed** on the machine and in the kind cluster is below:
+  [H-1942](#h-1942--the-development-profiles-keep-the-owners-upstream-token-in-plaintext-files-of-the-machine),
+  [H-1943](#h-1943--the-kind-profiles-cluster-holds-the-owners-upstream-token-where-its-kubeconfig-and-its-nodes-reach), and the shared
+  allowance, [H-1944](#h-1944--the-profiles-and-the-owners-installation-draw-on-one-docker-hub-accounts-allowance). Whoever can read
+  `upstream/docker-hub` of a profile pulls with the account (H-1025); the UI profile listens on the loopback address only.
+
 ## The stored-secret key ring
 
 A key ring holds the keys with which the database's sealed columns are encrypted (R-ARCH-021). Keys are loaded from
@@ -559,6 +585,36 @@ operator who rotates an upstream registry's token. Live with every declared acco
 some the new one. Revoking the old token at once fails the fetches of the replicas that still send it (`upstream_auth_failed`). What
 makes it real: a rotation that revokes before every pod has the new files; the manual's steps (create the new token, update the Secret,
 wait three minutes, revoke the old one) avoid it.
+
+### H-1942 · The development profiles keep the owner's upstream token in plaintext files of the machine
+
+Component: `<main checkout>/.dev/credentials/upstream-registries.env` and the copies [upstream-accounts.sh](../../deploy/dev/upstream-accounts.sh)
+writes, `.dev/ui-dev/upstream-accounts/docker-hub/` and `.dev/upstream-accounts/docker-hub/` (Q-ARCH-1066). Subject: every process that
+runs as the owner's user on his development machine: builds, tests, the install scripts of the web workspace's packages, editor
+extensions, and a backup of the home directory that does not exclude the checkout. Live while the file holds an account; dormant with the
+placeholder. The modes `0600` and `0700` keep other users of the machine out, not the owner's own processes, and the copies sit beside the
+source until `make ui-dev-down PURGE=1` or `make dev-down`. What makes it real: code that runs as that user and reads files, such as a
+compromised dependency. What it reaches: a token of the scope "Public Repo Read-only" pulls public content under the owner's name and from
+his allowance, nothing more; revoking it at Docker Hub ends it.
+
+### H-1943 · The kind profile's cluster holds the owner's upstream token where its kubeconfig and its nodes reach
+
+Component: the Secret `quader-upstream-docker-hub` and each node's `/var/lib/kubelet/config.json` of the kind profile (Q-ARCH-1066,
+Q-ARCH-1068). Subject: whoever holds the cluster's kubeconfig (an administrator of the cluster, which kind's own is), the profile's
+operators that read Secrets of every namespace (the internal-secrets-operator caches every Secret of the cluster,
+[local-profile.md](../developer/local-profile.md)), and whoever can talk to the machine's Docker daemon (`docker exec` into a node). Live
+while the main checkout's cluster exists and the file holds an account; never in CI. kind keeps the Secret in etcd without encryption at
+rest, and every pod of the cluster whose image is on Docker Hub is pulled with the account. `make dev-down` deletes the cluster and the
+copies; `up.sh` with a placeholder file deletes the Secret and the nodes' entry. What makes it real: a kubeconfig or a Docker socket in
+other hands than the owner's.
+
+### H-1944 · The profiles and the owner's installation draw on one Docker Hub account's allowance
+
+Component: the account of the owner's file (Q-ARCH-1066) and the account his installation declares in `secrets.upstreamAccounts`
+(R-HA-073). Subject: the owner's installation, when both are the same Docker Hub user. Live in that case. Docker Hub counts its limit per
+user, so a bulk download through a profile's `upstream/docker-hub` (on 2026-11-25 one of 315 tags on a machine of the site used up the
+address's anonymous allowance) or the kind nodes' pulls spend what the installation needs, and its fetches then wait on `429`. What closes
+it: a second Docker Hub user for the development machine, the owner's operational choice.
 
 ### H-1941 · Quader's audit trail does not show a rotation of a declared account's Secret
 

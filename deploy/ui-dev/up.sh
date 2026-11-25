@@ -63,6 +63,8 @@ QUADER_TEST_S3_ENDPOINT="https://127.0.0.1:$UI_S3_PORT" QUADER_TEST_S3_REGION=us
   QUADER_TEST_S3_BUCKET_BLOBS=quader-blobs QUADER_TEST_S3_BUCKET_BACKUPS=quader-backups \
   QUADER_TEST_CA_FILE="$certs/ca.crt" go run ./test/integration/cmd/seed
 
+# The accounts of the upstream registries, as serve.sh writes them at every start (deploy/dev/upstream-accounts.sh, Q-ARCH-1067).
+deploy/dev/upstream-accounts.sh files "$state/upstream-accounts" "$([ "$UI_INSTANCE" = 1 ] && echo main || echo none)"
 # quader.yaml: written by config.sh, which serve.sh runs at every start as well, so a change of the configuration reaches an
 # existing state directory without this script.
 deploy/ui-dev/config.sh "$state"

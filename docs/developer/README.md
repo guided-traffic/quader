@@ -235,6 +235,7 @@ quader/
 │   ├── tools/coverage/       # the requirement coverage generator (docs/coverage)
 │   ├── tools/ciworkflows/    # tests of .github: no bare apt-get, step timeouts of the gating jobs, apt-install.sh against stubs, every integration package in one shard
 │   ├── tools/e2eevidence/    # tests of the stall recorder's cgroup readers (deploy/dev/e2e-evidence.sh) against fabricated cgroup trees of both runner classes
+│   ├── tools/devprofile/     # tests of deploy/dev/upstream-accounts.sh with bash -x and made-up values: the files, the kubectl calls, no value in a trace
 │   └── webui/                # go:embed of the Angular build; dist/index.html is the committed placeholder
 ├── web/                      # Angular workspace: angular.json, src/, scripts/ (build-embed, check-budget), .nvmrc
 ├── deploy/

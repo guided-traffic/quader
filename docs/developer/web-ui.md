@@ -122,6 +122,7 @@ through the dev server works only against a Quader whose base URL is `https://lo
 | Secret files, the key ring (`dev`), the break-glass password | `.dev/ui-dev/secrets`, written once | `up.sh` |
 | Quader's configuration | `.dev/ui-dev/quader.yaml`, rewritten from the paths of the state directory by every `up.sh` and every `serve.sh`, so a change of the profile's configuration reaches an existing `.dev/ui-dev` at the next `make ui-dev-backend`; it creates no certificate, secret or container, and fails naming the file when one `up.sh` writes is missing | [config.sh](../../deploy/ui-dev/config.sh), run by `up.sh` and `serve.sh` |
 | Quader binary | `.dev/ui-dev/bin/quader` | [serve.sh](../../deploy/ui-dev/serve.sh) |
+| The Docker Hub account of `upstream/docker-hub`, when the main checkout's `.dev/credentials/upstream-registries.env` holds one ([below](#the-docker-hub-account)) | `.dev/ui-dev/upstream-accounts/docker-hub/username` and `password` (`0600`), and their paths in `quader.yaml` | [upstream-accounts.sh](../../deploy/dev/upstream-accounts.sh), run by `up.sh` and `serve.sh`; `config.sh` declares the account |
 | The sign-in provider `ui-dev`: `https://localhost:19090`, the loopback address only, the certificate `server.crt` of the profile; the client secret | `.dev/ui-dev/bin/devidp`, `.dev/ui-dev/secrets/idp-client-secret` | `serve.sh` starts and stops it with Quader; `up.sh` writes the secret, `config.sh` the provider into `quader.yaml` |
 | The image scanner `vuln-scanner-trivy` (Q-ARCH-1064): the role `scanner` of the kind `trivy` on `https://127.0.0.1:19083` (ops `:19084`) and the loader of its database, the kind `trivy-db` (ops `:19085`), both Quader from the working tree; Quader's scan listener on `127.0.0.1:19082`; the analyser Trivy of `TRIVY_IMAGE`, one container per call; the pair `trivy.crt` for `vuln-scanner-trivy.quader.test` from the profile's CA | `.dev/ui-dev/scanners/` (configurations, logs `trivy.log` and `trivy-db.log`, the analyser's wrapper `trivy`, the spool, the database's copy `trivy-db`) | [scanners.sh](../../deploy/ui-dev/scanners.sh) prepares, `serve.sh` starts and stops both processes and starts the task `vuln-sync-trivy-db` once; `config.sh` writes the scanner's address and the scan listener; `UI_SCANNERS=0` runs none |
 | The malware scanner `malware-scanner-clamav` (Q-ARCH-1065): the chart's pod on Docker, the containers `quader-ui-dev-malware-scanner-clamav-quader` (the role `scanner` of the kind `clamav`, Quader from the working tree on `RUNTIME_BASE_IMAGE`, published on `https://127.0.0.1:19086`, ops `:19087`) and `-clamd` (`clamd` of `CLAMAV_IMAGE` with [clamd.conf](../../deploy/ui-dev/clamd.conf), the chart's), joined by the socket of three volumes; the updater `malware-updater-freshclam`, the role `scanner` of the kind `freshclam` on the host (`https://127.0.0.1:19088`, ops `:19089`); the pairs `clamav.crt` and `freshclam.crt` | `.dev/ui-dev/scanners/` (the configurations `clamav.yaml` and `freshclam.yaml`, the logs `clamav-quader.log`, `clamav-clamd.log`, `freshclam.log`, the updater's directory `freshclam-db`); the signatures in `<main checkout>/.dev/clamav-signatures` | [malware.sh](../../deploy/ui-dev/malware.sh) prepares and builds, `serve.sh` starts and stops both units; `config.sh` writes their addresses; `UI_SCANNERS=0` or `UI_MALWARE=0` runs neither, `down.sh` removes the containers and volumes and with `PURGE=1` the image, never the signatures |
@@ -254,6 +255,32 @@ the image 115 MB. An EICAR file uploaded to a generic repository read **Malware 
 its upload, a plain file **clean**, and the download of the first was refused (`403 malware_found`); an npm version whose tarball holds it
 was found 38 ms after its publish.
 
+### The Docker Hub account
+
+`upstream/docker-hub` of the profile pulls with the owner's Docker Hub account when he keeps one in
+`<main checkout>/.dev/credentials/upstream-registries.env` (`DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`; the file, how to fill it and what the
+kind profile does with it are on [local-profile.md](local-profile.md#the-docker-hub-account)), as an installation's operator declares one
+([Q-ARCH-1066](../spec/architecture.md#q-arch-1066--the-development-profiles-hand-the-owners-upstream-accounts-to-quader-through-the-products-own-mechanism)):
+`up.sh` and `serve.sh` run [upstream-accounts.sh](../../deploy/dev/upstream-accounts.sh) `files`, which writes the user and the token to
+`.dev/ui-dev/upstream-accounts/docker-hub/username` and `password` (files `0600`, directories `0700`), and `config.sh` writes their paths
+into `quader.yaml` as `repositories.upstream_accounts.docker-hub` (R-REPO-077) with an empty `secret_name`. `serve.sh`'s `migrate up` applies
+the declaration, and the registry's page (**Admin area › Upstream registries › Docker Hub**) shows the account read-only: "From the
+installation's configuration file. Change or remove it there.", **Files** "Readable on this server", no value.
+
+- **A placeholder file, or none:** the script says `upstream/docker-hub pulls without an account: …` in one line and removes the files,
+  `quader.yaml` declares nothing, `migrate up` removes the declaration of an earlier start, and the page shows the form of an account an
+  administrator may store ("Docker Hub allows more requests with an account.").
+- **Instances 2 to 8 and every worktree** read no account unless `UPSTREAM_ACCOUNTS_FILE` names a file
+  ([Q-ARCH-1067](../spec/architecture.md#q-arch-1067--a-git-worktree-and-an-instance-other-than-1-read-no-account-unless-a-variable-names-a-file)),
+  so a builder's instance never pulls with the owner's account by accident; a builder that needs the declared state renders it with a file
+  of made-up values: `UPSTREAM_ACCOUNTS_FILE=<file> make ui-renders GREP=admin-upstream-docker-hub`.
+- **Rotation:** edit the file and run `deploy/dev/upstream-accounts.sh files .dev/ui-dev/upstream-accounts main` (or the next
+  `make ui-dev-backend`): the running backend reads the new files within 10 s (the re-read of R-REPO-077, held by the unit tests of
+  `internal/proxy/upstream`; not observed on the profile, where it would take a request to Docker Hub). Adding or removing the account changes `quader.yaml` and the
+  declaration, so it takes effect at the next `make ui-dev-backend`.
+- Rendered on 2026-11-25 on instance 3 with a file of made-up values and with the placeholder file: the two states above, light and dark,
+  1440 and 390 px; the backend's log and the run's output held no value.
+
 ### What an open tab asks of the server, measured
 
 Measured once on 2026-11-25 from 06:44 to 07:08, a measurement and not a test
@@ -332,6 +359,7 @@ shape of the integration stack's instances, [build-and-test.md](build-and-test.m
 | `malware-scanner-clamav`, its ops, `malware-updater-freshclam`, its ops ([malware.sh](../../deploy/ui-dev/malware.sh)) | 19086, 19087, 19088, 19089 | each plus `(n - 1) * 100` |
 | The malware scanner's containers, volumes and image | `quader-ui-dev-malware-scanner-clamav-quader`, `-clamd`; volumes `quader-ui-dev-clamd-run`, `-clamd-db`, `-clamd-tmp`; image `localhost/quader-ui-dev/quader:dev` | `quader-ui-dev<n>-…`, `localhost/quader-ui-dev<n>/quader:dev` |
 | ClamAV's signatures, fetched at most once a day | `<main checkout>/.dev/clamav-signatures/`, one for every instance and checkout | the same |
+| The Docker Hub account ([below](#the-docker-hub-account)) | the main checkout's `.dev/credentials/upstream-registries.env` | none, unless `UPSTREAM_ACCOUNTS_FILE` names a file |
 | PostgreSQL, Valkey, S3 | 25432, 26390, 28333 | each plus `(n - 1) * 100` |
 
 ```shell

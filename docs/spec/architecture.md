@@ -13049,6 +13049,102 @@ The details, decided by the development agent:
 [build-and-test.md](../developer/build-and-test.md#instances-and-their-ports), [clamav.md](../developer/clamav.md#the-ui-development-profiles-way-to-clamd),
 [security/malware-scanning.md](../security/malware-scanning.md).
 
+### Q-ARCH-1066 · The development profiles hand the owner's upstream accounts to Quader through the product's own mechanism
+
+Status: **Decided by the development agent** — selected from the options below as the plan of the upstream accounts' package (its cut P2)
+proposed it; the owner reviews it at the walkthrough. Context: an installation takes the account of a registry of the project `upstream`
+from an existing Secret since [R-REPO-077](repositories-and-proxy.md) and R-HA-073 ([ha-and-helm.md](ha-and-helm.md)). The owner keeps his
+Docker Hub account for the profiles in `<main checkout>/.dev/credentials/upstream-registries.env` (`DOCKERHUB_USERNAME`,
+`DOCKERHUB_TOKEN`; mode `0600`, ignored by git and by the image build), and what only a development profile needs stays on the profile's
+side, out of the product, its configuration keys, the chart and the shipped images (the owner, 2026-11-25, for
+[Q-ARCH-1065](#q-arch-1065--the-ui-development-profile-runs-the-malware-scanner-as-the-charts-pod-on-docker)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One script of the profiles turns the file into the product's own declaration (chosen) | [upstream-accounts.sh](../../deploy/dev/upstream-accounts.sh) writes the values into two files per registry; the UI profile names their paths in `repositories.upstream_accounts`, the kind profile applies the Secret `quader-upstream-docker-hub` from them and names it in `secrets.upstreamAccounts` | What the owner looks at is what an operator configures: the page reads "From the installation's configuration file." (UI) or the Secret's name (kind); one place per value; a registry more is one table line | Plaintext copies of the token on the machine and in the kind cluster ([H-1942](../security/data-and-secret-flow.md#h-1942--the-development-profiles-keep-the-owners-upstream-token-in-plaintext-files-of-the-machine), [H-1943](../security/data-and-secret-flow.md#h-1943--the-kind-profiles-cluster-holds-the-owners-upstream-token-where-its-kubeconfig-and-its-nodes-reach)) |
+| (b) The script stores the account through the API (`setUpstreamRepositoryAccount`) after the start | The value is sealed into the profile's database | No file beside the source | The value on a command line or in a request body of the script; a session with recent authentication; a profile reset loses it and a rotation needs the call again; the page shows an administrator's account, not a configured one |
+| (c) A `secretRef` to a file under `config_as_code.secrets_dir` | The account operation names the file | No copy in the database | Refused since [Q-REPO-487](repositories-and-proxy.md#q-repo-487--the-account-operation-of-a-well-known-repository-takes-a-value-only): a well-known repository takes a value only |
+| (d) A variable of the environment that Quader reads | `QUADER_…` | No file | A key of the product that only the profiles need; Quader refuses a `QUADER_` variable that is not a setting; an environment is readable in the process table's neighbourhood |
+
+**Choice:** (a). **Rationale:** it adds nothing to the product and exercises the product's path as an installation runs it, and the owner's
+token goes from the file to Quader without a shell word: `sed` reads a value from the file into a file (`umask 077`, renamed into place),
+the checks and `kubectl create secret --from-file` and `base64` read those files, and the Secret's manifest goes through a pipe into
+`kubectl apply --server-side`, so no `kubectl.kubernetes.io/last-applied-configuration` annotation holds the data. `bash -x`, the process
+list and the logs show key names and paths only, which `TestTheAccountFileReachesTheProfilesAndNoTraceShowsAValue`
+([internal/tools/devprofile](../../internal/tools/devprofile/upstream_accounts_test.go), unit, about 0.5 s) holds with made-up values. A
+value that is empty or still the placeholder `REPLACE_WITH_…` is no account, and the profiles start without one and say so in one line;
+the script refuses before it writes what the product would refuse at use (a colon in a username, more than 8 KiB). The development agent
+would revisit it if a profile had to declare a registry whose account is not a username and a token.
+
+**Applied:** [upstream-accounts.sh](../../deploy/dev/upstream-accounts.sh), [values-upstream-accounts.yaml](../../deploy/dev/values-upstream-accounts.yaml),
+`up.sh`, `lib.sh` (`release_values`, `UPSTREAM_ACCOUNTS_DIR`), `down.sh` of `deploy/dev`; `up.sh`, `serve.sh`, `config.sh` of `deploy/ui-dev`;
+[local-profile.md](../developer/local-profile.md#the-docker-hub-account), [web-ui.md](../developer/web-ui.md#the-docker-hub-account),
+[security/data-and-secret-flow.md](../security/data-and-secret-flow.md#the-development-profiles-docker-hub-account). Tests: the three of
+`internal/tools/devprofile` (unit, together about 1 s, no cluster, no network); `test/chart/lint.sh` renders `values-dev.yaml` with
+`values-upstream-accounts.yaml`.
+
+### Q-ARCH-1067 · A git worktree and an instance other than 1 read no account unless a variable names a file
+
+Status: **Decided by the development agent**, on the condition of the package's brief that a builder's instance never pulls with the
+owner's account by accident; the owner reviews it at the walkthrough. It takes back the plan's "a worktree's instance reads the same
+derived files". Context: the owner's file is in the main checkout only; the UI profile's instance 1 and the kind cluster `quader` are the
+main checkout's, the instances 2 to 8 and every worktree's cluster are builders' ([Q-UI-1044](api-and-ui.md#q-ui-1044--an-instance-of-the-ui-development-profile-is-claimed-not-chosen),
+[Q-HA-491](ha-and-helm.md#q-ha-491--a-worktrees-kind-cluster-its-edge-port-and-its-kubeconfig-are-its-own)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every checkout reads the main checkout's file (git's common directory names it, as `ui_main` of `instance.sh` does for claims) | A builder's instance declares the owner's account | A builder sees the configured state without a step | Every builder's renders, walks and tests pull through `upstream/docker-hub` with the owner's account and draw on its one allowance, unasked |
+| (b) The main checkout's instance 1 and cluster read the file; everything else none unless `UPSTREAM_ACCOUNTS_FILE` names one (chosen) | `files <dir> main` reads `<checkout>/.dev/credentials/upstream-registries.env` only when the checkout is not a worktree; the UI profile passes `none` for an instance other than 1 | The owner's account is used where he runs the profile; a builder names a file of made-up values for a test, or the owner's on purpose | A builder who wants the declared state names a file |
+| (c) A copy of the file per worktree | — | — | A copy of the token per worktree, left behind with it |
+
+**Choice:** (b). **Rationale:** the account and its allowance are the owner's, and a default that spends them on every builder's run is the
+accident the brief rules out. A worktree reads none even when a file lies at the same place in the worktree, so the rule does not depend on
+what a builder's tree holds; `UPSTREAM_ACCOUNTS_FILE=/dev/null` turns the account off in the main checkout. Held by
+`TestAGitWorktreeReadsAnAccountOnlyFromTheFileTheVariableNames` (a repository and a worktree made in a temporary directory, about 0.6 s).
+
+### Q-ARCH-1068 · The kind nodes take Docker Hub's account from the host's Docker first and from the profile's file second
+
+Status: **Decided by the development agent**, as the plan of the package proposed it; the owner reviews it at the walkthrough. Context: the
+nodes of the kind profile pull the operators' images from Docker Hub themselves, and `node_registry_credentials` of `up.sh` gave their
+kubelets the Docker Hub entry the host's Docker stores in `config.json` (CI's login step); on a Mac Docker Desktop keeps it in a credential
+store and none in the file, so the owner's nodes pulled without an account.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The host's Docker only (as before) | — | No change | The owner's nodes pull anonymously, from the allowance of the site's address that the pipeline's runners share |
+| (b) The host's Docker first, the profile's file second (chosen) | CI unchanged; the owner's Mac takes the file | One account per machine, the one its operator gave | Two sources to know of; the order is documented |
+| (c) The file first | — | The owner's account wins on a machine that has both | A developer's file would override the pipeline's login on a runner that had one |
+| (d) Asking the credential store (`docker-credential-desktop get`) | — | No file | The helper prints the secret to a pipe of the script and differs per platform; the store may ask the user |
+
+**Choice:** (b). The entry goes from the program that builds it (the host's `config.json` filtered by Python as before, or
+`upstream-accounts.sh dockerconfig`) through a pipe into each node's `/var/lib/kubelet/config.json` (`umask 077`), never into a shell word
+or a temporary file of the host; a kubelet is restarted only when the SHA-256 of its node's file differs from the new one, so a second
+`up.sh` (the e2e suite's profile switches) restarts none; without a source an entry of an earlier run is removed and its kubelet
+restarted. Observed once on 2026-11-25 on a one-node cluster of the pinned node image with the functions cut out of `up.sh` and made-up
+values: the file's account written (mode 600) and the kubelet restarted; a second run restarted nothing; no source removed the file; a
+host `config.json` with a made-up Docker Hub entry and another registry's won over the file, and only the Docker Hub entry reached the
+node.
+
+### Q-ARCH-1069 · The kind profile names the account's Secret only while it exists, and the kubelet fills an optional source that appears later
+
+Status: **Decided by the development agent**; the owner reviews it at the walkthrough. It also answers the point the plan of the
+upstream accounts left open for this cut: whether a kubelet fills the optional source of a Secret created after the pod started, on which
+R-HA-073's "that registry's fetches fail until it exists" and
+[Q-REPO-485](repositories-and-proxy.md#q-repo-485--a-missing-empty-or-wrong-file-fails-that-registrys-fetches-and-stops-nothing-else) rest.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `release_values` layers `values-upstream-accounts.yaml` only while the Secret `quader-upstream-docker-hub` exists (chosen) | A cluster without an account, every CI leg among them, renders what it rendered before | No pod of a leg mounts a volume it does not need; a file older releases lack is never asked for | One `kubectl get` per `release_values` |
+| (b) Always layer it | The volume in every pod, empty without the Secret | One path | Every leg's pods change for an account no leg has |
+
+**Choice:** (a). **Measured once on 2026-11-25** (a measurement, not a test: a cluster's start takes about 40 s): a one-node kind
+cluster of the pinned node image (Kubernetes 1.37.0), a pod with the projected volume the chart renders from `values-dev.yaml` and
+`values-upstream-accounts.yaml` (`defaultMode` 0440, the Secret `optional`, the items `username` and `token`), started without the Secret;
+the Secret then applied by `upstream-accounts.sh secret` from made-up values. The files appeared in the running pod 13 s after the apply, a
+changed token 54 s after its apply, and the files of the deleted Secret were gone 60 s after the delete; the pod ran throughout with no
+restart. The Secret carried no `last-applied-configuration` annotation, and its managed fields named the keys `username` and `token` with no
+value. Nothing asked Docker Hub.
+
 ## What this does not cover
 
 

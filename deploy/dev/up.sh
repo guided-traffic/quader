@@ -60,6 +60,9 @@
 #                          follows. Fixed when the cluster is created.
 #   QUADER_DEV_CLUSTER     the kind cluster, default `quader` in the main checkout and quader-<worktree> in a worktree, whose
 #                          kubeconfig is then the worktree's .dev/kubeconfig (QUADER_DEV_KUBECONFIG sets another).
+#   UPSTREAM_ACCOUNTS_FILE the file of the upstream registries' accounts (deploy/dev/upstream-accounts.sh): default the main
+#                          checkout's .dev/credentials/upstream-registries.env, none in a git worktree. Its Docker Hub account
+#                          becomes the Secret quader-upstream-docker-hub that upstream/docker-hub pulls with, and the nodes' own.
 #   QUADER_HELM_EXTRA=...  extra arguments for the helm upgrade of the quader release. They may not set the image (refused: helm
 #                          applies them before the image this script sets from QUADER_IMAGE); another image is QUADER_IMAGE.
 set -euo pipefail
@@ -100,16 +103,27 @@ k get nodes >/dev/null || die "the context $CTX does not answer"
 # the host spreading of the dependencies would be decided by luck.
 k wait --for=condition=Ready nodes --all --timeout=180s >/dev/null || die "the kind nodes did not become Ready"
 
+# The accounts of the upstream registries (upstream-accounts.sh, Q-ARCH-1066, Q-ARCH-1067): the files of the main checkout's
+# .dev/credentials/upstream-registries.env in $UPSTREAM_ACCOUNTS_DIR, none in a git worktree unless UPSTREAM_ACCOUNTS_FILE names a file,
+# and none in CI, which has no such file. They are the second source of the nodes' Docker Hub account below and the source of the
+# Secret quader-upstream-docker-hub of step 2.
+"$DEV_DIR/upstream-accounts.sh" files "$UPSTREAM_ACCOUNTS_DIR" main | while IFS= read -r line; do log "$line"; done
+
 # The nodes pull the profile's dependencies themselves (the operators' images are on Docker Hub), and without a credential those
 # pulls count against Docker Hub's limit of the host's public address, which others on that address can use up: a leg then ends
 # at "Deployment ... not ready" with ImagePullBackOff and "429 Too Many Requests" (Test and Release 45559612705, e2e (push)).
-# Where the host's Docker is logged in to Docker Hub with a stored secret (CI's login step; not a credential store, which keeps
-# no secret in the file), the nodes' kubelets get that one entry and pull with the account. It lives in the nodes until dev-down.
-node_registry_credentials() {
-  local cfg="${DOCKER_CONFIG:-$HOME/.docker}/config.json" one node
-  [ -r "$cfg" ] || return 0
-  one="$(mktemp)"
-  if ! python3 - "$cfg" > "$one" 2>/dev/null <<'PY'
+# The nodes' kubelets get one Docker Hub entry from the first of two sources (Q-ARCH-1068): the host's Docker where it is logged in to
+# Docker Hub with a stored secret (CI's login step), else the account of the profile's file above, which a Mac needs, whose Docker keeps
+# its secret in a credential store and none in the file. The entry goes from the program that builds it through a pipe into the node,
+# never into a shell word or a file of the host. A node whose file holds it already keeps its kubelet running, so a second run (the
+# profile switches of the e2e suite) restarts nothing; without a source an entry of an earlier run is removed. It lives in the nodes
+# until dev-down.
+
+# host_docker_hub prints the host Docker's stored Docker Hub entries as a Docker configuration; exit 3 without one.
+host_docker_hub() {
+  local cfg="${DOCKER_CONFIG:-$HOME/.docker}/config.json"
+  [ -r "$cfg" ] || return 3
+  python3 - "$cfg" <<'PY'
 import json, sys
 auths = json.load(open(sys.argv[1])).get("auths", {})
 hub = {k: v for k, v in auths.items() if "index.docker.io" in k or k.rstrip("/").endswith("docker.io")}
@@ -118,15 +132,48 @@ if not hub:
     sys.exit(3)
 json.dump({"auths": hub}, sys.stdout)
 PY
-  then rm -f "$one"; return 0; fi
-  log "the nodes pull from Docker Hub with the account the host's Docker is logged in with"
+}
+# node_docker_config <host|file> prints the nodes' Docker configuration from that source.
+node_docker_config() {
+  case "$1" in
+    host) host_docker_hub ;;
+    file) "$DEV_DIR/upstream-accounts.sh" dockerconfig "$UPSTREAM_ACCOUNTS_DIR" ;;
+  esac
+}
+# sha256_stdin prints the SHA-256 of its input (sha256sum on Linux runners, shasum on macOS).
+sha256_stdin() {
+  if command -v sha256sum >/dev/null; then sha256sum | awk '{print $1}'
+  else shasum -a 256 | awk '{print $1}'; fi
+}
+node_registry_credentials() {
+  local source=none want="" node have restarted=0
+  if host_docker_hub >/dev/null 2>&1; then
+    source="host"
+  elif node_docker_config file >/dev/null 2>&1; then
+    source="file"
+  fi
+  [ "$source" = none ] || want="$(node_docker_config "$source" | sha256_stdin)"
   for node in $(kind get nodes --name "$CLUSTER"); do
-    docker cp "$one" "$node:/var/lib/kubelet/config.json" >/dev/null \
-      && docker exec "$node" sh -c 'chmod 600 /var/lib/kubelet/config.json && systemctl restart kubelet.service' \
-      || { rm -f "$one"; die "could not give the node $node the Docker Hub credential"; }
+    have="$(docker exec "$node" sh -c 'sha256sum /var/lib/kubelet/config.json 2>/dev/null | cut -d" " -f1' || true)"
+    [ "$have" != "$want" ] || continue
+    if [ "$source" = none ]; then
+      docker exec "$node" sh -c 'rm -f /var/lib/kubelet/config.json && systemctl restart kubelet.service' \
+        || die "could not remove the Docker Hub credential of the node $node"
+    else
+      node_docker_config "$source" | docker exec -i "$node" sh -c 'umask 077 && cat > /var/lib/kubelet/config.json.new &&
+        mv -f /var/lib/kubelet/config.json.new /var/lib/kubelet/config.json && systemctl restart kubelet.service' \
+        || die "could not give the node $node the Docker Hub credential"
+    fi
+    restarted=1
   done
-  rm -f "$one"
-  k wait --for=condition=Ready nodes --all --timeout=180s >/dev/null || die "the kind nodes did not become Ready after the kubelets' restart"
+  case "$source" in
+    host) log "the nodes pull from Docker Hub with the account the host's Docker is logged in with" ;;
+    file) log "the nodes pull from Docker Hub with the account of $UPSTREAM_ACCOUNTS_DIR/docker-hub (the profile's file)" ;;
+    none) log "the nodes pull from Docker Hub without an account" ;;
+  esac
+  if [ "$restarted" = 1 ]; then
+    k wait --for=condition=Ready nodes --all --timeout=180s >/dev/null || die "the kind nodes did not become Ready after the kubelets' restart"
+  fi
 }
 node_registry_credentials
 
@@ -137,6 +184,9 @@ k label namespace "$NS" --overwrite \
   pod-security.kubernetes.io/enforce=restricted \
   pod-security.kubernetes.io/audit=restricted \
   pod-security.kubernetes.io/warn=restricted >/dev/null
+# The Secret of upstream/docker-hub's account from the files above, applied server side, or deleted without them; release_values
+# (lib.sh) names it in the chart's secrets.upstreamAccounts while it exists (values-upstream-accounts.yaml, Q-ARCH-1066).
+"$DEV_DIR/upstream-accounts.sh" secret "$CTX" "$NS" "$UPSTREAM_ACCOUNTS_DIR" | while IFS= read -r line; do log "$line"; done
 
 # ── 3. the dependencies, in parallel ─────────────────────────────────────────
 # A task that others depend on writes $LOGS/<name>.ok when it is done (or .fail), and a dependent task

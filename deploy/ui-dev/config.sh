@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Writes quader.yaml of the UI development profile from the state directory (default .dev/ui-dev) that deploy/ui-dev/up.sh
-# created: it reads only the paths of the certificates, the secret files and the spool, and creates no certificate, secret or
+# created: it reads only the paths of the certificates, the secret files, the upstream accounts' files (deploy/dev/upstream-accounts.sh)
+# and the spool, and creates no certificate, secret or
 # container. up.sh and serve.sh both run it, so a change of the profile's configuration reaches an existing state directory at
 # the next backend start, without make ui-dev-up. A key that needs a new file of up.sh still needs up.sh once; this script then
 # names the missing file.
@@ -56,6 +57,29 @@ if [ "${UI_SCANNERS:-1}" != 0 ] && [ "${UI_MALWARE:-1}" != 0 ]; then
 else
   malware=""
 fi
+# The accounts of the upstream registries (deploy/dev/upstream-accounts.sh, Q-ARCH-1066): one entry of repositories.upstream_accounts
+# (R-REPO-077) per registry whose files up.sh or serve.sh wrote, basic with a username file and bearer without one. secret_name stays
+# empty, so the registry's page reads "From the installation's configuration file.". Only the paths enter quader.yaml.
+accounts=""
+for d in "$state"/upstream-accounts/*/; do
+  d="${d%/}"
+  [ -f "$d/password" ] || continue
+  if [ -f "$d/username" ]; then
+    accounts+="
+    $(basename "$d"):
+      auth_mode: basic
+      username_file: \"$d/username\"
+      password_file: \"$d/password\""
+  else
+    accounts+="
+    $(basename "$d"):
+      auth_mode: bearer
+      password_file: \"$d/password\""
+  fi
+done
+repositories=""
+[ -z "$accounts" ] || repositories="repositories:
+  upstream_accounts:$accounts"
 
 cat > "$state/quader.yaml.tmp" <<YAML
 # Written by deploy/ui-dev/config.sh at every make ui-dev-up and make ui-dev-backend, so edit the script, not this file.
@@ -159,6 +183,7 @@ vulnerabilities:
       mode: "off"
 $images
 $malware
+$repositories
 signatures:
   trust_root:
     # Nor does it refresh the public Sigstore root from tuf-repo-cdn.sigstore.dev (R-SIG-017), which nine requests at every start did:

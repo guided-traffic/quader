@@ -298,10 +298,13 @@ Locally `make e2e` builds what a set needs. A CI leg builds none of the images t
 - **The stub upstreams, the driver and the issuer double** are built by `e2e.sh` in every leg, from the commit's Go code on the
   distroless base; each build (whose one fetch is that base) runs through `fetch.sh`, 120 s per attempt, three attempts.
 - **What the nodes pull themselves** (the operators' images of the profile's dependencies, which are on Docker Hub) is pulled with
-  the account the host's Docker is logged in with: after the nodes are ready, `up.sh` copies the host's Docker Hub entry, and only
-  that one, to `/var/lib/kubelet/config.json` of every node and restarts the kubelets (`node_registry_credentials`). It does so
-  only where the host's `config.json` stores the secret itself, as after the pipeline's step "Log in to Docker Hub"; a
-  developer's credential store keeps none in the file, and the nodes then pull without an account. Without it the pulls count
+  the account the host's Docker is logged in with: after the nodes are ready, `up.sh` pipes the host's Docker Hub entry, and only
+  that one, into `/var/lib/kubelet/config.json` of every node and restarts the kubelet of each node whose file changed
+  (`node_registry_credentials`), so a profile switch restarts none. It does so where the host's `config.json` stores the secret itself, as
+  after the pipeline's step "Log in to Docker Hub"; a developer's credential store keeps none in the file, and the nodes then take the
+  account of the owner's file of the main checkout, or pull without one
+  ([Q-ARCH-1068](../spec/architecture.md#q-arch-1068--the-kind-nodes-take-docker-hubs-account-from-the-hosts-docker-first-and-from-the-profiles-file-second),
+  [local-profile.md](local-profile.md#the-docker-hub-account)). A leg has no such file. Without it the pulls count
   against Docker Hub's limit of the host's public address, 100 an hour, which anything else on that address can use up: on
   2026-11-25 a bulk download of 315 tags on a development machine of the same site did, and `e2e (push)` ended after 25 minutes at
   "Deployment/valkey-operator-system/valkey-operator not ready" with `ImagePullBackOff` and "429 Too Many Requests" in the cluster

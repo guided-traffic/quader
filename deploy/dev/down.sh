@@ -17,3 +17,9 @@ if [ -d "$STATE_DIR/logs" ]; then
   log "removing $STATE_DIR/logs"
   rm -rf "$STATE_DIR/logs"
 fi
+# The copies of the upstream registries' accounts the cluster used (upstream-accounts.sh); the file they came from, under
+# .dev/credentials, is the owner's and stays.
+if [ -d "$UPSTREAM_ACCOUNTS_DIR" ]; then
+  log "removing $UPSTREAM_ACCOUNTS_DIR"
+  rm -rf "$UPSTREAM_ACCOUNTS_DIR"
+fi

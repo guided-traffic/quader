@@ -1,0 +1,9 @@
+# The Docker Hub account of the development profile (Q-ARCH-1066): the Secret quader-upstream-docker-hub, which deploy/dev/up.sh applies
+# from the account of <main checkout>/.dev/credentials/upstream-registries.env (deploy/dev/upstream-accounts.sh). release_values
+# (lib.sh) layers this file only while that Secret exists, so a cluster without an account, every CI leg among them, declares none.
+secrets:
+  upstreamAccounts:
+    docker-hub:
+      existingSecret: quader-upstream-docker-hub
+      usernameKey: username
+      passwordKey: token

@@ -9264,10 +9264,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-ARCH
 
-283 questions on [spec/architecture.md](spec/architecture.md).
+287 questions on [spec/architecture.md](spec/architecture.md).
 
 <details>
-<summary>Q-ARCH: 283 questions</summary>
+<summary>Q-ARCH: 287 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9554,6 +9554,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-1063](spec/architecture.md#q-arch-1063--where-the-minutes-of-the-suite-are-each-of-the-six-ranked-costs-decided) | Where the minutes of the suite are: each of the six ranked costs decided | Decided by the development agent | as in the table. | — |
 | [Q-ARCH-1064](spec/architecture.md#q-arch-1064--the-ui-development-profile-runs-the-image-scanner-beside-the-backend) | The UI development profile runs the image scanner beside the backend | Decided by the development agent | (a) `serve.sh` starts `vuln-scanner-trivy` beside the backend: the role `scanner` of the kinds `trivy` and `trivy-db`, Quader from the working tree for this machine; the analyser Trivy of `TRIVY_IMAGE` in a container per call (its binary is Linux only); the database through `upstream/scanner-trivy` as in an installation; `UI_SCANNERS=0` for none, the render runs' default | — |
 | [Q-ARCH-1065](spec/architecture.md#q-arch-1065--the-ui-development-profile-runs-the-malware-scanner-as-the-charts-pod-on-docker) | The UI development profile runs the malware scanner as the chart's pod on Docker | Decided by the owner on 2026-11-25: the conditions (only on his development machine, nothing of it in the shipped images, no new open port in the product) and, after the link to `clamd` over the loopback he had first agreed to proved to need a change of the product or an administrator's step, the form: the chart's pod on Docker | (f) The pod's shape on Docker | — |
+| [Q-ARCH-1066](spec/architecture.md#q-arch-1066--the-development-profiles-hand-the-owners-upstream-accounts-to-quader-through-the-products-own-mechanism) | The development profiles hand the owner's upstream accounts to Quader through the product's own mechanism | Decided by the development agent | (a) One script of the profiles turns the file into the product's own declaration | — |
+| [Q-ARCH-1067](spec/architecture.md#q-arch-1067--a-git-worktree-and-an-instance-other-than-1-read-no-account-unless-a-variable-names-a-file) | A git worktree and an instance other than 1 read no account unless a variable names a file | Decided by the development agent | (b) The main checkout's instance 1 and cluster read the file; everything else none unless `UPSTREAM_ACCOUNTS_FILE` names one | — |
+| [Q-ARCH-1068](spec/architecture.md#q-arch-1068--the-kind-nodes-take-docker-hubs-account-from-the-hosts-docker-first-and-from-the-profiles-file-second) | The kind nodes take Docker Hub's account from the host's Docker first and from the profile's file second | Decided by the development agent | (b) The host's Docker first, the profile's file second | — |
+| [Q-ARCH-1069](spec/architecture.md#q-arch-1069--the-kind-profile-names-the-accounts-secret-only-while-it-exists-and-the-kubelet-fills-an-optional-source-that-appears-later) | The kind profile names the account's Secret only while it exists, and the kubelet fills an optional source that appears later | Decided by the development agent | (a) `release_values` layers `values-upstream-accounts.yaml` only while the Secret `quader-upstream-docker-hub` exists | — |
 
 </details>
 
