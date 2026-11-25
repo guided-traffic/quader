@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
-	"net/url"
 	"strconv"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -298,16 +297,14 @@ func (t *Tracer) Start(ctx context.Context, name string, kind trace.SpanKind, at
 }
 
 // StartClient starts the client span of an outbound request and returns a
-// function that ends it with the outcome. The URL is scrubbed and carries no
-// query string.
-func (t *Tracer) StartClient(ctx context.Context, method string, u *url.URL) (context.Context, func(status int, err error)) {
-	attrs := []attribute.KeyValue{attribute.String("http.request.method", method)}
-	if u != nil {
-		c := *u
-		c.User, c.RawQuery, c.Fragment = nil, "", ""
-		attrs = append(attrs, attribute.String("url.full", c.String()), attribute.String("server.address", u.Hostname()))
+// function that ends it with the outcome. url.full is the address in the one
+// form of R-OPS-013 rule 7, the same as the upstream log's url field.
+func (t *Tracer) StartClient(ctx context.Context, req *http.Request) (context.Context, func(status int, err error)) {
+	attrs := []attribute.KeyValue{attribute.String("http.request.method", req.Method)}
+	if req.URL != nil {
+		attrs = append(attrs, attribute.String("url.full", t.scrub.RequestURL(req)), attribute.String("server.address", req.URL.Hostname()))
 	}
-	ctx, span := t.tracer.Start(ctx, method, trace.WithSpanKind(trace.SpanKindClient), trace.WithAttributes(attrs...))
+	ctx, span := t.tracer.Start(ctx, req.Method, trace.WithSpanKind(trace.SpanKindClient), trace.WithAttributes(attrs...))
 	return ctx, func(status int, err error) {
 		if status > 0 {
 			span.SetAttributes(attribute.Int("http.response.status_code", status))

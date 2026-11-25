@@ -1766,7 +1766,7 @@ log:
   request:
     enabled: true                       # default
     ops_listener: false                 # default: also log probe and metrics requests
-    redact_query_params: [token, access_token, password, secret, sig, signature, X-Amz-Signature, X-Amz-Credential, X-Amz-Security-Token]   # default
+    redact_query_params: [token, access_token, password, secret, sig, signature, X-Amz-Signature, X-Amz-Credential, X-Amz-Security-Token, X-Goog-Signature, X-Goog-Credential, validate_token, verify, jwt, hmac, cf_sign]   # default
   upstream:
     enabled: true                       # default
 metrics:

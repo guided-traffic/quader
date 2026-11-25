@@ -45,7 +45,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	endSpan := func(int, error) {}
 	if rt.f.tracer != nil {
 		var sctx context.Context
-		sctx, endSpan = rt.f.tracer.StartClient(out.Context(), req.Method, req.URL)
+		sctx, endSpan = rt.f.tracer.StartClient(out.Context(), req)
 		out = out.WithContext(sctx)
 		rt.f.tracer.Inject(sctx, out.Header)
 	}
@@ -92,7 +92,8 @@ func (r *record) finish(status int, respBytes int64, err error) {
 		attrs := []slog.Attr{
 			slog.String("purpose", r.rt.purpose),
 			slog.String("method", r.req.Method),
-			slog.String("url", f.scrub.URL(r.req.URL)),
+			// The one form of an address (R-OPS-013 rule 7): a redirect's target loses every value of its query.
+			slog.String("url", f.scrub.RequestURL(r.req)),
 			slog.Int("status", status),
 			slog.Int64("request_bytes", reqBytes),
 			slog.Int64("response_bytes", respBytes),

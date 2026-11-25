@@ -589,7 +589,7 @@ func TestUpstreamLog(t *testing.T) {
 		var buf bytes.Buffer
 		lg := observability.NewLogger(config.Log{Level: "info", Format: "json", Request: config.LogRequest{RedactQueryParams: observability.DefaultQueryParams()}}, &buf)
 		f := New(allowLoopback(), WithUpstreamLog(lg))
-		u := strings.Replace(srv.URL, "http://", "http://svc:topsecret@", 1) + "/p?access_token=xyz&v=1"
+		u := strings.Replace(srv.URL, "http://", "http://svc:topsecret@", 1) + "/p?access_token=xyz&limit=1"
 		ctx := WithCall(context.Background(), Call{OnBehalfOf: "alice", Attempt: 2})
 		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 		resp, err := f.Client(PurposeRemote, WithLogAttrs(slog.String("repo", "npm-remote"))).Do(req)
@@ -613,7 +613,7 @@ func TestUpstreamLog(t *testing.T) {
 			}
 		}
 		raw := buf.String()
-		if strings.Contains(raw, "topsecret") || strings.Contains(raw, "xyz") || !strings.Contains(raw, "v=1") {
+		if strings.Contains(raw, "topsecret") || strings.Contains(raw, "xyz") || !strings.Contains(raw, "limit=1") {
 			t.Errorf("URL not scrubbed: %s", raw)
 		}
 		for _, k := range []string{"url", "request_bytes", "duration_ms"} {

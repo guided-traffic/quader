@@ -20,7 +20,7 @@ type Log struct {
 type LogRequest struct {
 	Enabled           bool     `yaml:"enabled" default:"true"`
 	OpsListener       bool     `yaml:"ops_listener" default:"false" doc:"Also log probe and metrics requests."`
-	RedactQueryParams []string `yaml:"redact_query_params" default:"[\"token\",\"access_token\",\"password\",\"secret\",\"sig\",\"signature\",\"X-Amz-Signature\",\"X-Amz-Credential\",\"X-Amz-Security-Token\"]" doc:"Query parameters whose value is redacted in the request path and in logged URLs (R-OPS-010, R-OPS-013)."`
+	RedactQueryParams []string `yaml:"redact_query_params" default:"[\"token\",\"access_token\",\"password\",\"secret\",\"sig\",\"signature\",\"X-Amz-Signature\",\"X-Amz-Credential\",\"X-Amz-Security-Token\",\"X-Goog-Signature\",\"X-Goog-Credential\",\"validate_token\",\"verify\",\"jwt\",\"hmac\",\"cf_sign\"]" doc:"Query parameters whose value is redacted in the request path and in logged URLs (R-OPS-010, R-OPS-013)."`
 }
 
 // LogUpstream configures the upstream request log (R-OPS-011).

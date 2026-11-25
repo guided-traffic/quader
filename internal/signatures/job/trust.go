@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/observability"
 	"github.com/guided-traffic/quader/internal/signatures"
 	"github.com/guided-traffic/quader/internal/signatures/anchors"
 	"github.com/guided-traffic/quader/internal/signatures/scheme"
@@ -261,12 +262,15 @@ func (j *Job) RunTrustRoot(ctx context.Context, run Run) error {
 		if ctx.Err() != nil {
 			return context.Cause(ctx)
 		}
-		j.o.Log.WarnContext(ctx, "the public Sigstore root was not refreshed", "url", url, "error", err)
-		if ferr := j.o.Store.TrustRootFailed(ctx, codeRefreshFailed, err.Error()); ferr != nil {
+		j.o.Log.WarnContext(ctx, "the public Sigstore root was not refreshed", "url", observability.ScrubAddress(url), "error", err)
+		// The stored failure and the job's result are shown in answers: an address in the error keeps no value Quader did not write
+		// (R-OPS-013 rule 7), a redirect of the repository's host to a signed address included.
+		detail := observability.Scrub(err.Error())
+		if ferr := j.o.Store.TrustRootFailed(ctx, codeRefreshFailed, detail); ferr != nil {
 			return ferr
 		}
 		j.gauges(ctx)
-		return run.SetResult(map[string]string{"failed": err.Error()})
+		return run.SetResult(map[string]string{"failed": detail})
 	}
 	stored, err := j.o.Store.StoreTrustRoot(ctx, r)
 	if err != nil {
