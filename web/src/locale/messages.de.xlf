@@ -24232,7 +24232,7 @@
     </unit>
     <unit id="deb.keys.certificate">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:119,120</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:117,118</note>
       </notes>
       <segment>
         <source>Public certificate</source>
@@ -24241,7 +24241,7 @@
     </unit>
     <unit id="deb.keys.promote">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:154,155</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:152,153</note>
       </notes>
       <segment>
         <source>Promote</source>
@@ -24250,7 +24250,7 @@
     </unit>
     <unit id="deb.keys.remove">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:155,156</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:153,154</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -24259,7 +24259,7 @@
     </unit>
     <unit id="deb.keys.reinstate">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:157,158</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:155,156</note>
       </notes>
       <segment>
         <source>Reinstate</source>
@@ -24268,7 +24268,7 @@
     </unit>
     <unit id="deb.keys.confirm-retirement">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:158,160</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:156,158</note>
       </notes>
       <segment>
         <source>Confirm retirement</source>
@@ -24277,7 +24277,7 @@
     </unit>
     <unit id="deb.keys.next.heading">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:178,180</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:176,178</note>
       </notes>
       <segment>
         <source>Next key</source>
@@ -24286,7 +24286,7 @@
     </unit>
     <unit id="deb.keys.next.exists">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:181,183</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:179,181</note>
       </notes>
       <segment>
         <source> A next key exists. Promote it or remove it before you create another. </source>
@@ -24295,7 +24295,7 @@
     </unit>
     <unit id="deb.keys.next.intro">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:185,187</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:183,185</note>
       </notes>
       <segment>
         <source> Creating a next key starts the overlap: from the next build both keys sign every index. </source>
@@ -24304,7 +24304,7 @@
     </unit>
     <unit id="deb.keys.generate">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:189,190</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:187,188</note>
       </notes>
       <segment>
         <source> Generate a next key </source>
@@ -24313,7 +24313,7 @@
     </unit>
     <unit id="deb.keys.import">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:192,193</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:190,191</note>
       </notes>
       <segment>
         <source> Import a key </source>
@@ -24322,7 +24322,7 @@
     </unit>
     <unit id="deb.keys.import.key">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:199,200</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:197,198</note>
       </notes>
       <segment>
         <source>Armored secret key</source>
@@ -24331,7 +24331,7 @@
     </unit>
     <unit id="deb.keys.import.hint">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:211,212</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:209,210</note>
       </notes>
       <segment>
         <source> For an archive whose clients already trust a key. It is sent once over this connection and sealed on the server; it is never shown again. </source>
@@ -24340,7 +24340,7 @@
     </unit>
     <unit id="deb.keys.import.pass">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:216,218</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:214,216</note>
       </notes>
       <segment>
         <source>Passphrase</source>
@@ -24349,7 +24349,7 @@
     </unit>
     <unit id="deb.keys.import.pass-hint">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:227,228</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:225,226</note>
       </notes>
       <segment>
         <source> Only if the key is protected. It is used once and never stored. </source>
@@ -24358,7 +24358,7 @@
     </unit>
     <unit id="deb.keys.import.submit">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:231,232</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:229,230</note>
       </notes>
       <segment>
         <source> Import as next key </source>
@@ -24367,7 +24367,7 @@
     </unit>
     <unit id="deb.keys.loading">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:239,242</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:237,240</note>
       </notes>
       <segment>
         <source>Loading the keys.</source>
@@ -24376,7 +24376,7 @@
     </unit>
     <unit id="deb.keys.copy-fingerprint">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:308</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:293</note>
       </notes>
       <segment>
         <source>Copy fingerprint</source>
@@ -24385,7 +24385,7 @@
     </unit>
     <unit id="deb.keys.origin.imported">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:309</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:294</note>
       </notes>
       <segment>
         <source>Imported</source>
@@ -24394,7 +24394,7 @@
     </unit>
     <unit id="deb.keys.origin.generated">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:310</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:295</note>
       </notes>
       <segment>
         <source>Generated</source>
@@ -24403,7 +24403,7 @@
     </unit>
     <unit id="deb.keys.caption">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:311</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:296</note>
       </notes>
       <segment>
         <source>Signing keys of this repository</source>
@@ -24412,7 +24412,7 @@
     </unit>
     <unit id="deb.keys.col.fingerprint">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:315</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:300</note>
       </notes>
       <segment>
         <source>Fingerprint</source>
@@ -24421,7 +24421,7 @@
     </unit>
     <unit id="deb.keys.col.state">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:316</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:301</note>
       </notes>
       <segment>
         <source>State</source>
@@ -24430,7 +24430,7 @@
     </unit>
     <unit id="deb.keys.col.type">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:317</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:302</note>
       </notes>
       <segment>
         <source>Type</source>
@@ -24439,7 +24439,7 @@
     </unit>
     <unit id="deb.keys.col.origin">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:318</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:303</note>
       </notes>
       <segment>
         <source>Origin</source>
@@ -24448,7 +24448,7 @@
     </unit>
     <unit id="deb.keys.col.created">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:319</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:304</note>
       </notes>
       <segment>
         <source>Key created</source>
@@ -24457,7 +24457,7 @@
     </unit>
     <unit id="deb.keys.col.since">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:320</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:305</note>
       </notes>
       <segment>
         <source>In this state since</source>
@@ -24466,7 +24466,7 @@
     </unit>
     <unit id="deb.keys.col.actions">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:322</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:307</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -24475,7 +24475,7 @@
     </unit>
     <unit id="deb.keys.actions-of">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:339</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:324</note>
       </notes>
       <segment>
         <source>Actions for <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/></source>
@@ -24484,7 +24484,7 @@
     </unit>
     <unit id="deb.keys.done.created">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:392</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:377</note>
       </notes>
       <segment>
         <source>The next key was created. Both keys sign from the next build.</source>
@@ -24493,7 +24493,7 @@
     </unit>
     <unit id="deb.keys.done.imported">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:402</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:387</note>
       </notes>
       <segment>
         <source>The key was imported as the next key. Both keys sign from the next build.</source>
@@ -24502,7 +24502,7 @@
     </unit>
     <unit id="deb.keys.promote.title">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:412</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:397</note>
       </notes>
       <segment>
         <source>Promote the next key</source>
@@ -24511,7 +24511,7 @@
     </unit>
     <unit id="deb.keys.promote.line1">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:414</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:399</note>
       </notes>
       <segment>
         <source>The next key <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/> becomes the primary key. The old primary key is retired: it stops signing, leaves the key file clients fetch and its private key is erased.</source>
@@ -24520,7 +24520,7 @@
     </unit>
     <unit id="deb.keys.promote.line2">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:415</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:400</note>
       </notes>
       <segment>
         <source>A client that never replaced its key file fails to update from then on.</source>
@@ -24529,7 +24529,7 @@
     </unit>
     <unit id="deb.keys.promote.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:417</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:402</note>
       </notes>
       <segment>
         <source>Promote</source>
@@ -24538,7 +24538,7 @@
     </unit>
     <unit id="deb.keys.done.promoted">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:422</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:407</note>
       </notes>
       <segment>
         <source>The key was promoted.</source>
@@ -24547,7 +24547,7 @@
     </unit>
     <unit id="deb.keys.confirm.title">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:431</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:416</note>
       </notes>
       <segment>
         <source>Confirm the retirement of the key</source>
@@ -24556,7 +24556,7 @@
     </unit>
     <unit id="deb.keys.remove.title">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:432</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:417</note>
       </notes>
       <segment>
         <source>Remove the next key</source>
@@ -24565,7 +24565,7 @@
     </unit>
     <unit id="deb.keys.confirm.line1">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:435</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:420</note>
       </notes>
       <segment>
         <source>The key <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/> is retired and its private key is erased. This cannot be undone.</source>
@@ -24574,7 +24574,7 @@
     </unit>
     <unit id="deb.keys.remove.line1">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:436</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:421</note>
       </notes>
       <segment>
         <source>The next key <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/> stops signing and leaves the key file clients fetch. Its private key is erased and the key cannot be imported again.</source>
@@ -24583,7 +24583,7 @@
     </unit>
     <unit id="deb.keys.confirm.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:439</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:424</note>
       </notes>
       <segment>
         <source>Retire the key</source>
@@ -24592,7 +24592,7 @@
     </unit>
     <unit id="deb.keys.remove.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:440</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:425</note>
       </notes>
       <segment>
         <source>Remove the key</source>
@@ -24601,7 +24601,7 @@
     </unit>
     <unit id="deb.keys.done.retired">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:445</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:430</note>
       </notes>
       <segment>
         <source>The key was retired.</source>
@@ -24610,7 +24610,7 @@
     </unit>
     <unit id="deb.keys.done.reinstated">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:453</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:438</note>
       </notes>
       <segment>
         <source>The key was reinstated.</source>
