@@ -9775,7 +9775,8 @@ spinner in place of its word. [data-table.spec.ts](../../web/src/app/shared/ui/d
 shows its load and never its empty sentence, and **Load more** spins where its rows arrive.
 [remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts): the owner's case, a search started
 after a level's page with its answer held, shows its load, neither the level's total as hits nor the empty sentence, and its button is
-held. [lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs), two cases. The states `download-preview-loading` and
+held. [remote-downloads.spec.ts](../../web/src/app/features/repositories/downloads/remote-downloads.spec.ts): an empty queue read again by
+itself keeps its empty sentence and shows no load. [lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs), two cases. The states `download-preview-loading` and
 `limits-rule-profiles-loading` of `make ui-states`.
 
 ## Deferred
@@ -26614,6 +26615,8 @@ R-UI-217.
 | (b) A small spinner beside the page's title while a read again runs | — | The reader sees the page read | A spinner every 15 to 60 s on every page |
 
 **Choice:** (a). The dashboard's parts and the security dashboard's summary show their load only before their first answer (`!x.hasValue()`).
+The tab Downloads and its downloads kept in sync, whose own reads again set their loading flag, set it no more for a read again: with an
+empty list the data table would have shown its load in place of the empty sentence every 30 s.
 **Applied in the spec:** R-UI-217.
 
 ### Q-UI-1239 · A lint rule refuses a load without the spinner by its sentence, its list, its button and a spin of its own
