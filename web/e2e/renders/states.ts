@@ -295,13 +295,17 @@ export async function* openedAndSections(page: Page): AsyncGenerator<string> {
 async function openEverySection(page: Page, within: Locator): Promise<void> {
   const closed = within.locator('quader-disclosure button[aria-expanded="false"]:is(.toggle, .inline-toggle)');
   await expect(closed.first()).toBeVisible();
-  for (let round = 0; round < 60 && (await closed.count()) > 0; round++) {
-    // The toggle is named by the region it controls; the page writes `aria-expanded` a moment after the click (allSections).
-    const region = await closed.first().getAttribute('aria-controls');
-    const toggle = within.locator(`quader-disclosure button[aria-controls="${region}"]`);
-    await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await still(page);
+  // The sections before the folds inside them: a section's list may hold a fold per row (a page of 50 import tasks on an instance
+  // many runs have imported into), and the sections after it are opened whatever the list's length.
+  for (const each of [within.locator('quader-disclosure button[aria-expanded="false"].toggle'), closed]) {
+    for (let round = 0; round < 200 && (await each.count()) > 0; round++) {
+      // The toggle is named by the region it controls; the page writes `aria-expanded` a moment after the click (allSections).
+      const region = await each.first().getAttribute('aria-controls');
+      const toggle = within.locator(`quader-disclosure button[aria-controls="${region}"]`);
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      await still(page);
+    }
   }
   await expect(closed).toHaveCount(0);
 }
