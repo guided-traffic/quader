@@ -1,5 +1,5 @@
 @if (failure(); as f) {
-  <quader-error-notice [error]="f" (retry)="loaded.reload()" />
+  <quader-error-notice [error]="f" (retry)="reread()" />
 } @else if (repository(); as r) {
   <quader-page-header [heading]="r.key" [name]="true" [description]="sentence()" [descriptionAsWritten]="!!r.description">
     <div meta class="header-facts">

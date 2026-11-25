@@ -5,7 +5,6 @@ import { RouterLink } from '@angular/router';
 import { JobsApi, Task } from '../../../api/jobs-api';
 import { ApiError } from '../../../api/problem';
 import { DamagedBlob, DamagedBlobCopy, StorageApi, StorageConnection } from '../../../api/storage-api';
-import { describeProblem } from '../../../core/http/problem-messages';
 import { Notifier } from '../../../core/notifier';
 import { SessionStore } from '../../../core/session-store';
 import { ErrorNotice } from '../../../shared/error-notice';
@@ -32,6 +31,7 @@ import {
   summaryAt,
   unreachable,
 } from './storage-model';
+import { FailureToasts } from '../../../shared/failure-dialog';
 
 /** The blobs no connection holds whole that the tab lists (R-UI-196); the operator check lists every one. */
 export const DAMAGED_SHOWN = 20;
@@ -58,6 +58,7 @@ export class StoragePage {
   private readonly jobsApi = inject(JobsApi);
   private readonly session = inject(SessionStore);
   private readonly notifier = inject(Notifier);
+  private readonly failureToasts = inject(FailureToasts);
   private readonly pageRefresh = inject(SystemRefresh);
 
   protected readonly now = signal(Date.now());
@@ -232,7 +233,7 @@ export class StoragePage {
       );
     } catch (e) {
       const err = asApiError(e);
-      this.notifier.alert(describeProblem(err).text);
+      this.failureToasts.alert(err);
     } finally {
       this.checking.set(null);
     }

@@ -567,6 +567,10 @@ download (the provider package is a few hundred kilobytes of the workspace's `np
 [I: about 30 to 60 s on the job's runner of the class `self-hosted`, from the development machine's 17 to 23 s]. Per format: 0 (no state is a
 format's; a new format's dialog adds its own states once, a fraction of a second each).
 
+The error notice's seven states (R-UI-216, `shared/error-notice.states.spec.ts`) came later: measured on 2026-11-25 at a load of about
+17, 8.6 s for the file alone with pictures (`--include`), and the whole target 23.3 s wall with 78 tests [V], within the range above. They
+add about 1.5 s of the target's browser time; with `UI_STATES_PICTURES=1` each state also takes its two pictures in the dark scheme.
+
 ### 3.6 Nightly legs, per test
 
 

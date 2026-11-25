@@ -11,7 +11,7 @@
   </quader-page-header>
 
   <form class="create" (submit)="create($event)" novalidate>
-    <quader-error-summary [items]="summary()" (reveal)="reveal($event)" />
+    <quader-error-summary [items]="summary()" [error]="failure()" (reveal)="reveal($event)" />
     @if (failure(); as f) {
       @if (f.fieldErrors.size === 0) {
         <quader-error-notice [error]="f" />

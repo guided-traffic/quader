@@ -37,7 +37,7 @@ export interface IssuanceDetailData {
     <h2 quaderDialogTitle i18n="@@ci.issuance.title">Issued token</h2>
     <div class="dialog-body" tabindex="0">
       @if (error(); as e) {
-        <quader-error-notice [error]="e" />
+        <quader-error-notice [error]="e" (retry)="readUsage()" />
       }
       <dl class="facts">
         <dt i18n="@@ci.issuance.state">State</dt>
@@ -131,12 +131,16 @@ export class IssuanceDetailDialog {
   protected readonly claims = pretty(this.data.issuance.claims);
 
   constructor() {
-    if (this.data.withUsage) {
-      this.api.getIssuance(this.data.issuance.tokenId).then(
-        (d) => this.usage.set(d.usage),
-        (e: unknown) => this.error.set(asApiError(e)),
-      );
-    }
+    if (this.data.withUsage) this.readUsage();
+  }
+
+  /** Reads the token's use; the notice's Retry reads it again (R-UI-216). */
+  protected readUsage(): void {
+    this.error.set(null);
+    this.api.getIssuance(this.data.issuance.tokenId).then(
+      (d) => this.usage.set(d.usage),
+      (e: unknown) => this.error.set(asApiError(e)),
+    );
   }
 }
 

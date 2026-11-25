@@ -17,7 +17,7 @@
 
 <ng-template #problems let-section>
   @if (summaryOf(section).length > 0) {
-    <quader-error-summary [items]="summaryOf(section)" />
+    <quader-error-summary [items]="summaryOf(section)" [error]="failure()?.section === section ? failure()!.error : null" />
   }
   @if (noticeOf(section); as f) {
     <quader-error-notice [error]="f" />

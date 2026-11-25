@@ -207,12 +207,45 @@ function rateLimited(seconds: number | null): string {
     : $localize`:@@problem.rate_limited_wait:Too many requests. Try again in ${seconds}:seconds: seconds.`;
 }
 
+/**
+ * The sentence of a failure whose code the screen does not know, or that has no code (R-UI-216, Q-UI-1181): said from what failed,
+ * in the reader's language, never the server's text and never a bare "HTTP 502". The server's own sentence is a fact of the notice.
+ * `known` stays false, so that a field's problem still shows the server's sentence for a code it has none for (`fieldMessage`).
+ */
 function fallback(error: ApiError): ProblemText {
-  if (error.status === 0) {
-    return {
-      text: $localize`:@@problem.network:The server could not be reached. Check your connection and try again.`,
-      known: true,
-    };
+  const unknown = (text: string): ProblemText => ({ text, known: false });
+  if (error.answer.fault !== null && !error.answer.unreadable) {
+    return unknown($localize`:@@problem.fault:Something went wrong in this page. Try again; if it fails again, report it with the details below.`);
   }
-  return { text: error.problem?.detail ?? error.message, known: false };
+  if (error.answer.unreadable) {
+    return unknown($localize`:@@problem.unreadable:The server answered, but its answer could not be read.`);
+  }
+  const s = error.status;
+  if (s === 0) {
+    return { text: $localize`:@@problem.network:The server could not be reached. Check your connection and try again.`, known: true };
+  }
+  // A status that names its case says it, with a problem document of an unknown code or without one; the rest by its class.
+  switch (s) {
+    case 401:
+      return unknown($localize`:@@problem.unauthenticated:You are not signed in, or your session has ended.`);
+    case 403:
+      return unknown($localize`:@@problem.forbidden:You do not have the permission for this.`);
+    case 404:
+      return unknown($localize`:@@problem.not_found:This does not exist, or you may not see it.`);
+    case 408:
+      return unknown($localize`:@@problem.request_timeout:The server waited too long for the request.`);
+    case 413:
+      return unknown($localize`:@@problem.payload_too_large:The request is too large.`);
+    case 429:
+      return unknown(rateLimited(error.retryAfterSeconds));
+  }
+  if (s === 502 || s === 504) {
+    return unknown($localize`:@@problem.gateway:The server did not answer through the gateway in front of it. It may be restarting or overloaded.`);
+  }
+  if (s === 503) {
+    return unknown($localize`:@@problem.not_ready:The server is not ready to answer. It may be starting or in maintenance.`);
+  }
+  if (s >= 500) return unknown($localize`:@@problem.server_failed:The server failed to answer this request.`);
+  if (s >= 400) return unknown($localize`:@@problem.refused:The server refused this request.`);
+  return unknown($localize`:@@problem.unexpected:The server gave an answer this page did not expect.`);
 }

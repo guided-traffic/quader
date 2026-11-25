@@ -20,7 +20,7 @@
 }
 @if (saveError(); as e) {
   @if (summaryItems().length > 0) {
-    <quader-error-summary [items]="summaryItems()" />
+    <quader-error-summary [items]="summaryItems()" [error]="e" />
   } @else {
     <quader-error-notice [error]="e" />
   }

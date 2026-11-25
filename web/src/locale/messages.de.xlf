@@ -2180,6 +2180,7 @@
     <unit id="problem.unauthenticated">
       <notes>
         <note category="location">src/app/core/http/problem-messages.ts:46</note>
+        <note category="location">src/app/core/http/problem-messages.ts:230</note>
       </notes>
       <segment>
         <source>You are not signed in, or your session has ended.</source>
@@ -2198,6 +2199,7 @@
     <unit id="problem.forbidden">
       <notes>
         <note category="location">src/app/core/http/problem-messages.ts:50</note>
+        <note category="location">src/app/core/http/problem-messages.ts:232</note>
       </notes>
       <segment>
         <source>You do not have the permission for this.</source>
@@ -2216,6 +2218,7 @@
     <unit id="problem.not_found">
       <notes>
         <note category="location">src/app/core/http/problem-messages.ts:54</note>
+        <note category="location">src/app/core/http/problem-messages.ts:234</note>
       </notes>
       <segment>
         <source>This does not exist, or you may not see it.</source>
@@ -2297,6 +2300,7 @@
     <unit id="problem.payload_too_large">
       <notes>
         <note category="location">src/app/core/http/problem-messages.ts:72</note>
+        <note category="location">src/app/core/http/problem-messages.ts:238</note>
       </notes>
       <segment>
         <source>The request is too large.</source>
@@ -2591,13 +2595,85 @@
         <target>Zu viele Anfragen. Versuchen Sie es in <ph id="0" equiv="seconds" disp="seconds"/> Sekunden erneut.</target>
       </segment>
     </unit>
+    <unit id="problem.fault">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages.ts:218</note>
+      </notes>
+      <segment>
+        <source>Something went wrong in this page. Try again; if it fails again, report it with the details below.</source>
+        <target>In dieser Seite ist etwas schiefgelaufen. Versuchen Sie es erneut; schlägt es wieder fehl, melden Sie es mit den Details unten.</target>
+      </segment>
+    </unit>
+    <unit id="problem.unreadable">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages.ts:221</note>
+      </notes>
+      <segment>
+        <source>The server answered, but its answer could not be read.</source>
+        <target>Der Server hat geantwortet, aber seine Antwort konnte nicht gelesen werden.</target>
+      </segment>
+    </unit>
     <unit id="problem.network">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:213</note>
+        <note category="location">src/app/core/http/problem-messages.ts:225</note>
       </notes>
       <segment>
         <source>The server could not be reached. Check your connection and try again.</source>
         <target>Der Server ist nicht erreichbar. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.</target>
+      </segment>
+    </unit>
+    <unit id="problem.request_timeout">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages.ts:236</note>
+      </notes>
+      <segment>
+        <source>The server waited too long for the request.</source>
+        <target>Der Server hat zu lange auf die Anfrage gewartet.</target>
+      </segment>
+    </unit>
+    <unit id="problem.gateway">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages.ts:243</note>
+      </notes>
+      <segment>
+        <source>The server did not answer through the gateway in front of it. It may be restarting or overloaded.</source>
+        <target>Der Server hat über das Gateway vor ihm nicht geantwortet. Er startet vielleicht neu oder ist überlastet.</target>
+      </segment>
+    </unit>
+    <unit id="problem.not_ready">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages.ts:246</note>
+      </notes>
+      <segment>
+        <source>The server is not ready to answer. It may be starting or in maintenance.</source>
+        <target>Der Server ist noch nicht bereit zu antworten. Er startet vielleicht oder ist im Wartungsmodus.</target>
+      </segment>
+    </unit>
+    <unit id="problem.server_failed">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages.ts:248</note>
+      </notes>
+      <segment>
+        <source>The server failed to answer this request.</source>
+        <target>Der Server konnte diese Anfrage nicht beantworten.</target>
+      </segment>
+    </unit>
+    <unit id="problem.refused">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages.ts:249</note>
+      </notes>
+      <segment>
+        <source>The server refused this request.</source>
+        <target>Der Server hat diese Anfrage abgelehnt.</target>
+      </segment>
+    </unit>
+    <unit id="problem.unexpected">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages.ts:250</note>
+      </notes>
+      <segment>
+        <source>The server gave an answer this page did not expect.</source>
+        <target>Der Server hat eine Antwort gegeben, die diese Seite nicht erwartet hat.</target>
       </segment>
     </unit>
     <unit id="nav.context.home">
@@ -7674,7 +7750,7 @@
     <unit id="ci.issuance.active">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:48,49</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:249,250</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:253,254</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -7693,7 +7769,7 @@
     <unit id="ci.issuance.expired">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:52,53</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:253,254</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:257,258</note>
       </notes>
       <segment>
         <source>Expired</source>
@@ -7857,7 +7933,7 @@
     </unit>
     <unit id="ci.issuances.revoke-matching">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:168,171</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:172,175</note>
       </notes>
       <segment>
         <source> Revoke matching tokens </source>
@@ -7866,8 +7942,8 @@
     </unit>
     <unit id="ci.issuances.f.issuer">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:174</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:312</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:178</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:316</note>
       </notes>
       <segment>
         <source>Issuer</source>
@@ -7876,8 +7952,8 @@
     </unit>
     <unit id="ci.issuances.f.project-id">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:177</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:313</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:181</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:317</note>
       </notes>
       <segment>
         <source>GitLab project ID</source>
@@ -7886,9 +7962,9 @@
     </unit>
     <unit id="ci.issuances.f.project-path">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:178</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:314</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:405</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:182</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:318</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:409</note>
       </notes>
       <segment>
         <source>Project path</source>
@@ -7897,8 +7973,8 @@
     </unit>
     <unit id="ci.issuances.f.pipeline">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:179</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:315</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:183</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:319</note>
       </notes>
       <segment>
         <source>Pipeline ID</source>
@@ -7907,8 +7983,8 @@
     </unit>
     <unit id="ci.issuances.f.job">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:181</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:316</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:185</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:320</note>
       </notes>
       <segment>
         <source>Job ID</source>
@@ -7917,8 +7993,8 @@
     </unit>
     <unit id="ci.issuances.f.mapping">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:183</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:317</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:187</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:321</note>
       </notes>
       <segment>
         <source>Mapping</source>
@@ -7927,9 +8003,9 @@
     </unit>
     <unit id="ci.issuances.f.state">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:185</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:318</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:406</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:189</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:322</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:410</note>
       </notes>
       <segment>
         <source>State</source>
@@ -7938,9 +8014,9 @@
     </unit>
     <unit id="ci.issuances.f.from">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:187</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:319</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:407</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:191</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:323</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:411</note>
       </notes>
       <segment>
         <source>Issued from</source>
@@ -7949,9 +8025,9 @@
     </unit>
     <unit id="ci.issuances.f.to">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:188</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:320</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:408</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:192</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:324</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:412</note>
       </notes>
       <segment>
         <source>Issued until</source>
@@ -7960,7 +8036,7 @@
     </unit>
     <unit id="ci.issuances.revoke-unsupported">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:195,196</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:199,200</note>
       </notes>
       <segment>
         <source>The bulk revoke acts on the issuer, project ID, pipeline ID, job ID and mapping only. It would revoke more than the list shows while these filters are applied:</source>
@@ -7969,7 +8045,7 @@
     </unit>
     <unit id="ci.issuances.revoke-note">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:200,204</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:204,208</note>
       </notes>
       <segment>
         <source> To revoke in bulk, filter by one issuer and by a project ID, a pipeline ID, a job ID or a mapping, then apply the filters. </source>
@@ -7978,7 +8054,7 @@
     </unit>
     <unit id="ci.issuance.revoked-short">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:247,248</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:251,252</note>
       </notes>
       <segment>
         <source>Revoked</source>
@@ -7987,7 +8063,7 @@
     </unit>
     <unit id="ci.issuance.removed-short">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:251,252</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:255,256</note>
       </notes>
       <segment>
         <source>Removed</source>
@@ -7996,7 +8072,7 @@
     </unit>
     <unit id="ci.issuances.details">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:257,259</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:261,263</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -8005,7 +8081,7 @@
     </unit>
     <unit id="ci.issuances.empty-none">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:307</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:311</note>
       </notes>
       <segment>
         <source>There is no CI token yet.</source>
@@ -8014,7 +8090,7 @@
     </unit>
     <unit id="ci.issuances.empty">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:308</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:312</note>
       </notes>
       <segment>
         <source>No CI token matches.</source>
@@ -8023,7 +8099,7 @@
     </unit>
     <unit id="ci.issuances.state.any">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:333</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:337</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -8032,7 +8108,7 @@
     </unit>
     <unit id="ci.issuances.state.active">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:334</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:338</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -8041,7 +8117,7 @@
     </unit>
     <unit id="ci.issuances.state.inactive">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:335</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:339</note>
       </notes>
       <segment>
         <source>Expired or revoked</source>
@@ -8050,7 +8126,7 @@
     </unit>
     <unit id="ci.issuances.caption">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:337</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:341</note>
       </notes>
       <segment>
         <source>Issued CI tokens</source>
@@ -8059,7 +8135,7 @@
     </unit>
     <unit id="ci.issuances.col.issued">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:339</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:343</note>
       </notes>
       <segment>
         <source>Issued</source>
@@ -8068,7 +8144,7 @@
     </unit>
     <unit id="ci.issuances.col.issuer">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:340</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:344</note>
       </notes>
       <segment>
         <source>Issuer</source>
@@ -8077,7 +8153,7 @@
     </unit>
     <unit id="ci.issuances.col.mappings">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:341</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:345</note>
       </notes>
       <segment>
         <source>Mappings</source>
@@ -8086,7 +8162,7 @@
     </unit>
     <unit id="ci.issuances.col.project">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:342</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:346</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -8095,7 +8171,7 @@
     </unit>
     <unit id="ci.issuances.col.job">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:343</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:347</note>
       </notes>
       <segment>
         <source>Pipeline / job</source>
@@ -8104,7 +8180,7 @@
     </unit>
     <unit id="ci.issuances.col.ref">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:344</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:348</note>
       </notes>
       <segment>
         <source>Ref</source>
@@ -8113,7 +8189,7 @@
     </unit>
     <unit id="ci.issuances.col.state">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:345</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:349</note>
       </notes>
       <segment>
         <source>State</source>
@@ -8122,7 +8198,7 @@
     </unit>
     <unit id="ci.issuances.col.actions">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:346</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:350</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -8131,7 +8207,7 @@
     </unit>
     <unit id="ci.issuances.none-to-revoke">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:460</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:464</note>
       </notes>
       <segment>
         <source>No active token matches the filters.</source>
@@ -8140,7 +8216,7 @@
     </unit>
     <unit id="ci.issuances.revoke-title">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:464</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:468</note>
       </notes>
       <segment>
         <source>Revoke <ph id="0" equiv="count" disp="count"/> tokens?</source>
@@ -8149,7 +8225,7 @@
     </unit>
     <unit id="ci.issuances.revoke-text">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:466</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:470</note>
       </notes>
       <segment>
         <source>The <ph id="0" equiv="count" disp="count"/> active tokens that match the applied filters stop working at once on every replica. Running jobs that use them fail. This cannot be undone.</source>
@@ -8158,7 +8234,7 @@
     </unit>
     <unit id="ci.issuances.revoke-confirm">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:468</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:472</note>
       </notes>
       <segment>
         <source>Revoke <ph id="0" equiv="count" disp="count"/> tokens</source>
@@ -8167,7 +8243,7 @@
     </unit>
     <unit id="ci.issuances.revoked">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:472</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:476</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="revoked"/> tokens revoked.</source>
@@ -10527,7 +10603,7 @@
         <note category="location">src/app/features/repositories/repository-list.ts:365</note>
         <note category="location">src/app/features/system/backups/backups-page.html:154,156</note>
         <note category="location">src/app/features/system/job-table.ts:149</note>
-        <note category="location">src/app/features/system/storage/storage-page.ts:96</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:97</note>
         <note category="location">src/app/features/system/tasks-card.ts:121</note>
       </notes>
       <segment>
@@ -10567,6 +10643,7 @@
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:127</note>
         <note category="location">src/app/shared/copy-button.ts:36</note>
+        <note category="location">src/app/shared/error-notice.ts:405</note>
       </notes>
       <segment>
         <source>Copied to the clipboard.</source>
@@ -10577,6 +10654,7 @@
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:129</note>
         <note category="location">src/app/shared/copy-button.ts:39</note>
+        <note category="location">src/app/shared/error-notice.ts:407</note>
       </notes>
       <segment>
         <source>The clipboard is not available. Select the text and copy it.</source>
@@ -22315,7 +22393,7 @@
     </unit>
     <unit id="repo.content.sentence.remote">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:167</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:176</note>
       </notes>
       <segment>
         <source>A cache of another registry. It lists what clients have fetched through it.</source>
@@ -22324,7 +22402,7 @@
     </unit>
     <unit id="repo.content.sentence.virtual">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:169</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:178</note>
       </notes>
       <segment>
         <source>Combines other repositories behind one address. It lists what they resolve to.</source>
@@ -22333,7 +22411,7 @@
     </unit>
     <unit id="repo.content.sentence.local2">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:171</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:180</note>
       </notes>
       <segment>
         <source>Holds what is published to it.</source>
@@ -22342,7 +22420,7 @@
     </unit>
     <unit id="repo.content.files-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:266</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:275</note>
       </notes>
       <segment>
         <source>Address for downloads by path (curl, wget)</source>
@@ -22351,7 +22429,7 @@
     </unit>
     <unit id="repo.content.copy-files-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:267</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:276</note>
       </notes>
       <segment>
         <source>Copy address for downloads by path</source>
@@ -22360,7 +22438,7 @@
     </unit>
     <unit id="repo.content.more">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:280</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:289</note>
       </notes>
       <segment>
         <source>More actions</source>
@@ -22369,7 +22447,7 @@
     </unit>
     <unit id="files.trail.between">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:329</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:335</note>
       </notes>
       <segment>
         <source>Show the folders in between</source>
@@ -22378,7 +22456,7 @@
     </unit>
     <unit id="files.delete.progress">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:386</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:392</note>
       </notes>
       <segment>
         <source>Deleting items</source>
@@ -22387,7 +22465,7 @@
     </unit>
     <unit id="files.copy-path">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:387</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:393</note>
       </notes>
       <segment>
         <source>Copy path</source>
@@ -22396,7 +22474,7 @@
     </unit>
     <unit id="files.delete.folder-many">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:456</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:462</note>
       </notes>
       <segment>
         <source>The folder holds more than <ph id="0" equiv="limit" disp="TYPE_TO_CONFIRM_ABOVE"/> items. They are deleted for good.</source>
@@ -22405,7 +22483,7 @@
     </unit>
     <unit id="files.delete.folder">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:457</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:463</note>
       </notes>
       <segment>
         <source>The folder holds <ph id="0" equiv="count" disp="count"/> items. They are deleted for good.</source>
@@ -22414,7 +22492,7 @@
     </unit>
     <unit id="files.delete.file">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:465</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:471</note>
       </notes>
       <segment>
         <source>The file is deleted for good.</source>
@@ -22423,7 +22501,7 @@
     </unit>
     <unit id="files.delete.title">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:468</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:474</note>
       </notes>
       <segment>
         <source>Delete <ph id="0" equiv="path" disp="path"/>?</source>
@@ -22432,7 +22510,7 @@
     </unit>
     <unit id="files.delete.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:470</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:476</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -22441,8 +22519,8 @@
     </unit>
     <unit id="files.deleted">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:478</note>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:488</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:484</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:494</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="path" disp="path"/> deleted.</source>
@@ -22451,7 +22529,7 @@
     </unit>
     <unit id="files.delete.failed">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:489</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:495</note>
       </notes>
       <segment>
         <source>The deletion failed. Some items may be gone.</source>
@@ -22996,7 +23074,7 @@
     </unit>
     <unit id="upload.title">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:36,37</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:40,41</note>
       </notes>
       <segment>
         <source>Upload files</source>
@@ -23005,7 +23083,7 @@
     </unit>
     <unit id="upload.folder">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:39,41</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:43,45</note>
       </notes>
       <segment>
         <source>Target folder</source>
@@ -23014,7 +23092,7 @@
     </unit>
     <unit id="upload.folder.hint">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:50,52</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:54,56</note>
       </notes>
       <segment>
         <source> Relative to the root of the repository; missing folders are created. Empty is the root. </source>
@@ -23023,7 +23101,7 @@
     </unit>
     <unit id="upload.drop">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:61,62</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:65,66</note>
       </notes>
       <segment>
         <source>Drop files here, or</source>
@@ -23032,7 +23110,7 @@
     </unit>
     <unit id="upload.choose">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:68,70</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:72,74</note>
       </notes>
       <segment>
         <source> Choose files </source>
@@ -23041,7 +23119,7 @@
     </unit>
     <unit id="upload.overwrite">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:89,91</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:93,95</note>
       </notes>
       <segment>
         <source>Replace files that already exist</source>
@@ -23050,7 +23128,7 @@
     </unit>
     <unit id="upload.caption">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:96,97</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:100,101</note>
       </notes>
       <segment>
         <source> Files to upload </source>
@@ -23059,7 +23137,7 @@
     </unit>
     <unit id="upload.col.file">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:100,101</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:104,105</note>
       </notes>
       <segment>
         <source>File</source>
@@ -23068,7 +23146,7 @@
     </unit>
     <unit id="upload.col.status">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:101,103</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:105,107</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -23077,7 +23155,7 @@
     </unit>
     <unit id="upload.state.queued">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:112,114</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:116,118</note>
       </notes>
       <segment>
         <source>waiting</source>
@@ -23086,7 +23164,7 @@
     </unit>
     <unit id="upload.state.hashing">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:115,117</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:119,121</note>
       </notes>
       <segment>
         <source>computing checksum</source>
@@ -23095,7 +23173,7 @@
     </unit>
     <unit id="upload.state.done">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:127,128</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:131,132</note>
       </notes>
       <segment>
         <source>uploaded</source>
@@ -23104,16 +23182,26 @@
     </unit>
     <unit id="upload.state.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:131,133</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:135,137</note>
       </notes>
       <segment>
         <source>cancelled</source>
         <target>abgebrochen</target>
       </segment>
     </unit>
+    <unit id="failure.details">
+      <notes>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:143,144</note>
+        <note category="location">src/app/shared/failure-dialog.ts:43</note>
+      </notes>
+      <segment>
+        <source>Details</source>
+        <target>Details</target>
+      </segment>
+    </unit>
     <unit id="upload.cancel">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:151,153</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:158,160</note>
       </notes>
       <segment>
         <source> Cancel upload </source>
@@ -23122,7 +23210,7 @@
     </unit>
     <unit id="upload.close">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:154,155</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:161,162</note>
       </notes>
       <segment>
         <source>Close</source>
@@ -23131,7 +23219,7 @@
     </unit>
     <unit id="upload.start">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:161,162</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:168,169</note>
       </notes>
       <segment>
         <source> Upload </source>
@@ -23140,7 +23228,7 @@
     </unit>
     <unit id="upload.progress">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:221</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:234</note>
       </notes>
       <segment>
         <source>Upload progress</source>
@@ -23149,7 +23237,7 @@
     </unit>
     <unit id="upload.too-large">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:248</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:261</note>
       </notes>
       <segment>
         <source>Larger than <ph id="0" equiv="limit" disp="Math.floor(UPLOAD_LIMIT_BYTES / 1048576)"/> MiB. Use a native client or curl for files this large.</source>
@@ -23158,7 +23246,7 @@
     </unit>
     <unit id="upload.announce.done">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:317</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:330</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="file.name"/> uploaded.</source>
@@ -23167,7 +23255,7 @@
     </unit>
     <unit id="upload.announce.failed">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:324</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:337</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="file.name"/> failed.</source>
@@ -23176,7 +23264,7 @@
     </unit>
     <unit id="upload.exists">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:347</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:360</note>
       </notes>
       <segment>
         <source>A file already exists at this path. Tick &quot;Replace files that already exist&quot; to overwrite it.</source>
@@ -23185,7 +23273,7 @@
     </unit>
     <unit id="upload.failed">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:351</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:364</note>
       </notes>
       <segment>
         <source>The upload failed.</source>
@@ -25073,7 +25161,7 @@
     <unit id="downloads.bulk.start-again">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:202,204</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:633</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:634</note>
       </notes>
       <segment>
         <source>Start again</source>
@@ -25271,7 +25359,7 @@
     </unit>
     <unit id="downloads.bulks.caption">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:207</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:208</note>
       </notes>
       <segment>
         <source>Bulk downloads of this repository, newest first</source>
@@ -25280,7 +25368,7 @@
     </unit>
     <unit id="downloads.caption">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:267</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:268</note>
       </notes>
       <segment>
         <source>Downloads of this repository, running and waiting first</source>
@@ -25289,7 +25377,7 @@
     </unit>
     <unit id="downloads.empty">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:268</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:269</note>
       </notes>
       <segment>
         <source>There is no download yet.</source>
@@ -25298,7 +25386,7 @@
     </unit>
     <unit id="downloads.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:269</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:270</note>
       </notes>
       <segment>
         <source>No download matches.</source>
@@ -25307,7 +25395,7 @@
     </unit>
     <unit id="downloads.filter.state">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:270</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:271</note>
       </notes>
       <segment>
         <source>State</source>
@@ -25316,7 +25404,7 @@
     </unit>
     <unit id="downloads.col.subject">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:279</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:280</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -25325,7 +25413,7 @@
     </unit>
     <unit id="downloads.col.origin">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:280</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:281</note>
       </notes>
       <segment>
         <source>Origin</source>
@@ -25334,8 +25422,8 @@
     </unit>
     <unit id="downloads.col.state">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:281</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:291</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:282</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:292</note>
       </notes>
       <segment>
         <source>State</source>
@@ -25344,7 +25432,7 @@
     </unit>
     <unit id="downloads.col.progress">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:282</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:283</note>
       </notes>
       <segment>
         <source>Progress</source>
@@ -25353,8 +25441,8 @@
     </unit>
     <unit id="downloads.col.failure">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:283</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:293</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:284</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:294</note>
       </notes>
       <segment>
         <source>Failure</source>
@@ -25363,8 +25451,8 @@
     </unit>
     <unit id="downloads.col.actions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:284</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:294</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:285</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:295</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -25373,7 +25461,7 @@
     </unit>
     <unit id="downloads.bulks.col.bulk">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:290</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:291</note>
       </notes>
       <segment>
         <source>Bulk download</source>
@@ -25382,7 +25470,7 @@
     </unit>
     <unit id="downloads.bulks.col.versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:292</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:293</note>
       </notes>
       <segment>
         <source>Versions</source>
@@ -25391,7 +25479,7 @@
     </unit>
     <unit id="downloads.row.open">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:479</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:480</note>
       </notes>
       <segment>
         <source>Details of <ph id="0" equiv="subject" disp="downloadSubject(r)"/></source>
@@ -25400,8 +25488,8 @@
     </unit>
     <unit id="downloads.origin.you">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:486</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:493</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:487</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:494</note>
       </notes>
       <segment>
         <source>You</source>
@@ -25410,7 +25498,7 @@
     </unit>
     <unit id="downloads.attempt">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:525</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:526</note>
       </notes>
       <segment>
         <source>Attempt <ph id="0" equiv="attempt" disp="r.attempts"/> of <ph id="1" equiv="max" disp="r.maxAttempts"/></source>
@@ -25419,7 +25507,7 @@
     </unit>
     <unit id="downloads.progress.files">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:532</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:533</note>
       </notes>
       <segment>
         <source>Files: <ph id="0" equiv="done" disp="done"/> of <ph id="1" equiv="files" disp="r.files"/></source>
@@ -25428,7 +25516,7 @@
     </unit>
     <unit id="downloads.retried">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:565</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:566</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="downloadSubject(r)"/> waits for its download again.</source>
@@ -25437,7 +25525,7 @@
     </unit>
     <unit id="downloads.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:566</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:567</note>
       </notes>
       <segment>
         <source>The download of <ph id="0" equiv="subject" disp="downloadSubject(r)"/> is cancelled.</source>
@@ -25446,7 +25534,7 @@
     </unit>
     <unit id="downloads.retry">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:581</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:582</note>
       </notes>
       <segment>
         <source>Retry</source>
@@ -25455,8 +25543,8 @@
     </unit>
     <unit id="downloads.cancel">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:581</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:634</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:582</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:635</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -25465,7 +25553,7 @@
     </unit>
     <unit id="downloads.retried-all">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:599</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:600</note>
       </notes>
       <segment>
         <source>Failed downloads that wait again: <ph id="0" equiv="count" disp="n"/>.</source>
@@ -25474,7 +25562,7 @@
     </unit>
     <unit id="downloads.bulk.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:648</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:649</note>
       </notes>
       <segment>
         <source>The bulk download of <ph id="0" equiv="subject" disp="b.subject"/> is cancelled.</source>
@@ -25483,7 +25571,7 @@
     </unit>
     <unit id="downloads.bulk.started-again">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:652</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:653</note>
       </notes>
       <segment>
         <source>The bulk download of <ph id="0" equiv="subject" disp="b.subject"/> starts again: Quader reads its versions from the upstream.</source>
@@ -25492,7 +25580,7 @@
     </unit>
     <unit id="downloads.bulk.failed-versions-of">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:685</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:686</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="name"/>&apos;s version list could not be read</source>
@@ -25501,7 +25589,7 @@
     </unit>
     <unit id="downloads.bulk.failed-versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:686</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:687</note>
       </notes>
       <segment>
         <source>The upstream&apos;s version list could not be read</source>
@@ -25510,7 +25598,7 @@
     </unit>
     <unit id="downloads.bulk.failed-section-of">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:689</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:690</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="name"/>&apos;s list of the sub-section could not be read</source>
@@ -25519,7 +25607,7 @@
     </unit>
     <unit id="downloads.bulk.failed-section">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:690</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:691</note>
       </notes>
       <segment>
         <source>The upstream&apos;s list of the sub-section could not be read</source>
@@ -25528,7 +25616,7 @@
     </unit>
     <unit id="downloads.bulk.open">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:701</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:702</note>
       </notes>
       <segment>
         <source>The downloads of the bulk: <ph id="0" equiv="title" disp="this.bulkTitle(b)"/></source>
@@ -25537,7 +25625,7 @@
     </unit>
     <unit id="downloads.bulk.package">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:707</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:708</note>
       </notes>
       <segment>
         <source>Every version of <ph id="0" equiv="subject" disp="b.subject"/></source>
@@ -25546,7 +25634,7 @@
     </unit>
     <unit id="downloads.bulk.section">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:708</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:709</note>
       </notes>
       <segment>
         <source>The sub-section <ph id="0" equiv="subject" disp="b.subject"/></source>
@@ -25555,7 +25643,7 @@
     </unit>
     <unit id="downloads.bulk.state.expanding">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:732</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:733</note>
       </notes>
       <segment>
         <source>Finding versions</source>
@@ -25564,7 +25652,7 @@
     </unit>
     <unit id="downloads.bulk.state.queued">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:734</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:735</note>
       </notes>
       <segment>
         <source>Queued</source>
@@ -25573,7 +25661,7 @@
     </unit>
     <unit id="downloads.bulk.state.done">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:736</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:737</note>
       </notes>
       <segment>
         <source>Done</source>
@@ -25582,7 +25670,7 @@
     </unit>
     <unit id="downloads.bulk.state.bounded">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:738</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:739</note>
       </notes>
       <segment>
         <source>Stopped at a bound</source>
@@ -25591,7 +25679,7 @@
     </unit>
     <unit id="downloads.bulk.state.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:740</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:741</note>
       </notes>
       <segment>
         <source>Cancelled</source>
@@ -25600,7 +25688,7 @@
     </unit>
     <unit id="downloads.bulk.state.failed">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:742</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:743</note>
       </notes>
       <segment>
         <source>Failed</source>
@@ -25609,7 +25697,7 @@
     </unit>
     <unit id="downloads.bulks.versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:748</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:749</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="queued" disp="b.versionsQueued"/> of <ph id="1" equiv="found" disp="b.versionsFound"/> queued</source>
@@ -25618,7 +25706,7 @@
     </unit>
     <unit id="downloads.bulk.counts">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:752</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:753</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="queued" disp="b.versionsQueued"/> of <ph id="1" equiv="found" disp="b.versionsFound"/> versions found are queued</source>
@@ -25627,7 +25715,7 @@
     </unit>
     <unit id="downloads.bulk.bounds">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:758</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:759</note>
       </notes>
       <segment>
         <source>At most <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> versions and <ph id="1" equiv="bytes" disp="bytes"/>, pre-releases included</source>
@@ -25636,7 +25724,7 @@
     </unit>
     <unit id="downloads.bulk.bounds-no-pre">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:759</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:760</note>
       </notes>
       <segment>
         <source>At most <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> versions and <ph id="1" equiv="bytes" disp="bytes"/>, without pre-releases</source>
@@ -30261,7 +30349,7 @@
     </unit>
     <unit id="requests.state.open">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:277</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:278</note>
       </notes>
       <segment>
         <source>Open</source>
@@ -30270,7 +30358,7 @@
     </unit>
     <unit id="requests.state.allowed">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:279</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:280</note>
       </notes>
       <segment>
         <source>Allowed</source>
@@ -30279,7 +30367,7 @@
     </unit>
     <unit id="requests.state.declined">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:281</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:282</note>
       </notes>
       <segment>
         <source>Declined</source>
@@ -30288,7 +30376,7 @@
     </unit>
     <unit id="requests.state.withdrawn">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:283</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:284</note>
       </notes>
       <segment>
         <source>Withdrawn</source>
@@ -30297,7 +30385,7 @@
     </unit>
     <unit id="requests.asked-by-you">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:290</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:291</note>
       </notes>
       <segment>
         <source>asked by you</source>
@@ -30306,7 +30394,7 @@
     </unit>
     <unit id="requests.asked-by-one">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:292</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:293</note>
       </notes>
       <segment>
         <source>asked by <ph id="0" equiv="name" disp="name"/></source>
@@ -30315,7 +30403,7 @@
     </unit>
     <unit id="requests.asked-by-a-person">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:294</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:295</note>
       </notes>
       <segment>
         <source>asked by 1 person</source>
@@ -30324,7 +30412,7 @@
     </unit>
     <unit id="requests.asked-by-many">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:295</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:296</note>
       </notes>
       <segment>
         <source>asked by <ph id="0" equiv="count" disp="r.askerCount"/> people</source>
@@ -30333,7 +30421,7 @@
     </unit>
     <unit id="requests.menu">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:308</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:309</note>
       </notes>
       <segment>
         <source>Actions for <ph id="0" equiv="subject" disp="this.subject(r)"/></source>
@@ -30342,7 +30430,7 @@
     </unit>
     <unit id="requests.allowed">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:340</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:341</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="this.subject(r)"/> is allowed; its download starts.</source>
@@ -30351,7 +30439,7 @@
     </unit>
     <unit id="requests.declined">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:351</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:352</note>
       </notes>
       <segment>
         <source>The request for <ph id="0" equiv="subject" disp="this.subject(r)"/> is declined.</source>
@@ -30360,7 +30448,7 @@
     </unit>
     <unit id="requests.withdrawn">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:359</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:360</note>
       </notes>
       <segment>
         <source>Your request for <ph id="0" equiv="subject" disp="this.subject(r)"/> is withdrawn.</source>
@@ -30479,7 +30567,7 @@
     </unit>
     <unit id="rules.caption">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:192</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:193</note>
       </notes>
       <segment>
         <source>Delivery rules of this repository, newest first</source>
@@ -30488,7 +30576,7 @@
     </unit>
     <unit id="rules.empty">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:193</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:194</note>
       </notes>
       <segment>
         <source>There is no rule yet.</source>
@@ -30497,7 +30585,7 @@
     </unit>
     <unit id="rules.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:194</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:195</note>
       </notes>
       <segment>
         <source>No rule matches.</source>
@@ -30506,7 +30594,7 @@
     </unit>
     <unit id="rules.add.effect">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:195</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:196</note>
       </notes>
       <segment>
         <source>Effect</source>
@@ -30515,7 +30603,7 @@
     </unit>
     <unit id="rules.add.pattern-hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:196</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:197</note>
       </notes>
       <segment>
         <source>A name pattern, such as <ph id="0" equiv="example" disp="this.data.example"/>.</source>
@@ -30524,7 +30612,7 @@
     </unit>
     <unit id="rules.col.subject">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:198</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:199</note>
       </notes>
       <segment>
         <source>Subject</source>
@@ -30533,7 +30621,7 @@
     </unit>
     <unit id="rules.col.kind">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:199</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:200</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -30542,7 +30630,7 @@
     </unit>
     <unit id="rules.col.effect">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:200</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:201</note>
       </notes>
       <segment>
         <source>Effect</source>
@@ -30551,7 +30639,7 @@
     </unit>
     <unit id="rules.col.by">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:201</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:202</note>
       </notes>
       <segment>
         <source>Set by</source>
@@ -30560,7 +30648,7 @@
     </unit>
     <unit id="rules.col.actions">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:202</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:203</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -30569,7 +30657,7 @@
     </unit>
     <unit id="rules.added-allow">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:256</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:257</note>
       </notes>
       <segment>
         <source>The sub-section <ph id="0" equiv="pattern" disp="pattern"/> is allowed.</source>
@@ -30578,7 +30666,7 @@
     </unit>
     <unit id="rules.added-block">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:257</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:258</note>
       </notes>
       <segment>
         <source>The sub-section <ph id="0" equiv="pattern" disp="pattern"/> is blocked.</source>
@@ -30587,8 +30675,8 @@
     </unit>
     <unit id="upstream.rule.removed">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:276</note>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:170</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:277</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:171</note>
       </notes>
       <segment>
         <source>The rule for <ph id="0" equiv="subject" disp="r.subject"/> is removed.</source>
@@ -31323,7 +31411,7 @@
     </unit>
     <unit id="upstream.show-downloads">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:109</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:110</note>
       </notes>
       <segment>
         <source>Show downloads</source>
@@ -31332,7 +31420,7 @@
     </unit>
     <unit id="upstream.show-bulk">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:117</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:118</note>
       </notes>
       <segment>
         <source>Show bulk download</source>
@@ -31341,7 +31429,7 @@
     </unit>
     <unit id="upstream.download.queued">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:130</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:131</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="subjectText(s)"/> waits for its download into the cache.</source>
@@ -31350,7 +31438,7 @@
     </unit>
     <unit id="upstream.download.queued-examination">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:131</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:132</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="subjectText(s)"/> waits for its download for examination; it is not delivered.</source>
@@ -31359,7 +31447,7 @@
     </unit>
     <unit id="upstream.download.bulk-started">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:148</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:149</note>
       </notes>
       <segment>
         <source>The bulk download has started; Quader reads its versions first, then queues them.</source>
@@ -31368,7 +31456,7 @@
     </unit>
     <unit id="upstream.request.created">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:181</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:182</note>
       </notes>
       <segment>
         <source>Your request for <ph id="0" equiv="subject" disp="subjectText(s)"/> is sent to those who may allow it.</source>
@@ -31377,7 +31465,7 @@
     </unit>
     <unit id="upstream.discard.title">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:187</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:188</note>
       </notes>
       <segment>
         <source>Discard <ph id="0" equiv="subject" disp="subjectText(s)"/>?</source>
@@ -31386,7 +31474,7 @@
     </unit>
     <unit id="upstream.discard.text">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:188</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:189</note>
       </notes>
       <segment>
         <source>The files fetched for examination are removed from the cache. A version the rules deliver is never discarded.</source>
@@ -31395,7 +31483,7 @@
     </unit>
     <unit id="upstream.discard.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:189</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:190</note>
       </notes>
       <segment>
         <source>Discard</source>
@@ -31404,7 +31492,7 @@
     </unit>
     <unit id="upstream.discard.done">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:195</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:196</note>
       </notes>
       <segment>
         <source>Discarded: <ph id="0" equiv="versions" disp="out.versions.length"/> versions, <ph id="1" equiv="files" disp="out.files"/> files.</source>
@@ -31413,7 +31501,7 @@
     </unit>
     <unit id="upstream.rule.allowed-package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:203</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:204</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="subject"/> is allowed with every version, future ones included.</source>
@@ -31422,7 +31510,7 @@
     </unit>
     <unit id="upstream.rule.allowed">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:204</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:205</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="subject"/> is allowed.</source>
@@ -31431,7 +31519,7 @@
     </unit>
     <unit id="upstream.rule.blocked-package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:207</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:208</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="subject"/> is blocked with every version, future ones included.</source>
@@ -31440,7 +31528,7 @@
     </unit>
     <unit id="upstream.rule.blocked">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:208</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:209</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="subject"/> is blocked.</source>
@@ -40509,7 +40597,7 @@
     <unit id="jobs.filter.kind">
       <notes>
         <note category="location">src/app/features/system/jobs-page.ts:58,60</note>
-        <note category="location">src/app/features/system/jobs-page.ts:146</note>
+        <note category="location">src/app/features/system/jobs-page.ts:147</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -40528,7 +40616,7 @@
     <unit id="jobs.filter.state">
       <notes>
         <note category="location">src/app/features/system/jobs-page.ts:71</note>
-        <note category="location">src/app/features/system/jobs-page.ts:149</note>
+        <note category="location">src/app/features/system/jobs-page.ts:150</note>
       </notes>
       <segment>
         <source>State</source>
@@ -40537,7 +40625,7 @@
     </unit>
     <unit id="jobs.caption">
       <notes>
-        <note category="location">src/app/features/system/jobs-page.ts:130</note>
+        <note category="location">src/app/features/system/jobs-page.ts:131</note>
       </notes>
       <segment>
         <source>Jobs, newest first</source>
@@ -40546,7 +40634,7 @@
     </unit>
     <unit id="jobs.empty-none">
       <notes>
-        <note category="location">src/app/features/system/jobs-page.ts:131</note>
+        <note category="location">src/app/features/system/jobs-page.ts:132</note>
       </notes>
       <segment>
         <source>There is no job yet.</source>
@@ -40555,7 +40643,7 @@
     </unit>
     <unit id="jobs.empty">
       <notes>
-        <note category="location">src/app/features/system/jobs-page.ts:132</note>
+        <note category="location">src/app/features/system/jobs-page.ts:133</note>
       </notes>
       <segment>
         <source>No job matches.</source>
@@ -40564,8 +40652,8 @@
     </unit>
     <unit id="jobs.cancelling">
       <notes>
-        <note category="location">src/app/features/system/jobs-page.ts:215</note>
-        <note category="location">src/app/features/system/system-status.ts:278</note>
+        <note category="location">src/app/features/system/jobs-page.ts:216</note>
+        <note category="location">src/app/features/system/system-status.ts:276</note>
       </notes>
       <segment>
         <source>Job <ph id="0" equiv="kind" disp="job.kind"/> is being cancelled.</source>
@@ -41341,7 +41429,7 @@
     </unit>
     <unit id="storage.connections.caption">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:78</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:79</note>
       </notes>
       <segment>
         <source>Object-store connections in the order of the configuration</source>
@@ -41350,7 +41438,7 @@
     </unit>
     <unit id="storage.damaged.caption">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:79</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:80</note>
       </notes>
       <segment>
         <source>Blobs no connection holds whole</source>
@@ -41359,7 +41447,7 @@
     </unit>
     <unit id="storage.tasks.caption">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:80</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:81</note>
       </notes>
       <segment>
         <source>The last runs of the storage tasks</source>
@@ -41368,7 +41456,7 @@
     </unit>
     <unit id="storage.connections.empty">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:81</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:82</note>
       </notes>
       <segment>
         <source>No replica has recorded a connection yet.</source>
@@ -41377,7 +41465,7 @@
     </unit>
     <unit id="storage.col.connection">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:83</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:84</note>
       </notes>
       <segment>
         <source>Connection</source>
@@ -41386,7 +41474,7 @@
     </unit>
     <unit id="storage.col.state">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:84</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:85</note>
       </notes>
       <segment>
         <source>State</source>
@@ -41395,7 +41483,7 @@
     </unit>
     <unit id="storage.col.fill">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:85</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:86</note>
       </notes>
       <segment>
         <source>Fill</source>
@@ -41404,7 +41492,7 @@
     </unit>
     <unit id="storage.col.backlog">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:86</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:87</note>
       </notes>
       <segment>
         <source>Backlog</source>
@@ -41413,7 +41501,7 @@
     </unit>
     <unit id="storage.col.damaged">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:87</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:88</note>
       </notes>
       <segment>
         <source>Damaged copies</source>
@@ -41422,7 +41510,7 @@
     </unit>
     <unit id="storage.col.scrub">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:88</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:89</note>
       </notes>
       <segment>
         <source>Scrub</source>
@@ -41431,7 +41519,7 @@
     </unit>
     <unit id="storage.col.encrypted">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:89</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:90</note>
       </notes>
       <segment>
         <source>Encrypted</source>
@@ -41440,7 +41528,7 @@
     </unit>
     <unit id="storage.damaged.col.blob">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:92</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:93</note>
       </notes>
       <segment>
         <source>Blob</source>
@@ -41449,7 +41537,7 @@
     </unit>
     <unit id="storage.damaged.col.state">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:93</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:94</note>
       </notes>
       <segment>
         <source>State</source>
@@ -41458,7 +41546,7 @@
     </unit>
     <unit id="storage.damaged.col.copies">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:94</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:95</note>
       </notes>
       <segment>
         <source>Copies</source>
@@ -41467,7 +41555,7 @@
     </unit>
     <unit id="storage.damaged.col.item">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:95</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:96</note>
       </notes>
       <segment>
         <source>Referenced by</source>
@@ -41476,7 +41564,7 @@
     </unit>
     <unit id="storage.tasks.col.task">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:99</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:100</note>
       </notes>
       <segment>
         <source>Task</source>
@@ -41485,7 +41573,7 @@
     </unit>
     <unit id="storage.tasks.col.last">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:100</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:101</note>
       </notes>
       <segment>
         <source>Last run</source>
@@ -41494,7 +41582,7 @@
     </unit>
     <unit id="storage.tasks.col.next">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:101</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:102</note>
       </notes>
       <segment>
         <source>Next run</source>
@@ -41503,7 +41591,7 @@
     </unit>
     <unit id="storage.fold.label">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:159</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:160</note>
       </notes>
       <segment>
         <source>Details of the connection <ph id="0" equiv="id" disp="c.id"/></source>
@@ -41512,7 +41600,7 @@
     </unit>
     <unit id="storage.copy.present">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:203</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:204</note>
       </notes>
       <segment>
         <source>present</source>
@@ -41521,7 +41609,7 @@
     </unit>
     <unit id="storage.copy.missing">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:205</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:206</note>
       </notes>
       <segment>
         <source>missing</source>
@@ -41530,7 +41618,7 @@
     </unit>
     <unit id="storage.copy.corrupt">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:207</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:208</note>
       </notes>
       <segment>
         <source>corrupt</source>
@@ -41539,7 +41627,7 @@
     </unit>
     <unit id="storage.copy.deleting">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:209</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:210</note>
       </notes>
       <segment>
         <source>being deleted</source>
@@ -41548,7 +41636,7 @@
     </unit>
     <unit id="storage.damaged.check-label">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:219</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:220</note>
       </notes>
       <segment>
         <source>Check the copies of <ph id="0" equiv="digest" disp="this.short(b.sha256)"/> again</source>
@@ -41557,7 +41645,7 @@
     </unit>
     <unit id="storage.damaged.checked-ok">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:230</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:231</note>
       </notes>
       <segment>
         <source>A connection holds <ph id="0" equiv="digest" disp="this.short(b.sha256)"/> whole again.</source>
@@ -41566,7 +41654,7 @@
     </unit>
     <unit id="storage.damaged.checked-still">
       <notes>
-        <note category="location">src/app/features/system/storage/storage-page.ts:231</note>
+        <note category="location">src/app/features/system/storage/storage-page.ts:232</note>
       </notes>
       <segment>
         <source>No connection holds <ph id="0" equiv="digest" disp="this.short(b.sha256)"/> whole yet.</source>
@@ -42254,7 +42342,7 @@
     <unit id="system.keys.active">
       <notes>
         <note category="location">src/app/features/system/system-status.html:436,437</note>
-        <note category="location">src/app/features/system/system-status.ts:100</note>
+        <note category="location">src/app/features/system/system-status.ts:101</note>
       </notes>
       <segment>
         <source>Active key ID</source>
@@ -42443,8 +42531,8 @@
     </unit>
     <unit id="system.col.name">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:78</note>
-        <note category="location">src/app/features/system/system-status.ts:98</note>
+        <note category="location">src/app/features/system/system-status.ts:79</note>
+        <note category="location">src/app/features/system/system-status.ts:99</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -42453,7 +42541,7 @@
     </unit>
     <unit id="system.col.node">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:79</note>
+        <note category="location">src/app/features/system/system-status.ts:80</note>
       </notes>
       <segment>
         <source>Node</source>
@@ -42462,7 +42550,7 @@
     </unit>
     <unit id="system.col.version">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:80</note>
+        <note category="location">src/app/features/system/system-status.ts:81</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -42471,8 +42559,8 @@
     </unit>
     <unit id="system.col.state">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:81</note>
-        <note category="location">src/app/features/system/system-status.ts:102</note>
+        <note category="location">src/app/features/system/system-status.ts:82</note>
+        <note category="location">src/app/features/system/system-status.ts:103</note>
       </notes>
       <segment>
         <source>State</source>
@@ -42481,7 +42569,7 @@
     </unit>
     <unit id="system.col.heartbeat">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:82</note>
+        <note category="location">src/app/features/system/system-status.ts:83</note>
       </notes>
       <segment>
         <source>Heartbeat</source>
@@ -42490,7 +42578,7 @@
     </unit>
     <unit id="system.col.valkey">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:83</note>
+        <note category="location">src/app/features/system/system-status.ts:84</note>
       </notes>
       <segment>
         <source>Valkey</source>
@@ -42499,7 +42587,7 @@
     </unit>
     <unit id="system.keys.caption">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:86</note>
+        <note category="location">src/app/features/system/system-status.ts:87</note>
       </notes>
       <segment>
         <source>Key IDs and sealed values</source>
@@ -42508,7 +42596,7 @@
     </unit>
     <unit id="system.keys.col.id">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:90</note>
+        <note category="location">src/app/features/system/system-status.ts:91</note>
       </notes>
       <segment>
         <source>Key ID</source>
@@ -42517,7 +42605,7 @@
     </unit>
     <unit id="system.keys.col.sealed">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:91</note>
+        <note category="location">src/app/features/system/system-status.ts:92</note>
       </notes>
       <segment>
         <source>Sealed values</source>
@@ -42526,7 +42614,7 @@
     </unit>
     <unit id="system.keys.col.canary-by">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:92</note>
+        <note category="location">src/app/features/system/system-status.ts:93</note>
       </notes>
       <segment>
         <source>Canary (reported by <ph id="0" equiv="replica" disp="by"/>)</source>
@@ -42535,7 +42623,7 @@
     </unit>
     <unit id="system.keys.col.status">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:93</note>
+        <note category="location">src/app/features/system/system-status.ts:94</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -42544,7 +42632,7 @@
     </unit>
     <unit id="system.keys.replicas.caption">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:96</note>
+        <note category="location">src/app/features/system/system-status.ts:97</note>
       </notes>
       <segment>
         <source>Key rings of the live replicas</source>
@@ -42553,7 +42641,7 @@
     </unit>
     <unit id="system.keys.replicas.role">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:99</note>
+        <note category="location">src/app/features/system/system-status.ts:100</note>
       </notes>
       <segment>
         <source>Role</source>
@@ -42562,7 +42650,7 @@
     </unit>
     <unit id="system.keys.replicas.ring">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:101</note>
+        <note category="location">src/app/features/system/system-status.ts:102</note>
       </notes>
       <segment>
         <source>Key IDs held</source>
@@ -42571,7 +42659,7 @@
     </unit>
     <unit id="system.replicas.caption">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:106</note>
+        <note category="location">src/app/features/system/system-status.ts:107</note>
       </notes>
       <segment>
         <source>Replicas of the role <ph id="0" equiv="role" disp="role"/></source>
@@ -42580,7 +42668,7 @@
     </unit>
     <unit id="system.replicas.caption-pool">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:107</note>
+        <note category="location">src/app/features/system/system-status.ts:108</note>
       </notes>
       <segment>
         <source>Replicas of the pool <ph id="0" equiv="pool" disp="pool"/> of the role <ph id="1" equiv="role" disp="role"/></source>
@@ -42589,7 +42677,7 @@
     </unit>
     <unit id="system.reencrypt.started">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:251</note>
+        <note category="location">src/app/features/system/system-status.ts:253</note>
       </notes>
       <segment>
         <source>Re-encryption started.</source>
@@ -42598,7 +42686,7 @@
     </unit>
     <unit id="system.reencrypt.failed">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:257</note>
+        <note category="location">src/app/features/system/system-status.ts:256</note>
       </notes>
       <segment>
         <source>Re-encryption could not be started.</source>
@@ -42607,7 +42695,7 @@
     </unit>
     <unit id="jobs.cancel.failed">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:283</note>
+        <note category="location">src/app/features/system/system-status.ts:278</note>
       </notes>
       <segment>
         <source>The job could not be cancelled.</source>
@@ -42616,7 +42704,7 @@
     </unit>
     <unit id="system.jobs.caption">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:290</note>
+        <note category="location">src/app/features/system/system-status.ts:284</note>
       </notes>
       <segment>
         <source>Recent jobs</source>
@@ -42625,7 +42713,7 @@
     </unit>
     <unit id="system.reencrypt.progress">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:291</note>
+        <note category="location">src/app/features/system/system-status.ts:285</note>
       </notes>
       <segment>
         <source>Re-encryption</source>
@@ -42634,7 +42722,7 @@
     </unit>
     <unit id="system.check.objectStore">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:297</note>
+        <note category="location">src/app/features/system/system-status.ts:291</note>
       </notes>
       <segment>
         <source>Object store: blob requests on this replica fail with a retryable 503; everything else keeps working.</source>
@@ -42643,7 +42731,7 @@
     </unit>
     <unit id="system.check.valkey">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:299</note>
+        <note category="location">src/app/features/system/system-status.ts:293</note>
       </notes>
       <segment>
         <source>Valkey: no request fails, but remote fetches are collapsed per replica only, the negative cache is per replica, rate limits fall back to per-replica shares, and changes arrive through the change-log poll.</source>
@@ -42652,7 +42740,7 @@
     </unit>
     <unit id="system.check.vulnScannerTrivy">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:301</note>
+        <note category="location">src/app/features/system/system-status.ts:295</note>
       </notes>
       <segment>
         <source>Image scanning: the Trivy scanner of this replica cannot analyse images (its analyser is missing or does not run, its certificate did not load, or its working directory is not writable), so new images get no vulnerability results until it works again.</source>
@@ -42661,7 +42749,7 @@
     </unit>
     <unit id="system.check.malwareScannerClamav">
       <notes>
-        <note category="location">src/app/features/system/system-status.ts:303</note>
+        <note category="location">src/app/features/system/system-status.ts:297</note>
       </notes>
       <segment>
         <source>Malware scan: this worker has no ClamAV scanner to call (malware.scanner.url is empty), so new artifacts stay unchecked.</source>
@@ -42796,7 +42884,7 @@
     </unit>
     <unit id="tasks.run.label">
       <notes>
-        <note category="location">src/app/features/system/tasks-card.ts:149</note>
+        <note category="location">src/app/features/system/tasks-card.ts:150</note>
       </notes>
       <segment>
         <source>Run task <ph id="0" equiv="name" disp="name"/> now</source>
@@ -42805,7 +42893,7 @@
     </unit>
     <unit id="tasks.started">
       <notes>
-        <note category="location">src/app/features/system/tasks-card.ts:163</note>
+        <note category="location">src/app/features/system/tasks-card.ts:164</note>
       </notes>
       <segment>
         <source>Task <ph id="0" equiv="name" disp="task.name"/> queued. A worker replica runs it.</source>
@@ -48426,7 +48514,7 @@
     </unit>
     <unit id="vuln.triage.changed">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:83,84</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:85,86</note>
       </notes>
       <segment>
         <source>Changed</source>
@@ -48435,7 +48523,7 @@
     </unit>
     <unit id="vuln.triage.unchanged">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:86,88</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:88,90</note>
       </notes>
       <segment>
         <source>Unchanged, it had this status</source>
@@ -48444,7 +48532,7 @@
     </unit>
     <unit id="vuln.triage.close">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:95,97</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:97,99</note>
       </notes>
       <segment>
         <source>Close</source>
@@ -48453,7 +48541,7 @@
     </unit>
     <unit id="vuln.triage.status">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:111,113</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:113,115</note>
       </notes>
       <segment>
         <source>New status</source>
@@ -48462,7 +48550,7 @@
     </unit>
     <unit id="vuln.triage.reason">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:128</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:130</note>
       </notes>
       <segment>
         <source>Reason</source>
@@ -48471,7 +48559,7 @@
     </unit>
     <unit id="vuln.triage.comment">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:139,140</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:141,142</note>
       </notes>
       <segment>
         <source>Comment</source>
@@ -48480,7 +48568,7 @@
     </unit>
     <unit id="vuln.triage.cancel">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:147,148</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:149,150</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -48489,7 +48577,7 @@
     </unit>
     <unit id="vuln.triage.comment-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:181</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:183</note>
       </notes>
       <segment>
         <source>Optional, at most 4,000 characters. The comment is kept in the history of the finding.</source>
@@ -48498,7 +48586,7 @@
     </unit>
     <unit id="vuln.triage.reason-choose">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:187</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:189</note>
       </notes>
       <segment>
         <source>Choose a reason</source>
@@ -48507,7 +48595,7 @@
     </unit>
     <unit id="vuln.triage.reason-required">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:192</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:194</note>
       </notes>
       <segment>
         <source>A dismissal needs a reason.</source>
@@ -48516,7 +48604,7 @@
     </unit>
     <unit id="vuln.triage.comment-long">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:197</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:199</note>
       </notes>
       <segment>
         <source>The comment is longer than 4,000 characters.</source>
@@ -48525,7 +48613,7 @@
     </unit>
     <unit id="vuln.triage.title-bulk">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:202</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:204</note>
       </notes>
       <segment>
         <source>Change the status of the selected findings</source>
@@ -48534,7 +48622,7 @@
     </unit>
     <unit id="vuln.triage.title-block">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:205</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:207</note>
       </notes>
       <segment>
         <source>Block downloads</source>
@@ -48543,7 +48631,7 @@
     </unit>
     <unit id="vuln.triage.title-dismiss">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:207</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:209</note>
       </notes>
       <segment>
         <source>Dismiss the finding</source>
@@ -48552,7 +48640,7 @@
     </unit>
     <unit id="vuln.triage.title-confirm">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:209</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:211</note>
       </notes>
       <segment>
         <source>Confirm the finding</source>
@@ -48561,7 +48649,7 @@
     </unit>
     <unit id="vuln.triage.title-reopen">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:211</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:213</note>
       </notes>
       <segment>
         <source>Mark the finding as needing triage</source>
@@ -48570,7 +48658,7 @@
     </unit>
     <unit id="vuln.triage.submit-block">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:216</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:218</note>
       </notes>
       <segment>
         <source>Block downloads</source>
@@ -48579,7 +48667,7 @@
     </unit>
     <unit id="vuln.triage.submit-dismiss">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:217</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:219</note>
       </notes>
       <segment>
         <source>Dismiss</source>
@@ -48588,7 +48676,7 @@
     </unit>
     <unit id="vuln.triage.submit">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:218</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:220</note>
       </notes>
       <segment>
         <source>Save</source>
@@ -48597,7 +48685,7 @@
     </unit>
     <unit id="vuln.triage.selected-one">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:224</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:226</note>
       </notes>
       <segment>
         <source>One finding is selected.</source>
@@ -48606,7 +48694,7 @@
     </unit>
     <unit id="vuln.triage.selected-many">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:225</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:227</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> findings are selected.</source>
@@ -48615,7 +48703,7 @@
     </unit>
     <unit id="vuln.triage.block-warning">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:232</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:234</note>
       </notes>
       <segment>
         <source>Every client of <ph id="0" equiv="repositories" disp="repositories"/>, and of the virtual repositories that contain it, will be refused this version. Lift the block to allow the downloads again.</source>
@@ -48624,7 +48712,7 @@
     </unit>
     <unit id="vuln.triage.block-warning-bulk">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:233</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:235</note>
       </notes>
       <segment>
         <source>Every client of <ph id="0" equiv="repositories" disp="repositories"/>, and of the virtual repositories that contain them, will be refused the versions of the findings that become blocked. A finding that is not confirmed cannot be blocked and is reported below.</source>
@@ -48633,7 +48721,7 @@
     </unit>
     <unit id="vuln.triage.summary">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:249</note>
+        <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:256</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="changed" disp="changed"/> changed, <ph id="1" equiv="failed" disp="failed"/> failed, <ph id="2" equiv="unchanged" disp="r.length - changed - failed"/> unchanged.</source>
@@ -51613,45 +51701,288 @@
         <target>Ihre Nutzung ansehen</target>
       </segment>
     </unit>
-    <unit id="error.request-id">
-      <notes>
-        <note category="location">src/app/shared/error-notice.ts:20,21</note>
-      </notes>
-      <segment>
-        <source>Request ID</source>
-        <target>Anfrage-ID</target>
-      </segment>
-    </unit>
-    <unit id="error.copy">
-      <notes>
-        <note category="location">src/app/shared/error-notice.ts:23,24</note>
-      </notes>
-      <segment>
-        <source> Copy </source>
-        <target>Kopieren</target>
-      </segment>
-    </unit>
-    <unit id="error.hint">
-      <notes>
-        <note category="location">src/app/shared/error-notice.ts:26,28</note>
-      </notes>
-      <segment>
-        <source>Give this ID to your administrator.</source>
-        <target>Geben Sie diese ID Ihrer Administration weiter.</target>
-      </segment>
-    </unit>
     <unit id="error.retry">
       <notes>
-        <note category="location">src/app/shared/error-notice.ts:31,33</note>
+        <note category="location">src/app/shared/error-notice.ts:198,200</note>
       </notes>
       <segment>
         <source>Retry</source>
         <target>Erneut versuchen</target>
       </segment>
     </unit>
+    <unit id="error.copy-report">
+      <notes>
+        <note category="location">src/app/shared/error-notice.ts:202,203</note>
+      </notes>
+      <segment>
+        <source>Copy report</source>
+        <target>Bericht kopieren</target>
+      </segment>
+    </unit>
+    <unit id="error.copy-request-id">
+      <notes>
+        <note category="location">src/app/shared/error-notice.ts:302</note>
+      </notes>
+      <segment>
+        <source>Copy request ID</source>
+        <target>Anfrage-ID kopieren</target>
+      </segment>
+    </unit>
+    <unit id="error.trying">
+      <notes>
+        <note category="location">src/app/shared/error-notice.ts:351</note>
+      </notes>
+      <segment>
+        <source>Trying again.</source>
+        <target>Neuer Versuch läuft.</target>
+      </segment>
+    </unit>
+    <unit id="error.tries-again">
+      <notes>
+        <note category="location">src/app/shared/error-notice.ts:352</note>
+      </notes>
+      <segment>
+        <source>This page tries again by itself in <ph id="0" equiv="wait" disp="secondsText(Math.round(retryWaitMs(this.error()) / 1000))"/>.</source>
+        <target>Diese Seite versucht es in <ph id="0" equiv="wait" disp="secondsText(Math.round(retryWaitMs(this.error()) / 1000))"/> von selbst erneut.</target>
+      </segment>
+    </unit>
+    <unit id="failure.dialog.title">
+      <notes>
+        <note category="location">src/app/shared/failure-dialog.ts:17,18</note>
+      </notes>
+      <segment>
+        <source>What failed</source>
+        <target>Was fehlgeschlagen ist</target>
+      </segment>
+    </unit>
+    <unit id="failure.dialog.close">
+      <notes>
+        <note category="location">src/app/shared/failure-dialog.ts:22,26</note>
+      </notes>
+      <segment>
+        <source>Close</source>
+        <target>Schließen</target>
+      </segment>
+    </unit>
+    <unit id="failure.status">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:12</note>
+      </notes>
+      <segment>
+        <source>Status</source>
+        <target>Status</target>
+      </segment>
+    </unit>
+    <unit id="failure.no-answer">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:13</note>
+      </notes>
+      <segment>
+        <source>No answer</source>
+        <target>Keine Antwort</target>
+      </segment>
+    </unit>
+    <unit id="failure.call">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:14</note>
+      </notes>
+      <segment>
+        <source>Call</source>
+        <target>Aufruf</target>
+      </segment>
+    </unit>
+    <unit id="failure.calls">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:15</note>
+      </notes>
+      <segment>
+        <source>Calls</source>
+        <target>Aufrufe</target>
+      </segment>
+    </unit>
+    <unit id="failure.time">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:16</note>
+      </notes>
+      <segment>
+        <source>Time</source>
+        <target>Zeit</target>
+      </segment>
+    </unit>
+    <unit id="failure.request-id">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:17</note>
+      </notes>
+      <segment>
+        <source>Request ID</source>
+        <target>Anfrage-ID</target>
+      </segment>
+    </unit>
+    <unit id="failure.code">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:18</note>
+      </notes>
+      <segment>
+        <source>Code</source>
+        <target>Code</target>
+      </segment>
+    </unit>
+    <unit id="failure.server-message">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:19</note>
+      </notes>
+      <segment>
+        <source>Server&apos;s message</source>
+        <target>Meldung des Servers</target>
+      </segment>
+    </unit>
+    <unit id="failure.retry-after">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:20</note>
+      </notes>
+      <segment>
+        <source>Retry after</source>
+        <target>Erneut versuchen nach</target>
+      </segment>
+    </unit>
+    <unit id="failure.attempts">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:21</note>
+      </notes>
+      <segment>
+        <source>Attempts</source>
+        <target>Versuche</target>
+      </segment>
+    </unit>
+    <unit id="failure.sent-twice">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:22</note>
+      </notes>
+      <segment>
+        <source>Sent twice: the page sent the call again by itself after the first failure.</source>
+        <target>Zweimal gesendet: Die Seite hat den Aufruf nach dem ersten Fehlschlag von selbst erneut gesendet.</target>
+      </segment>
+    </unit>
+    <unit id="failure.in-row">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:23</note>
+      </notes>
+      <segment>
+        <source>Failed in a row</source>
+        <target>Fehlgeschlagen in Folge</target>
+      </segment>
+    </unit>
+    <unit id="failure.content-type">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:24</note>
+      </notes>
+      <segment>
+        <source>Content type</source>
+        <target>Inhaltstyp</target>
+      </segment>
+    </unit>
+    <unit id="failure.headers">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:25</note>
+      </notes>
+      <segment>
+        <source>Response headers</source>
+        <target>Header der Antwort</target>
+      </segment>
+    </unit>
+    <unit id="failure.body">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:26</note>
+      </notes>
+      <segment>
+        <source>Body of the answer</source>
+        <target>Inhalt der Antwort</target>
+      </segment>
+    </unit>
+    <unit id="failure.fields">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:27</note>
+      </notes>
+      <segment>
+        <source>Field problems</source>
+        <target>Fehler in Feldern</target>
+      </segment>
+    </unit>
+    <unit id="failure.type">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:28</note>
+      </notes>
+      <segment>
+        <source>Type</source>
+        <target>Typ</target>
+      </segment>
+    </unit>
+    <unit id="failure.instance">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:29</note>
+      </notes>
+      <segment>
+        <source>Instance</source>
+        <target>Instanz</target>
+      </segment>
+    </unit>
+    <unit id="failure.members">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:30</note>
+      </notes>
+      <segment>
+        <source>Other members</source>
+        <target>Weitere Angaben</target>
+      </segment>
+    </unit>
+    <unit id="failure.fault">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:31</note>
+      </notes>
+      <segment>
+        <source>Error in the page</source>
+        <target>Fehler in der Seite</target>
+      </segment>
+    </unit>
+    <unit id="failure.body-cut">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:37</note>
+      </notes>
+      <segment>
+        <source>Showing the first <ph id="0" equiv="shown" disp="n.format(shown)"/> of <ph id="1" equiv="whole" disp="n.format(whole)"/> characters.</source>
+        <target>Die ersten <ph id="0" equiv="shown" disp="n.format(shown)"/> von <ph id="1" equiv="whole" disp="n.format(whole)"/> Zeichen.</target>
+      </segment>
+    </unit>
+    <unit id="failure.one-second">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:43</note>
+      </notes>
+      <segment>
+        <source>1 second</source>
+        <target>1 Sekunde</target>
+      </segment>
+    </unit>
+    <unit id="failure.seconds">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:44</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="seconds" disp="seconds"/> seconds</source>
+        <target><ph id="0" equiv="seconds" disp="seconds"/> Sekunden</target>
+      </segment>
+    </unit>
+    <unit id="failure.times">
+      <notes>
+        <note category="location">src/app/shared/failure-report.ts:49</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n"/> times</source>
+        <target><ph id="0" equiv="count" disp="n"/>-mal</target>
+      </segment>
+    </unit>
     <unit id="field-errors.title">
       <notes>
-        <note category="location">src/app/shared/field-errors.ts:45,47</note>
+        <note category="location">src/app/shared/field-errors.ts:48,50</note>
       </notes>
       <segment>
         <source>Some entries are not valid</source>

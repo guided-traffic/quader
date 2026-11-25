@@ -210,8 +210,8 @@ export async function submit(panel: HTMLElement): Promise<void> {
 export const REQUEST_ID = '7f3c9a2e5b8d4f1a6c0e9b3d7a5f2c8e';
 
 /**
- * A failure the screen has no sentence for (R-UI-042): the shared error notice shows the server's English text, the request ID
- * and its Copy button, the longest shape of the notice.
+ * A failure the screen has no sentence for (R-UI-042, R-UI-216): the shared error notice says its status's sentence and shows the
+ * status, the time, the request ID with its Copy button, the code and the server's English text, a long shape of the notice.
  */
 export function serverFailure(
   detail = 'The object store did not accept the write within 30 seconds: the connection to storage-eu-central-1.internal was reset by its peer.',

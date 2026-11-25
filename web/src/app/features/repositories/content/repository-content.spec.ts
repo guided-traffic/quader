@@ -1,5 +1,6 @@
 import { ClientSetupApi, PackagesApi } from '../../../api/packages-api';
 import { RepositoriesApi } from '../../../api/repositories-api';
+import { ApiError } from '../../../api/problem';
 import { VulnerabilitiesApi } from '../../../api/vulnerabilities-api';
 import { FakeClientSetupApi, FakePackagesApi, OCI_PACKAGE, ociFixture, ociImagesFixture } from '../../../api/testing/fakes-packages';
 import { FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT, PACKAGE_FORMAT } from '../../../api/testing/fakes-catalog';
@@ -65,6 +66,35 @@ const OCI_REPO: RepoDoc ={ key: 'oci-local', project: 'web', class: 'local', for
 const NPM_REPO: RepoDoc = { key: 'npm-local', project: 'web', class: 'local', format: 'npm', description: 'Internal packages' };
 
 describe('Repository content page', () => {
+  it('R-UI-216 a page whose reads failed while its backend restarted comes back by itself, with the formats that failed beside it', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const gateway = (path: string): ApiError => new ApiError(502, null, null, null, { call: { method: 'GET', path } });
+      const r = await open(NPM_REPO, ({ catalog }) => {
+        const get = catalog.get.bind(catalog);
+        const formats = catalog.formats.bind(catalog);
+        catalog.get = async () => {
+          catalog.get = get;
+          throw gateway('/api/v1/projects/web/repositories/npm-local');
+        };
+        catalog.formats = async () => {
+          catalog.formats = formats;
+          throw gateway('/api/v1/formats');
+        };
+      });
+      const notice = r.root.querySelector('[data-testid="error-notice"]')!;
+      expect(notice.textContent).toContain('The server did not answer through the gateway in front of it.');
+      expect(notice.textContent).toContain('This page tries again by itself in 3 seconds.');
+      vi.advanceTimersByTime(3_000);
+      await settle(r.fixture);
+      expect(r.root.querySelector('[data-testid="error-notice"]')).toBeNull();
+      expect(r.root.querySelector('h1')?.textContent).toContain('npm-local');
+      expect(text(r.root)).not.toContain('not scanned for vulnerabilities yet');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('R-UI-052 an OCI repository lists its images, opens the tags with digest, size and pushed time, and shows the pull command of this installation', async () => {
     const r = await open(OCI_REPO, ({ packages }) => {
       ociFixture(packages);

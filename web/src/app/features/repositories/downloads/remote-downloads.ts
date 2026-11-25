@@ -19,7 +19,6 @@ import {
   downloadActive,
   downloadRetryable,
 } from '../../../api/remote-downloads-api';
-import { describeProblem } from '../../../core/http/problem-messages';
 import { LIVE_SLOW_MS, live, refreshResource } from '../../../core/live-refresh';
 import { Notifier } from '../../../core/notifier';
 import { SessionStore } from '../../../core/session-store';
@@ -49,6 +48,7 @@ import {
   failureStepText,
   queueOriginText,
 } from './download-words';
+import { FailureToasts } from '../../../shared/failure-dialog';
 
 /**
  * How often the tab reads the queue again while a row waits or runs (R-CUR-018; WCAG 2.2.2: with a pause control); while nothing
@@ -87,6 +87,7 @@ export class RemoteDownloads {
   private readonly api = inject(RemoteDownloadsApi);
   private readonly session = inject(SessionStore);
   private readonly notifier = inject(Notifier);
+  private readonly failureToasts = inject(FailureToasts);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -566,7 +567,7 @@ export class RemoteDownloads {
           : $localize`:@@downloads.cancelled:The download of ${downloadSubject(r)}:subject: is cancelled.`,
       );
     } catch (e) {
-      this.notifier.alert(describeProblem(asApiError(e)).text);
+      this.failureToasts.alert(e);
     } finally {
       this.busy.update((s) => {
         const next = new Set(s);
@@ -598,7 +599,7 @@ export class RemoteDownloads {
       );
       this.notifier.status($localize`:@@downloads.retried-all:Failed downloads that wait again: ${n}:count:.`);
     } catch (e) {
-      this.notifier.alert(describeProblem(asApiError(e)).text);
+      this.failureToasts.alert(e);
     } finally {
       this.retryingAll.set(false);
       this.refresh();
@@ -654,7 +655,7 @@ export class RemoteDownloads {
         if (this.bulkId()) this.clearBulk();
       }
     } catch (e) {
-      this.notifier.alert(describeProblem(asApiError(e)).text);
+      this.failureToasts.alert(e);
     } finally {
       this.bulkBusy.update((s) => {
         const next = new Set(s);

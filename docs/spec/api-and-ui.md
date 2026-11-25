@@ -5856,8 +5856,9 @@ Acceptance criteria:
 Priority: **MVP** · Covers: quader-only
 
 - One HTTP interceptor (R-ARCH-004 `core/http`) maps problem `code` values to translated messages and
-  `errors[].pointer` to form controls. Unknown codes show the English `detail` and the `requestId`
-  with a copy button ("give this ID to your administrator").
+  `errors[].pointer` to form controls. An unknown code, and an answer without a problem document, is said from its status in the
+  reader's language; the server's English `detail`, the `requestId` with a copy button and every other fact of the answer stand under
+  that sentence (R-UI-216, which replaced "Unknown codes show the English `detail`" on 2026-11-25).
 - 412 `precondition_failed`: a conflict dialog "Changed by someone else since you opened it",
   showing their version against yours field by field, with "Reload (discard mine)", "Overwrite"
   (re-sends with the new ETag after showing the diff) and "Copy my changes".
@@ -5898,7 +5899,7 @@ Priority: **MVP** · Covers: quader-only
   secret was lost with its answer. The UI revokes it (`DELETE /api/v1/tokens/{tokenId}`), creates
   the token again with a new key, and shows only the new one, so no unseen token stays valid.
 - 503: a page-level notice with "Retry"; in maintenance mode the notice shows the operator's
-  message.
+  message. Since R-UI-216 every failed read offers "Retry", and a failed read whose failure may pass reads again by itself.
 - Confirmations use a polite live region (`role="status"`), errors `role="alert"`; notifications
   with actions stay until dismissed. Both are shown as the reference's toast at the bottom right of the window, the owner's place
   (2026-11-24: "Und diese dann bitte unten rechts einblenden, nicht links"), with the text, an optional action and a close button
@@ -5918,7 +5919,7 @@ Acceptance criteria:
   that answers one of them `412` `authz_epoch_unknown` makes the UI show "may not have been saved",
   re-read the policy, and send no `Quader-Authz-Min-Epoch` on later requests until its next
   permission change; the conflict dialog does not open.
-- An unknown `code` shows the request ID.
+- An unknown `code` shows the request ID, the code and the server's `detail` as facts under the sentence of its status (R-UI-216).
 - A test proxy resets the connection of the wizard's `POST /api/v1/projects/{projectKey}/repositories` after the server
   has committed it. The UI retries with the same `Idempotency-Key`, reports success, and exactly one
   repository exists. The same with a `PATCH` of the edit form reports success without the conflict
@@ -9346,7 +9347,8 @@ shows state the server changes without the viewer's own act reads it again by it
   key), a row the person opened stays open, an open menu, the focus and the scroll stay, **Load more** continues after what was read
   again, and a field the person types in is never reset. A failed read keeps what is shown and shows no error; the next read tries
   again. A list the person extended with **Load more** is read again as far as it is shown. An answer that arrives after the view's
-  query changed is dropped. A version's page keeps the tab it opened on when a finished scan adds the tab Vulnerabilities in front.
+  query changed is dropped. A view whose own first read failed shows its notice, which reads it again by itself while the window is
+  seen (R-UI-216, [Q-UI-1184](#q-ui-1184--a-failed-read-is-offered-again-and-a-failure-that-may-pass-is-read-again-by-itself)). A version's page keeps the tab it opened on when a finished scan adds the tab Vulnerabilities in front.
 - **No announcement storm.** A read again sets no live region; a region that already announces (a job's progress, R-UI-042) keeps its
   own limit, and text that did not change is not written again.
 - **After the person's own act** (a download started, an allow or a block, a release, a rescan, a run of a pass), the affected view
@@ -9441,7 +9443,8 @@ server knows, it sends as a code with its parameters
   package's README), so that the German pass tells it from a server's sentence. The built-in project's description is the UI's own
   and is not marked; a built-in limit profile's name and description are stored and editable, English as the installation first
   writes them ([usage-and-limits.md](usage-and-limits.md) H-1861). A problem whose code the screen
-  does not know shows its English `detail` with the request ID (R-UI-042).
+  does not know is said from its status; its English `detail` is a fact of the notice, marked `lang="en" translate="no"`, with the
+  request ID (R-UI-216).
 - **The audit of 2026-11-24** (every binding of a server's text in `web/src/app`, against its source). Each screen exists once for
   every format and class that has it; the preview, the connection test, the mirror and the signatures serve every format through the
   same component:
@@ -9532,6 +9535,82 @@ stop and no region ([data-table.spec.ts](../../web/src/app/shared/ui/data-table.
 row ([audit-log.spec.ts](../../web/src/app/features/audit/audit-log.spec.ts)); a new documentation page brings its pane's top into
 view and **Back to the tree** the entry ([ansible-docs.spec.ts](../../web/src/app/features/packages/ansible-docs.spec.ts)); an opened
 command has no cap ([install-panel.spec.ts](../../web/src/app/features/packages/install-panel.spec.ts)).
+
+### R-UI-216 · A failure shows every fact of its answer
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-25, on a repository's page while the backend restarted behind the dev server's proxy, where two red notices stood one
+above the other and each said only "HTTP 502": "wenn das Frontend Fehler anzeigt ist mir das ein bisschen dünn, ich will im Frontend alle
+Infos die verfügbar sind angezeigt bekommen." The two were the shell's notice of the session's read (`whoami`) and the page's notice of
+the repository's read, both 502 without a body; an answer that was no problem document had become the message `HTTP <status>`, and the
+notice showed nothing else.
+
+*Built*: [error-notice.ts](../../web/src/app/shared/error-notice.ts) (`quader-error-notice`, every screen's), the facts of a failed
+answer on `ApiError.answer` ([problem.ts](../../web/src/app/api/problem.ts),
+[Q-UI-1180](#q-ui-1180--a-failure-carries-the-facts-of-its-answer-on-its-apierror)), made by `apiErrorOf` of
+[failure.ts](../../web/src/app/core/http/failure.ts) for the interceptors and the upload's own client, the words and the report in
+[failure-report.ts](../../web/src/app/shared/failure-report.ts), the groups in [failure-groups.ts](../../web/src/app/shared/failure-groups.ts),
+the toast's **Details** in [failure-dialog.ts](../../web/src/app/shared/failure-dialog.ts); how a screen uses it is on
+[web-ui.md](../developer/web-ui.md#errors-in-screens-r-ui-216).
+
+- **A sentence for every failure** ([Q-UI-1181](#q-ui-1181--every-failure-is-said-in-the-readers-language-from-its-code-else-from-its-status)),
+  in the reader's language, with or without a problem document: the code's sentence where the screen knows the code (R-UI-042), else
+  the status's: no answer (0); the server did not answer through the gateway in front of it (502, 504); the server is not ready (503);
+  not signed in (401), no permission (403), does not exist (404), waited too long (408), too large (413), too many requests (429); the
+  server failed (another 5xx); the server refused the request (another 4xx); an answer that could not be read; a failure of the page's
+  own code. Never the bare status as the only words. The sentence is the notice's alert; the facts below it are not announced.
+- **The facts of the answer, visible without a click**
+  ([Q-UI-1182](#q-ui-1182--the-facts-stand-under-the-sentence-what-can-be-long-is-folded)), each only where the answer had it: the
+  status with its reason phrase (`502 Bad Gateway`, from RFC 9110's table: HTTP/2 carries none), or **No answer**; the call (method,
+  path and query); the time of the failure; the request ID with a copy button (the problem's, else the answer's `X-Request-Id`, which
+  the server sets on every answer, `requestlog.go`); the problem's code; the server's own sentence (`detail`, else `title`), English and
+  marked `lang="en" translate="no"`; Retry-After; that the page sent the call twice (R-UI-042's one retry); the failures of the call in
+  a row.
+- **What can be long, under Technical details** (R-UI-214's fold): the body of an answer that is no problem document, as text and at
+  most 4,000 characters with a note of its whole length; its content type; the headers a script may read; the field problems of a
+  refusal (pointer, code, sentence); the problem's `type`, `instance` and other members; the message of a failure of the page's code.
+- **Copy report** ([Q-UI-1183](#q-ui-1183--copy-report-copies-the-whole-notice-as-plain-text)) copies the sentence, every fact and the
+  folded part as plain text, the time in the reader's form and in UTC.
+- **Retry for every failed read, and the read again by itself**
+  ([Q-UI-1184](#q-ui-1184--a-failed-read-is-offered-again-and-a-failure-that-may-pass-is-read-again-by-itself)): **Retry** stands for
+  every failed read (GET, HEAD) and for a write that got no answer, a gateway's or a starting server's (0, 502, 503, 504), where the
+  screen binds `(retry)`. A failed read whose failure may pass (0, 408, 429, 5xx, an unreadable answer) reads its view again by itself
+  while the window is seen: after 3 s, then twice as long after each further failure of the call, up to 5 minutes (R-UI-213's back-off),
+  never before Retry-After; at once when the window is seen again; never while it is hidden. The notice says when it tries ("This page
+  tries again by itself in 6 seconds.") and stays in place while it does (`failureOf` of
+  [paged-resource.ts](../../web/src/app/shared/paged-resource.ts)). A refusal (403, 404, 422) is not read again by itself; **a write is
+  never repeated by itself**.
+- **One cause, one notice** ([Q-UI-1185](#q-ui-1185--notices-of-one-cause-in-one-place-are-one-notice-by-themselves)): notices shown
+  at once in one place (the page, or one overlay) whose failures have the same status, code and server's sentence are one notice, the
+  first in the page's order, which names every call and whose Retry reads every view; the others show nothing. Every
+  `quader-error-notice` joins by itself, so every page that stacks notices has it, the owner's case first: the shell's and the
+  repository's 502 are one notice with two calls.
+- **Every screen and every format**: the change is in `ApiError`, the interceptors and the shared notice, which 197 places use. A compact
+  place says the sentence and opens the whole notice ([Q-UI-1187](#q-ui-1187--a-compact-place-says-the-sentence-and-opens-the-whole-notice)):
+  a failure's toast with **Details**, a failed upload's row with **Details**, a failed finding of a bulk triage with the sentence and
+  its status and code. A form's error summary keeps its field list and folds the answer's report under Technical details
+  ([Q-UI-1189](#q-ui-1189--a-forms-error-summary-folds-the-answers-report)).
+- **Security** ([Q-UI-1186](#q-ui-1186--a-failures-facts-leave-out-every-credential-and-show-a-foreign-body-as-text),
+  [data-and-secret-flow.md](../security/data-and-secret-flow.md#a-failed-answer-in-the-browser)): no request header, no request body,
+  no cookie is shown or copied; a query parameter that carries a credential is named without its value; the credential headers of an
+  answer are left out; a foreign body is text, never markup; the body of a successful answer that could not be read is never kept.
+
+Acceptance criteria (Vitest, milliseconds each): [error-notice.spec.ts](../../web/src/app/shared/error-notice.spec.ts), eleven cases,
+about 0.3 s: a 502 without a body says its sentence and shows the status, the call and the time and no empty row; a gateway's error page
+is folded as text, never as markup, with its headers and the note that it was cut; a 503 shows its code, the server's sentence marked
+English, Retry-After, the request ID with Copy, the call sent twice and the failures in a row; a refusal lists its field problems; two
+calls of one cause are one notice naming both, whose Retry reads both; two causes stay two; Copy report holds the sentence, the facts and
+the folded part; a failed read reads again after 3 s and a write never; nothing is read while the window is hidden and at once when it is
+seen again; the wait doubles up to 5 minutes and a refusal is not read again; a notice without a bound retry offers none.
+[interceptors.spec.ts](../../web/src/app/core/http/interceptors.spec.ts) (three cases) and
+[failure.spec.ts](../../web/src/app/core/http/failure.spec.ts) (five): the facts of a 502 with a credential parameter, the failures
+in a row and their end, a problem in a Blob, the redaction of the query and of the headers, an unreadable answer without its body, a
+failure of the page that is no lost connection. [problem-messages.spec.ts](../../web/src/app/core/http/problem-messages.spec.ts): a
+sentence for every status without a problem document. [repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts):
+the repository's page comes back by itself with the formats that failed beside it. The notice's seven states in a browser
+([error-notice.states.spec.ts](../../web/src/app/shared/error-notice.states.spec.ts), `make ui-states`) and the render walk
+`repository-failures` in English and German ([failures.ts](../../web/e2e/renders/failures.ts),
+[Q-UI-1188](#q-ui-1188--the-notices-states-are-measured-in-make-ui-states-and-its-words-in-the-render-sets-german-pass)).
 
 ## Deferred
 
@@ -24395,6 +24474,181 @@ changes first.
 **Applied in the spec:** R-UI-215. Code: `innerScroll` in [layout.ts](../../web/e2e/renders/layout.ts), its call in
 [render.spec.ts](../../web/e2e/renders/render.spec.ts), the fixtures in [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts).
 
+### Q-UI-1180 · A failure carries the facts of its answer on its ApiError
+
+Status: **The rule decided by the owner, 2026-11-25** (R-UI-216, his words there); **the form decided by the development agent** —
+selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the problem interceptor kept the status, the problem document, the request ID and Retry-After of a failed answer and threw the
+rest away; the upload's own client (no interceptors) kept less. 197 notices and a dozen toasts read an `ApiError`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `ApiError.answer`, made by one function for both clients (chosen) | `apiErrorOf` of failure.ts keeps the call, the time, the content type, the readable headers, a non-problem body as text, an unreadable answer, a failure of the page, the failures in a row | Every place that holds an `ApiError` holds the facts; one rule of what is left out | The error object grows by a few kilobytes at most (the body's bound) |
+| (b) A store of the last failures beside the error | A service the notice asks by the call | The error stays small | Two sources of one failure; a toast or a cell would have to look it up |
+| (c) The notice reads the `HttpErrorResponse` itself | No interceptor change | — | The response is gone once the interceptor threw its `ApiError` |
+
+**Choice:** (a). A failure that is no `ApiError` (a loader that threw) becomes one with its message as `fault` (`asFailure`), not the
+`ApiError(0)` that said the server could not be reached. A body the browser holds as a Blob or a buffer is read there, so a problem
+document of a download is found too. **Rationale:** the facts belong to the failure; whoever shows it shows them.
+
+**Applied in the spec:** R-UI-216, R-UI-042. Code: [problem.ts](../../web/src/app/api/problem.ts),
+[failure.ts](../../web/src/app/core/http/failure.ts), [interceptors.ts](../../web/src/app/core/http/interceptors.ts),
+[files-api.ts](../../web/src/app/api/files-api.ts), `asApiError` of [paged-resource.ts](../../web/src/app/shared/paged-resource.ts).
+
+### Q-UI-1181 · Every failure is said in the reader's language, from its code, else from its status
+
+Status: **The rule decided by the owner, 2026-11-25** (R-UI-216); **the sentences decided by the development agent** — the owner reviews
+them at the walkthrough. Revises R-UI-042's "Unknown codes show the English `detail`" and the same line of R-UI-214.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The code's sentence, else a sentence of the status, else of its class; the server's sentence a fact (chosen) | `fallback` of problem-messages.ts: 0, 401, 403, 404, 408, 413, 429, 502/504, 503, other 5xx, other 4xx, an unreadable answer, a failure of the page | A German page says every failure in German (R-UI-214); the server's text is still visible, marked English | A status's sentence is less exact than the server's |
+| (b) The server's `detail` as the sentence where there is one | As before | The server's words | English in a German page; and no sentence at all without a problem document |
+
+**Choice:** (a). A status that names its case says it with or without a problem document (a 404 of an unknown code is "does not
+exist"); `known` stays false for these, so a field problem of an unknown code still shows the server's sentence under its field.
+**Rationale:** the screen speaks the reader's language (R-UI-214); the server's sentence is a fact for whoever reports it.
+
+**Applied in the spec:** R-UI-042, R-UI-214, R-UI-216. Code: `fallback` in
+[problem-messages.ts](../../web/src/app/core/http/problem-messages.ts).
+
+### Q-UI-1182 · The facts stand under the sentence; what can be long is folded
+
+Status: **The rule decided by the owner, 2026-11-25** (R-UI-216: "alle Infos die verfügbar sind"); **the form decided by the development
+agent** — the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A facts list (`dl.facts`) under the sentence, the long parts under Technical details (chosen) | Status, call, time, request ID, code, server's sentence, Retry-After, sent twice, failures in a row visible; body, headers, content type, field problems, `type`, `instance`, other members folded | Short facts at a glance; a 4,000-character error page does not push the page's content down | One click for the body |
+| (b) Everything visible | No fold | No click | A gateway's page or a list of headers fills the screen in every notice |
+| (c) Everything folded | A sentence and one disclosure | Small | The owner's "dünn": the status and the call would stay hidden |
+
+**Choice:** (a), with only the rows the answer had. The status is named with its reason phrase from a fixed table (`reasonPhrase`),
+since HTTP/2 carries none. A path, an ID, a header and a body break inside themselves (`overflow-wrap: anywhere`, `pre-wrap`): they never
+push the page sideways (R-UI-173) and never scroll by themselves (R-UI-215). **Rationale:** what is short and identifies the failure is
+what a reader reads first; what is long is what an administrator asks for.
+
+**Applied in the spec:** R-UI-216. Code: [error-notice.ts](../../web/src/app/shared/error-notice.ts),
+[failure-report.ts](../../web/src/app/shared/failure-report.ts).
+
+### Q-UI-1183 · Copy report copies the whole notice as plain text
+
+Status: **Decided by the development agent** (the owner's decision of the button, R-UI-216) — the owner reviews the form at the
+walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Plain text with the reader's labels, the time also in UTC (chosen) | "Status: 502 Bad Gateway", one line per fact, the folded part after them | Pastes into any ticket; the UTC time is what a log is searched by | Labels in German for a German reader |
+| (b) JSON of the `ApiError` | Machine-readable | Exact | Not what a person pastes into a ticket |
+
+**Choice:** (a). **Rationale:** the report goes to a person first. A form's error summary carries the same text folded (Q-UI-1189).
+
+**Applied in the spec:** R-UI-216. Code: `failureReport` in [failure-report.ts](../../web/src/app/shared/failure-report.ts).
+
+### Q-UI-1184 · A failed read is offered again, and a failure that may pass is read again by itself
+
+Status: **The rule decided by the owner** (R-UI-213, 2026-11-24; R-UI-216's Retry, 2026-11-25); **the form decided by the development
+agent** — the owner reviews it at the walkthrough.
+
+Context: Retry stood only for 503 and 0, whether or not the screen had a view to read again; a page whose first read failed stayed
+failed until a reload, and its notice gave way to "Loading." at every retry.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Retry for every read and a write without an answer or with a gateway's; the notice reads its view again by itself after a failure that may pass, with R-UI-213's back-off (chosen) | 3 s, 6 s, 12 s … up to 5 minutes, never before Retry-After, only while the window is seen, at once when it is seen again; 0, 408, 429, 5xx and an unreadable answer; the failures in a row counted per call (`CallFailures`) | The owner's page comes back by itself; a refusal is not hammered; a write is never repeated | One timer per failed read's notice |
+| (b) Every failed read again by itself, a refusal too | Every status | Simplest | A 403 or a 404 read every 5 minutes for nothing |
+| (c) Through `live()` of every view | The view's own poll | One mechanism | A view not yet live, or one whose first read failed, has nothing to poll with |
+
+**Choice:** (a). Retry stands only where the screen binds `(retry)`: the notice reads `EventEmitter.observed` (a decorated output, the
+one in the app), so no notice offers a button that does nothing; the reads that had none got one (Claim tester, an issued token's use,
+the documentation's search). A failed resource keeps its notice while it reads again (`failureOf`): the notice says "Trying again."
+instead of giving way to "Loading.". The repository's page reads its formats and its address again with it: read once, a page that came
+back said "not scanned for vulnerabilities" of an npm repository (the reproduction of 2026-11-25). **Rationale:** a failure that passes
+needs no person; one that does not needs no traffic.
+
+**Applied in the spec:** R-UI-042, R-UI-213, R-UI-216. Code: `passes`, `retryWaitMs` and the effect of
+[error-notice.ts](../../web/src/app/shared/error-notice.ts), `CallFailures` of [failure.ts](../../web/src/app/core/http/failure.ts),
+`failureOf` of [paged-resource.ts](../../web/src/app/shared/paged-resource.ts), `reread` of
+[repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts).
+
+### Q-UI-1185 · Notices of one cause in one place are one notice, by themselves
+
+Status: **The rule decided by the owner, 2026-11-25** (R-UI-216); **the form decided by the development agent** — the owner reviews it at
+the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every notice joins a root registry; the first of a cause in a place shows it, the others nothing (chosen) | Cause: status, code and the server's sentence; place: the page (`main`) or one overlay; order: the document's | Every page that stacks notices has it without a change, the shell's notice and a page's among them; a 404 of one object and of another stay two | A notice that stands far from the first is shown there, not where its view is |
+| (b) A container per page that collects its notices | The page wraps its notices | Placement chosen by the page | 46 templates with more than one notice change; the shell and the page are two components |
+| (c) Same status and code only | The owner's words | Fewer notices | A 404 "No repository a" and a 404 "No file b" would read as one |
+
+**Choice:** (a). The first notice lists every call and every request ID of its group; its Retry reads every view of the group again (a
+write only where its own failure would offer Retry). **Rationale:** one cause is one thing to read and one thing to report.
+
+**Applied in the spec:** R-UI-216. Code: [failure-groups.ts](../../web/src/app/shared/failure-groups.ts),
+[error-notice.ts](../../web/src/app/shared/error-notice.ts).
+
+### Q-UI-1186 · A failure's facts leave out every credential and show a foreign body as text
+
+Status: **The rule decided by the owner, 2026-11-25** (the package's point 8); **the form decided by the development agent** — the owner
+reviews it at the walkthrough. The security page is [data-and-secret-flow.md](../security/data-and-secret-flow.md#a-failed-answer-in-the-browser).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Leave out the request's headers, body and cookies, name a credential parameter without its value, drop the credential headers of the answer, keep a foreign body as bounded text, never the body of an unreadable successful answer (chosen) | `redactUrl`, `shownHeaders`, `BODY_LIMIT` (4,000) in failure.ts | Nothing that authenticates is copied into a ticket; an error page cannot run in the page | A rule by names (H-1961) |
+| (b) Show the answer's headers and body as they came | No rule | Everything | A `Set-Cookie` or a signed address in a header, a token in an unreadable answer |
+
+**Choice:** (a). **Rationale:** a report travels; what authenticates must not travel with it.
+
+**Applied in the spec:** R-UI-216. Code: [failure.ts](../../web/src/app/core/http/failure.ts).
+
+### Q-UI-1187 · A compact place says the sentence and opens the whole notice
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The sentence, and **Details** that opens the notice in a dialog (chosen) | `FailureToasts.alert` for the toasts of a failed action (upstream actions, downloads, delivery requests and rules, jobs, storage, the tasks, System status), **Details** on a failed upload's row | A toast stays one line; nothing is lost | One click |
+| (b) The whole notice in the toast | No dialog | No click | A toast of 20 lines over the page |
+
+**Choice:** (a). A failed finding of a bulk triage says the sentence of its code, else of its status, with the status and code beside it
+as code: its result row has no `ApiError` to open, only the status and code the bulk's answer gives. The download queue's line of an
+upstream's failure ("Upstream error · HTTP 503 · registry.npmjs.org") stays: it names the upstream's status after the screen's class,
+and its sentence and its upstream's text are R-UI-214's already. **Rationale:** a compact place stays compact and loses nothing.
+
+**Applied in the spec:** R-UI-216. Code: [failure-dialog.ts](../../web/src/app/shared/failure-dialog.ts),
+[upload-dialog.ts](../../web/src/app/features/repositories/content/upload-dialog.ts),
+[triage-dialog.ts](../../web/src/app/features/vulnerabilities/triage-dialog.ts).
+
+### Q-UI-1188 · The notice's states are measured in make ui-states, and its words in the render set's German pass
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Seven states in `make ui-states`, six on the repository's page in the render set, English and German (chosen) | error-notice.states.spec.ts: 502 bare (two calls), 502 with a gateway's page, no connection, 503 with Retry-After, an unknown code, field problems, 429, at 390 and 1440 px, dark pictures with `UI_STATES_PICTURES=1`; the walk `repository-failures` of failures.ts answers the same in the browser, both schemes, three widths | The states cost about 9 s without a stack; the German words and the page around the notice are seen where only the render set sees them | No connection is not in the render set: a call the browser aborts writes a console error, which the render run counts as a failure |
+| (b) All in the render set | One place | Real page | A stack, and 36 pictures per run of the walk where 14 states without a stack measure the layout |
+
+**Choice:** (a). **Cost:** `make ui-states` +7 states, about 9 s; the render set +1 screen of six states as the plain user, about 28 s
+in English and 28 s in German; nothing per format.
+
+**Applied in the spec:** R-UI-216. Code: [error-notice.states.spec.ts](../../web/src/app/shared/error-notice.states.spec.ts),
+[failures.ts](../../web/e2e/renders/failures.ts).
+
+### Q-UI-1189 · A form's error summary folds the answer's report
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The summary keeps its field list and folds the report under Technical details (chosen) | `ErrorSummary.error`; a refusal the screen made up itself (no call) has none | The person fixes the fields; the report is one click away | The facts are folded, not visible as in the notice |
+| (b) The notice beside the summary | Both | Every fact visible | Two red boxes for one refusal |
+
+**Choice:** (a). **Rationale:** a refusal of fields is fixed by the person, whose list is the summary; the answer's facts are for a report.
+
+**Applied in the spec:** R-UI-216. Code: [field-errors.ts](../../web/src/app/shared/field-errors.ts).
+
 ### Q-UI-1120 · N/A says its state in a word, and its sentence is the cell's description
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It follows the
@@ -25330,6 +25584,22 @@ keys; a Secret reaches the pods within two minutes."
 
 **Applied in the spec:** R-UI-188. Code: [upstream-words.ts](../../web/src/app/features/upstream/upstream-words.ts).
 ## What this does not cover
+
+### H-1962 · A read that fails without a notice of its own is not read again with its page
+
+Stage: a screen's reads beside the one its notice reports (R-UI-216, Q-UI-1184). Subject: a page that comes back after its backend
+restarted. A resource whose failure no notice shows (the formats, the server's address, a section's own read) is read once; when it
+failed with the page's read, the page comes back without it and says what it says without it. Found on the repository's page in the
+reproduction of 2026-11-25 ("not scanned for vulnerabilities" of an npm repository) and fixed there (`reread`); not audited on the other
+screens. Live today on a screen whose first load fails partly; real for as long as the screen is open. The remedy per screen is the
+repository page's: the notice's retry reads every read of the screen that failed.
+
+### H-1963 · A notice gives way to "Loading." while it reads again, on the screens that keep no failure
+
+Stage: the read again by itself of R-UI-216 on a screen whose failure is `computed` from `resource().error()` (about 50, among them the
+repository's settings). Subject: the reader of such a notice while the page reads again. The notice disappears for the time of the
+read and comes back with a new error, so "Trying again." is not seen and the failures in a row are counted, but the notice is drawn anew.
+Live today; the repository's page uses `failureOf` and keeps its notice. The remedy: `failureOf` in place of the `computed` on each screen.
 
 ### H-1683 · The version list of a package several repositories hold, in the order of publication, reads every version, and the package list counts every version
 

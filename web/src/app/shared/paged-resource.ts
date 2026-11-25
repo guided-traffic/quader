@@ -1,10 +1,29 @@
-import { ResourceRef, signal } from '@angular/core';
+import { ResourceRef, Signal, computed, signal } from '@angular/core';
 import { ApiError } from '../api/problem';
 import { DEFAULT_PAGE_LIMIT, Page, PagedList, PageFetcher, READ_ON_REQUESTS } from '../api/pagination';
+import { asFailure } from '../core/http/failure';
 
-/** Wraps any failure of a list call in an `ApiError`, so that `<quader-error-notice>` can show it. */
+/**
+ * Wraps any failure in an `ApiError`, so that `<quader-error-notice>` can show it: an `ApiError` as it is, a failure of the page's
+ * own code as such, with its message (R-UI-216; it used to say that the server could not be reached).
+ */
 export function asApiError(e: unknown): ApiError {
-  return e instanceof ApiError ? e : new ApiError(0, null, null);
+  return asFailure(e);
+}
+
+/**
+ * The failure of a resource for its notice, kept while the resource reads again (R-UI-216, Q-UI-1184): the notice stays in place
+ * during a retry instead of giving way to "Loading." and coming back, so it can say that it tries again and count its attempts. A
+ * value or a failure of the new read replaces it.
+ */
+export function failureOf(ref: ResourceRef<unknown>): Signal<ApiError | null> {
+  let last: ApiError | null = null;
+  return computed(() => {
+    const e = ref.error();
+    if (e) return (last = asFailure(e));
+    if (last && ref.isLoading() && !ref.hasValue()) return last;
+    return (last = null);
+  });
 }
 
 /**

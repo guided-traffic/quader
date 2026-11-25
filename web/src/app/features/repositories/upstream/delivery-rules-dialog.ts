@@ -2,7 +2,6 @@ import { Component, computed, effect, inject, signal, untracked } from '@angular
 import { newIdempotencyKey } from '../../../api/client';
 import { DeliveryEffect, DeliveryRule, DeliveryRuleKind, DeliveryRulesApi } from '../../../api/delivery-rules-api';
 import { ApiError } from '../../../api/problem';
-import { describeProblem } from '../../../core/http/problem-messages';
 import { Notifier } from '../../../core/notifier';
 import { TextField } from '../../../shared/access/fields';
 import { ErrorNotice } from '../../../shared/error-notice';
@@ -11,6 +10,7 @@ import { asApiError } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../../shared/ui/dialog';
 import { TimeAgo } from '../../../shared/ui/time-ago';
+import { FailureToasts } from '../../../shared/failure-dialog';
 
 export interface DeliveryRulesData {
   readonly repository: string;
@@ -169,6 +169,7 @@ export function effectText(effect: DeliveryEffect): string {
 export class DeliveryRulesDialog {
   private readonly api = inject(DeliveryRulesApi);
   private readonly notifier = inject(Notifier);
+  private readonly failureToasts = inject(FailureToasts);
   protected readonly data = inject<DeliveryRulesData>(DIALOG_DATA);
   // The reference keeps the dialog typed; the result is the changed flag of `quaderDialogClose`.
   protected readonly ref = inject<DialogRef<boolean, DeliveryRulesDialog>>(DialogRef);
@@ -275,7 +276,7 @@ export class DeliveryRulesDialog {
       this.changed.set(true);
       this.notifier.status($localize`:@@upstream.rule.removed:The rule for ${r.subject}:subject: is removed.`);
     } catch (e) {
-      this.notifier.alert(describeProblem(asApiError(e)).text);
+      this.failureToasts.alert(e);
     } finally {
       this.removing.update((s) => {
         const next = new Set(s);

@@ -4,13 +4,13 @@ import { Component, computed, inject, resource, signal } from '@angular/core';
 import { newIdempotencyKey } from '../../api/client';
 import { ApiError } from '../../api/problem';
 import { JobsApi, Task } from '../../api/jobs-api';
-import { describeProblem } from '../../core/http/problem-messages';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
 import { ErrorNotice } from '../../shared/error-notice';
 import { JobProgress, jobStateText } from '../../shared/job-progress';
 import { asApiError, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { FailureToasts } from '../../shared/failure-dialog';
 
 /**
  * The scheduled tasks card (R-UI-038): schedule, next run, last outcome, and "Run now", which only
@@ -124,6 +124,7 @@ export class TasksCard {
   private readonly api = inject(JobsApi);
   private readonly session = inject(SessionStore);
   private readonly notifier = inject(Notifier);
+  private readonly failureToasts = inject(FailureToasts);
 
   protected readonly tasks = resource({ loader: () => this.api.tasks() });
   protected readonly busy = signal<string | null>(null);
@@ -167,7 +168,7 @@ export class TasksCard {
       // A refusal (a run in progress, a failed precondition) is final: the next click is a new run.
       if (error.status !== 0 && error.status !== 503) this.keys.delete(task.name);
       this.runFailure.set(error);
-      this.notifier.alert(describeProblem(error).text);
+      this.failureToasts.alert(error);
     } finally {
       this.busy.set(null);
     }

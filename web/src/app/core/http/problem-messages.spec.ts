@@ -7,9 +7,29 @@ describe('describeProblem', () => {
     expect(describeProblem(e)).toEqual({ text: 'You do not have the permission for this.', known: true });
   });
 
-  it('R-UI-042 an unknown code shows the English detail and is marked unknown, so the request ID is offered', () => {
+  it('R-UI-216 an unknown code is said by its status in the reader\'s words and marked unknown; the English detail is no sentence', () => {
     const e = new ApiError(409, { code: 'a_code_from_the_future', detail: 'The server explains it in English.' }, 'rid-1');
-    expect(describeProblem(e)).toEqual({ text: 'The server explains it in English.', known: false });
+    expect(describeProblem(e)).toEqual({ text: 'The server refused this request.', known: false });
+    const missing = new ApiError(404, { code: 'widget_not_found', detail: 'No widget x.' }, 'rid-2');
+    expect(describeProblem(missing).text).toBe('This does not exist, or you may not see it.');
+  });
+
+  it('R-UI-216 every failure without a problem document has a sentence, never the bare status', () => {
+    const said = (e: ApiError): string => describeProblem(e).text;
+    expect(said(new ApiError(502, null, null))).toBe('The server did not answer through the gateway in front of it. It may be restarting or overloaded.');
+    expect(said(new ApiError(504, null, null))).toBe(said(new ApiError(502, null, null)));
+    expect(said(new ApiError(503, null, null))).toBe('The server is not ready to answer. It may be starting or in maintenance.');
+    expect(said(new ApiError(500, null, null))).toBe('The server failed to answer this request.');
+    expect(said(new ApiError(418, null, null))).toBe('The server refused this request.');
+    expect(said(new ApiError(403, null, null))).toBe('You do not have the permission for this.');
+    expect(said(new ApiError(429, null, null, 30))).toContain('30');
+    expect(said(new ApiError(200, null, null, null, { unreadable: true, fault: 'SyntaxError: Unexpected token <' }))).toBe(
+      'The server answered, but its answer could not be read.',
+    );
+    expect(said(new ApiError(0, null, null, null, { fault: 'TypeError: x is undefined' }))).toContain('in this page');
+    for (const s of [0, 400, 401, 404, 408, 409, 413, 418, 422, 500, 501, 502, 503, 504, 599, 302]) {
+      expect(said(new ApiError(s, null, null)), String(s)).not.toMatch(/^HTTP \d+/);
+    }
   });
 
   // >>> M1 ui-b

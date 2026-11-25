@@ -12242,10 +12242,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-573 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+583 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 573 questions</summary>
+<summary>Q-UI: 583 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12822,6 +12822,16 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1160](spec/api-and-ui.md#q-ui-1160--a-limit-an-account-would-lift-offers-one-to-each-reader-where-that-reader-adds-it) | A limit an account would lift offers one to each reader where that reader adds it | Decided by the development agent | (b) A preset fact `AccountRaisesLimit`, true for Docker Hub alone, no number; the server answers `accountRaisesLimit` where the remote sends no credential; the sentence after the limit's, by who reads it | ADR-281 |
 | [Q-UI-1161](spec/api-and-ui.md#q-ui-1161--an-account-the-configuration-declares-is-read-only-on-the-registrys-page-its-source-and-its-files-state-no-value) | An account the configuration declares is read-only on the registry's page: its source and its files' state, no value | Decided by the development agent | (a) A lock line that names the Secret, the mode, the files' state, the last download and failure, the credential's hosts and **Test connection**; no field | — |
 | [Q-UI-1162](spec/api-and-ui.md#q-ui-1162--the-files-state-is-a-word-among-the-facts-and-a-warning-that-says-what-fails-until-when) | The files' state is a word among the facts, and a warning that says what fails until when | Decided by the development agent | (a). "The Secret's files are missing on this server, so every request to Docker Hub fails until the Secret exists with its keys; a Secret reaches the pods within two minutes." | — |
+| [Q-UI-1180](spec/api-and-ui.md#q-ui-1180--a-failure-carries-the-facts-of-its-answer-on-its-apierror) | A failure carries the facts of its answer on its ApiError | The rule decided by the owner, 2026-11-25 | (a) `ApiError.answer`, made by one function for both clients | — |
+| [Q-UI-1181](spec/api-and-ui.md#q-ui-1181--every-failure-is-said-in-the-readers-language-from-its-code-else-from-its-status) | Every failure is said in the reader's language, from its code, else from its status | The rule decided by the owner, 2026-11-25 | (a) The code's sentence, else a sentence of the status, else of its class; the server's sentence a fact | — |
+| [Q-UI-1182](spec/api-and-ui.md#q-ui-1182--the-facts-stand-under-the-sentence-what-can-be-long-is-folded) | The facts stand under the sentence; what can be long is folded | The rule decided by the owner, 2026-11-25 | (a), with only the rows the answer had. | — |
+| [Q-UI-1183](spec/api-and-ui.md#q-ui-1183--copy-report-copies-the-whole-notice-as-plain-text) | Copy report copies the whole notice as plain text | Decided by the development agent | (a) Plain text with the reader's labels, the time also in UTC | — |
+| [Q-UI-1184](spec/api-and-ui.md#q-ui-1184--a-failed-read-is-offered-again-and-a-failure-that-may-pass-is-read-again-by-itself) | A failed read is offered again, and a failure that may pass is read again by itself | The rule decided by the owner | (a) Retry for every read and a write without an answer or with a gateway's; the notice reads its view again by itself after a failure that may pass, with R-UI-213's back-off | — |
+| [Q-UI-1185](spec/api-and-ui.md#q-ui-1185--notices-of-one-cause-in-one-place-are-one-notice-by-themselves) | Notices of one cause in one place are one notice, by themselves | The rule decided by the owner, 2026-11-25 | (a) Every notice joins a root registry; the first of a cause in a place shows it, the others nothing | — |
+| [Q-UI-1186](spec/api-and-ui.md#q-ui-1186--a-failures-facts-leave-out-every-credential-and-show-a-foreign-body-as-text) | A failure's facts leave out every credential and show a foreign body as text | The rule decided by the owner, 2026-11-25 | (a) Leave out the request's headers, body and cookies, name a credential parameter without its value, drop the credential headers of the answer, keep a foreign body as bounded text, never the body of an unreadable successful answer | — |
+| [Q-UI-1187](spec/api-and-ui.md#q-ui-1187--a-compact-place-says-the-sentence-and-opens-the-whole-notice) | A compact place says the sentence and opens the whole notice | Decided by the development agent | (a) The sentence, and **Details** that opens the notice in a dialog | — |
+| [Q-UI-1188](spec/api-and-ui.md#q-ui-1188--the-notices-states-are-measured-in-make-ui-states-and-its-words-in-the-render-sets-german-pass) | The notice's states are measured in make ui-states, and its words in the render set's German pass | Decided by the development agent | (a) Seven states in `make ui-states`, six on the repository's page in the render set, English and German | — |
+| [Q-UI-1189](spec/api-and-ui.md#q-ui-1189--a-forms-error-summary-folds-the-answers-report) | A form's error summary folds the answer's report | Decided by the development agent | (a) The summary keeps its field list and folds the report under Technical details | — |
 
 </details>
 

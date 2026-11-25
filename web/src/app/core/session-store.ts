@@ -9,6 +9,7 @@ import {
   Whoami,
 } from '../api/session-api';
 import { AuthzEpoch } from './authz-epoch';
+import { asFailure } from './http/failure';
 import { BrowserNavigation } from './browser-navigation';
 
 /**
@@ -224,7 +225,7 @@ export class SessionStore {
         this._state.set(e.code === 'session_expired' && !this._ended() ? 'ended' : 'anonymous');
         this._ended.set(false);
       } else {
-        this._loadError.set(e instanceof ApiError ? e : null);
+        this._loadError.set(asFailure(e));
         this._state.set('failed');
       }
     }

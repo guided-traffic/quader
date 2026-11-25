@@ -58,6 +58,7 @@ import {
   valkeyDegraded,
 } from './server-texts';
 import { downloadsButtonWalk, downloadsExpected, downloadsPanelWalk } from './upstream-downloads';
+import { failureExpected, failureNotices, failureStates } from './failures';
 import {
   upstreamDebWalk,
   upstreamExpected,
@@ -2803,6 +2804,9 @@ export const screens: readonly Screen[] = [
   { id: 'repositories', path: `${P}/repositories`, kinds: all, walk: filtersOpen(repositoryChips), widths: [1100] },
   // A list's error states (G5-20): the shared notice with Retry on its line (R-UI-175), with a request ID and Copy, and a refusal.
   { id: 'repositories-unavailable', path: `${P}/repositories`, kinds: ['plain'], walk: listUnavailable, expected: unavailable, notices: unavailableNotice },
+  // The failures of a repository's page as the shared error notice shows them (R-UI-216): the owner's two 502s as one notice, a
+  // gateway's error page, a server not ready, an unknown code, field problems and a rate limit.
+  { id: 'repository-failures', path: `${P}/repositories/npm-internal`, kinds: ['plain'], walk: failureStates, expected: failureExpected, notices: failureNotices, de: true },
   { id: 'repositories-long-keys', path: `${O}/repositories`, kinds: all, walk: filtersOpen() },
   // The row menus of the lists that have one, open (G5-20): a project's repositories, every project's, a service account's technical
   // tokens, the exposure rules of an endpoint and the registries of upstream.

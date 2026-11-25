@@ -1,6 +1,8 @@
-import { Component, ElementRef, Injector, afterNextRender, inject, input, output } from '@angular/core';
+import { Component, ElementRef, Injector, LOCALE_ID, afterNextRender, computed, inject, input, output } from '@angular/core';
 import { ApiError, FieldProblem } from '../api/problem';
 import { describeProblem } from '../core/http/problem-messages';
+import { failureReport } from './failure-report';
+import { TechnicalDetails } from './technical-details';
 
 /** One line of the error summary: where, what, and which control to focus. */
 export interface SummaryItem {
@@ -39,6 +41,7 @@ export function problemsAt(
  */
 @Component({
   selector: 'quader-error-summary',
+  imports: [TechnicalDetails],
   template: `
     @if (items().length > 0) {
       <div class="summary" role="alert" tabindex="-1">
@@ -53,6 +56,12 @@ export function problemsAt(
             </li>
           }
         </ul>
+        <!-- The answer that refused the fields, whole and folded (R-UI-216): its status, call, time and request ID for a report. -->
+        @if (report(); as text) {
+          <quader-technical-details>
+            <pre class="report" translate="no">{{ text }}</pre>
+          </quader-technical-details>
+        }
       </div>
     }
   `,
@@ -71,6 +80,13 @@ export function problemsAt(
       margin: 0;
       padding-inline-start: var(--quader-space-4);
     }
+    .report {
+      margin: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.8125rem;
+    }
     .link {
       padding: 0;
       border: 0;
@@ -84,6 +100,15 @@ export function problemsAt(
 })
 export class ErrorSummary {
   readonly items = input.required<readonly SummaryItem[]>();
+  /** The answer that refused the fields: its whole report stands folded under the list (R-UI-216). */
+  readonly error = input<ApiError | null>(null);
+
+  private readonly locale = inject(LOCALE_ID);
+  protected readonly report = computed(() => {
+    const e = this.error();
+    // A refusal the screen made up itself (no call went out) has no answer to report.
+    return e?.answer.call ? failureReport([e], this.locale) : null;
+  });
   /**
    * A link of the summary was chosen: the screen opens the closed region that holds `id` (R-UI-083), and the field is focused once
    * the region is open.

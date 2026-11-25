@@ -1,4 +1,5 @@
 import {
+  HttpClient,
   HttpXsrfTokenExtractor,
   provideHttpClient,
   withInterceptors,
@@ -260,6 +261,60 @@ describe('HTTP layer', () => {
     await session.check([{ repository: 'r', action: 'read' }]);
     expect(api.checkCalls.length).toBe(2);
     expect(epoch.value()).toBe(7);
+  });
+
+  it('R-UI-216 a gateway\'s 502 keeps its call, time, headers and its error page as text; a credential parameter is named without its value', async () => {
+    const { client, http } = setup();
+    const before = Date.now();
+    const p = client.getJson('/api/v1/projects/platform/repositories/npm-local', { params: { token: 'secret-1', page: 2 } }).catch((e: unknown) => e);
+    const page = '<html><body><h1>502 Bad Gateway</h1>' + 'x'.repeat(5_000) + '</body></html>';
+    http
+      .expectOne((r) => r.url === '/api/v1/projects/platform/repositories/npm-local')
+      .flush(page, { status: 502, statusText: '', headers: { 'Content-Type': 'text/html', 'X-Request-Id': 'rid-gw', Server: 'edge', 'Set-Cookie': 'a=b' } });
+    const err = (await p) as ApiError;
+    expect(err.status).toBe(502);
+    expect(err.problem).toBeNull();
+    expect(err.requestId).toBe('rid-gw');
+    expect(err.answer.call).toEqual({ method: 'GET', path: '/api/v1/projects/platform/repositories/npm-local?token=[redacted]&page=2' });
+    expect(err.answer.at.getTime()).toBeGreaterThanOrEqual(before);
+    expect(err.answer.contentType).toBe('text/html');
+    expect(err.answer.body?.length).toBe(4_000);
+    expect(err.answer.body?.startsWith('<html><body><h1>502 Bad Gateway</h1>')).toBe(true);
+    expect(err.answer.bodyLength).toBe(page.length);
+    expect(err.answer.headers.map(([n]) => n)).toEqual(['content-type', 'x-request-id', 'server']);
+    expect(err.answer.inRow).toBe(1);
+    expect(err.isRead).toBe(true);
+    expect(err.message).toBe('HTTP 502 Bad Gateway');
+  });
+
+  it('R-UI-216 a call that fails again counts its failures in a row; an answer ends the row', async () => {
+    const { client, http } = setup();
+    const fail = async (): Promise<ApiError> => {
+      const p = client.getJson('/api/v1/system/info').catch((e: unknown) => e);
+      http.expectOne('/api/v1/system/info').flush('', { status: 504, statusText: 'Gateway Timeout' });
+      return (await p) as ApiError;
+    };
+    expect((await fail()).answer.inRow).toBe(1);
+    expect((await fail()).answer.inRow).toBe(2);
+    const ok = client.getJson('/api/v1/system/info');
+    http.expectOne('/api/v1/system/info').flush({});
+    await ok;
+    expect((await fail()).answer.inRow).toBe(1);
+  });
+
+  it('R-UI-216 a problem document in a Blob is read', async () => {
+    const { http } = setup();
+    const blob = TestBed.inject(HttpClient)
+      .get('/api/v1/repositories/x/files/a.tgz', { responseType: 'blob' })
+      .toPromise()
+      .catch((e: unknown) => e);
+    http
+      .expectOne('/api/v1/repositories/x/files/a.tgz')
+      .flush(new Blob([JSON.stringify({ code: 'not_found', detail: 'No file a.tgz.', requestId: 'rid-b' })]), { status: 404, statusText: 'Not Found' });
+    const missing = (await blob) as ApiError;
+    expect(missing.code).toBe('not_found');
+    expect(missing.requestId).toBe('rid-b');
+    expect(missing.answer.body).toBeNull();
   });
 
   it('does not touch requests outside /api/v1/ and /auth/', async () => {

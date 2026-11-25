@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { BackupsApi } from '../../api/backups-api';
 import { StorageApi } from '../../api/storage-api';
 import { EncryptionApi, SystemApi } from '../../api/system-api';
-import { ApiError } from '../../api/problem';
+import { asFailure } from '../../core/http/failure';
 import { SessionStore } from '../../core/session-store';
 import { ErrorNotice } from '../../shared/error-notice';
 import { valueOf } from '../../shared/paged-resource';
@@ -126,11 +126,11 @@ export class Dashboard {
   });
   protected readonly failure = computed(() => {
     const e = this.info.error() ?? this.replicas.error();
-    return e ? (e instanceof ApiError ? e : new ApiError(0, null, null)) : null;
+    return e ? asFailure(e) : null;
   });
   protected readonly overviewFailure = computed(() => {
     const e = this.overview.error();
-    return e ? (e instanceof ApiError ? e : new ApiError(0, null, null)) : null;
+    return e ? asFailure(e) : null;
   });
 
   constructor() {

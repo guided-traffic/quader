@@ -27,7 +27,7 @@ import { Confirm } from '../../../shared/confirm-dialog';
 import { CopyButton } from '../../../shared/copy-button';
 import { ErrorNotice } from '../../../shared/error-notice';
 import { JobProgress } from '../../../shared/job-progress';
-import { asApiError, valueOf } from '../../../shared/paged-resource';
+import { asApiError, failureOf, valueOf } from '../../../shared/paged-resource';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { AddressField } from '../../../shared/address-field';
 import { FrequentPlaces } from '../../../core/frequent-places';
@@ -138,10 +138,19 @@ export class RepositoryContent {
   });
   protected readonly formats = resource({ loader: () => this.api.formats() });
   protected readonly repository = computed<Repository | RepositoryConsumerView | undefined>(() => valueOf(this.loaded)?.value);
-  protected readonly failure = computed(() => {
-    const e = this.loaded.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The failure of the repository's read, kept while its notice reads it again (R-UI-216). */
+  protected readonly failure = failureOf(this.loaded);
+
+  /**
+   * The notice's Retry, and its read again by itself (R-UI-216): the repository, and the page's other reads that failed with it. The
+   * formats fail without a notice of their own; read once and never again, a page that came back after its backend restarted said
+   * "not scanned for vulnerabilities" of an npm repository (the reproduction of 2026-11-25).
+   */
+  protected reread(): void {
+    this.loaded.reload();
+    if (this.formats.error()) this.formats.reload();
+    if (this.baseUrl.error()) this.baseUrl.reload();
+  }
   protected readonly descriptor = computed<FormatDescriptor | undefined>(() =>
     (valueOf(this.formats) ?? []).find((f) => f.name === this.repository()?.format),
   );
@@ -302,10 +311,7 @@ export class RepositoryContent {
     loader: async ({ params }) => (params ? this.files.item(params.repo, params.path) : undefined),
   });
   protected readonly item = computed(() => valueOf(this.itemRead) ?? null);
-  protected readonly itemFailure = computed(() => {
-    const e = this.itemRead.error();
-    return e ? asApiError(e) : null;
-  });
+  protected readonly itemFailure = failureOf(this.itemRead);
   /** What the page shows below the header: the packages, a folder, a file, or nothing yet. */
   protected readonly view = computed<'items' | 'folder' | 'file' | 'loading' | 'downloads' | 'upstream' | 'details'>(() => {
     if (this.tab() === 'downloads') return 'downloads';

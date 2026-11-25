@@ -627,12 +627,13 @@ UI_STATES_PICTURES=1 make ui-states                           # and a picture of
 |---|---|
 | The runner's browser | [vitest.states.config.mts](../../web/vitest.states.config.mts): the provider `@vitest/browser-playwright` of the workspace's Vitest, the Chromium of the locked Playwright (no second browser), `--font-render-hinting=none` as the renders (`CHROMIUM_TEXT` of [paths.ts](../../web/e2e/renders/paths.ts)), the light scheme, English, UTC ([Q-UI-1141](../spec/api-and-ui.md#q-ui-1141--the-runners-browser-is-configured-in-a-runner-file-of-its-own-with-the-one-playwright-and-text-without-hinting)) |
 | The helper | [testing/states.ts](../../web/src/app/testing/states.ts): `expectState(name, open)` opens the state afresh in each window, hides the page behind an open dialog, measures, writes the picture with `UI_STATES_PICTURES=1`; `openDialog` opens through `QuaderDialog` with the options of the dialog's call site; `openInPage` renders a component inside the shell's panel (`quader-root > main.content`); `serverFailure()` and `fieldRefusal()` are the two refusals a state shows, `failNext` and `failAlways` make a fake's method give them ([Q-UI-1142](../spec/api-and-ui.md#q-ui-1142--a-state-is-measured-in-two-windows-in-the-light-scheme-and-fails-on-any-finding), [Q-UI-1143](../spec/api-and-ui.md#q-ui-1143--a-dialogs-failure-is-shown-in-its-longest-shape-and-its-validation-by-the-refusal-a-person-meets)) |
-| The states | one `*.states.spec.ts` per area beside its code: `shared/` (the confirm shapes; conflict, diff and both session dialogs; tooltips), `features/projects`, `users` (users, groups, service accounts), `tokens` (Rotate, the secret, Bastions, an issued CI token), `limits`, `upstream`, `settings` (signing), `repositories`, `permissions`, `vulnerabilities` (triage, malware, signatures) |
+| The states | one `*.states.spec.ts` per area beside its code: `shared/` (the confirm shapes; conflict, diff and both session dialogs; tooltips; the error notice's seven failures, R-UI-216, with pictures in the dark scheme too when `UI_STATES_PICTURES=1`), `features/projects`, `users` (users, groups, service accounts), `tokens` (Rotate, the secret, Bastions, an issued CI token), `limits`, `upstream`, `settings` (signing), `repositories`, `permissions`, `vulnerabilities` (triage, malware, signatures) |
 | The proof | [testing/states.states.spec.ts](../../web/src/app/testing/states.states.spec.ts): a copy of a dialog whose Copy stands 8 px under its name must report `off-line` in this browser, and the same button on its line nothing |
 
 **Add a state.** A new dialog gets its states in its area's file: as it opens, with long realistic data (a long name, a word of
 German length where the text is data, many items); after a submit with invalid fields; with the shared error notice of a failure
-the screen has no sentence for (`serverFailure()`: the server's text, the request ID and Copy). The open options are those of the
+the screen has no sentence for (`serverFailure()`: the status's sentence, then the status, the time, the request ID with Copy, the code
+and the server's text, R-UI-216). The open options are those of the
 dialog's call site, named in a comment. Look at each picture (`UI_STATES_PICTURES=1`) against the
 [checklist](ui-style-guide.md#checklist): a state passes the checks and can still be wrong to the eye.
 
@@ -1170,6 +1171,44 @@ Two checks hold it, neither of which sees everything:
   (those marked `de`), and costs a walk over the page's text nodes per picture (milliseconds). It misses a short English phrase and
   an English sentence wrongly marked `translate="no"`; an upstream's text that is not so marked is a finding.
 
+## Errors in screens (R-UI-216)
+
+Every failed call is shown by one component, `quader-error-notice` ([error-notice.ts](../../web/src/app/shared/error-notice.ts)), with
+everything the browser knows of its answer
+([R-UI-216](../spec/api-and-ui.md#r-ui-216--a-failure-shows-every-fact-of-its-answer)). A screen hands it an `ApiError` and, for a
+read, a way to read again; the rest is the notice's.
+
+| Piece | File | Does |
+|---|---|---|
+| `ApiError.answer` | [problem.ts](../../web/src/app/api/problem.ts) | The call (`method`, `path` with its query, credentials named without their value), `at`, `contentType`, `headers`, `body` (a non-problem body as text, at most `BODY_LIMIT` = 4,000 characters, `bodyLength` when cut), `unreadable`, `fault` (a failure of the page's own code), `inRow`. `reasonPhrase(status)` for "502 Bad Gateway"; `isRead` for GET and HEAD |
+| `apiErrorOf`, `asFailure`, `CallFailures` | [failure.ts](../../web/src/app/core/http/failure.ts) | Makes the `ApiError` of an `HttpErrorResponse` for the interceptor and for the upload's own client (`FilesApi`), reads a Blob's or a buffer's body, redacts (`redactUrl`, `shownHeaders`, [data-and-secret-flow.md](../security/data-and-secret-flow.md#a-failed-answer-in-the-browser)); `asFailure` makes a thrown error a failure of the page, not a lost connection; `CallFailures` counts a call's failures in a row and ends the row at its answer |
+| `describeProblem` | [problem-messages.ts](../../web/src/app/core/http/problem-messages.ts) | The sentence: the code's, else the status's (`fallback`); never the bare status |
+| `failureReport`, `FAILURE_WORDS` | [failure-report.ts](../../web/src/app/shared/failure-report.ts) | The words of the facts and the plain text of **Copy report** |
+| `FailureGroups` | [failure-groups.ts](../../web/src/app/shared/failure-groups.ts) | One cause, one notice: notices of the same status, code and server's sentence in one place; the first shows them all |
+| `failureOf(resource)` | [paged-resource.ts](../../web/src/app/shared/paged-resource.ts) | A resource's failure that stays while it reads again, so the notice keeps its place and says "Trying again." |
+| `FailureToasts` | [failure-dialog.ts](../../web/src/app/shared/failure-dialog.ts) | A failure in a toast with **Details**, which opens the whole notice in a dialog; `details(error)` for a row of a list |
+| `ErrorSummary.error` | [field-errors.ts](../../web/src/app/shared/field-errors.ts) | A form's summary folds the answer's report under its field list |
+
+**How a screen shows a failure:**
+
+1. A read: `protected readonly failure = failureOf(this.loaded);` and `<quader-error-notice [error]="f" (retry)="loaded.reload()" />`.
+   Bind `(retry)` to whatever reads the view again, every failed read of the view (the repository's page's `reread()` reads the
+   repository and the formats and the address that failed with it, H-1962). Without a binding the notice offers no Retry and reads
+   nothing again: the notice reads `retry.observed` of its decorated `EventEmitter` output.
+2. A write: `<quader-error-notice [error]="saveError()" />`, with `(retry)` only where repeating it is the person's act (the notice offers
+   it after no answer or a gateway's, 0, 502, 503, 504, never by itself).
+3. A toast of a failed action: `inject(FailureToasts).alert(e)` (or `.alert(e, sentence)` where the screen knows better), never
+   `notifier.alert(describeProblem(e).text)`.
+4. A cell or a row: the sentence, and a **Details** button calling `FailureToasts.details(error)`.
+
+The notice reads a failed read again by itself after one that may pass (0, 408, 429, 5xx, an unreadable answer), after 3 s, 6 s, 12 s
+… up to 5 minutes and never before Retry-After, only while the window is seen (`PageVisibility`), at once when it is seen again
+(`passes`, `retryWaitMs`). Measured on instance 3 on 2026-11-25 with the backend stopped: the repository's page answered 502 for the
+session and the repository at once, showed one notice naming both calls, read again after 3, 6, 12 and 24 s, and stood again 14 s after
+the backend was ready, without a reload. Its states are [error-notice.states.spec.ts](../../web/src/app/shared/error-notice.states.spec.ts)
+(`make ui-states`, seven states, about 9 s) and the render walk `repository-failures` ([failures.ts](../../web/e2e/renders/failures.ts),
+English and German).
+
 ## Test tiers (R-UI-047)
 
 | Tier | State |
@@ -1194,7 +1233,7 @@ requirement ID (`R-ARCH-004`, `R-UI-001`, ...) for the coverage generator.
 
 | Interceptor | Does |
 |---|---|
-| `problemInterceptor` | Maps a failed answer to `ApiError` (`status`, `problem`, `requestId`, `retryAfterSeconds`, `afterRetry`). A 401 during use ends the session (`SessionStore.ended`, dialog "Your session has ended"); the probes `whoami` and `login-options` are exempt, and the session store reads the `code` of `whoami`'s 401 itself. 401 `reauthentication_required` sets `reauthRequired`. 403 drops the cached permission decisions |
+| `problemInterceptor` | Maps a failed answer to `ApiError` (`status`, `problem`, `requestId`, `retryAfterSeconds`, `afterRetry`, and `answer`: the call, the time, the headers, a non-problem body, the failures in a row; `apiErrorOf` of [failure.ts](../../web/src/app/core/http/failure.ts), R-UI-216). A 401 during use ends the session (`SessionStore.ended`, dialog "Your session has ended"); the probes `whoami` and `login-options` are exempt, and the session store reads the `code` of `whoami`'s 401 itself. 401 `reauthentication_required` sets `reauthRequired`. 403 drops the cached permission decisions |
 | `resilienceInterceptor` | The one automatic retry of R-UI-042 (rules in Q-UI-12) |
 | `conventionsInterceptor` | `Accept`, `Quader-Authz-Min-Epoch` from `AuthzEpoch`, `Idempotency-Key` from the request context; stores `Quader-Authz-Epoch` of an answer |
 
@@ -1209,8 +1248,8 @@ list ends, each request asking only for the rows still missing, at most `READ_ON
 loaded `ETag` as a required argument; there is no wildcard. Answers carry `body`, `etag`, `location`. Reads for lists may also use `httpResource`
 on the same URLs; the interceptors apply to it as well.
 
-**Errors in screens.** `<quader-error-notice [error]="apiError" (retry)="...">` renders the translated message of the `code`
-(`describeProblem`), or the English `detail` plus the request ID and a copy button for an unknown code. `ApiError.fieldErrors` maps
+**Errors in screens.** `<quader-error-notice [error]="apiError" (retry)="...">` renders the sentence of the failure, the facts of its
+answer and its folded part ([Errors in screens](#errors-in-screens-r-ui-216)). `ApiError.fieldErrors` maps
 `errors[].pointer` to form controls. A 412 goes to `ConflictResolver.resolve({ mine, theirs })` (reload, overwrite, copy). `Notifier`
 feeds the two live regions of `<quader-notices>`, drawn as the reference's toast at the window's bottom right
 ([Q-UI-1063](../spec/api-and-ui.md#q-ui-1063--feedback-outside-forms-is-the-references-toast-at-the-bottom-right-one-confirmation-at-a-time)): `status` is polite, `alert` is immediate; a new confirmation replaces the one still shown, an action or an error keeps its toast until it is closed, and a confirmation's 8 seconds stop while the pointer or the focus is on it. A caller with a confirmation and warnings sends them as one status (`withWarnings` of `upstream-actions.ts`), since a second status would replace the first.

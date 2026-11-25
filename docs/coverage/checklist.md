@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,276 spec requirements:
-787 cover catalog features, 489 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,277 spec requirements:
+787 cover catalog features, 490 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>489 requirements</summary>
+<summary>490 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3098,6 +3098,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-213 | No view needs a reload | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-214 | A screen speaks its own language, never the server's sentence | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-215 | One scrollbar per page | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-216 | A failure shows every fact of its answer | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-037 | The scan listener of `packages` | P1 | [architecture.md](../spec/architecture.md) |
 | R-ARCH-003 | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-004 | Angular workspace layout | MVP | [architecture.md](../spec/architecture.md) |

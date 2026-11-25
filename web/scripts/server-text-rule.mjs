@@ -30,6 +30,11 @@ export const allowed = [
     why: "the screen's own message of a failed upload (describeProblem, or its own sentence)",
   },
   {
+    file: 'src/app/shared/error-notice.ts',
+    expression: 'f.detail',
+    why: "a field problem's English sentence among the facts of a failed answer, folded under Technical details and marked lang=en translate=no (R-UI-216)",
+  },
+  {
     file: 'src/app/features/repositories/ansible-import-tasks.ts',
     expression: 'm.message',
     why: "the import's log as the Galaxy import API answers it to ansible-galaxy, shown as a log with its level",

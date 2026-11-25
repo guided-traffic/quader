@@ -7,11 +7,11 @@ import {
   HttpResponse,
 } from '@angular/common/http';
 import { Injector, inject } from '@angular/core';
-import { Observable, catchError, of, switchMap, tap, throwError, timer } from 'rxjs';
+import { Observable, catchError, from, of, switchMap, tap, throwError, timer } from 'rxjs';
 import { IDEMPOTENCY_KEY, NO_AUTO_RETRY } from '../../api/client';
-import { ApiError, isProblem, Problem } from '../../api/problem';
 import { AuthzEpoch } from '../authz-epoch';
 import { SessionStore } from '../session-store';
+import { CallFailures, apiErrorOf, callOf, problemOf, retryAfterSeconds as retryAfterOf } from './failure';
 
 /** Requests to these prefixes carry the Quader conventions; everything else passes untouched. */
 const API_PREFIXES = ['/api/v1/', '/auth/'];
@@ -38,24 +38,8 @@ export const RETRY_STATE = new HttpContextToken<RetryState>(() => ({
   afterNetworkError: false,
 }));
 
-function problemOf(err: HttpErrorResponse): Problem | null {
-  let body: unknown = err.error;
-  // A request that reads text (a CI snippet) receives its problem document as a string.
-  if (typeof body === 'string') {
-    try {
-      body = JSON.parse(body);
-    } catch {
-      return null;
-    }
-  }
-  return isProblem(body) ? body : null;
-}
-
 function retryAfterSeconds(err: HttpErrorResponse): number | null {
-  const raw = err.headers?.get('Retry-After');
-  if (!raw) return null;
-  const n = Number.parseInt(raw, 10);
-  return Number.isFinite(n) && n >= 0 ? n : null;
+  return retryAfterOf(err.headers);
 }
 
 /**
@@ -154,36 +138,38 @@ export const resilienceInterceptor: HttpInterceptorFn = (req, next) => {
 };
 
 /**
- * Outermost: maps a failed answer to an `ApiError` (R-UI-042) and applies the session
- * consequences once, after the retry layer gave up. 401 `unauthenticated` during use ends the
- * session (dialog "Your session has ended"); 401 `reauthentication_required` asks for recent
- * authentication; 403 drops the cached decisions.
+ * Outermost: maps a failed answer to an `ApiError` (R-UI-042) with what the answer told beyond its problem document (R-UI-216:
+ * the call, the time, the body and the headers, the failures of the call in a row) and applies the session consequences once,
+ * after the retry layer gave up. 401 `unauthenticated` during use ends the session (dialog "Your session has ended"); 401
+ * `reauthentication_required` asks for recent authentication; 403 drops the cached decisions.
  */
 export const problemInterceptor: HttpInterceptorFn = (req, next) => {
   if (!isApiUrl(req.url)) return next(req);
   const injector = inject(Injector);
+  const failures = inject(CallFailures);
+  const call = callOf(req);
   return next(req).pipe(
+    tap((event) => {
+      if (event instanceof HttpResponse) failures.answered(call);
+    }),
     catchError((err: unknown) => {
       if (!(err instanceof HttpErrorResponse)) return throwError(() => err);
-      const problem = problemOf(err);
-      const apiError = new ApiError(
-        err.status,
-        problem,
-        problem?.requestId ?? err.headers?.get('X-Request-Id') ?? null,
-        retryAfterSeconds(err),
+      const inRow = failures.failed(call);
+      return from(apiErrorOf(req, err, { retried: req.context.get(RETRY_STATE).retried, inRow })).pipe(
+        switchMap((apiError) => {
+          const session = injector.get(SessionStore);
+          if (err.status === 401) {
+            if (apiError.code === 'reauthentication_required') {
+              session.markReauthRequired();
+            } else if (!SESSION_PROBES.some((p) => req.url.startsWith(p))) {
+              session.markEnded();
+            }
+          } else if (err.status === 403) {
+            session.dropCheckCache();
+          }
+          return throwError(() => apiError);
+        }),
       );
-      apiError.afterRetry = req.context.get(RETRY_STATE).retried;
-      const session = injector.get(SessionStore);
-      if (err.status === 401) {
-        if (problem?.code === 'reauthentication_required') {
-          session.markReauthRequired();
-        } else if (!SESSION_PROBES.some((p) => req.url.startsWith(p))) {
-          session.markEnded();
-        }
-      } else if (err.status === 403) {
-        session.dropCheckCache();
-      }
-      return throwError(() => apiError);
     }),
   );
 };

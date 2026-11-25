@@ -94,7 +94,7 @@
         <div class="pane-body">
           <div class="tree-scroll">
             @if (searchFailure(); as sf) {
-              <quader-error-notice [error]="sf" />
+              <quader-error-notice [error]="sf" (retry)="search.reload()" />
             }
             @if (noMatch()) {
               <div class="pane-empty" data-testid="docs-no-match">

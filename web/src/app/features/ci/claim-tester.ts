@@ -93,7 +93,7 @@ export function ciFailureText(failure: string): string {
       <quader-select-field i18n-label="@@ci.test.issuer" label="Issuer" name="issuer" [options]="issuerOptions()" [loading]="issuersLoading() ? loadingIssuers : null" [value]="issuerChoice()" (valueChange)="issuerChoice.set($event)" />
     }
     @if (loadError(); as e) {
-      <quader-error-notice [error]="e" />
+      <quader-error-notice [error]="e" (retry)="prepare()" />
     }
 
     <section class="card" aria-labelledby="ci-t-input">
@@ -441,7 +441,7 @@ export class ClaimTester {
   }
 
   /** Reads what the sample needs (the issuer's URL and audience) and, when a mapping is named, the mapping, so the claims start out matching it. */
-  private async prepare(): Promise<void> {
+  protected async prepare(): Promise<void> {
     this.loadError.set(null);
     const project = this.project();
     try {

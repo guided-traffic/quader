@@ -3,6 +3,8 @@ import { DIALOG_DATA, DialogRef, DialogTitle } from '../../../shared/ui/dialog';
 import { UPLOAD_LIMIT_BYTES, FilesApi, hexOfReprDigest, reprDigestOf } from '../../../api/files-api';
 import { ApiError } from '../../../api/problem';
 import { describeProblem } from '../../../core/http/problem-messages';
+import { asFailure } from '../../../core/http/failure';
+import { FailureToasts } from '../../../shared/failure-dialog';
 
 export interface UploadDialogData {
   readonly repository: string;
@@ -19,6 +21,8 @@ interface Entry {
   readonly state: EntryState;
   readonly loaded: number;
   readonly message: string;
+  /** The failure behind `message`, whose whole notice **Details** opens (R-UI-216); none for a refusal of the dialog itself. */
+  readonly failure?: ApiError;
 }
 
 /**
@@ -135,6 +139,9 @@ interface Entry {
                         <span class="material-icons bad" aria-hidden="true">error</span>
                         <span>{{ e.message }}</span>
                       </span>
+                      @if (e.failure; as f) {
+                        <button class="btn btn-tertiary details" type="button" (click)="details(f)" i18n="@@failure.details">Details</button>
+                      }
                     }
                   }
                 </td>
@@ -211,6 +218,12 @@ export class UploadDialog {
   protected readonly data = inject<UploadDialogData>(DIALOG_DATA);
   private readonly ref = inject<DialogRef<number, UploadDialog>>(DialogRef);
   private readonly files = inject(FilesApi);
+  private readonly failureToasts = inject(FailureToasts);
+
+  /** The whole notice of a file's failed upload (R-UI-216). */
+  protected details(failure: ApiError): void {
+    this.failureToasts.details(failure);
+  }
 
   protected readonly folder = signal(this.data.folder);
   protected readonly overwrite = signal(false);
@@ -320,7 +333,7 @@ export class UploadDialog {
         this.patch(index, { state: 'cancelled' });
         return;
       }
-      this.patch(index, { state: 'failed', message: this.describe(e) });
+      this.patch(index, { state: 'failed', message: this.describe(e), failure: asFailure(e) });
       this.announcement.set($localize`:@@upload.announce.failed:${file.name}:name: failed.`);
     }
   }

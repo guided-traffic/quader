@@ -5,14 +5,14 @@ import { newIdempotencyKey } from '../../../api/client';
 import { DeliveryRequestsApi } from '../../../api/delivery-requests-api';
 import { DeliveryEffect, DeliveryRuleInput, DeliveryRulesApi } from '../../../api/delivery-rules-api';
 import { RemoteDownloadRequest, RemoteDownloadsApi } from '../../../api/remote-downloads-api';
-import { describeProblem } from '../../../core/http/problem-messages';
 import { Notifier } from '../../../core/notifier';
 import { SessionStore } from '../../../core/session-store';
 import { Confirm } from '../../../shared/confirm-dialog';
-import { asApiError, valueOf } from '../../../shared/paged-resource';
+import { valueOf } from '../../../shared/paged-resource';
 import { QuaderDialog } from '../../../shared/ui/dialog';
 import { AskDialog, AskDialogData } from './request-dialogs';
 import { DownloadPreviewDialog, DownloadPreviewData } from './download-preview-dialog';
+import { FailureToasts } from '../../../shared/failure-dialog';
 
 /** The subject of an act: a package with every version, one version of it, or a sub-section (a name pattern or a level). */
 export interface Subject {
@@ -38,6 +38,7 @@ export class UpstreamActions {
   private readonly requests = inject(DeliveryRequestsApi);
   private readonly session = inject(SessionStore);
   private readonly notifier = inject(Notifier);
+  private readonly failureToasts = inject(FailureToasts);
   private readonly dialog = inject(QuaderDialog);
   private readonly confirm = inject(Confirm);
   private readonly router = inject(Router);
@@ -92,7 +93,7 @@ export class UpstreamActions {
       this.changed.update((n) => n + 1);
       return out;
     } catch (e) {
-      this.notifier.alert(describeProblem(asApiError(e)).text);
+      this.failureToasts.alert(e);
       return null;
     } finally {
       this.busy.update((b) => {

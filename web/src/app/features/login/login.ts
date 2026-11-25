@@ -6,7 +6,7 @@ import { map } from 'rxjs';
 import { LoginApi } from '../../api/login-api';
 import { ApiError } from '../../api/problem';
 import { BrowserNavigation, safeReturnTo } from '../../core/browser-navigation';
-import { describeProblem } from '../../core/http/problem-messages';
+import { asFailure } from '../../core/http/failure';
 import { SessionStore } from '../../core/session-store';
 import { Banner } from '../../shared/banner';
 import { QuaderMark } from '../../shared/brand/quader-mark';
@@ -84,8 +84,8 @@ import { ErrorNotice } from '../../shared/error-notice';
                   (input)="password.set($any($event.target).value)"
                 />
               </div>
-              @if (localError(); as text) {
-                <p role="alert" class="local-error">{{ text }}</p>
+              @if (localError(); as failure) {
+                <quader-error-notice class="local-error" [error]="failure" />
               }
               <button class="btn btn-confirm btn-block" type="submit" [disabled]="busy()" i18n="@@login.local.submit">
                 Sign in
@@ -161,8 +161,7 @@ import { ErrorNotice } from '../../shared/error-notice';
       text-align: center;
     }
     .local-error {
-      margin: 0;
-      color: var(--quader-status-bad);
+      display: block;
     }
     .divider {
       display: flex;
@@ -207,7 +206,8 @@ export class Login {
   protected readonly username = signal('');
   protected readonly password = signal('');
   protected readonly busy = signal(false);
-  protected readonly localError = signal<string | null>(null);
+  /** A failed sign-in, shown as every failure is (R-UI-216): its sentence, the facts of the answer, Copy report. */
+  protected readonly localError = signal<ApiError | null>(null);
 
   /**
    * `?auto_sign_in=false` waives the automatic sign-in at the provider for this visit and shows the
@@ -248,7 +248,7 @@ export class Login {
   }
 
   protected asApiError(e: unknown): ApiError {
-    return e instanceof ApiError ? e : new ApiError(0, null, null);
+    return asFailure(e);
   }
 
   /**
@@ -278,7 +278,7 @@ export class Login {
       await this.session.reload();
       await this.router.navigateByUrl(safeReturnTo(this.returnTo()));
     } catch (e) {
-      this.localError.set(e instanceof ApiError ? describeProblem(e).text : null);
+      this.localError.set(asFailure(e));
     } finally {
       this.busy.set(false);
     }

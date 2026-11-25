@@ -75,7 +75,9 @@ export interface TriageDialogResult {
                   @if (row.outcome === 'failed') {
                     <span class="icon-name"
                       ><span class="material-icons inline bad" aria-hidden="true">error</span
-                      ><span class="icon-name-text">{{ failure(row.code, row.status) }}</span></span
+                      ><span class="icon-name-text"
+                        >{{ failure(row.code, row.status) }}&ngsp;<code translate="no">{{ failureCode(row.code, row.status) }}</code></span
+                      ></span
                     >
                   } @else if (row.outcome === 'changed') {
                     <span class="ok"
@@ -237,9 +239,14 @@ export class TriageDialog {
     return this.data.targets.find((t) => t.id === id)?.label ?? id;
   }
 
+  /** A finding's failure in a cell (R-UI-216): the sentence of its code, else of its status; never the bare status. */
   protected failure(code: string | null, status: number): string {
-    if (code) return describeProblem(new ApiError(status, { code }, null)).text;
-    return `HTTP ${status}`;
+    return describeProblem(new ApiError(status, code ? { code } : null, null)).text;
+  }
+
+  /** The status and the code beside the sentence, as code: what an administrator searches for. */
+  protected failureCode(code: string | null, status: number): string {
+    return code ? `${status} ${code}` : String(status);
   }
 
   protected summary(): string {

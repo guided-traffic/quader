@@ -12,7 +12,8 @@ import { SessionStore } from '../../core/session-store';
 import { ErrorNotice } from '../../shared/error-notice';
 // >>> M1 ui-a
 import { JobProgress } from '../../shared/job-progress';
-import { describeProblem } from '../../core/http/problem-messages';
+import { FailureToasts } from '../../shared/failure-dialog';
+import { asFailure } from '../../core/http/failure';
 import { JobTable } from './job-table';
 import { TasksCard } from './tasks-card';
 // <<< M1 ui-a
@@ -114,6 +115,7 @@ export class SystemStatus {
   private readonly system = inject(SystemApi);
   private readonly encryptionApi = inject(EncryptionApi);
   private readonly notifier = inject(Notifier);
+  private readonly failureToasts = inject(FailureToasts);
   private readonly session = inject(SessionStore);
   private readonly refresh = inject(SystemRefresh);
   // >>> M1 ui-a
@@ -141,7 +143,7 @@ export class SystemStatus {
   protected readonly databaseLag = databaseLag;
   protected readonly scannersFailure = computed(() => {
     const e = this.scanners.error();
-    return e instanceof ApiError ? e : e ? new ApiError(0, null, null) : null;
+    return e ? asFailure(e) : null;
   });
 
   // >>> M1 ui-a
@@ -150,7 +152,7 @@ export class SystemStatus {
   });
   protected readonly recentFailure = computed(() => {
     const e = this.recentJobs.error();
-    return e instanceof ApiError ? e : e ? new ApiError(0, null, null) : null;
+    return e ? asFailure(e) : null;
   });
   /** The job of a re-encryption started from the key card; followed until it ends. */
   protected readonly reencryptJob = signal<string | null>(null);
@@ -168,11 +170,11 @@ export class SystemStatus {
 
   protected readonly failure = computed(() => {
     const e = this.info.error() ?? this.replicas.error();
-    return e instanceof ApiError ? e : e ? new ApiError(0, null, null) : null;
+    return e ? asFailure(e) : null;
   });
   protected readonly encryptionFailure = computed(() => {
     const e = this.encryption.error();
-    return e instanceof ApiError ? e : e ? new ApiError(0, null, null) : null;
+    return e ? asFailure(e) : null;
   });
 
   protected readonly groups = computed(() => {
@@ -251,11 +253,7 @@ export class SystemStatus {
       this.notifier.status($localize`:@@system.reencrypt.started:Re-encryption started.`);
       this.encryption.reload();
     } catch (e) {
-      this.notifier.alert(
-        e instanceof ApiError
-          ? describeProblem(e).text
-          : $localize`:@@system.reencrypt.failed:Re-encryption could not be started.`,
-      );
+      this.failureToasts.alert(e, e instanceof ApiError ? undefined : $localize`:@@system.reencrypt.failed:Re-encryption could not be started.`);
     } finally {
       this.reencrypting.set(false);
     }
@@ -277,11 +275,7 @@ export class SystemStatus {
       await this.jobsApi.cancel(job.id);
       this.notifier.status($localize`:@@jobs.cancelling:Job ${job.kind}:kind: is being cancelled.`);
     } catch (e) {
-      this.notifier.alert(
-        e instanceof ApiError
-          ? describeProblem(e).text
-          : $localize`:@@jobs.cancel.failed:The job could not be cancelled.`,
-      );
+      this.failureToasts.alert(e, e instanceof ApiError ? undefined : $localize`:@@jobs.cancel.failed:The job could not be cancelled.`);
     } finally {
       this.recentJobs.reload();
     }

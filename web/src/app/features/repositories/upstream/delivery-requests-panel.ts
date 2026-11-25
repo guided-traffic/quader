@@ -5,7 +5,6 @@ import { firstValueFrom } from 'rxjs';
 import { newIdempotencyKey } from '../../../api/client';
 import { DeliveryRequest, DeliveryRequestAllow, DeliveryRequestsApi, DeliveryRequestState } from '../../../api/delivery-requests-api';
 import { ApiError } from '../../../api/problem';
-import { describeProblem } from '../../../core/http/problem-messages';
 import { Notifier } from '../../../core/notifier';
 import { SessionStore } from '../../../core/session-store';
 import { ErrorNotice } from '../../../shared/error-notice';
@@ -16,6 +15,7 @@ import { versionCommands } from '../../packages/package-links';
 import { downloadStateText, failureLine } from '../downloads/download-words';
 import { AllowDialog, AllowDialogData, DeclineDialog, DeclineDialogData } from './request-dialogs';
 import { UpstreamActions } from './upstream-actions';
+import { FailureToasts } from '../../../shared/failure-dialog';
 
 /** How many entries the panel shows at first. */
 const PANEL_PAGE = 20;
@@ -194,6 +194,7 @@ const PANEL_PAGE = 20;
 export class DeliveryRequestsPanel {
   private readonly api = inject(DeliveryRequestsApi);
   private readonly notifier = inject(Notifier);
+  private readonly failureToasts = inject(FailureToasts);
   private readonly dialog = inject(QuaderDialog);
   private readonly session = inject(SessionStore);
   protected readonly actions = inject(UpstreamActions);
@@ -320,7 +321,7 @@ export class DeliveryRequestsPanel {
       this.notifier.status(done);
       this.actions.changed.update((n) => n + 1);
     } catch (e) {
-      this.notifier.alert(describeProblem(asApiError(e)).text);
+      this.failureToasts.alert(e);
     } finally {
       this.busy.update((s) => {
         const next = new Set(s);

@@ -2,7 +2,6 @@ import { Component, DestroyRef, computed, effect, inject, input, signal, untrack
 import { LIVE_SLOW_MS, live } from '../../core/live-refresh';
 import { Router } from '@angular/router';
 import { Job, JobState, JobsApi, jobActive } from '../../api/jobs-api';
-import { describeProblem } from '../../core/http/problem-messages';
 import { Notifier } from '../../core/notifier';
 import { ErrorNotice } from '../../shared/error-notice';
 import { PagedResource, asApiError } from '../../shared/paged-resource';
@@ -11,6 +10,7 @@ import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { JobTable, jobStatusText } from './job-table';
 import { SystemRefresh } from './system-refresh';
+import { FailureToasts } from '../../shared/failure-dialog';
 
 const STATES: readonly JobState[] = [
   'queued',
@@ -115,6 +115,7 @@ export class JobsPage {
   private readonly api = inject(JobsApi);
   private readonly router = inject(Router);
   private readonly notifier = inject(Notifier);
+  private readonly failureToasts = inject(FailureToasts);
   private readonly refresh = inject(SystemRefresh);
 
   /** Query parameters; `state` repeats and arrives as a string or an array. */
@@ -215,7 +216,7 @@ export class JobsPage {
       this.notifier.status($localize`:@@jobs.cancelling:Job ${job.kind}:kind: is being cancelled.`);
     } catch (e) {
       const error = asApiError(e);
-      this.notifier.alert(describeProblem(error).text);
+      this.failureToasts.alert(error);
       this.load();
     }
   }

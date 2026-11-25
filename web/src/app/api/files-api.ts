@@ -11,18 +11,20 @@ import {
   Observable,
   catchError,
   filter,
+  from,
   fromEvent,
   lastValueFrom,
   map,
+  switchMap,
   takeUntil,
   tap,
   throwError,
 } from 'rxjs';
+import { CallFailures, apiErrorOf, callOf } from '../core/http/failure';
 import { SessionStore } from '../core/session-store';
 import { ApiClient } from './client';
 import { CSRF_COOKIE, CSRF_HEADER } from './csrf';
 import { PageFetcher } from './pagination';
-import { ApiError, isProblem } from './problem';
 import { DeleteOutcome, JobReference, repositoryUrl } from './repositories-api';
 import { Schema } from './types';
 
@@ -145,6 +147,7 @@ export abstract class FilesApi {
 export class HttpFilesApi extends FilesApi {
   private readonly client = inject(ApiClient);
   private readonly session = inject(SessionStore);
+  private readonly failures = inject(CallFailures);
   private readonly injector = inject(EnvironmentInjector);
   private xhr: HttpClient | null = null;
 
@@ -258,7 +261,7 @@ export class HttpFilesApi extends FilesApi {
         filter((event) => event.type === HttpEventType.Response),
         map((event) => (event as { body: Item | null }).body as Item),
         takeUntil(abort$),
-        catchError((err: unknown) => throwError(() => this.toApiError(err))),
+        catchError((err: unknown) => from(this.toApiError(url, err)).pipe(switchMap((e) => throwError(() => e)))),
       );
     return lastValueFrom(events$, { defaultValue: null }).then((item) => {
       if (item === null) throw new DOMException('The upload was cancelled.', 'AbortError');
@@ -266,15 +269,12 @@ export class HttpFilesApi extends FilesApi {
     });
   }
 
-  private toApiError(err: unknown): unknown {
+  /** The upload's failure as the interceptors make one (R-UI-216): this client runs none of them. */
+  private async toApiError(url: string, err: unknown): Promise<unknown> {
     if (!(err instanceof HttpErrorResponse)) return err;
-    const problem = isProblem(err.error) ? err.error : null;
-    if (err.status === 401 && problem?.code !== 'reauthentication_required')
-      this.session.markEnded();
-    return new ApiError(
-      err.status,
-      problem,
-      problem?.requestId ?? err.headers?.get('X-Request-Id') ?? null,
-    );
+    const req = { method: 'PUT', urlWithParams: url };
+    const error = await apiErrorOf(req, err, { retried: false, inRow: this.failures.failed(callOf(req)) });
+    if (err.status === 401 && error.code !== 'reauthentication_required') this.session.markEnded();
+    return error;
   }
 }

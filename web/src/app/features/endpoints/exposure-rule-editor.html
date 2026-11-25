@@ -35,7 +35,7 @@
     </p>
   }
 
-  <quader-error-summary [items]="summary()" />
+  <quader-error-summary [items]="summary()" [error]="failure()" />
   @if (failure(); as f) {
     @if (f.fieldErrors.size === 0) {
       <quader-error-notice [error]="f" />

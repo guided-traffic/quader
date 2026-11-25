@@ -210,6 +210,31 @@ The in-memory ring buffer holds the same lines the log handler writes, bounded b
 16 KiB is kept as a stub ([ring.go](../../internal/observability/ring.go)). Standard output is not bounded, which is
 [H-70](#h-70--the-standard-output-log-carries-every-record-in-full).
 
+## A failed answer in the browser
+
+Every failed call of the web UI shows what the browser knows of its answer and copies it as one text for a ticket
+([R-UI-216](../spec/api-and-ui.md#r-ui-216--a-failure-shows-every-fact-of-its-answer),
+[Q-UI-1186](../spec/api-and-ui.md#q-ui-1186--a-failures-facts-leave-out-every-credential-and-show-a-foreign-body-as-text)). The facts
+come from one function, `apiErrorOf` in [failure.ts](../../web/src/app/core/http/failure.ts), for the interceptors and the upload's
+own client alike, and leave out what carries a credential:
+
+- **Nothing of the request but its method and its path.** No request header (the session cookie, the CSRF token, the
+  `Idempotency-Key`, an `Authorization`), no request body (a password, a token's secret), no cookie.
+- **A query parameter that carries a credential is named without its value** (`token=[redacted]`): a name that contains `token`,
+  `signature`, `secret`, `password`, `passwd` or `credential`, `sig`, `api_key`/`apikey`, and the `X-Amz-` and `X-Goog-` parameters
+  of a signed address. No call of the UI carries one today (verified 2026-11-25: the sign-in sends its password in a body, a signed
+  download link is a navigation of the browser, not a call); the rule is for the one that will.
+- **The answer's headers that a script may read**, less `Set-Cookie`, `Set-Cookie2`, `Authorization`, `Proxy-Authorization` and
+  `Cookie`; the address of a `Location`, `Content-Location`, `Link` or `Refresh` header loses its credential parameters by the same
+  rule.
+- **The body of an answer that is no problem document**, a gateway's error page, as text at most 4,000 characters, and never as
+  markup: Angular's interpolation writes it as a text node. **Never the body of a successful answer that could not be read**: it may
+  be a token's secret that a proxy broke (R-UI-043); the notice says only that it could not be read, with the parser's message.
+
+The viewer sees nothing the browser did not already hold: the same answer was readable in the browser's developer tools. What
+changes is that **Copy report** puts it into a text that travels, which [H-1960](#h-1960--a-failures-report-carries-what-the-answer-named)
+names.
+
 ## What a process holds, and what Valkey may hold
 
 A replica holds in memory the key ring and the credentials it has read, for as long as it uses them. The plaintext of a sealed
@@ -424,6 +449,30 @@ repository (a Maintainer or an Owner of its project among them) and an Owner of 
 - What makes it real: an engine message built from a part of an upstream's answer, from a request URL, or from an error of the HTTP
   client that quotes the URL. The engine's tests of its messages are the guard.
 - Not covered by the status: the log and the failure event of the engine carry the same text.
+
+### H-1960 · A failure's report carries what the answer named
+
+Stage: the shared error notice of the web UI and its **Copy report**
+([error-notice.ts](../../web/src/app/shared/error-notice.ts), R-UI-216). Subject: what a failed answer names besides a credential: the
+server's own sentence of a problem (`detail`, which may name a repository, a path or a host of the installation), the headers of a
+gateway (its software and version, `server: nginx/1.27.3`) and its error page, and the path of the call with its query.
+
+- **Live by design.** The notice shows them to the person whose browser received the answer, who could read them in the developer
+  tools before; the report copies them as they are, and a ticket or a chat that receives it gives them to whoever reads there. A
+  gateway's error page that names an internal address, or a server's sentence that names a project the ticket's readers may not see,
+  goes with it.
+- What makes it real: an edge whose error pages name internal hosts, and a report pasted where people read who may not see the
+  installation. The report holds no credential of the rules of the section above; whatever else the answer carried, it carries.
+
+### H-1961 · A credential in a query parameter of another name is shown
+
+Stage: `redactUrl` of [failure.ts](../../web/src/app/core/http/failure.ts), which reads a parameter's name (R-UI-216). Subject: a
+credential that a future call of the UI sends in its query under a name the rule does not know.
+
+- **Dormant.** No call of the UI sends a credential in its query (verified 2026-11-25 against the clients of `web/src/app/api`); a
+  cursor (`cursor=`) is an opaque position, not a credential. The rule reads names, so a call that put a token into `q=` or into
+  `cursor=` would show and copy it.
+- What makes it real: a new call that authenticates by its query. Its parameter's name joins the rule in the same change.
 
 ### H-325 · A moved action tag runs in a job that holds release secrets
 
