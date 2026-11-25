@@ -861,6 +861,7 @@ dependencies (JSON arrays), the upstream's download count, the commit and the im
 are [ansible_roles.sql](../../internal/meta/postgres/queries/ansible_roles.sql); the view joins it to the package `role/<id>` by
 `'role/' || role_id`. Export class `transient` ([roles_store.go](../../internal/formatdata/ansible/roles_store.go)): it is derived from
 upstream documents, a restore leaves it empty and the next lookup writes it; a restore without the remote caches deletes it with them.
+The rows are content: `upstream_repository_purge` is replaced again, the body of 00120 with the delete of `ansible_roles`.
 
 ## What the reader of a Debian data archive kept (00132)
 
