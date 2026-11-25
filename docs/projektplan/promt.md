@@ -298,10 +298,11 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | S13 · Small findings of the screens | the monospace token that is used nowhere; the conflict dialog's API names and JSON; links in a drawer in the browser's colours; the grey of the vulnerability cell's failed states beside the malware cell's amber; a host that breaks at its hyphen; the walk `mirrorFilled`'s order; a doubled breadcrumb; H-1871 (the audit log and the security dashboard read too seldom); H-1980 | landed and pushed at 16:48 |
 | S14 · What the product says about its scanners' replicas is true | a "Lost" row of the previous replica after every restart; "1 scan running" beside no place in use; the image scanner's processes under the host's name on the profile (whether two containers of one pod's name register side by side); no malware state in a remote's lists | landed and pushed at 15:11 (eight commits, migration 00127; Q-HA-495, Q-HA-496, Q-MAL-110, Q-MAL-111; gap H-1995; its builder worked from 13:55 to 14:57) |
 | S15 · A connection test says what it learned, and reads a token handshake right | the owner's finding of 14:15 (section 8, Product): the registry's test calls an accepted account an error (the challenge's 401 fails the screen's own rule) and shows one sentence of an answer that holds the status, the duration, the token service, the certificate and an error's code; one verdict at one place, the facts shown as R-UI-216 shows a failed call, for every place that tests something | landed and pushed at 15:50 |
-| W3 · A download ahead takes a range of versions (W-28, package 3) | the owner's task of 15:55 (section 8, Product): `fromVersion`, `toVersion`, `toInclusive` at a package's bulk and its preview, in the format's own order, the dialog's two fields, the bulk's line on the tab Downloads | in work since 16:28 |
+| W3 · A download ahead takes a range of versions (W-28, package 3) | the owner's task of 15:55 (section 8, Product): `fromVersion`, `toVersion`, `toInclusive` at a package's bulk and its preview, in the format's own order, the dialog's two fields, the bulk's line on the tab Downloads | landed and pushed at 17:41 |
 | W1 · Switches for the delivery, the cache's acts, the mode's dialog (W-28, package 1) | R-CUR-024, R-CUR-025 of the plan `.dev/w28-plan.md`; with it the attestation that an upstream version's line lists as a platform | in work since 17:05 |
-| W4 · Downloads kept in sync (W-28, package 4) | R-CUR-027 of the plan | waits for W3 |
+| W4 · Downloads kept in sync (W-28, package 4) | R-CUR-027 of the plan | landed and pushed at 19:11 |
 | W2 · A range of versions in a package's allow (W-28, package 2) | R-CUR-026 of the plan | waits for W1 |
+| S16 · A retired system repository is removed, and a retired preset says so | the owner's finding of 19:09 (section 8, Product): `upstream/scanner-clamav` stays listed as "Off" | in work since 19:09 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
 | G3 · Page and shell states on the stack | the 10 menus, 3 drawers, the person search's list in a drawer, about 19 sections, 11 routes, the banner and the maintenance notice, a failure of an action inside a section, the editors' refusals with their summary, two selection states, the command menus of NuGet, Ansible Galaxy and generic | 5 to 6 minutes of the render step (the job at about 61 to 64 of its 75 minutes), about 3 s per format | in work since 14:57 (after G1; the inventory of the morning is brought up to what landed today first) |
 
@@ -1070,6 +1071,9 @@ order is what a user or an operator meets first. The state is kept here.
   Also open, seen once: `TestMemoryAdmission` (`test/integration/overload`, shard b; the excess of slow downloads gets
   503 and the heap stays within its limit) failed in the run of 16:49 for S13, a package that changed no Go of the data
   path; read as a test that depends on the runner's load until it recurs.
+  Confirmed at 17:43 in the run of the two corrections (16:58): the four shards of `integration` and
+  `e2e (access-long)` are green, `TestMemoryAdmission`'s shard among them. The installation runs chart 0.131.1 (S13 and
+  the corrections), every pod ready.
 
 - **Closed on 2026-11-25, 11:11, by S2:** the German pass ends without a finding (81 screens, 8.7 minutes, on its
   builder's instance). A text a person or an upstream wrote is marked as written (`translate="no"`) where it is shown:
@@ -1194,7 +1198,73 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
-- **Closed on 2026-11-25, LANDTIMEW3, by W3 (W-28, package 3; Q-CUR-190 to Q-CUR-194; gaps H-2010 to H-2013; migration
+- **Open since 2026-11-25, 19:09, the owner's finding on his development profile: a retired system repository stays in
+  the list as "Off" (S16, in work).** His words: "Wieso sehe ich auf localhost noch das Uplink repo scanner-clamav Off".
+  Verified: `upstream/scanner-clamav` (generic, local) was the product's repository of ClamAV's database for half a day
+  (`100cccbbb`, 2026-11-21) until `upstream/clamav` replaced it (`97eb59149`); the reconcile retires a row no
+  declaration names and keeps it as a tombstone without content (R-REPO-067 step 5, Q-REPO-376); his row was created on
+  2026-11-21 05:11, retired at 13:46 and holds no package. The tombstone's reasons (a virtual repository may list a
+  preset; an administrator's rules on it) do not hold for a system repository, and the list shows a retired repository
+  with the badge of one an administrator switched off. My decision, for his objection: a retired system repository is
+  removed by the reconcile; a retired preset stays and reads "Retired" wherever it is listed. Not verified: whether his
+  installation holds the same row (the same history says it does).
+
+- **Closed on 2026-11-25, LANDTIMEW1, by W1 (W-28, package 1; R-CUR-024, R-CUR-025; Q-CUR-200 to Q-CUR-209; gaps H-2020
+  to H-2023; no migration): an upstream package and each of its versions have a switch, and a change of the delivery
+  mode says what follows.** The owner's d1 = b and his words on the place (the switch at the right, apart from the
+  download; one per version; the row's menu dissolved). The switch shows what holds and writes a rule only where its
+  subject departs from what it inherits; the server decides that in the write's transaction, with the mode read under
+  the rule set's lock (`POST delivery-rules/switch`). A package's switch asks, where its versions have rules of their
+  own, with one check box whether they are reset. The switch stands in a version's row, in the closed row of the
+  results and at the right of the opened package; the head's four buttons, the row's menu and the action column are
+  gone; the cache's one act (Download, Download for examination, Discard) stands in the cache's cell; a reader keeps the
+  badge and Request. A change to `onlyAllowed` opens a dialog that names the stored packages the mode decides today (the
+  first six, the count) and offers, checked, to allow them before the mode is saved (`GET delivery-rules/summary`,
+  `POST delivery-rules/allow-stored`, one statement, one revision, an event per rule); a caller who may set the
+  configuration and not the rules gets the dialog without the offer; a change to `allExceptBlocked` is a confirmation.
+  `proxy.delivery.max_rules` is 50,000, measured once: about 130 bytes a package rule, 6.5 to 9.5 MB a repository and
+  replica at the limit and twice that while a snapshot is rebuilt; the summary of 50,000 stored packages 0.25 s,
+  `allow-stored` of 50,000 names with their events 4.8 s, a version's switch beside 50,000 rules 24 ms (a development
+  machine). A package's version rules are a sorted slice, and the store compiles only what can decide a subject. With
+  it: the upstream catalogue leaves an image's attestation manifests out of its platforms (the finding of 15:40,
+  `unknown/unknown`). Departed from the plan: a version's `inherited` goes only to those who may set rules; the mode's
+  dialog names six packages, not 100; a switch's answer stays in its row until the catalogue agrees, at most 30 s
+  (the snapshot's lag flipped it back); "Zur Prüfung holen" for the act in German. Landed LANDNOTEW1 Open: a restore
+  to a point before `allow-stored` replays the mode and not the allows, so those packages are refused, fail closed
+  (H-2020); a large `allow-stored` writes as many audit events and webhook deliveries (H-2021); a row shows a switch's
+  answer for at most 30 s while the catalogue lags (H-2022); the dialog's count and what `allow-stored` writes come
+  from two moments (H-2023). Not verified: webhook deliveries of 50,000 events; the snapshot's lag on a cluster; the
+  mode's change through the HTTP `PATCH` in the integration case (it sets the mode in SQL); four of the mode dialog's
+  states on a picture.
+
+- **Closed on 2026-11-25, 19:11, by W4 (W-28, package 4; R-CUR-027; Q-CUR-240 to Q-CUR-250; gaps H-2030 to H-2034;
+  migration 00130): a package or a sub-section of a remote repository is kept in sync.** The owner's d3 = a and d4 = a.
+  A sync is the stored definition of a bulk (the level `package` or `section`, the range of W3, the newest N, the bytes,
+  pre-releases) that the task `remote-downloads-dispatch` starts again as a bulk of the origin `sync` every
+  `remote.syncs.intervalSeconds` of its repository (3,600 by default, 300 to 2,592,000); one run at a time; no run while
+  the upstream's limit holds the queue, the repository is disabled or offline, `remote.syncs.paused` holds or the
+  repository's bytes reach `remote.syncs.maxBytes` (none by default). A run stores only what the rules deliver (its
+  expansion leaves the rest out and its rows' fills ask the rules, which a queue row did not do before), leaves out what
+  the repository stores as a version, and queues an OCI tag again: an unchanged tag costs the tags list and one HEAD, a
+  moved tag is fetched with its new image and the earlier one stays. A run without news costs npm one conditional read
+  of the package document (the counting stubs, in the tests). It removes nothing. The holders of `manage` set up, pause,
+  resume, run and remove a sync, at most `proxy.downloads.max_syncs_per_repository` (100); a sync is not edited. The
+  download dialog offers "Once" or "Keep in sync", says the repository's interval in words ("every hour"), and says
+  when the package is not delivered at all or is kept in sync already; the tab Downloads lists "Kept in sync" over the
+  bulks (what, who, the last run or why none started, the next run or "Paused", the row's menu) and reads it again by
+  itself; the settings have a closed section for the interval, the pause and the byte bound. Four audit events, the
+  actor `system:download-sync`, two metrics, the origin `sync` in the queue's figures. Departed from the plan: the
+  interval's default (mine, 3,600), `to_inclusive` not null as in 00129, a column `versions_refused` at a bulk, the
+  check of `upstream_download_finished` extended, a sixth outcome `paused`, 422 and not 400 for a sync of one version,
+  the permissions' case inside the npm area. Landed with the thirteen gates green, the dialog states, the render of the download, upstream and settings screens (English 75 walks, German 13; 0 failed, 0 layout findings; the tab Downloads with five syncs looked at in English and German at 1,440 px) and the sync's and the bulk's cases of the npm and OCI areas against the stack (14 s each). Seen at the landing and left for the next batch of small findings: in German at 1,440 px the tab's lists of bulks and of downloads stack into label and value where the English ones stay tables (the German words need more room; the checks named nothing); a sub-section is "Teilbereich" in a sync's line and "Unterbereich" in a bulk's. Open: a sync's reads of the upstream have no budget over
+  time beyond the interval, 100 syncs and one run at a time (H-2030); a moved tag's earlier images stay until a
+  retention exists (H-2031, R-STOR-045); a lowered interval holds from each sync's next look (H-2032); the byte bound is
+  read when a run would start, not while it runs (H-2033); a dispatch on a role without the remote engine does not see
+  that a repository is offline (H-2034, dormant). Not verified: that Docker Hub does not count the HEAD as a pull (the
+  stub answered); a sync of Debian, NuGet and Ansible Galaxy against an upstream (npm's path); the settings section
+  read-only and the row's open menu on a picture.
+
+- **Closed on 2026-11-25, 17:41, by W3 (W-28, package 3; Q-CUR-190 to Q-CUR-194; gaps H-2010 to H-2013; migration
   00129): "Download every version…" takes a range of versions.** A bulk at the level `package` and its preview accept
   `fromVersion` (always included), `toVersion` and `toInclusive` (default true; false is "below"). The order is the
   format's own (`queue.Order` over the view adapter's `Compare` and the sort key's class, built in the format host and
@@ -1206,7 +1276,7 @@ records the recorder that tells such a stall apart).
   `maxVersions`, which the spec now says. The dialog has "From version" and "Up to version" with "included" or "below
   it" above the other bounds, suggests the package's versions and takes any typed one; the tab Downloads names the range
   on a bulk's row and above its rows, and "Start again" sends it. With a range the preview reads up to ten pages of
-  1,000 versions. Landed LANDNOTEW3 Open: npm orders build metadata after its release, so an inclusive bound `1.0.0`
+  1,000 versions. Landed with the thirteen gates green, the dialog states, the render of the upstream and download screens (English 42 walks, German 13; 0 failed, 0 layout findings; the dialog with a range looked at in German, dark, 1,440 px) and the npm area's download case against the stack (6 s). The tab Downloads' template was joined by hand with S13's "Started by you". The plan commit pushed with it still held this entry's two placeholders: a failed step of the landing's script did not stop the commit; set right in the next plan commit. Open: npm orders build metadata after its release, so an inclusive bound `1.0.0`
   leaves `1.0.0+b` out (H-2010, the format's order); a package past about 10,000 versions shows "more versions" in a
   ranged preview (H-2011); the suggestions are the first 100 versions, not what "Load more" added (H-2012, for W1's head
   to hand in); a sub-section takes no range (H-2013). Not verified: a ranged bulk of NuGet, OCI, Debian or Ansible
@@ -1294,6 +1364,10 @@ records the recorder that tells such a stall apart).
   d4 = a, d5 = a, none against a favourite; the paper's store stayed empty, the answer is this sentence of the chat. The
   builder of P1 (switches, the cache's acts, the mode's dialog; R-CUR-024, R-CUR-025, Q-CUR-200 to 209) started at 17:04;
   P4 starts when package 3 has landed, P2 when P1 has.
+  **W4 started at 17:43** on main with package 3. Told beyond the plan, my decisions: the default of
+  `remote.syncs.intervalSeconds` is 3,600 and not the plan's 86,400 (the owner was shown "every hour" in the paper's
+  sketch, and it is the mirror's default); its migration is 00130, so W2's becomes 00131; the dialog says when a package
+  is not delivered at all, instead of letting a sync be set up that stores nothing.
 
 - **Open since 2026-11-25, 15:40 (seen by me in the owner's picture of an opened upstream image, not named by him):
   an upstream version's line lists the attestation as a platform.** The version rows of
