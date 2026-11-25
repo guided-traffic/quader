@@ -1088,7 +1088,8 @@ What keeps a read invisible, checked for every live view:
 
 The views that are live, their intervals and what each costs are the table of R-UI-213. A view's polling of its own (`setInterval`,
 a `setTimeout` chain) is not added any more; the top bar's Downloads (R-UI-210, R-UI-211), the tab Downloads (R-CUR-018) and
-`JobProgress` keep theirs. Tests use fake timers (`vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })`) and a fake whose
+`JobProgress` keep theirs, and each of them reads [page-visibility.ts](../../web/src/app/core/page-visibility.ts) as `live()` does: no
+read while the window is hidden, one at once when it is seen again. Tests use fake timers (`vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })`) and a fake whose
 pages read the data at call time (as `FakePackagesApi.list` and `versions` do), so a read again sees what changed.
 
 ## Shell, design tokens and the list components

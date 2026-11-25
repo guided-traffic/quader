@@ -9221,7 +9221,10 @@ shows state the server changes without the viewer's own act reads it again by it
   is seen again after it was hidden, or a paused refresh is resumed; never while hidden or paused. The view's own first read stays its
   own; reads never overlap. The intervals:
   - **fast, 3 s** (`LIVE_FAST_MS`) while something on the view runs: a scan that has not answered, a download that waits or runs;
-    the existing fast reads keep their own (a job 2 s, the jobs list and a mirror pass 5 s, a Debian suite's build 3 s);
+    the existing fast reads keep their own (a job 2 s, the jobs list and a mirror pass 5 s, a Debian suite's build 3 s); those
+    keep the rule of the window too: a job's progress (`JobProgress`) and the tab Downloads (R-CUR-018) read nothing while the
+    window is hidden and read at once when it is seen again (both read on in a hidden window until 2026-11-25: the tab Downloads
+    24 reads a minute with a running queue, a running job 30);
   - **30 s** (`LIVE_SLOW_MS`) for a list that a client's push or pull, a scan or the queue changes;
   - **60 s** (`LIVE_IDLE_MS`) for a page or a summary that changes in minutes: a version's page, a package's page, the tab Upstream,
     the security dashboards, the ClamAV databases;
@@ -9289,8 +9292,10 @@ repository's images read again in place with a pushed image, an open row and its
 every 3 s while a version downloads ([remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts));
 the ClamAV databases' cheap read first ([clamav-databases.spec.ts](../../web/src/app/features/repositories/content/clamav-databases.spec.ts));
 the audit log's moving range ([audit-log.spec.ts](../../web/src/app/features/audit/audit-log.spec.ts)); the jobs in place, at 5 s and
-30 s, and paused ([system-jobs.spec.ts](../../web/src/app/features/system/system-jobs.spec.ts)); the banner not read while hidden
-([banner-store.spec.ts](../../web/src/app/core/banner-store.spec.ts)).
+30 s, and paused, and a running job's progress not read while hidden and read at once when seen again
+([system-jobs.spec.ts](../../web/src/app/features/system/system-jobs.spec.ts)); the tab Downloads not read while hidden and at once
+when seen again ([remote-downloads.spec.ts](../../web/src/app/features/repositories/downloads/remote-downloads.spec.ts)); the banner
+not read while hidden ([banner-store.spec.ts](../../web/src/app/core/banner-store.spec.ts)).
 
 ## Deferred
 

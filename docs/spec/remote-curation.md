@@ -1206,8 +1206,8 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
   2 of 5, next at 10:41"), and for a failed row the failure in one line ("TLS · `registry.example.com:443` · certificate not trusted");
   the row opens to the whole failure: step, code, address (with "query removed"), status, the excerpt in a code block, the detail, and
   **Retry**; **Retry all failed** (with the class filter) and **Cancel** for those who may. A bulk's line shows its counters and
-  **Cancel bulk**. The tab refreshes every 5 s while something waits or runs, with **Pause automatic refresh** as the page System status
-  has it.
+  **Cancel bulk**. The tab refreshes every 5 s while something waits or runs and the window is seen, at once when it is seen again
+  ([api-and-ui.md](api-and-ui.md) R-UI-213), with **Pause automatic refresh** as the page System status has it.
   - **As built (R5a).** One muted sentence says what the tab lists. The head: **All** and the four states as pressed buttons with their
     counts, **Failure** as a select of the fifteen classes, and at the row's end **Retry all failed** and **Pause automatic refresh**;
     the address carries `state`, `failure` (the class) and `bulk`

@@ -20,6 +20,7 @@ import {
 } from '../../../api/remote-downloads-api';
 import { describeProblem } from '../../../core/http/problem-messages';
 import { Notifier } from '../../../core/notifier';
+import { PageVisibility } from '../../../core/page-visibility';
 import { SessionStore } from '../../../core/session-store';
 import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError, valueOf } from '../../../shared/paged-resource';
@@ -58,7 +59,8 @@ type FilterState = (typeof FILTER_STATES)[number];
  * holder of `manage` retries every failed row that matches. Above the rows, the repository's bulk downloads, newest first, each with
  * its state, its counters and, where its expansion failed, the cause in words, so that a bulk that failed before it queued a row is
  * seen (Q-CUR-168); a failed bulk of a person can be started again. The list reads itself again every five seconds while a row waits
- * or runs or a bulk expands, until **Pause automatic refresh** (the form of the page System status, Q-UI-651).
+ * or runs or a bulk expands, until **Pause automatic refresh** (the form of the page System status, Q-UI-651), and only while the window
+ * is seen: a hidden window reads nothing and reads at once when it is seen again (R-UI-213).
  */
 @Component({
   selector: 'quader-remote-downloads',
@@ -72,6 +74,9 @@ export class RemoteDownloads {
   private readonly notifier = inject(Notifier);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly visibility = inject(PageVisibility);
+  /** The window was hidden while the list was live: it reads at once when it is seen again. */
+  private away = false;
 
   /** The qualified name `<project>/<key>` of the remote repository. */
   readonly repository = input.required<string>();
@@ -246,6 +251,14 @@ export class RemoteDownloads {
     });
     effect((onCleanup) => {
       if (this.paused() || !this.live()) return;
+      if (!this.visibility.visible()) {
+        this.away = true;
+        return;
+      }
+      if (this.away) {
+        this.away = false;
+        untracked(() => this.refresh());
+      }
       const timer = setInterval(() => this.refresh(), DOWNLOADS_REFRESH_MS);
       onCleanup(() => clearInterval(timer));
     });

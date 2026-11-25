@@ -360,6 +360,32 @@ describe('The tab Downloads of a remote repository', () => {
     }
   });
 
+  it('R-CUR-018 R-UI-213 a hidden window does not read the queue, and reads it at once when it is seen again', async () => {
+    const setVisibility = (state: 'visible' | 'hidden'): void => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    try {
+      const { fixture, fake } = await open();
+      const calls = fake.listCalls.length;
+      setVisibility('hidden');
+      await settle(fixture);
+      vi.advanceTimersByTime(DOWNLOADS_REFRESH_MS * 6);
+      await settle(fixture);
+      expect(fake.listCalls.length).toBe(calls);
+      setVisibility('visible');
+      await settle(fixture);
+      expect(fake.listCalls.length).toBe(calls + 1);
+      vi.advanceTimersByTime(DOWNLOADS_REFRESH_MS);
+      await settle(fixture);
+      expect(fake.listCalls.length).toBe(calls + 2);
+    } finally {
+      setVisibility('visible');
+      vi.useRealTimers();
+    }
+  });
+
   it('R-CUR-018 a queue where nothing waits or runs is not read again by itself', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     try {

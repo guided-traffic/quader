@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { Job, JobState, JobsApi, jobActive } from '../api/jobs-api';
 import { ApiError } from '../api/problem';
+import { PageVisibility } from '../core/page-visibility';
 import { ErrorNotice } from './error-notice';
 import { asApiError } from './paged-resource';
 
@@ -42,6 +43,7 @@ export function jobStateText(state: JobState): string {
  * Polls a job until it ends and shows its state and progress (R-UI-042, R-API-015). The visible
  * progress is live; the text for assistive technology changes at most every 10 seconds and on the
  * final state. `finished` emits the last job once, so the screen can reload what the job changed.
+ * The poll waits while the window is hidden and reads at once when it is seen again (R-UI-213).
  */
 @Component({
   selector: 'quader-job-progress',
@@ -88,6 +90,7 @@ export function jobStateText(state: JobState): string {
 export class JobProgress {
   private readonly api = inject(JobsApi);
   private readonly destroyed = inject(DestroyRef);
+  private readonly visibility = inject(PageVisibility);
 
   /** The ID of the job to follow (from `Location` or the job reference). */
   readonly jobId = input.required<string>();
@@ -121,12 +124,23 @@ export class JobProgress {
   private lastAnnounced = 0;
   private run = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
+  /** The run whose next poll came due while the window was hidden; it polls when the window is seen again. */
+  private waiting: number | null = null;
 
   constructor() {
     this.destroyed.onDestroy(() => this.stop());
     effect(() => {
       this.jobId();
       untracked(() => this.resume());
+    });
+    effect(() => {
+      const visible = this.visibility.visible();
+      untracked(() => {
+        const run = this.waiting;
+        if (!visible || run === null) return;
+        this.waiting = null;
+        if (run === this.run) void this.poll(run);
+      });
     });
   }
 
@@ -139,7 +153,15 @@ export class JobProgress {
 
   private stop(): void {
     this.run++;
+    this.waiting = null;
     clearTimeout(this.timer);
+  }
+
+  /** The poll's next read: now while the window is seen, else when it is seen again. */
+  private next(run: number): void {
+    if (run !== this.run) return;
+    if (this.visibility.visible()) void this.poll(run);
+    else this.waiting = run;
   }
 
   private async poll(run: number): Promise<void> {
@@ -149,7 +171,7 @@ export class JobProgress {
       this.job.set(job);
       this.announce(job);
       if (jobActive(job.state)) {
-        this.timer = setTimeout(() => void this.poll(run), this.intervalMs());
+        this.timer = setTimeout(() => this.next(run), this.intervalMs());
       } else {
         this.finished.emit(job);
       }

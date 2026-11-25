@@ -429,4 +429,45 @@ describe('Job progress', () => {
       vi.useRealTimers();
     }
   });
+
+  it('R-UI-213 a running job is not polled while the window is hidden, and is read at once when it is seen again', async () => {
+    const setVisibility = (state: 'visible' | 'hidden'): void => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    try {
+      const { fixture, get } = await renderScreen(JobProgress, {
+        inputs: { jobId: 'j-1', intervalMs: 1000 },
+        setup: (get) => {
+          (get(JobsApi) as FakeJobsApi).jobList = [sampleJob({ id: 'j-1', state: 'running', result: null })];
+        },
+      });
+      const jobs = get(JobsApi) as FakeJobsApi;
+      const reads = vi.spyOn(jobs, 'job');
+      await settle(fixture);
+      vi.advanceTimersByTime(1000);
+      await settle(fixture);
+      const seen = reads.mock.calls.length;
+      expect(seen).toBeGreaterThan(0);
+
+      setVisibility('hidden');
+      await settle(fixture);
+      vi.advanceTimersByTime(30_000);
+      await settle(fixture);
+      // The poll that came due while the window was hidden waits for it to be seen; none is sent meanwhile.
+      expect(reads.mock.calls.length).toBe(seen);
+      const hidden = seen;
+
+      setVisibility('visible');
+      await settle(fixture);
+      expect(reads.mock.calls.length).toBe(hidden + 1);
+      vi.advanceTimersByTime(1000);
+      await settle(fixture);
+      expect(reads.mock.calls.length).toBe(hidden + 2);
+    } finally {
+      setVisibility('visible');
+      vi.useRealTimers();
+    }
+  });
 });
