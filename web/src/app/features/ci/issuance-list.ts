@@ -94,7 +94,8 @@ export interface IssuanceDetailData {
         }
       </dl>
       <h3 i18n="@@ci.issuance.grants">Grants of the token</h3>
-      <!-- A scrolling block is a tab stop, so a keyboard user can scroll it (WCAG 2.1.1, axe scrollable-region-focusable). -->
+      <!-- A block as tall as its lines: the dialog's body is the one thing that scrolls up and down (R-UI-215). A long line scrolls
+           the block sideways, so it is a tab stop for a keyboard user (WCAG 2.1.1, axe scrollable-region-focusable). -->
       <pre translate="no" tabindex="0" i18n-aria-label="@@ci.issuance.grants" aria-label="Grants of the token">{{ grants }}</pre>
       <h3 i18n="@@ci.issuance.claims">Claims at the time of the exchange</h3>
       <pre translate="no" tabindex="0" i18n-aria-label="@@ci.issuance.claims" aria-label="Claims at the time of the exchange">{{ claims }}</pre>
@@ -108,8 +109,7 @@ export interface IssuanceDetailData {
     pre {
       margin: 0 0 var(--quader-space-3);
       padding: var(--quader-space-2) var(--quader-space-3);
-      overflow: auto;
-      max-block-size: 14rem;
+      overflow-x: auto;
       border: 1px solid var(--quader-border);
       border-radius: var(--quader-radius-s);
       font-family: var(--quader-font-mono);

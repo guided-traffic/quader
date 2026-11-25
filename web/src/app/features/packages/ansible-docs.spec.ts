@@ -347,6 +347,47 @@ describe('The Documentation tab of an Ansible collection', () => {
       expect(navigate).toHaveBeenCalledWith([], { queryParams: { doc: null }, queryParamsHandling: 'merge' });
     });
 
+    it('R-UI-215 the page pane scrolls with the page: a new page brings its top into view, and Back to the tree the entry that was read', async () => {
+      const r = await open();
+      // The group opened by hand stays open when the tree shows again.
+      items(r).find((i) => rowText(i).startsWith('Modules'))!.click();
+      await settle(r.fixture);
+      // The page's scroll container is the shell's main; the pane's top stands 400 px above its view.
+      const main = document.createElement('main');
+      document.body.append(main);
+      main.append(r.root);
+      const scrolled: { what: string; block: ScrollLogicalPosition | undefined }[] = [];
+      Object.defineProperty(Element.prototype, 'scrollIntoView', {
+        configurable: true,
+        value(this: Element, o?: ScrollIntoViewOptions) {
+          scrolled.push({ what: this.getAttribute('data-doc') ?? this.className, block: o?.block });
+        },
+      });
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+        const top = this.classList.contains('pane-details') || this.classList.contains('pane-tree') ? -400 : 0;
+        return { top, bottom: top + 10, left: 0, right: 10, width: 10, height: 10, x: 0, y: top, toJSON: () => ({}) } as DOMRect;
+      });
+      try {
+        await set(r, { doc: 'module/check_host_reachable' });
+        expect(scrolled).toEqual([{ what: expect.stringContaining('pane-details'), block: 'start' }]);
+        scrolled.length = 0;
+        vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+        [...r.root.querySelectorAll('button')].find((b) => /Back to the tree/.test(text(b)))!.click();
+        await set(r, { doc: undefined });
+        expect(scrolled).toEqual([{ what: 'module/check_host_reachable', block: 'nearest' }]);
+        // Where its group is closed, the tree's top comes into view instead.
+        items(r).find((i) => rowText(i).startsWith('Modules'))!.click();
+        await set(r, { doc: 'module/check_host_reachable' });
+        scrolled.length = 0;
+        [...r.root.querySelectorAll('button')].find((b) => /Back to the tree/.test(text(b)))!.click();
+        await set(r, { doc: undefined });
+        expect(scrolled).toEqual([{ what: expect.stringContaining('pane-tree'), block: 'start' }]);
+      } finally {
+        delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+        main.remove();
+      }
+    });
+
     it('R-UI-060 R-UI-064 the tab passes the accessibility checks with a page open and with a search', async () => {
       const r = await open({ doc: 'module/check_host_reachable', q: 'host' });
       await expectAccessible(r.root);

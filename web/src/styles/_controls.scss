@@ -639,13 +639,6 @@ input[type='radio'] {
   }
 }
 
-// A <pre> whose visible lines change: --lines is the number of lines it shows.
-.code-block.folding {
-  max-block-size: calc(var(--lines) * 1lh + 2 * var(--quader-space-3) + 1lh);
-  overflow: hidden auto;
-  transition: max-block-size var(--quader-motion-duration) var(--quader-motion-easing);
-}
-
 details {
   interpolate-size: allow-keywords;
 

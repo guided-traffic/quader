@@ -33,6 +33,11 @@ export interface ContentShape {
   readonly commandVerb: string;
   /** Says that this format's versions are not matched against advisories (shown instead of a column of findings). */
   readonly notScannedText: string;
+  /**
+   * The link under an opened item's newest versions to the package's page (R-UI-215, Q-UI-1111): "All 103 tags", "All 33 versions";
+   * `count` is the number as the locale writes it.
+   */
+  readonly allVersionsText: (count: string) => string;
 }
 
 export function contentShapeOf(format: string, repositoryClass = ''): ContentShape {
@@ -59,6 +64,7 @@ export function contentShapeOf(format: string, repositoryClass = ''): ContentSha
       digest: true,
       commandVerb: $localize`:@@repo.content.oci.verb:Pull`,
       notScannedText: $localize`:@@repo.content.no-scanning:This package type is not scanned for vulnerabilities yet.`,
+      allVersionsText: (count) => $localize`:@@repo.content.oci.all-versions:All ${count}:count: tags`,
     };
   }
   const fetched = $localize`:@@repo.content.fill-remote:It fills as clients fetch through it; Set up client shows how.`;
@@ -92,6 +98,7 @@ export function contentShapeOf(format: string, repositoryClass = ''): ContentSha
     digest: false,
     commandVerb: $localize`:@@repo.content.verb:Install`,
     notScannedText: $localize`:@@repo.content.no-scanning:This package type is not scanned for vulnerabilities yet.`,
+    allVersionsText: (count) => $localize`:@@repo.content.all-versions:All ${count}:count: versions`,
   };
 }
 

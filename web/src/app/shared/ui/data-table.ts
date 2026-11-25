@@ -69,7 +69,8 @@ const REMEASURE = 'quader-remeasure';
 
 /**
  * The data table of every list screen (R-UI-020, R-UI-024 to R-UI-027, R-UI-030, R-UI-037, R-UI-006).
- * It owns the frame: a bordered, inner-scrolling region with a sticky header, sortable headers
+ * It owns the frame: a table named by its caption that grows the page and never scrolls by itself, its head scrolling away
+ * with the page (R-UI-215, Q-UI-1110), sortable headers
  * (`aria-sort`, a real button per sortable column), a "?" help tooltip per column that needs one,
  * and the four states: loading, error (with retry), empty and filled, plus the "Load more" button of
  * cursor lists (R-UI-006). The rows are the screen's own `<tr>` elements, projected into the body, so
@@ -98,7 +99,7 @@ const REMEASURE = 'quader-remeasure';
       <!-- The widest relative times of the language, measured for the least width of a column of times (Q-UI-1069). -->
       <div class="time-widths" aria-hidden="true"></div>
       <div class="table-frame">
-        <div class="scroll table-scroll" tabindex="0" role="region" [attr.aria-labelledby]="captionId">
+        <div class="table-scroll">
           <table class="data">
             <caption [id]="captionId" class="visually-hidden">
               {{ caption() }}
@@ -256,32 +257,24 @@ export class DataTable {
           observer.observe(current, { childList: true, subtree: true, characterData: true });
         }
       }
-      // The list's width: an element of no height across the table, and the room inside the scroll region, which a scrollbar
-      // beside the rows narrows while the list keeps its width (a window made lower: the admin area's repositories at 1,280 px
-      // were 10 px wider than their region). Only a change of a width is a reason to measure; the change of the frame's height
-      // that the stacking makes is not. The measurement waits for the next frame: a change of the layout inside the observer's
-      // callback would start a second round of every observer of the page ("ResizeObserver loop completed with undelivered
-      // notifications").
+      // The list's width: an element of no height across the table. Only a change of its width is a reason to measure; the change
+      // of the frame's height that the stacking makes is not. Nothing puts a scrollbar beside the rows (R-UI-215), so the ruler's
+      // width is the room's. The measurement waits for the next frame: a change of the layout inside the observer's callback would
+      // start a second round of every observer of the page ("ResizeObserver loop completed with undelivered notifications").
       const ruler = host.querySelector('.table-width');
-      const region = host.querySelector('.table-scroll');
       if (ruler !== measured && typeof ResizeObserver !== 'undefined') {
         resized?.disconnect();
         measured = ruler;
         if (ruler) {
-          const last = new Map<Element, number>();
+          let last = -1;
           resized = new ResizeObserver((entries) => {
-            let changed = false;
-            for (const entry of entries) {
-              if (last.get(entry.target) === entry.contentRect.width) continue;
-              last.set(entry.target, entry.contentRect.width);
-              changed = true;
-            }
-            if (!changed) return;
+            const width = entries[entries.length - 1]?.contentRect.width ?? -1;
+            if (width === last) return;
+            last = width;
             cancelAnimationFrame(frame);
             frame = requestAnimationFrame(() => this.measure(host));
           });
           resized.observe(ruler);
-          if (region) resized.observe(region);
         }
       }
     });
@@ -304,7 +297,7 @@ export class DataTable {
   /**
    * Stacks the rows where the columns do not fit (R-UI-174, Q-UI-680): the table at its least width, which is each column's
    * declared least width (`width`) or its longest word, and a column that never breaks at its whole value, against the room of
-   * its scroll region, which a scrollbar beside the rows narrows. The table is measured as a table, so a stacked one is taken
+   * its room. The table is measured as a table, so a stacked one is taken
    * out of its blocks for the measurement and back in the same task; nothing is painted between.
    */
   private measure(host: HTMLElement): void {

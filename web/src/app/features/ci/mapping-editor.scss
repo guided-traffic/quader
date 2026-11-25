@@ -119,11 +119,11 @@ h3 {
   gap: var(--quader-space-2);
 }
 
+// As tall as its lines: the page scrolls, not the snippet (R-UI-215); a long line scrolls it sideways.
 .snippet {
   margin: 0;
   padding: var(--quader-space-3);
-  overflow: auto;
-  max-block-size: 24rem;
+  overflow-x: auto;
   border: 1px solid var(--quader-border);
   border-radius: var(--quader-radius-s);
   background: var(--quader-surface-raised);

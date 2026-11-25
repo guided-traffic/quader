@@ -10,7 +10,8 @@
 export interface LayoutFinding {
   /**
    * Which check found it: `icon-apart`, `broken`, `row-offset`, `row-actions`, `stacked-offset`, `stacked-place`, `label-apart`,
-   * `empty-cell`, `cell-overflow`, `clipped`, `cramped`, `stacked-fits`, `sideways`, `empty-scroll`, `tab-scrollbar`, `english`.
+   * `empty-cell`, `cell-overflow`, `clipped`, `cramped`, `stacked-fits`, `sideways`, `empty-scroll`, `tab-scrollbar`, `english`,
+   * `inner-scroll`.
    */
   readonly check: string;
   /** The element, as a path of up to four tags with their first two classes. */
@@ -968,8 +969,9 @@ export function layoutFindings(): LayoutFinding[] {
 
 /**
  * How far the window and the shell's panel scroll past their last content (run in the page, in the window's first height, before
- * the render grows it): something positioned (a text for assistive technology only) that stands at its place in rows a region
- * hides makes the panel, or the window, as long as those rows, and the user scrolls into an empty page (R-UI-173).
+ * the render grows it): something positioned (a text for assistive technology only) whose containing block is not the box it
+ * belongs to stands where nothing else does and makes the panel, or the window, longer than the page, and the user scrolls into an
+ * empty page (R-UI-173).
  */
 export function emptyScroll(): { window: number; panel: number } {
   const main = document.querySelector('main.content');
@@ -984,6 +986,81 @@ export function emptyScroll(): { window: number; panel: number } {
   }
   const panel = main.scrollHeight > main.clientHeight + 1 ? main.scrollHeight - bottom - parseFloat(getComputedStyle(main).paddingBottom) : 0;
   return { window: Math.max(0, doc.scrollHeight - doc.clientHeight), panel: Math.max(0, Math.round(panel)) };
+}
+
+/**
+ * One scrollbar per page (R-UI-215, Q-UI-1113; run in the page, in the window's first height, before the render grows it, where a
+ * region whose height follows the window still scrolls): inside the page (`main.content`) nothing scrolls up and down by itself,
+ * but a boxed list of at most 24 rem with a frame above and below that no other scrolling box holds, a navigation column that sticks
+ * beside the page, a popup, and a field that takes typed text. Inside an overlay (a dialog, a drawer, a menu, a popup) one element
+ * may scroll; another that scrolls inside it is the finding. An element scrolls when its overflow upwards and downwards is `auto` or
+ * `scroll` and its content is taller than its box, or a `max-block-size` caps it (a region built to scroll, which the seed's data
+ * may not fill). The side bar, the window (`empty-scroll`) and a sideways scroll (`sideways`) are other checks'.
+ */
+export function innerScroll(): LayoutFinding[] {
+  function pathOf(el: Element): string {
+    const parts: string[] = [];
+    for (let e: Element | null = el; e && e !== document.body && parts.length < 4; e = e.parentElement) {
+      parts.unshift(e.tagName.toLowerCase() + Array.from(e.classList).filter((c) => !c.startsWith('ng-')).slice(0, 2).map((c) => '.' + c).join(''));
+    }
+    return parts.join(' > ');
+  }
+  function shown(el: Element): boolean {
+    const r = el.getBoundingClientRect();
+    if (r.width <= 1 || r.height <= 1) return false;
+    if (el.closest('.visually-hidden, .cdk-visually-hidden, [hidden]')) return false;
+    return getComputedStyle(el).visibility !== 'hidden';
+  }
+  /** How far it scrolls up and down, or null where it does not; a box built to scroll (capped) counts with 0 px. */
+  function scrolls(el: Element): number | null {
+    if (el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement || el instanceof HTMLInputElement) return null;
+    const style = getComputedStyle(el);
+    if (style.overflowY !== 'auto' && style.overflowY !== 'scroll') return null;
+    const over = el.scrollHeight - el.clientHeight;
+    if (over > 1) return over;
+    return style.maxHeight !== 'none' ? 0 : null;
+  }
+  const px = (n: number): string => Math.round(n).toLocaleString('en');
+  const box = 24 * parseFloat(getComputedStyle(document.documentElement).fontSize);
+  const found = new Map<string, LayoutFinding & { count: number }>();
+  const add = (el: Element, detail: string): void => {
+    const what = pathOf(el);
+    const known = found.get(what);
+    if (known) known.count++;
+    else found.set(what, { check: 'inner-scroll', what, text: (el.getAttribute('aria-label') ?? '').slice(0, 80), detail, count: 1 });
+  };
+  const main = document.querySelector('main.content');
+  const overlays = Array.from(document.querySelectorAll('.cdk-overlay-container'));
+  const elements = [...(main ? Array.from(main.querySelectorAll('*')) : []), ...overlays.flatMap((o) => Array.from(o.querySelectorAll('*')))];
+  for (const el of elements) {
+    const over = scrolls(el);
+    if (over === null || !shown(el)) continue;
+    const overlay = el.closest('.cdk-overlay-container');
+    // The ancestors up to the page or the overlay: one that scrolls too makes this one the finding, wherever it stands.
+    let popup = false;
+    let sticky = false;
+    let outer: Element | null = null;
+    for (let e: Element | null = el; e && e !== main && e !== overlay; e = e.parentElement) {
+      const style = getComputedStyle(e);
+      if (style.position === 'absolute' || style.position === 'fixed') popup = true;
+      if (style.position === 'sticky') sticky = true;
+      if (e !== el && outer === null && scrolls(e) !== null) outer = e;
+    }
+    if (outer) {
+      add(el, `scrolls ${px(over)} px inside ${pathOf(outer).split(' > ').at(-1)}, which scrolls too`);
+      continue;
+    }
+    // An overlay's, or a popup's, one scroll.
+    if (overlay || popup) continue;
+    // A navigation column that sticks beside the page.
+    if (sticky && (el.matches('nav, [role="navigation"], [role="tree"]') || el.querySelector('nav, [role="navigation"], [role="tree"]'))) continue;
+    const style = getComputedStyle(el);
+    const framed = parseFloat(style.borderTopWidth) >= 1 && parseFloat(style.borderBottomWidth) >= 1;
+    if (framed && el.clientHeight <= box) continue;
+    const why = framed ? `framed, above the ${px(box)} px of a boxed list` : 'no frame';
+    add(el, `scrolls ${px(over)} px of its own in the page (${px(el.clientHeight)} px high, ${why}); the page scrolls instead`);
+  }
+  return [...found.values()];
 }
 
 /**

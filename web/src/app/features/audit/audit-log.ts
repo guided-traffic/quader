@@ -3,6 +3,7 @@ import { DatePipe } from '@angular/common';
 import {
   Component,
   ElementRef,
+  afterRenderEffect,
   computed,
   effect,
   inject,
@@ -27,6 +28,7 @@ import { TimeAgo } from '../../shared/ui/time-ago';
 import { PagedResource, asApiError, valueOf } from '../../shared/paged-resource';
 import { actionSuggestions, auditActionLabel, categoryLabel, outcomeLabel } from './audit-labels';
 import { PageHeader } from '../../shared/ui/page-header';
+import { StickyWhenFits } from '../../shared/ui/sticky-when-fits';
 import { ADDRESS_MARKS, KEY_MARKS, PartsText, breakParts } from '../../shared/break-parts';
 import { PrincipalField, choiceFromRef, refOf } from '../../shared/ui/principal-field';
 
@@ -93,6 +95,7 @@ const PRESETS: Readonly<Record<string, number>> = {
     PrincipalField,
     PartsText,
     ProjectLink,
+    StickyWhenFits,
     TimeAgo,
   ],
   templateUrl: './audit-log.html',
@@ -246,8 +249,10 @@ export class AuditLog {
       every: () => LIVE_SLOW_MS,
     });
     effect(() => this.restage());
-    // An event opened from the list takes the focus, so the page brings it into view where it stands above the log (Q-UI-997).
-    effect(() => {
+    // An event opened from the list takes the focus, so the page brings it into view where it stands above the log (Q-UI-997). It
+    // is given after the render, once the event beside the log sticks where it fits (`quaderStickyWhenFits`, R-UI-215): the focus
+    // finds it in view there and the page stays at the row.
+    afterRenderEffect(() => {
       const heading = this.eventHeading();
       if (heading && this.focusEvent) {
         this.focusEvent = false;
@@ -381,9 +386,17 @@ export class AuditLog {
     void this.router.navigate([], { queryParams: { event: id }, queryParamsHandling: 'merge' }).then(() => shown?.nativeElement.focus());
   }
 
+  /**
+   * Closes the event and gives the focus back to the row it was opened from, so a reader who opened it far down the log goes on
+   * from there (R-UI-215, Q-UI-1112): the page scrolls, and the row is where the focus brings the view.
+   */
   protected close(): void {
-    void this.router.navigate([], { queryParams: { event: null }, queryParamsHandling: 'merge' });
+    const opener = this.host.querySelector<HTMLElement>('.table-pane button.link[aria-current="true"]');
+    void this.router.navigate([], { queryParams: { event: null }, queryParamsHandling: 'merge' }).then(() => {
+      if (opener?.isConnected) opener.focus();
+    });
   }
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   protected actionLabel = auditActionLabel;
   protected categoryText = categoryLabel;

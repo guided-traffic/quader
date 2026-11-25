@@ -13,9 +13,11 @@
 }
 
 .help-contents {
+  // A navigation column beside the page: it sticks while the page scrolls and scrolls its own entries, at most as high as the
+  // panel's view less the panel's padding (R-UI-215, Q-UI-1112).
   position: sticky;
   inset-block-start: 0;
-  max-block-size: calc(100vh - var(--quader-topbar-height) - var(--quader-space-8));
+  max-block-size: calc(var(--quader-page-height) - 2 * var(--quader-space-6));
   overflow-y: auto;
   padding: var(--quader-space-3);
   border: 1px solid var(--quader-border);

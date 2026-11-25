@@ -77,7 +77,7 @@ describe('Install command panel', () => {
     expect((r.root.querySelector<HTMLInputElement>('quader-address-field input')?.value ?? r.root.querySelector('pre')?.textContent)).toBe(`npm install 'a(b)@1.4.0'`);
   });
 
-  it('R-UI-009 a command of more than three lines is collapsed behind an expander', async () => {
+  it('R-UI-009 R-UI-215 a command of more than three lines is cut behind an expander, and opened it has no cap of its own', async () => {
     const lines = ['yarn add a', 'yarn add b', 'yarn add c', 'yarn add d', 'yarn add e'].join('\n');
     const r = await renderScreen(InstallPanel, {
       inputs: { format: 'npm', name: '@team-a/ui', version: await version() },
@@ -90,12 +90,17 @@ describe('Install command panel', () => {
         };
       },
     });
-    expect(r.root.querySelector('pre')?.style.getPropertyValue('--lines')).toBe('3');
+    const pre = r.root.querySelector<HTMLElement>('pre')!;
+    expect(pre.style.getPropertyValue('--lines')).toBe('3');
+    expect(pre.classList.contains('folding')).toBe(true);
     const expander = button(r.root, 'Show the whole command');
     expect(expander.getAttribute('aria-expanded')).toBe('false');
     expander.click();
     await settle(r.fixture);
-    expect(r.root.querySelector('pre')?.style.getPropertyValue('--lines')).toBe('5');
+    // Opened, the text is as tall as its lines wrap to: no fold, no cap, nothing that scrolls inside the window (R-UI-215).
+    expect(pre.style.getPropertyValue('--lines')).toBe('');
+    expect(pre.classList.contains('folding')).toBe(false);
+    expect(pre.style.maxBlockSize).toBe('');
     expect((r.root.querySelector<HTMLInputElement>('quader-address-field input')?.value ?? r.root.querySelector('pre')?.textContent)).toBe(lines);
     expect(button(r.root, 'Show less').getAttribute('aria-expanded')).toBe('true');
     await expectAccessible(r.root);

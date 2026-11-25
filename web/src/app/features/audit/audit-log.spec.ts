@@ -210,6 +210,16 @@ describe('Audit log', () => {
     await expectAccessible(root);
   });
 
+  it('R-UI-215 closing an opened event gives the focus back to the row it was opened from', async () => {
+    const { root, fixture, router } = await open({ event: '01933b1e-7c2a-7f4e-9d1b-6a2f0c9e8b10' });
+    const opener = root.querySelector<HTMLButtonElement>('tbody th button.link[aria-current="true"]')!;
+    expect(opener).toBeTruthy();
+    button(root.querySelector('section.detail')!, 'Close').click();
+    await settle(fixture);
+    expect(router.navigate).toHaveBeenLastCalledWith([], { queryParams: { event: null }, queryParamsHandling: 'merge' });
+    expect(document.activeElement).toBe(opener);
+  });
+
   it('R-UI-037 the detail of a policy change shows the details object with before and after', async () => {
     const { root } = await open({ event: '01933b1e-7c2a-7f4e-9d1b-6a2f0c9e8b11' });
     const pre = root.querySelector('section.detail pre')!.textContent!;

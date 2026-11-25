@@ -399,20 +399,12 @@ td.class-cell .material-icons {
     container: table / inline-size;
   }
 
-  // The inner scroll keeps the header in view: the region scrolls, not the page. It keeps no room for a scrollbar its rows do not
-  // need: a reserved gutter ended every table 15 px before the edge that the head of the list and the lines above it reach
-  // (Q-UI-427). A table whose rows scroll has its scrollbar at that edge.
-  // It is the containing block of the rows' texts for assistive technology only (`.visually-hidden`, absolute): without it they
-  // stood at their places in the rows the region hides, and the panel scrolled that far into an empty page (R-UI-173).
+  // The table's room. It does not scroll: a list of any length grows the page, and the page is the one thing that scrolls
+  // (R-UI-215, Q-UI-1110). Its width is what the data table measures the columns against (Q-UI-680).
+  // It is the containing block of the rows' texts for assistive technology only (`.visually-hidden`, absolute), so they stand
+  // inside the table's box and never beyond the page's end (R-UI-173).
   .table-scroll {
     position: relative;
-    max-block-size: max(22rem, calc(100dvh - 17rem));
-    overflow: auto;
-
-    &:focus-visible {
-      outline: var(--quader-focus-ring);
-      outline-offset: -2px;
-    }
   }
 
   table.data {
@@ -475,11 +467,9 @@ td.class-cell .material-icons {
       min-inline-size: var(--quader-time-width, auto);
     }
 
+    // The head scrolls away with the page, as the reference's lists do (Q-UI-1110): a head that stuck would stand over the rows of a
+    // list opened in a row, whose columns are others.
     thead th {
-      position: sticky;
-      inset-block-start: 0;
-      z-index: 1;
-      background: var(--quader-surface);
       border-block-start: 1px solid var(--quader-border);
       color: var(--quader-heading);
       font-weight: 600;
@@ -689,11 +679,6 @@ td.class-cell .material-icons {
 // one row above the blocks (Q-UI-391); the data table gives every cell its column's name in `data-label` and marks an empty one
 // (`data-empty`), which is left out.
 .quader-data-table.stacked {
-  .table-scroll {
-    max-block-size: none;
-    overflow: visible;
-  }
-
   table.data {
     display: block;
 

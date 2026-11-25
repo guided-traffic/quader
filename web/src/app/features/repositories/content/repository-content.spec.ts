@@ -94,6 +94,41 @@ describe('Repository content page', () => {
     await expectAccessible(panel);
   });
 
+  it('R-UI-215 an opened image lists its ten newest tags under a head of its own and links all of them, with no Load more', async () => {
+    const r = await open(OCI_REPO, ({ packages }) => {
+      ociFixture(packages);
+      // Thirteen tags: the fixture's two and eleven older ones, a day apart.
+      const base = packages.versionList.find((v) => v.version === '1.1.0')!;
+      packages.versionList.push(
+        ...Array.from({ length: 11 }, (_, i) => ({ ...base, version: `0.${i}.0`, publishedAt: `2026-10-${String(10 + i).padStart(2, '0')}T00:00:00.000Z` })),
+      );
+      packages.packages = packages.packages.map((p) => (p.name === 'team/app' ? { ...p, versionCount: 13 } : p));
+    });
+    r.root.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
+    await settle(r.fixture);
+    const opened = r.root.querySelector('quader-repository-item-versions')!;
+    // The newest ten, under the list's own head (its columns are the tags', not the images').
+    const tags = [...opened.querySelectorAll(':scope table > tbody > tr')].map((tr) => tr.querySelector('th')?.textContent?.trim());
+    expect(tags).toEqual(['1.2.0', '1.1.0', '0.10.0', '0.9.0', '0.8.0', '0.7.0', '0.6.0', '0.5.0', '0.4.0', '0.3.0']);
+    expect([...opened.querySelectorAll(':scope table > thead th')].map((th) => text(th))[0]).toBe('Tag');
+    expect(opened.querySelector('.table-more')).toBeNull();
+    const all = opened.querySelector<HTMLAnchorElement>('.all-versions a')!;
+    expect(spokenText(all)).toBe('All 13 tags: team/app');
+    expect(all.getAttribute('href')).toBe('/projects/web/packages/oci/team/app');
+    await expectAccessible(r.root);
+  });
+
+  it('R-UI-215 an opened item with ten versions or fewer has no link to all of them', async () => {
+    const r = await open(NPM_REPO, ({ packages }) => {
+      packages.packages = packages.packages.map((p) => ({ ...p, repositories: ['web/npm-local'] }));
+    });
+    r.root.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
+    await settle(r.fixture);
+    const opened = r.root.querySelector('quader-repository-item-versions')!;
+    expect(opened.querySelectorAll(':scope table > tbody > tr').length).toBeGreaterThan(0);
+    expect(opened.querySelector('.all-versions')).toBeNull();
+  });
+
   it('R-UI-052 a tag\'s Pull opens the commands of that tag, a section per client, and the image row\'s Pull those of its latest tag', async () => {
     const r = await open(OCI_REPO, ({ packages }) => ociFixture(packages));
     const setup = r.get(ClientSetupApi) as FakeClientSetupApi;

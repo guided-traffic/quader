@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Page, expect, test } from '@playwright/test';
-import { LayoutFinding, emptyScroll, findingLine, judge, layoutFindings } from './layout';
+import { LayoutFinding, emptyScroll, findingLine, innerScroll, judge, layoutFindings } from './layout';
 import { locale, manifestDir, outDir } from './paths';
 import { awaitAnswersOnUnroute } from './routes';
 import { Kind } from './seed';
@@ -31,8 +31,8 @@ export interface Shot {
   /** How far the content panel (or the page) scrolls sideways, in CSS px. */
   readonly overflowX: number;
   /**
-   * The regions inside it that scroll sideways (a table's scroll region, a code block), with how far: in the grown window of the
-   * picture, and in the window's first height, where a table taller than its region has a scrollbar beside its rows that takes
+   * The regions inside it that scroll sideways (a code block, a document's table), with how far: in the grown window of the
+   * picture, and in the window's first height, where a boxed list taller than its box has a scrollbar beside its rows that takes
    * its width (the scrollbars are shown, as on a desktop with a mouse).
    */
   readonly regions: readonly { readonly what: string; readonly overflowX: number }[];
@@ -198,17 +198,20 @@ async function settle(page: Page): Promise<void> {
 }
 
 /**
- * The whole content: the panel `main` scrolls inside the shell and a list's region scrolls inside the panel, each with a
- * height that follows the window, so the window grows by what they hide (a few rounds, at most 16,000 px), then shrinks back.
+ * The whole content: the panel `main` scrolls inside the shell, the one thing of a page that does (R-UI-215), with a height that
+ * follows the window, so the window grows by what it hides and by what a box or a navigation column that keeps a scroll of its own
+ * hides (a few rounds, at most 16,000 px), then shrinks back.
  */
 async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null, scheme: Shot['scheme'], width: number): Promise<Shot> {
   const view = page.viewportSize() ?? { width, height: 900 };
-  // Before the window grows to the page's length: a table that scrolls inside its region has its scrollbar now.
+  // Before the window grows to the page's length: a box that scrolls by itself has its scrollbar now.
   const first = view.height <= heightOf(width) ? await page.evaluate(sidewaysRegions) : [];
   let height = view.height;
   // In the app's shell the panel scrolls and the window does not; neither scrolls past the content (R-UI-173). Measured in the
   // window's first height, as the user has it.
   const empty = view.height <= heightOf(width) ? await page.evaluate(emptyScroll) : { window: 0, panel: 0 };
+  // One scrollbar per page (R-UI-215), measured where a region whose height follows the window still scrolls; one layout for both schemes.
+  const scrolls = view.height <= heightOf(width) && scheme === 'light' ? await page.evaluate(innerScroll) : [];
   for (let round = 0; round < 4; round++) {
     const { hidden, by } = await page.evaluate(() => {
       const vertical = (el: Element | null): number => (el ? Math.max(0, el.scrollHeight - el.clientHeight) : 0);
@@ -287,6 +290,7 @@ async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null,
     if (empty.panel > 24) {
       findings.push({ check: 'empty-scroll', what: 'main.content', text: '', detail: `the panel scrolls ${empty.panel} px past its last content`, count: 1 });
     }
+    findings.push(...scrolls);
     if (width >= 1024) {
       for (const r of regions) findings.push({ check: 'sideways', what: r.what, text: '', detail: `the region scrolls ${r.overflowX} px sideways`, count: 1 });
     }

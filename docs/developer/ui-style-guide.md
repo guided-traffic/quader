@@ -68,6 +68,15 @@ Every page inside the shell has this order:
 | Content | A table, a form or sections, as below |
 | Details | What only a power user or an administrator needs, last, in one closed `<quader-disclosure>` **Details** (see [Opening and closing](#opening-and-closing)) |
 
+**One scrollbar per page** ([R-UI-215](../spec/api-and-ui.md#r-ui-215--one-scrollbar-per-page)): the content panel (`main`) scrolls,
+the window does not, and nothing in the page scrolls up and down by itself. A list of any length grows the page and its head scrolls
+with it ([Q-UI-1110](../spec/api-and-ui.md#q-ui-1110--the-page-is-the-one-thing-that-scrolls-a-lists-head-scrolls-with-it)). What may
+keep a scroll of its own: a framed box of at most 24 rem that stands in for a chart or is a list box control; a navigation column that
+sticks beside the page (`--quader-page-height` less the panel's padding, the manual's contents, a documentation tree); an overlay, one
+scroll each; a text area. A side column that is no navigation sticks only while it fits (`quaderStickyWhenFits` of
+[sticky-when-fits.ts](../../web/src/app/shared/ui/sticky-when-fits.ts)) and never scrolls by itself. A box inside a dialog or a drawer
+is as tall as its content; a code block that keeps its lines may scroll sideways. The render check `inner-scroll` holds it.
+
 One `<h1>` per page. Page titles are nouns (**Members**, **Settings**), in sentence case, and the same as the page's entry in the
 side bar (**Tokens**). The description is one sentence, the header's `description`, never a paragraph of its own after the header
 ([Q-UI-569](../spec/api-and-ui.md#q-ui-569--the-sentence-under-a-title-is-the-headers-description)); what would need a second one belongs in the
@@ -148,6 +157,11 @@ side bar (**Tokens**). The description is one sentence, the header's `descriptio
   width it is hidden and the others take its room (the list marks its cells `narrow-drop`; the admin area's Last activity). The
   list's width is the table's own (the container `table`); the table keeps no room for a scrollbar its rows do not need, so it
   ends where the lines above it end ([Q-UI-427](../spec/api-and-ui.md#q-ui-427--a-table-keeps-no-room-for-a-scrollbar-its-rows-do-not-need)).
+  It never scrolls by itself: the page does (R-UI-215).
+- **A list opened in a row is bounded.** An item opened in a repository's content shows its ten newest versions under a head of their
+  own and, where it holds more, **All N tags** or **All N versions** to the package's page, which lists them all
+  ([Q-UI-1111](../spec/api-and-ui.md#q-ui-1111--an-opened-item-shows-its-ten-newest-versions-and-links-all-of-them)); a list opened in a
+  row whose items have no page of their own (an upstream package's versions) grows the page with **Load more**.
 - **One alignment.** Every cell starts at the top of its row; a control in a cell (a button, a select, the address field) is
   centred on the first line of text by [the line rule](#a-control-beside-a-text). A list does not set its own vertical alignment.
 - **Where the columns do not fit, the rows stack.** A data table measures its columns at their least widths (a wrapping column's
@@ -522,7 +536,8 @@ Before a screen is committed:
       both schemes and at 390 px, as each kind of user that reaches it; the contact sheet lists no failure, no page that scrolls
       sideways at any width and no region that does at 1024 px and wider, that the change brought; no layout finding (an icon apart
       from its label, a short thing broken, a row off its line or with other actions, a cut text with room, a stacked field at another place than in the other blocks, a cell that shows nothing, a table stacked though
-      it fits, a page that scrolls into nothing, a control or an icon off its text's line: [the checks](web-ui.md#renders-of-every-screen), R-UI-170 to R-UI-176); and in
+      it fits, a page that scrolls into nothing, a control or an icon off its text's line, a box that scrolls by itself in the page
+      (`inner-scroll`, R-UI-215): [the checks](web-ui.md#renders-of-every-screen), R-UI-170 to R-UI-176); and in
       each picture what the checks do not see: a table that ends before the lines above it, a field far wider than its input, two
       words or two styles for one thing, an element that takes the room without being the screen's job.
 - [ ] Compared side by side with the reference's screen for the same job, in a real browser, not only in a unit test.

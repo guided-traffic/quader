@@ -63,10 +63,12 @@ async function render() {
 }
 
 describe('Data table', () => {
-  it('R-UI-020 shows a captioned table in a focusable scroll region with column headers and the projected rows', async () => {
+  it('R-UI-020 R-UI-215 shows a captioned table with column headers and the projected rows, no region of its own and no tab stop', async () => {
     const { root } = await render();
-    const region = root.querySelector('[role="region"]')!;
-    expect(region.getAttribute('tabindex')).toBe('0');
+    // The page scrolls, not the table: no scroll region to name and to reach by Tab.
+    expect(root.querySelector('[role="region"]')).toBeNull();
+    expect(root.querySelector('quader-data-table [tabindex]')).toBeNull();
+    expect(root.querySelector('table')?.getAttribute('aria-labelledby')).toBeNull();
     expect(root.querySelector('caption')?.textContent?.trim()).toBe('Widgets');
     expect([...root.querySelectorAll('th[scope="col"]')].map((h) => h.textContent?.trim())).toEqual([
       'Nameunfold_more',
@@ -505,9 +507,8 @@ describe('Data table', () => {
     }
   });
 
-  it('R-UI-174 a scrollbar that appears beside the rows narrows the region, not the list, and the rows stack then', async () => {
-    // The admin area's repositories at 1,280 px (2026-11-21): the window grew and shrank back, the region got its scrollbar
-    // while the ruler across the list kept its width, and the table stayed 10 px wider than its region. jsdom has no
+  it('R-UI-174 a change of the list\'s width measures its columns again, a report of the same width does not', async () => {
+    // Only the ruler across the list is observed: nothing puts a scrollbar beside the rows any more (R-UI-215). jsdom has no
     // ResizeObserver: a stand-in hands the observer the widths the browser would report.
     const observers: { observed: Element[]; callback: ResizeObserverCallback }[] = [];
     class FakeResizeObserver {
@@ -535,24 +536,23 @@ describe('Data table', () => {
       const table = root.querySelector('quader-data-table')!;
       expect(table.classList.contains('stacked')).toBe(false);
       const observer = observers.at(-1)!;
-      const region = root.querySelector('.table-scroll')!;
       const ruler = root.querySelector('.table-width')!;
-      expect(observer.observed).toEqual([ruler, region]);
-      const report = async (entries: [Element, number][]): Promise<void> => {
-        observer.callback(entries.map(([target, width]) => ({ target, contentRect: { width } }) as ResizeObserverEntry), observer as unknown as ResizeObserver);
+      expect(observer.observed).toEqual([ruler]);
+      const report = async (width: number): Promise<void> => {
+        observer.callback([{ target: ruler, contentRect: { width } } as ResizeObserverEntry], observer as unknown as ResizeObserver);
         await new Promise((r) => requestAnimationFrame(() => r(undefined)));
       };
-      await report([[ruler, 968], [region, 968]]);
+      await report(968);
       expect(table.classList.contains('stacked')).toBe(false);
-      // The scrollbar: the region's room is 15 px less, the ruler's width the same.
+      // A narrower window: the room is less than the columns need.
       has = 953;
-      await report([[region, 953]]);
+      await report(953);
       expect(table.classList.contains('stacked')).toBe(true);
-      // A change of height alone (the stacked rows are taller) measures nothing.
+      // The same width again (the stacked rows are taller) measures nothing, whatever the room would say now.
       has = 968;
-      await report([[region, 953]]);
+      await report(953);
       expect(table.classList.contains('stacked')).toBe(true);
-      await report([[region, 968]]);
+      await report(968);
       expect(table.classList.contains('stacked')).toBe(false);
     } finally {
       rect.mockRestore();

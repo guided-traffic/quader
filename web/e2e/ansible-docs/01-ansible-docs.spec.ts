@@ -142,8 +142,7 @@ test('R-UI-060 R-UI-064 the Documentation tab with the install panel above it at
     await expect(page.locator('.doc-title')).toBeVisible();
     await expect(page.locator('.pane-tree')).toBeHidden();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'the page scrolls sideways').toBe(true);
-    // the parameter table scrolls inside its own region
-    await expect(page.getByRole('region', { name: 'Parameters of this entry' })).toBeVisible();
+    await expect(page.getByRole('table', { name: 'Parameters of this entry' })).toBeVisible();
     await page.screenshot({ path: info.outputPath('docs-390-page.png'), fullPage: true });
     await bothSchemes(page, 'documentation tab at 390 px, module page');
     await page.getByRole('button', { name: /Back to the tree/ }).click();

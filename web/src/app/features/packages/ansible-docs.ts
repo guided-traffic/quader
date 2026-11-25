@@ -211,13 +211,38 @@ export class AnsibleDocs {
         if (q.trim() !== this.draft().trim()) this.draft.set(q);
       });
     });
-    // A new page starts at its top.
+    // The page pane scrolls with the page (R-UI-215, Q-UI-1112). A new page starts at its top: where the pane's top stands above the
+    // view, the view goes to it. **Back to the tree** (one pane at a time) brings the entry that was read into view in the tree.
+    let first = true;
     afterRenderEffect(() => {
       this.current();
-      const pane = this.pagePane()?.nativeElement;
-      if (pane) pane.scrollTop = 0;
+      this.hasSelection();
+      const pane = this.pagePane()?.nativeElement.closest<HTMLElement>('.pane-details');
+      untracked(() => {
+        const to = this.returnTo;
+        this.returnTo = null;
+        if (first || !pane) {
+          first = !pane;
+          return;
+        }
+        const host = pane.parentElement;
+        const main = pane.closest('main');
+        const above = (el: Element): boolean => !!main && el.getBoundingClientRect().top < main.getBoundingClientRect().top;
+        if (to !== null) {
+          // The entry where its group is open, else the tree's top where it stands above the view.
+          const row = host?.querySelector<HTMLElement>(`.pane-tree a[data-doc="${CSS.escape(to)}"]`);
+          const tree = host?.querySelector<HTMLElement>('.pane-tree');
+          if (row) intoView(row, 'nearest');
+          else if (tree && above(tree)) intoView(tree, 'start');
+          return;
+        }
+        if (above(pane)) intoView(pane, 'start');
+      });
     });
   }
+
+  /** The entry whose page **Back to the tree** left: the tree shows it again. */
+  private returnTo: string | null = null;
 
   protected isOpen(id: string): boolean {
     return this.overrides().get(id) ?? this.openByDefault().has(id);
@@ -244,6 +269,7 @@ export class AnsibleDocs {
   }
 
   protected back(): void {
+    this.returnTo = this.doc() ?? null;
     void this.router.navigate([], { queryParams: { doc: null }, queryParamsHandling: 'merge' });
   }
 
@@ -258,4 +284,9 @@ export class AnsibleDocs {
     if (next === this.committed()) return;
     void this.router.navigate([], { queryParams: { q: next }, queryParamsHandling: 'merge', replaceUrl: true });
   }
+}
+
+/** Scrolls the view so the element shows, without an animation the reader did not ask for. */
+function intoView(el: HTMLElement, block: ScrollLogicalPosition): void {
+  el.scrollIntoView?.({ block, inline: 'nearest' });
 }

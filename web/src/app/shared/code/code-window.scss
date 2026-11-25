@@ -114,10 +114,11 @@ quader-code-window {
     }
   }
 
-  // Folded to a number of lines, its height follows the number with the animation of the style guide.
+  // Folded to a number of lines, the text is cut there and the host's expander shows the rest: it never scrolls inside the window
+  // (R-UI-215). Its height moves with the animation of the style guide; the component sets the whole height while it unfolds.
   .code.folding {
     max-block-size: calc(var(--lines) * 1lh + 2 * var(--quader-space-3));
-    overflow: hidden auto;
+    overflow: hidden;
     transition: max-block-size var(--quader-motion-duration) var(--quader-motion-easing);
   }
 

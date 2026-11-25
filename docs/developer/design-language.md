@@ -159,18 +159,21 @@ that introduced it ([Q-UI-98](../spec/api-and-ui.md#q-ui-98--the-file-browser-is
 [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page): a repository's files are pages of the repository.
 Its styles are the global partial [_browse.scss](../../web/src/styles/_browse.scss).
 
-- Two flat bordered surfaces (`--quader-surface-raised`, the hairline border, the 6 px radius) side by side, each `max(26rem,
-  100dvh - 13.5rem)` high so the page does not scroll at 1280 x 800 and each pane scrolls on its own. The tree pane is
-  `clamp(18rem, 30%, 26rem)`; the details take the rest.
+- Two flat bordered surfaces (`--quader-surface-raised`, the hairline border, the 6 px radius) side by side. The tree pane is
+  `clamp(18rem, 30%, 26rem)`; the details take the rest. The details pane is as long as its page and scrolls with the page; the tree
+  pane is a navigation column that sticks beside it and scrolls its own rows, at most as high as the panel's view
+  (`--quader-page-height` less the panel's padding above and below), and a short page's pane is as high as the tree
+  ([R-UI-215](../spec/api-and-ui.md#r-ui-215--one-scrollbar-per-page), [Q-UI-1112](../spec/api-and-ui.md#q-ui-1112--a-navigation-column-sticks-beside-the-page-with-a-scroll-of-its-own-any-other-side-column-sticks-only-while-it-fits)).
+  A new page brings the details pane's top into view.
 - A pane head on the table-head fill: in the tree pane the filter field, then the shared filter toggle, a sort icon button and
   a count; in the details pane the path as a breadcrumb and the actions as a toolbar. Applied filters are the shared chips under
   the head. The shared filter panel opens inside the tree pane in place of the tree, without its own border or shadow.
 - A tree row is 32 px high: a chevron, an icon in the muted tone, the name, then small outlined badges (11 px) for the format
   and the labels "cache", "resolves from" and "disabled". The selected row is `--quader-accent-container`; the focus ring is the
   solid 2 px ring inside the row.
-- A folder's children use the shared data table, whose scroll region is capped below the pane height so its header stays
-  sticky.
-- Under 48 rem of content width (the `content` container query) one pane shows at a time and the details get a back button.
+- A table in a pane is the shared data table, which grows the pane and the page; its head scrolls with them.
+- Under 48 rem of content width (the `content` container query) one pane shows at a time, each as long as it is, and the details get
+  a back button, which brings the entry that was read into view in the tree.
 
 ## Controls
 

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Page, expect, test } from '@playwright/test';
 import { compile } from 'sass';
-import { CODE_BLOCK_SCROLL, LayoutFinding, judge, layoutFindings } from './layout';
+import { CODE_BLOCK_SCROLL, LayoutFinding, innerScroll, judge, layoutFindings } from './layout';
 import { root } from './paths';
 
 /**
@@ -939,5 +939,92 @@ test.describe('an English sentence in a German page (R-UI-214)', () => {
       '<p>Die Version 1.4.0 von left-pad liegt im Repository npm-remote.</p>';
     expect(describe(only(await check(page, german, '', false, 'de'), 'english'))).toBe('');
     expect(describe(only(await check(page, `<p class="hint">${basis}</p>`), 'english'))).toBe('');
+  });
+});
+
+test.describe('one scrollbar per page (R-UI-215)', () => {
+  /** A page whose `main.content` is the shell's panel, the one thing that scrolls, 600 px high; measured by `innerScroll`. */
+  async function scrolls(page: Page, body: string, css = '', withShared = false): Promise<LayoutFinding[]> {
+    await page.setContent(
+      `<!doctype html><html lang="en"><head><style>${withShared ? shared() : base}</style><style>${fonts}${css}</style>` +
+        `<style>html, body { block-size: 100%; margin: 0; } main.content { position: relative; block-size: 600px; overflow: auto; padding: 24px; box-sizing: border-box; }</style></head>` +
+        `<body><main class="content">${body}</main></body></html>`,
+    );
+    await page.evaluate(() => document.fonts.ready);
+    return page.evaluate(innerScroll);
+  }
+  const rows = (n: number, cell = (i: number): string => `<th scope="row">image-${i}</th><td>${i} tags</td>`): string =>
+    Array.from({ length: n }, (_, i) => `<tr>${cell(i)}</tr>`).join('');
+  /**
+   * A list as `<quader-data-table>` writes it, with a row opened under the first that holds a second list of 30 tags; `capped`, each
+   * list's room has the height cap and the scroll the data table had before R-UI-215.
+   */
+  const owners = (capped: boolean): string => {
+    const room = capped ? ' style="max-block-size: 400px; overflow: auto"' : '';
+    return `<div class="quader-data-table"><div class="table-frame"><div class="table-scroll"${room}><table class="data">
+       <thead><tr><th scope="col">Image</th><th scope="col">Tags</th></tr></thead>
+       <tbody><tr><th scope="row">chart-render-kit</th><td>103 tags</td></tr>
+       <tr class="expansion"><td colspan="2"><div class="quader-data-table"><div class="table-frame"><div class="table-scroll"${room}><table class="data">
+         <thead><tr><th scope="col">Tag</th><th scope="col">Size</th></tr></thead><tbody>${rows(30, (i) => `<th scope="row">1.${i}.0</th><td>8.7 MiB</td>`)}</tbody></table></div></div></div></td></tr>
+       ${rows(30)}</tbody></table></div></div></div>`;
+  };
+
+  test("R-UI-215 the owner's picture: a list's own region and the opened image's region in it are found, two scrollbars beside the page's", async ({ page }) => {
+    const found = await scrolls(page, owners(true));
+    expect(found.map((f) => f.detail.replace(/\d[\d,]*/g, 'N')), describe(found)).toEqual([
+      'scrolls N px of its own in the page (N px high, no frame); the page scrolls instead',
+      'scrolls N px inside div.table-scroll, which scrolls too',
+    ]);
+  });
+
+  test("R-UI-215 the same lists with the app's stylesheet scroll with the page: nothing scrolls by itself", async ({ page }) => {
+    const found = await scrolls(page, owners(false), '', true);
+    expect(found, describe(found)).toEqual([]);
+    // The page holds them and scrolls: the one scrollbar.
+    expect(await page.evaluate(() => document.querySelector('main')!.scrollHeight > document.querySelector('main')!.clientHeight)).toBe(true);
+  });
+
+  const boxed = (style: string): string =>
+    `<div class="box" tabindex="0" role="region" aria-label="Points" style="overflow-y: auto; ${style}"><table class="data"><tbody>${rows(40)}</tbody></table></div>`;
+  test('R-UI-215 a framed box of 18 rem passes; at 30 rem, without its frame or inside another box that scrolls it is found', async ({ page }) => {
+    expect(await scrolls(page, boxed('max-block-size: 18rem; border: 1px solid #ccc'))).toEqual([]);
+    const tall = await scrolls(page, boxed('max-block-size: 30rem; border: 1px solid #ccc'));
+    expect(tall.map((f) => f.detail), describe(tall)).toEqual([expect.stringMatching(/framed, above the 384 px of a boxed list/)]);
+    const bare = await scrolls(page, boxed('max-block-size: 18rem'));
+    expect(bare.map((f) => f.detail), describe(bare)).toEqual([expect.stringMatching(/no frame/)]);
+    const nested = await scrolls(
+      page,
+      `<div class="outer" style="max-block-size: 20rem; overflow: auto; border: 1px solid #ccc">${boxed('max-block-size: 18rem; border: 1px solid #ccc')}<p style="block-size: 30rem">More</p></div>`,
+    );
+    expect(nested.map((f) => f.detail), describe(nested)).toEqual([expect.stringMatching(/inside div\.outer, which scrolls too/)]);
+  });
+
+  const column = (inner: string): string =>
+    `<div style="display: grid; grid-template-columns: 15rem 1fr; gap: 32px; align-items: start">
+       <div class="side" style="position: sticky; top: 0; max-block-size: 30rem; overflow-y: auto">${inner}</div>
+       <article style="block-size: 3000px">The page</article>
+     </div>`;
+  const entries = Array.from({ length: 60 }, (_, i) => `<li><a href="#">Entry ${i}</a></li>`).join('');
+  test('R-UI-215 a navigation column that sticks beside the page keeps its scroll; a side column that is no navigation is found', async ({ page }) => {
+    expect(await scrolls(page, column(`<nav aria-label="Contents"><ul>${entries}</ul></nav>`))).toEqual([]);
+    expect(await scrolls(page, column(`<ul role="tree" aria-label="Documentation">${entries}</ul>`))).toEqual([]);
+    const preview = await scrolls(page, column(`<h2>Preview</h2><ul>${entries}</ul>`));
+    expect(preview.map((f) => f.what), describe(preview)).toEqual([expect.stringMatching(/div\.side$/)]);
+  });
+
+  test('R-UI-215 an overlay keeps one scroll; a block that scrolls inside it is found', async ({ page }) => {
+    const lines = Array.from({ length: 40 }, (_, i) => `line ${i}`).join('\n');
+    const dialog = (pre: string): string =>
+      `<p>The page</p><div class="cdk-overlay-container" style="position: fixed; inset: 0"><div class="cdk-overlay-pane" style="position: absolute; inset: 40px">
+         <div class="dialog-body" style="max-block-size: 300px; overflow: auto"><pre style="overflow: auto; ${pre}">${lines}</pre><p style="block-size: 400px">More</p></div>
+       </div></div>`;
+    expect(await scrolls(page, dialog(''))).toEqual([]);
+    const nested = await scrolls(page, dialog('max-block-size: 14rem'));
+    expect(nested.map((f) => f.detail), describe(nested)).toEqual([expect.stringMatching(/^scrolls \d+ px inside div\.dialog-body, which scrolls too$/)]);
+  });
+
+  test('R-UI-215 a text area with a long value is a field and no finding', async ({ page }) => {
+    const found = await scrolls(page, `<textarea rows="4" aria-label="Keys">${Array.from({ length: 80 }, (_, i) => `key ${i}`).join('\n')}</textarea>`);
+    expect(found, describe(found)).toEqual([]);
   });
 });

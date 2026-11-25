@@ -105,10 +105,11 @@ export class ClientCommand {
   protected readonly command = computed(() => this.snippet()?.content.trimEnd() ?? '');
   protected readonly lines = computed(() => this.command().split('\n'));
   protected readonly collapsible = computed(() => this.lines().length > COLLAPSE_AFTER_LINES);
-  /** How many lines the command shows; the height follows it with the animation of the style guide. */
-  protected readonly shownLines = computed(() =>
-    this.collapsible() && !this.expanded() ? COLLAPSE_AFTER_LINES : this.lines().length,
-  );
+  /**
+   * How many lines the command shows folded; null for all of them, at whatever height they wrap to, so a long line never scrolls
+   * inside the window (R-UI-215). The height follows it with the animation of the style guide.
+   */
+  protected readonly shownLines = computed(() => (this.collapsible() && !this.expanded() ? COLLAPSE_AFTER_LINES : null));
   protected readonly failure = computed(() => {
     const e = this.answer.error();
     return e ? asApiError(e) : null;

@@ -12168,10 +12168,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-550 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+554 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 550 questions</summary>
+<summary>Q-UI: 554 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12721,6 +12721,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1102](spec/api-and-ui.md#q-ui-1102--the-tab-downloads-is-live-by-the-shared-poll-5-s-while-something-moves-30-s-otherwise) | The tab Downloads is live by the shared poll: 5 s while something moves, 30 s otherwise | Decided by the development agent | (a); `DOWNLOADS_REFRESH_MS` stays 5 s, the tab's own interval of R-CUR-018. | — |
 | [Q-UI-1103](spec/api-and-ui.md#q-ui-1103--the-strips-label-reads-the-queues-counts-itself-on-every-other-tab-every-30-s) | The strip's label reads the queue's counts itself on every other tab, every 30 s | Decided by the development agent | (a) The open tab Downloads (or Upstream) passes its counts; on every other tab the strip reads one row of the list for its counts, at once and every 30 s while the window is seen | — |
 | [Q-UI-1104](spec/api-and-ui.md#q-ui-1104--the-limits-sentence-offers-no-account-the-presets-do-not-say-which-upstream-an-account-lifts) | The limit's sentence offers no account: the presets do not say which upstream an account lifts | Decided by the development agent | (a) No such sentence while no preset carries the fact | — |
+| [Q-UI-1110](spec/api-and-ui.md#q-ui-1110--the-page-is-the-one-thing-that-scrolls-a-lists-head-scrolls-with-it) | The page is the one thing that scrolls; a list's head scrolls with it | The rule decided by the owner, 2026-11-25 | (a) The page scrolls and a list's head scrolls away with it | — |
+| [Q-UI-1111](spec/api-and-ui.md#q-ui-1111--an-opened-item-shows-its-ten-newest-versions-and-links-all-of-them) | An opened item shows its ten newest versions and links all of them | Decided by the development agent | (a) The ten newest under their own head, and **All N tags** / **All N versions** to the package's page | — |
+| [Q-UI-1112](spec/api-and-ui.md#q-ui-1112--a-navigation-column-sticks-beside-the-page-with-a-scroll-of-its-own-any-other-side-column-sticks-only-while-it-fits) | A navigation column sticks beside the page with a scroll of its own; any other side column sticks only while it fits | Decided by the development agent | (a) A navigation column sticks with a scroll of its own, at most as high as the panel's view; any other side column sticks only while it fits and never scrolls by itself | — |
+| [Q-UI-1113](spec/api-and-ui.md#q-ui-1113--the-render-check-inner-scroll-measures-every-box-that-scrolls-by-itself-in-the-windows-first-height) | The render check inner-scroll measures every box that scrolls by itself, in the window's first height | Decided by the development agent | (a) A check in the page, in the window's first height, light scheme only | — |
 | [Q-UI-1120](spec/api-and-ui.md#q-ui-1120--na-says-its-state-in-a-word-and-its-sentence-is-the-cells-description) | N/A says its state in a word, and its sentence is the cell's description | Decided by the development agent | (a) The N/A shield and one or two words of the state ("Queued", "No scanner", "Scanning off", "Scan failed"); the sentence is the tooltip and the accessible description; the version's card says the sentence and folds a code under Technical details | — |
 | [Q-UI-1121](spec/api-and-ui.md#q-ui-1121--a-packages-versions-keep-the-column-vulnerabilities-unless-its-format-is-not-scanned) | A package's versions keep the column Vulnerabilities unless its format is not scanned | Decided by the development agent | (a) The column is left out only when every version's state is `format_not_scanned` (Debian, Ansible Galaxy, generic files) | — |
 | [Q-UI-1122](spec/api-and-ui.md#q-ui-1122--a-versions-page-reads-fast-only-while-its-scan-passes-on-its-own) | A version's page reads fast only while its scan passes on its own | Decided by the development agent | (a) Every 3 s while an image is `queued` or `scanning`, or a file's malware scan is `queued`; every minute when it waits for what the installation lacks (`no_scanner`, `no_database`) | — |

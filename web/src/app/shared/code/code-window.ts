@@ -1,4 +1,4 @@
-import { Component, ViewEncapsulation, computed, inject, input } from '@angular/core';
+import { Component, DestroyRef, ElementRef, ViewEncapsulation, afterRenderEffect, computed, inject, input } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { CopyButton } from '../copy-button';
 import { COMMAND_LANGUAGES, CodeLanguage, CodeMark, KEEP_MAX, highlight } from './code-syntax';
@@ -41,7 +41,7 @@ const TERMINAL_TITLES: Readonly<Record<string, string>> = { shell: 'shell', powe
           <quader-copy-button [value]="content()" [label]="copyLabel()" [quiet]="true" />
         </span>
       </div>
-      <pre class="code" translate="no" tabindex="0" [attr.data-snippet]="snippetId()" [class.folding]="shownLines() !== null" [style.--lines]="shownLines()">@for (line of lines(); track $index) {<span class="line" [attr.data-prompt]="line.prompt || null">@for (s of line.segments; track $index) {<span [class]="'k-' + s.kind" [class.keep]="s.keep" [attr.title]="markTitle(s.kind)">@for (p of s.pieces; track $index) {@if (s.pieces.length > 1 && p.length <= keepMax) {<span class="keep">{{ p }}</span>} @else {{{ p }}}@if (!$last) {<wbr />}}</span>}</span>{{ $last ? ending() : newline }}}</pre>
+      <pre class="code" translate="no" tabindex="0" [attr.data-snippet]="snippetId()" [style.--lines]="shownLines()">@for (line of lines(); track $index) {<span class="line" [attr.data-prompt]="line.prompt || null">@for (s of line.segments; track $index) {<span [class]="'k-' + s.kind" [class.keep]="s.keep" [attr.title]="markTitle(s.kind)">@for (p of s.pieces; track $index) {@if (s.pieces.length > 1 && p.length <= keepMax) {<span class="keep">{{ p }}</span>} @else {{{ p }}}@if (!$last) {<wbr />}}</span>}</span>{{ $last ? ending() : newline }}}</pre>
     </figure>
   `,
   styleUrl: './code-window.scss',
@@ -63,7 +63,10 @@ export class CodeWindow {
   readonly copyLabel = input($localize`:@@setup.copy:Copy snippet`);
   /** Whether a file offers **Download**. */
   readonly downloadable = input(true);
-  /** How many lines the text shows, the rest scrolled inside it and opened by the host's expander (the install panel, R-UI-009); null for all. */
+  /**
+   * How many lines the text shows folded: the rest is cut, not scrolled, and the host's expander shows it (the install panel, R-UI-009,
+   * R-UI-215); null for all, at whatever height its lines wrap to.
+   */
   readonly shownLines = input<number | null>(null);
 
   protected readonly terminal = computed(() => this.fileName() === null);
@@ -92,6 +95,45 @@ export class CodeWindow {
    * journey compares it); with the block's white space collapsed they take no room between the lines.
    */
   protected readonly newline = '\n';
+
+  constructor() {
+    // The fold (R-UI-009, R-UI-215): folded, the text is cut at its shown lines (`folding`); unfolded it has no cap, so a line that
+    // wraps never scrolls inside the window. Between the two its height moves with the style guide's animation, from or to the
+    // whole height measured at that moment, and the cap goes once it stands unfolded.
+    const host = inject(ElementRef<HTMLElement>).nativeElement as HTMLElement;
+    let before: number | null | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    afterRenderEffect(() => {
+      const shown = this.shownLines();
+      const pre = host.querySelector<HTMLElement>('pre.code');
+      const was = before;
+      before = shown;
+      if (!pre || shown === was) return;
+      clearTimeout(timer);
+      const settled = (): void => {
+        pre.style.removeProperty('max-block-size');
+        if (this.shownLines() === null) pre.classList.remove('folding');
+      };
+      if (shown !== null) {
+        // Folding: from the height it has now down to the shown lines.
+        if (was !== undefined && !pre.classList.contains('folding')) {
+          pre.style.maxBlockSize = `${pre.scrollHeight}px`;
+          pre.classList.add('folding');
+          void pre.offsetHeight;
+        }
+        pre.classList.add('folding');
+        pre.style.removeProperty('max-block-size');
+        return;
+      }
+      if (was === undefined || was === null) return;
+      // Unfolding: up to the whole height, then no cap.
+      pre.style.maxBlockSize = `${pre.scrollHeight}px`;
+      const ms = parseFloat(getComputedStyle(pre).transitionDuration || '0') * 1000;
+      if (!(ms > 0)) settled();
+      else timer = setTimeout(settled, ms + 50);
+    });
+    inject(DestroyRef).onDestroy(() => clearTimeout(timer));
+  }
   protected readonly ending = computed(() => (this.content().endsWith('\n') ? '\n' : ''));
 
   private readonly valueTitle = $localize`:@@code.mark.value:Replace with your own value`;

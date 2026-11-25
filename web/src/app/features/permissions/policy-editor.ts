@@ -39,6 +39,7 @@ import {
   warningText,
 } from './policy-model';
 import { PageHeader } from '../../shared/ui/page-header';
+import { StickyWhenFits } from '../../shared/ui/sticky-when-fits';
 
 /** Debounce of the live validation (R-UI-027). */
 export const PREVIEW_DEBOUNCE_MS = 500;
@@ -53,6 +54,7 @@ export const PREVIEW_DEBOUNCE_MS = 500;
  * sends `PUT` with `If-Match`. The `Quader-Authz-Epoch` of the write is kept by the HTTP layer and
  * sent as `Quader-Authz-Min-Epoch` on the reads that follow (R-AUTHZ-032, R-UI-042).
  */
+
 @Component({
   selector: 'quader-policy-editor',
   imports: [
@@ -64,6 +66,7 @@ export const PREVIEW_DEBOUNCE_MS = 500;
     PrincipalField,
     ProjectNeeds,
     SelectField,
+    StickyWhenFits,
     TextField,
   ],
   templateUrl: './policy-editor.html',

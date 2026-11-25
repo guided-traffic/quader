@@ -3610,7 +3610,7 @@ Priority: **MVP** · Covers: UI-001, UI-004
   object's name. The trail of a folder or a file of a repository ends at the repository, whose step stays a link; the page shows
   the folders itself (R-UI-010, Q-UI-510). A trail of one step is not shown.
 - List screens: the repository, user, group, service account, token, permission policy, endpoint
-  and audit log lists share one data table (bordered, inner scroll with a sticky header, sortable
+  and audit log lists share one data table (bordered, growing the page with a head that scrolls with it, R-UI-215, sortable
   column headers with `aria-sort`, a "?" help tooltip on a column that needs one, loading, empty
   and error states with retry, "Load more") and one head above the table (R-UI-100): the search by name, **Filters** with the
   number of filters that are set, and the set filters as chips. **Filters** opens the filter drawer over the page (R-UI-101,
@@ -4022,7 +4022,8 @@ Priority: **MVP** · Covers: UI-010
   panel's width, so it is read in full where it is shown (Q-UI-455, revisits Q-UI-320).
 - npm and NuGet install commands carry no credentials; the panel's **Set up client** (R-UI-126) opens the page of the chosen
   repository with the chosen client for configuring the client once.
-- Commands longer than three lines are collapsed with an expander.
+- Commands longer than three lines are folded after the third with an expander: the fold cuts the rest, it does not scroll it, and an
+  unfolded command, or a short one, is as tall as its lines wrap to (R-UI-215).
 
 Examples: `npm install @team-a/ui@1.4.0`, `dotnet add package Contoso.Logging --version 2.3.1`,
 `<PackageReference Include="Contoso.Logging" Version="2.3.1" />`.
@@ -4067,8 +4068,12 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
   (`vulnerabilityGrade` from `include=vulnerabilities`, R-VULN-039, Q-VULN-154) as `<quader-grade>` (R-UI-094) and sorts by grade
   (`sort=grade`, worst first as `-grade`, in the browser, Q-UI-373). The versions list of an item is `…/versions?repository=…` with its
   `…/vulnerabilities?repository=…` report, one request each per opened item.
-- The row of an item opens in place (`collapse-region`) to its versions: for an image, the tags with digest (`include=digest`), size and
-  pushed time; for a package, its versions with size and published time; each with the grade of the version in this repository.
+- The row of an item opens in place (`collapse-region`) to its ten newest versions under a head of their own, with no scroll and no
+  "Load more"; where the item holds more, a link under them, **All 103 tags** or **All 33 versions** (the count of the row), leads to
+  the package's page, which lists every version with filter, sort and "Load more" (R-UI-110, R-UI-215,
+  [Q-UI-1111](#q-ui-1111--an-opened-item-shows-its-ten-newest-versions-and-links-all-of-them)): for an image, the tags with digest
+  (`include=digest`), size and pushed time; for a package, its versions with size and published time; each with the grade of the
+  version in this repository.
   No box of a command stands in the list. At the end of each version's row, and of each item's row for its latest version, a button
   with the format's client verb and a chevron (**Pull** for an image, **Install** for a package, **Download** for a file;
   [Q-UI-1066](#q-ui-1066--a-versions-commands-are-a-menu-hung-from-a-button-with-the-formats-client-verb)) opens a menu hung from the
@@ -4534,8 +4539,9 @@ Quader is found, delivered by the frontend. The text is the manual of R-API-054;
   (`aria-current`), the page title as the heading and the document title, "On this page" from the page's headings, the
   page's HTML bound like a README (R-UI-008, the same component and finishing pass), and links to the previous and the
   next page. A link of the text to another page stays a link and opens the page in the application (a modified click
-  opens it in a new tab through the browser); a fragment in the address scrolls to its heading. On narrow content the
-  contents give way to a link back to the overview.
+  opens it in a new tab through the browser); a fragment in the address scrolls to its heading. The contents are a navigation column:
+  they stick beside the page and scroll their own entries, at most as high as the panel's view (R-UI-215, Q-UI-1112). On narrow
+  content the contents give way to a link back to the overview.
 - The manual's text is English and marked `lang="en"`; the frame is translated (Q-UI-86). The area sits behind the same
   guard as the guides: signed-in callers, anonymous ones while `publicContent` is true.
 - **Width** (Q-UI-97). The page takes the width of its column, which grows with the viewport; the prose keeps a measure
@@ -4857,8 +4863,9 @@ Priority: **MVP** · Covers: UI-039, UI-040
   resources summary, actions; filters by principal (picker), repository and project. The list of the admin area is the
   instance-wide list; a project's screen (R-UI-041) lists the project's policies.
 - Layout (Q-UI-4): one page for create and edit, no step-by-step wizard. The sections run down the
-  left with an in-page table of contents; the preview panel is a sticky right column while the
-  content area is at least 59 rem wide (a container query on the content area; the window's 960 px
+  left with an in-page table of contents; the preview panel is a right column while the
+  content area is at least 59 rem wide, which sticks beside the form while it fits in the panel's view and never scrolls by itself
+  (R-UI-215, [Q-UI-1112](#q-ui-1112--a-navigation-column-sticks-beside-the-page-with-a-scroll-of-its-own-any-other-side-column-sticks-only-while-it-fits)) (a container query on the content area; the window's 960 px
   left the form 110 px wide at 1,024 px with the side bar open, R-UI-171; 59 rem keeps the preview beside a form of at
   least 20 rem in a window of 1,280 px with the side bar open, where a threshold of the form's full width had folded it
   away) and a collapsible region above the save bar when it is narrower. The explainer (R-UI-028, P1) is its own screen, reached from the editor through "Test
@@ -5264,6 +5271,8 @@ Priority: **MVP** · Covers: OPS-023
   prefix of the registry's event types at every level (`ci.*`, `ci.issuer.*`) and every type with its name, from the registry.
 - Detail panel with the full event and links to actor and target. It stands beside the log from 68 rem of content (1,440 px) and above
   it, at the log's width, where it is narrower; an event opened from the list takes the focus, so the page brings it into view (Q-UI-997).
+  Beside the log it sticks while it fits in the panel's view and never scrolls by itself; **Close** gives the focus back to the row it was
+  opened from (R-UI-215, Q-UI-1112).
   Where the panel is narrower than 25 rem (390 px) each fact's name stands above its value, so that the time of the event stays on one line
   ([Q-UI-972](#q-ui-972--a-narrow-audit-event-puts-each-facts-name-above-its-value)). The actor's kind and credential stand on a line
   under its name; the action's key under its name, or alone where the action has no name of its own, and a key breaks after a dot or an
@@ -5901,13 +5910,13 @@ specific criteria:
 |---|---|
 | 1.3.1 Info and relationships | Data tables are `<table>` with `<th scope>`; landmarks; one `h1` per screen, no skipped heading levels |
 | 1.4.1 Use of color; 1.4.3 and 1.4.11 contrast | Status, decision and diff marks carry icon and text; contrast verified in both themes |
-| 1.4.10 Reflow | Usable at 320 CSS px; code blocks and wide tables scroll inside their own region |
+| 1.4.10 Reflow | Usable at 320 CSS px; a list stacks its rows where its columns do not fit (R-UI-174); a code block and a document's table scroll sideways inside their own region |
 | 1.4.13 Content on hover or focus | Tooltips are dismissible and hoverable; no information exists only in a tooltip |
 | 2.1.1 Keyboard | Tree, member editor, reordering, file selection ("Choose files" button) and action menus work by keyboard |
 | 2.1.4 Character key shortcuts | Single-key shortcuts (`/`, R-UI-095) are on by default and turned off in the profile (`keyboardShortcuts`, R-API-021); they never act while the focus is in a text field ([Q-UI-401](#q-ui-401--slash-focuses-the-field-and-is-on-by-default-the-preference-turns-it-off)) |
 | 2.2.1 Timing adjustable; 2.2.2 Pause | Session expiry warning (R-UI-002); auto-refresh can be paused (R-UI-038) |
 | 2.4.2 Page titled; 2.4.3 Focus order | Title per route; focus moves to the new `h1` on navigation to another screen and into dialogs on open, and returns to the trigger on close; a navigation that changes only the query or the fragment (a list's filter writing `?q=` while one types, a tab) leaves it where it is |
-| 2.4.11 Focus not obscured | `scroll-padding-top` keeps focused elements clear of the sticky header |
+| 2.4.11 Focus not obscured | A list's head scrolls with the page and sticks over no row (R-UI-215); a side column that sticks stands beside the page's content; an editor's save bar sticks at the panel's lower edge |
 | 2.5.7 Dragging movements | Every drag interaction has a button alternative (R-UI-022) |
 | 2.5.8 Target size | Interactive targets at least 24 × 24 CSS px |
 | 3.3.1 and 3.3.3 Errors | Field errors as text next to the field plus a summary at the top |
@@ -6155,7 +6164,10 @@ the tab is wiki content and follows the wiki check of [R-ANS-037](formats/ansibl
 - **Layout** (Q-UI-241): two panes. Tree pane (`clamp(18rem, 30%, 26rem)`): the search field in its head ([Q-UI-243](#q-ui-243--the-search-field-filters-the-tree-through-the-server-and-keeps-the-counts)),
   below it the tree, rows of 32 px: **Documentation** (the README, the other Markdown files as children), **Modules (n)**, **Plugins (n)** (children by type, collapsed at first with
   their counts, opened when they hold the open page or a match) and **Roles (n)**, each group with its count as a neutral badge; an entry row shows its name, the short description
-  as the tooltip; an entry without documentation is muted and labelled "no documentation". Page pane: the open page. Under 48 rem of content width one pane shows at a time with a back action.
+  as the tooltip; an entry without documentation is muted and labelled "no documentation". Page pane: the open page, as long as the page,
+  scrolling with the page; a new page brings the pane's top into view. The tree pane is a navigation column that sticks beside it and
+  scrolls its own entries, at most as high as the panel's view (R-UI-215, Q-UI-1112). Under 48 rem of content width one pane shows at a
+  time with a back action, each as long as it is; **Back to the tree** brings the entry that was read into view where its group is open.
 - **Addressing.** The open page is the query parameter `doc` of the package URL (`README.md`, `module/<name>`, `filter/<name>`, `role/<name>`, `file/<name>`); the search text is `q`;
   a link, a reload and the back button restore both. Changing the version or the repository resets `doc` and `q`. An unknown `doc` shows the first page and no error.
 - **Requests.** The tree is one call of `getPackageVersionDocs` per version, repeated only for a search (300 ms after the last key, at least 2 characters); a page is one call of
@@ -8123,10 +8135,9 @@ Priority: **MVP** · Covers: quader-only
 - A tab strip whose tabs are wider than its place keeps them on one line and scrolls sideways without a scrollbar; at an edge
   beyond which tabs lie a fade with a chevron says so and scrolls it by a click, and the current tab and a focused tab stand clear
   of the fades ([Q-UI-1074](#q-ui-1074--a-tab-strip-wider-than-its-place-scrolls-without-a-scrollbar-with-a-fade-and-a-chevron-at-the-edge)).
-- Neither the window nor the shell's panel scrolls past the content. The panel and a table's scroll region are the containing
-  blocks of what is positioned inside them: a text for assistive technology only (`.visually-hidden`) in the rows a region hides
-  stood at its place, far below the window's end, and a package's 33 versions had 900 px of empty page under them (the check
-  `empty-scroll`).
+- Neither the window nor the shell's panel scrolls past the content. The panel and a table's room are the containing blocks of what
+  is positioned inside them: a text for assistive technology only (`.visually-hidden`) in rows a region hid stood at its place, far
+  below the window's end, and a package's 33 versions had 900 px of empty page under them (the check `empty-scroll`).
 - A short text in a table's cell (a summary, a count with its unit) stands on one line where the other columns have the room for it
   and no row uses that room: a column whose width was set wider than every value of it gives the room back (the check `cramped`,
   [Q-UI-1060](#q-ui-1060--what-a-layout-check-can-hold-of-the-render-sets-blind-spots-and-what-stays-to-the-eye); W-5's grade
@@ -9377,6 +9388,59 @@ none the API's, and a German one in the German build. The lint rule's two cases 
 two fixtures in `layout-checks.spec.ts` (each under a second). The integration areas `npm` and `ansibleremote` (a preview's code),
 `ci` (a dry run's warning names its scope items).
 
+### R-UI-215 · One scrollbar per page
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-25, 06:50, on the tab Images of a remote OCI repository with an opened image of about a hundred tags, whole: "Ich
+sehe auf dieser Seite 3 scrollbars neben einander. Das sieht echt scheiße aus und sollte vermieden werden. Optimal wäre wenn es wirklich
+nur eine Scrollbar pro Seite gibt, die äußerste. Alles andere ist zu vermeiden. Bei kleinen Tabellen, ist evtl mal eine zweite
+Scrollbar in Ordnung, aber nicht bei einer Tabelle die eh schon allein den gesamten Bildschirm füllt." The three were the opened image's
+list, the list's own region and the page; the list's head stood above the opened image's rows, whose columns are others. The cause was
+one rule for every list: the data table scrolled by itself under a height cap so that its head stayed in view (Q-UI-68, Q-UI-427),
+which [Q-UI-1110](#q-ui-1110--the-page-is-the-one-thing-that-scrolls-a-lists-head-scrolls-with-it) reverses.
+
+- **A page has one scrollbar, its own.** The content panel (`main`) scrolls, the window does not, and nothing inside the page scrolls
+  upwards and downwards by itself. A list of any length grows the page, and its head scrolls with it; the data table is no tab stop
+  and no region of its own, named by its caption.
+- **An opened row shows a bounded part of its list** and links to the whole: an item of a repository's content its ten newest versions
+  under a head of their own and **All N tags** or **All N versions** to the package's page (R-UI-052,
+  [Q-UI-1111](#q-ui-1111--an-opened-item-shows-its-ten-newest-versions-and-links-all-of-them)). An upstream package opened in a row of
+  the tab Upstream grows the page with **Load more**: an upstream version has no page of its own.
+- **What keeps a scroll of its own**, each one by the development agent's choice that the owner may refuse
+  ([Q-UI-1110](#q-ui-1110--the-page-is-the-one-thing-that-scrolls-a-lists-head-scrolls-with-it),
+  [Q-UI-1112](#q-ui-1112--a-navigation-column-sticks-beside-the-page-with-a-scroll-of-its-own-any-other-side-column-sticks-only-while-it-fits)):
+  - a boxed list of at most 24 rem with a frame above and below, inside no other box that scrolls: the trend's table of the
+    vulnerabilities (18 rem) and the usage history's table (24 rem), which stand in for charts at a fixed height, and the list box of a
+    virtual repository's members (8 to 20 rem), whose active option moves inside it;
+  - a navigation column that sticks beside the page, at most as high as the panel's view: the manual's contents (R-UI-050) and the
+    tree of a collection's documentation (R-UI-060), in their two-column forms;
+  - an overlay (a dialog's body, a drawer's body, a menu, a field's suggestions), one scroll per overlay: a box inside it is as tall as
+    its content (the packages drawer's repositories, an issued token's grants and claims);
+  - a field that takes typed text.
+- **A side column that is no navigation** (a policy's preview, R-UI-027; an opened audit event, R-UI-037) sticks beside the page only
+  while it fits in the panel's view, and never scrolls by itself; taller, it scrolls with the page. Closing an audit event gives the focus
+  back to the row it was opened from.
+- **A box shows its content whole or folds it**: a folded command cuts after its third line behind its expander and never scrolls
+  (R-UI-009); the CI snippet of a mapping is as tall as its lines. A box may scroll sideways where its lines are kept as they are
+  copied (a code block, a document's table); that is R-UI-173's.
+- **Held** by the render check `inner-scroll` of [layout.ts](../../web/e2e/renders/layout.ts)
+  ([Q-UI-1113](#q-ui-1113--the-render-check-inner-scroll-measures-every-box-that-scrolls-by-itself-in-the-windows-first-height)),
+  measured in the window's first height, before the render grows it.
+
+Acceptance criteria: the render run names no `inner-scroll` finding. `make ui-layout-test`, the describe "one scrollbar per page
+(R-UI-215)" of [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts), six fixtures in three engines, each under a second:
+the owner's picture is found twice (the list's region and the opened image's region inside it); the same lists with the app's
+stylesheet pass; a framed box of 18 rem passes and is found at 30 rem, without its frame and inside another box that scrolls; a
+navigation column that sticks passes and a side column that is no navigation is found; an overlay's one scroll passes and a block that
+scrolls inside it is found; a text area passes. Unit (Vitest, about 0.1 s each): an opened image lists its ten newest tags under its own
+head and links all thirteen, and an item of ten or fewer has no link
+([repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts)); the data table is no tab
+stop and no region ([data-table.spec.ts](../../web/src/app/shared/ui/data-table.spec.ts)); a side column sticks only while it fits
+([sticky-when-fits.spec.ts](../../web/src/app/shared/ui/sticky-when-fits.spec.ts)); closing an audit event gives the focus back to its
+row ([audit-log.spec.ts](../../web/src/app/features/audit/audit-log.spec.ts)); a new documentation page brings its pane's top into
+view and **Back to the tree** the entry ([ansible-docs.spec.ts](../../web/src/app/features/packages/ansible-docs.spec.ts)); an opened
+command has no cap ([install-panel.spec.ts](../../web/src/app/features/packages/install-panel.spec.ts)).
+
 ## Deferred
 
 P2, Later and Out-of-scope entries of the three catalog pages this page draws on, plus P1 entries
@@ -9938,7 +10002,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 ### Q-UI-4 · Layout of the policy editor and the explainer (example screenshot requested)
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. **Revised in part by [Q-UI-1112](#q-ui-1112--a-navigation-column-sticks-beside-the-page-with-a-scroll-of-its-own-any-other-side-column-sticks-only-while-it-fits)** (R-UI-215): the preview sticks only while it fits in the panel's view and never scrolls by itself.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -10466,7 +10530,7 @@ The third was a false alarm of timing, not a defect. The development agent would
 
 ### Q-UI-68 · Layout of the application shell and the list screens
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. **Revised in part by [Q-UI-1110](#q-ui-1110--the-page-is-the-one-thing-that-scrolls-a-lists-head-scrolls-with-it)** (R-UI-215, the owner's rule of 2026-11-25): the data table no longer scrolls inside a region of its own with a sticky header and is no focusable region; the page scrolls and the head scrolls with it.
 
 The owner asked on 2026-10-30 for a product-grade layout with a navigation sidebar, list tables and a filter panel, and supplied a screenshot of another product as a visual reference for layout and interaction only. This decision turns it into Quader's own structure; Q-UI-2 (side bar from 1024 CSS px, compact density, container queries) stays in force.
 
@@ -16889,7 +16953,7 @@ admin area's copy button with the guides that open from a repository (W-2).
 
 ### Q-UI-427 · A table keeps no room for a scrollbar its rows do not need
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. **Revised in part by [Q-UI-1110](#q-ui-1110--the-page-is-the-one-thing-that-scrolls-a-lists-head-scrolls-with-it)**: no table scrolls by itself any more, so the "Against" of (a) is gone; no gutter is reserved, as chosen.
 
 Context: every table ended 15 px before the right edge that the head of the list, the tab line and the separators above it reach
 (`home`, `repository-npm-local`, `packages`, `profile-tokens`, `search-results`). The cause, one for all: the data table's scroll
@@ -20537,7 +20601,7 @@ lazy tabs in GitLab's strip (design-language.md, Controls). A `404` of the docum
 
 ### Q-UI-241 · The Documentation tab is the file browser's two panes: a tree with a search field, and the page
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. **Revised in part by [Q-UI-1112](#q-ui-1112--a-navigation-column-sticks-beside-the-page-with-a-scroll-of-its-own-any-other-side-column-sticks-only-while-it-fits)** (R-UI-215): the panes no longer scroll each on its own; the page pane scrolls with the page, and the tree sticks beside it with a scroll of its own.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -22966,7 +23030,7 @@ Status: **Decided by the development agent** on 2026-11-23, closing points 1 to 
 first round on its renders" by the rule of the lists of
 [Q-UI-969](#q-ui-969--the-signatures-lists-keep-one-form-a-table-at-1440-and-1024-px-blocks-at-390-px); the owner reviews it at the
 walkthrough. Amends [Q-UI-431](#q-ui-431--a-time-in-a-list-is-relative-with-the-absolute-time-as-its-title-a-log-writes-the-moment) for
-the audit log's rows.
+the audit log's rows. **Revised in part by [Q-UI-1112](#q-ui-1112--a-navigation-column-sticks-beside-the-page-with-a-scroll-of-its-own-any-other-side-column-sticks-only-while-it-fits)** (R-UI-215): beside the log the event sticks while it fits, and **Close** gives the focus back to its row; the drawer stays refused as in (c).
 
 Context: measured on the renders' data, the log's seven columns needed 1,125 px at their least widths against 697 at 1,024 px and 1,113
 at 1,440 px: a table or blocks at 1,440 px by what its rows held, blocks at 1,280 and 1,024 px; an opened event beside the log at 1,280 px
@@ -24111,6 +24175,129 @@ Hub account in the repository's settings to raise the limit" would help, if the 
 the development agent would build (b) if the owner wants the remedy said.
 
 **Applied in the spec:** [remote-curation.md](remote-curation.md) H-1884.
+
+### Q-UI-1110 · The page is the one thing that scrolls; a list's head scrolls with it
+
+Status: **The rule decided by the owner, 2026-11-25** (R-UI-215, his words there); **the form decided by the development agent** —
+selected from the options below; the owner reviews it at the walkthrough. Revises
+[Q-UI-68](#q-ui-68--layout-of-the-application-shell-and-the-list-screens) (its "inner scroll with a sticky header" and "a scroll
+region that is focusable") and [Q-UI-427](#q-ui-427--a-table-keeps-no-room-for-a-scrollbar-its-rows-do-not-need) (its "Against";
+no gutter is reserved, as chosen).
+
+Context: every data table scrolled inside a region of its own, capped at `max(22rem, 100dvh − 17rem)`, with a sticky head, so that the
+head stayed in view (68 component files use the data table). On the owner's picture three scrollbars stood side by side: an opened
+image's list, the list's region and the page, and the list's head stood over the opened image's rows, whose columns are others. The
+page's scroll container is `main` on every screen (the window never scrolls, R-UI-173), so "the outermost" scrollbar is `main`'s, at
+the panel's right edge.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The page scrolls and a list's head scrolls away with it (chosen) | The data table loses its cap, its own scroll, its tab stop, its region role and its sticky head; a list of any length grows the page | One scrollbar; no head stands over rows of another list; nothing to unclip; the style guide styles nothing the reference does not (its lists' heads are not described as sticking: not confirmed against the owner's GitLab, which the builder did not open) | On a long list the column names leave the view; a list's form is read from its rows |
+| (b) The head sticks under the breadcrumb bar | `thead th { position: sticky }` relative to `main` | The column names stay in view | A list opened in a row reads under the outer head (the owner's picture); every wrapper between the head and `main` must stop clipping (`.collapse-region`, a pane), and the tab strip and the list's head would need offsets of their own (146 px of a 672 px view at 1,024 × 768) |
+| (c) Keep the inner region | As built | Nothing changes | Refused by the owner |
+
+**Choice:** (a). The table's room (`.table-scroll`) keeps its name and its `position: relative` (the containing block of the rows' texts
+for assistive technology only, R-UI-173); the data table observes only its ruler for its width. **Kept with a scroll of their own, each a
+choice the owner may refuse:** the trend's table of the vulnerabilities (18 rem) and the usage history's table (24 rem, with a frame now
+and its head sticking inside the box), which stand in for charts at a fixed height (unboxed, the usage history's 288 points would add
+about 14,000 px to the page), and the list box of a virtual repository's members (8 to 20 rem), whose active option moves inside it; if
+he refuses a box, its rows grow the page. **What else lost a box that scrolled:** the packages drawer's list of repositories (14 rem
+inside the drawer's body), an issued token's grants and claims (14 rem each inside the dialog's body), the CI snippet of a mapping
+(24 rem), and the folded command of a version (R-UI-009), which cuts after its third line instead of scrolling; an unfolded or short
+command had been capped at its count of lines, so a line that wrapped scrolled inside it. A sideways scroll stays where lines are kept as
+they are copied (R-UI-173). **Rationale:** the owner's rule, and the one form that keeps a nested list's rows under their own head. The
+development agent revisits the head when the owner says a long list's head should stay in view: then (b) for the outer lists alone,
+with the opened rows' lists bounded as Q-UI-1111 has them.
+
+**Applied in the spec:** R-UI-002 (list screens), R-UI-009 (the fold), R-UI-173 (the containing block), R-UI-215, the WCAG rows 1.4.10
+and 2.4.11 (the `scroll-padding-top` the latter named did not exist in the code). Code: `.table-scroll` in
+[_list-screens.scss](../../web/src/styles/_list-screens.scss), [data-table.ts](../../web/src/app/shared/ui/data-table.ts),
+[code-window.ts](../../web/src/app/shared/code/code-window.ts), [usage-history.ts](../../web/src/app/features/usage/usage-history.ts).
+
+### Q-UI-1111 · An opened item shows its ten newest versions and links all of them
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Revises the
+opened row of R-UI-052.
+
+Context: an item opened in a repository's content listed its versions twenty at a time with **Load more**, in a list of its own inside
+the row. With the page as the one scroll (Q-UI-1110), an image of a hundred tags would fill the screen inside one row.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The ten newest under their own head, and **All N tags** / **All N versions** to the package's page (chosen) | A bounded peek; the package's page lists every version with filter, sort and **Load more** (R-UI-110) | An opened row is never longer than ten rows; the whole list lives where it can be filtered and sorted; the row's own head names its columns | One click more for the eleventh version |
+| (b) **Load more** grows the page | As before, without the region | Every version in place | An opened row of a hundred tags fills the screen by itself: the owner's case |
+| (c) No opened rows | The row links to the package's page | Simplest | R-UI-052 and W-23 want the versions and their **Pull** at hand in the list |
+
+**Choice:** (a). The link stands under the ten where the row's count is more than ten, its accessible name with the item's name ("All
+103 tags: chart-render-kit"). **The tab Upstream keeps Load more** for a package opened in its row (100 at a time): an upstream version
+has no page of its own to link to, and the list grows the page. **Rationale:** the newest versions are what a reader opens a row for;
+the package's page already is the list of all of them. The development agent revisits the bound of ten if the walkthrough shows rows
+that need more at hand.
+
+**Applied in the spec:** R-UI-052, R-UI-215. Code: [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts),
+`allVersionsText` in [content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts).
+
+### Q-UI-1112 · A navigation column sticks beside the page with a scroll of its own; any other side column sticks only while it fits
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Revises
+[Q-UI-241](#q-ui-241--the-documentation-tab-is-the-file-browsers-two-panes-a-tree-with-a-search-field-and-the-page) ("each pane
+scrolls on its own") and R-UI-060's layout, [Q-UI-4](#q-ui-4--layout-of-the-policy-editor-and-the-explainer-example-screenshot-requested)
+and R-UI-027 (the sticky preview, which scrolled by itself at `100vh − 8rem`), [Q-UI-997](#q-ui-997--the-audit-log-keeps-five-columns-and-an-opened-event-stands-beside-it-only-where-both-keep-their-form)
+and R-UI-037 (the event beside the log; the drawer stays refused as in its option (c)), and R-UI-050 (the contents' height, which
+did not count the breadcrumb bar).
+
+Context: four columns stand beside a page. The manual's contents and the tree of a collection's documentation are navigation: their
+entries are what the reader moves between while the page changes. A policy's preview and an opened audit event are content. The
+documentation's two panes had a height from the window and each scrolled by itself; the preview scrolled by itself beside the page,
+its scrollbar 32 px from the page's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A navigation column sticks with a scroll of its own, at most as high as the panel's view; any other side column sticks only while it fits and never scrolls by itself (chosen) | `--quader-page-height` (the window less the top bar, the breadcrumb bar and the panel's gap) caps a navigation column; `quaderStickyWhenFits` gives the class `sticks` to a side column while it is no taller than the panel's view less its padding | The navigation stays at hand on a long page, as a document site's contents do; a preview or an event is read whole without a second scrollbar; one small directive for every such column | The navigation column's scrollbar is a second one beside the page's; a side column taller than the view scrolls away |
+| (b) Every side column scrolls with the page | No sticky column | One scrollbar everywhere | The tree and the contents leave the view on a long page; the reader scrolls back to the top to move on |
+| (c) Every side column sticks with a scroll of its own | As the preview had it | Everything at hand | Two scrollbars side by side on every such page: the owner's objection |
+
+**Choice:** (a). **The navigation column is the one second scrollbar of a page kept by choice; the owner may refuse it**, and then the
+tree and the contents scroll with the page as in (b). The documentation's page pane is as long as its page; a new page brings the pane's
+top into view where it stands above the view, and **Back to the tree** (one pane at a time, under 48 rem) the entry that was read where
+its group is open, else the tree's top. Closing an audit event gives the focus back to the row it was opened from, so a reader who
+opened it far down the log goes on from there; the focus of an opened event is given after the render that measures whether it sticks,
+so the page stays at the row where it does. **Rationale:** navigation is used while the page moves; content is read, and is read
+whole. A banner above the frame is not counted in `--quader-page-height`: with a banner a navigation column's last entries may stand
+under the panel's edge until the page scrolls to its end.
+
+**Applied in the spec:** R-UI-027, R-UI-037, R-UI-050, R-UI-060, R-UI-215. Code: [sticky-when-fits.ts](../../web/src/app/shared/ui/sticky-when-fits.ts),
+[_browse.scss](../../web/src/styles/_browse.scss), [ansible-docs.ts](../../web/src/app/features/packages/ansible-docs.ts),
+[help-page.scss](../../web/src/app/features/help/help-page.scss), [policy-editor.scss](../../web/src/app/features/permissions/policy-editor.scss),
+[audit-log.ts](../../web/src/app/features/audit/audit-log.ts), `--quader-page-height` in [_tokens.scss](../../web/src/styles/_tokens.scss).
+
+### Q-UI-1113 · The render check inner-scroll measures every box that scrolls by itself, in the window's first height
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Extends
+[Q-UI-682](#q-ui-682--the-render-run-measures-the-layout-in-the-page-and-a-finding-fails-the-screen).
+
+Context: R-UI-215 is a rule of every screen, and a region whose height follows the window (`100dvh − X`) no longer overflows once the
+render has grown the window to the page's length, so a check in the grown picture would pass the owner's case.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A check in the page, in the window's first height, light scheme only (chosen) | `innerScroll` of [layout.ts](../../web/e2e/renders/layout.ts), beside `empty-scroll` | Sees what the user sees; place (page or overlay), nesting and stickiness are read from the laid-out page; constant cost per picture | One more walk over the page's elements per light picture |
+| (b) A lint rule: `max-block-size` with `overflow-y: auto` in a stylesheet | Static | No browser | Cannot see place, nesting or a flex-bounded pane; would need an allow list that repeats this check |
+
+**Choice:** (a). An element **scrolls** when its `overflow-y` is `auto` or `scroll` and its content is more than 1 px taller than its
+box, or a `max-block-size` caps it (a region built to scroll that the seed's data may not fill). **Allowed in the page:** a box of at
+most 24 rem with a border above and below that no scrolling box holds; a navigation column (the element or an ancestor below `main` is
+sticky, and it is or holds `nav`, `[role=navigation]` or `[role=tree]`); a popup (an ancestor below `main` absolutely or fixed placed),
+judged as an overlay; a text area, a select, an input. **Allowed in an overlay** (`.cdk-overlay-container`): one scroll; a scroll inside
+another is the finding, wherever it stands. Not judged: the side bar, the window (`empty-scroll`), a tab strip, a sideways scroll
+(`sideways`). No `allowed` entry exists for it. **Cost:** six fixtures in three engines, about 7 s of `make ui-layout-test`; in the
+renders one walk with `getComputedStyle` per light picture in the window's first height, as `sidewaysRegions` costs; nothing per
+format. **Rationale:** the rule is about what is seen at the window's height, and only the page can say where a box stands. The
+development agent revisits the 24 rem and the navigation test if a screen needs another kind of kept scroll; then the rule of R-UI-215
+changes first.
+
+**Applied in the spec:** R-UI-215. Code: `innerScroll` in [layout.ts](../../web/e2e/renders/layout.ts), its call in
+[render.spec.ts](../../web/e2e/renders/render.spec.ts), the fixtures in [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts).
 
 ### Q-UI-1120 · N/A says its state in a word, and its sentence is the cell's description
 

@@ -55,10 +55,9 @@ td .ellipsis {
 }
 
 
+// The drawer's body scrolls; a list of repositories inside it has no scroll of its own (R-UI-215: one scroll per overlay).
 .check-list {
   display: flex;
   flex-direction: column;
   gap: var(--quader-space-1);
-  max-block-size: 14rem;
-  overflow-y: auto;
 }

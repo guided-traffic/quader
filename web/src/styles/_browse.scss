@@ -1,26 +1,23 @@
-// The file browser (R-UI-010, Q-UI-98): two bordered panes that fill the height of the content area,
-// a tree pane with a compact toolbar and a details pane with a path, actions and tabs. Global on
-// purpose: the filter panel, the data table and the copy buttons are components whose DOM the
-// screen's own styles would not reach. Colours and lengths come from the tokens only (R-UI-044).
+// Two bordered panes side by side, a tree pane with a compact toolbar and a details pane (Q-UI-98, Q-UI-241): the Documentation tab
+// of a collection's version (R-UI-060). The page pane is as long as its page and scrolls with the page; the tree is a navigation
+// column that sticks beside it with a scroll of its own, at most as high as the panel's view (R-UI-215, Q-UI-1112). Global on
+// purpose: the data table and the copy buttons are components whose DOM the screen's own styles would not reach. Colours and lengths
+// come from the tokens only (R-UI-044).
 
 .browse {
-  --browse-height: max(26rem, calc(100dvh - 13.5rem));
-
   display: grid;
   grid-template-columns: clamp(18rem, 30%, 26rem) minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
   gap: var(--quader-space-3);
-  block-size: var(--browse-height);
 
   .pane {
     display: flex;
     flex-direction: column;
-    min-block-size: 0;
     min-inline-size: 0;
     border: 1px solid var(--quader-border);
     border-radius: var(--quader-radius-m);
     background: var(--quader-surface-raised);
-    overflow: hidden;
+    // Cuts the corners without being a box that scrolls.
+    overflow: clip;
   }
 
   .pane-head {
@@ -36,8 +33,6 @@
 
   .pane-body {
     flex: 1 1 auto;
-    min-block-size: 0;
-    overflow: auto;
   }
 
   .pane-status,
@@ -125,19 +120,6 @@
     margin: 0 0 0 auto;
     color: var(--quader-text-muted);
     font-size: var(--quader-text-muted-size);
-  }
-
-  .tree-filters {
-    .panel {
-      border: 0;
-      border-radius: 0;
-      box-shadow: none;
-      background: transparent;
-    }
-
-    .check-list {
-      max-block-size: 18rem;
-    }
   }
 
   .tree-scroll {
@@ -386,20 +368,29 @@
     }
   }
 
-  // The folder table sits in a pane that scrolls on its own; the table keeps its sticky header
-  // inside a region that is shorter than the pane.
-  .quader-data-table .table-scroll {
-    max-block-size: max(14rem, calc(var(--browse-height) - 11rem));
-  }
-
   // The filter chips of a pane are a quiet row.
   .chip-row {
     margin-block-end: 0;
   }
 }
 
-// One pane at a time on a narrow content area, with a way back to the tree (R-UI-010). The
-// container query follows the content area, so collapsing the side bar never breaks the layout.
+// Both panes: the tree sticks beside the page while the page scrolls, and its entries scroll inside it (R-UI-215, Q-UI-1112). A
+// short page's pane is as high as the tree.
+@container content (width > 48rem) {
+  .browse .pane-tree {
+    position: sticky;
+    inset-block-start: 0;
+    max-block-size: calc(var(--quader-page-height) - 2 * var(--quader-space-6));
+
+    .pane-body {
+      min-block-size: 0;
+      overflow-y: auto;
+    }
+  }
+}
+
+// One pane at a time on a narrow content area, with a way back to the tree (R-UI-010): it is as long as its entries and scrolls
+// with the page. The container query follows the content area, so collapsing the side bar never breaks the layout.
 @container content (max-width: 48rem) {
   .browse {
     grid-template-columns: minmax(0, 1fr);

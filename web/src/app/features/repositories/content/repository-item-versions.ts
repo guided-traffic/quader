@@ -1,4 +1,5 @@
-import { Component, computed, effect, inject, input, resource, untracked } from '@angular/core';
+import { Component, LOCALE_ID, computed, effect, inject, input, resource, untracked } from '@angular/core';
+import { formatNumber } from '@angular/common';
 import { refreshResource } from '../../../core/live-refresh';
 import { RouterLink } from '@angular/router';
 import { TimeAgo } from '../../../shared/ui/time-ago';
@@ -13,15 +14,19 @@ import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { GradeLabel } from '../../../shared/vulnerability/grade';
 import { ClientCommandMenu } from '../../packages/client-command-menu';
 import { VersionSize } from '../../packages/version-size';
-import { versionCommands } from '../../packages/package-links';
+import { packageCommands, versionCommands } from '../../packages/package-links';
 import { ContentShape } from './content-shape';
 
-/** How many versions an opened item lists at a time. */
-const VERSIONS_PAGE = 20;
+/**
+ * How many versions an opened item lists: its newest, and a link to the package's page for all of them (R-UI-215, Q-UI-1111). The
+ * opened row grows the page by at most this many rows, so a list of a hundred tags never fills the screen inside a row.
+ */
+export const OPENED_VERSIONS = 10;
 
 /**
- * The versions of one item of a repository's content page, opened in its row (R-UI-052): for an image its tags with digest, size and
- * pushed time, for a package its versions; the grade of each in this repository (R-UI-094), and at the end of each row the button with
+ * The versions of one item of a repository's content page, opened in its row (R-UI-052): its ten newest under a head of their own
+ * and, where it holds more, a link to the package's page that lists them all (R-UI-215, Q-UI-1111); no scroll and no **Load more**.
+ * For an image its tags with digest, size and pushed time, for a package its versions; the grade of each in this repository (R-UI-094), and at the end of each row the button with
  * the format's client verb (**Pull**, **Install**) that opens the version's commands, one per client (`<quader-client-command-menu>`,
  * Q-UI-1066). A command is the server's install snippet (R-API-030) for this repository, so it carries this installation's real
  * address. A system repository of the project `upstream` and a disabled repository have no command: they answer no client (Q-UI-898,
@@ -39,9 +44,7 @@ const VERSIONS_PAGE = 20;
       [error]="versions.error()"
       [empty]="versions.items().length === 0"
       [emptyText]="shape().emptyText"
-      [hasMore]="versions.hasMore()"
-      (more)="versions.more()"
-      (retry)="versions.more()"
+      (retry)="versions.reload()"
     >
       @for (v of versions.items(); track v.version) {
         <tr>
@@ -89,11 +92,22 @@ const VERSIONS_PAGE = 20;
         </tr>
       }
     </quader-data-table>
+    @if (more() > 0) {
+      <p class="all-versions">
+        <a [routerLink]="packageLink()">{{ allText() }}<span class="visually-hidden">: <span translate="no">{{ pkg().name }}</span></span></a>
+      </p>
+    }
   `,
   styles: `
     :host {
       display: block;
       padding: var(--quader-space-3) 0 var(--quader-space-3) var(--quader-space-6);
+    }
+    /* Under the last row, closed by a hairline as a row is: the next item's row stood without a line above it. */
+    .all-versions {
+      margin: 0;
+      padding: var(--quader-space-3) var(--quader-space-4);
+      border-block-end: 1px solid var(--quader-border);
     }
     .digest-cell {
       white-space: nowrap;
@@ -129,7 +143,8 @@ export class RepositoryItemVersions {
   /** The list carries grades: the column of grades is shown (Q-UI-377). */
   readonly scanned = input(false);
 
-  protected readonly versions = new PagedResource<PackageVersionSummary>(VERSIONS_PAGE);
+  protected readonly versions = new PagedResource<PackageVersionSummary>(OPENED_VERSIONS);
+  private readonly locale = inject(LOCALE_ID);
 
   /** The grade of every version in this repository, in one request for the item (R-VULN-039). */
   /** The item's ID alone: the list above reads its rows again (R-UI-213), and a new row object is no new item. */
@@ -154,6 +169,14 @@ export class RepositoryItemVersions {
 
   protected readonly caption = computed(() => `${this.shape().versionsLabel}: ${this.pkg().name}`);
   protected readonly copyDigestLabel = $localize`:@@repo.content.copy-digest:Copy digest`;
+  /** The item holds more versions than the row lists: the link to all of them stands under the list (R-UI-215, Q-UI-1111). */
+  protected readonly more = computed(() => (this.versions.loaded() && this.pkg().versionCount > OPENED_VERSIONS ? this.pkg().versionCount : 0));
+  /** "All 103 tags", "All 33 versions": the count the row above shows. */
+  protected readonly allText = computed(() => this.shape().allVersionsText(formatNumber(this.more(), this.locale)));
+  /** The package's page, which lists every version with filter, sort and **Load more** (R-UI-110). */
+  protected packageLink(): string[] {
+    return packageCommands(splitRef(this.repository()).project, this.pkg().format, this.pkg().name);
+  }
   /** The page of a version (R-UI-111). */
   protected versionLink(version: string): string[] {
     return versionCommands(splitRef(this.repository()).project, this.pkg().format, this.pkg().name, version);

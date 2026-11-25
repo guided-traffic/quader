@@ -77,6 +77,10 @@ repository type, but allow detailed settings."
   aktualisieren"): a view that shows what the server changes without the viewer's act reads it again by itself, in place, while it is
   seen, fast while something on it runs ([R-UI-213](docs/spec/api-and-ui.md#r-ui-213--no-view-needs-a-reload), `live()` of
   `web/src/app/core/live-refresh.ts`).
+- **One scrollbar per page** (owner, 2026-11-25: "Optimal wäre wenn es wirklich nur eine Scrollbar pro Seite gibt, die äußerste. Alles
+  andere ist zu vermeiden."): the page scrolls, nothing in it scrolls up and down by itself; a list of any length grows the page, a list
+  opened in a row is bounded and links to the whole; never two scrollbars nested, never one for a list that fills the screen
+  ([R-UI-215](docs/spec/api-and-ui.md#r-ui-215--one-scrollbar-per-page), the render check `inner-scroll`).
 - **Every UI change is rendered and looked at before it lands** (rule 11 of [promt.md](docs/projektplan/promt.md)): both schemes, wide and
   narrow, realistic data. The renders are never committed.
 

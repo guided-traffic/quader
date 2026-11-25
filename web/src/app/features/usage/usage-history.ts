@@ -98,8 +98,9 @@ export function historyChart(points: readonly UsagePoint[], series: HistorySerie
         @if (points().length === 0) {
           <p class="empty">{{ emptyText() }}</p>
         } @else if (asTable()) {
-          <!-- The shared data table: the columns that do not fit give way and then the rows stack (R-UI-174), as every list; its
-               288 points scroll in a region of their own, so the page below stays near. -->
+          <!-- The shared data table: the columns that do not fit give way and then the rows stack (R-UI-174), as every list. It stands
+               in for the three charts at a fixed height: its 288 points scroll in a framed box of their own, so the page below stays
+               near; a boxed list is the one scroll a page may keep beside its own (R-UI-215, Q-UI-1110). -->
           <div
             class="points-scroll"
             tabindex="0"
@@ -343,10 +344,19 @@ export function historyChart(points: readonly UsagePoint[], series: HistorySerie
       max-block-size: 24rem;
       margin-block-start: var(--quader-space-2);
       overflow-y: auto;
+      border: 1px solid var(--quader-border);
+      border-radius: var(--quader-radius-s);
     }
     .points-scroll:focus-visible {
       outline: var(--quader-focus-ring);
-      outline-offset: 2px;
+      outline-offset: -2px;
+    }
+    /* Inside its box the head stays in view, as the trend's table does: the box is what scrolls, not the page. */
+    .points-scroll thead th {
+      position: sticky;
+      inset-block-start: 0;
+      z-index: 1;
+      background: var(--quader-surface);
     }
     .points {
       display: block;

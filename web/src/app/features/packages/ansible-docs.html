@@ -51,6 +51,7 @@
             [label]="node.label"
             [routerLink]="[]"
             [queryParams]="{ doc: node.doc }"
+            [attr.data-doc]="node.doc"
             queryParamsHandling="merge"
             [attr.title]="node.tooltip || null"
           >

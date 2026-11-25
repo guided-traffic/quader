@@ -1,6 +1,6 @@
-// One page, sections down the left with a table of contents, a sticky preview on the right while
-// the content area is at least 59 rem wide, a collapsible region above the save bar below
-// that (Q-UI-4, R-UI-027).
+// One page, sections down the left with a table of contents, the preview on the right while the content area is at least 59 rem
+// wide, sticking while it fits in the panel's view and never scrolling by itself (R-UI-215, Q-UI-1112), and a collapsible region
+// above the save bar below that (Q-UI-4, R-UI-027).
 
 .editor {
   display: grid;
@@ -161,12 +161,14 @@
   }
 
   .preview {
-    position: sticky;
-    inset-block-start: var(--quader-space-4);
     grid-column: 3;
     grid-row: 1;
-    max-block-size: calc(100vh - 8rem);
-    overflow-y: auto;
+  }
+
+  // Taller than the panel's view, the preview scrolls with the page (`quaderStickyWhenFits`).
+  .preview.sticks {
+    position: sticky;
+    inset-block-start: var(--quader-space-4);
   }
 
   .preview-toggle {

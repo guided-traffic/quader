@@ -36,6 +36,13 @@
     .detail {
       order: 0;
     }
+
+    // Beside the log, the event stays in view while the log scrolls, as long as it fits in the panel's view; taller, it scrolls
+    // with the page and never by itself (R-UI-215, Q-UI-1112, `quaderStickyWhenFits`).
+    .detail.sticks {
+      position: sticky;
+      inset-block-start: var(--quader-space-4);
+    }
   }
 }
 
