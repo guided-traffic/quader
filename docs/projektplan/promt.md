@@ -263,7 +263,7 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 | S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | the plan is back at 07:20 (P3, 27 minutes, read-only; kept as `.dev/plans/p3-one-row-per-image-newest-first-plan.md` of the main checkout, not in git): two packages in order, S5a the server and S5b the screens, see below; **S5a landed and pushed at 10:03** (three commits, migrations 00122 to 00124; Q-API-431, Q-API-432, Q-OCI-268, Q-OCI-269, Q-CUR-180, Q-CUR-181, Q-UI-1130, ADR-280, gaps H-1900 to H-1902; its builder worked from 08:12 to 09:50; the landing's gates and five integration areas each exit 0); S5b in work since 10:06; **S5b landed and pushed at 11:25** (one commit; Q-UI-1150, Q-UI-1151, H-1930; its builder worked from 10:04 to 11:17; the landing's thirteen gates each exit 0 and the image and mirror screens rendered together without a finding); S5c (an image tag and an Ansible version are marked a pre-release) in work since 11:17 |
 | S6 · "Not scanned" says why and what comes | the owner's finding of 06:55 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | landed and pushed at 08:50 (two commits, migration 00121; Q-VULN-274 to Q-VULN-279, Q-UI-1120 to Q-UI-1123, Q-ARCH-1064, gaps H-1890 and H-1891; its builder worked from 07:19 to 08:25); what it built and left is in section 8, Product |
 | S7 · The UI profile scans for malware, with nothing of it in the product | H-1891 (section 8, Product, under S6): ClamAV on the owner's machine through a relay of the profile's own between a Unix socket on the host and `clamd`'s port published on the host's loopback; the product's binary, its configuration and the chart do not change (the owner's conditions of 09:17, below) | landed and pushed at 10:32 (two commits; Q-ARCH-1065, H-1891 narrowed to Linux hosts; its builder worked from 09:41 to 10:24, with a stop from 09:47 to 09:48 for the form; the landing's gates, the chart's tests and shellcheck each exit 0; two of its 44 pictures looked at by the development agent) |
-| S8 · An upstream's account from a Secret that exists | the owner's task of 09:40 (below): the chart supplies the upstream registries with accounts from existing Secrets; the development profiles take Docker Hub's account from a file of the machine | the plan is back at 10:04 (P4, 21 minutes, read-only; kept as `.dev/plans/p4-upstream-accounts-from-secrets-plan.md` of the main checkout, not in git): two packages, S8a the product, the chart and the screens, S8b the development profiles after it; see below; S8a in work since 10:15, in the place of G2; S8b after it |
+| S8 · An upstream's account from a Secret that exists | the owner's task of 09:40 (below): the chart supplies the upstream registries with accounts from existing Secrets; the development profiles take Docker Hub's account from a file of the machine | the plan is back at 10:04 (P4, 21 minutes, read-only; kept as `.dev/plans/p4-upstream-accounts-from-secrets-plan.md` of the main checkout, not in git): two packages, S8a the product, the chart and the screens, S8b the development profiles after it; see below; S8a in work since 10:15, in the place of G2; S8b after it; **S8a landed and pushed at 11:38** (one commit, migration 00125; see below); S8b waits for a builder's place |
 | P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows, what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | back at 06:42 (a planner, 25 minutes, read-only; kept in the session's scratch directory as `p1-render-guard-blind-spots-plan.md`); its three packages are G1 to G3 below |
 
 **The render guard's blind spots, as the plan of 06:42 reads them (counted in the code by its planner; the estimates are
@@ -464,6 +464,32 @@ mechanism; the kind nodes' kubelets take the same account on a machine whose Doc
 owner's installation, once the release is out (the development agent's task by his rule for his deployment
 repository):** the value in `apps/quader` and the Secret's manifest as a placeholder for him to fill and encrypt; a
 Docker Hub user shared by his cluster and his machine shares one allowance.
+
+**S8a landed and pushed at 11:38 (one commit, migration 00125; R-REPO-077, R-HA-073; Q-REPO-483 to Q-REPO-487,
+Q-HA-493, Q-HA-494, Q-UI-1160 to Q-UI-1162, ADR-281; gaps H-1940 and H-1941; its builder worked from 10:15 to 11:23).**
+Built as the plan reads, with these differences: a `secretRef` on the account's operation answers
+`422 secret_value_required` (the existing code of the same refusal, Q-REPO-487); the last failed download of a
+registry stands on its single answer only (`lastFailure`); the area `upstream` of the integration tests has no proxy
+engine, so the fetch with files is held at the unit tier and by a sub-case of `TestHandshake` in the area `proxy`; the
+format contract gains `UpstreamPreset.AccountRaisesLimit` and stays at version 12 (ADR-281); the chart's side is a file
+of its own (`_upstream_accounts.tpl`). **What an operator writes:** `secrets.upstreamAccounts.<key>` with
+`existingSecret`, `authMode` (`basic`, or `bearer`), `usernameKey` (`username`) and `passwordKey` (`password`); the
+product's key is `repositories.upstream_accounts.<key>` with `auth_mode`, `username_file`, `password_file` and
+`secret_name`, the mount `/var/run/secrets/quader/upstream-accounts/<key>/{username,password}`; a file is at most 8 KiB,
+loses one line break at its end, holds none inside and no NUL, a username no colon. A Secret or a key that is missing
+stops no pod: that registry alone answers `502 upstream_secret_unavailable`, nothing is sent upstream, the page says
+"Missing on this server" or "Empty on this server". **Against the brief's condition, and kept:** the three scanner
+kinds' pods roll once when an entry is added or removed, because their checksum covers the shared configuration file;
+nothing is mounted on them (R-HA-073 says so). A rotation: the new token into the Secret, three minutes, then the old
+one revoked; for up to two minutes replicas may hold the old and the new side by side (H-1940), and a rotation is not in
+Quader's audit trail (H-1941). **The landing:** thirteen gates, the chart's lint and tests and `make ui-states` each
+exit 0; its three screens ran against a stack for the first time at the
+landing (its builder had found every instance of the UI profile claimed and rendered without the stack): English 8
+screens, German 7, 0 failed, 0 findings; looked at by the development agent: the registry's page with the Secret's
+files missing, dark at 1,440 px, and with them readable, German light at 390 px (there `registry-1.docker.io` breaks
+at its hyphen in the sentence on where the credential goes: small, open). **Not verified:** that a kubelet fills an optional source of a
+Secret created after the install (S8b's check on the kind profile); the scope's name "Public Repo Read-only" of a
+Docker Hub token (from the plan, not read at Docker Hub).
 
 **What stays open and is not built by this run, each with its reason:** F-126, F-95, the `npm ci` binding and the
 unreachable github.com of `e2e (bastion)` wait for a recurrence (section 8); the stall without a neighbour is a standing
