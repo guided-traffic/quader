@@ -24509,6 +24509,27 @@ notice is an inline element without a margin; two dialogs (the download limits' 
 
 **Applied in the spec:** R-UI-042. Code: [_dialog.scss](../../web/src/styles/_dialog.scss).
 
+### Q-UI-1145 · A comparison of two versions is one table of the dialogs' look, and a block per field on a phone
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the conflict dialog of a save answered 412 (R-UI-042) and the diff before an exposure rule's save (R-EP-017) each compared
+the stored version and the draft in a table of three columns, built twice. With long values the dialog states showed both broken:
+the conflict's field names broke letter by letter at 390 px ("Fie" / "ld", "de" / "scr" / "iption") and its cells stood centred, a
+row's values ten lines apart (the checks' `broken` and `row-offset`); the diff's values did not break, so its last column stood past
+the dialog's edge at both widths and the body scrolled sideways.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One table of the dialogs' look (`.compare` in `_dialog.scss`) for both: a field's name on one line, values that break anywhere, every cell at its row's top; below 32 rem of the dialog's width (a container query) each field a block, its name and each value under its column's name (`data-label`); both dialogs 48 rem wide, not as wide as their content (chosen) | One style, two templates | Readable at both widths; one place for the next comparison | A container query needs the dialog's width given: a region measured by its container gives the dialog none |
+| (b) The shared data table | `quader-data-table` | Its stacking | A list's machinery (sorting, budgets) for three columns of a dialog |
+| (c) A sideways scroll in the dialog's body | | Nothing to build | A scroll inside the dialog's one scroll; the values out of sight |
+
+**Choice:** (a).
+
+**Applied in the spec:** R-UI-042, R-EP-017. Code: [_dialog.scss](../../web/src/styles/_dialog.scss),
+[conflict-dialog.ts](../../web/src/app/shared/conflict-dialog.ts), [diff-dialog.ts](../../web/src/app/shared/diff-dialog.ts).
+
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 
 Status: **Decided by the owner, 2026-11-23** (T-25, 19:30, whole: "Ich finde Projects und Repositories haben im Admin-Mneü nichts

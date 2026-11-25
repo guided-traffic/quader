@@ -18,31 +18,34 @@ export interface DiffData extends ConflictData {
       @if (rows.length === 0) {
         <p i18n="@@diff.none">Nothing differs from the stored version.</p>
       } @else {
-        <table class="data">
-          <caption class="visually-hidden" i18n="@@diff.caption">
-            Fields that change
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col" i18n="@@conflict.field">Field</th>
-              <th scope="col" i18n="@@diff.stored">Stored now</th>
-              <th scope="col" i18n="@@diff.new">After saving</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (row of rows; track row.field) {
+        <!-- The comparison's layout is the dialogs' (_dialog.scss, .compare): one line per field, or a block per field at 390 px. -->
+        <div class="compare-region">
+          <table class="compare">
+            <caption class="visually-hidden" i18n="@@diff.caption">
+              Fields that change
+            </caption>
+            <thead>
               <tr>
-                <th scope="row" translate="no">{{ row.field }}</th>
-                <td>
-                  <code translate="no">{{ row.theirs || '–' }}</code>
-                </td>
-                <td>
-                  <code translate="no">{{ row.mine || '–' }}</code>
-                </td>
+                <th scope="col" i18n="@@conflict.field">Field</th>
+                <th scope="col" i18n="@@diff.stored">Stored now</th>
+                <th scope="col" i18n="@@diff.new">After saving</th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (row of rows; track row.field) {
+                <tr>
+                  <th scope="row" translate="no">{{ row.field }}</th>
+                  <td data-label="Stored now" i18n-data-label="@@diff.stored">
+                    <code translate="no">{{ row.theirs || '–' }}</code>
+                  </td>
+                  <td data-label="After saving" i18n-data-label="@@diff.new">
+                    <code translate="no">{{ row.mine || '–' }}</code>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       }
     </div>
     <div class="dialog-actions">
@@ -73,6 +76,7 @@ export class DiffReview {
     const ref = this.dialog.open<DiffDialog, DiffData, boolean>(DiffDialog, {
       data,
       maxWidth: '48rem',
+      width: '48rem',
     });
     return (await firstValueFrom(ref.closed)) === true;
   }

@@ -12202,10 +12202,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-560 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+561 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 560 questions</summary>
+<summary>Q-UI: 561 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12769,6 +12769,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1142](spec/api-and-ui.md#q-ui-1142--a-state-is-measured-in-two-windows-in-the-light-scheme-and-fails-on-any-finding) | A state is measured in two windows, in the light scheme, and fails on any finding | Decided by the development agent | (a) Each state opened afresh at 390x844 and at 1440x900, light, the page behind an open dialog hidden, `layoutFindings` once per window; any finding fails, nothing is allowed by a list; a picture only with `UI_STATES_PICTURES=1` | — |
 | [Q-UI-1143](spec/api-and-ui.md#q-ui-1143--a-dialogs-failure-is-shown-in-its-longest-shape-and-its-validation-by-the-refusal-a-person-meets) | A dialog's failure is shown in its longest shape, and its validation by the refusal a person meets | Decided by the development agent | (a) A failure is a 500 with a code the screen has no sentence for: the shared error notice shows the server's English text, the request ID of 32 characters and Copy (`serverFailure()`); a validation is the dialog's own rule after a submit, or the server's 422 with its sentences under the fields where the dialog checks nothing itself (`fieldRefusal()`) | — |
 | [Q-UI-1144](spec/api-and-ui.md#q-ui-1144--the-error-notice-in-a-dialog-keeps-a-paragraphs-distance-from-what-is-above-and-below-it) | The error notice in a dialog keeps a paragraph's distance from what is above and below it | Decided by the development agent | (a) One rule of the dialog's look: a notice in a dialog's body is a block with 12 px above and below, none above as the body's first child | — |
+| [Q-UI-1145](spec/api-and-ui.md#q-ui-1145--a-comparison-of-two-versions-is-one-table-of-the-dialogs-look-and-a-block-per-field-on-a-phone) | A comparison of two versions is one table of the dialogs' look, and a block per field on a phone | Decided by the development agent | (a) One table of the dialogs' look (`.compare` in `_dialog.scss`) for both: a field's name on one line, values that break anywhere, every cell at its row's top; below 32 rem of the dialog's width (a container query) each field a block, its name and each value under its column's name (`data-label`); both dialogs 48 rem wide, not as wide as their content | — |
 
 </details>
 

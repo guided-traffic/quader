@@ -45625,7 +45625,7 @@
     </unit>
     <unit id="conflict.caption">
       <notes>
-        <note category="location">src/app/shared/conflict-dialog.ts:43,44</note>
+        <note category="location">src/app/shared/conflict-dialog.ts:45,46</note>
       </notes>
       <segment>
         <source> Fields that differ between the stored version and your version </source>
@@ -45633,8 +45633,8 @@
     </unit>
     <unit id="conflict.field">
       <notes>
-        <note category="location">src/app/shared/conflict-dialog.ts:47,48</note>
-        <note category="location">src/app/shared/diff-dialog.ts:27,28</note>
+        <note category="location">src/app/shared/conflict-dialog.ts:49,50</note>
+        <note category="location">src/app/shared/diff-dialog.ts:29,30</note>
       </notes>
       <segment>
         <source>Field</source>
@@ -45642,7 +45642,8 @@
     </unit>
     <unit id="conflict.theirs">
       <notes>
-        <note category="location">src/app/shared/conflict-dialog.ts:48,49</note>
+        <note category="location">src/app/shared/conflict-dialog.ts:50,51</note>
+        <note category="location">src/app/shared/conflict-dialog.ts:58</note>
       </notes>
       <segment>
         <source>Stored now</source>
@@ -45650,7 +45651,8 @@
     </unit>
     <unit id="conflict.mine">
       <notes>
-        <note category="location">src/app/shared/conflict-dialog.ts:49,51</note>
+        <note category="location">src/app/shared/conflict-dialog.ts:51,53</note>
+        <note category="location">src/app/shared/conflict-dialog.ts:59</note>
       </notes>
       <segment>
         <source>Yours</source>
@@ -45658,7 +45660,7 @@
     </unit>
     <unit id="conflict.copy">
       <notes>
-        <note category="location">src/app/shared/conflict-dialog.ts:66,68</note>
+        <note category="location">src/app/shared/conflict-dialog.ts:69,71</note>
       </notes>
       <segment>
         <source> Copy my changes </source>
@@ -45666,7 +45668,7 @@
     </unit>
     <unit id="conflict.reload">
       <notes>
-        <note category="location">src/app/shared/conflict-dialog.ts:69,71</note>
+        <note category="location">src/app/shared/conflict-dialog.ts:72,74</note>
       </notes>
       <segment>
         <source> Reload (discard mine) </source>
@@ -45674,7 +45676,7 @@
     </unit>
     <unit id="conflict.overwrite">
       <notes>
-        <note category="location">src/app/shared/conflict-dialog.ts:76,78</note>
+        <note category="location">src/app/shared/conflict-dialog.ts:79,81</note>
       </notes>
       <segment>
         <source> Overwrite </source>
@@ -45698,7 +45700,7 @@
     </unit>
     <unit id="diff.caption">
       <notes>
-        <note category="location">src/app/shared/diff-dialog.ts:23,24</note>
+        <note category="location">src/app/shared/diff-dialog.ts:25,26</note>
       </notes>
       <segment>
         <source> Fields that change </source>
@@ -45706,7 +45708,8 @@
     </unit>
     <unit id="diff.stored">
       <notes>
-        <note category="location">src/app/shared/diff-dialog.ts:28,29</note>
+        <note category="location">src/app/shared/diff-dialog.ts:30,31</note>
+        <note category="location">src/app/shared/diff-dialog.ts:38</note>
       </notes>
       <segment>
         <source>Stored now</source>
@@ -45714,7 +45717,8 @@
     </unit>
     <unit id="diff.new">
       <notes>
-        <note category="location">src/app/shared/diff-dialog.ts:29,30</note>
+        <note category="location">src/app/shared/diff-dialog.ts:31,32</note>
+        <note category="location">src/app/shared/diff-dialog.ts:41</note>
       </notes>
       <segment>
         <source>After saving</source>
@@ -45722,7 +45726,7 @@
     </unit>
     <unit id="diff.cancel">
       <notes>
-        <note category="location">src/app/shared/diff-dialog.ts:50,52</note>
+        <note category="location">src/app/shared/diff-dialog.ts:53,55</note>
       </notes>
       <segment>
         <source> Cancel </source>

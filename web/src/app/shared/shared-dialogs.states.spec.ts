@@ -2,11 +2,12 @@ import { DestroyRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, it } from 'vitest';
 import { LONG_TEXT, app, dialogPanel, expectState, openDialog } from '../testing/states';
+import { ConflictResolver } from './conflict-dialog';
 import { DiffReview } from './diff-dialog';
 import { DraftStore } from './drafts';
 import { SessionDialog } from './session-dialog';
 
-/** A draft and the stored version of an editor: long names, a list, a description of German length. */
+/** A draft and the stored version of an editor, as a 412 finds them: long names, a list, a description of German length. */
 const mine = {
   description: LONG_TEXT,
   includePatterns: ['@platform-engineering/kubernetes-infrastructure-*', '@platform-engineering/release-tooling/**'],
@@ -21,6 +22,14 @@ const theirs = {
 };
 
 describe('shared dialogs in a browser (R-UI-004, R-UI-042, R-EP-017, R-UI-173, R-UI-175)', () => {
+  it('Changed by someone else since you opened it: the conflict of a save answered 412', async () => {
+    await expectState('conflict', async () => {
+      await app();
+      void TestBed.inject(ConflictResolver).resolve({ mine, theirs });
+      await dialogPanel();
+    });
+  });
+
   it('What will change, before a save', async () => {
     await expectState('diff', async () => {
       await app();

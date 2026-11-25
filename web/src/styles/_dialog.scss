@@ -84,6 +84,84 @@
   margin-block: var(--quader-space-3);
 }
 
+// A stored version beside another, field by field: the conflict of a save answered 412 (R-UI-042) and what a save changes
+// (R-EP-017), `<div class="compare-region"><table class="compare">` in a dialog of a fixed width (a region measured by its
+// container query gives the dialog no width of its own) (Q-UI-1145). A field's name is one word on one line, a value
+// breaks where it must, and every cell starts at its row's top. Where the dialog is narrower than three columns hold (a phone), each
+// field is a block: its name, then each value under its column's name (`data-label`). As three columns at 390 px the names broke
+// letter by letter ("Fie" / "ld") and the cells stood centred, ten lines apart; the diff's values pushed its last column out of
+// the dialog.
+.compare-region {
+  container-type: inline-size;
+}
+
+.compare {
+  inline-size: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: var(--quader-space-1) var(--quader-space-3);
+    border-block-end: 1px solid var(--quader-border);
+    text-align: start;
+    vertical-align: top;
+  }
+
+  tbody th {
+    white-space: nowrap;
+  }
+
+  td {
+    overflow-wrap: anywhere;
+  }
+}
+
+@container (max-width: 32rem) {
+  .compare {
+    &,
+    thead,
+    tbody,
+    tr,
+    th,
+    td {
+      display: block;
+    }
+
+    // The column's names stay for assistive technology; each value says its own (`data-label`).
+    thead th {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      padding-block: var(--quader-space-2);
+      border-block-end: 1px solid var(--quader-border);
+    }
+
+    tbody th,
+    tbody td {
+      padding: 0;
+      border: 0;
+    }
+
+    tbody td {
+      margin-block-start: var(--quader-space-1);
+    }
+
+    tbody td::before {
+      content: attr(data-label);
+      display: block;
+      color: var(--quader-text-muted);
+      font: var(--quader-type-body-small);
+    }
+  }
+}
+
 .dialog-actions {
   display: flex;
   flex: none;

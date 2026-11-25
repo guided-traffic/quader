@@ -38,27 +38,30 @@ export function diffFields(data: ConflictData): ConflictRow[] {
       @if (rows.length === 0) {
         <p i18n="@@conflict.same">The stored version already equals yours.</p>
       } @else {
-        <table class="diff">
-          <caption class="visually-hidden" i18n="@@conflict.caption">
-            Fields that differ between the stored version and your version
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col" i18n="@@conflict.field">Field</th>
-              <th scope="col" i18n="@@conflict.theirs">Stored now</th>
-              <th scope="col" i18n="@@conflict.mine">Yours</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (row of rows; track row.field) {
+        <!-- The comparison's layout is the dialogs' (_dialog.scss, .compare): one line per field, or a block per field at 390 px. -->
+        <div class="compare-region">
+          <table class="compare">
+            <caption class="visually-hidden" i18n="@@conflict.caption">
+              Fields that differ between the stored version and your version
+            </caption>
+            <thead>
               <tr>
-                <th scope="row" translate="no">{{ row.field }}</th>
-                <td><code translate="no">{{ row.theirs }}</code></td>
-                <td><code translate="no">{{ row.mine }}</code></td>
+                <th scope="col" i18n="@@conflict.field">Field</th>
+                <th scope="col" i18n="@@conflict.theirs">Stored now</th>
+                <th scope="col" i18n="@@conflict.mine">Yours</th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (row of rows; track row.field) {
+                <tr>
+                  <th scope="row" translate="no">{{ row.field }}</th>
+                  <td data-label="Stored now" i18n-data-label="@@conflict.theirs"><code translate="no">{{ row.theirs }}</code></td>
+                  <td data-label="Yours" i18n-data-label="@@conflict.mine"><code translate="no">{{ row.mine }}</code></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       }
     </div>
     <div class="dialog-actions">
@@ -78,17 +81,6 @@ export function diffFields(data: ConflictData): ConflictRow[] {
     </div>
   `,
   styles: `
-    .diff {
-      border-collapse: collapse;
-      inline-size: 100%;
-    }
-    th,
-    td {
-      padding: var(--quader-space-1) var(--quader-space-3);
-      text-align: start;
-      border-block-end: 1px solid var(--quader-border);
-      overflow-wrap: anywhere;
-    }
     .visually-hidden {
       position: absolute;
       inline-size: 1px;
@@ -142,6 +134,7 @@ export class ConflictResolver {
     const ref = this.dialog.open<ConflictDialog, ConflictData, ConflictDecision>(ConflictDialog, {
       data,
       maxWidth: '48rem',
+      width: '48rem',
     });
     return (await firstValueFrom(ref.closed)) ?? null;
   }
