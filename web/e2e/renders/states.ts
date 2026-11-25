@@ -188,15 +188,6 @@ export async function* ownerMenus(page: Page): AsyncGenerator<string> {
   await escape(page);
 }
 
-/** The menu of a version of a package on the tab Upstream, for who may download (R-CUR-018): after the walk's state `package`. */
-export async function* upstreamVersionMenu(page: Page): AsyncGenerator<string> {
-  const trigger = page.locator('main quader-upstream-package td.actions button[aria-haspopup="menu"]').first();
-  if ((await trigger.count()) === 0) return;
-  await menuFrom(page, trigger);
-  yield 'version-menu';
-  await escape(page);
-}
-
 /** The menu of an open request on the tab Upstream, for who decides (R-CUR-018): after the walk's state `search`. */
 export async function* upstreamRequestMenu(page: Page): AsyncGenerator<string> {
   const trigger = page.locator('main [data-testid="upstream-requests"] button.request-menu').first();

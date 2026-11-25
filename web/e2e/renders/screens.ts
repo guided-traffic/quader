@@ -78,7 +78,6 @@ import {
   shellMenus,
   shellNotices,
   upstreamRequestMenu,
-  upstreamVersionMenu,
   withStates,
 } from './states';
 import {
@@ -2943,13 +2942,13 @@ export const screens: readonly Screen[] = [
   // in mode onlyAllowed with every state (upstream.ts); an OCI remote of ghcr.io that offers only the lookup by name; a Debian remote's
   // suites and its index search; a Docker Hub namespace Docker Hub does not have (Q-CUR-165); and the OCI remote whose upstream is this
   // installation, with the server's own answers. A package's versions keep the form of a table from 1,024 px on (Q-CUR-157).
-  // With the menus of an open request and of a version, for who decides (states.ts).
+  // With the menu of an open request, for who decides (states.ts); a version has its switch and no menu (R-CUR-024).
   {
     id: 'repository-npm-remote-upstream',
     path: `${P}/repositories/npmjs/upstream`,
     kinds: all,
-    walk: withStates(upstreamTabWalk, { search: upstreamRequestMenu, package: upstreamVersionMenu }),
-    states: overlays('request-menu', 'version-menu'),
+    walk: withStates(upstreamTabWalk, { search: upstreamRequestMenu }),
+    states: overlays('request-menu'),
     expected: upstreamExpected,
     de: true,
     tables: upstreamVersions,
