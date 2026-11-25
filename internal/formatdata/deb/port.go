@@ -43,6 +43,8 @@ type Options struct {
 	KeysChanged func(ctx context.Context, tx meta.Tx, repoID int64) error
 	// Jobs enqueues the index build (enqueue.go): after a key change when KeysChanged is nil, and for a reindex. nil enqueues nothing.
 	Jobs Jobs
+	// Blobs reads the stored package files a remote cached, for the job deb-remote-describe (R-DEB-037). nil: no cached file is described.
+	Blobs BlobRanges
 	// IndexDelay is deb.index_delay: the time a change waits before its build starts. Zero means DefaultIndexDelay.
 	IndexDelay time.Duration
 	// Log receives what a mirror pass's index step logs (a release no key verifies); nil discards it. The replica's logger, so the

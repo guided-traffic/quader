@@ -99,6 +99,181 @@ func (q *Queries) NPMAuditNames(ctx context.Context, arg NPMAuditNamesParams) ([
 	return items, nil
 }
 
+const nPMDescribeDocument = `-- name: NPMDescribeDocument :many
+SELECT e.blob_sha256 AS sha256, b.size
+  FROM remote_cache_entries e
+  JOIN blobs b ON b.sha256 = e.blob_sha256
+ WHERE e.repo_id = $1::bigint AND e.path = $2::text COLLATE "C"
+   AND e.variant = 'full' AND e.kind = 'metadata'
+`
+
+type NPMDescribeDocumentParams struct {
+	RepoID int64
+	Name   string
+}
+
+type NPMDescribeDocumentRow struct {
+	Sha256 []byte
+	Size   int64
+}
+
+// The stored full document of a package of a remote repository, by its blob (R-NPM-050): what the job npm-remote-describe reads the
+// entries of the cached versions from. No row: no document is stored.
+func (q *Queries) NPMDescribeDocument(ctx context.Context, arg NPMDescribeDocumentParams) ([]NPMDescribeDocumentRow, error) {
+	rows, err := q.db.Query(ctx, nPMDescribeDocument, arg.RepoID, arg.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []NPMDescribeDocumentRow{}
+	for rows.Next() {
+		var i NPMDescribeDocumentRow
+		if err := rows.Scan(&i.Sha256, &i.Size); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const nPMDescribeVersions = `-- name: NPMDescribeVersions :many
+SELECT pv.id AS version_id, pv.version,
+       COALESCE(i.blob_sha256, ''::bytea)::bytea AS sha256, COALESCE(i.size, 0)::bigint AS size,
+       (nv.version_id IS NOT NULL)::boolean AS described
+  FROM packages p
+  JOIN repositories r ON r.id = p.repo_id AND r.class = 'remote' AND r.format = 'npm'
+  JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
+  LEFT JOIN items i ON i.id = pv.lead_item_id AND i.trashed_at IS NULL
+  LEFT JOIN npm_versions nv ON nv.version_id = pv.id
+ WHERE p.repo_id = $1::bigint AND p.name = $2::text
+ ORDER BY pv.id
+`
+
+type NPMDescribeVersionsParams struct {
+	RepoID int64
+	Name   string
+}
+
+type NPMDescribeVersionsRow struct {
+	VersionID int64
+	Version   string
+	Sha256    []byte
+	Size      int64
+	Described bool
+}
+
+// The live versions a remote repository holds of a package (the tarballs it cached, R-API-081), with the blob of the cached tarball and
+// whether the version has its row of npm_versions yet (R-NPM-050). A version whose tarball is gone has no blob.
+func (q *Queries) NPMDescribeVersions(ctx context.Context, arg NPMDescribeVersionsParams) ([]NPMDescribeVersionsRow, error) {
+	rows, err := q.db.Query(ctx, nPMDescribeVersions, arg.RepoID, arg.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []NPMDescribeVersionsRow{}
+	for rows.Next() {
+		var i NPMDescribeVersionsRow
+		if err := rows.Scan(
+			&i.VersionID,
+			&i.Version,
+			&i.Sha256,
+			&i.Size,
+			&i.Described,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const nPMHoldsPackage = `-- name: NPMHoldsPackage :one
+SELECT EXISTS (
+  SELECT 1 FROM packages p JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
+   WHERE p.repo_id = $1::bigint AND p.name = $2::text)::boolean
+`
+
+type NPMHoldsPackageParams struct {
+	RepoID int64
+	Name   string
+}
+
+// Whether a remote repository holds a live version of a package: the refresh of a stored document describes the cached versions again
+// only then (R-NPM-050).
+func (q *Queries) NPMHoldsPackage(ctx context.Context, arg NPMHoldsPackageParams) (bool, error) {
+	row := q.db.QueryRow(ctx, nPMHoldsPackage, arg.RepoID, arg.Name)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const nPMPutCachedVersion = `-- name: NPMPutCachedVersion :execrows
+INSERT INTO npm_versions (version_id, manifest, integrity, shasum, deprecated, file_count, unpacked_size,
+                          has_install_script, has_shrinkwrap, readme, readme_filename, publish_tag, published_at)
+SELECT pv.id, $1::text::jsonb, 'sha512-' || translate(encode(b.sha512, 'base64'), E'\n', ''),
+       encode(b.sha1, 'hex'), NULLIF($2::text, ''),
+       $3::integer, $4::bigint,
+       $5::boolean, $6::boolean,
+       NULL, NULLIF($7::text, ''), '',
+       COALESCE(NULLIF($8::text, '')::timestamptz, now())
+  FROM package_versions pv
+  JOIN items i ON i.id = pv.lead_item_id AND i.trashed_at IS NULL
+  JOIN blobs b ON b.sha256 = i.blob_sha256
+ WHERE pv.id = $9::bigint AND pv.trashed_at IS NULL
+ON CONFLICT (version_id) DO UPDATE
+   SET manifest = EXCLUDED.manifest, deprecated = EXCLUDED.deprecated, published_at = EXCLUDED.published_at,
+       integrity = EXCLUDED.integrity, shasum = EXCLUDED.shasum,
+       file_count = CASE WHEN $10::boolean THEN EXCLUDED.file_count ELSE npm_versions.file_count END,
+       unpacked_size = CASE WHEN $10::boolean THEN EXCLUDED.unpacked_size ELSE npm_versions.unpacked_size END,
+       has_install_script = CASE WHEN $10::boolean THEN EXCLUDED.has_install_script ELSE npm_versions.has_install_script END,
+       has_shrinkwrap = CASE WHEN $10::boolean THEN EXCLUDED.has_shrinkwrap ELSE npm_versions.has_shrinkwrap END,
+       readme_filename = CASE WHEN $10::boolean THEN EXCLUDED.readme_filename ELSE npm_versions.readme_filename END
+`
+
+type NPMPutCachedVersionParams struct {
+	Manifest         string
+	Deprecated       string
+	FileCount        int32
+	UnpackedSize     int64
+	HasInstallScript bool
+	HasShrinkwrap    bool
+	ReadmeFilename   string
+	PublishedAt      string
+	VersionID        int64
+	Scanned          bool
+}
+
+// The row of npm_versions of a version a remote repository cached (R-NPM-050): the manifest is the version's entry of the stored
+// document, integrity and shasum are the digests of the cached tarball's blob, and the facts of the tarball (file count, unpacked size,
+// install script, shrinkwrap, the README's file name) come from one read of it when scanned is true. A row that exists keeps those facts
+// unless scanned, and takes the entry's manifest, deprecation and time: the upstream changes a deprecation, never a published tarball.
+// A version trashed or gone meanwhile gets no row. The README's text is never stored for a cached version: the screens read it from the
+// tarball (R-NPM-051).
+func (q *Queries) NPMPutCachedVersion(ctx context.Context, arg NPMPutCachedVersionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, nPMPutCachedVersion,
+		arg.Manifest,
+		arg.Deprecated,
+		arg.FileCount,
+		arg.UnpackedSize,
+		arg.HasInstallScript,
+		arg.HasShrinkwrap,
+		arg.ReadmeFilename,
+		arg.PublishedAt,
+		arg.VersionID,
+		arg.Scanned,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const nPMRemoteInsertPackage = `-- name: NPMRemoteInsertPackage :execrows
 
 INSERT INTO npm_remote_packages (repo_id, name, doc_sha256, doc_modified)

@@ -104,5 +104,9 @@ type Store interface {
 	// remoteID is the forwarding remote, virtualID the requesting virtual repository whose
 	// pin rules apply, 0 for a request addressed to the remote itself.
 	AuditNames(ctx context.Context, remoteID, virtualID int64, names []string) ([]rows.AuditName, error)
+	// QueueDescribe queues, in tx, the job that writes the row of npm_versions of every version a remote repository cached of the
+	// package from the stored document and the cached tarball (R-NPM-050). With ifHeld it queues only while the repository holds a
+	// live version of the package.
+	QueueDescribe(ctx context.Context, tx formats.Tx, repoID int64, name string, ifHeld bool) error
 	// <<< M2 npm-remote
 }

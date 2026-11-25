@@ -365,11 +365,16 @@ CREATE TABLE npm_versions (
   unpacked_size      bigint      NOT NULL,
   has_install_script boolean     NOT NULL,
   has_shrinkwrap     boolean     NOT NULL,
-  readme             text,                        -- R-NPM-010, extracted at publish, at most 64 KiB
-  readme_filename    text,
-  publish_tag        text        NOT NULL,        -- dist-tag the publish request carried (R-NPM-007 step 4)
-  published_at       timestamptz NOT NULL         -- PostgreSQL clock (R-NPM-012)
+  readme             text,                        -- R-NPM-010, extracted at publish, at most 64 KiB; NULL for a version
+                                                  -- a remote cached, whose README is read from its tarball (R-NPM-051)
+  readme_filename    text,                        -- the tarball's first top-level README, NULL without one
+  publish_tag        text        NOT NULL,        -- dist-tag the publish request carried (R-NPM-007 step 4); '' for a
+                                                  -- version a remote cached (R-NPM-050)
+  published_at       timestamptz NOT NULL         -- PostgreSQL clock (R-NPM-012); the upstream's time[version] for a
+                                                  -- version a remote cached
 );
+-- A version a remote repository cached has its row too (R-NPM-050), from its entry in the stored document; it is told
+-- from a published one by the class of its repository, and it has no npm_packages row and no tombstone.
 
 CREATE TABLE npm_tombstones (                     -- outlives trash and permanent removal (R-NPM-008)
   repo_id        bigint      NOT NULL REFERENCES repositories (id) ON DELETE CASCADE,
@@ -1586,6 +1591,63 @@ Acceptance criteria:
   version.
 - `pnpm install` with `trustPolicy: no-downgrade` succeeds through `npm-all` for a tree that passes
   the policy against the public registry.
+
+### R-NPM-050 · A version a remote cached is described as a published one
+Priority: **P1** · Covers: quader-only
+
+The package screens of a remote repository show for a version it cached what a local repository shows for a published one: the
+description, the keywords, the licences, the dependencies, the runtimes, the authors, the links, the deprecation and the README
+(R-API-029, R-UI-007). By the owner's rule of 2026-11-25 the documentation a format regularly carries is shown wherever it is present
+([Q-NPM-91](#q-npm-91--a-version-a-remote-cached-is-described-by-a-job-from-its-entry-in-the-stored-document-and-one-read-of-its-tarball)).
+
+- **The row.** Every live version a remote holds (a tarball it cached, R-API-081) has a row of `npm_versions` (R-NPM-006). Its
+  manifest is the version's entry in the stored package document (R-NPM-024), the member the registry answers `npm view` with, without
+  its `readme` and `readmeFilename` (an old document may carry them per version; the README comes from the tarball, R-NPM-051) and
+  without the upstream's `dist.tarball`. Its deprecation is the entry's `deprecated`, cut at 1,024 bytes; its time is the document's
+  `time[<version>]`; `integrity` and `shasum` are the SHA-512 and SHA-1 of the cached tarball's blob; `publish_tag` is empty.
+- **The tarball's facts.** The file count, the unpacked size, the install script (R-NPM-007's rule on the tarball's `package.json`),
+  the shrinkwrap and the README's file name come from one read of the cached tarball with the reader of a publish (R-NPM-007 step 3).
+  A tarball that reader refuses (an upstream's archive may break a rule Quader applies to a publish) keeps the facts its entry announces
+  (`dist.fileCount`, `dist.unpackedSize`, `hasInstallScript` or the entry's `scripts`, `_hasShrinkwrap`) and has no README.
+- **The job.** The job `npm-remote-describe` (queue `index`, coalesce per repository and package, key
+  `npm-describe:<repository id>:<name>`, 5 attempts, 10 minutes) writes the rows of one package: it reads the stored document by
+  streaming it, keeps the entries and times of the versions the repository holds, and reads the tarball of each version that has no row
+  yet. It holds no transaction while it reads a blob, and it writes no event, no dist-tag, no claim and no tombstone. A row that exists
+  keeps the tarball's facts and takes the entry's manifest, deprecation and time again.
+- **When it runs.** The commit of a cached tarball queues it in the fill's transaction; the row exists seconds later, and a package page
+  that is open reads it again by itself (R-UI-213). The fill that replaces a package's stored document (R-NPM-024) queues it while the
+  repository holds a live version of the package, so a deprecation the upstream adds later reaches the screens with the next document,
+  and a version cached before the job existed is described at its package's next changed document. A revalidation the upstream answers
+  `304` stores no document and queues nothing.
+- **What does not change.** A cached version stays a cached version: no `npm_packages` row, no dist-tags of the repository's own (the
+  served document is the upstream's, R-NPM-025), no tombstone, and the code of the local class (the documents of R-NPM-010, the dist-tag
+  writes, the unpublish, the signing of R-SIG-050) reads the rows of local repositories only. The row goes with its version when the
+  cached tarball is removed (R-API-081).
+
+Acceptance criteria:
+
+- A version of a corpus package installed through `npm-remote` answers, in the package API, the description, the licence, the
+  dependencies and the deprecation of its entry and `hasReadme: true`, and its README renders
+  (`TestR_NPM_050_ACachedVersionIsDescribedByItsEntryInTheStoredDocument`, integration area `npm`).
+
+### R-NPM-051 · The README of a version is read from its tarball when it is not stored
+Priority: **P1** · Covers: quader-only
+
+- A publish stores the first top-level README of its tarball, at most 64 KiB, with its file name (R-NPM-006); the screens read that text,
+  and an empty README is none.
+- A version a remote cached stores the file name of its tarball's first top-level README that is not empty (R-NPM-050) and no text. Its
+  README is read from the stored tarball when a screen asks for it: the file at that install path, found by streaming the tarball up to
+  it with the bounded reader of every archive a screen reads (R-ARCH-028; 20 seconds), cut at 64 KiB without a broken character. It is
+  the rule of NuGet's README out of the `.nupkg` (Q-NUGET-48) and Ansible's out of the collection archive (formats/ansible.md H-853):
+  the text is not stored, and a version cached before this rule gets its README as soon as its row names the file.
+- `hasReadme` is true when a published version's text is stored or a cached version's file name is (R-API-029); a tarball that cannot be
+  read at the time of the request answers the README's `404`, the answer of a version without one.
+- Nothing is fetched from the upstream for a version the repository does not hold.
+
+Acceptance criteria:
+
+- `TestR_NPM_051_TheREADMEIsReadFromTheTarballByItsInstallPath` (unit): the file at its install path, the cut, a nested file, a link and a
+  missing file; the README answer of R-NPM-050's integration test.
 
 ## Mirror discovery
 
@@ -5264,6 +5326,29 @@ remaining probes serve tools that use the registry's version endpoint. Revisit i
 manual's table of [Downloads a client only asked about](../../manual/admin/repositories.md#downloads-a-client-only-asked-about). W-25
 runs on the cluster with a real client in the OCI set only (`TestOCIProbe_R_REPO_065_…`).
 
+### Q-NPM-91 · A version a remote cached is described by a job from its entry in the stored document and one read of its tarball
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found by W-30
+(G1) on 2026-11-25 and reproduced on the integration stack: a version installed through `npm-remote` had no row of `npm_versions`, and
+its version answered no licence, no dependencies, no deprecation and `hasReadme: false`, its README `404`. The owner's rule of the same
+day: the documentation a format regularly carries is shown wherever it is present.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The commit of the tarball's fill reads the version's entry out of the stored document | The row exists with the commit | One place; no job | A blob of up to 128 MiB read and parsed inside the fill's transaction and under the lock of the package, on the request path of every tarball |
+| (b) A fill hook (`InspectFill`) reads the tarball's `package.json` and README, as NuGet and Ansible Galaxy read their archives | The pattern of the other formats | No second read; the row exists with the commit | The engine holds every byte of a tarball with a hook until the whole of it is fetched and inflated (`fillHeld`); `package.json` is not the registry's entry: no deprecation, no links the publishing client derived |
+| (c) A job queued by the tarball's commit and by a fill that replaces the stored document reads the entry and, once, the tarball (chosen) | `npm-remote-describe` (R-NPM-050) | No blob is read in a transaction and no tarball is held; the entry is what `npm view` answers; a deprecation the upstream adds later, and a version cached before the job existed, are described with the next changed document | The row exists seconds after the fill; one more job kind |
+
+**Choice:** (c). **Rationale:** the fill path keeps its streaming and its transactions short, and the screens read the upstream's own
+description of the version, which a later deprecation updates. The README stays in the tarball and is read when a screen asks
+(R-NPM-051), as NuGet and Ansible Galaxy read theirs; the job stores its file name so that `hasReadme` needs no read. Revisit if the
+fill gains a hook outside the transaction that does not hold the stream.
+
+**Applied in the spec:** R-NPM-006 (the data model), R-NPM-050, R-NPM-051, [api-and-ui.md](../api-and-ui.md) R-API-029 and R-UI-007.
+Code: [describe.go](../../../internal/formatdata/npm/describe.go), `commitFill` in [hooks.go](../../../internal/formats/npm/hooks.go),
+`OnFill` in [remote.go](../../../internal/formats/npm/remote.go). Tests: `TestR_NPM_050_…` (unit, in `internal/formats/npm` and
+`internal/formatdata/npm`, and integration, area `npm`), `TestR_NPM_051_…` (unit).
+
 ## What this does not cover
 
 
@@ -5344,3 +5429,24 @@ upstream is unreachable. Mitigation: withdraw a harmful version by unpublishing 
 restore, repeat the `npm.dist_tag.set`, `npm.dist_tag.delete` and `npm.deprecate` events of the
 audit log stream between the snapshot and the restore, and delete or reinstate every version the
 replay output lists as withheld.
+
+### H-2090 · A version cached before R-NPM-050 is described only when its package's document changes
+
+Component: the job `npm-remote-describe` (R-NPM-050). Subject: a remote repository that cached tarballs before the job existed. Its
+versions have no row of `npm_versions` and show no description, licence, dependencies or README until the fill of a changed package
+document queues the job; a revalidation answered `304` stores nothing and queues nothing, so a package whose upstream never changes keeps
+showing nothing until its cached tarball is evicted and fetched again. Live on an installation that cached npm tarballs before this change (pre-alpha:
+the owner's playground); nothing queues the job for all held packages at once.
+
+### H-2091 · The row of a cached version is written seconds after its fill
+
+Component: the job `npm-remote-describe` (R-NPM-050). Subject: the first screen of a version that was cached a moment ago. Between the
+commit of the tarball and the run of the job the version is listed with no description, licence or README; the page reads it again by
+itself while it is open (R-UI-213). Live; the time is the pick-up of a job of the queue `index` (seconds), longer while that queue is
+busy with index builds.
+
+### H-2092 · The README of a cached version is read by inflating its tarball up to the file, per request
+
+Component: the package screens (R-NPM-051). Subject: a tarball whose README comes late in a large archive. Each README request of a
+cached version streams the stored tarball up to the file, within the bounds of R-ARCH-028 and 20 seconds, as Ansible Galaxy's README
+does (formats/ansible.md H-853). Live for every remote npm package page; the cost is the size of what precedes the README in the archive.

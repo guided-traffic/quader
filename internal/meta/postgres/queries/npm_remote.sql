@@ -140,3 +140,61 @@ SELECT n.name::text AS name,
                         ELSE starts_with(n.name, m.literal)
                       END)::boolean AS pinned
   FROM n;
+
+-- name: NPMDescribeDocument :many
+-- The stored full document of a package of a remote repository, by its blob (R-NPM-050): what the job npm-remote-describe reads the
+-- entries of the cached versions from. No row: no document is stored.
+SELECT e.blob_sha256 AS sha256, b.size
+  FROM remote_cache_entries e
+  JOIN blobs b ON b.sha256 = e.blob_sha256
+ WHERE e.repo_id = sqlc.arg(repo_id)::bigint AND e.path = sqlc.arg(name)::text COLLATE "C"
+   AND e.variant = 'full' AND e.kind = 'metadata';
+
+-- name: NPMDescribeVersions :many
+-- The live versions a remote repository holds of a package (the tarballs it cached, R-API-081), with the blob of the cached tarball and
+-- whether the version has its row of npm_versions yet (R-NPM-050). A version whose tarball is gone has no blob.
+SELECT pv.id AS version_id, pv.version,
+       COALESCE(i.blob_sha256, ''::bytea)::bytea AS sha256, COALESCE(i.size, 0)::bigint AS size,
+       (nv.version_id IS NOT NULL)::boolean AS described
+  FROM packages p
+  JOIN repositories r ON r.id = p.repo_id AND r.class = 'remote' AND r.format = 'npm'
+  JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
+  LEFT JOIN items i ON i.id = pv.lead_item_id AND i.trashed_at IS NULL
+  LEFT JOIN npm_versions nv ON nv.version_id = pv.id
+ WHERE p.repo_id = sqlc.arg(repo_id)::bigint AND p.name = sqlc.arg(name)::text
+ ORDER BY pv.id;
+
+-- name: NPMPutCachedVersion :execrows
+-- The row of npm_versions of a version a remote repository cached (R-NPM-050): the manifest is the version's entry of the stored
+-- document, integrity and shasum are the digests of the cached tarball's blob, and the facts of the tarball (file count, unpacked size,
+-- install script, shrinkwrap, the README's file name) come from one read of it when scanned is true. A row that exists keeps those facts
+-- unless scanned, and takes the entry's manifest, deprecation and time: the upstream changes a deprecation, never a published tarball.
+-- A version trashed or gone meanwhile gets no row. The README's text is never stored for a cached version: the screens read it from the
+-- tarball (R-NPM-051).
+INSERT INTO npm_versions (version_id, manifest, integrity, shasum, deprecated, file_count, unpacked_size,
+                          has_install_script, has_shrinkwrap, readme, readme_filename, publish_tag, published_at)
+SELECT pv.id, sqlc.arg(manifest)::text::jsonb, 'sha512-' || translate(encode(b.sha512, 'base64'), E'\n', ''),
+       encode(b.sha1, 'hex'), NULLIF(sqlc.arg(deprecated)::text, ''),
+       sqlc.arg(file_count)::integer, sqlc.arg(unpacked_size)::bigint,
+       sqlc.arg(has_install_script)::boolean, sqlc.arg(has_shrinkwrap)::boolean,
+       NULL, NULLIF(sqlc.arg(readme_filename)::text, ''), '',
+       COALESCE(NULLIF(sqlc.arg(published_at)::text, '')::timestamptz, now())
+  FROM package_versions pv
+  JOIN items i ON i.id = pv.lead_item_id AND i.trashed_at IS NULL
+  JOIN blobs b ON b.sha256 = i.blob_sha256
+ WHERE pv.id = sqlc.arg(version_id)::bigint AND pv.trashed_at IS NULL
+ON CONFLICT (version_id) DO UPDATE
+   SET manifest = EXCLUDED.manifest, deprecated = EXCLUDED.deprecated, published_at = EXCLUDED.published_at,
+       integrity = EXCLUDED.integrity, shasum = EXCLUDED.shasum,
+       file_count = CASE WHEN sqlc.arg(scanned)::boolean THEN EXCLUDED.file_count ELSE npm_versions.file_count END,
+       unpacked_size = CASE WHEN sqlc.arg(scanned)::boolean THEN EXCLUDED.unpacked_size ELSE npm_versions.unpacked_size END,
+       has_install_script = CASE WHEN sqlc.arg(scanned)::boolean THEN EXCLUDED.has_install_script ELSE npm_versions.has_install_script END,
+       has_shrinkwrap = CASE WHEN sqlc.arg(scanned)::boolean THEN EXCLUDED.has_shrinkwrap ELSE npm_versions.has_shrinkwrap END,
+       readme_filename = CASE WHEN sqlc.arg(scanned)::boolean THEN EXCLUDED.readme_filename ELSE npm_versions.readme_filename END;
+
+-- name: NPMHoldsPackage :one
+-- Whether a remote repository holds a live version of a package: the refresh of a stored document describes the cached versions again
+-- only then (R-NPM-050).
+SELECT EXISTS (
+  SELECT 1 FROM packages p JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
+   WHERE p.repo_id = sqlc.arg(repo_id)::bigint AND p.name = sqlc.arg(name)::text)::boolean;

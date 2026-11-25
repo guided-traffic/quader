@@ -789,6 +789,45 @@ func (q *Queries) DebViewCoordinates(ctx context.Context, versionIds []int64) ([
 	return items, nil
 }
 
+const debViewRemoteCoordinates = `-- name: DebViewRemoteCoordinates :many
+SELECT DISTINCT i.version_id, substr(e.dir, 7)::text AS suite, split_part(e.index_path, '/', 1)::text AS component
+  FROM items i
+  JOIN deb_binaries b ON b.item_id = i.id
+  JOIN deb_remote_entries e ON e.repo_id = i.repo_id AND e.path = i.path::text
+ WHERE i.version_id = ANY($1::bigint[]) AND i.trashed_at IS NULL
+   AND e.dir LIKE 'dists/%' AND e.index_path LIKE '%/%'
+ ORDER BY 1, 2, 3
+`
+
+type DebViewRemoteCoordinatesRow struct {
+	VersionID pgtype.Int8
+	Suite     string
+	Component string
+}
+
+// The suites and components of the package files a remote repository cached (R-DEB-037): the parsed Packages indexes of a release
+// directory dists/<suite> that list the file's path, the component being the first segment of the index path. A file of a flat
+// directory has none.
+func (q *Queries) DebViewRemoteCoordinates(ctx context.Context, versionIds []int64) ([]DebViewRemoteCoordinatesRow, error) {
+	rows, err := q.db.Query(ctx, debViewRemoteCoordinates, versionIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DebViewRemoteCoordinatesRow{}
+	for rows.Next() {
+		var i DebViewRemoteCoordinatesRow
+		if err := rows.Scan(&i.VersionID, &i.Suite, &i.Component); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const debViewRows = `-- name: DebViewRows :many
 SELECT i.version_id, b.architecture, b.control, b.source
   FROM deb_binaries b

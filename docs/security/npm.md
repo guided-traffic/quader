@@ -215,7 +215,13 @@ repository's URL. Every other member passes as the upstream wrote it.
 **Which bytes a cached tarball must have.** The expected digest is the `sha512` of the document's `dist.integrity`, else its `dist.shasum`
 ([R-NPM-025](../spec/formats/npm.md#r-npm-025--tarball-urls-and-tarball-fetching), `BeforeArtifactWith`); the engine compares it under the
 remote's `integrity.checksumPolicy` (default `verify-if-available`, 502 `upstream_integrity_mismatch`, nothing stored). npm declares no
-fill inspection: a cached tarball is not opened, so the announced digest is the one tie between the document and the bytes. Under the
+fill inspection: a cached tarball is not opened before it is stored and served, so the announced digest is the one tie between the
+document and the bytes. After the fill the job `npm-remote-describe` reads it once with the reader of a publish (the bounds of
+Q-NPM-17), and a screen reads its README with the bounded reader of every archive (R-ARCH-028, 20 seconds); both only describe the
+version on the screens, decide nothing that is served, and treat a tarball they refuse as one without those facts
+([R-NPM-050](../spec/formats/npm.md#r-npm-050--a-version-a-remote-cached-is-described-as-a-published-one),
+[R-NPM-051](../spec/formats/npm.md#r-npm-051--the-readme-of-a-version-is-read-from-its-tarball-when-it-is-not-stored)). The README is
+rendered and sanitized as a published one's (R-UI-008). Under the
 default policy a version whose document announces neither digest is stored as the upstream sent it; `require` refuses it before a byte is
 fetched, because it asks for a SHA-256 or stronger digest ([internal/proxy/integrity.go](../../internal/proxy/integrity.go) `admitsDigests`).
 

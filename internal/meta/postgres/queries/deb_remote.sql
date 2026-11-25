@@ -215,3 +215,37 @@ SELECT DISTINCT r.dir, r.document, r.sha256, r.release_date, COALESCE(r.verified
   JOIN deb_remote_releases r ON r.repo_id = e.repo_id AND r.dir = e.dir AND r.document <> 'absent'
  WHERE e.repo_id = sqlc.arg(repo_id)::bigint AND e.path = sqlc.arg(path)::text AND e.sha256 = sqlc.arg(sha256)::bytea
  ORDER BY r.dir, r.document;
+
+-- name: DebDescribeFiles :many
+-- The live package files a remote repository cached of a package that have no row of deb_binaries yet (R-DEB-037): the files of its
+-- live versions, with their blobs, for the job deb-remote-describe to read the control paragraph of.
+SELECT i.id AS item_id, i.path::text AS path, COALESCE(i.blob_sha256, ''::bytea)::bytea AS sha256, COALESCE(i.size, 0)::bigint AS size
+  FROM packages p
+  JOIN repositories r ON r.id = p.repo_id AND r.class = 'remote' AND r.format = 'deb'
+  JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
+  JOIN items i ON i.version_id = pv.id AND i.trashed_at IS NULL AND i.kind = 'file'
+ WHERE p.repo_id = sqlc.arg(repo_id)::bigint AND p.name = sqlc.arg(package)::text
+   AND NOT EXISTS (SELECT 1 FROM deb_binaries b WHERE b.item_id = i.id)
+ ORDER BY i.id;
+
+-- name: DebForgetCachedRow :execrows
+-- Drops the row of another file of the same package, version and architecture a remote repository holds no more (a file fetched again
+-- is a new item), so that the row of the file that is cached now takes its place (R-DEB-037).
+DELETE FROM deb_binaries
+ WHERE repo_id = sqlc.arg(repo_id)::bigint AND package = sqlc.arg(package)::text AND version = sqlc.arg(version)::text
+   AND architecture = sqlc.arg(architecture)::text AND item_id <> sqlc.arg(item_id)::bigint;
+
+-- name: DebPutCachedRow :execrows
+-- The row of a package file a remote repository cached (R-DEB-037): its normalized control paragraph, as a local file's (R-DEB-007).
+-- A remote file has no row of deb_coordinates: the suites and components of a cached file are the indexes that list it
+-- (DebViewRemoteCoordinates), and nothing builds an index of a remote. A file gone or trashed meanwhile gets no row.
+INSERT INTO deb_binaries (item_id, repo_id, package, version, architecture, source, control)
+SELECT i.id, i.repo_id, sqlc.arg(package)::text, sqlc.arg(version)::text, sqlc.arg(architecture)::text, sqlc.arg(source)::text,
+       sqlc.arg(control)::text
+  FROM items i
+ WHERE i.id = sqlc.arg(item_id)::bigint AND i.repo_id = sqlc.arg(repo_id)::bigint AND i.trashed_at IS NULL
+ON CONFLICT (item_id) DO NOTHING;
+
+-- name: DebDeleteCachedRows :execrows
+-- The rows of package files a remote repository removed from its cache (R-DEB-037): they go with the file, in the removal's transaction.
+DELETE FROM deb_binaries WHERE repo_id = sqlc.arg(repo_id)::bigint AND item_id = ANY(sqlc.arg(item_ids)::bigint[]);

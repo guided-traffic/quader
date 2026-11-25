@@ -186,6 +186,10 @@ type App struct {
 	ansibleReindex late[jobs.Handler]
 	// ansibleDocsFill is the handler of the job ansible-docs-fill (wire_ansible.go).
 	ansibleDocsFill late[jobs.Handler]
+	// npmDescribe is the handler of the job npm-remote-describe (wire_remote_describe.go).
+	npmDescribe late[jobs.Handler]
+	// debDescribe is the handler of the job deb-remote-describe (wire_remote_describe.go).
+	debDescribe late[jobs.Handler]
 	// signatureFetch is the handler of the job signature-fetch (wire_signature_fetch.go).
 	signatureFetch late[jobs.Handler]
 	shipper        late[journal.Shipper]

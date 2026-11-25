@@ -1432,7 +1432,9 @@ Priority: **P2** · Covers: PKG-DEB-010
   `Description`, and as metadata the architectures, the coordinates, `Maintainer`, `Section`, `Priority`, `Installed-Size`,
   `Homepage`, `Depends` and `Source`. There is no README, so the format has no wiki content
   ([authorization.md](../authorization.md) R-AUTHZ-034) and a repository's wiki level decides nothing for it.
-- For a remote repository the screens show the versions whose files are stored, described from the parsed rows (R-DEB-023).
+- For a remote repository the screens show the versions whose files are stored, named by the parsed rows (R-DEB-023) and described
+  as a local version from the control paragraph of the cached file (R-DEB-037); their coordinates are the suites and components of the
+  parsed indexes that list the file.
 - **The repository screen** ([api-and-ui.md](../api-and-ui.md) R-UI-021, Q-DEB-100 to Q-DEB-102): a local or virtual Debian repository
   has the tabs **Signing keys** (R-DEB-015, R-DEB-017, R-DEB-032: the list, the next key generated or imported, the promotion, the
   removal of the next key, the confirmation or reinstatement of a withheld key; a private key is never shown) and **Index**
@@ -1444,6 +1446,37 @@ Acceptance criteria:
 
 - The package screen of `hello` in `deb-local` lists `2.10-3` with the architectures `amd64` and `arm64` and the coordinate
   `stable/main`; the API returns them in `metadata`.
+
+### R-DEB-037 · A package file a remote cached is described by its control paragraph
+Priority: **P1** · Covers: quader-only
+
+A version a remote repository lists because a client fetched its file (R-API-081) shows on the package screens what a local version shows
+(R-DEB-030): the first line of `Description` and the control fields. By the owner's rule of 2026-11-25 the documentation a format
+regularly carries is shown wherever it is present
+([Q-DEB-135](#q-deb-135--a-package-file-a-remote-cached-is-described-by-a-job-that-reads-its-control-archive)).
+
+- **The row.** Every live package file a remote holds of a listed version has a row of `deb_binaries` with its normalized control
+  paragraph, as a local file's (R-DEB-007): the paragraph of the file's control archive, read within the bounds of R-DEB-034, without the
+  fields an index computes. The data archive is never read. A cached file gets no row of `deb_coordinates`, raises no suite and is part of
+  no index build: its coordinates on the screens are the suites and components of the parsed `Packages` indexes below `dists/` that list
+  its path (R-DEB-023); a file of a flat directory has none.
+- **The job.** The job `deb-remote-describe` (queue `index`, coalesce per repository and package, key
+  `deb-describe:<repository id>:<package>`, 5 attempts, 10 minutes) reads, for every live file of the package that has no row yet, the
+  ar headers and the control archive of the stored file with ranged reads (no transaction is held while it reads), and writes the row.
+  A file whose control data Quader refuses (one an upload would be refused for, R-DEB-007) gets no row and stays listed by its generic
+  rows. The row of another file of the same package, version and architecture that the repository no longer holds (one fetched again is a
+  new item) is replaced.
+- **When it runs.** The commit of a cached package file queues it in the fill's transaction (R-DEB-022); the row exists seconds later, and
+  a package page that is open reads it again by itself (R-UI-213). A file cached before the job existed is described the next time a file
+  of its package is fetched.
+- **The removal.** The removal of a cached file deletes its row in the removal's transaction (R-API-081), and a restore without remote
+  caches erases the cached files through the same path (R-DEB-032).
+
+Acceptance criteria:
+
+- The package file of `quader-hello` fetched through a remote answers, in the package API, the paragraph's first line as the package's
+  description, `Depends`, `Maintainer`, the architecture `amd64` and the coordinate `stable/main`; its removal deletes the row
+  (`TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph`, integration area `debremote`).
 
 ### R-DEB-031 · Debian on n replicas, without Valkey and during a drain
 Priority: **P2** · Covers: quader-only
@@ -3426,7 +3459,10 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (a). **Revised on 2026-11-19** ([repositories-and-proxy.md](../repositories-and-proxy.md) Q-REPO-330, W-24): the fill of a pool
 file now writes the generic package and version rows of option (b), named by the parsed index row of its path, so that a Debian remote lists
 what was fetched through it as every format's remote does (R-API-081); it still writes no row of the local class (`deb_binaries`, the
-coordinates, the suites), and a file no parsed index lists gets no row.
+coordinates, the suites), and a file no parsed index lists gets no row. **Revised again on 2026-11-25** (R-DEB-037,
+[Q-DEB-135](#q-deb-135--a-package-file-a-remote-cached-is-described-by-a-job-that-reads-its-control-archive)): a cached file has its row of
+`deb_binaries`, written by the job the fill queues, so that its version is described as a local one; it still has no coordinates and no
+suite, and nothing builds an index of a remote.
 
 **Rationale:** The hook ran for fills before this class existed and answered 409 to a raw deploy; the fill is not a deploy.
 
@@ -3932,6 +3968,32 @@ agent would revisit the choice if a test's repository had a build queued with a 
 **Applied in the spec:** none. Tests: `TestR_DEB_025_AReleaseNoCurrentKeyVerifiesIsNotMerged`,
 `TestR_DEB_025_AReleaseOlderThanTheRecordedDateIsNotMerged`.
 
+### Q-DEB-135 · A package file a remote cached is described by a job that reads its control archive
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found by W-30
+(G1) on 2026-11-25 and reproduced on the integration stack: a package file fetched through a remote was listed (Q-REPO-330), and its
+version answered no control field within 30 seconds, because the fill wrote no row of `deb_binaries` (Q-DEB-85). W-30's plan had the
+commit write the row from the parsed index row; that row holds the package, the version, the architecture, the path, the digest, the size,
+`Provides` and the short description, not the paragraph.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The commit writes the row from the parsed index row (`deb_remote_entries`) | W-30's plan | No read of the file | The row holds no `Depends`, `Maintainer`, `Section` or long description: the version would stay undescribed |
+| (b) The parse stores every paragraph of an index (R-DEB-023) | The paragraph is at hand at the commit | No read of the file | Every paragraph of every index a remote parses, for the few files clients fetch: tens of megabytes per architecture and suite of a full archive |
+| (c) A fill hook reads the `.deb` before it is stored | The pattern of NuGet's `.nupkg` | The row exists with the commit | The engine holds every byte of a package file with a hook until the whole of it is fetched; apt waits for a large file with no byte arriving |
+| (d) A job queued by the fill reads the stored file's ar headers and control archive with ranged reads and writes the row (chosen) | `deb-remote-describe` (R-DEB-037) | The paragraph of the file itself, read as an upload's is (R-DEB-007) and never the data archive; no blob read in a transaction; the fill path unchanged | The row exists seconds after the fill; one more job kind |
+
+**Choice:** (d). **Rationale:** the file's own control archive is the paragraph a local version shows, the read costs a few ranged
+requests at the head of the file, and the fill keeps streaming. The ranged reads are not verified against the file's digest: the
+paragraph is display text, and the file was checked against its index's digest when it was stored (R-DEB-022). Revisit if the parse of
+R-DEB-023 keeps paragraphs for another reason.
+
+**Applied in the spec:** R-DEB-030, R-DEB-037, Q-DEB-85 (revised), [api-and-ui.md](../api-and-ui.md) R-API-029. Code:
+[describe.go](../../../internal/formatdata/deb/describe.go), `commitFill` and `removeCached` in
+[hooks.go](../../../internal/formats/deb/hooks.go), `Describe` in [view_store.go](../../../internal/formatdata/deb/view_store.go). Tests:
+`TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph` (integration, area `debremote`), the queue and the removal in
+`TestR_API_081_ARemoteListsThePackageFileItCachedAndItsRemovalTakesTheVersion` (unit).
+
 ## What this does not cover
 
 ### H-1971 · A pre-release spelled with a tilde is a package's latest version on the screens
@@ -4051,3 +4113,16 @@ package's name, architecture `all` (Q-DEB-47). A grant whose path patterns hide 
 name hides the version from the package screens and version lists; a pattern that addresses only the directory of another source
 package, or one architecture's file name, hides the file, which stays hidden on the pool route, but not the version. Live today for
 local repositories with such patterns; the file is never exposed by it.
+
+### H-2093 · A package file cached before R-DEB-037 is described only when a file of its package is fetched again
+
+Component: the job `deb-remote-describe` (R-DEB-037). Subject: a Debian remote that cached package files before the job existed. Such a
+version is listed without its control fields until the fill of another file of its package queues the job, which then describes every
+file of the package without a row; a package nobody fetches again stays undescribed. Live on an installation that cached Debian files
+before this change (pre-alpha: the owner's playground).
+
+### H-2094 · The row of a cached package file is written seconds after its fill
+
+Component: the job `deb-remote-describe` (R-DEB-037). Subject: the first screen of a version a client fetched a moment ago. Until the job
+ran the version is listed without its control fields; the page reads it again by itself while it is open (R-UI-213). Live; the time is
+the pick-up of a job of the queue `index`, longer while that queue is busy with index builds.

@@ -63,6 +63,9 @@ type Store struct {
 
 	// Fetches are the targets of the background fetch of signatures the format queued (R-SIG-026), "+" before a refresh.
 	Fetches []string
+	// Describes are the packages ("<repo>/<name>") whose cached versions the format queued the description of (R-NPM-050), "?" before
+	// one queued only while the repository holds a version.
+	Describes []string
 	// Keys are the keys of a local repository RegistryKeys answers (signatures.md R-SIG-050); nil answers none.
 	Keys []rows.RegistryKey
 	// signatures are the dist.signatures of a version a test set (SetSignatures), by repo/name/version.
@@ -369,6 +372,19 @@ func (s *Store) EnqueueSignatureFetch(_ context.Context, _ formats.Tx, _ int64, 
 		target = "+" + target
 	}
 	s.Fetches = append(s.Fetches, target)
+	return nil
+}
+
+// QueueDescribe records the package whose cached versions the format asked to describe (R-NPM-050), "?" before one queued only while the
+// repository holds a version of it.
+func (s *Store) QueueDescribe(_ context.Context, _ formats.Tx, repoID int64, name string, ifHeld bool) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	k := pkgKey(repoID, name)
+	if ifHeld {
+		k = "?" + k
+	}
+	s.Describes = append(s.Describes, k)
 	return nil
 }
 

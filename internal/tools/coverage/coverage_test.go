@@ -118,8 +118,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// (R-CUR-027, one P1 requirement). 1280 since the switches of a package and a version and the change of the delivery mode
 		// (R-CUR-024, R-CUR-025, two P1 requirements of W-28). 1281 since every load shows the spinner (R-UI-217, one P1 requirement).
 		// 1282 since the range of versions in a package's allow (R-CUR-026, one P1 requirement of W-28).
-		if len(m.Reqs) != 1282 || count[prioMVP] != 720 || count[prioP1] != 523 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1282 (720, 523, 39)",
+		// 1285 since a version a remote cached is described as a local one (R-NPM-050, R-NPM-051, R-DEB-037, three P1 requirements of
+		// W-30).
+		if len(m.Reqs) != 1285 || count[prioMVP] != 720 || count[prioP1] != 526 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1285 (720, 526, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"math"
+	"time"
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/formats/npm/tarball"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
@@ -53,11 +56,14 @@ func nonEmpty(in []string) []string {
 }
 
 // ViewDetails reads the manifest, the deprecation and the dist-tags of the versions,
-// and their README text when asked.
+// and their README text when asked: the stored text of a publish, else the file the
+// read of the tarball named, read from the stored tarball outside the transaction
+// (R-NPM-051).
 func (s *Store) ViewDetails(ctx context.Context, ids []int64, withReadme bool) ([]rows.ViewDetail, error) {
 	var out []rows.ViewDetail
+	var blobs []blobRef
 	err := s.o.DB.InTx(ctx, func(tx meta.Tx) error {
-		out = out[:0]
+		out, blobs = out[:0], blobs[:0]
 		qs, err := queries(tx)
 		if err != nil {
 			return err
@@ -75,10 +81,51 @@ func (s *Store) ViewDetails(ctx context.Context, ids []int64, withReadme bool) (
 				VersionID: r.VersionID, Manifest: []byte(r.Manifest), Deprecated: r.Deprecated,
 				HasReadme: r.HasReadme, Readme: r.Readme, ReadmeFilename: r.ReadmeFilename, DistTags: tags,
 			})
+			blobs = append(blobs, blobRef{sha256: r.Sha256, size: r.Size})
 		}
 		return nil
 	})
-	return out, err
+	if err != nil || !withReadme {
+		return out, err
+	}
+	for i := range out {
+		if d := &out[i]; d.HasReadme && d.Readme == "" && d.ReadmeFilename != "" {
+			d.Readme = s.readme(ctx, blobs[i], d.ReadmeFilename)
+		}
+	}
+	return out, nil
+}
+
+// blobRef names the stored tarball of a version.
+type blobRef struct {
+	sha256 []byte
+	size   int64
+}
+
+// readmeTimeout bounds the inflation of a tarball up to its README.
+const readmeTimeout = 20 * time.Second
+
+// readme reads the README the read of a tarball named from the stored tarball, at most the 64 KiB a published README keeps, by
+// streaming it up to that file (R-NPM-051): a tarball that cannot be read, one without the file and a replica without the blob store
+// give none, which the screens show as a version without a README.
+func (s *Store) readme(ctx context.Context, b blobRef, name string) string {
+	if s.o.Blobs == nil || len(b.sha256) != 32 {
+		return ""
+	}
+	var sum [32]byte
+	copy(sum[:], b.sha256)
+	body, err := s.o.Blobs.Open(ctx, sum, b.size)
+	if err != nil {
+		return ""
+	}
+	defer func() { _ = body.Close() }()
+	lim := untrusted.DefaultLimits()
+	lim.Deadline = readmeTimeout
+	data, found, err := tarball.ReadFile(ctx, body, lim, name, maxReadme)
+	if err != nil || !found {
+		return ""
+	}
+	return clean(string(data), maxReadme)
 }
 
 // ViewFind returns the ids of at most limit versions of the repositories (by key)

@@ -47,6 +47,12 @@ when the operator gives it the upstream's keys.
 | A by-hash file | its SHA-256 or SHA-512 is the digest of its path | the same |
 | A package file | the digest and size the newest parsed index lists, when one does | the same; without a listed digest it is stored unverified ([H-625](../spec/formats/debian.md#h-625--pool-files-no-parsed-index-names-are-stored-unverified)) or refused with `require` |
 
+**After a package file is stored**, the job `deb-remote-describe` reads its control archive for the package screens
+([R-DEB-037](../spec/formats/debian.md#r-deb-037--a-package-file-a-remote-cached-is-described-by-its-control-paragraph)): the reader of an
+upload, with the bounds of R-DEB-034, never the data archive. Its ranged reads of the stored blob are not verified against the digest: the
+paragraph is display text, the file was verified against its index when it was stored, and a paragraph the reader refuses leaves the
+version undescribed. Nothing it reads decides what is served.
+
 The order of the rules matters in one place: **the anti-rollback**. `floor_date` holds the newest `Date` of any release that was ever
 verified for a directory, rises only, and survives the removal of the key that verified it. While keys are set a received release
 older than the floor leaves the stored document where it is and counts in `quader_deb_release_rollbacks_total`, so a validly signed old

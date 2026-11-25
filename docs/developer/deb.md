@@ -79,7 +79,7 @@ deployment target by the dispatcher before the format sees it (Q-DEB-67).
 | [store.go](../../internal/formats/deb/store.go), `store_*.go` | The data port: `Store` embeds one group per package (`LocalStore`, `KeyStore`, `BuildStore`, `RemoteStore`, `MirrorStore`, `VirtualStore`, `ViewStore`, `JournalStore`) |
 | [rows](../../internal/formats/deb/rows/rows.go) | The values that cross the port (a leaf) |
 | [version](../../internal/formats/deb/version/version.go), [control](../../internal/formats/deb/control/control.go), [debfile](../../internal/formats/deb/debfile/debfile.go), [index](../../internal/formats/deb/index), [release](../../internal/formats/deb/release/release.go) | The leaf libraries: dpkg order, deb822, the package archive, the renderers of a local repository's indexes, the reader of an upstream's Release |
-| [../formatdata/deb](../../internal/formatdata/deb/port.go) | The implementation of the port: `port.go` composes one group per file (`local_store.go`, `keys_store.go`, `build_store.go`, `remote_store.go`, `mirror_store.go`, `virtual_store.go`, `view_store.go`, `journal_store.go`), all built. `tables_deb.go` registers the tables, the revision columns and the sealed column, `jobs.go` the kinds and the task, `build.go`, `virtual_build.go`, `remote_parse.go`, `housekeeping.go`, `refresh.go`, `refresh_remote.go`, `refresh_virtual.go` the handlers, `reseal.go` the key-ring walk |
+| [../formatdata/deb](../../internal/formatdata/deb/port.go) | The implementation of the port: `port.go` composes one group per file (`local_store.go`, `keys_store.go`, `build_store.go`, `remote_store.go`, `mirror_store.go`, `virtual_store.go`, `view_store.go`, `journal_store.go`), all built. `tables_deb.go` registers the tables, the revision columns and the sealed column, `jobs.go` the kinds and the task, `build.go`, `virtual_build.go`, `remote_parse.go`, `housekeeping.go`, `refresh.go`, `refresh_remote.go`, `refresh_virtual.go` the handlers, `describe.go` the job `deb-remote-describe` (R-DEB-037), `reseal.go` the key-ring walk |
 | [untrusted/{ar,xz,zstd}.go](../../internal/formats/untrusted/ar.go) | `NewAr` (the bounded `ar` reader: at most the member count of the limits, a member is opened by a section reader, never extracted), `NewXZReader`/`NewXZReaderMax` and `NewZstdReader`/`NewZstdReaderMax` (bounded, failing instead of cutting; Q-ARCH-382) |
 | [servefacts](../../internal/servefacts/servefacts.go), `files.sql` | The kinds `deb_local` and `deb_remote` and the columns the item lookup returns for them (Q-ARCH-381) |
 | [items/publish.go](../../internal/items/publish.go) | `Publisher`, `GeneratedFile`, `ErrSuperseded`, `Store.Publish` ([the publication port](items.md#the-publication-port)) |
@@ -359,6 +359,14 @@ Each run is counted in `quader_deb_remote_parse_total{outcome}` through `RemoteJ
 `deb-index` of a remote (`RunIndex`) re-verifies the unverified releases from the cache and forgets what `deb.by_hash_keep` has passed; the remote part
 of `deb-index-refresh` enqueues it. The runtime is `RemoteJobs`; the composition root wires it as a late value on a replica that claims jobs
 ([wire_deb_remote.go](../../internal/app/wire_deb_remote.go), ADR-187) and implements `Background` over the mirror host.
+
+**A cached file's control paragraph** (R-DEB-037, Q-DEB-135): `commitFill` ([hooks.go](../../internal/formats/deb/hooks.go)) queues `deb-remote-describe`
+for the package (`RemoteStore.QueueDescribe`, coalesced per repository and package); its handler (`DescribeCached` in
+[describe.go](../../internal/formatdata/deb/describe.go)) reads every live file of the package without a row of `deb_binaries` with `debfile.Read` over ranged
+reads of the stored blob (`Options.Blobs`, the composition root's `blobRanges`), and writes the row (`DebForgetCachedRow`, `DebPutCachedRow`). No
+`deb_coordinates` row is written: `Describe` in [view_store.go](../../internal/formatdata/deb/view_store.go) reads a cached file's coordinates from the parsed
+entries that list its path (`DebViewRemoteCoordinates`). `removeCached` deletes the rows of the removed files (`RemoteStore.ForgetCached`). The handler is
+built by `startRemoteDescribe` ([wire_remote_describe.go](../../internal/app/wire_remote_describe.go)) on a replica that claims jobs.
 
 **Repository rules** ([validate_deb.go](../../internal/repository/validate_deb.go), [members.go](../../internal/repository/members.go),
 [journal_replay.go](../../internal/repository/journal_replay.go), [keys_hooks.go](../../internal/repository/keys_hooks.go), [narrowed.go](../../internal/repository/narrowed.go)):

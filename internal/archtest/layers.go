@@ -98,6 +98,12 @@ func layerTable() []layerRule {
 		// port (domain) apply one dist-tag rule: the restore's journal replay withholds a version and moves the tags off it
 		// (R-NPM-016, R-NPM-047).
 		{"internal/formats/npm/semver", layerLeaf},
+		// The npm manifest rules and the tarball reader import only errs, internal/formats/untrusted, the standard library and each
+		// other. They are leaves so that the format (edge) and its data port (domain) read a tarball one way: the publish validates it,
+		// and the job that describes a version a remote cached and the README of the package screens read the stored one (R-NPM-050,
+		// R-NPM-051).
+		{"internal/formats/npm/manifest", layerLeaf},
+		{"internal/formats/npm/tarball", layerLeaf},
 		// The Debian rule libraries import only errs, internal/formats/untrusted, the standard library and each other: the deb822
 		// parser and writer (control), the package archive reader (debfile), dpkg's version order (version) and the index renderers
 		// (index). They are leaves so that the format (edge), its data port and its jobs share one parser (R-DEB-002, R-DEB-007,

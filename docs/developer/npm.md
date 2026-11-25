@@ -55,9 +55,11 @@ internal/audit/events_npm.go   every audit event type of R-NPM-044
 ```
 
 The sub-packages `name`, `semver`, `manifest`, `tarball` and `publish` are leaves: the standard library and [internal/errs](../../internal/errs/) (and
-their siblings). The format import rule of R-ARCH-008 ([archtest](../../internal/archtest/imports.go)) allows exactly that inside a format's own tree, so a leaf that grows an
-import of another layer fails `go test ./internal/archtest/...`. `rows` is a layer-table leaf of its own: the domain package `internal/formatdata/npm` may import it, which it may not
-do with any other package of the format.
+their siblings; `tarball` also the bounded readers of [internal/formats/untrusted](../../internal/formats/untrusted/)). The format import rule of R-ARCH-008
+([archtest](../../internal/archtest/imports.go)) allows exactly that inside a format's own tree, so a leaf that grows an import of another layer fails
+`go test ./internal/archtest/...`. `rows`, `semver`, `manifest` and `tarball` are leaves of the layer table too ([layers.go](../../internal/archtest/layers.go)):
+the domain package `internal/formatdata/npm` may import them (the job of R-NPM-050 reads a cached tarball with `tarball.Validate`, the screens read a README
+with `tarball.ReadFile`), which it may not do with any other package of the format.
 
 ## The format
 
@@ -268,8 +270,17 @@ internal/formats/npm/
 ├── remote/            the checks of R-NPM-024 (Check, a stream), Parse, Full / Abbreviated / Version, Rewrite, URL; a leaf
 └── merge/             the per-version source rule, the tag strategies, time and top-level fields, conflicts; a leaf
 internal/formatdata/npm/remote.go   ApplyFill, TarballFacts
+internal/formatdata/npm/describe.go the job npm-remote-describe: the rows of the versions a remote cached (R-NPM-050)
 internal/meta/postgres/queries/npm_remote.sql
 ```
+
+**A cached version's row** (R-NPM-050, Q-NPM-91): the commit of a cached tarball (`commitFill` in [hooks.go](../../internal/formats/npm/hooks.go)) links it to its
+version and queues `npm-remote-describe` for the package; `OnFill` queues it too when it replaced the stored document and the repository holds a live version of the
+package (`QueueDescribe` with `ifHeld`). The handler (`DescribeCached` in [describe.go](../../internal/formatdata/npm/describe.go)) reads the stored document by
+streaming it and keeps the entries and times of the versions held, reads each tarball without a row once with `tarball.Validate`, and writes `NPMPutCachedVersion`
+(the digests from the blob, the facts of the tarball only when it was read). The composition root registers the kind in `registerFormatJobs` and builds the handler
+on a replica that claims jobs (`startRemoteDescribe` in [wire_remote_describe.go](../../internal/app/wire_remote_describe.go)); the data port reads blobs through
+`Options.Blobs` and queues through `Options.Jobs`.
 
 | Question | Answer |
 |---|---|
@@ -390,7 +401,8 @@ documented one: description and keywords (summary); `license` or the legacy `lic
 `optionalDependencies`, `engines`; `author` and `contributors` as "Name <email> (url)"; `homepage`, `repository.url`, `bugs.url`; the deprecation message; and the
 dist-tags of the package, restricted to versions the caller may read. The reads are in
 [formatdata/npm/view.go](../../internal/formatdata/npm/view.go) over [npm_view.sql](../../internal/meta/postgres/queries/npm_view.sql): the summaries, the
-details with the README on request, the two searches (description contains text case-insensitively; keywords contain a keyword exactly) and the tombstoned
+details with the README on request (the stored text of a publish; for a cached version the file its row names, read from the stored tarball
+with `tarball.ReadFile` outside the transaction, R-NPM-051), the two searches (description contains text case-insensitively; keywords contain a keyword exactly) and the tombstoned
 versions that `Withheld` reports (R-NPM-047). The tests are `TestR_API_029_NPM*` ([view_test.go](../../internal/formats/npm/view_test.go)) and the
 integration area `test/integration/packages`.
 
@@ -419,6 +431,7 @@ complete tag map.
 | `LiveVersions` | under the row lock: the versions the document holds, in publish order |
 | `Tombstoned` | one lookup, for `ServeCheck` when the item lookup did not read the tombstone with the item (R-ARCH-027) |
 | `ClearTombstone` | a restore: removes the tombstone when the stored version has the integrity it holds |
+| `QueueDescribe` | in the fill's transaction: queues `npm-remote-describe` for a package of a remote (R-NPM-050); with `ifHeld` only while the repository holds a live version of it |
 | `AuditNames` | one statement (`NPMAuditNames`): per name of an audit body, the record of the forwarding remote, a package row or tombstone of any npm local repository, a claim of an npm local repository, a pin rule of the requesting virtual repository (R-NPM-038) |
 
 Add to the port in the `>>> M2 npm-read` and `>>> M2 npm-remote` blocks of `store.go` and `npm_local.sql`/`npm_remote.sql` (the reads of the local class are in [read.go](../../internal/formatdata/npm/read.go)); add the method to the twin in `npmtest` in the same change.
@@ -606,6 +619,7 @@ Errors are `*errs.Error` with the native npm codes `npm_bad_publish` (400), `npm
 | File | Responsibility |
 |---|---|
 | [tarball.go](../../internal/formats/npm/tarball/tarball.go) | `Validate`, `Limits`, `Result`; the reader stack; the walker with the path, link and duplicate rules |
+| [readfile.go](../../internal/formats/npm/tarball/readfile.go) | `ReadFile`: one file of a stored tarball by its install path, at most a bound, through `untrusted.NewTarGz` (the README of a cached version, R-NPM-051) |
 
 `Validate(ctx, r, limits)` reads a gzip-compressed tar once. The reader stack, outermost first: a source
 reader (context, compressed-bytes cap, count) feeds a tee into SHA-1 and SHA-512, then a buffered reader and a

@@ -87,6 +87,9 @@ func (a *App) wireFormatPorts(ctx context.Context, in infra) (formatPortsArea, e
 		if err := a.startAnsibleReindex(in, ports); err != nil {
 			return formatPortsArea{}, err
 		}
+		if err := a.startRemoteDescribe(ports); err != nil {
+			return formatPortsArea{}, err
+		}
 		a.startSignatureFetch(in)
 	}
 	return formatPortsArea{bindings: b, views: formathost.NewViewAdapters(formats.List(), b)}, nil
@@ -193,6 +196,8 @@ func (a *App) registerFormatJobs(r *jobs.Registry) {
 	r.RegisterTask(ocidata.SweepJobKind, spec)
 	debdata.RegisterJobs(r, a.debHandlers())
 	ansibledata.RegisterJobs(r, ansibledata.Handlers{Reindex: a.ansibleReindexHandler(), DocsFill: a.ansibleDocsFillHandler(), ImportTaskKeep: a.cfg.Ansible.ImportTaskKeep})
+	npm.RegisterJobs(r, a.npmDescribe.handler("npm remote describe", runLate))
+	debdata.RegisterDescribeJob(r, a.debDescribe.handler("Debian remote describe", runLate))
 	a.registerDownloadJobs(r)
 	sigfetch.RegisterKind(r, a.signatureFetchHandler())
 }
@@ -242,8 +247,12 @@ func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nu
 	// The background fetch of a remote's signatures (signatures.md R-SIG-026), queued by the OCI and the npm data ports.
 	fetches := signatureFetchQueue(db, queue, sig.RefreshAfter)
 	npmOpts := npm.Options{
-		DB: db, Recorder: rec, Source: httpserver.SourceFrom,
+		DB: db, Recorder: rec, Source: httpserver.SourceFrom, Blobs: npmBlobs(blobs),
 		Actor: func(ctx context.Context) audit.Actor { return edge.ActorFrom(httpserver.PrincipalFrom(ctx)) },
+	}
+	// The description of the versions a remote cached (R-NPM-050), queued by a fill; a restore fills nothing.
+	if queue != nil {
+		npmOpts.Jobs = queue
 	}
 	if fetches != nil {
 		npmOpts.Signatures = fetches
@@ -275,6 +284,7 @@ func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nu
 	}
 	debOpts := debdata.Options{
 		DB: db, Recorder: rec, Source: httpserver.SourceFrom, Ring: ring, IndexDelay: debCfg.IndexDelay, Log: log.With("component", "deb-mirror"),
+		Blobs: debBlobs(blobs),
 		Actor: func(ctx context.Context) audit.Actor { return edge.ActorFrom(httpserver.PrincipalFrom(ctx)) },
 	}
 	// The index build's queue: the restore's refusing queue has no Running and enqueues no build, as it enqueues no job.

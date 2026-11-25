@@ -652,15 +652,7 @@ func (w *walker) readReadme(hdr *tar.Header, name string) error {
 		return err
 	}
 	if n < hdr.Size {
-		// the cut may fall inside a character: drop the partial one
-		for i := len(data) - 1; i >= 0 && i >= len(data)-utf8.UTFMax; i-- {
-			if utf8.RuneStart(data[i]) {
-				if !utf8.FullRune(data[i:]) {
-					data = data[:i]
-				}
-				break
-			}
-		}
+		data = dropPartialRune(data) // the cut may fall inside a character
 	}
 	w.readme = strings.ToValidUTF8(string(data), "�")
 	w.readmeName = name

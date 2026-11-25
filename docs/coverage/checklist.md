@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,282 spec requirements:
-791 cover catalog features, 491 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,285 spec requirements:
+791 cover catalog features, 494 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>491 requirements</summary>
+<summary>494 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3231,6 +3231,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-DEB-004 | Permissions per operation | P2 | [formats/debian.md](../spec/formats/debian.md) |
 | R-DEB-005 | Errors and response headers | P2 | [formats/debian.md](../spec/formats/debian.md) |
 | R-DEB-024 | Mirror settings of a Debian remote | P2 | [formats/debian.md](../spec/formats/debian.md) |
+| R-DEB-037 | A package file a remote cached is described by its control paragraph | P1 | [formats/debian.md](../spec/formats/debian.md) |
 | R-DEB-031 | Debian on n replicas, without Valkey and during a drain | P2 | [formats/debian.md](../spec/formats/debian.md) |
 | R-DEB-032 | Debian data in backups and restores | P2 | [formats/debian.md](../spec/formats/debian.md) |
 | R-DEB-033 | Audit events and metrics | P2 | [formats/debian.md](../spec/formats/debian.md) |
@@ -3238,6 +3239,8 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-DEB-035 | Test suites | P2 | [formats/debian.md](../spec/formats/debian.md) |
 | R-DEB-036 | The upstream catalogue and the delivery rules of a Debian remote | P1 | [formats/debian.md](../spec/formats/debian.md) |
 | R-NPM-026 | Versions removed upstream | MVP | [formats/npm.md](../spec/formats/npm.md) |
+| R-NPM-050 | A version a remote cached is described as a published one | P1 | [formats/npm.md](../spec/formats/npm.md) |
+| R-NPM-051 | The README of a version is read from its tarball when it is not stored | P1 | [formats/npm.md](../spec/formats/npm.md) |
 | R-NPM-044 | npm audit events and metrics | MVP | [formats/npm.md](../spec/formats/npm.md) |
 | R-NPM-046 | npm across replicas: no state between requests, Valkey degradation, drain | MVP | [formats/npm.md](../spec/formats/npm.md) |
 | R-NPM-047 | npm data in backups and restores | MVP | [formats/npm.md](../spec/formats/npm.md) |

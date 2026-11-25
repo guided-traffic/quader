@@ -54,6 +54,17 @@ func (s viewStore) Describe(ctx context.Context, versionIDs []int64) (map[int64]
 				out[c.VersionID.Int64] = v
 			}
 		}
+		// A file a remote cached has the coordinates of the parsed indexes that list it (R-DEB-037).
+		rcs, err := qs.DebViewRemoteCoordinates(ctx, versionIDs)
+		if err != nil {
+			return err
+		}
+		for _, c := range rcs {
+			if v, ok := out[c.VersionID.Int64]; ok {
+				v.Coordinates = append(v.Coordinates, rows.Coordinate{Suite: c.Suite, Component: c.Component})
+				out[c.VersionID.Int64] = v
+			}
+		}
 		return nil
 	})
 	return out, err

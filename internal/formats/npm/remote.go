@@ -183,6 +183,11 @@ func (a remoteAdapter) OnFill(ctx context.Context, tx formats.Tx, ev formats.Fil
 	if err := st.EnqueueSignatureFetch(ctx, tx, ev.Repo.ID, keysTarget, [32]byte{}, true); err != nil {
 		return formats.FillByFetchTime, err
 	}
+	// The rows of the versions the repository cached follow the stored document: a deprecation the upstream added, and a version cached
+	// before its row existed, are described by the job (R-NPM-050).
+	if err := st.QueueDescribe(ctx, tx, ev.Repo.ID, doc.Name, true); err != nil {
+		return formats.FillByFetchTime, err
+	}
 	return decision, ev.Packages.Notify(catalog.MetadataChangedArea, catalog.PackageChanged(ev.Repo.ID, doc.Name))
 }
 

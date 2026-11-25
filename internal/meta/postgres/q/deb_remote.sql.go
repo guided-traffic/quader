@@ -12,6 +12,142 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const debDeleteCachedRows = `-- name: DebDeleteCachedRows :execrows
+DELETE FROM deb_binaries WHERE repo_id = $1::bigint AND item_id = ANY($2::bigint[])
+`
+
+type DebDeleteCachedRowsParams struct {
+	RepoID  int64
+	ItemIds []int64
+}
+
+// The rows of package files a remote repository removed from its cache (R-DEB-037): they go with the file, in the removal's transaction.
+func (q *Queries) DebDeleteCachedRows(ctx context.Context, arg DebDeleteCachedRowsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, debDeleteCachedRows, arg.RepoID, arg.ItemIds)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const debDescribeFiles = `-- name: DebDescribeFiles :many
+SELECT i.id AS item_id, i.path::text AS path, COALESCE(i.blob_sha256, ''::bytea)::bytea AS sha256, COALESCE(i.size, 0)::bigint AS size
+  FROM packages p
+  JOIN repositories r ON r.id = p.repo_id AND r.class = 'remote' AND r.format = 'deb'
+  JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
+  JOIN items i ON i.version_id = pv.id AND i.trashed_at IS NULL AND i.kind = 'file'
+ WHERE p.repo_id = $1::bigint AND p.name = $2::text
+   AND NOT EXISTS (SELECT 1 FROM deb_binaries b WHERE b.item_id = i.id)
+ ORDER BY i.id
+`
+
+type DebDescribeFilesParams struct {
+	RepoID  int64
+	Package string
+}
+
+type DebDescribeFilesRow struct {
+	ItemID int64
+	Path   string
+	Sha256 []byte
+	Size   int64
+}
+
+// The live package files a remote repository cached of a package that have no row of deb_binaries yet (R-DEB-037): the files of its
+// live versions, with their blobs, for the job deb-remote-describe to read the control paragraph of.
+func (q *Queries) DebDescribeFiles(ctx context.Context, arg DebDescribeFilesParams) ([]DebDescribeFilesRow, error) {
+	rows, err := q.db.Query(ctx, debDescribeFiles, arg.RepoID, arg.Package)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DebDescribeFilesRow{}
+	for rows.Next() {
+		var i DebDescribeFilesRow
+		if err := rows.Scan(
+			&i.ItemID,
+			&i.Path,
+			&i.Sha256,
+			&i.Size,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const debForgetCachedRow = `-- name: DebForgetCachedRow :execrows
+DELETE FROM deb_binaries
+ WHERE repo_id = $1::bigint AND package = $2::text AND version = $3::text
+   AND architecture = $4::text AND item_id <> $5::bigint
+`
+
+type DebForgetCachedRowParams struct {
+	RepoID       int64
+	Package      string
+	Version      string
+	Architecture string
+	ItemID       int64
+}
+
+// Drops the row of another file of the same package, version and architecture a remote repository holds no more (a file fetched again
+// is a new item), so that the row of the file that is cached now takes its place (R-DEB-037).
+func (q *Queries) DebForgetCachedRow(ctx context.Context, arg DebForgetCachedRowParams) (int64, error) {
+	result, err := q.db.Exec(ctx, debForgetCachedRow,
+		arg.RepoID,
+		arg.Package,
+		arg.Version,
+		arg.Architecture,
+		arg.ItemID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const debPutCachedRow = `-- name: DebPutCachedRow :execrows
+INSERT INTO deb_binaries (item_id, repo_id, package, version, architecture, source, control)
+SELECT i.id, i.repo_id, $1::text, $2::text, $3::text, $4::text,
+       $5::text
+  FROM items i
+ WHERE i.id = $6::bigint AND i.repo_id = $7::bigint AND i.trashed_at IS NULL
+ON CONFLICT (item_id) DO NOTHING
+`
+
+type DebPutCachedRowParams struct {
+	Package      string
+	Version      string
+	Architecture string
+	Source       string
+	Control      string
+	ItemID       int64
+	RepoID       int64
+}
+
+// The row of a package file a remote repository cached (R-DEB-037): its normalized control paragraph, as a local file's (R-DEB-007).
+// A remote file has no row of deb_coordinates: the suites and components of a cached file are the indexes that list it
+// (DebViewRemoteCoordinates), and nothing builds an index of a remote. A file gone or trashed meanwhile gets no row.
+func (q *Queries) DebPutCachedRow(ctx context.Context, arg DebPutCachedRowParams) (int64, error) {
+	result, err := q.db.Exec(ctx, debPutCachedRow,
+		arg.Package,
+		arg.Version,
+		arg.Architecture,
+		arg.Source,
+		arg.Control,
+		arg.ItemID,
+		arg.RepoID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const debRemoteClearVerifiedBy = `-- name: DebRemoteClearVerifiedBy :many
 UPDATE deb_remote_releases SET verified_by = NULL
  WHERE repo_id = $1::bigint AND verified_by = ANY($2::text[])

@@ -86,8 +86,11 @@ func (f *Format) OnCommit(ctx context.Context, tx formats.Tx, c formats.CommitEv
 // commitFill records the tarball a remote repository cached as a version of its package: the package and version rows, with the
 // item linked as the version's lead item, so that the scanning evaluates the version in the fill's commit and a block reaches
 // the item (R-VULN-001, R-VULN-011, R-VULN-015, Q-VULN-35). A remote version row is told from a published one by the class of
-// its repository; it carries no npm rows (the remote's documents come from the npm_remote tables). Any other file of a fill (a
-// metadata document, a provenance bundle) gets no version. A tarball whose path names no canonical package and version gets none.
+// its repository. Its row of npm_versions, which the package screens read, is written by the job the commit queues, from the
+// version's entry in the stored document and one read of the cached tarball (R-NPM-050): the commit reads no blob. A cached
+// version has no npm_packages row and no dist-tags of its own (the remote's documents come from the npm_remote tables). Any
+// other file of a fill (a metadata document, a provenance bundle) gets no version. A tarball whose path names no canonical
+// package and version gets none.
 func (f *Format) commitFill(ctx context.Context, tx formats.Tx, c formats.CommitEvent) error {
 	if c.Repo.Class != formats.Remote || !strings.HasSuffix(c.Path.Path, tarballSuffix) {
 		return nil
@@ -96,16 +99,27 @@ func (f *Format) commitFill(ctx context.Context, tx formats.Tx, c formats.Commit
 	if info.Kind != formats.Content || info.Package == "" || info.Version == "" {
 		return nil
 	}
+	st, err := storeOf(c.Data)
+	if err != nil {
+		// A host without the bound data port (the conformance kit's) lists the version and queues nothing.
+		return linkCached(ctx, c, info.Package, info.Version)
+	}
 	// The version's attestations are fetched in the background when its entry names dist.attestations (signatures.md R-SIG-026); the
 	// job reads the stored document, so a version without them costs no upstream request.
-	if st, err := storeOf(c.Data); err == nil {
-		var subject [32]byte
-		copy(subject[:], c.Digests.SHA256)
-		if err := st.EnqueueSignatureFetch(ctx, tx, c.Repo.ID, info.Package+"@"+info.Version, subject, false); err != nil {
-			return err
-		}
+	var subject [32]byte
+	copy(subject[:], c.Digests.SHA256)
+	if err := st.EnqueueSignatureFetch(ctx, tx, c.Repo.ID, info.Package+"@"+info.Version, subject, false); err != nil {
+		return err
 	}
-	pkg, _, err := c.Packages.EnsureLocked(ctx, c.Repo, info.Package, info.Package)
+	if err := linkCached(ctx, c, info.Package, info.Version); err != nil {
+		return err
+	}
+	return st.QueueDescribe(ctx, tx, c.Repo.ID, info.Package, false)
+}
+
+// linkCached links the cached tarball to its version as the lead item, creating the version when the repository has none of the number.
+func linkCached(ctx context.Context, c formats.CommitEvent, name, version string) error {
+	pkg, _, err := c.Packages.EnsureLocked(ctx, c.Repo, name, name)
 	if err != nil {
 		return err
 	}
@@ -114,11 +128,11 @@ func (f *Format) commitFill(ctx context.Context, tx formats.Tx, c formats.Commit
 		return err
 	}
 	for _, v := range live {
-		if v.Version == info.Version {
+		if v.Version == version {
 			return c.Packages.LinkItem(ctx, c.Item, v.ID, true)
 		}
 	}
-	if _, err := c.Packages.InsertVersion(ctx, pkg, formats.NewVersion{Version: info.Version, DisplayVersion: info.Version, LeadItem: &c.Item}); err != nil {
+	if _, err := c.Packages.InsertVersion(ctx, pkg, formats.NewVersion{Version: version, DisplayVersion: version, LeadItem: &c.Item}); err != nil {
 		return err
 	}
 	_, _, err = c.Packages.BumpRevision(ctx, pkg)

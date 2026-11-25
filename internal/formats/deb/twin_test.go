@@ -3,6 +3,7 @@ package deb
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"sort"
 	"strconv"
@@ -29,6 +30,24 @@ type twinStore struct {
 	Events []string
 	// Published are the package files package.published was recorded for (R-REPO-048).
 	Published []rows.Published
+	// Describes are the packages a remote's fill queued the description of ("<repo>/<package>"), Forgotten the cached files whose rows
+	// a removal deleted (R-DEB-037).
+	Describes []string
+	Forgotten []int64
+}
+
+func (t *twinStore) QueueDescribe(_ context.Context, _ formats.Tx, repoID int64, pkg string) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.Describes = append(t.Describes, fmt.Sprintf("%d/%s", repoID, pkg))
+	return nil
+}
+
+func (t *twinStore) ForgetCached(_ context.Context, _ formats.Tx, _ int64, itemIDs []int64) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.Forgotten = append(t.Forgotten, itemIDs...)
+	return nil
 }
 
 func (t *twinStore) RecordPublished(_ context.Context, _ formats.Tx, in rows.Published) error {

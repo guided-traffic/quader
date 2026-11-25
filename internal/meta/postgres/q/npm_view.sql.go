@@ -13,13 +13,19 @@ const nPMViewDetails = `-- name: NPMViewDetails :many
 SELECT nv.version_id,
        nv.manifest::text AS manifest,
        COALESCE(nv.deprecated, '')::text AS deprecated,
-       (COALESCE(nv.readme, '') <> '')::boolean AS has_readme,
+       (COALESCE(nv.readme, '') <> ''
+        OR (r.class = 'remote' AND COALESCE(nv.readme_filename, '') <> ''))::boolean AS has_readme,
        CASE WHEN $1::boolean THEN COALESCE(nv.readme, '') ELSE '' END::text AS readme,
        COALESCE(nv.readme_filename, '')::text AS readme_filename,
-       COALESCE(np.dist_tags, '{}'::jsonb)::text AS dist_tags
+       COALESCE(np.dist_tags, '{}'::jsonb)::text AS dist_tags,
+       COALESCE(i.blob_sha256, ''::bytea)::bytea AS sha256,
+       COALESCE(i.size, 0)::bigint AS size
   FROM npm_versions nv
   JOIN package_versions pv ON pv.id = nv.version_id
+  JOIN packages p ON p.id = pv.package_id
+  JOIN repositories r ON r.id = p.repo_id
   LEFT JOIN npm_packages np ON np.package_id = pv.package_id
+  LEFT JOIN items i ON i.id = pv.lead_item_id AND i.trashed_at IS NULL
  WHERE nv.version_id = ANY($2::bigint[])
 `
 
@@ -36,10 +42,14 @@ type NPMViewDetailsRow struct {
 	Readme         string
 	ReadmeFilename string
 	DistTags       string
+	Sha256         []byte
+	Size           int64
 }
 
 // The manifest, the deprecation, the README (when asked) and the dist-tags of the
-// package row of each given version.
+// package row of each given version, with the blob of its tarball. A published
+// version has a README when its text is stored; a version a remote cached when the
+// read of its tarball named one, whose text is read from the tarball (R-NPM-051).
 func (q *Queries) NPMViewDetails(ctx context.Context, arg NPMViewDetailsParams) ([]NPMViewDetailsRow, error) {
 	rows, err := q.db.Query(ctx, nPMViewDetails, arg.WithReadme, arg.Ids)
 	if err != nil {
@@ -57,6 +67,8 @@ func (q *Queries) NPMViewDetails(ctx context.Context, arg NPMViewDetailsParams) 
 			&i.Readme,
 			&i.ReadmeFilename,
 			&i.DistTags,
+			&i.Sha256,
+			&i.Size,
 		); err != nil {
 			return nil, err
 		}

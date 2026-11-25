@@ -1676,7 +1676,10 @@ remain as their owners define them.)
   Remote repositories contribute their cached versions only,
   and a version the format withholds (npm: a tombstoned one, R-NPM-047) is not counted anywhere.
 - What the generic rows do not hold - description, keywords, licenses, the README and the `metadata` - comes from
-  the format's view adapter over its data port (Q-API-166); the order of versions and the pre-release rule are the
+  the format's view adapter over its data port (Q-API-166), for a version a remote cached as for a published one: the format's row of
+  a cached version is written by the fill (NuGet, OCI, Ansible Galaxy) or by a job the fill queues, seconds later (npm
+  [R-NPM-050](formats/npm.md#r-npm-050--a-version-a-remote-cached-is-described-as-a-published-one), Debian
+  [R-DEB-037](formats/debian.md#r-deb-037--a-package-file-a-remote-cached-is-described-by-its-control-paragraph)); the order of versions and the pre-release rule are the
   format's (SemVer precedence for npm). `latestVersion` is the highest visible stable version, or the highest visible
   pre-release while no stable version is visible, or, while the format ranks none of the visible versions, the newest of them by its time
   (an image whose tags are `latest` and `sha-5ccfd1a` alone).
@@ -1722,9 +1725,10 @@ remain as their owners define them.)
   origin list before the rendering, so a request that holds it costs no rendering (Q-API-167).
 - README answer: `{"contentType": "text/markdown", "html": "<h1>…</h1>", "truncated": false, "externalImagesBlocked": 2}`;
   404 when the version has none, with the answer of a version that is not visible, and the same 404 when the caller may read
-  the version but not the wiki of the repository that holds it: the README is wiki content (R-AUTHZ-034). Rendering and sanitizing follow R-UI-008; README extraction (npm
-  `readme` field or `README.md` in the tarball, NuGet `<readme>` file in the package) is owned by
-  the format pages.
+  the version but not the wiki of the repository that holds it: the README is wiki content (R-AUTHZ-034). Rendering and sanitizing follow R-UI-008; README extraction (npm:
+  the tarball's first top-level README, stored at publish and read from the cached tarball for a version a remote cached,
+  [R-NPM-051](formats/npm.md#r-npm-051--the-readme-of-a-version-is-read-from-its-tarball-when-it-is-not-stored); NuGet: the `<readme>` file
+  read out of the package) is owned by the format pages.
 - Formats added in P1 use the same endpoints: Maven coordinates as `name=group:artifact`
   (API-094), container images as packages with tags as versions (API-109, API-110).
 
@@ -3950,6 +3954,10 @@ The owner's walk of 2026-11-18 (W-7): a package's page is its versions. A versio
 - No tabs, no version select and no pre-release switch: what the tabs **Metadata**, **Files** and **Repositories** showed belongs
   to one version and is on its page ([Q-UI-458](#q-ui-458--the-tabs-metadata-files-and-repositories-become-the-version-pages-details-and-files)).
 - Opening the page records it in "recently opened" (Q-UI-323).
+- **The same page for every class.** A package a remote repository cached shows the description, the README and, on its version's page, the
+  facts a published one shows, in every format (R-API-029). Where the format's job describes a cached version after the fill (npm
+  R-NPM-050, Debian R-DEB-037), a page opened in the seconds before shows the version without them and reads it again by itself
+  (R-UI-213).
 - Links taken from package metadata (npm `homepage`, `repository.url`, `bugs.url`; NuGet
   `projectUrl`, `licenseUrl`, the `repository` URL) MUST be rendered as links only when their
   scheme is `http` or `https`, with `rel="nofollow noopener noreferrer"`; any other value is shown

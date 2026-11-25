@@ -2,6 +2,8 @@ package deb
 
 import (
 	"context"
+	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/formats"
@@ -65,10 +67,20 @@ func TestR_API_081_ARemoteListsThePackageFileItCachedAndItsRemovalTakesTheVersio
 		t.Fatalf("versions = %+v, %v: want 1.0-1 led by the amd64 file", vs, err)
 	}
 
+	// The fill of each listed file queues the description of its package (R-DEB-037); the files no index lists queue none.
+	hello := fmt.Sprintf("%d/hello", h.Ref().ID)
+	if !slices.Equal(port.Describes, []string{hello, hello}) {
+		t.Errorf("queued %v, want the description of hello once per fill of its files", port.Describes)
+	}
+
 	if err := h.Remove(ctx, nil, "delete", amd); err != nil {
 		t.Fatal(err)
 	}
 	if vs, _, _ := h.Packages().Versions(ctx, h.Ref(), "hello"); len(vs) != 0 {
 		t.Fatalf("the version outlived its lead file: %+v", vs)
+	}
+	// The removal takes the row of the removed file's control paragraph (R-DEB-037).
+	if len(port.Forgotten) != 1 || port.Forgotten[0] != lead.ID {
+		t.Errorf("forgot the rows of %v, want the removed file %d", port.Forgotten, lead.ID)
 	}
 }

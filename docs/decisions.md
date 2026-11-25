@@ -10437,10 +10437,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-DEB
 
-111 questions on [spec/formats/debian.md](spec/formats/debian.md).
+112 questions on [spec/formats/debian.md](spec/formats/debian.md).
 
 <details>
-<summary>Q-DEB: 111 questions</summary>
+<summary>Q-DEB: 112 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10555,6 +10555,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-DEB-122](spec/formats/debian.md#q-deb-122--a-head-of-a-package-file-is-the-one-probe-of-apt) | A HEAD of a package file is the one probe of APT | Decided by the development agent | (a) A `HEAD` of a package file, in the pool or of a flat repository; the content is that file, the whole of its version for its architecture | [ADR-207](#adr-207--a-probe-starts-the-download-of-its-version-in-the-background-the-format-contract-is-at-version-7) |
 | [Q-DEB-133](spec/formats/debian.md#q-deb-133--a-release-is-recorded-under-the-keys-its-recording-transaction-reads) | A release is recorded under the keys its recording transaction reads | Decided by the development agent | (a), in `OnFill` ([remote.go](../internal/formats/deb/remote.go)) with `checkRelease`, the port's `UpstreamKeys` and `RecordVerified` ([remote_store.go](../internal/formatdata/deb/remote_store.go)), the statement `DebRemoteUpstreamKeysShared`. | — |
 | [Q-DEB-134](spec/formats/debian.md#q-deb-134--a-test-that-waits-for-the-build-a-change-enqueued-waits-for-every-build-enqueued-before-the-change-answered) | A test that waits for the build a change enqueued waits for every build enqueued before the change answered | Decided by the development agent | (a), `buildsEnded` and `builds` in [members_test.go](../test/integration/debvirtual/members_test.go), used by `failedWith` for `member_unverified` and `member_rollback`. | — |
+| [Q-DEB-135](spec/formats/debian.md#q-deb-135--a-package-file-a-remote-cached-is-described-by-a-job-that-reads-its-control-archive) | A package file a remote cached is described by a job that reads its control archive | Decided by the development agent | (d) A job queued by the fill reads the stored file's ar headers and control archive with ranged reads and writes the row | — |
 
 </details>
 
@@ -11106,10 +11107,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-NPM
 
-88 questions on [spec/formats/npm.md](spec/formats/npm.md).
+89 questions on [spec/formats/npm.md](spec/formats/npm.md).
 
 <details>
-<summary>Q-NPM: 88 questions</summary>
+<summary>Q-NPM: 89 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11201,6 +11202,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-NPM-88](spec/formats/npm.md#q-npm-88--the-readme-of-a-virtual-repository-is-decided-on-the-member-that-supplied-it-and-the-key-carries-the-answer-for-every-member) | The README of a virtual repository is decided on the member that supplied it, and the key carries the answer for every member | Decided by the development agent | (a), for the top level and for the version manifests alike: a caller without the wiki gets a full document and a version document without `readme` and `readmeFilename` in any manifest, and the validator and the rendition key of the version document carry the answer as those of the full document do. | — |
 | [Q-NPM-89](spec/formats/npm.md#q-npm-89--the-version-document-and-a-head-of-the-tarball-are-probes) | The version document and a HEAD of the tarball are probes | Decided by the development agent | (a) The version document (`GET` and `HEAD`, by number or by a dist-tag resolved in the stored document) and a `HEAD` of the tarball; the content is the tarball | [ADR-207](#adr-207--a-probe-starts-the-download-of-its-version-in-the-background-the-format-contract-is-at-version-7) |
 | [Q-NPM-90](spec/formats/npm.md#q-npm-90--npm-view-of-a-version-is-no-probe-the-rule-fires-for-tools-that-ask-the-version-document) | `npm view` of a version is no probe; the rule fires for tools that ask the version document | Decided by the development agent | (a) As built: the version document and a `HEAD` of the tarball are the probes; the specification and the manual say that npm's own commands send none | — |
+| [Q-NPM-91](spec/formats/npm.md#q-npm-91--a-version-a-remote-cached-is-described-by-a-job-from-its-entry-in-the-stored-document-and-one-read-of-its-tarball) | A version a remote cached is described by a job from its entry in the stored document and one read of its tarball | Decided by the development agent | (c) A job queued by the tarball's commit and by a fill that replaces the stored document reads the entry and, once, the tarball | — |
 
 </details>
 

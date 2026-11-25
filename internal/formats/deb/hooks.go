@@ -29,7 +29,7 @@ func (f *Format) OnCommit(ctx context.Context, tx formats.Tx, c formats.CommitEv
 			if analyzeRemote(c.Path.Path).kind == rkByHash {
 				return byHashFilled(ctx, tx, c)
 			}
-			return f.commitFill(ctx, c)
+			return f.commitFill(ctx, tx, c)
 		}
 		return nil
 	}
@@ -67,9 +67,10 @@ func byHashFilled(ctx context.Context, tx formats.Tx, c formats.CommitEvent) err
 // fetched through it as every other format does (R-API-081, Q-REPO-330): the package and version rows, with the file linked to the
 // version, the first file of a version as its lead and the file of another architecture beside it. Which package and version a file
 // is comes from the remote's parsed index rows (R-DEB-022), which the fill was checked against; a file no parsed index lists, a source
-// package's file and every file under dists/ get no row. No row of the local class is written: the version carries no control
-// paragraph, and the screens show what the generic rows hold.
-func (f *Format) commitFill(ctx context.Context, c formats.CommitEvent) error {
+// package's file and every file under dists/ get no row. The row of deb_binaries the screens read, with the file's control paragraph,
+// is written by the job the commit queues, which reads the stored file's control archive (R-DEB-037): the commit reads no blob. A
+// cached file gets no row of deb_coordinates and no raise of a suite: nothing builds an index of a remote.
+func (f *Format) commitFill(ctx context.Context, tx formats.Tx, c formats.CommitEvent) error {
 	if analyzeRemote(c.Path.Path).kind != rkContent {
 		return nil
 	}
@@ -89,26 +90,35 @@ func (f *Format) commitFill(ctx context.Context, c formats.CommitEvent) error {
 	if err != nil {
 		return err
 	}
+	linked := false
 	for _, v := range live {
 		if v.Version == e.Version {
 			if err := c.Packages.LinkItem(ctx, c.Item, v.ID, v.LeadItem == 0); err != nil {
 				return err
 			}
-			_, _, err = c.Packages.BumpRevision(ctx, pkg)
+			linked = true
+			break
+		}
+	}
+	if !linked {
+		if _, err := c.Packages.InsertVersion(ctx, pkg, formats.NewVersion{Version: e.Version, DisplayVersion: e.Version, LeadItem: &c.Item}); err != nil {
 			return err
 		}
 	}
-	if _, err := c.Packages.InsertVersion(ctx, pkg, formats.NewVersion{Version: e.Version, DisplayVersion: e.Version, LeadItem: &c.Item}); err != nil {
+	if _, _, err := c.Packages.BumpRevision(ctx, pkg); err != nil {
 		return err
 	}
-	_, _, err = c.Packages.BumpRevision(ctx, pkg)
-	return err
+	return st.QueueDescribe(ctx, tx, c.Repo.ID, e.Package)
 }
 
 // removeCached takes the version of a cached package file out with the file that was its lead (R-API-081): a remote repository lists
 // what it holds. The file of another architecture that stays loses its link with the version and is listed again when it is fetched
-// again; a file that was linked beside the lead takes nothing with it.
-func (f *Format) removeCached(ctx context.Context, e formats.ItemsEvent) error {
+// again; a file that was linked beside the lead takes nothing with it. The row of each removed file's control paragraph goes with the
+// file (R-DEB-037).
+func (f *Format) removeCached(ctx context.Context, tx formats.Tx, e formats.ItemsEvent) error {
+	if err := forgetCached(ctx, tx, e); err != nil {
+		return err
+	}
 	locked := map[string]formats.PackageRef{}
 	for _, it := range e.Items {
 		if it.Version == 0 || !strings.HasPrefix(it.Item.Path, dirPool+"/") {
@@ -146,6 +156,21 @@ func (f *Format) removeCached(ctx context.Context, e formats.ItemsEvent) error {
 		}
 	}
 	return nil
+}
+
+// forgetCached deletes the rows of the removed files of a remote's cache (R-DEB-037).
+func forgetCached(ctx context.Context, tx formats.Tx, e formats.ItemsEvent) error {
+	st, err := storeOf(e.Data)
+	if err != nil {
+		return err
+	}
+	ids := make([]int64, 0, len(e.Items))
+	for _, it := range e.Items {
+		if strings.HasPrefix(it.Item.Path, dirPool+"/") {
+			ids = append(ids, it.Item.ID)
+		}
+	}
+	return st.ForgetCached(ctx, tx, e.Repo.ID, ids)
 }
 
 func (f *Format) commitFile(ctx context.Context, tx formats.Tx, c formats.CommitEvent, p *uploadCommit) error {
@@ -248,7 +273,7 @@ func controlText(in *incoming) string {
 // delete through /files/ or the items API by the generic layer. The writer of this hook is bound to no request and decides none.
 func (f *Format) OnItemsRemoved(ctx context.Context, tx formats.Tx, e formats.ItemsEvent) error {
 	if e.Repo.Class == formats.Remote && len(e.Items) > 0 {
-		return f.removeCached(ctx, e)
+		return f.removeCached(ctx, tx, e)
 	}
 	if e.Repo.Class != formats.Local || len(e.Items) == 0 {
 		return nil

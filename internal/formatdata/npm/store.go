@@ -52,6 +52,11 @@ type Options struct {
 	// Signing is Quader's registry signing of local versions (signatures.md R-SIG-050): the keys of a local repository and the work
 	// a publish writes. nil: no keys, and a publish writes no work.
 	Signing RegistrySigning
+	// Blobs reads stored blobs: the stored document and the cached tarball the job npm-remote-describe reads, and the README a screen
+	// reads from a tarball (R-NPM-050, R-NPM-051). nil: no cached version is described and no README is read from a tarball.
+	Blobs BlobReader
+	// Jobs queues the job npm-remote-describe; nil queues none.
+	Jobs Jobs
 }
 
 // RegistrySigning is what the data port needs of Quader's signing of npm versions (signatures.md R-SIG-049, R-SIG-050); the

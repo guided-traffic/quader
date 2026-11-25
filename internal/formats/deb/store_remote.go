@@ -42,6 +42,11 @@ type RemoteStore interface {
 	// EnqueueParse enqueues deb-remote-parse for an index path of a release directory in the transaction tx (coalesced per
 	// repository, directory and index path, Q-DEB-36).
 	EnqueueParse(ctx context.Context, tx formats.Tx, repoID int64, dir, indexPath string) error
+	// QueueDescribe queues, in tx, the job that writes the row of deb_binaries of every package file the remote cached of the package
+	// from the file's control paragraph (R-DEB-037), coalesced per repository and package.
+	QueueDescribe(ctx context.Context, tx formats.Tx, repoID int64, pkg string) error
+	// ForgetCached deletes, in tx, the rows of deb_binaries of package files the remote removed from its cache (R-DEB-037).
+	ForgetCached(ctx context.Context, tx formats.Tx, repoID int64, itemIDs []int64) error
 	// EnsureParsed enqueues the release fetch and the parse of every index of a scope that is not settled, through the background
 	// path (R-DEB-023, Q-DEB-41), and reports whether any was enqueued.
 	EnsureParsed(ctx context.Context, q rows.NameScope) (enqueued bool, err error)
