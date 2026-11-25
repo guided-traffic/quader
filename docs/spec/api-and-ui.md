@@ -26285,6 +26285,34 @@ Test: [value-list.states.spec.ts](../../web/src/app/shared/value-list.states.spe
 breaks at its hyphen as plain text at every width that does it stays whole as a value, a longer one stays in its box, a sentence splits
 at its value).
 
+### Q-UI-1219 · A sentence that names the reader or a kind of caller is a unit of its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found by the
+owner on 2026-11-25 in the German tab Downloads of a remote, the head of a bulk: "Gestartet von Sie" ('"Gestartet von Sie" ist falsch.
+"Gestartet von Ihnen"'). `starterText` gave the cell's word for the reader, "You" ("Sie"), and the template put it into the unit
+"Started by {{ who }}", so English read "Started by You" with a capital in the sentence and German the nominative after "von". The
+same class, read across the screens: the profile's **Which limit applies** put the word "you" ("Sie") into "the rule for … applies"
+(right in German by chance, "für Sie"); the explanation's steps and a budget's rule put a list's label into a sentence, "the rule for
+Every signed-in user applies", and the budget lowered it to fit, "für alle angemeldeten benutzer" in German; and a budget's rule was
+one phrase put into two sentences, "Ihre Limits stammen aus der Regel …" and "Es gilt: der Regel …", the second in the wrong case.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A sentence that names the reader is a unit of its own ("Started by you" / "Gestartet von Ihnen", "no rule for you" / "keine Regel für Sie"), and a fact's value for the reader after "Started by" one of its own ("You" / "Ihnen"); a kind of caller in a sentence is a phrase of its own ("every signed-in user" / "alle angemeldeten Benutzer", `everyPhrase`); a phrase that two sentences need in two cases is written into each (`usage.rule.own-*`, `usage.rule.applies-*`) (chosen) | The German of each sentence written whole | The case, the capital and the pronoun are the translator's, in the sentence they stand in; `requests.asked-by-you` ("von Ihnen beantragt") had this form already | More units |
+| (b) A word per case ("Sie", "Ihnen", "Ihrer") chosen by the code | Grammar in the code | Fewer units | The code would know German's cases; another language its own |
+| (c) Keep the words, lower-case them in English | The capital fixed in English | Small | German stays wrong |
+
+**Choice:** (a). A rule in `check-rules.mjs` or `i18n-check.mjs` is not added: whether a unit's text reaches another unit's sentence is a
+flow of values through the code, which a search of the sources cannot follow exactly; the glossary states the rule for whoever writes a
+sentence ([GLOSSARY.md](../../web/src/locale/GLOSSARY.md)). **Applied in the spec:** R-CUR-018 (the bulk's head and a row's facts),
+R-UI-184 and R-UI-185 (the steps and a budget's rule). Code: `starterText`, `startedBySelf` of
+[remote-downloads.ts](../../web/src/app/features/repositories/downloads/remote-downloads.ts), `stepText` of
+[limit-explain.ts](../../web/src/app/features/usage/limit-explain.ts), `ruleSentence` of
+[usage-budgets.ts](../../web/src/app/features/usage/usage-budgets.ts), `everyPhrase` of [callers.ts](../../web/src/app/features/limits/callers.ts).
+Tests: `R-UI-184 names the steps and links a token to its account` of [usage.spec.ts](../../web/src/app/features/usage/usage.spec.ts) and
+the bulk's line of [remote-downloads.spec.ts](../../web/src/app/features/repositories/downloads/remote-downloads.spec.ts) (unit,
+milliseconds, English; the German targets are read in the translation file and on the German picture of the tab).
+
 ## What this does not cover
 
 ### H-1964 · A read that fails alone while its page stands is read again only by the person or its next use

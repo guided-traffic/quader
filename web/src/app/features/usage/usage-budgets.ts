@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, LOCALE_ID, inject, input } from '@angular/core';
 import { BudgetFigure, BudgetFigures, BudgetRule, Figure, LimitMode, LimitPlace, UsageBudget } from '../../api/limits-api';
-import { placeLabel, placeText, whoView } from '../limits/callers';
+import { everyPhrase, placeLabel, placeText, whoView } from '../limits/callers';
 import { figureName, formatBytes, formatCount, limitText, unitOf } from '../limits/figures';
 import { UsageMeter } from './usage-meter';
 import { stateOfRatio } from './usage-words';
@@ -24,7 +24,7 @@ function whoPhrase(rule: BudgetRule): string {
     case 'group':
       return $localize`:@@usage.who.group:the group ${w.displayName || w.group}:group:`;
     case 'every':
-      return whoView(w).primary.toLocaleLowerCase();
+      return everyPhrase(w.callerKind);
     case 'address':
       return $localize`:@@usage.who.address:the addresses ${w.prefix}:prefix:`;
     default:
@@ -41,10 +41,16 @@ export function ruleSentence(rule: BudgetRule | null, place: LimitPlace, profile
   if (!rule) return $localize`:@@usage.rule.none:No rule applies ${placeText(place)}:place:: every figure is unlimited.`;
   const who = whoPhrase(rule);
   const where = placeText(place);
-  const what = rule.builtin
-    ? $localize`:@@usage.rule.builtin:the default for ${who}:who: ${where}:place:, profile ${profileName}:profile:`
-    : $localize`:@@usage.rule.rule:the rule for ${who}:who: ${where}:place:, profile ${profileName}:profile:`;
-  return own ? $localize`:@@usage.rule.own:Your limits come from ${what}:rule:.` : $localize`:@@usage.rule.applies:Applies: ${what}:rule:.`;
+  // Each case is a sentence of its own (Q-UI-1219): German says "aus der Regel" after "stammen" and "die Regel" after "Es gilt", so the
+  // rule's phrase is no part to put into two sentences.
+  if (own) {
+    return rule.builtin
+      ? $localize`:@@usage.rule.own-builtin:Your limits come from the default for ${who}:who: ${where}:place:, profile ${profileName}:profile:.`
+      : $localize`:@@usage.rule.own-rule:Your limits come from the rule for ${who}:who: ${where}:place:, profile ${profileName}:profile:.`;
+  }
+  return rule.builtin
+    ? $localize`:@@usage.rule.applies-builtin:Applies: the default for ${who}:who: ${where}:place:, profile ${profileName}:profile:.`
+    : $localize`:@@usage.rule.applies-rule:Applies: the rule for ${who}:who: ${where}:place:, profile ${profileName}:profile:.`;
 }
 
 /** "246 GB of 300 GB", "31,000 of 50,000", "2 of 20". */

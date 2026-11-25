@@ -6,6 +6,12 @@ before using a new term in a German text.
 Every German text addresses the reader formally, as "Sie" ("Geben Sie … ein", "Ihre Rolle"), never as "du";
 [formal-german.spec.ts](../app/shared/formal-german.spec.ts) refuses an informal pronoun or imperative in a target.
 
+A sentence that names the reader is a unit of its own ("Started by you", "Gestartet von Ihnen"; "no rule for you", "keine Regel
+für Sie"), never a sentence with a translated word for the reader put into it: German says the reader "Sie", "Ihnen" or "Ihr" by
+the sentence's case, so "Gestartet von Sie" came of the cell's word "Sie" put after "von". The same holds for a kind of caller in a
+sentence: a phrase of its own in the sentence's case ("für alle angemeldeten Benutzer"), never a list's label lowered to fit
+([Q-UI-1219](../../../docs/spec/api-and-ui.md#q-ui-1219--a-sentence-that-names-the-reader-or-a-kind-of-caller-is-a-unit-of-its-own)).
+
 A term keeps one grammatical gender in every text. "Token" is neuter, "das Token", the form most texts already used when the
 screens' second round found 15 masculine ones beside about 36 neuter ones ([Q-UI-1052](../../../docs/spec/api-and-ui.md#q-ui-1052--token-is-neuter-in-every-german-text)); the same spec
 refuses a masculine "Token" in a target.

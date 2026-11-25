@@ -260,8 +260,12 @@ describe("A caller's usage (R-UI-184) and a user's own (R-UI-185)", () => {
 
   it('R-UI-184 names the steps and links a token to its account', () => {
     expect(stepText({ place: { kind: 'instance' }, step: 'kind', outcome: 'matched', rules: [{ id: 'b', who: { kind: 'every', callerKind: 'user' }, profile: 'standard', profileName: 'Standard', builtin: true, capped: false }] }, 'alice')).toBe(
-      'Instance: the rule for Every signed-in user applies.',
+      'Instance: the rule for every signed-in user applies.',
     );
+    // The reader's own steps are sentences of their own, never a word for the reader put into another (Q-UI-1219).
+    expect(stepText({ place: { kind: 'instance' }, step: 'single', outcome: 'none' }, null)).toBe('Instance: no rule for you.');
+    expect(stepText({ place: { kind: 'instance' }, step: 'single', outcome: 'matched', rules: [] }, null)).toBe('Instance: the rule for you applies.');
+    expect(stepText({ place: { kind: 'instance' }, step: 'single', outcome: 'none' }, 'alice')).toBe('Instance: no rule for alice.');
     expect(accountLink('sa:web/npm-local/ci')).toEqual(['/projects', 'web', 'repositories', 'npm-local', 'service-accounts', 'ci']);
     expect(accountLink('sa:backup-reader')).toEqual(['/admin/service-accounts', 'backup-reader']);
   });

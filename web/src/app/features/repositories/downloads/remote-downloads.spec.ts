@@ -242,7 +242,8 @@ describe('The tab Downloads of a remote repository', () => {
     expect(text(bulks)).toContain('Bulk downloads');
     const [failed, done] = [...bulks.querySelectorAll<HTMLTableRowElement>('tbody tr')] as [HTMLTableRowElement, HTMLTableRowElement];
     expect(text(failed)).toContain('Every version of guidedtraffic/valkey-operator');
-    expect(text(failed)).toContain('Started by You');
+    expect(text(failed)).toContain('Started by you');
+    expect(text(failed)).not.toContain('Started by You');
     expect(text(failed)).toContain('Failed');
     expect(text(failed)).not.toContain('0 of 0');
     expect(text(failed)).toContain("Docker Hub's version list could not be read");

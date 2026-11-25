@@ -1792,7 +1792,7 @@
     <unit id="limits.notice.blocked">
       <notes>
         <note category="location">src/app/core/http/problem-messages-limits.ts:79</note>
-        <note category="location">src/app/features/usage/profile-usage.ts:162</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:161</note>
       </notes>
       <segment>
         <source>Downloads are paused for you until <ph id="0" equiv="time" disp="time"/> after too many refused requests.</source>
@@ -12765,9 +12765,54 @@
         <target>Alle Administratoren</target>
       </segment>
     </unit>
+    <unit id="usage.who.every.user">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:47</note>
+      </notes>
+      <segment>
+        <source>every signed-in user</source>
+        <target>alle angemeldeten Benutzer</target>
+      </segment>
+    </unit>
+    <unit id="usage.who.every.technical-token">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:49</note>
+      </notes>
+      <segment>
+        <source>every technical token</source>
+        <target>alle technischen Tokens</target>
+      </segment>
+    </unit>
+    <unit id="usage.who.every.ci">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:51</note>
+      </notes>
+      <segment>
+        <source>every CI job</source>
+        <target>alle CI-Jobs</target>
+      </segment>
+    </unit>
+    <unit id="usage.who.every.anonymous">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:53</note>
+      </notes>
+      <segment>
+        <source>every anonymous caller</source>
+        <target>alle anonymen Aufrufer</target>
+      </segment>
+    </unit>
+    <unit id="usage.who.every.administrator">
+      <notes>
+        <note category="location">src/app/features/limits/callers.ts:55</note>
+      </notes>
+      <segment>
+        <source>every administrator</source>
+        <target>alle Administratoren</target>
+      </segment>
+    </unit>
     <unit id="usage.kind.user">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:44</note>
+        <note category="location">src/app/features/limits/callers.ts:63</note>
       </notes>
       <segment>
         <source>User</source>
@@ -12776,7 +12821,7 @@
     </unit>
     <unit id="usage.kind.technical-token">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:46</note>
+        <note category="location">src/app/features/limits/callers.ts:65</note>
       </notes>
       <segment>
         <source>Technical token</source>
@@ -12785,7 +12830,7 @@
     </unit>
     <unit id="usage.kind.ci">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:48</note>
+        <note category="location">src/app/features/limits/callers.ts:67</note>
       </notes>
       <segment>
         <source>CI project</source>
@@ -12794,8 +12839,8 @@
     </unit>
     <unit id="usage.kind.certificate">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:50</note>
-        <note category="location">src/app/features/limits/callers.ts:175</note>
+        <note category="location">src/app/features/limits/callers.ts:69</note>
+        <note category="location">src/app/features/limits/callers.ts:194</note>
       </notes>
       <segment>
         <source>Client certificate</source>
@@ -12804,8 +12849,8 @@
     </unit>
     <unit id="usage.kind.anonymous">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:52</note>
-        <note category="location">src/app/features/limits/callers.ts:172</note>
+        <note category="location">src/app/features/limits/callers.ts:71</note>
+        <note category="location">src/app/features/limits/callers.ts:191</note>
       </notes>
       <segment>
         <source>Anonymous address</source>
@@ -12814,8 +12859,8 @@
     </unit>
     <unit id="usage.kind.system">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:54</note>
-        <note category="location">src/app/features/limits/callers.ts:180</note>
+        <note category="location">src/app/features/limits/callers.ts:73</note>
+        <note category="location">src/app/features/limits/callers.ts:199</note>
       </notes>
       <segment>
         <source>System</source>
@@ -12824,7 +12869,7 @@
     </unit>
     <unit id="usage.filter.kind.user">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:62</note>
+        <note category="location">src/app/features/limits/callers.ts:81</note>
       </notes>
       <segment>
         <source>Users</source>
@@ -12833,7 +12878,7 @@
     </unit>
     <unit id="usage.filter.kind.technical-token">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:64</note>
+        <note category="location">src/app/features/limits/callers.ts:83</note>
       </notes>
       <segment>
         <source>Technical tokens</source>
@@ -12842,7 +12887,7 @@
     </unit>
     <unit id="usage.filter.kind.ci">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:66</note>
+        <note category="location">src/app/features/limits/callers.ts:85</note>
       </notes>
       <segment>
         <source>CI</source>
@@ -12851,7 +12896,7 @@
     </unit>
     <unit id="usage.filter.kind.certificate">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:68</note>
+        <note category="location">src/app/features/limits/callers.ts:87</note>
       </notes>
       <segment>
         <source>Client certificates</source>
@@ -12860,7 +12905,7 @@
     </unit>
     <unit id="usage.filter.kind.anonymous">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:70</note>
+        <note category="location">src/app/features/limits/callers.ts:89</note>
       </notes>
       <segment>
         <source>Anonymous addresses</source>
@@ -12869,7 +12914,7 @@
     </unit>
     <unit id="usage.filter.kind.system">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:72</note>
+        <note category="location">src/app/features/limits/callers.ts:91</note>
       </notes>
       <segment>
         <source>System</source>
@@ -12878,7 +12923,7 @@
     </unit>
     <unit id="limits.who.deleted">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:76</note>
+        <note category="location">src/app/features/limits/callers.ts:95</note>
       </notes>
       <segment>
         <source>(deleted)</source>
@@ -12887,7 +12932,7 @@
     </unit>
     <unit id="limits.who.group">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:96</note>
+        <note category="location">src/app/features/limits/callers.ts:115</note>
       </notes>
       <segment>
         <source>Group</source>
@@ -12896,7 +12941,7 @@
     </unit>
     <unit id="limits.who.address">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:116</note>
+        <note category="location">src/app/features/limits/callers.ts:135</note>
       </notes>
       <segment>
         <source>Address or range</source>
@@ -12905,7 +12950,7 @@
     </unit>
     <unit id="limits.who.kind">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:122</note>
+        <note category="location">src/app/features/limits/callers.ts:141</note>
       </notes>
       <segment>
         <source>Kind of caller</source>
@@ -12914,7 +12959,7 @@
     </unit>
     <unit id="usage.kind.system-hint">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:181</note>
+        <note category="location">src/app/features/limits/callers.ts:200</note>
       </notes>
       <segment>
         <source>Mirror passes and other background work</source>
@@ -12923,7 +12968,7 @@
     </unit>
     <unit id="limits.place.instance">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:219</note>
+        <note category="location">src/app/features/limits/callers.ts:238</note>
       </notes>
       <segment>
         <source>at the instance</source>
@@ -12932,7 +12977,7 @@
     </unit>
     <unit id="limits.place.project">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:221</note>
+        <note category="location">src/app/features/limits/callers.ts:240</note>
       </notes>
       <segment>
         <source>in project <ph id="0" equiv="project" disp="place.project"/></source>
@@ -12941,7 +12986,7 @@
     </unit>
     <unit id="limits.place.repository">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:223</note>
+        <note category="location">src/app/features/limits/callers.ts:242</note>
       </notes>
       <segment>
         <source>at <ph id="0" equiv="repository" disp="place.repository"/></source>
@@ -12950,7 +12995,7 @@
     </unit>
     <unit id="limits.place.instance-label">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:231</note>
+        <note category="location">src/app/features/limits/callers.ts:250</note>
       </notes>
       <segment>
         <source>Instance</source>
@@ -12959,7 +13004,7 @@
     </unit>
     <unit id="limits.place.project-label">
       <notes>
-        <note category="location">src/app/features/limits/callers.ts:233</note>
+        <note category="location">src/app/features/limits/callers.ts:252</note>
       </notes>
       <segment>
         <source>Project <ph id="0" equiv="project" disp="place.project"/></source>
@@ -13001,7 +13046,7 @@
         <note category="location">src/app/features/limits/figures.ts:323</note>
         <note category="location">src/app/features/limits/repository-limits-section.ts:70,71</note>
         <note category="location">src/app/features/limits/repository-limits-section.ts:89,90</note>
-        <note category="location">src/app/features/usage/limit-explain.ts:234</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:244</note>
       </notes>
       <segment>
         <source>Unlimited</source>
@@ -13152,7 +13197,7 @@
       <notes>
         <note category="location">src/app/features/limits/figures.ts:111</note>
         <note category="location">src/app/features/limits/repository-limits-section.ts:206</note>
-        <note category="location">src/app/features/usage/limit-explain.ts:170</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:178</note>
       </notes>
       <segment>
         <source>All anonymous callers</source>
@@ -13163,7 +13208,7 @@
       <notes>
         <note category="location">src/app/features/limits/figures.ts:112</note>
         <note category="location">src/app/features/limits/repository-limits-section.ts:207</note>
-        <note category="location">src/app/features/usage/limit-explain.ts:171</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:179</note>
       </notes>
       <segment>
         <source>All signed-in callers</source>
@@ -25412,7 +25457,7 @@
     <unit id="downloads.failure.address">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:39,40</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:392,393</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:396,397</note>
       </notes>
       <segment>
         <source>Address</source>
@@ -25422,7 +25467,7 @@
     <unit id="downloads.failure.query-removed">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:40,42</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:393,395</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:397,399</note>
       </notes>
       <segment>
         <source>(shown without its query, which can carry a credential)</source>
@@ -25432,7 +25477,7 @@
     <unit id="downloads.failure.headers">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:43,44</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:404,405</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:408,409</note>
       </notes>
       <segment>
         <source>Headers of the limit</source>
@@ -25442,7 +25487,7 @@
     <unit id="downloads.failure.excerpt">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:52,53</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:413,414</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:417,418</note>
       </notes>
       <segment>
         <source>The start of the upstream&apos;s answer</source>
@@ -25458,10 +25503,20 @@
         <target>Sammeldownloads</target>
       </segment>
     </unit>
+    <unit id="downloads.bulk.started-by-you">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:84,85</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:226,227</note>
+      </notes>
+      <segment>
+        <source>Started by you</source>
+        <target>Gestartet von Ihnen</target>
+      </segment>
+    </unit>
     <unit id="downloads.bulk.started-by">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:84</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:224</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:86</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:228</note>
       </notes>
       <segment>
         <source>Started by <ph id="0" equiv="INTERPOLATION" disp="{{ who }}"/></source>
@@ -25470,7 +25525,7 @@
     </unit>
     <unit id="downloads.rows.title">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:134,137</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:136,139</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -25479,7 +25534,7 @@
     </unit>
     <unit id="downloads.filter.all">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:141,142</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:143,144</note>
       </notes>
       <segment>
         <source>All</source>
@@ -25488,7 +25543,7 @@
     </unit>
     <unit id="downloads.filter.failure">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:152,153</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:154,155</note>
       </notes>
       <segment>
         <source>Failure</source>
@@ -25497,7 +25552,7 @@
     </unit>
     <unit id="downloads.filter.any-class">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:154,155</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:156,157</note>
       </notes>
       <segment>
         <source>Any class</source>
@@ -25506,7 +25561,7 @@
     </unit>
     <unit id="downloads.retry-all">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:162,164</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:164,166</note>
       </notes>
       <segment>
         <source>Retry all failed</source>
@@ -25515,7 +25570,7 @@
     </unit>
     <unit id="downloads.resume">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:166,167</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:168,169</note>
       </notes>
       <segment>
         <source>Resume automatic refresh</source>
@@ -25524,7 +25579,7 @@
     </unit>
     <unit id="downloads.pause">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:168,170</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:170,172</note>
       </notes>
       <segment>
         <source>Pause automatic refresh</source>
@@ -25533,7 +25588,7 @@
     </unit>
     <unit id="downloads.name-filter">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:177</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:179</note>
       </notes>
       <segment>
         <source>Only the downloads of <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;name-filter-name&quot; translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ n }}"/></pc>.</source>
@@ -25542,8 +25597,8 @@
     </unit>
     <unit id="downloads.bulk.show-all">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:182,187</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:204,206</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:184,189</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:206,208</note>
       </notes>
       <segment>
         <source>Show every download</source>
@@ -25552,7 +25607,7 @@
     </unit>
     <unit id="downloads.bulk.cancel">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:200,201</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:202,203</note>
       </notes>
       <segment>
         <source>Cancel bulk</source>
@@ -25561,8 +25616,8 @@
     </unit>
     <unit id="downloads.bulk.start-again">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:202,204</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:634</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:204,206</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:641</note>
       </notes>
       <segment>
         <source>Start again</source>
@@ -25571,7 +25626,7 @@
     </unit>
     <unit id="downloads.bulk.versions-found">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:212</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:214</note>
       </notes>
       <segment>
         <source>Versions found</source>
@@ -25580,7 +25635,7 @@
     </unit>
     <unit id="downloads.bulk.loading">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:241,246</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:245,250</note>
       </notes>
       <segment>
         <source>Loading the bulk download.</source>
@@ -25589,7 +25644,7 @@
     </unit>
     <unit id="downloads.not-delivered">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:279,281</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:283,285</note>
       </notes>
       <segment>
         <source>Not delivered here: stored for examination</source>
@@ -25598,7 +25653,7 @@
     </unit>
     <unit id="downloads.occurrences">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:291</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:295</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.occurrences }}"/> times</source>
@@ -25607,7 +25662,7 @@
     </unit>
     <unit id="downloads.next-attempt">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:332</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:336</note>
       </notes>
       <segment>
         <source>next</source>
@@ -25616,7 +25671,7 @@
     </unit>
     <unit id="downloads.progress.refused">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:339</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:343</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.refused }}"/> refused by a gate</source>
@@ -25625,7 +25680,7 @@
     </unit>
     <unit id="downloads.failure.title">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:375</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:379</note>
       </notes>
       <segment>
         <source>Failure of attempt <ph id="0" equiv="INTERPOLATION" disp="{{ f.attempt }}"/></source>
@@ -25634,7 +25689,7 @@
     </unit>
     <unit id="downloads.failure.class">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:381,382</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:385,386</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -25643,7 +25698,7 @@
     </unit>
     <unit id="downloads.failure.step">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:383,384</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:387,388</note>
       </notes>
       <segment>
         <source>Step</source>
@@ -25652,7 +25707,7 @@
     </unit>
     <unit id="downloads.failure.code">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:385,386</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:389,390</note>
       </notes>
       <segment>
         <source>Code</source>
@@ -25661,7 +25716,7 @@
     </unit>
     <unit id="downloads.failure.file">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:388,389</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:392,393</note>
       </notes>
       <segment>
         <source>File</source>
@@ -25670,7 +25725,7 @@
     </unit>
     <unit id="downloads.failure.status">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:396,397</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:400,401</note>
       </notes>
       <segment>
         <source>Upstream status</source>
@@ -25679,7 +25734,7 @@
     </unit>
     <unit id="downloads.failure.retry-after">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:400,401</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:404,405</note>
       </notes>
       <segment>
         <source>Retry-After</source>
@@ -25688,7 +25743,7 @@
     </unit>
     <unit id="downloads.failure.seconds">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:401,402</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:405,406</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ f.retryAfter }}"/> s</source>
@@ -25697,16 +25752,26 @@
     </unit>
     <unit id="downloads.fact.started-by">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:419,420</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:423,424</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:426,427</note>
       </notes>
       <segment>
         <source>Started by</source>
         <target>Gestartet von</target>
       </segment>
     </unit>
+    <unit id="downloads.fact.started-by-you">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:425</note>
+      </notes>
+      <segment>
+        <source>You</source>
+        <target>Ihnen</target>
+      </segment>
+    </unit>
     <unit id="downloads.fact.queued">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:422,423</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:429,430</note>
       </notes>
       <segment>
         <source>Queued</source>
@@ -25715,7 +25780,7 @@
     </unit>
     <unit id="downloads.fact.started">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:425,426</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:432,433</note>
       </notes>
       <segment>
         <source>Started</source>
@@ -25724,7 +25789,7 @@
     </unit>
     <unit id="downloads.fact.finished">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:429,430</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:436,437</note>
       </notes>
       <segment>
         <source>Finished</source>
@@ -25733,7 +25798,7 @@
     </unit>
     <unit id="downloads.fact.files">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:433,434</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:440,441</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -25742,7 +25807,7 @@
     </unit>
     <unit id="downloads.fact.files-value">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:434,435</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:441,442</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.files }}"/> named, <ph id="1" equiv="INTERPOLATION_1" disp="{{ r.stored }}"/> stored, <ph id="2" equiv="INTERPOLATION_2" disp="{{ r.present }}"/> already stored, <ph id="3" equiv="INTERPOLATION_3" disp="{{ r.refused }}"/> refused</source>
@@ -25751,7 +25816,7 @@
     </unit>
     <unit id="downloads.fact.bytes">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:437,438</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:444,445</note>
       </notes>
       <segment>
         <source>Stored</source>
@@ -25890,7 +25955,6 @@
     <unit id="downloads.origin.you">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:487</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:494</note>
       </notes>
       <segment>
         <source>You</source>
@@ -25899,7 +25963,7 @@
     </unit>
     <unit id="downloads.attempt">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:526</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:533</note>
       </notes>
       <segment>
         <source>Attempt <ph id="0" equiv="attempt" disp="r.attempts"/> of <ph id="1" equiv="max" disp="r.maxAttempts"/></source>
@@ -25908,7 +25972,7 @@
     </unit>
     <unit id="downloads.progress.files">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:533</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:540</note>
       </notes>
       <segment>
         <source>Files: <ph id="0" equiv="done" disp="done"/> of <ph id="1" equiv="files" disp="r.files"/></source>
@@ -25917,7 +25981,7 @@
     </unit>
     <unit id="downloads.retried">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:566</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:573</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="downloadSubject(r)"/> waits for its download again.</source>
@@ -25926,7 +25990,7 @@
     </unit>
     <unit id="downloads.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:567</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:574</note>
       </notes>
       <segment>
         <source>The download of <ph id="0" equiv="subject" disp="downloadSubject(r)"/> is cancelled.</source>
@@ -25935,7 +25999,7 @@
     </unit>
     <unit id="downloads.retry">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:582</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:589</note>
       </notes>
       <segment>
         <source>Retry</source>
@@ -25944,8 +26008,8 @@
     </unit>
     <unit id="downloads.cancel">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:582</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:635</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:589</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:642</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -25954,7 +26018,7 @@
     </unit>
     <unit id="downloads.retried-all">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:600</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:607</note>
       </notes>
       <segment>
         <source>Failed downloads that wait again: <ph id="0" equiv="count" disp="n"/>.</source>
@@ -25963,7 +26027,7 @@
     </unit>
     <unit id="downloads.bulk.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:649</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:656</note>
       </notes>
       <segment>
         <source>The bulk download of <ph id="0" equiv="subject" disp="b.subject"/> is cancelled.</source>
@@ -25972,7 +26036,7 @@
     </unit>
     <unit id="downloads.bulk.started-again">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:653</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:660</note>
       </notes>
       <segment>
         <source>The bulk download of <ph id="0" equiv="subject" disp="b.subject"/> starts again: Quader reads its versions from the upstream.</source>
@@ -25981,7 +26045,7 @@
     </unit>
     <unit id="downloads.bulk.failed-versions-of">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:686</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:693</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="name"/>&apos;s version list could not be read</source>
@@ -25990,7 +26054,7 @@
     </unit>
     <unit id="downloads.bulk.failed-versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:687</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:694</note>
       </notes>
       <segment>
         <source>The upstream&apos;s version list could not be read</source>
@@ -25999,7 +26063,7 @@
     </unit>
     <unit id="downloads.bulk.failed-section-of">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:690</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:697</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="name"/>&apos;s list of the sub-section could not be read</source>
@@ -26008,7 +26072,7 @@
     </unit>
     <unit id="downloads.bulk.failed-section">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:691</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:698</note>
       </notes>
       <segment>
         <source>The upstream&apos;s list of the sub-section could not be read</source>
@@ -26017,7 +26081,7 @@
     </unit>
     <unit id="downloads.bulk.open">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:702</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:709</note>
       </notes>
       <segment>
         <source>The downloads of the bulk: <ph id="0" equiv="title" disp="this.bulkTitle(b)"/></source>
@@ -26026,7 +26090,7 @@
     </unit>
     <unit id="downloads.bulk.package">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:708</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:715</note>
       </notes>
       <segment>
         <source>Every version of <ph id="0" equiv="subject" disp="b.subject"/></source>
@@ -26035,7 +26099,7 @@
     </unit>
     <unit id="downloads.bulk.section">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:709</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:716</note>
       </notes>
       <segment>
         <source>The sub-section <ph id="0" equiv="subject" disp="b.subject"/></source>
@@ -26044,7 +26108,7 @@
     </unit>
     <unit id="downloads.bulk.state.expanding">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:733</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:740</note>
       </notes>
       <segment>
         <source>Finding versions</source>
@@ -26053,7 +26117,7 @@
     </unit>
     <unit id="downloads.bulk.state.queued">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:735</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:742</note>
       </notes>
       <segment>
         <source>Queued</source>
@@ -26062,7 +26126,7 @@
     </unit>
     <unit id="downloads.bulk.state.done">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:737</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:744</note>
       </notes>
       <segment>
         <source>Done</source>
@@ -26071,7 +26135,7 @@
     </unit>
     <unit id="downloads.bulk.state.bounded">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:739</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:746</note>
       </notes>
       <segment>
         <source>Stopped at a bound</source>
@@ -26080,7 +26144,7 @@
     </unit>
     <unit id="downloads.bulk.state.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:741</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:748</note>
       </notes>
       <segment>
         <source>Cancelled</source>
@@ -26089,7 +26153,7 @@
     </unit>
     <unit id="downloads.bulk.state.failed">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:743</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:750</note>
       </notes>
       <segment>
         <source>Failed</source>
@@ -26098,7 +26162,7 @@
     </unit>
     <unit id="downloads.bulks.versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:749</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:756</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="queued" disp="b.versionsQueued"/> of <ph id="1" equiv="found" disp="b.versionsFound"/> queued</source>
@@ -26107,7 +26171,7 @@
     </unit>
     <unit id="downloads.bulk.counts">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:753</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:760</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="queued" disp="b.versionsQueued"/> of <ph id="1" equiv="found" disp="b.versionsFound"/> versions found are queued</source>
@@ -26116,7 +26180,7 @@
     </unit>
     <unit id="downloads.bulk.bounds">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:759</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:766</note>
       </notes>
       <segment>
         <source>At most <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> versions and <ph id="1" equiv="bytes" disp="bytes"/>, pre-releases included</source>
@@ -26125,7 +26189,7 @@
     </unit>
     <unit id="downloads.bulk.bounds-no-pre">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:760</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:767</note>
       </notes>
       <segment>
         <source>At most <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> versions and <ph id="1" equiv="bytes" disp="bytes"/>, without pre-releases</source>
@@ -45914,9 +45978,18 @@
         <target>Upstream-Registry</target>
       </segment>
     </unit>
+    <unit id="explain.single-none-you">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:21</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="place" disp="where"/>: no rule for you.</source>
+        <target><ph id="0" equiv="place" disp="where"/>: keine Regel für Sie.</target>
+      </segment>
+    </unit>
     <unit id="explain.single-none">
       <notes>
-        <note category="location">src/app/features/usage/limit-explain.ts:17</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:22</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="place" disp="where"/>: no rule for <ph id="1" equiv="name" disp="subjectName"/>.</source>
@@ -45925,7 +45998,7 @@
     </unit>
     <unit id="explain.groups-none">
       <notes>
-        <note category="location">src/app/features/usage/limit-explain.ts:19</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:24</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="place" disp="where"/>: no rule for its groups.</source>
@@ -45934,16 +46007,25 @@
     </unit>
     <unit id="explain.kind-none">
       <notes>
-        <note category="location">src/app/features/usage/limit-explain.ts:21</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:26</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="place" disp="where"/>: no rule for its kind.</source>
         <target><ph id="0" equiv="place" disp="where"/>: keine Regel für seine Art.</target>
       </segment>
     </unit>
+    <unit id="explain.single-match-you">
+      <notes>
+        <note category="location">src/app/features/usage/limit-explain.ts:34</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="place" disp="where"/>: the rule for you applies.</source>
+        <target><ph id="0" equiv="place" disp="where"/>: die Regel für Sie gilt.</target>
+      </segment>
+    </unit>
     <unit id="explain.single-match">
       <notes>
-        <note category="location">src/app/features/usage/limit-explain.ts:27</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:35</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="place" disp="where"/>: the rule for <ph id="1" equiv="name" disp="subjectName"/> applies.</source>
@@ -45952,7 +46034,7 @@
     </unit>
     <unit id="explain.groups-match">
       <notes>
-        <note category="location">src/app/features/usage/limit-explain.ts:29</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:37</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="place" disp="where"/>: the rule for <ph id="1" equiv="groups" disp="names"/> applies.</source>
@@ -45961,7 +46043,7 @@
     </unit>
     <unit id="explain.kind-match">
       <notes>
-        <note category="location">src/app/features/usage/limit-explain.ts:31</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:39</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="place" disp="where"/>: the rule for <ph id="1" equiv="kind" disp="names"/> applies.</source>
@@ -45970,7 +46052,7 @@
     </unit>
     <unit id="explain.open">
       <notes>
-        <note category="location">src/app/features/usage/limit-explain.ts:48,49</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:56,57</note>
       </notes>
       <segment>
         <source>Explain for a repository</source>
@@ -45979,7 +46061,7 @@
     </unit>
     <unit id="explain.repository">
       <notes>
-        <note category="location">src/app/features/usage/limit-explain.ts:54,56</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:62,64</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -45988,7 +46070,7 @@
     </unit>
     <unit id="explain.ask">
       <notes>
-        <note category="location">src/app/features/usage/limit-explain.ts:72,74</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:80,82</note>
       </notes>
       <segment>
         <source>Explain</source>
@@ -45997,7 +46079,7 @@
     </unit>
     <unit id="explain.administrator">
       <notes>
-        <note category="location">src/app/features/usage/limit-explain.ts:84,86</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:92,94</note>
       </notes>
       <segment>
         <source>An administrator is decided at the instance alone.</source>
@@ -46006,7 +46088,7 @@
     </unit>
     <unit id="explain.effective">
       <notes>
-        <note category="location">src/app/features/usage/limit-explain.ts:87,88</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:95,96</note>
       </notes>
       <segment>
         <source>Limits that apply</source>
@@ -46015,7 +46097,7 @@
     </unit>
     <unit id="explain.clamp">
       <notes>
-        <note category="location">src/app/features/usage/limit-explain.ts:90,91</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:98,99</note>
       </notes>
       <segment>
         <source>Above the project&apos;s maximum</source>
@@ -46024,7 +46106,7 @@
     </unit>
     <unit id="explain.ceiling">
       <notes>
-        <note category="location">src/app/features/usage/limit-explain.ts:94,96</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:102,104</note>
       </notes>
       <segment>
         <source>Ceiling of this remote</source>
@@ -46033,7 +46115,7 @@
     </unit>
     <unit id="explain.clamped">
       <notes>
-        <note category="location">src/app/features/usage/limit-explain.ts:228</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:238</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="figure" disp="figureName(f)"/>: <ph id="1" equiv="limit" disp="limitText(f, a.clamped[f] ?? null, this.locale)"/> applies</source>
@@ -46042,7 +46124,7 @@
     </unit>
     <unit id="explain.ceiling-text">
       <notes>
-        <note category="location">src/app/features/usage/limit-explain.ts:235</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:245</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="amount" disp="amount"/> from the upstream, upstream requests per hour: <ph id="1" equiv="count" disp="count"/></source>
@@ -46118,18 +46200,9 @@
         <target>Nach Zugangsdaten</target>
       </segment>
     </unit>
-    <unit id="profile.usage.you">
-      <notes>
-        <note category="location">src/app/features/usage/profile-usage.ts:110</note>
-      </notes>
-      <segment>
-        <source>you</source>
-        <target>Sie</target>
-      </segment>
-    </unit>
     <unit id="usage.empty">
       <notes>
-        <note category="location">src/app/features/usage/profile-usage.ts:123</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:122</note>
         <note category="location">src/app/features/usage/usage-detail.ts:189</note>
         <note category="location">src/app/features/usage/usage-overview.ts:189</note>
       </notes>
@@ -46165,45 +46238,45 @@
         <target>Keine Regel gilt <ph id="0" equiv="place" disp="placeText(place)"/>: jede Kennzahl ist unbegrenzt.</target>
       </segment>
     </unit>
-    <unit id="usage.rule.builtin">
+    <unit id="usage.rule.own-builtin">
       <notes>
-        <note category="location">src/app/features/usage/usage-budgets.ts:45</note>
+        <note category="location">src/app/features/usage/usage-budgets.ts:48</note>
       </notes>
       <segment>
-        <source>the default for <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, profile <ph id="2" equiv="profile" disp="profileName"/></source>
-        <target>der Vorgabe für <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, Profil <ph id="2" equiv="profile" disp="profileName"/></target>
+        <source>Your limits come from the default for <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, profile <ph id="2" equiv="profile" disp="profileName"/>.</source>
+        <target>Ihre Limits stammen aus der Vorgabe für <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, Profil <ph id="2" equiv="profile" disp="profileName"/>.</target>
       </segment>
     </unit>
-    <unit id="usage.rule.rule">
+    <unit id="usage.rule.own-rule">
       <notes>
-        <note category="location">src/app/features/usage/usage-budgets.ts:46</note>
+        <note category="location">src/app/features/usage/usage-budgets.ts:49</note>
       </notes>
       <segment>
-        <source>the rule for <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, profile <ph id="2" equiv="profile" disp="profileName"/></source>
-        <target>der Regel für <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, Profil <ph id="2" equiv="profile" disp="profileName"/></target>
+        <source>Your limits come from the rule for <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, profile <ph id="2" equiv="profile" disp="profileName"/>.</source>
+        <target>Ihre Limits stammen aus der Regel für <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, Profil <ph id="2" equiv="profile" disp="profileName"/>.</target>
       </segment>
     </unit>
-    <unit id="usage.rule.own">
+    <unit id="usage.rule.applies-builtin">
       <notes>
-        <note category="location">src/app/features/usage/usage-budgets.ts:47</note>
+        <note category="location">src/app/features/usage/usage-budgets.ts:52</note>
       </notes>
       <segment>
-        <source>Your limits come from <ph id="0" equiv="rule" disp="what"/>.</source>
-        <target>Ihre Limits stammen aus <ph id="0" equiv="rule" disp="what"/>.</target>
+        <source>Applies: the default for <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, profile <ph id="2" equiv="profile" disp="profileName"/>.</source>
+        <target>Es gilt: die Vorgabe für <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, Profil <ph id="2" equiv="profile" disp="profileName"/>.</target>
       </segment>
     </unit>
-    <unit id="usage.rule.applies">
+    <unit id="usage.rule.applies-rule">
       <notes>
-        <note category="location">src/app/features/usage/usage-budgets.ts:47</note>
+        <note category="location">src/app/features/usage/usage-budgets.ts:53</note>
       </notes>
       <segment>
-        <source>Applies: <ph id="0" equiv="rule" disp="what"/>.</source>
-        <target>Es gilt: <ph id="0" equiv="rule" disp="what"/>.</target>
+        <source>Applies: the rule for <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, profile <ph id="2" equiv="profile" disp="profileName"/>.</source>
+        <target>Es gilt: die Regel für <ph id="0" equiv="who" disp="who"/> <ph id="1" equiv="place" disp="where"/>, Profil <ph id="2" equiv="profile" disp="profileName"/>.</target>
       </segment>
     </unit>
     <unit id="usage.used-of">
       <notes>
-        <note category="location">src/app/features/usage/usage-budgets.ts:53</note>
+        <note category="location">src/app/features/usage/usage-budgets.ts:59</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="used" disp="amount(used)"/> of <ph id="1" equiv="limit" disp="amount(limit)"/></source>

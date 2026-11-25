@@ -488,11 +488,18 @@ export class RemoteDownloads {
     return by?.name ?? queueOriginText('person');
   }
 
-  /** The person who started a row or a bulk, where the API names them: **You**, their name, or nobody (`null`). */
+  /**
+   * The name of another person who started a row or a bulk, where the API names them; null for nobody and for the reader, whose line is
+   * a sentence of its own ("Started by you", "Gestartet von Ihnen", Q-UI-1219): a word for the reader is never put into another sentence.
+   */
   protected starterText(by: RemoteDownload['startedBy']): string | null {
-    if (!by?.id) return null;
-    if (by.id === this.self()) return $localize`:@@downloads.origin.you:You`;
+    if (!by?.id || by.id === this.self()) return null;
     return by.name ?? null;
+  }
+
+  /** The reader started the row or the bulk. */
+  protected startedBySelf(by: RemoteDownload['startedBy']): boolean {
+    return !!by?.id && by.id === this.self();
   }
 
   /** A waiting row's line while an upstream's rate limit holds the queue (Q-UI-1100): "Rate limit until 08:12"; null otherwise. */

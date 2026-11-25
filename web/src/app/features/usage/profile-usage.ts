@@ -58,7 +58,7 @@ export function nothingInDay(d: UsageDetail): boolean {
       <section class="section" aria-labelledby="own-limits">
         <h2 id="own-limits" i18n="@@profile.usage.limits">Your limits</h2>
         <quader-usage-budgets [budgets]="d.budgets" [mode]="d.mode" [own]="true" />
-        <quader-limit-explain [subjectName]="you" />
+        <quader-limit-explain />
       </section>
 
       @if (!empty()) {
@@ -107,7 +107,6 @@ export class ProfileUsage {
 
   readonly period = input<string | undefined>(undefined);
 
-  protected readonly you = $localize`:@@profile.usage.you:you`;
   protected readonly periods = PERIODS;
   protected readonly activePeriod = computed<UsagePeriod>(() => (PERIODS.includes(this.period() as UsagePeriod) ? (this.period() as UsagePeriod) : 'day'));
   protected readonly detail = signal<UsageDetail | null>(null);

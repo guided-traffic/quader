@@ -5,26 +5,34 @@ import { RepositoriesApi } from '../../api/repositories-api';
 import { isSystemRepository } from '../../core/upstream-project';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
-import { placeLabel, whoView } from '../limits/callers';
+import { everyPhrase, placeLabel, whoView } from '../limits/callers';
 import { FIGURES, compactFigures, figureName, formatCount, limitText } from '../limits/figures';
 
-/** One step of the resolution as a sentence (R-UI-184): "Repository web/npm-remote: no rule for alice." */
-export function stepText(step: ExplainStep, subjectName: string): string {
+/**
+ * One step of the resolution as a sentence (R-UI-184): "Repository web/npm-remote: no rule for alice." `subjectName` null: the step is the
+ * reader's own, said in sentences of their own ("no rule for you", Q-UI-1219), never with a word for the reader put into a sentence.
+ */
+export function stepText(step: ExplainStep, subjectName: string | null): string {
   const where = placeLabel(step.place);
   if (step.outcome === 'none') {
     switch (step.step) {
       case 'single':
-        return $localize`:@@explain.single-none:${where}:place:: no rule for ${subjectName}:name:.`;
+        return subjectName === null
+          ? $localize`:@@explain.single-none-you:${where}:place:: no rule for you.`
+          : $localize`:@@explain.single-none:${where}:place:: no rule for ${subjectName}:name:.`;
       case 'groups':
         return $localize`:@@explain.groups-none:${where}:place:: no rule for its groups.`;
       case 'kind':
         return $localize`:@@explain.kind-none:${where}:place:: no rule for its kind.`;
     }
   }
-  const names = (step.rules ?? []).map((r) => whoView(r.who).primary).join(', ');
+  // A kind of caller stands as a phrase of the sentence, not as a list's label ("every signed-in user", Q-UI-1219).
+  const names = (step.rules ?? []).map((r) => (r.who.kind === 'every' ? everyPhrase(r.who.callerKind) : whoView(r.who).primary)).join(', ');
   switch (step.step) {
     case 'single':
-      return $localize`:@@explain.single-match:${where}:place:: the rule for ${subjectName}:name: applies.`;
+      return subjectName === null
+        ? $localize`:@@explain.single-match-you:${where}:place:: the rule for you applies.`
+        : $localize`:@@explain.single-match:${where}:place:: the rule for ${subjectName}:name: applies.`;
     case 'groups':
       return $localize`:@@explain.groups-match:${where}:place:: the rule for ${names}:groups: applies.`;
     case 'kind':
@@ -156,7 +164,7 @@ export class LimitExplain {
 
   /** The caller asked about; absent for the caller's own limits. */
   readonly subject = input<{ kind: UsageSubjectKind; id: string } | null>(null);
-  /** How the steps name the caller ("alice", "you"). */
+  /** How the steps name another caller ("alice"); the reader's own limits (no `subject`) are said to the reader. */
   readonly subjectName = input('');
   /** The repositories offered: `<project>/<repo>`; empty takes every repository the caller can read. */
   readonly scopeRepositories = input<readonly string[] | null>(null);
@@ -214,7 +222,9 @@ export class LimitExplain {
     }
   }
 
+  /** A step of another caller names the caller; a step of the reader's own limits is said to the reader (Q-UI-1219). */
   protected step(s: ExplainStep, a: LimitExplanation): string {
+    if (this.subject() === null) return stepText(s, null);
     return stepText(s, this.subjectName() || ('name' in a.subject ? a.subject.name : a.subject.id));
   }
 

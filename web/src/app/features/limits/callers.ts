@@ -37,6 +37,25 @@ export function everyLabel(kind: CallerKind): string {
   }
 }
 
+/**
+ * A kind of caller as it stands in a sentence after "for" (Q-UI-1219): "every signed-in user", "alle angemeldeten Benutzer". The label of
+ * a list ("Every signed-in user") lowered to a phrase lowered German nouns too ("alle angemeldeten benutzer").
+ */
+export function everyPhrase(kind: CallerKind): string {
+  switch (kind) {
+    case 'user':
+      return $localize`:@@usage.who.every.user:every signed-in user`;
+    case 'technicalToken':
+      return $localize`:@@usage.who.every.technical-token:every technical token`;
+    case 'ci':
+      return $localize`:@@usage.who.every.ci:every CI job`;
+    case 'anonymous':
+      return $localize`:@@usage.who.every.anonymous:every anonymous caller`;
+    case 'administrator':
+      return $localize`:@@usage.who.every.administrator:every administrator`;
+  }
+}
+
 /** The kind of a usage subject as a word ("User", "Technical token", …). */
 export function subjectKindLabel(kind: UsageSubjectKind): string {
   switch (kind) {
