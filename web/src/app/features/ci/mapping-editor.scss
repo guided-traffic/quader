@@ -58,11 +58,19 @@ h3 {
   overflow-wrap: anywhere;
 }
 
+// The icon before the sentence on its first line, an action under the sentence (R-UI-175): as a wrapping row the sentence of the
+// public issuer's pin went under its icon at 1,024 and 390 px, 28 px below it (2026-11-25).
 .hint {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: var(--quader-space-2);
-  align-items: center;
+  // The icon stands on the first line by the paragraph's rule of _catalog-screens.scss (`p > .material-icons`).
+  align-items: start;
+
+  > .btn {
+    grid-column: 2;
+    justify-self: start;
+  }
   margin-block: var(--quader-space-2);
   padding: var(--quader-space-2) var(--quader-space-3);
   border: 1px solid var(--quader-border-strong);
