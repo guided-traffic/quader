@@ -259,10 +259,10 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 | S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:17 |
 | M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847) | landed and pushed at 07:14 (eight commits, Test and Release 45559185462; its builder worked from 06:17 to 07:12, every gate exit 0); what it measured and changed is below |
 | S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | landed and pushed at 08:11 (two commits, migration 00120; Q-CUR-170 to Q-CUR-176, Q-UI-1100 to Q-UI-1104, gaps H-1880 to H-1884; its builder worked from 06:40 to 08:05; the landing's gates each exit 0; two of its pictures looked at by the development agent) |
-| S4 · One scrollbar per page | the owner's finding of 06:45 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | landed and pushed at 09:47 (one commit; R-UI-215, Q-UI-1110 to Q-UI-1113; its builder worked from 07:15 to 09:38; the landing's gates each exit 0; the owner's case looked at by the development agent in its picture) |
-| S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | the plan is back at 07:20 (P3, 27 minutes, read-only; kept as `.dev/plans/p3-one-row-per-image-newest-first-plan.md` of the main checkout, not in git): two packages in order, S5a the server and S5b the screens, see below; S5a in work since 08:12, in S3's place; S5b after it and after S4 |
+| S4 · One scrollbar per page | the owner's finding of 06:45 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | landed and pushed at 09:45 (one commit, Test and Release 45579082289; R-UI-215, Q-UI-1110 to Q-UI-1113; its builder worked from 07:15 to 09:38; the landing's gates each exit 0; the owner's case looked at by the development agent in its picture) |
+| S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | the plan is back at 07:20 (P3, 27 minutes, read-only; kept as `.dev/plans/p3-one-row-per-image-newest-first-plan.md` of the main checkout, not in git): two packages in order, S5a the server and S5b the screens, see below; **S5a landed and pushed at 10:20** (three commits, migrations 00122 to 00124; Q-API-431, Q-API-432, Q-OCI-268, Q-OCI-269, Q-CUR-180, Q-CUR-181, Q-UI-1130, ADR-280, gaps H-1900 to H-1902; its builder worked from 08:12 to 10:00; the landing's gates and five integration areas each exit 0); S5b in work since 10:22 |
 | S6 · "Not scanned" says why and what comes | the owner's finding of 06:55 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | landed and pushed at 08:50 (two commits, migration 00121; Q-VULN-274 to Q-VULN-279, Q-UI-1120 to Q-UI-1123, Q-ARCH-1064, gaps H-1890 and H-1891; its builder worked from 07:19 to 08:25); what it built and left is in section 8, Product |
-| S7 · The UI profile scans for malware, with nothing of it in the product | H-1891 (section 8, Product, under S6): ClamAV on the owner's machine through a relay of the profile's own between a Unix socket on the host and `clamd`'s port published on the host's loopback; the product's binary, its configuration and the chart do not change (the owner's conditions of 09:17, below) | in work since 09:41, in S4's place |
+| S7 · The UI profile scans for malware, with nothing of it in the product | H-1891 (section 8, Product, under S6): ClamAV on the owner's machine through a relay of the profile's own between a Unix socket on the host and `clamd`'s port published on the host's loopback; the product's binary, its configuration and the chart do not change (the owner's conditions of 09:17, below) | in work since 09:41; its builder stopped at 09:47 before building (the relay's form needs a change of the product or an administrator's step, below) and goes on since 09:48 in another form: the chart's pod on Docker |
 | S8 · An upstream's account from a Secret that exists | the owner's task of 09:40 (below): the chart supplies the upstream registries with accounts from existing Secrets; the development profiles take Docker Hub's account from a file of the machine | a planner (P4) since 09:43; builders after its plan |
 | P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows, what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | back at 06:42 (a planner, 25 minutes, read-only; kept in the session's scratch directory as `p1-render-guard-blind-spots-plan.md`); its three packages are G1 to G3 below |
 
@@ -363,7 +363,9 @@ the repaired build workflow, its image and chart are out, and **it runs on the o
 0.124.2 deployed, seven Deployments on the image, every pod running, eleven certificates ready, the ingress answers). The
 UI development profile runs the `main` of 08:50 since 08:52, with the vulnerability scanner and the database's loader
 beside the backend.
-The run of S3's push (45566184640), which cut v0.124.2, ended with every job green, its kind legs among them (read at
+**v0.124.3** (S6: the scan state's cause, migration 00121) was cut at 09:06, its image and chart are out, and it runs on
+the owner's installation (read at 09:46: chart 0.124.3 deployed, the migration's job complete, seven Deployments on the
+image, every pod running). The run of S3's push (45566184640), which cut v0.124.2, ended with every job green, its kind legs among them (read at
 09:25); no job of it was started again.
 
 **ClamAV on the UI profile: the owner's decision and its conditions (2026-11-25, 09:17).** Asked what the open question of
@@ -383,6 +385,24 @@ scanner on the host is the product's, unchanged, with `malware.scanner.socket` p
 `cmd/` holds nothing else; the scanner is the client of `clamd`, so no option opened a port in the product. **To be held
 by a test:** the product's packages dial `clamd` by a Unix socket only and import nothing of the relay. Not verified:
 that `clamd` of the pinned image opens a TCP port beside its socket with the profile's configuration.
+
+**The relay's form did not hold, and a recorded fact was false (S7's builder, 09:47; nothing built, its tree clean).**
+Verified by it on the pinned image: `clamd` opens a TCP port beside its socket and a host process reaches it through a
+port published on the loopback alone. **The blocker:** the malware scanner's loader writes the signature database into a
+fixed directory, the constant `database.ClamdDir` (`/var/lib/clamav`, `internal/malware/database/loader.go`), with no
+configuration key; on the owner's machine that directory does not exist and `/var/lib` is root's. So the product's
+scanner cannot run on the host without a new key in the product (against his condition) or an administrator's step
+outside the repository, and then only one instance at a time. **The false fact:** Q-ARCH-1064 and H-1891 say Docker
+Desktop does not forward `host.docker.internal` to the host's loopback; the builder reached a server bound to the host's
+loopback from a container twice, in plain HTTP and in TLS with a check of the name. The owner had been told that fact as
+S6's measurement, not checked by the development agent. **Decided by the development agent at 09:48, against the form the
+owner had agreed to and told to him at once:** the chart's pod on Docker: the product's scanner, built from the working
+tree, in a container beside `clamd`, the socket between them inside Docker as in the pod; the scanner reaches the
+profile's scan listener through `host.docker.internal`, the worker reaches the scanner's own listener through a port
+published on the loopback alone. No link to `clamd` over TCP at all, no relay, no change of the product, no
+administrator's step, and it holds per instance; his three conditions hold more strictly than with the relay. First step
+of the builder: the product's scan listener reached from a container, which nobody has shown yet.
+**The owner agreed to the form at 09:52** (whole: "Ja, bau die Pod Form"), told the blocker and the corrected fact.
 
 **The owner's task of 09:40: accounts for the upstreams (S8).** His words, whole: "Ich möchte, dass ich im Helm Chart die
 Upstream-Repos mit Accounts über exsisting Secrets versorgen kann. Für die Dev-Umgebung auf localhost will ich die docker
@@ -983,6 +1003,24 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **Closed in part on 2026-11-25, 10:20, by S5a: the server's side of findings (2) and (3) of the owner's three of 06:55
+  (below); the screens follow with S5b.** Every list of versions defaults to the format's order, newest first
+  (`sort=-version`; npm, NuGet, Debian and Ansible Galaxy already ranked every string they store, generic has no
+  versions); a tag the format does not rank (`latest`, `main`, `sha-…`) stands below the versions, newest first by its
+  time. The Upstream tab lists Docker Hub's and Quay's tags in the tag order, a bulk queues the highest version first, and
+  the tab Downloads shows a bulk's rows in the order they run. The version list has a grouped mode (`group=content`): one
+  entry per manifest, led by its highest tag, the other tags as `aliases`; one request reads at most 1,024 tags, so a page
+  may be short with a cursor set. **Both leaks of attachment tags its planner had inferred were real**, each shown by a
+  test that failed first: a remote listed a `.sig` tag once a client had fetched it through the repository (in a mirror
+  also the referrers tag), and the catalogue of all three kinds of upstream passed the four forms on as versions; now
+  listed in no remote and no catalogue. **Measured once with 100,000 tags** (integration stack, load 7 to 10, nothing asked
+  of a public registry; `docs/developer/oci.md`): a grouped first page 36 ms on 100,000 manifests, 33 ms on 50,000
+  manifests with a version and a commit tag each (59 ms in a local repository), 133 ms with all tags on one manifest. Gaps
+  H-1900 (the end of a grouped list costs a request per 1,024 tags that lead no image), H-1901 and H-1902 (a package in
+  several repositories, a local image's downloads per page; neither measured). A row a replica of the previous release
+  writes during an upgrade has no digest and lists as an image of its own. The owner's word of W-7, "one row per version",
+  reads as one row per image for OCI by his word of today (Q-UI-1130).
+
 - **Closed in part on 2026-11-25, 08:50, by S6: "not scanned" says why (finding (1) of the owner's three of 06:55,
   below).** Every list's cell and the version's card say a scan's state by its cause from one derivation on the server
   (`internal/vuln/report/check.go`, per manifest for an image): queued (with "since"), scanning, no scanner connected, no
@@ -1038,7 +1076,7 @@ records the recorder that tells such a stall apart).
   his picture shows `3.8.51, sha-5ccfd1a, 3.8.52, …`, oldest first with the commit tags between. To do (S5): every list
   of versions defaults to the format's own version order, newest first, in every format.
 
-- **Closed on 2026-11-25, 09:47, by S4 (R-UI-215; Q-UI-1110 to Q-UI-1113):** a page has one scrollbar, `main`'s. The
+- **Closed on 2026-11-25, 09:45, by S4 (R-UI-215; Q-UI-1110 to Q-UI-1113):** a page has one scrollbar, `main`'s. The
   data table has no height cap, no scroll, no tab stop and no sticking head of its own, so a list of any length grows the
   page (the head scrolls away with it: the plan's recommendation, **not confirmed against the owner's GitLab**, since the
   style guide says nothing of it); an opened item shows its ten newest versions under a head of its own and links "All N
