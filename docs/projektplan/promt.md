@@ -257,7 +257,7 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 |---|---|---|
 | S1 · A screen says a server's failure in its own language | the thirteen screens of section 8, Product ("Thirteen more screens show a server's English text as their own"), from the kept diff `.dev/server-sentences-full-scope.diff`, which no longer applies to `main` as it is | in work since 06:17 |
 | S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:17 |
-| M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847). Each is run once and its numbers are written down; a defect a number shows is repaired or entered | in work since 06:17 |
+| M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847) | landed at 07:25 (eight commits; its builder worked from 06:17 to 07:12, every gate exit 0); what it measured and changed is below |
 | S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | in work since 06:40 |
 | S4 · One scrollbar per page | the owner's finding of 06:45 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | the plan is back at 07:12 (P2, 25 minutes, read-only; kept in the session's scratch directory as `p2-one-scrollbar-per-page-plan.md`): one package, see below; a builder when a place is free, ahead of G2 |
 | S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | a planner (P3) since 06:58; a builder when a place is free |
@@ -305,6 +305,28 @@ the window's first height, with fixtures that fail on his picture; it supersedes
 Q-UI-427 and revises Q-UI-241, Q-UI-4 and Q-UI-997. Cost by its planner's estimate: fixtures 3 to 5 s, the render step at
 most a minute more, nothing per format. It meets S5 in one file (the opened item's list): S4 sets its bound and its link,
 S5 its rows and their order; the second to land rebases.
+
+**The three measurements (M1, landed at 07:25; each is repeatable by the command on its developer page and runs in no
+normal run).**
+- **`package_write` under a push of several platforms: a defect, repaired.** With the default burst of 400 a `docker push`
+  of two platforms with 70 layers each got its first 429 at the 400th write, 2.5 s in (`Retry-After` 26 to 32 s); the
+  client stops at the first 429, so a pipeline's first push of such an image failed, and a client that waits finished in
+  35 s. The burst decides, not the rate (105 to 166 writes in the busiest second). **The default burst is 1,600 now, at
+  the same 10 a second (Q-LIM-292)**: a push of four platforms with 127 layers each (1,542 writes) passes; five such
+  platforms meet it at the 1,600th write. It changes a default of the development agent's own estimate (Q-LIM-56), not a
+  figure of the owner; his upload figures stay put off (Q-LIM-27). Not measured: real clients against the new default.
+- **The download overview writes little.** At most three statements per replica every 2 s, however many downloads run,
+  none on a fetch's own path; at most about 39 KB of WAL a second per replica, about 3 % of what the fills write at that
+  rate; a miss is no slower with the overview than without (p50 84 against 85 ms). Nothing repaired; Q-OPS-420's
+  condition to revisit is not met. Not measured: five replicas publishing at once, a pooler between.
+- **The live views.** Per seen tab and minute: a version's page whose scan waits 37 to 41 calls (about 330 statements,
+  115 ms of a replica's CPU), the administrator's dashboard and System status 27 to 28, a list or a package's page 6 to
+  7. A hidden tab reads nothing, **except two that did and are repaired:** the tab Downloads read every 5 s and a running
+  job's progress every 2 s while hidden. Fifty people with one seen tab each cost under 1 % of a core on lists and about
+  10 % on version pages that wait for a scan. H-1847 stays a gap with these numbers. New gaps: H-1870, a version's page
+  reads every 3 s for as long as its scan waits, without a bound; H-1871, the audit log and the security dashboard's
+  findings sent no read in 60 and 75 s of a seen tab in two runs (to read: both intervals may be the slow ones by
+  design, 30 and 60 s; section 8).
 
 **What stays open and is not built by this run, each with its reason:** F-126, F-95, the `npm ci` binding and the
 unreachable github.com of `e2e (bastion)` wait for a recurrence (section 8); the stall without a neighbour is a standing
@@ -854,6 +876,11 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **The audit log and the security dashboard's findings sent no read during 60 and 75 s of a seen tab (H-1871; M1,
+  2026-11-25, two runs in a browser on the UI profile):** both read at once when the window is seen again and their unit
+  tests pass. Not read to its cause: which interval each uses (`LIVE_SLOW_MS` is 30 s, `LIVE_IDLE_MS` 60 s) and whether a
+  list of events that others write may wait that long under R-UI-213.
 
 - **"Not scanned" without a cause, tags that read as signatures, and versions oldest first (owner, 2026-11-25, 06:55, the
   opened image `guidedtraffic/s3-encryption-proxy` on the tab Images of `upstream/docker-hub`, UI profile; his words,
@@ -11649,7 +11676,7 @@ the walk items and the run record); what the code holds beyond the plan has not 
   runs before the request check, so a request it admits and the check refuses still counts there; the profile editor's help
   text on waiting downloads was not touched; the client cases of Debian, npm and Ansible Galaxy were not run again; every run
   on the kind cluster was on `linux/arm64`. `package_write` (burst 400) would not hold a push of two platforms with more than
-  about 65 distinct layers each (Q-LIM-56). **Closed on 2026-11-24 by W17:** the help text, "A further download waits up to 10 seconds, then is refused, or at once while a server holds many waiting downloads." (R-UI-178, Q-LIM-60), in German too, rendered at three widths in both schemes. Open: `package_write` for a push of two platforms of more than about 65 distinct layers each (Q-LIM-56), not measured.
+  about 65 distinct layers each (Q-LIM-56). **Closed on 2026-11-24 by W17:** the help text, "A further download waits up to 10 seconds, then is refused, or at once while a server holds many waiting downloads." (R-UI-178, Q-LIM-60), in German too, rendered at three widths in both schemes. Open: `package_write` for a push of two platforms of more than about 65 distinct layers each (Q-LIM-56), not measured. **Closed on 2026-11-25 by M1 (Q-LIM-292):** measured on the integration stack with the registry's routes, and the default burst raised from 400 to 1,600 (section 1, Run of 2026-11-25).
 - **Partly closed; open: `package_write` as a stand-in until upload figures exist (Q-LIM-27, which the owner
   put after the first step) and a screen for a technical token's description and removal (package W9).**
   Closed: the usage list's offset cursor, which stays by decision 25 of the reading of 2026-11-23; the reason
