@@ -256,13 +256,13 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 | Package | What it closes | State |
 |---|---|---|
 | S1 · A screen says a server's failure in its own language | the thirteen screens of section 8, Product ("Thirteen more screens show a server's English text as their own"), from the kept diff `.dev/server-sentences-full-scope.diff`, which no longer applies to `main` as it is | landed and pushed at 07:28 (one commit, Test and Release 45560824204; R-UI-214, Q-UI-1080; its builder worked from 06:17 to 07:18; the landing's gates on its own worktree, each exit 0: build, vet, the whole unit run, lint, the documents' checks, the web's lint, tests, translation check and layout fixtures; two of its pictures looked at by the development agent) |
-| S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:17 |
+| S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24); added at 07:30: the German pass's `english` findings and the render's growth of `profile-usage-table` | landed and pushed at 11:11 (five commits, the last the development agent's repair of the profile's health check; Q-UI-1090 to Q-UI-1092, gaps H-1860 and H-1861; its builder worked from 06:17 to 11:05; the landing's thirteen gates each exit 0); what it built and left is in section 8, Product |
 | M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847) | landed and pushed at 07:14 (eight commits, Test and Release 45559185462; its builder worked from 06:17 to 07:12, every gate exit 0); what it measured and changed is below |
 | S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | landed and pushed at 08:11 (two commits, migration 00120; Q-CUR-170 to Q-CUR-176, Q-UI-1100 to Q-UI-1104, gaps H-1880 to H-1884; its builder worked from 06:40 to 08:05; the landing's gates each exit 0; two of its pictures looked at by the development agent) |
 | S4 · One scrollbar per page | the owner's finding of 06:45 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | landed and pushed at 09:45 (one commit, Test and Release 45579082289; R-UI-215, Q-UI-1110 to Q-UI-1113; its builder worked from 07:15 to 09:38; the landing's gates each exit 0; the owner's case looked at by the development agent in its picture) |
 | S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | the plan is back at 07:20 (P3, 27 minutes, read-only; kept as `.dev/plans/p3-one-row-per-image-newest-first-plan.md` of the main checkout, not in git): two packages in order, S5a the server and S5b the screens, see below; **S5a landed and pushed at 10:03** (three commits, migrations 00122 to 00124; Q-API-431, Q-API-432, Q-OCI-268, Q-OCI-269, Q-CUR-180, Q-CUR-181, Q-UI-1130, ADR-280, gaps H-1900 to H-1902; its builder worked from 08:12 to 09:50; the landing's gates and five integration areas each exit 0); S5b in work since 10:06 |
 | S6 · "Not scanned" says why and what comes | the owner's finding of 06:55 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | landed and pushed at 08:50 (two commits, migration 00121; Q-VULN-274 to Q-VULN-279, Q-UI-1120 to Q-UI-1123, Q-ARCH-1064, gaps H-1890 and H-1891; its builder worked from 07:19 to 08:25); what it built and left is in section 8, Product |
-| S7 · The UI profile scans for malware, with nothing of it in the product | H-1891 (section 8, Product, under S6): ClamAV on the owner's machine through a relay of the profile's own between a Unix socket on the host and `clamd`'s port published on the host's loopback; the product's binary, its configuration and the chart do not change (the owner's conditions of 09:17, below) | landed and pushed at 10:45 (two commits; Q-ARCH-1065, H-1891 narrowed to Linux hosts; its builder worked from 09:41 to 10:24, with a stop from 09:47 to 09:48 for the form; the landing's gates, the chart's tests and shellcheck each exit 0; two of its 44 pictures looked at by the development agent) |
+| S7 · The UI profile scans for malware, with nothing of it in the product | H-1891 (section 8, Product, under S6): ClamAV on the owner's machine through a relay of the profile's own between a Unix socket on the host and `clamd`'s port published on the host's loopback; the product's binary, its configuration and the chart do not change (the owner's conditions of 09:17, below) | landed and pushed at 10:32 (two commits; Q-ARCH-1065, H-1891 narrowed to Linux hosts; its builder worked from 09:41 to 10:24, with a stop from 09:47 to 09:48 for the form; the landing's gates, the chart's tests and shellcheck each exit 0; two of its 44 pictures looked at by the development agent) |
 | S8 · An upstream's account from a Secret that exists | the owner's task of 09:40 (below): the chart supplies the upstream registries with accounts from existing Secrets; the development profiles take Docker Hub's account from a file of the machine | the plan is back at 10:04 (P4, 21 minutes, read-only; kept as `.dev/plans/p4-upstream-accounts-from-secrets-plan.md` of the main checkout, not in git): two packages, S8a the product, the chart and the screens, S8b the development profiles after it; see below; S8a in work since 10:15, in the place of G2; S8b after it |
 | P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows, what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | back at 06:42 (a planner, 25 minutes, read-only; kept in the session's scratch directory as `p1-render-guard-blind-spots-plan.md`); its three packages are G1 to G3 below |
 
@@ -404,7 +404,7 @@ published on the loopback alone. No link to `clamd` over TCP at all, no relay, n
 administrator's step, and it holds per instance; his three conditions hold more strictly than with the relay. First step
 of the builder: the product's scan listener reached from a container, which nobody has shown yet.
 **The owner agreed to the form at 09:52** (whole: "Ja, bau die Pod Form"), told the blocker and the corrected fact.
-**Built and landed at 10:45 (S7).** The profile runs the malware scanner as the chart's pod on Docker: the product's
+**Built and landed at 10:32 (S7).** The profile runs the malware scanner as the chart's pod on Docker: the product's
 scanner, cross-built from the working tree, in one container, `clamd` of the pinned image in a second, the socket and the
 database directory as volumes between them, both as the chart's user with a read-only root and no capabilities, `clamd`
 without any network; the updater of the kind `freshclam` as a host process. **His three conditions, each held:** the diff
@@ -932,7 +932,11 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
-- **The German render pass is red on `main` since S1's landing (2026-11-25, 07:28; seen by the builders of S3 and S4):**
+- **Closed on 2026-11-25, 11:11, by S2:** the German pass ends without a finding (81 screens, 8.7 minutes, on its
+  builder's instance). A text a person or an upstream wrote is marked as written (`translate="no"`) where it is shown:
+  the repository's description in its header and in the lists, a project's and a package's description in the lists and
+  the search, an advisory's summary, a README, a limit profile's description; the check `english` is unchanged. As it
+  stood: **The German render pass is red on `main` since S1's landing (2026-11-25, 07:28; seen by the builders of S3 and S4):**
   21 screens with 108 findings, every one of the new check `english`, which finds English texts in a German picture that
   are data and not the screen's words and are not marked as written (`translate="no"`): the seed's project and item
   descriptions, page descriptions, readmes, advisory summaries, the limits' descriptions. S1's builder had run the German
@@ -1076,7 +1080,26 @@ records the recorder that tells such a stall apart).
   - **`make versions-check` fails on the development machine by two tools that exist twice:** Trivy 0.69.3 of the
     machine's package manager against the pin 0.76.2, and the Buildx of Docker Desktop v0.28.0 against the pin v0.38.1
     (there before G2; the pipeline reads the pins). By the rule "one version of every tool" the finding is the two
-    versions: to be read which target calls which binary, and the owner told the command for what needs his machine.
+    versions. Read on 2026-11-25, 11:05: no target of the repository calls the package manager's Trivy (the Makefile and
+    the UI profile take the binary out of the pinned image), so it is a second install on the path and nothing else;
+    `~/.docker/cli-plugins/docker-buildx` points at Docker Desktop's own Buildx again (F-17: Docker Desktop relinks it),
+    while the package manager's copy is v0.38.1, the pin. Both are the owner's machine outside the repository; he was
+    told the two commands the same hour (`brew uninstall trivy`;
+    `ln -sf /opt/homebrew/bin/docker-buildx ~/.docker/cli-plugins/docker-buildx`). Nothing in the repository changes.
+  - **A builder's `pkill` by a pattern without its worktree's path (S2, 2026-11-25, about 11:00):** it stopped its own
+    render run with `pkill -f "playwright test -c e2e/playwright.renders.config.ts"`, which matches every worktree's
+    render run; S5b's full render ran at that time. Not known whether one was cut. For the briefs: a builder stops only
+    processes whose command line holds its own worktree's path.
+  - **The malware scanner on the owner's profile, read at 11:10 after S7's landing:** the replicas `clamav`, `freshclam`
+    and `trivy` (3) are `ready`; 1,999 blobs are clean, the seed's four test signatures are found, one seed blob failed
+    by a timeout. Two findings. (1) The container of `clamd` read "unhealthy" while it scanned: the image's own health
+    check asks a `clamd` of the image's default configuration. Repaired with S2's landing: the container's health check
+    is the chart's readiness probe (`deploy/ui-dev/malware.sh`; the command answered `PONG` in the running container).
+    (2) **Open, to be read:** 17 blobs of `upstream/docker-hub`, each a layer of 7.33 to 7.34 MiB of the image
+    `guidedtraffic/s3-encryption-proxy`, are `unscannable` by `limits_exceeded` (`clamd`:
+    `Heuristics.Limits.Exceeded.MaxScanSize`, the limit 2 GiB), while layers of the same size of other versions are clean.
+    Not known: what in a layer of 7 MiB makes `clamd` read 2 GiB (a file scanned again in several forms, or a count that
+    is not the size), and whether an installation would show the same; what a reader of the image sees of it.
 
 - **Closed in part on 2026-11-25, 10:03, by S5a: the server's side of findings (2) and (3) of the owner's three of 06:55
   (below); the screens follow with S5b.** Every list of versions defaults to the format's order, newest first
@@ -1150,6 +1173,26 @@ records the recorder that tells such a stall apart).
   says "Latest 5.4.7" correctly) and the index of W17 serves it. Not verified: which order the opened image's list uses;
   his picture shows `3.8.51, sha-5ccfd1a, 3.8.52, …`, oldest first with the commit tags between. To do (S5): every list
   of versions defaults to the format's own version order, newest first, in every format.
+
+- **The opened image still starts with an old version (owner, 2026-11-25, about 11:00, UI profile, the opened image
+  `guidedtraffic/s3-encryption-proxy` of `upstream/docker-hub` after S4 and S5a; his words, whole: "Schau mal hier, die
+  neuste Version hat er erkannt (5.4.7) und in der Tabelle darunter zeigt er aber v3.4.0 an. Das passt irgendwie nicht
+  zusammen. Ich erwarte, dass er auch in der Tabelle darunter mit der höchsten Version anfängt. v1.0.0 soll übrigends
+  genau so behandelt werden wie 1.0.0. Ein v in der Version wird also ignoriert und ändert nichts an der sortierung,
+  solange es der erste Buchstabe ist, gefolgt von einer version wie in meinem Beispiel."):** two points.
+  **(1) The order.** Verified on `main`: the opened item asks for `sort: '-publishedAt'`
+  (`web/src/app/features/repositories/content/repository-item-versions.ts:218`), the time of the fetch, so the ten rows
+  are the ten fetched last, while the row's "Latest" and the package's page use the version order. S5a changed the
+  server's default and the package page; the opened item names its sort itself and was S5b's part. S5b's commit
+  `46e3cfeca` (not landed at the time of his message) asks for `sort: '-version'` with `group=content` there. To check at
+  S5b's landing, on his repository: the opened image starts with 5.4.7.
+  **(2) The leading `v`.** Verified: it is so for image tags already. `tagorder.Parse` drops one leading `v` before it
+  reads the numbers (`internal/formats/oci/tagorder/tagorder.go`), and the database's function for a remote's tags reads
+  `^v?…` (migrations 00116, 00123); `v1.0.0` and `1.0.0` have the same place, the bytes break the tie only. `V1` and `vv1`
+  are no versions. His rule is written here as a standing one: one leading lower-case `v` before a version changes
+  nothing of its place. The other formats: npm refuses `v1.0.0` at a publish (`npm_invalid_version`, verified by its
+  test); NuGet, Ansible and Debian take their order from their clients' rules, where a leading `v` is no version (not
+  read again for this entry); the generic format has no versions (Q-API-431).
 
 - **Closed on 2026-11-25, 09:45, by S4 (R-UI-215; Q-UI-1110 to Q-UI-1113):** a page has one scrollbar, `main`'s. The
   data table has no height cap, no scroll, no tab stop and no sticking head of its own, so a list of any length grows the
@@ -1238,7 +1281,22 @@ records the recorder that tells such a stall apart).
   is kept as a diff at `.dev/server-sentences-full-scope.diff` of the main checkout (not in git). Not given: the run was
   wound down at 12:25.
 
-- **Two German layout findings left by the layout package (2026-11-24, 12:45):** German `package-version-ansible` at
+- **Closed on 2026-11-25, 11:11, by S2 (Q-UI-1090 to Q-UI-1092):** a tab strip takes its tabs closer (8 px a side
+  instead of 12) before it scrolls, in every one of the nine strips, so the seven German tabs of an Ansible version fit
+  at 1,024 px (they need 710 px of 697); every German word of more than 20 letters carries a soft hyphen at its joint
+  (74 places), `make web-i18n-check` refuses one without, and the render check `heading-broken` refuses a heading that
+  breaks between two letters (three fixtures in three engines, about 1 s); a navigation entry of two lines keeps its
+  icon on the first. `package-version-ansible` (as the plain user) and `admin-settings-auth` are in the German pass.
+  The render set shows an OCI and a Debian remote's list as a mirror pass fills it (`repository-oci-mirror-filled`,
+  `repository-deb-mirror-filled`: 214 tags, long names, sizes in part, no downloads; the list's answers are changed in
+  the browser after the server's real ones, 24 pictures, about 12 s of the render step). The render no longer grows a
+  picture for a boxed list that keeps its height (the usage table's pictures end with their content). **Left open:**
+  a heading narrower than about 250 px and a German screen outside the pass are held by no check (H-1860); the five
+  built-in limit profiles read in English on a German installation, because migration 00081 stores their names and
+  descriptions as texts an administrator may edit (H-1861: the API would have to tell an edited text from the first
+  one); the 12 px of a tab's padding were **not read against the owner's GitLab**; at 1,024 px an OCI list stacks its
+  columns, with a short tag as with a long one (not caused by the filled rows, not judged). As it stood:
+  **Two German layout findings left by the layout package (2026-11-24, 12:45):** German `package-version-ansible` at
   1,024 px has a tab strip that scrolls 11–14 px (the `sideways` check flags it; the screen is not in the German pass, so
   CI does not see it); German `admin-settings-auth` at 390 px breaks its heading "Authentifizierungseinstellungen" inside
   the word (no check covers headings). Not given: the run was wound down at 12:25.
@@ -11979,7 +12037,7 @@ the walk items and the run record); what the code holds beyond the plan has not 
 
 ### C · The walk (W-12 to W-24) and what landed on 2026-11-20
 
-- **Partly closed; open: a row of a remote's list that a mirror pass filled is not in the render set (W-24)**: no pass
+- **Closed on 2026-11-25 by S2 (the filled row, section 8, Product). Before: partly closed; open: a row of a remote's list that a mirror pass filled is not in the render set (W-24)**: no pass
   runs on the render stack, so such a row needs a mirror that stores from an upstream the seed reaches (the installation's
   own `image-source`, as `image-cache` does) and a pass that ends before the pictures; not built. Closed on 2026-11-24 by
   the screens' package of round 3: the walk `storedMirror` (`web/e2e/renders/screens.ts`) renders an OCI and a Debian
