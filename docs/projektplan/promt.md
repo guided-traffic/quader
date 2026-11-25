@@ -263,7 +263,7 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 | S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | the plan is back at 07:20 (P3, 27 minutes, read-only; kept as `.dev/plans/p3-one-row-per-image-newest-first-plan.md` of the main checkout, not in git): two packages in order, S5a the server and S5b the screens, see below; **S5a landed and pushed at 10:03** (three commits, migrations 00122 to 00124; Q-API-431, Q-API-432, Q-OCI-268, Q-OCI-269, Q-CUR-180, Q-CUR-181, Q-UI-1130, ADR-280, gaps H-1900 to H-1902; its builder worked from 08:12 to 09:50; the landing's gates and five integration areas each exit 0); S5b in work since 10:06; **S5b landed and pushed at 11:25** (one commit; Q-UI-1150, Q-UI-1151, H-1930; its builder worked from 10:04 to 11:17; the landing's thirteen gates each exit 0 and the image and mirror screens rendered together without a finding); **S5c landed and pushed at 11:59** (an image tag and a collection version are marked a pre-release, migration 00126) |
 | S6 · "Not scanned" says why and what comes | the owner's finding of 06:55 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | landed and pushed at 08:50 (two commits, migration 00121; Q-VULN-274 to Q-VULN-279, Q-UI-1120 to Q-UI-1123, Q-ARCH-1064, gaps H-1890 and H-1891; its builder worked from 07:19 to 08:25); what it built and left is in section 8, Product |
 | S7 · The UI profile scans for malware, with nothing of it in the product | H-1891 (section 8, Product, under S6): ClamAV on the owner's machine through a relay of the profile's own between a Unix socket on the host and `clamd`'s port published on the host's loopback; the product's binary, its configuration and the chart do not change (the owner's conditions of 09:17, below) | landed and pushed at 10:32 (two commits; Q-ARCH-1065, H-1891 narrowed to Linux hosts; its builder worked from 09:41 to 10:24, with a stop from 09:47 to 09:48 for the form; the landing's gates, the chart's tests and shellcheck each exit 0; two of its 44 pictures looked at by the development agent) |
-| S8 · An upstream's account from a Secret that exists | the owner's task of 09:40 (below): the chart supplies the upstream registries with accounts from existing Secrets; the development profiles take Docker Hub's account from a file of the machine | the plan is back at 10:04 (P4, 21 minutes, read-only; kept as `.dev/plans/p4-upstream-accounts-from-secrets-plan.md` of the main checkout, not in git): two packages, S8a the product, the chart and the screens, S8b the development profiles after it; see below; S8a in work since 10:15, in the place of G2; S8b after it; **S8a landed and pushed at 11:38** (one commit, migration 00125; see below); S8b in work since 11:54 |
+| S8 · An upstream's account from a Secret that exists | the owner's task of 09:40 (below): the chart supplies the upstream registries with accounts from existing Secrets; the development profiles take Docker Hub's account from a file of the machine | the plan is back at 10:04 (P4, 21 minutes, read-only; kept as `.dev/plans/p4-upstream-accounts-from-secrets-plan.md` of the main checkout, not in git): two packages, S8a the product, the chart and the screens, S8b the development profiles after it; see below; S8a in work since 10:15, in the place of G2; S8b after it; **S8a landed and pushed at 11:38** (one commit, migration 00125; see below); **S8b landed and pushed at 12:43** (two commits; the profiles read his file, a worktree reads none) |
 | P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows, what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | back at 06:42 (a planner, 25 minutes, read-only; kept in the session's scratch directory as `p1-render-guard-blind-spots-plan.md`); its three packages are G1 to G3 below |
 
 **The render guard's blind spots, as the plan of 06:42 reads them (counted in the code by its planner; the estimates are
@@ -491,6 +491,32 @@ files missing, dark at 1,440 px, and with them readable, German light at 390 px 
 at its hyphen in the sentence on where the credential goes: small, open). **Not verified:** that a kubelet fills an optional source of a
 Secret created after the install (S8b's check on the kind profile); the scope's name "Public Repo Read-only" of a
 Docker Hub token (from the plan, not read at Docker Hub).
+
+**S8b landed and pushed at 12:43 (two commits; Q-ARCH-1066 to Q-ARCH-1069; gaps H-1942 to H-1944; its builder
+worked from 11:54 to 12:28).** One script, `deploy/dev/upstream-accounts.sh`, takes the owner's file
+`.dev/credentials/upstream-registries.env` of the main checkout: the file is never sourced, each value goes by `sed`
+straight into a file of mode 0600 in a directory of mode 0700, the kind profile's Secret is made from those files and
+applied on the server's side (no annotation holds it), the nodes' Docker configuration goes through a pipe, and a
+kubelet restarts only when its file changed. A test (`internal/tools/devprofile`, about 1.2 s, made-up values) runs the
+script under `bash -x` and fails where a value or its base64 shows in the trace, the output or an argument; its builder
+changed the script so that a value passed a shell variable, and the test failed. **UI profile:** the product's key
+`repositories.upstream_accounts.docker-hub` with an empty `secret_name`, the page "From the installation's
+configuration file." and "Readable on this server"; a placeholder, an empty value or no file is no account, said in
+one line. **kind profile:** the Secret `quader-upstream-docker-hub` and the chart's value while it exists; without an
+account the Secret is deleted and the value left out, which is the state of every leg of the pipeline. **A worktree and
+the instances 2 to 8 read no account** unless `UPSTREAM_ACCOUNTS_FILE` names a file (Q-ARCH-1067), so no builder pulls
+with the owner's account by accident. The nodes' kubelets take the host's stored Docker entry first, the file second
+(Q-ARCH-1068). **The kubelet's part, run once on a one-node cluster with made-up values (Q-ARCH-1069):** an optional
+source of a Secret created after the pod started was filled after 13 s, a changed token arrived after 54 s, the files
+were gone 60 s after the delete, the pod never restarted. **Beside the brief:** the pin of Helm goes from 4.3.1 to 4.3.2,
+the version on the development machine (one version of every tool: the newer one everywhere; the release exists since
+2026-11-13 and the pipeline installs the pin). **The landing:** the eight gates of the Go side, the chart's lint and tests and
+shellcheck on the touched scripts each exit 0; `make versions-check` names the two tools of the owner's machine only. **Not run:** a whole `make dev-up` with the change (the Docker
+VM's memory was taken by other stacks), so the kind profile's values file met no full profile; the pipeline's legs with
+it. Open: plain copies of the token on the machine, readable by every process of the owner (H-1942); the kind cluster
+holds it where its kubeconfig and the Docker socket reach (H-1943); the profiles and his installation share one
+allowance if he uses one user (H-1944); a comment of `web/e2e/renders/upstream-accounts.ts` says the profile declares
+no account, which is no longer always so.
 
 **The owner's dev server built nothing from 10:13 to 11:50 (found at 11:48, after his words "Die Versionsreihenfolge
 klappt so noch nicht auf localhost ..." with a picture of the old list).** G2's landing added the packages of
@@ -1235,7 +1261,12 @@ records the recorder that tells such a stall apart).
   repository `upstream/clamav` names what it is. Its class is `local` because the product's updater is the only one
   that asks ClamAV's network, on a schedule, and the readers are served what is stored (ClamAV's network blocks
   addresses that ask too often; a pull-through per reader's request would ask it at the readers' pace), but in the
-  project `upstream` a reader takes it for an upstream, as he did. S11 leaves that alone.
+  project `upstream` a reader takes it for an upstream, as he did. **Decided by the owner at 12:41 ("Nimm A, ich folge
+  deiner Empfehlung"):** of the three options told him (A a badge of its own instead of "Local"; B "Local" kept with a
+  sentence; C rebuilt as the class remote) he takes A. The development agent's word for it, his to change: **System**,
+  with a tooltip and a sentence on the repository's page that say it is filled by the installation itself on a
+  schedule and nobody publishes to it; decided by the catalog's fact, the class in the API stays `local`. Given to
+  S11's builder as an addition at 12:41.
 
 - **Closed on 2026-11-25, 12:37, by S10, on the owner's word of 11:47 "Ja, bau S10 erstmal wie vorgeschalgen."
   (Q-UI-1190 to Q-UI-1192, Q-CUR-182; gap H-1975):** the run above the versions is gone; an npm tag stands as a badge
