@@ -6474,7 +6474,9 @@ Priority: **MVP** · Covers: UI-031
   its reason (Q-UI-113). Preset: local. Another class keeps the project, an edited key, the description and the visibility, and
   starts its own group and the Advanced settings from the defaults of that class (R-REPO-063, [Q-UI-341](#q-ui-341--the-class-is-a-radio-group-of-the-form-preset-to-local)).
 - **Change format** returns to the chooser; what was typed is not carried over, and the unsaved guard asks first when something was.
-- An unknown format in the address shows the chooser with the notice "This installation has no format <name>."
+- An unknown format in the address shows the chooser with the notice "This installation has no format <name>.", the name as a value of
+  running text (Q-UI-1213), and the chooser's trail, which ends at one step **New repository**
+  ([Q-UI-1215](#q-ui-1215--a-resolved-title-that-repeats-the-step-before-it-adds-no-step)).
 - A system-only format in the address (`/projects/{project}/repositories/new/clamav`) offers no form: the page is the chooser, titled
   **New repository**, under the note "This installation creates the repository of ClamAV definitions itself; it is not created here.",
   followed by "It is upstream/clamav." with the link to the repository's page where the reader sees a repository of the format (the
@@ -26334,6 +26336,23 @@ as a warning"). Two rules for one question: does someone have to act.
 [grade.ts](../../web/src/app/shared/vulnerability/grade.ts), [grade-card.ts](../../web/src/app/shared/vulnerability/grade-card.ts); the
 malware's `tone` of [malware-status.ts](../../web/src/app/shared/malware/malware-status.ts). Test: the case of R-VULN-039 R-UI-091 in
 [grade-words.spec.ts](../../web/src/app/shared/vulnerability/grade-words.spec.ts) (unit, milliseconds, every state).
+
+### Q-UI-1215 · A resolved title that repeats the step before it adds no step
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found by
+opening the creation form's address with a format the installation does not have: the page is the chooser with its notice, and the
+trail read "New repository / New repository". The form's route resolves its title ("New OCI (Docker) repository"), and for an unknown
+format it answers the chooser's title, which the trail added again: its rule left out a repeated step only where the link was the same
+too.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The trail adds no step for a resolved title equal to the step before it (chosen) | One condition in `collect` | The chooser's trail, whatever the address; a resolver can say "this is the page above" by its title | — |
+| (b) The resolver answers a title of its own ("Unknown format") | A new word | The trail says what went wrong | The page is the chooser, whose title is "New repository"; the notice says what went wrong already |
+
+**Choice:** (a). **Applied in the spec:** R-UI-002, R-UI-080. Code: `collect` of [breadcrumbs.ts](../../web/src/app/core/breadcrumbs.ts).
+Test: `R-UI-002 R-UI-080 the creation form of an unknown format is the chooser` of
+[breadcrumbs.spec.ts](../../web/src/app/core/breadcrumbs.spec.ts) (unit, milliseconds).
 
 ## What this does not cover
 

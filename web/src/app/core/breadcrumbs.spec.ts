@@ -94,6 +94,11 @@ describe('Breadcrumbs', () => {
     expect(trail[3]?.link).toBe('//projects/web/repositories/new');
   });
 
+  it('R-UI-002 R-UI-080 the creation form of an unknown format is the chooser: its trail ends at one step New repository', async () => {
+    const trail = await trailAt('/projects/web/repositories/new/no-such-format');
+    expect(trail.map((c) => c.label)).toEqual(['Projects', 'web', 'Repositories', 'New repository']);
+  });
+
   it('R-UI-002 a multi-segment route skips the fixed word and keeps the parameters', async () => {
     expect((await trailAt('/admin/endpoints/customers/rules/docs')).map((c) => c.label)).toEqual([
       'Admin area',

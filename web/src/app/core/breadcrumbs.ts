@@ -24,7 +24,7 @@ export interface CrumbSpec {
  *
  * - `data.crumbs` of a route adds the named steps of an area ("Administration"), with or without a link;
  * - a route with a string `title` adds a step with that title, and a route whose title a resolver gives one step with the
- *   resolved title (the creation form of a format);
+ *   resolved title (the creation form of a format), unless it repeats the step before it (the chooser for an unknown format);
  * - a parameter segment (`:key`) adds a step with the parameter's value, so a detail screen reads
  *   "Repositories > my-repo";
  * - a matcher route without `data.crumbParam` (the folders and files of a repository) adds no step: the trail ends at the
@@ -113,8 +113,10 @@ export function collect(root: ActivatedRouteSnapshot): Crumb[] {
         add({ label: route.params[crumbParam] ?? crumbParam, commands: [...before, ...own], literal: true });
       }
     } else if (config && typeof config.title === 'function' && config.path !== undefined && route.title) {
-      // A title a resolver gives (the creation form's "New OCI (Docker) repository"): one step that names the page.
-      add({ label: route.title, commands: [...before, ...own], literal: false });
+      // A title a resolver gives (the creation form's "New OCI (Docker) repository"): one step that names the page. A resolver that
+      // answers its parent's title (an unknown format shows the chooser, titled "New repository") adds no step: the trail read
+      // "New repository / New repository" (Q-UI-1215).
+      if (out[out.length - 1]?.label !== route.title) add({ label: route.title, commands: [...before, ...own], literal: false });
     } else if (config && title && config.path !== undefined) {
       const pieces = config.path.split('/');
       pieces.forEach((piece, i) => {
