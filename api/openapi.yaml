@@ -14411,8 +14411,8 @@ paths:
       tags: [malware]
       summary: Read the switch and the state of the malware scanning
       description: |
-        The installation's switch with its `ETag`, the backlog that switching it on would refuse or hold, the signature database in
-        use and the scanners the worker last saw (R-MAL-019, R-MAL-022, R-MAL-023). `backlog.unchecked` counts the blobs of
+        The installation's switch with its `ETag`, the backlog that switching it on would refuse or hold and the signature database in
+        use (R-MAL-019, R-MAL-022, R-MAL-023); the scanners are the rows of `GET /api/v1/system/scanners` (Q-MAL-110). `backlog.unchecked` counts the blobs of
         scannable items without a verdict, `backlog.notCheckable` those whose verdict is unscannable or failed and that no release
         passes. Read from PostgreSQL, so an answer shows a change another replica committed.
       x-quader-permission:
@@ -29029,7 +29029,7 @@ components:
     MalwareSettings:
       type: object
       additionalProperties: false
-      required: [enabled, onlyChecked, version, updatedAt, updatedBy, backlog, database, scanners]
+      required: [enabled, onlyChecked, version, updatedAt, updatedBy, backlog, database]
       properties:
         enabled:
           type: boolean
@@ -29051,8 +29051,6 @@ components:
           $ref: "#/components/schemas/MalwareBacklog"
         database:
           $ref: "#/components/schemas/MalwareDatabaseState"
-        scanners:
-          $ref: "#/components/schemas/MalwareScanners"
     MalwareBacklog:
       type: object
       additionalProperties: false
@@ -29119,21 +29117,6 @@ components:
           type: integer
           minimum: 0
           description: The runs of the task that failed in a row.
-    MalwareScanners:
-      type: object
-      additionalProperties: false
-      required: [ready, busy, observedAt]
-      description: What the worker last saw of the malware scanners (Q-MAL-43); `observedAt` is null while it made no call.
-      properties:
-        ready:
-          type: integer
-          minimum: 0
-        busy:
-          type: integer
-          minimum: 0
-        observedAt:
-          type: [string, "null"]
-          format: date-time
     MalwareSettingsPatch:
       type: object
       additionalProperties: false

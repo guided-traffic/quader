@@ -612,11 +612,11 @@ its own. What the column means and who writes it is in [usage-and-limits.md](usa
 [00088_malware](../../internal/meta/postgres/migrations/00088_malware.sql) is an expand step of the malware scanning (malware-scanning.md
 R-MAL-002, R-MAL-010, R-MAL-019, R-MAL-021): `malware_scan`, the verdict of a blob keyed by its SHA-256 with the job's columns (due,
 priority, attempts, not_before), `malware_release`, the release of a blob, the one-row tables `malware_settings` (the switch, off),
-`malware_database` (the signature database in use, empty) and `malware_scanners`, and the `cluster_epoch` rows of the change areas
+`malware_database` (the signature database in use, empty) and `malware_scanners` (dropped by 00127, Q-MAL-110), and the `cluster_epoch` rows of the change areas
 `malware_settings` and `malware_database`. Neither the verdict nor the release has a foreign key to `blobs`: a foreign key to `blobs` is
 a reference the collection keeps (R-STOR-024), so the job's sweep removes the row of a blob no item holds instead. `GetLiveItem` left-joins
 both by the item's blob, so a download reads its verdict in its one statement (R-ARCH-027). The tables are registered in
-[tables_malware.go](../../internal/meta/postgres/tables_malware.go) (four of the class `Data`, `malware_scanners` `Transient`), the
+[tables_malware.go](../../internal/meta/postgres/tables_malware.go) (the four of the class `Data`), the
 statements are [malware.sql](../../internal/meta/postgres/queries/malware.sql), and the contracts the four packages share are in
 [malware.md](malware.md).
 
@@ -837,6 +837,13 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 `data` ([tables_remote_curation.go](../../internal/meta/postgres/tables_remote_curation.go); the Debian one in
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
+
+## The malware settings count the scanner replicas' rows (00127)
+
+[00127_malware_scanners_drop](../../internal/meta/postgres/migrations/00127_malware_scanners_drop.sql) drops `malware_scanners`, the one row
+the malware job wrote after a run with the replicas its calls reached and the calls it had in flight at most: the settings page counts the
+rows of `scanner_replica` instead ([malware-scanning.md](../spec/malware-scanning.md) Q-MAL-110). Nothing referenced the table; its
+queries, the store's `Scanners` and `RecordScanners` and the member `scanners` of `GET /api/v1/malware/settings` went with it.
 
 ## A format says which version is a pre-release (00126)
 

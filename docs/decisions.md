@@ -10946,10 +10946,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-MAL
 
-78 questions on [spec/malware-scanning.md](spec/malware-scanning.md).
+79 questions on [spec/malware-scanning.md](spec/malware-scanning.md).
 
 <details>
-<summary>Q-MAL: 78 questions</summary>
+<summary>Q-MAL: 79 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11031,6 +11031,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-MAL-102](spec/malware-scanning.md#q-mal-102--a-put-back-keeps-the-refused-version-until-the-next-set) | A put-back keeps the refused version until the next set | Decided by the development agent | (a) The put-back marks the set put back `in_use` and no set `previous`; its cleanup keeps the set put back and the refused one; the refused version, never offered again, goes with the cleanup after the next set | — |
 | [Q-MAL-103](spec/malware-scanning.md#q-mal-103--every-new-file-of-a-set-is-checked-before-any-is-stored) | Every new file of a set is checked before any is stored | Decided by the development agent | (a) The task spools and checks every new file of the set first, and commits them only when all passed | — |
 | [Q-MAL-104](spec/malware-scanning.md#q-mal-104--while-no-set-is-in-use-the-import-asks-the-updater-every-30-seconds) | While no set is in use, the import asks the updater every 30 seconds | Decided by the development agent | (a) While the row names no set in use and the source is an updater the worker can ask, every worker that runs the task enqueues a run every 30 seconds; once a set is in use the schedule is the only one | — |
+| [Q-MAL-110](spec/malware-scanning.md#q-mal-110--the-settings-page-counts-the-scanners-from-the-rows-they-report) | The settings page counts the scanners from the rows they report | Decided by the development agent | (a) The summary counts the rows: the live ready replicas and the slots they report in use; the job's table goes | — |
 
 </details>
 

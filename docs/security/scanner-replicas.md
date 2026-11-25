@@ -41,8 +41,9 @@ are what the scanner says. The route checks their size and shape and nothing els
 `Validate`): a body of at most 4 KiB, decoded strictly; names of letters, digits, dots, hyphens and underscores; versions of letters,
 digits and `. + _ ~ -`; a reason of letters, digits and underscores; slots 1 to 64; a database only from `clamav`. None of these character
 sets holds markup, the table checks the same lengths, and the screens bind every value as text. A kind has at most 64 live rows
-(`scanreport.MaxRowsPerKind`). Nothing decides on a row: no job, gate, count or limit reads the table; the worker's calls and the summary of
-the malware settings (what the worker saw, Q-MAL-43) come from the calls themselves.
+(`scanreport.MaxRowsPerKind`). Nothing decides on a row: no job, gate, count or limit reads the table, and the worker's calls go to the Service, not to a row. The summary
+of the malware settings ("2 ready, 1 scan running") counts the rows since Q-MAL-110, so it is the scanners' statement as the fold under it is
+(H-1161 names the page).
 
 The route writes one table, `scanner_replica`, apart from the registry of R-OPS-003, so no reader of the registry (the key rings, the
 support bundle, the fetch shares, the rate-limit shares) counts a scanner.

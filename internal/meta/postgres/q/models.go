@@ -894,13 +894,6 @@ type MalwareScan struct {
 	CreatedAt    pgtype.Timestamptz
 }
 
-type MalwareScanner struct {
-	ID         bool
-	Ready      int32
-	Busy       int32
-	ObservedAt pgtype.Timestamptz
-}
-
 type MalwareSetting struct {
 	ID          bool
 	OnlyChecked bool

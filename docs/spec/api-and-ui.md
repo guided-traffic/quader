@@ -22619,8 +22619,8 @@ it, the tool's version, its state and why it is not ready, and on the settings p
 page's header repeats as "No ready replica of `<kind>`" while the kind's replicas report and none is ready), the scan listener cannot tell
 the kind, or no scanner of the kind is configured (the sentence for the role `all`, which analysed images in its own process, went with
 Q-ARCH-563: it builds no image scanner and answers `none`). The reason of a state is a few words
-beside its badge ("No database loaded yet"), so that its first words stand on the row's line (R-UI-172). The malware page keeps the
-worker's summary (Q-MAL-43); the advisory sources gain the section **Image scanners** with a summary of the rows ("2 ready, 1 scan
+beside its badge ("No database loaded yet"), so that its first words stand on the row's line (R-UI-172). The malware page kept the
+worker's summary (Q-MAL-43) until it counted the rows too ([malware-scanning.md](malware-scanning.md) Q-MAL-110); the advisory sources gain the section **Image scanners** with a summary of the rows ("2 ready, 1 scan
 running"). **Applied in the spec:** R-UI-038; [malware-scanning.md](malware-scanning.md) R-MAL-023;
 [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022. Code: [scanner-replicas.ts](../../web/src/app/shared/scanner/scanner-replicas.ts),
 [scanner-model.ts](../../web/src/app/shared/scanner/scanner-model.ts), [system-status.html](../../web/src/app/features/system/system-status.html),

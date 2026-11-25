@@ -1138,7 +1138,6 @@ async function* malwareSettings(page: Page): AsyncGenerator<string> {
   await answerWith(page, settings, (b) => ({
     ...b,
     backlog: { unchecked: 48213, notCheckable: 1207 },
-    scanners: { ready: 0, busy: 0, observedAt: new Date(Date.now() - 9 * 60_000).toISOString() },
     database: {
       version: 'main-62.daily-27832.bytecode-339',
       builtAt: new Date(Date.now() - 4 * 86_400_000).toISOString(),
@@ -1161,7 +1160,6 @@ async function* malwareSettings(page: Page): AsyncGenerator<string> {
     ...b,
     onlyChecked: true,
     backlog: { unchecked: 0, notCheckable: 0 },
-    scanners: { ready: 0, busy: 0, observedAt: null },
     database: { ...(b['database'] as object), version: null, builtAt: null, importedAt: null, stale: false, lastError: null },
   }));
   await expect(page.locator('main [data-testid="malware-db-none"]')).toBeVisible();

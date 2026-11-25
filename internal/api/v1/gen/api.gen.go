@@ -12071,13 +12071,6 @@ type MalwareRescanResult struct {
 	Marked int64 `json:"marked"`
 }
 
-// MalwareScanners What the worker last saw of the malware scanners (Q-MAL-43); `observedAt` is null while it made no call.
-type MalwareScanners struct {
-	Busy       int        `json:"busy"`
-	ObservedAt *time.Time `json:"observedAt"`
-	Ready      int        `json:"ready"`
-}
-
 // MalwareSettings defines model for MalwareSettings.
 type MalwareSettings struct {
 	// Backlog What switching the switch on would hold or refuse (R-MAL-019).
@@ -12090,11 +12083,8 @@ type MalwareSettings struct {
 	Enabled bool `json:"enabled"`
 
 	// OnlyChecked Only checked artifacts can be downloaded (R-MAL-019); false by default.
-	OnlyChecked bool `json:"onlyChecked"`
-
-	// Scanners What the worker last saw of the malware scanners (Q-MAL-43); `observedAt` is null while it made no call.
-	Scanners  MalwareScanners `json:"scanners"`
-	UpdatedAt time.Time       `json:"updatedAt"`
+	OnlyChecked bool      `json:"onlyChecked"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 
 	// UpdatedBy `<kind>:<name>` of the principal who changed the switch last; null for none.
 	UpdatedBy *string `json:"updatedBy"`

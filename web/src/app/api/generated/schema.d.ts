@@ -5357,8 +5357,8 @@ export interface paths {
         };
         /**
          * Read the switch and the state of the malware scanning
-         * @description The installation's switch with its `ETag`, the backlog that switching it on would refuse or hold, the signature database in
-         *     use and the scanners the worker last saw (R-MAL-019, R-MAL-022, R-MAL-023). `backlog.unchecked` counts the blobs of
+         * @description The installation's switch with its `ETag`, the backlog that switching it on would refuse or hold and the signature database in
+         *     use (R-MAL-019, R-MAL-022, R-MAL-023); the scanners are the rows of `GET /api/v1/system/scanners` (Q-MAL-110). `backlog.unchecked` counts the blobs of
          *     scannable items without a verdict, `backlog.notCheckable` those whose verdict is unscannable or failed and that no release
          *     passes. Read from PostgreSQL, so an answer shows a change another replica committed.
          */
@@ -13336,7 +13336,6 @@ export interface components {
             updatedBy: string | null;
             backlog: components["schemas"]["MalwareBacklog"];
             database: components["schemas"]["MalwareDatabaseState"];
-            scanners: components["schemas"]["MalwareScanners"];
         };
         /** @description What switching the switch on would hold or refuse (R-MAL-019). */
         MalwareBacklog: {
@@ -13383,13 +13382,6 @@ export interface components {
             at: string;
             /** @description The runs of the task that failed in a row. */
             failures: number;
-        };
-        /** @description What the worker last saw of the malware scanners (Q-MAL-43); `observedAt` is null while it made no call. */
-        MalwareScanners: {
-            ready: number;
-            busy: number;
-            /** Format: date-time */
-            observedAt: string | null;
         };
         MalwareSettingsPatch: {
             onlyChecked?: boolean;
