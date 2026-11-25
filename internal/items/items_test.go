@@ -76,15 +76,16 @@ func TestOriginNames(t *testing.T) {
 }
 
 func TestUpstreamURLCarriesNoCredentials(t *testing.T) {
-	t.Run("R-REPO-025 an upstream url is stored without user info, and a value that is no url is dropped", func(t *testing.T) {
+	t.Run("R-REPO-025 R-OPS-013 an upstream url is stored without user info and without the value of a query parameter Quader did not write, and a value that is no url is dropped", func(t *testing.T) {
 		for in, want := range map[string]string{
-			"https://registry.example.org/w/-/w-1.tgz":                "https://registry.example.org/w/-/w-1.tgz",
-			"https://bot:s3cret@registry.example.org/w/-/w-1.tgz?a=b": "https://registry.example.org/w/-/w-1.tgz?a=b",
+			"https://registry.example.org/w/-/w-1.tgz":                           "https://registry.example.org/w/-/w-1.tgz",
+			"https://bot:s3cret@registry.example.org/w/-/w-1.tgz?a=b&limit=5":    "https://registry.example.org/w/-/w-1.tgz?a=[REDACTED]&limit=5",
+			"https://cdn.example/w-1.tgz?X-Amz-Signature=deadbeef&X-Amz-Expires": "https://cdn.example/w-1.tgz?X-Amz-Signature=[REDACTED]&X-Amz-Expires",
 			"":            "",
 			"http://[::1": "",
 		} {
-			if got := withoutUserInfo(in); got != want {
-				t.Errorf("withoutUserInfo(%q) = %q, want %q", in, got, want)
+			if got := upstreamAddress(in); got != want {
+				t.Errorf("upstreamAddress(%q) = %q, want %q", in, got, want)
 			}
 		}
 	})

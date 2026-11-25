@@ -11433,10 +11433,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OPS
 
-104 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
+105 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
 
 <details>
-<summary>Q-OPS: 104 questions</summary>
+<summary>Q-OPS: 105 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11544,6 +11544,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OPS-423](spec/operations-and-observability.md#q-ops-423--the-holders-of-contentmetadata-read-see-the-downloads-of-every-repository-and-nobody-else) | The holders of content:metadata-read see the downloads of every repository, and nobody else | Decided by the development agent on 2026-11-24 | (a) `content:metadata-read`: the administrator and the auditor | — |
 | [Q-OPS-424](spec/operations-and-observability.md#q-ops-424--one-key-the-publication-interval-the-list-holds-100) | One key, the publication interval; the list holds 100 | Decided by the development agent on 2026-11-24 | (a) `proxy.upstream_downloads.publish_interval` (2 s, 1 s to 30 s); 100 fixed | [ADR-279](#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished) |
 | [Q-OPS-425](spec/operations-and-observability.md#q-ops-425--quadercontrolconnectionwaits-fires-on-waits-that-go-on-for-five-minutes-for-10m-on-the-five-minute-window) | QuaderControlConnectionWaits fires on waits that go on for five minutes: `for: 10m` on the five-minute window | Decided by the development agent on 2026-11-24 | (a) `for: 10m` on the five-minute window | — |
+| [Q-OPS-426](spec/operations-and-observability.md#q-ops-426--an-address-of-another-system-keeps-its-path-and-the-names-of-its-query-a-value-only-where-quader-wrote-it) | An address of another system keeps its path and the names of its query; a value only where Quader wrote it | Decided by the development agent on 2026-11-25 | (a), and the redaction list gains the parameter that carries the secret of each well-known scheme as well, for a relative address or a fragment of one in free text, where no form can be applied: `X-Goog-Signature`, `X-Goog-Credential`, `validate_token`, `verify` (Docker Hub's blob redirect), `jwt` (GitHub's release and package redirects), `hmac`, `cf_sign` (Quay's CDN), beside the `sig`, `signature` and `X-Amz-*` it held. | — |
 
 </details>
 

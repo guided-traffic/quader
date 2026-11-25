@@ -16,6 +16,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/observability"
 	"github.com/guided-traffic/quader/internal/repository"
 )
 
@@ -175,7 +176,7 @@ func (s *Store) Commit(ctx context.Context, spec CommitSpec) (CommitResult, erro
 		return CommitResult{}, err
 	}
 	repo := RepoOf(spec.Repo)
-	spec.UpstreamURL = withoutUserInfo(spec.UpstreamURL)
+	spec.UpstreamURL = upstreamAddress(spec.UpstreamURL)
 	if spec.BeginCommit != nil {
 		spec.BeginCommit()
 	}
@@ -228,7 +229,7 @@ func (s *Store) CommitLinked(ctx context.Context, spec CommitSpec, d blob.Digest
 		return CommitResult{}, errs.E(errs.Internal, errs.CodeInternal, "items: a commit has an origin")
 	}
 	spec.Spooled = &Spooled{Digests: d}
-	spec.UpstreamURL = withoutUserInfo(spec.UpstreamURL)
+	spec.UpstreamURL = upstreamAddress(spec.UpstreamURL)
 	if spec.BeginCommit != nil {
 		spec.BeginCommit()
 	}
@@ -264,7 +265,7 @@ func (s *Store) LinkIn(ctx context.Context, tx meta.Tx, spec CommitSpec, d blob.
 		spec.Spooled = &Spooled{Digests: d}
 	}
 	spec.Companions = nil
-	spec.UpstreamURL = withoutUserInfo(spec.UpstreamURL)
+	spec.UpstreamURL = upstreamAddress(spec.UpstreamURL)
 	var out linkOutcome
 	if err := s.linkFile(ctx, tx, RepoOf(spec.Repo), spec, &out); err != nil {
 		return CommitResult{}, err
@@ -305,10 +306,13 @@ func (spec CommitSpec) files() []CommitSpec {
 	return out
 }
 
-// withoutUserInfo removes the credentials a URL may carry (user:password@): the
-// item keeps where its bytes came from, never how the proxy got in. A value that
-// is not a URL is dropped.
-func withoutUserInfo(raw string) string {
+// upstreamAddress is the address an item keeps of where its bytes came from, in
+// the one form of R-OPS-013 rule 7 (Q-OPS-426): never how the proxy got in, so no
+// user information (user:password@) and no value of a query parameter Quader does
+// not write itself (a signed address carries its credential there). The engine
+// hands it in that form already; the store holds to it for every caller. A value
+// that is not a URL is dropped.
+func upstreamAddress(raw string) string {
 	if raw == "" {
 		return ""
 	}
@@ -316,8 +320,7 @@ func withoutUserInfo(raw string) string {
 	if err != nil {
 		return ""
 	}
-	u.User = nil
-	return u.String()
+	return observability.ScrubURL(u)
 }
 
 // linkOutcome is what the link step of a file commit did. item is the row the

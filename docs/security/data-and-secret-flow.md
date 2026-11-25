@@ -222,7 +222,28 @@ Secrets are kept out of every log record, span attribute, error text and ring-bu
   `credential` have their value replaced (`token_id` and `token_type` are exempt);
 - free text: `qdr_<prefix>_<value>` tokens keep the prefix and lose the value, `Bearer` and `Basic` values are replaced, URL user
   information is replaced up to the last `@` before the authority ends, the poll secret of a `/auth/cli/` path is replaced, and
-  the values of the configured query parameters (`log.request.redact_query_params`) are replaced.
+  the values of the configured query parameters (`log.request.redact_query_params`) are replaced; by default these name the
+  parameter that carries the secret of each well-known signed address (S3's and Google Cloud Storage's signature and credential,
+  `sig` of an Azure SAS, `Signature` of a CloudFront link, Galaxy's `validate_token`, Docker Hub's `verify`, GitHub's `jwt`,
+  `hmac`, Quay's `cf_sign`);
+- **addresses of other systems** (R-OPS-013 rule 7, [Q-OPS-426](../spec/operations-and-observability.md#q-ops-426--an-address-of-another-system-keeps-its-path-and-the-names-of-its-query-a-value-only-where-quader-wrote-it)):
+  an address Quader asks or an upstream hands back keeps its scheme, host, port, path and the names of its query; a value only for a
+  parameter Quader writes itself (`ProductQueryParams`) and only when Quader built the address. A redirect's target, such as the
+  signed address of a CDN or an object store a download is sent on to, keeps no value on any host. The same rule rewrites every
+  absolute address in free text. A list of signatures to hide fails open at the next scheme; the list of what Quader writes fails
+  closed.
+
+Where an address of an upstream is held, and in which form:
+
+| Place | Form |
+|---|---|
+| The upstream log's `url` ([roundtripper.go](../../internal/outbound/roundtripper.go)), the client span's `url.full` ([tracing.go](../../internal/observability/tracing.go)) | rule 7, hop by hop: the first hop keeps Quader's values, a redirect's hop none |
+| The upstream log's `error`, every other log field and message, every exported span attribute, error texts | free text: rule 7 on every absolute address, the redaction list on the rest |
+| The `upstream_url` of an item and of a cache entry ([metadata.go](../../internal/proxy/metadata.go) `finalAddress`, [commit.go](../../internal/items/commit.go) `upstreamAddress`), and so the event `artifact.cached`, the item's and the cache's API answers, the signature origin and Quader's provenance statement | rule 7 of the address the bytes came from; a redirected download's keeps no value |
+| The failure of a download (its address and target, [failure.go](../../internal/proxy/failure.go)), the connection test's probe address and realm ([probe.go](../../internal/proxy/upstream/probe.go)), the importer's messages | without the query (`ScrubURLPath`), as their screens say |
+| The excerpt of an upstream's error answer and the detail of a failure inside Quader, the catalogue's error detail, the trust root's refresh failure | free text |
+| The mirror's failure text (`mirror_state.last_error`, a package's last error) | a host for every address ([end.go](../../internal/mirror/end.go) `sanitize`, [H-530](#h-530--the-mirror-status-shows-the-engines-failure-text-as-stored)) |
+| The download overview's rows (`upstream_download_finished`) and metrics labels | no address: a repository path, a class and a code; labels hold the purpose and the status |
 
 The scrubber runs before a field is cut to its length, so a secret is never split into a fragment that no pattern recognises
 (`clipField`, [requestlog.go](../../internal/observability/requestlog.go)). The span exporter scrubs its attributes through a
@@ -535,6 +556,65 @@ server did not send: URL-encoded, in another Base64 alphabet, cut by a line brea
   of the formats do not). A test pointed at a service that echoes them gets the verbatim values replaced.
 - What makes it real: an upstream, or a proxy in front of it, whose error page reflects the `Authorization` header encoded. The caller
   is one who typed the credential or may set the repository's address; the report it copies carries what the page showed.
+
+### H-2060 · An address stored before rule 7 keeps its query
+
+Stage: the `upstream_url` of `items` and `remote_cache_entries`, written by fills before R-OPS-013 rule 7
+([Q-OPS-426](../spec/operations-and-observability.md#q-ops-426--an-address-of-another-system-keeps-its-path-and-the-names-of-its-query-a-value-only-where-quader-wrote-it)),
+and what was made of it then: the events `artifact.cached` in the audit trail and its export, the provenance statements Quader signed,
+and log lines already collected. Subject: the signed address a download was redirected to (a Galaxy's `validate_token`, an object
+store's presigned address), readable in the item's and the cache's answers by whoever may read the repository's metadata.
+
+- **Live on the installations that fetched through a redirect before the change** (the owner's installation, the development profiles).
+  No migration rewrites the rows (pre-alpha, no migration paths); a row is rewritten when its path is fetched again. A signed address
+  opens its file only for its life, minutes to days (seven days at most for an S3 presigned address); a signed statement and an audit
+  row keep the text after that.
+- What makes it real: a reader of those answers or of the audit export within the address's life, for an upstream reached with a stored
+  account whose content is not public.
+
+### H-2061 · A credential in a relative address under a name off the list is shown in free text
+
+Stage: `Scrubber.String` of [redact.go](../../internal/observability/redact.go). Rule 7 rewrites the query of an absolute `http` or
+`https` address in text; a relative address or a query alone (`/x?a=b`, a request log's path) is held only to
+`log.request.redact_query_params`. Subject: a credential under a name the list does not hold, or a token standing as the whole query.
+
+- **Dormant.** Quader logs the addresses of other systems absolute; a relative one is a path of Quader's own API in the request log, whose
+  parameters carry no credential of another system (the one secret there, an OIDC callback's query, has its own pattern).
+- What makes it real: an error text that names an upstream's address relative to its host, with a credential in its query.
+
+### H-2062 · An address an upstream named and Quader asked first keeps the values of Quader's own parameter names
+
+Stage: `ScrubRequestURL` of [redact.go](../../internal/observability/redact.go). An address an upstream named in a document or a header
+and that Quader asks as a first hop (a token service's realm, a `next` link, a tarball's address) is not marked as handed: the values of
+the names Quader writes itself (`q`, `name`, `namespace`, `scope`, `limit` …) stay in the upstream log, the span and the stored address.
+Subject: a credential an upstream put under one of those names.
+
+- **Dormant.** No upstream of the six formats is known to carry a credential under such a name; they use names of their own (the
+  redaction list's).
+- What makes it real: an upstream that signs its addresses with, say, `?name=<token>`. What would close it: a mark on the request that
+  the address was handed, set where a format reads it from a document.
+
+### H-2063 · A problem's detail that an upstream's text went into is scrubbed where it is composed, not where it is written
+
+Stage: the error writers of the API and of the formats (`errs.ProblemOf` and the formats' `errors.go`), which write the detail the code
+composed; R-UI-216's "Technical details" and **Copy report** show it. Subject: an upstream's text with a signed address in it.
+
+- **Dormant.** The details found that take an upstream's or a transport's text are scrubbed as free text where they are made (the
+  catalogue's, a download's failure, the trust root's refresh, an OpenID provider's status); the engine's other details name a host, and
+  the formats' parse errors name fields, not addresses.
+- What makes it real: a new detail built from `err.Error()` of a request that followed a redirect. What would close it: the scrub in each
+  error writer, which `internal/errs`, a leaf without the scrubber, cannot do itself.
+
+### H-2064 · The address of a file an upstream's document named is kept whole for its fetch
+
+Stage: `remote_url_map` ([metadata.go](../../internal/proxy/metadata.go) `recordMappings`), the address of a file that a document of the
+upstream names when it differs from the address the format would build (an npm tarball on another path), kept with its query so that
+the fill asks it. Subject: a credential in that address's query.
+
+- **Dormant.** The table is read by the fill alone and shown in no answer, event or log line (the fill's request is logged by rule 7); a
+  reader of the database or of a backup sees it. The public registries name their tarballs without a query.
+- What makes it real: a private registry that signs the tarball addresses in its documents. The stored document itself holds the same
+  address, as the upstream sent it.
 
 ### H-325 · A moved action tag runs in a job that holds release secrets
 

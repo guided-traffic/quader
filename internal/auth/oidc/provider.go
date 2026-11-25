@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/observability"
 	"github.com/guided-traffic/quader/internal/outbound"
 )
 
@@ -126,7 +127,7 @@ func (p *Provider) Status() Status {
 	defer p.mu.RUnlock()
 	st := Status{ID: p.ID, DisplayName: p.cfg.DisplayName, Issuer: p.cfg.Issuer, Available: p.doc != nil, LastErrorAt: p.lastErrAt}
 	if p.lastErr != nil {
-		st.LastError = p.lastErr.Error()
+		st.LastError = observability.Scrub(p.lastErr.Error()) // an answer: a redirect's address in the error keeps no value (R-OPS-013 rule 7)
 	}
 	return st
 }

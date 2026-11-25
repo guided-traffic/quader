@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/observability"
 	"github.com/guided-traffic/quader/internal/outbound"
 	"github.com/guided-traffic/quader/internal/repository"
 )
@@ -278,10 +279,9 @@ func (c *Clients) probe(ctx context.Context, cl *Client, format string) reposito
 }
 
 // addressOf is an address as a result names it: scheme, host, port and path, without the query, the user information and the
-// fragment, which may carry a credential (a signed address carries one in its query).
-func addressOf(u *url.URL) string {
-	return (&url.URL{Scheme: u.Scheme, Host: u.Host, Path: u.Path, RawPath: u.RawPath}).String()
-}
+// fragment, which may carry a credential (a signed address carries one in its query); the stricter form of R-OPS-013 rule 7
+// (observability.ScrubURLPath, Q-OPS-426).
+func addressOf(u *url.URL) string { return observability.ScrubURLPath(u) }
 
 // maxChallengeBytes bounds a WWW-Authenticate value the test reads; a longer one reads as no challenge.
 const maxChallengeBytes = 8 << 10

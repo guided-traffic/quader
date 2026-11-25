@@ -90,7 +90,7 @@ Quader writes one JSON object per line to standard output (`log.format: text` fo
 | `upstream` | one record per request Quader sends to an upstream registry |
 | `audit` | a copy of every audit event |
 
-Secrets are redacted in every record: tokens, passwords, `Authorization` and cookie values, URL credentials and the query parameters of `log.request.redact_query_params`. Probe and metrics requests are not logged unless `log.request.ops_listener: true`.
+Secrets are redacted in every record: tokens, passwords, `Authorization` and cookie values, URL credentials and the query parameters of `log.request.redact_query_params`. The address of another system keeps its path and the names of its query; a value stays only where Quader wrote it (a search term, a page), so the signed address an upstream redirects a download to appears as `…?X-Amz-Signature=[REDACTED]&…`. Probe and metrics requests are not logged unless `log.request.ops_listener: true`.
 
 ```yaml
 log:

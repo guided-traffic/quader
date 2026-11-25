@@ -24,6 +24,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // The calls, the label call of the metrics.
@@ -431,7 +432,7 @@ func (e *Engine) fail(t Target, call string, err error, st Settings, ctx context
 	}
 	e.o.Metrics.count(t.Repo, call, OutcomeUpstreamError)
 	e.o.Log.Warn("a call of the upstream catalogue failed", "repository", t.Repo, "call", call, "error", err)
-	return errs.E(errs.UpstreamFailed, errs.CodeUpstreamError, "The upstream's answer could not be read for the catalogue: "+cut(err.Error()))
+	return errs.E(errs.UpstreamFailed, errs.CodeUpstreamError, "The upstream's answer could not be read for the catalogue: "+cut(observability.Scrub(err.Error())))
 }
 
 // turnOff turns a capability off for the cache period: the next calls answer catalogue_not_offered with the reason, and the caps name

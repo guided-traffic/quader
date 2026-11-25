@@ -1851,7 +1851,7 @@ log:
   request:
     enabled: true                 # default (proposed)
     ops_listener: false           # default (proposed)
-    redact_query_params: [token, access_token, password, secret, sig, signature, X-Amz-Signature, X-Amz-Credential, X-Amz-Security-Token]   # default (proposed)
+    redact_query_params: [token, access_token, password, secret, sig, signature, X-Amz-Signature, X-Amz-Credential, X-Amz-Security-Token, X-Goog-Signature, X-Goog-Credential, validate_token, verify, jwt, hmac, cf_sign]   # default (proposed)
 ```
 
 **Acceptance criteria:**
@@ -1874,7 +1874,7 @@ completes or fails. The same conventions as R-OPS-010 apply.
 | `repo` | Remote repository as its qualified name `<projectKey>/<repoKey>` (`remote`), else `null` |
 | `subscription` | Webhook subscription key (`webhook`), else `null` |
 | `method` | HTTP method |
-| `url` | Target URL with user information removed and query parameters redacted (R-OPS-013) |
+| `url` | Target URL in the form of R-OPS-013 rule 7: no user information, no fragment, the query's names, the values of the parameters Quader writes itself only on the first hop; a redirect's target keeps no value (Q-OPS-426) |
 | `status` | Upstream status, `0` on a transport error |
 | `error` | Transport or TLS error text, else `null` |
 | `request_bytes`, `response_bytes` | `-1` if unknown |
@@ -1986,6 +1986,18 @@ delivery-log entry or an error message. These rules are mandatory, and code revi
    placeholders only, never bound values.
 6. **Errors passed on to clients** go through the same scrubbing. A pull-through fetch error never
    returns upstream credentials embedded in a URL.
+7. **Addresses of other systems** (Q-OPS-426). An address Quader sends a request to, or an upstream hands back, is held
+   in one form wherever a log record, a span, a stored record, an audit event, an API answer or a screen holds it: scheme,
+   host, port and path, no user information, no fragment, and the names of the query's parameters. A value is kept only
+   for a parameter Quader writes into its own requests (a search term, a page, a filter, the scope of a registry token, the
+   object store's listing; `ProductQueryParams` of [redact.go](../../internal/observability/redact.go)) and only when Quader
+   built the address; every value of an address an upstream handed back (a redirect's target, a `Location`) reads
+   `[REDACTED]` on every host, since a signed address carries its credential there. A name that does not look like one is
+   redacted whole. An absolute address in free text gets the same treatment, the list's values kept. A record whose
+   screen says that it shows no query keeps the stricter form without the query (the failure of a download, Q-CUR-20; the
+   connection test, Q-REPO-489). The functions of `internal/observability` build every such address
+   (`ScrubURL`, `ScrubHandedURL`, `ScrubRequestURL`, `ScrubURLPath`), and a log field `url` takes its value from one of
+   them (the check `CheckURLLogFields` of [internal/archtest](../../internal/archtest/urlfield.go)).
 
 **Acceptance criteria:** a test suite logs in, publishes with `npm publish` and with
 `dotnet nuget push --api-key "$TOKEN"`, creates a templated webhook with a secret, and creates a
@@ -7175,6 +7187,60 @@ five-minute window is the definition's "five minutes" counted on the waits inste
 it if a busy control connection must be reported sooner than its readiness checks fail. **Applied:** [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl),
 the rule test "a node rotation's switchovers" in [rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml), R-OPS-046's table, the alert
 table of [ha-and-helm.md](ha-and-helm.md) R-HA-045 and its control-pool saturation scenario (R-HA-052), the operator manual.
+
+### Q-OPS-426 · An address of another system keeps its path and the names of its query; a value only where Quader wrote it
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: on 2026-11-25 the backend log of a development profile held, in the upstream log's `url`, the address a Galaxy redirected a
+collection's download to, `…/api/pulp/content/published/<file>.tar.gz?expires=<n>&validate_token=<hex>:<hex>`: the content guard's
+token in clear, a bearer credential for its life. The upstream log rendered its `url` with the redaction list of
+`log.request.redact_query_params`, which named S3's `X-Amz-Signature` and `X-Amz-Credential` but no other signature. The same final
+address, with its whole query, was stored as the `upstream_url` of the item and of the cache entry, and from there written into the
+event `artifact.cached`, the item's and the cache's API answers, the signature origin and Quader's signed provenance statement. A list of
+names to hide fails open: a signature under a name nobody listed stays readable.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Keep the address's names; keep a value only for the parameters Quader writes itself, and none of an address an upstream handed back (chosen) | One function in `internal/observability`; the list of Quader's own parameters fails closed | A new signature scheme is hidden without anyone listing it; a log still says what was searched or paged (`keywords`, `n`, `last`, `q`); the names tell a reader that the address was a signed one | A parameter a format starts to write shows `[REDACTED]` until it joins the list |
+| (b) Extend the redaction list only | No change of form | Small | Fails open again at the next scheme; the stored records keep the address whole |
+| (c) Drop every query | Simplest | Nothing to maintain | The log no longer says which page or search was asked, and nothing shows that an address was signed |
+
+**Choice:** (a), and the redaction list gains the parameter that carries the secret of each well-known scheme as well, for a relative
+address or a fragment of one in free text, where no form can be applied: `X-Goog-Signature`, `X-Goog-Credential`, `validate_token`,
+`verify` (Docker Hub's blob redirect), `jwt` (GitHub's release and package redirects), `hmac`, `cf_sign` (Quay's CDN), beside the
+`sig`, `signature` and `X-Amz-*` it held. The expiry, version and permission parameters of those schemes (`se`, `sv`, `sp`, `Expires`,
+`Policy`, `Key-Pair-Id`, `cf_expiry`) are not on it: without the signature they open nothing, and a short name such as `se` would hide
+a parameter of Quader's own API in the request log.
+
+- **Which address is handed.** An outbound request that follows a redirect carries the redirect's answer (`http.Request.Response`), so
+  `ScrubRequestURL` treats it as handed; the upstream log, the client span and the stored final address of a fill all take the address
+  from it. An address an upstream named in a document or a header and that Quader then asks as a first hop (a token service's realm, a
+  `next` link, a tarball address) is not marked: the list of Quader's parameters decides its values, and none of its names carries a
+  credential. `service` and `scope` of a registry token's request are Quader's (the realm is the registry's).
+- **Free text.** `Scrubber.String`, which every log field, span attribute and error text passes, rewrites the query of every absolute
+  `http` or `https` address it finds by the same rule, the values of the list kept: text does not say whether the address was handed.
+- **The stricter form stays where a screen says so.** The failure of a download names its address without the query (Q-CUR-20, the
+  screen's "(shown without its query, which can carry a credential)"), and so do the connection test's probe address and realm
+  (Q-REPO-489) and the importer's messages; they keep that form, built by `ScrubURLPath`, and no hand-made copy of it remains.
+- **What else holds an upstream's text.** The excerpt of an upstream's error answer in a download's failure, the detail of a failure
+  inside Quader, the catalogue's error detail and the failure of the signature trust root's refresh (stored and shown) are scrubbed as
+  free text. The mirror's failure text keeps its own stricter rule, a host for every address (H-530).
+
+**Rationale:** the list of what Quader writes is short and known; the list of what upstreams write is neither. The development agent would
+revisit it if an upstream used one of Quader's parameter names for a credential.
+
+**Applied:** R-OPS-013 rule 7, R-OPS-011's `url`, the default of `log.request.redact_query_params` (R-OPS-010's block), the sections
+"Redaction" and "What this does not cover" of [data-and-secret-flow.md](../security/data-and-secret-flow.md), the log fields of
+[observability.md](../developer/observability.md), the operator manual's logging section. Code: [redact.go](../../internal/observability/redact.go),
+[roundtripper.go](../../internal/outbound/roundtripper.go), [tracing.go](../../internal/observability/tracing.go),
+[metadata.go](../../internal/proxy/metadata.go) (`finalAddress`), [commit.go](../../internal/items/commit.go) (`upstreamAddress`),
+[failure.go](../../internal/proxy/failure.go), [probe.go](../../internal/proxy/upstream/probe.go), [client.go](../../internal/proxy/upstream/client.go),
+[catalogue.go](../../internal/remotecuration/catalogue/catalogue.go), [trust.go](../../internal/signatures/job/trust.go),
+[importer/client.go](../../internal/importer/client.go), the check [urlfield.go](../../internal/archtest/urlfield.go). Tests:
+`TestR_OPS_013_ASignedAddressKeepsNoSignature`, `TestR_OPS_013_AnAddressKeepsTheValuesQuaderWrote`,
+`TestR_OPS_013_TheDefaultListIsTheConfigurationsDefault`, `TestR_OPS_013_ARedirectToASignedAddressReachesNoRecordWithItsSignature`,
+`TestR_OPS_013_AFailureAndAnItemKeepNoSignature`, `TestR_OPS_013_ALoggedURLIsBuiltByTheOneFunction`.
 
 ## What this does not cover
 

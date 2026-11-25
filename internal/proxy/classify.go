@@ -47,7 +47,7 @@ func classifyStatus(rem Remote, resp *http.Response) failure {
 func classifyStatusSniffed(rem Remote, resp *http.Response, sniffed []byte) failure {
 	f := failure{status: resp.StatusCode, x: Exchange{Step: remotecuration.StepStatus, Status: resp.StatusCode, Excerpt: excerptOf(resp, sniffed)}}
 	if resp.Request != nil {
-		f.x.Address = addressOf(resp.Request.URL)
+		f.x.Address = answeredAddress(resp, nil)
 	}
 	if d, ok := upstream.ParseRetryAfter(resp.Header.Get("Retry-After"), time.Now()); ok {
 		f.x.RetryAfter = d

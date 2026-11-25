@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/observability"
 	"github.com/guided-traffic/quader/internal/outbound"
 	"github.com/guided-traffic/quader/internal/syncwrite"
 )
@@ -227,14 +228,14 @@ func sendWithRetry(ctx context.Context, hc *http.Client, rt Retry, lim *Limiter,
 	return nil, last
 }
 
-// redact drops the query and the user information of an address for a message.
+// redact is an address for a message without its query, its user information and its fragment: the stricter form of R-OPS-013
+// rule 7 (observability.ScrubURLPath, Q-OPS-426).
 func redact(raw string) string {
 	u, err := url.Parse(raw)
 	if err != nil {
 		return "(address)"
 	}
-	u.User, u.RawQuery, u.Fragment = nil, "", ""
-	return u.String()
+	return observability.ScrubURLPath(u)
 }
 
 // SourceClient reads the registry that is copied from. Its credentials are decided by the hop policy of its HTTP client,

@@ -67,7 +67,8 @@ Applied by the handler to every record, in every format, including the ring buff
 | Rule | Where |
 |---|---|
 | attribute keys containing `password`, `secret`, `token`, `authorization`, `cookie`, `api_key`, `apikey`, `private_key`, `credential` (case-insensitive) get the value `[REDACTED]`; `token_id` and `token_type` are exempt | `SensitiveKey` |
-| `qdr_<type>_<body>` becomes `qdr_<type>_[REDACTED]`; `Bearer x`, `Basic x`, URL user information, query parameters of `log.request.redact_query_params`, the segment after `/auth/cli/`, the whole query of `/auth/oidc/<provider>/callback` and the value of `id_token_hint` (Q-OPS-91) | `Scrubber.String`, applied to `msg` and every string attribute and error text |
+| `qdr_<type>_<body>` becomes `qdr_<type>_[REDACTED]`; `Bearer x`, `Basic x`, URL user information, query parameters of `log.request.redact_query_params`, the segment after `/auth/cli/`, the whole query of `/auth/oidc/<provider>/callback` and the value of `id_token_hint` (Q-OPS-91); the query of every absolute `http`/`https` address keeps its names and only the values of `ProductQueryParams` (rule 7, Q-OPS-426) | `Scrubber.String`, applied to `msg` and every string attribute and error text |
+| an address of another system (rule 7, Q-OPS-426): scheme, host, port, path, no user information, no fragment, the query's names; a value only for a parameter of `ProductQueryParams` (the ones Quader writes: search terms, pages, filters, a registry token's `service` and `scope`, the object store's listing, the OIDC requests' `client_id` and `redirect_uri`) that is not on the redaction list; a name that does not look like one, and a bare word longer than 24 characters, is redacted whole | `Scrubber.URL` (an address Quader built), `Scrubber.HandedURL` (an address an upstream handed back: every value redacted), `Scrubber.RequestURL` (an outbound request: handed when `http.Request.Response` is set, a redirect's hop), `Scrubber.URLPath` (no query at all, for the records whose screens say so); the package's `ScrubURL`, `ScrubHandedURL`, `ScrubRequestURL`, `ScrubURLPath`, `ScrubAddress` use the default list |
 | URL user information runs from `scheme://` to the **last** `@` before the authority ends (`/`, `?`, `#`, `<`, `>`, whitespace), so a password with an unencoded `@`, a `'` or a `"` is redacted whole; `user:secret@` keeps the user name, a bare `token@` keeps nothing. The rule errs towards hiding: text that follows a path-less URL up to a later `@` is redacted too | `Scrubber.String` |
 | values of kind `Any`: an `error`, a `fmt.Stringer` and a `*url.URL`/`url.URL` are logged as their scrubbed text (URLs through `Scrubber.URL`, without user information); an `http.Header` keeps its names, values of sensitive headers (`SensitiveKey` of the name with `-` read as `_`: `Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie`, `X-Api-Key`, …) become `[REDACTED]`, the others are scrubbed; anything else (maps, slices, structs, pointers) is encoded as JSON, decoded again (numbers kept exact), and every string is scrubbed and every value under a sensitive key redacted; a typed nil is `null` | `Logging.scrubAny` |
 | `observability.Secret` and `config.Secret` print `[REDACTED]` through slog, `fmt` and JSON | `Secret`, `replaceAttr` |
@@ -77,7 +78,13 @@ Rules for code:
 - Hold every secret in memory as `observability.Secret` (or the loader's `config.Secret`) so even a log call
   with an innocent key cannot print it.
 - Errors that leave the process (client responses, support bundles) go through `observability.ScrubError` or
-  `Scrubber.Error`.
+  `Scrubber.Error`; so does an upstream's or a transport's text that is stored or answered (a failure's excerpt or detail, a
+  task's last error).
+- An address of another system that is logged, stored, answered or shown is built by `ScrubURL`, `ScrubRequestURL`, `ScrubHandedURL`
+  or `ScrubURLPath`, never by hand (`url.URL{Scheme, Host, Path}` or `.String()`). A log field named `url` takes its value from one of
+  them; `CheckURLLogFields` of [internal/archtest](../../internal/archtest/urlfield.go) fails the unit run otherwise. A parameter a
+  format starts to write into its requests joins `ProductQueryParams` if its value is to stay readable; until then it reads
+  `[REDACTED]`.
 - `Quader-Bastion-Authorization` is a secret header (R-BAS-008): `SensitiveKey` matches the word `authorization` in a header name, so a logged
   `http.Header` shows it as `[REDACTED]`, and `qdr_bst_…` is a token for the scrubber like every `qdr_<type>_` value. The Recognize stage also
   removes the header from the request the later stages receive.
@@ -264,7 +271,7 @@ spans carry statements with placeholders only.
 
 All outbound HTTP goes through [internal/outbound](../../internal/outbound). Its factory adds, per request:
 `User-Agent: quader/<version>`, a client span, a `traceparent` only with `tracing.propagate_to_upstreams`, one
-`log: upstream` record (R-OPS-011: `purpose`, `repo`, `subscription`, scrubbed `url`, `status`, `error`,
+`log: upstream` record (R-OPS-011: `purpose`, `repo`, `subscription`, `url` by `Scrubber.RequestURL` (each hop of a redirect is a record of its own, and a redirect's target keeps no value of its query; the client span's `url.full` is the same text), `status`, `error`,
 `request_bytes`, `response_bytes`, `duration_ms` including the body, `attempt`, `on_behalf_of`, `collapsed_waiters`;
 pass `on_behalf_of`, `attempt`, `repo`, `collapsed_waiters` and, for `purpose=remote`, `flight_role`, `cache_status` and
 `SlotWait` (a `*outbound.SlotWait` made with `outbound.NewSlotWait(d)`, logged as `slot_wait_ms` with the precision of `duration_ms`; nil logs `null`: the request took no slot)

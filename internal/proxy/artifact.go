@@ -453,7 +453,7 @@ func (f *fetcher) artifactBody(ctx context.Context, resp *http.Response, idle *a
 	}
 	var changed [32]byte
 	declared := items.Expected{SHA256: rq.Expected.SHA256, SHA512: rq.Expected.SHA512, SHA1: rq.Expected.SHA1}
-	final := stripUser(f.finalURL(resp))
+	final := f.finalAddress(resp)
 	committed, err := e.o.Items.Commit(ctx, items.CommitSpec{
 		Repo: rem.Repo, Path: repository.Cleaned{Path: rq.Path}, Spooled: sp, MediaType: resp.Header.Get("Content-Type"),
 		Declared: declared, Origin: items.OriginFill, UpstreamURL: final, MayOverwrite: true, Payload: payload,

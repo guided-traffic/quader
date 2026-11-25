@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/observability"
 	"github.com/guided-traffic/quader/internal/outbound"
 	"github.com/guided-traffic/quader/internal/repository"
 )
@@ -132,14 +133,15 @@ func (c *Client) extraHostOf(u *url.URL) *string {
 }
 
 func refusedTarget(u *url.URL) errs.Option {
-	return errs.WithCause(&RefusedTarget{Address: (&url.URL{Scheme: u.Scheme, Host: u.Host, Path: u.Path, RawPath: u.RawPath}).String()})
+	return errs.WithCause(&RefusedTarget{Address: observability.ScrubURLPath(u)})
 }
 
 // RefusedTarget is the cause of an [Client.Allowed] refusal: the address the
 // upstream named and Quader did not ask, scheme, host, port and path without the
 // query, user information and fragment (a signed address of a CDN carries a
-// credential in its query). It stays in the process (R-ARCH-023); the download
-// queue's failure names it as its target (R-CUR-011, Q-CUR-169).
+// credential in its query), rendered by observability.ScrubURLPath (R-OPS-013
+// rule 7, Q-OPS-426). It stays in the process (R-ARCH-023); the download queue's
+// failure names it as its target (R-CUR-011, Q-CUR-169).
 type RefusedTarget struct {
 	Address string
 }

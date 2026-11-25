@@ -17,6 +17,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/observability"
 	"github.com/guided-traffic/quader/internal/outbound"
 	"github.com/guided-traffic/quader/internal/proxy/upstream"
 	"github.com/guided-traffic/quader/internal/remotecuration"
@@ -58,13 +59,16 @@ func (x *Exchange) Error() string {
 // Unwrap returns the error the engine classified.
 func (x *Exchange) Unwrap() error { return x.cause }
 
-// addressOf is u without its query, fragment and user information.
-func addressOf(u *url.URL) string {
-	if u == nil {
-		return ""
+// addressOf is an address of a failure: without its query, its fragment and its user information (Q-CUR-20), in the stricter form of
+// R-OPS-013 rule 7 (observability.ScrubURLPath, Q-OPS-426).
+func addressOf(u *url.URL) string { return observability.ScrubURLPath(u) }
+
+// answeredAddress is the address an answer came from, after redirects, in that form; fallback where the answer does not say.
+func answeredAddress(resp *http.Response, fallback *url.URL) string {
+	if resp != nil && resp.Request != nil && resp.Request.URL != nil {
+		return addressOf(resp.Request.URL)
 	}
-	c := url.URL{Scheme: u.Scheme, Host: u.Host, Path: u.Path, RawPath: u.RawPath}
-	return c.String()
+	return addressOf(fallback)
 }
 
 // binaryMedia reports whether a declared media type is no text: an excerpt of it is not taken.
@@ -85,7 +89,8 @@ func binaryMedia(contentType string) bool {
 	return true
 }
 
-// cleanExcerpt cuts b at 512 bytes and replaces every byte outside printable ASCII and line ends by '?' (R-CUR-011).
+// cleanExcerpt cuts b at 512 bytes and replaces every byte outside printable ASCII and line ends by '?' (R-CUR-011), then scrubs it
+// as free text: an upstream's error page that names a signed address or echoes a credential keeps neither (R-OPS-013).
 func cleanExcerpt(b []byte) string {
 	if len(b) > excerptBytes {
 		b = b[:excerptBytes]
@@ -99,7 +104,7 @@ func cleanExcerpt(b []byte) string {
 			out[i] = '?'
 		}
 	}
-	return string(out)
+	return observability.Scrub(string(out))
 }
 
 // excerptOf reads the excerpt of a non-success answer: sniffed are bytes of the body read before (the background throttle's sniff).
@@ -205,7 +210,7 @@ func Describe(err error) remotecuration.Failure {
 	}
 	ee, ok := errs.As(err)
 	if !ok {
-		f.Detail = "The download failed inside Quader: " + truncate(err.Error(), 300)
+		f.Detail = "The download failed inside Quader: " + truncate(observability.Scrub(err.Error()), 300)
 		return f
 	}
 	f.Code = ee.Code

@@ -205,7 +205,7 @@ func (e *Engine) get(ctx context.Context, g Get, cl *upstream.Client, viaMirror 
 		return nil, f.transportFailure(ctx, err, idle.Load()).err
 	}
 	if rl, ok := upstream.RateLimitOf(resp.StatusCode, resp.Header, data[:min(len(data), upstream.SlowDownSniffBytes)], e.now()); ok {
-		rl.Address, rl.Body = addressOf(answeredURL(resp, g.URL)), data[:min(len(data), excerptBytes)]
+		rl.Address, rl.Body = answeredAddress(resp, g.URL), data[:min(len(data), excerptBytes)]
 		return nil, &upstream.RateLimitError{RateLimit: rl, Repo: rem.Repo.Name.String()}
 	}
 	return &GetResult{Status: resp.StatusCode, Header: resp.Header, Body: data}, nil

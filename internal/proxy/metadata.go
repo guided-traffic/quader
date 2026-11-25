@@ -16,6 +16,7 @@ import (
 	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/observability"
 	"github.com/guided-traffic/quader/internal/repository"
 )
 
@@ -545,7 +546,7 @@ func (f *fetcher) fillLink(resp *http.Response, sp *items.Spooled, prepared Prep
 		}
 		if !renewed {
 			rows, err := qs.ProxyMetadataUpsert(ctx, q.ProxyMetadataUpsertParams{
-				RepoID: rem.id, Path: rq.Path, Variant: rq.Variant, BlobSha256: sp.SHA256[:], UpstreamUrl: stripUser(f.finalURL(resp)),
+				RepoID: rem.id, Path: rq.Path, Variant: rq.Variant, BlobSha256: sp.SHA256[:], UpstreamUrl: f.finalAddress(resp),
 				UpstreamEtag: ev.ETag, LastModifiedUs: unixMicro(ev.LastModified), FetchedUs: fetchedUs, TtlSeconds: ttl,
 				Force: decision == FillReplaceStored, MediaType: mediaType(resp.Header.Get("Content-Type")),
 			})
@@ -586,21 +587,14 @@ func (f *fetcher) fillLink(resp *http.Response, sp *items.Spooled, prepared Prep
 	}
 }
 
-// finalURL is the URL the response came from, after redirects.
-func (f *fetcher) finalURL(resp *http.Response) string {
+// finalAddress is the address the response came from, after redirects, in the one form of R-OPS-013 rule 7: the upstream_url of
+// the entry and the item, the artifact.cached event and every answer and statement that shows it. A redirect's target (a signed
+// address of a CDN or an object store) keeps the names of its query and none of its values.
+func (f *fetcher) finalAddress(resp *http.Response) string {
 	if resp.Request != nil && resp.Request.URL != nil {
-		return resp.Request.URL.String()
+		return observability.ScrubRequestURL(resp.Request)
 	}
-	return f.target0().String()
-}
-
-func stripUser(raw string) string {
-	u, err := url.Parse(raw)
-	if err != nil {
-		return ""
-	}
-	u.User = nil
-	return u.String()
+	return observability.ScrubURL(f.target0())
 }
 
 func lastModified(h http.Header) time.Time {
@@ -629,7 +623,7 @@ func (f *fetcher) enterAliases(ctx context.Context, tx meta.Tx, qs *q.Queries, r
 	if len(prepared.Aliases) == 0 {
 		return nil
 	}
-	final := stripUser(f.finalURL(resp))
+	final := f.finalAddress(resp)
 	for _, path := range prepared.Aliases {
 		if path == rq.Path {
 			continue
