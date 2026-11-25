@@ -16033,7 +16033,7 @@
     <unit id="pkg.meta.external">
       <notes>
         <note category="location">src/app/features/packages/ansible-doc-entry.html:232,233</note>
-        <note category="location">src/app/features/packages/package-version.html:468,469</note>
+        <note category="location">src/app/features/packages/package-version.html:497,498</note>
       </notes>
       <segment>
         <source>(opens another site)</source>
@@ -16668,6 +16668,267 @@
         <target>Installationsbefehl kopieren</target>
       </segment>
     </unit>
+    <unit id="deb.contents.why.compression">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:24</note>
+      </notes>
+      <segment>
+        <source>its data archive is compressed with a method Quader does not read (bzip2 or lzma)</source>
+        <target>sein Datenarchiv ist mit einem Verfahren komprimiert, das Quader nicht liest (bzip2 oder lzma)</target>
+      </segment>
+    </unit>
+    <unit id="deb.contents.why.invalid">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:26</note>
+      </notes>
+      <segment>
+        <source>its data archive is not a valid archive</source>
+        <target>sein Datenarchiv ist kein gültiges Archiv</target>
+      </segment>
+    </unit>
+    <unit id="deb.contents.why.too-large">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:28</note>
+      </notes>
+      <segment>
+        <source>its data archive is larger than Quader reads (2 GiB unpacked)</source>
+        <target>sein Datenarchiv ist größer, als Quader liest (2 GiB entpackt)</target>
+      </segment>
+    </unit>
+    <unit id="deb.contents.why.entries">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:30</note>
+      </notes>
+      <segment>
+        <source>its data archive holds more than 200,000 entries</source>
+        <target>sein Datenarchiv enthält mehr als 200.000 Einträge</target>
+      </segment>
+    </unit>
+    <unit id="deb.contents.why.timeout">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:32</note>
+      </notes>
+      <segment>
+        <source>reading it took longer than two minutes</source>
+        <target>das Lesen dauerte länger als zwei Minuten</target>
+      </segment>
+    </unit>
+    <unit id="deb.contents.why.no-content">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:34</note>
+      </notes>
+      <segment>
+        <source>its stored content is missing</source>
+        <target>sein gespeicherter Inhalt fehlt</target>
+      </segment>
+    </unit>
+    <unit id="deb.contents.pending">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:43</note>
+      </notes>
+      <segment>
+        <source>Quader is reading the package file. Its changelog, copyright file and file list appear here in a moment.</source>
+        <target>Quader liest die Paketdatei. Changelog, Copyright-Datei und Dateiliste erscheinen hier in einem Moment.</target>
+      </segment>
+    </unit>
+    <unit id="deb.contents.refused-why">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:47</note>
+      </notes>
+      <segment>
+        <source>Quader did not read the package file&apos;s changelog, copyright file and file list: <ph id="0" equiv="reason" disp="why"/>. The package is stored and installs as usual.</source>
+        <target>Quader hat Changelog, Copyright-Datei und Dateiliste der Paketdatei nicht gelesen: <ph id="0" equiv="reason" disp="why"/>. Das Paket ist gespeichert und wird wie gewohnt installiert.</target>
+      </segment>
+    </unit>
+    <unit id="deb.contents.refused">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:48</note>
+      </notes>
+      <segment>
+        <source>Quader could not read the package file, so its changelog, copyright file and file list are not shown. The package is stored and installs as usual.</source>
+        <target>Quader konnte die Paketdatei nicht lesen, daher werden ihr Changelog, ihre Copyright-Datei und ihre Dateiliste nicht angezeigt. Das Paket ist gespeichert und wird wie gewohnt installiert.</target>
+      </segment>
+    </unit>
+    <unit id="deb.changelog.loading">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:60,61</note>
+      </notes>
+      <segment>
+        <source>Loading the changelog.</source>
+        <target>Der Changelog wird geladen.</target>
+      </segment>
+    </unit>
+    <unit id="deb.changelog.cut">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:68,70</note>
+      </notes>
+      <segment>
+        <source>The newest entries are shown: Quader keeps the first 64 KiB of the changelog.</source>
+        <target>Die neuesten Einträge werden angezeigt: Quader behält die ersten 64 KiB des Changelogs.</target>
+      </segment>
+    </unit>
+    <unit id="deb.changelog.linked">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:72,73</note>
+      </notes>
+      <segment>
+        <source>This package&apos;s documentation is that of <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ link }}"/></pc>: it has no changelog of its own.</source>
+        <target>Die Dokumentation dieses Pakets ist die von <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ link }}"/></pc>: Es hat keinen eigenen Changelog.</target>
+      </segment>
+    </unit>
+    <unit id="deb.changelog.none">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:74,77</note>
+      </notes>
+      <segment>
+        <source>This package file holds no changelog.</source>
+        <target>Diese Paketdatei enthält keinen Changelog.</target>
+      </segment>
+    </unit>
+    <unit id="deb.copyright.cut">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:95,97</note>
+      </notes>
+      <segment>
+        <source>The beginning is shown: Quader keeps the first 64 KiB of the copyright file.</source>
+        <target>Der Anfang wird angezeigt: Quader behält die ersten 64 KiB der Copyright-Datei.</target>
+      </segment>
+    </unit>
+    <unit id="deb.copyright.none">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:101,105</note>
+      </notes>
+      <segment>
+        <source>This package file holds no copyright file.</source>
+        <target>Diese Paketdatei enthält keine Copyright-Datei.</target>
+      </segment>
+    </unit>
+    <unit id="deb.files.path">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:188</note>
+      </notes>
+      <segment>
+        <source>Path</source>
+        <target>Pfad</target>
+      </segment>
+    </unit>
+    <unit id="deb.files.size">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:189</note>
+      </notes>
+      <segment>
+        <source>Size</source>
+        <target>Größe</target>
+      </segment>
+    </unit>
+    <unit id="deb.files.caption">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:191</note>
+      </notes>
+      <segment>
+        <source>Files the package installs</source>
+        <target>Dateien, die das Paket installiert</target>
+      </segment>
+    </unit>
+    <unit id="deb.files.filter">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:192</note>
+      </notes>
+      <segment>
+        <source>Filter by path</source>
+        <target>Nach Pfad filtern</target>
+      </segment>
+    </unit>
+    <unit id="deb.files.link">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:216</note>
+      </notes>
+      <segment>
+        <source>link to <ph id="0" equiv="target" disp="f.target ?? &apos;&apos;"/></source>
+        <target>Link auf <ph id="0" equiv="target" disp="f.target ?? &apos;&apos;"/></target>
+      </segment>
+    </unit>
+    <unit id="deb.files.hardlink">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:218</note>
+      </notes>
+      <segment>
+        <source>hard link to <ph id="0" equiv="target" disp="f.target ?? &apos;&apos;"/></source>
+        <target>Hardlink auf <ph id="0" equiv="target" disp="f.target ?? &apos;&apos;"/></target>
+      </segment>
+    </unit>
+    <unit id="deb.files.special">
+      <notes>
+        <note category="location">src/app/features/packages/deb-contents.ts:220</note>
+      </notes>
+      <segment>
+        <source>device or pipe</source>
+        <target>Gerät oder Pipe</target>
+      </segment>
+    </unit>
+    <unit id="deb.files.heading">
+      <notes>
+        <note category="location">src/app/features/packages/deb-files.html:2,4</note>
+      </notes>
+      <segment>
+        <source>Installed files</source>
+        <target>Installierte Dateien</target>
+      </segment>
+    </unit>
+    <unit id="deb.files.architecture">
+      <notes>
+        <note category="location">src/app/features/packages/deb-files.html:22,23</note>
+      </notes>
+      <segment>
+        <source>Architecture</source>
+        <target>Architektur</target>
+      </segment>
+    </unit>
+    <unit id="deb.files.matching">
+      <notes>
+        <note category="location">src/app/features/packages/deb-files.html:32,33</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ f.matched | number }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ f.kept | number }}"/> files match</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ f.matched | number }}"/> von <ph id="1" equiv="INTERPOLATION_1" disp="{{ f.kept | number }}"/> Dateien passen</target>
+      </segment>
+    </unit>
+    <unit id="deb.files.count">
+      <notes>
+        <note category="location">src/app/features/packages/deb-files.html:34,36</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 file} other {<ph id="0" equiv="INTERPOLATION"/> files}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Datei} other {<ph id="0" equiv="INTERPOLATION"/> Dateien}}</target>
+      </segment>
+    </unit>
+    <unit id="deb.files.cut">
+      <notes>
+        <note category="location">src/app/features/packages/deb-files.html:39,41</note>
+      </notes>
+      <segment>
+        <source>The package installs <ph id="0" equiv="INTERPOLATION" disp="{{ f.total | number }}"/> files; Quader keeps the first <ph id="1" equiv="INTERPOLATION_1" disp="{{ f.kept | number }}"/> of the list, in the order of the package file. The filter searches those.</source>
+        <target>Das Paket installiert <ph id="0" equiv="INTERPOLATION" disp="{{ f.total | number }}"/> Dateien; Quader behält die ersten <ph id="1" equiv="INTERPOLATION_1" disp="{{ f.kept | number }}"/> der Liste, in der Reihenfolge der Paketdatei. Der Filter durchsucht diese.</target>
+      </segment>
+    </unit>
+    <unit id="deb.files.no-match">
+      <notes>
+        <note category="location">src/app/features/packages/deb-files.html:64,66</note>
+      </notes>
+      <segment>
+        <source>No file of the list matches the filter.</source>
+        <target>Keine Datei der Liste passt zum Filter.</target>
+      </segment>
+    </unit>
+    <unit id="deb.files.more">
+      <notes>
+        <note category="location">src/app/features/packages/deb-files.html:69,70</note>
+      </notes>
+      <segment>
+        <source>Show more (<ph id="0" equiv="INTERPOLATION" disp="{{ more() | number }}"/> left)</source>
+        <target>Mehr anzeigen (noch <ph id="0" equiv="INTERPOLATION" disp="{{ more() | number }}"/>)</target>
+      </segment>
+    </unit>
     <unit id="pkg.dist-tag.title">
       <notes>
         <note category="location">src/app/features/packages/dist-tags.ts:87</note>
@@ -17115,7 +17376,7 @@
     <unit id="pkg.ver.never-title">
       <notes>
         <note category="location">src/app/features/packages/package-detail.ts:230</note>
-        <note category="location">src/app/features/packages/package-version.ts:599</note>
+        <note category="location">src/app/features/packages/package-version.ts:648</note>
       </notes>
       <segment>
         <source>No client has downloaded this version through Quader yet.</source>
@@ -17299,7 +17560,7 @@
       <notes>
         <note category="location">src/app/features/packages/package-list.html:175,177</note>
         <note category="location">src/app/features/packages/package-list.html:181</note>
-        <note category="location">src/app/features/packages/package-list.ts:163</note>
+        <note category="location">src/app/features/packages/package-list.ts:168</note>
       </notes>
       <segment>
         <source>Keyword</source>
@@ -17310,7 +17571,7 @@
       <notes>
         <note category="location">src/app/features/packages/package-list.html:186,188</note>
         <note category="location">src/app/features/packages/package-list.html:190</note>
-        <note category="location">src/app/features/packages/package-list.ts:172</note>
+        <note category="location">src/app/features/packages/package-list.ts:177</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -17371,9 +17632,18 @@
         <target>Client einrichten, um das erste Paket zu veröffentlichen</target>
       </segment>
     </unit>
+    <unit id="pkg.filter.source-package">
+      <notes>
+        <note category="location">src/app/features/packages/package-list.ts:167</note>
+      </notes>
+      <segment>
+        <source>Source package</source>
+        <target>Quellpaket</target>
+      </segment>
+    </unit>
     <unit id="pkg.list.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:188</note>
+        <note category="location">src/app/features/packages/package-list.ts:193</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -17382,7 +17652,7 @@
     </unit>
     <unit id="pkg.list.empty">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:189</note>
+        <note category="location">src/app/features/packages/package-list.ts:194</note>
       </notes>
       <segment>
         <source>No package has been published yet.</source>
@@ -17391,7 +17661,7 @@
     </unit>
     <unit id="pkg.list.empty-filtered">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:190</note>
+        <note category="location">src/app/features/packages/package-list.ts:195</note>
       </notes>
       <segment>
         <source>No package matches the filters.</source>
@@ -17400,7 +17670,7 @@
     </unit>
     <unit id="pkg.list.search">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:191</note>
+        <note category="location">src/app/features/packages/package-list.ts:196</note>
       </notes>
       <segment>
         <source>Filter packages</source>
@@ -17409,7 +17679,7 @@
     </unit>
     <unit id="pkg.col.package">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:198</note>
+        <note category="location">src/app/features/packages/package-list.ts:203</note>
         <note category="location">src/app/features/search/search-results.ts:265</note>
       </notes>
       <segment>
@@ -17419,7 +17689,7 @@
     </unit>
     <unit id="pkg.col.format">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:199</note>
+        <note category="location">src/app/features/packages/package-list.ts:204</note>
         <note category="location">src/app/features/search/search-results.ts:268</note>
       </notes>
       <segment>
@@ -17429,7 +17699,7 @@
     </unit>
     <unit id="pkg.col.latest">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:203</note>
+        <note category="location">src/app/features/packages/package-list.ts:208</note>
         <note category="location">src/app/features/search/search-results.ts:271</note>
       </notes>
       <segment>
@@ -17439,7 +17709,7 @@
     </unit>
     <unit id="pkg.help.latest">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:204</note>
+        <note category="location">src/app/features/packages/package-list.ts:209</note>
         <note category="location">src/app/features/search/search-results.ts:272</note>
       </notes>
       <segment>
@@ -17449,7 +17719,7 @@
     </unit>
     <unit id="pkg.col.updated">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:208</note>
+        <note category="location">src/app/features/packages/package-list.ts:213</note>
         <note category="location">src/app/features/search/search-results.ts:277</note>
       </notes>
       <segment>
@@ -17459,7 +17729,7 @@
     </unit>
     <unit id="pkg.help.updated">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:210</note>
+        <note category="location">src/app/features/packages/package-list.ts:215</note>
         <note category="location">src/app/features/search/search-results.ts:278</note>
       </notes>
       <segment>
@@ -17469,7 +17739,7 @@
     </unit>
     <unit id="pkg.period.7">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:215</note>
+        <note category="location">src/app/features/packages/package-list.ts:220</note>
       </notes>
       <segment>
         <source>Last 7 days</source>
@@ -17478,7 +17748,7 @@
     </unit>
     <unit id="pkg.period.30">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:216</note>
+        <note category="location">src/app/features/packages/package-list.ts:221</note>
       </notes>
       <segment>
         <source>Last 30 days</source>
@@ -17487,7 +17757,7 @@
     </unit>
     <unit id="pkg.period.90">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:217</note>
+        <note category="location">src/app/features/packages/package-list.ts:222</note>
       </notes>
       <segment>
         <source>Last 90 days</source>
@@ -17496,7 +17766,7 @@
     </unit>
     <unit id="pkg.period.custom">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:218</note>
+        <note category="location">src/app/features/packages/package-list.ts:223</note>
       </notes>
       <segment>
         <source>Custom period</source>
@@ -17505,7 +17775,7 @@
     </unit>
     <unit id="pkg.views.actions-of">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:354</note>
+        <note category="location">src/app/features/packages/package-list.ts:359</note>
       </notes>
       <segment>
         <source>Actions for <ph id="0" equiv="name" disp="name"/></source>
@@ -17813,9 +18083,18 @@
         <target>Dateien nicht gelesen: Der Container enthält mehr, als die Grenzen erlauben.</target>
       </segment>
     </unit>
+    <unit id="pkg.meta.deb-description">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:373,374</note>
+      </notes>
+      <segment>
+        <source>Description</source>
+        <target>Beschreibung</target>
+      </segment>
+    </unit>
     <unit id="clamav.details.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:357,358</note>
+        <note category="location">src/app/features/packages/package-version.html:386,387</note>
       </notes>
       <segment>
         <source>Definitions</source>
@@ -17824,7 +18103,7 @@
     </unit>
     <unit id="clamav.fact.built">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:359,361</note>
+        <note category="location">src/app/features/packages/package-version.html:388,390</note>
       </notes>
       <segment>
         <source>Built</source>
@@ -17833,7 +18112,7 @@
     </unit>
     <unit id="clamav.fact.build-text">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:371,372</note>
+        <note category="location">src/app/features/packages/package-version.html:400,401</note>
       </notes>
       <segment>
         <source>Build time as written</source>
@@ -17842,7 +18121,7 @@
     </unit>
     <unit id="clamav.fact.signatures">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:374,375</note>
+        <note category="location">src/app/features/packages/package-version.html:403,404</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -17851,7 +18130,7 @@
     </unit>
     <unit id="clamav.fact.level">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:376,378</note>
+        <note category="location">src/app/features/packages/package-version.html:405,407</note>
       </notes>
       <segment>
         <source>Functionality level</source>
@@ -17860,7 +18139,7 @@
     </unit>
     <unit id="clamav.fact.builder">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:384,385</note>
+        <note category="location">src/app/features/packages/package-version.html:413,414</note>
       </notes>
       <segment>
         <source>Builder</source>
@@ -17869,7 +18148,7 @@
     </unit>
     <unit id="clamav.fact.verification">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:386,387</note>
+        <note category="location">src/app/features/packages/package-version.html:415,416</note>
       </notes>
       <segment>
         <source>Verification</source>
@@ -17878,7 +18157,7 @@
     </unit>
     <unit id="clamav.fact.files-removed">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:389,390</note>
+        <note category="location">src/app/features/packages/package-version.html:418,419</note>
       </notes>
       <segment>
         <source>Files removed</source>
@@ -17887,7 +18166,7 @@
     </unit>
     <unit id="clamav.fact.header-md5">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:396,397</note>
+        <note category="location">src/app/features/packages/package-version.html:425,426</note>
       </notes>
       <segment>
         <source>MD5 in the header</source>
@@ -17896,7 +18175,7 @@
     </unit>
     <unit id="clamav.fact.computed-md5">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:398,399</note>
+        <note category="location">src/app/features/packages/package-version.html:427,428</note>
       </notes>
       <segment>
         <source>MD5 computed by Quader</source>
@@ -17905,7 +18184,7 @@
     </unit>
     <unit id="pkg.image.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:405,406</note>
+        <note category="location">src/app/features/packages/package-version.html:434,435</note>
       </notes>
       <segment>
         <source>Image</source>
@@ -17914,8 +18193,8 @@
     </unit>
     <unit id="pkg.image.digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:407,409</note>
-        <note category="location">src/app/features/packages/package-version.ts:593</note>
+        <note category="location">src/app/features/packages/package-version.html:436,438</note>
+        <note category="location">src/app/features/packages/package-version.ts:642</note>
       </notes>
       <segment>
         <source>Digest</source>
@@ -17924,8 +18203,8 @@
     </unit>
     <unit id="pkg.image.media-type">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:413,414</note>
-        <note category="location">src/app/features/packages/package-version.ts:594</note>
+        <note category="location">src/app/features/packages/package-version.html:442,443</note>
+        <note category="location">src/app/features/packages/package-version.ts:643</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -17934,7 +18213,7 @@
     </unit>
     <unit id="pkg.image.artifact-type">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:417,418</note>
+        <note category="location">src/app/features/packages/package-version.html:446,447</note>
       </notes>
       <segment>
         <source>Artifact type</source>
@@ -17943,7 +18222,7 @@
     </unit>
     <unit id="pkg.image.total-size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:420,421</note>
+        <note category="location">src/app/features/packages/package-version.html:449,450</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -17952,7 +18231,7 @@
     </unit>
     <unit id="pkg.image.platforms">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:424,425</note>
+        <note category="location">src/app/features/packages/package-version.html:453,454</note>
       </notes>
       <segment>
         <source>Platforms</source>
@@ -17961,7 +18240,7 @@
     </unit>
     <unit id="pkg.image.not-fetched">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:450,451</note>
+        <note category="location">src/app/features/packages/package-version.html:479,480</note>
       </notes>
       <segment>
         <source>Not fetched</source>
@@ -17970,7 +18249,7 @@
     </unit>
     <unit id="pkg.meta.links">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:459,460</note>
+        <note category="location">src/app/features/packages/package-version.html:488,489</note>
       </notes>
       <segment>
         <source>Links</source>
@@ -17979,16 +18258,25 @@
     </unit>
     <unit id="pkg.meta.authors">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:478,479</note>
+        <note category="location">src/app/features/packages/package-version.html:507,508</note>
       </notes>
       <segment>
         <source>Authors</source>
         <target>Autoren</target>
       </segment>
     </unit>
+    <unit id="pkg.meta.deb-or">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:553,554</note>
+      </notes>
+      <segment>
+        <source>or</source>
+        <target>oder</target>
+      </segment>
+    </unit>
     <unit id="pkg.meta.frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:503,504</note>
+        <note category="location">src/app/features/packages/package-version.html:562,563</note>
       </notes>
       <segment>
         <source>Dependencies by target framework</source>
@@ -17997,7 +18285,7 @@
     </unit>
     <unit id="pkg.meta.all-frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:509,511</note>
+        <note category="location">src/app/features/packages/package-version.html:568,570</note>
       </notes>
       <segment>
         <source>All frameworks</source>
@@ -18006,7 +18294,7 @@
     </unit>
     <unit id="pkg.meta.no-dependencies">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:513,515</note>
+        <note category="location">src/app/features/packages/package-version.html:572,574</note>
       </notes>
       <segment>
         <source>No dependencies.</source>
@@ -18015,18 +18303,27 @@
     </unit>
     <unit id="pkg.meta.facts">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:525,526</note>
-        <note category="location">src/app/features/packages/package-version.html:534,535</note>
-        <note category="location">src/app/features/packages/package-version.html:543,544</note>
+        <note category="location">src/app/features/packages/package-version.html:584,585</note>
+        <note category="location">src/app/features/packages/package-version.html:593,594</note>
+        <note category="location">src/app/features/packages/package-version.html:613,614</note>
       </notes>
       <segment>
         <source>Package details</source>
         <target>Paketdetails</target>
       </segment>
     </unit>
+    <unit id="pkg.meta.deb-source">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:601,602</note>
+      </notes>
+      <segment>
+        <source>Source package</source>
+        <target>Quellpaket</target>
+      </segment>
+    </unit>
     <unit id="pkg.meta.engines">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:552,553</note>
+        <note category="location">src/app/features/packages/package-version.html:622,623</note>
       </notes>
       <segment>
         <source>Required runtimes</source>
@@ -18035,7 +18332,7 @@
     </unit>
     <unit id="pkg.repo.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:560,561</note>
+        <note category="location">src/app/features/packages/package-version.html:630,631</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -18044,7 +18341,7 @@
     </unit>
     <unit id="pkg.tab.vulnerabilities">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:244</note>
+        <note category="location">src/app/features/packages/package-version.ts:261</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -18053,7 +18350,7 @@
     </unit>
     <unit id="pkg.tab.readme">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:250</note>
+        <note category="location">src/app/features/packages/package-version.ts:267</note>
       </notes>
       <segment>
         <source>README</source>
@@ -18062,7 +18359,7 @@
     </unit>
     <unit id="pkg.tab.documentation">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:254</note>
+        <note category="location">src/app/features/packages/package-version.ts:271</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -18071,7 +18368,7 @@
     </unit>
     <unit id="pkg.tab.contents">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:259</note>
+        <note category="location">src/app/features/packages/package-version.ts:276</note>
       </notes>
       <segment>
         <source>Contents</source>
@@ -18080,7 +18377,7 @@
     </unit>
     <unit id="pkg.tab.files">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:265</note>
+        <note category="location">src/app/features/packages/package-version.ts:282</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -18089,7 +18386,7 @@
     </unit>
     <unit id="pkg.tab.signatures">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:267</note>
+        <note category="location">src/app/features/packages/package-version.ts:284</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -18098,25 +18395,43 @@
     </unit>
     <unit id="pkg.tab.details">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:268</note>
+        <note category="location">src/app/features/packages/package-version.ts:285</note>
       </notes>
       <segment>
         <source>Details</source>
         <target>Details</target>
       </segment>
     </unit>
+    <unit id="pkg.tab.changelog">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.ts:287</note>
+      </notes>
+      <segment>
+        <source>Changelog</source>
+        <target>Changelog</target>
+      </segment>
+    </unit>
     <unit id="pkg.tab.import-log">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:270</note>
+        <note category="location">src/app/features/packages/package-version.ts:289</note>
       </notes>
       <segment>
         <source>Import log</source>
         <target>Import-Protokoll</target>
       </segment>
     </unit>
+    <unit id="pkg.meta.deb-copyright-file">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.ts:391</note>
+      </notes>
+      <segment>
+        <source>Copyright file</source>
+        <target>Copyright-Datei</target>
+      </segment>
+    </unit>
     <unit id="clamav.member.name">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:405</note>
+        <note category="location">src/app/features/packages/package-version.ts:448</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -18125,7 +18440,7 @@
     </unit>
     <unit id="pkg.file.size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:406</note>
+        <note category="location">src/app/features/packages/package-version.ts:449</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -18134,7 +18449,7 @@
     </unit>
     <unit id="clamav.member.lines">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:409</note>
+        <note category="location">src/app/features/packages/package-version.ts:452</note>
       </notes>
       <segment>
         <source>Lines</source>
@@ -18143,7 +18458,7 @@
     </unit>
     <unit id="clamav.member.lines-help">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:411</note>
+        <note category="location">src/app/features/packages/package-version.ts:454</note>
       </notes>
       <segment>
         <source>The member&apos;s lines that are neither empty nor a comment.</source>
@@ -18152,7 +18467,7 @@
     </unit>
     <unit id="clamav.members">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:414</note>
+        <note category="location">src/app/features/packages/package-version.ts:457</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -18161,7 +18476,7 @@
     </unit>
     <unit id="clamav.checksums">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:415</note>
+        <note category="location">src/app/features/packages/package-version.ts:458</note>
       </notes>
       <segment>
         <source>Checksums of the archive</source>
@@ -18170,7 +18485,7 @@
     </unit>
     <unit id="clamav.member.digests">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:416</note>
+        <note category="location">src/app/features/packages/package-version.ts:459</note>
       </notes>
       <segment>
         <source>SHA-256 of each member</source>
@@ -18179,7 +18494,7 @@
     </unit>
     <unit id="pkg.file.path">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:553</note>
+        <note category="location">src/app/features/packages/package-version.ts:602</note>
       </notes>
       <segment>
         <source>File</source>
@@ -18188,7 +18503,7 @@
     </unit>
     <unit id="pkg.file.malware">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:554</note>
+        <note category="location">src/app/features/packages/package-version.ts:603</note>
       </notes>
       <segment>
         <source>Malware scan</source>
@@ -18197,7 +18512,7 @@
     </unit>
     <unit id="pkg.file.signature">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:555</note>
+        <note category="location">src/app/features/packages/package-version.ts:604</note>
       </notes>
       <segment>
         <source>Signature</source>
@@ -18206,7 +18521,7 @@
     </unit>
     <unit id="pkg.file.download-link">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:585</note>
+        <note category="location">src/app/features/packages/package-version.ts:634</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -18215,7 +18530,7 @@
     </unit>
     <unit id="pkg.repo.repository">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:587</note>
+        <note category="location">src/app/features/packages/package-version.ts:636</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -18224,7 +18539,7 @@
     </unit>
     <unit id="pkg.repo.class">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:588</note>
+        <note category="location">src/app/features/packages/package-version.ts:637</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -18233,7 +18548,7 @@
     </unit>
     <unit id="pkg.repo.published">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:589</note>
+        <note category="location">src/app/features/packages/package-version.ts:638</note>
       </notes>
       <segment>
         <source>Published</source>
@@ -18242,7 +18557,7 @@
     </unit>
     <unit id="pkg.image.platform">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:592</note>
+        <note category="location">src/app/features/packages/package-version.ts:641</note>
       </notes>
       <segment>
         <source>Platform</source>
@@ -18251,7 +18566,7 @@
     </unit>
     <unit id="pkg.image.size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:595</note>
+        <note category="location">src/app/features/packages/package-version.ts:644</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -18260,7 +18575,7 @@
     </unit>
     <unit id="pkg.image.platforms-caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:597</note>
+        <note category="location">src/app/features/packages/package-version.ts:646</note>
       </notes>
       <segment>
         <source>Platforms of this image index</source>
@@ -18269,7 +18584,7 @@
     </unit>
     <unit id="pkg.image.not-fetched-title">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:598</note>
+        <note category="location">src/app/features/packages/package-version.ts:647</note>
       </notes>
       <segment>
         <source>No client has fetched this platform through Quader yet, so its manifest and its size are not held.</source>
@@ -18278,7 +18593,7 @@
     </unit>
     <unit id="pkg.image.copy-digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:600</note>
+        <note category="location">src/app/features/packages/package-version.ts:649</note>
       </notes>
       <segment>
         <source>Copy digest</source>
@@ -18287,7 +18602,7 @@
     </unit>
     <unit id="pkg.file.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:601</note>
+        <note category="location">src/app/features/packages/package-version.ts:650</note>
       </notes>
       <segment>
         <source>Files of this version</source>
@@ -18296,7 +18611,7 @@
     </unit>
     <unit id="pkg.repo.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:602</note>
+        <note category="location">src/app/features/packages/package-version.ts:651</note>
       </notes>
       <segment>
         <source>Repositories that hold this version</source>
@@ -18305,7 +18620,7 @@
     </unit>
     <unit id="pkg.file.copy-sha">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:603</note>
+        <note category="location">src/app/features/packages/package-version.ts:652</note>
       </notes>
       <segment>
         <source>Copy SHA-256</source>
@@ -18495,7 +18810,7 @@
     </unit>
     <unit id="pkg.meta.deb-architectures">
       <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:171</note>
+        <note category="location">src/app/features/packages/version-metadata.ts:172</note>
       </notes>
       <segment>
         <source>Architectures</source>
@@ -18504,7 +18819,7 @@
     </unit>
     <unit id="pkg.meta.deb-coordinates">
       <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:172</note>
+        <note category="location">src/app/features/packages/version-metadata.ts:173</note>
       </notes>
       <segment>
         <source>Suites and components</source>
@@ -18513,7 +18828,7 @@
     </unit>
     <unit id="pkg.meta.deb-maintainer">
       <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:173</note>
+        <note category="location">src/app/features/packages/version-metadata.ts:174</note>
       </notes>
       <segment>
         <source>Maintainer</source>
@@ -18522,7 +18837,7 @@
     </unit>
     <unit id="pkg.meta.deb-section">
       <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:174</note>
+        <note category="location">src/app/features/packages/version-metadata.ts:175</note>
       </notes>
       <segment>
         <source>Section</source>
@@ -18531,7 +18846,7 @@
     </unit>
     <unit id="pkg.meta.deb-priority">
       <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:175</note>
+        <note category="location">src/app/features/packages/version-metadata.ts:176</note>
       </notes>
       <segment>
         <source>Priority</source>
@@ -18540,7 +18855,7 @@
     </unit>
     <unit id="pkg.meta.deb-installed-size">
       <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:176</note>
+        <note category="location">src/app/features/packages/version-metadata.ts:177</note>
       </notes>
       <segment>
         <source>Installed size</source>
@@ -18549,34 +18864,124 @@
     </unit>
     <unit id="pkg.meta.deb-kib">
       <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:176</note>
+        <note category="location">src/app/features/packages/version-metadata.ts:177</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="size" disp="size"/> KiB</source>
         <target><ph id="0" equiv="size" disp="size"/> KiB</target>
       </segment>
     </unit>
-    <unit id="pkg.meta.deb-depends">
-      <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:177</note>
-      </notes>
-      <segment>
-        <source>Depends</source>
-        <target>Abhängigkeiten</target>
-      </segment>
-    </unit>
-    <unit id="pkg.meta.deb-source">
+    <unit id="pkg.meta.deb-multi-arch">
       <notes>
         <note category="location">src/app/features/packages/version-metadata.ts:178</note>
       </notes>
       <segment>
-        <source>Source package</source>
-        <target>Quellpaket</target>
+        <source>Multi-Arch</source>
+        <target>Multi-Arch</target>
+      </segment>
+    </unit>
+    <unit id="pkg.meta.deb-essential">
+      <notes>
+        <note category="location">src/app/features/packages/version-metadata.ts:179</note>
+      </notes>
+      <segment>
+        <source>Essential</source>
+        <target>Essenziell</target>
+      </segment>
+    </unit>
+    <unit id="pkg.meta.deb-essential-yes">
+      <notes>
+        <note category="location">src/app/features/packages/version-metadata.ts:179</note>
+      </notes>
+      <segment>
+        <source>yes, APT refuses to remove it</source>
+        <target>ja, APT weigert sich, es zu entfernen</target>
+      </segment>
+    </unit>
+    <unit id="pkg.meta.deb-pre-depends">
+      <notes>
+        <note category="location">src/app/features/packages/version-metadata.ts:210</note>
+      </notes>
+      <segment>
+        <source>Pre-Depends</source>
+        <target>Hängt vorab ab von</target>
+      </segment>
+    </unit>
+    <unit id="pkg.meta.deb-depends">
+      <notes>
+        <note category="location">src/app/features/packages/version-metadata.ts:211</note>
+      </notes>
+      <segment>
+        <source>Depends</source>
+        <target>Hängt ab von</target>
+      </segment>
+    </unit>
+    <unit id="pkg.meta.deb-recommends">
+      <notes>
+        <note category="location">src/app/features/packages/version-metadata.ts:212</note>
+      </notes>
+      <segment>
+        <source>Recommends</source>
+        <target>Empfiehlt</target>
+      </segment>
+    </unit>
+    <unit id="pkg.meta.deb-suggests">
+      <notes>
+        <note category="location">src/app/features/packages/version-metadata.ts:213</note>
+      </notes>
+      <segment>
+        <source>Suggests</source>
+        <target>Schlägt vor</target>
+      </segment>
+    </unit>
+    <unit id="pkg.meta.deb-enhances">
+      <notes>
+        <note category="location">src/app/features/packages/version-metadata.ts:214</note>
+      </notes>
+      <segment>
+        <source>Enhances</source>
+        <target>Erweitert</target>
+      </segment>
+    </unit>
+    <unit id="pkg.meta.deb-breaks">
+      <notes>
+        <note category="location">src/app/features/packages/version-metadata.ts:215</note>
+      </notes>
+      <segment>
+        <source>Breaks</source>
+        <target>Beschädigt</target>
+      </segment>
+    </unit>
+    <unit id="pkg.meta.deb-conflicts">
+      <notes>
+        <note category="location">src/app/features/packages/version-metadata.ts:216</note>
+      </notes>
+      <segment>
+        <source>Conflicts</source>
+        <target>Kollidiert mit</target>
+      </segment>
+    </unit>
+    <unit id="pkg.meta.deb-replaces">
+      <notes>
+        <note category="location">src/app/features/packages/version-metadata.ts:217</note>
+      </notes>
+      <segment>
+        <source>Replaces</source>
+        <target>Ersetzt</target>
+      </segment>
+    </unit>
+    <unit id="pkg.meta.deb-provides">
+      <notes>
+        <note category="location">src/app/features/packages/version-metadata.ts:218</note>
+      </notes>
+      <segment>
+        <source>Provides</source>
+        <target>Stellt bereit</target>
       </segment>
     </unit>
     <unit id="pkg.meta.ansible-requires">
       <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:190</note>
+        <note category="location">src/app/features/packages/version-metadata.ts:281</note>
       </notes>
       <segment>
         <source>Requires Ansible</source>
@@ -18585,7 +18990,7 @@
     </unit>
     <unit id="pkg.meta.ansible-tags">
       <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:191</note>
+        <note category="location">src/app/features/packages/version-metadata.ts:282</note>
       </notes>
       <segment>
         <source>Tags</source>
@@ -18594,7 +18999,7 @@
     </unit>
     <unit id="pkg.meta.homepage">
       <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:200</note>
+        <note category="location">src/app/features/packages/version-metadata.ts:291</note>
       </notes>
       <segment>
         <source>Homepage</source>
@@ -18603,7 +19008,7 @@
     </unit>
     <unit id="pkg.meta.license-url">
       <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:201</note>
+        <note category="location">src/app/features/packages/version-metadata.ts:292</note>
       </notes>
       <segment>
         <source>License</source>
@@ -18612,7 +19017,7 @@
     </unit>
     <unit id="pkg.meta.docs-site">
       <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:203</note>
+        <note category="location">src/app/features/packages/version-metadata.ts:294</note>
       </notes>
       <segment>
         <source>Docs site</source>
@@ -18621,7 +19026,7 @@
     </unit>
     <unit id="pkg.meta.documentation">
       <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:203</note>
+        <note category="location">src/app/features/packages/version-metadata.ts:294</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -18630,7 +19035,7 @@
     </unit>
     <unit id="pkg.meta.source">
       <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:204</note>
+        <note category="location">src/app/features/packages/version-metadata.ts:295</note>
       </notes>
       <segment>
         <source>Source repository</source>
@@ -18639,7 +19044,7 @@
     </unit>
     <unit id="pkg.meta.bugs">
       <notes>
-        <note category="location">src/app/features/packages/version-metadata.ts:205</note>
+        <note category="location">src/app/features/packages/version-metadata.ts:296</note>
       </notes>
       <segment>
         <source>Issue tracker</source>

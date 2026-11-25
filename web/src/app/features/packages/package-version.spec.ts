@@ -504,9 +504,12 @@ describe('The page of a version (R-UI-111)', () => {
         Section: 'devel',
         Priority: 'optional',
         'Installed size': '280 KiB',
-        Depends: 'libc6 (>= 2.34)',
+        'Multi-Arch': 'foreign',
         'Source package': 'hello (2.10-3)',
       });
+      // The source package lists its binaries: the package list filtered by it (Q-DEB-142).
+      const source = r.root.querySelector<HTMLAnchorElement>('[data-testid="deb-facts"] dd a');
+      expect(source?.getAttribute('href')).toContain('keyword=hello');
       expect([...r.root.querySelectorAll<HTMLAnchorElement>('.version-tabs a[target="_blank"]')].map((a) => a.href)).toContain(
         'https://www.gnu.org/software/hello/',
       );
@@ -516,6 +519,67 @@ describe('The page of a version (R-UI-111)', () => {
     it('R-DEB-030 fields a version lacks are left out', async () => {
       const bare = await deb({ tab: 'details', version: '2.9-1' });
       expect(Object.keys(facts(bare))).toEqual(['Architectures', 'Suites and components']);
+    });
+
+    it('R-DEB-038 Details shows the long description, and the relations as lists whose held names link to their package', async () => {
+      const r = await deb({ tab: 'details' }, (fake) => {
+        fake.packages.push({ ...fake.packages.find((p) => p.format === 'deb')!, id: 'pkg_libc6', name: 'libc6' });
+      });
+      const details = r.root.querySelector('.version-tabs')!;
+      expect(text(details.querySelector('.deb-description')!)).toContain('friendly greeting');
+      expect(details.querySelector('.deb-verbatim')?.textContent).toBe(' * a greeting\n * a farewell');
+      const lines = [...details.querySelectorAll('.deb-relations li')].map((li) => text(li));
+      expect(lines).toEqual(['libc6 >= 2.34', 'python3:any or python3-minimal', 'hello-doc', 'greeter = 2.10']);
+      expect([...details.querySelectorAll<HTMLAnchorElement>('.deb-relations a')].map((a) => text(a))).toEqual(['libc6']);
+      // A field the server could not parse is its text.
+      expect(text(details.querySelector('.deb-relation-text')!)).toBe('hello-old [amd64');
+      await expectAccessible(r.root);
+    });
+
+    it('R-DEB-039 the changelog is a tab of text, the copyright a closed fold, the files a filtered list under the package files', async () => {
+      const r = await deb({ tab: 'changelog' });
+      expect(tabLabels(r)).toContain('Changelog');
+      expect(r.root.querySelector('[data-testid="deb-changelog"]')?.textContent).toContain('* Rebuild.');
+      expect(text(r.root.querySelector('quader-deb-changelog')!)).toContain('newest entries');
+      // No markup of the text becomes an element.
+      expect(r.root.querySelector('[data-testid="deb-changelog"] a')).toBeNull();
+
+      await set(r, { tab: 'files' });
+      const rows = () => [...r.root.querySelectorAll('quader-deb-files tbody tr')].map((tr) => text(tr));
+      expect(rows()[1]).toContain('/usr/bin/hi');
+      expect(rows()[1]).toContain('link to hello');
+      const filter = r.root.querySelector<HTMLInputElement>('quader-deb-files input[type="search"]')!;
+      vi.useFakeTimers();
+      filter.value = 'changelog';
+      filter.dispatchEvent(new Event('input'));
+      vi.advanceTimersByTime(300);
+      vi.useRealTimers();
+      await settle(r.fixture);
+      expect(rows()).toHaveLength(1);
+      expect(text(r.root.querySelector('.deb-files-count')!)).toBe('1 of 3 files match');
+
+      await set(r, { tab: 'details' });
+      const fold = r.root.querySelector('.deb-copyright-fold button')!;
+      expect(fold.getAttribute('aria-expanded')).toBe('false');
+      expect(r.root.querySelector('[data-testid="deb-copyright"]')?.textContent).toContain('copyright-format/1.0/');
+      await expectAccessible(r.root);
+    });
+
+    it('R-DEB-039 a version Quader has not read yet says so, and one it could not read says why in its own words', async () => {
+      const pending = await deb({ tab: 'changelog', version: '2.9-1' });
+      expect(text(pending.root.querySelector('quader-deb-changelog')!)).toContain('Quader is reading the package file');
+      const refused = await deb({ tab: 'changelog' }, (fake) => {
+        fake.contentsFixtures.set('pkg_01JBQ9DEBDEB@2.10-3', {
+          state: 'unavailable',
+          reason: 'too_large',
+          detail: 'The data archive crosses a bound of the reading: the content is larger than 2147483648 bytes',
+          repository: 'web/deb-local',
+          architecture: 'amd64',
+          architectures: ['amd64'],
+        });
+      });
+      expect(text(refused.root.querySelector('quader-deb-changelog .deb-note')!)).toContain('larger than Quader reads');
+      expect(refused.root.querySelector('quader-deb-changelog quader-technical-details')).not.toBeNull();
     });
   });
 

@@ -1,0 +1,93 @@
+// What a Debian package file tells about itself (R-DEB-039, Q-UI-1272): a changelog and a copyright file are text as written, wrapped
+// at the page's width and never scrolled on their own (one scrollbar per page, R-UI-215); a long word breaks inside itself.
+:host {
+  display: block;
+}
+
+.deb-text {
+  margin: 0;
+  padding: var(--quader-space-3);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-m);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.deb-note {
+  margin: 0 0 var(--quader-space-3);
+  color: var(--quader-text-muted);
+
+  &.warn {
+    color: var(--quader-text);
+  }
+}
+
+.deb-files {
+  margin-block-start: var(--quader-space-6);
+
+  h2 {
+    margin-block: 0 var(--quader-space-3);
+  }
+}
+
+// The filter is as wide as a path one types, the architecture as wide as its names; the count follows on the same line while it fits.
+.deb-files-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-2) var(--quader-space-4);
+  margin-block-end: var(--quader-space-3);
+}
+
+.deb-files-filter {
+  position: relative;
+  inline-size: min(100%, 20rem);
+
+  input {
+    inline-size: 100%;
+    padding-inline-end: var(--quader-space-6);
+  }
+
+  .material-icons {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: var(--quader-space-2);
+    transform: translateY(-50%);
+    color: var(--quader-text-muted);
+    font-size: 1.125rem;
+    pointer-events: none;
+  }
+}
+
+.deb-files-arch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--quader-space-2);
+
+  select {
+    inline-size: 8rem;
+  }
+}
+
+.deb-files-count {
+  margin: 0;
+}
+
+// A path is no name of a row to stand out in bold, as the list's row headers do: a column of bold paths of the same directory reads
+// as a block. The weight is the path's own: the list's rule for a row header outweighs a rule of the cell.
+.deb-path {
+  code {
+    font-weight: 400;
+    overflow-wrap: anywhere;
+  }
+
+  .secondary {
+    display: block;
+  }
+}
+
+.deb-files-more {
+  margin-block-start: var(--quader-space-3);
+}

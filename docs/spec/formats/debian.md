@@ -4380,3 +4380,11 @@ replacement character; the text is otherwise kept. Live for such packages.
 Component: the task `remote-describe` (Q-DEB-144). Subject: an operator who reads the task's name and schedule. It queues `deb-contents`
 for local Debian repositories too; its name says "remote". Live; renaming it touches the configuration key
 `maintenance.tasks.remote-describe` and its documentation.
+
+### H-2134 · A relation's name links to a package of that name the reader may read anywhere, not only in the version's repository
+
+Component: the Details tab of a Debian version (R-DEB-038, [api-and-ui.md](../api-and-ui.md) Q-UI-1270). Subject: a relation such as
+`Depends: libfoo1`. The screen asks the package lookup of the installation for each name, as it does for an Ansible collection's
+dependencies, and links the name when any repository the reader may read holds a package of it; the link opens that package's page in the
+project of the version. A name another repository holds is linked though the version's own repository (or the virtual repository it is
+read through) does not hold it, and APT would not find it there. Live; at most 60 names of a version are looked up.

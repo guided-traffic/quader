@@ -121,6 +121,8 @@ unless the line is too short, and then breaks at the joint with a hyphen; withou
 | test connection, upstream URL, negative cache | Verbindung testen, Upstream-URL, negativer Cache |
 | keyword (npm), maintainer (npm), package ID (NuGet), short description (Debian), the hint under the upstream search ("offers no search", "enter an image's full name") | Schlüsselwort, Maintainer, Paket-ID, Kurzbeschreibung ("bietet keine Suche", "geben Sie den vollständigen Namen eines Images ein") |
 | licence (of the software the build bundles, its notices) | Lizenz (der eingebundenen Software, Hinweise) |
+| Debian relations (R-DEB-038): Depends, Pre-Depends, Recommends, Suggests, Enhances, Breaks, Conflicts, Replaces, Provides; source package | the verbs of APT's German output: Hängt ab von, Hängt vorab ab von, Empfiehlt, Schlägt vor, Erweitert, Beschädigt, Kollidiert mit, Ersetzt, Stellt bereit; Quellpaket |
+| changelog, copyright file, installed files, package file, data archive (Debian, R-DEB-039) | Changelog (der), Copyright-Datei, Installierte Dateien, Paketdatei, Datenarchiv |
 | project switcher, start page of the projects ("Your work"), recently visited (projects) | Projektwechsler, "Ihre Arbeit", Zuletzt besucht |
 | storage (the logical size a project is charged), physical size | Speicher (logische Größe, die dem Projekt angerechnet wird), physische Größe |
 | backup, backup run, stored backup, backup target | Backup, Backup-Lauf, gespeichertes Backup, Backup-Ziel |

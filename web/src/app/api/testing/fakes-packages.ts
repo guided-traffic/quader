@@ -1,5 +1,6 @@
 import { Provider } from '@angular/core';
 import {
+  ContentsQuery,
   DocsQuery,
   PackageDocEntry,
   PackageDocFile,
@@ -12,6 +13,7 @@ import {
   PackageReadme,
   PackageSummary,
   PackageVersion,
+  PackageVersionContents,
   PackageVersionSummary,
   PackagesApi,
   VersionFilters,
@@ -386,10 +388,45 @@ export function debFixture(fake: FakePackagesApi): void {
       priority: 'optional',
       installedSize: '280',
       homepage: 'https://www.gnu.org/software/hello/',
-      depends: 'libc6 (>= 2.34)',
       source: 'hello (2.10-3)',
+      multiArch: 'foreign',
+      relations: {
+        depends: [[{ name: 'libc6', op: '>=', version: '2.34' }], [{ name: 'python3', arch: 'any' }, { name: 'python3-minimal' }]],
+        recommends: [[{ name: 'hello-doc' }]],
+        provides: [[{ name: 'greeter', op: '=', version: '2.10' }]],
+      },
+      relationsText: { breaks: 'hello-old [amd64' },
+      longDescription: [
+        { text: 'The GNU hello program produces a familiar, friendly greeting.' },
+        { text: 'It also lists:' },
+        { text: ' * a greeting\n * a farewell', verbatim: true },
+      ],
     }),
   );
+  fake.contentsFixtures.set(`${DEB_PACKAGE.id}@2.10-3`, {
+    state: 'available',
+    repository: 'web/deb-local',
+    architecture: 'amd64',
+    architectures: ['amd64', 'arm64'],
+    readAt: '2026-11-25T21:14:02.118Z',
+    changelog: {
+      file: 'changelog.Debian.gz',
+      text: 'hello (2.10-3) unstable; urgency=medium\n\n  * Rebuild.\n\n -- Jane Maintainer <jane@example.com>  Mon, 03 Mar 2025 10:00:00 +0000\n',
+      truncated: true,
+    },
+    copyright: { text: 'Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\n', truncated: false, licenses: ['GPL-3+'] },
+    files: {
+      total: 3,
+      kept: 3,
+      matched: 3,
+      offset: 0,
+      items: [
+        { path: '/usr/bin/hello', size: 26936, kind: 'file' },
+        { path: '/usr/bin/hi', kind: 'link', target: 'hello' },
+        { path: '/usr/share/doc/hello/changelog.Debian.gz', size: 512, kind: 'file' },
+      ],
+    },
+  });
 }
 
 /** The package of the Ansible fakes. It is not in the default list of {@link FakePackagesApi}; a test adds it with {@link ansibleFixture}. */
@@ -545,6 +582,9 @@ export class FakePackagesApi extends PackagesApi {
   readmeCalls: string[] = [];
   /** The documentation by `<packageId>@<version>`; a version without an entry answers 404 (R-ANS-036). */
   docFixtures = new Map<string, DocsFixture>();
+  /** What the reader of a Debian data archive kept, by `<packageId>@<version>`; a version without one is `pending` (R-DEB-039). */
+  contentsFixtures = new Map<string, PackageVersionContents>();
+  contentsCalls: string[] = [];
   /** Each call of the three documentation operations: `tree`, `tree?q=…`, `entry:<type>/<name>`, `file:<name>`. */
   docCalls: string[] = [];
   /** The refusal the next call of a documentation operation throws once. */
@@ -701,6 +741,18 @@ export class FakePackagesApi extends PackagesApi {
   override async docs(packageId: string, v: string, query: DocsQuery = {}): Promise<PackageDocTree | null> {
     const fx = this.doc(query.q ? `tree?q=${query.q}` : 'tree', packageId, v, query.repository);
     return fx ? docTree(fx, query.q) : null;
+  }
+
+  override async contents(packageId: string, v: string, query: ContentsQuery = {}): Promise<PackageVersionContents> {
+    this.contentsCalls.push(`${packageId}@${v}${query.q ? `?q=${query.q}` : ''}`);
+    const fx = this.contentsFixtures.get(`${packageId}@${v}`);
+    if (!fx) return { state: 'pending', repository: 'web/deb-local', architecture: 'amd64', architectures: ['amd64'] };
+    if (!fx.files) return fx;
+    const q = (query.q ?? '').toLowerCase();
+    const matching = fx.files.items.filter((f) => q === '' || f.path.toLowerCase().includes(q));
+    const offset = query.offset ?? 0;
+    const items = matching.slice(offset, offset + (query.limit ?? 200));
+    return { ...fx, files: { ...fx.files, matched: q === '' ? fx.files.kept : matching.length, offset, items } };
   }
 
   override async docEntry(packageId: string, v: string, type: string, name: string, repository?: string): Promise<PackageDocEntry> {

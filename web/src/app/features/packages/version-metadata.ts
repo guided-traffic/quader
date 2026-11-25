@@ -162,8 +162,9 @@ export function nugetFacts(m: Record<string, unknown>): [string, string][] {
 }
 
 /**
- * The facts of a Debian version (R-DEB-030): the architectures of its files, its coordinates (suite and component, shown as
- * `stable/main`) and the control fields the view adapter sends. Installed-Size is in KiB, as the control field says.
+ * The facts of a Debian version (R-DEB-030, R-DEB-038): the architectures of its files, its coordinates (suite and component, shown as
+ * `stable/main`) and the control fields the view adapter sends. Installed-Size is in KiB, as the control field says. The relations
+ * are lists of their own ({@link debRelations}); the source package is a link of its own (Q-UI-1271).
  */
 export function debFacts(m: Record<string, unknown>): [string, string][] {
   const size = text(m['installedSize']);
@@ -174,10 +175,100 @@ export function debFacts(m: Record<string, unknown>): [string, string][] {
     [$localize`:@@pkg.meta.deb-section:Section`, text(m['section'])],
     [$localize`:@@pkg.meta.deb-priority:Priority`, text(m['priority'])],
     [$localize`:@@pkg.meta.deb-installed-size:Installed size`, size === '' ? '' : $localize`:@@pkg.meta.deb-kib:${size}:size: KiB`],
-    [$localize`:@@pkg.meta.deb-depends:Depends`, text(m['depends'])],
-    [$localize`:@@pkg.meta.deb-source:Source package`, text(m['source'])],
+    [$localize`:@@pkg.meta.deb-multi-arch:Multi-Arch`, text(m['multiArch'])],
+    [$localize`:@@pkg.meta.deb-essential:Essential`, m['essential'] === true ? $localize`:@@pkg.meta.deb-essential-yes:yes, APT refuses to remove it` : ''],
   ];
   return entries.filter((e) => e[1] !== '');
+}
+
+/** The source package of a Debian version: its name without the version in parentheses, or null (R-DEB-038). */
+export function debSource(m: Record<string, unknown>): { readonly name: string; readonly text: string } | null {
+  const source = text(m['source']);
+  if (source === '') return null;
+  return { name: source.split(/\s/)[0] ?? source, text: source };
+}
+
+/** One alternative of a Debian relation (R-DEB-038): the package name, and what is written after it. */
+export interface DebAlternative {
+  readonly name: string;
+  /** The name as written, with its architecture qualifier (`python3:any`). */
+  readonly written: string;
+  /** The constraint (`>= 2.34`), the architecture restriction and the build profiles, as text. */
+  readonly qualifiers: string;
+}
+
+/** One relation field of a Debian version: its label and its groups of alternatives, or its text when the server could not parse it. */
+export interface DebRelationGroup {
+  readonly label: string;
+  readonly groups: readonly (readonly DebAlternative[])[];
+  readonly text: string | null;
+}
+
+/** The relation fields in the order `apt show` lists them, with their labels. */
+function relationLabels(): readonly (readonly [string, string])[] {
+  return [
+    ['preDepends', $localize`:@@pkg.meta.deb-pre-depends:Pre-Depends`],
+    ['depends', $localize`:@@pkg.meta.deb-depends:Depends`],
+    ['recommends', $localize`:@@pkg.meta.deb-recommends:Recommends`],
+    ['suggests', $localize`:@@pkg.meta.deb-suggests:Suggests`],
+    ['enhances', $localize`:@@pkg.meta.deb-enhances:Enhances`],
+    ['breaks', $localize`:@@pkg.meta.deb-breaks:Breaks`],
+    ['conflicts', $localize`:@@pkg.meta.deb-conflicts:Conflicts`],
+    ['replaces', $localize`:@@pkg.meta.deb-replaces:Replaces`],
+    ['provides', $localize`:@@pkg.meta.deb-provides:Provides`],
+  ];
+}
+
+function alternative(v: unknown): DebAlternative | null {
+  if (typeof v !== 'object' || v === null) return null;
+  const r = v as Record<string, unknown>;
+  const name = text(r['name']);
+  if (name === '') return null;
+  const parts: string[] = [];
+  const arch = text(r['arch']);
+  if (text(r['op']) !== '' && text(r['version']) !== '') parts.push(`${text(r['op'])} ${text(r['version'])}`);
+  const archs = strings(r['architectures']);
+  if (archs.length > 0) parts.push(`[${archs.join(' ')}]`);
+  for (const p of Array.isArray(r['profiles']) ? r['profiles'] : []) {
+    const terms = strings(p);
+    if (terms.length > 0) parts.push(`<${terms.join(' ')}>`);
+  }
+  return { name, written: arch === '' ? name : `${name}:${arch}`, qualifiers: parts.join(' ') };
+}
+
+/** The relations of a Debian version that are present, each a list of groups of alternatives (R-DEB-038). */
+export function debRelations(m: Record<string, unknown>): DebRelationGroup[] {
+  const parsed = typeof m['relations'] === 'object' && m['relations'] !== null ? (m['relations'] as Record<string, unknown>) : {};
+  const raw = typeof m['relationsText'] === 'object' && m['relationsText'] !== null ? (m['relationsText'] as Record<string, unknown>) : {};
+  return relationLabels().flatMap(([key, label]): DebRelationGroup[] => {
+    const t = text(raw[key]);
+    if (t !== '') return [{ label, groups: [], text: t }];
+    const groups = (Array.isArray(parsed[key]) ? (parsed[key] as unknown[]) : []).flatMap((g): DebAlternative[][] => {
+      const alts = (Array.isArray(g) ? g : []).flatMap((a) => alternative(a) ?? []);
+      return alts.length > 0 ? [alts] : [];
+    });
+    return groups.length > 0 ? [{ label, groups, text: null }] : [];
+  });
+}
+
+/** The names a Debian version's relations name, for the links to the packages the installation holds. */
+export function debRelationNames(m: Record<string, unknown>): string[] {
+  return [...new Set(debRelations(m).flatMap((r) => r.groups.flatMap((g) => g.map((a) => a.name))))];
+}
+
+/** A paragraph of the extended description of a Debian version (R-DEB-038): text the screen wraps, or lines shown as written. */
+export interface DescriptionBlock {
+  readonly text: string;
+  readonly verbatim: boolean;
+}
+
+export function debLongDescription(m: Record<string, unknown>): DescriptionBlock[] {
+  const blocks = Array.isArray(m['longDescription']) ? m['longDescription'] : [];
+  return blocks.flatMap((b): DescriptionBlock[] => {
+    if (typeof b !== 'object' || b === null) return [];
+    const r = b as Record<string, unknown>;
+    return typeof r['text'] === 'string' && r['text'] !== '' ? [{ text: r['text'], verbatim: r['verbatim'] === true }] : [];
+  });
 }
 
 /**

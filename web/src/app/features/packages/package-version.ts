@@ -19,6 +19,7 @@ import { barSeverityOf, blockedRepositories, PackageVulnerabilities } from '../v
 import { AnsibleContents } from './ansible-contents';
 import { AnsibleDocs } from './ansible-docs';
 import { AnsibleImportLog } from './ansible-import-log';
+import { DebChangelog, DebCopyright, DebFiles } from './deb-contents';
 import { formatSize } from './format-size';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { ClientCommandMenu } from './client-command-menu';
@@ -34,6 +35,10 @@ import { GradeLabel } from '../../shared/vulnerability/grade';
 import {
   ansibleFacts,
   debFacts,
+  debLongDescription,
+  debRelationNames,
+  debRelations,
+  debSource,
   dependencyGroups,
   deprecationOf,
   frameworkGroups,
@@ -78,7 +83,16 @@ function sameVersion(a: { id: string; version: string } | undefined, b: { id: st
   return a === b || (!!a && !!b && a.id === b.id && a.version === b.version);
 }
 
-export type VersionTab = 'vulnerabilities' | 'documentation' | 'contents' | 'readme' | 'files' | 'signatures' | 'details' | 'import-log';
+export type VersionTab =
+  | 'vulnerabilities'
+  | 'documentation'
+  | 'contents'
+  | 'readme'
+  | 'files'
+  | 'signatures'
+  | 'details'
+  | 'changelog'
+  | 'import-log';
 
 /** The content routes of the system repositories, `/api/v1/projects/upstream/repositories/<key>/content/` (R-API-025, Q-UI-898). */
 const SYSTEM_CONTENT = systemRepositoryNames().map((name) => contentPath(name, ''));
@@ -127,6 +141,9 @@ interface TabEntry {
     AnsibleContents,
     AnsibleDocs,
     AnsibleImportLog,
+    DebChangelog,
+    DebCopyright,
+    DebFiles,
     PackageVulnerabilities,
     GradeLabel,
     VersionSize,
@@ -266,6 +283,8 @@ export class PackageVersionPage {
       // The details of the signatures while the installation checks them (R-SIG-035): the member is absent while they are off.
       ...(d?.signatures !== undefined ? [{ id: 'signatures' as const, label: $localize`:@@pkg.tab.signatures:Signatures` }] : []),
       { id: 'details', label: $localize`:@@pkg.tab.details:Details` },
+      // The changelog of a Debian package file (R-DEB-039, Q-UI-1272): a detail, after the facts.
+      ...(d?.format === 'deb' ? [{ id: 'changelog' as const, label: $localize`:@@pkg.tab.changelog:Changelog` }] : []),
       ...(gradedFirst ? [] : vulnerabilities),
       ...(this.localRepository() !== null ? [{ id: 'import-log' as const, label: $localize`:@@pkg.tab.import-log:Import log` }] : []),
     ];
@@ -299,6 +318,24 @@ export class PackageVersionPage {
   private readonly docsGone = computed(() => this.docs.hasValue() && this.docs.value() === null);
   /** The tree's failure, kept while its tab reads it again (R-UI-216). */
   protected readonly docsFailure = failureOf(this.docs);
+
+  /**
+   * What Quader read from a Debian package file of the version (R-DEB-039): the changelog, the copyright and the first page of the
+   * files. Read once per version and again with the page while the reader has not run yet (R-UI-213).
+   */
+  private readonly debKey = computed(
+    () => {
+      const d = this.detail();
+      return d?.format === 'deb' ? { id: d.packageId, version: d.version } : undefined;
+    },
+    { equal: sameVersion },
+  );
+  protected readonly debContents = resource({
+    params: () => this.debKey(),
+    loader: ({ params }) => this.api.contents(params.id, params.version, { limit: 100 }),
+  });
+  protected readonly debContentsValue = computed(() => valueOf(this.debContents) ?? null);
+  protected readonly debContentsFailure = failureOf(this.debContents);
 
   protected readonly tabs = computed<readonly TabEntry[]>(() =>
     this.docsGone() ? this.announcedTabs().filter((t) => t.id !== 'documentation' && t.id !== 'contents') : this.announcedTabs(),
@@ -346,6 +383,12 @@ export class PackageVersionPage {
   protected readonly authors = computed(() => strings(this.metadata()['authors']));
   protected readonly nugetFacts = computed(() => nugetFacts(this.metadata()));
   protected readonly debFacts = computed(() => debFacts(this.metadata()));
+  protected readonly debRelations = computed(() => debRelations(this.metadata()));
+  protected readonly debLongDescription = computed(() => debLongDescription(this.metadata()));
+  protected readonly debSource = computed(() => debSource(this.metadata()));
+  /** The package list filtered by the source package: the binaries of one source (R-DEB-038, Q-DEB-142). */
+  protected readonly sourceLink = computed(() => ['/projects', this.project(), 'packages']);
+  protected readonly copyrightHeading = $localize`:@@pkg.meta.deb-copyright-file:Copyright file`;
   protected readonly ansibleFacts = computed(() => {
     const d = this.detail();
     return d ? ansibleFacts(d, valueOf(this.summary)?.keywords ?? []) : [];
@@ -426,20 +469,25 @@ export class PackageVersionPage {
   private readonly dependencyNames = computed(
     () => {
       const d = this.detail();
-      if (d?.format !== 'ansible') return undefined;
-      const names = stringRecord(d.metadata['dependencies']).map(([name]) => name);
-      return names.length > 0 ? names : undefined;
+      if (d?.format !== 'ansible' && d?.format !== 'deb') return undefined;
+      // A Debian version names its relations (R-DEB-038); the lookups are bounded, a name past the bound stays text.
+      const names =
+        d.format === 'deb' ? debRelationNames(d.metadata).slice(0, 60) : stringRecord(d.metadata['dependencies']).map(([name]) => name);
+      return names.length > 0 ? { format: d.format, names } : undefined;
     },
-    { equal: (a, b) => (a ?? []).join('\n') === (b ?? []).join('\n') && (a === undefined) === (b === undefined) },
+    {
+      equal: (a, b) =>
+        (a?.names ?? []).join('\n') === (b?.names ?? []).join('\n') && a?.format === b?.format && (a === undefined) === (b === undefined),
+    },
   );
   protected readonly heldDependencies = resource({
     params: () => this.dependencyNames(),
     loader: async ({ params }): Promise<ReadonlySet<string>> => {
       const held = new Set<string>();
       await Promise.all(
-        params.map(async (name) => {
+        params.names.map(async (name) => {
           try {
-            await this.api.lookup('ansible', name);
+            await this.api.lookup(params.format, name);
             held.add(name);
           } catch (e) {
             // Not held, or not visible to this caller: the name stays text. A failure that may pass is no such answer: the lookups
@@ -457,15 +505,16 @@ export class PackageVersionPage {
    * banner), the README, the tree of the documentation, the dependencies this installation holds.
    */
   protected readonly loadFailure = failureOf([this.summary, this.details], {
-    also: [this.vulnerabilities, this.readme, this.docs, this.heldDependencies],
+    also: [this.vulnerabilities, this.readme, this.docs, this.heldDependencies, this.debContents],
   });
   protected readonly readmeFailure = failureOf(this.readme);
   /** The scanning report's failure that may pass: without it, the tab Vulnerabilities, the grade and "Blocked in" were gone. */
   protected readonly vulnerabilitiesFailure = failureOf(this.vulnerabilities);
   /** The router commands of a dependency's page, or null when the installation does not hold it. */
   protected dependencyLink(name: string): string[] | null {
-    return this.detail()?.format === 'ansible' && valueOf(this.heldDependencies)?.has(name)
-      ? packageCommands(this.project(), 'ansible', name)
+    const format = this.detail()?.format;
+    return (format === 'ansible' || format === 'deb') && valueOf(this.heldDependencies)?.has(name)
+      ? packageCommands(this.project(), format, name)
       : null;
   }
 
@@ -623,6 +672,7 @@ export class PackageVersionPage {
     if (!d) return false;
     const signaturePending = (s: SignatureStatus | undefined): boolean => s?.state === 'not_checked' || s?.refusedReason === 'pending';
     if (signaturePending(d.signatures)) return true;
+    if (this.debContentsValue()?.state === 'pending') return true;
     if (d.files.some((f) => f.malware?.waiting === 'queued' || signaturePending(f.signatures))) return true;
     return (this.vulnerabilityReport()?.repositories ?? []).some((r) => checkWaits(r.grade.state));
   });
@@ -648,6 +698,10 @@ export class PackageVersionPage {
             : Promise.resolve(),
           this.vulnerabilities.hasValue()
             ? refreshResource(this.vulnerabilities, () => noneOnRefusal(this.vulnerabilityApi.versionReport(id, version)))
+            : Promise.resolve(),
+          // The reader of a Debian package file runs after the upload (R-DEB-039): its contents are read again until it ran.
+          this.debContentsValue()?.state === 'pending'
+            ? refreshResource(this.debContents, () => this.api.contents(id, version, { limit: 100 }))
             : Promise.resolve(),
         ]);
       },

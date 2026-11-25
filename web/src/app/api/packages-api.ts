@@ -23,6 +23,8 @@ export type PackageDocOptionConfiguration = Schema<'PackageDocOptionConfiguratio
 export type PackageDocReturnValue = Schema<'PackageDocReturnValue'>;
 export type PackageDocFile = Schema<'PackageDocFile'>;
 export type PackageVersionDocs = Schema<'PackageVersionDocs'>;
+export type PackageVersionContents = Schema<'PackageVersionContents'>;
+export type PackageFileEntry = Schema<'PackageFileEntry'>;
 export type ClientSetup = Schema<'ClientSetup'>;
 export type ClientSnippet = Schema<'ClientSnippet'>;
 
@@ -62,6 +64,14 @@ export interface VersionFilters {
 export interface DocsQuery {
   readonly repository?: string;
   readonly q?: string;
+}
+
+/** The query of `GET …/contents` (formats/debian.md R-DEB-039): the package file by its architecture, and a page of its files. */
+export interface ContentsQuery {
+  readonly architecture?: string;
+  readonly q?: string;
+  readonly offset?: number;
+  readonly limit?: number;
 }
 
 /** The query of `GET …/client-setup` (R-API-030). */
@@ -104,6 +114,11 @@ export abstract class PackagesApi {
   ): Promise<PackageDocEntry>;
   /** The README or a Markdown file of the documentation as sanitized HTML. */
   abstract docFile(packageId: string, version: string, file: string, repository?: string): Promise<PackageDocFile>;
+  /**
+   * What Quader read from a Debian package file of the version (R-DEB-039): its changelog, its copyright and a page of its files, or
+   * that it reads them still or could not read them.
+   */
+  abstract contents(packageId: string, version: string, query?: ContentsQuery): Promise<PackageVersionContents>;
 }
 
 /** The client setup snippets of a repository (R-API-030). */
@@ -153,6 +168,14 @@ export class HttpPackagesApi extends PackagesApi {
       if (e instanceof ApiError && (e.status === 404 || e.status === 403)) return null;
       throw e;
     }
+  }
+
+  override async contents(packageId: string, version: string, query: ContentsQuery = {}): Promise<PackageVersionContents> {
+    return (
+      await this.client.getJson<PackageVersionContents>(`${packageUrl(packageId)}/versions/${seg(version)}/contents`, {
+        params: cleanQuery(query),
+      })
+    ).body;
   }
 
   override async docEntry(

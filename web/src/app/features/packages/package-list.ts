@@ -158,9 +158,14 @@ export class PackageList {
       });
     }
     if (this.keyword()) {
+      // A list of Debian packages alone filters its keyword by the source package, the one grouping Debian has (Q-DEB-142).
+      const names = this.formatNames();
       out.push({
         key: 'keyword',
-        label: $localize`:@@pkg.filter.keyword:Keyword`,
+        label:
+          names.length === 1 && names[0] === 'deb'
+            ? $localize`:@@pkg.filter.source-package:Source package`
+            : $localize`:@@pkg.filter.keyword:Keyword`,
         value: this.keyword() ?? '',
         remove: { keyword: null },
       });

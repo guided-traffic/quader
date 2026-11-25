@@ -337,6 +337,14 @@
                   <p class="hint" i18n="@@clamav.members.not-read">Members not read: the container holds more than the bounds allow.</p>
                 }
               }
+              <!-- The files a Debian package installs, below the package files (R-DEB-039, Q-UI-1272). -->
+              @if (d.format === 'deb') {
+                @if (debContentsFailure(); as f) {
+                  <quader-error-notice [error]="f" (retry)="debContentsFailure.retry()" />
+                } @else {
+                  <quader-deb-files [packageId]="d.packageId" [version]="d.version" [contents]="debContentsValue()" />
+                }
+              }
             }
             @case ('signatures') {
               @if (activeTab() === 'signatures') {
@@ -351,7 +359,28 @@
                 />
               }
             }
+            @case ('changelog') {
+              @if (debContentsFailure(); as f) {
+                <quader-error-notice [error]="f" (retry)="debContentsFailure.retry()" />
+              } @else {
+                <quader-deb-changelog [contents]="debContentsValue()" />
+              }
+            }
             @case ('details') {
+              <!-- The extended description of a Debian package (R-DEB-038, Q-UI-1270): its paragraphs as written, the verbatim lines kept
+                   as they are; text, never markup. -->
+              @if (debLongDescription().length > 0) {
+                <h2 i18n="@@pkg.meta.deb-description">Description</h2>
+                <div class="deb-description" translate="no">
+                  @for (b of debLongDescription(); track $index) {
+                    @if (b.verbatim) {
+                      <pre class="deb-verbatim">{{ b.text }}</pre>
+                    } @else {
+                      <p>{{ b.text }}</p>
+                    }
+                  }
+                </div>
+              }
               <!-- Every field of a definition container's header (R-UI-194, R-CLAMAV-003), as text, never as markup. -->
               @if (clamav(); as c) {
                 <h2 i18n="@@clamav.details.heading">Definitions</h2>
@@ -499,6 +528,36 @@
                   }
                 </dl>
               }
+              <!-- The relations of a Debian package (R-DEB-038, Q-UI-1270): the block of the other formats' dependencies, one row per group,
+                   its alternatives side by side; a name the installation holds links to its page. -->
+              @for (g of debRelations(); track g.label) {
+                <h2>{{ g.label }}</h2>
+                @if (g.text; as t) {
+                  <p class="deb-relation-text" translate="no">{{ t }}</p>
+                } @else {
+                  <ul class="deb-relations" translate="no">
+                    @for (alts of g.groups; track $index) {
+                      <li>
+                        @for (a of alts; track $index; let last = $last) {
+                          <span class="deb-alternative">
+                            @if (dependencyLink(a.name); as link) {
+                              <a [routerLink]="link">{{ a.written }}</a>
+                            } @else {
+                              <span>{{ a.written }}</span>
+                            }
+                            @if (a.qualifiers !== '') {
+                              <span class="secondary-inline">&ngsp;{{ a.qualifiers }}</span>
+                            }
+                          </span>
+                          @if (!last) {
+                            &ngsp;<span class="deb-or secondary-inline" i18n="@@pkg.meta.deb-or">or</span>&ngsp;
+                          }
+                        }
+                      </li>
+                    }
+                  </ul>
+                }
+              }
               @if (frameworkGroups().length > 0) {
                 <h2 i18n="@@pkg.meta.frameworks">Dependencies by target framework</h2>
                 @for (g of frameworkGroups(); track $index) {
@@ -537,7 +596,18 @@
                     <dt>{{ f[0] }}</dt>
                     <dd translate="no">{{ f[1] }}</dd>
                   }
+                  <!-- The source package lists its binaries: the package list filtered by it (R-DEB-038, Q-DEB-142). -->
+                  @if (debSource(); as src) {
+                    <dt i18n="@@pkg.meta.deb-source">Source package</dt>
+                    <dd translate="no">
+                      <a [routerLink]="sourceLink()" [queryParams]="{ format: 'deb', keyword: src.name }">{{ src.text }}</a>
+                    </dd>
+                  }
                 </dl>
+                <!-- The copyright file is a detail on demand (Q-UI-1272): closed, the licence stands on the facts line. -->
+                <quader-disclosure class="deb-copyright-fold" [inline]="true" [heading]="copyrightHeading">
+                  <quader-deb-copyright [contents]="debContentsValue()" />
+                </quader-disclosure>
               }
               @if (ansibleFacts().length > 0) {
                 <h2 i18n="@@pkg.meta.facts">Package details</h2>

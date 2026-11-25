@@ -1,0 +1,74 @@
+<section class="deb-files" aria-labelledby="deb-files-heading">
+  <h2 id="deb-files-heading" i18n="@@deb.files.heading">Installed files</h2>
+  @if (note(); as n) {
+    <p class="deb-note" [class.warn]="shown()?.state === 'unavailable'" role="status">{{ n }}</p>
+  } @else if (files(); as f) {
+    <div class="deb-files-toolbar">
+      <div class="deb-files-filter">
+        <input
+          class="text-input"
+          type="search"
+          spellcheck="false"
+          autocomplete="off"
+          [attr.aria-label]="filterLabel"
+          [attr.placeholder]="filterLabel"
+          [value]="draft()"
+          (input)="onFilter($any($event.target).value)"
+        />
+        <span class="material-icons" aria-hidden="true">search</span>
+      </div>
+      @if (architectures().length > 1) {
+        <label class="deb-files-arch">
+          <span i18n="@@deb.files.architecture">Architecture</span>
+          <select class="select-input" [value]="architecture()" (change)="onArchitecture($any($event.target).value)">
+            @for (a of architectures(); track a) {
+              <option [value]="a" translate="no">{{ a }}</option>
+            }
+          </select>
+        </label>
+      }
+      <p class="deb-files-count secondary-inline" role="status">
+        @if (filtered()) {
+          <ng-container i18n="@@deb.files.matching">{{ f.matched | number }} of {{ f.kept | number }} files match</ng-container>
+        } @else {
+          <ng-container i18n="@@deb.files.count">{f.total, plural, =1 {1 file} other {{{ f.total | number }} files}}</ng-container>
+        }
+      </p>
+    </div>
+    @if (f.kept < f.total) {
+      <p class="deb-note" i18n="@@deb.files.cut">The package installs {{ f.total | number }} files; Quader keeps the first {{ f.kept | number }} of the list, in the order of the package file. The filter searches those.</p>
+    }
+    @if (pageFailure(); as e) {
+      <quader-error-notice [error]="e" (retry)="pageFailure.retry()" />
+    }
+    <quader-data-table class="deb-files-table" [caption]="caption" [columns]="columns" [empty]="false">
+      @for (e of items(); track e.path) {
+        <tr>
+          <th scope="row" class="deb-path">
+            <code translate="no">{{ e.path }}</code>
+            @if (kindText(e); as k) {
+              <span class="secondary">{{ k }}</span>
+            }
+          </th>
+          <td class="num">
+            @if (e.size !== undefined && e.size !== null) {
+              <span [attr.title]="e.size + ' B'">{{ size(e.size) }}</span>
+            } @else {
+              <quader-no-value />
+            }
+          </td>
+        </tr>
+      }
+    </quader-data-table>
+    @if (items().length === 0 && filtered()) {
+      <p class="deb-note" i18n="@@deb.files.no-match">No file of the list matches the filter.</p>
+    }
+    @if (more() > 0) {
+      <p class="deb-files-more">
+        <button class="btn btn-default" type="button" [disabled]="page.isLoading()" [quaderBusy]="page.isLoading()" (click)="showMore()">
+          <ng-container i18n="@@deb.files.more">Show more ({{ more() | number }} left)</ng-container>
+        </button>
+      </p>
+    }
+  }
+</section>

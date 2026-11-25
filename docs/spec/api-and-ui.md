@@ -7388,9 +7388,13 @@ page's width. Not chosen by the owner: a row that opens inside the table, and a 
   scan, the signature;
   [Q-UI-1002](#q-ui-1002--a-versions-files-keep-their-table-the-size-and-the-hash-stand-under-the-path),
   [Q-UI-1051](#q-ui-1051--a-versions-file-path-is-its-download)); **Details** (the format's metadata of R-API-029: an image's digest, media type, artifact
-  type, size and platforms, each platform with its size or "Not fetched" while the repository does not hold it (Q-OCI-221), the links, the authors, the dependency kinds, NuGet's target frameworks and facts, Debian's control
-  fields, an Ansible collection's Ansible versions and tags, the required runtimes; then the repositories that hold the version,
-  each a link to its page, with its class and when it was published there); **Vulnerabilities** after Details for a version that
+  type, size and platforms, each platform with its size or "Not fetched" while the repository does not hold it (Q-OCI-221), the links, the authors, the dependency kinds, NuGet's target frameworks and facts, Debian's long
+  description, relations and control fields with the source package as a link to its binaries and the copyright file in a closed fold
+  ([formats/debian.md](formats/debian.md) R-DEB-038, R-DEB-039, [Q-UI-1270](#q-ui-1270--a-debian-packages-relations-are-the-dependency-block-one-line-per-group-its-alternatives-side-by-side),
+  [Q-UI-1272](#q-ui-1272--a-debian-packages-changelog-is-a-tab-its-copyright-a-fold-its-files-a-section-of-files)),
+  an Ansible collection's Ansible versions and tags, the required runtimes; then the repositories that hold the version,
+  each a link to its page, with its class and when it was published there); **Changelog** of a Debian version after Details, and its
+  installed files under the package files of **Files**; **Vulnerabilities** after Details for a version that
   is N/A; **Import log** of an Ansible collection in a local repository (R-UI-063)
   ([Q-UI-456](#q-ui-456--the-version-page-opens-on-its-vulnerabilities-when-it-is-graded)).
 - A version the reader may not read, or that does not exist, is the not-found notice.
@@ -26976,6 +26980,58 @@ measure of [formats/ansible.md](formats/ansible.md) R-ANS-048 to R-ANS-050, has 
 [ansible-doc-entry.ts](../../web/src/app/features/packages/ansible-doc-entry.ts) and its template. Tests: the cases of R-UI-061 in
 [ansible-doc-entry.spec.ts](../../web/src/app/features/packages/ansible-doc-entry.spec.ts); the render `ansible-doc-module` declares the
 table (`tables` in `screens.ts`), so a table that stands as blocks from 1,024 px on is a finding.
+
+### Q-UI-1270 · A Debian package's relations are the dependency block, one line per group, its alternatives side by side
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+W-30 (G8) asks that a Debian package's Depends read like an npm package's dependencies, in the blocks of the other formats, and that a
+later package unifies the blocks.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A heading per relation field and a plain list, one line per group: the names linked where the installation holds the package, the alternatives with "or" between them, the constraint after each name, muted (chosen) | The heading and the spacing of npm's dependency kinds | Reads as `apt show` and as packages.debian.org; a group of alternatives stays one line | Not the two columns of npm's list |
+| (b) npm's two columns (name, range) | One row per alternative | The same table | An alternative's row says nothing of the group it belongs to; "a or b" becomes two rows that read as "a and b" |
+| (c) The raw field as text | As before | Nothing to build | No links; a long field is one wrapped line |
+
+**Choice:** (a). The headings are the field names as `apt show` writes them (Depends, Pre-Depends, …); German takes the verbs of APT's
+German output (`GLOSSARY.md`). A field the server could not parse stands as text under its heading. The long description stands first
+in Details under "Description": its text paragraphs wrap, its verbatim lines keep their spacing (Debian Policy 5.6.13), as text. The
+links are the lookups the Ansible dependencies make, at most 60 per version. **Applied in the spec:** R-UI-111. Code:
+`debRelations`, `debLongDescription` of [version-metadata.ts](../../web/src/app/features/packages/version-metadata.ts), the Details tab
+of [package-version.html](../../web/src/app/features/packages/package-version.html).
+
+### Q-UI-1271 · The source package of a Debian version links to the package list of its binaries
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A link to the package list filtered by the keyword, which Debian answers with the source package; the filter's chip says "Source package" while the list shows Debian alone (chosen) | [formats/debian.md](formats/debian.md) Q-DEB-142 | One filter that exists; the list is the binaries of the source | The chip reads "Keyword" when the list shows several formats |
+| (b) A section "Other packages of this source" on the version page | A list of its own | No navigation | A second list of packages on a version's page |
+
+**Choice:** (a). **Applied in the spec:** R-UI-111. Code: the fact Source package of the Details tab, the chip of
+[package-list.ts](../../web/src/app/features/packages/package-list.ts).
+
+### Q-UI-1272 · A Debian package's changelog is a tab, its copyright a fold, its files a section of Files
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+CLAUDE.md's rule: the description, the homepage and the relations stand on the page; the changelog, the copyright and the file list are
+details on demand; one scrollbar per page.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A tab **Changelog** after Details; the copyright file a closed fold under Package details (its licence stands on the facts line); the installed files a section under the package files of **Files**: the first 100, a filter on the path, "Show more" by 500, an architecture choice when the version has several (chosen) | | Each is where a reader looks for it; none of it is on the first screen; the list grows the page | Three places |
+| (b) One tab "Contents" holding all three | | One place | A changelog and a list of 10,000 paths in one tab; the name is Ansible's tab of another meaning |
+| (c) Folds on Details for all three | | No new tab | Details becomes a long page of folds; a list of thousands in a fold |
+
+**Choice:** (a). The texts are shown as text in a box that wraps (`pre-wrap`), never as markup, and no address in them becomes a link
+(formats/debian.md Q-DEB-143). Until the reader has run, each place says that Quader reads the package file, and the page reads the
+contents again every 3 s (R-UI-213); a file Quader could not read says so, and why, in the screen's words for the reason, to whoever
+the server tells it (a reader of the configuration), with the server's sentence under Technical details (R-UI-214). **Applied in the
+spec:** R-UI-111. Code: [deb-contents.ts](../../web/src/app/features/packages/deb-contents.ts),
+[deb-files.html](../../web/src/app/features/packages/deb-files.html). Tests: the Debian cases of
+[package-version.spec.ts](../../web/src/app/features/packages/package-version.spec.ts); the renders `package-version-deb-docs`,
+`-changelog`, `-files`, `-many-files`, `-refused` and `-cached-files`.
 
 ## What this does not cover
 
