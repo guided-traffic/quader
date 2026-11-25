@@ -251,11 +251,19 @@ func (s *Store) CommitLinked(ctx context.Context, spec CommitSpec, d blob.Digest
 // commit's link function): the item row, the storage hook and the audit row of a commit, with no object write. It is the building
 // block of a fill that enters one fetched document under further paths (R-OCI-022). The caller guarantees that the blob is live and
 // referenced under the lock it holds; Origin and the rest of the spec are Commit's.
+//
+// spec.Spooled, when the caller passes the body it holds of the same digests (the fetched document), is what the storage hook reads:
+// the blob's copy rows may be written in this very transaction, which the object store's read on another connection cannot see, so a
+// hook that reads the content (the signatures' detector, signatures.md R-SIG-011) would find nothing. Without it, or
+// with a body of other digests, the digests alone stand for the content and a hook reads it from the object store.
 func (s *Store) LinkIn(ctx context.Context, tx meta.Tx, spec CommitSpec, d blob.Digests) (CommitResult, error) {
 	if spec.Path.Path == "" || spec.Path.Folder {
 		return CommitResult{}, errs.E(errs.Invalid, errs.CodeInvalidPath, "A file is committed at a path that names a file.")
 	}
-	spec.Spooled, spec.Companions = &Spooled{Digests: d}, nil
+	if spec.Spooled == nil || !spec.Spooled.Readable() || spec.Spooled.SHA256 != d.SHA256 || spec.Spooled.Size != d.Size {
+		spec.Spooled = &Spooled{Digests: d}
+	}
+	spec.Companions = nil
 	spec.UpstreamURL = withoutUserInfo(spec.UpstreamURL)
 	var out linkOutcome
 	if err := s.linkFile(ctx, tx, RepoOf(spec.Repo), spec, &out); err != nil {

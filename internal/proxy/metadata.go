@@ -639,9 +639,11 @@ func (f *fetcher) enterAliases(ctx context.Context, tx meta.Tx, qs *q.Queries, r
 		} else if len(held) > 0 {
 			continue
 		}
+		// The spool is the content the alias's storage hook reads (the signatures' detector, R-SIG-011): the blob it links may have been
+		// written in this transaction, which a read of the object store cannot see yet.
 		res, err := f.e.o.Items.LinkIn(ctx, tx, items.CommitSpec{
 			Repo: rem.Repo, Path: repository.Cleaned{Path: path}, MediaType: mediaType(resp.Header.Get("Content-Type")),
-			Origin: items.OriginFill, UpstreamURL: final, MayOverwrite: true,
+			Origin: items.OriginFill, UpstreamURL: final, MayOverwrite: true, Spooled: sp,
 			Actor: auditActor(rq.Caller), Source: rq.Caller.Source, Endpoint: rq.Caller.Endpoint,
 		}, sp.Digests)
 		if err != nil {
