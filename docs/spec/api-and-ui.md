@@ -20780,6 +20780,9 @@ in the dark scheme too.
 
 **Choice:** (a). **Applied in the spec:** R-UI-044. Code: [_dialog.scss](../../web/src/styles/_dialog.scss).
 
+**Revisited 2026-11-25** by [Q-UI-1212](#q-ui-1212--every-overlay-gives-its-links-the-pages-look-without-a-weight-of-its-own): the
+drawers stand in the overlay too, outside a dialog's body, and their links were the browser's again; the rule is now the overlay's.
+
 ### Q-UI-765 · A caller's page is titled with the caller's name, and its reference stands under it
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -26234,6 +26237,24 @@ the monospace face: Q-UI-128 took the reference's sans face, Inter with `cv05`, 
 [main.scss](../../web/src/styles/main.scss), [_tokens.scss](../../web/src/styles/_tokens.scss),
 [mono-rule.mjs](../../web/scripts/mono-rule.mjs). Test: `R-UI-046 a monospace face is the token's` of
 [lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs) (node, under a millisecond); every screen of the render set in both schemes.
+
+### Q-UI-1212 · Every overlay gives its links the page's look, without a weight of its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found on the
+pictures of the drawers: the links of the top bar's **Downloads** (a download's repository, **Show in queue**, **About downloads from
+upstreams**) stood in the browser's underlined blue and violet. A drawer is the CDK's dialog in the overlay container, outside
+`quader-root`, whose rules `.content a` and `.bare a` (`_shell.scss`) give a page's links their colour, and outside `.dialog-body`,
+whose rule of Q-UI-764 gave a dialog's links theirs. The filter drawers hold no link today; the next one would have met the same.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One mixin of the page's link (`page-link`, and `listed-link` for a table or a key-value list) for the screens, the frame without the shell and the overlay container (`:where(.cdk-overlay-container) :where(a:not(.btn, .tab-link))`), the overlay's rule without a weight of its own so a class that draws a link otherwise (a menu's item, a switcher's entry) keeps its look; the dialog's rule of Q-UI-764 goes (chosen) | Every overlay: a dialog, a drawer, a menu, a popover | One look of a link wherever it stands; nothing for the next drawer to remember | A plain link in a menu would take the link colour; every menu's link has its class |
+| (b) The rule for the drawer's panel (`.quader-drawer a`) beside the dialog's | Two rules | Small | A popover with a link (a mirror's state) stays the browser's; three places to keep in step |
+| (c) A class on every link of a drawer | Template work | Explicit | Forgotten on the next link |
+
+**Choice:** (a). **Applied in the spec:** R-UI-044, Q-UI-128 (links). Code: [_shell.scss](../../web/src/styles/_shell.scss) (`page-link`,
+`listed-link`, the overlay's rules), [_dialog.scss](../../web/src/styles/_dialog.scss). Test: [overlay-links.states.spec.ts](../../web/src/app/shared/overlay-links.states.spec.ts) (the states' browser, milliseconds). Seen on the pictures `topbar-downloads-panel-*`
+of the render set, both schemes, 1,440 and 390 px.
 
 ## What this does not cover
 
