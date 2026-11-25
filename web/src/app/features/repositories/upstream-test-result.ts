@@ -115,7 +115,7 @@ const ICONS = { ok: 'check_circle', info: 'info', warn: 'warning', error: 'error
       margin: 0;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-family: var(--quader-font-mono);
       font-size: 0.8125rem;
     }
     .actions {
