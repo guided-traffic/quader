@@ -224,17 +224,45 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
   brought to its end and landed after its gates, and every task that remains stands in
   [section 1](#1--find-the-next-phase), "State at the stop of 2026-11-23", with where its entry or its
   cut is. The rule stands until he says how the work goes on; the timer's text says the same. **It ended at
-  22:21 the same day** (owner, whole: "Bitte führe den Plan fort: docs/projektplan/promt.md. Bitte verwende
-  Subagents von typ Opus 5.5 high"): the run goes on from the list of section 1, with at most four builders,
+  22:21 the same day** (owner: "Bitte führe den Plan fort: docs/projektplan/promt.md. Bitte verwende
+  Subagents von typ … high", naming the model): the run goes on from the list of section 1, with at most four builders,
   each on the model he named at effort high.
 - **Wind down and write down the state** (owner, 2026-11-24, 12:25, whole: "wir müssen jetzt langsam fertig werden
   und den aktuellen Stand dokumentieren."). Read as the rule of 2026-11-23, 17:15: from that minute no builder, planner
   or research is started; the three builders running then were told to finish their brief without extensions (the
   audit of server sentences cut to the trend's sentence plus a list); what they deliver is landed after its gates; the
   state stands in [section 1](#1--find-the-next-phase), "State at the stop of 2026-11-24". The rule stands until he says
-  how the work goes on.
+  how the work goes on. **It ended on 2026-11-25 at 06:10** (owner: "Bitte setze die Arbeite aus dem
+  docs/projektplan/promt.md fort.", with the model and the efforts for planning and for building named; rule 1 keeps
+  the model's name out of this file):
+  the run goes on from section 1, "Run of 2026-11-25"; planners run at the effort xhigh and builders at the effort high,
+  each on the model he named.
 
 ## 1 · Find the next phase
+
+### Run of 2026-11-25
+
+Read this first. Resumed at 06:10 by the owner's word (section 0). The rule "quality before quantity" stands: the run works
+the open entries of [section 8](#8--open-findings) and [section 12](#12--to-test-and-to-refactor) down; no new format, no
+edit of FULL.md.
+
+**Read at the start (06:13):** `main` clean at fe66711f1; Test and Release green on ee8e41c2c (45480741707); the nightly
+green (45490907494); the newest release is v0.124.0, and 94a99ebca and ee8e41c2c wait for the next code push to be
+released. Two integration instances and the UI profile's stores run; the machine's load is 7.6.
+
+**What is open and can be built, cut into packages (06:25):**
+
+| Package | What it closes | State |
+|---|---|---|
+| S1 · A screen says a server's failure in its own language | the thirteen screens of section 8, Product ("Thirteen more screens show a server's English text as their own"), from the kept diff `.dev/server-sentences-full-scope.diff`, which no longer applies to `main` as it is | in work since 06:30 |
+| S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:30 |
+| M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847). Each is run once and its numbers are written down; a defect a number shows is repaired or entered | in work since 06:30 |
+| P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows (dialogs, error states, hover, open menus), what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | a planner since 06:30 |
+
+**What stays open and is not built by this run, each with its reason:** F-126, F-95, the `npm ci` binding and the
+unreachable github.com of `e2e (bastion)` wait for a recurrence (section 8); the stall without a neighbour is a standing
+entry; the eight lines "what only the owner can close" of [With the owner](#with-the-owner); what Q-UI-1060 leaves to
+the eye by decision (section 12 A); H-829 and H-1683 with their measured numbers (section 12 E); H-842 (an account).
 
 ### CI repair, night of 2026-11-24
 
@@ -431,7 +459,7 @@ starts from it and from his word how the work goes on, not from the order of the
   the branch `coverage` with its four files and the badge shows 82.1% (closed in section 8).
 - **The nightly sets:** `drain-roles` ran alone at 22:24 and closed its entry; `vuln-perf` ran at 03:53 and closed
   F-121; `upgrade-release` ran at 04:21 and failed before it upgraded; repaired at 05:40, and with `upgrade` green at 06:04; the two
-  changed nightly sets `npm-ha` and `nuget-ha` have not run since their change either.
+  changed nightly sets `npm-ha` and `nuget-ha` ran green in the nightly 45490907494 of 2026-11-24.
 - **What W4 did not do**: landed at 23:12 with the integration tests' environment and ports and the mirror's
   back-off bound (section 8, Closed); F-126 stays open with a new reading.
 - **Single open entries without a package**, each in section 8 with its "To do": the cancel through
@@ -11531,11 +11559,6 @@ the walk items and the run record); what the code holds beyond the plan has not 
 
 ### C · The walk (W-12 to W-24) and what landed on 2026-11-20
 
-- **`upgrade-release`** (upgrade and rollback from the published release) has not run on a cluster since it was changed: a
-  dispatch of the nightly that names `e2e-upgrade` shows it.
-  Read on 2026-11-23: its set last ran on 2026-11-19 at 03:22 UTC (dispatch 44451019461, green), before the
-  chart's certificates changed (af1a16ee3, 2026-11-20); every nightly since skipped it, so the dispatch
-  `gh workflow run "HA and Performance (nightly)" --ref main -f sets=upgrade-release` is still what shows it.
 - **Partly closed; open: a row of a remote's list that a mirror pass filled is not in the render set (W-24)**: no pass
   runs on the render stack, so such a row needs a mirror that stores from an upstream the seed reaches (the installation's
   own `image-source`, as `image-cache` does) and a pass that ends before the pictures; not built. Closed on 2026-11-24 by
@@ -11554,8 +11577,9 @@ the walk items and the run record); what the code holds beyond the plan has not 
 
 ### D · Open findings whose cause is not known (each needs a recurrence read, not a new test)
 
-- **Partly closed; open: F-126 (its recurrence) and V-7b, which is measured once by one dispatch in a pipeline
-  window with no push beside it (decision 3 of the reading of 2026-11-23).** Closed: F-124 and the stall of
+- **Partly closed; open: F-126 (its recurrence).** V-7b was measured by the dispatch 45315614490 of 2026-11-24 and
+  met its bound (F-121, section 8, Closed). As it stood: open were F-126 and V-7b, to be measured once by one dispatch in a pipeline
+  window with no push beside it (decision 3 of the reading of 2026-11-23). Closed: F-124 and the stall of
   the whole cluster in the set `push`, by the statement on the stall family ("Reading a stall" of
   `docs/developer/e2e.md`; the standing entry "A stall without a neighbour" of section 8); F-127, whose run
   43022311289 predates the recorder and kept no log of the operator, so what is left of it is the one question
@@ -11632,6 +11656,14 @@ the walk items and the run record); what the code holds beyond the plan has not 
 Nothing is open here since 2026-11-23; the entries are in the list Closed.
 
 ### Closed
+
+- **Closed on 2026-11-25 by its runs:** `e2e (upgrade-release)` was green in the dispatch 45327654491 of 2026-11-24
+  (with `upgrade`, after the repair of 05:40) and in the nightly 45490907494 of the same night, both on the changed set.
+  As it stood: **`upgrade-release`** (upgrade and rollback from the published release) has not run on a cluster since it was changed: a
+  dispatch of the nightly that names `e2e-upgrade` shows it.
+  Read on 2026-11-23: its set last ran on 2026-11-19 at 03:22 UTC (dispatch 44451019461, green), before the
+  chart's certificates changed (af1a16ee3, 2026-11-20); every nightly since skipped it, so the dispatch
+  `gh workflow run "HA and Performance (nightly)" --ref main -f sets=upgrade-release` is still what shows it.
 
 - **Closed on 2026-11-24, 12:51, by the trend's package:** the vulnerability trend's basis sentence came from the server
   (`basis`) and stayed English; the field left the API and the screen writes it with `$localize` ("Ein Befund zählt unter
