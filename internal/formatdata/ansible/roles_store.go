@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgtype"
-
 	"github.com/guided-traffic/quader/internal/backup/tables"
 	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 	"github.com/guided-traffic/quader/internal/jobs"
@@ -82,9 +80,10 @@ func (s roleStore) Role(ctx context.Context, tx meta.Tx, repoID, id int64) (rows
 		found = true
 		out = rows.Role{
 			ID: r.RoleID, Owner: r.Owner, Name: r.Name, Description: r.Description, GitHubUser: r.GithubUser, GitHubRepo: r.GithubRepo,
-			GitHubBranch: r.GithubBranch, Tags: stringList(r.Tags), Dependencies: stringList(r.Dependencies), Downloads: count(r.Downloads),
-			Commit: r.CommitSha, Imported: timeOf(r.ImportedAt), Packaged: r.Packaged,
-			Readme: rows.RoleReadme{State: r.ReadmeState, Reason: r.ReadmeReason, File: r.ReadmeFile, Commit: r.ReadmeCommit},
+			GitHubBranch: r.GithubBranch, Tags: stringList(r.Tags), Dependencies: stringList(r.Dependencies),
+			Downloads: count(r.Downloads.Int64, r.Downloads.Valid), Commit: r.CommitSha, Imported: timeOf(r.ImportedAt.Time, r.ImportedAt.Valid),
+			Packaged: r.Packaged,
+			Readme:   rows.RoleReadme{State: r.ReadmeState, Reason: r.ReadmeReason, File: r.ReadmeFile, Commit: r.ReadmeCommit},
 		}
 		return nil
 	})
@@ -133,9 +132,9 @@ func (s viewStore) ViewRoles(ctx context.Context, ids []int64, readme bool) ([]r
 		for _, r := range list {
 			out = append(out, rows.RoleView{VersionID: r.VersionID, Package: r.Package, Role: rows.Role{
 				ID: r.RoleID, Owner: r.Owner, Name: r.Name, Description: r.Description, GitHubUser: r.GithubUser, GitHubRepo: r.GithubRepo,
-				GitHubBranch: r.GithubBranch, Tags: stringList(r.Tags), Dependencies: stringList(r.Dependencies), Downloads: count(r.Downloads),
-				Imported: timeOf(r.ImportedAt),
-				Readme:   rows.RoleReadme{State: r.ReadmeState, Reason: r.ReadmeReason, File: r.ReadmeFile, HTML: r.ReadmeHtml},
+				GitHubBranch: r.GithubBranch, Tags: stringList(r.Tags), Dependencies: stringList(r.Dependencies),
+				Downloads: count(r.Downloads.Int64, r.Downloads.Valid), Imported: timeOf(r.ImportedAt.Time, r.ImportedAt.Valid),
+				Readme: rows.RoleReadme{State: r.ReadmeState, Reason: r.ReadmeReason, File: r.ReadmeFile, HTML: r.ReadmeHtml},
 			}})
 		}
 		return nil
@@ -149,16 +148,18 @@ func stringList(raw json.RawMessage) []string {
 	return out
 }
 
-func count(v pgtype.Int8) int64 {
-	if !v.Valid {
+// count is a nullable count, -1 for none.
+func count(n int64, valid bool) int64 {
+	if !valid {
 		return -1
 	}
-	return v.Int64
+	return n
 }
 
-func timeOf(t pgtype.Timestamptz) time.Time {
-	if !t.Valid {
+// timeOf is a nullable time, the zero time for none.
+func timeOf(t time.Time, valid bool) time.Time {
+	if !valid {
 		return time.Time{}
 	}
-	return t.Time.UTC()
+	return t.UTC()
 }

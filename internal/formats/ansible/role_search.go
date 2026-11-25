@@ -36,13 +36,15 @@ const (
 
 // roleSearchWords are the parameters of `v1/search/roles/` that ansible-galaxy sends (api.py, search_roles): the text, the tags, the
 // platforms and the author; anything else is dropped.
-var roleSearchWords = []string{"autocomplete", "tags_autocomplete", "platforms_autocomplete", "username_autocomplete"}
+func roleSearchWords() []string {
+	return []string{"autocomplete", "tags_autocomplete", "platforms_autocomplete", "username_autocomplete"}
+}
 
 // roleSearchParams reads the client's query: the words that pass, each at most maxRoleSearchText characters of printable text, and the
 // page and its size as numbers in their bounds. A value outside them is 400 in the v1 shape.
 func roleSearchParams(q url.Values) (url.Values, error) {
 	out := url.Values{}
-	for _, k := range roleSearchWords {
+	for _, k := range roleSearchWords() {
 		v := strings.TrimSpace(q.Get(k))
 		if v == "" {
 			continue
