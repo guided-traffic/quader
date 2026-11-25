@@ -98,6 +98,11 @@ func TestR_OPS_048_TheRowsOfTheScannerReplicas(t *testing.T) {
 		if !record("clamav", b, clamav) {
 			t.Fatal("the second row was refused")
 		}
+		// Q-HA-496: a row's key is its process's UID, so two processes that carry one name (the containers of one pod, which the chart
+		// names after the pod) stand side by side and neither replaces the other.
+		if rows := list(); rows[a].Name != clamav.Name || rows[b].Name != clamav.Name || rows[a].Lost || rows[b].Lost {
+			t.Fatalf("two processes of one name: %+v %+v", rows[a], rows[b])
+		}
 		if record("clamav", c, clamav) {
 			t.Fatal("a third row beyond MaxRows was admitted")
 		}

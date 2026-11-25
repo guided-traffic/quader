@@ -12545,8 +12545,9 @@ Decision, the owner's sentence applied:
 What keeps its purpose's name: the role `scanner` and its area; the jobs, queues and tasks; the configuration keys
 `vulnerabilities.images.scanner.*` and `malware.scanner.*`; the repositories `upstream/scanner-trivy` and `upstream/scanner-clamav`; the
 metric names; the error codes `scanner_busy`, `scanner_draining`, `scanner_unavailable` and `scanner_lost`, which answer for whichever
-scanner is called; the subjects of the worker's own tasks (`system:image-database`, `system:malware-database`, `system:malware-scan`); and
-the table `malware_scanners`, what the worker saw of the scanners it calls.
+scanner is called; and the subjects of the worker's own tasks (`system:image-database`, `system:malware-database`, `system:malware-scan`).
+The table `malware_scanners`, what the worker saw of the scanners it calls, kept its purpose's name until it went
+([malware-scanning.md](malware-scanning.md) Q-MAL-110).
 
 Consequences: dashboards, alert rules and log queries of an installation that select `listener="scanner"` or `listener="malware-scanner"`,
 `quader_health_check_passing{name="scanner"}` or `{name="malware_scanner"}`, the field `component` `scanner`, `malware-scanner` or
@@ -13330,6 +13331,61 @@ ask.
 
 **Applied in the spec:** R-HA-073, R-HA-031's values. Code: [values.yaml](../../deploy/helm/quader/values.yaml),
 [values.schema.json](../../deploy/helm/quader/values.schema.json).
+
+### Q-HA-495 · A stopping scanner tries its sign-off again for ten seconds; a replica that vanished without a word stays lost by the registry's rule
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: on the owner's UI profile every restart left the scanner rows of before on the System page, ready for 30 s and then **Lost**,
+and kept them (2026-11-25: `freshclam` 2, `trivy` 4, `clamav` 3 rows after a few restarts). Read in the code: a row ends at the
+scanner's sign-off (`DELETE`, R-OPS-048), is left out of the list once it went stale while `draining` and deleted by
+`replica-registry-prune` at its next run (Q-OPS-210), and a row that went stale in any other state is listed as lost and deleted 24 h after
+its last report. The profile stopped quader first and its scanners after it, so every draining report and every sign-off met a closed scan
+listener, and it removed the malware scanner's container without a stop, so that one sent nothing: each restart made rows that ended in
+order look like replicas that vanished. In the product the same happens to a scanner pod whose sign-off finds no `packages` replica to
+take it: an upgrade rolls `packages` and the scanners at once, and the sign-off was one request, on a connection that may be the one to a
+`packages` pod closing its listener. What the owner asked: the replicas that exist; one that went away in order gone at once, one that
+vanished without a word lost for a bounded time and then removed, and the counts count the living.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The sign-off is tried again while the scan listener cannot take it (no connection, `5xx`, `429`, `408`), the pause doubling from 250 ms to 2 s, for at most 10 s and within the close phase; a lost row keeps the registry's 24 h (chosen) | `scanreport.Reporter.Stop` | A stop in order reaches a `packages` replica that is up, whichever one the Service picks next; the registry's rule stays one rule for both tables; a pod that never reaches one ends 10 s later than before, inside its grace period | A scanner that ends in order while no `packages` replica is reachable for those 10 s is listed as lost for 24 h (H-1995) |
+| (b) A new row of a kind and a name replaces the older rows of both | A container restarted in its pod takes its predecessor's place | No second row of one pod | A crash inside a pod (an out-of-memory kill) shows as nothing at all, against the owner's "lost for a bounded time"; two reporting processes of one name would take each other's row in turn |
+| (c) A shorter bound for a lost row (an hour) | The prune and the list | A vanished replica leaves sooner | The administrator who looks the next morning no longer sees that a replica vanished in the night; the registry of R-OPS-003 keeps its 24 h, so the System page would hold two rules |
+| (d) The list hides a lost row of a kind whose live rows meet its configured count | | No lost row while the kind is whole | The list would need the Deployment's replica count, which no replica knows |
+
+**Choice:** (a), and the profile stops its scanners before quader and the malware scanner's container with `TERM`, as the kubelet does
+(`deploy/ui-dev/serve.sh`, `malware.sh`). **Rationale:** the cause in both places was a sign-off that did not arrive, not the rule of the
+list; the rule is the registry's, which the owner's walk of W-13 settled (Q-OPS-210). What an installation shows now during a rolling update
+of `malware-scanner-clamav` with two replicas (`maxSurge: 1`, `maxUnavailable: 0`, `minReadySeconds: 10`): minute 0, the new pod's row
+appears **Starting** (`database`) beside the two ready ones, three rows, "2 of 3 ready"; when it is ready, about 30 to 50 s later with its
+signature database, and 10 s after that, the first old pod gets `SIGTERM`, reports `draining` and signs off, and its row is gone at once:
+two rows; the second pair follows the same way, about a minute later. The rows never number four, and none is **Lost**. A pod killed
+without its sign-off (the node lost, a kill past the grace period) shows ready until its report is 30 s old
+(`system.heartbeat_stale_after`), then **Lost**, counted in no number, until the prune deletes it 24 h after its last report.
+
+**Applied in the spec:** [operations-and-observability.md](operations-and-observability.md) R-OPS-048 ("Gone the way a replica goes"), H-1995
+there. Code: [reporter.go](../../internal/scanreport/reporter.go) `Stop`, `signOff`; test `TestR_OPS_048_TheSignOffIsTriedAgainWithinItsBound`
+in [scanreport_test.go](../../internal/scanreport/scanreport_test.go); the profile's [serve.sh](../../deploy/ui-dev/serve.sh)
+`stop_scanners` and [malware.sh](../../deploy/ui-dev/malware.sh) `down`.
+
+### Q-HA-496 · Two processes of one name stand side by side: the row's key is the process's UID, and the profile names its image scanner after the unit
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the profile's image scanner showed on the System page as `<host>-<pid>` (R-OPS-003's name outside Kubernetes), not as the
+unit: in the chart both containers of a `vuln-scanner-trivy` pod get the pod's name by `QUADER_POD_NAME`, and the profile ran its two
+processes without it. Whether two processes may carry one name: a row of `scanner_replica` is keyed by `instance_uid`, random per
+process (R-OPS-048), and nothing reads the name as a key; only the scanner of the pod reports, its database's loader does not
+(`startScannerReport`, Q-OPS-225), so a pod has one row.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The profile sets `QUADER_POD_NAME=<project>-vuln-scanner-trivy` for both processes, as the chart does (chosen) | `deploy/ui-dev/serve.sh` | The System page names the unit as the malware scanner's and the updater's rows already do; nothing of the product changes | — |
+| (b) A name for each process (`…-scanner`, `…-loader`) | | Two names in the logs | The chart's two containers share the pod's name; the profile would show what no installation shows |
+
+**Choice:** (a). The integration test of the rows holds that two reports of one kind and one name with two UIDs make two rows
+(`TestR_OPS_048_TheRowsOfTheScannerReplicas`). **Applied in the spec:** R-OPS-048 ("The report").
 
 ### H-37 · A database restore revives revoked credentials and removed grants
 

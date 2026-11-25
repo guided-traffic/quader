@@ -350,7 +350,12 @@ or its reason changes, and refuses a new UID beyond `MaxRows` live rows of the k
 `ListScannerReplicas` lists by the rule of `ListReplicas` (lost, signed off), and `replica-registry-prune` runs `PruneScannerReplicas` with
 the same two ages ([builtin.go](../../internal/jobs/builtin.go)). The sending side is [internal/scanreport](../../internal/scanreport/reporter.go)
 and [wire_scanner_report.go](../../internal/app/wire_scanner_report.go); the route is [scanlisten/replicas.go](../../internal/api/scanlisten/replicas.go).
-Tests: `TestR_OPS_048_TheRowsOfTheScannerReplicas` against PostgreSQL ([scanner_replicas_test.go](../../test/integration/coordination/scanner_replicas_test.go)).
+`Reporter.Stop` tries the sign-off again while the scan listener cannot take it (no connection, `5xx`, `429`, `408`), the pause doubling
+from 250 ms to 2 s, for `SignOffWindow` (10 s) within the close phase (Q-HA-495): an upgrade rolls `packages` and the scanners at once, and
+a sign-off that does not arrive leaves the row of a replica that ended in order listed as lost for a day (H-1995). The key of a row is the
+process's UID, so two processes of one name (the two containers of a `vuln-scanner-trivy` pod) never share a row (Q-HA-496).
+Tests: `TestR_OPS_048_TheRowsOfTheScannerReplicas` against PostgreSQL ([scanner_replicas_test.go](../../test/integration/coordination/scanner_replicas_test.go)),
+`TestR_OPS_048_TheSignOffIsTriedAgainWithinItsBound` with a clock of its own ([scanreport_test.go](../../internal/scanreport/scanreport_test.go)).
 
 ## Bounds P-13 and P-14
 

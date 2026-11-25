@@ -149,7 +149,8 @@ through the dev server works only against a Quader whose base URL is `https://lo
   [Q-ARCH-1065](../spec/architecture.md#q-arch-1065--the-ui-development-profile-runs-the-malware-scanner-as-the-charts-pod-on-docker)). The role
   `all` builds no scanner ([Q-ARCH-563](../spec/architecture.md#q-arch-563--the-role-all-builds-no-image-scanner)); `serve.sh` starts
   `vuln-scanner-trivy` beside it as two processes of the role `scanner`, the kinds `trivy` and `trivy-db`, the chart's two containers of
-  the pod, and `config.sh` points Quader at it and opens its scan listener. The analyser is the pinned Trivy of `TRIVY_IMAGE`, whose
+  the pod, both named `<project>-vuln-scanner-trivy` as the chart names both after the pod (only the scanner reports itself; Q-HA-496), and
+  `config.sh` points Quader at it and opens its scan listener. The analyser is the pinned Trivy of `TRIVY_IMAGE`, whose
   binary is built for Linux only: `vulnerabilities.images.binary` is a wrapper that runs each call in a container of that image with no
   network and the scanner's directory mounted at the same path, the database read-only. The database comes as in an installation,
   through `upstream/scanner-trivy` from `mirror.gcr.io` (143 MB, 1.7 GB unpacked in `.dev/ui-dev/scanners/trivy-db`); `serve.sh` starts
@@ -230,6 +231,12 @@ flowchart LR
 | The volumes `<project>-clamd-run`, `-clamd-db`, `-clamd-tmp` | The socket's directory, the database directory (read-only for `clamd`) and `clamd`'s temporary directory; made new at every start, handed to 65532 first, mounted `nocopy` | Docker's VM |
 | `malware-updater-freshclam` | The role `scanner` of the kind `freshclam`, a process on the host, the replica `<project>-malware-updater-freshclam`; its directory holds a copy of the machine's signature cache | `.dev/ui-dev/scanners/freshclam.yaml`, `freshclam-db/`, the pair `freshclam.crt`; log `freshclam.log` |
 | The signature cache | `freshclam` of `CLAMAV_IMAGE` with [freshclam.conf](../../deploy/ui-dev/freshclam.conf), the chart's (`TestR_HA_069_TheUIProfileRunsTheChartsFreshclamConf`): one run at most every 24 hours per machine, under a lock, for every instance and checkout; freshclam's state (`freshclam.dat`, its cool-down) stays in it; `PURGE=1` never removes it | `<main checkout>/.dev/clamav-signatures/` (the stamp `.quader-ui-dev-run`, the log `freshclam.log`) |
+
+**Stopping.** `serve.sh` ends the scanner units first and quader after them, the malware scanner's container with `TERM` (`malware.sh
+down`), as the kubelet stops a pod while `packages` serves: each signs off while the scan listener runs, and its row leaves the System
+page at once. Stopped the other way round, every restart left the rows of before listed as lost for a day (seen 2026-11-25,
+[Q-HA-495](../spec/ha-and-helm.md#q-ha-495--a-stopping-scanner-tries-its-sign-off-again-for-ten-seconds-a-replica-that-vanished-without-a-word-stays-lost-by-the-registrys-rule)).
+A process killed with `SIGKILL`, or a terminal closed under it, still leaves its row lost, as a pod killed past its grace period does.
 
 The variables: `UI_SCANNERS=0` runs no scanner at all (the render runs' default), `UI_MALWARE=0` leaves out the malware scanner alone.
 Quader's side of the links is `config.sh`'s `malware` section: the scanner's and the updater's addresses and names, and the names the scan

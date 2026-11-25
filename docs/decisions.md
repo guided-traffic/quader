@@ -10578,10 +10578,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-HA
 
-262 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
+264 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
 
 <details>
-<summary>Q-HA: 262 questions</summary>
+<summary>Q-HA: 264 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10847,6 +10847,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-HA-492](spec/ha-and-helm.md#q-ha-492--the-fill-of-the-versions-sort-keys-records-its-completion-after-a-pass-that-leaves-no-row-without-a-key) | The fill of the versions' sort keys records its completion after a pass that leaves no row without a key | Decided by the development agent on 2026-11-24 | (a) The fill starts at once and records its completion only after a pass that leaves no row without a key | [ADR-278](#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) |
 | [Q-HA-493](spec/ha-and-helm.md#q-ha-493--the-accounts-of-the-upstream-registries-are-one-projected-volume-with-optional-sources-in-the-pods-of-api-packages-and-worker) | The accounts of the upstream registries are one projected volume with optional sources in the pods of api, packages and worker | Decided by the development agent | (a) One projected volume, one optional source per entry, in every pod of `api`, `packages` and `worker` | — |
 | [Q-HA-494](spec/ha-and-helm.md#q-ha-494--secretsupstreamaccounts-is-a-map-by-the-registrys-key-and-authmode-defaults-to-basic) | `secrets.upstreamAccounts` is a map by the registry's key, and `authMode` defaults to basic | Decided by the development agent | (a) A map by the registry's key; `authMode` `basic` by default; `usernameKey` `username`, `passwordKey` `password` | — |
+| [Q-HA-495](spec/ha-and-helm.md#q-ha-495--a-stopping-scanner-tries-its-sign-off-again-for-ten-seconds-a-replica-that-vanished-without-a-word-stays-lost-by-the-registrys-rule) | A stopping scanner tries its sign-off again for ten seconds; a replica that vanished without a word stays lost by the registry's rule | Decided by the development agent | (a), and the profile stops its scanners before quader and the malware scanner's container with `TERM`, as the kubelet does (`deploy/ui-dev/serve.sh`, `malware.sh`). | — |
+| [Q-HA-496](spec/ha-and-helm.md#q-ha-496--two-processes-of-one-name-stand-side-by-side-the-rows-key-is-the-processs-uid-and-the-profile-names-its-image-scanner-after-the-unit) | Two processes of one name stand side by side: the row's key is the process's UID, and the profile names its image scanner after the unit | Decided by the development agent | (a) The profile sets `QUADER_POD_NAME=<project>-vuln-scanner-trivy` for both processes, as the chart does | — |
 
 </details>
 

@@ -658,7 +658,10 @@ already reaches with the certificate of its kind ([ha-and-helm.md](ha-and-helm.m
   R-MAL-032), its slots in use and in all (none for the updater), and for ClamAV the signature database `clamd` scans with, for the updater
   the set its directory holds and the build time of its newest daily (the member `databaseBuiltAt`, kept in the column `db_built_at`,
   [Q-OPS-226](#q-ops-226--the-updaters-report-carries-its-dailys-build-time-in-a-column-of-its-own-and-no-slots)). At `SIGTERM` it reports `draining` at once; at its clean shutdown it signs off with
-  `DELETE` on the same path.
+  `DELETE` on the same path, tried again while the scan listener cannot take it (no connection, `5xx`, `429`, `408`) for at most 10 s
+  within its close phase ([ha-and-helm.md](ha-and-helm.md) Q-HA-495). Two processes may carry one name (both containers of a
+  `vuln-scanner-trivy` pod carry the pod's): a row's key is the UID, so they never share a row, and only the scanner of a pod reports
+  (Q-HA-496).
 - **The kind is the certificate's.** The route takes no token and admits a request whose verified client certificate lists the name of a
   kind exactly: `vulnerabilities.images.registry.client_name` is the kind `trivy`, `malware.scan_listener.client_name` the kind `clamav`,
   `malware.scan_listener.updater_client_name` the kind `freshclam` (the chart sets them, [ha-and-helm.md](ha-and-helm.md) R-HA-066, R-HA-068,
@@ -675,7 +678,11 @@ already reaches with the certificate of its kind ([ha-and-helm.md](ha-and-helm.m
   new UID beyond them is refused `409`, and so is a report whose UID is a row of the other kind. The route writes no other table.
 - **Gone the way a replica goes.** The list reads the rows by the rule of R-OPS-003 (Q-OPS-210): a row whose report is older than
   `system.heartbeat_stale_after` is `lost`, unless it went stale while `draining`, and then it is not listed; `replica-registry-prune`
-  deletes them by the same rule.
+  deletes them by the same rule. A replica that ended in order is gone at its sign-off; one that vanished without a word is listed as
+  ready until its report is stale, then as lost, in no count, until the prune deletes it 24 h after its last report. A rolling update of a
+  scanner Deployment (`maxSurge: 1`, `maxUnavailable: 0`) shows the new pod's row beside the old ones and each old row leaving at its
+  sign-off, never one row per pod of both generations and none lost (Q-HA-495, minute by minute there); a sign-off that finds no
+  `packages` replica within its bound leaves the row lost (H-1995).
 - **The table** `scanner_replica` (migration 00090, export class `transient`) is apart from `replica`: the key rings, the support bundle,
   the fetch shares and the rate-limit shares count no scanner.
 
@@ -7169,6 +7176,16 @@ the rule test "a node rotation's switchovers" in [rules_test.yaml](../../deploy/
 table of [ha-and-helm.md](ha-and-helm.md) R-HA-045 and its control-pool saturation scenario (R-HA-052), the operator manual.
 
 ## What this does not cover
+
+### H-1995 · A scanner that ends in order while no scan listener can take its sign-off is listed as lost for a day
+
+Component: the sign-off of a scanner replica ([reporter.go](../../internal/scanreport/reporter.go) `Stop`, R-OPS-048, Q-HA-495). Subject:
+the administrator who reads the System page, **Settings › Malware scanning** or **Advisory sources**. Live when every `packages` replica is
+unreachable for the 10 s a stopping scanner tries its sign-off: `packages` scaled to zero, or its Service without a ready endpoint while
+the scanners roll. The row stays in its last state; it is left out of the list only when its `draining` report arrived, and otherwise it is
+listed as **Lost** for 24 h though the pod ended in order. It counts in no number and decides nothing; the cost is a warning in the
+System page's header (Q-UI-602) for that day. What would close it: a sign-off that outlives the pod (the next replica of the kind naming
+the rows it replaced), which needs an identity across pods that the scanners do not have.
 
 ### H-53 · Span export bypasses the egress address policy
 

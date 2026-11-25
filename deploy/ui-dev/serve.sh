@@ -45,13 +45,30 @@ idp_pid=$!
 # logging to its own file, and the task that fetches the database once quader is ready; they end with this script. UI_SCANNERS=0 runs
 # none of them.
 pids=("$idp_pid")
-trap 'kill "${pids[@]}" 2>/dev/null || true; deploy/ui-dev/scanners.sh down; deploy/ui-dev/malware.sh down' EXIT
+# The scanner units' processes, which stop_scanners ends before quader (below).
+scanner_pids=()
+# stop_scanners ends the scanner units while quader's scan listener still runs, as the kubelet stops a pod while packages serves: each
+# signs off and its row leaves the System page at once (Q-HA-495). Stopped after quader, every sign-off and draining report met a closed
+# listener, and every restart left the rows of before listed as lost (seen 2026-11-25). The malware scanner's container gets TERM from
+# malware.sh down.
+stop_scanners() {
+  if [ "${#scanner_pids[@]}" -gt 0 ]; then
+    kill -TERM "${scanner_pids[@]}" 2>/dev/null || true
+    wait "${scanner_pids[@]}" 2>/dev/null || true
+  fi
+  deploy/ui-dev/malware.sh down
+}
+trap 'stop_scanners; kill "${pids[@]}" 2>/dev/null || true; deploy/ui-dev/scanners.sh down' EXIT
 if [ "${UI_SCANNERS:-1}" != 0 ]; then
   deploy/ui-dev/scanners.sh prepare
-  "$bin" serve --role scanner --config "$state/scanners/trivy.yaml" > "$state/scanners/trivy.log" 2>&1 &
-  pids+=("$!")
-  "$bin" serve --role scanner --config "$state/scanners/trivy-db.yaml" > "$state/scanners/trivy-db.log" 2>&1 &
-  pids+=("$!")
+  # QUADER_POD_NAME names both processes after the unit, as the chart gives both containers of the pod the pod's name; only the
+  # scanner reports itself, and a row's key is its process's UID, so two processes of one name never share a row (Q-HA-496).
+  QUADER_POD_NAME="$UI_PROJECT-vuln-scanner-trivy" "$bin" serve --role scanner --config "$state/scanners/trivy.yaml" \
+    > "$state/scanners/trivy.log" 2>&1 &
+  scanner_pids+=("$!")
+  QUADER_POD_NAME="$UI_PROJECT-vuln-scanner-trivy" "$bin" serve --role scanner --config "$state/scanners/trivy-db.yaml" \
+    > "$state/scanners/trivy-db.log" 2>&1 &
+  scanner_pids+=("$!")
   deploy/ui-dev/scanners.sh database &
   pids+=("$!")
   echo "scanners: vuln-scanner-trivy on https://127.0.0.1:$UI_TRIVY_PORT with its loader (logs: $state/scanners/trivy.log, trivy-db.log)"
@@ -70,7 +87,7 @@ if [ "${UI_SCANNERS:-1}" != 0 ] && [ "${UI_MALWARE:-1}" != 0 ]; then
   (deploy/ui-dev/malware.sh signatures &&
     QUADER_POD_NAME="$UI_PROJECT-malware-updater-freshclam" exec "$bin" serve --role scanner --config "$state/scanners/freshclam.yaml") \
     > "$state/scanners/freshclam.log" 2>&1 &
-  pids+=("$!")
+  scanner_pids+=("$!")
   echo "malware: malware-scanner-clamav on https://127.0.0.1:$UI_CLAMAV_PORT (containers $UI_PROJECT-malware-scanner-clamav-quader and -clamd)," \
     "malware-updater-freshclam on https://127.0.0.1:$UI_FRESHCLAM_PORT (logs: $state/scanners/clamav-quader.log, clamav-clamd.log, freshclam.log)"
 fi
@@ -86,6 +103,10 @@ EOF
 # quader, and the provider ends with it.
 "$bin" serve --role all --config "$state/quader.yaml" &
 quader_pid=$!
-stop() { kill -TERM "$quader_pid" 2>/dev/null || true; wait "$quader_pid" 2>/dev/null || true; }
+stop() {
+  stop_scanners
+  kill -TERM "$quader_pid" 2>/dev/null || true
+  wait "$quader_pid" 2>/dev/null || true
+}
 trap stop INT TERM
 wait "$quader_pid"

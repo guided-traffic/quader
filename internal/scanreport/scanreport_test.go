@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -203,4 +205,88 @@ func waitSeen(t *testing.T, mu *sync.Mutex, seen *[]string, n int) {
 		time.Sleep(10 * time.Millisecond)
 	}
 	t.Fatalf("fewer than %d requests", n)
+}
+
+// fakeClock is the sign-off's clock in a test: a pause passes at once and moves the time on by its length.
+type fakeClock struct {
+	mu     sync.Mutex
+	at     time.Time
+	pauses []time.Duration
+}
+
+func (c *fakeClock) now() time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.at
+}
+
+func (c *fakeClock) after(d time.Duration) <-chan time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.at = c.at.Add(d)
+	c.pauses = append(c.pauses, d)
+	ch := make(chan time.Time, 1)
+	ch <- c.at
+	return ch
+}
+
+// R-OPS-048, Q-HA-495: a replica that ends in order is gone at once even when the scan listener is between two replicas of its own: the
+// sign-off is tried again while the listener cannot take it (5xx), with a pause that doubles up to its cap, until it is taken; a refusal
+// that another try cannot change (4xx) ends the tries at once; a listener that never takes it is tried for SignOffFor and no longer, and
+// the failure is logged once (H-1995). The clock is the test's: no test waits for a pause.
+func TestR_OPS_048_TheSignOffIsTriedAgainWithinItsBound(t *testing.T) {
+	cases := []struct {
+		name    string
+		answers []int // the answers to the DELETEs in turn; the last one repeats
+		tries   int
+		pauses  []time.Duration
+		warned  bool
+	}{
+		{"taken after the listener came back", []int{503, 502, 204}, 3, []time.Duration{250 * time.Millisecond, 500 * time.Millisecond}, false},
+		{"a row the listener does not hold is gone", []int{404}, 1, nil, false},
+		{"a refusal ends the tries", []int{401}, 1, nil, true},
+		{"never taken: tried for its bound", []int{503}, 8, []time.Duration{
+			250 * time.Millisecond, 500 * time.Millisecond, time.Second, 2 * time.Second, 2 * time.Second, 2 * time.Second, 2 * time.Second,
+		}, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var mu sync.Mutex
+			deletes := 0
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodDelete {
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+				mu.Lock()
+				code := tc.answers[min(deletes, len(tc.answers)-1)]
+				deletes++
+				mu.Unlock()
+				w.WriteHeader(code)
+			}))
+			defer srv.Close()
+			clock := &fakeClock{at: time.Date(2026, 11, 25, 12, 0, 0, 0, time.UTC)}
+			logs := &strings.Builder{}
+			r := NewReporter(Options{
+				URL: srv.URL, HTTP: srv.Client(), Interval: time.Hour, SignOffFor: SignOffWindow,
+				Identity: Identity{UID: "8a0b5f8e-3c1d-4f2a-9b7e-1c2d3e4f5a6b", Name: "pod-1", Version: "0.42.0", Revision: "abc"},
+				Status:   func(context.Context) Status { return Status{State: StateReady, Total: 1} },
+				Log:      slog.New(slog.NewTextHandler(logs, nil)),
+				after:    clock.after, now: clock.now,
+			})
+			r.Stop(context.Background())
+			mu.Lock()
+			defer mu.Unlock()
+			if deletes != tc.tries || !slices.Equal(clock.pauses, tc.pauses) {
+				t.Fatalf("%d sign-offs with the pauses %v, want %d with %v", deletes, clock.pauses, tc.tries, tc.pauses)
+			}
+			want := 0
+			if tc.warned {
+				want = 1
+			}
+			if warned := strings.Count(logs.String(), "sign-off did not reach"); warned != want {
+				t.Fatalf("logged %d times:\n%s", warned, logs.String())
+			}
+		})
+	}
 }

@@ -42,8 +42,24 @@ type Options struct {
 	Interval time.Duration
 	// Timeout bounds one request; zero is five seconds.
 	Timeout time.Duration
-	Log     *slog.Logger
+	// SignOffFor bounds the tries of the sign-off at Stop; zero is SignOffWindow. Stop's context ends them earlier.
+	SignOffFor time.Duration
+	Log        *slog.Logger
+
+	// after waits between two tries of the sign-off; nil is time.After. A test hands in its own clock.
+	after func(time.Duration) <-chan time.Time
+	// now reads the clock the sign-off's bound is counted on; nil is time.Now.
+	now func() time.Time
 }
+
+// SignOffWindow is how long a stopping scanner keeps trying to sign off (Q-HA-495): the scan listener of packages may be between two
+// replicas of its own (an upgrade rolls packages and the scanners at once), and a sign-off that does not arrive leaves the row of a
+// replica that ended in order listed as lost. The pause between two tries doubles from signOffPause up to signOffPauseMax.
+const (
+	SignOffWindow   = 10 * time.Second
+	signOffPause    = 250 * time.Millisecond
+	signOffPauseMax = 2 * time.Second
+)
 
 // Reporter sends a scanner's reports (R-OPS-048).
 type Reporter struct {
@@ -68,6 +84,15 @@ func NewReporter(o Options) *Reporter {
 	}
 	if o.Log == nil {
 		o.Log = slog.New(slog.DiscardHandler)
+	}
+	if o.SignOffFor <= 0 {
+		o.SignOffFor = SignOffWindow
+	}
+	if o.after == nil {
+		o.after = time.After
+	}
+	if o.now == nil {
+		o.now = time.Now
 	}
 	return &Reporter{o: o}
 }
@@ -104,8 +129,10 @@ func (r *Reporter) Drain() {
 	}()
 }
 
-// Stop waits for the report of Drain, ends the loop and signs off: the row is deleted. A sign-off that does not reach the scan
-// listener leaves the row draining, and the list stops showing it once its heartbeat is stale (Q-OPS-210).
+// Stop waits for the report of Drain, ends the loop and signs off: the row is deleted. The sign-off is tried again while the scan
+// listener cannot be reached or answers 5xx or 429, for SignOffFor and within ctx (Q-HA-495); a sign-off that never arrives leaves the
+// row in its last state: draining, which the list stops showing once its heartbeat is stale (Q-OPS-210), or the state before when the
+// draining report did not arrive either, which is listed as lost (H-1995).
 func (r *Reporter) Stop(ctx context.Context) {
 	sent := make(chan struct{})
 	go func() {
@@ -123,15 +150,39 @@ func (r *Reporter) Stop(ctx context.Context) {
 		case <-ctx.Done():
 		}
 	}
-	res, err := r.do(ctx, http.MethodDelete, nil)
-	if err == nil {
-		_ = res.Body.Close()
-		if res.StatusCode == http.StatusNoContent || res.StatusCode == http.StatusNotFound {
-			return
-		}
-		err = fmt.Errorf("the scan listener answered %d", res.StatusCode)
+	if err := r.signOff(ctx); err != nil {
+		r.o.Log.WarnContext(ctx, "the scanner's sign-off did not reach the scan listener; its row is listed until its heartbeat is stale", "error", err)
 	}
-	r.o.Log.WarnContext(ctx, "the scanner's sign-off did not reach the scan listener; its row is listed until its heartbeat is stale", "error", err)
+}
+
+// signOff sends the DELETE until the scan listener takes it (204, or 404 for a row it does not hold), refuses it for good (any other
+// 4xx: another try would be refused alike), or the bound or ctx ends the tries; it returns the last failure.
+func (r *Reporter) signOff(ctx context.Context) error {
+	until := r.o.now().Add(r.o.SignOffFor)
+	pause := signOffPause
+	for {
+		res, err := r.do(ctx, http.MethodDelete, nil)
+		if err == nil {
+			_ = res.Body.Close()
+			switch code := res.StatusCode; {
+			case code == http.StatusNoContent || code == http.StatusNotFound:
+				return nil
+			case code < 500 && code != http.StatusTooManyRequests && code != http.StatusRequestTimeout:
+				return fmt.Errorf("the scan listener answered %d", code)
+			default:
+				err = fmt.Errorf("the scan listener answered %d", code)
+			}
+		}
+		if ctx.Err() != nil || !r.o.now().Add(pause).Before(until) {
+			return err
+		}
+		select {
+		case <-ctx.Done():
+			return err
+		case <-r.o.after(pause):
+		}
+		pause = min(2*pause, signOffPauseMax)
+	}
 }
 
 // Send sends one report now.
