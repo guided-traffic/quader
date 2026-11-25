@@ -2732,6 +2732,28 @@ gives was the mode's alone (`formats.ModeReason`).
 **Consequences.** A format with a view adapter takes ranges with no code of its own; a format without one refuses a range
 (`not_applicable`). Kit check 23 holds every format with the class remote to a range case. The decision of a version under a range costs
 one canonical read and at most two comparisons; a package without a range pays one nil check.
+### ADR-284 · A view adapter names what it read from a file's content, and only the version's page asks for what a list cannot carry
+
+**Status:** Decided by the development agent on 2026-11-25 — owner review at the walkthrough
+([Q-OCI-273](spec/formats/oci.md#q-oci-273--an-images-configuration-and-labels-go-to-a-caller-who-may-read-its-config-blob)). It adds to the
+frozen format contract without a change of meaning: `ContractVersion` stays 13.
+
+**Context.** An image's version page is to show its configuration, layers and history (formats/oci.md R-OCI-040). The configuration is
+the content of the config blob, which can hold what a builder baked into an image, and the protocol serves that blob on its own path's
+decision, which the version page's decision (the package's document and the tag's file, Q-AUTHZ-255) does not make. And a configuration
+per platform is larger than the versions table, which asks `ViewDetails` for every row of a page, should read.
+
+**Decision.**
+- `ViewFields` gains `ViewFacts`: with `ViewDetails`, what only the version's own page shows. The core asks it in `Service.Version` and
+  nowhere else; a format that has no such facts ignores it.
+- `ViewData` gains `ContentMetadata` (the members of `Metadata` read from a file's content beyond the version's document) and
+  `ContentPaths` (the canonical paths of those files). The core drops the members unless the caller may read every path, the question
+  `authz.PathReader.MayReadPath` of the read scope, an optional property the engine's scope implements and a scope without it answers no.
+- The members travel like the wiki's (`WikiMetadata`, R-API-058): the format names them, the API drops them.
+
+**Consequences.** No page is a wider door to a blob's content than the registry. A format with content members names their files' paths
+and nothing else. A list reads none of it. The OCI view is the first user; a Debian control file or a chart's `values.yaml` would be the
+next.
 
 ## Design invariants
 
@@ -9827,7 +9849,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-AUTHZ-252](spec/authorization.md#q-authz-252--a-permission-check-that-names-a-path-is-decided-on-its-paths-package-and-a-path-of-another-package-answers-false) | A permission check that names a path is decided on its path's package, and a path of another package answers false | Decided by the development agent | (a) Classify the path as the items operations do; a named package that is not the path's, or a path that is not canonical, answers false | — |
 | [Q-AUTHZ-253](spec/authorization.md#q-authz-253--path-patterns-over-a-format-with-lower-case-paths-are-lower-case-and-every-path-pattern-on-a-package-format-is-warned-about) | Path patterns over a format with lower-case paths are lower case, and every path pattern on a package format is warned about | Decided by the development agent | (a) Refuse an upper-case path pattern where the resource set covers a repository of a format with lower-case paths; warn on every path pattern on a package format | [ADR-169](#adr-169--the-catalog-carries-the-package-document-path-and-the-conformance-kit-holds-every-format-to-the-paths-it-authorizes) |
 | [Q-AUTHZ-254](spec/authorization.md#q-authz-254--the-path-dimension-of-a-format-with-lower-case-paths-is-compared-in-lower-case-pattern-and-path-alike) | The path dimension of a format with lower-case paths is compared in lower case, pattern and path alike | Decided by the development agent | (a) Fold pattern and path to lower case where the dimension is compiled for a format with lower-case paths | [ADR-169](#adr-169--the-catalog-carries-the-package-document-path-and-the-conformance-kit-holds-every-format-to-the-paths-it-authorizes) |
-| [Q-AUTHZ-255](spec/authorization.md#q-authz-255--a-version-is-decided-on-its-files-path-as-well-as-on-the-package-documents-and-every-place-that-shows-a-package-shows-only-the-versions-the-caller-may-read) | A version is decided on its file's path as well as on the package document's, and every place that shows a package shows only the versions the caller may read | Decided by the development agent | (a) The format names the file of a version, the decision point decides a version on it as well, and the documents filter for the caller | [ADR-174](#adr-174--the-format-contract-names-the-file-of-a-version-decides-many-paths-at-once-and-gives-formats-the-versions-a-caller-may-read) |
+| [Q-AUTHZ-255](spec/authorization.md#q-authz-255--a-version-is-decided-on-its-files-path-as-well-as-on-the-package-documents-and-every-place-that-shows-a-package-shows-only-the-versions-the-caller-may-read) | A version is decided on its file's path as well as on the package document's, and every place that shows a package shows only the versions the caller may read | Decided by the development agent | (a) The format names the file of a version, the decision point decides a version on it as well, and the documents filter for the caller | [ADR-174](#adr-174--the-format-contract-names-the-file-of-a-version-decides-many-paths-at-once-and-gives-formats-the-versions-a-caller-may-read), [ADR-284](#adr-284--a-view-adapter-names-what-it-read-from-a-files-content-and-only-the-versions-page-asks-for-what-a-list-cannot-carry) |
 | [Q-AUTHZ-256](spec/authorization.md#q-authz-256--a-write-is-decided-on-every-file-it-writes-or-removes-whether-or-not-the-file-is-there-and-a-version-the-caller-may-not-read-is-not-the-callers-to-change) | A write is decided on every file it writes or removes, whether or not the file is there, and a version the caller may not read is not the caller's to change | Decided by the development agent | (a) Decide every path the operation can write or remove, before anything is written, whether or not a file is there; the first refusal refuses the whole operation; a version the caller may not read is left alone | [ADR-174](#adr-174--the-format-contract-names-the-file-of-a-version-decides-many-paths-at-once-and-gives-formats-the-versions-a-caller-may-read) |
 | [Q-AUTHZ-257](spec/authorization.md#q-authz-257--every-file-a-formats-removal-takes-is-decided-for-the-caller-the-files-of-a-folder-it-names-included) | Every file a format's removal takes is decided for the caller, the files of a folder it names included | Decided by the development agent | (a) The host decides every file a removal of a request takes, in the transaction, before any is removed | — |
 | [Q-AUTHZ-258](spec/authorization.md#q-authz-258--a-format-whose-paths-place-files-in-versions-names-the-file-of-a-version-and-the-kit-holds-every-such-format-to-it) | A format whose paths place files in versions names the file of a version, and the kit holds every such format to it | Decided by the development agent | (a) The fifth rule is mandatory, and OCI names its tag path | [ADR-174](#adr-174--the-format-contract-names-the-file-of-a-version-decides-many-paths-at-once-and-gives-formats-the-versions-a-caller-may-read) |
@@ -11349,10 +11371,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OCI
 
-122 questions on [spec/formats/oci.md](spec/formats/oci.md).
+126 questions on [spec/formats/oci.md](spec/formats/oci.md).
 
 <details>
-<summary>Q-OCI: 122 questions</summary>
+<summary>Q-OCI: 126 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11478,6 +11500,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OCI-268](spec/formats/oci.md#q-oci-268--an-attachment-tag-is-listed-in-no-remote-and-offered-by-no-upstream-catalogue) | An attachment tag is listed in no remote and offered by no upstream catalogue | Decided by the development agent | (a) The listing rules leave out a tag of the attachment grammar: the view `oci_remote_tags` and every statement that restates its rules per entry; the catalogue drops it from every source | — |
 | [Q-OCI-269](spec/formats/oci.md#q-oci-269--a-tag-that-is-no-version-is-no-version-of-the-format-and-the-lists-order-such-tags-by-time) | A tag that is no version is no version of the format, and the lists order such tags by time | Decided by the development agent | (a) A tag that is no version is `versionkey.NotVersion`, like a string that is no tag; the lists order the not-ranked versions of every format below the ranked ones, newest first by time | — |
 | [Q-OCI-270](spec/formats/oci.md#q-oci-270--an-image-tag-with-a-pre-release-suffix-is-a-pre-release-on-the-screens-and-is-not-the-latest-while-a-release-is) | An image tag with a pre-release suffix is a pre-release on the screens, and is not the latest while a release is | Decided by the development agent on 2026-11-25 | (a) A tag the tag order ranks as a version whose suffix starts with `alpha`, `beta`, `rc`, `pre` or `dev` (any case) and continues with digits and dots only is a pre-release, the view adapter's `Prerelease`, the same answer as the mirror's `tagorder.Prerelease` | — |
+| [Q-OCI-271](spec/formats/oci.md#q-oci-271--an-images-configuration-is-read-where-the-registry-holds-it-at-a-push-and-at-the-first-fetch-of-a-remotes-config) | An image's configuration is read where the registry holds it: at a push, and at the first fetch of a remote's config | Decided by the development agent on 2026-11-25 | (a) The push reads the stored config before it commits and writes the facts with the manifest's row; a remote's row waits unread, and the fetch of a blob asks one partial index whether it is an unread config and, if so, reads the stored blob after the answer went out | — |
+| [Q-OCI-272](spec/formats/oci.md#q-oci-272--an-images-configuration-is-read-by-the-strict-reader-of-the-manifests-within-bounds-of-its-own) | An image's configuration is read by the strict reader of the manifests, within bounds of its own | Decided by the development agent on 2026-11-25 | (a), with the bounds: the blob at most 1 MiB, 16 levels and 200,000 values; a string at most 4 KiB, cut at a character and marked; 256 environment entries, 256 labels, 512 history lines, 64 arguments of a command, 256 ports or volumes; 160 KiB of kept JSON in the order scalars, commands, ports, labels, environment, history, and what does not fit is counted as left out; a NUL becomes U+FFFD (jsonb holds none). | — |
+| [Q-OCI-273](spec/formats/oci.md#q-oci-273--an-images-configuration-and-labels-go-to-a-caller-who-may-read-its-config-blob) | An image's configuration and labels go to a caller who may read its config blob | Decided by the development agent on 2026-11-25 | (a) The view names the members it read from a file's content and the paths of those files (`ContentMetadata`, `ContentPaths`); the service drops the members for a caller the read scope refuses one of the paths (`authz.PathReader.MayReadPath`, the protocol's decision of that read) | [ADR-284](#adr-284--a-view-adapter-names-what-it-read-from-a-files-content-and-only-the-versions-page-asks-for-what-a-list-cannot-carry) |
+| [Q-OCI-274](spec/formats/oci.md#q-oci-274--an-images-description-licence-and-links-come-from-the-annotations-first-and-the-labels-second) | An image's description, licence and links come from the annotations first and the labels second | Decided by the development agent on 2026-11-25 | (a) The keys `org.opencontainers.image.*` of the tag's manifest, then of the first platform's manifest, then of that platform's labels, key by key; the links are the names every format's Links block reads | — |
 
 </details>
 

@@ -128,5 +128,5 @@ func (f *Format) commitAttestationReferrer(ctx context.Context, tx formats.Tx, c
 	if err := checkReferences(ctx, st, tx, c.Repo.ID, p.name, p.m); err != nil {
 		return err
 	}
-	return st.PutManifest(ctx, tx, manifestInput(c.Repo.ID, p.name, p.m))
+	return st.PutManifest(ctx, tx, manifestInput(c.Repo.ID, p.name, p.m, nil))
 }

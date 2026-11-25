@@ -1156,9 +1156,9 @@ version (`latest`, `main`, `sha-5ccfd1a`), newest first by push time in a local 
 `Stored` keeps push order; the precedence of two tags, `Compare`, is the tag order, and decides which tag is "latest": the highest tag
 that is no pre-release, the highest pre-release while the image has none, and for an image without a version tag its newest other tag,
 [Q-OCI-270](#q-oci-270--an-image-tag-with-a-pre-release-suffix-is-a-pre-release-on-the-screens-and-is-not-the-latest-while-a-release-is)): per tag the digest, the media type, the summed size, and for an index its
-platforms with each child's digest and size, from the rows of R-OCI-007. The `sizeBytes` of the version, in the list and in the details, is the same summed size (Q-OCI-130), not the size of the tag item; of an index the sum over the platforms the repository holds, with `sizePartial` while some are missing and `null` while none is (Q-OCI-221, R-API-080). Layer history and labels are not shown (Deferred).
+platforms with each child's digest and size, from the rows of R-OCI-007. The `sizeBytes` of the version, in the list and in the details, is the same summed size (Q-OCI-130), not the size of the tag item; of an index the sum over the platforms the repository holds, with `sizePartial` while some are missing and `null` while none is (Q-OCI-221, R-API-080). The image's description, licence and links, its configuration, layers and history, the word for its kind and its files are [R-OCI-039 to R-OCI-041](#an-images-facts).
 The version `metadata` of a tag holds `digest`, `mediaType`, `size` (the summed size of the config and the layers; of an index the sum over the platforms held, absent while none is, with `sizePartial` while some are missing, Q-OCI-221;
-at any depth) and `artifactType` (the manifest's own, else the media type of its config, so every image shows its config type); an index adds `platforms`, one object per child with
+at any depth), `artifactType` (the manifest's own, else the media type of its config, so every image shows its config type) and `kind` (R-OCI-041); an index adds `platforms`, one object per child with
 `platform` (`os/arch[/variant]`, `unknown/unknown` for an attestation, `""` for a child the index names without a platform), `digest`, `stored` and, when stored, `mediaType` and `size`. `Compare` is the tag order
 of the format (Q-OCI-17, Q-OCI-64) for the versions; a tag that is no version and a string that is no tag are no version of the format
 (`versionkey.NotVersion`) and sort before every version and among themselves by their bytes, and the lists order them by their time
@@ -1576,8 +1576,8 @@ T-16; "F4" means it stays in FULL.md F4 for a later phase; "Not offered" means Q
 | PKG-DOCKER-038 Chaining to another instance | Built as a plain remote with a namespace prefix | R-OCI-021 |
 | PKG-DOCKER-039 Virtual registry | Built | R-OCI-027, R-OCI-028 |
 | PKG-DOCKER-040 Tags by latest timestamp | F4 | Deferred |
-| PKG-DOCKER-041 Tag details | Built in part; layer history F4 | R-OCI-031 |
-| PKG-DOCKER-042 Labels as properties | F4 | Deferred |
+| PKG-DOCKER-041 Tag details | Built: the layers, the configuration and the history per platform | R-OCI-031, R-OCI-040 |
+| PKG-DOCKER-042 Labels as properties | F4: the labels are shown on the version page (R-OCI-040); as properties a search finds, deferred | Deferred |
 | PKG-DOCKER-043 Storage layout | Built (Quader's layout) | R-OCI-007 |
 | PKG-DOCKER-044 Docker Content Trust | Built by nature: signatures live on a separate server | — |
 | PKG-DOCKER-045 Supported clients | Built: Docker CLI with Buildx, Podman, Kubernetes; Kaniko and OpenShift F4 | R-OCI-035 |
@@ -1695,6 +1695,119 @@ Acceptance criteria:
 - End-to-end (the leg `oci`, `TestOCICuration_R_CUR_004_…`): `docker pull` of a refused tag through the remote prints the text; the
   allowed multi-platform tag pulls; a tag downloaded ahead and allowed pulls from the cache.
 
+## An image's facts
+
+What `docker inspect`, `docker history` and a registry's tag page tell a person about an image, on the version's page (the owner's rule of
+2026-11-25: metadata that is there is used and shown). The facts are the image's own: the annotations of its manifests, which are part of
+the manifests every reader of the tag reads, and its configuration, the config blob's content, which a page shows only to a caller who
+may read that blob.
+
+### R-OCI-039 · The description, the licence and the links from annotations and labels
+Priority: **P1** · Covers: quader-only
+
+The keys `org.opencontainers.image.*` of the image specification become the facts every format shows: `description` the description,
+`licenses` the licence (an SPDX expression, kept as one entry of `licenses`), `url`, `documentation` and `source` the links Homepage,
+Documentation and Source repository, and `title`, `revision`, `created`, `version`, `vendor`, `authors`, `base.name` and `base.digest`
+facts of the version.
+
+- **Where they are read, in this order** ([Q-OCI-274](#q-oci-274--an-images-description-licence-and-links-come-from-the-annotations-first-and-the-labels-second)):
+  the annotations of the tag's manifest; for an index, then the annotations of its first platform's manifest (the first child in platform
+  order that the repository holds and that is no attestation); then the labels of that platform's configuration (of the image's own for an
+  image manifest). **An annotation wins over a label**, key by key.
+- **What the API sends.** The version's `metadata` holds the annotations' facts as `description`, `title`, `homepage`, `documentationUrl`,
+  `repositoryUrl`, `revision`, `created`, `imageVersion`, `vendor`, `authors`, `baseName` and `baseDigest`, and their licence in the
+  version's `licenses`. The labels' facts, for the keys the annotations did not give, are the member `labeled` with the same names and
+  `licenses`; `labeled` is content of the config blob (R-OCI-040). Each value is bounded at 4 KiB.
+- **The package list** shows the description of the annotations (the summary of R-API-029), never one of a label: a list and a search
+  carry nothing of a config blob.
+- **On the screen** the description stands where every format's stands, under the name; the licence and the links where they stand for
+  every format (`version-metadata.ts`). A link is a link only when its address is `https` or `http`; any other value (`git@…`,
+  `javascript:…`) is shown as text. Every value is text, never markup.
+- An image stored before the change keeps its annotations (they were stored with the manifest's row, R-OCI-007) and so shows the facts
+  of its annotations at once; the labels' facts come with the configuration (R-OCI-040).
+
+Acceptance criteria:
+
+- Unit (`internal/formats/oci`, milliseconds, `TestR_OCI_039_AnnotationsWinOverLabelsAndLabelsAreContent`): an index's annotation wins
+  over its platform's, which wins over a label; a label gives what no annotation gives; the summary is the annotations' description alone.
+- Integration (area `oci`, `TestR_OCI_040_AnImagesFactsStandOnItsPageForWhoMayReadItsConfig`, about 2 s): the pushed image's
+  annotation description stands on its page and in the package list, the label's licence and source in `labeled`.
+
+### R-OCI-040 · The configuration, the layers and the history
+Priority: **P1** · Covers: PKG-DOCKER-041
+
+- **The layers.** An image manifest's config and layers are kept with its row in the manifest's order, each with its digest, media type
+  and compressed size and whether it is foreign (`oci_manifests.blobs`, migration 00132), at most 1,000 layers and 200 KiB; the version's
+  `metadata.blobs` maps the digest of each held image manifest (the tag's own, or each platform an index's repository holds) to
+  `{config, layers, more}`. The layers are the manifest's, which every reader of the tag reads.
+- **The configuration** of an image (a config of the media type `application/vnd.oci.image.config.v1+json` or
+  `application/vnd.docker.container.image.v1+json`; a Helm chart's or an artifact's config is not read) is read by a bounded, strict
+  reader ([Q-OCI-272](#q-oci-272--an-images-configuration-is-read-by-the-strict-reader-of-the-manifests-within-bounds-of-its-own)) into
+  `oci_manifests.config_facts`: the created time, the author, the platform (`os`, `os.version`, `architecture`, `variant`), the user, the
+  working directory, the stop signal, the entrypoint, the command, the shell, `ONBUILD`, the exposed ports, the volumes, the health check,
+  the environment in its order, the labels by key, and the history oldest first (`created`, `created_by`, `comment`, `author`,
+  `empty_layer`). What a bound left out is counted per list, a cut string is marked.
+- **When it is read** ([Q-OCI-271](#q-oci-271--an-images-configuration-is-read-where-the-registry-holds-it-at-a-push-and-at-the-first-fetch-of-a-remotes-config)):
+  a push reads it from the repository before it commits (the client uploaded it before the manifest) and writes it with the manifest's
+  row, for every platform manifest of an index as it is pushed. A remote's manifest is fetched before its config, so its row waits with
+  the configuration unread; the first fetch of the config through the repository (a client's pull, a pull through a virtual repository)
+  reads the stored blob and completes every row of the name that names it. A manifest whose config another row of the name read already
+  takes that reading. Each fetch of a blob asks one indexed question whether it is an unread config; a layer's fetch reads nothing else.
+  A config the store cannot open now stays unread for the next fetch; one that cannot be read is recorded with the reason (`too-large`,
+  `invalid`) and not read again.
+- **Who sees it** ([Q-OCI-273](#q-oci-273--an-images-configuration-and-labels-go-to-a-caller-who-may-read-its-config-blob)): the
+  configurations are the member `metadata.configs` (the digest of each held image manifest to `{kind, unreadable, image}`; `unreadable`
+  `not-read` while no fetch read it), sent with `labeled` only to a caller who may read every config blob they were read from, the
+  decision of a `GET` of `<name>/_blobs/<digest>` (the view's `ContentMetadata` and `ContentPaths`,
+  [api-and-ui.md](../api-and-ui.md) R-API-058). The environment and the labels can hold what a builder baked into an image: they are in
+  no list, no search hit, no audit event and no log
+  ([docs/security/oci-image-facts.md](../../security/oci-image-facts.md)).
+- **On the screen** (details on demand): the layers and the configuration with the history stand on the tab **Details**, per platform,
+  each opened from the platform's row; nothing of them scrolls on its own, a long list grows the page.
+- **An image stored before the change** has neither layers nor configuration on its page: a push of the same manifest again writes them
+  (a row keeps what it holds and takes what it lacks), and a remote's row gets them when its manifest is stored again (after an
+  eviction of its entry), followed by a fetch of its config. No job fills them: the reindex of R-REPO-016 does not serve the format (pre-alpha, no data
+  migration).
+
+Acceptance criteria:
+
+- Unit (`internal/formats/oci/manifest`, milliseconds): `TestR_OCI_040_ReadsTheConfigurationBuildxWrote` reads the configuration Docker
+  Buildx of Docker 28 wrote (`testdata/buildx-config.json`); `…_RefusesWhatTwoReadersCouldReadDifferently`, `…_ReadsKeysAsTheRuntimeDoes`
+  and `…_BoundsWhatItKeeps` pin the strict reading and the bounds.
+- Unit (`internal/formats/oci`, milliseconds, `TestR_OCI_040_APushReadsTheConfigAndAFetchCompletesARowWithout`): a push records the
+  configuration and the blobs; a row without a configuration is completed by the fetch of its config and not by a layer's.
+- Unit (`internal/authz`, milliseconds, `TestR_OCI_040_AFileOfAVersionIsDecidedOnItsPath`): the read of a file by its path follows a
+  grant's path pattern while the version stays readable.
+- Integration (area `oci`, about 2 s): the pushed configuration of the Buildx fixture stands on the version's page; a person whose grant
+  excludes `**/_blobs/**` reads the version, its layers and its annotations and none of `configs` or `labeled`.
+- Integration (area `ociremote`, `TestR_OCI_040_ARemotesConfigurationIsReadByItsFirstFetch`, about 2 s): `not-read` after the tag's
+  fetch, the stub's labels and history after the fetch of the config.
+
+### R-OCI-041 · The version page's head, the commands and the files of an image
+Priority: **P1** · Covers: quader-only
+
+- **The other tags of the digest** stand in the version page's head beside the tag (the tags the lists show of the same image, R-API-029
+  `group=content`), each a link to its own page. The version details carry them as `aliases` and `aliasesMore`, read and decided as the
+  list by content reads an entry's ([api-and-ui.md](../api-and-ui.md) R-API-029): a tag the reader may not read is not named.
+- **Pull by digest** is a second line of the command panel: `docker pull <host>/<project>/<repo>/<name>@sha256:…`, and Podman's alike;
+  the digest is the version's.
+- **The tab Files** lists what the image is made of by digest and size: the manifest (an index's and each held platform's), each
+  platform's config and its layers, in the manifest's order, with the digest cut in the middle and its copy button; the tag item's path
+  (`<name>/_tags/<tag>`) is no longer shown there.
+- **The kind of artifact** is a word, with the media type as its title: an image, a Helm chart, a signature, an SBOM, an attestation or
+  another artifact (`metadata.kind`: `image`, `helm-chart`, `signature`, `sbom`, `attestation`, `other`), read from the media type and
+  the artifact type (the manifest's own, else its config's). A Helm chart's facts (`Chart.yaml`, its README, `values.yaml`) are not read:
+  the owner's decision D4 of the working paper W-30 is open, and the reader of R-OCI-040 takes a chart's kind beside the image's.
+
+Acceptance criteria:
+
+- Unit (`internal/formats/oci`, milliseconds, `TestR_OCI_041_KindOfArtifact`): the words for the media types of an image, an index, a
+  Docker image, a Helm chart, a cosign signature, an SPDX document, a Sigstore bundle and an unknown artifact.
+- Integration (area `oci`, in `TestR_OCI_040_AnImagesFactsStandOnItsPageForWhoMayReadItsConfig`): a second tag of the image is the
+  version's `aliases`.
+- Web unit (`version-metadata.spec.ts`, milliseconds): the files, the kind and the facts of an image read from the metadata.
+- Renders (`package-version-oci-*`): the head with the other tags, the panel's digest line, the tab Files and the details per platform.
+
 ## Deferred
 
 | Catalog ID | Priority | Note |
@@ -1705,7 +1818,7 @@ Acceptance criteria:
 | PKG-DOCKER-032, PKG-OCI-012 | P1 | Promotion and moving referrers with their subject arrive with copy and move (R-STOR-019). |
 | PKG-DOCKER-036 | P2 | Fetching and caching foreign layers; their manifests are accepted and served (R-OCI-013). |
 | PKG-DOCKER-040 | P1 | Tag resolution by push time across virtual members. |
-| PKG-DOCKER-041 (layer history), PKG-DOCKER-042 | P1 | Reading image configs for history and labels. |
+| PKG-DOCKER-042 | P1 | Labels as properties a search finds: the version page shows them (R-OCI-040), a list and a search read none of a config blob (Q-OCI-273). |
 | PKG-DOCKER-045 (Kaniko, OpenShift) | P2 | Further producers, no registry behaviour of their own. |
 | PKG-OCI-006 (extra tags in the query) | P2 | `PUT …/manifests/<digest>?tag=…`; answered 400 `UNSUPPORTED` until then. |
 | PKG-OCI-014 (build caches), PKG-OCI-015 | P1 | BuildKit registry caches as a tested client. |
@@ -4192,6 +4305,87 @@ and the refill of the stored rows in migration [00126](../../../internal/meta/po
 `TestR_API_029_AnImageTagIsAPrereleaseByTheTagOrder` (unit), kit check 11 (`TestR_ARCH_010_Conformance`, the sample holds `2.0-rc.1` and the
 variant `1.0-alpine`), the SQL-against-Go table of `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit` (area `ociremote`).
 
+### Q-OCI-271 · An image's configuration is read where the registry holds it: at a push, and at the first fetch of a remote's config
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the version page is to show an image's configuration, layers and history (R-OCI-040, working paper W-30, G7). The config is a
+blob; a push uploads it before the manifest, a remote's client fetches the manifest before the config, and the remote engine holds a
+fetch's stream to its client while a fill hook reads it, so a hook on every blob would hold every layer's stream.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The push reads the stored config before it commits and writes the facts with the manifest's row; a remote's row waits unread, and the fetch of a blob asks one partial index whether it is an unread config and, if so, reads the stored blob after the answer went out (chosen) | Written once, where the bytes are | No request to an upstream for it, no new job, no stream held; a layer costs one indexed read | A remote's image whose config no client fetched through the repository (a mirror's download, a cache filled before the change) shows `not-read` |
+| (b) Read the config on every view of the version page | Nothing stored | Works for every image already stored | A blob read from the object store per platform and per view; six platforms are six reads for one page |
+| (c) A fill hook on every blob of a remote | The fill reads the config | Complete for a remote | Every layer's stream to its client would wait for the whole layer (`fillHeld`) |
+| (d) A job that fills the facts from the stored config blobs | A queue of its own | Old images get them | A new job kind for a pre-alpha installation without images (the owner's rule: no data migration); the reindex of R-REPO-016 does not serve the format |
+
+**Choice:** (a). A row that is recorded keeps what it holds and takes only what it lacks (`OCIPutManifest`'s `ON CONFLICT … DO UPDATE` of
+the three columns), so a push of the same manifest again completes a row stored before the change. **Rationale:** the bytes are in the
+registry at the two moments; reading them there costs a read of a few KiB, while every other place costs a stream, a job or a read per
+view. The development agent would revisit it if the owner wants the facts of a mirror's images before a client pulls them (then (d), or
+the mirror's download reading the config as the fetch does). **Applied in the spec:** R-OCI-040. Code:
+[image_facts.go](../../../internal/formats/oci/image_facts.go) (`readStoredConfig`, `completeConfig`), the statements `OCIPutManifest`,
+`OCIConfigUnread` and `OCIPutConfigFacts` of [oci_manifests.sql](../../../internal/meta/postgres/queries/oci_manifests.sql), migration
+[00132](../../../internal/meta/postgres/migrations/00132_oci_image_facts.sql).
+
+### Q-OCI-272 · An image's configuration is read by the strict reader of the manifests, within bounds of its own
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The token reader of the manifests (one value, UTF-8, every key once), a key matched as Docker matches it (exactly, else the one key that equals it without regard to case; two such keys make the whole unreadable), a value of a type the runtime refuses makes it unreadable, and bounds on the blob and on what is kept (chosen) | The page shows what a runtime runs, or nothing | No second reading of one document; the stored row stays small whatever the blob holds | A configuration a lenient runtime would still run is shown as unreadable when two of its keys only differ in case |
+| (b) The standard decoder into Docker's structs | Lenient | Least code | The last of two equal keys wins silently, so the page could show another environment than the one the runtime takes |
+| (c) Keep the configuration as it is, bounded by bytes | Store the blob's JSON | Everything is there | A row of up to the blob's size per platform; the screen would have to bound it |
+
+**Choice:** (a), with the bounds: the blob at most 1 MiB, 16 levels and 200,000 values; a string at most 4 KiB, cut at a character and
+marked; 256 environment entries, 256 labels, 512 history lines, 64 arguments of a command, 256 ports or volumes; 160 KiB of kept JSON in
+the order scalars, commands, ports, labels, environment, history, and what does not fit is counted as left out; a NUL becomes U+FFFD
+(jsonb holds none). Nothing of a configuration is logged. **Rationale:** the facts are displayed and decide nothing, but a page that shows
+an environment the runtime does not use misleads the person who reads it to judge an image; the bounds keep a row and a page within what a
+person reads. The development agent would revisit the bounds if a real image's history is cut (the measure: an image's history rarely
+exceeds 100 lines). **Applied in the spec:** R-OCI-040. Code: [config.go](../../../internal/formats/oci/manifest/config.go).
+
+### Q-OCI-273 · An image's configuration and labels go to a caller who may read its config blob
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-284](../../decisions.md#adr-284--a-view-adapter-names-what-it-read-from-a-files-content-and-only-the-versions-page-asks-for-what-a-list-cannot-carry).
+
+Context: an environment variable or a label can hold what a builder baked into an image (a token in `ENV`), and the protocol serves the
+config blob to whoever may read `<name>/_blobs/<digest>`. The version page is decided on the package's document and the tag's file
+(Q-AUTHZ-255), so a grant that excludes the blobs' paths reads the page and cannot pull the image.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The view names the members it read from a file's content and the paths of those files (`ContentMetadata`, `ContentPaths`); the service drops the members for a caller the read scope refuses one of the paths (`authz.PathReader.MayReadPath`, the protocol's decision of that read) (chosen) | The same decision as serving the blob | Nobody reads on a page what the registry would not serve them; the format names the paths, the core decides, as for the wiki (R-API-058) | One more question per page, a decision per config blob (at most the platforms of an index) |
+| (b) Whoever reads the version reads the configuration | Simplest | Nothing to build | A path-narrowed grant reads a secret it could not pull |
+| (c) Show the environment's names and not its values | Partial | Values never leak | `docker inspect` shows the values to whoever pulls; the owner's rule wants what is there |
+
+**Choice:** (a). The annotations stay with the version: they are part of the manifest, which every reader of the tag reads. A list, a
+search and an audit event carry nothing of a configuration: the summary reads the annotations alone, and `Find` reads nothing (H-2110).
+**Rationale:** the page must not be a second, wider door to the content of a blob. The development agent would revisit it if a format
+needs a content member decided per path rather than per version (then the members would carry their own path). **Applied in the spec:**
+R-OCI-040, [api-and-ui.md](../api-and-ui.md) R-API-058. Code: `describeFacts` in
+[view_facts.go](../../../internal/formats/oci/view_facts.go), `Service.Version` of
+[internal/packages/view](../../../internal/packages/view/service.go), `MayReadPath` in
+[visible.go](../../../internal/authz/visible.go); [docs/security/oci-image-facts.md](../../security/oci-image-facts.md).
+
+### Q-OCI-274 · An image's description, licence and links come from the annotations first and the labels second
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The keys `org.opencontainers.image.*` of the tag's manifest, then of the first platform's manifest, then of that platform's labels, key by key; the links are the names every format's Links block reads (chosen) | An annotation wins over a label | The image specification's own precedence (annotations are the manifest's, labels the config's); a multi-platform image annotated per platform only (Buildx's `--annotation manifest:…`) still has a description; an image reads like a package | The other platforms' facts are not shown when they differ from the first's |
+| (b) Labels only | What `docker inspect` shows | One source | Ignores the annotations that `docker buildx --annotation` and the registries' own pages use |
+| (c) Also the older keys of label-schema.org (`org.label-schema.*`) | More images | Old images | A deprecated convention, superseded by the specification's keys; a second precedence to explain |
+
+**Choice:** (a). **Rationale:** the specification defines both places and the same keys; reading them in its order keeps one answer per
+image. The development agent would revisit (c) if the owner finds images of his that carry only the older keys. **Applied in the spec:**
+R-OCI-039. Code: `annotationFacts`, `labelFacts` in [view_facts.go](../../../internal/formats/oci/view_facts.go).
+
 ## What this does not cover
 
 ### H-579 · A holder of the stored-secret key ring can mint registry tokens
@@ -4400,3 +4594,21 @@ make the client's layer upload impossible. The development agent would revisit i
 
 **Applied in the spec:** R-OCI-012 (the strip, in the bullet on registry tokens and the acceptance criterion); R-OCI-006 unchanged (it already
 says the source needs `pull`).
+
+### H-2110 · The search does not find an image by the description of its annotations
+
+The package list shows an image's description from its annotations (R-OCI-039), and the format's `Find` reads none, so a search of the
+list and of the top bar finds an image by its name alone. Live since R-OCI-039; real for a person who searches for what an image does. The
+labels are never searched (Q-OCI-273).
+
+### H-2111 · A remote's image whose config no client fetched through the repository shows its configuration as not read
+
+A remote's manifest is stored before its config, and the configuration is read at the first fetch of the config through the repository
+(Q-OCI-271). A mirror's download and a download ahead store the config without that fetch, so their images show `not-read` until a client
+pulls them through Quader. Live since R-OCI-040; real for the images of a repository in mode `mirror` that nobody pulled yet.
+
+### H-2113 · An image stored before the change shows no layers and no configuration until it is stored again
+
+The layers and the configuration are written with a manifest's row (migration 00132); a row stored before has neither, and no job fills
+them (pre-alpha: no data migration). A push of the same manifest again completes a local row, a fetch of an evicted remote entry and of its
+config a remote's. Its annotations' facts show at once. Live on an installation that holds images from before R-OCI-040.

@@ -174,6 +174,9 @@ const (
 	ViewDetails
 	// ViewReadme adds the README text and its file name.
 	ViewReadme
+	// ViewFacts adds, with ViewDetails, what only the version's own page shows and a list never reads: an OCI image's configuration,
+	// layers and history (formats/oci.md R-OCI-040), which are larger than a list could carry for every row.
+	ViewFacts
 )
 
 // Has reports whether f includes every field of o.
@@ -192,6 +195,12 @@ type ViewData struct {
 	// WikiMetadata names the members of Metadata that are wiki content (R-AUTHZ-034); the core drops them, and the README, for a
 	// caller who may not read the wiki (R-API-058). HasReadme is wiki content as well.
 	WikiMetadata []string
+	// ContentMetadata names the members of Metadata that are read from the content of the version's files beyond its document, and
+	// ContentPaths the canonical paths of those files: an OCI image's configuration, whose environment and labels can hold what a
+	// builder baked into the image, is read from its config blob (formats/oci.md R-OCI-040). The core drops the members for a caller who
+	// may not read every one of the paths, the decision the format's serving of the files makes (R-API-058).
+	ContentMetadata []string
+	ContentPaths    []string
 	// Readme and ReadmeFile are the README source and the name of its file; set
 	// only with ViewReadme.
 	Readme     string

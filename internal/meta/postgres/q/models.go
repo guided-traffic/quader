@@ -1088,6 +1088,9 @@ type OciManifest struct {
 	AnnotationsCut bool
 	CreatedAt      pgtype.Timestamptz
 	Attachment     bool
+	ConfigDigest   []byte
+	Blobs          json.RawMessage
+	ConfigFacts    json.RawMessage
 }
 
 type OciReference struct {

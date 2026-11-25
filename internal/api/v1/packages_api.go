@@ -590,6 +590,10 @@ func versionOf(base string, d view.VersionDetail) gen.PackageVersion {
 		Repositories: make([]gen.PackageVersionRepository, 0, len(d.Repositories)),
 		Files:        make([]gen.PackageFile, 0, len(d.Files)),
 	}
+	if d.Aliases != nil {
+		aliases, more := d.Aliases, d.AliasesMore
+		out.Aliases, out.AliasesMore = &aliases, &more
+	}
 	for _, r := range d.Repositories {
 		out.Repositories = append(out.Repositories, gen.PackageVersionRepository{
 			Key: r.Repo.String(), Class: gen.PackageVersionRepositoryClass(r.Class), PublishedAt: r.PublishedAt,

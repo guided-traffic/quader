@@ -1714,7 +1714,9 @@ remain as their owners define them.)
   most 100), `aliasesMore` (it has more), and the content's `repositories` (every repository that holds one of its versions) and
   `downloadCount` and `lastDownloadedAt` (its manifest by digest once and each version's own file by name, R-API-079). For a format
   whose versions name no content every version is its own entry with empty `aliases`. One request reads at most 1,024 versions, so a
-  page may be short or empty with a cursor (R-API-010). The `downloadUrl` of a file is the protocol URL of the repository
+  page may be short or empty with a cursor (R-API-010). The version details of such a format carry the same `aliases` and
+  `aliasesMore` of the content the version's metadata names (`digest`): its other visible versions, read and decided as an entry's
+  (an image's other tags, [formats/oci.md](formats/oci.md) R-OCI-041); the details of every other format carry neither. The `downloadUrl` of a file is the protocol URL of the repository
   that holds it where the format has a protocol, else its `/files/` URL, built on the configured base URL of the
   endpoint and never on the `Host` of the request. Its `contentUrl` is the relative URL of the content route of R-API-025
   for the item that holds the file (Q-UI-106): `PackageFile.path` is the path of the file item in the repository that
@@ -2566,6 +2568,10 @@ elsewhere; it is read into `Operation.Part`, as `x-quader-maintenance` is read i
 - A member of a management answer that carries wiki content (`hasReadme` of R-API-029, `metadata.docs` of the Ansible format)
   is decided with `MayReadWiki` and is `false` or absent when refused. The format's view adapter returns the wiki members
   marked, so that the API, not the format, drops them.
+- A member a format read from the content of a version's files beyond its document (an OCI image's configuration and the facts of its
+  labels, [formats/oci.md](formats/oci.md) R-OCI-040) is decided with the read of those files' paths (`authz.PathReader.MayReadPath`, the
+  protocol's decision of a read of the path) and is absent when one is refused. The view adapter names the members and the paths
+  (`ContentMetadata`, `ContentPaths`), and the API drops them; a list and a search carry no such member.
 - Today's operations with `x-quader-part: wiki`: `getPackageVersionReadme`; the documentation operations of
   [formats/ansible.md](formats/ansible.md) (T-19) join with their requirement.
 - A test walks the document and fails when an operation whose response schema holds a README or a documentation body lacks

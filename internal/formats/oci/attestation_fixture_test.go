@@ -61,7 +61,7 @@ func TestR_VULN_033_DockersAttestationManifestIsRecordedAsAnAttachment(t *testin
 		len(att.Layers) != 1 || att.Layers[0].MediaType != "application/vnd.in-toto+json" {
 		t.Fatalf("the recorded attestation is not the shape the selection by media types took for an image: %s", attBytes)
 	}
-	if row := manifestInput(1, "library/ubuntu", att); !row.Attachment || row.Subject != nil {
+	if row := manifestInput(1, "library/ubuntu", att, nil); !row.Attachment || row.Subject != nil {
 		t.Errorf("the attestation's row: attachment %v, subject %v; want an attachment without a subject", row.Attachment, row.Subject)
 	}
 	cfg := readAttestationFixture(t, "ubuntu-26.10-amd64-attestation-config.json")
@@ -77,7 +77,7 @@ func TestR_VULN_033_DockersAttestationManifestIsRecordedAsAnAttachment(t *testin
 	if img.Digest != image {
 		t.Fatalf("the recorded image %s is not the one the attestation attests (%s)", img.Digest, image)
 	}
-	if row := manifestInput(1, "library/ubuntu", img); row.Attachment {
+	if row := manifestInput(1, "library/ubuntu", img, nil); row.Attachment {
 		t.Error("the platform image is recorded as an attachment")
 	}
 }

@@ -144,7 +144,7 @@ func TestALinkedTagChecksTheManifestInTheTransaction(t *testing.T) {
 //
 // Mechanism of R-OCI-031, not a proof of its criteria: it checks the tag order or one step of the view; the criteria are the
 // platforms in the API metadata and the sizeBytes of the image.
-func TestTheSummaryReadsNothingAndTheDetailsReadOnce(t *testing.T) {
+func TestTheSummaryReadsTheAnnotationsAndTheDetailsReadOnce(t *testing.T) {
 	fx := newFixture(t, formattest.HostOptions{})
 	fx.image("a", "1", "one")
 	fx.image("b", "1", "two")
@@ -155,9 +155,10 @@ func TestTheSummaryReadsNothingAndTheDetailsReadOnce(t *testing.T) {
 		{ID: va[0].ID, Repo: fx.h.Ref(), Package: "a", Version: "1"}, {ID: vb[0].ID, Repo: fx.h.Ref(), Package: "b", Version: "1"},
 	}
 	view := New().View()
+	// The summary reads the annotations of the tags once (the description of R-OCI-039); images without one have no summary.
 	out, err := view.Describe(ctx, fx.h, vs, formats.ViewSummary, nil)
-	if err != nil || len(out) != 0 || fx.twin.calls["TagViews"] != 0 {
-		t.Fatalf("summary: %v %v, %d reads", out, err, fx.twin.calls["TagViews"])
+	if err != nil || len(out) != 0 || fx.twin.calls["TagViews"] != 0 || fx.twin.calls["TagFacts"] != 1 {
+		t.Fatalf("summary: %v %v, %d reads of the views, %d of the facts", out, err, fx.twin.calls["TagViews"], fx.twin.calls["TagFacts"])
 	}
 	out, err = view.Describe(ctx, fx.h, vs, formats.ViewDetails, nil)
 	if err != nil || len(out) != 2 || fx.twin.calls["TagViews"] != 1 {

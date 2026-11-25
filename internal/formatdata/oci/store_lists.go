@@ -83,7 +83,7 @@ func (s *Store) Referrers(ctx context.Context, repoID int64, name string, subjec
 		}
 		out = make([]rows.Manifest, 0, len(rs))
 		for _, r := range rs {
-			out = append(out, manifestRow(r))
+			out = append(out, manifestRow(q.OCIGetManifestRow(r)))
 		}
 		return nil
 	})

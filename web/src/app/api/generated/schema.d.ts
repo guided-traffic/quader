@@ -12475,12 +12475,25 @@ export interface components {
             /** @description Whether `readme` answers 200; the UI uses it to choose the default tab without a probing request. */
             hasReadme: boolean;
             /**
+             * @description For a format whose version names a content (an OCI tag and its manifest): the other versions the reader may read that name
+             *     the same content (an image's other tags), in the order of the versions, at most 100 (formats/oci.md R-OCI-041, Q-API-432);
+             *     absent for every other format.
+             */
+            aliases?: string[];
+            /** @description With `aliases`, it names 100 versions and the content has more. */
+            aliasesMore?: boolean;
+            /**
              * @description Format-specific, owned by the format page. For npm the members the UI reads are
              *     `distTags` (tag to version), `dependencies`, `devDependencies`, `peerDependencies` and
              *     `optionalDependencies` (name to range), `authors` (strings), `homepage`, `repositoryUrl`
              *     and `bugsUrl` (strings as the package declares them), `engines` (name to range) and
              *     `deprecated` (string or null). For Ansible Galaxy collections `docs` announces the documentation (R-ANS-036, Q-API-263): it is
-             *     wiki content and absent for a caller who may not read the wiki of the repository. A member that does not apply is absent.
+             *     wiki content and absent for a caller who may not read the wiki of the repository. For an OCI tag (formats/oci.md R-OCI-031,
+             *     R-OCI-039 to R-OCI-041): `digest`, `mediaType`, `size`, `artifactType`, `kind`, `platforms`, `attestations`, the facts of
+             *     the annotations (`description`, `title`, `homepage`, `documentationUrl`, `repositoryUrl`, `revision`, `created`,
+             *     `imageVersion`, `vendor`, `authors`, `baseName`, `baseDigest`), `blobs` (each held image manifest's config and layers), and
+             *     `configs` and `labeled` (the configurations and the facts of the labels), which are content of the config blobs and absent
+             *     for a caller who may not read them (Q-OCI-273). A member that does not apply is absent.
              */
             metadata: {
                 docs?: components["schemas"]["PackageVersionDocs"];

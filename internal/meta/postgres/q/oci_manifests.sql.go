@@ -72,6 +72,29 @@ func (q *Queries) OCIChildPlatforms(ctx context.Context, versionIds []int64) ([]
 	return items, nil
 }
 
+const oCIConfigUnread = `-- name: OCIConfigUnread :one
+SELECT EXISTS (
+  SELECT 1 FROM oci_manifests
+   WHERE repo_id = $1::bigint AND name = $2::text AND config_digest = $3::bytea
+     AND config_facts IS NULL
+)::boolean AS unread
+`
+
+type OCIConfigUnreadParams struct {
+	RepoID       int64
+	Name         string
+	ConfigDigest []byte
+}
+
+// Whether a manifest of the name names the blob as an image's configuration that is not read yet (R-OCI-040): the question of every
+// fetch of a blob, answered from the partial index of such manifests.
+func (q *Queries) OCIConfigUnread(ctx context.Context, arg OCIConfigUnreadParams) (bool, error) {
+	row := q.db.QueryRow(ctx, oCIConfigUnread, arg.RepoID, arg.Name, arg.ConfigDigest)
+	var unread bool
+	err := row.Scan(&unread)
+	return unread, err
+}
+
 const oCIExistingItems = `-- name: OCIExistingItems :many
 SELECT path::text AS path
 FROM items
@@ -188,16 +211,52 @@ func (q *Queries) OCILockExistingItems(ctx context.Context, arg OCILockExistingI
 	return items, nil
 }
 
+const oCIPutConfigFacts = `-- name: OCIPutConfigFacts :exec
+UPDATE oci_manifests
+   SET config_facts = $1::jsonb
+ WHERE repo_id = $2::bigint AND name = $3::text AND config_digest = $4::bytea
+   AND config_facts IS NULL
+`
+
+type OCIPutConfigFactsParams struct {
+	ConfigFacts  json.RawMessage
+	RepoID       int64
+	Name         string
+	ConfigDigest []byte
+}
+
+// Records what the reader read of a configuration in every manifest of the name that names it and has none yet (R-OCI-040).
+func (q *Queries) OCIPutConfigFacts(ctx context.Context, arg OCIPutConfigFactsParams) error {
+	_, err := q.db.Exec(ctx, oCIPutConfigFacts,
+		arg.ConfigFacts,
+		arg.RepoID,
+		arg.Name,
+		arg.ConfigDigest,
+	)
+	return err
+}
+
 const oCIPutManifest = `-- name: OCIPutManifest :exec
 
 INSERT INTO oci_manifests (repo_id, name, digest, media_type, artifact_type, subject, size, content_size, annotations, annotations_cut,
-                           attachment)
+                           attachment, config_digest, blobs, config_facts)
 VALUES (
   $1::bigint, $2::text, $3::bytea, $4::text,
   NULLIF($5::text, ''), $6::bytea, $7::bigint, $8::bigint,
-  $9::jsonb, $10::boolean, $11::boolean
+  $9::jsonb, $10::boolean, $11::boolean,
+  $12::bytea, $13::jsonb,
+  COALESCE($14::jsonb,
+           (SELECT s.config_facts FROM oci_manifests s
+             WHERE s.repo_id = $1::bigint AND s.name = $2::text
+               AND s.config_digest = $12::bytea AND s.config_facts IS NOT NULL
+             LIMIT 1))
 )
-ON CONFLICT (repo_id, name, digest) DO NOTHING
+ON CONFLICT (repo_id, name, digest) DO UPDATE
+   SET config_digest = COALESCE(oci_manifests.config_digest, EXCLUDED.config_digest),
+       blobs = COALESCE(oci_manifests.blobs, EXCLUDED.blobs),
+       config_facts = COALESCE(oci_manifests.config_facts, EXCLUDED.config_facts)
+ WHERE (oci_manifests.blobs IS NULL AND EXCLUDED.blobs IS NOT NULL)
+    OR (oci_manifests.config_facts IS NULL AND EXCLUDED.config_facts IS NOT NULL)
 `
 
 type OCIPutManifestParams struct {
@@ -212,12 +271,18 @@ type OCIPutManifestParams struct {
 	Annotations    json.RawMessage
 	AnnotationsCut bool
 	Attachment     bool
+	ConfigDigest   []byte
+	Blobs          json.RawMessage
+	ConfigFacts    json.RawMessage
 }
 
 // The statements of the OCI data port for manifests: the rows a push writes, the checks it makes under the package's lock, and
 // the reads of the package view (internal/formatdata/oci/store_manifests.go; R-OCI-007, R-OCI-013, R-OCI-031, R-OCI-033).
 // A digest travels as bytea; the format's paths are built by the format and arrive as text.
-// Records a manifest of an image name; one that is recorded already changes nothing (its row is a function of its bytes).
+// Records a manifest of an image name; its row is a function of its bytes, so one that is recorded already keeps what it holds. Only
+// the facts of an image (R-OCI-040) that a row lacks are written again: a row recorded before they were kept, or one whose
+// configuration was not read. A configuration that another manifest of the name names was read already when that one's was: its facts
+// are a function of the config's bytes, so they are taken over.
 func (q *Queries) OCIPutManifest(ctx context.Context, arg OCIPutManifestParams) error {
 	_, err := q.db.Exec(ctx, oCIPutManifest,
 		arg.RepoID,
@@ -231,6 +296,9 @@ func (q *Queries) OCIPutManifest(ctx context.Context, arg OCIPutManifestParams) 
 		arg.Annotations,
 		arg.AnnotationsCut,
 		arg.Attachment,
+		arg.ConfigDigest,
+		arg.Blobs,
+		arg.ConfigFacts,
 	)
 	return err
 }
@@ -319,6 +387,87 @@ func (q *Queries) OCIStoredTags(ctx context.Context, arg OCIStoredTagsParams) ([
 			return nil, err
 		}
 		items = append(items, tag)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const oCITagFacts = `-- name: OCITagFacts :many
+WITH tags AS (
+  SELECT pv.id, pv.package_id, i.blob_sha256 AS manifest_sha256
+    FROM package_versions pv JOIN items i ON i.id = pv.lead_item_id
+   WHERE pv.id = ANY($1::bigint[]) AND pv.trashed_at IS NULL AND i.trashed_at IS NULL
+  UNION ALL
+  SELECT -e.id, p.id, e.blob_sha256
+    FROM remote_cache_entries e
+    JOIN packages p ON p.repo_id = e.repo_id AND p.name = e.tag_name
+   WHERE e.id = ANY(SELECT -x FROM unnest($1::bigint[]) AS x)
+), facts AS (
+  SELECT t.id AS version_id, false AS child, ''::text AS platform, m.digest, m.annotations, m.config_digest,
+         CASE WHEN $2::boolean THEN m.blobs END AS blobs,
+         CASE WHEN $2::boolean THEN m.config_facts END AS config_facts
+    FROM tags t
+    JOIN packages p ON p.id = t.package_id
+    JOIN oci_manifests m ON m.repo_id = p.repo_id AND m.name = p.name AND m.digest = t.manifest_sha256
+  UNION ALL
+  SELECT t.id, true, COALESCE(r.platform, ''), c.digest, c.annotations, c.config_digest,
+         CASE WHEN $2::boolean THEN c.blobs END,
+         CASE WHEN $2::boolean THEN c.config_facts END
+    FROM tags t
+    JOIN packages p ON p.id = t.package_id
+    JOIN oci_references r ON r.repo_id = p.repo_id AND r.name = p.name AND r.manifest = t.manifest_sha256 AND r.kind = 'manifest'
+    JOIN oci_manifests c ON c.repo_id = r.repo_id AND c.name = r.name AND c.digest = r.target
+)
+SELECT version_id::bigint AS version_id, child::boolean AS child, platform::text AS platform, digest, annotations, config_digest, blobs::jsonb AS blobs,
+       config_facts::jsonb AS config_facts
+FROM facts
+ORDER BY version_id, child, platform = '', platform, digest
+`
+
+type OCITagFactsParams struct {
+	VersionIds []int64
+	WithFacts  bool
+}
+
+type OCITagFactsRow struct {
+	VersionID    int64
+	Child        bool
+	Platform     string
+	Digest       []byte
+	Annotations  json.RawMessage
+	ConfigDigest []byte
+	Blobs        json.RawMessage
+	ConfigFacts  json.RawMessage
+}
+
+// The facts of the manifests the tags with the given version ids point at, for the package screens (R-OCI-039, R-OCI-040): the tag's own
+// manifest (child false) and, for an index, every child the repository holds, in platform order. The annotations are read always (the
+// description of a package list); the blobs and the configuration only with with_facts, which the version page asks for: a configuration can
+// hold what only a caller who may read its blob may see.
+func (q *Queries) OCITagFacts(ctx context.Context, arg OCITagFactsParams) ([]OCITagFactsRow, error) {
+	rows, err := q.db.Query(ctx, oCITagFacts, arg.VersionIds, arg.WithFacts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []OCITagFactsRow{}
+	for rows.Next() {
+		var i OCITagFactsRow
+		if err := rows.Scan(
+			&i.VersionID,
+			&i.Child,
+			&i.Platform,
+			&i.Digest,
+			&i.Annotations,
+			&i.ConfigDigest,
+			&i.Blobs,
+			&i.ConfigFacts,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

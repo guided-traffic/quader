@@ -116,3 +116,37 @@ func TestR_EP_018_TheViewDecidesAVersionOnItsFilesPath(t *testing.T) {
 		t.Fatal("the ceiling serves the file the view hides")
 	}
 }
+
+// TestR_OCI_040_AFileOfAVersionIsDecidedOnItsPath: the read scope's question of one file by its path (PathReader) is the protocol's
+// decision of a read of that path, so a grant whose path pattern excludes a file refuses what a management answer read from it (an OCI
+// image's configuration, formats/oci.md R-OCI-040) while the version stays readable.
+func TestR_OCI_040_AFileOfAVersionIsDecidedOnItsPath(t *testing.T) {
+	f := newFixture().repo("npm-local", "local", "npm", "")
+	f.policy(policyDef{name: "no-readme", selectors: []string{"npm-local"}, pathExc: []string{"pkg/-/blobs/**"}, entries: map[string][]string{idAlice: {"read"}}})
+	f.policy(policyDef{name: "whole", selectors: []string{"npm-local"}, entries: map[string][]string{idBob: {"read"}}})
+	e := newTestEngine(t, f, nil)
+	keys := qrs([]string{"npm-local"})
+	for who, want := range map[string]bool{"alice": false, "bob": true} {
+		sub := userSub(idAlice, "alice")
+		if who == "bob" {
+			sub = userSub(idBob, "bob")
+		}
+		s, err := e.ReadScopeOn(t.Context(), e.Index(), sub, qr(""), keys)
+		if err != nil {
+			t.Fatal(err)
+		}
+		pr, ok := s.(PathReader)
+		if !ok {
+			t.Fatal("the read scope answers no question of a path")
+		}
+		if !s.MayRead(qr("npm-local"), "pkg", "1.0.0") {
+			t.Errorf("%s: the version is hidden", who)
+		}
+		if got := pr.MayReadPath(qr("npm-local"), "pkg", "1.0.0", "pkg/-/blobs/config"); got != want {
+			t.Errorf("%s: MayReadPath = %v, want %v", who, got, want)
+		}
+		if pr.MayReadPath(qr("npm-local"), "pkg", "1.0.0", "") || pr.MayReadPath(qr("unasked"), "pkg", "1.0.0", "pkg/-/blobs/config") {
+			t.Errorf("%s: an empty path or a repository the scope did not classify is read", who)
+		}
+	}
+}

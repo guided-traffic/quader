@@ -2,6 +2,7 @@ package oci
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/errs"
@@ -177,7 +178,7 @@ func (f *Format) commitManifestItem(ctx context.Context, tx formats.Tx, c format
 	if err := checkReferences(ctx, st, tx, c.Repo.ID, p.name, p.m); err != nil {
 		return err
 	}
-	if err := st.PutManifest(ctx, tx, manifestInput(c.Repo.ID, p.name, p.m)); err != nil {
+	if err := st.PutManifest(ctx, tx, manifestInput(c.Repo.ID, p.name, p.m, p.config)); err != nil {
 		return err
 	}
 	_, _, err = c.Packages.BumpRevision(ctx, pkg)
@@ -192,13 +193,24 @@ func portOf(data any) (Store, error) {
 	return st, nil
 }
 
-// manifestInput is the row of a parsed manifest and the references it names (R-OCI-007).
-func manifestInput(repoID int64, name string, m *manifest.Manifest) rows.ManifestInput {
+// manifestInput is the row of a parsed manifest and the references it names (R-OCI-007), with the facts of an image (R-OCI-040): the
+// config and the layers in the manifest's order, the digest of an image's configuration, and what the reader read of it when the
+// caller read it (facts nil: not read yet).
+func manifestInput(repoID int64, name string, m *manifest.Manifest, facts []byte) rows.ManifestInput {
 	annotations, cut := m.RowAnnotations(manifest.MaxAnnotationBytes)
 	in := rows.ManifestInput{Manifest: rows.Manifest{
 		RepoID: repoID, Name: name, Digest: m.Sum, MediaType: m.MediaType, ArtifactType: m.EffectiveArtifactType(),
 		Size: m.Size, ContentSize: m.ContentSize(), Annotations: annotations, AnnotationsCut: cut, Attachment: IsAttachment(m),
 	}}
+	if m.Type == manifest.TypeImage && m.Config != nil {
+		in.Blobs = imageBlobs(m)
+		if manifest.ConfigKind(m.Config.MediaType) != "" {
+			if d, ok := manifest.ParseDigest(m.Config.Digest); ok {
+				in.ConfigDigest = &d
+				in.ConfigFacts = facts
+			}
+		}
+	}
 	if m.Subject != nil {
 		if s, ok := manifest.ParseDigest(m.Subject.Digest); ok {
 			in.Subject = &s
@@ -217,6 +229,37 @@ func manifestInput(repoID int64, name string, m *manifest.Manifest) rows.Manifes
 	}
 	return in
 }
+
+// imageBlobs is the JSON of the config's and the layers' descriptors of an image manifest in its order (R-OCI-040), at most
+// rows.MaxLayers layers and at most maxBlobsJSON bytes of JSON. Every value passed the manifest parser (digests, media types of at
+// most 255 bytes and sizes of the form it checks), so a descriptor is at most about 400 bytes and a realistic one a third of that.
+func imageBlobs(m *manifest.Manifest) []byte {
+	desc := func(d manifest.Descriptor) rows.BlobDescriptor {
+		return rows.BlobDescriptor{Digest: d.Digest, MediaType: d.MediaType, Size: d.Size, Foreign: d.Foreign()}
+	}
+	out := rows.ImageBlobs{Layers: make([]rows.BlobDescriptor, 0, min(len(m.Layers), rows.MaxLayers))}
+	c := desc(*m.Config)
+	out.Config = &c
+	used := 512
+	for i, l := range m.Layers {
+		d := desc(l)
+		// The JSON of a descriptor: its strings quoted (the parser admits no character json escapes) and its keys and number.
+		used += len(d.Digest) + len(d.MediaType) + 80
+		if i >= rows.MaxLayers || used > maxBlobsJSON {
+			out.More = len(m.Layers) - i
+			break
+		}
+		out.Layers = append(out.Layers, d)
+	}
+	raw, err := json.Marshal(out)
+	if err != nil {
+		return nil
+	}
+	return raw
+}
+
+// maxBlobsJSON bounds the JSON of an image's blobs below the column's check (00132: 256 KiB).
+const maxBlobsJSON = 200 << 10
 
 // recordPublished records package.published of a version the push gave the name (a new tag, or the first manifest pushed by its
 // digest), with the outcome of the name's auto claim and, for its first version, of the shadowing check (R-REPO-048): every format's

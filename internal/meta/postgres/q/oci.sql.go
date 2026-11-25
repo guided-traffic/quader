@@ -7,6 +7,7 @@ package q
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -24,13 +25,28 @@ type OCIGetManifestParams struct {
 	Digest []byte
 }
 
+type OCIGetManifestRow struct {
+	RepoID         int64
+	Name           string
+	Digest         []byte
+	MediaType      string
+	ArtifactType   pgtype.Text
+	Subject        []byte
+	Size           int64
+	ContentSize    int64
+	Annotations    json.RawMessage
+	AnnotationsCut bool
+	CreatedAt      pgtype.Timestamptz
+	Attachment     bool
+}
+
 // The reads of the OCI format's data port (internal/formatdata/oci; R-OCI-007, R-OCI-016, R-OCI-018). The package is a domain
 // package and imports no driver types, so a digest travels as bytea and a time as text cast to timestamptz. The writes and the
 // listings of the tags, the catalog and the sweep are written by the work package that fills the port.
 // The row of a manifest of an image name (R-OCI-007).
-func (q *Queries) OCIGetManifest(ctx context.Context, arg OCIGetManifestParams) (OciManifest, error) {
+func (q *Queries) OCIGetManifest(ctx context.Context, arg OCIGetManifestParams) (OCIGetManifestRow, error) {
 	row := q.db.QueryRow(ctx, oCIGetManifest, arg.RepoID, arg.Name, arg.Digest)
-	var i OciManifest
+	var i OCIGetManifestRow
 	err := row.Scan(
 		&i.RepoID,
 		&i.Name,
@@ -129,9 +145,24 @@ type OCIListReferrersParams struct {
 	MaxRows      int32
 }
 
+type OCIListReferrersRow struct {
+	RepoID         int64
+	Name           string
+	Digest         []byte
+	MediaType      string
+	ArtifactType   pgtype.Text
+	Subject        []byte
+	Size           int64
+	ContentSize    int64
+	Annotations    json.RawMessage
+	AnnotationsCut bool
+	CreatedAt      pgtype.Timestamptz
+	Attachment     bool
+}
+
 // The manifests whose subject is the digest, in digest order after the cursor, optionally of one artifact type (R-OCI-016).
 // A NULL cursor starts at the first digest. A manifest the journal replay withheld is not listed (R-OCI-033).
-func (q *Queries) OCIListReferrers(ctx context.Context, arg OCIListReferrersParams) ([]OciManifest, error) {
+func (q *Queries) OCIListReferrers(ctx context.Context, arg OCIListReferrersParams) ([]OCIListReferrersRow, error) {
 	rows, err := q.db.Query(ctx, oCIListReferrers,
 		arg.RepoID,
 		arg.Name,
@@ -144,9 +175,9 @@ func (q *Queries) OCIListReferrers(ctx context.Context, arg OCIListReferrersPara
 		return nil, err
 	}
 	defer rows.Close()
-	items := []OciManifest{}
+	items := []OCIListReferrersRow{}
 	for rows.Next() {
-		var i OciManifest
+		var i OCIListReferrersRow
 		if err := rows.Scan(
 			&i.RepoID,
 			&i.Name,

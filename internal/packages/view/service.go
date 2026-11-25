@@ -3,6 +3,7 @@ package view
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"math"
 	"slices"
@@ -93,6 +94,14 @@ type Scope struct {
 	virtualReadable map[int64]bool
 	// wiki is the wiki question of the caller's read scope (authz.ReadScope.MayReadWiki); nil answers no.
 	wiki func(repo qname.Repo, pkg, version string) bool
+	// path is the question of a file of a version by its path (authz.PathReader.MayReadPath); nil answers no.
+	path func(repo qname.Repo, pkg, version, path string) bool
+}
+
+// MayReadPath reports whether the caller may read the file at a canonical path of a version in a repository: the decision the
+// format's serving of that file makes for a read (formats.ViewData.ContentPaths). A scope without the question answers no.
+func (sc Scope) MayReadPath(repo qname.Repo, pkg, version, path string) bool {
+	return sc.path != nil && sc.path(repo, pkg, version, path)
 }
 
 // MayReadWiki reports whether the caller may read the wiki of a package version in a repository (R-AUTHZ-034, R-API-058): the
@@ -163,6 +172,9 @@ type ScopeRequest struct {
 // in.
 func (s *Service) Scope(ctx context.Context, rs authz.ReadScope, topo Topology, virtualReadable []int64, r ScopeRequest) (Scope, error) {
 	sc := Scope{topo: topo, virtualReadable: map[int64]bool{}, wiki: rs.MayReadWiki}
+	if pr, ok := rs.(authz.PathReader); ok {
+		sc.path = pr.MayReadPath
+	}
 	for _, v := range virtualReadable {
 		sc.virtualReadable[v] = true
 	}
@@ -1272,7 +1284,7 @@ func (s *Service) fillFromMetadata(ctx context.Context, sc Scope, a Adapter, for
 // Version returns the details of one version, found false when the scope does not
 // hold it.
 func (s *Service) Version(ctx context.Context, sc Scope, format, name, version string) (VersionDetail, bool, error) {
-	g, a, ok, err := s.oneVersion(ctx, sc, format, name, version, true)
+	g, a, one, ok, err := s.oneVersionHeld(ctx, sc, format, name, version, true)
 	if err != nil || !ok {
 		return VersionDetail{}, false, err
 	}
@@ -1322,7 +1334,7 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 		return visible[v]
 	}
 	got, err := a.Describe(ctx, []Version{{ID: pri.VersionID, Format: format, Repo: sc.topo.Name(pri.RepoID).String(), Package: pri.Name, Version: version}},
-		FieldSummary|FieldDetails, isVisible)
+		FieldSummary|FieldDetails|FieldFacts, isVisible)
 	if err != nil {
 		return VersionDetail{}, false, err
 	}
@@ -1335,15 +1347,14 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 			d.Licenses = data.Licenses
 		}
 		if data.Metadata != nil {
-			d.Metadata = data.Metadata
-			if !wiki && len(data.WikiMetadata) > 0 {
-				d.Metadata = make(map[string]any, len(data.Metadata))
-				for k, v := range data.Metadata {
-					if !slices.Contains(data.WikiMetadata, k) {
-						d.Metadata[k] = v
-					}
-				}
-			}
+			d.Metadata = readableMetadata(sc, sc.topo.Name(pri.RepoID), name, version, data, wiki)
+		}
+	}
+	if a.Fetch() == FetchDocument {
+		// The other versions that name the version's content (an image's other tags, formats/oci.md R-OCI-041), read and decided as the
+		// list by content reads an entry's aliases (Q-API-432).
+		if d.Aliases, d.AliasesMore, err = s.otherVersions(ctx, sc, a, one, name, version, d.Metadata); err != nil {
+			return VersionDetail{}, false, err
 		}
 	}
 	if z, ok := a.(Sizer); ok {
@@ -1374,6 +1385,75 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 	return d, true, nil
 }
 
+// otherVersions are the visible versions of the package, other than version, that name the content the version's metadata names
+// (`digest`, "sha256:<hex>"), in the order of the versions, at most maxAliases; more says that there are more. A version whose metadata
+// names no content has none.
+func (s *Service) otherVersions(ctx context.Context, sc Scope, a Adapter, held oneHolders, name, version string, md map[string]any) ([]string, bool, error) {
+	text, _ := md["digest"].(string)
+	digest, ok := sha256Digest(text)
+	if !ok {
+		return []string{}, false, nil
+	}
+	w, err := s.newWalk(sc, a, held.hs, name, held.withheld, VersionFilter{}, nil, true, nil)
+	if err != nil {
+		return nil, false, err
+	}
+	tags, _, more, _, err := s.imageFacts(ctx, w, [][]byte{digest})
+	if err != nil {
+		return nil, false, err
+	}
+	out := []string{}
+	for _, t := range tags[string(digest)] {
+		if t != version {
+			out = append(out, t)
+		}
+	}
+	if len(out) > maxAliases {
+		return out[:maxAliases], true, nil
+	}
+	return out, more[string(digest)], nil
+}
+
+// readableMetadata is the metadata of a version without the members the caller may not read: the wiki's for a caller who may not read
+// the wiki (R-API-058), and those the format read from a file's content beyond the version's document for a caller who may not read
+// that file (an image's configuration, formats/oci.md R-OCI-040).
+func readableMetadata(sc Scope, repo qname.Repo, name, version string, data Data, wiki bool) map[string]any {
+	var drop []string
+	if !wiki {
+		drop = data.WikiMetadata
+	}
+	if !mayReadAll(sc, repo, name, version, data.ContentPaths) {
+		drop = append(slices.Clone(drop), data.ContentMetadata...)
+	}
+	if len(drop) == 0 {
+		return data.Metadata
+	}
+	out := make(map[string]any, len(data.Metadata))
+	for k, v := range data.Metadata {
+		if !slices.Contains(drop, k) {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+// sha256Digest reads "sha256:<64 hex digits>"; ok is false for anything else.
+func sha256Digest(text string) ([]byte, bool) {
+	hexDigest, named := strings.CutPrefix(text, "sha256:")
+	digest, err := hex.DecodeString(hexDigest)
+	return digest, named && err == nil && len(digest) == 32
+}
+
+// mayReadAll reports whether the caller may read the files at every one of the paths of a version.
+func mayReadAll(sc Scope, repo qname.Repo, pkg, version string, paths []string) bool {
+	for _, p := range paths {
+		if !sc.MayReadPath(repo, pkg, version, p) {
+			return false
+		}
+	}
+	return true
+}
+
 // ReadmeOf returns the README source of a version, found false when the scope does
 // not hold the version or it has none.
 func (s *Service) ReadmeOf(ctx context.Context, sc Scope, format, name, version string) (Readme, bool, error) {
@@ -1397,27 +1477,38 @@ func (s *Service) ReadmeOf(ctx context.Context, sc Scope, format, name, version 
 	return Readme{Source: data.Readme, FileName: data.ReadmeFile}, true, nil
 }
 
+// oneHolders are the holders of a version's package and the withheld versions of the scope, as oneVersion read them.
+type oneHolders struct {
+	hs       []q.PackageViewHoldersRow
+	withheld []int64
+}
+
 func (s *Service) oneVersion(ctx context.Context, sc Scope, format, name, version string, withSize bool) (versionGroup, Adapter, bool, error) {
+	g, a, _, ok, err := s.oneVersionHeld(ctx, sc, format, name, version, withSize)
+	return g, a, ok, err
+}
+
+func (s *Service) oneVersionHeld(ctx context.Context, sc Scope, format, name, version string, withSize bool) (versionGroup, Adapter, oneHolders, bool, error) {
 	a, ok := s.adapters.For(format)
 	if !ok {
-		return versionGroup{}, nil, false, nil
+		return versionGroup{}, nil, oneHolders{}, false, nil
 	}
 	withheld, err := s.withheld(ctx, sc, []string{format}, sc.Repos())
 	if err != nil {
-		return versionGroup{}, nil, false, err
+		return versionGroup{}, nil, oneHolders{}, false, err
 	}
 	hs, err := s.holdersOf(ctx, sc, format, name)
 	if err != nil || len(hs) == 0 {
-		return versionGroup{}, nil, false, err
+		return versionGroup{}, nil, oneHolders{}, false, err
 	}
 	rows, err := s.versionRows(ctx, sc, packageIDs(hs), []string{version}, withSize, withheld)
 	if err != nil {
-		return versionGroup{}, nil, false, err
+		return versionGroup{}, nil, oneHolders{}, false, err
 	}
 	for _, g := range groupRows(rows) {
 		if g.version == version {
-			return g, a, true, nil
+			return g, a, oneHolders{hs: hs, withheld: withheld}, true, nil
 		}
 	}
-	return versionGroup{}, nil, false, nil
+	return versionGroup{}, nil, oneHolders{}, false, nil
 }

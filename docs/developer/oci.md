@@ -46,6 +46,8 @@ names what is missing.
 | [mirror.go](../../internal/formats/oci/mirror.go), [mirror_listing.go](../../internal/formats/oci/mirror_listing.go), [mirror_tags.go](../../internal/formats/oci/mirror_tags.go), [mirror_plan.go](../../internal/formats/oci/mirror_plan.go) | The mirror lister (`discover.Lister`) on the remote adapter: the methods and the exact names, the catalog, the tags list and the tag selection, the plan of an image; see [the mirror](#the-mirror-r-oci-026) |
 | [hooks.go](../../internal/formats/oci/hooks.go) | `OnCommit`: the package row, the claim, the version of a tag and the manifest rows, in the commit transaction |
 | [view.go](../../internal/formats/oci/view.go) | The package view adapter: the tag order for versions and `NotVersion` for every other tag (Q-OCI-269), the exposure's tags newest push first, the platform table of an index, the withheld tags |
+| [view_facts.go](../../internal/formats/oci/view_facts.go) | An image's facts on the screens (R-OCI-039 to R-OCI-041): the keys `org.opencontainers.image.*` of the annotations, then of the first platform, then of its labels (`annotationFacts`, `labelFacts`); the word for the kind (`artifactKind`); `describeFacts`, which names the configurations and the labels' facts as content of the config blobs |
+| [image_facts.go](../../internal/formats/oci/image_facts.go), [manifest/config.go](../../internal/formats/oci/manifest/config.go) | Reading an image's configuration: before a push commits (`readStoredConfig`) and after a fetch of a blob that a row names as its unread config (`completeConfig`, Q-OCI-271); the bounded strict reader (`ReadConfig`, Q-OCI-272); a Helm chart's config is a kind a later reader adds beside `rows.ConfigImage` |
 | [handlers_upload.go](../../internal/formats/oci/handlers_upload.go) | The blob upload protocol over the host's session port: start, monolithic `POST`, `PATCH`, `PUT`, status, abort; `chunkStart` (the strict `Content-Range`), `outOfOrder` (the headers of a 416) |
 | [virtual.go](../../internal/formats/oci/virtual.go) | The virtual adapter: `Strategy` (the tags list is the one merged document), `Merge` (the union of the members' tags lists, each tag attributed to the member the tier resolution picks) |
 | [virtual_read.go](../../internal/formats/oci/virtual_read.go) | What a client reads through a virtual repository: the plan (`members`), the `walk` over the members, a manifest by tag, a manifest and a blob by digest in three tiers, the tags list and the referrers as unions |
@@ -883,6 +885,20 @@ The kit's OCI signature cases set `RemoveSubject`: the DELETE of the image takes
 [signatures_fetch_test.go](../../internal/formats/oci/signatures_fetch_test.go), [signatures_follow_test.go](../../internal/formats/oci/signatures_follow_test.go);
 integration `ocilocal` [signatures_test.go](../../test/integration/ocilocal/signatures_test.go) and `ociremote`
 [signatures_test.go](../../test/integration/ociremote/signatures_test.go) (a worker replica runs the job).
+
+## An image's facts (R-OCI-039 to R-OCI-041)
+
+An image manifest's row keeps its config and layers in the manifest's order (`oci_manifests.blobs`), the digest of an image's
+configuration (`config_digest`) and what the reader read of it (`config_facts`, migration 00132). A push reads the config from the
+repository before it commits (`pushed.config`, written by `manifestInput`); a remote's fill writes the row with the configuration unread,
+and the first `GET` of the config through the repository (`handleBlobGet`, `remoteBlobGet`) asks `ConfigUnread`, a read of the partial
+index `oci_manifests_config_unread`, and writes `PutConfigFacts`. `OCIPutManifest` takes a configuration another row of the name read
+already, and a row recorded again keeps what it holds and takes what it lacks.
+
+The view reads the facts with `TagFacts`: the annotations for a list's summary, and with `full` the blobs and the configurations for the
+version's page (`formats.ViewFacts`). The members `configs` and `labeled` are content of the config blobs (`ContentMetadata`,
+`ContentPaths`): `Service.Version` drops them unless `authz.PathReader.MayReadPath` allows the read of every config blob's path. The
+security view is [oci-image-facts.md](../security/oci-image-facts.md).
 
 ## What is built and what is not
 

@@ -80,6 +80,7 @@ const (
 	FieldSummary Fields = 1 << iota
 	FieldDetails
 	FieldReadme
+	FieldFacts
 )
 
 // Data is what the adapter knows of a version.
@@ -92,8 +93,12 @@ type Data struct {
 	// WikiMetadata names the members of Metadata that are wiki content (R-AUTHZ-034): the service drops them, and HasReadme,
 	// for a caller who may not read the wiki of the repository the version was read from (R-API-058).
 	WikiMetadata []string
-	Readme       string
-	ReadmeFile   string
+	// ContentMetadata names the members of Metadata read from the content of the files at ContentPaths: the service drops them for a
+	// caller who may not read every one of those paths (formats.ViewData.ContentMetadata).
+	ContentMetadata []string
+	ContentPaths    []string
+	Readme          string
+	ReadmeFile      string
 }
 
 // Find is a search the adapter answers: one of Text and Keyword is set.
@@ -184,8 +189,12 @@ type VersionDetail struct {
 	LastDownloadedAt *time.Time
 	HasReadme        bool
 	Metadata         map[string]any
-	Repositories     []RepositoryEntry
-	Files            []File
+	// Aliases are the other versions that name the version's content (an image's other tags), in the order of the versions, at most
+	// 100, for a format whose version is fetched as its document; AliasesMore says the content has more. Nil for any other format.
+	Aliases      []string
+	AliasesMore  bool
+	Repositories []RepositoryEntry
+	Files        []File
 	// Repo is the repository the files and the metadata were read from: the one
 	// that stored the version first.
 	Repo qname.Repo

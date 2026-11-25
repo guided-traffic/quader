@@ -171,6 +171,9 @@ type pushed struct {
 	// shadow is what the shadowing check found when it asked (R-REPO-048): undetermined, or the remote members a first version
 	// shadows on the strength of manage. The commit records it with the first version.
 	shadow formats.ShadowOutcome
+	// config is the JSON of what the reader read of an image's configuration before the commit (R-OCI-040); nil when the manifest is
+	// no image or its config could not be opened, which the next fetch of the config completes.
+	config []byte
 }
 
 // tagCommit is the payload of the tag item, the lead of a push by tag; manifestCommit the payload of the manifest item, the companion
@@ -290,7 +293,7 @@ func (f *Format) handleManifestPut(ctx context.Context, addr *formats.Request, w
 	if err != nil {
 		return err
 	}
-	p := &pushed{name: name, tag: tag, m: m, shadowSkipped: skipped, shadow: shadow}
+	p := &pushed{name: name, tag: tag, m: m, shadowSkipped: skipped, shadow: shadow, config: readStoredConfig(ctx, rq, name, m)}
 	if byDigest {
 		_, err = rq.Host.Ingest().Commit(ctx, rq, sp, formats.Commit{
 			Path: formats.Path{Path: path}, MediaType: m.MediaType, Payload: &manifestCommit{p},

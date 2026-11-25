@@ -2151,6 +2151,10 @@ type (
 		Licenses    []string
 		HasReadme   bool
 		WikiMetadata []string // the members of Metadata that are wiki content; the core drops them, and the README, for a caller who may not read the wiki (R-API-058)
+		// the members of Metadata read from a file's content beyond the version's document, and the canonical paths of those files; the
+		// core drops the members for a caller who may not read every path (R-API-058, formats/oci.md R-OCI-040, ADR-284)
+		ContentMetadata []string
+		ContentPaths    []string
 		Metadata    map[string]any
 		Readme      string
 		ReadmeFile  string
@@ -2162,6 +2166,7 @@ const (
 	ViewSummary ViewFields = 1 << iota // description and keywords
 	ViewDetails                        // adds the licenses, whether a README exists and the metadata
 	ViewReadme                         // adds the README text and its file name
+	ViewFacts                          // with ViewDetails, what only the version's own page shows (an image's configuration, ADR-284)
 )
 
 // Has reports whether f includes every field of o.

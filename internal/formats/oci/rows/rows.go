@@ -56,6 +56,12 @@ type Manifest struct {
 	// runnable image (signatures.md R-SIG-063, Q-SIG-82): the signature gate passes it.
 	Attachment bool
 	CreatedAt  time.Time
+	// ConfigDigest is the digest of an image's configuration (R-OCI-040); nil for an index and for a config of another kind.
+	ConfigDigest *[32]byte
+	// Blobs is the JSON of the [ImageBlobs] of an image manifest; nil for an index.
+	Blobs json.RawMessage
+	// ConfigFacts is the JSON of the [ConfigFacts] the reader read of the configuration; nil while it is not read.
+	ConfigFacts json.RawMessage
 }
 
 // ManifestKey names a manifest of an image name.

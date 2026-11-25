@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,291 spec requirements:
-792 cover catalog features, 499 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,294 spec requirements:
+793 cover catalog features, 501 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -1951,7 +1951,7 @@ Catalog page: [formats/docker.md](../features/formats/docker.md) · specified by
 | PKG-DOCKER-039 | Virtual Docker registry | P1 | specified | [R-OCI-027](../spec/formats/oci.md), [R-OCI-028](../spec/formats/oci.md) |
 | PKG-DOCKER-040 | Resolve tags by latest timestamp | P1 | open | – |
 | PKG-DOCKER-052 | Upstream for a cloud registry's pass-through repository | P2 | specified | [R-OCI-004](../spec/formats/oci.md) |
-| PKG-DOCKER-041 | Image tag details | P1 | specified | [R-OCI-031](../spec/formats/oci.md) |
+| PKG-DOCKER-041 | Image tag details | P1 | specified | [R-OCI-031](../spec/formats/oci.md), [R-OCI-040](../spec/formats/oci.md) |
 | PKG-DOCKER-042 | Image labels as searchable properties | P1 | open | – |
 | PKG-DOCKER-043 | Storage layout of images | P1 | specified | [R-OCI-007](../spec/formats/oci.md) |
 | PKG-DOCKER-044 | Docker Content Trust | P2 | open | – |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>499 requirements</summary>
+<summary>501 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3267,6 +3267,8 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-OCI-036 | The tags of a remote repository on the package screens | P1 | [formats/oci.md](../spec/formats/oci.md) |
 | R-OCI-037 | Scan tokens: the registry token of the image scanning's pull | P1 | [formats/oci.md](../spec/formats/oci.md) |
 | R-OCI-038 | The upstream catalogue and the delivery rules of an OCI remote | P1 | [formats/oci.md](../spec/formats/oci.md) |
+| R-OCI-039 | The description, the licence and the links from annotations and labels | P1 | [formats/oci.md](../spec/formats/oci.md) |
+| R-OCI-041 | The version page's head, the commands and the files of an image | P1 | [formats/oci.md](../spec/formats/oci.md) |
 | R-CI-029 | CI state across replicas, Valkey outages and restores | MVP | [gitlab-ci-oidc.md](../spec/gitlab-ci-oidc.md) |
 | R-CI-030 | Background tasks of the CI exchange | MVP | [gitlab-ci-oidc.md](../spec/gitlab-ci-oidc.md) |
 | R-HA-067 | Where the scanner runs outside the chart | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |

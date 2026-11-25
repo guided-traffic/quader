@@ -87,7 +87,10 @@ listed on the screens. The adapter orders the versions (`Compare`), says which o
 exposure rules read: `CatalogEntry` composes the catalog's `Versioning` of the exposure adapter's ranges and this answer, Q-API-433), gives the
 stored sort key of that order (`SortKey`, built with [versionkey](../../internal/formats/versionkey/versionkey.go): bytewise the order of `Compare`, a string that is
 no version first, two strings two keys; the host's package writer stores it and the pre-release answer with every version row, Q-API-429), reads what the screens show of a version beyond the generic rows
-(`Describe`: description, keywords, licenses, the README flag, the metadata and, when asked, the README), answers the two searches that need the format's
+(`Describe`: description, keywords, licenses, the README flag, the metadata and, when asked, the README; with `ViewFacts`, which the version's own page alone asks,
+what is too large for a list, an OCI image's configuration and layers; members read from a file's content beyond the version's document are named in
+`ContentMetadata` with the files' paths in `ContentPaths`, and the core drops them for a caller who may not read every path, as it drops `WikiMetadata`,
+[formats/oci.md](../spec/formats/oci.md) Q-OCI-273), answers the two searches that need the format's
 data (`Find`) and names the stored versions it does not serve (`Withheld`). It runs no SQL: it reaches its tables through the data port the host hands it
 (`formats.DataPorts`, the part of `Host` that is `FormatData`). `Validate` refuses a view without package names. The read model that calls the adapter, and
 the bridge to it (`formathost.NewViewAdapters`), are in [packages.md](packages.md). To give a format a view: implement the seven methods in `view.go` of the

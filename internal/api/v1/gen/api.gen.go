@@ -13692,6 +13692,14 @@ type PackageSummary struct {
 
 // PackageVersion defines model for PackageVersion.
 type PackageVersion struct {
+	// Aliases For a format whose version names a content (an OCI tag and its manifest): the other versions the reader may read that name
+	// the same content (an image's other tags), in the order of the versions, at most 100 (formats/oci.md R-OCI-041, Q-API-432);
+	// absent for every other format.
+	Aliases *[]string `json:"aliases,omitempty"`
+
+	// AliasesMore With `aliases`, it names 100 versions and the content has more.
+	AliasesMore *bool `json:"aliasesMore,omitempty"`
+
 	// DownloadCount How often clients fetched the version, as in the version list (R-API-079).
 	DownloadCount int64         `json:"downloadCount"`
 	Files         []PackageFile `json:"files"`
@@ -13711,7 +13719,12 @@ type PackageVersion struct {
 	// `optionalDependencies` (name to range), `authors` (strings), `homepage`, `repositoryUrl`
 	// and `bugsUrl` (strings as the package declares them), `engines` (name to range) and
 	// `deprecated` (string or null). For Ansible Galaxy collections `docs` announces the documentation (R-ANS-036, Q-API-263): it is
-	// wiki content and absent for a caller who may not read the wiki of the repository. A member that does not apply is absent.
+	// wiki content and absent for a caller who may not read the wiki of the repository. For an OCI tag (formats/oci.md R-OCI-031,
+	// R-OCI-039 to R-OCI-041): `digest`, `mediaType`, `size`, `artifactType`, `kind`, `platforms`, `attestations`, the facts of
+	// the annotations (`description`, `title`, `homepage`, `documentationUrl`, `repositoryUrl`, `revision`, `created`,
+	// `imageVersion`, `vendor`, `authors`, `baseName`, `baseDigest`), `blobs` (each held image manifest's config and layers), and
+	// `configs` and `labeled` (the configurations and the facts of the labels), which are content of the config blobs and absent
+	// for a caller who may not read them (Q-OCI-273). A member that does not apply is absent.
 	Metadata     PackageVersion_Metadata    `json:"metadata"`
 	Name         string                     `json:"name"`
 	PackageId    string                     `json:"packageId"`
@@ -13741,7 +13754,12 @@ type PackageVersion struct {
 // `optionalDependencies` (name to range), `authors` (strings), `homepage`, `repositoryUrl`
 // and `bugsUrl` (strings as the package declares them), `engines` (name to range) and
 // `deprecated` (string or null). For Ansible Galaxy collections `docs` announces the documentation (R-ANS-036, Q-API-263): it is
-// wiki content and absent for a caller who may not read the wiki of the repository. A member that does not apply is absent.
+// wiki content and absent for a caller who may not read the wiki of the repository. For an OCI tag (formats/oci.md R-OCI-031,
+// R-OCI-039 to R-OCI-041): `digest`, `mediaType`, `size`, `artifactType`, `kind`, `platforms`, `attestations`, the facts of
+// the annotations (`description`, `title`, `homepage`, `documentationUrl`, `repositoryUrl`, `revision`, `created`,
+// `imageVersion`, `vendor`, `authors`, `baseName`, `baseDigest`), `blobs` (each held image manifest's config and layers), and
+// `configs` and `labeled` (the configurations and the facts of the labels), which are content of the config blobs and absent
+// for a caller who may not read them (Q-OCI-273). A member that does not apply is absent.
 type PackageVersion_Metadata struct {
 	// Docs The announcement of the documentation of a version, `metadata.docs` of the version details for the format Ansible Galaxy
 	// (R-ANS-036, Q-API-263), so that the page chooses its tabs without a probing request.

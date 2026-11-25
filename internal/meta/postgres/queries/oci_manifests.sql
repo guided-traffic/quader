@@ -3,15 +3,45 @@
 -- A digest travels as bytea; the format's paths are built by the format and arrive as text.
 
 -- name: OCIPutManifest :exec
--- Records a manifest of an image name; one that is recorded already changes nothing (its row is a function of its bytes).
+-- Records a manifest of an image name; its row is a function of its bytes, so one that is recorded already keeps what it holds. Only
+-- the facts of an image (R-OCI-040) that a row lacks are written again: a row recorded before they were kept, or one whose
+-- configuration was not read. A configuration that another manifest of the name names was read already when that one's was: its facts
+-- are a function of the config's bytes, so they are taken over.
 INSERT INTO oci_manifests (repo_id, name, digest, media_type, artifact_type, subject, size, content_size, annotations, annotations_cut,
-                           attachment)
+                           attachment, config_digest, blobs, config_facts)
 VALUES (
   sqlc.arg(repo_id)::bigint, sqlc.arg(name)::text, sqlc.arg(digest)::bytea, sqlc.arg(media_type)::text,
   NULLIF(sqlc.arg(artifact_type)::text, ''), sqlc.narg(subject)::bytea, sqlc.arg(size)::bigint, sqlc.arg(content_size)::bigint,
-  sqlc.narg(annotations)::jsonb, sqlc.arg(annotations_cut)::boolean, sqlc.arg(attachment)::boolean
+  sqlc.narg(annotations)::jsonb, sqlc.arg(annotations_cut)::boolean, sqlc.arg(attachment)::boolean,
+  sqlc.narg(config_digest)::bytea, sqlc.narg(blobs)::jsonb,
+  COALESCE(sqlc.narg(config_facts)::jsonb,
+           (SELECT s.config_facts FROM oci_manifests s
+             WHERE s.repo_id = sqlc.arg(repo_id)::bigint AND s.name = sqlc.arg(name)::text
+               AND s.config_digest = sqlc.narg(config_digest)::bytea AND s.config_facts IS NOT NULL
+             LIMIT 1))
 )
-ON CONFLICT (repo_id, name, digest) DO NOTHING;
+ON CONFLICT (repo_id, name, digest) DO UPDATE
+   SET config_digest = COALESCE(oci_manifests.config_digest, EXCLUDED.config_digest),
+       blobs = COALESCE(oci_manifests.blobs, EXCLUDED.blobs),
+       config_facts = COALESCE(oci_manifests.config_facts, EXCLUDED.config_facts)
+ WHERE (oci_manifests.blobs IS NULL AND EXCLUDED.blobs IS NOT NULL)
+    OR (oci_manifests.config_facts IS NULL AND EXCLUDED.config_facts IS NOT NULL);
+
+-- name: OCIConfigUnread :one
+-- Whether a manifest of the name names the blob as an image's configuration that is not read yet (R-OCI-040): the question of every
+-- fetch of a blob, answered from the partial index of such manifests.
+SELECT EXISTS (
+  SELECT 1 FROM oci_manifests
+   WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND config_digest = sqlc.arg(config_digest)::bytea
+     AND config_facts IS NULL
+)::boolean AS unread;
+
+-- name: OCIPutConfigFacts :exec
+-- Records what the reader read of a configuration in every manifest of the name that names it and has none yet (R-OCI-040).
+UPDATE oci_manifests
+   SET config_facts = sqlc.arg(config_facts)::jsonb
+ WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND config_digest = sqlc.arg(config_digest)::bytea
+   AND config_facts IS NULL;
 
 -- name: OCIGateFacts :many
 -- What the signature gate asks of manifests of image names of a repository (signatures.md R-SIG-063): whether each is an attachment the
@@ -167,3 +197,38 @@ JOIN project rp ON rp.id = r.project_id
 JOIN items i ON i.id = pv.lead_item_id
 JOIN oci_tombstones t ON t.repo_id = p.repo_id AND t.name = p.name AND t.digest = i.blob_sha256
 WHERE pv.trashed_at IS NULL AND (rp.key || '/' || r.key) = ANY(sqlc.arg(repos)::text[]);
+
+-- name: OCITagFacts :many
+-- The facts of the manifests the tags with the given version ids point at, for the package screens (R-OCI-039, R-OCI-040): the tag's own
+-- manifest (child false) and, for an index, every child the repository holds, in platform order. The annotations are read always (the
+-- description of a package list); the blobs and the configuration only with with_facts, which the version page asks for: a configuration can
+-- hold what only a caller who may read its blob may see.
+WITH tags AS (
+  SELECT pv.id, pv.package_id, i.blob_sha256 AS manifest_sha256
+    FROM package_versions pv JOIN items i ON i.id = pv.lead_item_id
+   WHERE pv.id = ANY(sqlc.arg(version_ids)::bigint[]) AND pv.trashed_at IS NULL AND i.trashed_at IS NULL
+  UNION ALL
+  SELECT -e.id, p.id, e.blob_sha256
+    FROM remote_cache_entries e
+    JOIN packages p ON p.repo_id = e.repo_id AND p.name = e.tag_name
+   WHERE e.id = ANY(SELECT -x FROM unnest(sqlc.arg(version_ids)::bigint[]) AS x)
+), facts AS (
+  SELECT t.id AS version_id, false AS child, ''::text AS platform, m.digest, m.annotations, m.config_digest,
+         CASE WHEN sqlc.arg(with_facts)::boolean THEN m.blobs END AS blobs,
+         CASE WHEN sqlc.arg(with_facts)::boolean THEN m.config_facts END AS config_facts
+    FROM tags t
+    JOIN packages p ON p.id = t.package_id
+    JOIN oci_manifests m ON m.repo_id = p.repo_id AND m.name = p.name AND m.digest = t.manifest_sha256
+  UNION ALL
+  SELECT t.id, true, COALESCE(r.platform, ''), c.digest, c.annotations, c.config_digest,
+         CASE WHEN sqlc.arg(with_facts)::boolean THEN c.blobs END,
+         CASE WHEN sqlc.arg(with_facts)::boolean THEN c.config_facts END
+    FROM tags t
+    JOIN packages p ON p.id = t.package_id
+    JOIN oci_references r ON r.repo_id = p.repo_id AND r.name = p.name AND r.manifest = t.manifest_sha256 AND r.kind = 'manifest'
+    JOIN oci_manifests c ON c.repo_id = r.repo_id AND c.name = r.name AND c.digest = r.target
+)
+SELECT version_id::bigint AS version_id, child::boolean AS child, platform::text AS platform, digest, annotations, config_digest, blobs::jsonb AS blobs,
+       config_facts::jsonb AS config_facts
+FROM facts
+ORDER BY version_id, child, platform = '', platform, digest;

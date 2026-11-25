@@ -637,6 +637,8 @@ formats.ViewAdapter: method Prerelease(string) bool
 formats.ViewAdapter: method SortKey(string) []byte
 formats.ViewAdapter: method Stored(context.Context, DataPorts, StoredQuery) (Stored, error)
 formats.ViewAdapter: method Withheld(context.Context, DataPorts, []string) ([]VersionID, error)
+formats.ViewData: field ContentMetadata []string
+formats.ViewData: field ContentPaths []string
 formats.ViewData: field Description string
 formats.ViewData: field HasReadme bool
 formats.ViewData: field Keywords []string
@@ -831,6 +833,7 @@ formats.TierRemoteCached: value = (repeated, place 1 of its group)
 formats.Unknown: value = (repeated, place 2 of its group)
 formats.Upload: value = (repeated, place 3 of its group)
 formats.ViewDetails: value = (repeated, place 1 of its group)
+formats.ViewFacts: value = (repeated, place 3 of its group)
 formats.ViewReadme: value = (repeated, place 2 of its group)
 formats.ViewSummary: value ViewFields = 1 << iota (place 0 of its group)
 formats.Virtual: value = catalog.Virtual

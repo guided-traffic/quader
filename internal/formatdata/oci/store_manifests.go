@@ -57,10 +57,14 @@ func (s *Store) PutManifest(ctx context.Context, tx meta.Tx, in rows.ManifestInp
 	if len(annotations) == 0 {
 		annotations = nil
 	}
+	var configDigest []byte
+	if in.ConfigDigest != nil {
+		configDigest = in.ConfigDigest[:]
+	}
 	if err := qs.OCIPutManifest(ctx, q.OCIPutManifestParams{
 		RepoID: in.RepoID, Name: in.Name, Digest: in.Digest[:], MediaType: in.MediaType, ArtifactType: in.ArtifactType,
 		Subject: subject, Size: in.Size, ContentSize: in.ContentSize, Annotations: annotations, AnnotationsCut: in.AnnotationsCut,
-		Attachment: in.Attachment,
+		Attachment: in.Attachment, ConfigDigest: configDigest, Blobs: nilIfEmpty(in.Blobs), ConfigFacts: nilIfEmpty(in.ConfigFacts),
 	}); err != nil {
 		return err
 	}
@@ -122,7 +126,7 @@ func (s *Store) TagSizes(ctx context.Context, versionIDs []int64) (map[int64]row
 	return out, err
 }
 
-func manifestRow(m q.OciManifest) rows.Manifest {
+func manifestRow(m q.OCIGetManifestRow) rows.Manifest {
 	out := rows.Manifest{
 		RepoID: m.RepoID, Name: m.Name, MediaType: m.MediaType, ArtifactType: m.ArtifactType.String, Size: m.Size,
 		ContentSize: m.ContentSize, Annotations: m.Annotations, AnnotationsCut: m.AnnotationsCut, CreatedAt: m.CreatedAt.Time,
@@ -297,6 +301,71 @@ func (s *Store) WithheldVersions(ctx context.Context, repos []string) ([]int64, 
 	err := s.read(ctx, nil, func(qs *q.Queries) (err error) {
 		out, err = qs.OCIWithheldVersions(ctx, repos)
 		return err
+	})
+	return out, err
+}
+
+func nilIfEmpty(raw json.RawMessage) json.RawMessage {
+	if len(raw) == 0 {
+		return nil
+	}
+	return raw
+}
+
+// ConfigUnread reports whether a manifest of the name names the blob as an image's configuration that is not read yet (R-OCI-040).
+func (s *Store) ConfigUnread(ctx context.Context, repoID int64, name string, config [32]byte) (bool, error) {
+	var out bool
+	err := s.read(ctx, nil, func(qs *q.Queries) (err error) {
+		out, err = qs.OCIConfigUnread(ctx, q.OCIConfigUnreadParams{RepoID: repoID, Name: name, ConfigDigest: config[:]})
+		return err
+	})
+	return out, err
+}
+
+// PutConfigFacts records what the reader read of a configuration in the manifests of the name that name it and have none yet.
+func (s *Store) PutConfigFacts(ctx context.Context, repoID int64, name string, config [32]byte, facts json.RawMessage) error {
+	return s.o.DB.InTx(ctx, func(tx meta.Tx) error {
+		qs, err := txQueries(tx)
+		if err != nil {
+			return err
+		}
+		return qs.OCIPutConfigFacts(ctx, q.OCIPutConfigFactsParams{RepoID: repoID, Name: name, ConfigDigest: config[:], ConfigFacts: facts})
+	})
+}
+
+// TagFacts reads, for the tags with the given version ids, the facts of the manifests they point at and of the children an index
+// names that the repository holds, in platform order (R-OCI-039, R-OCI-040); full adds the blobs and the configurations.
+func (s *Store) TagFacts(ctx context.Context, versionIDs []int64, full bool) ([]rows.TagFacts, error) {
+	if len(versionIDs) == 0 {
+		return nil, nil
+	}
+	var out []rows.TagFacts
+	err := s.read(ctx, nil, func(qs *q.Queries) error {
+		out = out[:0]
+		rs, err := qs.OCITagFacts(ctx, q.OCITagFactsParams{VersionIds: versionIDs, WithFacts: full})
+		if err != nil {
+			return err
+		}
+		at := map[int64]int{}
+		for _, r := range rs {
+			f := rows.ManifestFacts{Platform: r.Platform, Annotations: r.Annotations, Blobs: r.Blobs, ConfigFacts: r.ConfigFacts}
+			copy(f.Digest[:], r.Digest)
+			if d, ok := digestOf(r.ConfigDigest); ok {
+				f.ConfigDigest = &d
+			}
+			i, seen := at[r.VersionID]
+			if !seen {
+				i = len(out)
+				at[r.VersionID] = i
+				out = append(out, rows.TagFacts{VersionID: r.VersionID})
+			}
+			if r.Child {
+				out[i].Children = append(out[i].Children, f)
+			} else {
+				out[i].Image = f
+			}
+		}
+		return nil
 	})
 	return out, err
 }

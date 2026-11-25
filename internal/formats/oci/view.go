@@ -15,7 +15,7 @@ import (
 // The package screens of the format (R-OCI-031, R-API-029): an image name is a package and its tags are its versions, newest first by
 // push time in a local repository and by fetch time in a remote one, whose tags the screens read from the cache entries (R-OCI-036).
 // Per tag the screen shows the digest, the media type, the summed size and, for an index, its platforms with the digest and the size
-// of each child, read from the rows of R-OCI-007. Layer history and labels are not shown (Deferred).
+// of each child, read from the rows of R-OCI-007; the version page adds the image's facts of R-OCI-039 and R-OCI-040 (view_facts.go).
 
 // View returns the format's part of the package screens.
 func (f *Format) View() formats.ViewAdapter { return viewAdapter{} }
@@ -103,22 +103,24 @@ func (viewAdapter) Withheld(ctx context.Context, ports formats.DataPorts, repos 
 	return out, err
 }
 
-// Find is empty: an image has no description or keywords to search (the config is not read, R-OCI-031).
+// Find is empty: the description of an image's annotations is not searched yet (H-2110), and its labels are never (R-OCI-040).
 func (viewAdapter) Find(context.Context, formats.DataPorts, formats.ViewFind, int) ([]formats.VersionID, error) {
 	return nil, nil
 }
 
-// Describe reads, for tags, the facts of the manifests they point at, in two statements however many packages the page holds. The
-// summary the package list asks for holds a description and keywords, which an image has none of, so it costs nothing; the details ask
-// for the metadata of a version:
+// Describe reads, for tags, the facts of the manifests they point at, in a few statements however many packages the page holds. The
+// summary the package list asks for is the description of the image's annotations (R-OCI-039); the details ask for the metadata of a
+// version:
 //
 //	digest, mediaType, size (the summed size of the config and the layers; of an index, of its children), artifactType (the
-//	manifest's own, else its config's media type) and, for an index, platforms: one object per child with platform, digest,
-//	mediaType and size.
+//	manifest's own, else its config's media type), kind (R-OCI-041) and, for an index, platforms: one object per child with platform,
+//	digest, mediaType and size.
 //
-// A tag the repository holds no recorded manifest for is absent from the answer.
+// The version page asks for the facts as well (formats.ViewFacts): the image's facts of its annotations, every held manifest's blobs,
+// and, as content of the config blobs, the configurations and the facts of the labels (describeFacts). A tag the repository holds no
+// recorded manifest for is absent from the answer.
 func (viewAdapter) Describe(ctx context.Context, ports formats.DataPorts, vs []formats.ViewVersion, want formats.ViewFields, _ func(string) bool) (map[formats.VersionID]formats.ViewData, error) {
-	if !want.Has(formats.ViewDetails) || len(vs) == 0 {
+	if len(vs) == 0 || (!want.Has(formats.ViewDetails) && !want.Has(formats.ViewSummary)) {
 		return map[formats.VersionID]formats.ViewData{}, nil
 	}
 	st, err := viewPort(ports)
@@ -126,16 +128,37 @@ func (viewAdapter) Describe(ctx context.Context, ports formats.DataPorts, vs []f
 		return nil, err
 	}
 	ids := make([]int64, len(vs))
+	names := make(map[int64]string, len(vs))
 	for i, v := range vs {
 		ids[i] = int64(v.ID)
+		names[int64(v.ID)] = v.Package
 	}
-	views, err := st.TagViews(ctx, ids)
+	out := make(map[formats.VersionID]formats.ViewData, len(vs))
+	if want.Has(formats.ViewDetails) {
+		views, err := st.TagViews(ctx, ids)
+		if err != nil {
+			return nil, err
+		}
+		for _, tv := range views {
+			out[formats.VersionID(tv.VersionID)] = formats.ViewData{Metadata: tagMetadata(tv)}
+		}
+	}
+	full := want.Has(formats.ViewDetails | formats.ViewFacts)
+	if !want.Has(formats.ViewSummary) && !full {
+		return out, nil
+	}
+	facts, err := st.TagFacts(ctx, ids, full)
 	if err != nil {
 		return nil, err
 	}
-	out := make(map[formats.VersionID]formats.ViewData, len(views))
-	for _, tv := range views {
-		out[formats.VersionID(tv.VersionID)] = formats.ViewData{Metadata: tagMetadata(tv)}
+	for _, tf := range facts {
+		id := formats.VersionID(tf.VersionID)
+		d, held := out[id]
+		describeFacts(&d, names[tf.VersionID], tf, want)
+		// A summary of an image without a description is no data: the list shows none.
+		if held || d.Description != "" {
+			out[id] = d
+		}
 	}
 	return out, nil
 }
@@ -213,6 +236,7 @@ func tagMetadata(tv rows.TagView) map[string]any {
 	if tv.ArtifactType != "" {
 		md["artifactType"] = tv.ArtifactType
 	}
+	md["kind"] = artifactKind(tv.MediaType, tv.ArtifactType)
 	if len(tv.Children) == 0 {
 		return md
 	}

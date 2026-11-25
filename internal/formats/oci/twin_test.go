@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -421,4 +422,72 @@ type proceedResolver struct{ formats.Resolver }
 
 func (proceedResolver) ShadowCheck(context.Context, *formats.Request, string) (formats.ShadowOutcome, error) {
 	return formats.ShadowOutcome{Proceed: true}, nil
+}
+
+// TagFacts is the twin of the statement OCITagFacts: the tag's manifest row and the rows of the children it holds, in platform order.
+func (t *twin) TagFacts(ctx context.Context, versionIDs []int64, full bool) ([]rows.TagFacts, error) {
+	t.note("TagFacts")
+	views, err := t.tagViews(ctx, versionIDs)
+	if err != nil {
+		return nil, err
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	var out []rows.TagFacts
+	for _, tv := range views {
+		name := ""
+		for k := range t.manifests {
+			if k.digest == tv.Digest {
+				name = k.name
+			}
+		}
+		of := func(platform string, m rows.Manifest) rows.ManifestFacts {
+			f := rows.ManifestFacts{Platform: platform, Digest: m.Digest, Annotations: m.Annotations, ConfigDigest: m.ConfigDigest}
+			if full {
+				f.Blobs, f.ConfigFacts = m.Blobs, m.ConfigFacts
+			}
+			return f
+		}
+		var repo int64
+		for k := range t.manifests {
+			if k.digest == tv.Digest && k.name == name {
+				repo = k.repo
+			}
+		}
+		tf := rows.TagFacts{VersionID: tv.VersionID, Image: of("", t.manifests[mkey{repo, name, tv.Digest}])}
+		for _, c := range tv.Children {
+			if m, ok := t.manifests[mkey{repo, name, c.Digest}]; ok {
+				tf.Children = append(tf.Children, of(c.Platform, m))
+			}
+		}
+		out = append(out, tf)
+	}
+	return out, nil
+}
+
+// ConfigUnread is the twin of OCIConfigUnread.
+func (t *twin) ConfigUnread(_ context.Context, repo int64, name string, config [32]byte) (bool, error) {
+	t.note("ConfigUnread")
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	for k, m := range t.manifests {
+		if k.repo == repo && k.name == name && m.ConfigDigest != nil && *m.ConfigDigest == config && m.ConfigFacts == nil {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// PutConfigFacts is the twin of OCIPutConfigFacts.
+func (t *twin) PutConfigFacts(_ context.Context, repo int64, name string, config [32]byte, facts json.RawMessage) error {
+	t.note("PutConfigFacts")
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	for k, m := range t.manifests {
+		if k.repo == repo && k.name == name && m.ConfigDigest != nil && *m.ConfigDigest == config && m.ConfigFacts == nil {
+			m.ConfigFacts = facts
+			t.manifests[k] = m
+		}
+	}
+	return nil
 }

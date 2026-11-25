@@ -548,7 +548,7 @@ func recordFilled(ctx context.Context, tx formats.Tx, pw formats.PackageWriter, 
 	if err != nil {
 		return err
 	}
-	if err := st.PutManifest(ctx, tx, manifestInput(repo.ID, fm.name, fm.m)); err != nil {
+	if err := st.PutManifest(ctx, tx, manifestInput(repo.ID, fm.name, fm.m, nil)); err != nil {
 		return err
 	}
 	_, _, err = pw.BumpRevision(ctx, pkg)

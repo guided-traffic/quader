@@ -838,6 +838,17 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
+## An image's facts (00133)
+
+[00133_oci_image_facts](../../internal/meta/postgres/migrations/00133_oci_image_facts.sql) adds three columns to `oci_manifests`
+([formats/oci.md](../spec/formats/oci.md) R-OCI-040, Q-OCI-271): `blobs` (an image manifest's config and layers in its order, jsonb,
+at most 256 KiB), `config_digest` (the digest of an image's configuration) and `config_facts` (what the format's bounded reader read of
+it, jsonb, at most 256 KiB; NULL while unread), and the partial index `oci_manifests_config_unread` of the rows whose configuration is
+still to be read, which the fetch of a blob asks. The rows are derived from the manifest's and the config's bytes; the table keeps its
+export class `data` ([tables.go](../../internal/formatdata/oci/tables.go)). Expand phase only; a row stored before stays without them until
+its manifest is stored again (no data migration, pre-alpha). The statements are `OCIPutManifest`, `OCIConfigUnread`, `OCIPutConfigFacts`
+and `OCITagFacts` in [oci_manifests.sql](../../internal/meta/postgres/queries/oci_manifests.sql).
+
 ## What the reader of a Debian data archive kept (00132)
 
 [00132_deb_contents](../../internal/meta/postgres/migrations/00132_deb_contents.sql) adds `deb_contents`, one row per Debian package file

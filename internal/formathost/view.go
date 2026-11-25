@@ -144,6 +144,9 @@ func (b viewBridge) Describe(ctx context.Context, vs []view.Version, want view.F
 	if want&view.FieldReadme != 0 {
 		f |= formats.ViewReadme
 	}
+	if want&view.FieldFacts != 0 {
+		f |= formats.ViewFacts
+	}
 	got, err := b.a.Describe(ctx, b.ports, in, f, visible)
 	if err != nil {
 		return nil, err
@@ -152,7 +155,8 @@ func (b viewBridge) Describe(ctx context.Context, vs []view.Version, want view.F
 	for id, d := range got {
 		out[int64(id)] = view.Data{
 			Description: d.Description, Keywords: d.Keywords, Licenses: d.Licenses, HasReadme: d.HasReadme,
-			Metadata: d.Metadata, WikiMetadata: d.WikiMetadata, Readme: d.Readme, ReadmeFile: d.ReadmeFile,
+			Metadata: d.Metadata, WikiMetadata: d.WikiMetadata, ContentMetadata: d.ContentMetadata, ContentPaths: d.ContentPaths,
+			Readme: d.Readme, ReadmeFile: d.ReadmeFile,
 		}
 	}
 	return out, nil

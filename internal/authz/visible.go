@@ -85,6 +85,15 @@ type ReadScope interface {
 	VersionsByPath(key qname.Repo) bool
 }
 
+// PathReader is the optional property of a [ReadScope] that decides the read of one file of a version by its canonical path: the
+// decision of [Decider.DecideOn] for a read of that path, without the audit event and the denial counters. A management answer that
+// carries what a format read from a file's content asks it (an OCI image's configuration from its config blob, formats/oci.md
+// R-OCI-040), so that the answer shows that content to a caller the protocol serves the file to, and to no other. A scope that does not
+// implement it answers no.
+type PathReader interface {
+	MayReadPath(repo qname.Repo, pkg, version, path string) bool
+}
+
 // VersionIndependent is the optional property of a [ReadScope] that a listing of findings uses to decide a package once and not
 // once per version (H-488, V-7b of R-VULN-028): when it reports true, MayRead(repo, pkg, v) gives the same answer for every
 // version v of the package, so MayRead(repo, pkg, "") stands for all of them. A scope that does not implement it, or reports
@@ -98,6 +107,7 @@ type VersionIndependent interface {
 var (
 	_ ReadScoper         = (*Engine)(nil)
 	_ VersionIndependent = (*readScope)(nil)
+	_ PathReader         = (*readScope)(nil)
 )
 
 type readScope struct {
@@ -152,6 +162,15 @@ func (s *readScope) MayRead(repo qname.Repo, pkg, version string) bool {
 	}
 	vc, ok := s.e.atVersion(s.idx, c)
 	return !ok || s.e.evaluateWith(s.idx, s.sub, s.st, vc).Outcome == Allow
+}
+
+// MayReadPath implements [PathReader]: the read of the artifact at the path, decided as the protocol decides it.
+func (s *readScope) MayReadPath(repo qname.Repo, pkg, version, path string) bool {
+	if path == "" || !s.idx.addressedReaches(s.addressed, repo) {
+		return false
+	}
+	c := Coordinate{Repository: repo, Package: pkg, Version: version, Kind: KindArtifact, Path: path, Actions: s.read, Addressed: s.addressed}
+	return s.e.evaluateWith(s.idx, s.sub, s.st, c).Outcome == Allow
 }
 
 // MayReadWiki implements [ReadScope]: MayRead on the coordinate with the part wiki.
