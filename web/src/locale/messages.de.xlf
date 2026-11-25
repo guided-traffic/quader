@@ -25511,7 +25511,7 @@
     </unit>
     <unit id="syncs.package">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:206</note>
+        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:207</note>
       </notes>
       <segment>
         <source>Every version of <ph id="0" equiv="subject" disp="s.subject"/></source>
@@ -25520,7 +25520,7 @@
     </unit>
     <unit id="syncs.section">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:207</note>
+        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:208</note>
       </notes>
       <segment>
         <source>The sub-section <ph id="0" equiv="subject" disp="s.subject"/></source>
@@ -25529,7 +25529,7 @@
     </unit>
     <unit id="syncs.newest">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:218</note>
+        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:219</note>
       </notes>
       <segment>
         <source>The newest <ph id="0" equiv="count" disp="s.bounds.maxVersions"/>, pre-releases included</source>
@@ -25538,7 +25538,7 @@
     </unit>
     <unit id="syncs.newest-no-pre">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:219</note>
+        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:220</note>
       </notes>
       <segment>
         <source>The newest <ph id="0" equiv="count" disp="s.bounds.maxVersions"/>, without pre-releases</source>
@@ -25547,7 +25547,7 @@
     </unit>
     <unit id="syncs.run.refused">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:235</note>
+        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:236</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="b.versionsRefused"/> not delivered</source>
@@ -25556,7 +25556,7 @@
     </unit>
     <unit id="syncs.run.open">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:250</note>
+        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:251</note>
       </notes>
       <segment>
         <source>The downloads of the last run that keeps <ph id="0" equiv="subject" disp="s.subject"/> in sync</source>
@@ -25565,7 +25565,7 @@
     </unit>
     <unit id="syncs.menu">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:254</note>
+        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:255</note>
       </notes>
       <segment>
         <source>Actions for <ph id="0" equiv="subject" disp="s.subject"/></source>
@@ -25574,7 +25574,7 @@
     </unit>
     <unit id="syncs.run-started">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:264</note>
+        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:265</note>
       </notes>
       <segment>
         <source>A run that keeps <ph id="0" equiv="subject" disp="s.subject"/> in sync has started.</source>
@@ -25583,7 +25583,7 @@
     </unit>
     <unit id="syncs.paused">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:275</note>
+        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:276</note>
       </notes>
       <segment>
         <source>The sync of <ph id="0" equiv="subject" disp="s.subject"/> is paused: it starts no run until it is resumed.</source>
@@ -25592,7 +25592,7 @@
     </unit>
     <unit id="syncs.resumed">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:276</note>
+        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:277</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="s.subject"/> is kept in sync again.</source>
@@ -25601,7 +25601,7 @@
     </unit>
     <unit id="syncs.remove.title">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:283</note>
+        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:284</note>
       </notes>
       <segment>
         <source>Stop keeping <ph id="0" equiv="subject" disp="s.subject"/> in sync?</source>
@@ -25610,7 +25610,7 @@
     </unit>
     <unit id="syncs.remove.text">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:285</note>
+        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:286</note>
       </notes>
       <segment>
         <source>Quader stops downloading what is new of it. What it stored stays, and a run in progress ends as a bulk download.</source>
@@ -25619,7 +25619,7 @@
     </unit>
     <unit id="syncs.remove.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:287</note>
+        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:288</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -25628,7 +25628,7 @@
     </unit>
     <unit id="syncs.removed">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:293</note>
+        <note category="location">src/app/features/repositories/downloads/download-syncs.ts:294</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="s.subject"/> is no longer kept in sync.</source>
@@ -26770,7 +26770,7 @@
     <unit id="downloads.bulk.start-again">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:223,225</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:643</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:644</note>
       </notes>
       <segment>
         <source>Start again</source>
@@ -27097,7 +27097,7 @@
     </unit>
     <unit id="downloads.row.open">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:482</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:483</note>
       </notes>
       <segment>
         <source>Details of <ph id="0" equiv="subject" disp="downloadSubject(r)"/></source>
@@ -27106,7 +27106,7 @@
     </unit>
     <unit id="downloads.origin.you">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:489</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:490</note>
       </notes>
       <segment>
         <source>You</source>
@@ -27115,7 +27115,7 @@
     </unit>
     <unit id="downloads.attempt">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:535</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:536</note>
       </notes>
       <segment>
         <source>Attempt <ph id="0" equiv="attempt" disp="r.attempts"/> of <ph id="1" equiv="max" disp="r.maxAttempts"/></source>
@@ -27124,7 +27124,7 @@
     </unit>
     <unit id="downloads.progress.files">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:542</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:543</note>
       </notes>
       <segment>
         <source>Files: <ph id="0" equiv="done" disp="done"/> of <ph id="1" equiv="files" disp="r.files"/></source>
@@ -27133,7 +27133,7 @@
     </unit>
     <unit id="downloads.retried">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:575</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:576</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="downloadSubject(r)"/> waits for its download again.</source>
@@ -27142,7 +27142,7 @@
     </unit>
     <unit id="downloads.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:576</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:577</note>
       </notes>
       <segment>
         <source>The download of <ph id="0" equiv="subject" disp="downloadSubject(r)"/> is cancelled.</source>
@@ -27151,7 +27151,7 @@
     </unit>
     <unit id="downloads.retry">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:591</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:592</note>
       </notes>
       <segment>
         <source>Retry</source>
@@ -27160,8 +27160,8 @@
     </unit>
     <unit id="downloads.cancel">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:591</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:644</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:592</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:645</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -27170,7 +27170,7 @@
     </unit>
     <unit id="downloads.retried-all">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:609</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:610</note>
       </notes>
       <segment>
         <source>Failed downloads that wait again: <ph id="0" equiv="count" disp="n"/>.</source>
@@ -27179,7 +27179,7 @@
     </unit>
     <unit id="downloads.bulk.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:658</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:659</note>
       </notes>
       <segment>
         <source>The bulk download of <ph id="0" equiv="subject" disp="b.subject"/> is cancelled.</source>
@@ -27188,7 +27188,7 @@
     </unit>
     <unit id="downloads.bulk.started-again">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:662</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:663</note>
       </notes>
       <segment>
         <source>The bulk download of <ph id="0" equiv="subject" disp="b.subject"/> starts again: Quader reads its versions from the upstream.</source>
@@ -27197,7 +27197,7 @@
     </unit>
     <unit id="downloads.bulk.failed-versions-of">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:695</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:696</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="name"/>&apos;s version list could not be read</source>
@@ -27206,7 +27206,7 @@
     </unit>
     <unit id="downloads.bulk.failed-versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:696</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:697</note>
       </notes>
       <segment>
         <source>The upstream&apos;s version list could not be read</source>
@@ -27215,7 +27215,7 @@
     </unit>
     <unit id="downloads.bulk.failed-section-of">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:699</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:700</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="name"/>&apos;s list of the sub-section could not be read</source>
@@ -27224,7 +27224,7 @@
     </unit>
     <unit id="downloads.bulk.failed-section">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:700</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:701</note>
       </notes>
       <segment>
         <source>The upstream&apos;s list of the sub-section could not be read</source>
@@ -27233,7 +27233,7 @@
     </unit>
     <unit id="downloads.bulk.open">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:711</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:712</note>
       </notes>
       <segment>
         <source>The downloads of the bulk: <ph id="0" equiv="title" disp="this.bulkTitle(b)"/></source>
@@ -27242,7 +27242,7 @@
     </unit>
     <unit id="downloads.bulk.package">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:717</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:718</note>
       </notes>
       <segment>
         <source>Every version of <ph id="0" equiv="subject" disp="b.subject"/></source>
@@ -27251,7 +27251,7 @@
     </unit>
     <unit id="downloads.bulk.section">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:718</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:719</note>
       </notes>
       <segment>
         <source>The sub-section <ph id="0" equiv="subject" disp="b.subject"/></source>
@@ -27260,7 +27260,7 @@
     </unit>
     <unit id="downloads.bulk.state.expanding">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:742</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:743</note>
       </notes>
       <segment>
         <source>Finding versions</source>
@@ -27269,7 +27269,7 @@
     </unit>
     <unit id="downloads.bulk.state.queued">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:744</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:745</note>
       </notes>
       <segment>
         <source>Queued</source>
@@ -27278,7 +27278,7 @@
     </unit>
     <unit id="downloads.bulk.state.done">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:746</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:747</note>
       </notes>
       <segment>
         <source>Done</source>
@@ -27287,7 +27287,7 @@
     </unit>
     <unit id="downloads.bulk.state.bounded">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:748</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:749</note>
       </notes>
       <segment>
         <source>Stopped at a bound</source>
@@ -27296,7 +27296,7 @@
     </unit>
     <unit id="downloads.bulk.state.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:750</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:751</note>
       </notes>
       <segment>
         <source>Cancelled</source>
@@ -27305,7 +27305,7 @@
     </unit>
     <unit id="downloads.bulk.state.failed">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:752</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:753</note>
       </notes>
       <segment>
         <source>Failed</source>
@@ -27314,7 +27314,7 @@
     </unit>
     <unit id="downloads.bulks.versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:758</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:759</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="queued" disp="b.versionsQueued"/> of <ph id="1" equiv="found" disp="b.versionsFound"/> queued</source>
@@ -27323,7 +27323,7 @@
     </unit>
     <unit id="downloads.bulk.counts">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:762</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:763</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="queued" disp="b.versionsQueued"/> of <ph id="1" equiv="found" disp="b.versionsFound"/> versions found are queued</source>
@@ -27332,7 +27332,7 @@
     </unit>
     <unit id="downloads.bulk.bounds">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:773</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:774</note>
       </notes>
       <segment>
         <source>At most <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> versions and <ph id="1" equiv="bytes" disp="bytes"/>, pre-releases included</source>
@@ -27341,7 +27341,7 @@
     </unit>
     <unit id="downloads.bulk.bounds-no-pre">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:774</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:775</note>
       </notes>
       <segment>
         <source>At most <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> versions and <ph id="1" equiv="bytes" disp="bytes"/>, without pre-releases</source>

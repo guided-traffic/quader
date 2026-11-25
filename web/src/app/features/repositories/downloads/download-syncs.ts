@@ -155,7 +155,8 @@ export class DownloadSyncs {
       this.loaded.set(false);
     }
     const limit = Math.min(MAX_PAGE_LIMIT, Math.max(SYNCS_PAGE, this.syncs().length));
-    this.loading.set(true);
+    // A live read keeps what is shown and says no load (R-UI-213, Q-UI-1238).
+    if (!quiet) this.loading.set(true);
     try {
       const page = await this.api.listSyncs(repository, null, limit);
       if (generation !== this.generation) return;

@@ -333,7 +333,8 @@ export class RemoteDownloads {
       this.nextCursor.set(null);
     }
     const limit = Math.min(MAX_PAGE_LIMIT, Math.max(DEFAULT_PAGE_LIMIT, this.rows().length));
-    this.loading.set(true);
+    // A live read keeps what is shown and says no load (R-UI-213, Q-UI-1238): an empty list would show the spinner in its place.
+    if (!quiet) this.loading.set(true);
     try {
       const page = await this.api.list(repository, filters, null, limit);
       if (generation !== this.generation) return;
@@ -371,7 +372,7 @@ export class RemoteDownloads {
       this.bulkListLoaded.set(false);
     }
     const limit = Math.min(MAX_PAGE_LIMIT, Math.max(BULKS_PAGE, this.bulkList().length));
-    this.bulkListLoading.set(true);
+    if (!quiet) this.bulkListLoading.set(true);
     try {
       const page = await this.api.listBulks(repository, null, limit);
       if (generation !== this.bulkGeneration) return;

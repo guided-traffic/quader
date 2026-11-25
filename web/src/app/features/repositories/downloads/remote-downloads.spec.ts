@@ -10,7 +10,7 @@ import { FakeSessionApi } from '../../../api/testing/fakes';
 import { FakeRemoteDownloadsApi, downloadBulk, downloadFailure, downloadLimit, downloadRow, downloadSync } from '../../../api/testing/fakes-remote-downloads';
 import { LIVE_SLOW_MS } from '../../../core/live-refresh';
 import { Notifier } from '../../../core/notifier';
-import { expectAccessible, renderScreen, settle, text } from '../../../testing/screen';
+import { expectAccessible, holdCalls, renderScreen, settle, text } from '../../../testing/screen';
 import { RepositoryContent } from '../content/repository-content';
 import { RemoteDownloads, DOWNLOADS_REFRESH_MS } from './remote-downloads';
 
@@ -389,6 +389,24 @@ describe('The tab Downloads of a remote repository', () => {
       expect(fake.listCalls.length).toBe(calls + 1);
       expect(text(root.querySelector('[data-testid="download-bulks"]')!)).toContain('guidedtraffic/s3-encryption-proxy');
       expect(text(rowOf(root, 'guidedtraffic/s3-encryption-proxy'))).toContain('Waiting');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('R-UI-217 an empty queue read again by itself keeps its empty sentence and shows no load', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const { root, fixture, fake } = await open({ rows: (f) => ((f.rows = []), (f.bulks = [])) });
+      const calls = fake.listCalls.length;
+      const release = holdCalls(fake, 'list');
+      vi.advanceTimersByTime(LIVE_SLOW_MS);
+      await settle(fixture);
+      // The read again is open: the list says what it said, never the spinner (Q-UI-1238).
+      expect(fake.listCalls.length).toBe(calls);
+      expect(root.querySelector('[data-testid="download-rows"] quader-loading')).toBeNull();
+      expect(root.querySelector('[data-testid="download-rows"] quader-empty-state')).toBeTruthy();
+      release();
     } finally {
       vi.useRealTimers();
     }
