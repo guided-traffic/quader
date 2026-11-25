@@ -9,6 +9,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 )
 
 // Every decision of a route names the item it acts on (R-AUTHZ-005): a grant or a pattern scoped by path decides on the canonical path
@@ -197,15 +198,32 @@ func TestTheSizesReadOnceAndAnswerForTheTagsAsked(t *testing.T) {
 	}
 }
 
-// Mechanism of R-OCI-031, not a proof of its criteria: it checks the tag order or one step of the view; the criteria are the
-// platforms in the API metadata and the sizeBytes of the image.
-func TestAStringThatIsNoTagSortsBeforeEveryTag(t *testing.T) {
+// TestR_OCI_031_ATagThatIsNoVersionIsNoVersionOfTheFormat: a tag the tag order does not rank as a version (`latest`, `main`,
+// `sha-5ccfd1a`) is no version of the format, as a string that is no tag is not: both sort before every version and among themselves by
+// their bytes, their key has the class versionkey.NotVersion, and every version's has the class Version (Q-OCI-269), so a list orders
+// them below the versions by their time (api-and-ui.md R-API-029). Milliseconds, a table of strings.
+func TestR_OCI_031_ATagThatIsNoVersionIsNoVersionOfTheFormat(t *testing.T) {
 	v := New().View()
-	for _, junk := range []string{"zz z", "", "-x", "\x00?!"} {
-		for _, tag := range []string{"abc", "1.0", "latest", "a"} {
-			if v.Compare(junk, tag) >= 0 || v.Compare(tag, junk) <= 0 {
-				t.Errorf("%q against the tag %q", junk, tag)
+	unranked := []string{"zz z", "", "-x", "\x00?!", "latest", "main", "sha-5ccfd1a", "abc", "a", "Latest", "_x", "edge"}
+	versions := []string{"1.0", "v2", "1.0-rc1", "5.4.7", "1.29.3-perl", "20240315"}
+	for _, u := range unranked {
+		if k := v.SortKey(u); k[0] != versionkey.NotVersion {
+			t.Errorf("the key of %q has the class %#x, want NotVersion", u, k[0])
+		}
+		for _, ver := range versions {
+			if v.Compare(u, ver) >= 0 || v.Compare(ver, u) <= 0 {
+				t.Errorf("%q against the version %q", u, ver)
 			}
+		}
+		for _, w := range unranked {
+			if c, want := v.Compare(u, w), strings.Compare(u, w); (c < 0) != (want < 0) || (c > 0) != (want > 0) {
+				t.Errorf("Compare(%q, %q) = %d, want the bytes' order %d", u, w, c, want)
+			}
+		}
+	}
+	for _, ver := range versions {
+		if k := v.SortKey(ver); k[0] != versionkey.Version {
+			t.Errorf("the key of %q has the class %#x, want Version", ver, k[0])
 		}
 	}
 }

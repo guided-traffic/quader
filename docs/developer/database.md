@@ -838,6 +838,18 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
+## The versions a format does not rank (00123)
+
+[00123_unranked_versions](../../internal/meta/postgres/migrations/00123_unranked_versions.sql) makes an image tag that is no version
+(`latest`, `main`, `sha-5ccfd1a`) a string its format does not rank, `versionkey.NotVersion` ([api-and-ui.md](../spec/api-and-ui.md)
+Q-API-431, [formats/oci.md](../spec/formats/oci.md) Q-OCI-269). It replaces `oci_tag_sort_key` (the one of 00116); writes the remote tag
+entries whose generated `tag_sort_key` has the old class (0x01 0x00) again (`UPDATE … SET path = path`: `ALTER COLUMN … SET EXPRESSION` needs
+PostgreSQL 17); sets `sort_key` and `prerelease` of the local OCI version rows of the old class to NULL, which the background migration
+`version_sort_key` fills again with the format's key (the reads give such a row that key meanwhile, Q-API-430); and adds the two partial
+indexes of the second part of the order of the versions, `package_versions_unranked (package_id, created_at, version COLLATE "C")` and
+`remote_cache_entries_tag_unranked (repo_id, tag_name, fetched_at, tag)`, both `WHERE … sort_key < '\x01'`.
+`TestR_HA_020_TheUnrankedVersionsStepPassesOnADatabaseOfThePreviousRelease` (area `postgres`) migrates a database of the release before it.
+
 ## A remote lists no attachment tag (00122)
 
 [00122_oci_attachment_tags_unlisted](../../internal/meta/postgres/migrations/00122_oci_attachment_tags_unlisted.sql) replaces the view

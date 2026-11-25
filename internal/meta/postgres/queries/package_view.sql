@@ -284,9 +284,15 @@ SELECT e.tag::text AS version, e.fetched_at AS created_at
 -- The latest visible version of each package row of the given packages ("<format>\x1f<name>") in the scope, as candidates: the highest
 -- release of its version rows by the format's sort key, its highest pre-release when it has no visible release, and for a remote OCI
 -- repository its highest tag (none is a pre-release), each one walk of an index of its kind (package_versions_latest_release,
--- package_versions_latest_prerelease, remote_cache_entries_tag_key) that stops at the first visible row (Q-API-429). The caller picks
--- the latest of a package among its rows' candidates by the format's order, and a package row with a candidate is a repository that
--- holds a visible version. It reads no version past the ones it returns and those the scope or the withheld list drops on the way.
+-- package_versions_latest_prerelease, remote_cache_entries_tag_key) that stops at the first visible row (Q-API-429). A ranked version's
+-- key is above every unranked one's, so the first entry of a walk is ranked whenever the package has a ranked version of its kind; a
+-- pre-release counts only while no ranked release is visible. Beside them the newest visible version the format does not rank (a key of
+-- the class 0x00: an image tag such as latest or sha-5ccfd1a), by its time, of the version rows and of a remote's tags, one walk of
+-- package_versions_unranked and remote_cache_entries_tag_unranked each (Q-API-431): the latest of a package that has no ranked version.
+-- The walks carry no bound of the class: the planner read every ranked tag by a bitmap scan and sorted them when they had one.
+-- The caller picks the latest of a package among its rows' candidates (latestOf: a release, else a pre-release, else the newest
+-- unranked one), and a package row with a candidate is a repository that holds a visible version. It reads no version past the ones it
+-- returns and those the scope or the withheld list drops on the way.
 -- A visible version row without a key (written before migration 00116 or by a replica of the release before it, until the background
 -- migration version_sort_key has filled it) is a candidate as well, every one of them (Q-API-430): the caller's order decides among
 -- them and the keyed candidates, so such a row is never passed over; once the rows are filled the branch reads nothing.
@@ -310,11 +316,20 @@ SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_
            AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
                 OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
            AND NOT EXISTS (SELECT 1 FROM package_versions rv
-                            WHERE rv.package_id = p.id AND rv.trashed_at IS NULL AND NOT rv.prerelease
+                            WHERE rv.package_id = p.id AND rv.trashed_at IS NULL AND NOT rv.prerelease AND rv.sort_key >= '\x01'::bytea
                               AND NOT (rv.id = ANY(sqlc.arg(withheld)::bigint[]))
                               AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
                                    OR concat_ws(chr(31), p.repo_id::text, p.name, rv.version) = ANY(sqlc.arg(rows)::text[])))
          ORDER BY pv.sort_key DESC
+         LIMIT 1)
+       UNION ALL
+       (SELECT pv.id, pv.version::text, pv.created_at
+          FROM package_versions pv
+         WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND pv.sort_key < '\x01'::bytea
+           AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+           AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+                OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
+         ORDER BY pv.created_at DESC, (pv.version COLLATE "C") DESC
          LIMIT 1)
        UNION ALL
        (SELECT -e.id, e.tag::text, e.fetched_at
@@ -323,7 +338,6 @@ SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_
            AND e.repo_id = p.repo_id AND e.tag_name = p.name
            AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
            AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
-   AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
            AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
            AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
                 OR concat_ws(chr(31), p.repo_id::text, p.name, e.tag) = ANY(sqlc.arg(rows)::text[]))
@@ -334,6 +348,25 @@ SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_
                             WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
                               AND i.trashed_at IS NULL AND s.downloads > 0 OFFSET 0))
          ORDER BY e.tag_sort_key DESC
+         LIMIT 1)
+       UNION ALL
+       (SELECT -e.id, e.tag::text, e.fetched_at
+          FROM remote_cache_entries e
+         WHERE r.class = 'remote' AND r.format = 'oci'
+           AND e.repo_id = p.repo_id AND e.tag_name = p.name
+           AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+           AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
+           AND e.tag_sort_key < '\x01'::bytea
+           AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
+           AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+                OR concat_ws(chr(31), p.repo_id::text, p.name, e.tag) = ANY(sqlc.arg(rows)::text[]))
+           AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)
+           AND (EXISTS (SELECT 1 FROM mirror_state ms WHERE ms.repo_id = e.repo_id OFFSET 0)
+                OR e.background_sha256 = e.blob_sha256
+                OR EXISTS (SELECT 1 FROM items i JOIN item_download_stats s ON s.item_id = i.id
+                            WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+                              AND i.trashed_at IS NULL AND s.downloads > 0 OFFSET 0))
+         ORDER BY e.fetched_at DESC, e.tag DESC
          LIMIT 1)
        UNION ALL
        (SELECT pv.id, pv.version::text, pv.created_at
@@ -352,14 +385,15 @@ SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_
 -- One page of the visible versions of one package of one repository in the order of the versions, highest first (R-API-010, Q-API-429):
 -- the keyset on the format's sort key below the cursor's, in the order of the index package_versions_by_key, so the page reads the rows
 -- it returns and those the scope or the withheld list drops on the way, and none past its limit. The first page passes '\x02', above
--- every key (a key starts with 0x00 or 0x01). After them come the package's visible rows without a key, every one (Q-API-430), with a
+-- every key (a key starts with 0x00 or 0x01). It reads the versions the format ranks (a key of the class 0x01), the first part of the
+-- order of the versions; the versions it does not rank follow by their time (PackageViewVersionUnranked*, Q-API-431). After them come the package's visible rows without a key, every one (Q-API-430), with a
 -- NULL sort_key: rows written before migration 00116 or by a replica of the release before it, until the background migration
 -- version_sort_key has filled them. The caller computes their keys with the format's code and merges them; once the rows are filled the
 -- second part reads nothing (package_versions_by_key holds the NULL keys).
 (SELECT pv.version::text AS version, pv.created_at, pv.sort_key
    FROM package_versions pv
   WHERE pv.package_id = sqlc.arg(package_id)::bigint AND pv.trashed_at IS NULL
-    AND pv.sort_key < sqlc.arg(after_key)::bytea
+    AND pv.sort_key < sqlc.arg(after_key)::bytea AND pv.sort_key >= '\x01'::bytea
     AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
     AND (sqlc.arg(whole)::boolean OR pv.version = ANY(sqlc.arg(allowed)::text[]))
   ORDER BY pv.sort_key DESC
@@ -377,7 +411,7 @@ UNION ALL
 (SELECT pv.version::text AS version, pv.created_at, pv.sort_key
    FROM package_versions pv
   WHERE pv.package_id = sqlc.arg(package_id)::bigint AND pv.trashed_at IS NULL
-    AND pv.sort_key > sqlc.arg(after_key)::bytea
+    AND pv.sort_key > sqlc.arg(after_key)::bytea AND pv.sort_key >= '\x01'::bytea
     AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
     AND (sqlc.arg(whole)::boolean OR pv.version = ANY(sqlc.arg(allowed)::text[]))
   ORDER BY pv.sort_key
@@ -398,7 +432,7 @@ SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sor
  WHERE e.repo_id = sqlc.arg(repo_id)::bigint AND e.tag_name = sqlc.arg(name)::text
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
    AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
-   AND e.tag_sort_key < sqlc.arg(after_key)::bytea
+   AND e.tag_sort_key < sqlc.arg(after_key)::bytea AND e.tag_sort_key >= '\x01'::bytea
    AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
    AND (sqlc.arg(whole)::boolean OR e.tag = ANY(sqlc.arg(allowed)::text[]))
    AND EXISTS (SELECT 1 FROM repositories r WHERE r.id = e.repo_id AND r.class = 'remote' AND r.format = 'oci' OFFSET 0)
@@ -418,7 +452,7 @@ SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sor
  WHERE e.repo_id = sqlc.arg(repo_id)::bigint AND e.tag_name = sqlc.arg(name)::text
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
    AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
-   AND e.tag_sort_key > sqlc.arg(after_key)::bytea
+   AND e.tag_sort_key > sqlc.arg(after_key)::bytea AND e.tag_sort_key >= '\x01'::bytea
    AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
    AND (sqlc.arg(whole)::boolean OR e.tag = ANY(sqlc.arg(allowed)::text[]))
    AND EXISTS (SELECT 1 FROM repositories r WHERE r.id = e.repo_id AND r.class = 'remote' AND r.format = 'oci' OFFSET 0)
@@ -430,6 +464,126 @@ SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sor
                       AND i.trashed_at IS NULL AND s.downloads > 0 OFFSET 0))
  ORDER BY e.tag_sort_key
  LIMIT sqlc.arg(max_rows)::int;
+
+-- name: PackageViewVersionUnrankedDesc :many
+-- The second part of the order of the versions, newest first (R-API-029, Q-API-431): one page of the visible versions of one package of one
+-- repository that the format does not rank (a key of the class 0x00, an image tag such as latest or sha-5ccfd1a), by their time and then
+-- their name compared bytewise below the cursor's, in the order of the index package_versions_unranked, so the page reads the rows it
+-- returns and those the scope or the withheld list drops on the way. The first page passes the time 'infinity' and an empty version. After
+-- them come the package's visible rows without a key, every one, as in PackageViewVersionKeyDesc (Q-API-430): the caller keeps those its
+-- format does not rank and that lie after the cursor.
+(SELECT pv.version::text AS version, pv.created_at, pv.sort_key
+   FROM package_versions pv
+  WHERE pv.package_id = sqlc.arg(package_id)::bigint AND pv.trashed_at IS NULL AND pv.sort_key < '\x01'::bytea
+    AND (pv.created_at, (pv.version COLLATE "C")) < (sqlc.arg(after_at)::text::timestamptz, (sqlc.arg(after_version)::text COLLATE "C"))
+    AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+    AND (sqlc.arg(whole)::boolean OR pv.version = ANY(sqlc.arg(allowed)::text[]))
+  ORDER BY pv.created_at DESC, (pv.version COLLATE "C") DESC
+  LIMIT sqlc.arg(max_rows)::int)
+UNION ALL
+(SELECT pv.version::text, pv.created_at, pv.sort_key
+   FROM package_versions pv
+  WHERE pv.package_id = sqlc.arg(package_id)::bigint AND pv.trashed_at IS NULL AND pv.sort_key IS NULL
+    AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+    AND (sqlc.arg(whole)::boolean OR pv.version = ANY(sqlc.arg(allowed)::text[])));
+
+-- name: PackageViewVersionUnrankedAsc :many
+-- PackageViewVersionUnrankedDesc oldest first: the keyset above the cursor's; the first page passes '-infinity' and an empty version.
+(SELECT pv.version::text AS version, pv.created_at, pv.sort_key
+   FROM package_versions pv
+  WHERE pv.package_id = sqlc.arg(package_id)::bigint AND pv.trashed_at IS NULL AND pv.sort_key < '\x01'::bytea
+    AND (pv.created_at, (pv.version COLLATE "C")) > (sqlc.arg(after_at)::text::timestamptz, (sqlc.arg(after_version)::text COLLATE "C"))
+    AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+    AND (sqlc.arg(whole)::boolean OR pv.version = ANY(sqlc.arg(allowed)::text[]))
+  ORDER BY pv.created_at, (pv.version COLLATE "C")
+  LIMIT sqlc.arg(max_rows)::int)
+UNION ALL
+(SELECT pv.version::text, pv.created_at, pv.sort_key
+   FROM package_versions pv
+  WHERE pv.package_id = sqlc.arg(package_id)::bigint AND pv.trashed_at IS NULL AND pv.sort_key IS NULL
+    AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+    AND (sqlc.arg(whole)::boolean OR pv.version = ANY(sqlc.arg(allowed)::text[])));
+
+-- name: PackageViewTagUnrankedDesc :many
+-- PackageViewVersionUnrankedDesc for the tags of a name in a remote OCI repository (R-OCI-036): the tags that are no version, by their
+-- fetch time, in the order of the index remote_cache_entries_tag_unranked, each entry kept by the rules of the view oci_remote_tags as
+-- checks per entry, as PackageViewTagPageDesc writes them.
+SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sort_key
+  FROM remote_cache_entries e
+ WHERE e.repo_id = sqlc.arg(repo_id)::bigint AND e.tag_name = sqlc.arg(name)::text
+   AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL AND e.tag_sort_key < '\x01'::bytea
+   AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
+   AND (e.fetched_at, e.tag) < (sqlc.arg(after_at)::text::timestamptz, (sqlc.arg(after_version)::text COLLATE "C"))
+   AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
+   AND (sqlc.arg(whole)::boolean OR e.tag = ANY(sqlc.arg(allowed)::text[]))
+   AND EXISTS (SELECT 1 FROM repositories r WHERE r.id = e.repo_id AND r.class = 'remote' AND r.format = 'oci' OFFSET 0)
+   AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)
+   AND (EXISTS (SELECT 1 FROM mirror_state ms WHERE ms.repo_id = e.repo_id OFFSET 0)
+        OR e.background_sha256 = e.blob_sha256
+        OR EXISTS (SELECT 1 FROM items i JOIN item_download_stats s ON s.item_id = i.id
+                    WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+                      AND i.trashed_at IS NULL AND s.downloads > 0 OFFSET 0))
+ ORDER BY e.fetched_at DESC, e.tag DESC
+ LIMIT sqlc.arg(max_rows)::int;
+
+-- name: PackageViewTagUnrankedAsc :many
+-- PackageViewTagUnrankedDesc oldest first.
+SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sort_key
+  FROM remote_cache_entries e
+ WHERE e.repo_id = sqlc.arg(repo_id)::bigint AND e.tag_name = sqlc.arg(name)::text
+   AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL AND e.tag_sort_key < '\x01'::bytea
+   AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
+   AND (e.fetched_at, e.tag) > (sqlc.arg(after_at)::text::timestamptz, (sqlc.arg(after_version)::text COLLATE "C"))
+   AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
+   AND (sqlc.arg(whole)::boolean OR e.tag = ANY(sqlc.arg(allowed)::text[]))
+   AND EXISTS (SELECT 1 FROM repositories r WHERE r.id = e.repo_id AND r.class = 'remote' AND r.format = 'oci' OFFSET 0)
+   AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)
+   AND (EXISTS (SELECT 1 FROM mirror_state ms WHERE ms.repo_id = e.repo_id OFFSET 0)
+        OR e.background_sha256 = e.blob_sha256
+        OR EXISTS (SELECT 1 FROM items i JOIN item_download_stats s ON s.item_id = i.id
+                    WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+                      AND i.trashed_at IS NULL AND s.downloads > 0 OFFSET 0))
+ ORDER BY e.fetched_at, e.tag
+ LIMIT sqlc.arg(max_rows)::int;
+
+-- name: PackageViewUnrankedNames :many
+-- The visible versions of the given packages (by id) that their format does not rank, one row per version per repository, with their
+-- time: the second part of the order of the versions of a package that several repositories of the scope hold, which the caller groups
+-- per version (a version by its oldest row) and sorts (R-API-029, Q-API-431, H-1901). Each part reads a partial index of the versions it
+-- returns; the rows without a key come as well, every one (Q-API-430), and the caller keeps those its format does not rank.
+SELECT pv.version::text AS version, pv.created_at, p.repo_id, pv.sort_key
+  FROM package_versions pv
+  JOIN packages p ON p.id = pv.package_id
+ WHERE pv.package_id = ANY(sqlc.arg(package_ids)::bigint[]) AND pv.trashed_at IS NULL AND pv.sort_key < '\x01'::bytea
+   AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+   AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+        OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
+UNION ALL
+SELECT pv.version::text, pv.created_at, p.repo_id, pv.sort_key
+  FROM package_versions pv
+  JOIN packages p ON p.id = pv.package_id
+ WHERE pv.package_id = ANY(sqlc.arg(package_ids)::bigint[]) AND pv.trashed_at IS NULL AND pv.sort_key IS NULL
+   AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+   AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+        OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
+UNION ALL
+SELECT e.tag::text, e.fetched_at, e.repo_id, e.tag_sort_key
+  FROM packages p
+  JOIN remote_cache_entries e ON e.repo_id = p.repo_id AND e.tag_name = p.name
+   AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL AND e.tag_sort_key < '\x01'::bytea
+ WHERE p.id = ANY(sqlc.arg(package_ids)::bigint[])
+   AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
+   AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
+   AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+        OR concat_ws(chr(31), p.repo_id::text, p.name, e.tag) = ANY(sqlc.arg(rows)::text[]))
+   AND EXISTS (SELECT 1 FROM repositories r WHERE r.id = e.repo_id AND r.class = 'remote' AND r.format = 'oci' OFFSET 0)
+   AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)
+   AND (EXISTS (SELECT 1 FROM mirror_state ms WHERE ms.repo_id = e.repo_id OFFSET 0)
+        OR e.background_sha256 = e.blob_sha256
+        OR EXISTS (SELECT 1 FROM items i JOIN item_download_stats s ON s.item_id = i.id
+                    WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+                      AND i.trashed_at IS NULL AND s.downloads > 0 OFFSET 0))
+;
 
 -- name: PackageViewFiles :many
 -- The files of a version: the live file items linked to it.

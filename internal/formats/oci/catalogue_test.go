@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
@@ -186,16 +187,22 @@ func TestR_SIG_024_AttachmentTagsAreNoVersionsOfTheUpstreamCatalogue(t *testing.
 	}
 	for name, c := range map[string]*canned{
 		"a distribution registry": {base: "https://registry.example/", answers: map[string]discover.Response{
-			"https://registry.example/v2/acme/app/tags/list?n=1000": {Status: 200,
-				Body: []byte(`{"name":"acme/app","tags":["1.0","` + strings.Join(attachments, `","`) + `"]}`)},
+			"https://registry.example/v2/acme/app/tags/list?n=1000": {
+				Status: 200,
+				Body:   []byte(`{"name":"acme/app","tags":["1.0","` + strings.Join(attachments, `","`) + `"]}`),
+			},
 		}},
 		"Docker Hub": {base: "https://registry-1.docker.io/", answers: map[string]discover.Response{
-			"https://hub.docker.com/v2/namespaces/acme/repositories/app/tags?page=1&page_size=100": {Status: 200,
-				Body: []byte(`{"count":5,"next":null,"results":[` + strings.Join(hubRows, ",") + `]}`)},
+			"https://hub.docker.com/v2/namespaces/acme/repositories/app/tags?page=1&page_size=100": {
+				Status: 200,
+				Body:   []byte(`{"count":5,"next":null,"results":[` + strings.Join(hubRows, ",") + `]}`),
+			},
 		}},
 		"Quay": {base: "https://quay.io/", answers: map[string]discover.Response{
-			"https://quay.io/api/v1/repository/acme/app/tag/?limit=100&onlyActiveTags=true&page=1": {Status: 200,
-				Body: []byte(`{"tags":[` + strings.Join(quayRows, ",") + `],"has_additional":false}`)},
+			"https://quay.io/api/v1/repository/acme/app/tag/?limit=100&onlyActiveTags=true&page=1": {
+				Status: 200,
+				Body:   []byte(`{"tags":[` + strings.Join(quayRows, ",") + `],"has_additional":false}`),
+			},
 		}},
 	} {
 		t.Run("R-SIG-024 "+name, func(t *testing.T) {
@@ -212,4 +219,79 @@ func TestR_SIG_024_AttachmentTagsAreNoVersionsOfTheUpstreamCatalogue(t *testing.
 			}
 		})
 	}
+}
+
+// TestR_CUR_007_DockerHubsAndQuaysTagsComeInTheTagOrder: the catalogue lists an image's tags newest first by the format's order whatever
+// order the operator's API answers in (Q-CUR-180): Docker Hub and Quay are read whole up to five pages and sorted, the versions by the
+// tag order (4.16.6 above 4.2.8), the tags that are no version below them, newest first by the upstream's time; an image with more
+// tags than five pages hold is listed from the distribution tags list in the tag order. Milliseconds, canned answers of a few hundred
+// bytes; nothing asks Docker Hub or Quay.
+func TestR_CUR_007_DockerHubsAndQuaysTagsComeInTheTagOrder(t *testing.T) {
+	const hub = "https://hub.docker.com/v2/namespaces/acme/repositories/app/tags?page="
+	// Docker Hub's order: the newest push first, each version beside the commit tag pushed with it.
+	pushed := []struct{ tag, at string }{
+		{"latest", "2026-11-20T10:00:00Z"},
+		{"sha-5ccfd1a", "2026-11-20T10:00:00Z"},
+		{"4.2.8", "2026-11-20T10:00:00Z"},
+		{"sha-d4591ff", "2026-11-10T10:00:00Z"},
+		{"4.16.6", "2026-11-10T10:00:00Z"},
+		{"4.16.6-rc1", "2026-11-09T10:00:00Z"},
+		{"main", "2026-11-25T10:00:00Z"},
+	}
+	var hubRows, quayRows []string
+	for _, p := range pushed {
+		hubRows = append(hubRows, fmt.Sprintf(`{"name":%q,"last_updated":%q,"full_size":1}`, p.tag, p.at))
+		at, _ := time.Parse(time.RFC3339, p.at)
+		quayRows = append(quayRows, fmt.Sprintf(`{"name":%q,"last_modified":%q,"size":1}`, p.tag, at.Format("Mon, 02 Jan 2006 15:04:05 -0700")))
+	}
+	want := []string{"4.16.6", "4.16.6-rc1", "4.2.8", "main", "sha-5ccfd1a", "latest", "sha-d4591ff"}
+	versions := func(t *testing.T, c *canned) []string {
+		t.Helper()
+		p, err := remoteAdapter{}.Package(context.Background(), c, "acme/app", discover.VersionsRequest{Limit: 100})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got []string
+		for _, v := range p.Versions {
+			got = append(got, v.Version)
+		}
+		return got
+	}
+	t.Run("R-CUR-007 Docker Hub read whole and sorted", func(t *testing.T) {
+		c := &canned{base: "https://registry-1.docker.io/", answers: map[string]discover.Response{
+			hub + "1&page_size=100": {Status: 200, Body: []byte(`{"count":7,"next":"p2","results":[` + strings.Join(hubRows[:4], ",") + `]}`)},
+			hub + "2&page_size=100": {Status: 200, Body: []byte(`{"count":7,"next":null,"results":[` + strings.Join(hubRows[4:], ",") + `]}`)},
+		}}
+		if got := versions(t, c); !slices.Equal(got, want) {
+			t.Fatalf("got %v, want %v", got, want)
+		}
+	})
+	t.Run("R-CUR-007 Quay read whole and sorted", func(t *testing.T) {
+		c := &canned{base: "https://quay.io/", answers: map[string]discover.Response{
+			"https://quay.io/api/v1/repository/acme/app/tag/?limit=100&onlyActiveTags=true&page=1": {
+				Status: 200,
+				Body:   []byte(`{"tags":[` + strings.Join(quayRows, ",") + `],"has_additional":false}`),
+			},
+		}}
+		if got := versions(t, c); !slices.Equal(got, want) {
+			t.Fatalf("got %v, want %v", got, want)
+		}
+	})
+	t.Run("R-CUR-007 an image with more tags than five pages: the tags list in the tag order", func(t *testing.T) {
+		c := &canned{base: "https://registry-1.docker.io/", answers: map[string]discover.Response{
+			"https://registry-1.docker.io/v2/acme/app/tags/list?n=1000": {
+				Status: 200,
+				Body:   []byte(`{"name":"acme/app","tags":["4.2.8","4.16.6","latest","main"]}`),
+			},
+		}}
+		for page := 1; page <= wholeTagPages; page++ {
+			c.answers[fmt.Sprintf("%s%d&page_size=100", hub, page)] = discover.Response{
+				Status: 200,
+				Body:   []byte(`{"count":900,"next":"more","results":[` + hubRows[0] + `]}`),
+			}
+		}
+		if got := versions(t, c); !slices.Equal(got, []string{"4.16.6", "4.2.8", "main", "latest"}) || len(c.asked) != wholeTagPages+1 {
+			t.Fatalf("got %v, asked %v", got, c.asked)
+		}
+	})
 }

@@ -142,6 +142,9 @@ type VersionSummary struct {
 	// LastDownloadedAt is the latest fetch of the version by a client, by its format's rule, in any repository that holds it (R-API-065,
 	// R-API-079); nil when no client fetched it.
 	LastDownloadedAt *time.Time
+	// Unranked says that the format does not rank the version (an image tag such as latest): in the order of the versions it comes after
+	// the ranked ones by its time, and a cursor after it carries the time (Q-API-431).
+	Unranked bool
 }
 
 // RepositoryEntry is a repository that holds a version.

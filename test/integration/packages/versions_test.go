@@ -45,8 +45,8 @@ func TestR_API_029_VersionList(t *testing.T) {
 			}
 		})
 	}
-	t.Run("the default sort is -publishedAt", func(t *testing.T) {
-		if got := versionsOf(e.all(e.tokE, base)); !slices.Equal(got, []string{"1.5.0", "2.0.0-beta.1", "1.4.0", "1.3.0"}) {
+	t.Run("the default sort is -version, the format's order newest first (R-API-029)", func(t *testing.T) {
+		if got := versionsOf(e.all(e.tokE, base)); !slices.Equal(got, []string{"2.0.0-beta.1", "1.5.0", "1.4.0", "1.3.0"}) {
 			t.Fatal(got)
 		}
 	})

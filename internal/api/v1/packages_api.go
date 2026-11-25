@@ -354,7 +354,7 @@ func (s *Server) ListPackageVersions(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 	lq, err := ParseList(r, ListSpec{
-		Filters: []string{"prerelease", "repository", "include"}, Sorts: []string{"publishedAt", "version"}, DefaultSort: "-publishedAt",
+		Filters: []string{"prerelease", "repository", "include"}, Sorts: []string{"publishedAt", "version"}, DefaultSort: "-version",
 	}, s.o.API.Config)
 	var f view.VersionFilter
 	if err == nil {

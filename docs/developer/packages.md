@@ -56,7 +56,9 @@ the client setup page of the admin UI ([web-ui.md](web-ui.md#package-screens-and
 5. For the packages of the page it reads the candidates of their latest version (`PackageViewLatest`, Q-API-429): per package row its highest visible release
    by the stored sort key, its highest pre-release when it has no visible release, and a remote OCI repository's highest tag, each the first visible entry of
    an index (`package_versions_latest_release`, `package_versions_latest_prerelease`, `remote_cache_entries_tag_key`), and every visible row without a stored
-   key (Q-API-430; none once the fill has run). It takes the latest among them by the adapter's order (a release before a pre-release), names the
+   key (Q-API-430; none once the fill has run), and the newest visible version the format does not rank, by its time, of the version rows and of a
+   remote's tags (`package_versions_unranked`, `remote_cache_entries_tag_unranked`, Q-API-431). `latestOf` takes the latest among them: a release before a
+   pre-release before an unranked version, the adapter's order within the first two, the time within the third; it names the
    repositories whose rows gave a candidate, and asks the adapter for the description and keywords of that version.
 
 Every transaction of the service runs with the server's JIT compilation off (`Service.read`, Q-API-428).
@@ -68,13 +70,20 @@ remote repository, `PackageViewTagPageDesc`/`Asc` over its OCI tag entries (inde
 batch are merged, the pre-release filter (the format's rule) is applied in the service and the next batch starts after the last version read until the
 page holds `limit + 1`. The cursor is `[publishedAt, version]`: the version's creation time and its name, compared bytewise, the statements' order. A
 package several repositories hold, in the order of publication, goes through `sortedPage`: every visible version's name and creation time
-(`PackageViewVersionNames`), grouped, filtered and sorted in the service (H-1683). The order of the format's versions (`sort=version`, `-version`) goes
-through `keyPage` for one holder or several (Q-API-429): `PackageViewVersionKeyDesc`/`Asc` over `package_versions` (index `package_versions_by_key`) and, for
+(`PackageViewVersionNames`), grouped, filtered and sorted in the service (H-1683). The order of the format's versions (`sort=-version`, the default,
+and `version`) goes through the `walk` of [order.go](../../internal/packages/view/order.go) (`orderPage`), in two parts (Q-API-431): the versions the
+format ranks (a key of the class `versionkey.Version`) by their key, then those it does not rank (`NotVersion`, an OCI tag such as `latest`) newest
+first by their time; oldest first the other way round. The first part, for one holder or several (Q-API-429): `PackageViewVersionKeyDesc`/`Asc` over `package_versions` (index `package_versions_by_key`) and, for
 a remote repository, `PackageViewTagKeyDesc`/`Asc` over its tag entries (index `remote_cache_entries_tag_key`), at least 64 versions of each holder after the
 cursor's key, merged by the key (`keyBatch`: a version two holders hold has one key, so its rows meet and it is taken once; the first `n` distinct versions
-of the merge are complete). The cursor is `[version]`; its key is `Adapter.SortKey(version)`, the bytes the rows store. The two version statements return
+of the merge are complete); the statements read keys of the class `Version` alone. The second part: for one holder a keyset on the time and the
+version, `PackageViewVersionUnrankedDesc`/`Asc` (index `package_versions_unranked`) and `PackageViewTagUnrankedDesc`/`Asc` (index
+`remote_cache_entries_tag_unranked`), merged as `keysetPage` merges (`unrankedRows`); for several holders every unranked visible version of the package
+(`PackageViewUnrankedNames`), each by its oldest row, sorted in the service (`loadUnranked`, H-1901). The cursor of the first part is `[version]`, its key
+`Adapter.SortKey(version)`, the bytes the rows store; that of the second `[publishedAt, version]` (`orderKey`, from `VersionSummary.Unranked`). The
+statements of both parts return
 after their batch every visible row of the package without a stored key; `keyRows` gives each the key `Adapter.SortKey` gives it, keeps it when it lies
-after the cursor's key and merges it with the rest, and only the keyed rows count against the batch (Q-API-430). A version's `publishedAt` is its
+after the cursor's key and in its part, and merges it with the rest, and only the keyed rows count against the batch (Q-API-430). A version's `publishedAt` is its
 oldest visible row's in every order. Either way `PackageViewVersions` then reads the rows of the
 page's versions alone, by the holders' package ids and the versions, with sizes and downloads. Each row carries the downloads and the `last_download_at` of the items that are a fetch of the version by its format's rule
 (`Descriptor.VersionFetch`: the lead file, any file of the version, or an image's manifest by tag and by digest), read from `item_download_stats` in a

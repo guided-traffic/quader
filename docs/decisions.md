@@ -2619,7 +2619,11 @@ No statement can sort by a format's `Compare`.
 reads a package's rows without a key whole until the fill has reached them; a change of a format's encoding is a migration step that
 sets its stored keys to NULL, which the fill recomputes. **Revised on 2026-11-24:** migration 00116 had refused a database that held
 version rows, which refused every upgrade. The order of publication of a package several repositories hold, and the count of a
-package's versions in the list, still read every version (H-1683).
+package's versions in the list, still read every version (H-1683). **Revised on 2026-11-25**
+([Q-API-431](spec/api-and-ui.md#q-api-431--every-list-of-versions-is-newest-first-by-its-formats-order-and-a-version-the-format-does-not-rank-comes-below-by-its-time)):
+the class byte is what a statement reads of a key: a version the format does not rank is `NotVersion` (an OCI tag such as `latest`, which
+had the class of a version), the lists order such versions below the ranked ones by their time, and the order of the versions is the
+API's default.
 
 ### ADR-279 · Administrators see the downloads from upstreams live, and the last 100 finished
 
@@ -9035,10 +9039,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-API
 
-156 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
+157 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-API: 156 questions</summary>
+<summary>Q-API: 157 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9198,6 +9202,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-API-428](spec/api-and-ui.md#q-api-428--the-package-views-statements-run-without-the-servers-jit-compilation) | The package view's statements run without the server's JIT compilation | Decided by the development agent | (a) `set_config('jit', 'off', true)` as the first statement of every transaction of the view's service | — |
 | [Q-API-429](spec/api-and-ui.md#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) | The order of a format's versions is a sort key stored with every version row | Decided by the development agent | (a) A sort key of the format's order stored with every version row | [ADR-278](#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) |
 | [Q-API-430](spec/api-and-ui.md#q-api-430--a-version-row-without-a-stored-sort-key-is-ordered-by-the-key-its-format-gives-it) | A version row without a stored sort key is ordered by the key its format gives it | Decided by the development agent | (a) The statements return a package's rows without a key after their keyed batch, and the service gives each the key its format gives it | [ADR-278](#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) |
+| [Q-API-431](spec/api-and-ui.md#q-api-431--every-list-of-versions-is-newest-first-by-its-formats-order-and-a-version-the-format-does-not-rank-comes-below-by-its-time) | Every list of versions is newest first by its format's order, and a version the format does not rank comes below by its time | Decided by the development agent on the owner's word of 2026-11-25 ("Nächstes Thema, ich wünsche eine Erkennung von semantic-versioning. Ich wünsche, dass unsere Software automatisch erkennt, dass 4.16.6 höher ist als 4.2.8, die Darstellung von Versionen ist default von der neusten zur ältesten.") | (a) The default `sort` is `-version`; the order has two parts, the ranked versions by key, then the versions of the class `NotVersion` newest first by time, each part a keyset | [ADR-278](#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) |
 
 </details>
 
@@ -10203,10 +10208,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-88 questions on [spec/remote-curation.md](spec/remote-curation.md).
+90 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 88 questions</summary>
+<summary>Q-CUR: 90 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10298,6 +10303,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-174](spec/remote-curation.md#q-cur-174--a-limits-failure-keeps-the-upstreams-answer-and-the-headers-of-the-limit-and-no-other) | A limit's failure keeps the upstream's answer and the headers of the limit, and no other | Decided by the development agent | (a) The address, status and excerpt as every failure's, and a member `headers` with a fixed list: `Retry-After`, `RateLimit`, `RateLimit-Policy`, `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, each at most 200 bytes | — |
 | [Q-CUR-175](spec/remote-curation.md#q-cur-175--the-list-answers-the-limit-beside-its-counts-for-every-reader) | The list answers the limit beside its counts, for every reader | Decided by the development agent | (a), to every reader of the queue, as the rows' failures: the upstream's name, the times and its answer, no credential. | — |
 | [Q-CUR-176](spec/remote-curation.md#q-cur-176--the-top-bars-panel-lists-the-queues-a-limit-holds-from-the-limits-rows) | The top bar's panel lists the queues a limit holds, from the limits' rows | Decided by the development agent | (a), at most 100 queues, the longest held first. | — |
+| [Q-CUR-180](spec/remote-curation.md#q-cur-180--docker-hubs-and-quays-tags-are-listed-in-the-tag-order) | Docker Hub's and Quay's tags are listed in the tag order | Decided by the development agent | (a) Read Docker Hub's and Quay's tags whole up to five pages of 100 and sort them: versions by the tag order, the other tags newest first by the upstream's time; an image with more tags is listed from the distribution tags list in the tag order, without the API's facts | — |
+| [Q-CUR-181](spec/remote-curation.md#q-cur-181--a-bulks-rows-are-listed-in-the-order-they-run) | A bulk's rows are listed in the order they run | Decided by the development agent | (a) Newest first by creation, then by id ascending: rows queued together in the order they run | — |
 
 </details>
 
@@ -11193,10 +11200,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OCI
 
-120 questions on [spec/formats/oci.md](spec/formats/oci.md).
+121 questions on [spec/formats/oci.md](spec/formats/oci.md).
 
 <details>
-<summary>Q-OCI: 120 questions</summary>
+<summary>Q-OCI: 121 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11320,6 +11327,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OCI-256](spec/formats/oci.md#q-oci-256--the-measurement-of-h-829-builds-no-index-the-cost-is-the-version-lists-statement-that-reads-every-row) | The measurement of H-829 builds no index: the cost is the version list's statement that reads every row | Decided by the development agent | (a) No index; H-829 stays open with the numbers and the order of the remedies | — |
 | [Q-OCI-267](spec/formats/oci.md#q-oci-267--a-remotes-tag-entries-store-their-name-and-tag-and-a-page-of-its-tags-is-a-keyset-query-on-them) | A remote's tag entries store their name and tag, and a page of its tags is a keyset query on them | Decided by the development agent | (a) The entry stores `tag_name` and `tag` as columns generated from its path, with the indexes `(repo_id, tag_name, fetched_at, tag)` and `(repo_id, tag_name, tag)`; the view reads them; a page of a name's tags is a keyset statement on the entries with the view's rules as checks per entry; a page's tags are read by the entry's primary key, the negated id | — |
 | [Q-OCI-268](spec/formats/oci.md#q-oci-268--an-attachment-tag-is-listed-in-no-remote-and-offered-by-no-upstream-catalogue) | An attachment tag is listed in no remote and offered by no upstream catalogue | Decided by the development agent | (a) The listing rules leave out a tag of the attachment grammar: the view `oci_remote_tags` and every statement that restates its rules per entry; the catalogue drops it from every source | — |
+| [Q-OCI-269](spec/formats/oci.md#q-oci-269--a-tag-that-is-no-version-is-no-version-of-the-format-and-the-lists-order-such-tags-by-time) | A tag that is no version is no version of the format, and the lists order such tags by time | Decided by the development agent | (a) A tag that is no version is `versionkey.NotVersion`, like a string that is no tag; the lists order the not-ranked versions of every format below the ranked ones, newest first by time | — |
 
 </details>
 

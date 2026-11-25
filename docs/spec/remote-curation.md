@@ -405,6 +405,13 @@ Priority: **P1** · Covers: ART-044
   | `lookup` | a package by its exact name; every format has it (the floor) |
   | `versions` | the versions of a package with what the upstream tells of each without a download: `published`, `size` (`sizes: known \| perVersion \| unknown`), flags (`deprecated`, `yanked`, `unlisted`, `prerelease`), platforms, a digest |
 
+- **The order of a package's versions** is the format's, newest first, for every upstream of the format, whatever order the upstream's
+  API answers in ([Q-CUR-180](#q-cur-180--docker-hubs-and-quays-tags-are-listed-in-the-tag-order)): an image's tags by the tag order, the
+  tags that are no version below them, newest first by the upstream's time where it tells one; Docker Hub's and Quay's APIs are read whole
+  up to five pages of 100 tags to sort them, and an image with more is listed from the distribution tags list. A bulk takes the versions
+  in this order, so the newest run first. An OCI attachment tag is no version and is offered by no upstream
+  ([signatures.md](signatures.md) R-SIG-024).
+
 - **The interface** (`formats.Catalogue` in `internal/formats/catalogue.go`; the remote adapter implements it, `formats.CapabilitiesOf`
   finds it as `RemoteCaps.Catalogue`). Its browsing calls and every type below are the leaf's, `internal/mirror/discover`
   ([catalogue.go](../../internal/mirror/discover/catalogue.go)), which the mirror's lister speaks, for the reason the lister is there
@@ -708,9 +715,11 @@ Acceptance criteria:
   each): one version is stored; for OCI the platforms of `oci.platforms` with their layers; for Debian the file a parsed index lists,
   verified against its digest.
 - Integration (area `ociremote`, `TestR_CUR_010_ABulkOfADockerHubRemoteReadsTheTagsWhereTheCatalogueReadsThem`, about 2 s, a stub of
-  Docker Hub's API on `hub.docker.com` with five tags): a Docker Hub remote's bulk of an image with `maxVersions: 2` reads the tags on the
-  catalogue host, which is no `extraHosts` entry, and queues the two newest; `GET download-bulks` lists it as the person's (Q-CUR-167,
-  Q-CUR-168).
+  Docker Hub's API on `hub.docker.com` with five tags in an order of pushes): a Docker Hub remote's bulk of an image with `maxVersions: 2`
+  reads the tags on the catalogue host, which is no `extraHosts` entry, and queues the two newest by the tag order (`2.0` and `1.2`,
+  [Q-CUR-180](#q-cur-180--docker-hubs-and-quays-tags-are-listed-in-the-tag-order)), in that order of their ids, so they run highest
+  first, and the tab Downloads lists them in that order once both ended ([Q-CUR-181](#q-cur-181--a-bulks-rows-are-listed-in-the-order-they-run));
+  `GET download-bulks` lists it as the person's (Q-CUR-167, Q-CUR-168).
 
 ### R-CUR-011 · The download queue of a remote repository
 Priority: **P1** · Covers: RMT-027
@@ -903,7 +912,7 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
 
 | Method and path | What | Answers |
 |---|---|---|
-| `GET downloads?state=&class=&origin=&bulk=&name=&cursor=&limit=` | the rows, newest first within `waiting` and `running` first; `class` filters failures | `200`, cursor paging; `"counts": {"waiting", "running", "failed", "done"}`; `"limit"`: the upstream's rate limit of the queue or `null` (below) |
+| `GET downloads?state=&class=&origin=&bulk=&name=&cursor=&limit=` | the rows, newest first within `waiting` and `running` first, and rows queued together (a bulk's) in the order they run ([Q-CUR-181](#q-cur-181--a-bulks-rows-are-listed-in-the-order-they-run)); `class` filters failures | `200`, cursor paging; `"counts": {"waiting", "running", "failed", "done"}`; `"limit"`: the upstream's rate limit of the queue or `null` (below) |
 | `GET downloads/{id}` | one row with its failure | `200` |
 | `POST downloads/{id}/retry` | a `failed` or `cancelled` row waits again with its attempts reset; a row of origin `client` becomes a download ahead of that file's version by the caller (R-CUR-010) | `200` with the row; `409 not_retryable` for another state |
 | `POST downloads/retry` | `{"class"?, "bulk"?}`: every failed row of the repository that matches, at most 10,000 | `200` `{"retried": <n>}` |
@@ -3186,6 +3195,48 @@ development agent would revisit (b) if a queue that waits for a place is ever mi
 [api-and-ui.md](api-and-ui.md) R-UI-211. Code: `UpstreamDownloadLimited` in
 [upstream_downloads.sql](../../internal/meta/postgres/queries/upstream_downloads.sql), [store_pg.go](../../internal/fills/store_pg.go),
 [upstream_downloads_api.go](../../internal/api/v1/upstream_downloads_api.go).
+
+### Q-CUR-180 · Docker Hub's and Quay's tags are listed in the tag order
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It answers the
+owner's word of 2026-11-25 ("ich wünsche, dass unsere Software automatisch erkennt, dass 4.16.6 höher ist als 4.2.8, die Darstellung von
+Versionen ist default von der neusten zur ältesten") for the tab Upstream and a bulk, and revises the catalogue's "Docker Hub and Quay as the
+API answers them" of R-OCI-038.
+
+Context: the catalogue of an OCI remote sorted the distribution tags list by the tag order, but Docker Hub's and Quay's APIs, which tell a
+tag's time, size and digest, were passed in their own order, newest push first. A bulk takes the versions in the catalogue's order, so on the
+owner's image `guidedtraffic/s3-encryption-proxy` the queue ran the 315 tags in push order, each version beside the commit tag pushed with
+it, and the opened image, sorted by fetch time, showed the oldest versions first with commit tags between them.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Read Docker Hub's and Quay's tags whole up to five pages of 100 and sort them: versions by the tag order, the other tags newest first by the upstream's time; an image with more tags is listed from the distribution tags list in the tag order, without the API's facts (chosen) | `hubTags`, `quayTags` return what they read; `Package` sorts every source the same way | One order on every upstream, the one the package screens use; a bulk runs the newest first | Up to five requests per page of the tab instead of one, within the catalogue's per-replica cache and budget; above 500 tags the tab shows no size or time |
+| (b) Keep the API's order on the tab, sort only a bulk's expansion | The tab as the operator answers | No extra requests for the tab | Two orders of one list; the owner asked for newest first by version everywhere |
+| (c) Always the distribution tags list | One source | Simple | The sizes, times and digests the tab shows today are gone for every image |
+
+**Choice:** (a). **Rationale:** the order is the format's, and five pages cover nearly every image (the owner's has 315 tags); the
+development agent would revisit the bound if an image above it is common, where a page of the tags list costs one request per thousand
+tags but tells nothing else. **Applied in the spec:** R-CUR-007, R-CUR-010, [formats/oci.md](formats/oci.md) R-OCI-038. Code: `Package`,
+`newestTagFirst`, `hubTags`, `quayTags` in [catalogue.go](../../internal/formats/oci/catalogue.go). Tests:
+`TestR_CUR_007_DockerHubsAndQuaysTagsComeInTheTagOrder` (unit, the canned answers), `TestR_CUR_010_ABulkOfADockerHubRemoteReadsTheTagsWhereTheCatalogueReadsThem`
+(area `ociremote`).
+
+### Q-CUR-181 · A bulk's rows are listed in the order they run
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the tab Downloads lists the rows newest first, by their creation time and then by their id descending. A bulk's rows share one
+creation time (in the owner's installation all 315 rows of the bulk had one), so they were listed by id descending: the reverse of the order
+the queue runs them (`RemoteDownloadDue`: origin, creation, id).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Newest first by creation, then by id ascending: rows queued together in the order they run (chosen) | `RemoteDownloadList`'s tie and keyset condition | The first rows of a bulk are the ones that run first; the ids are UUIDv7, written in the catalogue's order | Two bulks of one time interleave by id, as before |
+| (b) By the bulk, then by id | A grouping | Bulks never interleave | The list's index order changes for one rare case |
+
+**Choice:** (a). **Rationale:** the tie decides only rows written together, and those are a bulk's. **Applied in the spec:** R-CUR-012.
+Code: `RemoteDownloadList` in [remote_downloads.sql](../../internal/meta/postgres/queries/remote_downloads.sql). Test:
+`TestR_CUR_010_ABulkOfADockerHubRemoteReadsTheTagsWhereTheCatalogueReadsThem` (area `ociremote`).
 
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 

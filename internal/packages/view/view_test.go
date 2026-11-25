@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 	"github.com/guided-traffic/quader/internal/qname"
 	"github.com/guided-traffic/quader/internal/repository"
@@ -140,12 +141,26 @@ func TestR_API_029_HoldersShowOnlyReadableVirtualRepositories(t *testing.T) {
 	}
 }
 
-// fakeAdapter orders versions as dotted integers and calls a "-" suffix a pre-release.
+// fakeAdapter orders versions as dotted integers and calls a "-pre" suffix a pre-release; a string of other characters (latest) is no
+// version: it sorts before every version and by its bytes, its key of the class versionkey.NotVersion.
 type fakeAdapter struct{}
 
 func (fakeAdapter) Compare(a, b string) int {
+	switch va, vb := isFakeVersion(a), isFakeVersion(b); {
+	case !va && !vb:
+		return strings.Compare(a, b)
+	case !va:
+		return -1
+	case !vb:
+		return 1
+	}
 	pa, pb := strings.TrimSuffix(a, "-pre"), strings.TrimSuffix(b, "-pre")
 	return strings.Compare(pad(pa), pad(pb))
+}
+
+func isFakeVersion(v string) bool {
+	v = strings.TrimSuffix(v, "-pre")
+	return v != "" && strings.Trim(v, "0123456789.") == ""
 }
 
 func pad(v string) string {
@@ -157,7 +172,10 @@ func pad(v string) string {
 }
 func (fakeAdapter) Prerelease(v string) bool { return strings.HasSuffix(v, "-pre") }
 func (fakeAdapter) SortKey(v string) []byte {
-	return []byte(pad(strings.TrimSuffix(v, "-pre")) + "\x00" + v)
+	if !isFakeVersion(v) {
+		return versionkey.Of(nil, false, v)
+	}
+	return versionkey.Of([]byte(pad(strings.TrimSuffix(v, "-pre"))), true, v)
 }
 
 func (fakeAdapter) Describe(context.Context, []Version, Fields, func(string) bool) (map[int64]Data, error) {
@@ -278,6 +296,36 @@ func TestR_API_029_LatestIsTheHighestStableVersion(t *testing.T) {
 	}
 	if _, ok := latestOf(fakeAdapter{}, nil); ok {
 		t.Error("a package without a visible version has a latest version")
+	}
+}
+
+// R-API-029 (Q-API-431): a version the format does not rank (an image tag such as latest) is the latest only while no ranked version is
+// visible, and then the newest of them by its time wins, the name breaking a tie.
+func TestR_API_029_LatestOfAPackageWithoutARankedVersionIsItsNewest(t *testing.T) {
+	at := func(v string, minutes int) q.PackageViewVersionsRow {
+		return q.PackageViewVersionsRow{Version: v, CreatedAt: pgtype.Timestamptz{Time: time.Date(2026, 11, 25, 7, minutes, 0, 0, time.UTC), Valid: true}}
+	}
+	for _, tc := range []struct {
+		name string
+		rows []q.PackageViewVersionsRow
+		want string
+	}{
+		{"a ranked version beats a newer unranked one", []q.PackageViewVersionsRow{at("latest", 9), at("1.0", 1), at("main", 8)}, "1.0"},
+		{"a pre-release beats an unranked one", []q.PackageViewVersionsRow{at("latest", 9), at("2.0-pre", 1)}, "2.0-pre"},
+		{"no ranked version: the newest by time", []q.PackageViewVersionsRow{at("main", 3), at("sha-f00cf6c", 7), at("latest", 5)}, "sha-f00cf6c"},
+		{"one time: the higher name", []q.PackageViewVersionsRow{at("latest", 5), at("main", 5)}, "main"},
+	} {
+		if got, ok := latestOf(fakeAdapter{}, tc.rows); !ok || got.Version != tc.want {
+			t.Errorf("%s: %q %v, want %q", tc.name, got.Version, ok, tc.want)
+		}
+	}
+	at5 := time.Date(2026, 11, 25, 7, 5, 0, 0, time.UTC)
+	o := VersionOrder{Sort: "version", Desc: true}
+	if got := o.VersionKey(VersionSummary{Version: "1.0"}); !slices.Equal(got, []string{"1.0"}) {
+		t.Errorf("the cursor of a ranked version: %v", got)
+	}
+	if got := o.VersionKey(VersionSummary{Version: "latest", PublishedAt: at5, Unranked: true}); !slices.Equal(got, []string{at5.Format(time.RFC3339Nano), "latest"}) {
+		t.Errorf("the cursor of an unranked version: %v", got)
 	}
 }
 

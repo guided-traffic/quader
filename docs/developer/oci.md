@@ -45,7 +45,7 @@ names what is missing.
 | [remote_handlers.go](../../internal/formats/oci/remote_handlers.go) | What a client sees of a remote repository: manifests, blobs, the tags list window, referrers; the `library/` mapping |
 | [mirror.go](../../internal/formats/oci/mirror.go), [mirror_listing.go](../../internal/formats/oci/mirror_listing.go), [mirror_tags.go](../../internal/formats/oci/mirror_tags.go), [mirror_plan.go](../../internal/formats/oci/mirror_plan.go) | The mirror lister (`discover.Lister`) on the remote adapter: the methods and the exact names, the catalog, the tags list and the tag selection, the plan of an image; see [the mirror](#the-mirror-r-oci-026) |
 | [hooks.go](../../internal/formats/oci/hooks.go) | `OnCommit`: the package row, the claim, the version of a tag and the manifest rows, in the commit transaction |
-| [view.go](../../internal/formats/oci/view.go) | The package view adapter: tags newest push first, the platform table of an index, the withheld tags |
+| [view.go](../../internal/formats/oci/view.go) | The package view adapter: the tag order for versions and `NotVersion` for every other tag (Q-OCI-269), the exposure's tags newest push first, the platform table of an index, the withheld tags |
 | [handlers_upload.go](../../internal/formats/oci/handlers_upload.go) | The blob upload protocol over the host's session port: start, monolithic `POST`, `PATCH`, `PUT`, status, abort; `chunkStart` (the strict `Content-Range`), `outOfOrder` (the headers of a 416) |
 | [virtual.go](../../internal/formats/oci/virtual.go) | The virtual adapter: `Strategy` (the tags list is the one merged document), `Merge` (the union of the members' tags lists, each tag attributed to the member the tier resolution picks) |
 | [virtual_read.go](../../internal/formats/oci/virtual_read.go) | What a client reads through a virtual repository: the plan (`members`), the `walk` over the members, a manifest by tag, a manifest and a blob by digest in three tiers, the tags list and the referrers as unions |
@@ -225,7 +225,9 @@ the bound of the column (sums are saturated; the text is counted as jsonb prints
 Fuzz targets: `FuzzR_OCI_020_Parse`, `FuzzR_ARCH_028_Inspect`, `FuzzR_OCI_031_Compare`.
 
 **The view** ([view.go](../../internal/formats/oci/view.go)): `Stored` lists the tags of a local repository newest push first, `Withheld` the tags of
-withheld manifests, `Describe` the digest, media type, size and (for an index) the platform table, `Compare` is `tagorder.Compare`.
+withheld manifests, `Describe` the digest, media type, size and (for an index) the platform table, `Compare` is `tagorder.Compare` for the tags
+that are versions; a tag that is no version (`latest`, `sha-5ccfd1a`) is no version of the format (`isVersion`, its `SortKey` of the class
+`versionkey.NotVersion`), so the lists put it below the versions, newest first by push or fetch time (Q-OCI-269, api-and-ui.md Q-API-431).
 The format also implements the optional `formats.ViewSizer` (`Format.ViewSizes`, ADR-177, ADR-205): the package view asks it, once for a page of the
 version list and once for the details, for the `sizeBytes` of a tag, a `formats.ViewSize`. `Store.TagSizes` reads, in one statement for a page, the
 content size of the tag's manifest (an image manifest's config and layers) and, for an index, how many children it names, how many the repository

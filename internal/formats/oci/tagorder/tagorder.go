@@ -6,7 +6,9 @@
 // every other tag and are ordered by their numbers (a missing number counts as zero), then by the suffix: no suffix is newest, then
 // a suffix that is no pre-release marker (a variant such as "alpine"), then a pre-release marker, and within one rank by the bytes of
 // the suffix. A suffix starts a pre-release when it begins with alpha, beta, rc, pre or dev in any case and continues with digits
-// and dots only. Every other tag is ordered by its bytes. Two different tags never compare equal.
+// and dots only. Every other tag is ordered by its bytes. Two different tags never compare equal. The package screens use this order for
+// the versions alone: their view adapter calls a tag that is no version no version of the format, and the lists order such tags by their
+// time (formats/oci.md Q-OCI-269); the mirror's tag selection uses it whole.
 package tagorder
 
 import (

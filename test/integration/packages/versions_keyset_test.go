@@ -86,15 +86,17 @@ func TestR_API_010_APageOfVersionsReadsNoVersionPastItsLimit(t *testing.T) {
 
 	id := e.idOf(e.tokE, "left-pad")
 	base := "/api/v1/packages/" + id + "/versions?limit=50"
-	p1 := e.page(e.tokE, base)
+	// In the order of publication, which is no longer the default (Q-API-431).
+	pub := base + "&sort=-publishedAt"
+	p1 := e.page(e.tokE, pub)
 	if got := versionsOf(p1.Items); len(got) != 50 || got[0] != "0.0.2000-rc.1" || got[49] != "0.0.1951" || p1.NextCursor == nil {
 		t.Fatalf("the first page: %v", got)
 	}
-	p2 := e.page(e.tokE, base+"&cursor="+*p1.NextCursor)
+	p2 := e.page(e.tokE, pub+"&cursor="+*p1.NextCursor)
 	if got := versionsOf(p2.Items); len(got) != 50 || got[0] != "0.0.1950-rc.1" || got[49] != "0.0.1901" {
 		t.Fatalf("the second page: %v", got)
 	}
-	pre := e.page(e.tokE, base+"&prerelease=true")
+	pre := e.page(e.tokE, pub+"&prerelease=true")
 	want := make([]string, 0, 50)
 	for g := 2000; len(want) < 50; g -= 10 {
 		want = append(want, "0.0."+strconv.Itoa(g)+"-rc.1")

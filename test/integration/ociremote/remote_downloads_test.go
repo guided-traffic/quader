@@ -4,6 +4,7 @@ package ociremote
 
 import (
 	"net/http"
+	"slices"
 	"testing"
 	"time"
 
@@ -68,7 +69,30 @@ func TestR_CUR_010_ABulkOfADockerHubRemoteReadsTheTagsWhereTheCatalogueReadsThem
 		t.Fatalf("the bulk of acme/a: %v", bulk)
 	}
 	if n := e.st.Number(`SELECT count(*) FROM remote_download WHERE bulk_id = $1::uuid AND version IN ('2.0', '1.2')`, id); n != 2 {
-		t.Errorf("the bulk queued %d rows of the two newest tags, want 2", n)
+		t.Errorf("the bulk queued %d rows of the two newest tags by the tag order, want 2", n)
+	}
+	// The rows run in the order the catalogue listed them, highest version first (Q-CUR-180), and the tab Downloads lists the rows of
+	// one bulk, which share their creation time, in that order (R-CUR-012, Q-CUR-181).
+	if got := e.st.Text(`SELECT string_agg(version, ',' ORDER BY id) || ' ' || count(DISTINCT created_at)::text FROM remote_download
+	                     WHERE bulk_id = $1::uuid`, id); got != "2.0,1.2 1" {
+		t.Errorf("the bulk's rows by their id and their creation times: %s, want 2.0,1.2 at one time", got)
+	}
+	var listed []string
+	testenv.WaitFor(t, "the bulk's rows ended", 30*time.Second, func() bool {
+		_ = e.st.Do(rep, http.MethodPost, "/api/v1/system/tasks/remote-downloads-dispatch/run", e.admin, nil)
+		items, _ := e.st.Do(rep, http.MethodGet, path+"/downloads?bulk="+id, e.admin, nil).JSON(t)["items"].([]any)
+		listed = listed[:0]
+		for _, it := range items {
+			row := it.(map[string]any)
+			if row["state"] == "waiting" || row["state"] == "running" {
+				return false
+			}
+			listed = append(listed, row["version"].(string))
+		}
+		return len(listed) == 2
+	})
+	if !slices.Equal(listed, []string{"2.0", "1.2"}) {
+		t.Errorf("the tab Downloads lists the bulk's rows %v, want 2.0 before 1.2", listed)
 	}
 	if e.hubAPI.requests.Load() == 0 {
 		t.Error("the catalogue host of Docker Hub was not asked")

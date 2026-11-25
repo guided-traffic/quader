@@ -3837,8 +3837,10 @@ export interface paths {
          *     `prerelease` keeps pre-releases (`true`) or stable versions (`false`) by the format's version
          *     rules (SemVer pre-release tags for npm, SemVer 2.0 labels for NuGet); without it both are
          *     listed. `repository` (repeated) keeps the versions a repository holds; a virtual repository
-         *     expands to its members. `sort=-version` orders by the format's version precedence, newest
-         *     first; the default is `-publishedAt`. `include=digest` also reads each version's `digest` from
+         *     expands to its members. `sort=-version`, the default, orders by the format's version precedence, newest
+         *     first; a string the format does not rank (an image tag such as `latest`, `main` or `sha-5ccfd1a`) comes after
+         *     every version, newest first by its time (push or fetch), and a cursor after it carries that time (Q-API-431);
+         *     `version` is the reverse. `-publishedAt` and `publishedAt` order by publication. `include=digest` also reads each version's `digest` from
          *     the format's metadata (an OCI tag: `sha256:…` of its manifest, R-UI-052); a format without one
          *     has no `digest`. `include=state` reads each version's `state` from the format's metadata the same way (the ClamAV
          *     definitions: `in_use`, `previous`, `superseded`, `files_removed`, R-UI-194); a format without one has no `state`.

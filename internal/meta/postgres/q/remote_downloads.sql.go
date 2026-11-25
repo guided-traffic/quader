@@ -827,8 +827,8 @@ SELECT to_jsonb(d.*)::text AS doc,
         OR ((CASE d.state WHEN 'running' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END) = $7::int
             AND ((extract(epoch FROM d.created_at) * 1000000)::bigint < $8::bigint
                  OR ((extract(epoch FROM d.created_at) * 1000000)::bigint = $8::bigint
-                     AND d.id::text < $9::text))))
- ORDER BY CASE d.state WHEN 'running' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END, d.created_at DESC, d.id::text DESC
+                     AND d.id::text > $9::text))))
+ ORDER BY CASE d.state WHEN 'running' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END, d.created_at DESC, d.id::text
  LIMIT $10::int
 `
 
@@ -850,8 +850,9 @@ type RemoteDownloadListRow struct {
 	Rank int32
 }
 
-// One page of a repository's queue (R-CUR-012): running before waiting before the rest, newest first within each; every filter is
-// optional (an empty value matches all). The cursor is the last row's rank, creation time and id.
+// One page of a repository's queue (R-CUR-012): running before waiting before the rest, newest first within each; the rows queued
+// together (a bulk's, which share one creation time) in the order they run, by their id (UUIDv7, the order of RemoteDownloadDue's tie,
+// Q-CUR-181); every filter is optional (an empty value matches all). The cursor is the last row's rank, creation time and id.
 func (q *Queries) RemoteDownloadList(ctx context.Context, arg RemoteDownloadListParams) ([]RemoteDownloadListRow, error) {
 	rows, err := q.db.Query(ctx, remoteDownloadList,
 		arg.RepoID,

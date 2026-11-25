@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -513,144 +512,152 @@ func gitlabProject(ctx context.Context, u discover.Upstream, project string, rq 
 	return out, nil
 }
 
-// Package implements [discover.Catalogue]: an image's tags, which are its versions (Q-CUR-10). Docker Hub's and Quay's APIs tell each
-// tag's time, digest and size; every other upstream answers the tags list of the distribution API, ordered newest first by the
-// format's tag order (tagorder). An attachment tag (the referrers tag, cosign's .sig, .att, .sbom) is no version and is left out
-// everywhere (signatures.md R-SIG-024, Q-OCI-268).
+// Package implements [discover.Catalogue]: an image's tags, which are its versions (Q-CUR-10), newest first by the format's order
+// (R-OCI-031, Q-CUR-180): the versions by the tag order (tagorder), then the tags that are no version, newest first by the upstream's
+// time where it tells one, else by their bytes. Docker Hub's and Quay's APIs tell each tag's time, digest and size but answer in their own
+// order, so up to [wholeTagPages] of their pages are read and sorted here; an image with more tags than those pages hold, and every other
+// upstream, answers the tags list of the distribution API, which tells nothing beyond the tags. An attachment tag (the referrers tag,
+// cosign's .sig, .att, .sbom) is no version and is left out everywhere (signatures.md R-SIG-024, Q-OCI-268).
 func (a remoteAdapter) Package(ctx context.Context, u discover.Upstream, name string, rq discover.VersionsRequest) (discover.PackageInfo, error) {
 	name = strings.ToLower(strings.TrimSpace(name))
 	if !validName(name) {
 		return discover.PackageInfo{}, nil
 	}
+	var all []discover.VersionFacts
+	whole, found := false, false
+	var err error
 	switch presetOf(u.Base()) {
 	case presetDockerHub:
-		return hubTags(ctx, u, hubName(name), rq)
+		name = hubName(name)
+		all, whole, found, err = hubTags(ctx, u, name)
 	case presetQuay:
-		return quayTags(ctx, u, name, rq)
+		all, whole, found, err = quayTags(ctx, u, name)
 	}
-	tags, found, err := a.readTags(ctx, u, name)
-	if err != nil || !found {
+	if err != nil || (whole && !found) {
 		return discover.PackageInfo{}, err
 	}
-	tags = slices.DeleteFunc(tags, IsAttachmentTag)
-	sort.Slice(tags, func(i, j int) bool { return tagorder.Compare(tags[i], tags[j]) > 0 })
-	all := make([]discover.VersionFacts, 0, len(tags))
-	for _, t := range tags {
-		f := discover.VersionFacts{Version: t}
-		if tagorder.Prerelease(t) {
-			f.Flags = append(f.Flags, "prerelease")
+	if !whole {
+		tags, found, err := a.readTags(ctx, u, name)
+		if err != nil || !found {
+			return discover.PackageInfo{}, err
 		}
-		all = append(all, f)
+		all = make([]discover.VersionFacts, 0, len(tags))
+		for _, t := range tags {
+			all = append(all, discover.VersionFacts{Version: t})
+		}
 	}
+	all = slices.DeleteFunc(all, func(f discover.VersionFacts) bool { return !ValidTag(f.Version) || IsAttachmentTag(f.Version) })
+	for i := range all {
+		if tagorder.Prerelease(all[i].Version) {
+			all[i].Flags = append(all[i].Flags, "prerelease")
+		}
+	}
+	slices.SortStableFunc(all, newestTagFirst)
 	info := discover.PackageInfo{Found: true, Name: name}
 	info.Versions, info.Total, info.Cursor, info.Done = discover.PageVersions(all, rq)
 	return info, nil
 }
 
-// hubTags reads an image's tags from Docker Hub's API, newest first by the time of their last push, as the API answers them.
-func hubTags(ctx context.Context, u discover.Upstream, name string, rq discover.VersionsRequest) (discover.PackageInfo, error) {
+// newestTagFirst is the order of an image's tags in the catalogue (Q-CUR-180): the versions by the tag order, newest first, then the tags
+// that are no version, newest first by the upstream's time and, at one time or none, by their bytes, as the package screens order them
+// (formats/oci.md Q-OCI-269).
+func newestTagFirst(x, y discover.VersionFacts) int {
+	_, vx := tagorder.Parse(x.Version)
+	_, vy := tagorder.Parse(y.Version)
+	switch {
+	case vx && vy:
+		return -tagorder.Compare(x.Version, y.Version)
+	case vx:
+		return -1
+	case vy:
+		return 1
+	}
+	if c := y.Published.Compare(x.Published); c != 0 {
+		return c
+	}
+	return strings.Compare(y.Version, x.Version)
+}
+
+// wholeTagPages bounds the pages of Docker Hub's or Quay's tags API one answer reads to sort an image's tags (Q-CUR-180): at their page
+// size of 100, 500 tags; an image with more is listed from the distribution API's tags list.
+const wholeTagPages = 5
+
+// hubTags reads an image's tags from Docker Hub's API, at most wholeTagPages pages of 100; whole is false when the image has more.
+func hubTags(ctx context.Context, u discover.Upstream, name string) (all []discover.VersionFacts, whole, found bool, err error) {
 	ns, image, _ := strings.Cut(name, "/")
-	limit := clampLimit(rq.Limit, hubPageMax)
-	page := pageOf(rq.Cursor)
-	target := &url.URL{Scheme: "https", Host: hubAPI, Path: "/v2/namespaces/" + ns + "/repositories/" + image + "/tags", RawQuery: url.Values{
-		"page_size": {strconv.Itoa(limit)}, "page": {strconv.Itoa(page)},
-	}.Encode()}
-	var a struct {
-		Count   int     `json:"count"`
-		Next    *string `json:"next"`
-		Results []struct {
-			Name        string `json:"name"`
-			FullSize    int64  `json:"full_size"`
-			LastUpdated string `json:"last_updated"`
-			Digest      string `json:"digest"`
-			Images      []struct {
-				Architecture string  `json:"architecture"`
-				OS           string  `json:"os"`
-				Variant      *string `json:"variant"`
-			} `json:"images"`
-		} `json:"results"`
-	}
-	found, _, err := getJSON(ctx, u, target, &a)
-	if err != nil || !found {
-		return discover.PackageInfo{}, err
-	}
-	info := discover.PackageInfo{Found: true, Name: name, Total: a.Count}
-	for _, r := range a.Results {
-		if !ValidTag(r.Name) || IsAttachmentTag(r.Name) {
-			info.Total--
-			continue
+	for page := 1; page <= wholeTagPages; page++ {
+		target := &url.URL{Scheme: "https", Host: hubAPI, Path: "/v2/namespaces/" + ns + "/repositories/" + image + "/tags", RawQuery: url.Values{
+			"page_size": {strconv.Itoa(hubPageMax)}, "page": {strconv.Itoa(page)},
+		}.Encode()}
+		var a struct {
+			Next    *string `json:"next"`
+			Results []struct {
+				Name        string `json:"name"`
+				FullSize    int64  `json:"full_size"`
+				LastUpdated string `json:"last_updated"`
+				Digest      string `json:"digest"`
+				Images      []struct {
+					Architecture string  `json:"architecture"`
+					OS           string  `json:"os"`
+					Variant      *string `json:"variant"`
+				} `json:"images"`
+			} `json:"results"`
 		}
-		f := discover.VersionFacts{Version: r.Name, Published: parseTime(r.LastUpdated), Size: max(r.FullSize, 0), Digest: r.Digest}
-		for _, im := range r.Images {
-			p := im.OS + "/" + im.Architecture
-			if im.Variant != nil && *im.Variant != "" {
-				p += "/" + *im.Variant
+		ok, _, err := getJSON(ctx, u, target, &a)
+		if err != nil || !ok {
+			return nil, true, false, err
+		}
+		for _, r := range a.Results {
+			f := discover.VersionFacts{Version: r.Name, Published: parseTime(r.LastUpdated), Size: max(r.FullSize, 0), Digest: r.Digest}
+			for _, im := range r.Images {
+				p := im.OS + "/" + im.Architecture
+				if im.Variant != nil && *im.Variant != "" {
+					p += "/" + *im.Variant
+				}
+				if im.OS != "" && im.Architecture != "" {
+					f.Platforms = append(f.Platforms, p)
+				}
 			}
-			if im.OS != "" && im.Architecture != "" {
-				f.Platforms = append(f.Platforms, p)
-			}
+			all = append(all, f)
 		}
-		if tagorder.Prerelease(r.Name) {
-			f.Flags = append(f.Flags, "prerelease")
+		if a.Next == nil || *a.Next == "" || len(a.Results) == 0 {
+			return all, true, true, nil
 		}
-		info.Versions = append(info.Versions, filterVersion(f, rq.Filter)...)
 	}
-	if a.Next == nil || *a.Next == "" || len(a.Results) == 0 {
-		info.Done = true
-	} else {
-		info.Cursor = discover.OffsetCursor(page + 1)
-	}
-	return info, nil
+	return nil, false, true, nil
 }
 
-// quayTags reads an image's active tags from Quay's API, newest first as the API answers them.
-func quayTags(ctx context.Context, u discover.Upstream, name string, rq discover.VersionsRequest) (discover.PackageInfo, error) {
-	limit := clampLimit(rq.Limit, quayPageMax)
-	page := pageOf(rq.Cursor)
-	target := originURL(u.Base(), "/api/v1/repository/"+name+"/tag/", url.Values{
-		"limit": {strconv.Itoa(limit)}, "page": {strconv.Itoa(page)}, "onlyActiveTags": {"true"},
-	})
-	var a struct {
-		Tags []struct {
-			Name           string `json:"name"`
-			ManifestDigest string `json:"manifest_digest"`
-			LastModified   string `json:"last_modified"`
-			Size           int64  `json:"size"`
-		} `json:"tags"`
-		HasAdditional bool `json:"has_additional"`
-	}
-	found, _, err := getJSON(ctx, u, target, &a)
-	if err != nil || !found {
-		return discover.PackageInfo{}, err
-	}
-	info := discover.PackageInfo{Found: true, Name: name, Total: -1}
-	for _, t := range a.Tags {
-		if !ValidTag(t.Name) || IsAttachmentTag(t.Name) {
-			continue
+// quayTags reads an image's active tags from Quay's API, at most wholeTagPages pages of 100; whole is false when the image has more.
+func quayTags(ctx context.Context, u discover.Upstream, name string) (all []discover.VersionFacts, whole, found bool, err error) {
+	for page := 1; page <= wholeTagPages; page++ {
+		target := originURL(u.Base(), "/api/v1/repository/"+name+"/tag/", url.Values{
+			"limit": {strconv.Itoa(quayPageMax)}, "page": {strconv.Itoa(page)}, "onlyActiveTags": {"true"},
+		})
+		var a struct {
+			Tags []struct {
+				Name           string `json:"name"`
+				ManifestDigest string `json:"manifest_digest"`
+				LastModified   string `json:"last_modified"`
+				Size           int64  `json:"size"`
+			} `json:"tags"`
+			HasAdditional bool `json:"has_additional"`
 		}
-		f := discover.VersionFacts{Version: t.Name, Size: max(t.Size, 0), Digest: t.ManifestDigest}
-		if ts, err := time.Parse("Mon, 02 Jan 2006 15:04:05 -0700", t.LastModified); err == nil {
-			f.Published = ts.UTC()
+		ok, _, err := getJSON(ctx, u, target, &a)
+		if err != nil || !ok {
+			return nil, true, false, err
 		}
-		if tagorder.Prerelease(t.Name) {
-			f.Flags = append(f.Flags, "prerelease")
+		for _, t := range a.Tags {
+			f := discover.VersionFacts{Version: t.Name, Size: max(t.Size, 0), Digest: t.ManifestDigest}
+			if ts, err := time.Parse("Mon, 02 Jan 2006 15:04:05 -0700", t.LastModified); err == nil {
+				f.Published = ts.UTC()
+			}
+			all = append(all, f)
 		}
-		info.Versions = append(info.Versions, filterVersion(f, rq.Filter)...)
+		if !a.HasAdditional || len(a.Tags) == 0 {
+			return all, true, true, nil
+		}
 	}
-	if !a.HasAdditional || len(a.Tags) == 0 {
-		info.Done = true
-	} else {
-		info.Cursor = discover.OffsetCursor(page + 1)
-	}
-	return info, nil
-}
-
-// filterVersion keeps a version whose tag holds the filter (case-insensitive), as discover.PageVersions does for a list held whole.
-func filterVersion(f discover.VersionFacts, filter string) []discover.VersionFacts {
-	if filter = strings.ToLower(strings.TrimSpace(filter)); filter != "" && !strings.Contains(strings.ToLower(f.Version), filter) {
-		return nil
-	}
-	return []discover.VersionFacts{f}
+	return nil, false, true, nil
 }
 
 // parseTime reads an RFC 3339 time of an operator's API; the zero time for none.

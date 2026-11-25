@@ -1149,14 +1149,19 @@ Acceptance criteria:
 ### R-OCI-031 · Package screens
 Priority: **P1** · Covers: PKG-DOCKER-041, PKG-DOCKER-023
 
-The format's view adapter (R-API-029) shows an image name as a package and its tags as versions, newest first by push time in a
-local repository and by fetch time in a remote one (the list of versions is ordered by push, `Stored`; the precedence of two tags,
-`Compare`, is the tag order, and decides which tag is "latest"): per tag the digest, the media type, the summed size, and for an index its
+The format's view adapter (R-API-029) shows an image name as a package and its tags as versions, newest first by the tag order: the
+tags that are versions (`5.4.7`, `v2.1`, `1.0-rc1`) by their numbers, so `4.16.6` comes before `4.2.8`, and below them the tags that are no
+version (`latest`, `main`, `sha-5ccfd1a`), newest first by push time in a local repository and by fetch time in a remote one
+([Q-OCI-269](#q-oci-269--a-tag-that-is-no-version-is-no-version-of-the-format-and-the-lists-order-such-tags-by-time); the exposure's
+`Stored` keeps push order; the precedence of two tags, `Compare`, is the tag order, and decides which tag is "latest", which for an image
+without a version tag is its newest other tag): per tag the digest, the media type, the summed size, and for an index its
 platforms with each child's digest and size, from the rows of R-OCI-007. The `sizeBytes` of the version, in the list and in the details, is the same summed size (Q-OCI-130), not the size of the tag item; of an index the sum over the platforms the repository holds, with `sizePartial` while some are missing and `null` while none is (Q-OCI-221, R-API-080). Layer history and labels are not shown (Deferred).
 The version `metadata` of a tag holds `digest`, `mediaType`, `size` (the summed size of the config and the layers; of an index the sum over the platforms held, absent while none is, with `sizePartial` while some are missing, Q-OCI-221;
 at any depth) and `artifactType` (the manifest's own, else the media type of its config, so every image shows its config type); an index adds `platforms`, one object per child with
 `platform` (`os/arch[/variant]`, `unknown/unknown` for an attestation, `""` for a child the index names without a platform), `digest`, `stored` and, when stored, `mediaType` and `size`. `Compare` is the tag order
-of the format (Q-OCI-17, Q-OCI-64), and a string that is no tag sorts before every tag; a tag whose manifest the journal replay withheld is not listed (R-OCI-033).
+of the format (Q-OCI-17, Q-OCI-64) for the versions; a tag that is no version and a string that is no tag are no version of the format
+(`versionkey.NotVersion`) and sort before every version and among themselves by their bytes, and the lists order them by their time
+(Q-OCI-269); a tag whose manifest the journal replay withheld is not listed (R-OCI-033).
 The tags of a remote repository are listed the same way, read from its cache entries (R-OCI-036).
 
 Acceptance criteria:
@@ -1164,6 +1169,10 @@ Acceptance criteria:
 - The package screen of `docker-local/multi` shows the tag `1` with two platforms; the API returns them in `metadata`.
 - The version list and the details of tag `1` of an image show the size of its config and layers as `sizeBytes`, not the size of the manifest
   document.
+- The version list of an image with the tags `4.2.8`, `4.16.6`, `latest` and `sha-5ccfd1a`, without a `sort`, lists `4.16.6`, `4.2.8`, then
+  the other two newest first by their push or fetch time; the key of a tag that is no version has the class NotVersion
+  (`TestR_OCI_031_ATagThatIsNoVersionIsNoVersionOfTheFormat`, unit; `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit`, area
+  `ociremote`, for the remote's statements).
 
 ### R-OCI-032 · OCI on n replicas, without Valkey and during a drain
 Priority: **P1** · Covers: quader-only
@@ -1638,6 +1647,11 @@ search field, a code the screen says in its language ([Q-CUR-166](../remote-cura
 | GitHub (`ghcr`) | `none` (hint `ghcr`) | none: its listing needs a GitHub token with `read:packages`, which a registry credential is not | `tags/list` — sizes `unknown` |
 | GitLab (`gitlab`; catalogue host `gitlab.com`, no credential) | `none` (hint `gitlab`) | `project` → images: `GET /api/v4/projects/{url-encoded path}/registry/repositories` for a public project; a group's listing needs a token and is not offered; its `404 Project Not Found` is an unknown project (Q-CUR-165) | `tags/list`; a tag's `total_size` from the project API when its row is opened — sizes `perVersion` |
 
+- **The order of the tags** is the format's on every upstream ([remote-curation.md](../remote-curation.md)
+  [Q-CUR-180](../remote-curation.md#q-cur-180--docker-hubs-and-quays-tags-are-listed-in-the-tag-order)): versions by the tag order, newest
+  first, then the tags that are no version, newest first by the upstream's time (`last_updated`, `last_modified`) and else by their bytes.
+  Docker Hub's and Quay's tags are read whole up to five pages of 100 and sorted; an image with more is listed from `tags/list` in the tag
+  order, without the API's facts. An attachment tag (R-SIG-024) is offered by no upstream (Q-OCI-268).
 - **The version is the tag** (Q-CUR-10); its canon is the tag as given. A manifest by digest is delivered when the image is delivered with
   no version rule of it, or when a delivered tag's stored document names the digest, directly or through a stored index
   (`oci_references`); a blob by digest when some version of the image is delivered. A tag that moves upstream delivers what it names when it
@@ -2017,7 +2031,10 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) Lexical order | The order of the tags list | Trivial | `9.0` after `10.0`; date tags only by accident |
 | (c) Push time from the image config | Real recency | Correct | One manifest `GET` per tag (Q-OCI-16 (c)) |
 
-**Choice:** (a). The view adapter's `Compare` uses the same order.
+**Choice:** (a). The view adapter's `Compare` uses the same order for the versions. **Revised on 2026-11-25** for the lists by
+[Q-OCI-269](#q-oci-269--a-tag-that-is-no-version-is-no-version-of-the-format-and-the-lists-order-such-tags-by-time): a tag that is no
+version is no version of the format and the lists order such tags by their time, not by bytes descending; the mirror's selection keeps
+this order.
 
 **Rationale:** the only order available without a request per tag. The development agent would revisit it if mirrors of the owner's
 images keep the wrong tags.
@@ -4112,6 +4129,30 @@ Both were reproduced by a test that failed before the change (`TestR_SIG_026_…
 **Choice:** (a). **Applied in the spec:** R-OCI-036 and [signatures.md](../signatures.md) R-SIG-024. Code: migration
 [00122](../../../internal/meta/postgres/migrations/00122_oci_attachment_tags_unlisted.sql), [package_view.sql](../../../internal/meta/postgres/queries/package_view.sql),
 [upstream_catalogue.sql](../../../internal/meta/postgres/queries/upstream_catalogue.sql), [catalogue.go](../../../internal/formats/oci/catalogue.go).
+
+### Q-OCI-269 · A tag that is no version is no version of the format, and the lists order such tags by time
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It answers the
+owner's word of 2026-11-25 ("ich wünsche eine Erkennung von semantic-versioning … die Darstellung von Versionen ist default von der
+neusten zur ältesten") for OCI, and revises [Q-OCI-17](#q-oci-17--the-tag-order-of-the-format) (a)'s "every other tag after all versions,
+by bytes descending" for the lists, and R-OCI-031's "newest first by push time" order of a list.
+
+Context: the tag order already knew that `4.16.6` is above `4.2.8`, but the opened image listed its tags by fetch time, and a tag that is no
+version had the key class of a version (0x01 0x00), so no statement could tell it from a version by its key, and it sorted by its bytes
+(`sha-…` above `main` above `latest`), an order that says nothing.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A tag that is no version is `versionkey.NotVersion`, like a string that is no tag; the lists order the not-ranked versions of every format below the ranked ones, newest first by time (chosen) | `SortKey` and `Compare` of the view adapter; `oci_tag_sort_key` (migration 00123) | One test of the class for every format ("the key starts with 0x00"), what the contract's words already say; `latest` and `sha-…` read by recency, which is all they carry | The stored keys of the old class are cleared by the migration and filled again by the background migration |
+| (b) Keep the class, order such tags by bytes | Nothing to change | — | `sha-5ccfd1a` above `5.4.7`'s alias `latest` by an accident of the alphabet |
+| (c) Order such tags by the image's config time | Real recency | — | One manifest read per tag (Q-OCI-17 (c)) |
+
+**Choice:** (a). The mirror's tag selection keeps the tag order of Q-OCI-17 (it picks versions). **Rationale:** a tag that is no version
+is a name of a moment (`latest`, `main`, a commit); its time is the one order it has. **Applied in the spec:** R-OCI-031,
+[api-and-ui.md](../api-and-ui.md) R-API-029 and [Q-API-431](../api-and-ui.md#q-api-431--every-list-of-versions-is-newest-first-by-its-formats-order-and-a-version-the-format-does-not-rank-comes-below-by-its-time).
+Code: `Compare`, `SortKey` in [view.go](../../../internal/formats/oci/view.go); migration
+[00123](../../../internal/meta/postgres/migrations/00123_unranked_versions.sql). Tests: `TestR_OCI_031_ATagThatIsNoVersionIsNoVersionOfTheFormat`
+(unit), kit check 11 (`TestR_ARCH_010_Conformance`), the SQL-against-Go key table of `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit`.
 
 ## What this does not cover
 

@@ -34,9 +34,11 @@ func viewPort(ports formats.DataPorts) (Store, error) {
 }
 
 // Compare orders tags by the tag order of the format (Q-OCI-17): versions by their numbers, then the release before its variants
-// before its pre-releases, then every other tag by its bytes. A string that is no tag sorts before every tag, as the contract asks.
+// before its pre-releases. A tag that is no version (`latest`, `main`, `sha-5ccfd1a`) is no version of the format, as a string that is no
+// tag is not (Q-OCI-269): both sort before every version and among themselves by their bytes, as the contract asks; the lists order
+// them by their time (api-and-ui.md R-API-029).
 func (viewAdapter) Compare(a, b string) int {
-	switch okA, okB := ValidTag(a), ValidTag(b); {
+	switch okA, okB := isVersion(a), isVersion(b); {
 	case !okA && !okB:
 		return strings.Compare(a, b)
 	case !okA:
@@ -47,11 +49,17 @@ func (viewAdapter) Compare(a, b string) int {
 	return tagorder.Compare(a, b)
 }
 
-// SortKey is the stored key of Compare's order (Q-API-429): a string that is no tag first, then the key of the tag order. A remote
-// repository's tags are cache entries whose key PostgreSQL derives from the tag (oci_tag_sort_key, migration 00116); both give the same
-// bytes for every tag, which the listing test of R-OCI-036 checks.
+// isVersion reports whether a string is a tag the tag order ranks as a version.
+func isVersion(tag string) bool {
+	_, ok := tagorder.Parse(tag)
+	return ok && ValidTag(tag)
+}
+
+// SortKey is the stored key of Compare's order (Q-API-429): a string that is no version first, then the key of the tag order. A remote
+// repository's tags are cache entries whose key PostgreSQL derives from the tag (oci_tag_sort_key, migrations 00116 and 00123); both give
+// the same bytes for every tag, which the listing test of R-OCI-036 checks.
 func (viewAdapter) SortKey(tag string) []byte {
-	return versionkey.Of(tagorder.Key(tag), ValidTag(tag), tag)
+	return versionkey.Of(tagorder.Key(tag), isVersion(tag), tag)
 }
 
 // Stored lists the tags a local repository serves of an image name, newest push first, for the exposure check of an endpoint. A remote

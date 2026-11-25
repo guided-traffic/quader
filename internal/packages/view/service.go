@@ -13,6 +13,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
@@ -541,24 +542,43 @@ func (s *Service) packages(ctx context.Context, sc Scope, p q.PackageViewListPar
 	return pkgs, nil
 }
 
-// latestOf is the latest visible stable version, or the latest visible pre-release
-// while no stable version is visible (R-API-029).
+// latestOf is the latest visible version (R-API-029, Q-API-431): the highest stable version, the highest pre-release while no stable version
+// is visible, and while the format ranks none of the visible versions the newest of the others by its time (an image whose tags are
+// latest and sha-5ccfd1a alone).
 func latestOf(a Adapter, rows []q.PackageViewVersionsRow) (q.PackageViewVersionsRow, bool) {
-	var best q.PackageViewVersionsRow
-	found, bestPre := false, false
-	for _, r := range rows {
-		pre := a.Prerelease(r.Version)
+	class := func(v string) int {
 		switch {
-		case !found:
-		case bestPre && !pre:
-		case !bestPre && pre:
+		case !ranked(a, v):
+			return 0
+		case a.Prerelease(v):
+			return 1
+		}
+		return 2
+	}
+	var best q.PackageViewVersionsRow
+	found, bestClass := false, 0
+	for _, r := range rows {
+		c := class(r.Version)
+		switch {
+		case !found, c > bestClass:
+		case c < bestClass:
 			continue
-		case a.Compare(r.Version, best.Version) <= 0:
+		case c > 0 && a.Compare(r.Version, best.Version) <= 0:
+			continue
+		case c == 0 && newer(best, r):
 			continue
 		}
-		best, found, bestPre = r, true, pre
+		best, found, bestClass = r, true, c
 	}
 	return best, found
+}
+
+// newer reports whether x is not older than y in the unranked part of the order: by time, then by the version's bytes.
+func newer(x, y q.PackageViewVersionsRow) bool {
+	if c := x.CreatedAt.Time.Compare(y.CreatedAt.Time); c != 0 {
+		return c > 0
+	}
+	return x.Version >= y.Version
 }
 
 // fetchRules names the formats whose versions are fetched as any of their files and those fetched as their document; every other
@@ -714,7 +734,7 @@ type VersionOrder struct {
 // the version.
 func (o VersionOrder) VersionKey(v VersionSummary) []string {
 	if o.Sort == "version" {
-		return []string{v.Version}
+		return orderKey(v)
 	}
 	return []string{v.PublishedAt.UTC().Format(time.RFC3339Nano), v.Version}
 }
@@ -725,6 +745,8 @@ type pageKey struct {
 	version   string
 	published time.Time
 	key       []byte
+	// unranked says that the format does not rank the version: it is in the second part of the order of the versions (Q-API-431).
+	unranked bool
 }
 
 // keysetBatch is the least number of versions one statement of a keyset page asks for: a filter the statement cannot apply (the
@@ -758,7 +780,7 @@ func (s *Service) Versions(ctx context.Context, sc Scope, format, name string, f
 	var found bool
 	switch {
 	case o.Sort == "version":
-		page, found, err = s.keyPage(ctx, sc, a, hs, name, withheld, f, only, o, after, limit)
+		page, found, err = s.orderPage(ctx, sc, a, hs, name, withheld, f, only, o, after, limit)
 	case len(hs) == 1:
 		page, found, err = s.keysetPage(ctx, sc, a, hs[0], name, withheld, f, only, o, after, limit)
 	default:
@@ -792,7 +814,7 @@ func (s *Service) Versions(ctx context.Context, sc Scope, format, name string, f
 		out = append(out, VersionSummary{
 			Version: k.version, Prerelease: a.Prerelease(k.version), PublishedAt: g.published,
 			SizeBytes: &files, Repositories: sc.topo.Names(sc.holders(g.repoIDs())), DownloadCount: g.downloads(),
-			LastDownloadedAt: g.lastDownload(),
+			LastDownloadedAt: g.lastDownload(), Unranked: k.unranked,
 		})
 	}
 	if err := s.adapterSizes(ctx, sc, a, format, groupOf, out); err != nil {
@@ -978,58 +1000,6 @@ func keysetTags(ctx context.Context, qs *q.Queries, k keysetQuery, at, cur strin
 	return out, err
 }
 
-// keyPage reads a page in the order of the format's versions by keyset statements on the stored sort key (Q-API-429): of every holder
-// the repository filter admits, its version rows and, for a remote repository, its OCI tags after the cursor's key, at least keysetBatch
-// each, merged by the key (keyBatch). A version that several holders hold has one key, so its rows meet in the merge and it is taken
-// once. Batches follow until limit+1 versions passed the pre-release filter or none is left. The cursor is the version; its key is the
-// format's (Adapter.SortKey), the one the version's rows store. found is false when the first page of the package without its filters
-// is empty.
-func (s *Service) keyPage(ctx context.Context, sc Scope, a Adapter, hs []q.PackageViewHoldersRow, name string, withheld []int64, f VersionFilter,
-	only []int64, o VersionOrder, after []string, limit int,
-) ([]pageKey, bool, error) {
-	at := keyStart(o)
-	if after != nil {
-		if len(after) != 1 {
-			return nil, true, errBadCursor
-		}
-		at = a.SortKey(after[0])
-	}
-	var all, admitted []keysetQuery
-	for _, h := range hs {
-		k := keysetQueryOf(sc, h, name, withheld, o)
-		all = append(all, k)
-		if !f.HasRepositories || slices.Contains(only, h.RepoID) {
-			admitted = append(admitted, k)
-		}
-	}
-	batch := max(limit+1, keysetBatch)
-	var page []pageKey
-	for len(admitted) > 0 && len(page) < limit+1 {
-		got, more, err := s.keyBatch(ctx, a, admitted, at, batch)
-		if err != nil {
-			return nil, true, err
-		}
-		for _, k := range got {
-			if f.Prerelease == nil || *f.Prerelease == a.Prerelease(k.version) {
-				page = append(page, k)
-			}
-		}
-		if !more || len(got) == 0 {
-			break
-		}
-		at = got[len(got)-1].key
-	}
-	if len(page) > limit+1 {
-		page = page[:limit+1]
-	}
-	if len(page) > 0 || after != nil || (f.Prerelease == nil && !f.HasRepositories) {
-		return page, len(page) > 0 || after != nil, nil
-	}
-	// An empty first page under a filter: the package is found when it has a version at all.
-	any, _, err := s.keyBatch(ctx, a, all, keyStart(o), 1)
-	return page, len(any) > 0, err
-}
-
 // keyStart is the cursor's key of a first page: every key is above the empty one and below 0x02 (a key starts with its class, 0x00 or
 // 0x01, internal/formats/versionkey).
 func keyStart(o VersionOrder) []byte {
@@ -1102,8 +1072,8 @@ func keyRows(ctx context.Context, qs *q.Queries, a Adapter, k keysetQuery, at []
 			out = append(out, pageKey{version: version, published: created, key: key})
 			return
 		}
-		key = a.SortKey(version)
-		if c := bytes.Compare(key, at); (k.desc && c < 0) || (!k.desc && c > 0) {
+		// The ranked part of the order alone: a row its format does not rank is read by the unranked part (Q-API-431).
+		if key = a.SortKey(version); key[0] == versionkey.Version && keyAfter(key, at, k.desc) {
 			out = append(out, pageKey{version: version, published: created, key: key})
 		}
 	}

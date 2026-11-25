@@ -1592,7 +1592,7 @@ remain as their owners define them.)
 | GET | `/api/v1/packages` | Packages; filters `format`, `repository` (both repeatable; the qualified name `<projectKey>/<repoKey>`), `project`, `q` (name and description), `namePrefix`, `keyword`, `createdFrom` / `createdTo` (first visible version); `sort` `name`, `createdAt`, `updatedAt` and their descending forms (default `name`); `include=vulnerabilities` (R-UI-052) | visible versions (below); anonymous where allowed |
 | GET | `/api/v1/packages/lookup?format=npm&name=@team-a/ui` | Resolve a name to the package | as list |
 | GET | `/api/v1/packages/{packageId}` | Package summary | as list |
-| GET | `/api/v1/packages/{packageId}/versions` | Versions; filters `prerelease`, `repository`; `sort` `-publishedAt` (default), `publishedAt`, `-version`, `version` (the format's version precedence); `include=digest` (R-UI-052), `include=state` (R-UI-194) | as list |
+| GET | `/api/v1/packages/{packageId}/versions` | Versions; filters `prerelease`, `repository`; `sort` `-version` (default, the format's version precedence, newest first), `version`, `-publishedAt`, `publishedAt`; `include=digest` (R-UI-052), `include=state` (R-UI-194) | as list |
 | GET | `/api/v1/packages/{packageId}/versions/{version}` | Version details | as list |
 | GET | `/api/v1/packages/{packageId}/versions/{version}/readme` | Sanitized README HTML; wiki content (`x-quader-part: wiki`, R-API-058) | as list, then the wiki check ([authorization.md](authorization.md) R-AUTHZ-034) |
 | GET | `/api/v1/packages/{packageId}/versions/{version}/docs`, `…/docs/entries/{type}/{name}`, `…/docs/files/{file}` | The documentation of a version of a format that has one (Ansible Galaxy: the tree with search, one plugin's page, a Markdown file): `getPackageVersionDocs`, `getPackageVersionDocEntry`, `getPackageVersionDocFile`, [formats/ansible.md](formats/ansible.md) R-ANS-036; wiki content (Q-API-260, Q-API-261); 404 for a format without documentation | as list, then the wiki check of R-AUTHZ-034 ([formats/ansible.md](formats/ansible.md) R-ANS-037) |
@@ -1674,7 +1674,17 @@ remain as their owners define them.)
 - What the generic rows do not hold - description, keywords, licenses, the README and the `metadata` - comes from
   the format's view adapter over its data port (Q-API-166); the order of versions and the pre-release rule are the
   format's (SemVer precedence for npm). `latestVersion` is the highest visible stable version, or the highest visible
-  pre-release while no stable version is visible. The `downloadUrl` of a file is the protocol URL of the repository
+  pre-release while no stable version is visible, or, while the format ranks none of the visible versions, the newest of them by its time
+  (an image whose tags are `latest` and `sha-5ccfd1a` alone).
+- **Every list of versions is newest first by its format's order** unless the caller sorts otherwise (the owner, 2026-11-25:
+  [Q-API-431](#q-api-431--every-list-of-versions-is-newest-first-by-its-formats-order-and-a-version-the-format-does-not-rank-comes-below-by-its-time)).
+  The order of the versions has two parts: the versions the format ranks, in its precedence, and below them the strings it does not rank
+  (a sort key of the class `NotVersion`: an OCI tag such as `latest`, `main` or `sha-5ccfd1a`), newest first by their time (a version by its
+  oldest visible row: push time, a remote tag's fetch time), the name compared bytewise breaking a tie. `sort=version` is the reverse, the
+  second part first. A cursor of the first part is the version, one of the second its time and the version. What "newest" is per format:
+  npm SemVer precedence (a pre-release below its release), NuGet normalized SemVer 2.0, Debian the dpkg order (epoch, upstream version,
+  revision, `~` lowest), Ansible Galaxy SemVer, OCI the tag order ([formats/oci.md](formats/oci.md) R-OCI-031); none of npm, NuGet,
+  Debian and Ansible stores a string it does not rank, so their lists have no second part; the generic format has no versions. The `downloadUrl` of a file is the protocol URL of the repository
   that holds it where the format has a protocol, else its `/files/` URL, built on the configured base URL of the
   endpoint and never on the `Host` of the request. Its `contentUrl` is the relative URL of the content route of R-API-025
   for the item that holds the file (Q-UI-106): `PackageFile.path` is the path of the file item in the repository that
@@ -24667,6 +24677,40 @@ R-API-029, Q-API-429. Code: `keyRows` and `keyBatch` in [service.go](../../inter
 ([postgres](../../test/integration/postgres/version_sort_key_test.go)); `TestR_API_010_APageOfVersionsReadsNoVersionPastItsLimit` keeps
 holding the keyset's bound.
 
+### Q-API-431 · Every list of versions is newest first by its format's order, and a version the format does not rank comes below by its time
+
+Status: **Decided by the development agent** on the owner's word of 2026-11-25 ("Nächstes Thema, ich wünsche eine Erkennung von
+semantic-versioning. Ich wünsche, dass unsere Software automatisch erkennt, dass 4.16.6 höher ist als 4.2.8, die Darstellung von Versionen
+ist default von der neusten zur ältesten."); the options are the development agent's, the owner reviews them at the walkthrough. It revises
+[Q-API-417](#q-api-417--the-version-list-of-a-package-is-read-a-page-at-a-time-by-a-keyset-query-in-the-order-of-publication)'s default
+(`-publishedAt`) and, on what the class of a key means,
+[Q-API-429](#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) and
+[ADR-278](../decisions.md#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row).
+
+Context: every format already ranks its versions (`Compare`, `SortKey`), and the package's page sorted by it, but the API's default and
+the opened item in the content list were the order of publication: on the owner's image the tags fetched last, the oldest versions, stood
+first. And an OCI tag that is no version had the key class of a version (0x01 0x00), which no statement can tell from npm's 0x01 followed
+by its first number, so "below every version" was not a rule a statement could keep.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The default `sort` is `-version`; the order has two parts, the ranked versions by key, then the versions of the class `NotVersion` newest first by time, each part a keyset (chosen) | The API's default; `PackageViewVersionUnranked*`, `PackageViewTagUnranked*` on two partial indexes; one walk across both parts in the service | One rule for every format; a format with no unranked string pays one empty index probe; a cursor stays the position in one keyset | Two cursor shapes; a package several repositories hold reads its unranked versions whole for the second part (H-1901) |
+| (b) The default `-version`, unranked strings by their bytes | No second keyset | Simple | `sha-…` above `main` above `latest` says nothing (the owner's image) |
+| (c) Keep `-publishedAt` as the default, the screens ask `-version` | No API change | — | Every client gets the order the owner objected to unless it knows better |
+
+**Choice:** (a). The second part is ordered by the version's time, the first row's (push time; a remote tag's fetch time), and the name
+bytewise; the latest version of a package with no ranked version is its newest unranked one (`PackageViewLatest` reads the first entry
+of each partial index). **Rationale:** the order of versions is the format's knowledge, and a string the format does not rank carries
+nothing but its time. The development agent would revisit the walk of several holders if a package that a local and a remote repository
+both hold with many unranked versions is common (H-1901). **Applied in the spec:** R-API-029; [formats/oci.md](formats/oci.md) R-OCI-031
+and Q-OCI-269. Code: `walk`, `orderPage`, `unrankedRows`, `latestOf` in [order.go](../../internal/packages/view/order.go) and
+[service.go](../../internal/packages/view/service.go); the statements named above and `PackageViewLatest` in
+[package_view.sql](../../internal/meta/postgres/queries/package_view.sql); migration
+[00123](../../internal/meta/postgres/migrations/00123_unranked_versions.sql). Tests: `TestR_API_029_VersionList` (area `packages`, the
+default), `TestR_API_029_LatestOfAPackageWithoutARankedVersionIsItsNewest` (unit), `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit`
+(area `ociremote`, the second part's statements read no entry past their page), `TestR_HA_020_TheUnrankedVersionsStepPassesOnADatabaseOfThePreviousRelease`
+(area `postgres`).
+
 ## What this does not cover
 
 ### H-1683 · The version list of a package several repositories hold, in the order of publication, reads every version, and the package list counts every version
@@ -24674,7 +24718,7 @@ holding the keyset's bound.
 The version list reads a page by keyset queries in the order of the format's versions, for one repository or several, and in the order
 of publication for a package that one repository of the caller's scope holds (Q-API-417, Q-API-429). For a package that several
 repositories hold (a name in a local repository and in a remote's cache, a virtual repository's members), in the order of publication
-(the default `-publishedAt`), it reads the name and the creation time of every visible version, one cheap row each, and sorts them in the
+(`-publishedAt`), it reads the name and the creation time of every visible version, one cheap row each, and sorts them in the
 service: a version's place is its oldest visible row, which a keyset over each holder cannot see without a lookup per row. The package
 list reads one cheap row per visible version of the caller's scope to count the versions of each package and to find its first and last
 creation; the latest version and the downloads are read for the page's packages alone (Q-API-429). Live today; real for a package with
@@ -24683,6 +24727,17 @@ order of publication (0.03 s in the order of the versions), the package list 0.1
 ([packages.md](../developer/packages.md#a-package-with-100000-versions-h-1683-measured)). Counts kept by the commit and the fill would end
 the second part; they would have to follow every rule of what a caller may see (the scope's rows, withheld versions, a remote's listing
 rules that change with a download), and none is built.
+
+### H-1901 · The second part of the order of the versions of a package several repositories hold reads every unranked version
+
+In the order of the versions, the versions a format does not rank (an OCI tag such as `latest` or `sha-5ccfd1a`) come after the ranked
+ones newest first by their time, a version by its oldest visible row (Q-API-431). For one holder that part is a keyset on a partial index;
+for a package that several repositories of the caller's scope hold (an image in a local and a remote repository, the members of a virtual
+repository), a version's place is its oldest row over all of them, which a keyset over each holder cannot see, so the walk reads every
+unranked visible version of the package, one cheap row each from the partial indexes, and sorts them in the service, as H-1683 does for the
+order of publication. Live today; real only for an image that two physical repositories of one scope hold with thousands of tags that are
+no version (a CI's commit tags); npm, NuGet, Debian and Ansible store no such version, and a virtual repository over one member is one
+holder. Not measured. The remedy would be the same as H-1683's: a time per version kept across its holders.
 
 
 ### H-1847 · A live list reads its rows again; there is no answer of what changed

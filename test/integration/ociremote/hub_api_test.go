@@ -18,8 +18,9 @@ type hubAPIStub struct {
 	requests atomic.Int64
 }
 
-// hubTags are the tags the stub's API lists of acme/a, as the registry stub holds them.
-var hubTags = []string{"2.0", "1.2", "1.1", "1.0", "latest"}
+// hubTags are the tags the stub's API lists of acme/a, as the registry stub holds them, in an order of pushes (Docker Hub answers the newest
+// push first), not in the tag order the catalogue sorts them into (Q-CUR-180).
+var hubTags = []string{"1.2", "latest", "1.0", "2.0", "1.1"}
 
 func startHubAPI(t *testing.T, cfg *tls.Config) *hubAPIStub {
 	t.Helper()

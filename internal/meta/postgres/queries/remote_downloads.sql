@@ -123,8 +123,9 @@ DELETE FROM remote_download_bulks b
    AND NOT EXISTS (SELECT 1 FROM remote_download d WHERE d.bulk_id = b.id);
 
 -- name: RemoteDownloadList :many
--- One page of a repository's queue (R-CUR-012): running before waiting before the rest, newest first within each; every filter is
--- optional (an empty value matches all). The cursor is the last row's rank, creation time and id.
+-- One page of a repository's queue (R-CUR-012): running before waiting before the rest, newest first within each; the rows queued
+-- together (a bulk's, which share one creation time) in the order they run, by their id (UUIDv7, the order of RemoteDownloadDue's tie,
+-- Q-CUR-181); every filter is optional (an empty value matches all). The cursor is the last row's rank, creation time and id.
 SELECT to_jsonb(d.*)::text AS doc,
        (CASE d.state WHEN 'running' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END)::int AS rank
   FROM remote_download d
@@ -139,8 +140,8 @@ SELECT to_jsonb(d.*)::text AS doc,
         OR ((CASE d.state WHEN 'running' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END) = sqlc.arg(after_rank)::int
             AND ((extract(epoch FROM d.created_at) * 1000000)::bigint < sqlc.arg(after_us)::bigint
                  OR ((extract(epoch FROM d.created_at) * 1000000)::bigint = sqlc.arg(after_us)::bigint
-                     AND d.id::text < sqlc.arg(after_id)::text))))
- ORDER BY CASE d.state WHEN 'running' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END, d.created_at DESC, d.id::text DESC
+                     AND d.id::text > sqlc.arg(after_id)::text))))
+ ORDER BY CASE d.state WHEN 'running' THEN 0 WHEN 'waiting' THEN 1 ELSE 2 END, d.created_at DESC, d.id::text
  LIMIT sqlc.arg(max_rows)::int;
 
 -- name: RemoteDownloadStateCounts :one

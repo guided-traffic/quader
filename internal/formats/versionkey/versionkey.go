@@ -5,7 +5,8 @@
 // A key is a class byte, the format's encoding of the version's place in its order, and the version's own bytes: a string that is no
 // version of the format has the class [NotVersion] and its bytes alone, so it sorts before every version and by its bytes, as Compare
 // orders it; every version has the class [Version]. The bytes at the end make two different strings two different keys, the tie-break
-// Compare ends with. A format's encoding must be self-delimiting (no key of one version is a proper prefix of the key of another), so
+// Compare ends with. The class is what a statement reads of a key: a key below 0x01 is a string the format does not rank, which the lists
+// put after every version, newest first by its time (api-and-ui.md Q-API-431). A format's encoding must be self-delimiting (no key of one version is a proper prefix of the key of another), so
 // that the bytes at the end never change the order of two versions. The helpers here are self-delimiting.
 //
 // The package is a leaf: it imports the standard library only.
