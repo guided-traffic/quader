@@ -260,10 +260,10 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 | M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847) | landed and pushed at 07:14 (eight commits, Test and Release 45559185462; its builder worked from 06:17 to 07:12, every gate exit 0); what it measured and changed is below |
 | S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | landed and pushed at 08:11 (two commits, migration 00120; Q-CUR-170 to Q-CUR-176, Q-UI-1100 to Q-UI-1104, gaps H-1880 to H-1884; its builder worked from 06:40 to 08:05; the landing's gates each exit 0; two of its pictures looked at by the development agent) |
 | S4 · One scrollbar per page | the owner's finding of 06:45 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | landed and pushed at 09:45 (one commit, Test and Release 45579082289; R-UI-215, Q-UI-1110 to Q-UI-1113; its builder worked from 07:15 to 09:38; the landing's gates each exit 0; the owner's case looked at by the development agent in its picture) |
-| S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | the plan is back at 07:20 (P3, 27 minutes, read-only; kept as `.dev/plans/p3-one-row-per-image-newest-first-plan.md` of the main checkout, not in git): two packages in order, S5a the server and S5b the screens, see below; **S5a landed and pushed at 10:03** (three commits, migrations 00122 to 00124; Q-API-431, Q-API-432, Q-OCI-268, Q-OCI-269, Q-CUR-180, Q-CUR-181, Q-UI-1130, ADR-280, gaps H-1900 to H-1902; its builder worked from 08:12 to 09:50; the landing's gates and five integration areas each exit 0); S5b in work since 10:06; **S5b landed and pushed at 11:25** (one commit; Q-UI-1150, Q-UI-1151, H-1930; its builder worked from 10:04 to 11:17; the landing's thirteen gates each exit 0 and the image and mirror screens rendered together without a finding); S5c (an image tag and an Ansible version are marked a pre-release) in work since 11:17 |
+| S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | the plan is back at 07:20 (P3, 27 minutes, read-only; kept as `.dev/plans/p3-one-row-per-image-newest-first-plan.md` of the main checkout, not in git): two packages in order, S5a the server and S5b the screens, see below; **S5a landed and pushed at 10:03** (three commits, migrations 00122 to 00124; Q-API-431, Q-API-432, Q-OCI-268, Q-OCI-269, Q-CUR-180, Q-CUR-181, Q-UI-1130, ADR-280, gaps H-1900 to H-1902; its builder worked from 08:12 to 09:50; the landing's gates and five integration areas each exit 0); S5b in work since 10:06; **S5b landed and pushed at 11:25** (one commit; Q-UI-1150, Q-UI-1151, H-1930; its builder worked from 10:04 to 11:17; the landing's thirteen gates each exit 0 and the image and mirror screens rendered together without a finding); **S5c landed and pushed at 11:59** (an image tag and a collection version are marked a pre-release, migration 00126) |
 | S6 · "Not scanned" says why and what comes | the owner's finding of 06:55 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | landed and pushed at 08:50 (two commits, migration 00121; Q-VULN-274 to Q-VULN-279, Q-UI-1120 to Q-UI-1123, Q-ARCH-1064, gaps H-1890 and H-1891; its builder worked from 07:19 to 08:25); what it built and left is in section 8, Product |
 | S7 · The UI profile scans for malware, with nothing of it in the product | H-1891 (section 8, Product, under S6): ClamAV on the owner's machine through a relay of the profile's own between a Unix socket on the host and `clamd`'s port published on the host's loopback; the product's binary, its configuration and the chart do not change (the owner's conditions of 09:17, below) | landed and pushed at 10:32 (two commits; Q-ARCH-1065, H-1891 narrowed to Linux hosts; its builder worked from 09:41 to 10:24, with a stop from 09:47 to 09:48 for the form; the landing's gates, the chart's tests and shellcheck each exit 0; two of its 44 pictures looked at by the development agent) |
-| S8 · An upstream's account from a Secret that exists | the owner's task of 09:40 (below): the chart supplies the upstream registries with accounts from existing Secrets; the development profiles take Docker Hub's account from a file of the machine | the plan is back at 10:04 (P4, 21 minutes, read-only; kept as `.dev/plans/p4-upstream-accounts-from-secrets-plan.md` of the main checkout, not in git): two packages, S8a the product, the chart and the screens, S8b the development profiles after it; see below; S8a in work since 10:15, in the place of G2; S8b after it; **S8a landed and pushed at 11:38** (one commit, migration 00125; see below); S8b waits for a builder's place |
+| S8 · An upstream's account from a Secret that exists | the owner's task of 09:40 (below): the chart supplies the upstream registries with accounts from existing Secrets; the development profiles take Docker Hub's account from a file of the machine | the plan is back at 10:04 (P4, 21 minutes, read-only; kept as `.dev/plans/p4-upstream-accounts-from-secrets-plan.md` of the main checkout, not in git): two packages, S8a the product, the chart and the screens, S8b the development profiles after it; see below; S8a in work since 10:15, in the place of G2; S8b after it; **S8a landed and pushed at 11:38** (one commit, migration 00125; see below); S8b in work since 11:54 |
 | P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows, what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | back at 06:42 (a planner, 25 minutes, read-only; kept in the session's scratch directory as `p1-render-guard-blind-spots-plan.md`); its three packages are G1 to G3 below |
 
 **The render guard's blind spots, as the plan of 06:42 reads them (counted in the code by its planner; the estimates are
@@ -490,6 +490,28 @@ files missing, dark at 1,440 px, and with them readable, German light at 390 px 
 at its hyphen in the sentence on where the credential goes: small, open). **Not verified:** that a kubelet fills an optional source of a
 Secret created after the install (S8b's check on the kind profile); the scope's name "Public Repo Read-only" of a
 Docker Hub token (from the plan, not read at Docker Hub).
+
+**The owner's dev server built nothing from 10:13 to 11:50 (found at 11:48, after his words "Die Versionsreihenfolge
+klappt so noch nicht auf localhost ..." with a picture of the old list).** G2's landing added the packages of
+`make ui-states` to the lock file; the main checkout kept its `node_modules` of 2026-11-17, every build of its dev server
+failed on `vitest/browser` since, and the browser went on showing the bundle of before without a sign: nothing of S2,
+S5b or S8a reached him, and what the development agent told him at 11:25 ("auf deinem Profil angekommen") was read
+from the API and wrong for the screen. Repaired at 11:50: `deploy/ui-dev/web.sh` installs the packages again when the
+lock file is newer than the last install (pushed), the dev server was started again, and the bundle it serves holds the
+new request (read from the served chunks). For every landing: after the fast-forward read the dev server's log for
+"generation failed" before the owner is told anything. Open: a failed build of the dev server shows nothing in the
+browser.
+
+**The owner's word at 11:47: "Ja, bau S10 erstmal wie vorgeschalgen." and "Bereite mir das Quader Secret für dockerhub
+vor: apps/quader/app".** Written into his deployment repository at 11:52, uncommitted, by his rule for it: the
+placeholder `apps/quader/app/s-quader-upstream-docker-hub.unenc.yml` (ignored by git; keys `username` and `token`, the
+one command to encrypt it in its head), the block `decryption` of the Kustomization `quader`, the value
+`secrets.upstreamAccounts.docker-hub` of the HelmRelease and a section of the README. Checked without him: the chart of
+`main` rendered with his values mounts the Secret optional, read-only and with mode 0440 on `api`, `packages` and
+`worker` (`token` as the file `password`) and renders no Secret; `sops-age` exists in `flux-system`; the registry
+`upstream/docker-hub` is declared by the product (`internal/wellknown`), not read on his cluster. His installation runs
+chart 0.125.0, which has no such value yet: the value and the encrypted Secret are committed together, on his word,
+once the release with S8a is out.
 
 **What stays open and is not built by this run, each with its reason:** F-126, F-95, the `npm ci` binding and the
 unreachable github.com of `e2e (bastion)` wait for a recurrence (section 8); the stall without a neighbour is a standing
@@ -1246,7 +1268,19 @@ records the recorder that tells such a stall apart).
   seed (`portal/worker`, 12 images, 26 tags: 2.0.0-rc.1, 1.16.6, 1.10.1, 1.10.0, 1.9.0, …); the landing's thirteen
   gates each exit 0. **Left open by it:** (1) an image tag is never marked a pre-release (OCI has no exposure adapter,
   `prereleaseOf` of `internal/formathost/view.go`), so "Latest" can be a release candidate and no row carries the
-  badge; older than S5; **S5c, in work since 11:17**, for OCI, Ansible Galaxy and Debian. (2) An image without a
+  badge; older than S5; **closed by S5c, landed and pushed at 11:59** (one commit, migration 00126, ADR-282, the format
+  contract at version 13; Q-API-433 to Q-API-435, Q-OCI-270, Q-ANS-92; gaps H-1970, H-1971): a format says which of its
+  versions is a pre-release where it says its order (`ViewAdapter.Prerelease`; the exposure adapter no longer does, and
+  the contract kit's check 11 holds every format to its sample), an image tag by the tag order's rule, a collection
+  version by its SemVer part, Debian and ClamAV none (a `~` marks a backport as often as a pre-release, and APT
+  installs the highest: H-1971); a remote's tags carry the flag by a generated column that the database derives as the
+  Go code does (one table of 29 tags holds both); the rows whose answer changes are filled again by the background
+  migration at the next start; "Latest" is the newest release where one exists (seen by its builder in the seed:
+  `portal/worker` Latest 1.16.6, 2.0.0-rc.1 first row with the badge Pre-release). npm reads a version for the exposure
+  rules by its order's strict grammar now (`v1.0.0` is none there too). The landing's eight gates of the Go side each
+  exit 0. Open: a collection document's `highest_version` still counts a pre-release (H-1970, the protocol's document,
+  not read against the reference server); the refill on an installation was shown in the database test only; the full
+  lint was run at the landing, not by its builder after its last repair. (2) An image without a
   version tag is led by its newest tag (`sha-e4a1f60` before `main` in the seed), and `latest` can stand behind "+N
   more" on a row of four other tags (Q-API-431's rule; the owner may want `latest` and a branch name first). (3) Tags
   past the hundred an entry names are neither shown nor found by the filter (H-1930). (4) Not looked at: the search's
