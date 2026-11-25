@@ -224,6 +224,8 @@
       [sort]="tableSort()"
       [loaded]="list.loaded()"
       [loading]="list.loading()"
+      loadingText="Loading the packages."
+      i18n-loadingText="@@pkg.list.loading"
       [error]="list.error()"
       [empty]="list.items().length === 0"
       [emptyText]="filtered() ? emptyFilteredText : emptyText"

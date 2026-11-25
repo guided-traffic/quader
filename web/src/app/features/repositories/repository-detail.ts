@@ -76,6 +76,8 @@ import { RepositoryDownloadLinksSection } from './repository-download-links';
 import { DeliverySave, RepositoryDeliverySection } from './repository-delivery';
 import { RepositorySyncsSection, SyncSettings } from './repository-syncs';
 import { DeliveryRulesApi } from '../../api/delivery-rules-api';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 // <<< T-24 delivery
 
 /** The closed sections whose content loads when it is first opened (a list read from the server). */
@@ -92,7 +94,7 @@ type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombs
  */
 @Component({
   selector: 'quader-repository-detail',
-  imports: [
+  imports: [Busy, Loading, 
     AnsibleImportTasks,
     DocumentBlock,
     AnsibleTombstones,

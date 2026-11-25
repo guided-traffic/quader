@@ -7,6 +7,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { everyPhrase, placeLabel, whoView } from '../limits/callers';
 import { FIGURES, compactFigures, figureName, formatCount, limitText } from '../limits/figures';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * One step of the resolution as a sentence (R-UI-184): "Repository web/npm-remote: no rule for alice." `subjectName` null: the step is the
@@ -49,7 +50,7 @@ export function stepText(step: ExplainStep, subjectName: string | null): string 
 @Component({
   selector: 'quader-limit-explain',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ErrorNotice],
+  imports: [Busy, ErrorNotice],
   template: `
     <button class="btn btn-tertiary" type="button" [attr.aria-expanded]="open()" aria-controls="explain-panel" (click)="open.set(!open())">
       <span class="material-icons expand-chevron" aria-hidden="true">expand_more</span>
@@ -77,7 +78,7 @@ export function stepText(step: ExplainStep, subjectName: string | null): string 
               }
             </datalist>
           </div>
-          <button class="btn btn-default" type="submit" [disabled]="busy() || !repository().includes('/')" i18n="@@explain.ask">Explain</button>
+          <button class="btn btn-default" type="submit" [disabled]="busy() || !repository().includes('/')" [quaderBusy]="busy()" i18n="@@explain.ask">Explain</button>
         </form>
         @if (failure(); as e) {
           <quader-error-notice [error]="e" />

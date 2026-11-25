@@ -6,6 +6,7 @@ import { PackageReadme } from '../../api/packages-api';
 import { ErrorNotice } from '../../shared/error-notice';
 import { failureOf, valueOf } from '../../shared/paged-resource';
 import { PackageReadmeView } from '../packages/package-readme';
+import { Loading } from '../../shared/ui/loading';
 
 /**
  * A page of the manual (R-UI-050): the contents of both guides beside the page, the page's
@@ -16,7 +17,7 @@ import { PackageReadmeView } from '../packages/package-readme';
  */
 @Component({
   selector: 'quader-help-page',
-  imports: [RouterLink, RouterLinkActive, ErrorNotice, PackageReadmeView],
+  imports: [Loading, RouterLink, RouterLinkActive, ErrorNotice, PackageReadmeView],
   templateUrl: './help-page.html',
   styleUrl: './help-page.scss',
 })

@@ -35,6 +35,7 @@ import {
   SigningKeyDialogData,
   SigningKeyDraft,
 } from './signing-dialogs';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * The section **Signing identity** of **Admin area › Settings › Signatures** (R-SIG-056, Q-SIG-70), first on the page and open, in
@@ -51,7 +52,7 @@ import {
  */
 @Component({
   selector: 'quader-signing-identity',
-  imports: [CodeWindow, CopyButton, DataTable, DatePipe, DecimalPipe, Disclosure, ErrorNotice, NgTemplateOutlet, TimeAgo],
+  imports: [Busy, CodeWindow, CopyButton, DataTable, DatePipe, DecimalPipe, Disclosure, ErrorNotice, NgTemplateOutlet, TimeAgo],
   templateUrl: './signing-identity.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `

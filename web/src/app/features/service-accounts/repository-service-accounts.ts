@@ -30,6 +30,8 @@ import { ServiceAccountCreateData, ServiceAccountCreateDialog } from './service-
       [columns]="columns"
       [loaded]="list.loaded()"
       [loading]="list.loading()"
+      loadingText="Loading the service accounts."
+      i18n-loadingText="@@sa.list.loading"
       [error]="list.error()"
       [empty]="list.items().length === 0"
       i18n-emptyText="@@repo-sas.empty"

@@ -10,6 +10,8 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { Disclosure } from '../../shared/ui/disclosure';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /** The fingerprint in groups of four, the way an operator compares it with a second channel (R-DEB-018). */
 export function groupedFingerprint(fingerprint: string): string {
@@ -70,7 +72,7 @@ export function keyErrorText(error: ApiError): string | null {
  */
 @Component({
   selector: 'quader-deb-signing-keys',
-  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DatePipe, CopyButton, DataTable, Disclosure, ErrorNotice],
+  imports: [Busy, Loading, CdkMenu, CdkMenuItem, CdkMenuTrigger, DatePipe, CopyButton, DataTable, Disclosure, ErrorNotice],
   template: `
     <section class="keys" aria-labelledby="deb-keys-heading">
       <h2 id="deb-keys-heading" class="visually-hidden" i18n="@@deb.keys.heading">Signing keys</h2>
@@ -140,7 +142,7 @@ export function keyErrorText(error: ApiError): string | null {
                     <button
                       class="btn btn-tertiary btn-icon"
                       type="button"
-                      [disabled]="busy()"
+                      [disabled]="busy()" [quaderBusy]="busy()"
                       [attr.aria-label]="actionsLabel(k)"
                       [cdkMenuTriggerFor]="keyMenu"
                     >
@@ -183,7 +185,7 @@ export function keyErrorText(error: ApiError): string | null {
               Creating a next key starts the overlap: from the next build both keys sign every index.
             </p>
             <div class="buttons">
-              <button class="btn btn-confirm" type="button" [disabled]="busy()" (click)="generate()" data-testid="deb-generate" i18n="@@deb.keys.generate">
+              <button class="btn btn-confirm" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="generate()" data-testid="deb-generate" i18n="@@deb.keys.generate">
                 Generate a next key
               </button>
               <button class="btn btn-default" type="button" [disabled]="busy()" (click)="importing.set(!importing())" [attr.aria-expanded]="importing()" i18n="@@deb.keys.import">
@@ -225,7 +227,7 @@ export function keyErrorText(error: ApiError): string | null {
                     Only if the key is protected. It is used once and never stored.
                   </p>
                 </div>
-                <button class="btn btn-confirm" type="submit" [disabled]="busy() || secret().trim() === ''" i18n="@@deb.keys.import.submit">
+                <button class="btn btn-confirm" type="submit" [disabled]="busy() || secret().trim() === ''" [quaderBusy]="busy()" i18n="@@deb.keys.import.submit">
                   Import as next key
                 </button>
               </form>
@@ -234,7 +236,7 @@ export function keyErrorText(error: ApiError): string | null {
           }
         }
       } @else {
-        <p role="status" i18n="@@deb.keys.loading">Loading the keys.</p>
+        <quader-loading i18n="@@deb.keys.loading">Loading the keys.</quader-loading>
       }
     </section>
   `,

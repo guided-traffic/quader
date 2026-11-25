@@ -5,6 +5,8 @@ import { AnsibleApi, AnsibleImportTask } from '../../api/ansible-api';
 import { ErrorNotice } from '../../shared/error-notice';
 import { PagedResource } from '../../shared/paged-resource';
 import { importStateText } from '../repositories/ansible-import-tasks';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * The Import log tab of a version held by a local repository (R-UI-063): the import tasks of that version, newest first, each with its
@@ -13,12 +15,12 @@ import { importStateText } from '../repositories/ansible-import-tasks';
  */
 @Component({
   selector: 'quader-ansible-import-log',
-  imports: [DatePipe, ErrorNotice],
+  imports: [Busy, Loading, DatePipe, ErrorNotice],
   template: `
     @if (list.error(); as e) {
       <quader-error-notice [error]="e" (retry)="load()" />
     } @else if (!list.loaded()) {
-      <p role="status" i18n="@@pkg.loading">Loading.</p>
+      <quader-loading i18n="@@pkg.import-log.loading">Loading the import log.</quader-loading>
     } @else if (list.items().length === 0) {
       <p class="empty" data-testid="import-log-empty" i18n="@@docs.import-log.empty">
         No import task of this version is kept. A task is deleted after the retention period; the version stays.
@@ -47,7 +49,7 @@ import { importStateText } from '../repositories/ansible-import-tasks';
       }
       @if (list.hasMore()) {
         <p>
-          <button type="button" class="btn btn-default" [disabled]="list.loading()" (click)="list.more()" i18n="@@list.load-more">
+          <button type="button" class="btn btn-default" [disabled]="list.loading()" [quaderBusy]="list.loading()" (click)="list.more()" i18n="@@list.load-more">
             Load more
           </button>
         </p>

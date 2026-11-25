@@ -28,6 +28,10 @@
 }
 
 <!-- The instance: overall state, version, address and replicas, with the way to the status screen. -->
+<!-- Each part says its first load in its place; the dashboard's reads every 15 s keep what they show (R-UI-213, R-UI-217). -->
+@if (!info.hasValue() && info.isLoading() && !failure()) {
+  <quader-loading i18n="@@dashboard.instance.loading">Loading the state of the instance.</quader-loading>
+}
 @if (valueOf(info); as i) {
   <section class="instance-bar" aria-labelledby="dash-instance">
     <h2 id="dash-instance" class="visually-hidden" i18n="@@dashboard.instance">Instance</h2>
@@ -109,6 +113,9 @@
 }
 
 <h2 i18n="@@dashboard.components">Components</h2>
+@if (!replicas.hasValue() && replicas.isLoading() && !failure()) {
+  <quader-loading i18n="@@dashboard.components.loading">Loading the components.</quader-loading>
+}
 <div class="cards">
   @for (l of loads(); track l.role) {
     <section class="card" [attr.aria-labelledby]="'dash-role-' + l.role">
@@ -203,6 +210,9 @@
 </div>
 
 <h2 i18n="@@dashboard.dependencies">Dependencies</h2>
+@if (!info.hasValue() && info.isLoading() && !failure()) {
+  <quader-loading i18n="@@dashboard.dependencies.loading">Loading the dependencies.</quader-loading>
+}
 <div class="cards">
   @if (valueOf(info); as i) {
     <section class="card" aria-labelledby="dash-db">
@@ -320,6 +330,9 @@
 </div>
 
 <h2 i18n="@@dashboard.content-access">Content and access</h2>
+@if (!overview.hasValue() && overview.isLoading() && !overviewFailure()) {
+  <quader-loading i18n="@@dashboard.content-access.loading">Loading the content and the access.</quader-loading>
+}
 @if (overviewFailure(); as f) {
   <quader-error-notice [error]="f" (retry)="overviewFailure.retry()" />
 }

@@ -13,6 +13,7 @@ import { TimeAgo } from '../../shared/ui/time-ago';
 import { CallerCell } from './caller-cell';
 import { placeLabel, subjectView } from './callers';
 import { formatCount } from './figures';
+import { Busy } from '../../shared/ui/busy';
 
 /** "61 of 60 per hour" (R-UI-177). */
 export function refusedOfLimit(b: LimitBlock, locale: string): string {
@@ -32,7 +33,7 @@ export function blockActive(b: LimitBlock, now = Date.now()): boolean {
 @Component({
   selector: 'quader-limits-blocks-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CallerCell, Checkbox, DataTable, ListHead, TimeAgo],
+  imports: [Busy, CallerCell, Checkbox, DataTable, ListHead, TimeAgo],
   template: `
     <quader-list-head [filters]="false">
       <quader-checkbox headEnd [checked]="showEnded()" (checkedChange)="toggleEnded($event)">
@@ -45,6 +46,8 @@ export function blockActive(b: LimitBlock, now = Date.now()): boolean {
       [columns]="columns()"
       [loaded]="blocks() !== null"
       [loading]="blocks() === null && !failure()"
+      loadingText="Loading the blocks."
+      i18n-loadingText="@@limits.blocks.loading"
       [error]="failure()"
       (retry)="load()"
       [empty]="(blocks() ?? []).length === 0"
@@ -70,7 +73,7 @@ export function blockActive(b: LimitBlock, now = Date.now()): boolean {
           @if (canWrite()) {
             <td class="actions">
               @if (active(b)) {
-                <button class="btn btn-tertiary" type="button" (click)="lift(b)">
+                <button quaderBusy class="btn btn-tertiary" type="button" (click)="lift(b)">
                   <ng-container i18n="@@limits.blocks.lift">Lift</ng-container>
                   <span class="visually-hidden" translate="no"> {{ caller(b).primary }}</span>
                 </button>

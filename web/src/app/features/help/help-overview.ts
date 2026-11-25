@@ -6,6 +6,7 @@ import { SessionStore } from '../../core/session-store';
 import { ErrorNotice } from '../../shared/error-notice';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { failureOf, valueOf } from '../../shared/paged-resource';
+import { Loading } from '../../shared/ui/loading';
 
 /**
  * The start of the help area (R-UI-050): the two guides of the manual with every page's title and
@@ -15,7 +16,7 @@ import { failureOf, valueOf } from '../../shared/paged-resource';
  */
 @Component({
   selector: 'quader-help-overview',
-  imports: [NgTemplateOutlet, RouterLink, ErrorNotice, Disclosure],
+  imports: [Loading, NgTemplateOutlet, RouterLink, ErrorNotice, Disclosure],
   template: `
     <h1 i18n="@@help.title">Documentation</h1>
     <p class="help-lead" i18n="@@help.lead">
@@ -55,7 +56,7 @@ import { failureOf, valueOf } from '../../shared/paged-resource';
         <a routerLink="/guides">guides</a>.
       </p>
     } @else {
-      <p role="status" i18n="@@help.loading">Loading the manual…</p>
+      <quader-loading size="page" i18n="@@help.loading">Loading the manual…</quader-loading>
     }
   `,
   styleUrl: './help-overview.scss',

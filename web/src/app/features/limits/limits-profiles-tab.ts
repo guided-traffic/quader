@@ -9,6 +9,7 @@ import { asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { NoValue } from '../../shared/ui/no-value';
 import { compactFigures, formatCount } from './figures';
+import { Busy } from '../../shared/ui/busy';
 
 /** "4 rules, 1 project maximum", "Nothing" (R-UI-178). */
 export function usedByText(p: LimitProfile, locale: string): string {
@@ -33,7 +34,7 @@ export function usedByText(p: LimitProfile, locale: string): string {
 @Component({
   selector: 'quader-limits-profiles-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, NoValue, RouterLink],
+  imports: [Busy, DataTable, NoValue, RouterLink],
   template: `
     @if (canWrite()) {
       <div class="tab-head">
@@ -46,6 +47,8 @@ export function usedByText(p: LimitProfile, locale: string): string {
       [columns]="columns()"
       [loaded]="profiles() !== null"
       [loading]="profiles() === null && !failure()"
+      loadingText="Loading the profiles."
+      i18n-loadingText="@@limits.profiles.loading"
       [error]="failure()"
       (retry)="load()"
       [empty]="(profiles() ?? []).length === 0"
@@ -83,7 +86,7 @@ export function usedByText(p: LimitProfile, locale: string): string {
             <td class="actions">
               @if (!p.builtin) {
                 @let inUse = p.usedBy.assignments + p.usedBy.projectMaximums > 0;
-                <button
+                <button quaderBusy
                   class="btn btn-tertiary"
                   type="button"
                   [disabled]="inUse"

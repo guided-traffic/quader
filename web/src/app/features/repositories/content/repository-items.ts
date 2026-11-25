@@ -58,6 +58,8 @@ export const GRADE_SORT_MAX = 1000;
       (sortChange)="changeSort($event)"
       [loaded]="list.loaded()"
       [loading]="list.loading()"
+      loadingText="Loading the repository's content."
+      i18n-loadingText="@@repo.content.loading"
       [error]="list.error()"
       [empty]="list.items().length === 0"
       [emptyText]="q() ? shape().emptyFilteredText : emptyText()"

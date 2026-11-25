@@ -59,6 +59,8 @@ export interface DatabaseRow {
       [columns]="columns"
       [loaded]="rows.hasValue() || failure() !== null"
       [loading]="rows.isLoading()"
+      loadingText="Loading the databases."
+      i18n-loadingText="@@clamav.databases.loading"
       [error]="failure()"
       (retry)="failure.retry()"
       [empty]="(valueRows() ?? []).length === 0"

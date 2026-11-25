@@ -11,6 +11,8 @@ import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { JobTable, jobStatusText } from './job-table';
 import { SystemRefresh } from './system-refresh';
 import { FailureToasts } from '../../shared/failure-dialog';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 const STATES: readonly JobState[] = [
   'queued',
@@ -42,7 +44,7 @@ function kindsOf(text: string | undefined): string[] {
  */
 @Component({
   selector: 'quader-jobs-page',
-  imports: [EmptyState, ErrorNotice, FilterCategory, FilterPanel, JobTable, ListHead],
+  imports: [Busy, Loading, EmptyState, ErrorNotice, FilterCategory, FilterPanel, JobTable, ListHead],
   template: `
     <!-- The jobs have no search by name; the head is Filters and the filters that are set (Q-UI-420, Q-UI-566). -->
     <quader-list-head [chips]="chips()" (removeChip)="removeChip($event)" [(filtersOpen)]="panelOpen" [controls]="panel.panelId" />
@@ -97,7 +99,7 @@ function kindsOf(text: string | undefined): string[] {
           <p>
             <button class="btn btn-default"
               type="button"
-              [disabled]="list.loading()"
+              [disabled]="list.loading()" [quaderBusy]="list.loading()"
               (click)="list.more()"
               i18n="@@list.load-more"
             >
@@ -107,7 +109,7 @@ function kindsOf(text: string | undefined): string[] {
         }
       }
     } @else if (list.loading() && !list.error()) {
-      <p role="status" i18n="@@system.loading">Loading.</p>
+      <quader-loading size="page" i18n="@@jobs.loading">Loading the jobs.</quader-loading>
     }
   `,
 })

@@ -120,6 +120,8 @@ export class UsageOverview {
   protected readonly next = signal<string | null>(null);
   protected readonly mode = signal<LimitMode>('audit');
   protected readonly loaded = signal(false);
+  /** The scope and the query the rows shown answer. */
+  private shownQuestion = '';
   protected readonly loading = signal(false);
   protected readonly failure = signal<ApiError | null>(null);
   private generation = 0;
@@ -235,6 +237,13 @@ export class UsageOverview {
 
   protected async load(scope = this.usageScope(), query = this.query()): Promise<void> {
     const generation = ++this.generation;
+    // Another scope, period or filter is a new question: its load shows, not the rows of the one before (R-UI-217, Q-UI-1234).
+    const question = JSON.stringify([scope, query]);
+    if (question !== this.shownQuestion) {
+      this.rows.set([]);
+      this.loaded.set(false);
+    }
+    this.shownQuestion = question;
     this.loading.set(true);
     // The project filter's choices read again with the list after their read failed (R-UI-216).
     if (this.projectsFailed && this.scope() === 'instance') void this.loadProjects();

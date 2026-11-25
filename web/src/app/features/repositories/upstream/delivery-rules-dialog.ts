@@ -11,6 +11,7 @@ import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../../shared/ui/dialog';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { FailureToasts } from '../../../shared/failure-dialog';
+import { Busy } from '../../../shared/ui/busy';
 
 export interface DeliveryRulesData {
   readonly repository: string;
@@ -45,7 +46,7 @@ export function effectText(effect: DeliveryEffect): string {
  */
 @Component({
   selector: 'quader-delivery-rules-dialog',
-  imports: [DataTable, DialogClose, DialogTitle, ErrorNotice, TextField, TimeAgo],
+  imports: [Busy, DataTable, DialogClose, DialogTitle, ErrorNotice, TextField, TimeAgo],
   template: `
     <h2 quaderDialogTitle i18n="@@rules.title">Delivery rules</h2>
     <div class="dialog-body">
@@ -82,6 +83,8 @@ export function effectText(effect: DeliveryEffect): string {
         [columns]="columns()"
         [loaded]="loaded()"
         [loading]="loading()"
+        loadingText="Loading the rules."
+        i18n-loadingText="@@rules.loading"
         [error]="listError()"
         [empty]="rows().length === 0"
         [emptyText]="q() ? emptyFiltered : emptyText"
@@ -113,7 +116,7 @@ export function effectText(effect: DeliveryEffect): string {
             </td>
             @if (data.canChange) {
               <td class="actions">
-                <button class="btn btn-tertiary" type="button" [disabled]="removing().has(r.id)" (click)="remove(r)">
+                <button quaderBusy class="btn btn-tertiary" type="button" [disabled]="removing().has(r.id)" (click)="remove(r)">
                   <ng-container i18n="@@rules.remove">Remove</ng-container><span class="visually-hidden" translate="no">&ngsp;{{ r.subject }}</span>
                 </button>
               </td>
@@ -177,6 +180,8 @@ export class DeliveryRulesDialog {
   protected readonly rows = signal<readonly DeliveryRule[]>([]);
   protected readonly next = signal<string | null>(null);
   protected readonly loaded = signal(false);
+  /** The filter the rows shown answer. */
+  private shownQ = '';
   protected readonly loading = signal(false);
   protected readonly listError = signal<ApiError | null>(null);
   protected readonly q = signal('');
@@ -225,6 +230,13 @@ export class DeliveryRulesDialog {
   async load(fresh: boolean): Promise<void> {
     const generation = fresh ? ++this.generation : this.generation;
     const cursor = fresh ? null : this.next();
+    // Another filter is a new question: its load shows, not the rules of the filter before (R-UI-217, Q-UI-1234); a read after a
+    // write keeps the rows while it reads.
+    if (fresh && this.q() !== this.shownQ) {
+      this.rows.set([]);
+      this.loaded.set(false);
+    }
+    this.shownQ = this.q();
     this.loading.set(true);
     try {
       const page = await this.api.list(this.data.repository, { q: this.q() || undefined }, cursor);

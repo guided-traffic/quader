@@ -32,6 +32,8 @@ import {
 } from './backups-model';
 import { ManualRunPanel } from './manual-run-panel';
 import { SystemRefresh } from '../system-refresh';
+import { Loading } from '../../../shared/ui/loading';
+import { Busy } from '../../../shared/ui/busy';
 
 /** Runs per page of the list; the automatic refresh keeps the first page current and leaves a longer list alone. */
 export const RUNS_PAGE_SIZE = 25;
@@ -45,7 +47,7 @@ export const RUNS_PAGE_SIZE = 25;
  */
 @Component({
   selector: 'quader-backups-page',
-  imports: [DocumentBlock, DatePipe, RouterLink, EmptyState, ErrorNotice, FilterPanel, ListHead, NoValue, SelectField, BackupState, ManualRunPanel],
+  imports: [Busy, Loading, DocumentBlock, DatePipe, RouterLink, EmptyState, ErrorNotice, FilterPanel, ListHead, NoValue, SelectField, BackupState, ManualRunPanel],
   templateUrl: './backups-page.html',
   styleUrl: './backups-page.scss',
 })

@@ -45,6 +45,8 @@ import {
   ruleOf,
 } from './endpoint-model';
 import { PageHeader } from '../../shared/ui/page-header';
+import { Busy } from '../../shared/ui/busy';
+import { Spinner } from '../../shared/ui/spinner';
 
 /** The preview waits this long after the last change before it asks the server (R-EP-017). */
 export const PREVIEW_DEBOUNCE_MS = 500;
@@ -114,7 +116,7 @@ const FIELD_LABELS: readonly (readonly [prefix: string, label: () => string])[] 
  */
 @Component({
   selector: 'quader-exposure-rule-editor',
-  imports: [PageHeader, AddressField, Disclosure, ErrorNotice, ErrorSummary, NoValue],
+  imports: [Spinner, Busy, PageHeader, AddressField, Disclosure, ErrorNotice, ErrorSummary, NoValue],
   templateUrl: './exposure-rule-editor.html',
   styleUrl: './exposure-rule-editor.scss',
 })

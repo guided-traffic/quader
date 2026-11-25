@@ -36,6 +36,8 @@ import { classIcon, classLabel, shownClass } from '../repositories/repository-cl
         [columns]="columns"
         [loaded]="repositories.hasValue()"
         [loading]="repositories.isLoading()"
+        loadingText="Loading the repositories."
+        i18n-loadingText="@@repo.list.loading"
         [error]="listFailure()"
         [empty]="rows().length === 0"
         [emptyText]="emptyText"

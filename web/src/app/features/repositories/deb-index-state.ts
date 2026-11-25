@@ -11,6 +11,8 @@ import { Confirm } from '../../shared/confirm-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /** The state is read again this often while a suite waits for its build (R-DEB-014). */
 export const DEB_INDEX_POLL_INTERVAL_MS = 3_000;
@@ -65,7 +67,7 @@ export function behindBy(suite: DebSuiteState): number {
  */
 @Component({
   selector: 'quader-deb-index-state',
-  imports: [DatePipe, RouterLink, DataTable, ErrorNotice],
+  imports: [Busy, Loading, DatePipe, RouterLink, DataTable, ErrorNotice],
   template: `
     <section class="index" aria-labelledby="deb-index-heading">
       <h2 id="deb-index-heading" class="visually-hidden" i18n="@@deb.index.heading">Index state</h2>
@@ -118,7 +120,7 @@ export function behindBy(suite: DebSuiteState): number {
 
         @if (canManage()) {
           <div class="buttons">
-            <button class="btn btn-default" type="button" [disabled]="requesting()" (click)="reindex()" data-testid="deb-reindex" i18n="@@deb.index.reindex">
+            <button quaderBusy class="btn btn-default" type="button" [disabled]="requesting()" (click)="reindex()" data-testid="deb-reindex" i18n="@@deb.index.reindex">
               Rebuild all indexes
             </button>
           </div>
@@ -143,7 +145,7 @@ export function behindBy(suite: DebSuiteState): number {
           <quader-error-notice [error]="f" />
         }
       } @else {
-        <p role="status" i18n="@@deb.index.loading">Loading the index state.</p>
+        <quader-loading i18n="@@deb.index.loading">Loading the index state.</quader-loading>
       }
     </section>
   `,

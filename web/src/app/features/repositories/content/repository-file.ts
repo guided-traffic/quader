@@ -22,6 +22,7 @@ import { hasSignatureBadge, signatureStateWord } from '../../../shared/signature
 import { SignatureGateRefusedReason } from '../../../api/signatures-api';
 import { gateReasonWord } from '../../../shared/signatures/gate-words';
 import { SignatureGate } from '../../../shared/signatures/signature-gate';
+import { Loading } from '../../../shared/ui/loading';
 
 /** The names of a signature beside its file in a generic repository, longest first (R-SIG-032). */
 const SIBLING_SUFFIXES = ['.sigstore.json', '.jws.sig', '.cose.sig', '.asc', '.sig'];
@@ -39,7 +40,7 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
  */
 @Component({
   selector: 'quader-repository-file',
-  imports: [DocumentBlock, AddressField, CopyButton, Disclosure, ErrorNotice, MalwareStatusView, RouterLink, SignatureBadge, SignatureGate, SignatureReport, TimeAgo],
+  imports: [Loading, DocumentBlock, AddressField, CopyButton, Disclosure, ErrorNotice, MalwareStatusView, RouterLink, SignatureBadge, SignatureGate, SignatureReport, TimeAgo],
   template: `
     @let it = item();
     <section class="file-view" aria-labelledby="file-name">
@@ -153,7 +154,7 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
             }
             <quader-signature-report [report]="report" [format]="format()" [level]="3" />
           } @else if (signaturesOpen()) {
-            <p role="status" i18n="@@repo.loading">Loading.</p>
+            <quader-loading i18n="@@files.signatures.loading">Loading the signatures.</quader-loading>
           }
         </quader-disclosure>
       }
@@ -199,7 +200,7 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
           </dl>
           <p class="hint" i18n="@@files.stats.hint">Counts reach the database within a minute of a download.</p>
         } @else if (detailsOpen()) {
-          <p role="status" i18n="@@repo.loading">Loading.</p>
+          <quader-loading i18n="@@files.details.loading">Loading the file's details.</quader-loading>
         }
         <h3 i18n="@@files.api.json">The file as the API describes it</h3>
         <quader-document-block [document]="item()" [copyLabel]="copyItem" />

@@ -1,4 +1,5 @@
 import { Component, computed, input, model, signal } from '@angular/core';
+import { Spinner } from '../../shared/ui/spinner';
 
 let nextPickerId = 1;
 
@@ -12,7 +13,7 @@ let nextPickerId = 1;
  */
 @Component({
   selector: 'quader-ci-name-picker',
-  imports: [],
+  imports: [Spinner],
   template: `
     <div class="picker">
       <span class="label" [id]="id + '-label'">{{ label() }}</span>
@@ -35,6 +36,7 @@ let nextPickerId = 1;
       @if (!readonly()) {
         <div class="add">
           <label class="visually-hidden" [for]="id + '-input'">{{ addLabel() }}</label>
+          <span class="field-wrap field-busy-wrap">
           <input
             #field
             class="text-input field-w-name"
@@ -49,6 +51,11 @@ let nextPickerId = 1;
             (change)="pickedFromList(field)"
             (keydown.enter)="$event.preventDefault(); add(field)"
           />
+          @if (loading() !== null) {
+            <!-- The names load: the spinner inside the held field, at its end, after the delay of every load (R-UI-217). -->
+            <quader-spinner class="field-busy quader-spinner-delayed" />
+          }
+          </span>
           <datalist [id]="id + '-options'">
             @for (o of available(); track o) {
               <option [value]="o"></option>
@@ -63,6 +70,10 @@ let nextPickerId = 1;
     </div>
   `,
   styles: `
+    .field-wrap {
+      flex: 0 1 var(--quader-field-width-name);
+      min-inline-size: 0;
+    }
     .picker {
       display: flex;
       flex-direction: column;
@@ -121,7 +132,7 @@ let nextPickerId = 1;
     }
     /* The field keeps its width and gives way on a narrow line, so **Add** stays beside it. */
     .add .text-input {
-      flex: 0 1 var(--quader-field-width-name);
+      flex: 1 1 auto;
       min-inline-size: 0;
     }
     .field-error {

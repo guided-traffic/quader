@@ -26,6 +26,8 @@ import { PageHeader } from '../../shared/ui/page-header';
       (sortChange)="sort.set($event)"
       [loaded]="valueOf(endpoints) !== undefined"
       [loading]="endpoints.isLoading()"
+      loadingText="Loading the endpoints."
+      i18n-loadingText="@@ep.list.loading"
       [error]="failure()"
       [empty]="rows().length === 0"
       i18n-emptyText="@@ep.list.empty"

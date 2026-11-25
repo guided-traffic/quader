@@ -34,6 +34,7 @@ import { DistTags } from './dist-tags';
 import { SignatureBadge } from '../../shared/signatures/signature-badge';
 import { CLAMAV_FORMAT, clamavState, stateRank, stateText } from './clamav-definitions';
 import { ImageTags, listsByContent } from './image-tags';
+import { Loading } from '../../shared/ui/loading';
 
 /**
  * A package's page is its versions (R-UI-007, R-UI-110, the owner's walk of 2026-11-18): the name, the format and the
@@ -52,7 +53,7 @@ function sameVersion(a: { id: string; version: string } | undefined, b: { id: st
 
 @Component({
   selector: 'quader-package-detail',
-  imports: [
+  imports: [Loading, 
     SignatureBadge,
     DecimalPipe,
     RouterLink,

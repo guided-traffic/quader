@@ -65,7 +65,7 @@
       }
       <p class="visually-hidden" role="status">
         @if (keyCheck() === 'checking') {
-          <ng-container i18n="@@repo.key.checking">Checking the key.</ng-container>
+          <quader-loading [inline]="true" [status]="false" i18n="@@repo.key.checking">Checking the key.</quader-loading>
         } @else if (keyCheck() === 'free') {
           <ng-container i18n="@@repo.key.free">The key is available.</ng-container>
         }
@@ -215,10 +215,10 @@
     </quader-disclosure>
 
     <div class="actions">
-      <button class="btn btn-confirm" type="submit" [disabled]="creating()" i18n="@@repo.wizard.create">Create repository</button>
+      <button class="btn btn-confirm" type="submit" [disabled]="creating()" [quaderBusy]="creating()" i18n="@@repo.wizard.create">Create repository</button>
       <a class="btn btn-tertiary" [routerLink]="cancelLink()" i18n="@@repo.wizard.cancel">Cancel</a>
     </div>
   </form>
 } @else {
-  <p role="status" i18n="@@repo.loading">Loading.</p>
+  <quader-loading size="page" i18n="@@repo.create.loading">Loading the format's settings.</quader-loading>
 }

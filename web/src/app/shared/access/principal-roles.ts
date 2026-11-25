@@ -11,6 +11,7 @@ import { ErrorNotice } from '../error-notice';
 import { Confirm } from '../confirm-dialog';
 import { SelectField } from './fields';
 import { asApiError } from '../paged-resource';
+import { Busy } from '../ui/busy';
 
 /** The five fixed system roles (R-AUTHZ-010). The API refuses any other. */
 export const ROLE_NAMES: readonly RoleName[] = [
@@ -31,7 +32,7 @@ export const ROLE_NAMES: readonly RoleName[] = [
  */
 @Component({
   selector: 'quader-principal-roles',
-  imports: [DatePipe, RouterLink, ErrorNotice, SelectField, Disclosure],
+  imports: [Busy, DatePipe, RouterLink, ErrorNotice, SelectField, Disclosure],
   template: `
     <quader-disclosure
       i18n-heading="@@principal-roles.heading"
@@ -65,7 +66,7 @@ export const ROLE_NAMES: readonly RoleName[] = [
                     <td>{{ b.grantedAt | date: 'medium' }}</td>
                     @if (canWrite()) {
                       <td class="actions">
-                        <button class="btn btn-tertiary"
+                        <button quaderBusy class="btn btn-tertiary"
                           type="button"
                           [disabled]="lastAdmin(b)"
                           [attr.aria-describedby]="lastAdmin(b) ? headingId + '-guard' : null"
@@ -96,7 +97,7 @@ export const ROLE_NAMES: readonly RoleName[] = [
               [options]="freeOptions()"
               [(value)]="chosen"
             />
-            <button class="btn btn-confirm" type="button" [disabled]="busy()" (click)="bind()" i18n="@@principal-roles.bind">
+            <button class="btn btn-confirm" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="bind()" i18n="@@principal-roles.bind">
               Bind role
             </button>
           </div>

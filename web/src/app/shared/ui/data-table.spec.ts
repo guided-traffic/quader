@@ -110,6 +110,34 @@ describe('Data table', () => {
     expect(help[0]!.getAttribute('aria-describedby')).toBeTruthy();
   });
 
+  it('R-UI-217 a list that loads a new question shows the spinner and its sentence, never the empty sentence of the question before', async () => {
+    const { root, host, settle } = await render();
+    // The screen says the rows answer its question (loaded) and that there are none, while it already reads a new one (Q-UI-1234).
+    host.loaded.set(true);
+    host.rows.set([]);
+    host.loading.set(true);
+    await settle();
+    const loading = root.querySelector<HTMLElement>('quader-loading')!;
+    expect(loading.getAttribute('role')).toBe('status');
+    expect(loading.querySelector('quader-spinner')?.getAttribute('aria-hidden')).toBe('true');
+    expect(loading.textContent?.trim()).toBe('Loading.');
+    expect(root.querySelector('quader-empty-state')).toBeNull();
+    // With rows shown, loading is Load more's: the rows stay, and the button that was pressed is busy where the rows arrive.
+    host.loading.set(false);
+    host.rows.set(['alpha']);
+    host.hasMore.set(true);
+    await settle();
+    const more = [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.includes('Load more'))!;
+    more.click();
+    host.loading.set(true);
+    await settle();
+    expect(root.querySelector('quader-loading')).toBeNull();
+    expect(root.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(more.disabled).toBe(true);
+    expect(more.getAttribute('aria-busy')).toBe('true');
+    expect(more.querySelector('quader-spinner')).toBeTruthy();
+  });
+
   it('R-UI-042 shows loading, empty and error states instead of the table', async () => {
     const { root, host, settle } = await render();
     host.loaded.set(false);

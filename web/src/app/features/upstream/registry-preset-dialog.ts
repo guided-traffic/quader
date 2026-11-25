@@ -5,6 +5,7 @@ import { SelectField, SelectOption, TextField } from '../../shared/access/fields
 import { ErrorNotice } from '../../shared/error-notice';
 import { fieldMessage, problemsAt } from '../../shared/field-errors';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../shared/ui/dialog';
+import { Busy } from '../../shared/ui/busy';
 
 /** What the dialog of one registry of the installation is opened with (R-UI-195). */
 export interface RegistryPresetDialogData {
@@ -30,7 +31,7 @@ interface HostRow {
  */
 @Component({
   selector: 'quader-registry-preset-dialog',
-  imports: [DialogClose, DialogTitle, ErrorNotice, SelectField, TextField],
+  imports: [Busy, DialogClose, DialogTitle, ErrorNotice, SelectField, TextField],
   template: `
     <h2 quaderDialogTitle>{{ title }}</h2>
     <div class="dialog-body">
@@ -110,7 +111,7 @@ interface HostRow {
     </div>
     <div class="dialog-actions">
       <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@confirm.cancel">Cancel</button>
-      <button class="btn btn-confirm" type="submit" form="registry-preset" [disabled]="saving()" i18n="@@presets.save">Save</button>
+      <button class="btn btn-confirm" type="submit" form="registry-preset" [disabled]="saving()" [quaderBusy]="saving()" i18n="@@presets.save">Save</button>
     </div>
   `,
   styles: `

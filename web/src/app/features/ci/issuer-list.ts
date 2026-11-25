@@ -40,6 +40,8 @@ import { PageHeader } from '../../shared/ui/page-header';
       [columns]="columns"
       [loaded]="loaded()"
       [loading]="loading() && !error()"
+      loadingText="Loading the issuers."
+      i18n-loadingText="@@ci.issuers.loading"
       [empty]="issuers().length === 0"
       i18n-emptyText="@@ci.issuers.empty"
       emptyText="There is no CI issuer yet."

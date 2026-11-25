@@ -48,6 +48,8 @@ import { RepositoryTab, RepositoryTabs } from './repository-tabs';
 // >>> T-24 upstream
 import { UpstreamCatalogue } from '../../../api/upstream-catalogue-api';
 import { RemoteUpstream } from '../upstream/remote-upstream';
+import { Loading } from '../../../shared/ui/loading';
+import { Busy } from '../../../shared/ui/busy';
 // <<< T-24 upstream
 
 const SORTS: readonly ItemSort[] = ['name', '-name', 'updatedAt', '-updatedAt', 'grade', '-grade'];
@@ -66,7 +68,7 @@ export const TYPE_TO_CONFIRM_ABOVE = 100;
  */
 @Component({
   selector: 'quader-repository-content',
-  imports: [
+  imports: [Busy, Loading, 
     FormatIconView,
     VisibilityIcon,
     CdkMenu,

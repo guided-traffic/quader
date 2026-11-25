@@ -1,4 +1,5 @@
 import { Component, computed, input, output } from '@angular/core';
+import { Spinner } from './spinner';
 
 /**
  * A switch (Q-UI-830, the style guide's Forms): something that is on or off and changes at once, without a save, such as a
@@ -8,7 +9,8 @@ import { Component, computed, input, output } from '@angular/core';
  * choice that a form saves.
  *
  * The control does not change itself: a click asks for the other state (`checkedChange`) and the screen sets `checked` from the
- * server's answer. `busy` holds it while that answer is open (`aria-busy`, no second click); `disabled` where it cannot change.
+ * server's answer. `busy` holds it while that answer is open (`aria-busy`, no second click) and shows the spinner in place of the word
+ * after the delay of every load (R-UI-217); `disabled` where it cannot change.
  * The look follows the reference's toggle: a track of 40 by 24 px, the accent's fill when on and the control's border colour
  * when off (never green, which is a positive status), a knob of 16 px with a check or a cross in the track's colour, the focus
  * ring of every control. It stands on the middle of its text's line (R-UI-175).
@@ -31,13 +33,19 @@ import { Component, computed, input, output } from '@angular/core';
     >
       <span class="knob" aria-hidden="true"><span class="material-icons">{{ checked() ? 'check' : 'close' }}</span></span>
     </button>
+    @if (busy()) {
+      <!-- The answer is open: the spinner in place of the word, or after the track where there is none (R-UI-217, Q-UI-1235). -->
+      <quader-spinner class="switch-busy" [class.alone]="!showWord()" />
+    }
     @if (showWord()) {
-      <span class="word" aria-hidden="true">{{ word() }}</span>
+      <span class="word" aria-hidden="true" [class.busy]="busy()">{{ word() }}</span>
     }
   `,
+  imports: [Spinner],
   host: { class: 'quader-switch' },
   styles: `
     :host {
+      position: relative;
       display: inline-flex;
       align-items: flex-start;
       gap: var(--quader-space-2);
@@ -106,6 +114,17 @@ import { Component, computed, input, output } from '@angular/core';
     }
     .knob .material-icons {
       font-size: 0.75rem;
+    }
+    /* The spinner and the word swap after the delay of every load (Q-UI-1230); an answer within it changes nothing. */
+    .switch-busy {
+      animation: quader-busy-in 0s linear 300ms both;
+    }
+    .switch-busy.alone {
+      position: absolute;
+      inset-inline-start: calc(100% + var(--quader-space-2));
+    }
+    .word.busy {
+      animation: quader-busy-out 0s linear 300ms both;
     }
   `,
 })

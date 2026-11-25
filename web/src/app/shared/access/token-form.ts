@@ -8,6 +8,7 @@ import { SelectField, SelectOption, TextField } from './fields';
 import { fieldMessage } from '../field-errors';
 import { ErrorNotice } from '../error-notice';
 import { asApiError } from '../paged-resource';
+import { Busy } from '../ui/busy';
 
 export const TOKEN_ACTIONS = ['read', 'annotate', 'deploy', 'overwrite', 'delete', 'manage'] as const;
 type TokenAction = (typeof TOKEN_ACTIONS)[number];
@@ -61,7 +62,7 @@ export type TokenFormRequest = CreateTokenRequest & { readonly name?: string };
  */
 @Component({
   selector: 'quader-token-form',
-  imports: [Checkbox, ErrorNotice, SelectField, TextField],
+  imports: [Busy, Checkbox, ErrorNotice, SelectField, TextField],
   template: `
     <form class="form" (submit)="submit($event)" novalidate>
       @if (mode() === 'technical') {
@@ -192,7 +193,7 @@ export type TokenFormRequest = CreateTokenRequest & { readonly name?: string };
       }
 
       <div class="row">
-        <button class="btn btn-confirm" type="submit" [disabled]="busy()">{{ submitLabel() }}</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy()" [quaderBusy]="busy()">{{ submitLabel() }}</button>
         <button class="btn btn-tertiary" type="button" (click)="cancelled.emit()" i18n="@@token-form.cancel">
           Cancel
         </button>

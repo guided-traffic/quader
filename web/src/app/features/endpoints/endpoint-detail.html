@@ -12,7 +12,7 @@
 @if (failure(); as f) {
   <quader-error-notice [error]="f" (retry)="failure.retry()" />
 } @else if (detail.isLoading() && !valueOf(detail)) {
-  <p role="status" i18n="@@repo.loading">Loading.</p>
+  <quader-loading size="page" i18n="@@ep.loading">Loading the endpoint.</quader-loading>
 } @else if (valueOf(detail); as e) {
 
   @if (modeAll()) {
@@ -143,7 +143,7 @@
                 <!-- The name opens the rule; a reader whose rule is not served would get a menu of the one entry Edit, which the
                      name already is: no menu then (R-UI-163, Q-UI-643). -->
                 @if (canWrite() || addressOf(rule)?.served) {
-                  <button class="btn btn-tertiary btn-icon" type="button" [attr.aria-label]="actionsLabel(rule.name)" [cdkMenuTriggerFor]="ruleMenu">
+                  <button quaderBusy class="btn btn-tertiary btn-icon" type="button" [attr.aria-label]="actionsLabel(rule.name)" [cdkMenuTriggerFor]="ruleMenu">
                     <span class="material-icons" aria-hidden="true">more_vert</span>
                   </button>
                 }
@@ -172,7 +172,7 @@
         </quader-data-table>
       }
     } @else {
-      <p role="status" i18n="@@repo.loading">Loading.</p>
+      <quader-loading i18n="@@ep.rules.loading">Loading the rules.</quader-loading>
     }
   </section>
 }

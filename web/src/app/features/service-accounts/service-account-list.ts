@@ -18,6 +18,7 @@ import { NoValue } from '../../shared/ui/no-value';
 import { ProjectLink } from '../../shared/ui/project-mark';
 import { PageHeader } from '../../shared/ui/page-header';
 import { AccountRights } from './account-rights';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * What the dialog is opened with: the project key to create a project service account, named within it (R-AUTHZ-026), and with
@@ -36,7 +37,7 @@ export interface ServiceAccountCreateData {
  */
 @Component({
   selector: 'quader-service-account-create-dialog',
-  imports: [AccountRights, DialogTitle, DialogClose, ErrorNotice, TextField],
+  imports: [Busy, AccountRights, DialogTitle, DialogClose, ErrorNotice, TextField],
   template: `
     <h2 quaderDialogTitle i18n="@@sa-create.title">New service account</h2>
     <form (submit)="submit($event)" novalidate>
@@ -70,7 +71,7 @@ export interface ServiceAccountCreateData {
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@sa-create.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@sa-create.submit">Create service account</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy()" [quaderBusy]="busy()" i18n="@@sa-create.submit">Create service account</button>
       </div>
     </form>
   `,
@@ -149,6 +150,8 @@ export class ServiceAccountCreateDialog {
       (sortChange)="sortBy($event)"
       [loaded]="list.loaded()"
       [loading]="list.loading()"
+      loadingText="Loading the service accounts."
+      i18n-loadingText="@@sa.list.loading"
       [error]="list.error()"
       [empty]="list.items().length === 0"
       [emptyText]="q() ? noMatch : noAccount"

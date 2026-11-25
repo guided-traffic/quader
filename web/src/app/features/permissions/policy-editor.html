@@ -154,7 +154,7 @@
         />
         <p class="covers" role="status">
           @if (validating()) {
-            <ng-container i18n="@@policy.covers-checking">Checking which repositories are covered.</ng-container>
+            <quader-loading [inline]="true" [status]="false" i18n="@@policy.covers-checking">Checking which repositories are covered.</quader-loading>
           } @else if (validation()) {
             <span class="material-icons" aria-hidden="true">inventory_2</span>
             <ng-container i18n="@@policy.covers">Repositories covered now: {{ covers().length }}</ng-container>
@@ -223,7 +223,7 @@
           hint="Delete this policy."
         >
           <p class="muted" i18n="@@policy.delete-note">Deleting the policy removes every grant it gives, at once on every replica.</p>
-          <button class="btn btn-danger" type="button" [disabled]="busy()" (click)="remove()" i18n="@@policy.delete">Delete policy</button>
+          <button class="btn btn-danger" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="remove()" i18n="@@policy.delete">Delete policy</button>
         </quader-disclosure>
       }
     </div>
@@ -271,7 +271,7 @@
             </ul>
           }
         } @else if (validating()) {
-          <p role="status" i18n="@@policy.preview-loading">Checking the policy.</p>
+          <quader-loading i18n="@@policy.preview-loading">Checking the policy.</quader-loading>
         }
 
         <h3 i18n="@@policy.try">Try it</h3>
@@ -287,7 +287,7 @@
           />
           <quader-text-field width="name" i18n-label="@@policy.try-repository" label="Repository" name="askRepository" [(value)]="askRepository" />
           <quader-select-field i18n-label="@@policy.try-action" label="Action" name="askAction" [options]="actionOptions" [(value)]="askAction" />
-          <button class="btn btn-default explain" type="button" (click)="explain($event)" i18n="@@policy.try-ask">Explain</button>
+          <button quaderBusy class="btn btn-default explain" type="button" (click)="explain($event)" i18n="@@policy.try-ask">Explain</button>
         </div>
         @if (askMissing()) {
           <p class="field-error" role="alert" i18n="@@policy.try-missing">Name a principal and a repository first.</p>
@@ -329,7 +329,7 @@
 
     <div class="save-bar">
       @if (canWrite()) {
-        <button class="btn btn-confirm" type="submit" [disabled]="busy() || (!isNew() && !dirty())">
+        <button class="btn btn-confirm" type="submit" [disabled]="busy() || (!isNew() && !dirty())" [quaderBusy]="busy()">
           @if (isNew()) {
             <ng-container i18n="@@policy.create">Create policy</ng-container>
           } @else {

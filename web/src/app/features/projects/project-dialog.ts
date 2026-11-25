@@ -17,6 +17,7 @@ import { fieldErrorAt } from '../../shared/field-errors';
 import { asApiError } from '../../shared/paged-resource';
 import { TextField } from '../../shared/access/fields';
 import { PrincipalField } from '../../shared/ui/principal-field';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * Create a project (R-UI-041, R-AUTHZ-026), from **New project** of the start page. The key is fixed at creation. A new project takes
@@ -29,7 +30,7 @@ import { PrincipalField } from '../../shared/ui/principal-field';
  */
 @Component({
   selector: 'quader-project-dialog',
-  imports: [DialogTitle, DialogClose, ErrorNotice, PrincipalField, TextField, VisibilityLevelControl],
+  imports: [Busy, DialogTitle, DialogClose, ErrorNotice, PrincipalField, TextField, VisibilityLevelControl],
   template: `
     <h2 quaderDialogTitle i18n="@@project-dialog.title-new">New project</h2>
     <form (submit)="submit($event)" novalidate>
@@ -93,7 +94,7 @@ import { PrincipalField } from '../../shared/ui/principal-field';
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@project-dialog.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@project-dialog.create">Create project</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy()" [quaderBusy]="busy()" i18n="@@project-dialog.create">Create project</button>
       </div>
     </form>
   `,

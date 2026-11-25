@@ -90,6 +90,8 @@ export const FILES_PAGE = 200;
       [columns]="columns()"
       [loaded]="list.loaded()"
       [loading]="list.loading()"
+      loadingText="Loading the files."
+      i18n-loadingText="@@files.loading"
       [error]="list.error()"
       [empty]="shown().length === 0"
       [emptyText]="emptyText()"

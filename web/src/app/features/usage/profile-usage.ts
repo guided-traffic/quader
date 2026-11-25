@@ -14,6 +14,7 @@ import { blockedUntil } from './usage-detail';
 import { UsageHistory } from './usage-history';
 import { UsageByCredentialTable, UsageByRepositoryTable } from './usage-tables';
 import { PERIODS, periodLabel, periodPhrase } from './usage-words';
+import { Loading } from '../../shared/ui/loading';
 
 /** True where the caller used nothing in the 24 hours of the history. */
 export function nothingInDay(d: UsageDetail): boolean {
@@ -28,7 +29,7 @@ export function nothingInDay(d: UsageDetail): boolean {
 @Component({
   selector: 'quader-profile-usage',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ErrorNotice, LimitExplain, PageHeader, ProfileNav, UsageBudgets, UsageByCredentialTable, UsageByRepositoryTable, UsageHistory],
+  imports: [Loading, ErrorNotice, LimitExplain, PageHeader, ProfileNav, UsageBudgets, UsageByCredentialTable, UsageByRepositoryTable, UsageHistory],
   template: `
     <quader-page-header heading="Usage" i18n-heading="@@profile.usage.heading" description="What you downloaded, and the limits that apply to you." i18n-description="@@profile.usage.description">
       <div actions class="period" role="group" i18n-aria-label="@@usage.period" aria-label="Period">
@@ -77,7 +78,7 @@ export function nothingInDay(d: UsageDetail): boolean {
         <quader-usage-by-credential [rows]="d.credentials" [emptyText]="emptyText()" />
       </section>
     } @else {
-      <p role="status" i18n="@@limits.loading">Loading.</p>
+      <quader-loading size="page" i18n="@@usage.loading">Loading the usage.</quader-loading>
     }
   `,
   styleUrl: './usage.scss',

@@ -9,6 +9,7 @@ import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError, failureOf, valueOf } from '../../../shared/paged-resource';
 import { formatSize } from '../../packages/format-size';
 import { syncIntervalSentence } from '../downloads/download-words';
+import { Loading } from '../../../shared/ui/loading';
 
 /** The code of what a preview's counts leave open (R-CUR-010). */
 export type PreviewNote = NonNullable<RemoteDownloadPreview['note']>;
@@ -89,7 +90,7 @@ function count(n: number): string {
  */
 @Component({
   selector: 'quader-download-preview-dialog',
-  imports: [Checkbox, DialogClose, DialogTitle, ErrorNotice],
+  imports: [Loading, Checkbox, DialogClose, DialogTitle, ErrorNotice],
   template: `
     <h2 quaderDialogTitle>{{ data.title }}</h2>
     <form (submit)="submit($event)" novalidate>
@@ -191,7 +192,7 @@ function count(n: number): string {
           }
 
         } @else {
-          <p role="status" i18n="@@upstream.preview.loading">Reading what the download would fetch.</p>
+          <quader-loading i18n="@@upstream.preview.loading">Reading what the download would fetch.</quader-loading>
         }
         @if (ceilingBounds(); as top) {
           <fieldset class="plain bounds">

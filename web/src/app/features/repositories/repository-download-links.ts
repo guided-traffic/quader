@@ -4,6 +4,7 @@ import { DownloadLinksSwitchStore } from '../../core/download-links-switch';
 import { ErrorNotice } from '../../shared/error-notice';
 import { Checkbox } from '../../shared/ui/checkbox';
 import { Disclosure } from '../../shared/ui/disclosure';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * The repository's opt-out of the delivery by signed links (R-UI-201, storage.md R-STOR-014): the closed section **Download links**
@@ -16,7 +17,7 @@ import { Disclosure } from '../../shared/ui/disclosure';
  */
 @Component({
   selector: 'quader-repository-download-links',
-  imports: [Checkbox, Disclosure, ErrorNotice],
+  imports: [Busy, Checkbox, Disclosure, ErrorNotice],
   template: `
     <quader-disclosure
       i18n-heading="@@repo.links.heading"
@@ -71,7 +72,7 @@ import { Disclosure } from '../../shared/ui/disclosure';
         </div>
         @if (canChange() && !locked()) {
           <div class="actions">
-            <button class="btn btn-confirm" type="submit" [disabled]="!dirty() || saving()">
+            <button class="btn btn-confirm" type="submit" [disabled]="!dirty() || saving()" [quaderBusy]="saving()">
               <ng-container i18n="@@repo.settings.save">Save changes</ng-container>
               <span class="visually-hidden" i18n="@@repo.links.save-for"> (download links)</span>
             </button>

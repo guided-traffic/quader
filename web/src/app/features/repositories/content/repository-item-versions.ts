@@ -48,6 +48,8 @@ export const OPENED_OTHER_TAGS = 4;
       [columns]="columns()"
       [loaded]="versions.loaded()"
       [loading]="versions.loading()"
+      loadingText="Loading the versions."
+      i18n-loadingText="@@repo.versions.loading"
       [error]="versions.error()"
       [empty]="versions.items().length === 0"
       [emptyText]="shape().emptyText"

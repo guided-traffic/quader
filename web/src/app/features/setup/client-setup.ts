@@ -31,6 +31,8 @@ import { SnippetText, snippetText } from './clients';
 import { SetupFlowArt } from './setup-flow-art';
 import { SetupSnippet } from './setup-snippet';
 import { checkTokenShape, TokenShape } from './token-shape';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /** How the snippets get their credential (R-UI-122): the variable QUADER_TOKEN, or a token written into them. */
 export type CredentialMode = 'env' | 'paste';
@@ -80,7 +82,7 @@ type Step = 'configure' | 'install' | 'publish' | 'verify';
  */
 @Component({
   selector: 'quader-client-setup',
-  imports: [
+  imports: [Busy, Loading, 
     NgTemplateOutlet,
     RouterLink,
     PageHeader,

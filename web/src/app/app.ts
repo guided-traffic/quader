@@ -43,6 +43,7 @@ import { AvatarStore } from './core/avatar-store';
 import { ProjectSwitcher } from './features/projects/project-switcher';
 import { SearchField } from './features/search/search-field';
 import { UpstreamDownloadsButton } from './shared/upstream-downloads/upstream-downloads-button';
+import { Loading } from './shared/ui/loading';
 
 /** Whether a key typed at `target` is text: a text field, a text area, a select or an editable element. */
 function isTextTarget(target: EventTarget | null): boolean {
@@ -69,7 +70,7 @@ function isBare(route: ActivatedRouteSnapshot | null): boolean {
  */
 @Component({
   selector: 'quader-root',
-  imports: [
+  imports: [Loading, 
     RouterOutlet,
     RouterLink,
     CdkMenu,
@@ -130,6 +131,13 @@ export class App {
    * created once.
    */
   protected readonly shell = computed(() => this.bare() === false);
+  /** No navigation has ended yet: the first screen loads (R-UI-217). */
+  protected readonly firstLoad = computed(() => this.bare() === null);
+  /**
+   * The rest of the delay of every load (Q-UI-1230), counted from the page's start: the spinner of `index.html` that the app replaced
+   * may already stand, and the one of the app then shows at once instead of blinking for another 300 ms.
+   */
+  protected readonly bootDelay = Math.max(0, 300 - Math.round(typeof performance === 'undefined' ? 0 : performance.now()));
   /** The side bar shows once the application knows whether the caller is signed in or anonymous. */
   protected readonly showNav = computed(
     () => this.session.state() === 'authenticated' || this.session.state() === 'anonymous',

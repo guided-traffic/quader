@@ -12,6 +12,8 @@ import { Banner } from '../../shared/banner';
 import { QuaderMark } from '../../shared/brand/quader-mark';
 import { ErrorNotice } from '../../shared/error-notice';
 import { failureOf } from '../../shared/paged-resource';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * Sign-in (R-UI-004, Q-UI-125). A screen without the shell, laid out as one column: the wordmark, the
@@ -26,7 +28,7 @@ import { failureOf } from '../../shared/paged-resource';
  */
 @Component({
   selector: 'quader-login',
-  imports: [RouterLink, Banner, ErrorNotice, QuaderMark],
+  imports: [Busy, Loading, RouterLink, Banner, ErrorNotice, QuaderMark],
   template: `
     <quader-banner />
     <div class="bare-panel">
@@ -46,10 +48,10 @@ import { failureOf } from '../../shared/paged-resource';
       @if (optionsFailure(); as failure) {
         <quader-error-notice [error]="failure" (retry)="optionsFailure.retry()" />
       } @else if (options.isLoading()) {
-        <p role="status" class="state" i18n="@@login.loading">Loading the sign-in options.</p>
+        <quader-loading class="state" i18n="@@login.loading">Loading the sign-in options.</quader-loading>
       } @else if (options.value(); as o) {
         @if (redirecting()) {
-          <p role="status" class="state" i18n="@@login.redirecting">Redirecting to the identity provider.</p>
+          <quader-loading class="state" i18n="@@login.redirecting">Redirecting to the identity provider.</quader-loading>
         } @else {
           @if (o.providers.length === 0 && !showLocal()) {
             <p class="state" i18n="@@login.no-providers">No sign-in method is configured.</p>
@@ -88,7 +90,7 @@ import { failureOf } from '../../shared/paged-resource';
               @if (localError(); as failure) {
                 <quader-error-notice class="local-error" [error]="failure" />
               }
-              <button class="btn btn-confirm btn-block" type="submit" [disabled]="busy()" i18n="@@login.local.submit">
+              <button class="btn btn-confirm btn-block" type="submit" [disabled]="busy()" [quaderBusy]="busy()" i18n="@@login.local.submit">
                 Sign in
               </button>
             </form>

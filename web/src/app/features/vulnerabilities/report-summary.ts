@@ -10,6 +10,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { failureOf, valueOf } from '../../shared/paged-resource';
 import { BAR_SEVERITIES, BarQueries, SeverityBar } from '../../shared/vulnerability/severity-bar';
 import { timeAgo } from '../../shared/ui/time-ago';
+import { Loading } from '../../shared/ui/loading';
 
 /** One count of the header: a link that applies its filter (R-VULN-022). */
 export interface SummaryCount {
@@ -40,7 +41,7 @@ export interface DataNotice {
  */
 @Component({
   selector: 'quader-vuln-summary',
-  imports: [DecimalPipe, Disclosure, RouterLink, ErrorNotice, SeverityBar],
+  imports: [Loading, DecimalPipe, Disclosure, RouterLink, ErrorNotice, SeverityBar],
   template: `
     @if (failure(); as f) {
       <quader-error-notice [error]="f" (retry)="failure.retry()" />
@@ -58,6 +59,9 @@ export interface DataNotice {
           </span>
         </p>
       }
+    }
+    @if (!summary.hasValue() && summary.isLoading() && !failure()) {
+      <quader-loading i18n="@@vuln.summary.loading">Loading the summary.</quader-loading>
     }
     @if (summary.hasValue() && bySeverity(); as severities) {
       <quader-severity-bar class="vuln-bar" [counts]="severities" [queries]="barQueries()" />

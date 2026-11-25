@@ -34,6 +34,8 @@
   (sortChange)="sortBy($event)"
   [loaded]="list.loaded()"
   [loading]="list.loading()"
+  loadingText="Loading the users."
+  i18n-loadingText="@@users.loading"
   [error]="list.error()"
   [empty]="list.items().length === 0"
   [emptyText]="filtered() ? noMatch : noUser"

@@ -135,6 +135,9 @@
   // stones and the wordmark, and the one coloured stone. The inline mark of shared/brand/quader-mark.ts reads them.
   --quader-mark-stone: light-dark(#28272d, #ececef);
   --quader-mark-accent: light-dark(#b4690e, #e9a13b);
+  // The spinner's stones at rest (R-UI-217, Q-UI-1229): a quiet neutral that reads on every surface it stands on (the page, a dialog, a
+  // card, a disabled button, the frame) in both schemes, and is no text colour; the lit stone is the mark's sandstone above.
+  --quader-spinner-stone: light-dark(#c9c8cd, #5c5b62);
   // A project's mark (owner, 2026-11-18): a stone of Quader's mark with the project's letter on it; under the pointer or the
   // keyboard's focus of its row it is the coloured stone. The letter is the other scheme's stone, legible on both.
   --quader-mark-letter: light-dark(#ececef, #28272d);

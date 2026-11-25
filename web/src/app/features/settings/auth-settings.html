@@ -22,7 +22,7 @@
       </quader-checkbox>
       <p id="new-users-external-note" class="muted" i18n="@@auth-settings.new-users-external-note">Users created from now on start as external users; existing users keep their flag.</p>
       @if (canWrite()) {
-        <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirtyExternal()">
+        <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirtyExternal()" [quaderBusy]="busy()">
           <ng-container i18n="@@auth-settings.save-changes">Save changes</ng-container>
           <span class="visually-hidden" i18n="@@auth-settings.save-new-users-external"> (new users are external)</span>
         </button>
@@ -98,7 +98,7 @@
           />
         </div>
         @if (canWrite()) {
-          <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirtyTokens()">
+          <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirtyTokens()" [quaderBusy]="busy()">
             <ng-container i18n="@@auth-settings.save-changes">Save changes</ng-container>
             <span class="visually-hidden" i18n="@@auth-settings.save-tokens"> (token lifetimes)</span>
           </button>

@@ -95,7 +95,7 @@
                   <button
                     class="btn btn-confirm"
                     type="button"
-                    [disabled]="clientsLevel() === r.visibility || busy() !== null"
+                    [disabled]="clientsLevel() === r.visibility || busy() !== null" [quaderBusy]="busy() !== null"
                     (click)="saveClientsLevel()"
                     i18n="@@wellknown.set-all.confirm"
                   >Set visibility</button>
@@ -342,12 +342,12 @@
           </fieldset>
           @if (canWrite()) {
             <div class="actions">
-              <button class="btn btn-confirm" type="submit" [disabled]="!addressDirty() || busy() !== null" i18n="@@wellknown.address.save">Save address</button>
+              <button class="btn btn-confirm" type="submit" [disabled]="!addressDirty() || busy() !== null" [quaderBusy]="busy() !== null" i18n="@@wellknown.address.save">Save address</button>
               @if (addressDirty()) {
                 <button class="btn btn-tertiary" type="button" (click)="discardAddress()" i18n="@@repo.edit.reset">Discard changes</button>
               }
               @if (r.address.overridden) {
-                <button class="btn btn-default" type="button" [disabled]="busy() !== null" (click)="resetAddress()" i18n="@@wellknown.address.reset">Reset to Quader's address</button>
+                <button class="btn btn-default" type="button" [disabled]="busy() !== null" [quaderBusy]="busy() !== null" (click)="resetAddress()" i18n="@@wellknown.address.reset">Reset to Quader's address</button>
               }
             </div>
           }
@@ -444,21 +444,21 @@
           <!-- Testing, saving and removing are a writer's: the upstream test needs the right to change the repository. -->
           @if (canWrite()) {
             <div class="actions">
-              <button class="btn btn-default" type="button" [disabled]="testing()" (click)="test()" i18n="@@upstream.test">Test connection</button>
+              <button class="btn btn-default" type="button" [disabled]="testing()" [quaderBusy]="testing()" (click)="test()" i18n="@@upstream.test">Test connection</button>
               @if (!configured()) {
-                <button class="btn btn-confirm" type="submit" [disabled]="!accountDirty() || busy() !== null" i18n="@@wellknown.account.save">Save account</button>
+                <button class="btn btn-confirm" type="submit" [disabled]="!accountDirty() || busy() !== null" [quaderBusy]="busy() !== null" i18n="@@wellknown.account.save">Save account</button>
                 @if (accountDirty()) {
                   <button class="btn btn-tertiary" type="button" (click)="discardAccount()" i18n="@@repo.edit.reset">Discard changes</button>
                 }
                 @if (accountStored()) {
-                  <button class="btn btn-default" type="button" [disabled]="busy() !== null" (click)="removeAccount()" i18n="@@wellknown.account.remove">Remove account</button>
+                  <button class="btn btn-default" type="button" [disabled]="busy() !== null" [quaderBusy]="busy() !== null" (click)="removeAccount()" i18n="@@wellknown.account.remove">Remove account</button>
                 }
               }
             </div>
           }
           <div class="test-result" role="status" aria-live="polite">
             @if (testing()) {
-              <span i18n="@@upstream.test.running">Testing the connection.</span>
+              <quader-loading [inline]="true" [status]="false" i18n="@@upstream.test.running">Testing the connection.</quader-loading>
             }
             @if (testError(); as e) {
               <quader-error-notice [error]="e" />
@@ -520,7 +520,7 @@
     }
   </div>
 } @else {
-  <p role="status" i18n="@@repo.loading">Loading.</p>
+  <quader-loading size="page" i18n="@@upstream.registry.loading">Loading the registry.</quader-loading>
 }
 
 <!-- The repository's dates, the last facts of Details. -->

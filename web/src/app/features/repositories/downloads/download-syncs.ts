@@ -14,6 +14,7 @@ import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { failureSentence, syncIntervalSentence, versionRangeText } from './download-words';
 import { DOWNLOADS_REFRESH_MS } from './downloads-refresh';
+import { Busy } from '../../../shared/ui/busy';
 
 /** The syncs the section shows at first and adds per **Show more**: a repository holds at most `max_syncs_per_repository` (100). */
 export const SYNCS_PAGE = 20;
@@ -81,7 +82,7 @@ export function syncRunWords(s: RemoteDownloadSync, upstream: string | null): Sy
  */
 @Component({
   selector: 'quader-download-syncs',
-  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DataTable, RouterLink, TimeAgo],
+  imports: [Busy, CdkMenu, CdkMenuItem, CdkMenuTrigger, DataTable, RouterLink, TimeAgo],
   templateUrl: './download-syncs.html',
   styleUrl: './remote-downloads.scss',
 })

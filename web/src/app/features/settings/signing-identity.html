@@ -102,10 +102,10 @@
       <a class="btn btn-default" [href]="chainUrl" download="quader-signing-chain.pem" i18n="@@signing.download-chain">Download chain</a>
       <a class="btn btn-default" [href]="rootUrl" download="quader-trusted-root.json" i18n="@@signing.download-root">Download trusted root</a>
       @if (canReplace()) {
-        <button class="btn btn-default" type="button" [disabled]="busy()" (click)="createKey(true)" i18n="@@signing.replace">Replace</button>
+        <button class="btn btn-default" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="createKey(true)" i18n="@@signing.replace">Replace</button>
       }
       @if (canRemove()) {
-        <button class="btn btn-danger" type="button" [disabled]="busy()" (click)="remove()" i18n="@@signing.remove">Remove</button>
+        <button class="btn btn-danger" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="remove()" i18n="@@signing.remove">Remove</button>
       }
     </div>
     @if (ov.announced; as next) {
@@ -171,13 +171,13 @@
     <p i18n="@@signing.request-hint">Have your company's CA issue a code-signing certificate for this request, then upload it with its chain.</p>
     @if (canChange()) {
       <div class="row-actions">
-        <button class="btn btn-confirm" type="button" [disabled]="busy()" (click)="uploadCertificate()" i18n="@@signing.cert.heading">Upload certificate</button>
-        <button class="btn btn-default" type="button" [disabled]="busy()" (click)="discard()" i18n="@@signing.discard">Discard</button>
+        <button class="btn btn-confirm" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="uploadCertificate()" i18n="@@signing.cert.heading">Upload certificate</button>
+        <button class="btn btn-default" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="discard()" i18n="@@signing.discard">Discard</button>
       </div>
     }
   } @else if (!ov.current && canChange()) {
     <div class="row-actions">
-      <button class="btn btn-confirm" type="button" [disabled]="busy()" (click)="createKey(false)" i18n="@@signing.key.heading">Create signing key</button>
+      <button class="btn btn-confirm" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="createKey(false)" i18n="@@signing.key.heading">Create signing key</button>
     </div>
   }
 
@@ -186,7 +186,7 @@
       <p i18n="@@signing.import.note">
         For a CA that hands out the key and the certificate together, or a key moved from another installation.
       </p>
-      <button class="btn btn-default" type="button" [disabled]="busy()" (click)="importIdentity()" i18n="@@signing.import.heading">Import key and certificate</button>
+      <button class="btn btn-default" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="importIdentity()" i18n="@@signing.import.heading">Import key and certificate</button>
     </quader-disclosure>
   }
 
@@ -226,7 +226,7 @@
             </td>
             @if (canWrite()) {
               <td class="actions">
-                <button class="btn btn-tertiary" type="button" [disabled]="busy()" (click)="retire(p)">
+                <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="retire(p)">
                   <ng-container i18n="@@signing.retire">Retire</ng-container><span class="visually-hidden">&ngsp;{{ grouped(p.fingerprint).slice(0, 19) }}</span>
                 </button>
               </td>

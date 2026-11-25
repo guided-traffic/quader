@@ -55,6 +55,8 @@ export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: numb
       [emptyText]="emptyText()"
       [hasMore]="hasMore()"
       [loading]="loading()"
+      loadingText="Loading the tokens."
+      i18n-loadingText="@@tokens.list.loading"
       (more)="more.emit()"
     >
       @for (t of tokens(); track t.id) {

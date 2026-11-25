@@ -289,7 +289,7 @@
 
     <div class="row-actions">
       @if (writable()) {
-        <button class="btn btn-confirm" type="submit" [disabled]="busy() || !!jsonError()">
+        <button class="btn btn-confirm" type="submit" [disabled]="busy() || !!jsonError()" [quaderBusy]="busy()">
           @if (isNew()) {
             <ng-container i18n="@@ci.editor.create">Create mapping</ng-container>
           } @else {

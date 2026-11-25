@@ -30,6 +30,8 @@ import {
   switchLabel,
   unknownLevelText,
 } from './upstream-words';
+import { Loading } from '../../../shared/ui/loading';
+import { Busy } from '../../../shared/ui/busy';
 
 /** One page of packages the tab lists: a search's hits or a level's packages, with what the answer says about them. */
 interface ListPage {
@@ -64,7 +66,7 @@ function levelOf(param: string | null): readonly string[] {
  */
 @Component({
   selector: 'quader-remote-upstream',
-  imports: [Checkbox, DataTable, DeliveryRequestsPanel, ErrorNotice, NoValue, RouterLink, Switch, UpstreamPackageView],
+  imports: [Busy, Loading, Checkbox, DataTable, DeliveryRequestsPanel, ErrorNotice, NoValue, RouterLink, Switch, UpstreamPackageView],
   providers: [UpstreamActions],
   templateUrl: './remote-upstream.html',
   styleUrl: './remote-upstream.scss',
@@ -264,6 +266,10 @@ export class RemoteUpstream {
     const cursor = fresh ? null : (this.page()?.next ?? null);
     if (fresh) {
       this.listFailure.set(null);
+      // A new question (another search, level or filter) shows its load, never the answer of the question before under its words: the
+      // count line and the empty sentence belong to the answer (R-UI-217, Q-UI-1234). A read after a write asks the same question and
+      // keeps the rows while it reads.
+      if (this.keyOf(listing, q, level, namesOnly) !== this.shownKey) this.page.set(null);
     }
     this.listLoading.set(true);
     try {
@@ -277,7 +283,7 @@ export class RemoteUpstream {
       );
       this.pages = fresh || !before ? 1 : this.pages + 1;
       // A new query closes the rows; a read after a write keeps what is open.
-      const key = `${listing} ${q} ${level.join('/')} ${namesOnly}`;
+      const key = this.keyOf(listing, q, level, namesOnly);
       if (fresh && key !== this.shownKey) this.opened.set(new Set());
       this.shownKey = key;
       this.listFailure.set(null);
@@ -289,6 +295,10 @@ export class RemoteUpstream {
     } finally {
       if (generation === this.generation) this.listLoading.set(false);
     }
+  }
+
+  private keyOf(listing: 'search' | 'level', q: string, level: readonly string[], namesOnly: boolean): string {
+    return `${listing} ${q} ${level.join('/')} ${namesOnly}`;
   }
 
   /**
@@ -331,7 +341,8 @@ export class RemoteUpstream {
   protected search(event: Event): void {
     event.preventDefault();
     const text = this.text().trim();
-    if (text === '') return;
+    // A search that runs is not started again by a second Enter; its button is busy (R-UI-217).
+    if (text === '' || this.listLoading()) return;
     if (this.searches()) this.navigate({ q: text, name: null });
     else this.navigate({ name: text, q: null });
   }
@@ -441,6 +452,12 @@ export class RemoteUpstream {
     return n === 1
       ? $localize`:@@upstream.results.withheld-one:1 hit is not allowed in this repository; look a package up by its exact name to ask for it.`
       : $localize`:@@upstream.results.withheld:${n}:count: hits are not allowed in this repository; look a package up by its exact name to ask for it.`;
+  }
+
+  /** What the list reads while it loads a new question (R-UI-217). */
+  protected loadingText(): string {
+    if (this.listing() === 'search') return $localize`:@@upstream.results.loading:Searching the upstream for “${this.q()}:query:”.`;
+    return $localize`:@@upstream.level.loading:Reading the upstream's packages at this level.`;
   }
 
   protected emptyText(): string {

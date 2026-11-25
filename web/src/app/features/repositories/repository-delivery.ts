@@ -10,6 +10,7 @@ import { Disclosure } from '../../shared/ui/disclosure';
 import { firstValueFrom } from 'rxjs';
 import { DeliveryModeChoice, DeliveryModeData, DeliveryModeDialog } from './delivery-mode-dialog';
 import { DeliveryMode, modeName } from './upstream/upstream-words';
+import { Busy } from '../../shared/ui/busy';
 
 /** `remote.delivery` of a remote repository (R-CUR-001, R-CUR-020). */
 export type DeliverySettings = Schema<'DeliverySettings'>;
@@ -38,7 +39,7 @@ export function deliveryOf(stored: Partial<DeliverySettings> | undefined | null)
  */
 @Component({
   selector: 'quader-repository-delivery',
-  imports: [Checkbox, Disclosure, ErrorNotice, RouterLink],
+  imports: [Busy, Checkbox, Disclosure, ErrorNotice, RouterLink],
   template: `
     <quader-disclosure
       id="delivery"
@@ -94,7 +95,7 @@ export function deliveryOf(stored: Partial<DeliverySettings> | undefined | null)
         </fieldset>
         @if (canChange()) {
           <div class="actions">
-            <button class="btn btn-confirm" type="submit" [disabled]="!dirty() || saving() || !!daysError()">
+            <button class="btn btn-confirm" type="submit" [disabled]="!dirty() || saving() || !!daysError()" [quaderBusy]="saving()">
               <ng-container i18n="@@repo.settings.save">Save changes</ng-container>
               <span class="visually-hidden" i18n="@@delivery.save-for"> (delivery)</span>
             </button>

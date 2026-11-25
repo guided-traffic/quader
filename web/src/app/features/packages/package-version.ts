@@ -68,6 +68,7 @@ import {
   stateText,
   verificationText,
 } from './clamav-definitions';
+import { Loading } from '../../shared/ui/loading';
 
 /** Two answers name the same version. */
 function sameVersion(a: { id: string; version: string } | undefined, b: { id: string; version: string } | undefined): boolean {
@@ -100,7 +101,7 @@ interface TabEntry {
  */
 @Component({
   selector: 'quader-package-version',
-  imports: [
+  imports: [Loading, 
     TimeAgo,
     DecimalPipe,
     RouterLink,

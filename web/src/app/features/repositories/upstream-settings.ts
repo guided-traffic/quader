@@ -29,6 +29,8 @@ import {
 } from './upstream-model';
 import { controlIdOf, numberOrText } from './settings-schema';
 import { UpstreamTestResultView } from './upstream-test-result';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /** The id of the section; a server error at a pointer of the upstream settings that has no control lands here. */
 export const UPSTREAM_SECTION_ID = 'f-remote-upstream';
@@ -104,7 +106,7 @@ export function upstreamAuthLabel(mode: string): string {
  */
 @Component({
   selector: 'quader-upstream-settings',
-  imports: [Disclosure, ErrorNotice, RouterLink, UpstreamTestResultView, ValueList],
+  imports: [Busy, Loading, Disclosure, ErrorNotice, RouterLink, UpstreamTestResultView, ValueList],
   template: `
     <section class="upstream" [id]="sectionId" tabindex="-1" aria-labelledby="upstream-heading">
       <h2 id="upstream-heading" i18n="@@upstream.heading">Upstream</h2>
@@ -287,7 +289,7 @@ export function upstreamAuthLabel(mode: string): string {
       </div>
 
       <div class="test">
-        <button class="btn btn-default" type="button" [disabled]="testing()" (click)="test()">
+        <button class="btn btn-default" type="button" [disabled]="testing()" [quaderBusy]="testing()" (click)="test()">
           <ng-container i18n="@@upstream.test">Test connection</ng-container>
         </button>
         @if (upstream().passwordStored !== 'none' && upstream().password === '') {
@@ -298,7 +300,7 @@ export function upstreamAuthLabel(mode: string): string {
       </div>
       <div class="test-result" role="status" aria-live="polite">
         @if (testing()) {
-          <span i18n="@@upstream.test.running">Testing the connection.</span>
+          <quader-loading [inline]="true" [status]="false" i18n="@@upstream.test.running">Testing the connection.</quader-loading>
         }
         @if (failure(); as f) {
           <quader-error-notice [error]="f" />

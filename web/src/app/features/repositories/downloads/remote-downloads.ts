@@ -52,6 +52,8 @@ import {
 import { FailureToasts } from '../../../shared/failure-dialog';
 import { DOWNLOADS_REFRESH_MS } from './downloads-refresh';
 import { DownloadSyncs } from './download-syncs';
+import { Loading } from '../../../shared/ui/loading';
+import { Busy } from '../../../shared/ui/busy';
 
 export { DOWNLOADS_REFRESH_MS };
 
@@ -77,7 +79,7 @@ type FilterState = (typeof FILTER_STATES)[number];
  */
 @Component({
   selector: 'quader-remote-downloads',
-  imports: [DataTable, DownloadSyncs, ErrorNotice, NoValue, RouterLink, TechnicalDetails, TimeAgo],
+  imports: [Busy, Loading, DataTable, DownloadSyncs, ErrorNotice, NoValue, RouterLink, TechnicalDetails, TimeAgo],
   templateUrl: './remote-downloads.html',
   styleUrl: './remote-downloads.scss',
 })

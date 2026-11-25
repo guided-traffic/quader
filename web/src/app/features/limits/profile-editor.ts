@@ -14,6 +14,8 @@ import { fieldErrorAt } from '../../shared/field-errors';
 import { asApiError } from '../../shared/paged-resource';
 import { PageHeader } from '../../shared/ui/page-header';
 import { FigureFields, FigureTexts, readTexts, textsOf } from './figure-fields';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /** A profile's key (R-LIM-010). */
 export const PROFILE_KEY_PATTERN = /^[a-z][a-z0-9-]{1,31}$/;
@@ -38,7 +40,7 @@ export function keyFromName(name: string): string {
 @Component({
   selector: 'quader-limit-profile-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ErrorNotice, FigureFields, PageHeader, TextField],
+  imports: [Busy, Loading, ErrorNotice, FigureFields, PageHeader, TextField],
   template: `
     @if (isNew()) {
       <quader-page-header heading="New profile" i18n-heading="@@limits.profile.new-title" />
@@ -98,7 +100,7 @@ export function keyFromName(name: string): string {
         <quader-figure-fields [(texts)]="texts" [readonly]="readonly() || unlimited()" [errors]="figureErrors()" [cacheNote]="true" />
 
         @if (!readonly() && !unlimited()) {
-          <button class="btn btn-confirm" type="submit" [disabled]="busy() || (!isNew() && !dirty())">
+          <button class="btn btn-confirm" type="submit" [disabled]="busy() || (!isNew() && !dirty())" [quaderBusy]="busy()">
             @if (isNew()) {
               <ng-container i18n="@@limits.profile.create">Create profile</ng-container>
             } @else {
@@ -108,7 +110,7 @@ export function keyFromName(name: string): string {
         }
       </form>
     } @else {
-      <p role="status" i18n="@@limits.loading">Loading.</p>
+      <quader-loading size="page" i18n="@@limits.loading.profile">Loading the profile.</quader-loading>
     }
   `,
   styles: `

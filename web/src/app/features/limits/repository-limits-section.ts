@@ -12,6 +12,7 @@ import { Disclosure } from '../../shared/ui/disclosure';
 import { fromField, limitConflictFields, toField } from './figures';
 import { LimitRules } from './limit-rules';
 import { rulesNote } from './project-limits-section';
+import { Busy } from '../../shared/ui/busy';
 
 type CeilingClass = 'anonymous' | 'signedIn';
 
@@ -32,7 +33,7 @@ function textsOf(c: CeilingFigures | undefined): CeilingTexts {
 @Component({
   selector: 'quader-repository-limits',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Disclosure, ErrorNotice, LimitRules, RouterLink],
+  imports: [Busy, Disclosure, ErrorNotice, LimitRules, RouterLink],
   template: `
     <quader-disclosure
       i18n-heading="@@limits.section.heading"
@@ -99,7 +100,7 @@ function textsOf(c: CeilingFigures | undefined): CeilingTexts {
                 </div>
               </div>
               @if (canWriteCeilings()) {
-                <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirty(c)">
+                <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirty(c)" [quaderBusy]="busy()">
                   <ng-container i18n="@@limits.save-changes">Save changes</ng-container>
                   <span class="visually-hidden"> ({{ classLabel(c) }})</span>
                 </button>

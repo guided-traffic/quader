@@ -7,6 +7,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { Checkbox } from '../../shared/ui/checkbox';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { syncIntervalSentence } from './downloads/download-words';
+import { Busy } from '../../shared/ui/busy';
 
 /** `remote.syncs` of a remote repository (R-CUR-020, R-CUR-027). */
 export type SyncSettings = Schema<'SyncSettings'>;
@@ -31,7 +32,7 @@ const GIB = 1024 ** 3;
  */
 @Component({
   selector: 'quader-repository-syncs',
-  imports: [Checkbox, Disclosure, ErrorNotice],
+  imports: [Busy, Checkbox, Disclosure, ErrorNotice],
   template: `
     <quader-disclosure
       id="syncs"
@@ -94,7 +95,7 @@ const GIB = 1024 ** 3;
         </fieldset>
         @if (canChange()) {
           <div class="actions">
-            <button class="btn btn-confirm" type="submit" [disabled]="!dirty() || saving() || !!minutesError() || !!gibError()">
+            <button class="btn btn-confirm" type="submit" [disabled]="!dirty() || saving() || !!minutesError() || !!gibError()" [quaderBusy]="saving()">
               <ng-container i18n="@@repo.settings.save">Save changes</ng-container>
               <span class="visually-hidden" i18n="@@syncs.settings.save-for"> (kept in sync)</span>
             </button>

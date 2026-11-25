@@ -11,6 +11,7 @@ import { anchorKindWords, anchorScopeWords, shortFingerprint } from '../../share
 import { Checkbox } from '../../shared/ui/checkbox';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { GateOrder, gateOrder } from './signature-gate-order';
+import { Busy } from '../../shared/ui/busy';
 
 /** One trust anchor the repository can accept, by its reference `<scope>/<key>` (R-SIG-061). */
 export interface GateAnchorOption {
@@ -69,7 +70,7 @@ export function anchorOptions(
  */
 @Component({
   selector: 'quader-repository-signatures',
-  imports: [Checkbox, Disclosure, ErrorNotice, RouterLink],
+  imports: [Busy, Checkbox, Disclosure, ErrorNotice, RouterLink],
   template: `
     <quader-disclosure
       i18n-heading="@@repo.signatures.heading"
@@ -209,7 +210,7 @@ export function anchorOptions(
 
         @if (canChange() && (!deb() || remote())) {
           <div class="actions">
-            <button class="btn btn-confirm" type="submit" [disabled]="!dirty() || saving() || asking() || (chosen() && onlyVerified() && refs().length === 0)">
+            <button class="btn btn-confirm" type="submit" [disabled]="!dirty() || saving() || asking() || (chosen() && onlyVerified() && refs().length === 0)" [quaderBusy]="saving()">
               <ng-container i18n="@@repo.settings.save">Save changes</ng-container>
               <span class="visually-hidden" i18n="@@repo.signatures.save-for"> (signatures)</span>
             </button>

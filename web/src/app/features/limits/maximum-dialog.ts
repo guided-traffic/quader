@@ -10,6 +10,7 @@ import { Disclosure } from '../../shared/ui/disclosure';
 import { FigureFields, FigureTexts, readTexts, textsOf } from './figure-fields';
 import { FIGURES, compactFigures } from './figures';
 import { overridesOf } from './rule-dialog';
+import { Busy } from '../../shared/ui/busy';
 
 export interface MaximumDialogData {
   /** The project; absent for **Add maximum**, which asks for it first. */
@@ -26,7 +27,7 @@ export interface MaximumDialogData {
 @Component({
   selector: 'quader-limit-maximum-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DialogClose, DialogTitle, Disclosure, ErrorNotice, FigureFields, SelectField],
+  imports: [Busy, DialogClose, DialogTitle, Disclosure, ErrorNotice, FigureFields, SelectField],
   template: `
     @if (data.maximum) {
       <h2 quaderDialogTitle i18n="@@limits.maximum.change-title">Change maximum</h2>
@@ -76,7 +77,7 @@ export interface MaximumDialogData {
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@limits.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="busy() || !profileKey()" i18n="@@limits.maximum.save">Save maximum</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy() || !profileKey()" [quaderBusy]="busy()" i18n="@@limits.maximum.save">Save maximum</button>
       </div>
     </form>
   `,

@@ -14,6 +14,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { NoValue } from '../../shared/ui/no-value';
 import { RegistryPresetDialog, RegistryPresetDialogData } from './registry-preset-dialog';
+import { Busy } from '../../shared/ui/busy';
 
 /** One group of the table: a format and its presets in the administrator's order. */
 interface PresetGroup {
@@ -29,7 +30,7 @@ interface PresetGroup {
  */
 @Component({
   selector: 'quader-registry-presets',
-  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DataTable, ErrorNotice, FormatIconView, NoValue],
+  imports: [Busy, CdkMenu, CdkMenuItem, CdkMenuTrigger, DataTable, ErrorNotice, FormatIconView, NoValue],
   template: `
     <h2 class="presets-heading" id="registry-presets">{{ heading }}</h2>
     <p class="hint presets-hint" i18n="@@presets.hint">
@@ -38,7 +39,7 @@ interface PresetGroup {
     </p>
     @if (canWrite()) {
       <p class="presets-actions">
-        <button class="btn btn-default" type="button" [disabled]="list() === null || busy()" (click)="add()" i18n="@@presets.add">
+        <button class="btn btn-default" type="button" [disabled]="list() === null || busy()" [quaderBusy]="busy()" (click)="add()" i18n="@@presets.add">
           Add registry
         </button>
       </p>
@@ -52,6 +53,8 @@ interface PresetGroup {
       [columns]="columns()"
       [loaded]="list() !== null"
       [loading]="list() === null && !loadError()"
+      loadingText="Loading the presets."
+      i18n-loadingText="@@presets.loading"
       [error]="loadError()"
       (retry)="load()"
       [empty]="groups().length === 0"
@@ -94,7 +97,7 @@ interface PresetGroup {
                 <button
                   class="btn btn-tertiary btn-icon"
                   type="button"
-                  [disabled]="busy()"
+                  [disabled]="busy()" [quaderBusy]="busy()"
                   [attr.aria-label]="actionsLabel(row.preset)"
                   [cdkMenuTriggerFor]="rowMenu"
                 >

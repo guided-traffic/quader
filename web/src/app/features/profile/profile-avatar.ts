@@ -9,6 +9,7 @@ import { asApiError } from '../../shared/paged-resource';
 import { QuaderAvatar } from '../../shared/ui/avatar';
 import { AVATAR_TYPES, IMAGE_SIZER, refuseAvatar } from './avatar-file';
 import { avatarErrorText, avatarRefusalText } from './avatar-messages';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * "Public avatar" of the profile (R-UI-051): the current avatar, a "Choose file…" button, what is accepted, and
@@ -19,7 +20,7 @@ import { avatarErrorText, avatarRefusalText } from './avatar-messages';
  */
 @Component({
   selector: 'quader-profile-avatar',
-  imports: [QuaderAvatar, ErrorNotice],
+  imports: [Busy, QuaderAvatar, ErrorNotice],
   templateUrl: './profile-avatar.html',
   styleUrls: ['../../shared/access/access.scss', './profile-avatar.scss'],
 })

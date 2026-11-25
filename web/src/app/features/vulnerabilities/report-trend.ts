@@ -5,6 +5,7 @@ import { SEVERITIES, VulnerabilitiesApi, VulnerabilitySeverity, VulnerabilityTre
 import { ErrorNotice } from '../../shared/error-notice';
 import { failureOf, valueOf } from '../../shared/paged-resource';
 import { severityIcon, severityLabel } from './vuln-labels';
+import { Loading } from '../../shared/ui/loading';
 
 export type TrendRange = '30' | '90' | '365';
 export const TREND_RANGES: readonly TrendRange[] = ['30', '90', '365'];
@@ -99,7 +100,7 @@ export function trendGeometry(trend: VulnerabilityTrend): TrendGeometry {
  */
 @Component({
   selector: 'quader-vuln-trend',
-  imports: [DecimalPipe, ErrorNotice],
+  imports: [Loading, DecimalPipe, ErrorNotice],
   template: `
     <section class="vuln-trend" aria-labelledby="vuln-trend-title">
       <div class="vuln-trend-head">
@@ -123,7 +124,7 @@ export function trendGeometry(trend: VulnerabilityTrend): TrendGeometry {
         @if (failure(); as f) {
           <quader-error-notice [error]="f" (retry)="failure.retry()" />
         } @else if (!trend.hasValue()) {
-          <p role="status" i18n="@@vuln.trend.loading">Loading the trend.</p>
+          <quader-loading i18n="@@vuln.trend.loading">Loading the trend.</quader-loading>
         } @else if (asTable()) {
           <div class="trend-table-scroll" tabindex="0" role="region" aria-label="Open findings per day" i18n-aria-label="@@vuln.trend.table-label">
             <table class="data trend-table">

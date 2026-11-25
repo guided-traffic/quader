@@ -19,6 +19,7 @@ import { ProjectsApi } from '../../api/projects-api';
 import { SearchApi, SuggestionKind } from '../../api/search-api';
 import { ActiveOption, heldEnter, optionDomId } from './active-option';
 import { QuaderAvatar } from './avatar';
+import { Loading } from './loading';
 
 /**
  * The kinds of principal a field names. A technical token and a CI project are the two kinds of the download limits' rule dialog
@@ -140,7 +141,7 @@ function placeList(popup: HTMLElement, anchor: HTMLElement): void {
 @Component({
   selector: 'quader-principal-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [QuaderAvatar],
+  imports: [Loading, QuaderAvatar],
   template: `
     <div class="field">
       <label class="field-label" [for]="inputId">{{ label() }}</label>
@@ -227,7 +228,12 @@ function placeList(popup: HTMLElement, anchor: HTMLElement): void {
               }
             </div>
             @if (state(); as s) {
-              <p class="state" [class.failed]="s.failed">{{ s.text }}</p>
+              @if (phase() === 'searching') {
+                <!-- The matches of the text before stay while the next answer is read: they still name people (Q-UI-1234). -->
+                <quader-loading class="state" [status]="false">{{ s.text }}</quader-loading>
+              } @else {
+                <p class="state" [class.failed]="s.failed">{{ s.text }}</p>
+              }
             }
           </div>
         }
@@ -508,7 +514,7 @@ export class PrincipalField {
   protected readonly state = computed<{ text: string; failed: boolean } | null>(() => {
     const phase = this.phase();
     if (phase === 'failed') return { text: $localize`:@@principal-field.failed:The search failed. Change the text to try again.`, failed: true };
-    if (phase === 'searching' && this.matches().length === 0) return { text: $localize`:@@principal-field.searching:Searching…`, failed: false };
+    if (phase === 'searching') return { text: $localize`:@@principal-field.searching:Searching…`, failed: false };
     if (phase === 'done' && this.matches().length === 0) {
       const text = this.text().trim();
       return {

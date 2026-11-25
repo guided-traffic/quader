@@ -57,6 +57,8 @@ import {
 import { SettingSchema, errorTarget, settingNodes } from './settings-schema';
 import { initialUpstream, upstreamDefaultsOf } from './upstream-model';
 import { UpstreamSettings, upstreamPointerLabel, upstreamTarget } from './upstream-settings';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 type KeyCheck = 'idle' | 'checking' | 'free' | 'taken' | 'unknown';
 
@@ -108,7 +110,7 @@ interface CreateDraft {
  */
 @Component({
   selector: 'quader-repository-create',
-  imports: [
+  imports: [Busy, Loading, 
     RouterLink,
     DocumentBlock,
     Disclosure,

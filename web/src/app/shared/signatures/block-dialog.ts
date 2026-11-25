@@ -9,6 +9,7 @@ import { fieldErrorAt } from '../field-errors';
 import { asApiError } from '../paged-resource';
 import { DialogClose, DialogRef, DialogTitle } from '../ui/dialog';
 import { blockKindWords } from './signature-words';
+import { Busy } from '../ui/busy';
 
 /**
  * **Block signer** (R-SIG-020): the kind (a certificate's or an OpenPGP key's fingerprint, an issuer and a serial, npm's or a raw key's
@@ -17,7 +18,7 @@ import { blockKindWords } from './signature-words';
  */
 @Component({
   selector: 'quader-block-dialog',
-  imports: [DialogClose, DialogTitle, ErrorNotice, SelectField, TextField],
+  imports: [Busy, DialogClose, DialogTitle, ErrorNotice, SelectField, TextField],
   template: `
     <h2 quaderDialogTitle i18n="@@sig.block.heading">Block signer</h2>
     <form (submit)="submit($event)" novalidate>
@@ -51,7 +52,7 @@ import { blockKindWords } from './signature-words';
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@sig.form.cancel">Cancel</button>
-        <button class="btn btn-danger" type="submit" [disabled]="busy()">
+        <button class="btn btn-danger" type="submit" [disabled]="busy()" [quaderBusy]="busy()">
           @if (impact()) {
             <ng-container i18n="@@sig.block.submit-anyway">Block signer and refuse them</ng-container>
           } @else {

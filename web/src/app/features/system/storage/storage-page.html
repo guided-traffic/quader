@@ -483,7 +483,7 @@
               </td>
               @if (canRecheck()) {
                 <td class="actions">
-                  <button class="btn btn-tertiary" type="button" [disabled]="checking() === b.sha256" [attr.aria-label]="checkLabel(b)" (click)="recheck(b)">
+                  <button class="btn btn-tertiary" type="button" [disabled]="checking() === b.sha256" [quaderBusy]="checking() === b.sha256" [attr.aria-label]="checkLabel(b)" (click)="recheck(b)">
                     <ng-container i18n="@@storage.damaged.check">Check again</ng-container>
                   </button>
                 </td>
@@ -537,5 +537,5 @@
     }
   </quader-disclosure>
 } @else if (!failure()) {
-  <p role="status" i18n="@@system.loading">Loading.</p>
+  <quader-loading size="page" i18n="@@storage.loading">Loading the storage.</quader-loading>
 }

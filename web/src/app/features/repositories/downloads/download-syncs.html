@@ -13,6 +13,8 @@
       [columns]="columns()"
       [loaded]="loaded()"
       [loading]="loading()"
+      loadingText="Loading the downloads kept in sync."
+      i18n-loadingText="@@downloads.syncs.loading"
       [error]="error()"
       [empty]="syncs().length === 0"
       [hasMore]="hasMore()"
@@ -69,7 +71,7 @@
           </td>
           @if (hasActions()) {
             <td class="actions">
-              <button
+              <button quaderBusy
                 class="btn btn-tertiary btn-icon"
                 type="button"
                 [disabled]="isBusy(s)"

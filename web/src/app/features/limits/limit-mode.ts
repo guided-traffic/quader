@@ -10,6 +10,8 @@ import { asApiError } from '../../shared/paged-resource';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle, QuaderDialog } from '../../shared/ui/dialog';
 import { subjectKindFilterLabel } from './callers';
 import { figureName, formatCount } from './figures';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /** The owner's two words (decision 17), the same in every language. */
 export function modeWord(mode: LimitMode): string {
@@ -37,7 +39,7 @@ export interface ModeDialogData {
 @Component({
   selector: 'quader-limit-mode-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DialogClose, DialogTitle, ErrorNotice, RouterLink],
+  imports: [Busy, Loading, DialogClose, DialogTitle, ErrorNotice, RouterLink],
   template: `
     @if (data.to === 'enforce') {
       <h2 quaderDialogTitle i18n="@@limits.mode.to-enforce-title">Switch to Enforce</h2>
@@ -86,7 +88,7 @@ export interface ModeDialogData {
           }
           <p class="consequence" i18n="@@limits.mode.consequence">From now on, limits refuse and slow requests on every replica within seconds.</p>
         } @else {
-          <p role="status" i18n="@@limits.mode.preview-loading">Reading the last 24 hours…</p>
+          <quader-loading i18n="@@limits.mode.preview-loading">Reading the last 24 hours…</quader-loading>
         }
       } @else {
         <p i18n="@@limits.mode.to-audit-removes">In Audit nothing is refused or slowed on the package and registry addresses, not even by the request limits; every limit is counted and shown as "Would have been limited".</p>
@@ -95,9 +97,9 @@ export interface ModeDialogData {
     <div class="dialog-actions">
       <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@limits.cancel">Cancel</button>
       @if (data.to === 'enforce') {
-        <button class="btn btn-confirm" type="button" [disabled]="busy()" (click)="switch()" i18n="@@limits.mode.to-enforce-title">Switch to Enforce</button>
+        <button class="btn btn-confirm" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="switch()" i18n="@@limits.mode.to-enforce-title">Switch to Enforce</button>
       } @else {
-        <button class="btn btn-confirm" type="button" [disabled]="busy()" (click)="switch()" i18n="@@limits.mode.to-audit-title">Switch to Audit</button>
+        <button class="btn btn-confirm" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="switch()" i18n="@@limits.mode.to-audit-title">Switch to Audit</button>
       }
     </div>
   `,

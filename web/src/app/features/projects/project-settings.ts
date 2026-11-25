@@ -30,6 +30,7 @@ import { projectRoleLabel } from './project-roles';
 import { PageHeader } from '../../shared/ui/page-header';
 import { ProjectLimitsSection } from '../limits/project-limits-section';
 import { ProjectSignatureAnchors } from './project-signature-anchors';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * The settings of one project (R-UI-041, R-UI-054, Q-UI-129, Q-UI-215): the display name and the description edited in place by
@@ -41,7 +42,7 @@ import { ProjectSignatureAnchors } from './project-signature-anchors';
  */
 @Component({
   selector: 'quader-project-settings',
-  imports: [PageHeader, DatePipe, ErrorNotice, Needs, Disclosure, ProjectLimitsSection, ProjectSignatureAnchors, TextField, VisibilityLevelControl],
+  imports: [Busy, PageHeader, DatePipe, ErrorNotice, Needs, Disclosure, ProjectLimitsSection, ProjectSignatureAnchors, TextField, VisibilityLevelControl],
   template: `
     <quader-page-header heading="Settings" i18n-heading="@@project.settings" />
 
@@ -79,7 +80,7 @@ import { ProjectSignatureAnchors } from './project-signature-anchors';
             [error]="serverError('/description')"
           />
           @if (canEdit()) {
-            <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirty()" i18n="@@project.save-changes">Save changes</button>
+            <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirty()" [quaderBusy]="busy()" i18n="@@project.save-changes">Save changes</button>
           } @else {
             <quader-needs capability="projects:write" [project]="p.key" />
           }
@@ -108,7 +109,7 @@ import { ProjectSignatureAnchors } from './project-signature-anchors';
               [disabled]="!canWrite()"
             />
             @if (canWrite()) {
-              <button class="btn btn-confirm" type="submit" [disabled]="busy() || !visibilityDirty()">
+              <button class="btn btn-confirm" type="submit" [disabled]="busy() || !visibilityDirty()" [quaderBusy]="busy()">
                 <ng-container i18n="@@project.save-changes">Save changes</ng-container>
                 <span class="visually-hidden" i18n="@@project.save-visibility"> (visibility)</span>
               </button>
@@ -180,7 +181,7 @@ import { ProjectSignatureAnchors } from './project-signature-anchors';
             <button
               class="btn btn-danger"
               type="button"
-              [disabled]="busy() || !empty()"
+              [disabled]="busy() || !empty()" [quaderBusy]="busy()"
               aria-describedby="project-delete-note"
               (click)="remove()"
               i18n="@@project.delete"

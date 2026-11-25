@@ -220,7 +220,7 @@
             <button
               class="btn btn-default"
               type="button"
-              [disabled]="runs.loading()"
+              [disabled]="runs.loading()" [quaderBusy]="runs.loading()"
               (click)="runs.more()"
               i18n="@@list.load-more"
             >
@@ -230,7 +230,7 @@
         }
       }
     } @else if (runs.loading() && !runs.error()) {
-      <p role="status" i18n="@@system.loading">Loading.</p>
+      <quader-loading i18n="@@backups.loading">Loading the backups.</quader-loading>
     }
   </section>
 

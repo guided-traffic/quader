@@ -41,6 +41,9 @@ export class SessionStore {
   private readonly _ended = signal(false);
   private readonly _reauthRequired = signal(false);
   private readonly _loadError = signal<ApiError | null>(null);
+  private readonly _signingOut = signal(false);
+  /** The sign-out was sent and its answer is open: the top bar says so with the spinner (R-UI-217). */
+  readonly signingOut = this._signingOut.asReadonly();
 
   private loading: Promise<void> | null = null;
   private checkCache = new Map<string, { allowed: boolean; at: number }>();
@@ -198,7 +201,13 @@ export class SessionStore {
    * Other tabs of this browser follow through the BroadcastChannel (R-UI-004).
    */
   async signOut(): Promise<void> {
-    const answer = await this.api.logout();
+    this._signingOut.set(true);
+    let answer: Awaited<ReturnType<typeof this.api.logout>>;
+    try {
+      answer = await this.api.logout();
+    } finally {
+      this._signingOut.set(false);
+    }
     this.reset();
     this.channel?.postMessage('signed-out');
     if (answer.redirectTo) {

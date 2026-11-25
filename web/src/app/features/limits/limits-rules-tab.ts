@@ -8,6 +8,7 @@ import { asApiError } from '../../shared/paged-resource';
 import { formatCount } from './figures';
 import { LimitRules } from './limit-rules';
 import { LimitsSettingsState } from './limits-state';
+import { Busy } from '../../shared/ui/busy';
 
 /** The block time as it reads: "15 minutes", "1 minute". */
 export function minutesText(seconds: number, locale: string): string {
@@ -24,7 +25,7 @@ export function minutesText(seconds: number, locale: string): string {
 @Component({
   selector: 'quader-limits-rules-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ErrorNotice, LimitRules],
+  imports: [Busy, ErrorNotice, LimitRules],
   template: `
     @if (canWrite()) {
       <div class="tab-head">
@@ -51,7 +52,7 @@ export function minutesText(seconds: number, locale: string): string {
                 (input)="minutes.set($any($event.target).value)"
               />
             </div>
-            <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@limits.save-changes">Save changes</button>
+            <button class="btn btn-confirm" type="submit" [disabled]="busy()" [quaderBusy]="busy()" i18n="@@limits.save-changes">Save changes</button>
             <button class="btn btn-tertiary" type="button" (click)="editing.set(false)" i18n="@@limits.cancel">Cancel</button>
           </form>
           @if (minutesError(); as e) {

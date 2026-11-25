@@ -5,3 +5,8 @@ declare module '*.scss' {
   const text: string;
   export default text;
 }
+// The page before the app starts, read as text by its spinner's test (spinner.spec.ts).
+declare module '*.html' {
+  const text: string;
+  export default text;
+}

@@ -23,6 +23,8 @@ import { ProjectNeeds, createState } from './project-access';
       [columns]="columns"
       [loaded]="list.loaded()"
       [loading]="list.loading()"
+      loadingText="Loading the policies."
+      i18n-loadingText="@@policies.list.loading"
       [error]="list.error()"
       [empty]="list.items().length === 0"
       i18n-emptyText="@@project-policies.empty"

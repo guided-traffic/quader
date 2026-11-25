@@ -31,6 +31,8 @@ import {
   unreachable,
 } from './storage-model';
 import { FailureToasts } from '../../../shared/failure-dialog';
+import { Loading } from '../../../shared/ui/loading';
+import { Busy } from '../../../shared/ui/busy';
 
 /** The blobs no connection holds whole that the tab lists (R-UI-196); the operator check lists every one. */
 export const DAMAGED_SHOWN = 20;
@@ -48,7 +50,7 @@ export const STORAGE_TASKS = ['storage-reconcile', 'scrub', 'orphan-sweep', 'sto
  */
 @Component({
   selector: 'quader-storage-page',
-  imports: [DecimalPipe, RouterLink, DataTable, Disclosure, ErrorNotice, NoValue, TimeAgo],
+  imports: [Busy, Loading, DecimalPipe, RouterLink, DataTable, Disclosure, ErrorNotice, NoValue, TimeAgo],
   templateUrl: './storage-page.html',
   styleUrl: './storage-page.scss',
 })

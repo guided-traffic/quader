@@ -27,7 +27,7 @@ import {
   upstreamVersion,
 } from '../../../api/testing/fakes-upstream-catalogue';
 import { Notifier } from '../../../core/notifier';
-import { expectAccessible, renderScreen, settle, text, waitUntil } from '../../../testing/screen';
+import { expectAccessible, holdCalls, renderScreen, settle, text, waitUntil } from '../../../testing/screen';
 import { contentShapeOf } from '../content/content-shape';
 import { RepositoryContent } from '../content/repository-content';
 import { RemoteUpstream } from './remote-upstream';
@@ -561,6 +561,35 @@ describe('The tab Upstream of a remote repository', () => {
     ]);
     // The index search of Debian has Names only.
     expect(text(root.querySelector('form.search')!)).toContain('Names only');
+  });
+
+  it('R-UI-217 a new search shows its load, never the level\'s total as its hits nor its empty sentence, and its button is busy', async () => {
+    // The owner's picture of 2026-11-25 on upstream/galaxy: while a search ran, the level's 38,655 packages stood as the search's hits,
+    // and the table said that nothing matched (Q-UI-1234).
+    const { root, fixture, catalogue } = await open({
+      format: 'deb',
+      fake: (c) => {
+        c.capsAnswer = catalogueCaps({ search: 'index', levels: ['suite', 'component', 'architecture'], searchHint: 'aptIndex' });
+        c.levels[''] = { levels: ['trixie'], packages: [upstreamHit({ name: 'common-lisp-controller' })], total: 38655, nextCursor: null, done: true, withheld: null, withheldNote: null, unknown: null };
+        c.hits = [upstreamHit({ name: 'common-files' })];
+      },
+    });
+    expect(text(root)).toContain('common-lisp-controller');
+    const release = holdCalls(catalogue, 'search');
+    await fixture.componentRef.injector.get(Router).navigateByUrl('/projects/web/repositories/npmjs/upstream?q=common');
+    await settle(fixture);
+    const loading = root.querySelector<HTMLElement>('quader-data-table quader-loading')!;
+    expect(text(loading)).toBe('Searching the upstream for “common”.');
+    expect(loading.querySelector('quader-spinner')).toBeTruthy();
+    expect(text(root)).not.toContain('38,655 hits');
+    expect(text(root)).not.toContain('No package of the upstream matches');
+    expect(text(root)).not.toContain('common-lisp-controller');
+    const search = root.querySelector<HTMLButtonElement>('form.search button[type="submit"]')!;
+    expect(search.disabled).toBe(true);
+    release();
+    await waitUntil(fixture, () => text(root).includes('common-files'), 'the hits of the search');
+    expect(root.querySelector('quader-data-table quader-loading')).toBeNull();
+    expect(search.disabled).toBe(false);
   });
 
   it('R-CUR-018 R-CUR-007 a level the upstream does not have says so, with the rule its name breaks and the level it may have meant', async () => {

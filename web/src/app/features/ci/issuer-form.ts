@@ -14,6 +14,7 @@ import { fieldErrorAt } from '../../shared/field-errors';
 import { asApiError } from '../../shared/paged-resource';
 import { changedMembers, overwriteBody } from './ci-common';
 import { splitValues } from './ci-model';
+import { Busy } from '../../shared/ui/busy';
 
 const ALGORITHMS = ['RS256', 'RS384', 'RS512', 'PS256', 'PS384', 'PS512', 'ES256', 'ES384', 'EdDSA'] as const;
 
@@ -53,7 +54,7 @@ function issuerConflictFields(): Record<string, string> {
 
 @Component({
   selector: 'quader-ci-issuer-form',
-  imports: [Checkbox, ErrorNotice, Disclosure, TextField],
+  imports: [Busy, Checkbox, ErrorNotice, Disclosure, TextField],
   template: `
     @if (configured()) {
       <p class="source-note" role="note">
@@ -185,7 +186,7 @@ function issuerConflictFields(): Record<string, string> {
           <quader-checkbox [checked]="validate()" (checkedChange)="validate.set($event)" i18n="@@ci.form.validate">Check the discovery document and the keys before saving</quader-checkbox>
         }
         <div class="row-actions">
-          <button class="btn btn-confirm" type="submit" [disabled]="busy()">
+          <button class="btn btn-confirm" type="submit" [disabled]="busy()" [quaderBusy]="busy()">
             @if (isNew()) {
               <ng-container i18n="@@ci.form.create">Create issuer</ng-container>
             } @else {

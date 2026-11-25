@@ -14,6 +14,7 @@ import { ProjectNeeds, createState } from '../projects/project-access';
 import { ciRoutes } from './ci-common';
 import { summarizeCondition, summarizeGrants, tierLabel } from './ci-model';
 import { ErrorNotice } from '../../shared/error-notice';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * The mappings of an issuer in evaluation order (R-UI-035, R-CI-009, R-CI-019): tier, then priority,
@@ -23,7 +24,7 @@ import { ErrorNotice } from '../../shared/error-notice';
  */
 @Component({
   selector: 'quader-ci-mapping-list',
-  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, RouterLink, ErrorNotice, DataTable, Needs, ProjectNeeds],
+  imports: [Busy, CdkMenu, CdkMenuItem, CdkMenuTrigger, RouterLink, ErrorNotice, DataTable, Needs, ProjectNeeds],
   template: `
     <div class="toolbar">
       @if (writable()) {
@@ -53,6 +54,8 @@ import { ErrorNotice } from '../../shared/error-notice';
         [columns]="columns()"
         [loaded]="loaded()"
         [loading]="loading() && !error()"
+        loadingText="Loading the mappings."
+        i18n-loadingText="@@ci.mappings.loading"
         [empty]="mappings().length === 0"
         i18n-emptyText="@@ci.mappings.empty"
         emptyText="No mapping yet. Without a mapping no job receives a token."
@@ -83,7 +86,7 @@ import { ErrorNotice } from '../../shared/error-notice';
                  Q-UI-643). -->
             <td class="actions">
               @if (writable()) {
-                <button class="btn btn-tertiary btn-icon" type="button" [attr.aria-label]="actionsLabel(m)" [cdkMenuTriggerFor]="rowMenu">
+                <button quaderBusy class="btn btn-tertiary btn-icon" type="button" [attr.aria-label]="actionsLabel(m)" [cdkMenuTriggerFor]="rowMenu">
                   <span class="material-icons" aria-hidden="true">more_vert</span>
                 </button>
                 <ng-template #rowMenu>

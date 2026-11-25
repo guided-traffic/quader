@@ -7,6 +7,7 @@ import { fieldErrorAt } from '../field-errors';
 import { asApiError } from '../paged-resource';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../ui/dialog';
 import { gateReasonSentence } from './gate-words';
+import { Busy } from '../ui/busy';
 
 /** The longest reason the API takes (R-SIG-070). */
 export const GATE_RELEASE_REASON_MAX = 1000;
@@ -30,7 +31,7 @@ export interface GateReleaseData {
  */
 @Component({
   selector: 'quader-gate-release-dialog',
-  imports: [DialogTitle, DialogClose, ErrorNotice, TextField],
+  imports: [Busy, DialogTitle, DialogClose, ErrorNotice, TextField],
   template: `
     <h2 quaderDialogTitle>{{ title() }}</h2>
     <form (submit)="submit($event)" novalidate>
@@ -68,7 +69,7 @@ export interface GateReleaseData {
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@sig.release.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@sig.release.submit">Release for this repository</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy()" [quaderBusy]="busy()" i18n="@@sig.release.submit">Release for this repository</button>
       </div>
     </form>
   `,

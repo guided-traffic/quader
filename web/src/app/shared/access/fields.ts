@@ -1,4 +1,5 @@
 import { Component, DestroyRef, ElementRef, Signal, afterNextRender, computed, inject, input, model, signal } from '@angular/core';
+import { Spinner } from '../ui/spinner';
 
 let nextFieldId = 1;
 
@@ -166,6 +167,7 @@ export interface SelectOption {
   template: `
     <div class="field">
       <label class="field-label" [for]="id">{{ label() }}</label>
+      <span class="field-busy-wrap">
       <select
         class="select-input"
         [class]="'field-w-' + width()"
@@ -186,16 +188,23 @@ export interface SelectOption {
           }
         }
       </select>
+      @if (loading() !== null) {
+        <!-- The options load: the spinner inside the held select, before its arrow, after the delay of every load (R-UI-217). -->
+        <quader-spinner class="field-busy quader-spinner-delayed" />
+      }
+      </span>
     </div>
     @if (shownError(); as text) {
       <p class="field-error" [id]="id + '-error'">{{ text }}</p>
     }
   `,
+  imports: [Spinner],
   styles: `
     :host {
       display: inline-block;
       max-inline-size: 100%;
     }
+
     :host(.full) {
       display: block;
     }

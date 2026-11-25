@@ -19,6 +19,8 @@ import { asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { endpointAddress, patternSummary, versionSummary } from './endpoint-model';
 import { PageHeader } from '../../shared/ui/page-header';
 import { EmptyState } from '../../shared/ui/empty-state';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * One endpoint (R-EP-017): its configuration read-only and marked as coming from the
@@ -28,7 +30,7 @@ import { EmptyState } from '../../shared/ui/empty-state';
  */
 @Component({
   selector: 'quader-endpoint-detail',
-  imports: [
+  imports: [Busy, Loading, 
     CdkMenu,
     CdkMenuItem,
     CdkMenuTrigger,

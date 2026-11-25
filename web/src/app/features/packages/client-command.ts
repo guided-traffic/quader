@@ -4,6 +4,7 @@ import { AddressField } from '../../shared/address-field';
 import { CodeWindow } from '../../shared/code/code-window';
 import { ErrorNotice } from '../../shared/error-notice';
 import { failureOf, valueOf } from '../../shared/paged-resource';
+import { Loading } from '../../shared/ui/loading';
 
 /** A command longer than this many lines is collapsed behind an expander (R-UI-009). */
 export const COLLAPSE_AFTER_LINES = 3;
@@ -18,12 +19,12 @@ export const COLLAPSE_AFTER_LINES = 3;
  */
 @Component({
   selector: 'quader-client-command',
-  imports: [AddressField, CodeWindow, ErrorNotice],
+  imports: [Loading, AddressField, CodeWindow, ErrorNotice],
   template: `
     @if (failure(); as f) {
       <quader-error-notice [error]="f" (retry)="failure.retry()" />
     } @else if (answer.isLoading()) {
-      <p class="command-loading" role="status" i18n="@@pkg.install.loading">Loading the command.</p>
+      <quader-loading class="command-loading" i18n="@@pkg.install.loading">Loading the command.</quader-loading>
     } @else if (command()) {
       @if (oneLine()) {
         <!-- A one-line command is one copyable value, as an address is: the field with its joined copy button (Q-UI-320). -->

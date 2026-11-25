@@ -31,6 +31,7 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { StickyWhenFits } from '../../shared/ui/sticky-when-fits';
 import { ADDRESS_MARKS, KEY_MARKS, PartsText, breakParts } from '../../shared/break-parts';
 import { PrincipalField, choiceFromRef, refOf } from '../../shared/ui/principal-field';
+import { Loading } from '../../shared/ui/loading';
 
 /**
  * The kinds of resource the events name most (the `resource.type` of an event), offered by the filter's field; any other kind can be
@@ -81,7 +82,7 @@ const PRESETS: Readonly<Record<string, number>> = {
  */
 @Component({
   selector: 'quader-audit-log',
-  imports: [
+  imports: [Loading, 
     PageHeader,
     DatePipe,
     RouterLink,

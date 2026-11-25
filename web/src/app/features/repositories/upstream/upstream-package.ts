@@ -20,6 +20,7 @@ import { downloadStateText } from '../downloads/download-words';
 import { UpstreamActions } from './upstream-actions';
 import { LIVE_FAST_MS, LIVE_IDLE_MS, live } from '../../../core/live-refresh';
 import { catalogueState, decidedByText, flagText, notCoveredText, stateBadge, switchLabel, verdictText } from './upstream-words';
+import { Loading } from '../../../shared/ui/loading';
 
 /** The one act of a version's cache cell (R-CUR-024): it changes what the cell shows. */
 export type CacheAct = 'download' | 'examine' | 'discard';
@@ -44,7 +45,7 @@ export function groupedCount(n: number): string {
  */
 @Component({
   selector: 'quader-upstream-package',
-  imports: [DataTable, DistTags, ErrorNotice, RouterLink, Switch, TimeAgo],
+  imports: [Loading, DataTable, DistTags, ErrorNotice, RouterLink, Switch, TimeAgo],
   templateUrl: './upstream-package.html',
   styleUrl: './upstream-package.scss',
 })
@@ -70,6 +71,8 @@ export class UpstreamPackageView {
   protected readonly loading = signal(false);
   protected readonly failure = signal<ApiError | null>(null);
   protected readonly filter = signal('');
+  /** The name and the filter the versions shown answer. */
+  private shownQuestion = '';
   private readonly appliedFilter = signal('');
   private generation = 0;
   private filterTimer: ReturnType<typeof setTimeout> | null = null;
@@ -173,6 +176,11 @@ export class UpstreamPackageView {
 
   private async load(name: string, filter: string, fresh: boolean): Promise<void> {
     const generation = fresh ? ++this.generation : this.generation;
+    // Another version filter is a new question: its load shows, not the versions of the filter before (R-UI-217, Q-UI-1234). A read
+    // after a write asks the same question and keeps the rows while it reads.
+    const question = `${name} ${filter}`;
+    if (fresh && question !== this.shownQuestion) this.versions.set([]);
+    this.shownQuestion = question;
     this.loading.set(true);
     try {
       const page = this.settle(await this.api.package(this.actions.repository(), name, fresh ? null : this.next(), filter));

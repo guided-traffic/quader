@@ -1,0 +1,204 @@
+// The spinner of every load (R-UI-217): the mark's six stones, at rest in a quiet neutral, one after another lit in the mark's
+// sandstone clockwise from the top left, a round in 1.8 s (Q-UI-1229). Global, not a component's style, because the page before the app
+// starts (`index.html`, the first paint of a cold load) draws the same SVG with these rules; `quader-spinner` of
+// `shared/ui/spinner.ts` draws it everywhere else. Both put the stones in the same order (clockwise from the top left), and
+// `spinner.spec.ts` holds `index.html`'s copy to the component's.
+//
+//   <quader-spinner />                   16 px, on its text's line (the line rule of _controls.scss)
+//   <quader-spinner size="button" />     16 px, a button's icon size; [quaderBusy] puts it there
+//   <quader-spinner size="page" />       48 px, for a page or a large area: the next size after 40 px at which every stone and joint
+//                                        of the 64 grid falls on whole pixels (16 px: stones of 4 and joints of 1; 48 px: 12 and 3)
+
+$round: 1.8s;
+$step: calc($round / 6);
+
+.quader-spinner {
+  display: inline-block;
+  flex: none;
+  inline-size: 1rem;
+  block-size: 1rem;
+  line-height: 0;
+  // On the middle of its text's first line, no taller than it (R-UI-175); a page's spinner stands above its sentence.
+  margin-block: calc((var(--quader-line) - 1rem) / 2);
+  vertical-align: top;
+
+  svg {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+  }
+
+  rect {
+    fill: var(--quader-spinner-stone);
+    animation: quader-spinner-light $round linear infinite;
+  }
+
+  // The still frame (no animation, a picture of the render set): the first stone lit.
+  rect:nth-child(1) {
+    fill: var(--quader-mark-accent);
+  }
+
+  @for $i from 2 through 6 {
+    rect:nth-child(#{$i}) {
+      animation-delay: calc(#{$i - 1} * #{$step});
+    }
+  }
+}
+
+.quader-spinner-button {
+  margin-block: 0;
+}
+
+.quader-spinner-page {
+  inline-size: 3rem;
+  block-size: 3rem;
+  margin-block: 0;
+}
+
+// A stone lights up at once and fades back over the next two steps, so a short trail follows the light.
+@keyframes quader-spinner-light {
+  0%,
+  6% {
+    fill: var(--quader-mark-accent);
+  }
+
+  40%,
+  100% {
+    fill: var(--quader-spinner-stone);
+  }
+}
+
+// Reduced motion (Q-UI-1237): no light travels. The first stone stays lit and the mark breathes, slowly, as one.
+@media (prefers-reduced-motion: reduce) {
+  .quader-spinner {
+    rect {
+      animation: none;
+    }
+
+    svg {
+      animation: quader-spinner-breathe 2.4s ease-in-out infinite alternate;
+    }
+  }
+}
+
+@keyframes quader-spinner-breathe {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0.45;
+  }
+}
+
+// ---- The delay (Q-UI-1230) ---------------------------------------------------------------------------------------------------------
+//
+// A load that answers within 300 ms shows nothing. `quader-loading` keeps its place from the start and is hidden until then, so
+// nothing moves when it appears (it stands where the content will stand). A busy button's spinner takes no room until then, and an
+// icon it replaces stays until then, so a fast act changes nothing on the button.
+
+$delay: 300ms;
+
+.quader-loading {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--quader-space-2);
+  margin-block: 1em;
+  color: var(--quader-text-muted);
+  animation: quader-appear 0s linear $delay both;
+}
+
+// A spinner without a sentence of its own (inside a select whose one option says what loads) keeps the same delay.
+.quader-spinner-delayed {
+  animation: quader-appear 0s linear $delay both;
+}
+
+// A field held while its choices load (a select whose one option says what loads, a text field with suggestions): the spinner inside
+// the field's box, before a select's arrow or at a text field's end, so the field keeps its size.
+.field-busy-wrap {
+  position: relative;
+  display: flex;
+  align-self: flex-start;
+  max-inline-size: 100%;
+}
+
+.field-busy-wrap > .field-busy {
+  position: absolute;
+  inset-block-start: calc((var(--quader-control-height) - 1rem) / 2);
+  inset-inline-end: var(--quader-space-8);
+  margin: 0;
+}
+
+.field-busy-wrap > input + .field-busy {
+  inset-inline-end: var(--quader-space-3);
+}
+
+.quader-loading-inline {
+  display: inline-flex;
+  margin-block: 0;
+  vertical-align: top;
+}
+
+.quader-loading-page {
+  flex-direction: column;
+  align-items: center;
+  gap: var(--quader-space-3);
+  padding-block: var(--quader-space-6);
+  text-align: center;
+}
+
+@keyframes quader-appear {
+  from {
+    visibility: hidden;
+  }
+
+  to {
+    visibility: visible;
+  }
+}
+
+.btn > .quader-spinner {
+  animation: quader-busy-in 0s linear $delay both;
+}
+
+.btn > .quader-spinner + .material-icons {
+  animation: quader-busy-out 0s linear $delay both;
+}
+
+.btn.is-busy {
+  cursor: progress;
+}
+
+@keyframes quader-busy-in {
+  from {
+    display: none;
+  }
+
+  to {
+    display: inline-block;
+  }
+}
+
+@keyframes quader-busy-out {
+  to {
+    display: none;
+  }
+}
+
+// ---- The first paint (Q-UI-1236) ---------------------------------------------------------------------------------------------------
+//
+// `index.html` holds the spinner and its sentence in both languages inside `<quader-root>` until the app starts; the build of each
+// locale sets `<html lang>`, and the sentence of the other language is not shown. Centred in the window, as the app's own page is not
+// drawn yet.
+
+.quader-boot {
+  box-sizing: border-box;
+  justify-content: center;
+  min-block-size: 100dvh;
+  margin: 0;
+}
+
+html:not(:lang(de)) .quader-boot [lang='de'],
+html:lang(de) .quader-boot [lang='en'] {
+  display: none;
+}

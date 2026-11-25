@@ -9,6 +9,7 @@ import { provideRouter, TitleStrategy, withComponentInputBinding } from '@angula
 import { routes } from './app.routes';
 import { provideApiServices } from './api/providers';
 import { CSRF_COOKIE, CSRF_HEADER } from './api/csrf';
+import { busyActInterceptor } from './shared/ui/busy';
 import {
   conventionsInterceptor,
   problemInterceptor,
@@ -36,7 +37,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withFetch(),
       withXsrfConfiguration({ cookieName: CSRF_COOKIE, headerName: CSRF_HEADER }),
-      withInterceptors([problemInterceptor, resilienceInterceptor, conventionsInterceptor]),
+      withInterceptors([busyActInterceptor, problemInterceptor, resilienceInterceptor, conventionsInterceptor]),
     ),
   ],
 };

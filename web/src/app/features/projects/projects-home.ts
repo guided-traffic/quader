@@ -60,6 +60,8 @@ const DETAILS_ID = 'projects.details';
       [columns]="columns()"
       [loaded]="context.loaded() && !listFailure()"
       [loading]="!context.loaded()"
+      loadingText="Loading the projects."
+      i18n-loadingText="@@projects.loading"
       [error]="listFailure()"
       (retry)="retryList()"
       [empty]="shown().length === 0"

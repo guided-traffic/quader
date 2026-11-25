@@ -129,6 +129,8 @@
       [columns]="columns"
       [loaded]="list.loaded()"
       [loading]="list.loading() && !list.error()"
+      loadingText="Loading the events."
+      i18n-loadingText="@@audit.loading"
       [empty]="list.items().length === 0"
       [emptyText]="chips().length > 0 ? noMatch : noEvent"
       [hasMore]="list.hasMore()"
@@ -323,7 +325,7 @@
         <h3 i18n="@@audit.detail.details">Details</h3>
         <quader-document-block [document]="details()" [wrap]="true" [copyLabel]="copyDetails" />
       } @else {
-        <p role="status" i18n="@@repo.loading">Loading.</p>
+        <quader-loading i18n="@@audit.detail.loading">Loading the event.</quader-loading>
       }
     </section>
   }

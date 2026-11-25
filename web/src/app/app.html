@@ -65,6 +65,9 @@
 
       @switch (session.state()) {
         @case ('authenticated') {
+          @if (session.signingOut()) {
+            <quader-loading class="signing-out" [inline]="true" i18n="@@shell.signing-out">Signing out.</quader-loading>
+          }
           <button type="button" class="user-button" [cdkMenuTriggerFor]="userMenu">
             <quader-avatar class="avatar" aria-hidden="true" [seed]="session.whoami()?.principal?.id ?? ''" [imageUrl]="avatars.url()" />
             <!-- The name is the first part of the accessible name; the avatar is the user's generated robot. -->
@@ -291,6 +294,11 @@
     <main #main id="main" tabindex="-1" [class.content]="shell()" [class.bare]="!shell()">
       @if (shell() && loadFailure(); as failure) {
         <quader-error-notice [error]="failure" (retry)="retrySession()" />
+      }
+      @if (firstLoad()) {
+        <!-- The first screen is not known yet (the session, the caller's rights and the screen's code load): the spinner of the page
+             before the app started stands on, in the same place (R-UI-217, Q-UI-1236). -->
+        <quader-loading class="quader-boot" size="page" [style.animation-delay.ms]="bootDelay" i18n="@@shell.loading">Loading Quader.</quader-loading>
       }
       <router-outlet />
     </main>

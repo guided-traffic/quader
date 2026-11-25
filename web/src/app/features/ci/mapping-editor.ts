@@ -43,6 +43,7 @@ import { ConditionBuilder } from './condition-builder';
 import { NamePicker } from './name-picker';
 import { PageHeader } from '../../shared/ui/page-header';
 import { PrincipalField, choiceFromRef, refOf } from '../../shared/ui/principal-field';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * The mapping editor (R-UI-035, R-CI-009 to R-CI-014): a mapping of the system tier of an issuer, or, with
@@ -56,7 +57,7 @@ import { PrincipalField, choiceFromRef, refOf } from '../../shared/ui/principal-
  */
 @Component({
   selector: 'quader-ci-mapping-editor',
-  imports: [
+  imports: [Busy, 
     PageHeader,
     Checkbox,
     RouterLink,

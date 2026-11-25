@@ -16,6 +16,7 @@ import { ListHead } from '../../shared/ui/list-head';
 import { ProjectMark } from '../../shared/ui/project-mark';
 import { formatCount } from './figures';
 import { LimitMaximumDialog, MaximumDialogData } from './maximum-dialog';
+import { Busy } from '../../shared/ui/busy';
 
 /** "Technical", "Technical + 2 changes", "None" (R-UI-177). */
 export function maximumText(row: ProjectLimitsRow, profiles: readonly LimitProfile[]): string {
@@ -37,7 +38,7 @@ export function maximumText(row: ProjectLimitsRow, profiles: readonly LimitProfi
 @Component({
   selector: 'quader-limits-projects-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, ListHead, ProjectMark, RouterLink],
+  imports: [Busy, DataTable, ListHead, ProjectMark, RouterLink],
   template: `
     <quader-list-head [searchLabel]="searchLabel" [search]="q()" (searchChange)="q.set($event)" [filters]="false">
       @if (canWrite()) {
@@ -50,6 +51,8 @@ export function maximumText(row: ProjectLimitsRow, profiles: readonly LimitProfi
       [columns]="columns()"
       [loaded]="rows() !== null"
       [loading]="rows() === null && !failure()"
+      loadingText="Loading the projects."
+      i18n-loadingText="@@projects.loading"
       [error]="failure()"
       (retry)="load()"
       [empty]="shown().length === 0"
@@ -84,7 +87,7 @@ export function maximumText(row: ProjectLimitsRow, profiles: readonly LimitProfi
           @if (canWrite()) {
             <td class="actions">
               @if (r.maximum) {
-                <button class="btn btn-tertiary" type="button" (click)="remove(r)">
+                <button quaderBusy class="btn btn-tertiary" type="button" (click)="remove(r)">
                   <ng-container i18n="@@limits.projects.remove">Remove maximum</ng-container>
                   <span class="visually-hidden" translate="no"> {{ r.project }}</span>
                 </button>

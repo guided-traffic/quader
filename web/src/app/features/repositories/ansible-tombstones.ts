@@ -8,6 +8,7 @@ import { Confirm } from '../../shared/confirm-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { PagedResource, asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * The tombstones of a local Ansible Galaxy repository (R-ANS-012, R-ANS-026): the versions that were deleted and whose numbers are
@@ -16,7 +17,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
  */
 @Component({
   selector: 'quader-ansible-tombstones',
-  imports: [DatePipe, DataTable, ErrorNotice],
+  imports: [Busy, DatePipe, DataTable, ErrorNotice],
   template: `
     <section class="tombstones" aria-labelledby="ansible-tombstones-heading">
       <h2 id="ansible-tombstones-heading" class="visually-hidden" i18n="@@ansible.tombstones.heading">Tombstones</h2>
@@ -29,6 +30,8 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
         [columns]="columns"
         [loaded]="list.loaded()"
         [loading]="list.loading()"
+        loadingText="Loading the tombstones."
+        i18n-loadingText="@@ansible.tombstones.loading"
         [error]="list.error()"
         [empty]="list.loaded() && list.items().length === 0"
         [emptyText]="emptyText"
@@ -47,7 +50,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
             <td>
               @if (canManage()) {
                 <!-- The row's one action is its quiet word (R-UI-163). -->
-                <button class="btn btn-tertiary" type="button" [disabled]="busy()" (click)="clear(t)" data-testid="ansible-tombstone-clear">
+                <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="clear(t)" data-testid="ansible-tombstone-clear">
                   <ng-container i18n="@@ansible.tombstones.clear">Clear</ng-container>
                   <span class="visually-hidden" translate="no"> {{ t.name }} {{ t.version }}</span>
                 </button>

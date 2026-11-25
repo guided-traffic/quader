@@ -4,6 +4,8 @@ import { Tooltip } from './tooltip';
 import { ApiError } from '../../api/problem';
 import { ErrorNotice } from '../error-notice';
 import { EmptyState } from './empty-state';
+import { Loading } from './loading';
+import { Busy } from './busy';
 
 /** One column of a `<quader-data-table>`. The label is the translated header text. */
 export interface TableColumn {
@@ -81,15 +83,16 @@ const REMEASURE = 'quader-remeasure';
  */
 @Component({
   selector: 'quader-data-table',
-  imports: [Tooltip, ErrorNotice, EmptyState],
+  imports: [Tooltip, ErrorNotice, EmptyState, Loading, Busy],
   template: `
     @if (error(); as e) {
       <quader-error-notice [error]="e" (retry)="retry.emit()" />
     }
-    @if (!loaded()) {
-      <!-- A list read again after its failure keeps the notice in place and shows no "Loading." under it (R-UI-216). -->
+    @if (!loaded() || (loading() && empty())) {
+      <!-- A list read again after its failure keeps the notice in place and shows no "Loading." under it (R-UI-216). A list that
+           reads the answer to a new question shows the load, never the empty sentence of the question before (R-UI-217, Q-UI-1234). -->
       @if (loading() && !error()) {
-        <p class="table-status" role="status" i18n="@@table.loading">Loading.</p>
+        <quader-loading class="table-status" size="page">{{ loadingText() }}</quader-loading>
       }
     } @else if (empty()) {
       <quader-empty-state [text]="emptyText()"><ng-content select="[emptyAction]" /></quader-empty-state>
@@ -144,6 +147,7 @@ const REMEASURE = 'quader-remeasure';
           <button class="btn btn-default"
             type="button"
             [disabled]="loading()"
+            [quaderBusy]="loading()"
             (click)="more.emit()"
             i18n="@@list.load-more"
           >
@@ -167,8 +171,15 @@ export class DataTable {
 
   /** True once the first answer has arrived. */
   readonly loaded = input(true);
-  /** True while a request is running; before `loaded` it shows the loading status. */
+  /**
+   * True while a request is running. Before `loaded`, or while the list is empty, it shows the load in the table's place (a new
+   * question: another search, filter, level or sort); with rows shown it is **Load more**'s, which shows its spinner where the rows
+   * arrive (R-UI-217). A live view's read again (R-UI-213) does not set it. `loaded` says that the rows shown answer the question
+   * the screen asks now: a screen that keeps the rows of the question before while it reads a new one sets it false.
+   */
   readonly loading = input(false);
+  /** What loads, in a sentence ("Loading the members."); "Loading." where the screen knows no more. */
+  readonly loadingText = input($localize`:@@table.loading:Loading.`);
   readonly error = input<ApiError | null>(null);
   readonly empty = input(false);
   readonly emptyText = input($localize`:@@table.empty:Nothing to show.`);

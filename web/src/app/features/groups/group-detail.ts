@@ -21,6 +21,7 @@ import { groupOriginLabel } from './group-list';
 import { PageHeader } from '../../shared/ui/page-header';
 import { QuaderAvatar } from '../../shared/ui/avatar';
 import { PrincipalField, choiceFromRef, refOf } from '../../shared/ui/principal-field';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * One group (R-UI-025): name, description and auto-join; members with their sources, where only
@@ -31,7 +32,7 @@ import { PrincipalField, choiceFromRef, refOf } from '../../shared/ui/principal-
  */
 @Component({
   selector: 'quader-group-detail',
-  imports: [PageHeader, DatePipe, Checkbox, RouterLink, ErrorNotice, Needs, PrincipalField, QuaderAvatar, SelectField, Disclosure, TextField],
+  imports: [Busy, PageHeader, DatePipe, Checkbox, RouterLink, ErrorNotice, Needs, PrincipalField, QuaderAvatar, SelectField, Disclosure, TextField],
   templateUrl: './group-detail.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `

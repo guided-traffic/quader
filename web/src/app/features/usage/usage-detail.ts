@@ -17,6 +17,8 @@ import { UsageBudgets } from './usage-budgets';
 import { UsageHistory } from './usage-history';
 import { UsageByCredentialTable, UsageByRepositoryTable } from './usage-tables';
 import { PERIODS, periodLabel, periodPhrase } from './usage-words';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /** The page of a technical token's service account (R-UI-181): `sa:<name>`, `sa:<project>/<name>`, `sa:<project>/<repo>/<name>`. */
 export function accountLink(account: string): readonly string[] | null {
@@ -48,7 +50,7 @@ function sameSubject(a: UsageSubject, b: UsageSubject): boolean {
 @Component({
   selector: 'quader-usage-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ErrorNotice, LimitExplain, PageHeader, RouterLink, UsageBudgets, UsageByCredentialTable, UsageByRepositoryTable, UsageHistory],
+  imports: [Busy, Loading, ErrorNotice, LimitExplain, PageHeader, RouterLink, UsageBudgets, UsageByCredentialTable, UsageByRepositoryTable, UsageHistory],
   template: `
     <quader-page-header [heading]="title()" [name]="true">
       <span meta class="meta">
@@ -79,7 +81,7 @@ function sameSubject(a: UsageSubject, b: UsageSubject): boolean {
           <span class="material-icons bad" aria-hidden="true">block</span>
           <span class="text">{{ blockText(until) }}</span>
           @if (block() && canLift()) {
-            <button class="btn btn-default on-line" type="button" (click)="lift()" i18n="@@usage.block.lift">Lift block</button>
+            <button quaderBusy class="btn btn-default on-line" type="button" (click)="lift()" i18n="@@usage.block.lift">Lift block</button>
           }
         </div>
       }
@@ -110,7 +112,7 @@ function sameSubject(a: UsageSubject, b: UsageSubject): boolean {
         </section>
       }
     } @else {
-      <p role="status" i18n="@@limits.loading">Loading.</p>
+      <quader-loading size="page" i18n="@@usage.loading">Loading the usage.</quader-loading>
     }
   `,
   styleUrl: './usage.scss',

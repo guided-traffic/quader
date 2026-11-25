@@ -33,6 +33,8 @@ export function importStateText(state: AnsibleImportTask['state']): string {
         [columns]="columns"
         [loaded]="list.loaded()"
         [loading]="list.loading()"
+        loadingText="Loading the import tasks."
+        i18n-loadingText="@@ansible.imports.loading"
         [error]="list.error()"
         [empty]="list.loaded() && list.items().length === 0"
         [emptyText]="emptyText"

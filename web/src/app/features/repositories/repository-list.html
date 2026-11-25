@@ -91,6 +91,8 @@
   [columns]="columns()"
   [loaded]="list.loaded()"
   [loading]="list.loading()"
+  loadingText="Loading the repositories."
+  i18n-loadingText="@@repo.list.loading"
   [error]="list.error()"
   [empty]="rows().length === 0"
   [emptyText]="filtered() ? emptyFilteredText : emptyText"
@@ -119,6 +121,8 @@
       [columns]="columns()"
       [loaded]="systemLoad.hasValue() || systemFailure() !== null"
       [loading]="systemLoad.isLoading()"
+      loadingText="Loading the system repositories."
+      i18n-loadingText="@@repo.system.loading"
       [error]="systemFailure()"
       [empty]="systemRows().length === 0"
       [emptyText]="systemEmptyText"
@@ -204,7 +208,7 @@
         >
       }
       <!-- The row's actions are a menu (ui-style-guide.md, Lists; Q-UI-302): four buttons pushed the list sideways. -->
-      <button
+      <button quaderBusy
         class="btn btn-tertiary btn-icon"
         type="button"
         [attr.aria-label]="actionsLabel(row)"

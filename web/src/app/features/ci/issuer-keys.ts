@@ -11,6 +11,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { ErrorNotice } from '../../shared/error-notice';
 import { FAILURE_WORDS } from '../../shared/failure-report';
 import { ciKeyErrorFacts, ciKeyErrorText } from './ci-common';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * The signing keys of an issuer (R-UI-035, R-CI-002, R-CI-003): the cached key set with its fetch time,
@@ -20,10 +21,10 @@ import { ciKeyErrorFacts, ciKeyErrorText } from './ci-common';
  */
 @Component({
   selector: 'quader-ci-issuer-keys',
-  imports: [DatePipe, ErrorNotice, DataTable, Needs, NoValue],
+  imports: [Busy, DatePipe, ErrorNotice, DataTable, Needs, NoValue],
   template: `
     <div class="toolbar">
-      <button class="btn btn-confirm" type="button" [disabled]="busy() || !session.has('ci:write')" aria-describedby="needs-ci-keys" (click)="refresh()" i18n="@@ci.keys.refresh">
+      <button class="btn btn-confirm" type="button" [disabled]="busy() || !session.has('ci:write')" [quaderBusy]="busy()" aria-describedby="needs-ci-keys" (click)="refresh()" i18n="@@ci.keys.refresh">
         Refresh keys
       </button>
     </div>

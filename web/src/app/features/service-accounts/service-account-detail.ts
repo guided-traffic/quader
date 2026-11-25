@@ -19,6 +19,7 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { TokensApi } from '../../api/tokens-api';
 import { AccountRights, actionLabel } from './account-rights';
 import { TechnicalTokens } from './technical-tokens';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * One service account of the instance, a project or a repository (R-UI-026, R-UI-181): description, for a repository's account its
@@ -28,7 +29,7 @@ import { TechnicalTokens } from './technical-tokens';
  */
 @Component({
   selector: 'quader-service-account-detail',
-  imports: [AccountRights, PageHeader, DatePipe, ErrorNotice, Needs, PrincipalRoles, Disclosure, RouterLink, TextField, TechnicalTokens],
+  imports: [Busy, AccountRights, PageHeader, DatePipe, ErrorNotice, Needs, PrincipalRoles, Disclosure, RouterLink, TextField, TechnicalTokens],
   template: `
     <quader-page-header [heading]="name()" [name]="true">
       <span meta class="badge" i18n="@@sa.heading">Service account</span>
@@ -66,7 +67,7 @@ import { TechnicalTokens } from './technical-tokens';
             <quader-account-rights [(actions)]="actions" [readonly]="!canWrite()" [error]="fieldError('/actions')" />
           }
           @if (canWrite()) {
-            <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirty()" i18n="@@sa.save-changes">Save changes</button>
+            <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirty()" [quaderBusy]="busy()" i18n="@@sa.save-changes">Save changes</button>
           }
         </form>
 
@@ -125,7 +126,7 @@ import { TechnicalTokens } from './technical-tokens';
             @if (offersRevokeAll()) {
               <p class="muted" i18n="@@tokens.revoke-all-note">Every token stops working at once, and the tools that use them are refused. This cannot be undone.</p>
               <p>
-                <button class="btn btn-danger" type="button" (click)="revokeAll()" i18n="@@tokens.revoke-all">Revoke all tokens</button>
+                <button quaderBusy class="btn btn-danger" type="button" (click)="revokeAll()" i18n="@@tokens.revoke-all">Revoke all tokens</button>
               </p>
             }
             @if (canWrite()) {
@@ -138,13 +139,13 @@ import { TechnicalTokens } from './technical-tokens';
               </p>
               <p>
                 @if (a.status === 'active') {
-                  <button class="btn btn-tertiary" type="button" [disabled]="busy()" (click)="disable()" i18n="@@sa.disable">Disable</button>
+                  <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="disable()" i18n="@@sa.disable">Disable</button>
                 } @else {
-                  <button class="btn btn-tertiary" type="button" [disabled]="busy()" (click)="enable()" i18n="@@sa.enable">Enable</button>
+                  <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="enable()" i18n="@@sa.enable">Enable</button>
                 }
               </p>
               <p class="muted" i18n="@@sa.delete-note">Deleting the account removes it and its tokens. This cannot be undone.</p>
-              <button class="btn btn-danger" type="button" [disabled]="busy()" (click)="remove()" i18n="@@sa.delete">Delete</button>
+              <button class="btn btn-danger" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="remove()" i18n="@@sa.delete">Delete</button>
             }
           </quader-disclosure>
         }

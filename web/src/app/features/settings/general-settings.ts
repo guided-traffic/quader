@@ -30,6 +30,7 @@ import {
 } from '../../shared/ui/visibility-level';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
+import { Busy } from '../../shared/ui/busy';
 
 type Severity = 'info' | 'warning' | 'critical';
 
@@ -48,7 +49,7 @@ const MAINTENANCE_MESSAGE_MAX = 500;
  */
 @Component({
   selector: 'quader-general-settings',
-  imports: [
+  imports: [Busy, 
     PageHeader,
     Checkbox,
     ErrorNotice,

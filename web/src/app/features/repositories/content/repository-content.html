@@ -97,7 +97,7 @@
         }
       </div>
     } @else {
-      <p role="status" i18n="@@repo.loading">Loading.</p>
+      <quader-loading size="page" i18n="@@repo.content.loading">Loading the repository's content.</quader-loading>
     }
   } @else if (view() === 'downloads') {
     @if (remoteTabs()) {
@@ -221,7 +221,7 @@
               </a>
             }
             @if (permissions().delete) {
-              <button class="btn btn-default on-line" type="button" (click)="remove()">
+              <button quaderBusy class="btn btn-default on-line" type="button" (click)="remove()">
                 <span class="material-icons" aria-hidden="true">delete</span>
                 <ng-container i18n="@@files.delete">Delete</ng-container>
               </button>
@@ -262,7 +262,7 @@
         @if (itemFailure(); as f) {
           <quader-error-notice [error]="f" (retry)="itemFailure.retry()" />
         } @else {
-          <p role="status" i18n="@@repo.loading">Loading.</p>
+          <quader-loading size="page" i18n="@@repo.item.loading">Loading the item.</quader-loading>
         }
       }
     }

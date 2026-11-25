@@ -58,6 +58,8 @@ import {
   switchLabel,
   systemUseSentence,
 } from './upstream-words';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /** The answer carries the problem of a stored account whose hosts the write would move (R-REPO-069). */
 function needsAccount(e: ApiError): boolean {
@@ -74,7 +76,7 @@ function needsAccount(e: ApiError): boolean {
  */
 @Component({
   selector: 'quader-upstream-registry',
-  imports: [
+  imports: [Busy, Loading, 
     AddressField,
     CodeWindow,
     DatePipe,

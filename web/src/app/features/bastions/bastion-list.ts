@@ -14,6 +14,7 @@ import { BastionCard } from './bastion-card';
 import { BastionCreateDialog, BastionTokenDraft } from './bastion-dialogs';
 import { PageHeader } from '../../shared/ui/page-header';
 import { EmptyState } from '../../shared/ui/empty-state';
+import { Loading } from '../../shared/ui/loading';
 
 /**
  * Administration → Bastions (R-BAS-007): the registrations of the Quader Bastions in front of this
@@ -25,7 +26,7 @@ import { EmptyState } from '../../shared/ui/empty-state';
  */
 @Component({
   selector: 'quader-bastion-list',
-  imports: [EmptyState, PageHeader, BastionCard, ErrorNotice, Needs],
+  imports: [Loading, EmptyState, PageHeader, BastionCard, ErrorNotice, Needs],
   template: `
     <quader-page-header heading="Bastions" i18n-heading="@@bastions.heading">
       <button actions class="btn btn-confirm" type="button" [disabled]="!canWrite()" aria-describedby="needs-bastions" (click)="add()" i18n="@@bastions.add">New Bastion</button>
@@ -40,7 +41,7 @@ import { EmptyState } from '../../shared/ui/empty-state';
     }
     @if (!loaded()) {
       @if (!error()) {
-        <p role="status" i18n="@@bastions.loading">Loading Bastions.</p>
+        <quader-loading size="page" i18n="@@bastions.loading">Loading Bastions.</quader-loading>
       }
     } @else if (items().length === 0) {
       <!-- The action that fills the list is the header's New Bastion, once (Q-UI-565). -->

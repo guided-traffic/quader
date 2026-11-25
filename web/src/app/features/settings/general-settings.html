@@ -62,7 +62,7 @@
         <!-- The button stands under what it saves; what is public now is a reading under it, not a setting (owner walk, W-11). -->
         @if (canWriteVisibility()) {
           <div class="row-actions">
-            <button class="btn btn-confirm" type="submit" [disabled]="savingVisibility() || !visibilityDirty()">
+            <button class="btn btn-confirm" type="submit" [disabled]="savingVisibility() || !visibilityDirty()" [quaderBusy]="savingVisibility()">
               <ng-container i18n="@@general.save-changes">Save changes</ng-container>
               <span class="visually-hidden" i18n="@@general.visibility.save-for"> (visibility)</span>
             </button>
@@ -156,7 +156,7 @@
         }
         @if (canWrite()) {
           <div class="row-actions">
-            <button class="btn btn-confirm" type="submit" [disabled]="savingBanner() || !bannerDirty()">
+            <button class="btn btn-confirm" type="submit" [disabled]="savingBanner() || !bannerDirty()" [quaderBusy]="savingBanner()">
               <ng-container i18n="@@general.save-changes">Save changes</ng-container>
               <span class="visually-hidden" i18n="@@general.banner.save-for"> (banner)</span>
             </button>
@@ -234,7 +234,7 @@
         </fieldset>
         @if (canWrite()) {
           <div class="row-actions">
-            <button class="btn btn-confirm" type="submit" [disabled]="savingMode() || !modeDirty()">
+            <button class="btn btn-confirm" type="submit" [disabled]="savingMode() || !modeDirty()" [quaderBusy]="savingMode()">
               <ng-container i18n="@@general.save-changes">Save changes</ng-container>
               <span class="visually-hidden" i18n="@@general.mode.save-for"> (maintenance mode)</span>
             </button>

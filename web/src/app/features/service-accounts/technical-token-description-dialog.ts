@@ -4,6 +4,7 @@ import { AccountAddress, TechnicalToken, TechnicalTokensApi } from '../../api/te
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../shared/ui/dialog';
+import { Busy } from '../../shared/ui/busy';
 
 export interface TechnicalTokenDescriptionData {
   readonly account: AccountAddress;
@@ -17,7 +18,7 @@ export interface TechnicalTokenDescriptionData {
  */
 @Component({
   selector: 'quader-technical-token-description-dialog',
-  imports: [DialogTitle, DialogClose, ErrorNotice],
+  imports: [Busy, DialogTitle, DialogClose, ErrorNotice],
   template: `
     <h2 quaderDialogTitle i18n="@@tt-desc.title">Edit description</h2>
     <div class="dialog-body">
@@ -44,7 +45,7 @@ export interface TechnicalTokenDescriptionData {
     </div>
     <div class="dialog-actions">
       <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@tt-desc.cancel">Cancel</button>
-      <button class="btn btn-confirm" type="button" [disabled]="busy() || unchanged() || readFailure() !== null" (click)="save()" i18n="@@tt-desc.save">Save changes</button>
+      <button class="btn btn-confirm" type="button" [disabled]="busy() || unchanged() || readFailure() !== null" [quaderBusy]="busy()" (click)="save()" i18n="@@tt-desc.save">Save changes</button>
     </div>
   `,
   styles: `

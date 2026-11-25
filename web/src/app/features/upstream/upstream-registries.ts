@@ -16,6 +16,7 @@ import { VisibilityIcon, installationReasons, levelName } from '../../shared/ui/
 import { RegistryPresets } from './registry-presets';
 import { UpstreamActions } from './upstream-actions';
 import { clientsSwitchLabel, clientsWord, inUseBadge, levelOptions, onOffWord, privateRowNote, rowBadge, rowNotes, switchLabel } from './upstream-words';
+import { Busy } from '../../shared/ui/busy';
 
 /** One group of the list: a format and its well-known repositories, in catalog order. */
 interface FormatGroup {
@@ -39,16 +40,16 @@ function replaced(items: readonly UpstreamRepository[], next: readonly UpstreamR
  */
 @Component({
   selector: 'quader-upstream-registries',
-  imports: [DataTable, ErrorNotice, FormatIconView, ListHead, NoValue, PageHeader, RegistryPresets, RouterLink, Switch, VisibilityIcon],
+  imports: [Busy, DataTable, ErrorNotice, FormatIconView, ListHead, NoValue, PageHeader, RegistryPresets, RouterLink, Switch, VisibilityIcon],
   template: `
     <quader-page-header [heading]="heading" [count]="items() === null ? null : presets().length" [description]="description">
       @if (canWrite()) {
-        <button actions class="btn btn-default" type="button" [disabled]="bulkBusy() || items() === null" (click)="setAll()" i18n="@@wellknown.set-all">
+        <button quaderBusy actions class="btn btn-default" type="button" [disabled]="bulkBusy() || items() === null" (click)="setAll()" i18n="@@wellknown.set-all">
           Set visibility of all
         </button>
       }
       @if (canWrite()) {
-        <button
+        <button quaderBusy
           actions
           class="btn btn-confirm"
           type="button"
@@ -77,6 +78,8 @@ function replaced(items: readonly UpstreamRepository[], next: readonly UpstreamR
       [columns]="columns()"
       [loaded]="items() !== null"
       [loading]="items() === null && !loadError()"
+      loadingText="Loading the registries."
+      i18n-loadingText="@@registries.loading"
       [error]="loadError()"
       (retry)="load()"
       [empty]="groups().length === 0"

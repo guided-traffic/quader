@@ -12,6 +12,7 @@ import { fieldErrorAt } from '../../shared/field-errors';
 import { asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { MemberPicker } from './member-picker';
 import { WellKnownMembers, memberState } from './well-known-members';
+import { Busy } from '../../shared/ui/busy';
 
 /** What the editor asks its screen to store: the ordered member keys and the default deployment target (`null`: none). */
 export interface MemberChange {
@@ -79,7 +80,7 @@ export function placeholderDecisionText(state: 'switched-off' | 'not-switched-on
  */
 @Component({
   selector: 'quader-virtual-members',
-  imports: [ErrorNotice, MemberPicker, SelectField, TextField],
+  imports: [Busy, ErrorNotice, MemberPicker, SelectField, TextField],
   templateUrl: './virtual-members.html',
   styleUrl: './virtual-members.scss',
 })

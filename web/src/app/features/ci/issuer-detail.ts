@@ -15,6 +15,7 @@ import { MappingList } from './mapping-list';
 import { ErrorNotice } from '../../shared/error-notice';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
+import { Busy } from '../../shared/ui/busy';
 
 /** The tabs of the issuer page, in this order; the query parameter `tab` names the open one. */
 export const ISSUER_TABS = ['settings', 'keys', 'mappings', 'issuances'] as const;
@@ -28,7 +29,7 @@ export type IssuerTab = (typeof ISSUER_TABS)[number];
  */
 @Component({
   selector: 'quader-ci-issuer-detail',
-  imports: [PageHeader, TabContent, TabGroup, TabPage, RouterLink, ErrorNotice, IssuanceList, IssuerForm, IssuerKeys, MappingList, Disclosure],
+  imports: [Busy, PageHeader, TabContent, TabGroup, TabPage, RouterLink, ErrorNotice, IssuanceList, IssuerForm, IssuerKeys, MappingList, Disclosure],
   template: `
     <quader-page-header [heading]="issuer()" [name]="true">
       <span meta class="badge" i18n="@@ci.issuer.heading">CI issuer</span>
@@ -53,7 +54,7 @@ export type IssuerTab = (typeof ISSUER_TABS)[number];
                   hint="Delete this issuer."
                 >
                   <p class="muted" i18n="@@ci.issuer.delete-note">Deleting the issuer revokes the tokens issued through it and deletes its mappings.</p>
-                  <button class="btn btn-danger" type="button" [disabled]="busy()" (click)="remove()" i18n="@@ci.issuer.delete">Delete issuer</button>
+                  <button class="btn btn-danger" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="remove()" i18n="@@ci.issuer.delete">Delete issuer</button>
                 </quader-disclosure>
               }
             </div>

@@ -41,6 +41,8 @@ import { databaseLag, scannerGroups, waitingScanners } from '../../shared/scanne
 import { NoValue } from '../../shared/ui/no-value';
 import { TechnicalDetails } from '../../shared/technical-details';
 import { SystemRefresh } from './system-refresh';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /** Automatic refresh interval with a pause control (R-UI-038, WCAG 2.2.2). */
 export const REFRESH_INTERVAL_MS = 15_000;
@@ -63,7 +65,7 @@ export const PRIMARY_DISAGREEMENT_GRACE_MS = 30_000;
  */
 @Component({
   selector: 'quader-system-status',
-  imports: [DataTable, DatePipe, ErrorNotice, JobProgress, JobTable, NoValue, ScannerReplicas, TasksCard, TechnicalDetails],
+  imports: [Busy, Loading, DataTable, DatePipe, ErrorNotice, JobProgress, JobTable, NoValue, ScannerReplicas, TasksCard, TechnicalDetails],
   templateUrl: './system-status.html',
   styleUrl: './system-status.scss',
 })

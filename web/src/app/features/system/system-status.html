@@ -575,7 +575,7 @@
       </div>
     }
     @if (canReencrypt()) {
-      <button class="btn btn-confirm"
+      <button quaderBusy class="btn btn-confirm"
         type="button"
         [disabled]="reencrypting() || !e.ringsCompatible || reencryptJob() !== null"
         [attr.aria-describedby]="e.ringsCompatible ? null : 'reencrypt-reason'"
@@ -591,7 +591,7 @@
       }
     }
   } @else if (encryption.isLoading()) {
-    <p role="status" i18n="@@system.loading">Loading.</p>
+    <quader-loading i18n="@@system.keys.loading">Loading the key rings.</quader-loading>
   }
 </section>
 
@@ -612,6 +612,6 @@
       />
     }
   } @else {
-    <p role="status" i18n="@@system.loading">Loading.</p>
+    <quader-loading i18n="@@system.jobs.loading">Loading the recent jobs.</quader-loading>
   }
 </section>

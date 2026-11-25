@@ -27,7 +27,7 @@
 <ng-template #save let-section let-suffix="suffix">
   @if (canSave(section)) {
     <div class="actions">
-      <button class="btn btn-confirm" type="submit" [disabled]="!dirty(section) || saving() !== null">
+      <button class="btn btn-confirm" type="submit" [disabled]="!dirty(section) || saving() !== null" [quaderBusy]="saving() !== null">
         <ng-container i18n="@@repo.settings.save">Save changes</ng-container>
         @if (suffix) {
           <span class="visually-hidden"> ({{ suffix }})</span>
@@ -43,7 +43,7 @@
 @if (loadFailure(); as f) {
   <quader-error-notice [error]="f" (retry)="loadFailure.retry()" />
 } @else if (loaded.isLoading() && !stored() && !consumer()) {
-  <p role="status" i18n="@@repo.loading">Loading.</p>
+  <quader-loading size="page" i18n="@@repo.loading.repository">Loading the repository.</quader-loading>
 } @else if (consumer(); as c) {
   <div class="settings">
     <p class="banner-warning" role="note">
@@ -540,11 +540,11 @@
               @if (repo.disabled) {
                 <h3 id="repo-disable" i18n="@@repo.enable.heading">Enable repository</h3>
                 <p class="hint" i18n="@@repo.enable.hint">The repository is disabled: it serves nothing and takes no publish.</p>
-                <button class="btn btn-default" type="button" [disabled]="advancedBusy()" (click)="toggleDisabled()" i18n="@@repo.enable.confirm">Enable repository</button>
+                <button quaderBusy class="btn btn-default" type="button" [disabled]="advancedBusy()" (click)="toggleDisabled()" i18n="@@repo.enable.confirm">Enable repository</button>
               } @else {
                 <h3 id="repo-disable" i18n="@@repo.disable.heading">Disable repository</h3>
                 <p class="hint" i18n="@@repo.disable.hint">Clients can no longer download from it or publish to it; its content stays.</p>
-                <button class="btn btn-default" type="button" [disabled]="advancedBusy()" (click)="toggleDisabled()" i18n="@@repo.disable.confirm">Disable repository</button>
+                <button quaderBusy class="btn btn-default" type="button" [disabled]="advancedBusy()" (click)="toggleDisabled()" i18n="@@repo.disable.confirm">Disable repository</button>
               }
             </section>
             @if (canMove() && moveOptions().length > 1) {
@@ -561,7 +561,7 @@
                     [options]="moveOptions()"
                     [(value)]="moveTarget"
                   />
-                  <button class="btn btn-default" type="button" [disabled]="!moveTarget() || moving()" (click)="move()" i18n="@@repo.move.action">
+                  <button quaderBusy class="btn btn-default" type="button" [disabled]="!moveTarget() || moving()" (click)="move()" i18n="@@repo.move.action">
                     Move repository
                   </button>
                 </div>
@@ -570,7 +570,7 @@
             <section class="advanced-action" aria-labelledby="repo-delete">
               <h3 id="repo-delete" i18n="@@repo.delete.heading">Delete repository</h3>
               <p class="hint delete-note" i18n="@@repo.detail.delete-note">Deleting the repository removes it and everything in it for good. It runs as a job, and the key stays taken until it has finished.</p>
-              <button class="btn btn-danger" type="button" (click)="remove()" i18n="@@repo.detail.delete">Delete repository</button>
+              <button quaderBusy class="btn btn-danger" type="button" (click)="remove()" i18n="@@repo.detail.delete">Delete repository</button>
             </section>
           </quader-disclosure>
         }

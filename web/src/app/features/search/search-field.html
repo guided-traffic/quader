@@ -43,7 +43,11 @@
     <!-- The pointer keeps the focus in the field (mousedown), so a click reaches its entry. -->
     <div class="search-popup" animate.enter="dropdown-in" (mousedown)="$event.preventDefault()">
       @if (status(); as s) {
-        <p class="search-status">{{ s }}</p>
+        @if (searching()) {
+          <quader-loading class="search-status" [status]="false">{{ s }}</quader-loading>
+        } @else {
+          <p class="search-status">{{ s }}</p>
+        }
       }
       <!-- aria-busy from the text's change until its suggestions answer: assistive technology waits for them, and so do the tests -->
       <div

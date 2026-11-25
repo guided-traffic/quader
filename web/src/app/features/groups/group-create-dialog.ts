@@ -9,11 +9,12 @@ import { TextField } from '../../shared/access/fields';
 import { fieldErrorAt } from '../../shared/field-errors';
 import { asApiError } from '../../shared/paged-resource';
 import { ErrorNotice } from '../../shared/error-notice';
+import { Busy } from '../../shared/ui/busy';
 
 /** "New group" (R-UI-025). The idempotency key lives as long as the dialog (R-UI-042). */
 @Component({
   selector: 'quader-group-create-dialog',
-  imports: [Checkbox, DialogTitle, DialogClose, ErrorNotice, TextField],
+  imports: [Busy, Checkbox, DialogTitle, DialogClose, ErrorNotice, TextField],
   template: `
     <h2 quaderDialogTitle i18n="@@group-create.title">New group</h2>
     <form (submit)="submit($event)" novalidate>
@@ -39,7 +40,7 @@ import { ErrorNotice } from '../../shared/error-notice';
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@group-create.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@group-create.submit">Create group</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy()" [quaderBusy]="busy()" i18n="@@group-create.submit">Create group</button>
       </div>
     </form>
   `,

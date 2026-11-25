@@ -7,6 +7,7 @@ import { Checkbox } from '../../shared/ui/checkbox';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../shared/ui/dialog';
 import { groupedCount } from './upstream/upstream-package';
 import { DeliveryMode } from './upstream/upstream-words';
+import { Loading } from '../../shared/ui/loading';
 
 export interface DeliveryModeData {
   /** The qualified name `<project>/<key>` of the remote repository. */
@@ -33,7 +34,7 @@ export const SHOWN_NAMES = 6;
  */
 @Component({
   selector: 'quader-delivery-mode-dialog',
-  imports: [Checkbox, DialogClose, DialogTitle, ErrorNotice],
+  imports: [Loading, Checkbox, DialogClose, DialogTitle, ErrorNotice],
   template: `
     @if (data.to === 'onlyAllowed') {
       <h2 quaderDialogTitle i18n="@@delivery.change.only-title">Deliver only what is allowed?</h2>
@@ -44,7 +45,7 @@ export const SHOWN_NAMES = 6;
       @if (failure(); as f) {
         <quader-error-notice [error]="f" (retry)="failure.retry()" />
       } @else if (!summary()) {
-        <p role="status" i18n="@@delivery.change.reading">Reading what the repository stores.</p>
+        <quader-loading i18n="@@delivery.change.reading">Reading what the repository stores.</quader-loading>
       }
       @if (summary(); as s) {
         @if (data.to === 'onlyAllowed') {

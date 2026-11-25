@@ -10,6 +10,7 @@ import { fromDays } from '../../shared/access/duration';
 import { fieldErrorAt } from '../../shared/field-errors';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * "New Bastion" (R-BAS-007, R-BAS-004). The idempotency key lives as long as the dialog (R-UI-042).
@@ -17,7 +18,7 @@ import { asApiError } from '../../shared/paged-resource';
  */
 @Component({
   selector: 'quader-bastion-create-dialog',
-  imports: [DialogTitle, DialogClose, ErrorNotice, TextField],
+  imports: [Busy, DialogTitle, DialogClose, ErrorNotice, TextField],
   template: `
     <h2 quaderDialogTitle i18n="@@bastion-create.title">New Bastion</h2>
     <form (submit)="submit($event)" novalidate>
@@ -46,7 +47,7 @@ import { asApiError } from '../../shared/paged-resource';
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@bastion-create.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@bastion-create.submit">Create Bastion</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy()" [quaderBusy]="busy()" i18n="@@bastion-create.submit">Create Bastion</button>
       </div>
     </form>
   `,
@@ -120,7 +121,7 @@ export interface BastionTokenDialogData {
  */
 @Component({
   selector: 'quader-bastion-token-dialog',
-  imports: [DialogTitle, DialogClose, ErrorNotice, TextField],
+  imports: [Busy, DialogTitle, DialogClose, ErrorNotice, TextField],
   template: `
     <h2 quaderDialogTitle i18n="@@bastion-token.title">Issue a token for the Bastion</h2>
     <form (submit)="submit($event)" novalidate>
@@ -154,7 +155,7 @@ export interface BastionTokenDialogData {
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@bastion-token.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@bastion-token.submit">Issue token</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy()" [quaderBusy]="busy()" i18n="@@bastion-token.submit">Issue token</button>
       </div>
     </form>
   `,

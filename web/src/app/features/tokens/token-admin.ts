@@ -14,6 +14,8 @@ import { FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { PageHeader } from '../../shared/ui/page-header';
 import { PrincipalField, choiceFromRef } from '../../shared/ui/principal-field';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * Tokens, the token administration (R-UI-030): every token with filters (type, owner, state, expiring before,
@@ -24,7 +26,7 @@ import { PrincipalField, choiceFromRef } from '../../shared/ui/principal-field';
  */
 @Component({
   selector: 'quader-token-admin',
-  imports: [
+  imports: [Busy, Loading, 
     PageHeader,
     Checkbox,
     ErrorNotice,

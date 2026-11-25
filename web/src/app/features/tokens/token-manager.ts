@@ -17,6 +17,8 @@ import { TokenSecret } from '../../shared/access/token-secret';
 import { TokenTable } from '../../shared/access/token-table';
 import { ErrorNotice } from '../../shared/error-notice';
 import { Disclosure } from '../../shared/ui/disclosure';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * Whose tokens the manager shows and what it may do with them: the caller's own or a user's. A service account's tokens are its
@@ -77,7 +79,7 @@ export class RotateDialog {
  */
 @Component({
   selector: 'quader-token-manager',
-  imports: [Checkbox, Disclosure, ErrorNotice, TokenForm, TokenSecret, TokenTable],
+  imports: [Busy, Checkbox, Disclosure, ErrorNotice, Loading, TokenForm, TokenSecret, TokenTable],
   template: `
     <div class="toolbar">
       @if (createInToolbar() && offersCreate()) {
@@ -130,14 +132,14 @@ export class RotateDialog {
         (rotate)="rotate($event)"
       />
     } @else if (list.loading() && !list.error()) {
-      <p role="status" i18n="@@tokens.loading">Loading tokens.</p>
+      <quader-loading i18n="@@tokens.loading">Loading tokens.</quader-loading>
     }
 
     @if (revokeAllHere() && offersRevokeAll()) {
       <quader-disclosure i18n-heading="@@tokens.advanced" heading="Advanced" i18n-hint="@@tokens.advanced-hint" hint="Revoke every token at once.">
         <p class="muted" i18n="@@tokens.revoke-all-note">Every token stops working at once, and the tools that use them are refused. This cannot be undone.</p>
         <p>
-          <button class="btn btn-danger" type="button" (click)="revokeAllTokens()" i18n="@@tokens.revoke-all">Revoke all tokens</button>
+          <button quaderBusy class="btn btn-danger" type="button" (click)="revokeAllTokens()" i18n="@@tokens.revoke-all">Revoke all tokens</button>
         </p>
       </quader-disclosure>
     }

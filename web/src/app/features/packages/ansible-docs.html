@@ -1,7 +1,7 @@
 @if (failure(); as f) {
   <quader-error-notice [error]="f" (retry)="refresh.emit()" />
 } @else if (loading() || (!tree() && !readmeOnly())) {
-  <p role="status" i18n="@@pkg.loading">Loading.</p>
+  <quader-loading size="page" i18n="@@docs.loading">Loading the documentation.</quader-loading>
 } @else if (state() === 'pending') {
   <div class="docs-state" data-testid="docs-pending">
     <p i18n="@@docs.pending">The documentation of this version is being fetched.</p>
@@ -136,7 +136,7 @@
         @if (pageFailure(); as pf) {
           <quader-error-notice [error]="pf" (retry)="pageFailure.retry()" />
         } @else if (page.isLoading()) {
-          <p role="status" i18n="@@pkg.loading">Loading.</p>
+          <quader-loading i18n="@@docs.page.loading">Loading the page.</quader-loading>
         } @else if (pageValue(); as p) {
           @if (p.kind === 'file') {
             <quader-package-readme [readme]="p.file" />

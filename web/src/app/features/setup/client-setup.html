@@ -194,7 +194,7 @@
         </p>
         @if (mode() === 'env' && !createdToken()) {
           <span class="create-row">
-            <button class="btn btn-confirm on-line" type="button" [disabled]="creating() || !setup()" (click)="createToken()" i18n="@@setup.token.create">
+            <button class="btn btn-confirm on-line" type="button" [disabled]="creating() || !setup()" [quaderBusy]="creating()" (click)="createToken()" i18n="@@setup.token.create">
               Create a token
             </button>
             @if (publishTarget()) {
@@ -311,7 +311,7 @@
       }
     </div>
   } @else if (!loadFailure() && (setupAnswer.isLoading() || guideAnswer.isLoading() || loaded.isLoading())) {
-    <p role="status" i18n="@@setup.loading">Loading.</p>
+    <quader-loading size="page" i18n="@@setup.loading.client">Loading the client setup.</quader-loading>
   }
 
   <!-- The explanation below the job (R-UI-125): the guide's sections as closed rows; it describes this installation, so a Bastion

@@ -6,6 +6,7 @@ import { NoValue } from '../ui/no-value';
 import { Switch } from '../ui/switch';
 import { TimeAgo } from '../ui/time-ago';
 import { anchorKindWords, anchorScopeWords, shortFingerprint } from './signature-words';
+import { Busy } from '../ui/busy';
 
 /** What a row of the table may offer: its switch, its removal, or nothing. */
 export interface AnchorRowControls {
@@ -28,7 +29,7 @@ export interface AnchorRowControls {
 @Component({
   selector: 'quader-anchor-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, DecimalPipe, NoValue, Switch, TimeAgo],
+  imports: [Busy, DataTable, DecimalPipe, NoValue, Switch, TimeAgo],
   template: `
     <quader-data-table [caption]="caption()" [columns]="columns()" [empty]="anchors().length === 0" [emptyText]="emptyText()">
       @for (a of anchors(); track a.id) {
@@ -80,7 +81,7 @@ export interface AnchorRowControls {
           @if (anyRemove()) {
             <td class="actions">
               @if (c.remove) {
-                <button class="btn btn-tertiary" type="button" [disabled]="busy().has(a.id)" (click)="remove.emit(a)">
+                <button class="btn btn-tertiary" type="button" [disabled]="busy().has(a.id)" [quaderBusy]="busy().has(a.id)" (click)="remove.emit(a)">
                   <ng-container i18n="@@sig.anchor.remove">Remove</ng-container><span class="visually-hidden">&ngsp;{{ a.title }}</span>
                 </button>
               }

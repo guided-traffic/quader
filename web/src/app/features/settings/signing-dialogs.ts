@@ -9,6 +9,7 @@ import { asApiError } from '../../shared/paged-resource';
 import { signingFieldError } from '../../shared/signatures/signing-words';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../shared/ui/dialog';
 import { Disclosure } from '../../shared/ui/disclosure';
+import { Busy } from '../../shared/ui/busy';
 
 /** The entries of the key request, kept as a draft of the route when the write needs a recent sign-in (R-API-007, R-UI-042). */
 export interface SigningKeyDraft {
@@ -52,7 +53,7 @@ export const DEFAULT_SIGNING_CN = 'Quader signing';
  */
 @Component({
   selector: 'quader-signing-key-dialog',
-  imports: [DialogClose, DialogTitle, Disclosure, ErrorNotice, TextField],
+  imports: [Busy, DialogClose, DialogTitle, Disclosure, ErrorNotice, TextField],
   template: `
     <h2 quaderDialogTitle>{{ heading }}</h2>
     <form (submit)="submit($event)" novalidate>
@@ -101,7 +102,7 @@ export const DEFAULT_SIGNING_CN = 'Quader signing';
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@signing.dialog.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@signing.key.submit">Create signing key</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy()" [quaderBusy]="busy()" i18n="@@signing.key.submit">Create signing key</button>
       </div>
     </form>
   `,
@@ -205,7 +206,7 @@ export interface SigningCertificateDialogData {
  */
 @Component({
   selector: 'quader-signing-certificate-dialog',
-  imports: [DialogClose, DialogTitle, Disclosure, ErrorNotice, TextField],
+  imports: [Busy, DialogClose, DialogTitle, Disclosure, ErrorNotice, TextField],
   template: `
     <h2 quaderDialogTitle i18n="@@signing.cert.heading">Upload certificate</h2>
     <form (submit)="submit($event)" novalidate>
@@ -233,7 +234,7 @@ export interface SigningCertificateDialogData {
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@signing.dialog.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="busy() || chain().trim() === ''" i18n="@@signing.cert.submit">Upload certificate</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy() || chain().trim() === ''" [quaderBusy]="busy()" i18n="@@signing.cert.submit">Upload certificate</button>
       </div>
     </form>
   `,
@@ -291,7 +292,7 @@ export class SigningCertificateDialog {
  */
 @Component({
   selector: 'quader-signing-import-dialog',
-  imports: [DialogClose, DialogTitle, Disclosure, ErrorNotice, TextField],
+  imports: [Busy, DialogClose, DialogTitle, Disclosure, ErrorNotice, TextField],
   template: `
     <h2 quaderDialogTitle i18n="@@signing.import.heading">Import key and certificate</h2>
     <form (submit)="submit($event)" novalidate>
@@ -351,7 +352,7 @@ export class SigningCertificateDialog {
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@signing.dialog.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="busy() || key().trim() === '' || chain().trim() === ''" i18n="@@signing.import.submit">Import</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy() || key().trim() === '' || chain().trim() === ''" [quaderBusy]="busy()" i18n="@@signing.import.submit">Import</button>
       </div>
     </form>
   `,

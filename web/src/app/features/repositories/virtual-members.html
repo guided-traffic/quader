@@ -51,7 +51,7 @@
 
     @if (canWrite()) {
       <div class="actions">
-        <button class="btn btn-confirm" type="submit" [disabled]="!dirty() || saving()">
+        <button class="btn btn-confirm" type="submit" [disabled]="!dirty() || saving()" [quaderBusy]="saving()">
           <ng-container i18n="@@repo.settings.save">Save changes</ng-container>
           <span class="visually-hidden" i18n="@@virtual.save-suffix"> (members)</span>
         </button>

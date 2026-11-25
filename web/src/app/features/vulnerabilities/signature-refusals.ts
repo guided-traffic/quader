@@ -22,6 +22,7 @@ import { Disclosure } from '../../shared/ui/disclosure';
 import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { TimeAgo } from '../../shared/ui/time-ago';
+import { Busy } from '../../shared/ui/busy';
 
 /** One chip of a filter that is set, with the query change that removes it. */
 interface Chip extends ListChip {
@@ -44,7 +45,7 @@ export function refusalArtifact(r: Pick<SignatureRefusal, 'package' | 'version' 
  */
 @Component({
   selector: 'quader-signature-refusals',
-  imports: [DataTable, DecimalPipe, Disclosure, ErrorNotice, FilterCategory, FilterPanel, ListHead, RouterLink, TimeAgo],
+  imports: [Busy, DataTable, DecimalPipe, Disclosure, ErrorNotice, FilterCategory, FilterPanel, ListHead, RouterLink, TimeAgo],
   template: `
     <h2 class="vuln-list-title" i18n="@@sig.refusals.title">Refused downloads</h2>
     <p class="hint list-note" i18n="@@sig.refusals.note">
@@ -78,6 +79,8 @@ export function refusalArtifact(r: Pick<SignatureRefusal, 'package' | 'version' 
       [columns]="columns()"
       [loaded]="list.loaded()"
       [loading]="list.loading()"
+      loadingText="Loading the refused downloads."
+      i18n-loadingText="@@sig.refusals.loading"
       [error]="list.error()"
       [empty]="list.items().length === 0"
       [emptyText]="filtered() ? emptyFiltered : emptyText"
@@ -119,7 +122,7 @@ export function refusalArtifact(r: Pick<SignatureRefusal, 'package' | 'version' 
           <td class="num">{{ r.count | number }}</td>
           @if (canRelease()) {
             <td class="actions">
-              <button class="btn btn-tertiary" type="button" [disabled]="busy()" (click)="act(r)">
+              <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="act(r)">
                 {{ r.release ? withdrawLabel : releaseLabel }}<span class="visually-hidden" translate="no">&ngsp;{{ artifact(r) }}, {{ r.repository }}</span>
               </button>
             </td>
@@ -147,6 +150,8 @@ export function refusalArtifact(r: Pick<SignatureRefusal, 'package' | 'version' 
             [columns]="releaseColumns()"
             [loaded]="releases.hasValue()"
             [loading]="releases.isLoading()"
+            loadingText="Loading the releases."
+            i18n-loadingText="@@sig.releases.loading"
             [empty]="releaseItems().length === 0"
             [emptyText]="releasesEmpty"
             data-testid="signature-releases"
@@ -171,7 +176,7 @@ export function refusalArtifact(r: Pick<SignatureRefusal, 'package' | 'version' 
                 </td>
                 @if (canRelease()) {
                   <td class="actions">
-                    <button class="btn btn-tertiary" type="button" [disabled]="busy()" (click)="withdrawRelease(rel)">
+                    <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="withdrawRelease(rel)">
                       {{ withdrawLabel }}<span class="visually-hidden" translate="no">&ngsp;{{ releaseName(rel) ?? rel.sha256 }}</span>
                     </button>
                   </td>

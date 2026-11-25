@@ -6,6 +6,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { FormatTiles } from '../../shared/ui/format-tiles';
 import { failureOf, valueOf } from '../../shared/paged-resource';
 import { PageHeader } from '../../shared/ui/page-header';
+import { Loading } from '../../shared/ui/loading';
 
 /** The installed formats that match a search, by display name or name, case-insensitive (Q-UI-115). */
 export function matchingFormats(formats: readonly FormatDescriptor[], query: string): readonly FormatDescriptor[] {
@@ -24,7 +25,7 @@ export function matchingFormats(formats: readonly FormatDescriptor[], query: str
  */
 @Component({
   selector: 'quader-repository-format-chooser',
-  imports: [ErrorNotice, FormatTiles, PageHeader, RouterLink],
+  imports: [Loading, ErrorNotice, FormatTiles, PageHeader, RouterLink],
   template: `
     <quader-page-header
       i18n-heading="@@repo.new.heading"
@@ -58,7 +59,7 @@ export function matchingFormats(formats: readonly FormatDescriptor[], query: str
     @if (loadFailure(); as f) {
       <quader-error-notice [error]="f" (retry)="loadFailure.retry()" />
     } @else if (formats.isLoading()) {
-      <p role="status" i18n="@@repo.loading">Loading.</p>
+      <quader-loading size="page" i18n="@@repo.formats.loading">Loading the formats.</quader-loading>
     } @else {
       <div class="field search">
         <label class="field-label" for="f-format-search" i18n="@@repo.new.search">Search by package type</label>

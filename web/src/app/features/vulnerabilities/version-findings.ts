@@ -49,6 +49,8 @@ export function severitiesOf(s: BarSeverity): VulnerabilitySeverity[] {
       [columns]="columns"
       [loaded]="list.loaded()"
       [loading]="list.loading()"
+      loadingText="Loading the findings."
+      i18n-loadingText="@@vuln.findings.loading"
       [error]="list.error()"
       [empty]="list.items().length === 0"
       [emptyText]="emptyText"

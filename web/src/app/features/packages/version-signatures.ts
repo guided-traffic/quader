@@ -8,6 +8,7 @@ import { failureOf, valueOf } from '../../shared/paged-resource';
 import { GateArtifact, SignatureGate } from '../../shared/signatures/signature-gate';
 import { SignatureReport } from '../../shared/signatures/signature-report';
 import { classLabel } from '../repositories/repository-class';
+import { Loading } from '../../shared/ui/loading';
 
 /**
  * The tab **Signatures** of a version (R-SIG-035, R-SIG-024): what `GET …/versions/{version}/signatures` answers, per repository that
@@ -18,7 +19,7 @@ import { classLabel } from '../repositories/repository-class';
 @Component({
   selector: 'quader-version-signatures',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ErrorNotice, SignatureGate, SignatureReport],
+  imports: [Loading, ErrorNotice, SignatureGate, SignatureReport],
   template: `
     @if (failure(); as f) {
       <quader-error-notice [error]="f" (retry)="failure.retry()" />
@@ -45,7 +46,7 @@ import { classLabel } from '../repositories/repository-class';
         <quader-signature-report [report]="rep" [format]="format()" [level]="2" [showRepository]="rep.class === 'virtual' || r.repositories.length > 1" />
       }
     } @else {
-      <p role="status" i18n="@@pkg.loading">Loading.</p>
+      <quader-loading i18n="@@files.signatures.loading">Loading the signatures.</quader-loading>
     }
   `,
   styles: `

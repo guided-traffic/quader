@@ -22,6 +22,8 @@ import { TechnicalDetails } from '../../shared/technical-details';
 import { jobStateText } from '../../shared/job-progress';
 import { asApiError } from '../../shared/paged-resource';
 import { formatSize } from '../packages/format-size';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /** The status is read again this often while a pass is in progress (R-UI-021, Q-UI-119). */
 export const MIRROR_POLL_INTERVAL_MS = 5_000;
@@ -196,7 +198,7 @@ export function mirrorErrorText(code: MirrorErrorCode): string {
  */
 @Component({
   selector: 'quader-mirror-status',
-  imports: [DatePipe, DecimalPipe, NgTemplateOutlet, CdkMenu, CdkMenuItem, CdkMenuTrigger, RouterLink, ErrorNotice, TechnicalDetails],
+  imports: [Busy, Loading, DatePipe, DecimalPipe, NgTemplateOutlet, CdkMenu, CdkMenuItem, CdkMenuTrigger, RouterLink, ErrorNotice, TechnicalDetails],
   template: `
     <section class="status" aria-labelledby="mirror-status-heading">
       <h2 id="mirror-status-heading" i18n="@@mirror.status.heading">Mirror status</h2>
@@ -217,16 +219,16 @@ export function mirrorErrorText(code: MirrorErrorCode): string {
         @if (canChange()) {
           <div class="buttons">
             @if (s.state === 'paused') {
-              <button class="btn btn-default" type="button" [disabled]="busy()" (click)="setPaused.emit(false)">
+              <button class="btn btn-default" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="setPaused.emit(false)">
                 <ng-container i18n="@@mirror.resume">Resume</ng-container>
               </button>
             } @else {
-              <button class="btn btn-default" type="button" [disabled]="busy() || s.state === 'off'" (click)="setPaused.emit(true)">
+              <button class="btn btn-default" type="button" [disabled]="busy() || s.state === 'off'" [quaderBusy]="busy()" (click)="setPaused.emit(true)">
                 <ng-container i18n="@@mirror.pause">Pause</ng-container>
               </button>
             }
             <span class="split">
-              <button
+              <button quaderBusy
                 class="btn btn-confirm"
                 type="button"
                 [disabled]="requesting() || s.state === 'unbounded'"
@@ -492,7 +494,7 @@ export function mirrorErrorText(code: MirrorErrorCode): string {
           </dd>
         </dl>
       } @else {
-        <p role="status" i18n="@@mirror.status.loading">Loading the status.</p>
+        <quader-loading i18n="@@mirror.status.loading">Loading the status.</quader-loading>
       }
     </section>
 

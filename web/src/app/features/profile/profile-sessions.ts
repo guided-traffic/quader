@@ -9,6 +9,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { PageHeader } from '../../shared/ui/page-header';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { ProfileNav } from './profile-nav';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * The caller's browser sessions (R-UI-029, R-AUTH-017): created, last seen, address, user agent
@@ -17,11 +18,11 @@ import { ProfileNav } from './profile-nav';
  */
 @Component({
   selector: 'quader-profile-sessions',
-  imports: [DatePipe, DataTable, ErrorNotice, PageHeader, ProfileNav],
+  imports: [Busy, DatePipe, DataTable, ErrorNotice, PageHeader, ProfileNav],
   template: `
     <quader-page-header [heading]="heading">
       @if (others() > 0) {
-        <button actions class="btn btn-confirm" type="button" (click)="endOthers()" i18n="@@profile.sessions.end-others">
+        <button quaderBusy actions class="btn btn-confirm" type="button" (click)="endOthers()" i18n="@@profile.sessions.end-others">
           End all other sessions
         </button>
       }
@@ -34,7 +35,7 @@ import { ProfileNav } from './profile-nav';
     <!-- The shared data table: a column budget, the browser's long user agent wrapping in its cell, and stacked rows where
          the columns do not fit, so the page never scrolls sideways (R-UI-029, at 390 px it did by about 230 px). -->
     @if (loaded() || !error()) {
-      <quader-data-table [caption]="caption" [columns]="columns" [loaded]="loaded()" [loading]="!loaded()" [empty]="sessions().length === 0">
+      <quader-data-table [caption]="caption" [columns]="columns" [loaded]="loaded()" [loading]="!loaded()" loadingText="Loading the sessions." i18n-loadingText="@@sessions.loading" [empty]="sessions().length === 0">
         @for (s of sessions(); track s.id) {
           <tr>
             <th scope="row">
@@ -49,7 +50,7 @@ import { ProfileNav } from './profile-nav';
             <td translate="no">{{ s.providerId ?? s.authMethod }}</td>
             <td class="actions">
               @if (!s.current) {
-                <button class="btn btn-tertiary" type="button" (click)="end(s)">
+                <button quaderBusy class="btn btn-tertiary" type="button" (click)="end(s)">
                   <ng-container i18n="@@profile.sessions.end">End</ng-container>
                   <span class="visually-hidden"> {{ s.createdAt | date: 'medium' }}</span>
                 </button>

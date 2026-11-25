@@ -14,6 +14,8 @@ import { asApiError } from '../../shared/paged-resource';
 import { ErrorNotice } from '../../shared/error-notice';
 import { PageHeader } from '../../shared/ui/page-header';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * System roles and their bindings (R-UI-024, R-AUTHZ-022). The five roles are fixed (R-AUTHZ-010);
@@ -28,7 +30,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
  */
 @Component({
   selector: 'quader-role-bindings',
-  imports: [DataTable, PageHeader, DatePipe, ErrorNotice, Needs, PrincipalField],
+  imports: [Busy, Loading, DataTable, PageHeader, DatePipe, ErrorNotice, Needs, PrincipalField],
   templateUrl: './role-bindings.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `

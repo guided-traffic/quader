@@ -29,7 +29,7 @@
 @if (loadFailure(); as f) {
   <quader-error-notice [error]="f" (retry)="loadFailure.retry()" />
 } @else if (!detail()) {
-  <p role="status" i18n="@@pkg.loading">Loading.</p>
+  <quader-loading size="page" i18n="@@pkg.version.loading">Loading the version.</quader-loading>
 } @else if (detail(); as d) {
   <section class="version-facts" aria-label="Facts of this version" i18n-aria-label="@@pkg.version.facts">
     <p class="facts-line">
@@ -192,7 +192,7 @@
               @if (readmeFailure(); as f) {
                 <quader-error-notice [error]="f" (retry)="readmeFailure.retry()" />
               } @else if (readme.isLoading()) {
-                <p role="status" i18n="@@pkg.loading">Loading.</p>
+                <quader-loading i18n="@@pkg.readme.loading">Loading the README.</quader-loading>
               } @else {
                 <quader-package-readme [readme]="readme.hasValue() ? (readme.value() ?? null) : null" />
               }

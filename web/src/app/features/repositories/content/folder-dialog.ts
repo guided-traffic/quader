@@ -4,6 +4,7 @@ import { FilesApi } from '../../../api/files-api';
 import { ApiError } from '../../../api/problem';
 import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError } from '../../../shared/paged-resource';
+import { Busy } from '../../../shared/ui/busy';
 
 export interface FolderDialogData {
   readonly repository: string;
@@ -14,7 +15,7 @@ export interface FolderDialogData {
 /** "New folder" (R-UI-011): an explicit folder below the selected one, created with `PUT …/folder/`. */
 @Component({
   selector: 'quader-folder-dialog',
-  imports: [DialogTitle, DialogClose, ErrorNotice],
+  imports: [Busy, DialogTitle, DialogClose, ErrorNotice],
   template: `
     <h2 quaderDialogTitle i18n="@@folder.title">New folder</h2>
     <div class="dialog-body">
@@ -44,7 +45,7 @@ export interface FolderDialogData {
       <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@folder.cancel">Cancel</button>
       <button class="btn btn-confirm"
         type="button"
-        [disabled]="busy() || name().trim() === ''"
+        [disabled]="busy() || name().trim() === ''" [quaderBusy]="busy()"
         (click)="create()"
         i18n="@@folder.create"
       >

@@ -16,6 +16,7 @@ import { ApiError } from '../../api/problem';
 import { ErrorNotice } from '../../shared/error-notice';
 import { fieldErrorAt } from '../../shared/field-errors';
 import { Disclosure } from '../../shared/ui/disclosure';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * The section Visibility of a repository's settings page (R-UI-055, Q-UI-770 to Q-UI-773): one radio group, **Visibility level**,
@@ -37,7 +38,7 @@ import { Disclosure } from '../../shared/ui/disclosure';
  */
 @Component({
   selector: 'quader-repository-visibility',
-  imports: [Disclosure, ErrorNotice, VisibilityLevelControl],
+  imports: [Busy, Disclosure, ErrorNotice, VisibilityLevelControl],
   template: `
     <section class="visibility" aria-labelledby="repo-visibility">
       <h2 id="repo-visibility" i18n="@@repo.visibility.heading">Visibility</h2>
@@ -84,7 +85,7 @@ import { Disclosure } from '../../shared/ui/disclosure';
         }
         <div class="foot">
           @if (canWrite()) {
-            <button class="btn btn-confirm" type="submit" [disabled]="saving() || !dirty()">
+            <button class="btn btn-confirm" type="submit" [disabled]="saving() || !dirty()" [quaderBusy]="saving()">
               <ng-container i18n="@@repo.visibility.save">Save changes</ng-container>
               <span class="visually-hidden" i18n="@@repo.visibility.save-for"> (visibility)</span>
             </button>

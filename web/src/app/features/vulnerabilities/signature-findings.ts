@@ -84,6 +84,8 @@ export function findingKindWord(kind: SignatureFindingKind): string {
       [columns]="columns"
       [loaded]="list.loaded()"
       [loading]="list.loading()"
+      loadingText="Loading the signature findings."
+      i18n-loadingText="@@sig.findings.loading"
       [error]="list.error()"
       [empty]="list.items().length === 0"
       [emptyText]="filtered() ? emptyFiltered : emptyText"

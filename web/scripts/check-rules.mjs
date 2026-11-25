@@ -11,6 +11,8 @@
 //  - R-UI-163: no row shows two word actions at once: several actions are the row's menu (row-actions-rule.mjs).
 //  - Q-UI-1006: no template interpolates a principal's reference (`…By`, `by`, `lastDownloader`) as it is; it goes through personName.
 //  - Q-UI-564: the word of a badge or a status starts with a capital (**Disabled**, not "disabled"), as the manual writes it.
+//  - R-UI-217: a loading sentence is <quader-loading>, a list that loads says what (loadingText), a button held while its act runs
+//    carries [quaderBusy], and no stylesheet spins something of its own (busy-rule.mjs).
 //  - Q-UI-1211: no stylesheet names a monospace face of its own: the face is the token --quader-font-mono's (mono-rule.mjs).
 //  - R-UI-175: no `vertical-align: middle` and no `align-items: last baseline` in a style: a box beside a text stands on the
 //    line's middle by the line rule of _controls.scss (line-rule.mjs).
@@ -41,6 +43,7 @@ import { decisionNumbersInTestNames } from './test-names-rule.mjs';
 import { tabStripFindings } from './tab-strip-rule.mjs';
 import { serverTextFindings } from './server-text-rule.mjs';
 import { clearedBeforeAnswer, handMadeFailures } from './read-failure-rule.mjs';
+import { busyFindings } from './busy-rule.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
@@ -202,6 +205,17 @@ for (const file of sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('
   for (const { line, problem } of [...handMadeFailures(text), ...clearedBeforeAnswer(text, ts)]) {
     failed = true;
     console.error(`R-UI-216: ${rel}:${line}: ${problem}`);
+  }
+}
+
+// Every load shows the spinner of the mark: a loading sentence is <quader-loading>, a list says what it loads, a button held while its
+// act runs carries [quaderBusy], and nothing spins in a way of its own (R-UI-217, Q-UI-1239).
+for (const file of sources.filter((p) => /\.(ts|html|scss|css)$/.test(p) && !p.endsWith('.spec.ts'))) {
+  const rel = relative(root, file).split(sep).join('/');
+  if (rel === 'src/styles/_spinner.scss') continue;
+  for (const { line, tag, problem } of busyFindings(rel, readFileSync(file, 'utf8'))) {
+    failed = true;
+    console.error(`R-UI-217: ${rel}:${line}: ${problem}: ${tag}`);
   }
 }
 

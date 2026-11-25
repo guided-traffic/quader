@@ -18,6 +18,7 @@ import { fieldErrorAt } from '../../shared/field-errors';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { dismissalLabel, statusLabel } from './vuln-labels';
+import { Busy } from '../../shared/ui/busy';
 
 /** What a triage dialog acts on: a finding with the label the user knows it by. */
 export interface TriageTarget {
@@ -53,7 +54,7 @@ export interface TriageDialogResult {
  */
 @Component({
   selector: 'quader-triage-dialog',
-  imports: [DialogTitle, DialogClose, ErrorNotice, SelectField, TextField],
+  imports: [Busy, DialogTitle, DialogClose, ErrorNotice, SelectField, TextField],
   template: `
     <h2 quaderDialogTitle>{{ title() }}</h2>
     @if (results(); as r) {
@@ -147,7 +148,7 @@ export interface TriageDialogResult {
         </div>
         <div class="dialog-actions">
           <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@vuln.triage.cancel">Cancel</button>
-          <button class="btn btn-confirm" type="submit" [disabled]="busy()">{{ submitLabel() }}</button>
+          <button class="btn btn-confirm" type="submit" [disabled]="busy()" [quaderBusy]="busy()">{{ submitLabel() }}</button>
         </div>
       </form>
     }

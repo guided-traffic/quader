@@ -86,6 +86,8 @@
     [columns]="columns()"
     [loaded]="true"
     [loading]="loading()"
+    loadingText="Reading the versions from the upstream."
+    i18n-loadingText="@@upstream.versions.loading"
     [empty]="versions().length === 0"
     [emptyText]="filter() ? noVersionMatches : noVersions"
     [hasMore]="next() !== null"
@@ -174,5 +176,5 @@
     }
   </quader-data-table>
 } @else if (!failure()) {
-  <p role="status" i18n="@@upstream.package.loading">Reading the package from the upstream.</p>
+  <quader-loading i18n="@@upstream.package.loading">Reading the package from the upstream.</quader-loading>
 }

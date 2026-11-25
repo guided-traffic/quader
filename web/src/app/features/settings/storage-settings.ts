@@ -26,6 +26,7 @@ import { Checkbox } from '../../shared/ui/checkbox';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
 import { TimeAgo } from '../../shared/ui/time-ago';
+import { Busy } from '../../shared/ui/busy';
 
 /** One MiB, the unit of the minimum size on the screen (Q-UI-951). */
 const MIB = 1048576;
@@ -110,7 +111,7 @@ interface TestOutcome {
  */
 @Component({
   selector: 'quader-storage-settings',
-  imports: [AddressField, Checkbox, Disclosure, ErrorNotice, Needs, PageHeader, RouterLink, TimeAgo],
+  imports: [Busy, AddressField, Checkbox, Disclosure, ErrorNotice, Needs, PageHeader, RouterLink, TimeAgo],
   templateUrl: './storage-settings.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `

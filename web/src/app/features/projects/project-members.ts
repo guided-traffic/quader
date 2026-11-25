@@ -14,6 +14,7 @@ import { asApiError } from '../../shared/paged-resource';
 import { ProjectNeeds } from './project-access';
 import { ProjectMemberChoice, ProjectMemberDialog, ProjectMemberDialogData } from './project-member-dialog';
 import { projectRoleLabel } from './project-roles';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * The members of a project with their roles (R-UI-041, R-AUTHZ-026, Q-AUTHZ-207, Q-UI-214): the list, adding a user or group
@@ -28,7 +29,7 @@ import { projectRoleLabel } from './project-roles';
  */
 @Component({
   selector: 'quader-project-members',
-  imports: [DataTable, ErrorNotice, ListHead, ProjectNeeds, QuaderAvatar],
+  imports: [Busy, DataTable, ErrorNotice, ListHead, ProjectNeeds, QuaderAvatar],
   template: `
     @if (writeError(); as e) {
       @if (e.code === 'last_owner') {
@@ -50,6 +51,8 @@ import { projectRoleLabel } from './project-roles';
       (sortChange)="sort.set($event)"
       [loaded]="loaded()"
       [loading]="!loaded()"
+      loadingText="Loading the members."
+      i18n-loadingText="@@members.loading"
       [error]="loadError()"
       (retry)="load()"
       [empty]="shown().length === 0"
@@ -98,7 +101,7 @@ import { projectRoleLabel } from './project-roles';
           <!-- The row's one action is its word, as a group's member has it; a menu of one entry is not made (R-UI-163). -->
           <td class="actions">
             @if (canWrite()) {
-              <button class="btn btn-tertiary" type="button" [disabled]="busy()" (click)="remove(m)">
+              <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="remove(m)">
                 <ng-container i18n="@@project-members.remove">Remove</ng-container>
                 <span class="visually-hidden" translate="no"> {{ m.principal }}</span>
               </button>

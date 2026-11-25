@@ -41,6 +41,8 @@ import {
 } from './policy-model';
 import { PageHeader } from '../../shared/ui/page-header';
 import { StickyWhenFits } from '../../shared/ui/sticky-when-fits';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /** Debounce of the live validation (R-UI-027). */
 export const PREVIEW_DEBOUNCE_MS = 500;
@@ -58,7 +60,7 @@ export const PREVIEW_DEBOUNCE_MS = 500;
 
 @Component({
   selector: 'quader-policy-editor',
-  imports: [
+  imports: [Busy, Loading, 
     PageHeader,
     Checkbox,
     Disclosure,

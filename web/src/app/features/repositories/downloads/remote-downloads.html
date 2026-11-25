@@ -78,6 +78,8 @@
       [columns]="bulkColumns()"
       [loaded]="bulkListLoaded()"
       [loading]="bulkListLoading()"
+      loadingText="Loading the bulk downloads."
+      i18n-loadingText="@@downloads.bulks.loading"
       [error]="bulkListError()"
       [empty]="bulkList().length === 0"
       [emptyText]="emptyText"
@@ -137,7 +139,7 @@
           @if (bulkHasActions()) {
             <td class="actions">
               @if (bulkAction(b)) {
-                <button class="btn btn-tertiary" type="button" [disabled]="isBulkBusy(b)" (click)="actOnBulk(b)">
+                <button quaderBusy class="btn btn-tertiary" type="button" [disabled]="isBulkBusy(b)" (click)="actOnBulk(b)">
                   {{ bulkActionLabel(b) }}<span class="visually-hidden" translate="no">&ngsp;{{ b.subject }}</span>
                 </button>
               }
@@ -178,7 +180,7 @@
   </div>
   <div class="head-end">
     @if (offersRetryAll()) {
-      <button class="btn btn-default" type="button" [disabled]="retryingAll()" (click)="retryAll()" i18n="@@downloads.retry-all">Retry all failed</button>
+      <button quaderBusy class="btn btn-default" type="button" [disabled]="retryingAll()" (click)="retryAll()" i18n="@@downloads.retry-all">Retry all failed</button>
     }
     <button class="btn btn-default" type="button" [attr.aria-pressed]="paused()" (click)="paused.set(!paused())">
       @if (paused()) {
@@ -216,9 +218,9 @@
         <span [class]="badge.cls"><span class="material-icons" aria-hidden="true">{{ badge.icon }}</span>{{ bulkStateText(b) }}</span>
         <span class="bulk-actions">
           @if (offersCancelBulk()) {
-            <button class="btn btn-default on-line" type="button" [disabled]="isBulkBusy(b)" (click)="actOnShownBulk()" i18n="@@downloads.bulk.cancel">Cancel bulk</button>
+            <button quaderBusy class="btn btn-default on-line" type="button" [disabled]="isBulkBusy(b)" (click)="actOnShownBulk()" i18n="@@downloads.bulk.cancel">Cancel bulk</button>
           } @else if (offersStartAgain()) {
-            <button class="btn btn-default on-line" type="button" [disabled]="isBulkBusy(b)" (click)="actOnShownBulk()" i18n="@@downloads.bulk.start-again">Start again</button>
+            <button quaderBusy class="btn btn-default on-line" type="button" [disabled]="isBulkBusy(b)" (click)="actOnShownBulk()" i18n="@@downloads.bulk.start-again">Start again</button>
           }
           <button class="btn btn-tertiary on-line" type="button" (click)="clearBulk()" i18n="@@downloads.bulk.show-all">Show every download</button>
         </span>
@@ -262,7 +264,7 @@
         <quader-technical-details class="technical" [text]="f.detail" [code]="f.code" />
       }
     } @else {
-      <p role="status" i18n="@@downloads.bulk.loading">Loading the bulk download.</p>
+      <quader-loading i18n="@@downloads.bulk.loading">Loading the bulk download.</quader-loading>
     }
   </section>
 }
@@ -273,6 +275,8 @@
   [columns]="columns()"
   [loaded]="loaded()"
   [loading]="loading()"
+  loadingText="Loading the downloads."
+  i18n-loadingText="@@downloads.loading"
   [error]="listError()"
   [empty]="rows().length === 0"
   [emptyText]="filtered() ? emptyFiltered : emptyText"
@@ -379,7 +383,7 @@
       @if (hasActions()) {
         <td class="actions">
           @if (action(r); as kind) {
-            <button class="btn btn-tertiary" type="button" [disabled]="isBusy(r)" (click)="act(r)">
+            <button quaderBusy class="btn btn-tertiary" type="button" [disabled]="isBusy(r)" (click)="act(r)">
               {{ actionLabel(r) }}<span class="visually-hidden" translate="no">&ngsp;{{ subject(r) }}</span>
             </button>
           }

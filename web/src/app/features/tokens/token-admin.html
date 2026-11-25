@@ -5,7 +5,7 @@
 <!-- Tokens have no search by name; the head is Filters, the filters that are set and the selection's action (Q-UI-420). -->
 <quader-list-head [chips]="chips()" (removeChip)="removeChip($event)" [(filtersOpen)]="panelOpen" [controls]="panel.panelId">
   @if (session.has('tokens:revoke') && selected().length > 0) {
-    <button headEnd class="btn btn-confirm" type="button" (click)="revokeSelected()">
+    <button quaderBusy headEnd class="btn btn-confirm" type="button" (click)="revokeSelected()">
       <ng-container i18n="@@tokens-admin.revoke-selected">Revoke selected</ng-container> ({{ selected().length }})
     </button>
   }
@@ -62,7 +62,7 @@
     (revoke)="revokeOne($event)"
   />
 } @else if (list.loading() && !list.error()) {
-  <p role="status" i18n="@@tokens-admin.loading">Loading tokens.</p>
+  <quader-loading size="page" i18n="@@tokens-admin.loading">Loading tokens.</quader-loading>
 }
 
 @if (session.has('tokens:revoke')) {
@@ -88,7 +88,7 @@
         <ng-container i18n="@@tokens-admin.reveal">Show the value</ng-container>
       </quader-checkbox>
       <div class="row-actions">
-        <button class="btn btn-confirm" type="submit" [disabled]="busy() || pasted().trim() === ''" i18n="@@tokens-admin.revoke-value">
+        <button class="btn btn-confirm" type="submit" [disabled]="busy() || pasted().trim() === ''" [quaderBusy]="busy()" i18n="@@tokens-admin.revoke-value">
           Revoke token
         </button>
       </div>

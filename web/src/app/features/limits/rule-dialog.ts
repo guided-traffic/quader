@@ -25,6 +25,7 @@ import { CallerCell } from './caller-cell';
 import { everyLabel, whoView } from './callers';
 import { FigureFields, FigureTexts, readTexts, textsOf } from './figure-fields';
 import { FIGURES, compactFigures, limitConflictFields, limitText } from './figures';
+import { Busy } from '../../shared/ui/busy';
 
 /** What "Applies to" offers (R-UI-179). */
 export type WhoChoice = 'user' | 'group' | 'technicalToken' | 'ciProject' | 'address' | 'every';
@@ -75,7 +76,7 @@ export const ADDRESS_PATTERN = /^(?:(?:\d{1,3}\.){3}\d{1,3}(?:\/\d{1,2})?|[0-9a-
 @Component({
   selector: 'quader-limit-rule-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CallerCell, DialogClose, DialogTitle, Disclosure, ErrorNotice, FigureFields, PrincipalField, SelectField, TextField],
+  imports: [Busy, CallerCell, DialogClose, DialogTitle, Disclosure, ErrorNotice, FigureFields, PrincipalField, SelectField, TextField],
   template: `
     <h2 quaderDialogTitle>{{ title }}</h2>
     <form (submit)="submit($event)" novalidate>
@@ -188,7 +189,7 @@ export const ADDRESS_PATTERN = /^(?:(?:\d{1,3}\.){3}\d{1,3}(?:\/\d{1,2})?|[0-9a-
           <button class="btn btn-tertiary remove" type="button" (click)="remove()" i18n="@@limits.token.remove-confirm">Remove limit</button>
         }
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@limits.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="busy() || !profileKey()">{{ confirmLabel }}</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy() || !profileKey()" [quaderBusy]="busy()">{{ confirmLabel }}</button>
       </div>
     </form>
   `,

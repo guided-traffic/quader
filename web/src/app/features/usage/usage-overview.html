@@ -69,6 +69,8 @@
   (sortChange)="setSort($event)"
   [loaded]="loaded()"
   [loading]="loading()"
+  loadingText="Loading the usage."
+  i18n-loadingText="@@usage.loading"
   [error]="failure()"
   (retry)="load()"
   [empty]="rows().length === 0"

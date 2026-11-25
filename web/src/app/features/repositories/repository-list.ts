@@ -51,6 +51,7 @@ import { FrequentPlaces } from '../../core/frequent-places';
 import { setupCommands } from '../../core/project-links';
 import { Tooltip } from '../../shared/ui/tooltip';
 import { classFilterQuery, classFilterValues, classIcon, classLabel, classTip, shownClass } from './repository-class';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * Whether the list's filters admit a repository, by the rules the server applies to the list (R-REPO-012): `q` a case-insensitive
@@ -91,7 +92,7 @@ export function listAdmits(
  */
 @Component({
   selector: 'quader-repository-list',
-  imports: [
+  imports: [Busy, 
     FormatIconView,
     CdkMenu,
     CdkMenuItem,

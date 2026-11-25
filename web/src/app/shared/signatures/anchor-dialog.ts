@@ -10,6 +10,7 @@ import { Checkbox } from '../ui/checkbox';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../ui/dialog';
 import { Disclosure } from '../ui/disclosure';
 import { anchorKindWords } from './signature-words';
+import { Busy } from '../ui/busy';
 
 /** Where the anchor is created: the installation's (`project` null) or a project's. */
 export interface AnchorDialogData {
@@ -36,7 +37,7 @@ export function keyOf(title: string): string {
  */
 @Component({
   selector: 'quader-anchor-dialog',
-  imports: [Checkbox, DialogClose, DialogTitle, Disclosure, ErrorNotice, SelectField, TextField],
+  imports: [Busy, Checkbox, DialogClose, DialogTitle, Disclosure, ErrorNotice, SelectField, TextField],
   template: `
     <h2 quaderDialogTitle>{{ heading }}</h2>
     <form (submit)="submit($event)" novalidate>
@@ -98,7 +99,7 @@ export function keyOf(title: string): string {
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@sig.form.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@sig.form.submit">Add trust anchor</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy()" [quaderBusy]="busy()" i18n="@@sig.form.submit">Add trust anchor</button>
       </div>
     </form>
   `,

@@ -81,6 +81,7 @@
           <label class="field-label" for="f-repository" i18n="@@ep.field.repository"
             >Repository</label
           >
+          <span class="field-busy-wrap">
           <select
             id="f-repository"
             class="select-input field-w-name"
@@ -109,6 +110,11 @@
               </option>
             }
           </select>
+          @if (repos.isLoading()) {
+            <!-- The repositories load: the spinner inside the held select, after the delay of every load (R-UI-217). -->
+            <quader-spinner class="field-busy quader-spinner-delayed" />
+          }
+          </span>
           @if (reposFailure(); as f) {
             <quader-error-notice [error]="f" (retry)="reposFailure.retry()" />
           }
@@ -397,7 +403,7 @@
 
       @if (canWrite() && !inert()) {
         <div class="actions">
-          <button class="btn btn-confirm" type="submit" [disabled]="saving() || (!creating() && !dirty())">
+          <button class="btn btn-confirm" type="submit" [disabled]="saving() || (!creating() && !dirty())" [quaderBusy]="saving()">
             @if (creating()) {
               <ng-container i18n="@@ep.editor.create">Create rule</ng-container>
             } @else {
@@ -620,7 +626,7 @@
       hint="Delete this rule."
     >
       <p class="hint delete-note" i18n="@@ep.rule.delete-note">Deleting the rule makes content that only this rule exposes unavailable on this endpoint.</p>
-      <button class="btn btn-danger" type="button" (click)="remove()" i18n="@@ep.editor.delete">Delete rule</button>
+      <button quaderBusy class="btn btn-danger" type="button" (click)="remove()" i18n="@@ep.editor.delete">Delete rule</button>
     </quader-disclosure>
   }
 }

@@ -15,6 +15,7 @@ import { alarms, roleGroups, serviceStatus } from './system-status-model';
 import { dashboardStorageAlarm, hostOf, unreachable } from './storage/storage-model';
 import { PageHeader } from '../../shared/ui/page-header';
 import { TimeAgo } from '../../shared/ui/time-ago';
+import { Loading } from '../../shared/ui/loading';
 
 /**
  * The admin dashboard (Q-OPS-175): the first screen of the admin area, an overview of the installation in cards.
@@ -26,7 +27,7 @@ import { TimeAgo } from '../../shared/ui/time-ago';
  */
 @Component({
   selector: 'quader-dashboard',
-  imports: [PageHeader, DatePipe, DecimalPipe, NgTemplateOutlet, RouterLink, ErrorNotice, TimeAgo],
+  imports: [Loading, PageHeader, DatePipe, DecimalPipe, NgTemplateOutlet, RouterLink, ErrorNotice, TimeAgo],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })

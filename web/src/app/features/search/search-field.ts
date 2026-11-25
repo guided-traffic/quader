@@ -50,6 +50,7 @@ import {
   sectionPlaces,
 } from './search-model';
 import { SearchLayout } from './search-layout';
+import { Loading } from '../../shared/ui/loading';
 
 /** How many answers are kept while the list is open, and for how long (R-UI-097). */
 const CACHE_SIZE = 10;
@@ -86,7 +87,7 @@ interface IndexedGroup {
  */
 @Component({
   selector: 'quader-search-field',
-  imports: [NgTemplateOutlet, CdkMenu, CdkMenuItemRadio, CdkMenuTrigger, CdkTrapFocus, FormatIconView, QuaderAvatar],
+  imports: [Loading, NgTemplateOutlet, CdkMenu, CdkMenuItemRadio, CdkMenuTrigger, CdkTrapFocus, FormatIconView, QuaderAvatar],
   templateUrl: './search-field.html',
   host: { '[class.narrow]': 'layout.narrow()' },
 })

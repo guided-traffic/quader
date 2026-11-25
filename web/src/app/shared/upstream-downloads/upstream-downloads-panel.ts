@@ -19,6 +19,7 @@ import { QuaderDrawer } from '../ui/drawer';
 import { TimeAgo } from '../ui/time-ago';
 import { finishedFigures, originText, outcomeBadge, runningFigures, subjectOf } from './download-words';
 import { limitQueueText } from './limit-words';
+import { Loading } from '../ui/loading';
 
 /** Where this device keeps the newest end of the finished downloads **Hide all** hid (R-UI-212). */
 export const HIDDEN_BEFORE_KEY = 'quader.upstream-downloads.hidden-before';
@@ -35,7 +36,7 @@ const DEFAULT_POLL_SECONDS = 2;
  */
 @Component({
   selector: 'quader-upstream-downloads-panel',
-  imports: [NgTemplateOutlet, QuaderDrawer, RouterLink, FormatIconView, TimeAgo],
+  imports: [Loading, NgTemplateOutlet, QuaderDrawer, RouterLink, FormatIconView, TimeAgo],
   templateUrl: './upstream-downloads-panel.html',
   styleUrl: './upstream-downloads-panel.scss',
 })

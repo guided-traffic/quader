@@ -12,6 +12,7 @@ import { CallerCell } from './caller-cell';
 import { whoRank, whoSortName, whoView } from './callers';
 import { FIGURES, figureName, limitText, overridesSummary } from './figures';
 import { LimitRuleDialog, RuleDialogData } from './rule-dialog';
+import { Busy } from '../../shared/ui/busy';
 
 /** The rules in the order resolution tries them (R-LIM-013, Q-UI-751): single callers and addresses, groups, kinds; by name within. */
 export function orderRules(rules: readonly LimitRule[]): LimitRule[] {
@@ -27,13 +28,15 @@ export function orderRules(rules: readonly LimitRule[]): LimitRule[] {
 @Component({
   selector: 'quader-limit-rules',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CallerCell, DataTable, Tooltip],
+  imports: [Busy, CallerCell, DataTable, Tooltip],
   template: `
     <quader-data-table
       [caption]="caption()"
       [columns]="columns()"
       [loaded]="rules() !== null"
       [loading]="rules() === null && !failure()"
+      loadingText="Loading the rules."
+      i18n-loadingText="@@limits.rules.loading"
       [error]="failure()"
       (retry)="load()"
       [empty]="(rules() ?? []).length === 0"
@@ -70,7 +73,7 @@ export function orderRules(rules: readonly LimitRule[]): LimitRule[] {
           @if (canWrite()) {
             <td class="actions">
               @if (!r.builtin) {
-                <button class="btn btn-tertiary" type="button" (click)="remove(r)">
+                <button quaderBusy class="btn btn-tertiary" type="button" (click)="remove(r)">
                   <ng-container i18n="@@limits.rules.delete">Delete</ng-container>
                   <span class="visually-hidden"> {{ view(r).primary }}</span>
                 </button>

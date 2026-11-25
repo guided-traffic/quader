@@ -15,6 +15,7 @@ import { NoValue } from '../../shared/ui/no-value';
 import { FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { ErrorNotice } from '../../shared/error-notice';
+import { Busy } from '../../shared/ui/busy';
 
 const pretty = (v: unknown): string => JSON.stringify(v, null, 2);
 
@@ -165,12 +166,12 @@ function dayStart(value: string, plusDays = 0): string | undefined {
  */
 @Component({
   selector: 'quader-ci-issuance-list',
-  imports: [DatePipe, ErrorNotice, DataTable, FilterPanel, ListHead, NoValue, SelectField, TextField],
+  imports: [Busy, DatePipe, ErrorNotice, DataTable, FilterPanel, ListHead, NoValue, SelectField, TextField],
   template: `
     <!-- The issued tokens have no search by name; the head is Filters, the filters that are set and the bulk revoke (Q-UI-420). -->
     <quader-list-head [chips]="chips()" (removeChip)="removeChip($event)" [(filtersOpen)]="panelOpen" [controls]="panel.panelId">
       @if (canRevoke()) {
-        <button headEnd class="btn btn-default" type="button" [disabled]="!revocable() || busy()" aria-describedby="ci-revoke-note" (click)="revokeMatching()" i18n="@@ci.issuances.revoke-matching">
+        <button headEnd class="btn btn-default" type="button" [disabled]="!revocable() || busy()" [quaderBusy]="busy()" aria-describedby="ci-revoke-note" (click)="revokeMatching()" i18n="@@ci.issuances.revoke-matching">
           Revoke matching tokens
         </button>
       }
@@ -219,6 +220,8 @@ function dayStart(value: string, plusDays = 0): string | undefined {
         [columns]="columns()"
         [loaded]="list.loaded()"
         [loading]="list.loading() && !list.error()"
+        loadingText="Loading the issued tokens."
+        i18n-loadingText="@@ci.issuances.loading"
         [empty]="list.items().length === 0"
         [emptyText]="chips().length > 0 ? noMatch : noToken"
         [hasMore]="list.hasMore()"

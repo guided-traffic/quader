@@ -4,6 +4,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { failureOf, valueOf } from '../../shared/paged-resource';
 import { FormatTiles } from '../../shared/ui/format-tiles';
 import { PageHeader } from '../../shared/ui/page-header';
+import { Loading } from '../../shared/ui/loading';
 
 /**
  * The navigation entry **Guides** (R-UI-124, Q-UI-481): the formats that have clients, as the tiles of R-UI-127, and nothing else
@@ -11,7 +12,7 @@ import { PageHeader } from '../../shared/ui/page-header';
  */
 @Component({
   selector: 'quader-guides-home',
-  imports: [ErrorNotice, FormatTiles, PageHeader],
+  imports: [Loading, ErrorNotice, FormatTiles, PageHeader],
   template: `
     <quader-page-header
       heading="Guides"
@@ -22,7 +23,7 @@ import { PageHeader } from '../../shared/ui/page-header';
     @if (failure(); as f) {
       <quader-error-notice [error]="f" (retry)="failure.retry()" />
     } @else if (formats.isLoading()) {
-      <p role="status" i18n="@@guides.loading">Loading.</p>
+      <quader-loading size="page" i18n="@@guides.loading.formats">Loading the guides.</quader-loading>
     } @else if (offered().length === 0) {
       <p i18n="@@guides.no-formats">No package type has a guide yet.</p>
     } @else {

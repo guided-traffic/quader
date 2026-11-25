@@ -11,6 +11,8 @@ import { JobProgress, jobStateText } from '../../shared/job-progress';
 import { asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { FailureToasts } from '../../shared/failure-dialog';
+import { Loading } from '../../shared/ui/loading';
+import { Busy } from '../../shared/ui/busy';
 
 /**
  * The scheduled tasks card (R-UI-038): schedule, next run, last outcome, and "Run now", which only
@@ -20,7 +22,7 @@ import { FailureToasts } from '../../shared/failure-dialog';
  */
 @Component({
   selector: 'quader-tasks-card',
-  imports: [DataTable, DatePipe, ErrorNotice, JobProgress, NoValue],
+  imports: [Busy, Loading, DataTable, DatePipe, ErrorNotice, JobProgress, NoValue],
   template: `
     <section class="card" aria-labelledby="card-tasks">
       <div class="head">
@@ -79,7 +81,7 @@ import { FailureToasts } from '../../shared/failure-dialog';
                     <!-- The row's one action is its quiet word (R-UI-163); its name says the task. -->
                     <button class="btn btn-tertiary"
                       type="button"
-                      [disabled]="busy() === t.name"
+                      [disabled]="busy() === t.name" [quaderBusy]="busy() === t.name"
                       [attr.aria-label]="runLabel(t.name)"
                       (click)="run(t)"
                       i18n="@@tasks.run"
@@ -96,7 +98,7 @@ import { FailureToasts } from '../../shared/failure-dialog';
           <quader-error-notice [error]="f" />
         }
       } @else {
-        <p role="status" i18n="@@system.loading">Loading.</p>
+        <quader-loading i18n="@@system.tasks.loading">Loading the tasks.</quader-loading>
       }
     </section>
   `,

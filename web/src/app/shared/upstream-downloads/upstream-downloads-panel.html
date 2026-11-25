@@ -26,7 +26,7 @@
 
     @if (list() === null) {
       @if (!refreshFailed()) {
-        <p class="dl-empty" role="status" i18n="@@upstream-downloads.loading">Loading the downloads.</p>
+        <quader-loading class="dl-empty" i18n="@@upstream-downloads.loading">Loading the downloads.</quader-loading>
       }
     } @else {
       @if (waitingShown().length > 0) {

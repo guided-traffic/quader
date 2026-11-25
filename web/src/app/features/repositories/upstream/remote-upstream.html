@@ -44,7 +44,7 @@
         (input)="text.set($any($event.target).value)"
       />
       @if (searches()) {
-        <button class="btn btn-confirm" type="submit" i18n="@@upstream.search.submit">Search</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="listLoading()" [quaderBusy]="listLoading()" i18n="@@upstream.search.submit">Search</button>
         <button class="btn btn-default" type="button" (click)="lookup()" i18n="@@upstream.lookup.exact">Look up by exact name</button>
       } @else {
         <button class="btn btn-confirm" type="submit" i18n="@@upstream.lookup.submit">Look up</button>
@@ -146,6 +146,7 @@
         [columns]="columns()"
         [loaded]="page() !== null || !!listFailure()"
         [loading]="listLoading()"
+        [loadingText]="loadingText()"
         [error]="listState() ? null : listFailure()"
         [empty]="(page()?.hits?.length ?? 0) === 0"
         [emptyText]="emptyText()"
@@ -240,5 +241,5 @@
     </p>
   }
 } @else if (!capsFailure()) {
-  <p role="status" i18n="@@upstream.loading">Reading what the upstream offers.</p>
+  <quader-loading size="page" i18n="@@upstream.loading">Reading what the upstream offers.</quader-loading>
 }

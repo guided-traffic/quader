@@ -42,6 +42,8 @@ export const CONTENTS_PAGE = 100;
         [columns]="columns"
         [loaded]="tree() !== null"
         [loading]="loading()"
+        loadingText="Loading the contents."
+        i18n-loadingText="@@docs.contents.loading"
         [error]="failure()"
         [empty]="rows().length === 0"
         [emptyText]="emptyText"

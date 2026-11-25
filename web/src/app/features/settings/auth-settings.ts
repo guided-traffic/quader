@@ -19,6 +19,7 @@ import { asApiError } from '../../shared/paged-resource';
 import { ConflictFields, ConflictResolver } from '../../shared/conflict-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { PageHeader } from '../../shared/ui/page-header';
+import { Busy } from '../../shared/ui/busy';
 
 /** The editable form content in one object, for the draft and the conflict dialog. */
 interface Form {
@@ -43,7 +44,7 @@ type Part = 'external' | 'tokens';
  */
 @Component({
   selector: 'quader-auth-settings',
-  imports: [PageHeader, Checkbox, ErrorNotice, Needs, Disclosure, TextField],
+  imports: [Busy, PageHeader, Checkbox, ErrorNotice, Needs, Disclosure, TextField],
   templateUrl: './auth-settings.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `

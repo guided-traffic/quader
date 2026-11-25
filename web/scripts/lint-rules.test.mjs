@@ -17,6 +17,7 @@ import { decisionNumbersInTestNames } from './test-names-rule.mjs';
 import { tabStripFindings } from './tab-strip-rule.mjs';
 import { serverTextBindings, serverTextFindings } from './server-text-rule.mjs';
 import { clearedBeforeAnswer, handMadeFailures } from './read-failure-rule.mjs';
+import { busyFindings } from './busy-rule.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const eslint = new ESLint({ cwd: root });
@@ -434,4 +435,35 @@ test("R-UI-216 a resource's failure made by hand and a read that clears its noti
   // A method the retry calls before it waits counts as its own.
   const delegating = 'class A {\n  load(): void {\n    this.reset();\n    void this.fetch();\n  }\n  private reset(): void {\n    this.loadError.set(null);\n  }\n}';
   assert.deepEqual(clearedBeforeAnswer(notice, delegating).map((f) => f.line), [1]);
+});
+
+test('R-UI-217 a loading sentence without the spinner, a list without its sentence, a held act without it and a spin of its own fail the rule', () => {
+  const file = 'src/app/features/probe/probe.ts';
+  const bad = [
+    '<p role="status" i18n="@@probe.loading">Loading the members.</p>',
+    '<span i18n="@@probe.reading">Reading the package from the upstream.</span>',
+    '<quader-data-table [caption]="c" [columns]="cols" [loading]="list.loading()" />',
+    '<button class="btn btn-confirm" type="submit" [disabled]="saving() || !dirty()" i18n="@@probe.save">Save changes</button>',
+    '@keyframes turn {\n  to {\n    transform: rotate(360deg);\n  }\n}',
+  ];
+  assert.deepEqual(
+    bad.map((t) => busyFindings(file, t).length),
+    [1, 1, 1, 1, 1],
+  );
+  const good = [
+    '<quader-loading i18n="@@probe.loading">Loading the members.</quader-loading>',
+    '<option value="" selected i18n="@@probe.options">Loading repositories…</option>',
+    '<quader-data-table [caption]="c" [columns]="cols" [loading]="list.loading()" loadingText="Loading the members." i18n-loadingText="@@probe.l" />',
+    '<button class="btn btn-confirm" type="submit" [disabled]="saving() || !dirty()" [quaderBusy]="saving()" i18n="@@probe.save">Save changes</button>',
+    '<button class="btn btn-tertiary" type="button" [disabled]="saving()" quaderDialogClose i18n="@@probe.cancel">Cancel</button>',
+    '<button class="btn" type="button" [disabled]="!dirty()" (click)="save()">Save</button>',
+    '@keyframes quader-appear {\n  from {\n    visibility: hidden;\n  }\n}',
+  ];
+  assert.deepEqual(good.flatMap((t) => busyFindings(file, t)), []);
+});
+
+test('R-UI-217 a held button that is no act passes in its own file only', () => {
+  const add = '<button class="btn btn-default" type="button" [disabled]="loading() !== null" (click)="add(field)">Add</button>';
+  assert.deepEqual(busyFindings('src/app/features/ci/name-picker.ts', add), []);
+  assert.equal(busyFindings('src/app/features/ci/other.ts', add).length, 1);
 });

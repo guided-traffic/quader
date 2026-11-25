@@ -64,6 +64,8 @@ export function groupOriginLabel(origin: Group['origin']): string {
       (sortChange)="sortBy($event)"
       [loaded]="list.loaded()"
       [loading]="list.loading()"
+      loadingText="Loading the groups."
+      i18n-loadingText="@@groups.loading"
       [error]="list.error()"
       [empty]="list.items().length === 0"
       [emptyText]="applied().q || chips().length > 0 ? noMatch : noGroup"

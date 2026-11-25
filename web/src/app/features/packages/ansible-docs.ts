@@ -34,6 +34,7 @@ import {
   unavailableText,
 } from './docs-model';
 import { PackageReadmeView } from './package-readme';
+import { Loading } from '../../shared/ui/loading';
 
 /** The silence after the last key before a search is sent (Q-UI-243). */
 export const SEARCH_DEBOUNCE_MS = 300;
@@ -56,7 +57,7 @@ type DocPage =
  */
 @Component({
   selector: 'quader-ansible-docs',
-  imports: [
+  imports: [Loading, 
     DatePipe,
     NgTemplateOutlet,
     RouterLink,

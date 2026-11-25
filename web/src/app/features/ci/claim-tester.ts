@@ -9,6 +9,7 @@ import { claimsSatisfying, newId, parseClaimsInput, sampleClaims, summarizeGrant
 import { ErrorNotice } from '../../shared/error-notice';
 import { TechnicalDetails } from '../../shared/technical-details';
 import { PageHeader } from '../../shared/ui/page-header';
+import { Busy } from '../../shared/ui/busy';
 
 const pretty = (v: unknown): string => JSON.stringify(v, null, 2);
 
@@ -76,7 +77,7 @@ export function ciFailureText(failure: string): string {
  */
 @Component({
   selector: 'quader-ci-claim-tester',
-  imports: [PageHeader, ErrorNotice, CiWarnings, SelectField, TechnicalDetails],
+  imports: [Busy, PageHeader, ErrorNotice, CiWarnings, SelectField, TechnicalDetails],
   template: `
     <quader-page-header heading="Claim tester" i18n-heading="@@ci.test.heading" />
     <p class="subject dot-separated" translate="no">
@@ -150,7 +151,7 @@ export function ciFailureText(failure: string): string {
         </p>
       }
       <div class="row-actions">
-        <button class="btn btn-confirm" type="button" [disabled]="busy()" (click)="evaluate()" i18n="@@ci.test.evaluate">Evaluate</button>
+        <button class="btn btn-confirm" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="evaluate()" i18n="@@ci.test.evaluate">Evaluate</button>
         <button class="btn btn-default" type="button" (click)="insertSample()" i18n="@@ci.test.sample">Insert sample GitLab claims</button>
       </div>
     </section>

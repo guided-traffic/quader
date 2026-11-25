@@ -8,6 +8,7 @@ import { TimeAgo } from '../ui/time-ago';
 import { GateActions } from './gate-releases';
 import { gateReasonSentence } from './gate-words';
 import { anchorScopeWords } from './signature-words';
+import { Busy } from '../ui/busy';
 
 /** An artifact of the entry in the gate's repository: a stored file the gate judges, by its digest, with its own refusal when it has one. */
 export interface GateArtifact {
@@ -28,7 +29,7 @@ export interface GateArtifact {
 @Component({
   selector: 'quader-signature-gate',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ErrorNotice, TimeAgo],
+  imports: [Busy, ErrorNotice, TimeAgo],
   template: `
     @let g = gate();
     <section class="sig-gate" [class.refused]="g.decision === 'refused'" data-testid="signature-gate" [attr.aria-label]="label">
@@ -78,7 +79,7 @@ export interface GateArtifact {
               </p>
               @if (canRelease()) {
                 <p class="gate-actions">
-                  <button class="btn btn-default" type="button" [disabled]="busy()" (click)="release(a)">
+                  <button class="btn btn-default" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="release(a)">
                     <ng-container i18n="@@sig.release.action">Release for this repository</ng-container
                     ><span class="visually-hidden" translate="no">&ngsp;{{ a.name }}</span>
                   </button>
@@ -111,7 +112,7 @@ export interface GateArtifact {
                 <p class="release-reason"><span class="muted" i18n="@@sig.gate.release-reason">Reason:</span>&ngsp;<span>{{ rel.reason }}</span></p>
                 @if (canRelease()) {
                   <p class="gate-actions">
-                    <button class="btn btn-default" type="button" [disabled]="busy()" (click)="withdraw(rel.sha256)" i18n="@@sig.withdraw">Withdraw release</button>
+                    <button class="btn btn-default" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="withdraw(rel.sha256)" i18n="@@sig.withdraw">Withdraw release</button>
                   </p>
                 }
               }

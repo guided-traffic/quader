@@ -17,6 +17,7 @@ import { QuaderDialog } from '../../shared/ui/dialog';
 import { TechnicalTokenLimits, accountPlace } from '../limits/technical-token-limit';
 import { RotateDialog } from '../tokens/token-manager';
 import { TechnicalTokenTable, TokenLimitsView, currentSecret } from './technical-token-table';
+import { Loading } from '../../shared/ui/loading';
 
 /** What the open form issues: a new technical token, or a new secret of the named one. */
 type FormFor = { readonly kind: 'token' } | { readonly kind: 'secret'; readonly name: string };
@@ -34,7 +35,7 @@ type FormFor = { readonly kind: 'token' } | { readonly kind: 'secret'; readonly 
  */
 @Component({
   selector: 'quader-technical-tokens',
-  imports: [ErrorNotice, TechnicalTokenTable, TokenForm, TokenSecret],
+  imports: [Loading, ErrorNotice, TechnicalTokenTable, TokenForm, TokenSecret],
   template: `
     @if (canIssue() && !form()) {
       <div class="toolbar">
@@ -105,7 +106,7 @@ type FormFor = { readonly kind: 'token' } | { readonly kind: 'secret'; readonly 
         />
       }
     } @else if (!loadError()) {
-      <p role="status" i18n="@@tt.loading">Loading technical tokens.</p>
+      <quader-loading i18n="@@tt.loading">Loading technical tokens.</quader-loading>
     }
   `,
   styleUrl: '../../shared/access/access.scss',

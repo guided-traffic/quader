@@ -16,6 +16,7 @@ import { downloadStateText, failureLine } from '../downloads/download-words';
 import { AllowDialog, AllowDialogData, DeclineDialog, DeclineDialogData } from './request-dialogs';
 import { UpstreamActions } from './upstream-actions';
 import { FailureToasts } from '../../../shared/failure-dialog';
+import { Busy } from '../../../shared/ui/busy';
 
 /** How many entries the panel shows at first. */
 const PANEL_PAGE = 20;
@@ -29,7 +30,7 @@ const PANEL_PAGE = 20;
  */
 @Component({
   selector: 'quader-delivery-requests-panel',
-  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, ErrorNotice, RouterLink, TimeAgo],
+  imports: [Busy, CdkMenu, CdkMenuItem, CdkMenuTrigger, ErrorNotice, RouterLink, TimeAgo],
   template: `
     @if (failure(); as f) {
       <quader-error-notice [error]="f" (retry)="load(true)" />
@@ -102,7 +103,7 @@ const PANEL_PAGE = 20;
                 <button
                   class="btn btn-tertiary btn-icon on-line request-menu"
                   type="button"
-                  [disabled]="busy().has(r.id)"
+                  [disabled]="busy().has(r.id)" [quaderBusy]="busy().has(r.id)"
                   [attr.aria-label]="menuLabel(r)"
                   [cdkMenuTriggerFor]="requestMenu"
                 >
@@ -115,7 +116,7 @@ const PANEL_PAGE = 20;
                   </div>
                 </ng-template>
               } @else if (!actions.manager() && r.state === 'open' && mine(r)) {
-                <button class="btn btn-tertiary on-line" type="button" [disabled]="busy().has(r.id)" (click)="withdraw(r)">
+                <button class="btn btn-tertiary on-line" type="button" [disabled]="busy().has(r.id)" [quaderBusy]="busy().has(r.id)" (click)="withdraw(r)">
                   <ng-container i18n="@@requests.withdraw">Withdraw</ng-container><span class="visually-hidden" translate="no">&ngsp;{{ subject(r) }}</span>
                 </button>
               }
@@ -123,7 +124,7 @@ const PANEL_PAGE = 20;
           }
         </ul>
         @if (next() !== null) {
-          <button class="btn btn-default" type="button" [disabled]="loading()" (click)="load(false)" i18n="@@requests.more">Load more</button>
+          <button class="btn btn-default" type="button" [disabled]="loading()" [quaderBusy]="loading()" (click)="load(false)" i18n="@@requests.more">Load more</button>
         }
       </section>
     }
