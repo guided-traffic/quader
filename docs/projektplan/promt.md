@@ -843,6 +843,14 @@ order is what a user or an operator meets first. The state is kept here.
   `docs/developer/e2e.md`). Not run on a cluster before the push: a developer's machine keeps no secret in the file, so only
   the pipeline's legs show it; the first leg's log line "the nodes pull from Docker Hub with the account" and its operators
   coming up are what to read. `SBOM generator` was green in that run with its login.
+  `e2e (push)` of S1's run (45560824204, job 139026533392, read at 08:02) ended the same way at the same two operators; that
+  run was started before the repair and is not started again.
+  **The release v0.124.1 has no image and no chart (read at 08:10):** Semantic Release of S1's run cut it at 07:43 (the two
+  UI repairs of the night, M1 and S1), and `Release Docker & Helm` (45562691930) failed at "Start the registry of the SBOM
+  generator": the same pull of the `registry` image, before the workflow's own login to Docker Hub, answered 429. The
+  owner's installation stays on 0.124.0 (read at 08:08: the release ready, eleven certificates ready). **Repaired at 08:15:**
+  the login stands before the first pull in `.github/workflows/build.yml`. The release's run reads the workflow of its tag,
+  so a re-run of v0.124.1 passes only once the address's limit has room; the next release builds with the repaired file.
 
 - **Two red jobs of R5b's push (2026-11-24; Test and Release 45324445298, read at 06:25):** `UI layout checks`: the
   renders `repository-npm-remote-upstream` as power and admin ended with eight `cramped` findings at 1440 px (the
