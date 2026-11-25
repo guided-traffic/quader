@@ -29,13 +29,13 @@ function problem(route: Route, status: number, code: string, detail: string, ret
 
 const apiOf = (suffix: string) => (url: URL): boolean => new RegExp(`^/api/v1/projects/[^/]+/repositories/[^/]+/${suffix}$`).test(url.pathname);
 const capsUrl = apiOf('upstream');
-const searchUrl = apiOf('upstream/search');
+export const searchUrl = apiOf('upstream/search');
 const levelsUrl = apiOf('upstream/levels');
-const packageUrl = apiOf('upstream/package');
+export const packageUrl = apiOf('upstream/package');
 const verdictsUrl = apiOf('upstream/vulnerabilities');
 const requestsUrl = apiOf('delivery-requests');
 const rulesUrl = apiOf('delivery-rules');
-const previewUrl = apiOf('downloads/preview');
+export const previewUrl = apiOf('downloads/preview');
 
 // ---- npm ----
 
@@ -318,7 +318,7 @@ function previewOf(body: Record<string, unknown> | null): Record<string, unknown
 }
 
 /** Every call of the tab answered as an npm remote in mode `onlyAllowed` answers it; `over` changes one call's answer. */
-async function answerNpm(p: Page, over: { caps?: (r: Route) => Promise<void>; search?: (r: Route) => Promise<void>; pkg?: (r: Route) => Promise<void> } = {}): Promise<void> {
+export async function answerNpm(p: Page, over: { caps?: (r: Route) => Promise<void>; search?: (r: Route) => Promise<void>; pkg?: (r: Route) => Promise<void> } = {}): Promise<void> {
   await p.unrouteAll({ behavior: 'ignoreErrors' });
   await p.route(capsUrl, over.caps ?? ((r) => json(r, npmCaps())));
   await p.route(searchUrl, over.search ?? ((r) => {
@@ -356,13 +356,13 @@ function deliveredByMode(name: string): Record<string, unknown> {
 }
 
 /** A query of the tab's address, the page reloaded with the answers in place. */
-async function open(p: Page, query: string): Promise<void> {
+export async function open(p: Page, query: string): Promise<void> {
   const url = new URL(p.url());
   url.search = query;
   await p.goto(url.toString());
 }
 
-const tab = 'main quader-remote-upstream';
+export const tab = 'main quader-remote-upstream';
 
 /**
  * The tab as it opens (the seed's offline remote: the offline mode's sentence), then answered as an npm remote: a search with every

@@ -1,9 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Page, expect, test } from '@playwright/test';
+import { Page, Request, expect, test } from '@playwright/test';
 import { LayoutFinding, emptyScroll, findingLine, innerScroll, judge, layoutFindings } from './layout';
 import { locale, manifestDir, outDir } from './paths';
-import { awaitAnswersOnUnroute } from './routes';
+import { awaitAnswersOnUnroute, isHeld } from './routes';
 import { Kind } from './seed';
 import { KEEP_OPEN, Screen, screens } from './screens';
 
@@ -188,10 +188,11 @@ async function settle(page: Page): Promise<void> {
   let quietSince = Date.now();
   while (pending && Date.now() < deadline) {
     await page.waitForTimeout(100);
-    if (pending.size > 0) quietSince = Date.now();
+    // A call a walk holds open to picture a load (R-UI-217) is not waited for.
+    if ([...pending].some((r) => !isHeld(r as Request))) quietSince = Date.now();
     else if (Date.now() - quietSince >= 400) break;
   }
-  if (pending && pending.size > 0 && Date.now() >= deadline) {
+  if (pending && [...pending].some((r) => !isHeld(r as Request)) && Date.now() >= deadline) {
     console.log(`settle: on ${new URL(page.url()).pathname}, still open after 15 s: ${[...pending].map((r) => (r as { url(): string }).url()).join(', ')}`);
   }
   const t0 = Date.now();

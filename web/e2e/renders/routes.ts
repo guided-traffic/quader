@@ -75,6 +75,34 @@ function sameUrl(a: Url, b: Url): boolean {
   return a === b;
 }
 
+/** The calls a walk holds open on purpose, to picture a load (R-UI-217): `settle` of the render run does not wait for them. */
+const held = new WeakSet<Request>();
+
+/** Whether a call is held open by a walk. */
+export function isHeld(request: Request): boolean {
+  return held.has(request);
+}
+
+/**
+ * Holds every call of `url` (of `method`, GET by default) open until the returned function releases them: the screen as it loads, with
+ * its spinner and its sentence. A released call goes on to the walk's earlier routes or the server (`route.fallback()`), and the handler
+ * is removed. The run's `settle` leaves held calls out of the calls it waits for, so the picture is taken while they are open.
+ */
+export async function holdCalls(page: Page, url: Url, method = 'GET'): Promise<() => Promise<void>> {
+  const waiting: Route[] = [];
+  const handler = (route: Route): unknown => {
+    if (route.request().method() !== method) return route.fallback();
+    held.add(route.request());
+    waiting.push(route);
+    return undefined;
+  };
+  await page.route(url, handler);
+  return async () => {
+    for (const r of waiting.splice(0)) await r.fallback().catch(() => undefined);
+    await page.unroute(url, handler);
+  };
+}
+
 /** Resolves when every call has ended, however it ended, or after `IN_FLIGHT_MS`. */
 async function settled(calls: Promise<unknown>[]): Promise<void> {
   if (calls.length === 0) return;

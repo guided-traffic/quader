@@ -60,6 +60,7 @@ import {
 } from './server-texts';
 import { downloadsButtonWalk, downloadsExpected, downloadsPanelWalk } from './upstream-downloads';
 import { failureExpected, failureNotices, failureStates } from './failures';
+import { loadingWalk } from './loading';
 import {
   adminLists,
   debianKeys,
@@ -2953,6 +2954,9 @@ export const screens: readonly Screen[] = [
     de: true,
     tables: upstreamVersions,
   },
+  // The loads of R-UI-217 held open (loading.ts): a list's load in the table's place, the busy Search button, an opened row's line, a
+  // dialog's line and a page's load, each with the spinner of the mark, in both languages; a held call is not waited for (`isHeld`).
+  { id: 'loading-states', path: `${P}/repositories/npmjs/upstream`, kinds: ['power'], walk: loadingWalk, expected: upstreamExpected, de: ['power'], states: { list: { widths: [1440, 390] }, 'search-busy': { widths: [1440, 390] }, package: { widths: [1440, 390] }, preview: { widths: [1440, 390] }, page: { widths: [1440, 390] } } },
   { id: 'repository-oci-upstream-lookup', path: `${O}/repositories/docker-hub-remote/upstream`, kinds: ['power'], walk: upstreamLookupWalk, expected: upstreamExpected, tables: upstreamVersions },
   { id: 'repository-oci-upstream-unknown-level', path: `${O}/repositories/docker-hub-remote/upstream`, kinds: ['power'], walk: upstreamUnknownLevelWalk, de: true },
   { id: 'repository-deb-upstream', path: `${O}/repositories/debian/upstream`, kinds: ['power'], walk: upstreamDebWalk, tables: upstreamVersions },
