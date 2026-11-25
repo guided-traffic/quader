@@ -81,9 +81,11 @@ export function importStateText(state: AnsibleImportTask['state']): string {
       margin: var(--quader-space-1) 0 0;
       max-width: 40rem;
     }
+    /* A message's word longer than its line (a digest, a path) breaks where it must, never a shorter one. */
     .messages {
       margin: var(--quader-space-1) 0 0;
       padding-inline-start: var(--quader-space-4);
+      overflow-wrap: break-word;
     }
     .level {
       font-weight: 600;
@@ -106,9 +108,11 @@ export class AnsibleImportTasks {
   protected readonly emptyText = $localize`:@@ansible.imports.empty:No collection has been published to this repository yet, or the tasks have been deleted.`;
   protected readonly columns: readonly TableColumn[] = [
     { id: 'collection', label: $localize`:@@ansible.imports.col.collection:Collection` },
-    { id: 'version', label: $localize`:@@ansible.imports.col.version:Version` },
-    { id: 'state', label: $localize`:@@ansible.imports.col.state:State` },
-    { id: 'created', label: $localize`:@@ansible.imports.col.created:Published` },
+    // The short columns keep their width and the messages take the rest: a row's messages unfold in a fold that asks its column
+    // for no room, and the column was 90 px wide at 1,024 px, a word a line, its digest 10 px into the next cell (2026-11-25).
+    { id: 'version', label: $localize`:@@ansible.imports.col.version:Version`, width: '6rem' },
+    { id: 'state', label: $localize`:@@ansible.imports.col.state:State`, width: '9rem' },
+    { id: 'created', label: $localize`:@@ansible.imports.col.created:Published`, width: '12rem' },
     {
       id: 'messages',
       label: $localize`:@@ansible.imports.col.messages:Messages`,
