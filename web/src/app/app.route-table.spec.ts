@@ -1,7 +1,7 @@
 import { Route, Routes, UrlMatcher } from '@angular/router';
 import specPage from '../../../docs/spec/api-and-ui.md' with { loader: 'text' };
 import { routes } from './app.routes';
-import { packageMatcher, versionMatcher } from './features/packages/packages.routes';
+import { packageMatcher, versionMatcher, versionsMatcher } from './features/packages/packages.routes';
 import { filesMatcher } from './features/repositories/repositories.routes';
 import { advisoryMatcher } from './features/vulnerabilities/vulnerabilities.routes';
 
@@ -10,6 +10,7 @@ const MATCHERS = new Map<UrlMatcher, string>([
   [filesMatcher, 'files/{path…}'],
   [packageMatcher, '{format}/{name…}'],
   [versionMatcher, '{format}/{name…}@{version}'],
+  [versionsMatcher, '{format}/{name…}/-/versions'],
   [advisoryMatcher, 'advisories/{ecosystem}/{id}'],
 ]);
 
