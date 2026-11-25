@@ -258,6 +258,7 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 | S1 · A screen says a server's failure in its own language | the thirteen screens of section 8, Product ("Thirteen more screens show a server's English text as their own"), from the kept diff `.dev/server-sentences-full-scope.diff`, which no longer applies to `main` as it is | in work since 06:17 |
 | S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:17 |
 | M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847). Each is run once and its numbers are written down; a defect a number shows is repaired or entered | in work since 06:17 |
+| S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | in work since 06:40 |
 | P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows (dialogs, error states, hover, open menus), what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | a planner since 06:17 |
 
 **What stays open and is not built by this run, each with its reason:** F-126, F-95, the `npm ci` binding and the
@@ -808,6 +809,20 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **A download queue that an upstream's rate limit stops reads as running, and the overview reads as done (owner,
+  2026-11-25, 06:31, on the UI profile; his words: "Ich glaube der Download ist fertig aber das UI für Downloads spiegelt
+  das nicht. Running & Waiting haben noch Pillen die auf ausstehende Downloads hinweisen. Bitte einmal prüfen. Ich will
+  niergends F5 drücken müssen."):** the bulk of every version of `guidedtraffic/s3-encryption-proxy` (315) on the remote
+  `upstream/docker-hub`. **Verified by the development agent in the profile's database and log:** the tab is not stale
+  (`remote_download`: done 105, running 4, waiting 206, unchanged for minutes; the tab reads itself every 5 s); Docker Hub
+  answers every manifest request with 429 since 05:30:51 UTC, 2 min 47 s after the bulk's start (its pull limit without an
+  account); the four running rows ask again about once a minute and stay `running` with `attempts` 1; nothing is in flight,
+  so the overview says "No download from an upstream is running". Neither place says that the upstream limits requests,
+  since when, or when Quader asks again. Not verified: the `Retry-After` Docker Hub sent, and what the job does with it.
+  Seen beside it, cause not read: 48 warnings "signatures: the detector could not read the stored content; it is stored
+  without signatures" ("no connection of this replica holds a present copy") for manifests the bulk had just stored.
+  Given to a builder at 06:40 (package S3 of section 1), for every format's upstream.
 
 - **Thirteen more screens show a server's English text as their own (the audit of 2026-11-24, 13:00):** the download
   preview's note; repository warnings after a save and the upstream registries' messages; the connection test of a remote
