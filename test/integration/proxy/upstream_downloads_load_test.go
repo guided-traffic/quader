@@ -174,7 +174,7 @@ func TestMeasureTheWriteLoadOfTheDownloadOverview(t *testing.T) {
 	waitFor(t, "a live row with 200 downloads", 30*time.Second, func() bool {
 		rowBytes = e.number("SELECT coalesce(max(pg_column_size(downloads)), 0) FROM " + schemaName + ".upstream_download_live")
 		omitted = e.number("SELECT coalesce(max(omitted), 0) FROM " + schemaName + ".upstream_download_live")
-		return e.number("SELECT coalesce(max(jsonb_array_length(downloads)), 0) FROM " + schemaName + ".upstream_download_live") == fills.MaxPublished
+		return e.number("SELECT coalesce(max(jsonb_array_length(downloads)), 0) FROM "+schemaName+".upstream_download_live") == fills.MaxPublished
 	})
 	textBytes := e.number("SELECT coalesce(max(octet_length(downloads::text)), 0) FROM " + schemaName + ".upstream_download_live")
 	wg.Wait()
@@ -191,9 +191,11 @@ func TestMeasureTheWriteLoadOfTheDownloadOverview(t *testing.T) {
 	for i := range entries {
 		speed := int64(1 << 20)
 		tot := int64(64 << 10)
-		entries[i] = fills.Entry{ID: uuid.NewString(), RepoID: e.number("SELECT id FROM " + schemaName + ".repositories WHERE key = 'remote-on'"), Name: fmt.Sprintf("h%03d", i),
+		entries[i] = fills.Entry{
+			ID: uuid.NewString(), RepoID: e.number("SELECT id FROM " + schemaName + ".repositories WHERE key = 'remote-on'"), Name: fmt.Sprintf("h%03d", i),
 			Version: "1.0.0", Path: fmt.Sprintf("pkg/h%03d/-/h%03d-1.tgz", i, i), Bytes: 32 << 10, Total: &tot, Speed: &speed,
-			StartedAt: time.Now().UTC(), ElapsedMs: 3000, Origin: "client", By: uuid.NewString()}
+			StartedAt: time.Now().UTC(), ElapsedMs: 3000, Origin: "client", By: uuid.NewString(),
+		}
 	}
 	instance := uuid.NewString()
 	const reps = 50
@@ -209,9 +211,11 @@ func TestMeasureTheWriteLoadOfTheDownloadOverview(t *testing.T) {
 		now := time.Now().UTC()
 		for i := range out {
 			tot := int64(1024)
-			out[i] = fills.Finished{ID: uuid.NewString(), RepoID: entries[0].RepoID, Name: fmt.Sprintf("p%05d", i), Version: "1", Path: "pkg/x/-/x-1.tgz",
+			out[i] = fills.Finished{
+				ID: uuid.NewString(), RepoID: entries[0].RepoID, Name: fmt.Sprintf("p%05d", i), Version: "1", Path: "pkg/x/-/x-1.tgz",
 				Bytes: 1024, Total: &tot, StartedAt: now, FinishedAt: now.Add(time.Duration(i) * time.Microsecond), DurationMs: 3, Outcome: "completed",
-				Origin: "client", Replica: "r"}
+				Origin: "client", Replica: "r",
+			}
 		}
 		return out
 	}

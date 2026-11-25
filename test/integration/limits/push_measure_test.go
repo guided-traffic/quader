@@ -147,8 +147,10 @@ func (c *registryClient) push(repo, name, pat, who string, platforms, layers int
 	if a := c.send("GET", "/v2/", "", nil, nil); a.status != http.StatusUnauthorized {
 		c.t.Fatalf("the version check without a credential: %d", a.status)
 	}
-	form := url.Values{"grant_type": {"password"}, "username": {who}, "password": {pat}, "service": {testenv.DefaultHost},
-		"scope": {"repository:" + testenv.DefaultProject + "/" + repo + "/" + name + ":pull,push"}}
+	form := url.Values{
+		"grant_type": {"password"}, "username": {who}, "password": {pat}, "service": {testenv.DefaultHost},
+		"scope": {"repository:" + testenv.DefaultProject + "/" + repo + "/" + name + ":pull,push"},
+	}
 	tok := c.send("POST", "/v2/_token", "", []byte(form.Encode()), map[string]string{"Content-Type": "application/x-www-form-urlencoded"})
 	if tok.status != http.StatusOK {
 		c.t.Fatalf("the token: %d %s", tok.status, tok.body)
@@ -174,9 +176,11 @@ func (c *registryClient) push(repo, name, pat, who string, platforms, layers int
 		if !c.blobs(path, bearer, blobs) {
 			return c.result(false)
 		}
-		m, _ := json.Marshal(map[string]any{"schemaVersion": 2, "mediaType": "application/vnd.oci.image.manifest.v1+json",
+		m, _ := json.Marshal(map[string]any{
+			"schemaVersion": 2, "mediaType": "application/vnd.oci.image.manifest.v1+json",
 			"config": map[string]any{"mediaType": "application/vnd.oci.image.config.v1+json", "digest": digest(cfg), "size": len(cfg)},
-			"layers": ls})
+			"layers": ls,
+		})
 		if a := c.send("PUT", path+"/manifests/"+digest(m), bearer, m, map[string]string{"Content-Type": "application/vnd.oci.image.manifest.v1+json"}); a.status != http.StatusCreated {
 			return c.result(false)
 		}
@@ -184,8 +188,10 @@ func (c *registryClient) push(repo, name, pat, who string, platforms, layers int
 	}
 	var ms []any
 	for i, m := range manifests {
-		ms = append(ms, map[string]any{"mediaType": "application/vnd.oci.image.manifest.v1+json", "digest": digest(m),
-			"size": len(m), "platform": map[string]any{"os": "linux", "architecture": fmt.Sprintf("arch%d", i)}})
+		ms = append(ms, map[string]any{
+			"mediaType": "application/vnd.oci.image.manifest.v1+json", "digest": digest(m),
+			"size": len(m), "platform": map[string]any{"os": "linux", "architecture": fmt.Sprintf("arch%d", i)},
+		})
 	}
 	idx, _ := json.Marshal(map[string]any{"schemaVersion": 2, "mediaType": "application/vnd.oci.image.index.v1+json", "manifests": ms})
 	a := c.send("PUT", path+"/manifests/v1", bearer, idx, map[string]string{"Content-Type": "application/vnd.oci.image.index.v1+json"})
@@ -193,8 +199,10 @@ func (c *registryClient) push(repo, name, pat, who string, platforms, layers int
 }
 
 func (c *registryClient) result(finished bool) pushResult {
-	r := pushResult{requests: c.requests.Load(), unsafe: c.unsafe.Load(), refused: c.refused.Load(), took: time.Since(c.start),
-		waited: time.Duration(c.waited.Load()) * time.Millisecond, finished: finished, first429: c.first429}
+	r := pushResult{
+		requests: c.requests.Load(), unsafe: c.unsafe.Load(), refused: c.refused.Load(), took: time.Since(c.start),
+		waited: time.Duration(c.waited.Load()) * time.Millisecond, finished: finished, first429: c.first429,
+	}
 	for _, n := range c.perSecond {
 		r.peak = max(r.peak, n)
 	}
