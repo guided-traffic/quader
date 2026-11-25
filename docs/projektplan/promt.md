@@ -259,9 +259,11 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 | S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:17 |
 | M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847) | landed and pushed at 07:14 (eight commits, Test and Release 45559185462; its builder worked from 06:17 to 07:12, every gate exit 0); what it measured and changed is below |
 | S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | landed and pushed at 08:11 (two commits, migration 00120; Q-CUR-170 to Q-CUR-176, Q-UI-1100 to Q-UI-1104, gaps H-1880 to H-1884; its builder worked from 06:40 to 08:05; the landing's gates each exit 0; two of its pictures looked at by the development agent) |
-| S4 · One scrollbar per page | the owner's finding of 06:45 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | the plan is back at 07:12 (P2, 25 minutes, read-only; kept in the session's scratch directory as `p2-one-scrollbar-per-page-plan.md`): one package, see below; a builder in M1's place since 07:16 |
+| S4 · One scrollbar per page | the owner's finding of 06:45 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | landed and pushed at 09:47 (one commit; R-UI-215, Q-UI-1110 to Q-UI-1113; its builder worked from 07:15 to 09:38; the landing's gates each exit 0; the owner's case looked at by the development agent in its picture) |
 | S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | the plan is back at 07:20 (P3, 27 minutes, read-only; kept as `.dev/plans/p3-one-row-per-image-newest-first-plan.md` of the main checkout, not in git): two packages in order, S5a the server and S5b the screens, see below; S5a in work since 08:12, in S3's place; S5b after it and after S4 |
 | S6 · "Not scanned" says why and what comes | the owner's finding of 06:55 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | landed and pushed at 08:50 (two commits, migration 00121; Q-VULN-274 to Q-VULN-279, Q-UI-1120 to Q-UI-1123, Q-ARCH-1064, gaps H-1890 and H-1891; its builder worked from 07:19 to 08:25); what it built and left is in section 8, Product |
+| S7 · The UI profile scans for malware, with nothing of it in the product | H-1891 (section 8, Product, under S6): ClamAV on the owner's machine through a relay of the profile's own between a Unix socket on the host and `clamd`'s port published on the host's loopback; the product's binary, its configuration and the chart do not change (the owner's conditions of 09:17, below) | in work since 09:41, in S4's place |
+| S8 · An upstream's account from a Secret that exists | the owner's task of 09:40 (below): the chart supplies the upstream registries with accounts from existing Secrets; the development profiles take Docker Hub's account from a file of the machine | a planner (P4) since 09:43; builders after its plan |
 | P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows, what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | back at 06:42 (a planner, 25 minutes, read-only; kept in the session's scratch directory as `p1-render-guard-blind-spots-plan.md`); its three packages are G1 to G3 below |
 
 **The render guard's blind spots, as the plan of 06:42 reads them (counted in the code by its planner; the estimates are
@@ -280,7 +282,7 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 
 | Package | What it builds | Cost (the planner's estimate, to be measured by its builder) | State |
 |---|---|---|---|
-| G2 · Every dialog in a real browser, without the stack | the 21 dialogs, the two confirm shapes, 17 failures and 13 validations inside a dialog, the conflict and the session dialogs, the token's secret, tooltips at the window's edge: about 62 states at 390 and 1,440 px, measured by the layout checks' own function in the unit-test builder's browser mode; one new development dependency (the unit-test runner's browser provider, pinned) | 2 to 3 minutes of the job `UI layout checks`, nothing per format | waits for a builder's place (four run) |
+| G2 · Every dialog in a real browser, without the stack | the 21 dialogs, the two confirm shapes, 17 failures and 13 validations inside a dialog, the conflict and the session dialogs, the token's secret, tooltips at the window's edge: about 62 states at 390 and 1,440 px, measured by the layout checks' own function in the unit-test builder's browser mode; one new development dependency (the unit-test runner's browser provider, pinned) | 2 to 3 minutes of the job `UI layout checks`, nothing per format | in work since 08:53, in S6's place |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | after S1 and S2 have landed (the same files) |
 | G3 · Page and shell states on the stack | the 10 menus, 3 drawers, the person search's list in a drawer, about 19 sections, 11 routes, the banner and the maintenance notice, a failure of an action inside a section, the editors' refusals with their summary, two selection states, the command menus of NuGet, Ansible Galaxy and generic | 5 to 6 minutes of the render step (the job at about 61 to 64 of its 75 minutes), about 3 s per format | after G1 |
 
@@ -354,6 +356,44 @@ through it or a mirror pass has stored it, and the Upstream tab and "download ev
   and six decisions of the development agent (Q-UI-453, R-UI-052's opened list, R-OCI-031's and Q-OCI-17's order of
   tags that are no version, R-API-029's default, the catalogue's order for Docker Hub and Quay). Not built: a count of
   images, grouping on the Upstream tab (its acts are per tag), a version-aware order of generic folders.
+
+**Releases of the morning.** v0.124.1 was cut at 07:43 (the night's two UI repairs, M1, S1) and has no image and no chart
+(section 8, Tests and tools: Docker Hub's limit); **v0.124.2** was cut at 08:36 by the run of S3's push (45566184640) with
+the repaired build workflow, its image and chart are out, and **it runs on the owner's installation** (read at 08:55: chart
+0.124.2 deployed, seven Deployments on the image, every pod running, eleven certificates ready, the ingress answers). The
+UI development profile runs the `main` of 08:50 since 08:52, with the vulnerability scanner and the database's loader
+beside the backend.
+The run of S3's push (45566184640), which cut v0.124.2, ended with every job green, its kind legs among them (read at
+09:25); no job of it was started again.
+
+**ClamAV on the UI profile: the owner's decision and its conditions (2026-11-25, 09:17).** Asked what the open question of
+H-1891 is, he was given the three options with the development agent's favourite, a link to `clamd` over TCP in the
+product, accepted for a loopback address only. His answer, whole: "Ja, bau A, auf loopback beschränken. Das soll aber ein
+Setting sein, welches nur hier auf meinem Mac zur Deveopmentzeit angewendet wird. Ich will dass davon nichts in die
+ausgelieferten Images wandert und ich will keinen neuen offenen Port im produktiven quader. Bekommen wir das so
+bescheränkt?" **So the development agent's favourite as proposed does not meet his conditions** (a setting of the product
+is in every image), **and is built another way that does:** the product keeps its one way to `clamd`, the Unix socket
+(`internal/malware/clamd` dials `unix` and nothing else); the profile starts `clamd` in a container of the pinned image
+with a TCP port that Docker publishes on the host's loopback alone, and a relay of the profile's own, a program of the
+repository beside the profile's sign-in provider (`test/…`, built by `deploy/ui-dev/` into `.dev/`, never by the
+`Containerfile`), listens on a Unix socket in the profile's state directory and passes each connection to that port. The
+scanner on the host is the product's, unchanged, with `malware.scanner.socket` pointing at the relay's socket.
+**Verified before the answer:** the chart's `clamd.conf` has `LocalSocket` and no TCP line
+(`deploy/helm/quader/templates/_malware.tpl`); the image builds and copies one binary, `quader` (`Containerfile`), and
+`cmd/` holds nothing else; the scanner is the client of `clamd`, so no option opened a port in the product. **To be held
+by a test:** the product's packages dial `clamd` by a Unix socket only and import nothing of the relay. Not verified:
+that `clamd` of the pinned image opens a TCP port beside its socket with the profile's configuration.
+
+**The owner's task of 09:40: accounts for the upstreams (S8).** His words, whole: "Ich möchte, dass ich im Helm Chart die
+Upstream-Repos mit Accounts über exsisting Secrets versorgen kann. Für die Dev-Umgebung auf localhost will ich die docker
+credentials pflegen. Wo kann ich dir dockerhub public-read credentials hinterlegen? Erzeuge mir eine geeignete Ablage".
+**The place exists since 09:42:** `.dev/credentials/upstream-registries.env` of the main checkout (mode 0600, its
+directory 0700; `/.dev/` is ignored by git and by the image build), with the keys `DOCKERHUB_USERNAME` and
+`DOCKERHUB_TOKEN` as placeholders. Nothing reads it yet. A planner (P4, since 09:43) reads how an upstream's account is
+stored and set today, weighs how a Secret that exists becomes one (read at use from a mounted file, imported at a start,
+or a declared block of the values), gives the values' shape for his case, and plans how both development profiles take
+the file's account through the same mechanism, with nothing of the profiles in the product. The development agent reads
+and prints the file's values never.
 
 **What stays open and is not built by this run, each with its reason:** F-126, F-95, the `npm ci` binding and the
 unreachable github.com of `e2e (bastion)` wait for a recurrence (section 8); the stall without a neighbour is a standing
@@ -824,6 +864,14 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **The German render pass is red on `main` since S1's landing (2026-11-25, 07:28; seen by the builders of S3 and S4):**
+  21 screens with 108 findings, every one of the new check `english`, which finds English texts in a German picture that
+  are data and not the screen's words and are not marked as written (`translate="no"`): the seed's project and item
+  descriptions, page descriptions, readmes, advisory summaries, the limits' descriptions. S1's builder had run the German
+  pass on its own 18 screens only. The pass is a local gate and not a job of the pipeline. Not given to a builder of its
+  own: S2, whose brief ends with a German pass without a finding, meets them after its rebase; its report says what is
+  left.
+
 - **`SBOM generator` red in the run of M1's push: Docker Hub's limit of the site's address, used up by a bulk on the UI
   profile (2026-11-25; Test and Release 45559185462, job 139018489252, read at 07:17):** the job's `docker run` of the
   pinned `registry` image was answered "429 Too Many Requests" by `registry-1.docker.io`. The job gates Semantic Release
@@ -845,6 +893,9 @@ order is what a user or an operator meets first. The state is kept here.
   coming up are what to read. `SBOM generator` was green in that run with its login.
   `e2e (push)` of S1's run (45560824204, job 139026533392, read at 08:02) ended the same way at the same two operators; that
   run was started before the repair and is not started again.
+  **Shown at 08:58:** the run of the repair (45564088304) ended with every job green, its four kind legs among them
+  (`e2e (push)`, `(access-long)`, `(npm)`, `(ci)`), and the log of `e2e (push)` holds the line "the nodes pull from Docker
+  Hub with the account", while the address was still limited. No job of it was started again.
   **The release v0.124.1 has no image and no chart (read at 08:10):** Semantic Release of S1's run cut it at 07:43 (the two
   UI repairs of the night, M1 and S1), and `Release Docker & Helm` (45562691930) failed at "Start the registry of the SBOM
   generator": the same pull of the `registry` image, before the workflow's own login to Docker Hub, answered 429. The
@@ -987,7 +1038,23 @@ records the recorder that tells such a stall apart).
   his picture shows `3.8.51, sha-5ccfd1a, 3.8.52, …`, oldest first with the commit tags between. To do (S5): every list
   of versions defaults to the format's own version order, newest first, in every format.
 
-- **Three scrollbars side by side on a list (owner, 2026-11-25, 06:45, on the UI profile, the tab Images of
+- **Closed on 2026-11-25, 09:47, by S4 (R-UI-215; Q-UI-1110 to Q-UI-1113):** a page has one scrollbar, `main`'s. The
+  data table has no height cap, no scroll, no tab stop and no sticking head of its own, so a list of any length grows the
+  page (the head scrolls away with it: the plan's recommendation, **not confirmed against the owner's GitLab**, since the
+  style guide says nothing of it); an opened item shows its ten newest versions under a head of its own and links "All N
+  tags" or "All N versions" to the package's page; an upstream package opened in a row grows the page with "Load more";
+  the policy's preview and an opened audit event stick beside the page only while they fit (a shared directive), and
+  closing an event returns the focus to its row; the caps of the issued-token dialog's two blocks, of the packages
+  drawer's check list and of the CI snippet are gone; a folded command cuts instead of scrolling. Held by the render
+  check `inner-scroll`, measured in the window's first height (six fixtures in three engines, about 3 s; about 3 s of the
+  render step), and by the rule in `CLAUDE.md`. A full English render run had no finding (43.6 minutes). **Kept with a
+  scroll of its own, each written into Q-UI-1110 and Q-UI-1112 as a choice the owner may refuse:** a navigation column
+  that sticks beside the page (the manual's contents, the tree of a collection's documentation), the two framed boxes of
+  a fixed height that stand in for charts (the trend's table and the usage history's, the latter framed now), the list
+  box of a virtual repository's members, and every overlay, one scroll each. Left open by its builder: no picture shows a
+  folded command or an image with a hundred tags (the seed has neither); a banner above the frame is not counted in the
+  page's height, so a navigation column's last entries can sit under the panel's edge then; the render of the usage
+  history's table is 16,000 px tall, by the render's own growth loop. As it stood: **Three scrollbars side by side on a list (owner, 2026-11-25, 06:45, on the UI profile, the tab Images of
   `upstream/docker-hub` with an opened image of about a hundred tags; his words, whole: "Ich sehe auf dieser Seite 3
   scrollbars neben einander. Das sieht echt scheiße aus und sollte vermieden werden. Optimal wäre wenn es wirklich nur
   eine Scrollbar pro Seite gibt, die äußerste. Alles andere ist zu vermeiden. Bei kleinen Tabellen, ist evtl mal eine
