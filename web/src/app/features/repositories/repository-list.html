@@ -90,7 +90,7 @@
   [caption]="tableCaption"
   [columns]="columns()"
   [loaded]="list.loaded()"
-  [loading]="list.loading()"
+  [loading]="list.loading() || (serverFiltersWait() && !list.loaded())"
   loadingText="Loading the repositories."
   i18n-loadingText="@@repo.list.loading"
   [error]="list.error()"

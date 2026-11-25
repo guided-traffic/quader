@@ -244,6 +244,8 @@ export class RepositoryList {
     if (this.formats.isLoading()) return undefined;
     return classFilterQuery(cls, this.format(), valueOf(this.formats));
   });
+  /** The list waits for the catalog before its first request (a class filter of Local or System): it shows its load meanwhile. */
+  protected readonly serverFiltersWait = computed(() => this.classQuery() === undefined);
   /** The filters of the list's request; `null` while the class waits for the catalog. */
   private serverFilters(): RepositoryFilters | null {
     const cq = this.classQuery();
