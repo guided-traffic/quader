@@ -476,7 +476,7 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    `main`) is opened in turn; each view is taken light and dark (`prefers-color-scheme`, which the app follows while no theme is
    stored, the theme button's "Follow the system"). A view is taken when no call of the app's API has been open for 400 ms (at most
    15 s; a new document drops the calls of the one before it, which Chromium cancels without a word to the run). The window grows by what the content panel hides (the one thing of a page
-   that scrolls, R-UI-215) and what a box or a navigation column that keeps a scroll of its own hides, so a picture shows the whole length. A flow is a screen with a `walk`: the creation form is walked for OCI, npm, Ansible, NuGet and Debian,
+   that scrolls, R-UI-215) and what a box or a navigation column that keeps a scroll of its own hides, so a picture shows the whole length; not for a boxed list that `inner-scroll` allows (framed, at most 24 rem high), which keeps its height whatever the window's (the profile's usage table grew to the cap of 16,000 px before). A flow is a screen with a `walk`: the creation form is walked for OCI, npm, Ansible, NuGet and Debian,
    local, remote and virtual, as the power user in a project and as the administrator in the admin area: as it opens, with two
    members for a virtual repository, with Advanced settings open, and with the key's error (`new-<format>-<class>-…`); the format
    chooser as it opens and with a search that leaves no tile (`repository-new-…`); nothing is created. A repository's settings are

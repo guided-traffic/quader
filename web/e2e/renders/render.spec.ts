@@ -220,8 +220,13 @@ async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null,
       let by = '';
       // A text area keeps its height whatever the window's (R-UI-085: a typed field scrolls a longer value): the Debian remote's
       // upstream keys, 75,000 characters, grew the window of every Debian settings picture to the cap of 16,000 px (G5-65).
+      // A boxed list that `inner-scroll` allows (framed, at most 24 rem high) keeps its height whatever the window's, so the window is
+      // not grown for it: the profile's usage table grew every round by the same hidden rows to the cap of 16,000 px (2026-11-25).
+      const box = 24 * parseFloat(getComputedStyle(document.documentElement).fontSize);
       for (const el of Array.from(document.querySelectorAll<HTMLElement>('main *'))) {
         if (el instanceof HTMLTextAreaElement || !['auto', 'scroll'].includes(getComputedStyle(el).overflowY)) continue;
+        const style = getComputedStyle(el);
+        if (parseFloat(style.borderTopWidth) >= 1 && parseFloat(style.borderBottomWidth) >= 1 && el.clientHeight <= box) continue;
         const v = vertical(el);
         if (v > inner) {
           inner = v;
