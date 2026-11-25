@@ -7935,6 +7935,11 @@ the practice of most lists is the rule of every list and every table of the app,
   tooltip, [Q-UI-642](#q-ui-642--a-copy-button-stays-the-copy-icon-also-where-it-is-a-rows-one-action)), or **Set up client**
   in its quiet word form in a project's repository list ([Q-UI-487](#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row)).
   The menu may offer the same action again.
+- **A switch and the act of a state stand in the cell of that state** (the owner's working paper W-28 of 2026-11-25,
+  [Q-CUR-201](remote-curation.md#q-cur-201--a-versions-acts-stand-where-their-state-stands)): a list whose rows set a state by a switch
+  shows the switch in that state's cell beside its badge, and an act that changes what one cell shows stands in that cell as its one
+  word (the cache's **Download**, **Download for examination** or **Discard**; a reader's **Request** under the delivery). Such a row
+  has no action cell and no menu, and no cell holds two words.
 - **Opening the thing is its name**: the name in the first column is the link to the thing's page, and a row whose only action
   would open it has no action cell.
 - **A credential's Revoke is never in a menu** ([Q-UI-641](#q-ui-641--a-credentials-revoke-is-never-in-a-menu-a-token-row-keeps-its-two-words)):
@@ -7951,7 +7956,8 @@ Acceptance criteria:
 
 - `check-rules.mjs` fails on a template whose table cell or list item shows two word actions at once
   (`row-actions-rule.mjs`, tested by `lint-rules.test.mjs`); the app passes it with one allowed file, the token table of
-  Q-UI-641.
+  Q-UI-641. `lint-rules.test.mjs` passes a cell with a switch, one word and a link; `layout-checks.spec.ts` passes a switch beside its
+  badge on one line.
 - Unit tests: a CI mapping's row offers **Edit**, **Test** and **Delete** in the menu **Actions for &lt;name&gt;** to a writer and
   **Test** as its word to a reader, and the name opens the mapping; a next Debian key offers **Promote** and **Remove** in its
   menu, a withheld one **Reinstate** and **Confirm retirement**, the primary and a retired key nothing; a saved view's menu offers

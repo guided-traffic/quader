@@ -354,13 +354,17 @@ it bounds every counter at zero from below and every bulk's bounds at one.
   name the rule refuses answers `422 invalid_name` (registered with the rules' package, `internal/errs/codes.go`), a version the format
   cannot read `422 invalid_version`, a pattern the matcher refuses `422 invalid_pattern`; the decision folds what it is
   asked with the same functions, so `NuGet 1.0` and a rule on `1.0.0` meet (the gap of H-380 does not arise).
-- **Limits:** at most `proxy.delivery.max_rules` (10,000 by default) rules per repository, of which at most 100 sections (the bound of a
-  pattern list, R-REPO-005); beyond it `422 too_many_rules`.
+- **Limits:** at most `proxy.delivery.max_rules` (50,000 by default,
+  [Q-CUR-207](#q-cur-207--max_rules-50000-a-packages-version-rules-a-sorted-slice-the-store-compiles-only-what-can-decide-the-subject))
+  rules per repository, of which at most 100 sections (the bound of a pattern list, R-REPO-005); beyond it `422 too_many_rules`.
 - **Propagation.** Every write records the change area `repository` in its transaction (R-ARCH-018), as a write of a virtual
   repository's member rows does; every replica's snapshot of the repository then holds its compiled rule set: a map of names to the
-  package rule and the version rules, and the section patterns compiled by the matcher. A replica decides on its snapshot until it is
-  rebuilt (H-132, [../security/repository-model.md](../security/repository-model.md)). Memory: about 150 bytes per rule, 1.5 MB per
-  repository at the limit.
+  package rule and the version rules (a sorted slice per package), and the section patterns compiled by the matcher. A replica decides
+  on its snapshot until it is rebuilt (H-132, [../security/repository-model.md](../security/repository-model.md)). Memory, measured
+  once on 2026-11-25 with names of 30 characters (not a test): about 130 bytes a package rule (99 of the set, 31 of the name) and
+  185 a version rule of a package of its own (131 and 54), 50 a version rule of a package with a hundred; 6.5 MB per repository at the
+  limit of package rules, at most 9.5 MB, twice that while a snapshot is rebuilt; compiled in 7 ms. A snapshot that starts reads every
+  rule of every repository (`DeliveryRulesAll`).
 - **Journal.** A write that narrows what the repository delivers (a `block` added, an `allow` removed or turned into a `block`, the
   mode set to `onlyAllowed`) records `repository.narrowed` beside its own event, with the part `rules`
   (`{"blocksAdded": [<subject>], "allowsRemoved": [<subject>]}`) or `deliveryMode` (`"onlyAllowed"`), so a restore keeps it narrowed
@@ -374,6 +378,9 @@ it bounds every counter at zero from below and every bulk's bounds at one.
   | `POST delivery-rules` | `{"kind", "pattern" \| "name" [, "version"], "effect", "note"}`; creates or replaces the subject's rule | `201` (created), `200` (replaced) with the rule and `"revision"`; `422` as above; `400 not_applicable` for a local or virtual repository |
   | `DELETE delivery-rules/{ruleId}` | removes the rule | `204` |
   | `POST delivery-rules/check` | `{"name" [, "version"]}`: the decision of R-CUR-001 and the rule that made it (`"decidedBy": {"kind", "subject", "effect"} \| {"mode"}`) | `200` |
+  | `POST delivery-rules/switch` | a package's or a version's switch: writes or removes the subject's rule by what it inherits (R-CUR-024) | `200` |
+  | `GET delivery-rules/summary` | the counts of the rules and the stored packages the mode decides (R-CUR-025) | `200` |
+  | `POST delivery-rules/allow-stored` | one allowing package rule for each of those packages (R-CUR-025) | `200` |
 
   The rule's representation: `{"id", "kind", "subject", "pattern"?, "name"?, "version"?, "effect", "note", "requestId", "createdBy": {"id",
   "name"}, "createdAt"}`. Writes take `Idempotency-Key` (R-API-014).
@@ -652,6 +659,9 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
 - **A version's platforms** are the images' platforms or a package's architectures as the upstream names them, without the platform
   `unknown/unknown` an OCI index gives its attestation manifests (a provenance, an SBOM), which Docker Hub's tag list names among the
   images: the catalogue's engine leaves it out for every format's catalogue that names platforms (`platformsOf` of the catalogue engine).
+- **What a switch shows and asks** (R-CUR-024), only to whoever may set rules: a hit and a package carry `level` (the package level's
+  decision: its package rule, else the sections, else the mode), `inherited` (the level without the package's own rule) and
+  `versionRules` (`{"allow", "block"}`: its version rules by effect); a version carries `inherited` (the decision without its own rule).
 
 Acceptance criteria:
 
@@ -1281,9 +1291,9 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
   - A package opened (in place, as the content list's rows open, `collapse-region`): its versions, newest first, paged by 100 with
     **Load more** and a filter field for the version; per version its published time, size (or "size not told by the upstream"), flags,
     the delivery state, stored or not, the verdicts (with the sentence of a verdict that cannot exist), a queued download's state; the
-    actions per version and per package: **Download** (into the cache; for an examination **Download for examination**), **Allow**,
-    **Block**, **Remove rule**, **Request** (for a reader), and on the package **Download every version…** (opens the preview) and
-    **Allow every version** (future ones included).
+    actions per version and per package: **Download** (into the cache; for an examination **Download for examination**), the
+    switch between allowed and blocked (R-CUR-024), **Request** (for a reader), and on the package **Download every version…** (opens the preview) and
+    the package's switch (future versions included).
   - States: no result ("No package of the upstream matches “…”."), the upstream down ("The upstream is assumed offline until 10:42; Quader
     retries then." with the circuit's time), the budget used up ("The upstream catalogue's budget of this repository is used up; try again
     in 40 s."), a document too large ("This package's document is larger than 64 MiB; Quader does not read it for browsing."), a format
@@ -1307,20 +1317,21 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
     repository holds a version: the API answers no count, Q-CUR-61). A package opens in place: its head says only what no row above it
     shows ([Q-UI-1192](api-and-ui.md#q-ui-1192--an-opened-upstream-package-says-its-state-once-the-row-shows-the-badge-the-head-the-rule)):
     opened in a row, the rule that decided where one did ("Rule: @gitlab/*"), the row's **State** being the badge; looked up by name,
-    its description and its state with the rule. Then **Download every version…**, **Allow every version** and **Block every version** (the
-    one the package's rule has is **Remove the allow** or **Remove the block**) for those who decide, **Request every version** for a
-    reader; **Filter versions** (**Filter versions and npm tags** for a package with tags: the filter also finds a version by the name of a
+    its description and its state with the rule. Then **Download every version…** at the left and the package's switch at the right
+    (R-CUR-024) for those who decide, **Request every version** for a reader; **Filter versions** (**Filter versions and npm tags** for a package with tags: the filter also finds a version by the name of a
     tag that points at it, on any page,
     [Q-CUR-182](#q-cur-182--the-version-filter-of-the-catalogue-finds-a-version-by-the-name-of-its-tag)) and "Showing 100 of 3,893" with
     **Load more**; per version **Version** (with its flags and the npm tags that name it as badges, `latest` first, at most three and
     "+N more", each saying what it is in its tooltip,
     [Q-UI-1190](api-and-ui.md#q-ui-1190--an-npm-tag-is-a-badge-on-the-row-of-the-version-it-names-with-a-tooltip-that-says-what-it-is),
     [Q-UI-1191](api-and-ui.md#q-ui-1191--a-version-shows-three-tags-and-n-more-whose-tooltip-names-the-others); with the published
-    time and the size under it, "Size not told"), **Delivery** (with the rule that decided under it), **Cache** (**Stored**, **Stored for
-    examination**, **Waiting**, **Running**, **Not stored**, with the verdicts under it) and the acts
-    ([Q-CUR-152](#q-cur-152--a-versions-acts-are-a-word-for-a-reader-and-a-menu-for-those-who-decide-the-rule-is-a-column-the-verdicts-a-word-or-a-link)),
-    a table from 1,024 px on
-    ([Q-CUR-157](#q-cur-157--a-packages-versions-are-three-columns-the-facts-under-the-version-the-rule-under-the-delivery-the-verdicts-under-the-cache)).
+    time and the size under it, "Size not told", and an image's platforms), **Delivery** (the switch for those who decide, the badge, the
+    rule that decided under it; a reader's **Request**), **Cache** (**Stored**, **Stored for examination**, **Waiting**, **Running**,
+    **Not stored**, with its one act **Download**, **Download for examination** or **Discard** on the state's line and the verdicts under
+    it), a table from 1,024 px on
+    ([Q-CUR-157](#q-cur-157--a-packages-versions-are-three-columns-the-facts-under-the-version-the-rule-under-the-delivery-the-verdicts-under-the-cache)
+    as revised by [Q-CUR-201](#q-cur-201--a-versions-acts-stand-where-their-state-stands)). In a row of the results the column **State**
+    holds the package's switch beside its badge for those who decide.
     The catalogue's states are sentences in a warning line
     ([Q-CUR-155](#q-cur-155--the-catalogues-own-states-are-sentences-of-the-screen-the-upstreams-own-sentences-stand-as-the-upstream-wrote-them)).
 - **The preview of a bulk** (a dialog): **Once** or **Keep in sync** first (R-CUR-027; with a sync chosen the sentence of the
@@ -1431,11 +1442,13 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
 │ └───────────────────────────────────────────────────────────────────────────────────────────────────┘   │
 │ Search the upstream [ gitlab                      ] (names, descriptions and keywords, ranked by npm)   │
 │ 11,235 hits; npm shows at most the first 5,250                                                          │
-│ ▸ @gitlab/ui            GitLab UI components                      124.0.3  Allowed       Stored 6        │
-│ ▾ gitlab-ai-provider    An AI SDK provider for GitLab              1.4.0    Not allowed  Stored 1        │
-│     Filter versions [      ]                       [Download every version…] [Allow every version]      │
-│     1.4.0   2026-11-02  size not told  examined: no malware · 0 findings   Not allowed  [Allow][Discard] │
-│     1.3.9   2026-10-20  size not told                                      Not allowed  [Download for examination][Allow] │
+│ ▸ @gitlab/ui            GitLab UI components                      124.0.3  [●] Allowed    Stored 6     │
+│ ▾ gitlab-ai-provider    An AI SDK provider for GitLab              1.4.0    [○] Not allowed Stored 1     │
+│     [Download every version…]                                                        [○] Not allowed    │
+│     Filter versions [      ]                                                                            │
+│     1.4.0   2026-11-02  size not told   [●] Allowed       Stored for examination [Discard]              │
+│                                         Rule: this version  no malware · 0 findings                     │
+│     1.3.9   2026-10-20  size not told   [○] Not allowed   Not stored [Download for examination]         │
 │     … Showing 100 of 212   [Load more]                                                                  │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -1502,8 +1515,8 @@ Acceptance criteria:
   a remote only; each state's sentence; the actions by permission; the German texts of the glossary rows. Built for the strip and the tab
   Downloads in [remote-downloads.spec.ts](../../web/src/app/features/repositories/downloads/remote-downloads.spec.ts) (twelve cases, about
   0.7 s, rows of a few hundred bytes each); the renders gain two screens, about 45 s. Built for the tab Upstream and the section Delivery in
-  [remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts) (twelve cases, about 1.3 s) and
-  [repository-delivery.spec.ts](../../web/src/app/features/repositories/repository-delivery.spec.ts) (two cases, about 0.2 s), answers of
+  [remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts) (eighteen cases with those of R-CUR-024, about 1.4 s) and
+  [repository-delivery.spec.ts](../../web/src/app/features/repositories/repository-delivery.spec.ts) (seven cases with those of R-CUR-025, about 0.4 s), answers of
   a few kilobytes in memory; the renders gain six screens (about 4 minutes on the development machine, most of it the npm walk's
   eleven states as three users).
 - UI layout checks (`web/e2e`, the existing walk, about 20 more screens at three widths as the three users): the two tabs in both
@@ -1576,7 +1589,7 @@ catalogue's cache period and call time are `cache_ttl` and `timeout`:
 ```yaml
 proxy:
   delivery:
-    max_rules: 10000                          # default; 100 to 1000000, rules per repository
+    max_rules: 50000                          # default; 100 to 1000000, rules per repository
     open_requests_per_person: 20              # default; 1 to 1000, per repository
     examine_versions_per_request: 1           # default; 1 to 100
     request_retention: 720h                   # default; at least 1h
@@ -1607,7 +1620,8 @@ maintenance:
     remote-examination-cleanup: {enabled: true, schedule: "0 4 * * *"}       # default
 ```
 
-- What the defaults cost: the catalogue's cache 32 MiB per `api` replica; the rule sets about 150 bytes per rule per replica; four
+- What the defaults cost: the catalogue's cache 32 MiB per `api` replica; the rule sets, measured, about 130 bytes a package rule and 185 a
+  version rule per replica, 6.5 to 9.5 MB per repository at 50,000 rules (R-CUR-006); four
   running downloads per repository take at most four of the repository's background slots (R-REPO-055); the dispatch task reads the
   due index once a minute.
 
@@ -1666,6 +1680,109 @@ owner's word of 08:09):
 | Maven | `upstream`: Central's search service on its own host, declared by the preset | group IDs as path levels (directory listings of the repository) | `maven-metadata.xml` per artifact | `unknown` (a `HEAD` per file) | search by group and artifact; the group tree |
 | Helm (classic) | `index`: `index.yaml` of the repository | none | the index's entries | `unknown` | search over chart names and descriptions |
 | RubyGems | `upstream`: `api/v1/search.json` | none | `/info/<gem>` | `unknown` | search, versions |
+
+### R-CUR-024 · A package's and a version's switch
+Priority: **P1** · Covers: SEC-007
+
+The owner's working paper W-28 (2026-11-25): a switch between allow and block instead of three buttons, at the right and apart from
+the download; a switch on every version; the row's menu dissolved.
+
+- **What a switch shows.** A version's switch is on when the rules deliver the version (R-CUR-001), off when they do not. A package's
+  switch is on when the package level delivers it: its `package` rule, else the sections, else the mode; a version's own rule does
+  not move it. The state's badge stands beside the switch and the rule that decided under it.
+- **What a switch writes** ([Q-CUR-200](#q-cur-200--a-switch-shows-the-decision-and-writes-a-rule-only-where-it-departs-from-what-is-inherited)):
+  the rules stay the exceptions of the mode. A switch turned to the state its subject inherits (a version: its package's rule, else the
+  sections, else the mode; a package: the sections, else the mode) removes the subject's own rule; turned to the other state it writes
+  the subject's rule with that effect, `allow` for on and `block` for off, replacing one of the other effect. The server decides against
+  the rules and the mode as stored in the write's transaction, under the revision's row lock, never against the screen's copy
+  (`POST delivery-rules/switch`, [Q-CUR-202](#q-cur-202--the-switch-is-one-operation-of-the-server)). A switch turned to the state its
+  subject has already, without a rule to remove, writes and records nothing.
+- **The versions' own rules.** A package whose versions have rules of their own asks, when its switch is turned, whether they are kept
+  or reset: a confirmation ("Allow every version of lodash?") counts them by effect and offers the check box **Reset them: every
+  version follows the package**, not ticked, so their settings are kept unless the decider ticks it; ticked, the switch removes every
+  `version` rule of the package in the same transaction. Without version rules nothing is asked ([Q-CUR-203](#q-cur-203--the-packages-switch-asks-keep-or-reset-when-its-versions-have-rules)).
+- **Where they stand** ([Q-CUR-201](#q-cur-201--a-versions-acts-stand-where-their-state-stands)): in an opened package's head the
+  package's switch at the right, apart from **Download every version…** at the left; in a closed package row of the results the
+  package's switch in the column **State**; in a version row the version's switch in the column **Delivery**. A version row has no
+  menu and no action cell, and the head has no **Allow every version**, **Block every version**, **Remove the allow** or **Remove the
+  block**. The line under the package's switch is left free for the range of versions of a package's allow (P2 of W-28).
+- **The cache's act stands in the cache's cell**, at most one, by the state it changes: **Download** (not stored, delivered; a holder of
+  `manage`, or a reader who may fill the repository), **Download for examination** (not stored, not delivered; `manage`), **Discard**
+  (stored for examination; `manage`). A waiting or running download shows its state and no act; **Open the version** stays the link
+  under a stored version's state.
+- **A reader without `manage`** sees no switch: the badge, and **Request** in the delivery's cell where the version is not delivered,
+  no block holds it and no request of it is open; **Request every version** in the head.
+- **After a switch** the row shows the server's answer at once, without a reload (R-UI-213); a refused write puts the switch back and
+  says every fact the answer carried (R-UI-216).
+- **The API** (R-CUR-005: as a rule's write):
+
+  | Method and path | Body | Answer |
+  |---|---|---|
+  | `POST delivery-rules/switch` | `{"name", "version"?, "delivered": bool, "resetVersions"?: bool (a package only), "note"?}` | `200` `{"decision", "rule": <the subject's rule after the write> \| null, "removed": [<rule>], "revision"}`; `422` as a rule's write, and `422 validation_failed` for `resetVersions` with a version; `409 managed_by_product`; `400 not_applicable` |
+
+  `decision` is a version's decision, or a package's package level. Writes take `Idempotency-Key` (R-API-014). The catalogue's answers
+  (R-CUR-009) carry, to whoever may set rules, for a version `inherited` (the decision without the version's own rule), for a package
+  and a hit `level` (the package level's decision), `inherited` (the level without the package's own rule) and `versionRules`
+  (`{"allow", "block"}`: its version rules).
+- Every rule the switch writes or removes records its event (R-CUR-019), in batches (`audit.RecordAllTx`); the blocks added and the
+  allows removed record one `repository.narrowed` with the part `rules` (R-CUR-006); a block removed or an allow written removes the
+  examination rows of the package's versions it comes to deliver (R-CUR-016). The write compiles only the package's rules and the
+  sections ([Q-CUR-207](#q-cur-207--max_rules-50000-a-packages-version-rules-a-sorted-slice-the-store-compiles-only-what-can-decide-the-subject)).
+
+Acceptance criteria:
+
+- Unit (`internal/remotecuration/rules`, milliseconds, `TestR_CUR_024_WhatASubjectInherits`, ten cases in both modes): `Inherited`,
+  `Level`, `LevelInherited`, `ModeDecides` and `VersionRuleCounts`, a version rule beside a package rule, a section beside a package, the
+  set's `Counts` and the binary search over the sorted version rules.
+- Integration (area `repository`, `TestR_CUR_024_ASwitchWritesOnlyWhatDepartsFromWhatIsInherited`, about 2 s, no upstream): in mode
+  `allExceptBlocked` a version switched off writes `version … block` and `repository.narrowed`; switched on again removes it, and once
+  more writes nothing; with `package … block` a version switched on writes `version … allow`; the package switched on with
+  `resetVersions` removes the package rule and every version rule in one revision and journals the removed allow; a Reader answers
+  `403`; `upstream/scanner-trivy` `409`. Area `backup`: `TestR_CUR_006_TheRulesAndTheModeNarrowedAfterARestorePointAreReplayed` replays a
+  reset's removed allow.
+- Web unit (`remote-upstream.spec.ts`, about 0.5 s): the switch and its badge per state; the cache's act per state; no menu and no action
+  column; a reader's **Request** in the delivery's cell; the package's switch asks only where `versionRules` counts some; a refused
+  switch stays as it was.
+
+### R-CUR-025 · A change of the delivery mode says what follows, and keeps what is delivered on request
+Priority: **P1** · Covers: SEC-007
+
+- **To `onlyAllowed`.** Before the mode is saved, a dialog names the packages the repository stores whose package level the mode
+  decides today (no `package` rule, no section that matches; R-CUR-001), the first 6 by name in a sentence and their count, and offers, checked,
+  **Allow these N packages with every version, so that they stay delivered**: one `package` rule with `allow` each, written before the
+  mode, so no client is refused between the two writes ([Q-CUR-204](#q-cur-204--a-change-to-onlyallowed-offers-the-stored-packages-the-mode-decides-the-server-writes-them-before-the-mode)).
+  Where the count exceeds the rules the repository may still hold, the offer is not made and the dialog says so. A caller who may set
+  the configuration and not the rules (`repository-admin`) reads the list without the offer ([Q-CUR-206](#q-cur-206--a-writer-of-the-configuration-who-may-not-write-rules-changes-the-mode-without-the-offer)).
+  Where the repository stores no package the mode decides, the dialog says that nothing stored changes.
+- **To `allExceptBlocked`.** A confirmation says what follows: every package and version no rule blocks is delivered; the allow rules
+  stay and decide again when the mode returns ([Q-CUR-209](#q-cur-209--a-change-to-allexceptblocked-is-a-confirmation-with-the-counts-of-the-rules)).
+- **The API** (below `/api/v1/projects/{projectKey}/repositories/{repoKey}`, tag `remote-curation`):
+
+  | Method and path | Who | Answer |
+  |---|---|---|
+  | `GET delivery-rules/summary` | as reading the rules, and the writers of the configuration | `200` `{"mode", "rules": {"allow", "block", "sections"}, "maxRules", "unruled": {"count", "names": [≤ 100], "counted": bool}}` |
+  | `POST delivery-rules/allow-stored` | as a rule's write | `200` `{"created", "revision"}`; `409 conflict` in mode `onlyAllowed`; `422 too_many_rules` when the rules would exceed `proxy.delivery.max_rules` (nothing written) |
+
+  `unruled` is read from the repository's `packages` rows in name order against the replica's rule set; `counted` is false when the
+  read stopped at `maxRules + 1` names. `allow-stored` decides in its own transaction, under the revision's row lock, against the mode
+  and the rules as stored: one statement per 10,000 rules inserts them, one event per rule
+  ([Q-CUR-208](#q-cur-208--every-rule-of-a-bulk-write-records-its-own-event)), one raise of the revision, one change of the area
+  `repo_config`. No examination row changes: the mode delivers these packages already, and a version's block stays narrower than the
+  package's allow. Measured on the development machine against the integration stack (2026-11-25): the summary of 50,000 stored
+  packages in 0.25 s, `allow-stored` of 50,000 names with 50,000 events in 4.8 s, the replica's snapshot holding them 0.2 s later.
+
+Acceptance criteria:
+
+- Integration (area `repository`, `TestR_CUR_025_AChangeToOnlyAllowedKeepsTheStoredPackagesOnRequest`, about 1 s, five package rows
+  seeded, one with a package rule and one under a section allow): the summary counts three and names them, to a `repository-admin` too,
+  and refuses a Reader; a `repository-admin`'s `allow-stored` is refused; with `proxy.delivery.max_rules` of 100 and 97 more rules the
+  offer answers `422 too_many_rules` and writes nothing; `allow-stored` creates three rules in one revision and records three
+  `remote.rule.created`; the mode `onlyAllowed` then refuses none of the four without a block; a second `allow-stored` answers `409`.
+- Web unit (`repository-delivery.spec.ts`, seven cases, about 0.4 s): the dialog with the offer checked; the offer unticked and a
+  cancel; without the offer for a caller without `manage`; the offer refused when the count exceeds the room; the confirmation towards
+  `allExceptBlocked`; the order of the calls on the settings page (`allow-stored`, then `PATCH`).
+- UI states (`repositories.states.spec.ts`, `make ui-states`): the package switch's confirmation, and the mode's dialog with the offer,
+  without the right, beyond the room, with nothing to offer, towards `allExceptBlocked`, and with its summary failed.
 
 ### R-CUR-027 · Downloads kept in sync
 Priority: **P1** · Covers: RMT-027
@@ -2715,7 +2832,8 @@ sub-section rules are written in the rule list (Q-CUR-153). **Read the index** w
 
 ### Q-CUR-152 · A version's acts are a word for a reader and a menu for those who decide; the rule is a column, the verdicts a word or a link
 
-Status: **Decided by the development agent on 2026-11-24** — selected from the options below while building the tab Upstream (R5b); the
+Status: **Superseded by [Q-CUR-201](#q-cur-201--a-versions-acts-stand-where-their-state-stands) (W-28, 2026-11-25).** Decided by the
+development agent on 2026-11-24 — selected from the options below while building the tab Upstream (R5b); the
 owner reviews it at the walkthrough.
 
 Context: R-CUR-018's drawing shows a version's acts as buttons side by side ([Allow][Discard]). R-UI-163 gives a row with one action its
@@ -2852,7 +2970,9 @@ says what is known. The layout check `row-offset` measured a cell whose badge ha
 row's line; a control on a line of its own above the cell's text is now the cell's first line (the fixture in
 [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts)), which was Q-CUR-152 (c)'s objection. **Rationale:** the facts a
 person reads per version stay in the row, and the render run holds the form at 1,024 px with the screens' `tables` (`stacked` finding).
-The development agent would revisit (c) if a person asks to sort or scan by the published time.
+The development agent would revisit (c) if a person asks to sort or scan by the published time. **Revised by
+[Q-CUR-201](#q-cur-201--a-versions-acts-stand-where-their-state-stands) (W-28, 2026-11-25):** no action column; the switch stands under
+**Delivery** beside the badge, the cache's one act under **Cache** on its state's line, a reader's **Request** under **Delivery**.
 
 **Applied in the spec:** R-CUR-018 (the tab Upstream, "As built (R5b)"); Q-CUR-152 (the rule's and the verdicts' columns). Code:
 [upstream-package.ts](../../web/src/app/features/repositories/upstream/upstream-package.ts),
@@ -3747,6 +3867,156 @@ R-CUR-027. Code: [download-preview-dialog.ts](../../web/src/app/features/reposit
 [repository-syncs.ts](../../web/src/app/features/repositories/repository-syncs.ts), `syncIntervalSentence` in
 [download-words.ts](../../web/src/app/features/repositories/downloads/download-words.ts).
 
+### Q-CUR-200 · A switch shows the decision and writes a rule only where it departs from what is inherited
+
+Status: **Decided by the owner on 2026-11-25 (working paper W-28, d1 = b)**, the development agent's favourite of three.
+
+Context: the owner wants to switch a package and a version between allowed and blocked, and asked what happens when the delivery mode
+is changed later (W-28). A switch can store the state it shows, or only the exceptions of the mode; the mode then decides everything no
+rule names, and a change of the mode changes what such a package delivers.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The rules stay the exceptions of the mode; the mode's change says nothing | A switch writes where it departs, removes where it equals | Few rules; one decision table | A change to `onlyAllowed` refuses every stored package no rule allows, unannounced |
+| (b) As (a), and a change to `onlyAllowed` offers, checked, to allow the stored packages the mode decides before it is saved (chosen) | `delivery-rules/summary`, `delivery-rules/allow-stored`, a dialog | What is delivered stays delivered on request; the rules stay exceptions | Up to `max_rules` rules written at once (R-CUR-025) |
+| (c) A stored state per package at its first fetch; the mode only for packages not seen | A rule written in the fill's transaction | A switch always means the stored state | Every first fetch writes a rule and rebuilds every replica's snapshot; R-CUR-003's "a remote without rules pays nothing" ends; the snapshot grows with the cache |
+
+**Choice:** (b), the owner's. **Applied in the spec:** R-CUR-024, R-CUR-025. Code:
+[switch.go](../../internal/remotecuration/rules/store/switch.go), [rules.go](../../internal/remotecuration/rules/rules.go)
+(`Inherited`, `Level`, `LevelInherited`, `ModeDecides`).
+
+### Q-CUR-201 · A version's acts stand where their state stands
+
+Status: **Decided by the owner on 2026-11-25** (working paper W-28), his words about the three buttons at an opened package: "einfach
+hingeknallt, sieht scheiße aus"; "diese Toggel gehört separiert vom Download-Button. Lass uns mal versuchen diesen Toggel auf die Rechte
+Seite zu bringen und einzelne Versionen brauchen dann natürlich auch den Toggel […] Das drei-punkt-menü bei einzelnen Versionen lösen wir
+dazu auf."
+
+**Choice:** the package's switch at the right of the opened package's head, **Download every version…** at the left; a version's switch
+in the column **Delivery** beside its badge; the cache's one act (**Download**, **Download for examination**, **Discard**) in the column
+**Cache** on its state's line; a reader's **Request** under **Delivery**. No action column, no row menu, and the head's **Allow every
+version**, **Block every version**, **Remove the allow** and **Remove the block** go. A closed package row of the results holds the
+package's switch in its column **State**. Supersedes
+[Q-CUR-152](#q-cur-152--a-versions-acts-are-a-word-for-a-reader-and-a-menu-for-those-who-decide-the-rule-is-a-column-the-verdicts-a-word-or-a-link),
+revises [Q-CUR-157](#q-cur-157--a-packages-versions-are-three-columns-the-facts-under-the-version-the-rule-under-the-delivery-the-verdicts-under-the-cache).
+**Applied in the spec:** R-CUR-018, R-CUR-024; [api-and-ui.md](api-and-ui.md) R-UI-163. Code:
+[upstream-package.html](../../web/src/app/features/repositories/upstream/upstream-package.html),
+[remote-upstream.html](../../web/src/app/features/repositories/upstream/remote-upstream.html).
+
+### Q-CUR-202 · The switch is one operation of the server
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below while building W-28's switches; the owner
+reviews it at the walkthrough.
+
+Context: what a subject inherits is known only against the rules as stored; the screen's copy can lag the snapshot, and a second person
+can decide meanwhile.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `POST delivery-rules/switch` decides against the stored rules and the stored mode in its transaction, under the revision's row lock (chosen) | One operation | One write, one revision; two deciders are ordered by the lock; the mode a replica has not read yet does not decide | A fourth write operation beside put, delete and check |
+| (b) The screen computes the inherited state and calls put or delete | No new operation | — | Two writes; a stale snapshot; a race with a second decider |
+| (c) Put only | No new operation | — | Rules pile up, against Q-CUR-200 |
+
+**Choice:** (a). The lock is `DeliveryRulesRaiseRevisionMode`, which reads `remote.delivery.mode` from the document under the row lock
+that every rule write takes. A switch to the state its subject has already, with no rule to remove, records nothing and tells no replica.
+**Rationale:** the development agent would revisit it if a client of the API needs the switch's decision without writing (it reads
+`check`). **Applied in the spec:** R-CUR-024; [api/openapi.yaml](../../api/openapi.yaml) `switchDeliveryRule`.
+
+### Q-CUR-203 · The package's switch asks Keep or Reset when its versions have rules
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Ask: their settings are kept unless the check box **Reset them: every version follows the package** is ticked, which removes the version rules in the same transaction (chosen) | The confirmation's shape "choice" (`Confirm` with `choice`, not ticked) | Nothing a decider set is lost unasked; one click resets | A dialog on a package with version rules |
+| (b) Always reset | — | One click | A blocked version comes back delivered unasked |
+| (c) Always keep | — | One click | A package's switch that does not change what its versions show |
+
+**Choice:** (a); without version rules nothing is asked (`versionRules` of the catalogue counts them). The planned two words **Keep their
+settings** and **Reset them** became one check box of the shared confirmation, whose one action and **Cancel** every confirmation has; a
+dialog of two equal answers would be a shape of its own. **Rationale:** the development agent would revisit it if a decider resets in
+most cases. **Applied in the spec:** R-CUR-024.
+
+### Q-CUR-204 · A change to onlyAllowed offers the stored packages the mode decides; the server writes them before the mode
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below, under the owner's d1 = b; the owner
+reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `allow-stored` first, then the mode's `PATCH` (chosen) | Two calls of the screen | No client is refused between them (the allows are redundant under `allExceptBlocked`); the server reads the names in its transaction | A failed `PATCH` leaves redundant allows, which change nothing |
+| (b) The screen posts the names in pages | Up to 50 calls | — | A stale list; many calls |
+| (c) The mode and the rules in one transaction | The rules' store inside `repository.Service.Patch` | One write | Two deciders in one call; the configuration's writer may not write rules (Q-CUR-206) |
+
+**Choice:** (a). The stored packages are the repository's `packages` rows (in mode `allExceptBlocked` it delivers the whole upstream,
+and only what it stores is a finite list), folded by the format's name rule. **Rationale:** the development agent would revisit (c) if
+a failed `PATCH` after `allow-stored` is seen. **Applied in the spec:** R-CUR-025.
+
+### Q-CUR-205 · The offer names the first six and allows all or none
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The first six names in a sentence of the dialog (20 of names of 60 characters made it a wall of text at 1,440 px, seen in the states' pictures) and the count ("express, left-pad, lodash and 3,409 more"); one check box for all (chosen) | The API answers the first 100 | The dialog stays short and never scrolls (R-UI-215) | A package is not left out from the dialog; it is blocked after |
+| (b) The first 100 as a list | — | More names in view | A list that makes the dialog scroll at 390 px, against R-UI-215 |
+| (c) A check box per package | — | Each chosen | A list of thousands in a dialog, against R-UI-215 |
+
+**Choice:** (a). **Rationale:** the development agent would revisit (b) if a decider needs the names to decide. **Applied in the spec:**
+R-CUR-025. Code: [delivery-mode-dialog.ts](../../web/src/app/features/repositories/delivery-mode-dialog.ts) `SHOWN_NAMES`.
+
+### Q-CUR-206 · A writer of the configuration who may not write rules changes the mode without the offer
+
+Status: **Decided by the development agent on 2026-11-25**; the owner reviews it at the walkthrough.
+
+The mode is configuration (`repositories:write-config`, the project's Owner) and the rules are `manage`'s (R-CUR-005); a
+`repository-admin` sets the mode and no rule. Such a caller reads the summary (`GET delivery-rules/summary` admits the writers of the
+configuration) and gets the dialog with the list and without the offer, saying who may allow the packages. **Applied in the spec:**
+R-CUR-005, R-CUR-025.
+
+### Q-CUR-207 · max_rules 50,000; a package's version rules a sorted slice; the store compiles only what can decide the subject
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below and held by a measurement; the owner
+reviews it at the walkthrough.
+
+Context: `allow-stored` writes a rule per stored package, so `max_rules` bounds how large a cache can change to `onlyAllowed` with its
+packages kept. Every rule write compiled the repository's whole rule set inside its transaction, and the first version rule of a package
+allocated a map.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) 50,000; the version rules a sorted slice; a package's or a version's write compiles the package's rules and the sections (chosen) | `rules.go`, `store.go` | Measured: about 130 bytes a package rule, 185 a version rule of a package of its own; 6.5 to 9.5 MB per repository at the limit; a write's cost does not grow with the other rules | A snapshot that starts reads every rule of every repository |
+| (b) 50,000 with maps | — | — | About 20 MB per repository per replica in the worst case (estimated) |
+| (c) Keep 10,000 | — | Less memory | A cache of more packages cannot keep them delivered on a change of the mode |
+
+**Choice:** (a). The measurement (2026-11-25, once, not a test): the set of 50,000 package rules 4.97 MB plus the names, compiled in 7
+ms; of 50,000 version rules on as many packages 6.56 MB plus the names; `allow-stored` of 50,000 names 4.8 s; a version's switch beside
+50,000 rules 24 ms. **Rationale:** the development agent would revisit the limit if a replica's memory per repository is seen above 20 MB.
+**Applied in the spec:** R-CUR-006, R-CUR-020; [remote_curation.go](../../internal/config/remote_curation.go) `max_rules`.
+
+### Q-CUR-208 · Every rule of a bulk write records its own event
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One `remote.rule.created` per rule, in batches (`audit.RecordAllTx`, 500 a statement) (chosen) | — | The audit's search by subject finds every rule | 50,000 events for a large cache |
+| (b) One summary event with the first 1,000 subjects | — | One row | The search by subject misses the rest |
+
+**Choice:** (a); a switch's events go the same way. **Rationale:** the development agent would revisit it if the webhooks' deliveries
+of a large `allow-stored` are seen to lag. **Applied in the spec:** R-CUR-019, R-CUR-025.
+
+### Q-CUR-209 · A change to allExceptBlocked is a confirmation with the counts of the rules
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A confirmation: every package and version no rule blocks is delivered; the allow rules stay and decide again when the mode returns (chosen) | — | A widening of every package is said before it is saved | One click more |
+| (b) No dialog | — | — | A widening without a word |
+
+**Choice:** (a). **Applied in the spec:** R-CUR-025.
+
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 
 Status: **Decided by the development agent** — selected from the options below while building the download queue (R4); the owner reviews
@@ -4175,16 +4445,39 @@ more expensively than its plan.
   [H-1841](../security/remote-curation.md#h-1841--the-usage-overview-does-not-name-who-started-a-bulk) and
   [H-1842](../security/remote-curation.md#h-1842--a-discard-leaves-what-a-version-shares-by-its-digest),
   [H-1880](../security/remote-curation.md#h-1880--the-queue-and-a-mirror-pass-of-one-repository-meet-an-upstreams-limit-apart) to
-  [H-1883](../security/remote-curation.md#h-1883--a-reader-of-the-queue-sees-how-much-of-the-upstreams-quota-is-left): the gaps of this
-  page's mechanisms, on its security page.
+  [H-1883](../security/remote-curation.md#h-1883--a-reader-of-the-queue-sees-how-much-of-the-upstreams-quota-is-left),
+  [H-2020](../security/remote-curation.md#h-2020--a-restore-to-a-point-before-allow-stored-refuses-the-packages-it-allowed) and
+  [H-2021](../security/remote-curation.md#h-2021--a-large-allow-stored-writes-as-many-audit-events-and-webhook-deliveries): the gaps of
+  this page's mechanisms, on its security page.
 - [H-1975](#h-1975--the-rows-latest-and-the-opened-packages-latest-tag-come-from-two-answers): the column **Latest** and the badge
   `latest` of an opened npm package read two answers of the registry.
 - [H-2030](#h-2030--a-syncs-reads-of-the-upstream-have-no-budget-over-time) to
   [H-2034](#h-2034--a-dispatch-without-the-remote-engine-does-not-see-that-a-repository-is-offline): the gaps of the downloads kept in
   sync (R-CUR-027).
+
+- [H-2022](#h-2022--a-switchs-row-shows-the-servers-answer-for-at-most-30-s-while-the-catalogue-lags): a row shows a switch's answer
+  for at most 30 s while the catalogue's read of the replica's snapshot does not agree with it yet.
+- [H-2023](#h-2023--the-summary-counts-against-the-replicas-snapshot-allow-stored-against-the-stored-rules): the dialog's count and
+  what `allow-stored` writes are read at two moments, from two sources.
 - The conditions of a curation policy and their wizard (SEC-009 to SEC-011), curation across sites (SEC-040, REPL-061).
 - Rules of a local or a virtual repository.
 - PyPI and every other format that does not exist (R-CUR-023).
+
+### H-2022 · A switch's row shows the server's answer for at most 30 s while the catalogue lags
+
+Component: the tab Upstream's switches (R-CUR-024, `UpstreamActions.settled`). Subject: a decider who turns a switch. Live, dormant while
+the snapshot's bound (H-132) stays under 30 s. The write answers the decision at once and the row shows it; the catalogue's next read
+comes from the replica's snapshot, which takes the write within its bound, so a read in between would show the state before the switch.
+The row keeps the answer until a read agrees with it, at most 30 s (`SETTLE_MS`), and the views read every few seconds meanwhile. A
+replica whose snapshot lags longer shows the old state again after 30 s, until it is rebuilt; the rule is written either way. What makes
+it real: a cluster whose change notifications are delayed by more than 30 s.
+
+### H-2023 · The summary counts against the replica's snapshot, allow-stored against the stored rules
+
+Component: the change of the mode (R-CUR-025). Subject: a decider who changes the mode while another changes rules. Live. The dialog's
+count is read against the replica's rule set when it opens; `allow-stored` reads the stored packages and rules again in its own
+transaction, so it may write a few rules more or fewer than the dialog named, and the status after the save says how many it wrote. What
+makes it real: two deciders at work on one repository at once.
 
 ### H-1975 · The row's Latest and the opened package's `latest` tag come from two answers
 

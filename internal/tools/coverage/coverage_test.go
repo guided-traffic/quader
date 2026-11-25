@@ -115,9 +115,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1274 since a page has one scrollbar (R-UI-215, one P1 requirement). 1276 since the accounts of the upstream registries from
 		// existing Secrets (R-REPO-077, R-HA-073, two MVP requirements of the well-known repositories and the chart's secret wiring).
 		// 1277 since an error says every fact of its answer (R-UI-216, one P1 requirement). 1278 since the downloads kept in sync
-		// (R-CUR-027, one P1 requirement).
-		if len(m.Reqs) != 1278 || count[prioMVP] != 720 || count[prioP1] != 519 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1278 (720, 519, 39)",
+		// (R-CUR-027, one P1 requirement). 1280 since the switches of a package and a version and the change of the delivery mode
+		// (R-CUR-024, R-CUR-025, two P1 requirements of W-28).
+		if len(m.Reqs) != 1280 || count[prioMVP] != 720 || count[prioP1] != 521 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1280 (720, 521, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

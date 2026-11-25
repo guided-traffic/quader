@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,278 spec requirements:
-788 cover catalog features, 490 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,280 spec requirements:
+790 cover catalog features, 490 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -1267,7 +1267,7 @@ Catalog page: [security-scanning-and-curation.md](../features/security-scanning-
 | SEC-005 | Package labels | P2 | open | – |
 | SEC-006 | Custom licenses | P2 | open | – |
 | SEC-090 | Package intelligence browser | P2 | open | – |
-| SEC-007 | Upstream curation service | P1 | specified | [R-CUR-001](../spec/remote-curation.md), [R-CUR-003](../spec/remote-curation.md), [R-CUR-004](../spec/remote-curation.md), [R-CUR-014](../spec/remote-curation.md) |
+| SEC-007 | Upstream curation service | P1 | specified | [R-CUR-001](../spec/remote-curation.md), [R-CUR-003](../spec/remote-curation.md), [R-CUR-004](../spec/remote-curation.md), [R-CUR-014](../spec/remote-curation.md), [R-CUR-024](../spec/remote-curation.md), [R-CUR-025](../spec/remote-curation.md) |
 | SEC-008 | Curated remote repositories | P1 | open | – |
 | SEC-009 | Curation policy | P1 | open | – |
 | SEC-010 | Curation policy scope | P1 | open | – |

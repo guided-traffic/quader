@@ -16,6 +16,11 @@ Every remote repository of every format (npm, NuGet, OCI, Debian, Ansible Galaxy
 - **Who.** A Maintainer or Owner of the project and an administrator set rules and answer requests. The mode is the repository's
   configuration, set in the section **Delivery** of its settings by whoever may change the configuration
   ([Managing repositories](../admin/repositories.md#delivery-of-a-remote-repository)). Anyone who may read the repository may ask.
+- **Changing the mode later.** Before **Only what is allowed** is saved, Quader names the packages the repository stores that no rule
+  allows or blocks: they are delivered today only because of the mode, and refused after the change. It offers, ticked, to allow them
+  with every version first, so they stay delivered; whoever may change the configuration but not the rules reads the list without the
+  offer. Back to **Everything except what is blocked**, Quader says that every package no rule blocks is delivered again and that the
+  allow rules stay for the next time.
 - **What a rule refuses.** The rules decide before Quader fetches anything from the upstream, when the cache serves a stored file, and
   in the documents a client resolves versions from: npm's package documents and dist-tags, NuGet's version lists, registrations and
   search, an OCI repository's tags list and Ansible Galaxy's collection documents list only what is delivered, so a client's version
@@ -81,11 +86,18 @@ For Maintainers, Owners and administrators the tab adds:
   examination found (**Verdicts** opens the examined version). **Allow…** writes a rule for the request, optionally for every version of
   the package and with a download of every version; **Decline…** takes a reason, which the askers read, and discards what was fetched for
   examination.
-- Each version's menu: **Download** or **Download for examination** (for a version the repository does not deliver: it is stored and
-  scanned, not delivered), **Allow**, **Block**, **Remove rule** and **Discard** (removes what was fetched for examination).
-- On a package: **Allow every version** and **Block every version** (future versions included) and **Download every version…**; on a
-  level: **Download this sub-section…**. Both downloads open a preview of how many versions and bytes they take, how many are stored and
-  how many are not delivered here, with bounds you may lower, and **Start download**.
+- A switch beside each version's state: on, the version is delivered; off, it is not. Quader writes a rule only where your choice
+  differs from what the version gets from its package (the package's own setting, a sub-section's rule, or the repository's mode), and
+  removes it when you switch back, so the rules stay the exceptions. **Rule: this version** under the state says that the version has a
+  setting of its own.
+- The package's switch, at the right of an opened package and in the column **State** of a closed row: it decides every version that
+  has no setting of its own, future versions included. Where some versions have settings of their own, Quader asks first; they are kept
+  unless you tick **Reset them**.
+- The cache's one action beside its state: **Download**, **Download for examination** (for a version the repository does not deliver:
+  it is stored and scanned, not delivered) or **Discard** (removes what was fetched for examination).
+- On a package: **Download every version…** at the left; on a level: **Download this sub-section…**. Both downloads open a preview of how
+  many versions and bytes they take, how many are stored and how many are not delivered here, with bounds you may lower, and **Start
+  download**.
 - **Download every version…** also takes a range of the package's versions: **From version** (that version and every newer one) and
   **Up to version** with **included** or **below it** (that version and every older one, or only the older ones). Leave a field empty
   for no bound on that side. The fields offer the versions the package lists, and you may type any version, also one the upstream does

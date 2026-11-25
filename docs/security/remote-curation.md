@@ -101,6 +101,10 @@ who can make Quader download how much, and what is kept of content that no clien
   the indexes of a Debian remote addressed directly, which list what its rules refuse ([H-1726](#h-1726--a-debian-remote-addressed-directly-lists-what-its-rules-refuse));
   a replica that has not rebuilt its snapshot ([H-132](repository-model.md#h-132--a-replica-enforces-the-previous-repository-settings-until-its-snapshot-is-rebuilt)).
 - A narrowing (a block added, an allow removed, the mode set to `onlyAllowed`) is journaled, so a restore keeps it; a widening is not.
+- A switch (R-CUR-024) is decided by the server in its own transaction, under the rule set's row lock, against the rules and the mode as
+  stored; it is a rule's write for who may (`manage`, the administrator) and journals its narrowings as one. The change of the mode to
+  `onlyAllowed` writes its allows first (`allow-stored`, R-CUR-025), a widening that is not journaled
+  ([H-2020](#h-2020--a-restore-to-a-point-before-allow-stored-refuses-the-packages-it-allowed)).
 
 ## Who can make Quader download how much
 
@@ -294,6 +298,22 @@ Component: the client's fill (R-REPO-029) beside the queue's limit (R-CUR-011). 
 remote. By design: a client's miss is never held by the background's state, and it gets the upstream's answer as R-REPO-029 classifies it
 (`upstream_rate_limited` with its `Retry-After`). A client that retries at once spends the limit the queue waits out. What makes it real: a
 build that pulls through the remote while a bulk waits for the same limit.
+
+### H-2020 · A restore to a point before allow-stored refuses the packages it allowed
+
+Component: the change of the delivery mode (R-CUR-025, Q-CUR-204) and the journal's replay (R-CUR-006). Subject: the clients of a remote
+whose mode went to `onlyAllowed` with its stored packages allowed. Dormant until a restore to a point between the allows and the mode's
+change, or before both with the mode's entry after it. `allow-stored` widens and is not journaled; the mode's change narrows and is. A
+restore to a point before `allow-stored` replays the mode and has no allows, so the packages that stayed delivered are refused (fail
+closed) until a holder of `manage` allows them again. What makes it real: a restore after a change of the mode of a remote that clients
+use.
+
+### H-2021 · A large allow-stored writes as many audit events and webhook deliveries
+
+Component: `allow-stored` (R-CUR-025, Q-CUR-208). Subject: the audit log and the webhooks of an installation. Live. Every rule it writes
+records `remote.rule.created`, 50,000 at the bound, in one transaction (measured 4.8 s on the development machine); a subscription to
+the event receives as many deliveries. Not measured: how the webhooks' deliveries scale. What makes it real: a change of the mode of a
+remote that stores tens of thousands of packages, with a subscription to `remote.rule.*`.
 
 ### H-1883 · A reader of the queue sees how much of the upstream's quota is left
 
