@@ -296,10 +296,10 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | S11 · A system-only format is offered nowhere for something new | the owner's finding of 12:36 (section 8, Product): the chooser of "New repository" offers ClamAV definitions although R-CLAMAV-001 says it must not; no code of the UI reads `systemOnly`; an audit of every place that lists formats and of every write that takes one | landed and pushed at 14:55 (one commit; Q-UI-1200 to Q-UI-1203, Q-CLAMAV-19, H-1980; its builder worked from 12:36 to 13:20) |
 | S12 · A scan that could not be read to its end says which limit was passed | the research of 13:20 (section 8, Tests and tools, under the malware scanner on the owner's profile): the scanner's answer, the row, the API and the screens carry the heuristic's name; the release dialog says that a Go program can trip the scan-size limit; nothing of the limits changes | in work since 13:52 |
 | S13 · Small findings of the screens | the monospace token that is used nowhere; the conflict dialog's API names and JSON; links in a drawer in the browser's colours; the grey of the vulnerability cell's failed states beside the malware cell's amber; a host that breaks at its hyphen; the walk `mirrorFilled`'s order; a doubled breadcrumb; H-1871 (the audit log and the security dashboard read too seldom); H-1980 | in work since 13:54 |
-| S14 · What the product says about its scanners' replicas is true | a "Lost" row of the previous replica after every restart; "1 scan running" beside no place in use; the image scanner's processes under the host's name on the profile (whether two containers of one pod's name register side by side); no malware state in a remote's lists | in work since 13:54 |
+| S14 · What the product says about its scanners' replicas is true | a "Lost" row of the previous replica after every restart; "1 scan running" beside no place in use; the image scanner's processes under the host's name on the profile (whether two containers of one pod's name register side by side); no malware state in a remote's lists | landed and pushed at 15:11 (eight commits, migration 00127; Q-HA-495, Q-HA-496, Q-MAL-110, Q-MAL-111; gap H-1995; its builder worked from 13:55 to 14:57) |
 | S15 · A connection test says what it learned, and reads a token handshake right | the owner's finding of 14:15 (section 8, Product): the registry's test calls an accepted account an error (the challenge's 401 fails the screen's own rule) and shows one sentence of an answer that holds the status, the duration, the token service, the certificate and an error's code; one verdict at one place, the facts shown as R-UI-216 shows a failed call, for every place that tests something | in work since 14:20 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
-| G3 · Page and shell states on the stack | the 10 menus, 3 drawers, the person search's list in a drawer, about 19 sections, 11 routes, the banner and the maintenance notice, a failure of an action inside a section, the editors' refusals with their summary, two selection states, the command menus of NuGet, Ansible Galaxy and generic | 5 to 6 minutes of the render step (the job at about 61 to 64 of its 75 minutes), about 3 s per format | after G1 |
+| G3 · Page and shell states on the stack | the 10 menus, 3 drawers, the person search's list in a drawer, about 19 sections, 11 routes, the banner and the maintenance notice, a failure of an action inside a section, the editors' refusals with their summary, two selection states, the command menus of NuGet, Ansible Galaxy and generic | 5 to 6 minutes of the render step (the job at about 61 to 64 of its 75 minutes), about 3 s per format | in work since 14:57 (after G1; the inventory of the morning is brought up to what landed today first) |
 
 Not built, by the plan: hover and loading states, a rule against an overlay covering a control, a walk per place of the
 confirm dialog or of the error notice (one component each: its shapes and its containers are rendered). A table of refused
@@ -431,7 +431,26 @@ scan listener through `host.docker.internal`; an EICAR file read `infected` half
 download answered 403 `malware_found`; an npm tarball with it 38 ms after its publish (R-MAL-035, seen). **What it costs
 the machine:** `clamd` 959 MiB resident, the scanner 33 MiB, the updater 63 MB; the malware scanner ready 49 s after the
 backend's start; the signatures 113 MB fetched once from ClamAV's network into `.dev/clamav-signatures` of the main
-checkout, then no request for 24 hours; `UI_MALWARE=0` leaves the scanner out. **Left open:** a "Lost" row of the previous
+checkout, then no request for 24 hours; `UI_MALWARE=0` leaves the scanner out. **All four closed on 2026-11-25, 15:11, by S14, each read to its cause:** (1) a replica that ends in order
+is no "lost" one by the product's rule, but its sign-off never arrived: the profile stopped quader before the scanners
+(and removed the ClamAV container without a word), and in the product an upgrade that rolls `packages` and the scanners
+at once does the same to a sign-off of one request. The sign-off is tried again for up to 10 s now; the profile stops
+the scanners first. A restart of the profile leaves no row (observed by its builder). A rolling update of two scanner
+pods, read from the code and the chart's values and not seen on a cluster: never four rows, none lost. Open: a scanner
+that stops while no scan listener takes its sign-off for 10 s stays listed as lost for 24 hours (H-1995). (2) "1 scan
+running" came from a table that kept the peak of the last run; the line counts the living replicas' own reports now, as
+the list under it does, and the table is gone (migration 00127, Q-MAL-110 supersedes Q-MAL-43). (3) Two processes of
+one name register side by side: a row's key is the process's own identifier (Q-HA-496, an assertion of an existing
+test); the profile's two Trivy processes carry the unit's name. (4) The lists show no malware state for any
+repository, by a decision (Q-UI-872), and stay so; the defect beside it: a remote image's tag owned no file, so its
+version's page showed no malware state at all; it lists its manifest now (Q-MAL-111). **Found on the way and repaired,
+a defect of today's S8a that reaches the owner's installation:** every read of an upstream registry whose recent
+downloads all completed answered 500 (a NULL read into the last failure's code), the registry's admin page and its
+switch among them. The landing: thirteen gates, `make ui-states`, shellcheck and the touched screens' render (14
+screens, 0 findings) each exit 0; looked at by the development agent: the malware settings with "2 ready, 1 scan
+running" above replicas that show one place of two in use. Not verified: the retry against a `packages` pod that is
+rolling (a unit test with a fake clock holds it); the files of NuGet, Debian and Ansible remotes (read in the code).
+As it stood: **Left open:** a "Lost" row of the previous
 scanner's replica after every restart of the backend; the settings page said "1 scan running" while the replica showed
 none of its two places in use (not read); the image scanner's two processes show on the System page under the host's
 name, not the unit's (the chart gives both containers the pod's name; whether two processes of one name can register
