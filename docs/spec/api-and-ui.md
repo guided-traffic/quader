@@ -27029,11 +27029,11 @@ R-CUR-014), and no screen read it.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A note at the top of the version's page per remote that holds the version and does not deliver it: "Not delivered by `<repository>`: `<reason>`. A client cannot install this version through it." with the way to the tab Upstream under the name the rules see; the install panel offers no command for it and says that no repository delivers the version (chosen) | Every format, from the field the details carry | One sentence where a person looks first; the reasons are the tab Upstream's words; no request of its own | — |
+| (a) A note at the top of the version's page per remote that holds the version and does not deliver it: "Not delivered by `<repository>`: `<reason>`. A client cannot install this version through it." with the way to the tab Upstream under the name the rules see; the command menu in the head offers no command through it, and where no repository delivers the version the head has no button and a sentence under the facts says so (chosen) | Every format, from the field the details carry | One sentence where a person looks first; the reasons are the tab Upstream's words; no request of its own | — |
 | (b) Only the role's page says it | Narrower | — | The same defect stays for every other format |
 
 **Choice:** (a). **Applied in the spec:** R-UI-111, [remote-curation.md](remote-curation.md) R-CUR-014. Code:
-[delivery-note.ts](../../web/src/app/features/packages/delivery-note.ts), [install-panel.ts](../../web/src/app/features/packages/install-panel.ts).
+[delivery-note.ts](../../web/src/app/features/packages/delivery-note.ts), `versionCommand` of [version-command.ts](../../web/src/app/features/packages/version-command.ts).
 
 ### Q-UI-1261 · A package's address is its key, its title its name, and the search finds the name
 

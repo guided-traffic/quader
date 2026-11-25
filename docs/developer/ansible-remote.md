@@ -49,6 +49,7 @@ whole is [ansible.md](ansible.md).
 | [`roles.go`](../../internal/formats/ansible/roles.go) | a role's facts from a lookup, its README from its content document, the queueing of the README, what the screens show of a role (`describeRole`, R-ANS-056) |
 | [`role_search.go`](../../internal/formats/ansible/role_search.go) | `role search`: the bounds of the client's words, `UpstreamQuery`, the hits the caller may see (`renderRoleSearch`) |
 | [`catalogue_roles.go`](../../internal/formats/ansible/catalogue_roles.go) | a role in the tab Upstream by `role/<id>` and the version probe of its download (Q-ANS-115) |
+| [`web/…/ansible-role.ts`](../../web/src/app/features/packages/ansible-role.ts) | the page of a role: its facts on Details, the state of its README and the line on publishing a role inside a collection; the page is addressed by the key `role/<id>` and titled by the summary's name ([api-and-ui.md](../spec/api-and-ui.md) Q-UI-1261) |
 | [`mirror.go`](../../internal/formats/ansible/mirror.go) | `discover.Lister`: the methods, the index listing by offset, the exact names, the plan of a collection |
 | [`hub.go`](../../internal/formats/ansible/hub.go) | `formats.CredentialExchanger`: the refresh-token grant at `ansible.authUrl` and the reading of its answer |
 | [`internal/repository/validate_ansible.go`](../../internal/repository/validate_ansible.go) | the rules of `ansible.authUrl` when a document is saved |
