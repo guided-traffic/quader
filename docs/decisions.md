@@ -12160,10 +12160,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-540 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+541 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 540 questions</summary>
+<summary>Q-UI: 541 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12707,6 +12707,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1075](spec/api-and-ui.md#q-ui-1075--a-view-is-live-by-one-shared-poll-that-reads-in-place-and-only-while-it-is-seen) | A view is live by one shared poll that reads in place, and only while it is seen | Decided by the development agent on 2026-11-24 | (a) One helper `live()`: a view names its interval (fast while something runs, slow while nothing does); the helper reads while the window is seen and the view shown, at once on return, with back-off; the reads replace in place (`PagedResource.refresh`, `refreshResource`) | — |
 | [Q-UI-1076](spec/api-and-ui.md#q-ui-1076--a-status-too-long-for-a-pill-puts-its-verdict-on-the-badge-and-the-rest-after-it) | A status too long for a pill puts its verdict on the badge and the rest after it | Decided by the development agent on 2026-11-24 | (a), for the untrusted state only. | — |
 | [Q-UI-1077](spec/api-and-ui.md#q-ui-1077--below-36-rem-of-content-a-facts-term-stands-above-its-value) | Below 36 rem of content a fact's term stands above its value | Decided by the development agent on 2026-11-24 | (a) Every `dl.facts` puts each term above its value below 36 rem of the content panel, and a dialog's below 36 rem of the window | — |
+| [Q-UI-1080](spec/api-and-ui.md#q-ui-1080--a-server-sends-a-code-the-screen-says-it-and-a-raw-text-folds-under-technical-details) | A server sends a code, the screen says it, and a raw text folds under Technical details | Decided by the development agent | (a) A code for a case, said by the screen; a raw text folded under **Technical details** below the screen's own sentence, by one shared component | — |
 
 </details>
 

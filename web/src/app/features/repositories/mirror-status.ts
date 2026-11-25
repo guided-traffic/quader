@@ -18,6 +18,7 @@ import { JobReference } from '../../api/jobs-api';
 import { ApiError } from '../../api/problem';
 import { MirrorState, MirrorStatus, RepositoriesApi } from '../../api/repositories-api';
 import { ErrorNotice } from '../../shared/error-notice';
+import { TechnicalDetails } from '../../shared/technical-details';
 import { jobStateText } from '../../shared/job-progress';
 import { asApiError } from '../../shared/paged-resource';
 import { formatSize } from '../packages/format-size';
@@ -160,6 +161,31 @@ function boundText(kind: string): string {
   }
 }
 
+/** The code of a mirror's last failed pass attempt (R-REPO-056); null when no attempt failed. */
+export type MirrorErrorCode = MirrorStatus['errors']['lastCode'];
+
+/** Why a mirror's last pass attempt failed, in the screen's words (R-UI-214), by the code the pass recorded (R-REPO-056). */
+export function mirrorErrorText(code: MirrorErrorCode): string {
+  switch (code) {
+    case 'discovery_unavailable':
+      return $localize`:@@mirror.error.discovery-unavailable:The upstream does not offer the way of listing its packages that the mirror is set to use.`;
+    case 'discovery_failed':
+      return $localize`:@@mirror.error.discovery-failed:Listing the upstream's packages failed.`;
+    case 'discovery_stalled':
+      return $localize`:@@mirror.error.discovery-stalled:Listing the upstream's packages stopped making progress.`;
+    case 'cursor_too_large':
+      return $localize`:@@mirror.error.cursor:The upstream's listing cannot be followed: its position is too large to keep.`;
+    case 'not_applicable':
+      return $localize`:@@mirror.error.not-applicable:This format has no way of listing an upstream's packages.`;
+    case 'upstream_unavailable':
+      return $localize`:@@mirror.error.upstream:The upstream could not be reached.`;
+    case 'internal':
+      return $localize`:@@mirror.error.internal:An error of the installation itself stopped the pass.`;
+    case null:
+      return $localize`:@@mirror.error.other:The pass failed.`;
+  }
+}
+
 /**
  * The status of a remote repository's mirror (R-UI-021, R-REPO-056, Q-UI-104, Q-UI-105): the state in
  * words, the pass in progress, the last complete pass, the next pass, the last error, the rate-limit
@@ -170,7 +196,7 @@ function boundText(kind: string): string {
  */
 @Component({
   selector: 'quader-mirror-status',
-  imports: [DatePipe, DecimalPipe, NgTemplateOutlet, CdkMenu, CdkMenuItem, CdkMenuTrigger, RouterLink, ErrorNotice],
+  imports: [DatePipe, DecimalPipe, NgTemplateOutlet, CdkMenu, CdkMenuItem, CdkMenuTrigger, RouterLink, ErrorNotice, TechnicalDetails],
   template: `
     <section class="status" aria-labelledby="mirror-status-heading">
       <h2 id="mirror-status-heading" i18n="@@mirror.status.heading">Mirror status</h2>
@@ -358,8 +384,9 @@ function boundText(kind: string): string {
                   <span class="material-icons inline" aria-hidden="true">warning</span>
                   <ng-container i18n="@@mirror.last.no">No</ng-container>
                 </span>
+                <!-- The format's own English note on how the upstream ended the listing, folded (R-UI-214). -->
                 @if (l.discoveryNote) {
-                  : {{ l.discoveryNote }}
+                  <quader-technical-details [text]="l.discoveryNote" />
                 }
               }
             </dd>
@@ -393,10 +420,12 @@ function boundText(kind: string): string {
         <h3 i18n="@@mirror.error.heading">Last error</h3>
         @if (s.errors.lastCode || s.errors.lastMessage) {
           <dl class="facts" data-testid="mirror-error">
-            <dt i18n="@@mirror.error.code">Code</dt>
-            <dd><code translate="no">{{ s.errors.lastCode ?? '–' }}</code></dd>
-            <dt i18n="@@mirror.error.message">Message</dt>
-            <dd>{{ s.errors.lastMessage ?? '–' }}</dd>
+            <!-- The failure in the screen's words; the pass's own English message and its code are a technical detail (R-UI-214). -->
+            <dt i18n="@@mirror.error.reason">Reason</dt>
+            <dd>
+              {{ errorText(s.errors.lastCode) }}
+              <quader-technical-details [text]="s.errors.lastMessage" [code]="s.errors.lastCode" />
+            </dd>
             <dt i18n="@@mirror.error.at">Time</dt>
             <dd>
               @if (s.errors.lastAt; as at) {
@@ -545,6 +574,7 @@ export class MirrorStatusPanel {
   readonly setPaused = output<boolean>();
 
   protected readonly status = signal<MirrorStatus | null>(null);
+  protected readonly errorText = mirrorErrorText;
   protected readonly failure = signal<ApiError | null>(null);
   protected readonly requesting = signal(false);
   protected readonly notice = signal<RunNotice | null>(null);

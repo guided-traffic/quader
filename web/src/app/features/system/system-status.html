@@ -302,8 +302,12 @@
                               ><span class="material-icons" aria-hidden="true">warning</span
                               ><ng-container i18n="@@system.valkey.degraded">Degraded</ng-container></span
                             >
+                            @if (v.reasonCode; as code) {
+                              <span> ({{ valkeyReason(code) }})</span>
+                            }
+                            <!-- The client's own English words name addresses and replies: folded under the screen's (R-UI-214). -->
                             @if (v.reason) {
-                              <span translate="no"> ({{ v.reason }})</span>
+                              <quader-technical-details [text]="v.reason" />
                             }
                           }
                           @if (v.circuit === 'open') {
@@ -380,7 +384,7 @@
           >Degraded on {{ v.degradedReplicas }} of {{ v.liveReplicas }} replicas</span
         >
         @if (v.reasons.length > 0) {
-          <span translate="no"> ({{ v.reasons.join(', ') }})</span>
+          <span> ({{ valkeyReasons(v.reasons) }})</span>
         }
       </p>
     }

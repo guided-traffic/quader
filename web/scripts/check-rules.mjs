@@ -17,6 +17,8 @@
 //    and the code's words for it are messages.xlf's (journey-texts-rule.mjs).
 //  - Q-UI-1074: a tab strip (class tab-nav) carries quaderTabStrip and its component imports TabStrip, which scrolls it
 //    (tab-strip-rule.mjs).
+//  - R-UI-214: no template interpolates a server's English sentence (`{{ x.detail }}`, `{{ x.basis }}`, …): the screen says a
+//    code in its own words, a raw text goes through <quader-technical-details> (server-text-rule.mjs).
 //  - a test's name carries a requirement ID, never a decision's number: no `describe`, `it` or `test` title of a spec, a journey or
 //    a script's test names a `Q-…` or an `ADR-…` (test-names-rule.mjs).
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -30,6 +32,7 @@ import { offTheLine } from './line-rule.mjs';
 import { journeyTextFindings } from './journey-texts-rule.mjs';
 import { decisionNumbersInTestNames } from './test-names-rule.mjs';
 import { tabStripFindings } from './tab-strip-rule.mjs';
+import { serverTextFindings } from './server-text-rule.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
@@ -151,6 +154,18 @@ for (const file of sources.filter((p) => p.endsWith('.ts') && !p.endsWith('.spec
   if (unimported) {
     failed = true;
     console.error(`Q-UI-1074: ${relative(root, file)}: a tab strip (class tab-nav) in a component that does not import TabStrip (src/app/shared/ui/tab-strip.ts)`);
+  }
+}
+
+// A screen says a server's code in its own words and folds a raw text under Technical detail; it never binds the server's English
+// sentence as its own (R-UI-214).
+for (const file of sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('.spec.ts'))) {
+  const rel = relative(root, file).split(sep).join('/');
+  for (const { line, expression } of serverTextFindings(rel, readFileSync(file, 'utf8'))) {
+    failed = true;
+    console.error(
+      `R-UI-214: ${rel}:${line}: {{ ${expression} }} shows a server's English sentence; say its code with $localize, or pass a raw text to <quader-technical-details [text]>`,
+    );
   }
 }
 

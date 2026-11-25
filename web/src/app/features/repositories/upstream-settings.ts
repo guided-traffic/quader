@@ -11,6 +11,7 @@ import {
   UpstreamTestResult,
 } from '../../api/repositories-api';
 import { ErrorNotice } from '../../shared/error-notice';
+import { TechnicalDetails } from '../../shared/technical-details';
 import { heldWhileFocused } from '../../shared/held-while-focused';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { fieldMessage, problemsAt } from '../../shared/field-errors';
@@ -28,6 +29,7 @@ import {
   upstreamTestBody,
 } from './upstream-model';
 import { controlIdOf, numberOrText } from './settings-schema';
+import { upstreamTestErrorText } from './upstream-test-words';
 
 /** The id of the section; a server error at a pointer of the upstream settings that has no control lands here. */
 export const UPSTREAM_SECTION_ID = 'f-remote-upstream';
@@ -91,7 +93,7 @@ export function upstreamPointerLabel(pointer: string): string | null {
  */
 @Component({
   selector: 'quader-upstream-settings',
-  imports: [DatePipe, Disclosure, ErrorNotice, RouterLink],
+  imports: [DatePipe, Disclosure, ErrorNotice, RouterLink, TechnicalDetails],
   template: `
     <section class="upstream" [id]="sectionId" tabindex="-1" aria-labelledby="upstream-heading">
       <h2 id="upstream-heading" i18n="@@upstream.heading">Upstream</h2>
@@ -328,7 +330,8 @@ export function upstreamPointerLabel(pointer: string): string | null {
             @if (o.result.error; as err) {
               <dt i18n="@@upstream.test.error">Reason</dt>
               <dd>
-                {{ err.message }} <code translate="no">{{ err.code }}</code>
+                {{ errorText(err.code) }}
+                <quader-technical-details [text]="err.message" [code]="err.code" />
               </dd>
             }
           </dl>
@@ -604,6 +607,7 @@ export class UpstreamSettings {
   protected readonly sectionId = UPSTREAM_SECTION_ID;
   protected readonly hostsId = controlIdOf('/remote/extraHosts');
   protected readonly authModes: readonly UpstreamAuthMode[] = ['none', 'basic', 'bearer'];
+  protected readonly errorText = upstreamTestErrorText;
   protected readonly accepted = $localize`:@@upstream.test.accepted:accepted`;
   protected readonly refused = $localize`:@@upstream.test.refused:refused`;
 

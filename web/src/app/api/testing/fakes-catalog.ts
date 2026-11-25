@@ -619,7 +619,7 @@ export class FakeRepositoriesApi extends RepositoriesApi {
       next.class === 'remote' && next.visibility?.artifacts === 'public'
         ? [
             {
-              code: 'public_populates_remote',
+              code: 'public_populates_remote' as const,
               detail: 'Anyone can fill the cache of this remote repository from its upstream.',
             },
           ]

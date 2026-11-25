@@ -8,6 +8,25 @@ import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError, valueOf } from '../../../shared/paged-resource';
 import { formatSize } from '../../packages/format-size';
 
+/** The code of what a preview's counts leave open (R-CUR-010). */
+export type PreviewNote = NonNullable<RemoteDownloadPreview['note']>;
+
+/** The sentence of a preview's note, in the screen's language (R-UI-214): the API answers a code, never the sentence. */
+export function previewNoteText(code: PreviewNote): string {
+  switch (code) {
+    case 'section_uncounted':
+      return $localize`:@@upstream.preview.note.section:The upstream does not tell how many versions a sub-section holds or how large they are; the bounds stop the download while it runs.`;
+    case 'sizes_unannounced':
+      return $localize`:@@upstream.preview.note.sizes:The upstream announces no sizes. A size counts once its file is stored, and the bounds stop the download while it runs.`;
+    case 'more_versions':
+      return $localize`:@@upstream.preview.note.more:The upstream lists more versions than one answer holds; the rest are counted while the download runs.`;
+    case 'size_once_stored':
+      return $localize`:@@upstream.preview.note.size-once-stored:The size of the version is known once it is stored.`;
+    case 'counted_on_expand':
+      return $localize`:@@upstream.preview.note.on-expand:The versions are counted when the download starts; the bounds stop it while it runs.`;
+  }
+}
+
 export interface DownloadPreviewData {
   readonly repository: string;
   /** A package's or a sub-section's bulk, without bounds: the preview answers the installation's. */
@@ -79,8 +98,8 @@ function count(n: number): string {
               }
             </dd>
           </dl>
-          @if (p.note) {
-            <p class="hint" translate="no">{{ p.note }}</p>
+          @if (p.note; as code) {
+            <p class="hint">{{ noteText(code) }}</p>
           }
           <fieldset class="plain bounds">
             <legend class="field-label" i18n="@@upstream.preview.bounds">Bounds</legend>
@@ -196,6 +215,7 @@ export class DownloadPreviewDialog {
   });
 
   protected readonly number = count;
+  protected readonly noteText = previewNoteText;
   protected readonly size = formatSize;
 
   protected gib(bytes: number): string {

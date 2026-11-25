@@ -68,7 +68,7 @@ describe('Mirror status panel', () => {
       ['running', 'Running', { pass: PASS }],
       ['waiting', 'Waiting', { pass: { ...PASS, job: null } }],
       ['bound_reached', 'Bound reached', { bound: { reached: 'bytes', at: '2026-11-04T10:30:00Z', maxBytes: 1048576, usedBytes: 1048577 } }],
-      ['failing', 'Failing', { errors: { consecutiveFailures: 4, lastAt: '2026-11-04T10:30:00Z', lastCode: 'upstream_error', lastMessage: 'registry.example.org answered 500' } }],
+      ['failing', 'Failing', { errors: { consecutiveFailures: 4, lastAt: '2026-11-04T10:30:00Z', lastCode: 'upstream_unavailable', lastMessage: 'registry.example.org answered 500' } }],
     ];
 
     for (const [state, label, over] of states) {
@@ -128,7 +128,7 @@ describe('Mirror status panel', () => {
       expect(text(r.root)).toContain('No pass has completed yet.');
     });
 
-    it('R-UI-021 shows the last complete pass: outcome, kind, method, times, counts and the discovery note', async () => {
+    it('R-UI-021 R-UI-214 shows the last complete pass: outcome, kind, method, times, counts and the discovery note as a technical detail', async () => {
       const { r } = await render([
         sampleMirrorStatus({
           lastCompletePass: {
@@ -151,7 +151,9 @@ describe('Mirror status panel', () => {
         'Bytes stored': '8.5 GiB',
       });
       expect(last['Discovery saw everything']).toContain('No');
-      expect(last['Discovery saw everything']).toContain('the upstream search stops at 10000 results');
+      expect(text(r.root.querySelector('[data-testid="mirror-last-pass"] [data-testid="technical-details"]')!)).toBe(
+        'the upstream search stops at 10000 results',
+      );
       expect(r.root.querySelector('[data-testid="mirror-last-pass"] time')?.getAttribute('datetime')).toBe(
         '2026-11-03T10:00:00Z',
       );
@@ -173,7 +175,7 @@ describe('Mirror status panel', () => {
       expect(text(unbounded.r.root.querySelector('[data-testid="mirror-next"]')!)).toContain('No pass is planned.');
     });
 
-    it('R-UI-021 shows the last error with code, message and time, and "No error." without one', async () => {
+    it('R-UI-021 R-UI-214 shows the last error in words with its time, the message and the code as a technical detail, and "No error." without one', async () => {
       const none = await render([sampleMirrorStatus()]);
       expect(text(none.r.root)).toContain('No error.');
       const { r } = await render([
@@ -181,17 +183,17 @@ describe('Mirror status panel', () => {
           errors: {
             consecutiveFailures: 2,
             lastAt: '2026-11-04T10:30:00Z',
-            lastCode: 'upstream_unreachable',
+            lastCode: 'upstream_unavailable',
             lastMessage: 'registry.example.org did not answer',
           },
         }),
       ]);
       const error = facts(r.root.querySelector('[data-testid="mirror-error"]')!);
-      expect(error).toMatchObject({
-        Code: 'upstream_unreachable',
-        Message: 'registry.example.org did not answer',
-        'Failures in a row': '2',
-      });
+      expect(error['Reason']).toContain('The upstream could not be reached.');
+      expect(error['Failures in a row']).toBe('2');
+      expect(text(r.root.querySelector('[data-testid="mirror-error"] [data-testid="technical-details"]')!)).toBe(
+        'registry.example.org did not answer upstream_unavailable',
+      );
       expect(error['Time']).not.toBe('–');
     });
 
@@ -442,7 +444,7 @@ describe('Mirror status panel', () => {
     const failing = await render([
       sampleMirrorStatus({
         state: 'failing',
-        errors: { consecutiveFailures: 3, lastAt: '2026-11-04T10:30:00Z', lastCode: 'x', lastMessage: 'y' },
+        errors: { consecutiveFailures: 3, lastAt: '2026-11-04T10:30:00Z', lastCode: 'internal', lastMessage: 'y' },
         bound: { reached: 'bytes', at: '2026-11-04T10:30:00Z', maxBytes: 1048576, usedBytes: 2000000 },
       }),
     ]);

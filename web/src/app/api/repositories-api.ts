@@ -14,6 +14,8 @@ export type MirrorStatus = Schema<'MirrorStatus'>;
 export type MirrorState = MirrorStatus['state'];
 export type UpstreamTestResult = Schema<'UpstreamTestResult'>;
 export type RepositoryResolution = Schema<'RepositoryResolution'>;
+/** A finding of a write that did not block it (`Repository.warnings`); the screen says it by its code (R-UI-214). */
+export type RepositoryWarning = Schema<'RepositoryWarning'>;
 /** A well-known public registry of a format, one of its `upstreamPresets` (R-REPO-062). */
 export type UpstreamPreset = Schema<'UpstreamPreset'>;
 

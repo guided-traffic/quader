@@ -151,19 +151,24 @@ describe('System status screen', () => {
     expect(text(other.root)).toContain('read-only');
   });
 
-  it('R-UI-038 a degraded Valkey check is a warning that names what it means, not an error', async () => {
+  it('R-UI-038 R-UI-214 a degraded Valkey check is a warning that names what it means in words, the client\'s text folded', async () => {
+    const reason = 'not connected: dial tcp 10.0.4.12:6379: i/o timeout';
+    const degraded = { ...sampleReplica().valkey!, state: 'degraded' as const, reasonCode: 'timeout' as const, reason };
     const { root } = await render((system) => {
       system.replicasResult = [
-        sampleReplica({ degraded: ['valkey'], valkey: { ...sampleReplica().valkey!, state: 'degraded', reason: 'timeout' } }),
-        sampleReplica({ name: 'b', instanceUid: 'b', node: 'node-b', degraded: ['valkey'], valkey: { ...sampleReplica().valkey!, state: 'degraded', reason: 'timeout' } }),
+        sampleReplica({ degraded: ['valkey'], valkey: degraded }),
+        sampleReplica({ name: 'b', instanceUid: 'b', node: 'node-b', degraded: ['valkey'], valkey: degraded }),
       ];
       system.infoResult = sampleInfo({ valkey: { ...sampleInfo().valkey, degradedReplicas: 2 } });
     });
     const t = text(root);
     expect(t).toContain('Degraded');
     expect(t).not.toContain('Replicas unready');
-    expect(t).toContain('Degraded on 2 of 2 replicas');
+    expect(t).toContain('Degraded on 2 of 2 replicas (timed out)');
     expect(t).toContain('change-log poll');
+    // The client's own words name an address: under Technical details of each replica's row, never in the summary.
+    const folded = [...root.querySelectorAll<HTMLElement>('[data-testid="technical-details"]')].map((e) => text(e));
+    expect(folded).toEqual([reason, reason]);
   });
 
   it('R-UI-038 R-UI-172 an unready replica names its failing checks beside its state, a space after the colon', async () => {

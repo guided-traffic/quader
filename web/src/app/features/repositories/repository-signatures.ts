@@ -17,7 +17,7 @@ export interface GateAnchorOption {
   readonly ref: string;
   readonly title: string;
   /** What identifies it: kind, where it comes from, the first fingerprint or subject. */
-  readonly detail: string;
+  readonly facts: string;
   /** It matches nothing now: switched off, or a project anchor while project anchors are switched off. */
   readonly off: boolean;
   /** A stored reference that names no anchor any more (R-SIG-061): shown as **Removed trust anchor**. */
@@ -40,7 +40,7 @@ export function anchorOptions(
     return {
       ref: `${a.scope}/${a.key}`,
       title: a.title,
-      detail: [anchorKindWords(a.kind), anchorScopeWords(a.scope), id].filter((v) => v !== '').join(' · '),
+      facts: [anchorKindWords(a.kind), anchorScopeWords(a.scope), id].filter((v) => v !== '').join(' · '),
       off: a.scope === 'project' ? !projectAnchorsOn : !a.enabled,
       removed: false,
     };
@@ -52,7 +52,7 @@ export function anchorOptions(
   const refs = new Set(known.map((o) => o.ref));
   const removed = stored
     .filter((r) => !refs.has(r))
-    .map((ref): GateAnchorOption => ({ ref, title: ref, detail: '', off: true, removed: true }));
+    .map((ref): GateAnchorOption => ({ ref, title: ref, facts: '', off: true, removed: true }));
   return [...known, ...removed];
 }
 
@@ -151,7 +151,7 @@ export function anchorOptions(
                               >
                             } @else {
                               <span translate="no">{{ o.title }}</span>
-                              <span class="secondary detail">{{ o.detail }}@if (o.off) {&ngsp;· <ng-container i18n="@@repo.gate.off">switched off, matches nothing</ng-container>}</span>
+                              <span class="secondary detail">{{ o.facts }}@if (o.off) {&ngsp;· <ng-container i18n="@@repo.gate.off">switched off, matches nothing</ng-container>}</span>
                             }
                           </span>
                         </label>

@@ -11,6 +11,7 @@ import { Needs } from '../../shared/access/needs';
 import { Confirm } from '../../shared/confirm-dialog';
 import { ConflictResolver } from '../../shared/conflict-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
+import { TechnicalDetails } from '../../shared/technical-details';
 import { asApiError } from '../../shared/paged-resource';
 import { AnchorDialog, AnchorDialogData } from '../../shared/signatures/anchor-dialog';
 import { AnchorRowControls, AnchorTable } from '../../shared/signatures/anchor-table';
@@ -37,7 +38,7 @@ import { SigningIdentitySection } from './signing-identity';
  */
 @Component({
   selector: 'quader-signature-settings',
-  imports: [AnchorTable, Checkbox, DataTable, DatePipe, DecimalPipe, Disclosure, ErrorNotice, Needs, PageHeader, RouterLink, SigningIdentitySection, TimeAgo],
+  imports: [AnchorTable, Checkbox, DataTable, DatePipe, DecimalPipe, Disclosure, ErrorNotice, Needs, PageHeader, RouterLink, SigningIdentitySection, TechnicalDetails, TimeAgo],
   templateUrl: './signature-settings.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `

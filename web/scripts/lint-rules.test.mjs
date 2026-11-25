@@ -13,6 +13,7 @@ import { compare, rewrite } from './i18n-check.mjs';
 import { journeyTextFindings } from './journey-texts-rule.mjs';
 import { decisionNumbersInTestNames } from './test-names-rule.mjs';
 import { tabStripFindings } from './tab-strip-rule.mjs';
+import { serverTextBindings, serverTextFindings } from './server-text-rule.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const eslint = new ESLint({ cwd: root });
@@ -323,4 +324,33 @@ test('R-UI-173 a tab strip without quaderTabStrip or without the import of TabSt
   assert.equal(tabStripFindings('@Component({ template: `<div quaderTabStrip class="view-tabs tab-nav"></div>` })').unimported, true);
   assert.deepEqual(tabStripFindings('@Component({ imports: [RouterLink], template: `<nav class="tab-navigation"></nav>` })'), ok);
   assert.deepEqual(tabStripFindings('/** The links of `<nav class="tab-nav">`. */ @Directive({ selector: \'[quaderTabStrip]\' })'), ok);
+});
+
+test('R-UI-214 a template that binds a server sentence fails the rule, technical details and a code in words pass', () => {
+  const bad = [
+    '<p class="hint">{{ basis }}</p>\n<p>{{ trend().basis }}</p>',
+    '<span translate="no">{{ err.detail }}</span>',
+    '<dd>{{ s.errors.lastMessage ?? \'–\' }}</dd>',
+    '<p class="hint" translate="no">{{ p?.note }}</p><span>{{ w.detail }}</span>',
+    ': {{ l.discoveryNote }}',
+    '<span>{{ i.keys!.lastError }}</span>',
+  ];
+  assert.deepEqual(
+    bad.flatMap((t) => serverTextBindings(t).map((b) => b.expression)),
+    ['trend().basis', 'err.detail', 's.errors.lastMessage', 'w.detail', 'l.discoveryNote', 'i.keys.lastError'],
+  );
+  const good = [
+    '<quader-technical-details [text]="err.detail" />',
+    '<p class="hint">{{ noteText(code) }}</p>',
+    '<span>{{ errorText(err.code) }}</span>',
+    '<span>{{ detailOf(err) }}</span>',
+    '<span>{{ r.description }}</span>',
+  ];
+  assert.deepEqual(good.flatMap((t) => serverTextBindings(t)), []);
+});
+
+test('R-UI-214 an allowed binding passes in its own file only', () => {
+  const log = '<li><span class="level" translate="no">{{ m.level }}</span>&ngsp;<span lang="en" translate="no">{{ m.message }}</span></li>';
+  assert.deepEqual(serverTextFindings('src/app/features/packages/ansible-import-log.ts', log), []);
+  assert.deepEqual(serverTextFindings('src/app/features/packages/other.ts', log), [{ line: 1, expression: 'm.message' }]);
 });

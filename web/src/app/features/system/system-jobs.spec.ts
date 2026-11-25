@@ -210,7 +210,7 @@ describe('Jobs screen', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-038 a failed job shows its error code, the detail and the attempt it failed in, and passes the accessibility check', async () => {
+  it('R-UI-038 R-UI-214 a failed job says why in words, the attempt it failed in, and the detail under Technical detail, and passes the accessibility check', async () => {
     const detail = 'the archive is not a valid zip archive: entry "MAL-2026-16369.json" is larger than the limit';
     const { root } = await open({}, (jobs) => {
       jobs.jobList = [
@@ -225,9 +225,12 @@ describe('Jobs screen', () => {
       ];
     });
     const cell = root.querySelector('tbody tr td:nth-child(6)')!;
-    const lines = [...cell.querySelectorAll('span')].map((e) => text(e));
-    expect(lines).toEqual(['job_failed', detail, 'Attempt 2 of 3']);
-    expect(cell.querySelector('.error-detail')!.getAttribute('translate')).toBe('no');
+    expect(text(cell)).toContain('The attempt failed.');
+    expect(text(cell)).toContain('Attempt 2 of 3');
+    const raw = cell.querySelector('quader-technical-details [data-testid="technical-details"]')!;
+    expect(text(raw)).toBe(`${detail} job_failed`);
+    expect(raw.getAttribute('lang')).toBe('en');
+    expect(raw.getAttribute('translate')).toBe('no');
     await expectAccessible(root);
   });
 
@@ -247,13 +250,13 @@ describe('Jobs screen', () => {
     expect(text(root)).not.toContain('Attempt 3 of 5');
   });
 
-  it('R-UI-038 an error without a detail shows its code alone', async () => {
+  it('R-UI-038 R-UI-214 an error without a detail says it in words and folds nothing', async () => {
     const { root } = await open({}, (jobs) => {
       jobs.jobList = [sampleJob({ state: 'cancelled', result: null, error: { code: 'cancelled' } })];
     });
     const cell = root.querySelector('tbody tr td:nth-child(6)')!;
-    expect(text(cell)).toBe('cancelled');
-    expect(root.querySelector('.error-detail')).toBeNull();
+    expect(text(cell)).toBe('The job was cancelled.');
+    expect(cell.querySelector('quader-technical-details')).toBeNull();
   });
 
   it('R-UI-038 the result of a job whose result holds a list shows the length of the list', async () => {

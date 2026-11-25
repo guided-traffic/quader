@@ -8,6 +8,7 @@ import { Confirm } from '../../shared/confirm-dialog';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle, QuaderDialog } from '../../shared/ui/dialog';
 import { VisibilityLevel, VisibilityLevelControl, installationReasons, levelName, restrictedNotes } from '../../shared/ui/visibility-level';
 import { SystemClients } from '../../core/system-clients';
+import { repositoryWarningText } from '../repositories/repository-warnings';
 import { clientsLoweredWarning, clientsSwitchedText, levelSetText, publicSentence, switchedText } from './upstream-words';
 
 /**
@@ -15,7 +16,7 @@ import { clientsLoweredWarning, clientsSwitchedText, levelSetText, publicSentenc
  * status of its own would replace the confirmation it belongs to.
  */
 function withWarnings(text: string, saved: Pick<UpstreamRepository, 'warnings'>): string {
-  return [text, ...(saved.warnings ?? []).map((w) => w.detail)].join(' ');
+  return [text, ...(saved.warnings ?? []).map((w) => repositoryWarningText(w))].join(' ');
 }
 
 interface SetAllData {

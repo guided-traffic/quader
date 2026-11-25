@@ -50,9 +50,9 @@ function shared(): string {
   return sharedCss;
 }
 
-async function check(page: Page, body: string, css = '', withShared = false): Promise<LayoutFinding[]> {
+async function check(page: Page, body: string, css = '', withShared = false, lang = 'en'): Promise<LayoutFinding[]> {
   await page.setContent(
-    `<!doctype html><html lang="en"><head><style>${withShared ? shared() : base}</style><style>${fonts}${css}</style></head>` +
+    `<!doctype html><html lang="${lang}"><head><style>${withShared ? shared() : base}</style><style>${fonts}${css}</style></head>` +
       `<body><main class="content">${body}</main></body></html>`,
   );
   await page.evaluate(async () => {
@@ -918,5 +918,26 @@ test.describe('the bound of an allowed finding', () => {
     expect(judge('policy-new', [button(inGroup, `Add selector ${key}`)]).defects).toEqual([]);
     expect(judge('policy-new', [button(inGroup, `Selektor hinzufügen ${key}`)]).defects).toEqual([]);
     expect(judge('policy-new', [button('div.save-bar > button.btn.btn-confirm', `Add selector ${key}`)]).defects).toHaveLength(1);
+  });
+});
+
+test.describe('an English sentence in a German page (R-UI-214)', () => {
+  // The trend's basis as it stood in the German dashboard on 2026-11-24, a server's sentence bound as it came.
+  const basis = 'A finding counts under its current severity, from the day it was detected until the day it resolved.';
+
+  test('R-UI-214 the server sentence of the German dashboard is found', async ({ page }) => {
+    const found = only(await check(page, `<p class="hint">${basis}</p>`, '', false, 'de'), 'english');
+    expect(found.map((f) => f.what), describe(found)).toEqual(['main.content > p.hint']);
+  });
+
+  test('R-UI-214 German text, code, a technical detail, a name and the same sentence in an English page pass', async ({ page }) => {
+    const german =
+      '<p>Ein Befund zählt unter seinem aktuellen Schweregrad, vom Tag seiner Erkennung bis zum Tag seiner Behebung.</p>' +
+      `<pre><code>${basis}</code></pre>` +
+      `<p lang="en" translate="no">${basis}</p>` +
+      `<span translate="no">${basis}</span>` +
+      '<p>Die Version 1.4.0 von left-pad liegt im Repository npm-remote.</p>';
+    expect(describe(only(await check(page, german, '', false, 'de'), 'english'))).toBe('');
+    expect(describe(only(await check(page, `<p class="hint">${basis}</p>`), 'english'))).toBe('');
   });
 });

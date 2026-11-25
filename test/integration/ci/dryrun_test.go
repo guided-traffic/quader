@@ -144,9 +144,11 @@ func TestR_CI_019_TheDryRunOfTheExampleClaimSet(t *testing.T) {
 		if got["failure"] != nil {
 			t.Fatalf("failure = %v", got["failure"])
 		}
+		// The warning names the scope items, so that the screen says it in its words with them (R-UI-214).
 		var warned bool
 		for _, w := range got["warnings"].([]any) {
-			warned = warned || w.(map[string]any)["code"] == "scope_policy_grants_not_checked"
+			m := w.(map[string]any)
+			warned = warned || (m["code"] == "scope_policy_grants_not_checked" && fmt.Sprint(m["names"]) == "[delete:it/npm-internal]")
 		}
 		if !warned {
 			t.Errorf("warnings = %v", got["warnings"])

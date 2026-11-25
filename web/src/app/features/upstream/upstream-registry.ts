@@ -17,6 +17,7 @@ import { UPSTREAM_PROJECT, systemWork } from '../../core/upstream-project';
 import { SelectField, SelectOption, TextField } from '../../shared/access/fields';
 import { Confirm } from '../../shared/confirm-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
+import { TechnicalDetails } from '../../shared/technical-details';
 import { FormatIconView } from '../../shared/format-icon';
 import { asApiError, valueOf } from '../../shared/paged-resource';
 import { QuaderDialog } from '../../shared/ui/dialog';
@@ -32,6 +33,7 @@ import { ScannerList, SystemApi } from '../../api/system-api';
 import { ScannerReplicas } from '../../shared/scanner/scanner-replicas';
 import { scannerGroup } from '../../shared/scanner/scanner-model';
 import { groupedFingerprint } from '../repositories/deb-signing-keys';
+import { upstreamTestErrorText } from '../repositories/upstream-test-words';
 import { AccountAgainAnswer, AccountAgainData, AccountAgainDialog } from './account-again-dialog';
 import { AuthMode, HostRow, authOptions, credentialHostsOf, hostOf, sameHosts } from './upstream-account';
 import { UpstreamActions } from './upstream-actions';
@@ -78,6 +80,7 @@ function needsAccount(e: ApiError): boolean {
     ScannerReplicas,
     SelectField,
     Switch,
+    TechnicalDetails,
     TextField,
     VisibilityIcon,
     VisibilityLevelControl,
@@ -270,6 +273,7 @@ export class UpstreamRegistry {
   protected readonly testing = signal(false);
   protected readonly testResult = signal<UpstreamTestResult | null>(null);
   protected readonly testError = signal<ApiError | null>(null);
+  protected readonly errorText = upstreamTestErrorText;
   protected readonly testSummary = computed(() => {
     const r = this.testResult();
     if (!r) return null;

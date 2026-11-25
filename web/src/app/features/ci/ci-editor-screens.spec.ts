@@ -205,7 +205,7 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
     expect(state.warnings.map((w) => w.code)).toEqual(expect.arrayContaining(['unprotected_refs_allowed', 'write_without_pipeline_source']));
   });
 
-  it('R-CI-010 the warnings of a replace are shown with their code and detail', async () => {
+  it('R-CI-010 R-UI-214 the warnings of a replace are shown in the screen\'s words, not the server\'s detail', async () => {
     const { root, fixture, get } = await renderScreen(MappingEditor, { inputs: { issuer: 'gitlab-com', mapping: 'team-a-release' } });
     typeInto(root, 'Description', 'Changed text');
     buttonByText(root, 'Save mapping').click();
@@ -214,8 +214,8 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
     expect(ci(get).ifMatch).toEqual(['"1"']);
     const warnings = text(root.querySelector('quader-ci-warnings')!);
     expect(warnings).toContain('Saved, with warnings');
-    expect(warnings).toContain('write_without_pipeline_source');
-    expect(warnings).toContain('Add a pipeline_source condition');
+    expect(warnings).toContain('The mapping writes without a condition on pipeline_source.');
+    expect(warnings).not.toContain('Add a pipeline_source condition');
   });
 
   it('R-CI-013 explicit ownership none on a writing grant warns before the save (shared_ownership)', async () => {
@@ -643,7 +643,8 @@ describe('The claim tester (R-UI-036, R-CI-019)', () => {
     buttonByText(root, 'Evaluate').click();
     await sleep(fixture, 100);
     expect(text(root)).toContain('No mapping matches; the exchange would fail.');
-    expect(text(root)).toContain('no_matching_mapping');
+    expect(text(root.querySelector('[data-testid="ci-test-failure"]')!)).toBe('No mapping of the issuer matches these claims.');
+    expect(text(root.querySelector('[data-testid="technical-details"]')!)).toContain('no_matching_mapping');
     const failed = root.querySelector('tr.failed')!;
     expect(text(failed)).toContain('ref_protected');
     expect(text(failed)).toContain('true');
@@ -653,6 +654,24 @@ describe('The claim tester (R-UI-036, R-CI-019)', () => {
     expect(failed.querySelector('.material-icons')!.textContent).toBe('cancel');
     expect(text(root)).toContain('Did not match');
     await expectAccessible(root);
+  });
+
+  it('R-CI-019 R-UI-214 the dry run\'s warnings are said in the screen\'s words under a heading of the dry run, never "Saved"', async () => {
+    const { root, fixture, get } = await renderScreen(ClaimTester, { inputs: { issuer: 'gitlab-com' } });
+    const evaluate = ci(get).evaluate.bind(ci(get));
+    ci(get).evaluate = async (...args) => ({
+      ...(await evaluate(...args)),
+      warnings: [{ code: 'scope_policy_grants_not_checked', pointer: '/scope', names: ['delete:it/npm-internal'], detail: 'the API sentence' }],
+    });
+    buttonByText(root, 'Insert sample GitLab claims').click();
+    await settle(fixture);
+    buttonByText(root, 'Evaluate').click();
+    await sleep(fixture, 100);
+    const warnings = text(root.querySelector('quader-ci-warnings')!);
+    expect(warnings).toContain('Warnings of the dry run');
+    expect(warnings).not.toContain('Saved');
+    expect(warnings).toContain('The scope asks for delete:it/npm-internal, which only a listed policy or group can give');
+    expect(warnings).not.toContain('the API sentence');
   });
 
   it('R-UI-036 an absent claim is shown as absent', async () => {

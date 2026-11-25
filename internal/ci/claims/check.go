@@ -12,11 +12,14 @@ import (
 )
 
 // Warning is a finding of a save that does not refuse it (R-CI-010, R-CI-011): the save succeeds and
-// the response carries it in `warnings`.
+// the response carries it in `warnings`. The screen says it per Code with Names in its own language (R-UI-214); Detail is
+// the English sentence for a reader of the API.
 type Warning struct {
 	Code    reason.Reason `json:"code"`
 	Pointer string        `json:"pointer,omitempty"`
-	Detail  string        `json:"detail"`
+	// Names are the claims or the scope items the warning is about, where its sentence names them.
+	Names  []string `json:"names,omitempty"`
+	Detail string   `json:"detail"`
 }
 
 // IssuerFacts are the settings of the mapping's CI issuer that the save-time rules read.
@@ -321,19 +324,19 @@ func PinViolation(f IssuerFacts, in SaveInput) error {
 // order: the condition's, the templates', the grants', the options'.
 func warnings(f IssuerFacts, in SaveInput, c Checked) []Warning {
 	out := []Warning{}
-	add := func(code reason.Reason, ptr, detail string) {
-		out = append(out, Warning{Code: code, Pointer: ptr, Detail: detail})
+	add := func(code reason.Reason, ptr, detail string, names ...string) {
+		out = append(out, Warning{Code: code, Pointer: ptr, Detail: detail, Names: names})
 	}
 	pinned := in.Match.Pins(f.PinClaims)
 	if !f.PublicIssuer && !pinned {
-		add(reason.WarnUnpinnedCondition, "/match", "the condition pins no immutable ID claim ("+strings.Join(f.PinClaims, ", ")+"); a path claim follows renames and transfers, and a project that inherits a released path matches (H-30)")
+		add(reason.WarnUnpinnedCondition, "/match", "the condition pins no immutable ID claim ("+strings.Join(f.PinClaims, ", ")+"); a path claim follows renames and transfers, and a project that inherits a released path matches (H-30)", f.PinClaims...)
 	}
 	walkLeaves(in.Match, "/match", func(leaf Node, ptr string) {
 		switch name := leaf.claimName(); {
 		case name == "sub" && (leaf.Glob != nil || leaf.Regex != nil):
 			add(reason.WarnSubjectPattern, ptr, "a glob or regex on sub: a project can reconfigure the components of sub; test the separate claims (project_id, ref_type, ref, …)")
 		case name == "user_login" || name == "user_email":
-			add(reason.WarnMutableUserClaim, ptr, "a condition on "+name+": GitLab users can change it")
+			add(reason.WarnMutableUserClaim, ptr, "a condition on "+name+": GitLab users can change it", name)
 		}
 	})
 	writes := writesOf(in, c.Grants).any()
@@ -376,7 +379,7 @@ func templateWarnings(f IssuerFacts, in SaveInput, c Checked) []Warning {
 		for _, name := range t.ClaimNames() {
 			if !slices.Contains(f.RequiredClaims, name) && !slices.Contains(guarded, name) {
 				out = append(out, Warning{
-					Code: reason.WarnUnguardedTemplateClaim, Pointer: p,
+					Code: reason.WarnUnguardedTemplateClaim, Pointer: p, Names: []string{name},
 					Detail: "the template uses the claim " + name + ", which the issuer does not require and no top-level present: true guards; a token without it fails the exchange with grant_render_failed",
 				})
 			}

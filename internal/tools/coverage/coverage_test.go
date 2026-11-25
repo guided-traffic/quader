@@ -111,9 +111,9 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// connection's storage keys (R-STOR-097 to R-STOR-103, R-BAK-032, eight P1 requirements). 1262 since the curation of a remote
 		// repository (R-CUR-001 to R-CUR-023, R-NPM-049, R-NUGET-035, R-OCI-038, R-DEB-036, R-ANS-047, 28 P1 requirements). 1264 since
 		// the scans after any fill (R-VULN-050, R-MAL-035, two P1 requirements). 1268 since the downloads from upstreams (R-OPS-049 to
-		// R-OPS-052, four P1 requirements).
-		if len(m.Reqs) != 1272 || count[prioMVP] != 718 || count[prioP1] != 515 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1272 (718, 515, 39)",
+		// R-OPS-052, four P1 requirements). 1273 since a screen says a server's code in its own language (R-UI-214, one P1 requirement).
+		if len(m.Reqs) != 1273 || count[prioMVP] != 718 || count[prioP1] != 516 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1273 (718, 516, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

@@ -276,7 +276,7 @@ const preview = {
   stored: 2,
   notDelivered: 210,
   bounds: { maxVersions: 10000, maxBytes: 107374182400, includePrereleases: true },
-  note: null,
+  note: 'sizes_unannounced',
 };
 
 /** Every call of the tab answered as an npm remote in mode `onlyAllowed` answers it; `over` changes one call's answer. */

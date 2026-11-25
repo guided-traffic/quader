@@ -39,7 +39,7 @@ import { importStateText } from '../repositories/ansible-import-tasks';
           @if (task.messages.length > 0) {
             <ol class="messages">
               @for (m of task.messages; track $index) {
-                <li><span class="level" translate="no">{{ m.level }}</span> {{ m.message }}</li>
+                <li><span class="level" translate="no">{{ m.level }}</span>&ngsp;<span lang="en" translate="no">{{ m.message }}</span></li>
               }
             </ol>
           }

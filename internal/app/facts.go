@@ -283,6 +283,9 @@ func valkeyViewOf(st cluster.ValkeyStatus) *gen.ValkeyView {
 	}
 	if !st.Available {
 		v.State = gen.ValkeyViewStateDegraded
+		// The code is what the screen says (R-UI-214); the free text, which names addresses and replies, is its technical detail.
+		c := gen.ValkeyViewReasonCode(st.ReasonCode)
+		v.ReasonCode = &c
 		r := st.DegradedReason
 		v.Reason = &r
 	}

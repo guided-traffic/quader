@@ -34,6 +34,14 @@ const (
 	CodeInternal = "internal"
 )
 
+// Codes lists the codes a failed pass attempt records, the closed list of the API's MirrorErrors.lastCode, which the screen
+// says in its own words (R-UI-214).
+func Codes() []string {
+	return []string{
+		CodeDiscoveryUnavailable, CodeDiscoveryFailed, CodeDiscoveryStalled, CodeCursorTooLarge, CodeNotApplicable, CodeUpstream, CodeInternal,
+	}
+}
+
 // passError is an error of the pass itself with the code it is recorded under.
 type passError struct {
 	code string

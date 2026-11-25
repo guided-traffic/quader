@@ -142,8 +142,9 @@ func TestR_CUR_010_ADownloadAheadOfOneVersionAndOfAPackage(t *testing.T) {
 		}
 		pv := r.st.Do(rep, http.MethodPost, downloadsPath+"/downloads/preview", r.tokL, body)
 		// The preview counts the newest maxVersions of the package by one catalogue call (R-CUR-010): npm announces no tarball size.
+		// What the counts leave open is a code the screen says in its words (R-UI-214).
 		if m := pv.JSON(t); pv.Status != http.StatusOK || m["packages"] != float64(1) || m["versions"] != float64(2) || m["bytes"] != nil ||
-			m["sizeUnknown"] != float64(2) {
+			m["sizeUnknown"] != float64(2) || m["note"] != "sizes_unannounced" {
 			t.Fatalf("the preview: %d %s", pv.Status, pv.Body)
 		}
 		a := r.startDownload(rep, r.tokL, body)

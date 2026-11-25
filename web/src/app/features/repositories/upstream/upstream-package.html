@@ -11,7 +11,7 @@
 @if (pkg(); as p) {
   <div class="package-head">
     @if (p.description && showDescription()) {
-      <p class="package-description">{{ p.description }}</p>
+      <p class="package-description" translate="no">{{ p.description }}</p>
     }
     @if (tagEntries(p).length > 0) {
       <p class="package-tags dot-separated">

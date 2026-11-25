@@ -160,7 +160,7 @@ describe('The tab Downloads of a remote repository', () => {
     expect(detail.querySelector('pre.excerpt')?.textContent).toBe('<html><body>Service Unavailable</body></html>');
     // The screen's sentence from the code; the server's English one folded under it (Q-CUR-169).
     expect(detail.querySelector('.failure-detail')?.textContent).toBe('The upstream answered with an error of its own. A later attempt may succeed.');
-    const engine = detail.querySelector<HTMLElement>('quader-disclosure.technical .technical-detail')!;
+    const engine = detail.querySelector<HTMLElement>('quader-technical-details [data-testid="technical-details"]')!;
     expect(engine.lang).toBe('en');
     expect(engine.textContent).toContain('answered 503 Service Unavailable');
     await expectAccessible(root);
@@ -283,9 +283,9 @@ describe('The tab Downloads of a remote repository', () => {
     expect(text(bulk)).toContain('Versions found');
     expect(bulk.querySelector('.bulk-facts quader-no-value')).not.toBeNull();
     // The server's English sentence and the code fold under the screen's sentence, marked as English.
-    const technical = bulk.querySelector<HTMLElement>('quader-disclosure.technical')!;
+    const technical = bulk.querySelector<HTMLElement>('quader-technical-details')!;
     expect(technical.querySelector('button[aria-expanded="false"]')?.textContent).toContain('Technical details');
-    const engine = technical.querySelector<HTMLElement>('.technical-detail')!;
+    const engine = technical.querySelector<HTMLElement>('[data-testid="technical-details"]')!;
     expect(engine.lang).toBe('en');
     expect(engine.textContent).toContain('The upstream document points to the host hub.docker.com');
     expect(engine.textContent).toContain('foreign_host_denied');

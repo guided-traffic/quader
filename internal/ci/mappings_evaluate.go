@@ -110,7 +110,7 @@ func (s *MappingService) evaluate(ctx context.Context, issuerName, project strin
 	}
 	if len(policyItems) > 0 {
 		res.Warnings = append(res.Warnings, claims.Warning{
-			Code: WarnScopeNotChecked, Pointer: "/scope",
+			Code: WarnScopeNotChecked, Pointer: "/scope", Names: policyItems,
 			Detail: "the scope asks for " + strings.Join(policyItems, ", ") + ", which only a listed policy or group may give; the dry run reads no policy and took the item as held",
 		})
 	}

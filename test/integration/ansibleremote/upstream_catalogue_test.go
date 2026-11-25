@@ -21,7 +21,7 @@ func TestR_CUR_010_ASubSectionIsPreviewedAndDownloadedThroughTheCatalogue(t *tes
 	body := map[string]any{"level": "section", "section": "acme", "maxVersions": 2}
 
 	pv := e.st.Do(rep, http.MethodPost, path+"/downloads/preview", e.admin, body)
-	if m := pv.JSON(t); pv.Status != http.StatusOK || m["packages"] != float64(3) || m["versions"] != nil {
+	if m := pv.JSON(t); pv.Status != http.StatusOK || m["packages"] != float64(3) || m["versions"] != nil || m["note"] != "section_uncounted" {
 		t.Fatalf("the preview of the namespace: %d %s", pv.Status, pv.Body)
 	}
 	a := e.st.Do(rep, http.MethodPost, path+"/downloads", e.admin, body)

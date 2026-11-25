@@ -112,7 +112,7 @@ func (s *Server) toUpstream(r *http.Request, it repository.UpstreamItem) gen.Ups
 		ws := make([]gen.RepositoryWarning, 0, len(it.Warnings))
 		for _, w := range it.Warnings {
 			p := w.Pointer
-			ws = append(ws, gen.RepositoryWarning{Code: w.Code, Pointer: &p, Detail: w.Detail})
+			ws = append(ws, gen.RepositoryWarning{Code: gen.RepositoryWarningCode(w.Code), Pointer: &p, Detail: w.Detail})
 		}
 		out.Warnings = &ws
 	}

@@ -176,11 +176,21 @@ const (
 	LevelPublic   = "public"
 )
 
-// Warning is a finding that does not block a save (R-REPO-008).
+// Warning is a finding that does not block a save (R-REPO-008). Its Code is one of WarningCodes; the screen says a warning per
+// code in its own language and never shows Detail, the English sentence for a reader of the API (R-UI-214).
 type Warning struct {
 	Code    string `json:"code"`
 	Pointer string `json:"pointer,omitempty"`
 	Detail  string `json:"detail"`
+}
+
+// WarningCodes lists the codes a Warning carries, the closed list of the API's RepositoryWarning.code.
+func WarningCodes() []string {
+	return []string{
+		WarningMemberInactive, warningNoMembers, warningUnprotected, warningUnscopedOnly, codeClaimOverlaps,
+		warningDebUpstreamUnverified, WarnPlainHTTPUpstream, WarnSourceNetworkSingle, WarnMirrorUnbounded,
+		WarningPublicPopulatesRemote, WarningPublicNotAllowedLowered,
+	}
 }
 
 // ConsumerView is what a caller who may read a repository but not its

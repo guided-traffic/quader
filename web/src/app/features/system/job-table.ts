@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, input, output } from '@angular/core';
 import { Job, JobState, jobActive, jobCancellable } from '../../api/jobs-api';
+import { TechnicalDetails } from '../../shared/technical-details';
 import { SessionStore } from '../../core/session-store';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { NoValue } from '../../shared/ui/no-value';
@@ -26,6 +27,22 @@ export function jobStatusText(state: JobState): string {
   }
 }
 
+/** Why a job's last attempt failed or why it ended, in the screen's words (R-UI-214); the handler's text is a technical detail. */
+export function jobErrorText(code: NonNullable<Job['error']>['code']): string {
+  switch (code) {
+    case 'job_failed':
+      return $localize`:@@job.error.failed:The attempt failed.`;
+    case 'job_timeout':
+      return $localize`:@@job.error.timeout:The attempt took longer than the job may run.`;
+    case 'attempts_exhausted':
+      return $localize`:@@job.error.exhausted:Every attempt failed; the job is not tried again.`;
+    case 'cancelled':
+      return $localize`:@@job.error.cancelled:The job was cancelled.`;
+    case 'superseded':
+      return $localize`:@@job.error.superseded:A newer job of the same kind took its place.`;
+  }
+}
+
 /**
  * A table of jobs (R-UI-038): kind, state as a badge (its icon and its word, never broken, Q-UI-560), start, progress, replica and
  * result. The kind and the replica are names that stay on one line; the result is read and wraps.
@@ -34,7 +51,7 @@ export function jobStatusText(state: JobState): string {
  */
 @Component({
   selector: 'quader-job-table',
-  imports: [DataTable, DatePipe, NoValue],
+  imports: [DataTable, DatePipe, NoValue, TechnicalDetails],
   styles: `
     /* A result is read in full: it wraps in its column, at any character where it must. */
     .long {
@@ -82,10 +99,10 @@ export function jobStatusText(state: JobState): string {
           </td>
           <td class="long">
             @if (j.error; as err) {
-              <span translate="no">{{ err.code }}</span>
+              <span>{{ errorText(err.code) }}</span>
               @if (err.detail) {
-                <span class="error-detail" translate="no">{{ err.detail }}</span>
                 <span class="error-detail" i18n="@@jobs.attempt">Attempt {{ attemptOf(j) }} of {{ j.maxAttempts }}</span>
+                <quader-technical-details [text]="err.detail" [code]="err.code" />
               }
             } @else if (summary(j); as text) {
               <span translate="no">{{ text }}</span>
@@ -133,6 +150,8 @@ export class JobTable {
   ];
 
   private readonly self = computed(() => this.session.whoami()?.principal.id ?? null);
+
+  protected readonly errorText = jobErrorText;
 
   protected stateText(job: Job): string {
     return jobStatusText(job.state);

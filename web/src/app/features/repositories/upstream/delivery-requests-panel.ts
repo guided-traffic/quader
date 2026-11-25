@@ -91,11 +91,11 @@ const PANEL_PAGE = 20;
                 </p>
                 @if (actions.manager()) {
                   @for (a of notes(r); track $index) {
-                    <p class="request-note"><span class="note-by">{{ a.name }}</span>: {{ a.note }}</p>
+                    <p class="request-note"><span class="note-by">{{ a.name }}</span>:&ngsp;<span translate="no">{{ a.note }}</span></p>
                   }
                 }
                 @if (r.state === 'declined' && r.declineReason) {
-                  <p class="request-note"><ng-container i18n="@@requests.declined-because">Declined</ng-container>: {{ r.declineReason }}</p>
+                  <p class="request-note"><ng-container i18n="@@requests.declined-because">Declined</ng-container>:&ngsp;<span translate="no">{{ r.declineReason }}</span></p>
                 }
               </div>
               @if (actions.manager() && r.state === 'open') {

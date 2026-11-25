@@ -172,9 +172,7 @@
           <p class="bulk-failure muted">{{ sentence(f) }}</p>
         }
         <!-- The server's own sentence, English, for an administrator and a script (Q-CUR-169): folded under the screen's sentence. -->
-        <quader-disclosure class="technical" [inline]="true" i18n-heading="@@downloads.failure.technical" heading="Technical details">
-          <p class="technical-detail" lang="en" translate="no">{{ f.detail }}&ngsp;<code>{{ f.code }}</code></p>
-        </quader-disclosure>
+        <quader-technical-details class="technical" [text]="f.detail" [code]="f.code" />
       }
     } @else {
       <p role="status" i18n="@@downloads.bulk.loading">Loading the bulk download.</p>
@@ -311,9 +309,7 @@
                   </h3>
                   <p class="failure-detail">{{ sentence(f) }}</p>
                   <!-- The server's own sentence, English, for an administrator and a script (Q-CUR-169); the facts below carry the code. -->
-                  <quader-disclosure class="technical" [inline]="true" i18n-heading="@@downloads.failure.technical" heading="Technical details">
-                    <p class="technical-detail" lang="en" translate="no">{{ f.detail }}</p>
-                  </quader-disclosure>
+                  <quader-technical-details class="technical" [text]="f.detail" />
                   <dl class="facts">
                     <dt i18n="@@downloads.failure.class">Class</dt>
                     <dd>{{ classText(f.class) }}&ngsp;<code class="secondary" translate="no">{{ f.class }}</code></dd>

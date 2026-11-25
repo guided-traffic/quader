@@ -25,7 +25,7 @@ import { SessionStore } from '../../../core/session-store';
 import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError, valueOf } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
-import { Disclosure } from '../../../shared/ui/disclosure';
+import { TechnicalDetails } from '../../../shared/technical-details';
 import { NoValue } from '../../../shared/ui/no-value';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { formatSize } from '../../packages/format-size';
@@ -64,7 +64,7 @@ type FilterState = (typeof FILTER_STATES)[number];
  */
 @Component({
   selector: 'quader-remote-downloads',
-  imports: [DataTable, Disclosure, ErrorNotice, NoValue, RouterLink, TimeAgo],
+  imports: [DataTable, ErrorNotice, NoValue, RouterLink, TechnicalDetails, TimeAgo],
   templateUrl: './remote-downloads.html',
   styleUrl: './remote-downloads.scss',
 })

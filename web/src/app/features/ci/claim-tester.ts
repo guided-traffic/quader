@@ -7,6 +7,7 @@ import { asApiError } from '../../shared/paged-resource';
 import { CiWarnings, ciRoutes } from './ci-common';
 import { claimsSatisfying, newId, parseClaimsInput, sampleClaims, summarizeGrants, tierLabel } from './ci-model';
 import { ErrorNotice } from '../../shared/error-notice';
+import { TechnicalDetails } from '../../shared/technical-details';
 import { PageHeader } from '../../shared/ui/page-header';
 
 const pretty = (v: unknown): string => JSON.stringify(v, null, 2);
@@ -33,6 +34,38 @@ function valueFor(previous: unknown, text: string): unknown {
 }
 
 /**
+ * Why the exchange would fail, in the screen's words (R-CI-019, R-UI-214), by the reason of R-CI-008 the dry run answers. The dry
+ * run's English detail and the reason itself are folded under Technical details.
+ */
+export function ciFailureText(failure: string): string {
+  switch (failure) {
+    case 'no_matching_mapping':
+      return $localize`:@@ci.failure.no-mapping:No mapping of the issuer matches these claims.`;
+    case 'cross_project_source_denied':
+      return $localize`:@@ci.failure.cross-project:The pipeline runs for another project (a fork or a merge request from one), and the mappings that match refuse such a pipeline.`;
+    case 'grant_render_failed':
+      return $localize`:@@ci.failure.render:A template of the grants could not be filled from these claims.`;
+    case 'scope_malformed':
+      return $localize`:@@ci.failure.scope-malformed:The scope cannot be read.`;
+    case 'scope_not_granted':
+      return $localize`:@@ci.failure.scope-not-granted:The scope asks for more than the matching mappings grant.`;
+    case 'required_claim_missing':
+      return $localize`:@@ci.failure.claim-missing:A claim the issuer requires is missing.`;
+    case 'token_expired':
+      return $localize`:@@ci.failure.expired:The token has expired at the time given.`;
+    case 'token_not_yet_valid':
+    case 'issued_in_future':
+      return $localize`:@@ci.failure.not-yet-valid:The token is not valid yet at the time given.`;
+    case 'subject_token_expires_too_soon':
+      return $localize`:@@ci.failure.expires-soon:The token expires too soon for the shortest lifetime of a CI token.`;
+    case 'ttl_below_minimum':
+      return $localize`:@@ci.failure.ttl:The lifetime asked for is below the shortest a CI token may have.`;
+    default:
+      return $localize`:@@ci.failure.other:The exchange would be refused.`;
+  }
+}
+
+/**
  * The claim tester (R-UI-036, R-CI-019): paste the claims of a job as JSON, or a compact ID token, and
  * see which mapping would match and why not the others. A pasted token is decoded here, header and
  * payload only and without any signature check, and at once replaced by its pretty-printed claims: the
@@ -43,7 +76,7 @@ function valueFor(previous: unknown, text: string): unknown {
  */
 @Component({
   selector: 'quader-ci-claim-tester',
-  imports: [PageHeader, ErrorNotice, CiWarnings, SelectField],
+  imports: [PageHeader, ErrorNotice, CiWarnings, SelectField, TechnicalDetails],
   template: `
     <quader-page-header heading="Claim tester" i18n-heading="@@ci.test.heading" />
     <p class="subject dot-separated" translate="no">
@@ -145,8 +178,9 @@ function valueFor(previous: unknown, text: string): unknown {
             <strong i18n="@@ci.test.match">Matched:</strong>&ngsp;<span translate="no">{{ r.selected.join(', ') }}</span>
           </p>
         }
-        @if (r.failure) {
-          <p><code translate="no">{{ r.failure }}</code>@if (r.detail) { <span>: {{ r.detail }}</span> }</p>
+        @if (r.failure; as failure) {
+          <p data-testid="ci-test-failure">{{ failureText(failure) }}</p>
+          <quader-technical-details [text]="r.detail ?? null" [code]="failure" />
         }
         @if (r.crossProject) {
           <p class="muted" i18n="@@ci.test.cross">The claims describe a pipeline of another project than the one it runs for (a fork or a merge request from one).</p>
@@ -170,8 +204,9 @@ function valueFor(previous: unknown, text: string): unknown {
                 <span class="badge" i18n="@@ci.test.selected-mapping">The mapping you came from</span>
               }
             </p>
+            <!-- The failed condition stands in the table below; the selection's English sentence for it is a technical detail. -->
             @if (entry.detail && !entry.matched) {
-              <p class="muted" translate="no">{{ entry.detail }}</p>
+              <quader-technical-details [text]="entry.detail" />
             }
             @if ((entry.leaves ?? []).length > 0) {
               <div class="scroll">
@@ -227,7 +262,7 @@ function valueFor(previous: unknown, text: string): unknown {
             <dd>{{ r.ttlSeconds ? lifetime(r.ttlSeconds) : '–' }}</dd>
           </dl>
         }
-        <quader-ci-warnings [warnings]="r.warnings ?? []" />
+        <quader-ci-warnings [warnings]="r.warnings ?? []" heading="Warnings of the dry run" i18n-heading="@@ci.test.warnings" />
       </section>
     }
   `,
@@ -297,10 +332,11 @@ function valueFor(previous: unknown, text: string): unknown {
     .hint.warn {
       border-color: var(--quader-status-warn);
     }
+    /* The icon stands on the middle of the verdict's first line (R-UI-175): a verdict that wraps at a phone's width keeps it there. */
     .verdict {
       display: flex;
       gap: var(--quader-space-2);
-      align-items: center;
+      align-items: flex-start;
       font: var(--quader-type-title-medium);
     }
     h3 {
@@ -322,6 +358,10 @@ function valueFor(previous: unknown, text: string): unknown {
       gap: var(--quader-space-3);
       align-items: center;
       margin: 0;
+    }
+    /* A condition is a claim and its operator, identifiers that stay on one line; the table scrolls in its region at a phone's width. */
+    tbody th {
+      white-space: nowrap;
     }
     tr.failed th,
     tr.failed td {
@@ -369,6 +409,7 @@ export class ClaimTester {
   protected readonly busy = signal(false);
 
   protected readonly tier = tierLabel;
+  protected readonly failureText = ciFailureText;
   protected readonly describedBy = computed(() =>
     [this.inputError() ? 'ci-t-error' : null, this.fromToken() ? 'ci-t-token-note' : null].filter(Boolean).join(' ') || null,
   );

@@ -224,7 +224,8 @@ export interface ValkeySummary {
   /** `k` of `n` replicas degraded; 0 means available on every replica. */
   readonly degradedReplicas: number;
   readonly liveReplicas: number;
-  readonly reasons: readonly string[];
+  /** The codes of why the degraded replicas see Valkey so, each once. */
+  readonly reasons: readonly NonNullable<ValkeyReasonCode>[];
   /** Replicas that are `available` report different primaries. */
   readonly primariesDisagree: boolean;
   /** A replica sees fewer than a majority of its configured Sentinels. */
@@ -236,6 +237,36 @@ export interface ValkeySummary {
 /** Majority of `n` Sentinels. */
 export function sentinelMajority(n: number): number {
   return Math.floor(n / 2) + 1;
+}
+
+/** The code of why a replica sees Valkey degraded (R-OPS-003); null while it is available. */
+export type ValkeyReasonCode = NonNullable<Replica['valkey']>['reasonCode'];
+
+/**
+ * Why a replica sees Valkey degraded, in the screen's words (R-OPS-003, R-UI-214), by the code of the fixed vocabulary the API
+ * answers beside the client's own English text, which the replica's row folds under **Technical details**.
+ */
+export function valkeyReasonText(code: NonNullable<ValkeyReasonCode>): string {
+  switch (code) {
+    case 'connecting':
+      return $localize`:@@system.valkey.reason.connecting:not connected yet`;
+    case 'no_sentinel':
+      return $localize`:@@system.valkey.reason.no-sentinel:no Sentinel answers`;
+    case 'timeout':
+      return $localize`:@@system.valkey.reason.timeout:timed out`;
+    case 'auth_failed':
+      return $localize`:@@system.valkey.reason.auth:sign-in refused`;
+    case 'config_error':
+      return $localize`:@@system.valkey.reason.config:configuration error`;
+    case 'unsupported':
+      return $localize`:@@system.valkey.reason.version:unsupported version`;
+    case 'circuit_open':
+      return $localize`:@@system.valkey.reason.circuit:calls paused after errors`;
+    case 'probe_failed':
+      return $localize`:@@system.valkey.reason.probe:health check failed`;
+    case 'closed':
+      return $localize`:@@system.valkey.reason.closed:client closed`;
+  }
 }
 
 export function valkeySummary(info: SystemInfo, replicas: readonly Replica[]): ValkeySummary {
@@ -250,7 +281,7 @@ export function valkeySummary(info: SystemInfo, replicas: readonly Replica[]): V
     views.map((v) => v.serverVersion).filter((v): v is string => v !== null),
   );
   const reasons = new Set(
-    views.map((v) => v.reason).filter((r): r is string => r !== null && r !== ''),
+    views.map((v) => v.reasonCode).filter((r): r is NonNullable<ValkeyReasonCode> => r !== null),
   );
   return {
     degradedReplicas:

@@ -39,7 +39,8 @@ describe('The CI issuer list (R-UI-035)', () => {
     // The issuer of the Helm values says so, and its failed fetch shows with its error, as text and not as colour alone.
     expect(corp).toContain('Configuration');
     expect(corp).toContain('Fetch failed');
-    expect(corp).toContain('HTTP 502 from git.corp.example.com');
+    expect(corp).toContain('The issuer answered with the error status 502.');
+    expect(corp).not.toContain('status=502');
     expect(root.querySelector('a[href="/admin/ci/gitlab-com"]')).toBeTruthy();
     await expectAccessible(root);
   });
@@ -189,7 +190,8 @@ describe('A CI issuer (R-UI-035, R-CI-001, R-CI-002)', () => {
       inputs: { issuer: 'corp-gitlab', tab: 'keys' },
     });
     await settle(fixture);
-    expect(text(root)).toContain('HTTP 502 from git.corp.example.com');
+    expect(text(root)).toContain('The issuer answered with the error status 502.');
+    expect(text(root.querySelector('[data-testid="technical-details"]')!)).toBe('http_status status=502 host=git.corp.example.com');
     expect(text(root)).toContain('Ignored');
     expect(text(root)).toContain('key_too_small');
     buttonByText(root, 'Refresh keys').click();

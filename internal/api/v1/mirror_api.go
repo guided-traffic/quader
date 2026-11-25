@@ -367,7 +367,7 @@ func buildMirrorStatus(t MirrorTarget, row MirrorRow) gen.MirrorStatus {
 		LastFullPassAt: row.LastFullPassAt,
 		Errors: gen.MirrorErrors{
 			ConsecutiveFailures: row.ConsecutiveFailures, LastAt: row.LastErrorAt,
-			LastCode: strPtr(row.LastErrorCode), LastMessage: strPtr(row.LastError),
+			LastCode: mirrorErrorCode(row.LastErrorCode), LastMessage: strPtr(row.LastError),
 		},
 		RateLimit: gen.MirrorRateLimit{
 			Waits: row.RateLimitWaits, WaitSeconds: row.RateLimitWaitSecs, LastAt: row.LastRateLimitAt,
@@ -412,6 +412,15 @@ func aheadOf(t *time.Time, now time.Time) *time.Time {
 		return nil
 	}
 	return t
+}
+
+// mirrorErrorCode is the API's code of a failed pass attempt (one of mirror.Codes(), R-UI-214); nil when none failed.
+func mirrorErrorCode(s string) *gen.MirrorErrorsLastCode {
+	if s == "" {
+		return nil
+	}
+	c := gen.MirrorErrorsLastCode(s)
+	return &c
 }
 
 func strPtr(s string) *string {

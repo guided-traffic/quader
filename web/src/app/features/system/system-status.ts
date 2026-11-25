@@ -30,6 +30,8 @@ import {
   roleGroups,
   rotationStep,
   serviceStatus,
+  ValkeyReasonCode,
+  valkeyReasonText,
   valkeySummary,
 } from './system-status-model';
 import { valueOf } from '../../shared/paged-resource';
@@ -37,6 +39,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { ScannerReplicas } from '../../shared/scanner/scanner-replicas';
 import { databaseLag, scannerGroups, waitingScanners } from '../../shared/scanner/scanner-model';
 import { NoValue } from '../../shared/ui/no-value';
+import { TechnicalDetails } from '../../shared/technical-details';
 import { SystemRefresh } from './system-refresh';
 
 /** Automatic refresh interval with a pause control (R-UI-038, WCAG 2.2.2). */
@@ -60,7 +63,7 @@ export const PRIMARY_DISAGREEMENT_GRACE_MS = 30_000;
  */
 @Component({
   selector: 'quader-system-status',
-  imports: [DataTable, DatePipe, ErrorNotice, JobProgress, JobTable, NoValue, ScannerReplicas, TasksCard],
+  imports: [DataTable, DatePipe, ErrorNotice, JobProgress, JobTable, NoValue, ScannerReplicas, TasksCard, TechnicalDetails],
   templateUrl: './system-status.html',
   styleUrl: './system-status.scss',
 })
@@ -104,6 +107,10 @@ export class SystemStatus {
       : $localize`:@@system.replicas.caption-pool:Replicas of the pool ${pool}:pool: of the role ${role}:role:`;
   }
   protected readonly valueOf = valueOf;
+  protected readonly valkeyReason = valkeyReasonText;
+  protected valkeyReasons(reasons: readonly NonNullable<ValkeyReasonCode>[]): string {
+    return reasons.map(valkeyReasonText).join(', ');
+  }
   private readonly system = inject(SystemApi);
   private readonly encryptionApi = inject(EncryptionApi);
   private readonly notifier = inject(Notifier);

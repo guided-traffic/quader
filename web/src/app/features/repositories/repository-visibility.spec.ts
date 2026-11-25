@@ -222,13 +222,13 @@ describe('The visibility block of a repository (R-UI-055)', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-055 the warning of the answer is shown at the block', async () => {
+  it('R-UI-055 R-UI-214 the warning of the answer is shown at the block, in the screen\'s words for its code', async () => {
     const r = await openAccess({ project: 'public', cls: 'remote', format: 'npm' });
     await r.choose(LEVEL, 'Public');
     await r.save();
-    expect(text(r.root.querySelector('quader-repository-visibility')!)).toContain(
-      'Anyone can fill the cache of this remote repository from its upstream.',
-    );
+    const shown = text(r.root.querySelector('quader-repository-visibility')!);
+    expect(shown).toContain('A request without a credential fills the cache of this repository');
+    expect(shown).not.toContain('Anyone can fill the cache of this remote repository from its upstream.');
   });
 
   it('R-UI-141 an Owner sees a restricted level disabled with the reason, and keeps the level the repository has', async () => {

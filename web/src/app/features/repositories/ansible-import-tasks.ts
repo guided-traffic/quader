@@ -60,7 +60,7 @@ export function importStateText(state: AnsibleImportTask['state']): string {
                 <quader-disclosure [inline]="true" [heading]="messagesOf(task.messages.length)">
                   <ul class="messages">
                     @for (m of task.messages; track $index) {
-                      <li><span class="level" translate="no">{{ m.level }}</span> {{ m.message }}</li>
+                      <li><span class="level" translate="no">{{ m.level }}</span>&ngsp;<span lang="en" translate="no">{{ m.message }}</span></li>
                     }
                   </ul>
                 </quader-disclosure>

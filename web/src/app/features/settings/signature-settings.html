@@ -174,12 +174,13 @@
         <dt i18n="@@sig.root.failure">Last failure</dt>
         <dd>
           @if (root.lastError; as err) {
-            <!-- The state and its time on the first line, the task's message below them: the time never reads as the message's end. -->
+            <!-- The state and its time on the first line, the task's own English text below them as a technical detail (R-UI-214). -->
             <span class="warn"><span class="material-icons" aria-hidden="true">warning</span><ng-container i18n="@@sig.root.failed">Failed</ng-container></span>
             @if (root.lastErrorAt; as at) {
               &ngsp;<span class="muted"><quader-time-ago [at]="at" absolute="title" /></span>
             }
-            &ngsp;<span class="root-failure" translate="no">{{ err }}</span>
+            <span class="root-failure" i18n="@@sig.root.failed-sentence">The last refresh of the public root failed; the root in use stays until a refresh succeeds.</span>
+            <quader-technical-details [text]="err" />
           } @else {
             <span class="muted" i18n="@@sig.root.no-failure">None since the last refresh</span>
           }

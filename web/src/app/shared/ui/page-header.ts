@@ -21,7 +21,7 @@ import { AddressField } from '../address-field';
           >{{ heading() }}@if (count() !== null) {&ngsp;<span class="badge heading-count" translate="no">{{ count() }}</span>}</h1
         >
         @if (description()) {
-          <p class="page-header-description">{{ description() }}</p>
+          <p class="page-header-description" [attr.translate]="descriptionAsWritten() ? 'no' : null">{{ description() }}</p>
         }
         <ng-content select="[meta]" />
         @for (a of addresses(); track a) {
@@ -100,6 +100,11 @@ export class PageHeader {
   readonly count = input<number | null>(null);
   /** One muted sentence under the heading; nothing when empty. */
   readonly description = input<string | null | undefined>('');
+  /**
+   * The description is what a publisher or an upstream wrote (a package's description, an advisory's summary): it is shown as it
+   * came and not translated (R-UI-214).
+   */
+  readonly descriptionAsWritten = input(false);
   /** The object's client addresses, each one field (R-UI-065, Q-UI-301); none when empty. */
   readonly addresses = input<readonly string[]>([]);
   readonly addressLabel = input($localize`:@@address.label:Client address`);

@@ -10,7 +10,7 @@
 export interface LayoutFinding {
   /**
    * Which check found it: `icon-apart`, `broken`, `row-offset`, `row-actions`, `stacked-offset`, `stacked-place`, `label-apart`,
-   * `empty-cell`, `cell-overflow`, `clipped`, `cramped`, `stacked-fits`, `sideways`, `empty-scroll`, `tab-scrollbar`.
+   * `empty-cell`, `cell-overflow`, `clipped`, `cramped`, `stacked-fits`, `sideways`, `empty-scroll`, `tab-scrollbar`, `english`.
    */
   readonly check: string;
   /** The element, as a path of up to four tags with their first two classes. */
@@ -937,6 +937,30 @@ export function layoutFindings(): LayoutFinding[] {
     const has = region.clientWidth;
     host.classList.add('stacked');
     if (need <= has) add('stacked-fits', host, host.querySelector('caption')?.textContent ?? '', `stacked, but its columns need ${Math.round(need)} px and have ${has}`);
+  }
+
+  // An English sentence in a German page (R-UI-214): three English server sentences stood in German pages on one day (the
+  // upstream search's hint, a failed bulk's detail, the vulnerability trend's basis). In a page whose language is German, a shown
+  // text of at least six words of which three are English function words is a finding, unless it stands in code, in a text marked
+  // as another language (`lang="en"`: a technical detail, a format's English texts, the manual) or as not to be translated
+  // (`translate="no"`: names, upstream texts, what a person typed). A heuristic: a German sentence holds none of these words, a
+  // short English phrase is not seen, and a server's sentence wrongly marked `translate="no"` is the lint rule's to find.
+  if ((document.documentElement.lang || '').toLowerCase().startsWith('de')) {
+    const ENGLISH = new Set([
+      'the', 'and', 'of', 'is', 'are', 'to', 'with', 'which', 'its', 'until', 'that', 'this', 'be', 'has', 'have', 'for', 'when',
+      'from', 'your', 'you', 'not', 'been', 'does', 'there', 'their', 'than', 'would', 'should', 'could', 'it',
+    ]);
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const parent = n.parentElement;
+      if (!parent || !shown(parent)) continue;
+      if (parent.closest('code, pre, kbd, samp, script, style, textarea, [translate="no"]')) continue;
+      if (!(parent.closest('[lang]')?.getAttribute('lang') ?? '').toLowerCase().startsWith('de')) continue;
+      const words = (n.nodeValue ?? '').toLowerCase().match(/[a-zäöüß']+/g) ?? [];
+      if (words.length < 6) continue;
+      const english = words.filter((w) => ENGLISH.has(w)).length;
+      if (english >= 3) add('english', parent, n.nodeValue ?? '', `an English sentence in a German page: ${english} of its ${words.length} words are English function words`);
+    }
   }
 
   return [...found.values()];

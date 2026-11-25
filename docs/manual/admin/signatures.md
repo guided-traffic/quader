@@ -133,7 +133,8 @@ blocked signers stand under **Security audit › Signatures**.
 The closed section **Public Sigstore root** shows where the public Sigstore root and npm's registry keys in use come from: refreshed daily
 from the Sigstore update repository, or the snapshot the release ships. Without internet the snapshot holds and ages with the release
 (the alert `QuaderSignatureTrustRootStale` fires after 14 days); an operator can set `signatures.trust_root.url` to a mirror of the
-company. The last failure of the refresh is shown with its time.
+company. A failed refresh is shown with its time and the sentence that the root in use stays until a refresh succeeds; the refresh's
+own message folds under **Technical details**.
 
 ## Signatures of remote repositories
 

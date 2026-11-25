@@ -856,6 +856,48 @@ func (e CiMappingInputSubjectKinds) Valid() bool {
 	}
 }
 
+// Defines values for CiWarningCode.
+const (
+	CrossProjectReadOnly            CiWarningCode = "cross_project_read_only"
+	MutableUserClaim                CiWarningCode = "mutable_user_claim"
+	RepositoryTemplateUnconstrained CiWarningCode = "repository_template_unconstrained"
+	ScopePolicyGrantsNotChecked     CiWarningCode = "scope_policy_grants_not_checked"
+	SharedOwnership                 CiWarningCode = "shared_ownership"
+	SubPattern                      CiWarningCode = "sub_pattern"
+	UnguardedTemplateClaim          CiWarningCode = "unguarded_template_claim"
+	UnpinnedCondition               CiWarningCode = "unpinned_condition"
+	UnprotectedRefsAllowed          CiWarningCode = "unprotected_refs_allowed"
+	WriteWithoutPipelineSource      CiWarningCode = "write_without_pipeline_source"
+)
+
+// Valid indicates whether the value is a known member of the CiWarningCode enum.
+func (e CiWarningCode) Valid() bool {
+	switch e {
+	case CrossProjectReadOnly:
+		return true
+	case MutableUserClaim:
+		return true
+	case RepositoryTemplateUnconstrained:
+		return true
+	case ScopePolicyGrantsNotChecked:
+		return true
+	case SharedOwnership:
+		return true
+	case SubPattern:
+		return true
+	case UnguardedTemplateClaim:
+		return true
+	case UnpinnedCondition:
+		return true
+	case UnprotectedRefsAllowed:
+		return true
+	case WriteWithoutPipelineSource:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ClientSetupCredentials.
 const (
 	ClientSetupCredentialsEnv         ClientSetupCredentials = "env"
@@ -2401,6 +2443,42 @@ func (e MirrorBoundKind) Valid() bool {
 	}
 }
 
+// Defines values for MirrorErrorsLastCode.
+const (
+	MirrorErrorsLastCodeCursorTooLarge       MirrorErrorsLastCode = "cursor_too_large"
+	MirrorErrorsLastCodeDiscoveryFailed      MirrorErrorsLastCode = "discovery_failed"
+	MirrorErrorsLastCodeDiscoveryStalled     MirrorErrorsLastCode = "discovery_stalled"
+	MirrorErrorsLastCodeDiscoveryUnavailable MirrorErrorsLastCode = "discovery_unavailable"
+	MirrorErrorsLastCodeInternal             MirrorErrorsLastCode = "internal"
+	MirrorErrorsLastCodeLessThannil          MirrorErrorsLastCode = "<nil>"
+	MirrorErrorsLastCodeNotApplicable        MirrorErrorsLastCode = "not_applicable"
+	MirrorErrorsLastCodeUpstreamUnavailable  MirrorErrorsLastCode = "upstream_unavailable"
+)
+
+// Valid indicates whether the value is a known member of the MirrorErrorsLastCode enum.
+func (e MirrorErrorsLastCode) Valid() bool {
+	switch e {
+	case MirrorErrorsLastCodeCursorTooLarge:
+		return true
+	case MirrorErrorsLastCodeDiscoveryFailed:
+		return true
+	case MirrorErrorsLastCodeDiscoveryStalled:
+		return true
+	case MirrorErrorsLastCodeDiscoveryUnavailable:
+		return true
+	case MirrorErrorsLastCodeInternal:
+		return true
+	case MirrorErrorsLastCodeLessThannil:
+		return true
+	case MirrorErrorsLastCodeNotApplicable:
+		return true
+	case MirrorErrorsLastCodeUpstreamUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MirrorMethod.
 const (
 	MirrorMethodFeed    MirrorMethod = "feed"
@@ -3352,6 +3430,36 @@ func (e RemoteDownloadFailureClass) Valid() bool {
 	}
 }
 
+// Defines values for RemoteDownloadPreviewNote.
+const (
+	RemoteDownloadPreviewNoteCountedOnExpand  RemoteDownloadPreviewNote = "counted_on_expand"
+	RemoteDownloadPreviewNoteLessThannil      RemoteDownloadPreviewNote = "<nil>"
+	RemoteDownloadPreviewNoteMoreVersions     RemoteDownloadPreviewNote = "more_versions"
+	RemoteDownloadPreviewNoteSectionUncounted RemoteDownloadPreviewNote = "section_uncounted"
+	RemoteDownloadPreviewNoteSizeOnceStored   RemoteDownloadPreviewNote = "size_once_stored"
+	RemoteDownloadPreviewNoteSizesUnannounced RemoteDownloadPreviewNote = "sizes_unannounced"
+)
+
+// Valid indicates whether the value is a known member of the RemoteDownloadPreviewNote enum.
+func (e RemoteDownloadPreviewNote) Valid() bool {
+	switch e {
+	case RemoteDownloadPreviewNoteCountedOnExpand:
+		return true
+	case RemoteDownloadPreviewNoteLessThannil:
+		return true
+	case RemoteDownloadPreviewNoteMoreVersions:
+		return true
+	case RemoteDownloadPreviewNoteSectionUncounted:
+		return true
+	case RemoteDownloadPreviewNoteSizeOnceStored:
+		return true
+	case RemoteDownloadPreviewNoteSizesUnannounced:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RemoteDownloadRequestLevel.
 const (
 	DownloadLevelPackage RemoteDownloadRequestLevel = "package"
@@ -3940,6 +4048,51 @@ func (e RepositorySummaryLifecycle) Valid() bool {
 	case RepositorySummaryLifecycleActive:
 		return true
 	case RepositorySummaryLifecycleDeleting:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RepositoryWarningCode.
+const (
+	ClaimOverlaps                  RepositoryWarningCode = "claim_overlaps"
+	DebUpstreamUnverified          RepositoryWarningCode = "deb_upstream_unverified"
+	DependencyConfusionUnprotected RepositoryWarningCode = "dependency_confusion_unprotected"
+	MemberInactive                 RepositoryWarningCode = "member_inactive"
+	MirrorUnbounded                RepositoryWarningCode = "mirror_unbounded"
+	NoMembers                      RepositoryWarningCode = "no_members"
+	PatternUnscopedOnly            RepositoryWarningCode = "pattern_unscoped_only"
+	PlainHttpUpstream              RepositoryWarningCode = "plain_http_upstream"
+	PublicNotAllowedLowered        RepositoryWarningCode = "public_not_allowed_lowered"
+	PublicPopulatesRemote          RepositoryWarningCode = "public_populates_remote"
+	SourceNetworkSingleAddress     RepositoryWarningCode = "source_network_single_address"
+)
+
+// Valid indicates whether the value is a known member of the RepositoryWarningCode enum.
+func (e RepositoryWarningCode) Valid() bool {
+	switch e {
+	case ClaimOverlaps:
+		return true
+	case DebUpstreamUnverified:
+		return true
+	case DependencyConfusionUnprotected:
+		return true
+	case MemberInactive:
+		return true
+	case MirrorUnbounded:
+		return true
+	case NoMembers:
+		return true
+	case PatternUnscopedOnly:
+		return true
+	case PlainHttpUpstream:
+		return true
+	case PublicNotAllowedLowered:
+		return true
+	case PublicPopulatesRemote:
+		return true
+	case SourceNetworkSingleAddress:
 		return true
 	default:
 		return false
@@ -5917,6 +6070,48 @@ func (e ValkeyFactsMode) Valid() bool {
 	case Sentinel:
 		return true
 	case Standalone:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ValkeyViewReasonCode.
+const (
+	ValkeyViewReasonCodeAuthFailed  ValkeyViewReasonCode = "auth_failed"
+	ValkeyViewReasonCodeCircuitOpen ValkeyViewReasonCode = "circuit_open"
+	ValkeyViewReasonCodeClosed      ValkeyViewReasonCode = "closed"
+	ValkeyViewReasonCodeConfigError ValkeyViewReasonCode = "config_error"
+	ValkeyViewReasonCodeConnecting  ValkeyViewReasonCode = "connecting"
+	ValkeyViewReasonCodeLessThannil ValkeyViewReasonCode = "<nil>"
+	ValkeyViewReasonCodeNoSentinel  ValkeyViewReasonCode = "no_sentinel"
+	ValkeyViewReasonCodeProbeFailed ValkeyViewReasonCode = "probe_failed"
+	ValkeyViewReasonCodeTimeout     ValkeyViewReasonCode = "timeout"
+	ValkeyViewReasonCodeUnsupported ValkeyViewReasonCode = "unsupported"
+)
+
+// Valid indicates whether the value is a known member of the ValkeyViewReasonCode enum.
+func (e ValkeyViewReasonCode) Valid() bool {
+	switch e {
+	case ValkeyViewReasonCodeAuthFailed:
+		return true
+	case ValkeyViewReasonCodeCircuitOpen:
+		return true
+	case ValkeyViewReasonCodeClosed:
+		return true
+	case ValkeyViewReasonCodeConfigError:
+		return true
+	case ValkeyViewReasonCodeConnecting:
+		return true
+	case ValkeyViewReasonCodeLessThannil:
+		return true
+	case ValkeyViewReasonCodeNoSentinel:
+		return true
+	case ValkeyViewReasonCodeProbeFailed:
+		return true
+	case ValkeyViewReasonCodeTimeout:
+		return true
+	case ValkeyViewReasonCodeUnsupported:
 		return true
 	default:
 		return false
@@ -9605,13 +9800,18 @@ type CiTraceEntry struct {
 	Tier        string          `json:"tier"`
 }
 
-// CiWarning defines model for CiWarning.
+// CiWarning A finding of a save or a dry run that does not refuse it (R-CI-010, R-CI-011, R-CI-019). A client matches on `code`; the screen says the warning per code with `names` in its own language (R-UI-214), and `detail` is the English sentence for a reader of the API.
 type CiWarning struct {
-	// Code For example `unpinned_condition`, `repository_template_unconstrained`, `shared_ownership`.
-	Code    string  `json:"code"`
-	Detail  string  `json:"detail"`
-	Pointer *string `json:"pointer,omitempty"`
+	Code   CiWarningCode `json:"code"`
+	Detail string        `json:"detail"`
+
+	// Names The claims or the scope items the sentence names: the issuer's pin claims (`unpinned_condition`), the claim (`mutable_user_claim`, `unguarded_template_claim`), the scope items no policy was read for (`scope_policy_grants_not_checked`); absent for the other codes.
+	Names   *[]string `json:"names,omitempty"`
+	Pointer *string   `json:"pointer,omitempty"`
 }
+
+// CiWarningCode defines model for CiWarning.Code.
+type CiWarningCode string
 
 // ClaimedNameMatch A public advisory for a name the installation treats as internal (R-VULN-010).
 type ClaimedNameMatch struct {
@@ -11997,11 +12197,16 @@ type MirrorBoundKind string
 type MirrorErrors struct {
 	ConsecutiveFailures int        `json:"consecutiveFailures"`
 	LastAt              *time.Time `json:"lastAt"`
-	LastCode            *string    `json:"lastCode"`
 
-	// LastMessage The last failure in words, naming hosts and never a URL or a credential.
+	// LastCode The code of the last failed pass attempt (R-REPO-056), which the screen says in its own words (R-UI-214); `null` when no attempt has failed.
+	LastCode *MirrorErrorsLastCode `json:"lastCode"`
+
+	// LastMessage The last failure in the pass's own English words, naming hosts and never a URL or a credential. The screen shows it folded under **Technical details** (R-UI-214).
 	LastMessage *string `json:"lastMessage"`
 }
+
+// MirrorErrorsLastCode The code of the last failed pass attempt (R-REPO-056), which the screen says in its own words (R-UI-214); `null` when no attempt has failed.
+type MirrorErrorsLastCode string
 
 // MirrorMethod How a pass discovers names (R-REPO-051).
 type MirrorMethod string
@@ -13528,12 +13733,17 @@ type RemoteDownloadPreview struct {
 	Bounds       RemoteDownloadBounds `json:"bounds"`
 	Bytes        *int64               `json:"bytes"`
 	NotDelivered int                  `json:"notDelivered"`
-	Note         *string              `json:"note"`
-	Packages     *int                 `json:"packages"`
-	SizeUnknown  int                  `json:"sizeUnknown"`
-	Stored       int                  `json:"stored"`
-	Versions     *int                 `json:"versions"`
+
+	// Note The code of what the counts leave open, which the screen says in its own words (R-UI-214): `section_uncounted` (the upstream does not tell a sub-section's versions and sizes; the bounds cut while the bulk runs), `sizes_unannounced` (no size is announced; a size counts once the file is stored), `more_versions` (the upstream lists more versions than one answer holds; the bulk counts the rest while it runs), `size_once_stored` and `counted_on_expand` (without the catalogue: a version's size is known once it is stored; a package's versions are counted when the bulk is expanded); `null` when the counts are complete.
+	Note        *RemoteDownloadPreviewNote `json:"note"`
+	Packages    *int                       `json:"packages"`
+	SizeUnknown int                        `json:"sizeUnknown"`
+	Stored      int                        `json:"stored"`
+	Versions    *int                       `json:"versions"`
 }
+
+// RemoteDownloadPreviewNote The code of what the counts leave open, which the screen says in its own words (R-UI-214): `section_uncounted` (the upstream does not tell a sub-section's versions and sizes; the bounds cut while the bulk runs), `sizes_unannounced` (no size is announced; a size counts once the file is stored), `more_versions` (the upstream lists more versions than one answer holds; the bulk counts the rest while it runs), `size_once_stored` and `counted_on_expand` (without the catalogue: a version's size is known once it is stored; a package's versions are counted when the bulk is expanded); `null` when the counts are complete.
+type RemoteDownloadPreviewNote string
 
 // RemoteDownloadRequest A download ahead of a client (R-CUR-010): `version` with `name` and `version`; `package` with `name`; `section` with `section`,
 // a level of the upstream catalogue. The bounds of a package and a section default to `proxy.downloads.max_versions_per_bulk`
@@ -14243,12 +14453,15 @@ type RepositoryVisibility struct {
 	Wiki VisibilityLevel `json:"wiki"`
 }
 
-// RepositoryWarning defines model for RepositoryWarning.
+// RepositoryWarning A finding of a write that did not block it. A client matches on `code`; the screen says the warning per code in its own language (R-UI-214), and `detail` is the English sentence for a reader of the API.
 type RepositoryWarning struct {
-	Code    string  `json:"code"`
-	Detail  string  `json:"detail"`
-	Pointer *string `json:"pointer,omitempty"`
+	Code    RepositoryWarningCode `json:"code"`
+	Detail  string                `json:"detail"`
+	Pointer *string               `json:"pointer,omitempty"`
 }
+
+// RepositoryWarningCode defines model for RepositoryWarning.Code.
+type RepositoryWarningCode string
 
 // RevokeByValueRequest defines model for RevokeByValueRequest.
 type RevokeByValueRequest struct {
@@ -17372,13 +17585,19 @@ type ValkeyView struct {
 	// Primary The primary address (host and port) the client currently uses.
 	Primary *string `json:"primary"`
 
-	// Reason `null`, or an error kind (`timeout`, `connection`, `readonly`, `auth`, `tls`, `oom`), `no_primary` or `unsupported_version`.
-	Reason              *string         `json:"reason"`
-	SentinelsConfigured int             `json:"sentinelsConfigured"`
-	SentinelsReachable  int             `json:"sentinelsReachable"`
-	ServerVersion       *string         `json:"serverVersion"`
-	State               ValkeyViewState `json:"state"`
+	// Reason The same in the client's own English words, which can name addresses and server replies of the Valkey topology; `null` while it is available. The screen shows it folded under **Technical details** (R-UI-214).
+	Reason *string `json:"reason"`
+
+	// ReasonCode Why the replica sees Valkey degraded, in the fixed vocabulary that `/readyz?verbose=1` shows (R-OPS-003), which the screen says in its own words (R-UI-214); `null` while it is available.
+	ReasonCode          *ValkeyViewReasonCode `json:"reasonCode"`
+	SentinelsConfigured int                   `json:"sentinelsConfigured"`
+	SentinelsReachable  int                   `json:"sentinelsReachable"`
+	ServerVersion       *string               `json:"serverVersion"`
+	State               ValkeyViewState       `json:"state"`
 }
+
+// ValkeyViewReasonCode Why the replica sees Valkey degraded, in the fixed vocabulary that `/readyz?verbose=1` shows (R-OPS-003), which the screen says in its own words (R-UI-214); `null` while it is available.
+type ValkeyViewReasonCode string
 
 // ValkeyViewState defines model for ValkeyView.State.
 type ValkeyViewState string

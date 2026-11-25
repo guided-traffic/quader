@@ -8,6 +8,7 @@ import { Needs } from '../../shared/access/needs';
 import { asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { ErrorNotice } from '../../shared/error-notice';
+import { ciKeyErrorText } from './ci-common';
 import { PageHeader } from '../../shared/ui/page-header';
 
 /**
@@ -67,7 +68,7 @@ import { PageHeader } from '../../shared/ui/page-header';
           <td>
             @if (i.keys?.lastError) {
               <span class="bad"><span class="material-icons" aria-hidden="true">error</span><ng-container i18n="@@ci.keys.failed">Fetch failed</ng-container></span>
-              <div class="muted detail">{{ i.keys!.lastError }}</div>
+              <div class="muted detail">{{ keyError(i.keys!.lastError) }}</div>
             } @else if (i.keys?.fetchedAt) {
               <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span><ng-container i18n="@@ci.keys.usable">{{ i.keys!.usable }} usable</ng-container></span>
               <div class="muted detail"><ng-container i18n="@@ci.keys.fetched">fetched</ng-container> {{ i.keys!.fetchedAt | date: 'short' }}</div>
@@ -101,6 +102,7 @@ import { PageHeader } from '../../shared/ui/page-header';
 })
 export class IssuerList {
   private readonly api = inject(CiApi);
+  protected readonly keyError = ciKeyErrorText;
   protected readonly session = inject(SessionStore);
 
   protected readonly issuers = signal<readonly CiIssuer[]>([]);

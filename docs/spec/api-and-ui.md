@@ -9297,6 +9297,71 @@ the audit log's moving range ([audit-log.spec.ts](../../web/src/app/features/aud
 when seen again ([remote-downloads.spec.ts](../../web/src/app/features/repositories/downloads/remote-downloads.spec.ts)); the banner
 not read while hidden ([banner-store.spec.ts](../../web/src/app/core/banner-store.spec.ts)).
 
+### R-UI-214 · A screen speaks its own language, never the server's sentence
+Priority: **P1** · Covers: quader-only
+
+On 2026-11-24 the German dashboard of the vulnerabilities said under its trend "A finding counts under its current severity, …": the
+server sent the sentence and the screen showed it as it came. It was the third English server sentence inside a German page that day,
+after the hint under the upstream search ([Q-CUR-166](remote-curation.md#q-cur-166--the-hint-under-the-upstream-search-is-a-code-the-screen-says-in-its-language))
+and a failed bulk's detail ([Q-CUR-169](remote-curation.md#q-cur-169--a-download-failure-is-said-in-the-screens-language-from-its-code-the-servers-english-sentence-folds-under-it)),
+and the audit of that day found thirteen more screens that did the same. A screen says everything in the reader's language; what the
+server knows, it sends as a code with its parameters
+([Q-UI-1080](#q-ui-1080--a-server-sends-a-code-the-screen-says-it-and-a-raw-text-folds-under-technical-details)).
+
+- **A code, said by the screen.** Where the server's text is one of a closed set of cases (a warning, a note, a reason, a state), the
+  API answers its code (an enum of the OpenAPI document) and the parameters the sentence names, and the screen writes the sentence
+  with `$localize`, one case per code. An API field may keep an English `detail` beside the code for a reader of the API (as a
+  problem's `detail`, R-UI-042); the screen does not show it as its words. A fixed sentence with no case to tell is no field of the
+  API at all (the trend's `basis` is gone, R-VULN-021).
+- **A raw text, folded.** Where the server's text is a diagnosis that no code covers (an error as a handler or a host returned it, a
+  verifier's note, a format's note), or the English sentence beside a code, the screen says what happened in its own sentence, from
+  the code where there is one, and shows the server's text only under **Technical details**, with its code where the screen said one
+  ([technical-details.ts](../../web/src/app/shared/technical-details.ts), one component for every screen): closed, marked
+  `lang="en"` and not translated, for whoever has to report it.
+- **What stays as it came.** What a person typed (descriptions, notes, reasons of a release or a block, a banner's message), what an
+  upstream wrote (a package's description, an advisory's summary), names and identifiers, and the texts that are English by decision
+  and marked `lang="en"`: the manual (R-UI-050), a format's guide (Q-UI-86) and a format's settings schema (Q-UI-79). What a person
+  or an upstream wrote is marked `translate="no"` (a package's description in its page's header, an upstream's hit and package, a
+  request's note and a decline's reason), so that the German pass tells it from a server's sentence. A problem whose code the screen
+  does not know shows its English `detail` with the request ID (R-UI-042).
+- **The audit of 2026-11-24** (every binding of a server's text in `web/src/app`, against its source). Each screen exists once for
+  every format and class that has it; the preview, the connection test, the mirror and the signatures serve every format through the
+  same component:
+
+  | Screen | Server field (source) | Now |
+  |---|---|---|
+  | Security dashboard, **Trend** | `VulnerabilityTrend.basis` (`report.TrendBasis`) | the field is gone; the screen's sentence (R-VULN-021) |
+  | Tab **Upstream**, the preview of a download ahead | `RemoteDownloadPreview.note` (`preview` of `remote_downloads_api.go`, five sentences) | a code of five, said by the screen (`previewNoteText`) |
+  | A repository's settings, a save's warnings; **Set visibility**; the upstream registries' toasts | `RepositoryWarning.detail` (`internal/repository`, eleven codes) | `code` is an enum, said by the screen (`repositoryWarningText`) |
+  | A remote's **Test connection**; an upstream registry's test | `UpstreamTestResult.error.message` (`internal/proxy/upstream`) | the code (twelve) said by the screen (`upstreamTestErrorText`); the message and the code folded |
+  | A CI mapping's save, **Test with claims** | `CiWarning.detail` (`internal/ci/claims`, ten codes) | `code` is an enum with `names`, said by the screen (`ciWarningText`) |
+  | **Test with claims**, the result and the mappings looked at | `CiEvaluateResult.failure`/`detail`, `CiTraceEntry.detail` (`internal/ci`) | the failure said by the screen (`ciFailureText`); the detail and the reason folded |
+  | A CI issuer's **Keys** and the issuers' list | `CiKeyStatus.lastError` (`FetchError.Error`: class, status, host) | the class and the status said by the screen (`ciKeyErrorText`); the line folded on **Keys** |
+  | **Jobs** (System), a job's result | `JobError.detail` (the handler's error, five codes) | the code said by the screen (`jobErrorText`); the detail and the code folded |
+  | **Malware scanning**, the signature database's failure | `MalwareDatabaseError.detail` | the title from the code as before; the detail and the code folded |
+  | **Advisory sources**, a source's last error | `VulnerabilitySourceState.lastError.detail` | the title from the code, "The last run failed." for an unknown one; the detail and the code folded |
+  | **Signatures** (settings), the public root's last failure | `SignatureTrustRoot.lastError` | the screen's sentence; the text folded |
+  | A remote's **Mirror** tab, the last error and the last pass | `MirrorErrors.lastCode` (seven codes, now an enum) and `lastMessage`, `MirrorPassSummary.discoveryNote` (a format's note) | the code said by the screen (`mirrorErrorText`); the message with the code, and the note, folded |
+  | A version's signatures, a file's signatures | `SignatureEntry.detail` (a verifier's note) | inside the entry's **Technical details** as **Verifier's note** |
+  | **System status**, Valkey: the replica's row and the card | `ValkeyView.reason` (the client's free text, which names addresses and replies) | the new `reasonCode` (the nine codes `/readyz?verbose=1` shows) said by the screen (`valkeyReasonText`); the text folded in the replica's row |
+  | Tab **Downloads**, a failed row and a failed bulk | `RemoteDownloadFailure.detail` | said from the code by the download queue (Q-CUR-169); the sentence folded by the same component |
+  | An Ansible Galaxy import's log | `AnsibleImportTask.messages[].message` | a log as the Galaxy import API answers it to `ansible-galaxy`, kept and marked English (`lang="en"`) |
+
+- **Held.** A lint rule refuses a template that interpolates a member the API gives to its English sentences (`detail`, `basis`,
+  `message`, `lastMessage`, `lastError`, `discoveryNote`, …), with a short list of reasoned exceptions
+  ([server-text-rule.mjs](../../web/scripts/server-text-rule.mjs)); the German render pass reports a shown text of six words or more
+  with three English function words in a German page, outside code and outside a text marked `lang="en"` or `translate="no"`
+  (`english` of [layout.ts](../../web/e2e/renders/layout.ts)).
+
+Acceptance criteria: `TestR_UI_214_EveryCodeASentenceStandsForIsInTheAPIsEnum` (unit, `internal/api/v1`, microseconds): every
+repository warning, CI warning, preview note, mirror error code and Valkey reason code the server sends is a value of the API's enum.
+"R-UI-214 every code the server sends has a sentence of the screen, and a German one in the German build" and "R-UI-214 technical
+details are folded, English, not translated, and show the text as it came with its code"
+([server-texts.spec.ts](../../web/src/app/shared/server-texts.spec.ts), about 0.1 s): 87 codes of nine kinds each give a sentence,
+none the API's, and a German one in the German build. The lint rule's two cases in `lint-rules.test.mjs` and the `english` check's
+two fixtures in `layout-checks.spec.ts` (each under a second). The integration areas `npm` and `ansibleremote` (a preview's code),
+`ci` (a dry run's warning names its scope items).
+
 ## Deferred
 
 P2, Later and Out-of-scope entries of the three catalog pages this page draws on, plus P1 entries
@@ -23900,6 +23965,37 @@ Tests: "R-UI-171 a fact list below 36 rem of content puts each term above its va
 in [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts) (Chromium, Firefox, WebKit). Rendered: `package-version-deb`,
 `package-version-ansible`, `package-version-oci` in English and German, both schemes, 1,440, 1,024 and 390 px; every screen without a
 walk in German at 390 px.
+
+### Q-UI-1080 · A server sends a code, the screen says it, and a raw text folds under Technical details
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-214. Three English server sentences stood in German pages on 2026-11-24; the audit of that day found thirteen more
+screens that bound a server's text, of two kinds: a closed set of cases written out as English sentences (a preview's note, a save's
+warnings, Valkey's reasons), and a raw diagnosis (a job's error, a host's answer, a verifier's note). The trend's basis (R-VULN-021)
+and the download queue's failures (Q-CUR-169) had been changed the same day, each on its own.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A code for a case, said by the screen; a raw text folded under **Technical details** below the screen's own sentence, by one shared component (chosen) | The API answers an enum (and the parameters the sentence names); the screen writes the sentence with `$localize`; a diagnosis stays the server's English, closed, `lang="en"`, with its code | Every sentence is in the reader's language and in the glossary's words; the API's codes are what a script matches on; the raw text stays for a report; one fold looks and reads the same on every screen | A new case needs a sentence in the UI and in German; the API's enum must follow the server (held by a test) |
+| (b) The server writes the sentence in the caller's language (`Accept-Language`) | A catalogue of messages on the server | One place for the text, also for the API | A second translation system beside the UI's, outside the glossary and the German checks; every format and task writes its texts twice |
+| (c) Show the server's English, marked `lang="en"` | The text as it came, declared English | Nothing to build | The owner's finding as it stands: English in a German page |
+| (d) Translate the server's English sentence in the UI by a table keyed by the text | A lookup of the English | No API change | Breaks with every rewording; a sentence with a host or a number in it is no key |
+
+**Choice:** (a). Where the API already had a code beside an English `detail` (a repository's and a CI mapping's warnings), the code
+became an enum and the `detail` stays for a reader of the API, as a problem's does (R-UI-042); a CI warning that names claims carries
+them as `names`. Where the API had only the text, it gains the code: a preview's `note` is the code now, and Valkey's view carries
+`reasonCode` (the vocabulary `/readyz` already had) beside its free `reason`, which names addresses and is folded. A mirror's
+`lastCode` became an enum. The download queue's two folds of Q-CUR-169 became the shared component, so every screen has the one
+**Technical details** with the text and its code. **Rationale:** the UI's i18n is the one place where texts are translated, checked
+(`make web-i18n-check`, the formal German and the glossary's checks) and rendered in German; a diagnosis loses nothing by being folded
+and gains a sentence the reader understands. The texts that are English by decision (the manual, a format's guide, Q-UI-86; a format's
+settings schema, Q-UI-79) keep their `lang="en"`; the development agent revisits Q-UI-79 with this rule when the owner wants a format's
+settings in German, and the lint rule's list of names when a new English member of the API is shown.
+
+**Applied in the spec:** R-UI-214; the OpenAPI document: `RemoteDownloadPreview.note`, `RepositoryWarning.code`, `CiWarning.code` and
+`MirrorErrors.lastCode` as enums, `CiWarning.names`, `ValkeyView.reasonCode`. Code:
+[technical-details.ts](../../web/src/app/shared/technical-details.ts), [server-text-rule.mjs](../../web/scripts/server-text-rule.mjs).
 
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 

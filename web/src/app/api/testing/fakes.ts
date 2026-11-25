@@ -246,6 +246,7 @@ export function sampleReplica(over: Partial<Replica> = {}): Replica {
     degraded: [],
     valkey: {
       state: 'available',
+      reasonCode: null,
       reason: null,
       circuit: 'closed',
       primary: 'valkey-0:6379',

@@ -292,7 +292,7 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
       await expectAccessible(r.root);
     });
 
-    it('R-UI-021 R-REPO-024 an upstream that cannot be reached is a warning in words with the server reason; refused credentials are named', async () => {
+    it('R-UI-021 R-REPO-024 an upstream that cannot be reached is a warning in words with its reason in words and the server text folded; refused credentials are named', async () => {
       const r = await remoteStep([GENERIC_FORMAT, NPM], 'npm');
       const fake = r.get(RepositoriesApi) as FakeRepositoriesApi;
       fake.upstreamTestResult = sampleUpstreamTestResult({
@@ -308,7 +308,8 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
       expect(text(result)).toContain('The upstream could not be reached.');
       expect(result.className).toContain('warn');
       expect(result.className).not.toContain('ok');
-      expect(facts(r.root.querySelector('.test-result')!)['Reason']).toBe('npm.internal.example does not resolve dns_error');
+      expect(facts(r.root.querySelector('.test-result')!)['Reason']).toContain("The upstream's host name could not be resolved.");
+      expect(text(r.root.querySelector('.test-result [data-testid="technical-details"]')!)).toBe('npm.internal.example does not resolve dns_error');
 
       fake.upstreamTestResult = sampleUpstreamTestResult({ httpStatus: 401, authenticated: false });
       button(r.root, 'Test connection').click();

@@ -237,7 +237,7 @@ The image scanning works in the scanner pods. Their spool holds the analyses and
 
 **What to do.**
 
-1. Read **Last error** (the code, and hosts but never credentials), **Rate-limit waits** and **Bound** on the status.
+1. Read **Last error** (the reason, and under **Technical details** the message with its code, which names hosts but never credentials), **Rate-limit waits** and **Bound** on the status.
 2. No progress and no error: check that a worker claims the queue `mirror` (`worker.pools` take queues away from the main worker) and that the worker pods are ready; `QuaderJobsStuck` fires on an unclaimed queue.
 3. `QuaderMirrorStale` with a rate limit: the upstream holds it back, and the passes continue by themselves when its limit allows. A pass that hit a bound: raise `remote.mirror.maxBytes` or the repository's quota. **No bound**: give the mirror **Mirror only these packages** (`remote.mirror.include`, patterns that each start with a literal part, such as `@types/*`) or a **Storage limit in bytes**; the next dispatch runs it.
 4. **Run a pass now** queues one, and **Run a full pass** discovers every name again instead of reading the feed from its cursor. **Pause** and **Resume** stop and start passes. A `mirror-pass` job that hangs can be cancelled from the **Jobs** screen.

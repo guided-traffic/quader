@@ -8650,7 +8650,12 @@ export interface components {
         ValkeyView: {
             /** @enum {string} */
             state: "available" | "degraded";
-            /** @description `null`, or an error kind (`timeout`, `connection`, `readonly`, `auth`, `tls`, `oom`), `no_primary` or `unsupported_version`. */
+            /**
+             * @description Why the replica sees Valkey degraded, in the fixed vocabulary that `/readyz?verbose=1` shows (R-OPS-003), which the screen says in its own words (R-UI-214); `null` while it is available.
+             * @enum {string|null}
+             */
+            reasonCode: "connecting" | "no_sentinel" | "timeout" | "auth_failed" | "config_error" | "unsupported" | "circuit_open" | "probe_failed" | "closed" | null;
+            /** @description The same in the client's own English words, which can name addresses and server replies of the Valkey topology; `null` while it is available. The screen shows it folded under **Technical details** (R-UI-214). */
             reason: string | null;
             /** @description Open enum, for example `closed` or `open`. */
             circuit: string;
@@ -9911,10 +9916,13 @@ export interface components {
         CiMappingList: {
             items: components["schemas"]["CiMapping"][];
         };
+        /** @description A finding of a save or a dry run that does not refuse it (R-CI-010, R-CI-011, R-CI-019). A client matches on `code`; the screen says the warning per code with `names` in its own language (R-UI-214), and `detail` is the English sentence for a reader of the API. */
         CiWarning: {
-            /** @description For example `unpinned_condition`, `repository_template_unconstrained`, `shared_ownership`. */
-            code: string;
+            /** @enum {string} */
+            code: "unpinned_condition" | "repository_template_unconstrained" | "shared_ownership" | "sub_pattern" | "mutable_user_claim" | "unguarded_template_claim" | "write_without_pipeline_source" | "unprotected_refs_allowed" | "cross_project_read_only" | "scope_policy_grants_not_checked";
             pointer?: string;
+            /** @description The claims or the scope items the sentence names: the issuer's pin claims (`unpinned_condition`), the claim (`mutable_user_claim`, `unguarded_template_claim`), the scope items no policy was read for (`scope_policy_grants_not_checked`); absent for the other codes. */
+            names?: string[];
             detail: string;
         };
         /** @description A claim set, never a token (R-CI-019). */
@@ -11447,8 +11455,10 @@ export interface components {
                 before: components["schemas"]["RepositoryVisibility"];
             }[];
         };
+        /** @description A finding of a write that did not block it. A client matches on `code`; the screen says the warning per code in its own language (R-UI-214), and `detail` is the English sentence for a reader of the API. */
         RepositoryWarning: {
-            code: string;
+            /** @enum {string} */
+            code: "member_inactive" | "no_members" | "dependency_confusion_unprotected" | "pattern_unscoped_only" | "claim_overlaps" | "deb_upstream_unverified" | "plain_http_upstream" | "source_network_single_address" | "mirror_unbounded" | "public_populates_remote" | "public_not_allowed_lowered";
             pointer?: string;
             detail: string;
         };
@@ -15335,8 +15345,12 @@ export interface components {
             consecutiveFailures: number;
             /** Format: date-time */
             lastAt: string | null;
-            lastCode: string | null;
-            /** @description The last failure in words, naming hosts and never a URL or a credential. */
+            /**
+             * @description The code of the last failed pass attempt (R-REPO-056), which the screen says in its own words (R-UI-214); `null` when no attempt has failed.
+             * @enum {string|null}
+             */
+            lastCode: "discovery_unavailable" | "discovery_failed" | "discovery_stalled" | "cursor_too_large" | "not_applicable" | "upstream_unavailable" | "internal" | null;
+            /** @description The last failure in the pass's own English words, naming hosts and never a URL or a credential. The screen shows it folded under **Technical details** (R-UI-214). */
             lastMessage: string | null;
         };
         MirrorRateLimit: {
@@ -16752,7 +16766,11 @@ export interface components {
             stored: number;
             notDelivered: number;
             bounds: components["schemas"]["RemoteDownloadBounds"];
-            note: string | null;
+            /**
+             * @description The code of what the counts leave open, which the screen says in its own words (R-UI-214): `section_uncounted` (the upstream does not tell a sub-section's versions and sizes; the bounds cut while the bulk runs), `sizes_unannounced` (no size is announced; a size counts once the file is stored), `more_versions` (the upstream lists more versions than one answer holds; the bulk counts the rest while it runs), `size_once_stored` and `counted_on_expand` (without the catalogue: a version's size is known once it is stored; a package's versions are counted when the bulk is expanded); `null` when the counts are complete.
+             * @enum {string|null}
+             */
+            note: "section_uncounted" | "sizes_unannounced" | "more_versions" | "size_once_stored" | "counted_on_expand" | null;
         };
         /** @description A bulk download (R-CUR-010, R-CUR-012), expanded into rows within its bounds. */
         RemoteDownloadBulk: {

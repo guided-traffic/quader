@@ -40,6 +40,20 @@ import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, defini
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
 import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { downloadsWalk } from './downloads';
+import {
+  advisorySourceFailures,
+  claimTesterFailure,
+  issuerKeysFailure,
+  issuerListFailure,
+  jobsFailures,
+  malwareDatabaseFailure,
+  mirrorFailure,
+  registryTestFailure,
+  remoteSettingsFailures,
+  signatureNote,
+  signatureRootFailure,
+  valkeyDegraded,
+} from './server-texts';
 import { downloadsButtonWalk, downloadsExpected, downloadsPanelWalk } from './upstream-downloads';
 import {
   upstreamDebWalk,
@@ -3169,4 +3183,18 @@ export const screens: readonly Screen[] = [
   { id: 'admin-settings-signatures-read', path: '/ui/admin/settings/signatures', kinds: ['auditor'] },
   // The section Signing identity in each state of R-SIG-056: with the controls of security-settings:write, and read-only.
   { id: 'admin-settings-signing', path: '/ui/admin/settings/signatures', kinds: [...admins, 'auditor'], walk: signingIdentity },
+  // A server's failure in the screen's own words, its English text folded under Technical details (R-UI-214): one state each, opened,
+  // as the administrator, in English and German (renders/server-texts.ts). A download's preview note is the tab Upstream's walk.
+  { id: 'failure-repository-settings', path: `${P}/repositories/npmjs/settings`, kinds: admins, walk: remoteSettingsFailures, de: true },
+  { id: 'failure-repository-mirror', path: `${P}/repositories/npmjs/settings`, kinds: admins, walk: mirrorFailure, de: true },
+  { id: 'failure-upstream-registry', path: '/ui/admin/upstream/debian', kinds: admins, walk: registryTestFailure, de: true },
+  { id: 'failure-ci-claim-tester', path: `/ui/admin/ci/${ciIssuer}/test`, kinds: admins, walk: claimTesterFailure, de: true },
+  { id: 'failure-ci-issuer-keys', path: `/ui/admin/ci/${ciIssuer}?tab=keys`, kinds: admins, walk: issuerKeysFailure, de: true },
+  { id: 'failure-ci-issuers', path: '/ui/admin/ci', kinds: admins, walk: issuerListFailure, de: true },
+  { id: 'failure-system-jobs', path: '/ui/admin/system/jobs', kinds: admins, walk: jobsFailures, de: true },
+  { id: 'failure-system-valkey', path: '/ui/admin/system', kinds: admins, walk: valkeyDegraded, de: true },
+  { id: 'failure-malware-database', path: '/ui/admin/settings/malware', kinds: admins, walk: malwareDatabaseFailure, de: true },
+  { id: 'failure-advisory-sources', path: '/ui/admin/advisory-sources', kinds: admins, walk: advisorySourceFailures, de: true },
+  { id: 'failure-signature-root', path: '/ui/admin/settings/signatures', kinds: admins, walk: signatureRootFailure, de: true },
+  { id: 'failure-signature-note', path: `${ver(P, manyVersionsPackage, signedVersions.invalid)}?tab=signatures`, kinds: ['plain'], walk: signatureNote, de: true },
 ];

@@ -240,6 +240,7 @@ describe('system status model', () => {
   it('R-UI-038 the Valkey summary counts degraded replicas, flags primary disagreement and missing Sentinel majority', () => {
     const view = (primary: string, reachable = 3) => ({
       state: 'available' as const,
+      reasonCode: null,
       reason: null,
       circuit: 'closed',
       primary,

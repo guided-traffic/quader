@@ -240,7 +240,7 @@ export class FakeCiApi extends CiApi {
       description: 'Declared in the Helm values',
       source: 'configuration',
       mappingCount: 0,
-      keys: { usable: 0, ignored: 1, fetchedAt: null, lastError: 'fetch failed: HTTP 502 from git.corp.example.com', lastErrorAt: '2026-11-02T07:00:00Z' },
+      keys: { usable: 0, ignored: 1, fetchedAt: null, lastError: 'http_status status=502 host=git.corp.example.com', lastErrorAt: '2026-11-02T07:00:00Z' },
     }),
   ];
   mappings: CiMapping[] = [sampleMapping()];

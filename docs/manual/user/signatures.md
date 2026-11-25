@@ -42,8 +42,8 @@ The tab **Signatures** of a version, and the section **Signatures** of a file's 
 - the certificate's validity ("valid for 10 minutes at signing; covered by the log entry", "expired on 30 Apr 2027"); a certificate that
   expired after signing is information, not a verdict;
 - the trust anchor that knows the signer and where it comes from, or the date and reason of an administrator's block;
-- **Download original**, the signature as it arrived; **Technical details** fold out its key identifiers, chain, log entries,
-  timestamps and where it is attached.
+- **Download original**, the signature as it arrived; **Technical details** fold out the verifier's note on how it reached its state
+  (in English, as the verifier wrote it), its key identifiers, chain, log entries, timestamps and where it is attached.
 
 Above the signatures stands where the artifact came from: **Uploaded by** a user, a service account, or "CI job <project> · <ref> ·
 pipeline <id>" with whether the ref is protected, or **Fetched from** the remote's upstream with the time. Every text a signature carries

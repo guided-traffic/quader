@@ -184,16 +184,9 @@ tr.expansion > td {
   margin: 0 0 var(--quader-space-1);
 }
 
-// The server's English sentence under the screen's (Q-CUR-169): folded, muted, and broken anywhere, since it names addresses.
-quader-disclosure.technical {
-  display: block;
+// The server's English sentence under the screen's (Q-CUR-169, R-UI-214), folded by the shared component.
+quader-technical-details.technical {
   margin: 0 0 var(--quader-space-3);
-}
-
-.technical-detail {
-  margin: 0;
-  color: var(--quader-text-muted);
-  overflow-wrap: anywhere;
 }
 
 .excerpt-label {

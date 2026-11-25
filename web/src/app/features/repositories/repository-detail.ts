@@ -64,7 +64,7 @@ import { RepositoryServiceAccounts } from '../service-accounts/repository-servic
 import { RepositoryLimitsSection } from '../limits/repository-limits-section';
 import { UpstreamApi, UpstreamRepository } from '../../api/upstream-api';
 import { MemberState, stateBadge, systemLevelSentence } from '../upstream/upstream-words';
-import { memberInactiveText } from './well-known-members';
+import { repositoryWarningText } from './repository-warnings';
 import { MalwareSwitchStore } from '../../core/malware-switch';
 import { RepositoryMalwareSection } from './repository-malware';
 import { RepositorySignaturesSection, SignatureSettingsChange } from './repository-signatures';
@@ -575,7 +575,7 @@ export class RepositoryDetail implements HasUnsavedChanges {
   private async send(section: SettingsSection, patch: JsonObject, etag: string): Promise<void> {
     const saved = await this.api.patch(this.ref(), patch, etag);
     this.takeStored(saved.value, saved.etag, section);
-    this.warnings.set((saved.value.warnings ?? []).map((w) => w.detail));
+    this.warnings.set((saved.value.warnings ?? []).map((w) => repositoryWarningText(w)));
     this.notifier.status($localize`:@@repo.edit.saved:Repository saved.`);
   }
 
@@ -662,7 +662,7 @@ export class RepositoryDetail implements HasUnsavedChanges {
     const saved = await this.api.patch(this.ref(), { visibility: change }, etag);
     this.takeStored(saved.value, saved.etag);
     this.visibilityWarnings.set(
-      (saved.value.warnings ?? []).filter((w) => w.code === 'public_populates_remote').map((w) => w.detail),
+      (saved.value.warnings ?? []).filter((w) => w.code === 'public_populates_remote').map((w) => repositoryWarningText(w)),
     );
     this.notifier.status($localize`:@@repo.visibility.saved:Visibility saved.`);
   }
@@ -849,9 +849,7 @@ export class RepositoryDetail implements HasUnsavedChanges {
       this.takeStored(saved.value, saved.etag);
       // A member that is not switched on is accepted with the warning `member_inactive` (R-REPO-071), said in words (R-UI-189).
       this.warnings.set(
-        (saved.value.warnings ?? []).map((w) =>
-          w.code === 'member_inactive' ? memberInactiveText(w.pointer, change.members) : w.detail,
-        ),
+        (saved.value.warnings ?? []).map((w) => repositoryWarningText(w, change.members)),
       );
       this.notifier.status($localize`:@@repo.members.saved:Members saved.`);
     } catch (e) {

@@ -9,6 +9,8 @@ import { Needs } from '../../shared/access/needs';
 import { asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { ErrorNotice } from '../../shared/error-notice';
+import { TechnicalDetails } from '../../shared/technical-details';
+import { ciKeyErrorText } from './ci-common';
 
 /**
  * The signing keys of an issuer (R-UI-035, R-CI-002, R-CI-003): the cached key set with its fetch time,
@@ -18,7 +20,7 @@ import { ErrorNotice } from '../../shared/error-notice';
  */
 @Component({
   selector: 'quader-ci-issuer-keys',
-  imports: [DatePipe, ErrorNotice, DataTable, Needs, NoValue],
+  imports: [DatePipe, ErrorNotice, DataTable, Needs, NoValue, TechnicalDetails],
   template: `
     <div class="toolbar">
       <button class="btn btn-confirm" type="button" [disabled]="busy() || !session.has('ci:write')" aria-describedby="needs-ci-keys" (click)="refresh()" i18n="@@ci.keys.refresh">
@@ -40,10 +42,12 @@ import { ErrorNotice } from '../../shared/error-notice';
         <dt i18n="@@ci.keys.last-error">Last error</dt>
         <dd>
           @if (s.lastError) {
-            <span class="bad"><span class="material-icons" aria-hidden="true">error</span> {{ s.lastError }}</span>
+            <!-- A sentence, not a status: the icon carries the colour and the words wrap in the fact's value (R-UI-214). -->
+            <span class="material-icons inline bad" aria-hidden="true">error</span>{{ keyError(s.lastError) }}
             @if (s.lastErrorAt) {
               <span class="muted">({{ s.lastErrorAt | date: 'medium' }})</span>
             }
+            <quader-technical-details [text]="s.lastError" />
           } @else {
             <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span> <ng-container i18n="@@ci.keys.no-error">None</ng-container></span>
           }
@@ -87,6 +91,7 @@ export class IssuerKeys {
   readonly issuer = input.required<string>();
 
   private readonly api = inject(CiApi);
+  protected readonly keyError = ciKeyErrorText;
   private readonly notifier = inject(Notifier);
   protected readonly session = inject(SessionStore);
 

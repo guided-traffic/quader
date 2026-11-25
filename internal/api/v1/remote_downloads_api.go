@@ -849,6 +849,15 @@ func (s *Server) sectionOffered(ctx context.Context, t downloadTarget, section s
 	return nil
 }
 
+// The codes of a preview's note (R-CUR-010, R-UI-214): what the counts leave open, which the screen says in its own words.
+const (
+	previewNoteSectionUncounted = "section_uncounted" // the upstream does not tell a sub-section's versions and sizes
+	previewNoteSizesUnannounced = "sizes_unannounced" // the upstream announces no size; a size counts once the file is stored
+	previewNoteMoreVersions     = "more_versions"     // the upstream lists more versions than one answer holds
+	previewNoteSizeOnceStored   = "size_once_stored"  // without the catalogue: the version's size is known once it is stored
+	previewNoteCountedOnExpand  = "counted_on_expand" // without the catalogue: the versions are counted when the bulk is expanded
+)
+
 // preview counts what a download ahead would queue (R-CUR-010): one version or a package by one catalogue call (Package) with a page of
 // the bulk's maxVersions, a sub-section by its level's count where the upstream tells it. Without the catalogue a version is one version
 // of unknown size and a package is not counted.
@@ -873,7 +882,7 @@ func (s *Server) preview(ctx context.Context, t downloadTarget, in downloadReque
 		if page.Total >= 0 {
 			out["packages"] = page.Total
 		}
-		out["note"] = "The upstream does not tell the versions and sizes of a sub-section; the bounds cut while the bulk runs."
+		out["note"] = previewNoteSectionUncounted
 		return out, nil
 	}
 	if eng == nil {
@@ -932,12 +941,12 @@ func (s *Server) preview(ctx context.Context, t downloadTarget, in downloadReque
 	switch {
 	case unknown == len(picked):
 		out["bytes"] = nil
-		out["note"] = "The upstream announces no size; a size counts when the file is stored, and the bounds cut while the bulk runs."
+		out["note"] = previewNoteSizesUnannounced
 	default:
 		out["bytes"] = bytes
 	}
 	if !info.Done && in.Level == string(queue.LevelPackage) && len(picked) < b.MaxVersions {
-		out["note"] = "The upstream lists more versions than one answer holds; the bulk counts the rest while it runs."
+		out["note"] = previewNoteMoreVersions
 	}
 	return out, nil
 }
@@ -949,10 +958,10 @@ func previewWithoutCatalogue(ctx context.Context, s *Server, repoID string, in d
 		if !s.downloadDecider().Decide(ctx, repoID, in.Name, in.Version).Delivered {
 			out["notDelivered"] = 1
 		}
-		out["note"] = "The size of the version is known once it is stored."
+		out["note"] = previewNoteSizeOnceStored
 		return out
 	}
 	out["versions"], out["packages"], out["bytes"] = nil, 1, nil
-	out["note"] = "The upstream's versions are counted when the bulk is expanded; the bounds cut while it runs."
+	out["note"] = previewNoteCountedOnExpand
 	return out
 }

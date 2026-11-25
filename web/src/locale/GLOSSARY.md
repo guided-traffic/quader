@@ -140,3 +140,5 @@ refuses a masculine "Token" in a target.
 | signing identity (Quader's own), certificate request, announced (identity), previous (identity), retire (an identity), chain, trusted root (of Quader's signatures), npm key ID, receipt attestation | Signaturidentität, Zertifikatsanforderung, angekündigt, früher, außer Dienst stellen, Kette, Vertrauensbasis, npm-Schlüssel-ID, Empfangsattestierung |
 | object-store connection, fill, backlog, scrub, reconciliation, storage summary, storage key | Objektspeicher-Verbindung (kurz Verbindung), Füllstand, Rückstand, Prüflauf, Abgleich, Speicherübersicht, Speicherschlüssel |
 | filling, active, draining, drained, detached, retired (the states of a connection) | Wird befüllt, Aktiv, Wird geleert, Geleert, Abgekoppelt, Stillgelegt |
+| technical details (a server's own text, folded under the sentence of the screen), verifier's note (of a signature) | Technische Details, Hinweis der Prüfung |
+| source network (of a remote repository) | Quellnetzwerk |

@@ -100,9 +100,6 @@
       } @else {
         <p class="sig-sentence">{{ entrySentence(e) }}</p>
       }
-      @if (e.detail; as detail) {
-        <p class="hint" translate="no">{{ detail }}</p>
-      }
       <dl class="facts">
         @if (e.signer; as signer) {
           <dt i18n="@@sig.fact.signer">Signer</dt>
@@ -178,6 +175,11 @@
       </p>
       <quader-disclosure class="sig-technical" [inline]="true" [heading]="technicalHeading">
         <dl class="facts">
+          <!-- The verifier's own English note on why the state was reached; the sentence above is the screen's (R-UI-214). -->
+          @if (e.detail; as note) {
+            <dt i18n="@@sig.tech.note">Verifier's note</dt>
+            <dd class="sig-text" lang="en" translate="no" data-testid="signature-note">{{ note }}</dd>
+          }
           @if (e.keyIds.length > 0) {
             <dt i18n="@@sig.tech.key-ids">Key identifiers</dt>
             <dd>

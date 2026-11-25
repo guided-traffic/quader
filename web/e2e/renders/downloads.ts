@@ -262,8 +262,8 @@ export async function* downloadsWalk(p: Page): AsyncGenerator<string> {
   await expect(p.locator('main [data-testid="download-bulk"] .bulk-failure')).toBeVisible();
   yield 'bulk-failed';
   // The server's English sentence and its code, folded under the screen's sentence (Q-CUR-169).
-  await p.locator('main [data-testid="download-bulk"] quader-disclosure.technical button').click();
-  await expect(p.locator('main [data-testid="download-bulk"] quader-disclosure.technical .collapse-region.open')).toBeVisible();
+  await p.locator('main [data-testid="download-bulk"] quader-technical-details button').click();
+  await expect(p.locator('main [data-testid="download-bulk"] quader-technical-details .collapse-region.open')).toBeVisible();
   yield 'bulk-failed-technical';
   // The rows of one package, as the link Show in queue of the top bar's downloads panel opens the tab (R-UI-211).
   await p.goto(`${new URL(p.url()).pathname}?name=${encodeURIComponent('typescript')}`);
