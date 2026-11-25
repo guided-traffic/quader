@@ -81,7 +81,8 @@ const DETAILS_ID = 'projects.details';
           </th>
           <td>
             @if (descriptionOf(p.key, p.description); as description) {
-              {{ description }}
+              <!-- A project's own description is what a person wrote; the built-in project's is the UI's (R-UI-214). -->
+              <span [attr.translate]="builtIn(p.key) ? null : 'no'">{{ description }}</span>
             } @else {
               <quader-no-value />
             }

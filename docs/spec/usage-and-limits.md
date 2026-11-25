@@ -3238,3 +3238,14 @@ when it admits it, before the fetch takes its slot and asks the circuit; a fetch
 (`proxy.queue_timeout_seconds`) or the open circuit answers as assumed offline sends nothing upstream, and its upstream request stays
 counted. A client that retries against a remote whose upstream is down spends its upstream budget without reaching the upstream, and
 finds it used up when the upstream is back.
+
+### H-1861 · The built-in limit profiles read in English in a German installation
+
+Component: the five built-in profiles of the download limits (`unlimited`, `standard`, `technical`, `restricted`, `anonymous`), which
+[migration 00081](../../internal/meta/postgres/migrations/00081_limits.sql) writes with an English name and description; the tab
+**Profiles** of **Download limits** ([limits-profiles-tab.ts](../../web/src/app/features/limits/limits-profiles-tab.ts)). Subject: every
+reader of the tab in German (administrators, auditors). Live today: the German page shows "Standard", "Technical" and "Technical tokens
+and CI projects without a rule of their own." as the installation stored them. Both are stored and an administrator may rewrite them, so
+the screen shows them as written (`translate="no"`, R-UI-214) and the German render pass does not count them as a server's sentence.
+What would end it: the screen says a built-in profile's first name and description from its key in its language, and shows the stored
+text only once an administrator changed it; that needs the API to tell a changed text from the first one, which it does not.

@@ -82,7 +82,7 @@ export const GRADE_SORT_MAX = 1000;
               <span>
                 <a class="item-name" [routerLink]="detailLink(p)" translate="no">{{ p.name }}</a>
                 @if (p.description; as d) {
-                  <span class="item-description">{{ d }}</span>
+                  <span class="item-description" translate="no">{{ d }}</span>
                 }
               </span>
             </div>

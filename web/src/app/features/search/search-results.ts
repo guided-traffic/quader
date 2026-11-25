@@ -69,7 +69,7 @@ const PAGE = 25;
                         &ngsp;<span class="badge">{{ systemText }}</span>
                       }
                       @if (row.description) {
-                        <span class="secondary">{{ row.description }}</span>
+                        <span class="secondary" translate="no">{{ row.description }}</span>
                       }
                     </span>
                   </span>
@@ -110,7 +110,7 @@ const PAGE = 25;
                 <th scope="row" class="wrap-name">
                   <a [routerLink]="packageLink(row)" translate="no">{{ row.name }}</a>
                   @if (row.description) {
-                    <span class="secondary">{{ row.description }}</span>
+                    <span class="secondary" translate="no">{{ row.description }}</span>
                   }
                 </th>
                 <td class="project-cell"><quader-project-link [key]="at.project" /></td>
@@ -160,7 +160,8 @@ const PAGE = 25;
                 </th>
                 <td>
                   @if (descriptionOf(p.key, p.description); as description) {
-                    {{ description }}
+                    <!-- A project's own description is what a person wrote; the built-in project's is the UI's (R-UI-214). -->
+                    <span [attr.translate]="builtIn(p.key) ? null : 'no'">{{ description }}</span>
                   } @else {
                     <quader-no-value />
                   }

@@ -61,7 +61,7 @@ export function severitiesOf(s: BarSeverity): VulnerabilitySeverity[] {
           <td><quader-severity [severity]="f.severity" [score]="f.cvss?.score ?? null" /></td>
           <th scope="row">
             <a [routerLink]="['/projects', f.project, 'vulnerabilities', 'findings', f.id]" translate="no">{{ f.advisory }}</a>
-            <span class="secondary">{{ f.summary }}</span>
+            <span class="secondary" translate="no">{{ f.summary }}</span>
           </th>
           <td><quader-finding-status [finding]="f" /></td>
           <td translate="no" class="wrap">{{ f.fixedVersions.length > 0 ? f.fixedVersions.join(', ') : '–' }}</td>

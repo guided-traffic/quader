@@ -9408,7 +9408,12 @@ server knows, it sends as a code with its parameters
   upstream wrote (a package's description, an advisory's summary), names and identifiers, and the texts that are English by decision
   and marked `lang="en"`: the manual (R-UI-050), a format's guide (Q-UI-86) and a format's settings schema (Q-UI-79). What a person
   or an upstream wrote is marked `translate="no"` (a package's description in its page's header, an upstream's hit and package, a
-  request's note and a decline's reason), so that the German pass tells it from a server's sentence. A problem whose code the screen
+  request's note and a decline's reason; since the German pass of 2026-11-25 also a repository's description in its page's header,
+  a package's description in a repository's list, the descriptions of a project, a repository and a package among the search's
+  hits and in the project list, a download limit profile's description, an advisory's summary among the findings, and a
+  package's README), so that the German pass tells it from a server's sentence. The built-in project's description is the UI's own
+  and is not marked; a built-in limit profile's name and description are stored and editable, English as the installation first
+  writes them ([usage-and-limits.md](usage-and-limits.md) H-1861). A problem whose code the screen
   does not know shows its English `detail` with the request ID (R-UI-042).
 - **The audit of 2026-11-24** (every binding of a server's text in `web/src/app`, against its source). Each screen exists once for
   every format and class that has it; the preview, the connection test, the mirror and the signatures serve every format through the

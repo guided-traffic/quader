@@ -64,7 +64,9 @@ export function usedByText(p: LimitProfile, locale: string): string {
           </th>
           <td>
             @if (p.description) {
-              {{ p.description }}
+              <!-- A profile's description is stored and an administrator may rewrite it, a built-in profile's too, as its name: it
+                   is shown as written (R-UI-214); the built-in profiles' first texts are English (H-1861). -->
+              <span translate="no">{{ p.description }}</span>
             } @else {
               <quader-no-value />
             }

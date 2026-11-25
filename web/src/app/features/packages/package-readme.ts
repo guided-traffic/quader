@@ -72,7 +72,7 @@ export function headingSlug(heading: string, seen: Map<string, number>): string 
           {{ r.externalImagesBlocked }} external images are shown as links.
         </p>
       }
-      <div class="readme" [innerHTML]="r.html"></div>
+      <div class="readme" translate="no" [innerHTML]="r.html"></div>
     }
   `,
   styleUrl: './package-readme.scss',

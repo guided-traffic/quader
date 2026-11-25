@@ -293,7 +293,7 @@
       <notes>
         <note category="location">src/app/app.routes.ts:62</note>
         <note category="location">src/app/app.routes.ts:63</note>
-        <note category="location">src/app/features/search/search-results.ts:227</note>
+        <note category="location">src/app/features/search/search-results.ts:228</note>
       </notes>
       <segment>
         <source>Search</source>
@@ -12303,8 +12303,8 @@
       <notes>
         <note category="location">src/app/features/guides/guide-format.ts:152</note>
         <note category="location">src/app/features/repositories/repository-list.ts:347</note>
-        <note category="location">src/app/features/search/search-results.ts:244</note>
-        <note category="location">src/app/features/search/search-results.ts:258</note>
+        <note category="location">src/app/features/search/search-results.ts:245</note>
+        <note category="location">src/app/features/search/search-results.ts:259</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -12333,7 +12333,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:69</note>
         <note category="location">src/app/features/repositories/repository-list.ts:282</note>
         <note category="location">src/app/features/repositories/repository-list.ts:354</note>
-        <note category="location">src/app/features/search/search-results.ts:249</note>
+        <note category="location">src/app/features/search/search-results.ts:250</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -13684,7 +13684,7 @@
       <notes>
         <note category="location">src/app/features/limits/limit-rules.ts:144</note>
         <note category="location">src/app/features/limits/limits-blocks-tab.ts:111</note>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:138</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:140</note>
         <note category="location">src/app/features/limits/limits-projects-tab.ts:150</note>
       </notes>
       <segment>
@@ -14004,7 +14004,7 @@
     </unit>
     <unit id="limits.profiles.delete">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:91,92</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:93,94</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -14013,7 +14013,7 @@
     </unit>
     <unit id="limits.profiles.in-use">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:96,97</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:98,99</note>
       </notes>
       <segment>
         <source>Used by <ph id="0" equiv="INTERPOLATION" disp="{{ usedBy(p) }}"/></source>
@@ -14022,7 +14022,7 @@
     </unit>
     <unit id="limits.profiles.col-name">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:134</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:136</note>
       </notes>
       <segment>
         <source>Profile</source>
@@ -14031,7 +14031,7 @@
     </unit>
     <unit id="limits.profiles.col-description">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:135</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:137</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -14040,7 +14040,7 @@
     </unit>
     <unit id="limits.profiles.col-figures">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:136</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:138</note>
       </notes>
       <segment>
         <source>Figures</source>
@@ -14049,7 +14049,7 @@
     </unit>
     <unit id="limits.profiles.col-used">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:137</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:139</note>
       </notes>
       <segment>
         <source>Used by</source>
@@ -14058,7 +14058,7 @@
     </unit>
     <unit id="limits.profiles.delete-title">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:164</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:166</note>
       </notes>
       <segment>
         <source>Delete profile <ph id="0" equiv="name" disp="p.name"/>?</source>
@@ -14067,7 +14067,7 @@
     </unit>
     <unit id="limits.profiles.delete-text">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:165</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:167</note>
       </notes>
       <segment>
         <source>Nothing uses the profile. It is deleted for good.</source>
@@ -14076,7 +14076,7 @@
     </unit>
     <unit id="limits.profiles.delete-confirm">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:166</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:168</note>
       </notes>
       <segment>
         <source>Delete profile</source>
@@ -14085,7 +14085,7 @@
     </unit>
     <unit id="limits.profiles.deleted">
       <notes>
-        <note category="location">src/app/features/limits/limits-profiles-tab.ts:173</note>
+        <note category="location">src/app/features/limits/limits-profiles-tab.ts:175</note>
       </notes>
       <segment>
         <source>Profile deleted.</source>
@@ -16772,7 +16772,7 @@
     <unit id="pkg.col.package">
       <notes>
         <note category="location">src/app/features/packages/package-list.ts:198</note>
-        <note category="location">src/app/features/search/search-results.ts:256</note>
+        <note category="location">src/app/features/search/search-results.ts:257</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -16782,7 +16782,7 @@
     <unit id="pkg.col.format">
       <notes>
         <note category="location">src/app/features/packages/package-list.ts:199</note>
-        <note category="location">src/app/features/search/search-results.ts:259</note>
+        <note category="location">src/app/features/search/search-results.ts:260</note>
       </notes>
       <segment>
         <source>Format</source>
@@ -16792,7 +16792,7 @@
     <unit id="pkg.col.latest">
       <notes>
         <note category="location">src/app/features/packages/package-list.ts:203</note>
-        <note category="location">src/app/features/search/search-results.ts:262</note>
+        <note category="location">src/app/features/search/search-results.ts:263</note>
       </notes>
       <segment>
         <source>Latest</source>
@@ -16802,7 +16802,7 @@
     <unit id="pkg.help.latest">
       <notes>
         <note category="location">src/app/features/packages/package-list.ts:204</note>
-        <note category="location">src/app/features/search/search-results.ts:263</note>
+        <note category="location">src/app/features/search/search-results.ts:264</note>
       </notes>
       <segment>
         <source>The highest stable version you may see. A pre-release is shown only while no stable version exists.</source>
@@ -16812,7 +16812,7 @@
     <unit id="pkg.col.updated">
       <notes>
         <note category="location">src/app/features/packages/package-list.ts:208</note>
-        <note category="location">src/app/features/search/search-results.ts:268</note>
+        <note category="location">src/app/features/search/search-results.ts:269</note>
       </notes>
       <segment>
         <source>Updated</source>
@@ -16822,7 +16822,7 @@
     <unit id="pkg.help.updated">
       <notes>
         <note category="location">src/app/features/packages/package-list.ts:210</note>
-        <note category="location">src/app/features/search/search-results.ts:269</note>
+        <note category="location">src/app/features/search/search-results.ts:270</note>
       </notes>
       <segment>
         <source>When the latest version you may see was published.</source>
@@ -21196,7 +21196,7 @@
     </unit>
     <unit id="projects-home.heading">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:135</note>
+        <note category="location">src/app/features/projects/projects-home.ts:136</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -21205,7 +21205,7 @@
     </unit>
     <unit id="projects-home.hint-anonymous">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:142</note>
+        <note category="location">src/app/features/projects/projects-home.ts:143</note>
       </notes>
       <segment>
         <source>The projects with public content. Sign in to see your own.</source>
@@ -21214,7 +21214,7 @@
     </unit>
     <unit id="projects-home.hint">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:144</note>
+        <note category="location">src/app/features/projects/projects-home.ts:145</note>
       </notes>
       <segment>
         <source>Find a project and explore the repositories and packages it holds.</source>
@@ -21223,7 +21223,7 @@
     </unit>
     <unit id="projects.search">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:164</note>
+        <note category="location">src/app/features/projects/projects-home.ts:165</note>
       </notes>
       <segment>
         <source>Filter projects</source>
@@ -21232,7 +21232,7 @@
     </unit>
     <unit id="projects-home.empty-filtered">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:187</note>
+        <note category="location">src/app/features/projects/projects-home.ts:188</note>
       </notes>
       <segment>
         <source>No project matches.</source>
@@ -21241,7 +21241,7 @@
     </unit>
     <unit id="projects-home.empty-anonymous">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:189</note>
+        <note category="location">src/app/features/projects/projects-home.ts:190</note>
       </notes>
       <segment>
         <source>No project is public. Sign in to see your projects.</source>
@@ -21250,7 +21250,7 @@
     </unit>
     <unit id="projects-home.empty">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:190</note>
+        <note category="location">src/app/features/projects/projects-home.ts:191</note>
       </notes>
       <segment>
         <source>You are not a member of a project yet. An Owner of a project adds you with a role.</source>
@@ -21259,7 +21259,7 @@
     </unit>
     <unit id="projects-home.caption-public">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:195</note>
+        <note category="location">src/app/features/projects/projects-home.ts:196</note>
       </notes>
       <segment>
         <source>Public projects</source>
@@ -21268,7 +21268,7 @@
     </unit>
     <unit id="projects-home.caption">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:196</note>
+        <note category="location">src/app/features/projects/projects-home.ts:197</note>
       </notes>
       <segment>
         <source>Your projects</source>
@@ -21277,10 +21277,10 @@
     </unit>
     <unit id="projects.col.project">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:209</note>
-        <note category="location">src/app/features/search/search-results.ts:245</note>
-        <note category="location">src/app/features/search/search-results.ts:257</note>
-        <note category="location">src/app/features/search/search-results.ts:275</note>
+        <note category="location">src/app/features/projects/projects-home.ts:210</note>
+        <note category="location">src/app/features/search/search-results.ts:246</note>
+        <note category="location">src/app/features/search/search-results.ts:258</note>
+        <note category="location">src/app/features/search/search-results.ts:276</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -21289,8 +21289,8 @@
     </unit>
     <unit id="projects-home.col.description">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:211</note>
-        <note category="location">src/app/features/search/search-results.ts:276</note>
+        <note category="location">src/app/features/projects/projects-home.ts:212</note>
+        <note category="location">src/app/features/search/search-results.ts:277</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -21299,8 +21299,8 @@
     </unit>
     <unit id="projects.col.visibility">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:212</note>
-        <note category="location">src/app/features/search/search-results.ts:277</note>
+        <note category="location">src/app/features/projects/projects-home.ts:213</note>
+        <note category="location">src/app/features/search/search-results.ts:278</note>
         <note category="location">src/app/features/upstream/upstream-registries.ts:294</note>
         <note category="location">src/app/features/upstream/upstream-registries.ts:311</note>
       </notes>
@@ -21311,8 +21311,8 @@
     </unit>
     <unit id="projects.col.role">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:215</note>
-        <note category="location">src/app/features/search/search-results.ts:280</note>
+        <note category="location">src/app/features/projects/projects-home.ts:216</note>
+        <note category="location">src/app/features/search/search-results.ts:281</note>
       </notes>
       <segment>
         <source>Your role</source>
@@ -21321,8 +21321,8 @@
     </unit>
     <unit id="projects.help.role">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:216</note>
-        <note category="location">src/app/features/search/search-results.ts:281</note>
+        <note category="location">src/app/features/projects/projects-home.ts:217</note>
+        <note category="location">src/app/features/search/search-results.ts:282</note>
       </notes>
       <segment>
         <source>Your role in the project; a dash when you see it through a system role and are no member.</source>
@@ -21331,7 +21331,7 @@
     </unit>
     <unit id="projects.col.owners">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:219</note>
+        <note category="location">src/app/features/projects/projects-home.ts:220</note>
       </notes>
       <segment>
         <source>Owners</source>
@@ -21340,8 +21340,8 @@
     </unit>
     <unit id="projects.col.repositories">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:220</note>
-        <note category="location">src/app/features/search/search-results.ts:284</note>
+        <note category="location">src/app/features/projects/projects-home.ts:221</note>
+        <note category="location">src/app/features/search/search-results.ts:285</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -21350,8 +21350,8 @@
     </unit>
     <unit id="projects.col.members">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:221</note>
-        <note category="location">src/app/features/search/search-results.ts:285</note>
+        <note category="location">src/app/features/projects/projects-home.ts:222</note>
+        <note category="location">src/app/features/search/search-results.ts:286</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -21360,7 +21360,7 @@
     </unit>
     <unit id="projects.col.storage">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:224</note>
+        <note category="location">src/app/features/projects/projects-home.ts:225</note>
       </notes>
       <segment>
         <source>Storage</source>
@@ -21369,7 +21369,7 @@
     </unit>
     <unit id="projects.help.storage">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:226</note>
+        <note category="location">src/app/features/projects/projects-home.ts:227</note>
       </notes>
       <segment>
         <source>The logical size the project is charged: the full size of every file in its repositories, also where another project holds the same content.</source>
@@ -27638,7 +27638,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:56</note>
         <note category="location">src/app/features/repositories/repository-list.ts:280</note>
         <note category="location">src/app/features/repositories/repository-list.ts:351</note>
-        <note category="location">src/app/features/search/search-results.ts:246</note>
+        <note category="location">src/app/features/search/search-results.ts:247</note>
       </notes>
       <segment>
         <source>Format</source>
@@ -28919,7 +28919,7 @@
     <unit id="repo.help.class">
       <notes>
         <note category="location">src/app/features/repositories/repository-list.ts:355</note>
-        <note category="location">src/app/features/search/search-results.ts:250</note>
+        <note category="location">src/app/features/search/search-results.ts:251</note>
       </notes>
       <segment>
         <source>Local repositories hold what you upload, remote repositories fetch and cache from another registry, virtual repositories combine other repositories behind one address.</source>
@@ -33102,7 +33102,7 @@
     <unit id="search.group.repositories">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:211</note>
-        <note category="location">src/app/features/search/search-results.ts:229</note>
+        <note category="location">src/app/features/search/search-results.ts:230</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -33112,7 +33112,7 @@
     <unit id="search.group.packages">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:212</note>
-        <note category="location">src/app/features/search/search-results.ts:230</note>
+        <note category="location">src/app/features/search/search-results.ts:231</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -33122,7 +33122,7 @@
     <unit id="search.group.projects">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:213</note>
-        <note category="location">src/app/features/search/search-results.ts:231</note>
+        <note category="location">src/app/features/search/search-results.ts:232</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -33194,7 +33194,7 @@
     </unit>
     <unit id="search.results.description">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:234</note>
+        <note category="location">src/app/features/search/search-results.ts:235</note>
       </notes>
       <segment>
         <source>What you may read that matches “<ph id="0" equiv="text" disp="this.term()"/>”.</source>
@@ -33203,7 +33203,7 @@
     </unit>
     <unit id="search.results.too-short">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:238</note>
+        <note category="location">src/app/features/search/search-results.ts:239</note>
       </notes>
       <segment>
         <source>Type at least two characters.</source>
@@ -33212,7 +33212,7 @@
     </unit>
     <unit id="search.results.none">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:239</note>
+        <note category="location">src/app/features/search/search-results.ts:240</note>
       </notes>
       <segment>
         <source>Nothing you may read matches “<ph id="0" equiv="text" disp="this.term()"/>”.</source>
