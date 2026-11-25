@@ -287,6 +287,11 @@ What was red at 19:49 (Test and Release on 928e2a6e7 and every run since 08:32; 
   nightly); the next code push releases the two UI fixes. The owner's installation runs 0.124.0 meanwhile. Plan commits now wait for
   the code run's release.
 
+- **Nightly green** (run 45490907494 on c8f72cdcb, every one of its 45 jobs, 22:27 to 03:20), npm-ha and drain-roles among them
+  without neighbours, alerts with the rule of Q-OPS-425 and vuln-pooler with the platform load. No job was re-run.
+- **Open after the night:** the release of 94a99ebca and ee8e41c2c, which comes with the next code push; the nine worktrees of
+  earlier sessions whose commits `git cherry` does not find on `main` stay, as the housekeeping rule says.
+
 ### State at the stop of 2026-11-24
 
 Read this first. The run that began at 22:21 on 2026-11-23 ended its starts at 12:25 on 2026-11-24 by the owner's word
