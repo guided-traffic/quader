@@ -26215,6 +26215,26 @@ and format members by the schema's titles), [figures.ts](../../web/src/app/featu
 and each form that opens the dialog. Tests: the cases of R-UI-042 in [misc.spec.ts](../../web/src/app/core/misc.spec.ts) (unit,
 milliseconds), the states `conflict` and `diff` of `make ui-states` (labels, a list, a switch, a password, an unnamed member).
 
+### Q-UI-1211 · Every monospace text takes the token's face, set once on code, kbd, pre and samp
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found on the
+pictures of the new error notice (its status, its call and its request ID) and of digests, commands and keys: every `code` stood in the
+browser's default monospace face, Courier on macOS. The token `--quader-font-mono` (`ui-monospace, SFMono-Regular, Menlo, monospace`)
+was named by a few fields only (an address, a command, a claim editor); `code`, `kbd` and `samp` had no rule, and four stylesheets wrote
+stacks of their own (the error notice's answer, the error summary's report, a code block, a README), each another. No decision named
+the monospace face: Q-UI-128 took the reference's sans face, Inter with `cv05`, and its type sizes.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The token's system stack, given once to `code`, `kbd`, `pre` and `samp` in `main.scss`; a class that sets the face on another element (a field, a cell's span) names the token; a lint rule (`mono-rule.mjs` of `check-rules.mjs`) refuses a stylesheet that names a monospace face of its own (chosen) | One face in one place | No new font: the system's monospace face (Menlo or SF Mono on macOS, the system's own elsewhere), the face the token already named; nothing can drift again | The face differs between systems, as the reference's sans face did before Q-UI-128 shipped Inter |
+| (b) Ship the reference's own monospace face | A font file in the bundle | The reference's look to the letter | A new font, which the owner's rule for the screens forbids without his word; about 100 KiB more in every first load |
+| (c) Keep the browser's default | Nothing to build | — | Courier on macOS beside Inter: the look the finding is about |
+
+**Choice:** (a). The token's value is unchanged. **Applied in the spec:** Q-UI-128 (the type). Code:
+[main.scss](../../web/src/styles/main.scss), [_tokens.scss](../../web/src/styles/_tokens.scss),
+[mono-rule.mjs](../../web/scripts/mono-rule.mjs). Test: `R-UI-046 a monospace face is the token's` of
+[lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs) (node, under a millisecond); every screen of the render set in both schemes.
+
 ## What this does not cover
 
 ### H-1964 · A read that fails alone while its page stands is read again only by the person or its next use

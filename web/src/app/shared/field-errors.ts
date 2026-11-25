@@ -84,7 +84,6 @@ export function problemsAt(
       margin: 0;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size: 0.8125rem;
     }
     .link {

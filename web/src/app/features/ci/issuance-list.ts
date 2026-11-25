@@ -112,7 +112,6 @@ export interface IssuanceDetailData {
       overflow-x: auto;
       border: 1px solid var(--quader-border);
       border-radius: var(--quader-radius-s);
-      font-family: var(--quader-font-mono);
       font-size: 0.8125rem;
     }
     h3 {

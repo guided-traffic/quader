@@ -10,6 +10,7 @@ import { bareIconsInCells } from './status-rule.mjs';
 import { wordActionsSideBySide } from './row-actions-rule.mjs';
 import { offTheLine } from './line-rule.mjs';
 import { separatorsOutsideTheRules } from './separator-rule.mjs';
+import { ownMonospace } from './mono-rule.mjs';
 import { LONG_WORD, compare, longWords, rewrite } from './i18n-check.mjs';
 import { journeyTextFindings } from './journey-texts-rule.mjs';
 import { decisionNumbersInTestNames } from './test-names-rule.mjs';
@@ -286,6 +287,21 @@ test("R-UI-171 a separator drawn by CSS outside the app's separator rules fails 
     "// a line that starts with content: '·' in a comment\n.x { content: ''; }",
   ];
   for (const css of good) assert.deepEqual(separatorsOutsideTheRules(css), [], css);
+});
+
+test('R-UI-046 a monospace face is the token\'s: a stylesheet that names one of its own fails the lint', () => {
+  const bad = [
+    '.raw {\n  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;\n}',
+    'input { font-family: monospace; }',
+    '.x {\n  font: 400 0.8rem / 1.5 Menlo, Consolas, monospace;\n}',
+  ];
+  for (const css of bad) assert.equal(ownMonospace(css).length, 1, css);
+  const good = [
+    '.raw {\n  font-family: var(--quader-font-mono);\n}',
+    ':root {\n  --quader-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;\n}',
+    '// the browser default monospace stood here\n.x { font: var(--quader-type-label-large); }',
+  ];
+  for (const css of good) assert.deepEqual(ownMonospace(css), [], css);
 });
 
 test("a journey's text named by its ID must be a plain unit of the translation files and the code's words", () => {

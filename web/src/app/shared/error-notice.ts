@@ -247,7 +247,6 @@ export function retryWaitMs(error: ApiError): number {
     .raw {
       margin: 0;
       white-space: pre-wrap;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size: 0.8125rem;
     }
     .call {

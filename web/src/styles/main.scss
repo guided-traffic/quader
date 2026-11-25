@@ -34,6 +34,13 @@ body {
   font-feature-settings: var(--quader-font-features);
 }
 
+// Every text in the monospace face (Q-UI-1211): a code, a command, a key, a digest, a server's answer. The elements that mean it take
+// the face of the token here, once; a class that sets the face on another element (a field that holds an address) names the token.
+// Without this rule the browser's default stood (Courier on macOS), and the token was used by a few fields only.
+:is(code, kbd, pre, samp) {
+  font-family: var(--quader-font-mono);
+}
+
 // A date, a time or both are one value: a line breaks before or after it, never inside it (R-UI-171). A list's cell held this
 // already (`td time`); a fact's "ClamAV database of Nov 24, 2026" broke between "Nov" and "24" at 390 px on the days whose date
 // reached the line's end.

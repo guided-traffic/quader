@@ -52,7 +52,9 @@ Take the first of these that fits, in this order:
 
 Never write a colour, a font size, a shadow or a radius as a literal in a component. Spacing comes from `--quader-space-1` to
 `-8` (4, 8, 12, 16, 20, 24 and 32 px). A value the tokens do not have is a new token, added with its light and dark value, and a
-new text and background pair goes into [palette.spec.ts](../../web/src/styles/palette.spec.ts). No new font, shadow or gradient.
+new text and background pair goes into [palette.spec.ts](../../web/src/styles/palette.spec.ts). No new font, shadow or gradient. A text in
+the monospace face is a `code`, `kbd`, `pre` or `samp`, which take `--quader-font-mono` from `main.scss`; any other element names the
+token, never a face of its own ([Q-UI-1211](../spec/api-and-ui.md#q-ui-1211--every-monospace-text-takes-the-tokens-face-set-once-on-code-kbd-pre-and-samp)).
 
 ## Anatomy of a page
 

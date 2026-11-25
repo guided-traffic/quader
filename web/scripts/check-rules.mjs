@@ -11,6 +11,7 @@
 //  - R-UI-163: no row shows two word actions at once: several actions are the row's menu (row-actions-rule.mjs).
 //  - Q-UI-1006: no template interpolates a principal's reference (`…By`, `by`, `lastDownloader`) as it is; it goes through personName.
 //  - Q-UI-564: the word of a badge or a status starts with a capital (**Disabled**, not "disabled"), as the manual writes it.
+//  - Q-UI-1211: no stylesheet names a monospace face of its own: the face is the token --quader-font-mono's (mono-rule.mjs).
 //  - R-UI-175: no `vertical-align: middle` and no `align-items: last baseline` in a style: a box beside a text stands on the
 //    line's middle by the line rule of _controls.scss (line-rule.mjs).
 //  - Q-UI-1046: every text a journey names by its message ID (`ui('…')` of e2e/support.ts) is a plain unit of the translation files,
@@ -34,6 +35,7 @@ import { bareIconsInCells } from './status-rule.mjs';
 import { wordActionsSideBySide } from './row-actions-rule.mjs';
 import { offTheLine } from './line-rule.mjs';
 import { separatorsOutsideTheRules } from './separator-rule.mjs';
+import { ownMonospace } from './mono-rule.mjs';
 import { journeyTextFindings } from './journey-texts-rule.mjs';
 import { decisionNumbersInTestNames } from './test-names-rule.mjs';
 import { tabStripFindings } from './tab-strip-rule.mjs';
@@ -152,6 +154,14 @@ for (const file of sources.filter((p) => /\.(ts|scss|css)$/.test(p) && !p.endsWi
   for (const { line, text } of separatorsOutsideTheRules(readFileSync(file, 'utf8'))) {
     failed = true;
     console.error(`R-UI-171: ${relative(root, file)}:${line}: a separator drawn by CSS outside the separator rules; use .dot-before, .dot-separated or a breadcrumb's li + li::before: ${text}`);
+  }
+}
+
+// Every monospace text takes the token's face, never a stack of its own (Q-UI-1211).
+for (const file of sources.filter((p) => /\.(ts|scss|css)$/.test(p) && !p.endsWith('.spec.ts'))) {
+  for (const { line, text } of ownMonospace(readFileSync(file, 'utf8'))) {
+    failed = true;
+    console.error(`Q-UI-1211: ${relative(root, file)}:${line}: a monospace face of its own; use var(--quader-font-mono), which main.scss gives code, kbd, pre and samp: ${text}`);
   }
 }
 

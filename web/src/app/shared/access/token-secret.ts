@@ -82,7 +82,7 @@ import { Notifier } from '../../core/notifier';
       flex: 0 1 36rem;
       min-inline-size: 0;
       padding: var(--quader-space-2);
-      font-family: ui-monospace, monospace;
+      font-family: var(--quader-font-mono);
       color: var(--quader-on-surface);
       background: var(--quader-surface-container);
       border: 1px solid var(--quader-border-strong);
