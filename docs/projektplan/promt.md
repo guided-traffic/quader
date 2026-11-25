@@ -1050,6 +1050,20 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **Closed on 2026-11-25, 16:58: `integration` was red on every push from 11:38 to 16:49, and `e2e (access-long)` from
+  15:51, by two expectations today's landings had made stale; no release was held (Q-ARCH-457).** Read at the start of
+  the pipeline window (17:00), eleven runs. (1) `TestR_ANS_026_ThePackageScreensShowACollection` (shard a, every run from
+  11:59 on) expected the pre-release `2.0.0-rc.1` as the list's latest version; since S5c the latest is the highest
+  version that is no pre-release (`1.10.0`), which the test now expects; run locally against the stack, 6 s, green. (2)
+  The journey F-54 (`web/e2e/tests/14-mirror.spec.ts`) expected "The upstream could not be reached." for a test of a
+  repository set offline; since S15 the server's verdict says "No request was sent to the upstream."; the journey expects
+  that. Not run locally (a kind leg); the sentence is the one the failed run received. Both are mine: S5c's and S15's
+  landings ran the unit tier, the web tier and the renders, not the integration area of the format whose order changed
+  and not the journeys that name a sentence the package rewrote. Rule taken from it: a landing that changes what an API
+  answers or a sentence a screen says greps `test/integration` and `web/e2e/tests` for the old value before it is
+  pushed. Open, not read to its cause: `TestR_VULN_050_R_MAL_035_ADownloadAheadAndAClientsFillAreScannedAtOnceWithoutASchedule`
+  (shard d) failed in the two runs of 11:38 and 11:49 and in none of the nine after them.
+
 - **Closed on 2026-11-25, 11:11, by S2:** the German pass ends without a finding (81 screens, 8.7 minutes, on its
   builder's instance). A text a person or an upstream wrote is marked as written (`translate="no"`) where it is shown:
   the repository's description in its header and in the lists, a project's and a package's description in the lists and
