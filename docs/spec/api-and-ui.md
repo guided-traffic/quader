@@ -8289,8 +8289,9 @@ its pictures.
 - The states of the overlays that no walk opens are measured by the same function in a real browser without the stack (`make
   ui-states`, [Q-UI-1140](#q-ui-1140--the-states-of-the-overlays-are-measured-at-the-component-tier-in-the-unit-test-builders-browser-mode)):
   every dialog as it opens with long data, after a submit with invalid fields and with the shared error notice of a failure; the
-  confirm dialog's shapes; the token's secret shown once; tooltips at the window's right edge. A state fails on any finding, and a
-  copy of a dialog whose button stands 8 px under its name must report `off-line` there.
+  confirm dialog's shapes; the token's secret shown once; tooltips at the window's right edge. A state fails on any finding of the
+  checks and of R-UI-215's one scroll per overlay, and a copy of a dialog whose button stands 8 px under its name must report
+  `off-line` there, one with a block that scrolls inside its scrolling body `inner-scroll`.
 
 Acceptance criteria:
 
@@ -24467,7 +24468,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Each state opened afresh at 390x844 and at 1440x900, light, the page behind an open dialog hidden, `layoutFindings` once per window; any finding fails, nothing is allowed by a list; a picture only with `UI_STATES_PICTURES=1` (chosen) | A dialog is at most 52 rem wide: the widths between show nothing these two do not | The narrow and the wide shape of every state; the checks measure the light scheme only; a defect is never allowed away | A component without the shell behind a dialog is not measured as a page |
+| (a) Each state opened afresh at 390x844 and at 1440x900, light, the page behind an open dialog hidden, `layoutFindings` and `innerScroll` (R-UI-215) once per window, which is the state's first height; any finding fails, nothing is allowed by a list; a picture only with `UI_STATES_PICTURES=1` (chosen) | A dialog is at most 52 rem wide: the widths between show nothing these two do not | The narrow and the wide shape of every state; the checks measure the light scheme only; a defect is never allowed away | A component without the shell behind a dialog is not measured as a page |
 | (b) The render set's three widths and both schemes | | Like the screens | 1,024 px adds nothing to a dialog; dark is colour, which no check measures |
 | (c) `judge` with the render set's `allowed` list | | One rule for both | An entry for the screens would allow a dialog's defect unseen |
 
@@ -25115,9 +25116,9 @@ one with `UI_STATES_PICTURES=1`, looked at, at about a tenth of a second per sta
 
 Component: the layout checks ([layout.ts](../../web/e2e/renders/layout.ts)) as the dialog states run them. Subject: every reader of a
 dialog, a drawer or a list that opens over the page. Live: `sideways` measures `main` alone, and no check measures whether an overlay
-stands inside the window or inside its dialog, so the states' pictures, not their checks, showed a dialog's table wider than the
-dialog and a person-search list cut by a dialog's body (2026-11-25). What would close it: the checks of the overlays planned for the
-render set, imported here as they land.
+stands inside the window, so the states' pictures, not their checks, showed a dialog's table wider than the dialog (2026-11-25); a
+scroll inside a dialog's one scroll is measured (`innerScroll`, R-UI-215). What would close it: the checks of the overlays planned
+for the render set, imported here as they land.
 
 ### H-43 · General API rate limits are per replica
 

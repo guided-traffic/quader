@@ -533,7 +533,8 @@ start page's administrator's columns); a change rendered at 1440 and 390 px alon
 ### Dialog states
 
 `make ui-states` opens the states of the overlays that no walk of the render set opens and measures each with the render set's
-own `layoutFindings` ([layout.ts](../../web/e2e/renders/layout.ts), imported, not copied): every dialog in its long shapes, its
+own `layoutFindings` and `innerScroll` ([layout.ts](../../web/e2e/renders/layout.ts), imported, not copied; an overlay has one
+scroll of its own at most, its body, R-UI-215): every dialog in its long shapes, its
 failure and its validation, the confirm dialog's shapes, the token's secret shown once, and tooltips at the window's right edge. No
 stack, no backend: the Angular unit-test builder's browser mode (the target `states` of [angular.json](../../web/angular.json))
 runs the `*.states.spec.ts` in headless Chromium with the app's global stylesheet and fonts, and each state is opened through the
@@ -564,8 +565,8 @@ dialog's call site, named in a comment. Look at each picture (`UI_STATES_PICTURE
 
 **What it does not do.** It is English only: a German dialog is seen in the render set's German pass. The page behind a dialog is
 hidden for the measurement; whether an overlay stands inside the window and whether a region of a dialog scrolls sideways is
-measured by no check yet (`sideways` looks at `main` only), so a list cut by a dialog and a table wider than its dialog were found in
-the pictures, not by the checks. Focus rings show where a state's dialog put the focus (the CDK's
+measured by no check yet (`sideways` looks at `main` only), so a table wider than its dialog was found in the pictures, not by the
+checks. Focus rings show where a state's dialog put the focus (the CDK's
 first tabbable element): what a keyboard user sees. Pictures are never written in the pipeline and never committed. The gaps are
 H-1910 to H-1912 of [api-and-ui.md](../spec/api-and-ui.md#h-1910--the-dialog-states-are-measured-in-english-only).
 

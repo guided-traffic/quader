@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { expect, inject as provided } from 'vitest';
 import { page } from 'vitest/browser';
-import { findingLine, layoutFindings } from '../../../e2e/renders/layout';
+import { findingLine, innerScroll, layoutFindings } from '../../../e2e/renders/layout';
 import { SessionApi } from '../api/session-api';
 import { FakeSessionApi, provideFakeApis } from '../api/testing/fakes';
 import { SessionStore } from '../core/session-store';
@@ -60,8 +60,9 @@ function hideBehind(): void {
 }
 
 /**
- * Opens a state in every window of `WINDOWS`, measures it with the render set's own `layoutFindings` (web/e2e/renders/layout.ts)
- * and fails with every finding, named as failures.txt names it. With `UI_STATES_PICTURES=1` a picture of each window is written
+ * Opens a state in every window of `WINDOWS`, measures it with the render set's own `layoutFindings` and `innerScroll` (layout.ts:
+ * an overlay has one scroll of its own at most, R-UI-215) and fails with every finding, named as failures.txt names it. With
+ * `UI_STATES_PICTURES=1` a picture of each window is written
  * to `.out/ui-states/<name>-<width>.png`.
  */
 export async function expectState(name: string, open: Open): Promise<void> {
@@ -74,7 +75,8 @@ export async function expectState(name: string, open: Open): Promise<void> {
     await open();
     await quiet();
     hideBehind();
-    for (const f of layoutFindings()) lines.push(findingLine(f, `${name} at ${width}`));
+    // The window is the state's first and only height, so a scroll inside a dialog's one scroll is measured as the renders do.
+    for (const f of [...layoutFindings(), ...innerScroll()]) lines.push(findingLine(f, `${name} at ${width}`));
     if (dir) await page.screenshot({ path: `${dir}/${name}-${width}.png` });
   }
   TestBed.resetTestingModule();

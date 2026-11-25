@@ -552,13 +552,13 @@ The step "Render every screen and check its layout" is 1,733 s in run 2 and 1,86
 ### 3.5a Dialog states (`make ui-states`, measured 2026-11-25 on the development machine)
 
 The states of the overlays at the component tier ([web-ui.md](web-ui.md#dialog-states), Q-UI-1140): 69 states and the harness's
-proof, 13 spec files, each state opened twice (390x844 and 1440x900) and measured by `layoutFindings` once per window, 138 measurements
+two proofs, 13 spec files, each state opened twice (390x844 and 1440x900) and measured by `layoutFindings` and `innerScroll` once per window, 138 measurements
 [V]. Measured with `/usr/bin/time` on the 20-core development machine at a load of 15 to 27 (other builders' runs beside it) [V]:
 
 | Part | Time |
 |---|---|
 | The build (the target's esbuild bundle of the specs; warm cache / empty `.angular` and `node_modules/.vite`) | 1.5 to 2.9 s / 5.6 s |
-| The 70 tests in the browser (Vitest's `Duration`) | 12.1 to 13.7 s, about 0.18 s per state with both windows |
+| The 71 tests in the browser (Vitest's `Duration`) | 12.0 to 13.7 s, about 0.18 s per state with both windows (`innerScroll` added nothing measurable) |
 | The whole target, wall | 16.6 to 23.4 s; with `UI_STATES_PICTURES=1` (138 pictures) 18.1 s |
 
 Data: no state sends a byte over a network; each renders one dialog or one component against the in-memory fakes. The job `UI
