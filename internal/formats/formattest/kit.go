@@ -342,6 +342,12 @@ type ViewFixture struct {
 	// Seed stores Package at every one of Versions, in that order, in the Host's repository
 	// (a local one), the way a client would publish them; no version is withheld.
 	Seed func(h *Host) error
+	// Prereleases are the versions of Versions the format calls pre-releases
+	// (ViewAdapter.Prerelease, api-and-ui.md Q-API-433); NoPrereleases says why the format
+	// has none. Exactly one of the two is set, so a format that orders versions cannot leave
+	// the question open.
+	Prereleases   []string
+	NoPrereleases string
 }
 
 // NameCase is one package name in its spellings (check 10).

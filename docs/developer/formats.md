@@ -83,7 +83,8 @@ only writer is `Member` (Q-ARCH-252, [Q-AUTHZ-165](../spec/authorization.md)).
 ## The package view
 
 A format that has package screens (R-API-029) returns a `formats.ViewAdapter` from `View()`; `Base.View()` is nil, and a format without one is not
-listed on the screens. The adapter orders the versions (`Compare`; "is a pre-release" is the exposure adapter's `Prerelease`, which the host's view bridge asks, Q-ARCH-257), gives the
+listed on the screens. The adapter orders the versions (`Compare`), says which of them is a pre-release (`Prerelease`, the one answer the screens, the stored rows and the
+exposure rules read: `CatalogEntry` composes the catalog's `Versioning` of the exposure adapter's ranges and this answer, Q-API-433), gives the
 stored sort key of that order (`SortKey`, built with [versionkey](../../internal/formats/versionkey/versionkey.go): bytewise the order of `Compare`, a string that is
 no version first, two strings two keys; the host's package writer stores it and the pre-release answer with every version row, Q-API-429), reads what the screens show of a version beyond the generic rows
 (`Describe`: description, keywords, licenses, the README flag, the metadata and, when asked, the README), answers the two searches that need the format's
@@ -95,8 +96,9 @@ format, add the statements to the format's data package and the matching methods
 remote one, otherwise `Compare` descending), and its tags only when the query asks (the catalog says the format has tags). "Serves" means answerable by a request for
 the exact version, so unlisted and deprecated versions count and withheld ones do not (Q-EP-67). The dry run of an endpoint's exposure rules calls it when a check
 names no versions (R-EP-016, Q-EP-61); the bridge is `formathost.ViewAdapters.Stored`, which is the `authz.StoredPackages` of the rule service, and it asks neither a
-virtual repository nor a format without an adapter. Kit check 11 holds the adapter (`Compare` a total order over the fixture's sample versions, `SortKey` ordering them and a string that is no version as `Compare` does with one key per string, `Withheld` and
-`Stored` over an empty repository and over a seeded package).
+virtual repository nor a format without an adapter. Kit check 11 holds the adapter (`Compare` a total order over the fixture's sample versions, `SortKey` ordering them and a string that is no version as `Compare` does with one key per string, `Prerelease` answering exactly the
+fixture's `Prereleases` over the sample, each a version the format ranks, and false for a string that is no version, or the fixture's
+`NoPrereleases` saying why the format has none, `Withheld` and `Stored` over an empty repository and over a seeded package).
 
 ## The registry
 

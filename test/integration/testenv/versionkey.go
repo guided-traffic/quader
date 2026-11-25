@@ -18,11 +18,7 @@ func VersionKey(tb testing.TB, format, version string) (key []byte, prerelease b
 	}
 	key = versionkey.Of(nil, false, version)
 	if a := f.View(); a != nil {
-		key = a.SortKey(version)
-	}
-	if x := f.Exposure(); x != nil {
-		pre, ok := x.Prerelease(version)
-		prerelease = ok && pre
+		key, prerelease = a.SortKey(version), a.Prerelease(version)
 	}
 	return key, prerelease
 }

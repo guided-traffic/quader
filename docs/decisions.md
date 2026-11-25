@@ -2679,6 +2679,33 @@ the manifest's bytes, and that row did not hold the digest, so no index found a 
 written by a replica of the release before during an upgrade has no digest and is listed as an image of its own until it is written again
 (pre-alpha: no fill for it). The end of a list whose versions lead no image costs a request per 1,024 versions (H-1900).
 
+### ADR-282 · A format says which of its versions is a pre-release in its view adapter
+
+**Status:** Decided by the development agent on 2026-11-25 — owner review at the walkthrough
+([Q-API-433](spec/api-and-ui.md#q-api-433--a-format-says-which-of-its-versions-is-a-pre-release-where-it-says-its-order)). It changes the
+frozen format contract: `ContractVersion` 13, and revises
+[Q-ARCH-257](spec/architecture.md#q-arch-257--a-minimal-contract-the-npm-concepts-leave-the-shared-types) on the pre-release.
+
+**Context.** The screens, the stored flag of a version row and the latest version asked the exposure adapter whether a version is a
+pre-release. OCI and Ansible Galaxy have none, so an image's `2.0.0-rc.1` was its latest version and no image tag or collection version
+was ever marked a pre-release, although both formats know their pre-releases (the tag order, the semantic version).
+
+**Decision.**
+- `ViewAdapter` gains `Prerelease(version) bool`, beside `Compare` and `SortKey`: every format with package screens answers it (OCI by
+  the tag order's markers, Ansible Galaxy by the semantic version's pre-release part, npm and NuGet as before, Debian and the ClamAV
+  definitions false). Kit check 11 asks each fixture to name its sample's pre-releases or why the format has none.
+- `ExposureAdapter` loses `Prerelease`: it keeps `ValidateRange`, `InRange` and `Dimensions`. `CatalogEntry` composes the catalog's
+  `Versioning` of the exposure adapter's ranges and the view adapter's answer (a string the view adapter does not rank is no version), and
+  `Validate` refuses a format whose exposure rules narrow versions without a view adapter.
+- The host stores the view adapter's answer with every version row (`formathost.orderOf`). PostgreSQL derives the same answer for a
+  remote's tag entries (`oci_tag_prerelease`, a generated column, two partial indexes for the latest tag, [Q-API-435](spec/api-and-ui.md#q-api-435--a-remotes-tag-entries-carry-whether-the-tag-is-a-pre-release-and-the-latest-tag-is-read-by-two-indexes)),
+  and migration 00126 clears the key and the flag of the stored rows whose answer changes, which the background migration
+  `version_sort_key` fills again.
+
+**Consequences.** A format that orders its versions cannot leave the question open, and the screens and the exposure rules cannot
+disagree on a version. npm's exposure rules read a version as npm's order does: a string with a leading `v` or blanks is no version there
+either. A new format writes one method more.
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -8971,10 +8998,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 <!-- coverage-gen:begin decisions -->
 ### Q-ANS
 
-80 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
+81 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-ANS: 80 questions</summary>
+<summary>Q-ANS: 81 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9058,15 +9085,16 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ANS-79](spec/formats/ansible.md#q-ans-79--the-eviction-of-a-cached-archive-removes-the-generic-version-as-the-core-does-and-leaves-the-formats-documentation-rows) | The eviction of a cached archive removes the generic version as the core does and leaves the format's documentation rows | Decided by the development agent | (a) The core's removal of the item and its version stands; the documentation rows stay until the repository or the cache is purged (H-900) | — |
 | [Q-ANS-80](spec/formats/ansible.md#q-ans-80--the-version-document-and-a-head-of-an-archive-are-probes) | The version document and a HEAD of an archive are probes | Decided by the development agent | (a) The version document (`GET` and `HEAD`) and a `HEAD` of a collection's or a role's archive; the content is the archive | [ADR-207](#adr-207--a-probe-starts-the-download-of-its-version-in-the-background-the-format-contract-is-at-version-7) |
 | [Q-ANS-91](spec/formats/ansible.md#q-ans-91--a-symbolic-link-that-stays-inside-a-collection-is-admitted-and-never-followed) | A symbolic link that stays inside a collection is admitted and never followed | Decided by the coordinator of the run | (a), with two rules the client's lexical check does not make and its build never needs: a target whose resolution passes through another link before its last step, and an entry below a link, are refused (the rule of npm's [Q-NPM-55](spec/formats/npm.md#q-npm-55--a-link-target-may-not-pass-through-another-link)); a hard link stays refused, as the build writes none. | — |
+| [Q-ANS-92](spec/formats/ansible.md#q-ans-92--a-collection-version-with-a-pre-release-part-is-a-pre-release-on-the-screens) | A collection version with a pre-release part is a pre-release on the screens | Decided by the development agent on 2026-11-25 | (a) A semantic version with a pre-release part (a `-` before any build metadata, R-ANS-002) is a pre-release; build metadata alone is none | — |
 
 </details>
 
 ### Q-API
 
-158 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
+161 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-API: 158 questions</summary>
+<summary>Q-API: 161 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9228,6 +9256,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-API-430](spec/api-and-ui.md#q-api-430--a-version-row-without-a-stored-sort-key-is-ordered-by-the-key-its-format-gives-it) | A version row without a stored sort key is ordered by the key its format gives it | Decided by the development agent | (a) The statements return a package's rows without a key after their keyed batch, and the service gives each the key its format gives it | [ADR-278](#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) |
 | [Q-API-431](spec/api-and-ui.md#q-api-431--every-list-of-versions-is-newest-first-by-its-formats-order-and-a-version-the-format-does-not-rank-comes-below-by-its-time) | Every list of versions is newest first by its format's order, and a version the format does not rank comes below by its time | Decided by the development agent on the owner's word of 2026-11-25 ("Nächstes Thema, ich wünsche eine Erkennung von semantic-versioning. Ich wünsche, dass unsere Software automatisch erkennt, dass 4.16.6 höher ist als 4.2.8, die Darstellung von Versionen ist default von der neusten zur ältesten.") | (a) The default `sort` is `-version`; the order has two parts, the ranked versions by key, then the versions of the class `NotVersion` newest first by time, each part a keyset | [ADR-278](#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) |
 | [Q-API-432](spec/api-and-ui.md#q-api-432--the-list-by-content-one-entry-per-manifest-on-the-walk-of-the-order-of-the-versions-with-a-lead-check-per-batch-and-a-scan-budget) | The list by content: one entry per manifest, on the walk of the order of the versions, with a lead check per batch and a scan budget | Decided by the development agent | (a) `group=content` on the version list: the walk of the order of the versions in batches of 64; after each batch one statement per holder asks which of the batch's (version, digest) pairs a visible version earlier in the order names (`PackageViewImageSeen`, an index probe per candidate on the indexes by document); the others lead an entry; the page is cut after a version's last entry; one request reads at most 1,024 versions, so a page may be short with a cursor | [ADR-280](#adr-280--a-version-that-names-content-stores-its-digest-and-a-list-of-versions-groups-by-it) |
+| [Q-API-433](spec/api-and-ui.md#q-api-433--a-format-says-which-of-its-versions-is-a-pre-release-where-it-says-its-order) | A format says which of its versions is a pre-release where it says its order | Decided by the development agent on 2026-11-25 | (a) `ViewAdapter.Prerelease(version) bool` beside `Compare` and `SortKey`; the exposure adapter loses `Prerelease`, and `Register` composes the catalog's `Versioning` of the exposure adapter's ranges and the view adapter's answer, a string the view adapter does not rank being no version; a format whose rules narrow versions needs a view adapter; contract version 13 | [ADR-282](#adr-282--a-format-says-which-of-its-versions-is-a-pre-release-in-its-view-adapter) |
+| [Q-API-434](spec/api-and-ui.md#q-api-434--a-format-whose-ecosystem-has-no-pre-release-calls-no-version-one) | A format whose ecosystem has no pre-release calls no version one | Decided by the development agent on 2026-11-25 | (a) Both answer false for every version; their kit fixtures say why (`NoPrereleases`) | — |
+| [Q-API-435](spec/api-and-ui.md#q-api-435--a-remotes-tag-entries-carry-whether-the-tag-is-a-pre-release-and-the-latest-tag-is-read-by-two-indexes) | A remote's tag entries carry whether the tag is a pre-release, and the latest tag is read by two indexes | Decided by the development agent on 2026-11-25 | (a) `oci_tag_prerelease(tag)`, the format's rule in SQL, a stored generated column `tag_prerelease` beside `tag_sort_key`, two partial indexes of the releases and the pre-releases of a name's tags, and `PackageViewLatest` reads the first entry of each; migration 00126 clears the key and the flag of the stored rows whose answer changes, and the background migration `version_sort_key` fills them again | [ADR-282](#adr-282--a-format-says-which-of-its-versions-is-a-pre-release-in-its-view-adapter) |
 
 </details>
 
@@ -9346,7 +9377,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-254](spec/architecture.md#q-arch-254--the-written-contract-equals-the-code-and-a-capability-is-not-found-by-a-type-assertion) | The written contract equals the code, and a capability is not found by a type assertion | Decided by the development agent | (a) A test parses the Go blocks of R-ARCH-008/009 and compares them with the package; an archtest rule bans the assertion; the two optional interfaces become methods of `RemoteAdapter` with defaults in `RemoteBase` | — |
 | [Q-ARCH-255](spec/architecture.md#q-arch-255--shared-code-says-tags-not-dist-tags) | Shared code says tags, not dist-tags | Decided by the development agent | (a) Rename the Go identifiers to `Tags`; leave the JSON name `distTags`, the database column `dist_tags` and the generated types | — |
 | [Q-ARCH-256](spec/architecture.md#q-arch-256--the-dormant-methods-leave-the-frozen-contract-and-the-contract-grows-by-optional-interfaces) | The dormant methods leave the frozen contract, and the contract grows by optional interfaces | Decided by the development agent | (a) Take them out; `OnItemsRestored` becomes the optional `ItemsRestorer` that `CapabilitiesOf` finds; R-ARCH-025 gets the additive-evolution rule | [ADR-089](#adr-089--derived-metadata-is-rendered-per-request-and-a-publish-never-waits-for-an-index), [ADR-136](#adr-136--the-format-contract-freezes-at-version-1-as-the-smaller-contract-and-grows-by-optional-interfaces), [ADR-141](#adr-141--the-format-contract-is-frozen-at-version-1) |
-| [Q-ARCH-257](spec/architecture.md#q-arch-257--a-minimal-contract-the-npm-concepts-leave-the-shared-types) | A minimal contract: the npm concepts leave the shared types | Decided by the development agent | (a) Move what is npm's into npm, drop what the core does not call, derive what exists twice | [ADR-136](#adr-136--the-format-contract-freezes-at-version-1-as-the-smaller-contract-and-grows-by-optional-interfaces) |
+| [Q-ARCH-257](spec/architecture.md#q-arch-257--a-minimal-contract-the-npm-concepts-leave-the-shared-types) | A minimal contract: the npm concepts leave the shared types | Decided by the development agent | (a) Move what is npm's into npm, drop what the core does not call, derive what exists twice | [ADR-136](#adr-136--the-format-contract-freezes-at-version-1-as-the-smaller-contract-and-grows-by-optional-interfaces), [ADR-282](#adr-282--a-format-says-which-of-its-versions-is-a-pre-release-in-its-view-adapter) |
 | [Q-ARCH-258](spec/architecture.md#q-arch-258--a-volatile-route-returns-package-derived-content-under-the-headers-of-metadata) | A `Volatile` route returns package-derived content under the headers of `Metadata` | Decided by the development agent | (a) The core wraps a `Volatile` route like a `Metadata` route: the headers of R-ARCH-007 without `Content-Disposition`, whatever the handler does | [ADR-137](#adr-137--every-route-that-returns-package-derived-bytes-carries-the-content-headers) |
 | [Q-ARCH-259](spec/architecture.md#q-arch-259--the-package-writer-signals-a-raised-package-and-notify-is-limited-to-declared-areas) | The package writer signals a raised package, and `Notify` is limited to declared areas | Decided by the development agent | (a) The package writer attaches the signal once per package it raised; `Notify` accepts the areas of `Descriptor.NotifyAreas` only, signal areas of `catalog.FormatAreas`; the name and the payload function live in the leaf `catalog` | [ADR-136](#adr-136--the-format-contract-freezes-at-version-1-as-the-smaller-contract-and-grows-by-optional-interfaces) |
 | [Q-ARCH-260](spec/architecture.md#q-arch-260--a-format-names-only-its-own-repository-the-requests-scope-and-a-writer-bound-to-its-event) | A format names only its own repository: the request's scope, and a writer bound to its event | Decided by the development agent | (a), and (c) is the "e rest": it stays out of version 1 and is a version 2 change, to be taken by an ADR when the narrowed view exists (ADR-136). | [ADR-136](#adr-136--the-format-contract-freezes-at-version-1-as-the-smaller-contract-and-grows-by-optional-interfaces), [ADR-141](#adr-141--the-format-contract-is-frozen-at-version-1) |
@@ -11228,10 +11259,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OCI
 
-121 questions on [spec/formats/oci.md](spec/formats/oci.md).
+122 questions on [spec/formats/oci.md](spec/formats/oci.md).
 
 <details>
-<summary>Q-OCI: 121 questions</summary>
+<summary>Q-OCI: 122 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11356,6 +11387,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OCI-267](spec/formats/oci.md#q-oci-267--a-remotes-tag-entries-store-their-name-and-tag-and-a-page-of-its-tags-is-a-keyset-query-on-them) | A remote's tag entries store their name and tag, and a page of its tags is a keyset query on them | Decided by the development agent | (a) The entry stores `tag_name` and `tag` as columns generated from its path, with the indexes `(repo_id, tag_name, fetched_at, tag)` and `(repo_id, tag_name, tag)`; the view reads them; a page of a name's tags is a keyset statement on the entries with the view's rules as checks per entry; a page's tags are read by the entry's primary key, the negated id | — |
 | [Q-OCI-268](spec/formats/oci.md#q-oci-268--an-attachment-tag-is-listed-in-no-remote-and-offered-by-no-upstream-catalogue) | An attachment tag is listed in no remote and offered by no upstream catalogue | Decided by the development agent | (a) The listing rules leave out a tag of the attachment grammar: the view `oci_remote_tags` and every statement that restates its rules per entry; the catalogue drops it from every source | — |
 | [Q-OCI-269](spec/formats/oci.md#q-oci-269--a-tag-that-is-no-version-is-no-version-of-the-format-and-the-lists-order-such-tags-by-time) | A tag that is no version is no version of the format, and the lists order such tags by time | Decided by the development agent | (a) A tag that is no version is `versionkey.NotVersion`, like a string that is no tag; the lists order the not-ranked versions of every format below the ranked ones, newest first by time | — |
+| [Q-OCI-270](spec/formats/oci.md#q-oci-270--an-image-tag-with-a-pre-release-suffix-is-a-pre-release-on-the-screens-and-is-not-the-latest-while-a-release-is) | An image tag with a pre-release suffix is a pre-release on the screens, and is not the latest while a release is | Decided by the development agent on 2026-11-25 | (a) A tag the tag order ranks as a version whose suffix starts with `alpha`, `beta`, `rc`, `pre` or `dev` (any case) and continues with digits and dots only is a pre-release, the view adapter's `Prerelease`, the same answer as the mirror's `tagorder.Prerelease` | — |
 
 </details>
 

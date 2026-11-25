@@ -187,6 +187,8 @@ func conformance(t testing.TB) formattest.Fixture {
 		Changes: conformanceChanges(),
 		View: &formattest.ViewFixture{
 			Versions: versions, Package: "hello",
+			// The dpkg order has no pre-release and APT installs the highest version its pinning allows (api-and-ui.md Q-API-434).
+			NoPrereleases: "Debian has no notion of a pre-release version",
 			Seed: func(h *formattest.Host) error {
 				for _, v := range versions {
 					if err := upload(v, "stable")(h); err != nil {

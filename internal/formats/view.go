@@ -14,9 +14,10 @@ type DataPorts interface {
 // ViewAdapter is a format's part of the package screens (R-API-029): what the
 // generic package and version rows do not hold - the description, the keywords,
 // the licenses, the format-specific metadata and the README - and the format's
-// notion of version order. Whether a version is a pre-release is not asked here: the
-// screens take it from the format's exposure adapter ([catalog.Versioning]), which
-// is the one definition (Q-ARCH-257). The core answers everything the generic rows carry
+// notion of version order, which includes which of its versions is a pre-release
+// (api-and-ui.md Q-API-433): the one place a format says it. The screens, the stored
+// rows and the decision point of the exposure rules ([catalog.Versioning], composed by
+// [CatalogEntry]) all ask it here. The core answers everything the generic rows carry
 // (names, versions, repositories, times, sizes, downloads, files) and asks the
 // adapter for the rest; the adapter reads its own side tables through its data
 // port and runs no SQL (R-ARCH-008).
@@ -37,6 +38,13 @@ type ViewAdapter interface {
 	// the reads give such a row this key meanwhile (Q-API-430). A change of the encoding is therefore a migration step that sets the
 	// format's stored keys to NULL; the next worker that starts queues the fill again.
 	SortKey(version string) []byte
+	// Prerelease reports whether a version is a pre-release of the format (R-API-029, Q-API-433): a version the format ranks (SortKey of
+	// the class [versionkey.Version]) that its ecosystem's clients pass over for a release unless asked for it. It is false for a string
+	// that is no version and for every version of a format whose ecosystem has no such notion (Debian, the ClamAV definitions). The host
+	// stores it with every version row beside the sort key, the latest version of a package is its highest release before its highest
+	// pre-release, and an exposure rule without pre-releases hides a version it answers true for. A change of the answer for a stored
+	// version is a migration step that sets the format's stored keys to NULL, as for SortKey.
+	Prerelease(version string) bool
 	// Describe reads, for versions the caller may read, what the screens show of
 	// each. A version the format has no data for is absent from the answer. visible
 	// says which versions of the same package the caller may read, so that data

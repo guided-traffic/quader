@@ -9,8 +9,8 @@ import (
 )
 
 // NuGet on an endpoint with exposure rules (R-NUGET-034, R-EP-018). The adapter is the
-// version syntax the decision point compiles rules with (catalog.Versioning: ValidateRange,
-// Prerelease, InRange) and the dimensions the rules may narrow: packages and versions.
+// version syntax the decision point compiles rules with (ValidateRange, InRange; which version
+// is a pre-release is the view adapter's, Q-API-433) and the dimensions the rules may narrow: packages and versions.
 // NuGet has no tags. formats.Register puts both into the catalog, and authz reads them there.
 //
 // The filter that removes what an endpoint does not expose is a predicate over the rows of a
@@ -44,16 +44,6 @@ func (*exposure) ValidateRange(expr string) error {
 		return fmt.Errorf("%q is not a NuGet version range: an interval like [1.0,2.0) or a minimum version, without floating versions, at most %d bytes", expr, version.MaxRangeLength)
 	}
 	return nil
-}
-
-// Prerelease reports whether a version has a pre-release label. ok is false for a text that
-// is no version, which a rule without prereleases therefore never exposes.
-func (*exposure) Prerelease(v string) (pre, ok bool) {
-	p, err := version.Parse(v)
-	if err != nil {
-		return false, false
-	}
-	return p.IsPrerelease(), true
 }
 
 // InRange reports whether a version lies in a validated range. A range that does not parse

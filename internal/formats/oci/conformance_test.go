@@ -143,12 +143,13 @@ func conformance() formattest.Fixture {
 			routeUploadPut: uploadNoRow, routeUploadCancel: uploadNoRow,
 		},
 		View: &formattest.ViewFixture{
-			Versions: []string{"1.0", "2.0", "3.0"}, Package: "app",
+			// A variant (1.0-alpine) is no pre-release, a tag whose suffix is a pre-release marker is (Q-OCI-270).
+			Versions: []string{"1.0", "1.0-alpine", "2.0-rc.1", "2.0", "3.0"}, Package: "app", Prereleases: []string{"2.0-rc.1"},
 			Seed: func(h *formattest.Host) error {
 				bind(h)
 				h.PutItem(BlobPath("app", sha(seedConfig)), "application/octet-stream", seedConfig)
 				h.PutItem(BlobPath("app", sha(seedLayer)), "application/octet-stream", seedLayer)
-				for _, tag := range []string{"1.0", "2.0", "3.0"} {
+				for _, tag := range []string{"1.0", "1.0-alpine", "2.0-rc.1", "2.0", "3.0"} {
 					if err := pushManifest(h, "app/manifests/"+tag, seedManifest); err != nil {
 						return err
 					}

@@ -35,8 +35,7 @@ func (r exampleRule) Version(n, v string) bool {
 	if !r.Package(n) || v == "2.0.1" || !r.x.InRange(v, ">=2.0.0") {
 		return false
 	}
-	pre, ok := r.x.Prerelease(v)
-	return ok && !pre
+	return !viewAdapter{}.Prerelease(v)
 }
 
 func (r exampleRule) Tag(n, tag, v string) bool {
@@ -66,13 +65,15 @@ func TestR_NPM_048_RangesOfRules(t *testing.T) {
 		if x.InRange("2.0.0", ">=2.0.0 <") {
 			t.Fatal("a range that does not parse admits a version")
 		}
-		if pre, ok := x.Prerelease("2.1.0-rc.1"); !pre || !ok {
+		// Which version is a pre-release is the view adapter's; the catalog's versioning asks it (Q-API-433).
+		v := formats.CatalogEntry(New()).Exposure.Versioning
+		if pre, ok := v.Prerelease("2.1.0-rc.1"); !pre || !ok {
 			t.Fatal("2.1.0-rc.1 is a pre-release")
 		}
-		if pre, ok := x.Prerelease("2.1.0"); pre || !ok {
+		if pre, ok := v.Prerelease("2.1.0"); pre || !ok {
 			t.Fatal("2.1.0 is a release")
 		}
-		if _, ok := x.Prerelease("latest"); ok {
+		if _, ok := v.Prerelease("latest"); ok {
 			t.Fatal("a tag is no version")
 		}
 	})

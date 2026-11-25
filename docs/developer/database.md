@@ -838,6 +838,21 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
+## A format says which version is a pre-release (00126)
+
+[00126_version_prerelease](../../internal/meta/postgres/migrations/00126_version_prerelease.sql) carries the pre-release answer of the
+formats' view adapters ([api-and-ui.md](../spec/api-and-ui.md) Q-API-433 to Q-API-435, ADR-282) into the database. It adds
+`oci_tag_prerelease(tag)`, the rule of `tagorder.Prerelease` for a tag that is a version; the stored generated column
+`remote_cache_entries.tag_prerelease` beside `tag_sort_key` (NULL for an entry that is no tag; the column writes the table once); the
+partial indexes `remote_cache_entries_tag_latest_release` and `remote_cache_entries_tag_latest_prerelease (repo_id, tag_name,
+tag_sort_key)` that `PackageViewLatest` walks for a remote image's highest release and highest pre-release; the views `oci_remote_tags` and
+`package_version_listing` with the remote tag's flag (a new last column of the former); and it sets `sort_key` and `prerelease` to NULL on
+the version rows whose answer changes (an OCI tag the rule calls a pre-release, an Ansible version with a pre-release part, both stored as
+none), which the background migration `version_sort_key` fills again at the next start (the reads give such a row its format's key
+meanwhile, Q-API-430). `TestR_HA_020_ThePrereleaseStepRefillsTheRowsWhoseAnswerChanged` (area `postgres`) migrates a database of the
+release before it; the SQL-against-Go table of `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit` (area `ociremote`) holds the
+function equal to the format's answer.
+
 ## A version that names content stores its digest (00124)
 
 [00124_version_document](../../internal/meta/postgres/migrations/00124_version_document.sql) adds `package_versions.document_sha256` (32

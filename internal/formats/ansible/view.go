@@ -58,6 +58,14 @@ func (viewAdapter) SortKey(v string) []byte {
 	return versionkey.Of(version.SortKey(sv), true, v)
 }
 
+// Prerelease is the semantic version's pre-release (Q-ANS-92): a version with a part after "-" before any build metadata
+// (`1.0.0-beta.1`, `2.0.0-rc.1+build.5`), which ansible-galaxy installs only when asked for it (`--pre` or the exact version) and the
+// mirror's selection leaves out unless told otherwise. A string that is no version is none.
+func (viewAdapter) Prerelease(v string) bool {
+	sv, err := version.Parse(v)
+	return err == nil && len(sv.Pre) > 0
+}
+
 // Stored lists what a local repository serves of the collection, newest first by precedence. A remote repository's cache is listed by
 // the generic rows alone, and a virtual repository stores nothing of its own.
 func (viewAdapter) Stored(ctx context.Context, ports formats.DataPorts, q formats.StoredQuery) (formats.Stored, error) {

@@ -17,6 +17,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/formattest"
 	"github.com/guided-traffic/quader/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/formats/oci/tagorder"
 )
 
 // indexOf builds an OCI image index over manifests; an entry is "<digest>" or "<digest> <os>/<arch>[/<variant>]".
@@ -851,5 +852,24 @@ func TestTheViewOrdersTagsByTheTagOrder(t *testing.T) {
 	v := New().View()
 	if v.Compare("1.10", "1.9") <= 0 || v.Compare("latest", "1.0") >= 0 || v.Compare("1.0", "1.0-rc1") <= 0 || v.Compare("a", "a") != 0 {
 		t.Fatal("the view does not use the tag order of the format")
+	}
+}
+
+// TestR_API_029_AnImageTagIsAPrereleaseByTheTagOrder: the view adapter calls a tag a pre-release exactly when the tag order ranks it a
+// version with a pre-release suffix, the answer the mirror's tag selection excludes by default (Q-OCI-270, Q-API-433); a variant and a
+// tag that is no version are none.
+func TestR_API_029_AnImageTagIsAPrereleaseByTheTagOrder(t *testing.T) {
+	v := New().View()
+	for tag, want := range map[string]bool{
+		"2.0.0-rc.1": true, "v3.1-beta2": true, "1.0-RC.2": true, "1.0-dev12": true, "1.0-alpha": true, "1.0-pre.1": true,
+		"2.0.0": false, "1.25-alpine": false, "1.0-preview": false, "1.0-rc1-x": false, "latest": false, "main": false,
+		"sha-5ccfd1a": false, "-rc1": false, "1.0-rc1 x": false,
+	} {
+		if got := v.Prerelease(tag); got != want {
+			t.Errorf("Prerelease(%q) = %v, want %v", tag, got, want)
+		}
+		if ValidTag(tag) && v.Prerelease(tag) != tagorder.Prerelease(tag) {
+			t.Errorf("the screens and the mirror's tag selection disagree on %q", tag)
+		}
 	}
 }

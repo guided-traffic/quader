@@ -19,7 +19,7 @@ import (
 
 // npm on an endpoint with exposure rules (R-NPM-048, R-EP-018). The adapter has two
 // halves. The first is the version syntax the decision point compiles rules with
-// (catalog.Versioning: ValidateRange, Prerelease, InRange) and the dimensions:
+// (ValidateRange, InRange; which version is a pre-release is the view adapter's, Q-API-433) and the dimensions:
 // formats.Register puts them into the catalog, and authz reads them there. The
 // second is the filter: a document lists only what the endpoint exposes of the
 // addressed repository, after the merge of a virtual repository and the rewrite of
@@ -70,17 +70,6 @@ func (*exposure) ValidateRange(expr string) error {
 		return fmt.Errorf("%q is not a version range in node-semver's strict syntax of at most %d bytes", expr, semver.MaxRangeLength)
 	}
 	return nil
-}
-
-// Prerelease reports whether a version has a pre-release part. A version is read as
-// node-semver reads the versions of documents (Q-NPM-15); ok is false for a text
-// that is no version, which a rule without prereleases therefore never exposes.
-func (*exposure) Prerelease(version string) (pre, ok bool) {
-	v, err := semver.ParseNode(version, false)
-	if err != nil {
-		return false, false
-	}
-	return v.IsPrerelease(), true
 }
 
 // InRange reports whether a version lies in a validated range, evaluated with

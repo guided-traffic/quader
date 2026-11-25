@@ -35,7 +35,7 @@ func NewViewAdapters(fs []formats.Format, ports formats.DataPorts) *ViewAdapters
 	for _, f := range fs {
 		if a := f.View(); a != nil {
 			id := string(f.Descriptor().ID)
-			b := viewBridge{a: a, ports: ports, pre: prereleaseOf(f), fetch: f.Descriptor().VersionFetch}
+			b := viewBridge{a: a, ports: ports, fetch: f.Descriptor().VersionFetch}
 			v.bridges[id] = b
 			v.by[id] = b
 			if z := formats.CapabilitiesOf(f).ViewSizer; z != nil {
@@ -80,7 +80,6 @@ func (v *ViewAdapters) Stored(ctx context.Context, repo authz.StoredRepo, pkg st
 type viewBridge struct {
 	a     formats.ViewAdapter
 	ports formats.DataPorts
-	pre   func(string) bool
 	fetch formats.VersionFetch
 }
 
@@ -93,20 +92,6 @@ func (b viewBridge) Fetch() view.FetchRule {
 		return view.FetchDocument
 	}
 	return view.FetchLeadFile
-}
-
-// prereleaseOf derives "is a pre-release" for the screens from the format's exposure
-// adapter, the one place a format says it; a format that is not exposable has none, and
-// none of its versions is a pre-release.
-func prereleaseOf(f formats.Format) func(string) bool {
-	x := f.Exposure()
-	if x == nil {
-		return func(string) bool { return false }
-	}
-	return func(v string) bool {
-		pre, ok := x.Prerelease(v)
-		return ok && pre
-	}
 }
 
 // sizedBridge is the bridge of a format that reports the size of its versions (formats.ViewSizer): only such a format has a
@@ -139,7 +124,7 @@ func (b sizedBridge) Sizes(ctx context.Context, vs []view.Version) (map[int64]vi
 
 func (b viewBridge) Compare(x, y string) int  { return b.a.Compare(x, y) }
 func (b viewBridge) SortKey(v string) []byte  { return b.a.SortKey(v) }
-func (b viewBridge) Prerelease(v string) bool { return b.pre(v) }
+func (b viewBridge) Prerelease(v string) bool { return b.a.Prerelease(v) }
 
 func (b viewBridge) Describe(ctx context.Context, vs []view.Version, want view.Fields, visible func(string) bool) (map[int64]view.Data, error) {
 	in := make([]formats.ViewVersion, len(vs))

@@ -12,19 +12,22 @@ import (
 // TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit: the tags of an image in a remote OCI repository, which are cache entries and
 // no version rows (R-OCI-036), are listed a page at a time by a keyset query on the entry's stored name and tag (Q-OCI-267, H-829) and,
 // in the order of the tags, on the entry's sort key (Q-API-429): each page's statement reads no tag entry past its limit, on the first
-// page, on one deep in the list and oldest or lowest first, and the image's latest tag reads one entry. The sort key PostgreSQL derives
-// from a tag (oci_tag_sort_key, migration 00116) is the format's, byte for byte, over a table of tags. 2,000 tiny tag entries of one
-// pulled image are written by SQL, listed as a background download lists them; about 2 s on the stack.
+// page, on one deep in the list and oldest or lowest first, and the image's latest tag reads one entry of each kind: its highest release
+// before a higher pre-release (Q-API-433, Q-OCI-270). The sort key PostgreSQL derives from a tag (oci_tag_sort_key, migration 00116) and
+// whether it calls the tag a pre-release (oci_tag_prerelease, migration 00126) are the format's, byte for byte and answer for answer,
+// over one table of tags. 2,201 tiny tag entries of one pulled image are written by SQL, listed as a background download lists them;
+// about 2 s on the stack.
 func TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit(t *testing.T) {
 	e := newEnv(t, options{})
 	rep := e.start(1)[0]
 	e.pull(rep, rAnon, "library/alpine", "3.19")
 	e.st.Exec(`INSERT INTO remote_cache_entries (repo_id, path, variant, kind, blob_sha256, upstream_url, fetched_at, validated_at, expires_at,
 	                                              last_used_at, background_sha256)
-		SELECT c.repo_id, 'library/alpine/_tags/' || CASE WHEN g <= 2000 THEN 'm' || lpad(g::text, 4, '0') ELSE '0.' || (g - 2000)::text END,
+		SELECT c.repo_id, 'library/alpine/_tags/' || CASE WHEN g <= 2000 THEN 'm' || lpad(g::text, 4, '0')
+		                                                  WHEN g <= 2200 THEN '0.' || (g - 2000)::text ELSE '3.20-rc.1' END,
 		       '', 'metadata', c.blob_sha256, c.upstream_url,
 		       c.fetched_at + make_interval(secs => g), c.validated_at, c.expires_at, c.last_used_at, c.blob_sha256
-		  FROM remote_cache_entries c, generate_series(1, 2200) g
+		  FROM remote_cache_entries c, generate_series(1, 2201) g
 		 WHERE c.path = 'library/alpine/_tags/3.19' AND c.kind = 'metadata'`)
 	e.st.Exec("ANALYZE remote_cache_entries")
 	repo := e.st.Text(`SELECT id::text FROM repositories WHERE key = $1`, rAnon)
@@ -86,22 +89,30 @@ func TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit(t *testing.T) {
 		"withheld": "'{}'", "whole": "'{" + repo + "}'", "rows": "'{}'", "packages": "ARRAY['oci' || chr(31) || 'library/alpine']",
 		"scope": "'{" + repo + "}'", "has_repos": "false", "repos": "'{}'",
 	})
-	// The candidates of the latest tag: the highest version and the newest tag that is no version, one entry each.
-	if got := e.st.Text("SELECT string_agg(version, ',' ORDER BY version) FROM (" + latest + ") x"); got != "3.19,m2000" {
-		t.Errorf("the candidates of the latest tag: %q, want 3.19 and m2000", got)
+	// The candidates of the latest tag: the highest release, the highest pre-release and the newest tag that is no version, one entry
+	// each; the service picks the release (latestOf).
+	if got := e.st.Text("SELECT string_agg(version, ',' ORDER BY version) FROM (" + latest + ") x"); got != "3.19,3.20-rc.1,m2000" {
+		t.Errorf("the candidates of the latest tag: %q, want 3.19, 3.20-rc.1 and m2000", got)
 	}
-	if read := e.st.RowsRead(latest)["remote_cache_entries"]; read > 2 {
-		t.Errorf("the latest tag read %v tag entries for two", read)
+	if read := e.st.RowsRead(latest)["remote_cache_entries"]; read > 3 {
+		t.Errorf("the latest tag read %v tag entries for three", read)
 	}
 
 	for _, tag := range []string{
 		"3.19", "latest", "v1", "1.0", "1.0.0", "01.2", "1.0-rc1", "1.0-RC.2", "1.0-alpine", "1.0-rc1-x", "1-a",
 		"99999999999999999999999999", "_x", "Latest", "1.2.3.4.5", "v2.9.0-beta.1", "1.0-dev12", "1.0-preview", "main", "sha-5ccfd1a", "edge",
+		"2.0.0-rc.1", "1.0-ALPHA", "1.0-beta.", "1.0-Pre1.2", "1.0-pre-1", "v-rc1", "-rc1", "1.0-rc1 x",
 	} {
-		want, _ := e.st.VersionKey("oci", tag)
+		want, pre := e.st.VersionKey("oci", tag)
 		if got := e.st.Text("SELECT encode(oci_tag_sort_key($1), 'hex')", tag); got != fmt.Sprintf("%x", want) {
 			t.Errorf("the sort key of %q: PostgreSQL %s, the format %x", tag, got, want)
 		}
+		if got := e.st.Text("SELECT oci_tag_prerelease($1)::text", tag); got != fmt.Sprint(pre) {
+			t.Errorf("whether %q is a pre-release: PostgreSQL %s, the format %v", tag, got, pre)
+		}
+	}
+	if n := e.st.Text(`SELECT count(*)::text FROM remote_cache_entries WHERE tag IS NOT NULL AND tag_prerelease IS DISTINCT FROM oci_tag_prerelease(tag)`); n != "0" {
+		t.Errorf("%s tag entries do not store whether their tag is a pre-release", n)
 	}
 	if n := e.st.Text(`SELECT count(*)::text FROM remote_cache_entries WHERE tag IS NOT NULL AND tag_sort_key IS DISTINCT FROM oci_tag_sort_key(tag)`); n != "0" {
 		t.Errorf("%s tag entries do not store the key of their tag", n)

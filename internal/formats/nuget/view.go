@@ -80,6 +80,13 @@ func (viewAdapter) SortKey(v string) []byte {
 	return versionkey.Of(nv.SortKey(), true, v)
 }
 
+// Prerelease reports whether a version has a pre-release label (`2.0.0-beta.1`, R-NUGET-003), the versions NuGet clients show and
+// install only when asked for them and an exposure rule without pre-releases hides. A string that is no version is none.
+func (viewAdapter) Prerelease(v string) bool {
+	nv, err := version.Parse(v)
+	return err == nil && nv.IsPrerelease()
+}
+
 // Stored lists what the repository serves of the package (R-EP-016, Q-EP-61): every version
 // it holds, listed or not, in the URL form. A hosted repository lists them in arrival order,
 // newest first; a remote one lists the versions of its cache, newest published first. A

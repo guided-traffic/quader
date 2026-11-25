@@ -17,7 +17,7 @@ import (
 // until their classes join (the kit refuses a skip the format contradicts).
 func conformance(t testing.TB) formattest.Fixture {
 	const noTask = "a task id is random: the import task is read by the ansiblelocal integration test after a publish returned it"
-	versions := []string{"1.0.0", "1.1.0", "2.0.0"}
+	versions := []string{"1.0.0", "1.1.0", "2.0.0-beta.1", "2.0.0"}
 	seed := func(vs ...string) func(h *formattest.Host) error {
 		return func(h *formattest.Host) error {
 			for _, v := range vs {
@@ -101,7 +101,7 @@ func conformance(t testing.TB) formattest.Fixture {
 		},
 		NoRevision: map[string]string{},
 		View: &formattest.ViewFixture{
-			Versions: versions, Package: "acme.tools",
+			Versions: versions, Package: "acme.tools", Prereleases: []string{"2.0.0-beta.1"},
 			Seed: func(h *formattest.Host) error { return seed(versions...)(h) },
 		},
 	}

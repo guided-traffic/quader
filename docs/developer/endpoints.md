@@ -111,7 +111,7 @@ The effective TLS block of a further endpoint is `server.tls` with the endpoint'
 | [internal/authz/ceiling.go](../../internal/authz/ceiling.go) | `Ceiling` (evaluated on the request's index, for the endpoint of the subject), `ExposureFilter`, `Exposed`/`ExposedOn` |
 | [internal/authz/exposure.go](../../internal/authz/exposure.go) | The rule model, compilation into the index, matching, the explanation of the dry run, the fingerprint, `ExposureCeiling` (the modes, and the format facts `catalog.Exposure` and `catalog.Versioning` it reads from the catalog), `ExposureCeiling.View` and `ExposureView` (what a format filters with, R-EP-018; a package, its versions and its tags decided on the package document's path, Q-AUTHZ-251, and a version on its file's path as well, Q-EP-85) |
 | [internal/api/dispatch/dispatcher.go](../../internal/api/dispatch/dispatcher.go) | `endpointFacts`: the name, `Rules`, `CacheFill`, the exposure fingerprint and the view of a format request, from the listener and the request's index |
-| [internal/formats/npm/exposure.go](../../internal/formats/npm/exposure.go) | npm's exposure adapter (ranges, pre-releases, dimensions), the filter of rows and of documents, `viewOf`, the read-for-write refusal (R-NPM-048) |
+| [internal/formats/npm/exposure.go](../../internal/formats/npm/exposure.go) | npm's exposure adapter (ranges, dimensions), the filter of rows and of documents, `viewOf`, the read-for-write refusal (R-NPM-048) |
 | [internal/virtual/artifact.go](../../internal/virtual/artifact.go) | `Caller.asAddressed`: a member's failure as the addressed repository's on an endpoint with rules; the refused member counted through `Options.FillRefused` |
 | [internal/api/edge/subject.go](../../internal/api/edge/subject.go) | `SubjectFrom`, `SubjectOf`: the one conversion that builds an `authz.Subject`, with the listener's endpoint; `ActorFrom` |
 | [internal/authz/exposure_service.go](../../internal/authz/exposure_service.go) | `ExposureService`: validation, create in the caller's transaction, replace, delete, get, list, counts, `Check` (a check that names a package and no versions asks the late-bound `StoredPackages`, set by `wirePackagesAPI`, outside its transaction; Q-EP-61); the `endpoint.exposure.*` events with their journal entries |
@@ -404,8 +404,9 @@ addressed repository into `Coordinate.Addressed` when deciding a member of a vir
 `Coordinate.Version`; answer a missing item with `authz.NotFound()`; list with `Readable`.
 
 **A format that can be served under exposure rules.**
-1. Return an `ExposureAdapter` from `Exposure()` ([exposure.go](../../internal/formats/exposure.go)): `Dimensions`, the
-   `catalog.Versioning` of its ranges and pre-releases; the filter of a merged or rewritten document is the format's own function
+1. Return an `ExposureAdapter` from `Exposure()` ([exposure.go](../../internal/formats/exposure.go)): `Dimensions`, `ValidateRange`
+   and `InRange`; which version is a pre-release is the view adapter's `Prerelease`, so a format whose rules narrow versions has a view
+   adapter, and `CatalogEntry` composes the `catalog.Versioning` of both (Q-API-433); the filter of a merged or rewritten document is the format's own function
    over `rq.Endpoint.Exposure`, not a method of the adapter (Q-ARCH-257); `formats.Register` puts the facts into the
    catalog, which `NewExposureCeiling` and `ExposureServiceOptions.Ceiling` read (`exposureCeiling` in
    [wire_exposure.go](../../internal/app/wire_exposure.go)). The adapter is the format's own value; a memo it keeps is a field

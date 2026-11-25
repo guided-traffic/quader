@@ -83,6 +83,5 @@ type pathsOnly struct{}
 var errNoVersions = errors.New("the generic format has no versions")
 
 func (pathsOnly) ValidateRange(string) error             { return errNoVersions }
-func (pathsOnly) Prerelease(string) (bool, bool)         { return false, false }
 func (pathsOnly) InRange(string, string) bool            { return false }
 func (pathsOnly) Dimensions() formats.ExposureDimensions { return formats.ExposureDimensions{} }

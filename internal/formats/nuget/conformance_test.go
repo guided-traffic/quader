@@ -245,9 +245,10 @@ func conformance(f *Format) formattest.Fixture {
 		},
 		// The arrival order is not the version order, so a Stored that sorts by version fails.
 		View: &formattest.ViewFixture{
-			Versions: []string{"1.0.0", "1.10.0", "1.2.0", "2.0.0-beta.1", "2.0.0"},
-			Package:  "view.sample",
-			Seed:     seedVersions("view.sample", "1.0.0", "1.10.0", "1.2.0", "2.0.0-beta.1", "2.0.0"),
+			Versions:    []string{"1.0.0", "1.10.0", "1.2.0", "2.0.0-beta.1", "2.0.0"},
+			Package:     "view.sample",
+			Prereleases: []string{"2.0.0-beta.1"},
+			Seed:        seedVersions("view.sample", "1.0.0", "1.10.0", "1.2.0", "2.0.0-beta.1", "2.0.0"),
 		},
 		OptionNames: []string{"--password", "--store-password-in-clear-text", "-Password", "ClearTextPassword", "QUADER_TOKEN"},
 		Remote:      remoteFixture(),

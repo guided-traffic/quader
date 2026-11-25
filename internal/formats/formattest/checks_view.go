@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 )
 
 // junkVersion is a string that is no version of any format the kit knows; the contract of
@@ -34,6 +35,7 @@ func (r *run) view() {
 	}
 	r.viewCompare(a, v.Versions)
 	r.viewSortKey(a, v.Versions)
+	r.viewPrerelease(a, v)
 	r.viewEmpty(a)
 	if v.Seed == nil {
 		r.failf("the View fixture has no Seed: Stored cannot be checked over a package")
@@ -109,6 +111,37 @@ func (r *run) viewSortKey(a formats.ViewAdapter, vs []string) {
 				r.failf("SortKey(%q) and SortKey(%q) do not order as Compare = %d: bytes.Compare of the keys has the sign of Compare", x, y, c)
 			}
 		}
+	}
+}
+
+// viewPrerelease checks that the format says which of its versions is a pre-release beside its order (Q-API-433): the fixture names
+// the sample's pre-releases or why the format has none, Prerelease answers exactly that over the sample, a pre-release is a version the
+// format ranks, and a string that is no version is none.
+func (r *run) viewPrerelease(a formats.ViewAdapter, v *ViewFixture) {
+	switch {
+	case len(v.Prereleases) == 0 && v.NoPrereleases == "":
+		r.failf("the View fixture names neither the sample's pre-releases (Prereleases) nor why the format has none (NoPrereleases)")
+		return
+	case len(v.Prereleases) > 0 && v.NoPrereleases != "":
+		r.failf("the View fixture names pre-releases and a reason the format has none")
+		return
+	}
+	for _, p := range v.Prereleases {
+		if !slices.Contains(v.Versions, p) {
+			r.failf("the pre-release %q is not one of the sample's versions", p)
+		}
+	}
+	for _, x := range v.Versions {
+		want := slices.Contains(v.Prereleases, x)
+		if got := a.Prerelease(x); got != want {
+			r.failf("Prerelease(%q) = %v, the fixture says %v", x, got, want)
+		}
+		if k := a.SortKey(x); want && (len(k) == 0 || k[0] != versionkey.Version) {
+			r.failf("the pre-release %q is no version the format ranks: a pre-release has a place in the order of the versions", x)
+		}
+	}
+	if a.Prerelease(junkVersion) {
+		r.failf("Prerelease(%q) = true: a string that is no version is no pre-release", junkVersion)
 	}
 }
 

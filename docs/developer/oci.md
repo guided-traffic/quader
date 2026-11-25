@@ -228,6 +228,10 @@ Fuzz targets: `FuzzR_OCI_020_Parse`, `FuzzR_ARCH_028_Inspect`, `FuzzR_OCI_031_Co
 withheld manifests, `Describe` the digest, media type, size and (for an index) the platform table, `Compare` is `tagorder.Compare` for the tags
 that are versions; a tag that is no version (`latest`, `sha-5ccfd1a`) is no version of the format (`isVersion`, its `SortKey` of the class
 `versionkey.NotVersion`), so the lists put it below the versions, newest first by push or fetch time (Q-OCI-269, api-and-ui.md Q-API-431).
+`Prerelease` is `tagorder.Prerelease` for a tag that is a version (`2.0.0-rc.1`; not `1.25-alpine`, not `latest`), the answer the mirror's
+tag selection uses too, so an image's latest tag is its highest release (Q-OCI-270); a remote's tag entries carry the same answer in the
+generated column `tag_prerelease` (`oci_tag_prerelease`, migration 00126), which the SQL-against-Go table of
+`TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit` holds equal.
 The format's fetch rule is the document, so its versions name a content: a local tag's version row stores its manifest's digest
 (`document_sha256`, ADR-280) and a remote tag's cache entry has it, and the version list's `group=content` lists one entry per manifest led
 by its first tag with the others as `aliases` (api-and-ui.md Q-API-432, [packages.md](packages.md#the-list-by-content-q-api-432)); the

@@ -1680,6 +1680,17 @@ remain as their owners define them.)
   format's (SemVer precedence for npm). `latestVersion` is the highest visible stable version, or the highest visible
   pre-release while no stable version is visible, or, while the format ranks none of the visible versions, the newest of them by its time
   (an image whose tags are `latest` and `sha-5ccfd1a` alone).
+- **A format says which of its versions is a pre-release where it says its order**, in its view adapter
+  ([Q-API-433](#q-api-433--a-format-says-which-of-its-versions-is-a-pre-release-where-it-says-its-order)): npm and NuGet a version with a
+  SemVer pre-release label, Ansible Galaxy a semantic version with a pre-release part (`1.0.0-beta.1`, [formats/ansible.md](formats/ansible.md)
+  Q-ANS-92), OCI a tag the tag order ranks as a version whose suffix is a pre-release marker (`2.0.0-rc.1`, `v3.1-beta2`, not `1.25-alpine`,
+  [formats/oci.md](formats/oci.md) Q-OCI-270); Debian and the ClamAV definitions have none
+  ([Q-API-434](#q-api-434--a-format-whose-ecosystem-has-no-pre-release-calls-no-version-one)). The answer is a version's `prerelease` in every
+  list and in the details, it is stored with every version row and derived by PostgreSQL for a remote's tags
+  ([Q-API-435](#q-api-435--a-remotes-tag-entries-carry-whether-the-tag-is-a-pre-release-and-the-latest-tag-is-read-by-two-indexes)), and an
+  exposure rule without pre-releases (R-EP-012) hides what it calls one. A pre-release keeps its place in the order of the versions, first
+  when it is the highest; it is only not `latestVersion` while a stable version is visible: an image whose tags are `1.16.6` and
+  `2.0.0-rc.1` lists `2.0.0-rc.1` first, marked a pre-release, and its latest version is `1.16.6`.
 - **Every list of versions is newest first by its format's order** unless the caller sorts otherwise (the owner, 2026-11-25:
   [Q-API-431](#q-api-431--every-list-of-versions-is-newest-first-by-its-formats-order-and-a-version-the-format-does-not-rank-comes-below-by-its-time)).
   The order of the versions has two parts: the versions the format ranks, in its precedence, and below them the strings it does not rank
@@ -25077,6 +25088,83 @@ spec:** R-API-010, R-API-029, R-UI-052, R-UI-110. Code: `Images`, `imageWalk`, `
 `versionListQuery` in [packages_api.go](../../internal/api/v1/packages_api.go). Tests: `TestR_API_029_TheListByContentGroupsAndCutsAtAVersion`
 (unit), `TestR_API_029_TheListByContentIsTheGroupingOfTheListByTag` (area `ociremote`, the oracle and the budget),
 `TestR_API_029_AMovedTagMovesBetweenImagesOfTheListByContent` (area `oci`), `TestR_API_029_VersionList` (area `packages`).
+
+### Q-API-433 · A format says which of its versions is a pre-release where it says its order
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+It carries out R-API-029's rule of `latestVersion` (the highest visible stable version) for every format, and revises
+[Q-ARCH-257](architecture.md#q-arch-257--a-minimal-contract-the-npm-concepts-leave-the-shared-types)'s "`ViewAdapter.Prerelease` leaves
+the contract, the exposure adapter's answer is the one definition"
+([ADR-282](../decisions.md#adr-282--a-format-says-which-of-its-versions-is-a-pre-release-in-its-view-adapter)).
+
+Context: the screens, the stored flag `package_versions.prerelease` (migration 00116) and the latest version read "is a pre-release" from
+the format's exposure adapter. Only clamav, generic, npm and NuGet have one: OCI and Ansible Galaxy, which order their versions and know
+their pre-releases (the tag order's markers, the mirror's `includePrereleases`), answered false for every version. Seen in the render seed:
+the image `portal/worker` showed Latest `2.0.0-rc.1`, no image row carried the badge Pre-release, and every stored flag of an image tag
+was false. Nothing made a format that orders its versions say it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `ViewAdapter.Prerelease(version) bool` beside `Compare` and `SortKey`; the exposure adapter loses `Prerelease`, and `Register` composes the catalog's `Versioning` of the exposure adapter's ranges and the view adapter's answer, a string the view adapter does not rank being no version; a format whose rules narrow versions needs a view adapter; contract version 13 (chosen) | One method, one answer, read by the screens, the writer of the rows and the decision point | A format with an order cannot compile without the answer; the two answers cannot disagree because there is one; kit check 11 holds the answer against the fixture's named pre-releases or the reason the format has none | A contract change: every format moves (six view adapters, two exposure adapters lose a method); npm's exposure now reads a version strictly as its order does (`v1.0.0` is no version there either) |
+| (b) Keep the exposure adapter as the definition and give OCI and Ansible one | No contract change | The definition stays where Q-ARCH-257 put it | Two formats gain an exposure surface (ranges, dimensions) nobody asked for, only to say a pre-release; a format with an order and no exposure still answers false without notice |
+| (c) Both adapters answer, a kit check holds them equal | Two definitions, a test between | — | The disagreement the finding was, kept possible and caught only when a fixture happens to name the version |
+
+**Choice:** (a). **Rationale:** whether a version is a pre-release is part of the format's notion of its versions, the same knowledge as
+its order, and the place that must exist for a format with screens is the view adapter. The exposure rules need the same answer, so they
+read it from there. The development agent would revisit it if a format needs exposure rules over versions without package screens.
+**Applied in the spec:** R-API-029, [architecture.md](architecture.md) R-ARCH-008 (the contract block),
+[formats/oci.md](formats/oci.md) R-OCI-031 and Q-OCI-270, [formats/ansible.md](formats/ansible.md) R-ANS-026 and Q-ANS-92,
+[formats/debian.md](formats/debian.md) R-DEB-002. Code: `ViewAdapter.Prerelease` in [view.go](../../internal/formats/view.go), `versioning`
+in [exposure.go](../../internal/formats/exposure.go), `CatalogEntry` and `Validate` in [formats.go](../../internal/formats/formats.go),
+`orderOf` in [hooks.go](../../internal/formathost/hooks.go), the view adapters of every format; kit check 11
+([checks_view.go](../../internal/formats/formattest/checks_view.go) `viewPrerelease`, `ViewFixture.Prereleases` and `NoPrereleases`).
+Tests: `TestR_API_029_TheRulesAskTheViewAdapterWhichVersionIsAPrerelease` (unit), `TestR_ARCH_010_Check11ViewAdapter` (the kit's own),
+`TestR_API_029_AnImageTagIsAPrereleaseByTheTagOrder`, `TestR_API_029_ACollectionVersionIsAPrereleaseByItsSemanticVersion`,
+`TestR_API_029_ADebianVersionIsNoPrerelease`, `TestR_API_029_NPMVersionOrderIsSemVerPrecedence` (units of the formats), kit check 11 of
+every format (`TestR_ARCH_010_Conformance`).
+
+### Q-API-434 · A format whose ecosystem has no pre-release calls no version one
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Q-API-433 makes every format with an order answer the question. Debian's versions have no pre-release that every archive uses
+alike ([formats/debian.md](formats/debian.md) R-DEB-002, Q-DEB-17): a `~` sorts a version below the one it precedes and marks an upstream
+pre-release (`1.0~rc1-1`) as often as a backport or a stable update (`1.0-1~bpo12+1`, `1.0-1~deb12u1`); APT installs the highest version
+its pinning allows, and what a repository keeps apart is a distribution (`experimental`), not a version. A ClamAV definitions database's
+version is the number of its build, and freshclam takes the newest.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Both answer false for every version; their kit fixtures say why (`NoPrereleases`) (chosen) | The latest version is the highest | What the clients install is what the screens call latest | A `~` pre-release that is the highest version is shown as the latest (H-1971) |
+| (b) Debian: a `~` in the upstream part marks a pre-release | A rule of thumb | Catches `1.0~rc1` | Calls a backport or a security update of a stable release a pre-release; no client acts on it; invented |
+
+**Choice:** (a). **Rationale:** a pre-release is what a format's clients pass over unless asked; where no client does, there is none to
+show. **Applied in the spec:** R-API-029, [formats/debian.md](formats/debian.md) R-DEB-002, [formats/clamav.md](formats/clamav.md) (its
+versions are build numbers). Code: `Prerelease` in [deb/view.go](../../internal/formats/deb/view.go) and
+[clamav/view.go](../../internal/formats/clamav/view.go). Tests: `TestR_API_029_ADebianVersionIsNoPrerelease` (unit), kit check 11 of both
+formats.
+
+### Q-API-435 · A remote's tag entries carry whether the tag is a pre-release, and the latest tag is read by two indexes
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a remote OCI repository's tags are cache entries, not version rows (R-OCI-036); PostgreSQL derives their sort key from the tag
+(`oci_tag_sort_key`, migrations 00116 and 00123), and `PackageViewLatest` took a remote image's highest tag as its candidate, which is
+`2.0.0-rc.1` when that is the highest. The version rows of the release before store the old answer (false) for every image tag and every
+Ansible collection version.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `oci_tag_prerelease(tag)`, the format's rule in SQL, a stored generated column `tag_prerelease` beside `tag_sort_key`, two partial indexes of the releases and the pre-releases of a name's tags, and `PackageViewLatest` reads the first entry of each; migration 00126 clears the key and the flag of the stored rows whose answer changes, and the background migration `version_sort_key` fills them again (chosen) | The remote's latest tag is two index probes, like a local package's | The latest of a remote image is right with one entry read per kind; the rows refill the way 00123 made them; a test holds the SQL equal to the Go code over one table of tags | The column writes the table once at the migration; the rule exists twice, in Go and in SQL |
+| (b) Read the highest tags in key order until one is no pre-release | No column | — | An image with many pre-releases above its last release reads them all on every package list |
+| (c) Compute the flag in the service for the candidates | No SQL rule | — | The highest tag is the only candidate; the release below it is never read |
+
+**Choice:** (a). **Rationale:** the remote's tags follow the rows' design (a key and a flag beside each, an index per kind) so that the
+latest version has one rule across classes. **Applied in the spec:** R-API-029, [formats/oci.md](formats/oci.md) Q-OCI-270. Code:
+[00126](../../internal/meta/postgres/migrations/00126_version_prerelease.sql), `PackageViewLatest` in
+[package_view.sql](../../internal/meta/postgres/queries/package_view.sql). Tests: the SQL-against-Go table and the latest tag's candidates of
+`TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit` (area `ociremote`), `TestR_HA_020_ThePrereleaseStepRefillsTheRowsWhoseAnswerChanged`
+(area `postgres`).
 
 ### Q-UI-1090 · A tab strip takes its tabs closer before it scrolls
 

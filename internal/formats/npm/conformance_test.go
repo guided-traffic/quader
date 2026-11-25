@@ -257,9 +257,10 @@ func conformance(t *testing.T) formattest.Fixture {
 		},
 		// The arrival order is not the SemVer order, so a Stored that sorts by version fails.
 		View: &formattest.ViewFixture{
-			Versions: []string{"1.0.0", "1.10.0", "1.2.0", "2.0.0-beta.1", "2.0.0"},
-			Package:  "view-sample",
-			Seed:     publishAll("view-sample", "1.0.0", "1.10.0", "1.2.0", "2.0.0-beta.1", "2.0.0"),
+			Versions:    []string{"1.0.0", "1.10.0", "1.2.0", "2.0.0-beta.1", "2.0.0"},
+			Package:     "view-sample",
+			Prereleases: []string{"2.0.0-beta.1"},
+			Seed:        publishAll("view-sample", "1.0.0", "1.10.0", "1.2.0", "2.0.0-beta.1", "2.0.0"),
 		},
 		OptionNames: []string{"_authToken", "npmAuthToken", "QUADER_TOKEN"},
 		Remote: &formattest.RemoteFixture{

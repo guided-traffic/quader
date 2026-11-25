@@ -76,9 +76,8 @@ func orderOf(f formats.Format) versionOrder {
 		return o
 	}
 	if a := f.View(); a != nil {
-		o.key = a.SortKey
+		o.key, o.pre = a.SortKey, a.Prerelease
 	}
-	o.pre = prereleaseOf(f)
 	return o
 }
 

@@ -37,7 +37,7 @@ internal/formats/npm/
 ├── handlers_audit_local.go   the audit in mode local, from Quader's own advisory data: the mode of a repository, the answer and its notice (R-VULN-017)
 ├── handlers_audit_ranges.go  vulnerable_versions as node-semver text, the pre-release completion, the adapter the audit hands to the matcher (R-VULN-017)
 ├── tags.go          the dist-tag rules of R-NPM-016 on the SemVer order; a publish leaves a tag at a hidden version (Q-NPM-85)
-├── exposure.go      the exposure adapter (ranges, pre-releases, dimensions) and the filter of rows and documents (R-NPM-048)
+├── exposure.go      the exposure adapter (ranges, dimensions) and the filter of rows and documents (R-NPM-048)
 ├── versions.go      the versions a caller's grants hide: callerVersions (the hidden fingerprint of a rendition), filterOf, callerView (Q-NPM-82)
 ├── store.go         the data port (Store), with marked blocks for the work packages that add to it
 ├── bind.go          Format.Bind: the settings and the metrics of one replica, kept per Host
@@ -231,7 +231,7 @@ endpoint without rules, and a view that exposes nothing for an endpoint with rul
 | Part | Does |
 |---|---|
 | `ValidateRange` | `semver.ParseForExposure`: node-semver's strict syntax, accepted with and without `includePrerelease`, at most 4096 bytes; the message is a field error of the rule API |
-| `Prerelease`, `InRange` | `semver.ParseNode(v, false)` (the grammar of document versions, Q-NPM-15); a range is evaluated with `includePrerelease`, so the rule's `prereleases` flag decides pre-releases. Parsed ranges are kept in a memo of the format (at most 4,096, cleared when full): the decision point asks `InRange` per version and rule |
+| `InRange` | `semver.ParseNode(v, false)` (the grammar of document versions, Q-NPM-15); which version is a pre-release is the view adapter's `Prerelease` (`semver.Parse`, the grammar of the order, Q-API-433), which the catalog's versioning asks; a range is evaluated with `includePrerelease`, so the rule's `prereleases` flag decides pre-releases. Parsed ranges are kept in a memo of the format (at most 4,096, cleared when full): the decision point asks `InRange` per version and rule |
 | `exposedVersions`, `exposedTags` | The one decision: the versions the view exposes; the tags that stay (name admitted, version exposed, never moved); `latest` kept when exposed, else the highest exposed release, else the highest exposed pre-release; a missing `latest` computed the same way |
 | `exposeRows` | The filter of a local document's rows before rendering: versions, tags, and the README of a moved `latest` cleared (Q-NPM-39). `time`, `maintainers` and the top-level fields are then rendered from what remains |
 | `filterDocument` (npm's own function; the contract has none, Q-ARCH-257) | The filter of a merged or rewritten document (`{name}` full or abbreviated, `{name}/{version}`): members read like `JSON.parse` (a repeated member takes its last value at its first place), `versions`, `time`, `dist-tags` and `maintainers` filtered, the top-level fields of a moved `latest` taken from its entry or removed, other members kept (Q-NPM-40); another path is an internal error, never an unfiltered answer |

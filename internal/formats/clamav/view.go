@@ -50,6 +50,10 @@ func (viewAdapter) SortKey(v string) []byte {
 	return versionkey.Of(binary.BigEndian.AppendUint64(nil, uint64(n)^(1<<63)), true, v) //nolint:gosec // the bits of the integer, reordered
 }
 
+// Prerelease is false for every version (api-and-ui.md Q-API-434): a definitions database's version is the number of its build, and
+// freshclam takes the newest one there is.
+func (viewAdapter) Prerelease(string) bool { return false }
+
 // Stored lists the versions of a database the repository holds: the stored ones newest first, then the history rows without files.
 func (viewAdapter) Stored(ctx context.Context, ports formats.DataPorts, q formats.StoredQuery) (formats.Stored, error) {
 	if q.Repo.Class != formats.Local || !cvd.IsDB(q.Package) || q.Limit <= 0 {

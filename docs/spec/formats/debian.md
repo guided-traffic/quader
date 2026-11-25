@@ -162,8 +162,8 @@ Priority: **P2** · Covers: PKG-DEB-002
   other characters, `~` before everything including the end of the string) and digits (numerically). The view's `Compare`, the
   mirror plan and `maxVersionsPerPackage` use it.
 - **No pre-releases.** Debian versions carry no pre-release marker that every archive uses alike (`~` marks pre-releases and
-  backports alike), so `Versioning.Prerelease` is false for every version and `includePrereleases` has no effect on the format
-  (Q-DEB-17).
+  backports alike), so the view adapter's `Prerelease` is false for every version, the latest version of a package on the screens is its
+  highest, and `includePrereleases` has no effect on the format (Q-DEB-17, [api-and-ui.md](../api-and-ui.md) Q-API-434).
 - A remote repository serves what its upstream lists under any suite and component name APT can request; an upstream entry
   whose package name or version breaks the grammar is left out of the parsed rows and of a virtual merge and counted
   (R-DEB-023, R-DEB-034).
@@ -3931,6 +3931,14 @@ agent would revisit the choice if a test's repository had a build queued with a 
 `TestR_DEB_025_AReleaseOlderThanTheRecordedDateIsNotMerged`.
 
 ## What this does not cover
+
+### H-1971 · A pre-release spelled with a tilde is a package's latest version on the screens
+
+A Debian version is never a pre-release (R-DEB-002, [api-and-ui.md](../api-and-ui.md) Q-API-434), so a package whose highest version is an
+upstream pre-release by the `~` convention (`2.0~rc1-1` above `1.9-3`) shows `2.0~rc1-1` as its latest version, without the badge
+Pre-release. That is the version APT installs without a pin, so the screen and the client agree; what it does not show is the upstream's
+intent. Live for every local and remote Debian repository that holds such a version; real where an archive publishes release candidates in
+the same suite as releases.
 
 ### H-620 · A holder of the stored-secret key ring and a database copy can sign for every Debian repository
 

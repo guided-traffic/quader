@@ -1095,6 +1095,7 @@ type OciRemoteTag struct {
 	CreatedAt      pgtype.Timestamptz
 	ManifestSha256 []byte
 	SortKey        []byte
+	Prerelease     pgtype.Bool
 }
 
 type OciTombstone struct {
@@ -1238,6 +1239,7 @@ type RemoteCacheEntry struct {
 	TagName              pgtype.Text
 	Tag                  pgtype.Text
 	TagSortKey           []byte
+	TagPrerelease        pgtype.Bool
 }
 
 type RemoteCacheInvalidation struct {

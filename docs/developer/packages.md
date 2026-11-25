@@ -14,7 +14,7 @@ the client setup page of the admin UI ([web-ui.md](web-ui.md#package-screens-and
   repository for the request; the statements take the result as arrays.
 - **The core knows no format.** What the generic rows do not hold (description, keywords, licenses, metadata, README) and the order of versions come from the
   format's `ViewAdapter` over its data port (Q-API-166). The order is also stored: every version row carries the format's sort key
-  (`ViewAdapter.SortKey`, bytewise the order of `Compare`) and its pre-release answer, which the host's package writer writes, so that
+  (`ViewAdapter.SortKey`, bytewise the order of `Compare`) and its pre-release answer (`ViewAdapter.Prerelease`, Q-API-433), which the host's package writer writes, so that
   PostgreSQL orders the versions by an index ([Q-API-429](../spec/api-and-ui.md#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row)).
   A row may lack the key (written before migration 00116, or by a replica of the release before it during an upgrade): the reads give it the
   key its format gives it ([Q-API-430](../spec/api-and-ui.md#q-api-430--a-version-row-without-a-stored-sort-key-is-ordered-by-the-key-its-format-gives-it)),
@@ -54,8 +54,10 @@ the client setup page of the admin UI ([web-ui.md](web-ui.md#package-screens-and
    page's packages alone (the lead file or any file of a visible version by a join with `item_download_stats`; the document of an OCI version from the
    package's downloaded files, each counted once per visible version or tag that holds its bytes). Names are compared with collation `C`.
 5. For the packages of the page it reads the candidates of their latest version (`PackageViewLatest`, Q-API-429): per package row its highest visible release
-   by the stored sort key, its highest pre-release when it has no visible release, and a remote OCI repository's highest tag, each the first visible entry of
-   an index (`package_versions_latest_release`, `package_versions_latest_prerelease`, `remote_cache_entries_tag_key`), and every visible row without a stored
+   by the stored sort key, its highest pre-release when it has no visible release, and a remote OCI repository's highest tag that is no pre-release and its
+   highest pre-release tag (the generated column `tag_prerelease`, migration 00126, Q-API-435), each the first visible entry of an index
+   (`package_versions_latest_release`, `package_versions_latest_prerelease`, `remote_cache_entries_tag_latest_release`,
+   `remote_cache_entries_tag_latest_prerelease`), and every visible row without a stored
    key (Q-API-430; none once the fill has run), and the newest visible version the format does not rank, by its time, of the version rows and of a
    remote's tags (`package_versions_unranked`, `remote_cache_entries_tag_unranked`, Q-API-431). `latestOf` takes the latest among them: a release before a
    pre-release before an unranked version, the adapter's order within the first two, the time within the third; it names the

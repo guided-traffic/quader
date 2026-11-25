@@ -283,8 +283,9 @@ SELECT e.tag::text AS version, e.fetched_at AS created_at
 -- name: PackageViewLatest :many
 -- The latest visible version of each package row of the given packages ("<format>\x1f<name>") in the scope, as candidates: the highest
 -- release of its version rows by the format's sort key, its highest pre-release when it has no visible release, and for a remote OCI
--- repository its highest tag (none is a pre-release), each one walk of an index of its kind (package_versions_latest_release,
--- package_versions_latest_prerelease, remote_cache_entries_tag_key) that stops at the first visible row (Q-API-429). A ranked version's
+-- repository its highest tag that is no pre-release and its highest pre-release tag (Q-API-433, migration 00126), each one walk of an
+-- index of its kind (package_versions_latest_release, package_versions_latest_prerelease, remote_cache_entries_tag_latest_release,
+-- remote_cache_entries_tag_latest_prerelease) that stops at the first visible row (Q-API-429). A ranked version's
 -- key is above every unranked one's, so the first entry of a walk is ranked whenever the package has a ranked version of its kind; a
 -- pre-release counts only while no ranked release is visible. Beside them the newest visible version the format does not rank (a key of
 -- the class 0x00: an image tag such as latest or sha-5ccfd1a), by its time, of the version rows and of a remote's tags, one walk of
@@ -337,6 +338,26 @@ SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_
          WHERE r.class = 'remote' AND r.format = 'oci'
            AND e.repo_id = p.repo_id AND e.tag_name = p.name
            AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+           AND NOT e.tag_prerelease
+           AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
+           AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
+           AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+                OR concat_ws(chr(31), p.repo_id::text, p.name, e.tag) = ANY(sqlc.arg(rows)::text[]))
+           AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)
+           AND (EXISTS (SELECT 1 FROM mirror_state ms WHERE ms.repo_id = e.repo_id OFFSET 0)
+                OR e.background_sha256 = e.blob_sha256
+                OR EXISTS (SELECT 1 FROM items i JOIN item_download_stats s ON s.item_id = i.id
+                            WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+                              AND i.trashed_at IS NULL AND s.downloads > 0 OFFSET 0))
+         ORDER BY e.tag_sort_key DESC
+         LIMIT 1)
+       UNION ALL
+       (SELECT -e.id, e.tag::text, e.fetched_at
+          FROM remote_cache_entries e
+         WHERE r.class = 'remote' AND r.format = 'oci'
+           AND e.repo_id = p.repo_id AND e.tag_name = p.name
+           AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+           AND e.tag_prerelease
            AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
            AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
            AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])

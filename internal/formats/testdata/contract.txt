@@ -1,4 +1,4 @@
-contract version 12
+contract version 13
 formats.Action: alias authz.Action
 formats.AttestationItem: field Blob [32]byte
 formats.AttestationItem: field Path string
@@ -136,8 +136,9 @@ formats.Exchange: field Body []byte
 formats.Exchange: field Header http.Header
 formats.Exchange: field Method string
 formats.Exchange: field Path string
-formats.ExposureAdapter: embedded catalog.Versioning
 formats.ExposureAdapter: method Dimensions() ExposureDimensions
+formats.ExposureAdapter: method InRange(string, string) bool
+formats.ExposureAdapter: method ValidateRange(string) error
 formats.ExposureDimensions: field Packages bool
 formats.ExposureDimensions: field Tags bool
 formats.ExposureDimensions: field Versions bool
@@ -632,6 +633,7 @@ formats.VersionView: method Version(string) bool
 formats.ViewAdapter: method Compare(string, string) int
 formats.ViewAdapter: method Describe(context.Context, DataPorts, []ViewVersion, ViewFields, func(string) bool) (map[VersionID]ViewData, error)
 formats.ViewAdapter: method Find(context.Context, DataPorts, ViewFind, int) ([]VersionID, error)
+formats.ViewAdapter: method Prerelease(string) bool
 formats.ViewAdapter: method SortKey(string) []byte
 formats.ViewAdapter: method Stored(context.Context, DataPorts, StoredQuery) (Stored, error)
 formats.ViewAdapter: method Withheld(context.Context, DataPorts, []string) ([]VersionID, error)
@@ -732,7 +734,7 @@ formats.ActionRead: value = authz.Read
 formats.Admin: value = (repeated, place 5 of its group)
 formats.Computed: value = (repeated, place 2 of its group)
 formats.Content: value PathKind = iota + 1 (place 0 of its group)
-formats.ContractVersion: value = 12
+formats.ContractVersion: value = 13
 formats.Current: value Currency = iota + 1 (place 0 of its group)
 formats.Delete: value = (repeated, place 4 of its group)
 formats.Download: value RouteKind = iota + 1 (place 0 of its group)

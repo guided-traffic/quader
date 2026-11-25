@@ -62,6 +62,14 @@ func (viewAdapter) SortKey(tag string) []byte {
 	return versionkey.Of(tagorder.Key(tag), isVersion(tag), tag)
 }
 
+// Prerelease is the tag order's pre-release (Q-OCI-270): a tag that is a version whose suffix starts with alpha, beta, rc, pre or dev and
+// continues with digits and dots only (`2.0.0-rc.1`, `v3.1-beta2`), the rank below a release and its variants, and the same answer the
+// mirror's tag selection excludes by default. A variant (`1.25-alpine`) and a tag that is no version (`latest`) are none. PostgreSQL
+// answers the same for a remote repository's tags (oci_tag_prerelease, migration 00126), which the listing test of R-OCI-036 checks.
+func (viewAdapter) Prerelease(tag string) bool {
+	return isVersion(tag) && tagorder.Prerelease(tag)
+}
+
 // Stored lists the tags a local repository serves of an image name, newest push first, for the exposure check of an endpoint. A remote
 // repository answers none here: its tag documents are metadata entries and own no version row (Q-OCI-34, Q-OCI-121); the package screens
 // list them from the cache entries (R-OCI-036, Q-OCI-215) and the exposure check does not read the cache.

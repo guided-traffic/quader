@@ -247,3 +247,14 @@ func TestR_DEB_030_ViewCompareFollowsDpkg(t *testing.T) {
 		t.Error("an invalid string sorts after a version")
 	}
 }
+
+// TestR_API_029_ADebianVersionIsNoPrerelease: the dpkg order has no pre-release (Q-API-434): a "~" marks an upstream pre-release as
+// often as a backport or a stable update, and APT installs the highest version its pinning allows, so no version is one.
+func TestR_API_029_ADebianVersionIsNoPrerelease(t *testing.T) {
+	a := viewAdapter{}
+	for _, v := range []string{"1.0~rc1-1", "1.0-1~bpo12+1", "2.36.1-8+deb12u1~1", "1:2.0-1", "1.0"} {
+		if a.Prerelease(v) {
+			t.Errorf("Prerelease(%q) = true", v)
+		}
+	}
+}

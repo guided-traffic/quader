@@ -12,6 +12,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/formattest"
 	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 )
 
 // rulesView is the decision of one rule the way the decision point takes it: a package
@@ -30,7 +31,7 @@ func (v rulesView) Version(name, ver string) bool {
 	if !v.packages[name] {
 		return false
 	}
-	if pre, ok := v.x.Prerelease(ver); !ok || (pre && !v.pre) {
+	if _, err := version.Parse(ver); err != nil || (viewAdapter{}.Prerelease(ver) && !v.pre) {
 		return false
 	}
 	return v.rng == "" || v.x.InRange(ver, v.rng)
@@ -84,13 +85,15 @@ func TestR_NUGET_034_RangeNotationOfRules(t *testing.T) {
 	if d := x.Dimensions(); !d.Packages || !d.Versions || d.Tags {
 		t.Errorf("dimensions = %+v, want packages and versions, no tags", d)
 	}
-	if pre, ok := x.Prerelease("2.1.0-beta.1"); !pre || !ok {
+	// Which version is a pre-release is the view adapter's; the catalog's versioning asks it (Q-API-433).
+	v := formats.CatalogEntry(New()).Exposure.Versioning
+	if pre, ok := v.Prerelease("2.1.0-beta.1"); !pre || !ok {
 		t.Errorf("Prerelease(2.1.0-beta.1) = %v, %v", pre, ok)
 	}
-	if pre, ok := x.Prerelease("2.1.0+build"); pre || !ok {
+	if pre, ok := v.Prerelease("2.1.0+build"); pre || !ok {
 		t.Errorf("Prerelease(2.1.0+build) = %v, %v", pre, ok)
 	}
-	if _, ok := x.Prerelease("nonsense"); ok {
+	if _, ok := v.Prerelease("nonsense"); ok {
 		t.Error("Prerelease accepted a text that is no version")
 	}
 }

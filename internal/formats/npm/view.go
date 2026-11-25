@@ -100,6 +100,13 @@ func (viewAdapter) SortKey(version string) []byte {
 	return versionkey.Of(appendIdentifiers(k, v.Build), true, version)
 }
 
+// Prerelease reports whether a version has a pre-release part (`2.0.0-beta.1`), the versions npm install passes over for a range unless
+// asked for them and an exposure rule without pre-releases hides. A string that is no version is none.
+func (viewAdapter) Prerelease(version string) bool {
+	v, err := semver.Parse(version)
+	return err == nil && v.IsPrerelease()
+}
+
 // appendIdentifiers appends dot-separated identifiers as SemVer orders them: a number (0x01 and its value) before any other identifier
 // (0x02 and its bytes), and 0x00 at the end, so a list that is the prefix of another sorts first.
 func appendIdentifiers(k []byte, ids []string) []byte {

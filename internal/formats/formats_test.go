@@ -12,6 +12,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 )
 
 // fake is a format whose parts a test sets. It embeds Base for the hooks and
@@ -425,8 +426,8 @@ func TestR_ARCH_010_RegisterChecksTheDataPort(t *testing.T) {
 // hand in between (Q-ARCH-188).
 func TestR_REPO_003_RegisterFillsTheCatalog(t *testing.T) {
 	d := valid("probe-cat")
-	d.PackageNames, d.PatternSubject, d.Names = true, SubjectName, identity{}
-	Register(fake{d: d, expo: stubExposure{dim: ExposureDimensions{Packages: true, Versions: true}}})
+	d.PackageNames, d.PatternSubject, d.Names, d.VersionFetch = true, SubjectName, identity{}, FetchLeadFile
+	Register(fake{d: d, expo: stubExposure{dim: ExposureDimensions{Packages: true, Versions: true}}, view: preView{}})
 	e, ok := catalog.Default().Lookup("probe-cat")
 	if !ok {
 		t.Fatal("Register did not fill catalog.Default")
@@ -436,6 +437,33 @@ func TestR_REPO_003_RegisterFillsTheCatalog(t *testing.T) {
 		t.Fatalf("catalog entry = %+v", e)
 	}
 }
+
+// TestR_API_029_TheRulesAskTheViewAdapterWhichVersionIsAPrerelease: the catalog's versioning takes the range syntax from the exposure
+// adapter and the pre-release from the view adapter, the one place a format says it (Q-API-433): a string the view adapter does not rank
+// is no version, and a format whose rules narrow versions without a view adapter does not register.
+func TestR_API_029_TheRulesAskTheViewAdapterWhichVersionIsAPrerelease(t *testing.T) {
+	d := valid("probe-pre")
+	d.PackageNames, d.PatternSubject, d.Names, d.VersionFetch = true, SubjectName, identity{}, FetchLeadFile
+	v := CatalogEntry(fake{d: d, expo: stubExposure{dim: ExposureDimensions{Packages: true, Versions: true}}, view: preView{}}).Exposure.Versioning
+	for version, want := range map[string][2]bool{"1.0-rc": {true, true}, "1.0": {false, true}, "junk": {false, false}} {
+		if pre, ok := v.Prerelease(version); pre != want[0] || ok != want[1] {
+			t.Errorf("Prerelease(%q) = %v, %v, want %v", version, pre, ok, want)
+		}
+	}
+	if err := v.ValidateRange("x"); err == nil {
+		t.Error("ValidateRange is not the exposure adapter's")
+	}
+	err := Validate(fake{d: d, expo: stubExposure{dim: ExposureDimensions{Packages: true, Versions: true}}})
+	if err == nil || !strings.Contains(err.Error(), "no view adapter") {
+		t.Fatalf("a format whose rules narrow versions without a view adapter: %v", err)
+	}
+}
+
+// preView ranks every string but "junk" and calls a version ending in "-rc" a pre-release.
+type preView struct{ ViewAdapter }
+
+func (preView) SortKey(v string) []byte  { return versionkey.Of(nil, v != "junk", v) }
+func (preView) Prerelease(v string) bool { return strings.HasSuffix(v, "-rc") }
 
 // TestR_EP_018_TheAdapterIsTheSourceOfTheExposureFacts: a format without an
 // adapter is not exposable, and an adapter narrowing by package needs package
@@ -456,7 +484,6 @@ type stubExposure struct {
 }
 
 func (stubExposure) ValidateRange(string) error       { return errors.New("no") }
-func (stubExposure) Prerelease(string) (bool, bool)   { return false, true }
 func (stubExposure) InRange(string, string) bool      { return false }
 func (s stubExposure) Dimensions() ExposureDimensions { return s.dim }
 

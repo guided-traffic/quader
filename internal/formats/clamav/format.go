@@ -219,6 +219,5 @@ type pathsOnly struct{}
 var errNoRanges = errors.New("the clamav format narrows no versions on an endpoint")
 
 func (pathsOnly) ValidateRange(string) error             { return errNoRanges }
-func (pathsOnly) Prerelease(string) (bool, bool)         { return false, false }
 func (pathsOnly) InRange(string, string) bool            { return false }
 func (pathsOnly) Dimensions() formats.ExposureDimensions { return formats.ExposureDimensions{} }

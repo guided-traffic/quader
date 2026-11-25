@@ -1153,8 +1153,9 @@ The format's view adapter (R-API-029) shows an image name as a package and its t
 tags that are versions (`5.4.7`, `v2.1`, `1.0-rc1`) by their numbers, so `4.16.6` comes before `4.2.8`, and below them the tags that are no
 version (`latest`, `main`, `sha-5ccfd1a`), newest first by push time in a local repository and by fetch time in a remote one
 ([Q-OCI-269](#q-oci-269--a-tag-that-is-no-version-is-no-version-of-the-format-and-the-lists-order-such-tags-by-time); the exposure's
-`Stored` keeps push order; the precedence of two tags, `Compare`, is the tag order, and decides which tag is "latest", which for an image
-without a version tag is its newest other tag): per tag the digest, the media type, the summed size, and for an index its
+`Stored` keeps push order; the precedence of two tags, `Compare`, is the tag order, and decides which tag is "latest": the highest tag
+that is no pre-release, the highest pre-release while the image has none, and for an image without a version tag its newest other tag,
+[Q-OCI-270](#q-oci-270--an-image-tag-with-a-pre-release-suffix-is-a-pre-release-on-the-screens-and-is-not-the-latest-while-a-release-is)): per tag the digest, the media type, the summed size, and for an index its
 platforms with each child's digest and size, from the rows of R-OCI-007. The `sizeBytes` of the version, in the list and in the details, is the same summed size (Q-OCI-130), not the size of the tag item; of an index the sum over the platforms the repository holds, with `sizePartial` while some are missing and `null` while none is (Q-OCI-221, R-API-080). Layer history and labels are not shown (Deferred).
 The version `metadata` of a tag holds `digest`, `mediaType`, `size` (the summed size of the config and the layers; of an index the sum over the platforms held, absent while none is, with `sizePartial` while some are missing, Q-OCI-221;
 at any depth) and `artifactType` (the manifest's own, else the media type of its config, so every image shows its config type); an index adds `platforms`, one object per child with
@@ -1175,6 +1176,10 @@ Acceptance criteria:
   the other two newest first by their push or fetch time; the key of a tag that is no version has the class NotVersion
   (`TestR_OCI_031_ATagThatIsNoVersionIsNoVersionOfTheFormat`, unit; `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit`, area
   `ociremote`, for the remote's statements).
+- An image with the tags `1.16.6` and `2.0.0-rc.1` lists `2.0.0-rc.1` first with `prerelease: true`, alone and as the leading tag of its
+  row with `group=content`, and its `latestVersion` is `1.16.6`, in a local and in a remote repository (Q-OCI-270;
+  `TestR_API_029_AnImageTagIsAPrereleaseByTheTagOrder`, unit; the latest tag's candidates of
+  `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit`, area `ociremote`).
 
 ### R-OCI-032 · OCI on n replicas, without Valkey and during a drain
 Priority: **P1** · Covers: quader-only
@@ -4155,6 +4160,32 @@ is a name of a moment (`latest`, `main`, a commit); its time is the one order it
 Code: `Compare`, `SortKey` in [view.go](../../../internal/formats/oci/view.go); migration
 [00123](../../../internal/meta/postgres/migrations/00123_unranked_versions.sql). Tests: `TestR_OCI_031_ATagThatIsNoVersionIsNoVersionOfTheFormat`
 (unit), kit check 11 (`TestR_ARCH_010_Conformance`), the SQL-against-Go key table of `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit`.
+
+### Q-OCI-270 · An image tag with a pre-release suffix is a pre-release on the screens, and is not the latest while a release is
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+It applies [api-and-ui.md](../api-and-ui.md) Q-API-433 to the format.
+
+Context: the tag order of [Q-OCI-17](#q-oci-17--the-tag-order-of-the-format) already ranks a pre-release below its release and its variants,
+and the mirror's tag selection leaves such tags out unless `includePrereleases` is set, but the screens asked the exposure adapter, which
+the format does not have: in the render seed `portal/worker` showed Latest `2.0.0-rc.1`, no image row carried the badge Pre-release, and
+every stored flag of an image tag was false.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A tag the tag order ranks as a version whose suffix starts with `alpha`, `beta`, `rc`, `pre` or `dev` (any case) and continues with digits and dots only is a pre-release, the view adapter's `Prerelease`, the same answer as the mirror's `tagorder.Prerelease` (chosen) | `2.0.0-rc.1`, `v3.1-beta2`, `1.0-RC.2` are; `1.25-alpine`, `1.0-preview`, `latest` are not | One rule for the order, the mirror and the screens; nothing per image to configure | A pre-release spelled otherwise (`1.0-preview`, `2.0.0-next.3`) is a variant, and can be the latest |
+| (b) Any suffix is a pre-release (SemVer's reading) | `1.25-alpine` would be one | Simple | A variant image (`-alpine`, `-slim`) is a release of its own; most images would have no latest release |
+| (c) No pre-releases | Nothing to change | — | The finding |
+
+**Choice:** (a). The latest tag of an image is its highest release, else its highest pre-release, else its newest tag that is no version
+([api-and-ui.md](../api-and-ui.md) R-API-029); a pre-release keeps its place in the order, so `2.0.0-rc.1` still leads the opened image's
+list, with the badge Pre-release on its row. A remote's tag entries carry the same answer, derived by PostgreSQL
+([api-and-ui.md](../api-and-ui.md) Q-API-435). The mirror's tag selection is unchanged. **Rationale:** the tag order's markers are the
+format's only notion of a pre-release, and the screens must not have another. **Applied in the spec:** R-OCI-031,
+[api-and-ui.md](../api-and-ui.md) R-API-029. Code: `Prerelease` in [view.go](../../../internal/formats/oci/view.go); `oci_tag_prerelease`
+and the refill of the stored rows in migration [00126](../../../internal/meta/postgres/migrations/00126_version_prerelease.sql). Tests:
+`TestR_API_029_AnImageTagIsAPrereleaseByTheTagOrder` (unit), kit check 11 (`TestR_ARCH_010_Conformance`, the sample holds `2.0-rc.1` and the
+variant `1.0-alpine`), the SQL-against-Go table of `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit` (area `ociremote`).
 
 ## What this does not cover
 

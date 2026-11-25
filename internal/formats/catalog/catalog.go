@@ -277,9 +277,10 @@ type VersionCanon interface {
 	Canonical(version string) (canonical string, ok bool)
 }
 
-// Versioning is the part of a format's exposure adapter that the decision point
-// compiles rules with (R-EP-012, R-EP-018): the format's range syntax and its
-// notion of a pre-release.
+// Versioning is what the decision point compiles a format's rules with (R-EP-012,
+// R-EP-018): the format's range syntax, from its exposure adapter, and its notion of
+// a pre-release, from its view adapter beside its order of versions (api-and-ui.md
+// Q-API-433), so the screens and the rules never disagree on a version.
 type Versioning interface {
 	// ValidateRange checks one range in the format's native syntax.
 	ValidateRange(expr string) error

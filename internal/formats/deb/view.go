@@ -38,6 +38,12 @@ func (viewAdapter) SortKey(v string) []byte {
 	return versionkey.Of(version.SortKey(v), ValidVersion(v), v)
 }
 
+// Prerelease is false for every version (api-and-ui.md Q-API-434): the dpkg order has no pre-release, APT installs the highest version
+// its pinning allows whatever its spelling, and a "~" only sorts a version below the one it precedes, which marks an upstream pre-release
+// (`1.0~rc1-1`) as often as a backport or a stable update (`1.0-1~bpo12+1`, `1.0-1~deb12u1`). What a repository's practice keeps apart
+// is a distribution (`experimental`), not a version.
+func (viewAdapter) Prerelease(string) bool { return false }
+
 func viewStoreOf(ports formats.DataPorts) (Store, error) { return storeOf(ports.FormatData(ID)) }
 
 // Describe describes the versions from their rows. Fields of the control paragraph that a version lacks are left out.

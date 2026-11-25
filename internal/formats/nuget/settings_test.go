@@ -139,12 +139,14 @@ func TestR_NUGET_034_TheExposureAdapter(t *testing.T) {
 			t.Errorf("ValidateRange(%q) accepts a range outside the grammar", r)
 		}
 	}
+	// Which version is a pre-release is the view adapter's, which the catalog's versioning asks (Q-API-433).
+	vs := formats.CatalogEntry(New()).Exposure.Versioning
 	for v, want := range map[string]bool{"1.0.0": false, "1.0.0-rc.1": true, "2.0.0-beta+meta": true, "1.0.0+meta": false} {
-		if pre, ok := x.Prerelease(v); !ok || pre != want {
+		if pre, ok := vs.Prerelease(v); !ok || pre != want {
 			t.Errorf("Prerelease(%q) = %v, %v, want %v", v, pre, ok, want)
 		}
 	}
-	if _, ok := x.Prerelease("one"); ok {
+	if _, ok := vs.Prerelease("one"); ok {
 		t.Error("Prerelease accepts a text that is no version")
 	}
 	inRange := map[[2]string]bool{

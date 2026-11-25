@@ -66,7 +66,8 @@ func conformance() formattest.Fixture {
 		NoRevision: map[string]string{},
 		View: &formattest.ViewFixture{
 			Versions: []string{"9", "28189", "28190"}, Package: "daily",
-			Seed: func(h *formattest.Host) error { return seedInUse("daily", false, 9, 28189, 28190)(h) },
+			NoPrereleases: "a definitions database's version is the number of its build (api-and-ui.md Q-API-434)",
+			Seed:          func(h *formattest.Host) error { return seedInUse("daily", false, 9, 28189, 28190)(h) },
 		},
 		Skip: map[formattest.Check]string{
 			formattest.CheckRewrite:   "local class only: no remote adapter (R-CLAMAV-008)",

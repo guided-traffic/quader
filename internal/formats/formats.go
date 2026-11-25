@@ -41,9 +41,11 @@ import (
 // reasons. Version 11 is the upstream catalogue's (remote-curation.md R-CUR-006, R-CUR-007, Q-CUR-12, ADR-277): a format with the class
 // remote declares its catalogue ([Descriptor.Catalogue], the lookup by exact name at least) and its version canon
 // ([Descriptor.VersionCanon]). Version 12 is the stored sort key's (api-and-ui.md R-API-029, Q-API-429, ADR-278): a format's
-// [ViewAdapter] gives the key of its order of versions (SortKey), which the host stores with every version row. A format declares
-// the literal it was written against in [Descriptor.ContractVersion], and Register panics on a mismatch.
-const ContractVersion = 12
+// [ViewAdapter] gives the key of its order of versions (SortKey), which the host stores with every version row. Version 13 is the
+// pre-release's (api-and-ui.md R-API-029, Q-API-433): a format's [ViewAdapter] says which of its versions is a pre-release (Prerelease),
+// beside its order, and the [ExposureAdapter] no longer does; the catalog's Versioning takes the answer from the view adapter. A format
+// declares the literal it was written against in [Descriptor.ContractVersion], and Register panics on a mismatch.
+const ContractVersion = 13
 
 // The types of other packages under the names a format spells them: one type
 // each, no mirrors (Q-ARCH-188, Q-ARCH-189). A format imports this package and
@@ -435,8 +437,8 @@ func CatalogEntry(f Format) catalog.Entry {
 	if x := f.Exposure(); x != nil {
 		dim := x.Dimensions()
 		e.Exposure = catalog.Exposure{Exposable: true, Packages: dim.Packages, Versions: dim.Versions, Tags: dim.Tags}
-		if dim.Versions {
-			e.Exposure.Versioning = x
+		if v := f.View(); dim.Versions && v != nil {
+			e.Exposure.Versioning = versioning{x: x, v: v}
 		}
 	}
 	return e
@@ -495,6 +497,9 @@ func Validate(f Format) error {
 	if x := f.Exposure(); x != nil {
 		if dim := x.Dimensions(); (dim.Packages || dim.Versions || dim.Tags) && !d.PackageNames {
 			return fmt.Errorf("%q narrows exposure by package, version or tag and has no package names", id)
+		} else if dim.Versions && f.View() == nil {
+			// Which version is a pre-release is the view adapter's answer (Q-API-433): rules that narrow versions need it.
+			return fmt.Errorf("%q narrows exposure by version and has no view adapter that says which version is a pre-release", id)
 		}
 	}
 	for _, check := range []func(Format, Descriptor) error{checkSystemOnly, checkView, checkProbes, checkCatalogue, checkSignatures} {

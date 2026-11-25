@@ -415,7 +415,8 @@ Priority: **P1** · Covers: quader-only
 The format returns a `ViewAdapter` (R-API-029, [developer/formats.md](../../developer/formats.md#the-package-view)), so the repository's
 packages and versions show on the screens of every repository:
 
-- `Compare` orders versions as integers; `Describe` returns the metadata of R-CLAMAV-003; `Stored` lists the stored versions of a database,
+- `Compare` orders versions as integers and `Prerelease` is false for every version, a build number being no pre-release
+  ([api-and-ui.md](../api-and-ui.md) Q-API-434); `Describe` returns the metadata of R-CLAMAV-003; `Stored` lists the stored versions of a database,
   newest first, and the history rows without files after them; `Withheld` names none; `Find` searches the three names.
 - `VersionFetch` is `FetchLeadFile`: a version is fetched when its container is served, which counts the version's downloads and its last
   download.

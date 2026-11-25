@@ -1882,11 +1882,14 @@ const (
 	Merge                          // every eligible member contributes
 )
 
-// ExposureAdapter is a format's part of endpoint exposure (endpoints.md R-EP-018): the version syntax the decision
-// point compiles rules with and the dimensions rules may narrow. What an endpoint hides from a document is the format's
+// ExposureAdapter is a format's part of endpoint exposure (endpoints.md R-EP-018): the range syntax the decision
+// point compiles rules with and the dimensions rules may narrow. Which version is a pre-release is the view adapter's
+// answer (ViewAdapter.Prerelease, api-and-ui.md Q-API-433): Register composes the catalog's Versioning of both, and a
+// format whose rules narrow versions has a view adapter. What an endpoint hides from a document is the format's
 // own filter over Request.Endpoint.Exposure; no core code calls one (Q-ARCH-257).
 type ExposureAdapter interface {
-	catalog.Versioning // ValidateRange, Prerelease, InRange
+	ValidateRange(expr string) error   // one range in the format's native syntax
+	InRange(version, expr string) bool // a normalized version in a validated range
 	Dimensions() ExposureDimensions
 }
 
@@ -2089,8 +2092,9 @@ type GuideSection struct {
 func (g GuideSection) AppliesTo(class Class, client string) bool
 
 // ViewAdapter is a format's part of the package screens (api-and-ui.md R-API-029) and of the dry run of the exposure
-// rules (endpoints.md R-EP-016). It reads through the format's data port and runs no SQL. Whether a version is a
-// pre-release is the exposure adapter's answer (Versioning.Prerelease), taken once by the host (Q-ARCH-257).
+// rules (endpoints.md R-EP-016). It reads through the format's data port and runs no SQL. It says the format's order of
+// versions and, beside it, which of them is a pre-release: the one answer the screens, the stored rows and the exposure
+// rules read (api-and-ui.md Q-API-433).
 type ViewAdapter interface {
 	// Compare is a total order over the versions the format stores (negative: a is older than b); a string that is no
 	// version sorts before every version, and equal strings compare equal.
@@ -2098,6 +2102,9 @@ type ViewAdapter interface {
 	// SortKey is the stored sort key of a version (Q-API-429): bytes.Compare of two keys has the sign of Compare wherever Compare is
 	// not zero, and two different strings have two different keys (internal/formats/versionkey).
 	SortKey(version string) []byte
+	// Prerelease reports whether a version the format ranks is a pre-release (Q-API-433); false for a string that is no
+	// version and for every version of a format whose ecosystem has none (Debian, the ClamAV definitions, Q-API-434).
+	Prerelease(version string) bool
 	Describe(ctx context.Context, ports DataPorts, vs []ViewVersion, want ViewFields, visible func(version string) bool) (map[VersionID]ViewData, error)
 	Find(ctx context.Context, ports DataPorts, f ViewFind, limit int) ([]VersionID, error)
 	// Withheld returns the ids of the stored versions the format does not serve (R-NPM-047).
@@ -8759,7 +8766,10 @@ Context: roadmap WP3.0j. Five parts of the contract of M2 have no caller in the 
 
 ### Q-ARCH-257 · A minimal contract: the npm concepts leave the shared types
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. **Revised on
+2026-11-25** by [Q-API-433](api-and-ui.md#q-api-433--a-format-says-which-of-its-versions-is-a-pre-release-where-it-says-its-order): which
+version is a pre-release is the view adapter's `Prerelease` again, beside the order, and the exposure adapter no longer says it; the
+catalog's `Versioning` takes it from the view adapter (contract version 13, ADR-282).
 
 Context: roadmap WP3.0q. The shared types carry npm's vocabulary: `ExposureView.Tag` (a dist-tag), `SetupData.Scope` and `SetupData.RegistryKey` (an npm scope and the key of an `.npmrc` credential line), `ExposureAdapter.FilterDocument` (called by no core code: npm calls its own), `Strategy.Newest` (returned by no format, resolved as `Merge` by the engine, Q-ARCH-234) and `ViewAdapter.Prerelease` (a second definition of what `catalog.Versioning.Prerelease` already says).
 

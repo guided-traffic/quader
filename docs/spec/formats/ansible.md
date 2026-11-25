@@ -955,7 +955,9 @@ Acceptance criteria:
 ### R-ANS-026 · Package screens and the deploy dialog
 Priority: **P1** · Covers: PKG-ANSIBLE-004
 
-- A `ViewAdapter` gives the package screens (R-API-029): the versions of a collection ordered by semver, the metadata block
+- A `ViewAdapter` gives the package screens (R-API-029): the versions of a collection ordered by semver, a version with a pre-release
+  part marked a pre-release and the latest version the highest one without while one is visible
+  ([Q-ANS-92](#q-ans-92--a-collection-version-with-a-pre-release-part-is-a-pre-release-on-the-screens)), the metadata block
   (`requires_ansible`, dependencies, authors, license, tags, repository and issue links), the README of a version read from the archive
   by streaming up to it (the entry named by `collection_info.readme`, text limit 64 KiB, never executed or rendered as HTML by Quader), the
   size of a version, and (local) the publisher and time. The metadata members `describe` (`view.go`) emits are `sha256`, `requiresAnsible`
@@ -3136,7 +3138,37 @@ collection the client built were refused by them.
 and the integration cases in [ansiblelocal/links_test.go](../../../test/integration/ansiblelocal/links_test.go) and
 [ansibleremote/links_test.go](../../../test/integration/ansibleremote/links_test.go).
 
+### Q-ANS-92 · A collection version with a pre-release part is a pre-release on the screens
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+It applies [api-and-ui.md](../api-and-ui.md) Q-API-433 to the format.
+
+Context: the screens took "is a pre-release" from the exposure adapter, which the format does not have, so `1.0.0-beta.1` was never a
+pre-release on them and was the collection's latest version whenever it was the highest; the mirror's selection already left such a
+version out unless `includePrereleases` was set (R-ANS-021). `ansible-galaxy collection install` takes a pre-release only with `--pre` or
+the exact version.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A semantic version with a pre-release part (a `-` before any build metadata, R-ANS-002) is a pre-release; build metadata alone is none (chosen) | The view adapter's `Prerelease` reads the version as `Compare` does | The rule the mirror and the client use; one parse | — |
+| (b) No pre-releases | Nothing to change | — | The latest version on the screens is one the client does not install |
+
+**Choice:** (a). **Rationale:** the semantic version says it, and the client acts on it. **Applied in the spec:** R-ANS-026,
+[api-and-ui.md](../api-and-ui.md) R-API-029. Code: `Prerelease` in [view.go](../../../internal/formats/ansible/view.go); migration
+[00126](../../../internal/meta/postgres/migrations/00126_version_prerelease.sql) refills the stored rows. Tests:
+`TestR_API_029_ACollectionVersionIsAPrereleaseByItsSemanticVersion` (unit), kit check 11 (`TestR_ARCH_010_Conformance`, the sample holds
+`2.0.0-beta.1`), `TestR_HA_020_ThePrereleaseStepRefillsTheRowsWhoseAnswerChanged` (area `postgres`).
+
 ## What this does not cover
+
+### H-1970 · A collection document's highest_version counts a pre-release
+
+The `highest_version` of a collection document (R-ANS-004, R-ANS-047) is the highest version by precedence, a pre-release among them, so
+it names `2.0.0-rc.1` above `1.9.0`, while the package screens' latest version is `1.9.0` (Q-ANS-92). `ansible-galaxy collection install`
+picks its version from the version list and passes pre-releases over unless asked, so what it installs does not depend on the member. Not
+verified: whether the reference Galaxy server leaves pre-releases out of `highest_version` while a release exists; if it does, a client
+or a tool that reads the member sees another version from Quader. Live for every local and remote collection whose highest version is a
+pre-release.
 
 ### H-839 · A remote's signatures are verified and shown, and refuse nothing
 

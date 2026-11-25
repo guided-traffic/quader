@@ -69,6 +69,17 @@ func (m *memView) SortKey(v string) []byte {
 	return versionkey.Of([]byte{byte(num(v))}, err == nil, v) //nolint:gosec // the sample's numbers are below 256
 }
 
+// Prerelease calls the version 1 a pre-release, as the fixture says.
+func (m *memView) Prerelease(v string) bool {
+	switch {
+	case m.flags["pre-none"]:
+		return false
+	case m.flags["pre-junk"]:
+		return v == "1" || num(v) == 0
+	}
+	return v == "1"
+}
+
 func (m *memView) Describe(context.Context, formats.DataPorts, []formats.ViewVersion, formats.ViewFields, func(string) bool) (map[formats.VersionID]formats.ViewData, error) {
 	return nil, nil
 }
@@ -137,7 +148,7 @@ func viewFixture(a *memView, versions ...string) formattest.Fixture {
 	fx := testformat.Fixture()
 	fx.Skip = nil
 	fx.View = &formattest.ViewFixture{
-		Versions: versions, Package: "view-sample",
+		Versions: versions, Package: "view-sample", Prereleases: []string{"1"},
 		Seed: func(*formattest.Host) error {
 			a.arrived = slices.Clone(versions)
 			return nil
@@ -181,6 +192,8 @@ func TestR_ARCH_010_Check11ViewAdapter(t *testing.T) {
 		{"a Stored that fails for a package the repository does not hold", "unknown-fails", "does not hold"},
 		{"a Withheld that fails for no repository", "withheld-fails", "Withheld over no repository"},
 		{"a Withheld that lists a version the repository serves", "withholds-served", "all served"},
+		{"a Prerelease that calls no version a pre-release", "pre-none", "the fixture says true"},
+		{"a Prerelease that calls a string that is no version one", "pre-junk", "no version is no pre-release"},
 	} {
 		t.Run("R-ARCH-010 "+c.name+" fails check 11", func(t *testing.T) {
 			rep := run(c.flag)
@@ -199,6 +212,26 @@ func TestR_ARCH_010_Check11ViewAdapter(t *testing.T) {
 		rep := formattest.Evaluate(viewFormat{Format: testformat.New(), a: a}, fx)
 		if got := messages(rep, formattest.CheckView); !strings.Contains(got, "has a view adapter") {
 			t.Fatalf("got %q", got)
+		}
+	})
+	t.Run("R-ARCH-010 check 11 needs the sample's pre-releases or why the format has none", func(t *testing.T) {
+		check := func(prereleases []string, reason string) string {
+			a := &memView{flags: map[string]bool{"pre-none": true}}
+			fx := viewFixture(a, versions...)
+			fx.View.Prereleases, fx.View.NoPrereleases = prereleases, reason
+			return messages(formattest.Evaluate(viewFormat{Format: testformat.New(), a: a}, fx), formattest.CheckView)
+		}
+		if got := check(nil, ""); !strings.Contains(got, "names neither") {
+			t.Fatalf("neither: %q", got)
+		}
+		if got := check(nil, "the test format has none"); got != "" {
+			t.Fatalf("a reason: %q", got)
+		}
+		if got := check([]string{"9"}, "the test format has none"); !strings.Contains(got, "and a reason") {
+			t.Fatalf("both: %q", got)
+		}
+		if got := check([]string{"9"}, ""); !strings.Contains(got, "not one of the sample's versions") {
+			t.Fatalf("a pre-release outside the sample: %q", got)
 		}
 	})
 	t.Run("R-ARCH-010 check 11 needs a sample and a seed", func(t *testing.T) {
