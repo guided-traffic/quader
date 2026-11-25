@@ -317,7 +317,7 @@ export class SigningCertificateDialog {
             (input)="key.set($any($event.target).value)"
           ></textarea>
           <p id="signing-import-key-hint" class="hint" i18n="@@signing.import.key-hint">
-            PKCS#8 or SEC 1, encrypted or not. PKCS#12 is not taken: convert it with openssl pkcs12 -in &lt;file&gt; -nodes.
+            PKCS#8 or SEC 1, encrypted or not. PKCS#12 is not taken: convert it with <code translate="no">openssl pkcs12 -in &lt;file&gt; -nodes</code>.
           </p>
         </div>
         @if (err('/key'); as text) {
@@ -371,6 +371,10 @@ export class SigningCertificateDialog {
     }
     .hint {
       margin: 0;
+    }
+    /* The command is copied as it stands: broken at its hyphen it read "-" / "nodes." (1,440 px). */
+    .hint code {
+      white-space: nowrap;
     }
   `,
 })

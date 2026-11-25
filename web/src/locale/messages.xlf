@@ -32609,7 +32609,7 @@
         <note category="location">src/app/features/settings/signing-dialogs.ts:320,322</note>
       </notes>
       <segment>
-        <source> PKCS#8 or SEC 1, encrypted or not. PKCS#12 is not taken: convert it with openssl pkcs12 -in &lt;file&gt; -nodes. </source>
+        <source> PKCS#8 or SEC 1, encrypted or not. PKCS#12 is not taken: convert it with <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">openssl pkcs12 -in &lt;file&gt; -nodes</pc>. </source>
       </segment>
     </unit>
     <unit id="signing.import.passphrase">
