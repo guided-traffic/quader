@@ -24530,6 +24530,25 @@ the dialog's edge at both widths and the body scrolled sideways.
 **Applied in the spec:** R-UI-042, R-EP-017. Code: [_dialog.scss](../../web/src/styles/_dialog.scss),
 [conflict-dialog.ts](../../web/src/app/shared/conflict-dialog.ts), [diff-dialog.ts](../../web/src/app/shared/diff-dialog.ts).
 
+### Q-UI-1146 · The person search's list stands in the top layer under its field, not inside the box that holds the field
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the matches of the shared principal field (R-UI-150) hung under the field as an absolutely placed box. In a dialog, whose
+body scrolls, the body cut the list: in **Add member** at both widths only the first match showed, half of it, and the body scrolled
+inside the dialog to the rest (the dialog states, 2026-11-25). The same holds for every field of the kind in a dialog (**First
+Owners** of New project, the user of a download limit's rule) and in a drawer's body.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The list is a popover (`popover="manual"`) in the top layer, fixed under its field and as wide as it, at most half the window or 24 rem high, above the field where the window has more room there; placed again on every scroll and resize while it is open (chosen) | The element stays where it is in the document | No box cuts it, in a dialog, a drawer or a page; the combobox, its keyboard and its tests unchanged | Its place is computed, as a menu's is |
+| (b) The list in the flow of a dialog | | No positioning | The dialog grows while a person types and, centred, moves the field under the pointer |
+| (c) A CDK overlay | | The menus' mechanism | The list leaves the field's element: the screen reader's and the tests' way to it changes |
+
+**Choice:** (a).
+
+**Applied in the spec:** R-UI-150. Code: [principal-field.ts](../../web/src/app/shared/ui/principal-field.ts) (`placeList`).
+
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 
 Status: **Decided by the owner, 2026-11-23** (T-25, 19:30, whole: "Ich finde Projects und Repositories haben im Admin-Mneü nichts

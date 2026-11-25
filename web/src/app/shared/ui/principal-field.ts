@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  afterRenderEffect,
   ElementRef,
   computed,
   effect,
@@ -96,6 +97,30 @@ export function refOf(kind: PrincipalKind, name: string): string {
 let nextId = 1;
 
 /**
+ * Places the open list (fixed, in the top layer) under its field, as wide as the field and at most half the window or 24 rem high;
+ * above the field where the room below is smaller than the list and the room above larger, as a menu flips.
+ */
+function placeList(popup: HTMLElement, anchor: HTMLElement): void {
+  const field = anchor.getBoundingClientRect();
+  const gap = 4;
+  const edge = 8;
+  const cap = Math.min(window.innerHeight / 2, 384);
+  const below = window.innerHeight - field.bottom - gap - edge;
+  const above = field.top - gap - edge;
+  const need = Math.min(popup.scrollHeight, cap);
+  popup.style.insetInlineStart = `${field.left}px`;
+  popup.style.inlineSize = `${field.width}px`;
+  if (need > below && above > below) {
+    const room = Math.min(cap, above);
+    popup.style.maxBlockSize = `${room}px`;
+    popup.style.insetBlockStart = `${field.top - gap - Math.min(need, room)}px`;
+  } else {
+    popup.style.maxBlockSize = `${Math.max(0, Math.min(cap, below))}px`;
+    popup.style.insetBlockStart = `${field.bottom + gap}px`;
+  }
+}
+
+/**
  * The one field that names a person, a group or a service account (R-UI-150, Q-UI-580): it searches while one types and lists
  * the matches under the field, each with the avatar (or the kind's icon), the name and under it the username or the kind; the
  * chosen principals are chips in the field. Nobody types a reference (`user:`, `group:`, `sa:`).
@@ -119,7 +144,7 @@ let nextId = 1;
   template: `
     <div class="field">
       <label class="field-label" [for]="inputId">{{ label() }}</label>
-      <div class="anchor field-w-name" [class.full]="width() === 'full'">
+      <div #anchor class="anchor field-w-name" [class.full]="width() === 'full'">
         <div class="box text-input" [class.invalid]="!!error()" [class.readonly]="readonly()">
           @if (chosen().length > 0) {
             <ul class="chips" [attr.aria-label]="chosenLabel()">
@@ -169,8 +194,10 @@ let nextId = 1;
         </div>
         @if (open()) {
           <!-- The pointer keeps the focus in the input (mousedown), so a click reaches its row. A row is never focused (the focus
-               stays in the input, aria-activedescendant names the row); tabindex -1 and Enter keep it operable should a tool focus it. -->
-          <div class="popup" (mousedown)="$event.preventDefault()">
+               stays in the input, aria-activedescendant names the row); tabindex -1 and Enter keep it operable should a tool focus it.
+               The list stands in the top layer (popover), fixed under its field: a dialog's or a drawer's body scrolls, and a list
+               that hung in it was cut by it (Add member, Q-UI-1146). -->
+          <div #popup class="popup" popover="manual" (mousedown)="$event.preventDefault()">
             <!-- aria-busy while the text's search runs: assistive technology waits for the answer, and so do the tests (choosePrincipal) -->
             <div role="listbox" class="list" [id]="listId" [attr.aria-label]="listLabel()" [attr.aria-busy]="phase() === 'searching' ? 'true' : null">
               @for (m of matches(); track m.ref; let i = $index) {
@@ -327,6 +354,8 @@ let nextId = 1;
       block-size: 1rem;
       border-radius: 50%;
     }
+    /* In the top layer, placed by placeList() under the field (above it where the window has more room there); without the popover
+       (an engine without it) it hangs under the field as before. */
     .popup {
       position: absolute;
       inset-block-start: calc(100% + var(--quader-space-1));
@@ -336,6 +365,7 @@ let nextId = 1;
       /* As wide as the field: a list wider than its field leaves a drawer or a dialog at the side. */
       inline-size: 100%;
       max-block-size: min(50vh, 24rem);
+      margin: 0;
       overflow-y: auto;
       padding: var(--quader-space-1);
       border: 1px solid var(--quader-menu-border);
@@ -344,6 +374,11 @@ let nextId = 1;
       color: var(--quader-control-fg);
       box-shadow: var(--quader-elevation-2);
       font-size: 0.875rem;
+    }
+    .popup:popover-open {
+      position: fixed;
+      inset-block-end: auto;
+      inset-inline-end: auto;
     }
     .option {
       display: flex;
@@ -434,6 +469,8 @@ export class PrincipalField {
   readonly picked = output<PrincipalChoice>();
 
   private readonly input = viewChild<ElementRef<HTMLInputElement>>('field');
+  private readonly anchor = viewChild<ElementRef<HTMLElement>>('anchor');
+  private readonly popup = viewChild<ElementRef<HTMLElement>>('popup');
   protected readonly inputId = `quader-principal-${nextId++}`;
   protected readonly listId = `${this.inputId}-list`;
   protected readonly text = signal('');
@@ -489,6 +526,24 @@ export class PrincipalField {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.abort?.abort());
+    // The open list in the top layer, under its field, again on every scroll and resize while it is open and whenever its rows
+    // change: it follows its field as a menu does.
+    afterRenderEffect((onCleanup) => {
+      const popup = this.popup()?.nativeElement;
+      const anchor = this.anchor()?.nativeElement;
+      this.matches();
+      this.state();
+      if (!popup || !anchor || typeof popup.showPopover !== 'function') return;
+      if (!popup.matches(':popover-open')) popup.showPopover();
+      const place = (): void => placeList(popup, anchor);
+      place();
+      window.addEventListener('scroll', place, true);
+      window.addEventListener('resize', place);
+      onCleanup(() => {
+        window.removeEventListener('scroll', place, true);
+        window.removeEventListener('resize', place);
+      });
+    });
     // A new text searches after the pause; a text below the minimum clears the list.
     effect((onCleanup) => {
       const text = this.text().trim();
