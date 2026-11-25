@@ -24549,6 +24549,23 @@ Owners** of New project, the user of a download limit's rule) and in a drawer's 
 
 **Applied in the spec:** R-UI-150. Code: [principal-field.ts](../../web/src/app/shared/ui/principal-field.ts) (`placeList`).
 
+### Q-UI-1147 · A token's secret shown once stands in a field as wide as a token
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the secret of a new or rotated token (`<quader-token-secret>`, R-UI-029, R-UI-043; a person's token, a technical token, a
+Bastion's) stood in a field that took the page's whole line: 1,200 px at 1,440 px for a token of 57 characters (`qdr_pat_`, 43
+digits and the check), against R-UI-085.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The field grows to 36 rem at most and shrinks with the line; Show and Copy stand beside it, under it where the line is narrower (chosen) | 576 px: a token of 57 characters in the monospace font with room to spare | As wide as its input | A longer token type would need the rule again |
+| (b) The width of a name (28 rem) | | One of the five widths | 448 px: a token's last characters cut |
+
+**Choice:** (a).
+
+**Applied in the spec:** R-UI-085. Code: [token-secret.ts](../../web/src/app/shared/access/token-secret.ts).
+
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 
 Status: **Decided by the owner, 2026-11-23** (T-25, 19:30, whole: "Ich finde Projects und Repositories haben im Admin-Mneü nichts

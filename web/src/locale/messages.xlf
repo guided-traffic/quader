@@ -45223,7 +45223,7 @@
     </unit>
     <unit id="token-secret.copied">
       <notes>
-        <note category="location">src/app/shared/access/token-secret.ts:115</note>
+        <note category="location">src/app/shared/access/token-secret.ts:116</note>
       </notes>
       <segment>
         <source>Token copied to the clipboard.</source>
@@ -45231,7 +45231,7 @@
     </unit>
     <unit id="token-secret.copy-failed">
       <notes>
-        <note category="location">src/app/shared/access/token-secret.ts:118</note>
+        <note category="location">src/app/shared/access/token-secret.ts:119</note>
       </notes>
       <segment>
         <source>The token could not be copied. Show it and copy it by hand.</source>

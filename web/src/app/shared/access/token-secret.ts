@@ -77,8 +77,9 @@ import { Notifier } from '../../core/notifier';
       gap: var(--quader-space-2);
       margin-block-end: var(--quader-space-3);
     }
+    /* As wide as a token of 57 characters, not the page (R-UI-085, Q-UI-1147): at 1,440 px the field ran 1,200 px for it. */
     input {
-      flex: 1 1 18rem;
+      flex: 0 1 36rem;
       min-inline-size: 0;
       padding: var(--quader-space-2);
       font-family: ui-monospace, monospace;
