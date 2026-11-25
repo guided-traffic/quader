@@ -283,7 +283,7 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | Package | What it builds | Cost (the planner's estimate, to be measured by its builder) | State |
 |---|---|---|---|
 | G2 · Every dialog in a real browser, without the stack | the 21 dialogs, the two confirm shapes, 17 failures and 13 validations inside a dialog, the conflict and the session dialogs, the token's secret, tooltips at the window's edge: about 62 states at 390 and 1,440 px, measured by the layout checks' own function in the unit-test builder's browser mode; one new development dependency (the unit-test runner's browser provider, pinned) | 2 to 3 minutes of the job `UI layout checks`, nothing per format | landed and pushed at 10:13 (twelve commits; Q-UI-1140 to Q-UI-1149, gaps H-1910 to H-1912; its builder worked from 08:53 to 10:07; the landing's gates and `make ui-states` each exit 0): 69 states, twelve defects of the product found and repaired (section 8, Product) |
-| S9 · A failed call says everything the answer carried | the owner's finding of 11:14 (section 8, Product): the error notice of every screen says what happened in a sentence for every status, shows the status, the call, the time, the request ID, the code and the server's sentence, keeps the answer's body and headers one click away, offers Retry for every read and reads again by itself; one cause is one notice | in work since 11:14 |
+| S9 · A failed call says everything the answer carried | the owner's finding of 11:14 (section 8, Product): the error notice of every screen says what happened in a sentence for every status, shows the status, the call, the time, the request ID, the code and the server's sentence, keeps the answer's body and headers one click away, offers Retry for every read and reads again by itself; one cause is one notice | landed and pushed at 12:08 (one commit; R-UI-216; H-1960 to H-1963; its builder worked from 11:14 to 12:00); S9b (the about 50 screens whose notice gives way while it retries) follows |
 | S10 · An upstream package's npm tags stand on their versions | the owner's finding of 11:22 (section 8, Product): the unlabelled run of dist-tags above an opened upstream package goes; a tag stands as a badge on its version's row, as on the package's page, says what it is, and the filter finds a version by it; the package's state is not said twice | in work since 11:23 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | in work since 11:13 |
 | G3 · Page and shell states on the stack | the 10 menus, 3 drawers, the person search's list in a drawer, about 19 sections, 11 routes, the banner and the maintenance notice, a failure of an action inside a section, the editors' refusals with their summary, two selection states, the command menus of NuGet, Ansible Galaxy and generic | 5 to 6 minutes of the render step (the job at about 61 to 64 of its 75 minutes), about 3 s per format | after G1 |
@@ -1239,7 +1239,34 @@ records the recorder that tells such a stall apart).
   version by its tag; the package's state stands in the opened part only where it says more than the row (a rule, a
   request). npm alone has such names among the formats; an image's tags are its versions.
 
-- **An error on a screen says "HTTP 502" and nothing else (owner, 2026-11-25, 11:14, UI profile, the page of
+- **Closed on 2026-11-25, 12:08, by S9 (R-UI-216; Q-UI-1180 to Q-UI-1189 as used; gaps H-1960 to H-1963):** an
+  error says what happened in a sentence for every status (502 and 504: "The server did not answer through the gateway
+  in front of it. It may be restarting or overloaded."), then the facts the answer carried without a click: the status
+  with its reason, the time, the call, the request ID with Copy (read from the answer's header too), the code, the
+  server's sentence, Retry-After, "sent twice", "failed in a row N times"; folded under Technical details: the content
+  type, the headers a script may read, the body of an answer that is no problem document as text (4,000 characters at
+  most), the field problems, `type`, `instance`; **Copy report** copies all of it. Calls of one view that fail the same
+  way (status, code and the server's sentence) are one notice that names each call. A failed read that may pass (no
+  answer, 408, 429, 5xx, an answer that could not be read) is read again by itself after 3, 6, 12, 24 s and no sooner
+  than Retry-After; a 403, 404 or 422 offers Retry and is not polled; a failed write is never repeated. Toasts (13 in
+  9 files), a failed upload row, a triage result, the login form and the forms' error summary follow the form; the
+  download lists' "HTTP 429/503" stay, because they name the upstream's status after the screen's own sentence. No
+  request header, body or cookie is shown or copied, a query parameter that carries a credential is named without its
+  value, a foreign body is text (`docs/security/data-and-secret-flow.md`). **The owner's case as its builder observed
+  it on its instance:** the backend stopped and the repository's page loaded: one notice with both calls, retries at 3,
+  6, 12 and 24 s, the page back 14 s after the backend was ready, without a reload; a defect found there and repaired
+  (the formats' read had failed silently, so the page said "not scanned" after the recovery). **Left open:** about 50
+  screens let the notice give way to "Loading." while it retries (H-1963: each needs `failureOf`), and a read without a
+  notice of its own is retried with its page on the repository's page only (H-1962): S9b; the report shows what the
+  answer named, internal host names among it (H-1960, by design); the redaction goes by a parameter's name (H-1961, no
+  call carries one today); "Try again in 1 seconds."; not seen behind the installation's edge, in Firefox or WebKit.
+  **The landing:** the translation files and one import were joined by hand (42 hunks of location notes, written
+  again by `make web-i18n`); the pinned count of requirements is 1277 (720, 518, 39), which its builder had not run
+  the Go tests for; thirteen gates, `make ui-states` and the failure screens' render (4 screens, 0 findings) each exit
+  0; looked at by the development agent: the gateway failure dark at 1,440 px (one notice, both calls, "tries again by
+  itself in 3 seconds") and with a proxy's page light at 390 px (the page as text under Technical details). Seen there:
+  the facts' values stand in the browser's default monospace face (the open entry on the unused mono font). As it stood:
+  **An error on a screen says "HTTP 502" and nothing else (owner, 2026-11-25, 11:14, UI profile, the page of
   `upstream/docker-hub`: two red notices one above the other, each "HTTP 502", and nothing of the page; his words,
   whole: "wenn das Frontend Fehler anzeigt ist mir das ein bisschen dünn, ich will im Frontend alle Infos die verfügbar
   sind angezeigt bekommen."):** **The cause of the 502 was the development agent:** it restarted the profile's backend
