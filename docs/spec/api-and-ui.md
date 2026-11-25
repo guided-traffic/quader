@@ -26324,7 +26324,8 @@ R-UI-184 and R-UI-185 (the steps and a budget's rule). Code: `starterText`, `sta
 [usage-budgets.ts](../../web/src/app/features/usage/usage-budgets.ts), `everyPhrase` of [callers.ts](../../web/src/app/features/limits/callers.ts).
 Tests: `R-UI-184 names the steps and links a token to its account` of [usage.spec.ts](../../web/src/app/features/usage/usage.spec.ts) and
 the bulk's line of [remote-downloads.spec.ts](../../web/src/app/features/repositories/downloads/remote-downloads.spec.ts) (unit,
-milliseconds, English; the German targets are read in the translation file and on the German picture of the tab).
+milliseconds, English; the German targets are read in the translation file and on the German picture of the tab, whose walk `downloadsWalk`
+answers the bulk whose rows run as started by the reader and the expanding one as started by another person).
 
 ### Q-UI-1214 · A scan's state is a warning where an administrator must repair something, and neutral otherwise
 

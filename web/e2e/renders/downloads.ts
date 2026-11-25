@@ -215,6 +215,8 @@ const expandingBulk = {
   versionsQueued: 0,
   rows: {},
   createdAt: at(-1),
+  // Another person started it: its head says "Started by Priya Raman".
+  startedBy: { id: '0193a1b2-0000-7000-8000-0000000000aa', name: 'Priya Raman' },
 };
 
 const bulks = [expandingBulk, failedBulk, bulk];
@@ -279,6 +281,13 @@ const rowsOfTab = 'main quader-remote-downloads [data-testid="download-rows"] tb
 export async function* downloadsWalk(p: Page): AsyncGenerator<string> {
   await expect(p.locator('main quader-remote-downloads [data-testid="download-rows"]')).toBeVisible();
   yield '';
+  // The bulk whose rows run was started by the reader: its head says so in a sentence of its own, "Started by you", in German
+  // "Gestartet von Ihnen" (Q-UI-1219). The reader is the session's principal.
+  const who = await p.request.get('/api/v1/auth/whoami');
+  expect(who.ok()).toBe(true);
+  const me = ((await who.json()) as { principal: { id: string; name?: string } }).principal;
+  const mine = { ...bulk, startedBy: { id: me.id, name: me.name ?? null } };
+  const answered = (b: Record<string, unknown>) => (b['id'] === bulk.id ? mine : b);
   // The queue an upstream's limit holds is answered once the walk reaches it.
   let held = false;
   await p.route(listUrl, (route) => {
@@ -295,11 +304,11 @@ export async function* downloadsWalk(p: Page): AsyncGenerator<string> {
   });
   await p.route(bulkUrl, (route) => {
     const id = new URL(route.request().url()).pathname.split('/').at(-1);
-    const answer = held ? heldBulk : (bulks.find((b) => b.id === id) ?? bulk);
+    const answer = held ? heldBulk : answered(bulks.find((b) => b.id === id) ?? bulk);
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(answer) });
   });
   await p.route(bulksUrl, (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: held ? [heldBulk] : bulks, nextCursor: null }) }),
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: held ? [heldBulk] : bulks.map(answered), nextCursor: null }) }),
   );
   await p.reload();
   await expect(p.locator(rowsOfTab)).toHaveCount(9);
