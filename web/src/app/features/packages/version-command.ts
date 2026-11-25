@@ -14,8 +14,9 @@ const CLAMAV_REF = upstreamName(CLAMAV_KEY);
  *   client can take the version from, `repository` first;
  * - `clamav`: a version of the ClamAV definitions while ClamAV definition updates is on (R-UI-194): no command per version, since a
  *   ClamAV installation always takes the version in use; **Set up client** of `upstream/clamav` with freshclam, and the note why;
- * - `note`: no button, one sentence why no client can install the version: it is held only by disabled repositories (Q-UI-965) or only
- *   by system repositories of the project `upstream`, which answer every client 404 (R-UI-193, Q-UI-898, Q-UI-899);
+ * - `note`: no button, one sentence why no client can install the version: it is held only by remotes whose rules do not deliver it
+ *   (R-CUR-014, Q-UI-1260), only by disabled repositories (Q-UI-965) or only by system repositories of the project `upstream`, which
+ *   answer every client 404 (R-UI-193, Q-UI-898, Q-UI-899);
  * - `none`: a format without clients: nothing.
  *
  * No command that would fail is offered.
@@ -23,7 +24,7 @@ const CLAMAV_REF = upstreamName(CLAMAV_KEY);
 export type VersionCommand =
   | { readonly kind: 'menu'; readonly repository: string; readonly repositories: readonly string[] }
   | { readonly kind: 'clamav'; readonly setup: readonly string[] }
-  | { readonly kind: 'note'; readonly note: string; readonly cause: 'disabled' | 'system' }
+  | { readonly kind: 'note'; readonly note: string; readonly cause: 'undelivered' | 'disabled' | 'system' }
   | { readonly kind: 'none' };
 
 /**
@@ -49,6 +50,15 @@ export function versionCommand(format: string, version: PackageVersion, clamavCl
     return setup ? { kind: 'clamav', setup } : { kind: 'none' };
   }
   if (repositories.length > 0) return { kind: 'menu', repository: repositories[0]!, repositories };
+  // Held by remotes whose rules do not deliver it: no command that would be refused; the note at the top of the page says why for each
+  // (R-CUR-014, Q-UI-1260). Such a remote is not disabled.
+  if (version.repositories.some((r) => r.unavailableReason !== undefined)) {
+    return {
+      kind: 'note',
+      cause: 'undelivered',
+      note: $localize`:@@pkg.install.undelivered:No repository delivers this version: the note at the top of the page says why.`,
+    };
+  }
   const keys = version.repositories
     .filter((r) => !r.available && r.class !== 'virtual' && !isSystemRepositoryName(r.key))
     .map((r) => r.key);

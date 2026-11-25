@@ -118,6 +118,7 @@ export function snippetText(id: string, reader: SnippetReader = { anonymous: fal
     case 'curl.install':
     case 'apt.install':
     case 'ansible-galaxy.install.collection':
+    case 'ansible-galaxy.install.role':
     case 'dotnet.publish.shell':
     case 'nuget.publish.cmd':
       return text(null);
@@ -210,6 +211,12 @@ export function snippetText(id: string, reader: SnippetReader = { anonymous: fal
       return text($localize`:@@setup.caption.freshclam-conf:Put this line into \`freshclam.conf\` of each ClamAV installation. \`PrivateMirror\` replaces ClamAV's own network.`);
     case 'freshclam.install':
       return text($localize`:@@setup.caption.freshclam-run:Run it once: it fetches each database whole, then reports each as up to date.`);
+    case 'ansible-galaxy.install.role-requirements':
+      // A role's requirements.yml (R-ANS-056, Q-ANS-114).
+      return text(
+        $localize`:@@setup.caption.ansible-role-requirements:Install it with \`ansible-galaxy role install -r requirements.yml\`.`,
+        $localize`:@@setup.fold.requirements:With a requirements.yml`,
+      );
     case 'ansible-galaxy.publish.collection':
       return text($localize`:@@setup.caption.ansible-publish:Publishes an archive built with \`ansible-galaxy collection build\`.`);
     case 'npm.verify.signatures':

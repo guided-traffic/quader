@@ -46,6 +46,7 @@ import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBas
 import { downloadsWalk } from './downloads';
 import { cachedDeb, cachedNpm } from './cached';
 import { brokenDeb, debRelationLookups, docsDeb, manyFilesDeb } from './debdocs';
+import { bareRole, blockedRole, pipRole } from './roles';
 import { accountOfferWalk, registryAccountWalk } from './upstream-accounts';
 import {
   advisorySourceFailures,
@@ -3176,6 +3177,14 @@ export const screens: readonly Screen[] = [
     kinds: ['plain'],
     walk: docEntry,
   },
+  // A role a remote read (R-ANS-056, roles.ts): titled by its owner and name, its README first, the role's install command; its facts and
+  // the name the rules see on Details; twenty versions on its package page; a role the remote's rules block, and one without facts.
+  { id: 'package-version-ansible-role', path: ver(O, pipRole, pipRole.version), kinds: all, de: ['plain'] },
+  { id: 'package-version-ansible-role-details', path: `${ver(O, pipRole, pipRole.version)}?tab=details`, kinds: ['plain'], de: ['plain'] },
+  { id: 'package-ansible-role', path: pkg(O, pipRole), kinds: ['plain'] },
+  { id: 'package-version-ansible-role-blocked', path: ver(O, blockedRole, blockedRole.version), kinds: ['plain'], de: ['plain'] },
+  { id: 'package-version-ansible-role-bare', path: ver(O, bareRole, bareRole.version), kinds: ['plain'] },
+  { id: 'search-results-roles', path: '/ui/search?q=geerlingguy&kind=package', kinds: ['plain'], de: true },
   // The folders and files of a repository on its page (R-UI-010 to R-UI-012, ADR-203): a folder with the Owner's operations, a
   // folder deep in a path of long names, a folder of more than a page, an empty folder, a file and a package format's raw files.
   { id: 'files-folder', path: `${P}/repositories/assets/files/releases/design-system/2.5.0`, kinds: all, walk: folderOperations },

@@ -22,6 +22,9 @@ func optionNames() []string { return []string{tokenEnv, "--token", "password"} }
 // exampleArchive is the collection archive the publish snippet names where the reader names theirs (R-API-030).
 const exampleArchive = "./acme-tools-1.0.0.tar.gz"
 
+// roleExample is what a role's install snippet writes for a role whose owner and name the remote has not read yet (R-ANS-056).
+const roleExample = "<owner>.<name>"
+
 const anonymousNote = "This repository is open to anonymous readers: no credential is needed to install from it."
 
 // SetupTemplates are the client setup snippets of R-ANS-025 and R-UI-018 (Q-ANS-22, Q-ANS-48): the server in an ansible.cfg, the token
@@ -88,10 +91,12 @@ roles:
 		{
 			ID: "ansible-galaxy.role.install", Client: ClientGalaxy, Section: "install", Lang: "shell", Packages: RolePrefix,
 			Template: "ansible-galaxy role install " + formats.SetupPackageRef + "\n", VersionSpec: "," + formats.SetupVersionRef,
+			PackageExample: roleExample,
 		},
 		{
 			ID: "ansible-galaxy.role-requirements.install", Client: ClientGalaxy, Section: "install", Lang: "yaml", File: "requirements.yml",
 			Packages: RolePrefix, Template: roleRequirements, VersionSpec: "\n    version: \"" + formats.SetupVersionRef + "\"",
+			PackageExample: roleExample,
 		},
 
 		{ID: "ansible-galaxy.collection.publish", Client: ClientGalaxy, Section: "publish", Lang: "shell", Template: publish, Examples: []string{exampleArchive}},

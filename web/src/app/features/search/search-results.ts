@@ -324,7 +324,8 @@ export class SearchResults {
   }
 
   protected packageLink(row: PackageSummary): string[] {
-    return packageCommands(this.placeOf(row).project, row.format, row.name);
+    // The address is the key, the name the rules see (an Ansible role's role/<id>, R-ANS-056); the row shows the name.
+    return packageCommands(this.placeOf(row).project, row.format, row.key ?? row.name);
   }
 
   /**

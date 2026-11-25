@@ -37,6 +37,11 @@ func TestR_ANS_056_ARolesInstallCommandIsTheRolesOwnByItsDisplayName(t *testing.
 		!strings.Contains(got[1], "roles:\n  - name: geerlingguy.pip\n    version: \"2.0.0\"") {
 		t.Errorf("a role's install snippets: %q", got)
 	}
+	// A role whose owner and name the remote has not read: the example stands, so no command names a name the client cannot look up.
+	in.DisplayName = ""
+	if got := installs(in); len(got) != 2 || got[0] != "ansible-galaxy role install <owner>.<name>\n" {
+		t.Errorf("a role without its display name: %q", got)
+	}
 	in.Package, in.Version, in.DisplayName = "acme.tools", "1.0.0", ""
 	if got := installs(in); len(got) != 2 || got[0] != "ansible-galaxy collection install acme.tools:1.0.0\n" {
 		t.Errorf("a collection's install snippets: %q", got)

@@ -24,7 +24,8 @@
 -- version, aggregated over the visible versions, in keyset order. sort is name,
 -- createdAt or updatedAt; the tie-breakers are name and format, in the direction of
 -- the sort. q_ids and keyword_ids are the versions whose description or keywords the
--- format matched (a package matches when one of its visible versions is among them).
+-- format matched (a package matches when one of its visible versions is among them). The text matches the name and the display
+-- name (an Ansible role's <owner>.<name> for its package role/<id>, R-ANS-056).
 -- exact_name, when set, restricts the rows to one package. Names are ordered bytewise
 -- (collation C), so the order does not depend on the database's locale and the keyset
 -- comparison of a cursor means the same on every replica.
@@ -52,7 +53,8 @@ WITH vis AS (
          count(DISTINCT v.version)::bigint AS version_count
     FROM vis v
    GROUP BY v.format, v.name
-  HAVING (sqlc.arg(q)::text = '' OR position(lower(sqlc.arg(q)::text) in lower(v.name)) > 0 OR bool_or(v.vid = ANY(sqlc.arg(q_ids)::bigint[])))
+  HAVING (sqlc.arg(q)::text = '' OR position(lower(sqlc.arg(q)::text) in lower(v.name)) > 0
+          OR position(lower(sqlc.arg(q)::text) in lower(min(v.display_name))) > 0 OR bool_or(v.vid = ANY(sqlc.arg(q_ids)::bigint[])))
      AND (sqlc.arg(keyword)::text = '' OR bool_or(v.vid = ANY(sqlc.arg(keyword_ids)::bigint[])))
      AND (NOT sqlc.arg(has_from)::boolean OR min(v.created_at) >= NULLIF(sqlc.arg(created_from)::text, '')::timestamptz)
      AND (NOT sqlc.arg(has_to)::boolean OR min(v.created_at) < NULLIF(sqlc.arg(created_to)::text, '')::timestamptz)

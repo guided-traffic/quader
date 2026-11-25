@@ -13676,7 +13676,12 @@ type PackageSummary struct {
 	Format string `json:"format"`
 
 	// Id Server-generated and opaque.
-	Id       string   `json:"id"`
+	Id string `json:"id"`
+
+	// Key The normalized name: the one the package's address, the rules and the permissions use. It differs from `name` where the
+	// format shows another name: a NuGet ID's original casing, an Ansible role's `<owner>.<name>` for its package `role/<id>`
+	// (R-ANS-056, Q-UI-1261).
+	Key      *string  `json:"key,omitempty"`
 	Keywords []string `json:"keywords"`
 
 	// Kind What `latestVersion` is in its format's words, from the format's metadata: an OCI artifact's kind (`image`, `helm-chart`,

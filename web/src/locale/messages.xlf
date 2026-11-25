@@ -11222,7 +11222,7 @@
         <note category="location">src/app/features/packages/client-command-menu.ts:109,110</note>
         <note category="location">src/app/features/packages/client-command-menu.ts:151,152</note>
         <note category="location">src/app/features/packages/package-list.html:2,5</note>
-        <note category="location">src/app/features/packages/package-version.html:71,75</note>
+        <note category="location">src/app/features/packages/package-version.html:72,76</note>
         <note category="location">src/app/features/repositories/content/repository-content.html:25,27</note>
         <note category="location">src/app/features/repositories/repository-list.html:206,207</note>
       </notes>
@@ -14300,7 +14300,7 @@
     <unit id="pkg.meta.external">
       <notes>
         <note category="location">src/app/features/packages/ansible-doc-entry.html:232,233</note>
-        <note category="location">src/app/features/packages/package-version.html:647,648</note>
+        <note category="location">src/app/features/packages/package-version.html:658,659</note>
       </notes>
       <segment>
         <source>(opens another site)</source>
@@ -14663,6 +14663,158 @@
       </notes>
       <segment>
         <source>Import of <ph id="0" equiv="collection" disp="collection"/> <ph id="1" equiv="version" disp="task.version"/></source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.readme.bare">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:72</note>
+      </notes>
+      <segment>
+        <source>Quader has not read what the upstream says of this role yet. Its owner and name, its description and its README come with the role&apos;s next lookup, the first request of ansible-galaxy role install or role info.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.readme.queued">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:76</note>
+      </notes>
+      <segment>
+        <source>Quader is fetching the README of this role from the upstream. It appears here when it arrives.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.readme.absent">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:78</note>
+      </notes>
+      <segment>
+        <source>The upstream has no README for this role.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.readme.too-large">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:82</note>
+      </notes>
+      <segment>
+        <source>The upstream&apos;s README of this role is larger than Quader keeps (512 KiB).</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.readme.invalid">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:84</note>
+      </notes>
+      <segment>
+        <source>The upstream answered something Quader cannot read as the README of this role.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.readme.failed">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:86</note>
+      </notes>
+      <segment>
+        <source>Quader could not fetch the README of this role from the upstream. It asks again when a client installs the role.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.readme.none">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:89</note>
+      </notes>
+      <segment>
+        <source>Quader has no README of this role yet: it fetches it from the upstream when a client installs the role, unless the repository fetches no documentation.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.publish">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:106,108</note>
+      </notes>
+      <segment>
+        <source>Roles come to Quader from a Galaxy. To publish a role of your own, put it into the roles directory of a collection and publish the collection.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.publish-how">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:109,113</note>
+      </notes>
+      <segment>
+        <source>How to publish a role</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.heading">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:137,138</note>
+      </notes>
+      <segment>
+        <source>Role</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.owner">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:140,141</note>
+      </notes>
+      <segment>
+        <source>Owner</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.name">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:142,143</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.upstream-downloads">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:144,146</note>
+      </notes>
+      <segment>
+        <source>Downloads at the upstream</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.not-named">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:149,151</note>
+      </notes>
+      <segment>
+        <source>Not named by the upstream</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.branch">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:154,155</note>
+      </notes>
+      <segment>
+        <source>Branch</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.dependencies">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:158,159</note>
+      </notes>
+      <segment>
+        <source>Dependencies</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.rules-name">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:161,163</note>
+      </notes>
+      <segment>
+        <source>Name in rules and permissions</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.upstream-link">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:165,167</note>
+      </notes>
+      <segment>
+        <source>Delivery in the tab Upstream</source>
+      </segment>
+    </unit>
+    <unit id="pkg.role.rules-note">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:168,171</note>
+      </notes>
+      <segment>
+        <source>Delivery rules, include and exclude patterns and permissions name a role by the Galaxy&apos;s number, not by its owner and name.</source>
       </segment>
     </unit>
     <unit id="clamav.outdated">
@@ -15121,6 +15273,54 @@
         <source>Show more (<ph id="0" equiv="INTERPOLATION" disp="{{ more() | number }}"/> left)</source>
       </segment>
     </unit>
+    <unit id="pkg.delivery.blocked">
+      <notes>
+        <note category="location">src/app/features/packages/delivery-note.ts:12</note>
+      </notes>
+      <segment>
+        <source>a rule of the repository blocks it</source>
+      </segment>
+    </unit>
+    <unit id="pkg.delivery.outside-range">
+      <notes>
+        <note category="location">src/app/features/packages/delivery-note.ts:14</note>
+      </notes>
+      <segment>
+        <source>it lies outside the range of versions the repository allows</source>
+      </segment>
+    </unit>
+    <unit id="pkg.delivery.not-allowed">
+      <notes>
+        <note category="location">src/app/features/packages/delivery-note.ts:16</note>
+      </notes>
+      <segment>
+        <source>the repository delivers only what a rule allows, and no rule allows it</source>
+      </segment>
+    </unit>
+    <unit id="pkg.delivery.heading">
+      <notes>
+        <note category="location">src/app/features/packages/delivery-note.ts:33</note>
+      </notes>
+      <segment>
+        <source>Not delivered by</source>
+      </segment>
+    </unit>
+    <unit id="pkg.delivery.consequence">
+      <notes>
+        <note category="location">src/app/features/packages/delivery-note.ts:34,35</note>
+      </notes>
+      <segment>
+        <source>A client cannot install this version through it.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.delivery.link">
+      <notes>
+        <note category="location">src/app/features/packages/delivery-note.ts:38,41</note>
+      </notes>
+      <segment>
+        <source>Delivery in the tab Upstream</source>
+      </segment>
+    </unit>
     <unit id="pkg.dist-tag.title">
       <notes>
         <note category="location">src/app/features/packages/dist-tags.ts:87</note>
@@ -15366,7 +15566,7 @@
     <unit id="pkg.layers.heading">
       <notes>
         <note category="location">src/app/features/packages/image-details.ts:107,108</note>
-        <note category="location">src/app/features/packages/package-version.ts:514</note>
+        <note category="location">src/app/features/packages/package-version.ts:533</note>
       </notes>
       <segment>
         <source>Layers</source>
@@ -15431,7 +15631,7 @@
     <unit id="pkg.layers.copy">
       <notes>
         <note category="location">src/app/features/packages/image-details.ts:251</note>
-        <note category="location">src/app/features/packages/package-version.ts:525</note>
+        <note category="location">src/app/features/packages/package-version.ts:544</note>
       </notes>
       <segment>
         <source>Copy the digest of layer <ph id="0" equiv="number" disp="n"/></source>
@@ -15464,9 +15664,9 @@
     <unit id="pkg.image.digest">
       <notes>
         <note category="location">src/app/features/packages/image-details.ts:259</note>
-        <note category="location">src/app/features/packages/package-version.html:544,546</note>
-        <note category="location">src/app/features/packages/package-version.ts:746</note>
-        <note category="location">src/app/features/packages/package-version.ts:753</note>
+        <note category="location">src/app/features/packages/package-version.html:552,554</note>
+        <note category="location">src/app/features/packages/package-version.ts:765</note>
+        <note category="location">src/app/features/packages/package-version.ts:772</note>
       </notes>
       <segment>
         <source>Digest</source>
@@ -15475,8 +15675,8 @@
     <unit id="pkg.image.media-type">
       <notes>
         <note category="location">src/app/features/packages/image-details.ts:260</note>
-        <note category="location">src/app/features/packages/package-version.html:550,551</note>
-        <note category="location">src/app/features/packages/package-version.ts:747</note>
+        <note category="location">src/app/features/packages/package-version.html:558,559</note>
+        <note category="location">src/app/features/packages/package-version.ts:766</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -15486,8 +15686,8 @@
       <notes>
         <note category="location">src/app/features/packages/image-details.ts:261</note>
         <note category="location">src/app/features/packages/image-details.ts:266</note>
-        <note category="location">src/app/features/packages/package-version.ts:748</note>
-        <note category="location">src/app/features/packages/package-version.ts:754</note>
+        <note category="location">src/app/features/packages/package-version.ts:767</note>
+        <note category="location">src/app/features/packages/package-version.ts:773</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -16151,7 +16351,7 @@
     <unit id="pkg.ver.never-title">
       <notes>
         <note category="location">src/app/features/packages/package-detail.ts:230</note>
-        <note category="location">src/app/features/packages/package-version.ts:762</note>
+        <note category="location">src/app/features/packages/package-version.ts:781</note>
       </notes>
       <segment>
         <source>No client has downloaded this version through Quader yet.</source>
@@ -16539,7 +16739,7 @@
     </unit>
     <unit id="pkg.version.loading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:80,81</note>
+        <note category="location">src/app/features/packages/package-version.html:81,82</note>
       </notes>
       <segment>
         <source>Loading the version.</source>
@@ -16547,7 +16747,7 @@
     </unit>
     <unit id="pkg.version.facts">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:82</note>
+        <note category="location">src/app/features/packages/package-version.html:83</note>
       </notes>
       <segment>
         <source>Facts of this version</source>
@@ -16555,7 +16755,7 @@
     </unit>
     <unit id="pkg.fact.published">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:91</note>
+        <note category="location">src/app/features/packages/package-version.html:92</note>
       </notes>
       <segment>
         <source>Published</source>
@@ -16563,7 +16763,7 @@
     </unit>
     <unit id="pkg.fact.last-download">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:95</note>
+        <note category="location">src/app/features/packages/package-version.html:96</note>
       </notes>
       <segment>
         <source>Last download</source>
@@ -16571,7 +16771,7 @@
     </unit>
     <unit id="pkg.fact.never">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:98,100</note>
+        <note category="location">src/app/features/packages/package-version.html:99,101</note>
       </notes>
       <segment>
         <source>never</source>
@@ -16579,7 +16779,7 @@
     </unit>
     <unit id="pkg.fact.download-count">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:101,102</note>
+        <note category="location">src/app/features/packages/package-version.html:102,103</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 download} other {<ph id="0" equiv="INTERPOLATION"/> downloads}}</source>
@@ -16587,7 +16787,7 @@
     </unit>
     <unit id="pkg.unlisted">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:120,121</note>
+        <note category="location">src/app/features/packages/package-version.html:121,122</note>
       </notes>
       <segment>
         <source>Unlisted.</source>
@@ -16595,7 +16795,7 @@
     </unit>
     <unit id="pkg.unlisted-detail">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:122,124</note>
+        <note category="location">src/app/features/packages/package-version.html:123,125</note>
       </notes>
       <segment>
         <source>This version is hidden from search. It is still downloaded when a project asks for exactly this version.</source>
@@ -16603,7 +16803,7 @@
     </unit>
     <unit id="pkg.blocked-in">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:135</note>
+        <note category="location">src/app/features/packages/package-version.html:138</note>
       </notes>
       <segment>
         <source>Blocked in</source>
@@ -16611,7 +16811,7 @@
     </unit>
     <unit id="pkg.malware.found">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:146,147</note>
+        <note category="location">src/app/features/packages/package-version.html:149,150</note>
       </notes>
       <segment>
         <source>Malware found in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> (<pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.malware.signature }}"/></pc>). Downloads are refused.</source>
@@ -16619,7 +16819,7 @@
     </unit>
     <unit id="pkg.malware.not-checked-why">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:152,154</note>
+        <note category="location">src/app/features/packages/package-version.html:155,157</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> could not be checked for malware: <ph id="2" equiv="INTERPOLATION_1" disp="{{ why }}"/>. Downloads are refused here.</source>
@@ -16627,7 +16827,7 @@
     </unit>
     <unit id="pkg.malware.not-checked">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:156,157</note>
+        <note category="location">src/app/features/packages/package-version.html:159,160</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> could not be checked for malware. Downloads are refused here.</source>
@@ -16635,7 +16835,7 @@
     </unit>
     <unit id="pkg.gate.banner.missing">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:170,171</note>
+        <note category="location">src/app/features/packages/package-version.html:173,174</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has no signature of its publisher or its build.</source>
@@ -16643,7 +16843,7 @@
     </unit>
     <unit id="pkg.gate.banner.untrusted">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:173,174</note>
+        <note category="location">src/app/features/packages/package-version.html:176,177</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build whose signer no trust anchor this repository accepts knows.</source>
@@ -16651,7 +16851,7 @@
     </unit>
     <unit id="pkg.gate.banner.not-chosen">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:176,177</note>
+        <note category="location">src/app/features/packages/package-version.html:179,180</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is verified only by trust anchors this repository does not accept.</source>
@@ -16659,7 +16859,7 @@
     </unit>
     <unit id="pkg.gate.banner.invalid">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:179,180</note>
+        <note category="location">src/app/features/packages/package-version.html:182,183</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that does not match its content.</source>
@@ -16667,7 +16867,7 @@
     </unit>
     <unit id="pkg.gate.banner.blocked">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:182,183</note>
+        <note category="location">src/app/features/packages/package-version.html:185,186</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is signed by a signer an administrator blocked.</source>
@@ -16675,7 +16875,7 @@
     </unit>
     <unit id="pkg.gate.banner.not-checked">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:185,186</note>
+        <note category="location">src/app/features/packages/package-version.html:188,189</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that Quader cannot read or could not check.</source>
@@ -16683,7 +16883,7 @@
     </unit>
     <unit id="sig.release.action">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:192,193</note>
+        <note category="location">src/app/features/packages/package-version.html:195,196</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:271</note>
         <note category="location">src/app/shared/signatures/signature-gate.ts:83,84</note>
       </notes>
@@ -16693,7 +16893,7 @@
     </unit>
     <unit id="pkg.deprecated">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:204</note>
+        <note category="location">src/app/features/packages/package-version.html:207</note>
       </notes>
       <segment>
         <source>Deprecated.</source>
@@ -16701,7 +16901,7 @@
     </unit>
     <unit id="pkg.readme.loading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:251,252</note>
+        <note category="location">src/app/features/packages/package-version.html:253,254</note>
       </notes>
       <segment>
         <source>Loading the README.</source>
@@ -16709,7 +16909,7 @@
     </unit>
     <unit id="pkg.readme.none">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:254,256</note>
+        <note category="location">src/app/features/packages/package-version.html:258,260</note>
       </notes>
       <segment>
         <source>This version has no README to show.</source>
@@ -16717,7 +16917,7 @@
     </unit>
     <unit id="pkg.chart.values-cut">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:264,266</note>
+        <note category="location">src/app/features/packages/package-version.html:272,274</note>
       </notes>
       <segment>
         <source>The values are longer than 64 KiB; the rest is not shown.</source>
@@ -16725,9 +16925,9 @@
     </unit>
     <unit id="pkg.file.manifest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:279,280</note>
-        <note category="location">src/app/features/packages/package-version.html:281,282</note>
-        <note category="location">src/app/features/packages/package-version.html:338,339</note>
+        <note category="location">src/app/features/packages/package-version.html:287,288</note>
+        <note category="location">src/app/features/packages/package-version.html:289,290</note>
+        <note category="location">src/app/features/packages/package-version.html:346,347</note>
       </notes>
       <segment>
         <source>Manifest</source>
@@ -16735,7 +16935,7 @@
     </unit>
     <unit id="pkg.file.sha256">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:293</note>
+        <note category="location">src/app/features/packages/package-version.html:301</note>
       </notes>
       <segment>
         <source>SHA-256</source>
@@ -16743,7 +16943,7 @@
     </unit>
     <unit id="sig.gate.refused-here">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:314,315</note>
+        <note category="location">src/app/features/packages/package-version.html:322,323</note>
         <note category="location">src/app/features/repositories/content/repository-file.ts:110,111</note>
         <note category="location">src/app/shared/signatures/signature-gate.ts:73,74</note>
       </notes>
@@ -16753,7 +16953,7 @@
     </unit>
     <unit id="pkg.file.image-content">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:333,335</note>
+        <note category="location">src/app/features/packages/package-version.html:341,343</note>
       </notes>
       <segment>
         <source>Content of the image</source>
@@ -16761,7 +16961,7 @@
     </unit>
     <unit id="pkg.file.config">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:348,349</note>
+        <note category="location">src/app/features/packages/package-version.html:356,357</note>
       </notes>
       <segment>
         <source>Config</source>
@@ -16769,7 +16969,7 @@
     </unit>
     <unit id="pkg.file.layer">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:358,359</note>
+        <note category="location">src/app/features/packages/package-version.html:366,367</note>
       </notes>
       <segment>
         <source>Layer <ph id="0" equiv="INTERPOLATION" disp="{{ i + 1 }}"/></source>
@@ -16777,7 +16977,7 @@
     </unit>
     <unit id="clamav.signature">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:371,373</note>
+        <note category="location">src/app/features/packages/package-version.html:379,381</note>
       </notes>
       <segment>
         <source>Detached signature</source>
@@ -16785,7 +16985,7 @@
     </unit>
     <unit id="clamav.signature.present">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:374,375</note>
+        <note category="location">src/app/features/packages/package-version.html:382,383</note>
       </notes>
       <segment>
         <source>Present, <ph id="0" equiv="INTERPOLATION" disp="{{ c.detachedSignature.signatures ?? 0 }}"/> signatures. Quader passes it on; ClamAV checks it.</source>
@@ -16793,7 +16993,7 @@
     </unit>
     <unit id="clamav.signature.none">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:376,378</note>
+        <note category="location">src/app/features/packages/package-version.html:384,386</note>
       </notes>
       <segment>
         <source>None</source>
@@ -16801,7 +17001,7 @@
     </unit>
     <unit id="clamav.members.hint">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:382,383</note>
+        <note category="location">src/app/features/packages/package-version.html:390,391</note>
       </notes>
       <segment>
         <source>The signature count of the header is the total; lines of a member are not always signatures.</source>
@@ -16809,7 +17009,7 @@
     </unit>
     <unit id="clamav.members.removed">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:403,405</note>
+        <note category="location">src/app/features/packages/package-version.html:411,413</note>
       </notes>
       <segment>
         <source>The files of this version were removed; its metadata stays as history.</source>
@@ -16817,7 +17017,7 @@
     </unit>
     <unit id="clamav.members.not-read">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:405,407</note>
+        <note category="location">src/app/features/packages/package-version.html:413,415</note>
       </notes>
       <segment>
         <source>Members not read: the container holds more than the bounds allow.</source>
@@ -16825,7 +17025,7 @@
     </unit>
     <unit id="pkg.meta.deb-description">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:441,442</note>
+        <note category="location">src/app/features/packages/package-version.html:449,450</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -16833,7 +17033,7 @@
     </unit>
     <unit id="clamav.details.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:454,455</note>
+        <note category="location">src/app/features/packages/package-version.html:462,463</note>
       </notes>
       <segment>
         <source>Definitions</source>
@@ -16841,7 +17041,7 @@
     </unit>
     <unit id="clamav.fact.built">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:456,458</note>
+        <note category="location">src/app/features/packages/package-version.html:464,466</note>
       </notes>
       <segment>
         <source>Built</source>
@@ -16849,7 +17049,7 @@
     </unit>
     <unit id="clamav.fact.build-text">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:468,469</note>
+        <note category="location">src/app/features/packages/package-version.html:476,477</note>
       </notes>
       <segment>
         <source>Build time as written</source>
@@ -16857,7 +17057,7 @@
     </unit>
     <unit id="clamav.fact.signatures">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:471,472</note>
+        <note category="location">src/app/features/packages/package-version.html:479,480</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -16865,7 +17065,7 @@
     </unit>
     <unit id="clamav.fact.level">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:473,475</note>
+        <note category="location">src/app/features/packages/package-version.html:481,483</note>
       </notes>
       <segment>
         <source>Functionality level</source>
@@ -16873,7 +17073,7 @@
     </unit>
     <unit id="clamav.fact.builder">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:481,482</note>
+        <note category="location">src/app/features/packages/package-version.html:489,490</note>
       </notes>
       <segment>
         <source>Builder</source>
@@ -16881,7 +17081,7 @@
     </unit>
     <unit id="clamav.fact.verification">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:483,484</note>
+        <note category="location">src/app/features/packages/package-version.html:491,492</note>
       </notes>
       <segment>
         <source>Verification</source>
@@ -16889,7 +17089,7 @@
     </unit>
     <unit id="clamav.fact.files-removed">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:486,487</note>
+        <note category="location">src/app/features/packages/package-version.html:494,495</note>
       </notes>
       <segment>
         <source>Files removed</source>
@@ -16897,7 +17097,7 @@
     </unit>
     <unit id="clamav.fact.header-md5">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:493,494</note>
+        <note category="location">src/app/features/packages/package-version.html:501,502</note>
       </notes>
       <segment>
         <source>MD5 in the header</source>
@@ -16905,7 +17105,7 @@
     </unit>
     <unit id="clamav.fact.computed-md5">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:495,496</note>
+        <note category="location">src/app/features/packages/package-version.html:503,504</note>
       </notes>
       <segment>
         <source>MD5 computed by Quader</source>
@@ -16913,8 +17113,8 @@
     </unit>
     <unit id="pkg.chart.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:503,504</note>
-        <note category="location">src/app/features/packages/package-version.html:507,508</note>
+        <note category="location">src/app/features/packages/package-version.html:511,512</note>
+        <note category="location">src/app/features/packages/package-version.html:515,516</note>
       </notes>
       <segment>
         <source>Chart</source>
@@ -16922,7 +17122,7 @@
     </unit>
     <unit id="pkg.chart.held">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:504</note>
+        <note category="location">src/app/features/packages/package-version.html:512</note>
       </notes>
       <segment>
         <source>The chart&apos;s facts and values are not shown: a download of its files would not be served to you now.</source>
@@ -16930,7 +17130,7 @@
     </unit>
     <unit id="pkg.chart.maintainers">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:515,516</note>
+        <note category="location">src/app/features/packages/package-version.html:523,524</note>
       </notes>
       <segment>
         <source>Maintainers</source>
@@ -16938,7 +17138,7 @@
     </unit>
     <unit id="pkg.meta.dependencies">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:523,524</note>
+        <note category="location">src/app/features/packages/package-version.html:531,532</note>
         <note category="location">src/app/features/packages/version-metadata.ts:145</note>
       </notes>
       <segment>
@@ -16947,7 +17147,7 @@
     </unit>
     <unit id="pkg.image.kind">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:541,542</note>
+        <note category="location">src/app/features/packages/package-version.html:549,550</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -16955,7 +17155,7 @@
     </unit>
     <unit id="pkg.image.artifact-type">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:554,555</note>
+        <note category="location">src/app/features/packages/package-version.html:562,563</note>
       </notes>
       <segment>
         <source>Artifact type</source>
@@ -16963,7 +17163,7 @@
     </unit>
     <unit id="pkg.image.total-size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:557,558</note>
+        <note category="location">src/app/features/packages/package-version.html:565,566</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -16971,7 +17171,7 @@
     </unit>
     <unit id="pkg.image.platforms">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:561,562</note>
+        <note category="location">src/app/features/packages/package-version.html:569,570</note>
       </notes>
       <segment>
         <source>Platforms</source>
@@ -16979,7 +17179,7 @@
     </unit>
     <unit id="pkg.image.not-fetched">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:603,604</note>
+        <note category="location">src/app/features/packages/package-version.html:611,612</note>
       </notes>
       <segment>
         <source>Not fetched</source>
@@ -16987,10 +17187,10 @@
     </unit>
     <unit id="pkg.meta.facts">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:628,629</note>
-        <note category="location">src/app/features/packages/package-version.html:734,735</note>
-        <note category="location">src/app/features/packages/package-version.html:743,744</note>
-        <note category="location">src/app/features/packages/package-version.html:763,764</note>
+        <note category="location">src/app/features/packages/package-version.html:636,637</note>
+        <note category="location">src/app/features/packages/package-version.html:745,746</note>
+        <note category="location">src/app/features/packages/package-version.html:754,755</note>
+        <note category="location">src/app/features/packages/package-version.html:774,775</note>
       </notes>
       <segment>
         <source>Package details</source>
@@ -16998,7 +17198,7 @@
     </unit>
     <unit id="pkg.meta.links">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:638,639</note>
+        <note category="location">src/app/features/packages/package-version.html:649,650</note>
       </notes>
       <segment>
         <source>Links</source>
@@ -17006,7 +17206,7 @@
     </unit>
     <unit id="pkg.meta.authors">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:657,658</note>
+        <note category="location">src/app/features/packages/package-version.html:668,669</note>
       </notes>
       <segment>
         <source>Authors</source>
@@ -17014,7 +17214,7 @@
     </unit>
     <unit id="pkg.meta.deb-or">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:703,704</note>
+        <note category="location">src/app/features/packages/package-version.html:714,715</note>
       </notes>
       <segment>
         <source>or</source>
@@ -17022,7 +17222,7 @@
     </unit>
     <unit id="pkg.meta.frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:712,713</note>
+        <note category="location">src/app/features/packages/package-version.html:723,724</note>
       </notes>
       <segment>
         <source>Dependencies by target framework</source>
@@ -17030,7 +17230,7 @@
     </unit>
     <unit id="pkg.meta.all-frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:718,720</note>
+        <note category="location">src/app/features/packages/package-version.html:729,731</note>
       </notes>
       <segment>
         <source>All frameworks</source>
@@ -17038,7 +17238,7 @@
     </unit>
     <unit id="pkg.meta.no-dependencies">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:722,724</note>
+        <note category="location">src/app/features/packages/package-version.html:733,735</note>
       </notes>
       <segment>
         <source>No dependencies.</source>
@@ -17046,7 +17246,7 @@
     </unit>
     <unit id="pkg.meta.deb-source">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:751,752</note>
+        <note category="location">src/app/features/packages/package-version.html:762,763</note>
       </notes>
       <segment>
         <source>Source package</source>
@@ -17054,7 +17254,7 @@
     </unit>
     <unit id="pkg.meta.engines">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:772,773</note>
+        <note category="location">src/app/features/packages/package-version.html:783,784</note>
       </notes>
       <segment>
         <source>Required runtimes</source>
@@ -17062,7 +17262,7 @@
     </unit>
     <unit id="pkg.repo.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:780,781</note>
+        <note category="location">src/app/features/packages/package-version.html:791,792</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -17070,7 +17270,7 @@
     </unit>
     <unit id="pkg.tab.vulnerabilities">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:268</note>
+        <note category="location">src/app/features/packages/package-version.ts:274</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -17078,7 +17278,7 @@
     </unit>
     <unit id="pkg.tab.readme">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:274</note>
+        <note category="location">src/app/features/packages/package-version.ts:282</note>
       </notes>
       <segment>
         <source>README</source>
@@ -17086,7 +17286,7 @@
     </unit>
     <unit id="pkg.tab.documentation">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:278</note>
+        <note category="location">src/app/features/packages/package-version.ts:287</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -17094,7 +17294,7 @@
     </unit>
     <unit id="pkg.tab.contents">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:283</note>
+        <note category="location">src/app/features/packages/package-version.ts:292</note>
       </notes>
       <segment>
         <source>Contents</source>
@@ -17102,7 +17302,7 @@
     </unit>
     <unit id="pkg.tab.values">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:290</note>
+        <note category="location">src/app/features/packages/package-version.ts:299</note>
       </notes>
       <segment>
         <source>Values</source>
@@ -17110,7 +17310,7 @@
     </unit>
     <unit id="pkg.tab.files">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:291</note>
+        <note category="location">src/app/features/packages/package-version.ts:300</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -17118,7 +17318,7 @@
     </unit>
     <unit id="pkg.tab.signatures">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:293</note>
+        <note category="location">src/app/features/packages/package-version.ts:302</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -17126,7 +17326,7 @@
     </unit>
     <unit id="pkg.tab.details">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:294</note>
+        <note category="location">src/app/features/packages/package-version.ts:303</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -17134,7 +17334,7 @@
     </unit>
     <unit id="pkg.tab.changelog">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:296</note>
+        <note category="location">src/app/features/packages/package-version.ts:305</note>
       </notes>
       <segment>
         <source>Changelog</source>
@@ -17142,7 +17342,7 @@
     </unit>
     <unit id="pkg.tab.import-log">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:298</note>
+        <note category="location">src/app/features/packages/package-version.ts:307</note>
       </notes>
       <segment>
         <source>Import log</source>
@@ -17150,7 +17350,7 @@
     </unit>
     <unit id="pkg.meta.deb-copyright-file">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:400</note>
+        <note category="location">src/app/features/packages/package-version.ts:419</note>
       </notes>
       <segment>
         <source>Copyright file</source>
@@ -17158,7 +17358,7 @@
     </unit>
     <unit id="pkg.chart.deprecated">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:407</note>
+        <note category="location">src/app/features/packages/package-version.ts:426</note>
       </notes>
       <segment>
         <source>This chart is deprecated.</source>
@@ -17166,7 +17366,7 @@
     </unit>
     <unit id="pkg.chart.copy-values">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:417</note>
+        <note category="location">src/app/features/packages/package-version.ts:436</note>
       </notes>
       <segment>
         <source>Copy values.yaml</source>
@@ -17174,7 +17374,7 @@
     </unit>
     <unit id="pkg.image.other-tags">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:481</note>
+        <note category="location">src/app/features/packages/package-version.ts:500</note>
       </notes>
       <segment>
         <source>Other tags of this image</source>
@@ -17182,7 +17382,7 @@
     </unit>
     <unit id="pkg.image.open-platform">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:510</note>
+        <note category="location">src/app/features/packages/package-version.ts:529</note>
       </notes>
       <segment>
         <source>Configuration and layers of <ph id="0" equiv="platform" disp="platform"/></source>
@@ -17190,7 +17390,7 @@
     </unit>
     <unit id="pkg.image.details">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:514</note>
+        <note category="location">src/app/features/packages/package-version.ts:533</note>
       </notes>
       <segment>
         <source>Configuration, layers and history</source>
@@ -17198,7 +17398,7 @@
     </unit>
     <unit id="pkg.image.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:518</note>
+        <note category="location">src/app/features/packages/package-version.ts:537</note>
       </notes>
       <segment>
         <source>Image</source>
@@ -17206,7 +17406,7 @@
     </unit>
     <unit id="pkg.image.artifact-heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:518</note>
+        <note category="location">src/app/features/packages/package-version.ts:537</note>
       </notes>
       <segment>
         <source>Artifact</source>
@@ -17214,7 +17414,7 @@
     </unit>
     <unit id="pkg.file.copy-manifest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:521</note>
+        <note category="location">src/app/features/packages/package-version.ts:540</note>
       </notes>
       <segment>
         <source>Copy the manifest&apos;s digest</source>
@@ -17222,7 +17422,7 @@
     </unit>
     <unit id="pkg.file.copy-config">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:522</note>
+        <note category="location">src/app/features/packages/package-version.ts:541</note>
       </notes>
       <segment>
         <source>Copy the config&apos;s digest</source>
@@ -17230,7 +17430,7 @@
     </unit>
     <unit id="pkg.file.copy-platform-layer">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:526</note>
+        <note category="location">src/app/features/packages/package-version.ts:545</note>
       </notes>
       <segment>
         <source>Copy the digest of layer <ph id="0" equiv="number" disp="n"/> of <ph id="1" equiv="platform" disp="platform"/></source>
@@ -17238,7 +17438,7 @@
     </unit>
     <unit id="clamav.member.name">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:552</note>
+        <note category="location">src/app/features/packages/package-version.ts:571</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -17246,7 +17446,7 @@
     </unit>
     <unit id="pkg.file.size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:553</note>
+        <note category="location">src/app/features/packages/package-version.ts:572</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -17254,7 +17454,7 @@
     </unit>
     <unit id="clamav.member.lines">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:556</note>
+        <note category="location">src/app/features/packages/package-version.ts:575</note>
       </notes>
       <segment>
         <source>Lines</source>
@@ -17262,7 +17462,7 @@
     </unit>
     <unit id="clamav.member.lines-help">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:558</note>
+        <note category="location">src/app/features/packages/package-version.ts:577</note>
       </notes>
       <segment>
         <source>The member&apos;s lines that are neither empty nor a comment.</source>
@@ -17270,7 +17470,7 @@
     </unit>
     <unit id="clamav.members">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:561</note>
+        <note category="location">src/app/features/packages/package-version.ts:580</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -17278,7 +17478,7 @@
     </unit>
     <unit id="clamav.checksums">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:562</note>
+        <note category="location">src/app/features/packages/package-version.ts:581</note>
       </notes>
       <segment>
         <source>Checksums of the archive</source>
@@ -17286,7 +17486,7 @@
     </unit>
     <unit id="clamav.member.digests">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:563</note>
+        <note category="location">src/app/features/packages/package-version.ts:582</note>
       </notes>
       <segment>
         <source>SHA-256 of each member</source>
@@ -17294,7 +17494,7 @@
     </unit>
     <unit id="pkg.file.path">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:706</note>
+        <note category="location">src/app/features/packages/package-version.ts:725</note>
       </notes>
       <segment>
         <source>File</source>
@@ -17302,7 +17502,7 @@
     </unit>
     <unit id="pkg.file.malware">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:707</note>
+        <note category="location">src/app/features/packages/package-version.ts:726</note>
       </notes>
       <segment>
         <source>Malware scan</source>
@@ -17310,7 +17510,7 @@
     </unit>
     <unit id="pkg.file.signature">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:708</note>
+        <note category="location">src/app/features/packages/package-version.ts:727</note>
       </notes>
       <segment>
         <source>Signature</source>
@@ -17318,7 +17518,7 @@
     </unit>
     <unit id="pkg.file.download-link">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:738</note>
+        <note category="location">src/app/features/packages/package-version.ts:757</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -17326,7 +17526,7 @@
     </unit>
     <unit id="pkg.repo.repository">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:740</note>
+        <note category="location">src/app/features/packages/package-version.ts:759</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -17334,7 +17534,7 @@
     </unit>
     <unit id="pkg.repo.class">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:741</note>
+        <note category="location">src/app/features/packages/package-version.ts:760</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -17342,7 +17542,7 @@
     </unit>
     <unit id="pkg.repo.published">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:742</note>
+        <note category="location">src/app/features/packages/package-version.ts:761</note>
       </notes>
       <segment>
         <source>Published</source>
@@ -17350,7 +17550,7 @@
     </unit>
     <unit id="pkg.image.platform">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:745</note>
+        <note category="location">src/app/features/packages/package-version.ts:764</note>
       </notes>
       <segment>
         <source>Platform</source>
@@ -17358,7 +17558,7 @@
     </unit>
     <unit id="pkg.image.platforms-caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:750</note>
+        <note category="location">src/app/features/packages/package-version.ts:769</note>
       </notes>
       <segment>
         <source>Platforms of this image index</source>
@@ -17366,7 +17566,7 @@
     </unit>
     <unit id="pkg.file.part">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:752</note>
+        <note category="location">src/app/features/packages/package-version.ts:771</note>
       </notes>
       <segment>
         <source>Part</source>
@@ -17374,7 +17574,7 @@
     </unit>
     <unit id="pkg.file.image-caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:758</note>
+        <note category="location">src/app/features/packages/package-version.ts:777</note>
       </notes>
       <segment>
         <source>Manifest, config and layers of the image</source>
@@ -17382,7 +17582,7 @@
     </unit>
     <unit id="pkg.file.platform-caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:759</note>
+        <note category="location">src/app/features/packages/package-version.ts:778</note>
       </notes>
       <segment>
         <source>Manifest, config and layers of <ph id="0" equiv="platform" disp="platform"/></source>
@@ -17390,7 +17590,7 @@
     </unit>
     <unit id="pkg.image.not-fetched-title">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:761</note>
+        <note category="location">src/app/features/packages/package-version.ts:780</note>
       </notes>
       <segment>
         <source>No client has fetched this platform through Quader yet, so its manifest and its size are not held.</source>
@@ -17398,7 +17598,7 @@
     </unit>
     <unit id="pkg.image.copy-digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:763</note>
+        <note category="location">src/app/features/packages/package-version.ts:782</note>
       </notes>
       <segment>
         <source>Copy digest</source>
@@ -17406,7 +17606,7 @@
     </unit>
     <unit id="pkg.file.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:764</note>
+        <note category="location">src/app/features/packages/package-version.ts:783</note>
       </notes>
       <segment>
         <source>Files of this version</source>
@@ -17414,7 +17614,7 @@
     </unit>
     <unit id="pkg.repo.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:765</note>
+        <note category="location">src/app/features/packages/package-version.ts:784</note>
       </notes>
       <segment>
         <source>Repositories that hold this version</source>
@@ -17422,7 +17622,7 @@
     </unit>
     <unit id="pkg.file.copy-sha">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:766</note>
+        <note category="location">src/app/features/packages/package-version.ts:785</note>
       </notes>
       <segment>
         <source>Copy SHA-256</source>
@@ -17461,9 +17661,17 @@
         <source>Package</source>
       </segment>
     </unit>
-    <unit id="pkg.install.disabled-note">
+    <unit id="pkg.install.undelivered">
       <notes>
         <note category="location">src/app/features/packages/version-command.ts:59</note>
+      </notes>
+      <segment>
+        <source>No repository delivers this version: the note at the top of the page says why.</source>
+      </segment>
+    </unit>
+    <unit id="pkg.install.disabled-note">
+      <notes>
+        <note category="location">src/app/features/packages/version-command.ts:69</note>
       </notes>
       <segment>
         <source>The repository <ph id="0" equiv="repository" disp="keys[0]"/> is disabled: nobody can install this version until it is enabled again.</source>
@@ -17471,7 +17679,7 @@
     </unit>
     <unit id="pkg.install.disabled-note-many">
       <notes>
-        <note category="location">src/app/features/packages/version-command.ts:66</note>
+        <note category="location">src/app/features/packages/version-command.ts:76</note>
       </notes>
       <segment>
         <source>The repositories <ph id="0" equiv="repositories" disp="keys.join(&apos;, &apos;)"/> are disabled: nobody can install this version until one of them is enabled again.</source>
@@ -17479,7 +17687,7 @@
     </unit>
     <unit id="clamav.install.note">
       <notes>
-        <note category="location">src/app/features/packages/version-command.ts:75</note>
+        <note category="location">src/app/features/packages/version-command.ts:85</note>
       </notes>
       <segment>
         <source>A ClamAV installation always takes the version in use: point freshclam at Quader once, and it updates by itself.</source>
@@ -37727,7 +37935,7 @@
     </unit>
     <unit id="setup.caption.publish-dir">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:127</note>
+        <note category="location">src/app/features/setup/clients.ts:128</note>
       </notes>
       <segment>
         <source>Run in the directory of the package.</source>
@@ -37735,7 +37943,7 @@
     </unit>
     <unit id="setup.caption.publish-berry">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:129</note>
+        <note category="location">src/app/features/setup/clients.ts:130</note>
       </notes>
       <segment>
         <source>Add to `.yarnrc.yml`, then run `yarn npm publish`.</source>
@@ -37743,7 +37951,7 @@
     </unit>
     <unit id="setup.snippet.gitlab-generic">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:131</note>
+        <note category="location">src/app/features/setup/clients.ts:132</note>
       </notes>
       <segment>
         <source>For npm 10, pnpm 10 on npm 10 and Yarn 1. A pipeline step exchanges the job&apos;s ID token for a short-lived Quader token and revokes it again as its last step.</source>
@@ -37751,7 +37959,7 @@
     </unit>
     <unit id="setup.snippet.gitlab-native">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:133</note>
+        <note category="location">src/app/features/setup/clients.ts:134</note>
       </notes>
       <segment>
         <source>For npm 11.5.1 and later, pnpm 11 and 12 and Yarn 4. The client exchanges the job&apos;s ID token itself.</source>
@@ -37759,7 +37967,7 @@
     </unit>
     <unit id="setup.caption.dotnet-source">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:135</note>
+        <note category="location">src/app/features/setup/clients.ts:136</note>
       </notes>
       <segment>
         <source>Adds the source to your user configuration. On Linux and macOS the token is stored there in clear text.</source>
@@ -37767,7 +37975,7 @@
     </unit>
     <unit id="setup.caption.nuget-source">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:137</note>
+        <note category="location">src/app/features/setup/clients.ts:138</note>
       </notes>
       <segment>
         <source>Adds the source to your user configuration.</source>
@@ -37775,8 +37983,8 @@
     </unit>
     <unit id="setup.caption.nuget-config">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:145</note>
-        <note category="location">src/app/features/setup/clients.ts:147</note>
+        <note category="location">src/app/features/setup/clients.ts:146</note>
+        <note category="location">src/app/features/setup/clients.ts:148</note>
       </notes>
       <segment>
         <source>Save next to your solution. Every package then comes through this repository.</source>
@@ -37784,7 +37992,7 @@
     </unit>
     <unit id="setup.fold.nuget-config">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:145</note>
+        <note category="location">src/app/features/setup/clients.ts:146</note>
       </notes>
       <segment>
         <source>As a nuget.config file</source>
@@ -37792,7 +38000,7 @@
     </unit>
     <unit id="setup.caption.vs-packagereference">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:149</note>
+        <note category="location">src/app/features/setup/clients.ts:150</note>
       </notes>
       <segment>
         <source>Add to the project file inside an `ItemGroup`, then restore.</source>
@@ -37800,7 +38008,7 @@
     </unit>
     <unit id="setup.caption.curl-function">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:151</note>
+        <note category="location">src/app/features/setup/clients.ts:152</note>
       </notes>
       <segment>
         <source>Paste into the shell or the CI script that runs curl. The token stays off curl&apos;s command line.</source>
@@ -37808,7 +38016,7 @@
     </unit>
     <unit id="setup.caption.curl-publish">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:153</note>
+        <note category="location">src/app/features/setup/clients.ts:154</note>
       </notes>
       <segment>
         <source>Replacing a file also needs the overwrite permission.</source>
@@ -37816,7 +38024,7 @@
     </unit>
     <unit id="setup.caption.oci-login-anonymous">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:160</note>
+        <note category="location">src/app/features/setup/clients.ts:161</note>
       </notes>
       <segment>
         <source>Not needed to pull: this repository can be read without signing in.</source>
@@ -37824,7 +38032,7 @@
     </unit>
     <unit id="setup.caption.oci-login">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:161</note>
+        <note category="location">src/app/features/setup/clients.ts:162</note>
       </notes>
       <segment>
         <source>Sign in once on each machine.</source>
@@ -37832,7 +38040,7 @@
     </unit>
     <unit id="setup.caption.oci-pull-secret">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:165</note>
+        <note category="location">src/app/features/setup/clients.ts:166</note>
       </notes>
       <segment>
         <source>Creates an image pull secret. Name it under `imagePullSecrets` of your pods.</source>
@@ -37840,7 +38048,7 @@
     </unit>
     <unit id="setup.fold.kubernetes">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:166</note>
+        <note category="location">src/app/features/setup/clients.ts:167</note>
       </notes>
       <segment>
         <source>For a Kubernetes cluster</source>
@@ -37848,7 +38056,7 @@
     </unit>
     <unit id="setup.caption.oci-push">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:171</note>
+        <note category="location">src/app/features/setup/clients.ts:172</note>
       </notes>
       <segment>
         <source>Name a local image below this repository, then push it.</source>
@@ -37856,7 +38064,7 @@
     </unit>
     <unit id="setup.caption.helm-push">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:173</note>
+        <note category="location">src/app/features/setup/clients.ts:174</note>
       </notes>
       <segment>
         <source>Package the chart, then push it below this repository.</source>
@@ -37864,7 +38072,7 @@
     </unit>
     <unit id="setup.caption.oci-buildx">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:175</note>
+        <note category="location">src/app/features/setup/clients.ts:176</note>
       </notes>
       <segment>
         <source>Or build for two platforms and push in one go.</source>
@@ -37872,7 +38080,7 @@
     </unit>
     <unit id="setup.caption.apt-configure">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:178</note>
+        <note category="location">src/app/features/setup/clients.ts:179</note>
       </notes>
       <segment>
         <source>Installs the signing key and adds the repository as a verified source. Run it again after a key rotation.</source>
@@ -37880,7 +38088,7 @@
     </unit>
     <unit id="setup.caption.apt-upstream">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:182</note>
+        <note category="location">src/app/features/setup/clients.ts:183</note>
       </notes>
       <segment>
         <source>Verifies against the archive&apos;s own keyring instead of a key of Quader&apos;s.</source>
@@ -37888,7 +38096,7 @@
     </unit>
     <unit id="setup.fold.apt-upstream">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:183</note>
+        <note category="location">src/app/features/setup/clients.ts:184</note>
       </notes>
       <segment>
         <source>Remote without upstream keys</source>
@@ -37896,7 +38104,7 @@
     </unit>
     <unit id="setup.caption.apt-list">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:187</note>
+        <note category="location">src/app/features/setup/clients.ts:188</note>
       </notes>
       <segment>
         <source>Install the key file as above first.</source>
@@ -37904,7 +38112,7 @@
     </unit>
     <unit id="setup.fold.apt-list">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:187</note>
+        <note category="location">src/app/features/setup/clients.ts:188</note>
       </notes>
       <segment>
         <source>As a one-line .list file</source>
@@ -37912,7 +38120,7 @@
     </unit>
     <unit id="setup.caption.apt-publish">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:189</note>
+        <note category="location">src/app/features/setup/clients.ts:190</note>
       </notes>
       <segment>
         <source>The package is in the index within moments.</source>
@@ -37920,7 +38128,7 @@
     </unit>
     <unit id="setup.caption.ansible-cfg">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:191</note>
+        <note category="location">src/app/features/setup/clients.ts:192</note>
       </notes>
       <segment>
         <source>Save next to your playbooks, or as `~/.ansible.cfg`.</source>
@@ -37928,7 +38136,7 @@
     </unit>
     <unit id="setup.caption.ansible-token-env">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:193</note>
+        <note category="location">src/app/features/setup/clients.ts:194</note>
       </notes>
       <segment>
         <source>`ansible.cfg` does not expand variables, so the token comes from this one.</source>
@@ -37936,7 +38144,7 @@
     </unit>
     <unit id="setup.fold.cmd">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:197</note>
+        <note category="location">src/app/features/setup/clients.ts:198</note>
       </notes>
       <segment>
         <source>In cmd</source>
@@ -37944,7 +38152,7 @@
     </unit>
     <unit id="setup.caption.ansible-netrc">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:200</note>
+        <note category="location">src/app/features/setup/clients.ts:201</note>
       </notes>
       <segment>
         <source>A role download falls back to `~/.netrc`. One line serves every repository on this host.</source>
@@ -37952,7 +38160,7 @@
     </unit>
     <unit id="setup.fold.roles">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:201</note>
+        <note category="location">src/app/features/setup/clients.ts:202</note>
       </notes>
       <segment>
         <source>To install roles</source>
@@ -37960,7 +38168,7 @@
     </unit>
     <unit id="setup.caption.ansible-requirements">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:206</note>
+        <note category="location">src/app/features/setup/clients.ts:207</note>
       </notes>
       <segment>
         <source>Install it with `ansible-galaxy collection install -r requirements.yml`.</source>
@@ -37968,7 +38176,8 @@
     </unit>
     <unit id="setup.fold.requirements">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:207</note>
+        <note category="location">src/app/features/setup/clients.ts:208</note>
+        <note category="location">src/app/features/setup/clients.ts:218</note>
       </notes>
       <segment>
         <source>With a requirements.yml</source>
@@ -37976,7 +38185,7 @@
     </unit>
     <unit id="setup.caption.freshclam-conf">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:210</note>
+        <note category="location">src/app/features/setup/clients.ts:211</note>
       </notes>
       <segment>
         <source>Put this line into `freshclam.conf` of each ClamAV installation. `PrivateMirror` replaces ClamAV&apos;s own network.</source>
@@ -37984,15 +38193,23 @@
     </unit>
     <unit id="setup.caption.freshclam-run">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:212</note>
+        <note category="location">src/app/features/setup/clients.ts:213</note>
       </notes>
       <segment>
         <source>Run it once: it fetches each database whole, then reports each as up to date.</source>
       </segment>
     </unit>
+    <unit id="setup.caption.ansible-role-requirements">
+      <notes>
+        <note category="location">src/app/features/setup/clients.ts:217</note>
+      </notes>
+      <segment>
+        <source>Install it with `ansible-galaxy role install -r requirements.yml`.</source>
+      </segment>
+    </unit>
     <unit id="setup.caption.ansible-publish">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:214</note>
+        <note category="location">src/app/features/setup/clients.ts:221</note>
       </notes>
       <segment>
         <source>Publishes an archive built with `ansible-galaxy collection build`.</source>
@@ -38000,7 +38217,7 @@
     </unit>
     <unit id="setup.caption.verify-npm-signatures">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:216</note>
+        <note category="location">src/app/features/setup/clients.ts:223</note>
       </notes>
       <segment>
         <source>Run it in your project: checks the registry signatures of every installed package, this installation&apos;s of your own packages included.</source>
@@ -38008,7 +38225,7 @@
     </unit>
     <unit id="setup.caption.verify-attestation">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:220</note>
+        <note category="location">src/app/features/setup/clients.ts:227</note>
       </notes>
       <segment>
         <source>Checks with cosign, offline, that this installation received the artifact and what its checks found. Replace the marked values.</source>

@@ -136,6 +136,11 @@ func TestR_ANS_056_ARoleSearchAnswerKeepsWhatTheCallerMaySee(t *testing.T) {
 	if strings.Contains(string(out), "galaxy.ansible.com/api/v1") {
 		t.Errorf("the answer names an address of the upstream's API: %s", out)
 	}
+	// A page whose every hit is left out counts none: ansible-galaxy fails on hits it is promised and not given.
+	out, err = renderRoleSearch(doc, repo, params, func(string) bool { return false })
+	if err != nil || !strings.Contains(string(out), `"count":0`) {
+		t.Errorf("a page left empty: %s %v", out, err)
+	}
 	if _, err := renderRoleSearch([]byte(`[]`), repo, params, func(string) bool { return true }); errs.KindOf(err) != errs.UpstreamFailed {
 		t.Errorf("an answer that is no object: %v", err)
 	}

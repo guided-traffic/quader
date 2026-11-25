@@ -25,6 +25,7 @@ import { seedScannerReplicas } from './scanners';
 import { seedBastion } from './bastions';
 import { removeCachedSources, seedCachedVersions } from './cached';
 import { seedDebDocs } from './debdocs';
+import { seedRoles } from './roles';
 
 /**
  * The global setup of `make ui-renders`: waits for the edge (the dev server of the UI development profile), seeds the data
@@ -44,6 +45,8 @@ export default async function setup(): Promise<void> {
   const admin = await Api.of(ctx, edge);
   await seedAuditMode(admin);
   await seedProjectsAndRepositories(admin);
+  // The roles the remote galaxy read, written as its fills would have (R-ANS-056): the profile reaches no Galaxy.
+  await seedRoles(admin);
   await seedUpstreamRegistries(admin);
   await seedRegistryPresets(admin);
   await seedBastion(admin);

@@ -184,7 +184,7 @@ func (s *Server) addVulnerabilityGrades(r *http.Request, lq ListQuery, page []vi
 
 func summaryOf(p view.Package) gen.PackageSummary {
 	out := gen.PackageSummary{
-		Id: p.ID, Format: p.Format, Name: p.Name, Description: p.Description, LatestVersion: p.LatestVersion,
+		Id: p.ID, Format: p.Format, Name: p.Name, Key: &p.Key, Description: p.Description, LatestVersion: p.LatestVersion,
 		Keywords: p.Keywords, Repositories: repoTexts(p.Repositories), CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
 		VersionCount: p.VersionCount, DownloadCount: p.DownloadCount,
 	}
@@ -511,8 +511,9 @@ func (s *Server) GetPackageVersion(w http.ResponseWriter, r *http.Request, id ge
 		httpserver.Problem(w, r, err)
 		return
 	}
-	if format == "ansible" {
-		// The announcement of the documentation is wiki content: absent for a caller who may not read it (R-ANS-036, R-ANS-037).
+	if format == "ansible" && !strings.HasPrefix(name, "role/") {
+		// The announcement of the documentation is wiki content: absent for a caller who may not read it (R-ANS-036, R-ANS-037). A role a
+		// remote read has no documentation of a collection: its README is its own (formats/ansible.md R-ANS-056).
 		out.Metadata.Docs = s.docsAnnouncement(r, id, version)
 	}
 	writeTagged(w, r, out)
@@ -567,12 +568,21 @@ func addAvailable(ctx context.Context, reader repository.Reader, d view.VersionD
 		}
 		out.Repositories[i].Available = ok
 		// A remote that stores the version and whose rules do not deliver it lists it, marked, with the reason (R-CUR-014, Q-CUR-26).
-		if dec := repo.Delivery().Decide(d.Name, d.Version); repo.Class == repository.Remote && !dec.Delivered {
+		if dec := repo.Delivery().Decide(ruleName(d), d.Version); repo.Class == repository.Remote && !dec.Delivered {
 			reason := gen.PackageVersionRepositoryUnavailableReason(dec.Reason)
 			out.Repositories[i].UnavailableReason = &reason
 		}
 	}
 	return nil
+}
+
+// ruleName is the name the delivery rules decide a version's package by: the normalized name of its id, not the display name the
+// details show (an Ansible role's role/<id> and not its <owner>.<name>, formats/ansible.md R-ANS-056).
+func ruleName(d view.VersionDetail) string {
+	if _, name, ok := view.ParseID(d.PackageID); ok {
+		return name
+	}
+	return d.Name
 }
 
 // servesVersion reports whether a client gets the version through repo: repo is not disabled, and it holds the version and its
@@ -583,7 +593,7 @@ func servesVersion(ctx context.Context, reader repository.Reader, repo repositor
 		return false, nil
 	}
 	if repo.Class != repository.Virtual {
-		return holders[repo.Name] && repo.Delivery().Decide(d.Name, d.Version).Delivered, nil
+		return holders[repo.Name] && repo.Delivery().Decide(ruleName(d), d.Version).Delivered, nil
 	}
 	if seen[repo.Name] {
 		return false, nil

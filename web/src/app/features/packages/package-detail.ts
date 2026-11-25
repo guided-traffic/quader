@@ -275,7 +275,7 @@ export class PackageDetail {
     // Opening the page records it in "recently opened" (R-UI-007).
     effect(() => {
       const s = valueOf(this.summary);
-      if (s) untracked(() => this.memory.addRecent({ format: s.format, name: s.name }));
+      if (s) untracked(() => this.memory.addRecent({ format: s.format, name: s.name, ...(s.key && s.key !== s.name ? { key: s.key } : {}) }));
     });
   }
 

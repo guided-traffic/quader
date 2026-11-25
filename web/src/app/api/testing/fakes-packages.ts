@@ -73,9 +73,10 @@ export const NUGET_REPOSITORIES: readonly Repository[] = [
   { key: 'nuget-all', project: 'web', class: 'virtual', format: 'nuget', description: 'Everything for NuGet clients' },
 ];
 
-/** The Ansible repository of the fakes: the one the package of {@link ansibleFixture} is in. */
+/** The Ansible repositories of the fakes: the one the package of {@link ansibleFixture} is in, and the remote of {@link roleFixture}. */
 export const ANSIBLE_REPOSITORIES: readonly Repository[] = [
   { key: 'ansible-local', project: 'web', class: 'local', format: 'ansible', description: 'Internal collections' },
+  { key: 'galaxy', project: 'web', class: 'remote', format: 'ansible', description: 'Ansible Galaxy cache' },
 ];
 
 interface FakeVersion extends PackageVersion {
@@ -496,6 +497,67 @@ export function ansibleFixture(fake: FakePackagesApi): void {
   );
 }
 
+/** The role `geerlingguy.pip` a remote of a Galaxy read (formats/ansible.md R-ANS-056): the package `role/16`, shown by its owner and name. */
+export const ROLE_PACKAGE: PackageSummary = {
+  id: 'pkg_01JBQ9ROLE16',
+  format: 'ansible',
+  name: 'geerlingguy.pip',
+  key: 'role/16',
+  description: 'Pip (Python package manager) for Linux.',
+  latestVersion: '2.0.0',
+  keywords: ['python', 'pip', 'development'],
+  repositories: ['web/galaxy'],
+  createdAt: '2026-11-20T00:00:00.000Z',
+  updatedAt: '2026-11-24T00:00:00.000Z',
+  versionCount: 1,
+  downloadCount: 2,
+};
+
+/**
+ * Adds the role {@link ROLE_PACKAGE} with `2.0.0`: the role's facts in `metadata.role` and the GitHub repository as its link, its README
+ * the upstream's HTML (`readme` the state of the server's README; `available` gives it one). `over` changes the version.
+ */
+export function roleFixture(fake: FakePackagesApi, readme: 'available' | 'queued' | 'absent' | 'unavailable' | 'none' = 'available', over: Partial<FakeVersion> = {}): void {
+  fake.packages.push(ROLE_PACKAGE);
+  const path = 'roles/16/2.0.0.tar.gz';
+  fake.versionList.push({
+    packageId: ROLE_PACKAGE.id,
+    format: 'ansible',
+    name: 'geerlingguy.pip',
+    version: '2.0.0',
+    prerelease: false,
+    publishedAt: '2026-11-24T00:00:00.000Z',
+    licenses: [],
+    sizeBytes: 6_144,
+    sizePartial: false,
+    downloadCount: 2,
+    lastDownloadedAt: '2026-11-24T10:00:00.000Z',
+    hasReadme: readme === 'available',
+    metadata: {
+      role: {
+        id: 16, owner: 'geerlingguy', name: 'pip', packageName: 'role/16', readme, upstreamDownloads: 30_832_123, branch: 'master',
+        dependencies: ['geerlingguy.repo-epel'], ...(readme === 'unavailable' ? { readmeReason: 'too_large' } : {}),
+      },
+      repositoryUrl: 'https://github.com/geerlingguy/ansible-role-pip',
+    },
+    repositories: [{ key: 'web/galaxy', class: 'remote', publishedAt: '2026-11-24T00:00:00.000Z', available: true }],
+    files: [
+      {
+        path,
+        sizeBytes: 6_144,
+        sha256: sha(0x16),
+        downloadUrl: `${BASE}/api/ansible/web/galaxy/v1/roles/archives/16/2.0.0.tar.gz`,
+        contentUrl: `/api/v1/projects/web/repositories/galaxy/content/${path}`,
+      },
+    ],
+    readme:
+      readme === 'available'
+        ? { contentType: 'text/html', html: '<h1>Ansible Role: Pip</h1><p>An Ansible Role that installs Pip on Linux.</p>', truncated: false, externalImagesBlocked: 0 }
+        : null,
+    ...over,
+  });
+}
+
 /**
  * Gives `acme.tools@1.2.0` the documentation of {@link commonFixture} (or `fx`): the version announces it in `metadata.docs` and has a
  * README, as a version that the generator has read does (R-ANS-036). Call it after {@link ansibleFixture}.
@@ -621,7 +683,8 @@ export class FakePackagesApi extends PackagesApi {
   }
 
   override async lookup(format: string, name: string): Promise<PackageSummary> {
-    const found = this.packages.find((p) => p.format === format && p.name === name);
+    // The address names a package by its key where it has one (an Ansible role's role/<id>, R-ANS-056).
+    const found = this.packages.find((p) => p.format === format && (p.key ?? p.name) === name) ?? this.packages.find((p) => p.format === format && p.name === name);
     if (!found) throw notFound();
     return found;
   }
@@ -1142,6 +1205,10 @@ function ansibleSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boo
       : '# This repository is open to anonymous readers: no ~/.netrc entry is needed.\n',
   );
   const version = query.package && query.version ? query.version : null;
+  // The server writes a role's own install snippets with its display name (R-ANS-056, Q-ANS-114); the fake knows the one role it serves.
+  if (query.package === 'role/16') {
+    add('ansible-galaxy.install.role', 'install', 'shell', `ansible-galaxy role install geerlingguy.pip${version ? `,${shellQuote(version)}` : ''}\n`);
+  }
   add('ansible-galaxy.install.collection', 'install', 'shell', `ansible-galaxy collection install ${pkg === null ? '<package>' : version ? `${pkg}:${shellQuote(version)}` : pkg}\n`);
   add(
     'ansible-galaxy.install.requirements',

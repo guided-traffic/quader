@@ -152,7 +152,9 @@ func renderSnippets(in setupInput) ([]snippet, error) {
 			content = applyCredentials(content, in)
 			if t.Section == "install" {
 				name := in.Package
-				if t.Packages != "" && in.DisplayName != "" {
+				if t.Packages != "" {
+					// The name the client knows the package by; without one the template's example stands (a role whose owner and
+					// name the remote has not read yet, R-ANS-056).
 					name = in.DisplayName
 				}
 				content = substitutePackage(content, t, name, in.Version)

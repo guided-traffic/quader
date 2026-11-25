@@ -43,7 +43,7 @@
               <quader-format-icon [format]="p.format" />
               <span translate="no">{{ formatLabel(p.format) }}</span>
             </span>
-            <a [routerLink]="commands(p.format, p.name)" translate="no">{{ p.name }}</a>
+            <a [routerLink]="commands(p.format, p.key ?? p.name)" translate="no">{{ p.name }}</a>
           </li>
         }
       </ul>
@@ -239,7 +239,7 @@
              changed. Counts and the first publication are on the package's page. -->
         <tr>
           <th scope="row" class="wrap-name">
-            <a [routerLink]="commands(row.format, row.name)" translate="no">{{ row.name }}</a>
+            <a [routerLink]="commands(row.format, row.key ?? row.name)" translate="no">{{ row.name }}</a>
             @if (row.description) {
               <span class="secondary">{{ row.description }}</span>
             }

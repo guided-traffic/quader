@@ -58,8 +58,8 @@ type SetupTemplate struct {
 	// Packages is the prefix of the normalized names an install template is for ("role/" for an Ansible role,
 	// ansible.md R-ANS-056), "" for every package. For a package a prefixed install template of the client claims,
 	// the client's install templates without a prefix are left out and the package is written by its display name,
-	// the name the client knows it by; for any other package, and when the request names none, the prefixed ones are
-	// left out.
+	// the name the client knows it by, or by the template's PackageExample when it has none; for any other package, and
+	// when the request names none, the prefixed ones are left out.
 	Packages string
 	// Examples are the literal values of the template that the reader replaces with
 	// their own: a file to publish, an image name, a path. The API names each one

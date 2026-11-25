@@ -11,6 +11,8 @@ export const SAVED_VIEWS_LIMIT = 8;
 export interface RecentPackage {
   readonly format: string;
   readonly name: string;
+  /** The key the package's address names where it differs from its name (an Ansible role's `role/<id>`, R-ANS-056). */
+  readonly key?: string;
 }
 
 /** A saved view is a name and the query parameters of the list. */

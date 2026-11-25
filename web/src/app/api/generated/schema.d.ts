@@ -12318,6 +12318,12 @@ export interface components {
             format: string;
             /** @description The name as the format stores it; NuGet IDs in their original casing. */
             name: string;
+            /**
+             * @description The normalized name: the one the package's address, the rules and the permissions use. It differs from `name` where the
+             *     format shows another name: a NuGet ID's original casing, an Ansible role's `<owner>.<name>` for its package `role/<id>`
+             *     (R-ANS-056, Q-UI-1261).
+             */
+            key?: string;
             /** @description The description of the latest version. */
             description: string | null;
             latestVersion: string;
@@ -12519,10 +12525,11 @@ export interface components {
         };
         PackageReadme: {
             /**
-             * @description The type of the source; `html` is always sanitized HTML.
+             * @description The type of the source: `text/markdown` is rendered, `text/html` is an upstream's HTML (an Ansible role's README, R-ANS-039,
+             *     R-ANS-056) sanitized as it is; `html` is always sanitized HTML.
              * @enum {string}
              */
-            contentType: "text/markdown";
+            contentType: "text/markdown" | "text/html";
             html: string;
             /** @description The source or the rendered HTML exceeded a limit of R-UI-008. */
             truncated: boolean;

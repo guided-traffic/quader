@@ -42,6 +42,11 @@ func TestR_ANS_056_ARoleInstalledThroughARemoteReadsLikeARole(t *testing.T) {
 		obj(items[0])["description"] != "Pip (Python package manager) for Linux." {
 		t.Fatalf("list: %d %s", list.Status, list.Body)
 	}
+	// The search finds the role by its owner, and the summary names the key its page is addressed by.
+	found := listOf(e.st.Do(r, http.MethodGet, "/api/v1/packages?format=ansible&q=geerlingguy", e.admin, nil).JSON(t)["items"])
+	if len(found) != 1 || obj(found[0])["key"] != "role/16" {
+		t.Errorf("search by the owner: %v", found)
+	}
 	lookup := e.st.Do(r, http.MethodGet, "/api/v1/packages/lookup?format=ansible&name=role/16", e.admin, nil)
 	id, _ := lookup.JSON(t)["id"].(string)
 	if lookup.Status != http.StatusOK || id == "" {
@@ -90,6 +95,14 @@ func TestR_ANS_056_ARoleInstalledThroughARemoteReadsLikeARole(t *testing.T) {
 	if n := e.stub.Counts().OfKind(ansiblestub.ClassRoleContent, http.MethodGet); n != 1 {
 		t.Errorf("the stub saw %d requests for the role's content after a second version, want 1", n)
 	}
+
+	// A rule that blocks the role by the name the rules see makes its cached version undelivered, with the reason, on its page
+	// (R-CUR-014, Q-UI-1260): the details decide by role/16, not by the display name.
+	e.st.MustPutDeliveryRule(r, e.admin, repo, testenv.PackageRule("role/16", "block"))
+	eventually(t, 10*time.Second, "the rule on the version's page", func() bool {
+		held := listOf(e.st.Do(r, http.MethodGet, "/api/v1/packages/"+id+"/versions/2.0.0", e.admin, nil).JSON(t)["repositories"])
+		return len(held) == 1 && obj(held[0])["available"] == false && obj(held[0])["unavailableReason"] == "blocked"
+	})
 }
 
 // TestR_ANS_056_ARoleCachedBeforeItsFactsIsNamedAtItsNextLookup: a role whose archive was cached when the remote held no facts of it is

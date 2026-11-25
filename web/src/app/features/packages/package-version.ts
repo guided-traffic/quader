@@ -20,6 +20,8 @@ import { AnsibleContents } from './ansible-contents';
 import { AnsibleDocs } from './ansible-docs';
 import { AnsibleImportLog } from './ansible-import-log';
 import { DebChangelog, DebCopyright, DebFiles } from './deb-contents';
+import { AnsibleRoleFacts, AnsibleRoleReadmeNote, roleFacts, roleRemote } from './ansible-role';
+import { DeliveryNote } from './delivery-note';
 import { formatSize } from './format-size';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { ClientCommandMenu } from './client-command-menu';
@@ -145,6 +147,9 @@ interface TabEntry {
     ClientCommandMenu,
     VersionSwitch,
     PackageReadmeView,
+    AnsibleRoleFacts,
+    AnsibleRoleReadmeNote,
+    DeliveryNote,
     AnsibleContents,
     AnsibleDocs,
     AnsibleImportLog,
@@ -211,8 +216,9 @@ export class PackageVersionPage {
   private readonly readmeKey = computed(
     () => {
       const d = this.detail();
-      // The README of an Ansible collection is the first page of its Documentation tab (R-UI-060), not a tab of its own.
-      return d?.hasReadme && d.format !== 'ansible' ? { id: d.packageId, version: d.version } : undefined;
+      // The README of an Ansible collection is the first page of its Documentation tab (R-UI-060), not a tab of its own; a role's is
+      // its own tab, the first of its page (R-ANS-056).
+      return d?.hasReadme && (d.format !== 'ansible' || roleFacts(d) !== null) ? { id: d.packageId, version: d.version } : undefined;
     },
     { equal: sameVersion },
   );
@@ -270,8 +276,11 @@ export class PackageVersionPage {
     // format that leads with its documentation shows it first (R-UI-218): its README tab stands even where the version has none, and
     // says so (Q-UI-1245).
     const gradedFirst = this.grade() !== null && this.grade()?.grade !== 'N/A';
+    // A role's README tab is there before its README is: it says why there is none yet (R-ANS-056).
     const readme: TabEntry[] =
-      d && d.format !== 'ansible' && (d.hasReadme || this.leads()) ? [{ id: 'readme', label: $localize`:@@pkg.tab.readme:README` }] : [];
+      d && ((d.format !== 'ansible' && (d.hasReadme || this.leads())) || roleFacts(d) !== null)
+        ? [{ id: 'readme', label: $localize`:@@pkg.tab.readme:README` }]
+        : [];
     return [
       ...(this.leads() ? readme : []),
       ...(gradedFirst ? vulnerabilities : []),
@@ -353,9 +362,12 @@ export class PackageVersionPage {
   private readonly shownVersion = computed(() => `${this.format()}\n${this.name()}\n${this.shown() ?? ''}`);
   /**
    * The tab the page opens on: the first, but a README tab of a version without a README (Q-UI-1245), which says only that there is
-   * none: a format that leads with its documentation opens such a version on its first tab with content.
+   * none: a format that leads with its documentation opens such a version on its first tab with content. A role opens on its README
+   * tab all the same, whose note says why it has none yet and how a role is published (R-ANS-056, Q-ANS-111).
    */
-  private readonly firstTab = computed(() => this.tabs().find((t) => t.id !== 'readme' || this.detail()?.hasReadme === true)?.id);
+  private readonly firstTab = computed(
+    () => this.tabs().find((t) => t.id !== 'readme' || this.detail()?.hasReadme === true || this.role() !== null)?.id,
+  );
   /**
    * The tab the page opened on without a tab in its address, fixed once the version and its scanning have answered: the page reads
    * the version again while it is open (R-UI-213), and a scan that finishes meanwhile adds the tab Vulnerabilities in front, which
@@ -376,7 +388,14 @@ export class PackageVersionPage {
 
 
   /** The page's title: the package and the version, as a reader names it. */
-  protected readonly heading = computed(() => `${this.name()} ${this.shown() ?? ''}`.trimEnd());
+  protected readonly heading = computed(() => `${this.pkg()?.name ?? this.name()} ${this.shown() ?? ''}`.trimEnd());
+  /** The facts of a role an Ansible Galaxy remote read (R-ANS-056); null for every other version. */
+  protected readonly role = computed(() => roleFacts(this.detail()));
+  /** The remote that holds the role, whose tab Upstream decides it. */
+  protected readonly roleRemote = computed(() => {
+    const d = this.detail();
+    return d && this.role() ? roleRemote(d) : null;
+  });
   /** The distribution tags that point at this version (npm `latest`, Q-UI-453). */
   protected readonly tags = computed(() =>
     distTagsOf(this.detail()?.metadata)
@@ -826,7 +845,7 @@ export class PackageVersionPage {
     // Opening the page records the package in "recently opened" (R-UI-007).
     effect(() => {
       const s = valueOf(this.summary);
-      if (s) untracked(() => this.memory.addRecent({ format: s.format, name: s.name }));
+      if (s) untracked(() => this.memory.addRecent({ format: s.format, name: s.name, ...(s.key && s.key !== s.name ? { key: s.key } : {}) }));
     });
     // The tree is asked for when a tab that shows it is open, and then once for the version (R-UI-060).
     effect(() => {

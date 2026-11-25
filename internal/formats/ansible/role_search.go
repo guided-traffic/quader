@@ -197,7 +197,12 @@ func renderRoleSearch(doc []byte, repo string, params url.Values, keep func(pkg 
 	}
 	var count int
 	if json.Unmarshal(page["count"], &count) == nil {
-		page["count"] = json.RawMessage(strconv.Itoa(max(count-(len(results)-len(kept)), len(kept))))
+		count = max(count-(len(results)-len(kept)), len(kept))
+		if len(kept) == 0 {
+			// ansible-galaxy lists the hits of a count above zero and fails on an empty page (max of no names): a page left empty says none.
+			count = 0
+		}
+		page["count"] = json.RawMessage(strconv.Itoa(count))
 	}
 	extra := url.Values{}
 	for k, v := range params {

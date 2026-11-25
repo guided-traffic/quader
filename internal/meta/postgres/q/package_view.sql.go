@@ -701,7 +701,8 @@ WITH vis AS (
          count(DISTINCT v.version)::bigint AS version_count
     FROM vis v
    GROUP BY v.format, v.name
-  HAVING ($12::text = '' OR position(lower($12::text) in lower(v.name)) > 0 OR bool_or(v.vid = ANY($13::bigint[])))
+  HAVING ($12::text = '' OR position(lower($12::text) in lower(v.name)) > 0
+          OR position(lower($12::text) in lower(min(v.display_name))) > 0 OR bool_or(v.vid = ANY($13::bigint[])))
      AND ($14::text = '' OR bool_or(v.vid = ANY($15::bigint[])))
      AND (NOT $16::boolean OR min(v.created_at) >= NULLIF($17::text, '')::timestamptz)
      AND (NOT $18::boolean OR min(v.created_at) < NULLIF($19::text, '')::timestamptz)
@@ -862,7 +863,8 @@ type PackageViewListRow struct {
 // version, aggregated over the visible versions, in keyset order. sort is name,
 // createdAt or updatedAt; the tie-breakers are name and format, in the direction of
 // the sort. q_ids and keyword_ids are the versions whose description or keywords the
-// format matched (a package matches when one of its visible versions is among them).
+// format matched (a package matches when one of its visible versions is among them). The text matches the name and the display
+// name (an Ansible role's <owner>.<name> for its package role/<id>, R-ANS-056).
 // exact_name, when set, restricts the rows to one package. Names are ordered bytewise
 // (collation C), so the order does not depend on the database's locale and the keyset
 // comparison of a cursor means the same on every replica.
