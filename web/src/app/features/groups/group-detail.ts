@@ -208,6 +208,11 @@ export class GroupDetail {
       const result = await this.conflicts.save<Group>({
         etag: this.etag,
         patch,
+        fields: {
+          '/name': $localize`:@@group.name:Name`,
+          '/description': $localize`:@@group.description:Description`,
+          '/autoJoin': $localize`:@@group.auto-join:Every user joins this group automatically`,
+        },
         send: (etag) => this.api.updateGroup(g.name, patch, etag),
         reload: () => this.api.group(g.name),
       });

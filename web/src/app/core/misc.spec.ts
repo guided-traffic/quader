@@ -78,14 +78,46 @@ describe('filesMatcher', () => {
 });
 
 describe('conflict diff', () => {
-  it('R-UI-042 lists only the fields that differ, theirs against yours', () => {
+  it('R-UI-042 lists only the fields that differ, theirs against yours, by their API names where the form names none', () => {
     const rows = diffFields({
       mine: { description: 'mine', enabled: true, extra: 1 },
       theirs: { description: 'theirs', enabled: true },
     });
     expect(rows).toEqual([
-      { field: 'description', mine: '"mine"', theirs: '"theirs"' },
-      { field: 'extra', mine: '1', theirs: '' },
+      { pointer: '/description', field: 'description', apiName: true, mine: { entries: ['mine'] }, theirs: { entries: ['theirs'] } },
+      { pointer: '/extra', field: 'extra', apiName: true, mine: { entries: ['1'] }, theirs: { entries: [] } },
     ]);
+  });
+
+  it('R-UI-042 names a field by the form\'s label and shows a value as the form does: a list as its entries, a switch as on or off, none, never a secret', () => {
+    const rows = diffFields({
+      mine: { includePatterns: ['a', 'b'], hideExistence: 'true', remote: { url: 'https://x', password: { value: 's3cret' } }, on: true },
+      theirs: { includePatterns: [], hideExistence: 'inherit', remote: { url: 'https://y' }, on: false },
+      fields: {
+        '/includePatterns': 'Include patterns',
+        '/hideExistence': { label: 'Hide existence', show: (v) => (v === 'true' ? 'Hide' : 'Use the installation setting') },
+        '/remote/url': 'Upstream URL',
+        '/on': 'Enabled',
+      },
+    });
+    expect(rows.map((r) => [r.field, r.apiName, r.theirs.entries, r.mine.entries])).toEqual([
+      ['Include patterns', false, [], ['a', 'b']],
+      ['Hide existence', false, ['Use the installation setting'], ['Hide']],
+      ['Upstream URL', false, ['https://y'], ['https://x']],
+      // A member the form does not name keeps its API name; a password's value never stands, whatever the form says.
+      ['remote/password/value', true, [], ['Hidden']],
+      ['Enabled', false, ['Off'], ['On']],
+    ]);
+    expect(JSON.stringify(rows)).not.toContain('s3cret');
+  });
+
+  it('R-UI-042 two empty values do not differ, and an empty value the form names shows the form\'s choice', () => {
+    expect(diffFields({ mine: { a: '', b: [] }, theirs: { a: null } })).toEqual([]);
+    const [row] = diffFields({
+      mine: { locale: 'de' },
+      theirs: { locale: null },
+      fields: { '/locale': { label: 'Language', show: () => 'Deutsch', empty: 'Follow the browser' } },
+    });
+    expect([row!.theirs.entries, row!.mine.entries]).toEqual([['Follow the browser'], ['Deutsch']]);
   });
 });

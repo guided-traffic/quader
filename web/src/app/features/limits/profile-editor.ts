@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, LOCALE_ID, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { newIdempotencyKey } from '../../api/client';
 import { LimitProfile, LimitProfileWrite, LimitsApi } from '../../api/limits-api';
@@ -7,6 +7,7 @@ import { Versioned } from '../../api/repositories-api';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
 import { TextField } from '../../shared/access/fields';
+import { limitConflictFields } from './figures';
 import { ConflictResolver } from '../../shared/conflict-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { fieldErrorAt } from '../../shared/field-errors';
@@ -126,6 +127,7 @@ export class LimitProfileEditor {
   private readonly router = inject(Router);
   private readonly notifier = inject(Notifier);
   private readonly conflicts = inject(ConflictResolver);
+  private readonly locale = inject(LOCALE_ID);
 
   /** The route's `:key`; absent on `/admin/limits/profiles/new`. */
   readonly key = input<string | undefined>(undefined);
@@ -234,6 +236,7 @@ export class LimitProfileEditor {
       const result = await this.conflicts.save<LimitProfile>({
         etag: stored.etag,
         patch: { name: body.name, description: body.description, figures: body.figures },
+        fields: limitConflictFields(this.locale),
         send: (etag) => this.api.replaceProfile(stored.value.key, body, etag),
         reload: () => this.api.profile(stored.value.key),
       });

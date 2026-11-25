@@ -17,7 +17,7 @@ import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
 import { Needs } from '../../shared/access/needs';
 import { AddressField } from '../../shared/address-field';
-import { ConflictResolver } from '../../shared/conflict-dialog';
+import { ConflictField, ConflictResolver } from '../../shared/conflict-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { fieldErrorAt } from '../../shared/field-errors';
 import { linkCheckClause } from '../../shared/link-check';
@@ -385,7 +385,7 @@ export class StorageSettingsPage {
       publicAddresses: Object.fromEntries(s.connections.map((c) => [c.name, c.publicAddress])),
     };
     const theirPart = Object.fromEntries(Object.keys(patch).map((k) => [k, stored[k]]));
-    const decision = await this.conflicts.resolve({ mine: { ...patch }, theirs: theirPart });
+    const decision = await this.conflicts.resolve({ mine: { ...patch }, theirs: theirPart, fields: (p) => this.conflictField(p) });
     if (decision === 'overwrite') {
       try {
         this.adopt(await this.api.updateSettings(patch, theirs.etag));
@@ -395,6 +395,20 @@ export class StorageSettingsPage {
     } else {
       this.adopt(theirs);
     }
+  }
+
+  /** How the conflict dialog names and shows a field of the section (R-UI-042, Q-UI-1210): the minimum size in MiB, as the field. */
+  private conflictField(pointer: string): ConflictField | null {
+    switch (pointer) {
+      case '/enabled':
+        return { label: $localize`:@@links.switch:Deliver large downloads by signed links of the object store` };
+      case '/minSize':
+        return { label: $localize`:@@links.min-size:Minimum size in MiB`, show: (v) => mibOf(Number(v)) };
+      case '/linkLifeSeconds':
+        return { label: $localize`:@@links.life:Link valid for, in seconds` };
+    }
+    const c = this.connections().find((x) => this.addressPointer(x) === pointer);
+    return c ? { label: $localize`:@@conflict.links.address:Public address of ${c.name}:connection:` } : null;
   }
 
   /** **Test link** (Q-UI-952): a link to a probe on the connection, signed against the address as typed; nothing is saved. */

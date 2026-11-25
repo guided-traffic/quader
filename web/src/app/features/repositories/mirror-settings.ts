@@ -45,6 +45,30 @@ export function mirrorPointerLabel(pointer: string): string | null {
   return mirrorLabels()[name] ?? $localize`:@@mirror.heading:Mirror`;
 }
 
+/** What the select **Discovery** shows for a value of `remote.mirror.discovery`. */
+export function discoveryLabel(d: string): string {
+  switch (d) {
+    case 'feed':
+      return $localize`:@@mirror.discovery.feed:Change feed`;
+    case 'listing':
+      return $localize`:@@mirror.discovery.listing:Listing`;
+    case 'names':
+      return $localize`:@@mirror.discovery.names:Names list`;
+    default:
+      return $localize`:@@mirror.discovery.auto:Automatic`;
+  }
+}
+
+/** The title of a value of `remote.mode` as the section's radios say it. */
+export function remoteModeLabel(mode: string): string {
+  return mode === 'mirror' ? $localize`:@@mirror.mode.mirror:Mirror` : $localize`:@@mirror.mode.pull-through:Pull-through`;
+}
+
+/** The label of a known member of `remote.mirror`, or null. */
+export function mirrorMemberLabel(name: string): string | null {
+  return mirrorLabels()[name] ?? null;
+}
+
 function mirrorLabels(): Record<string, string> {
   return {
     include: $localize`:@@mirror.include:Mirror only these packages`,
@@ -503,16 +527,7 @@ export class MirrorSettings {
   }
 
   protected discoveryLabel(d: string): string {
-    switch (d) {
-      case 'feed':
-        return $localize`:@@mirror.discovery.feed:Change feed`;
-      case 'listing':
-        return $localize`:@@mirror.discovery.listing:Listing`;
-      case 'names':
-        return $localize`:@@mirror.discovery.names:Names list`;
-      default:
-        return $localize`:@@mirror.discovery.auto:Automatic`;
-    }
+    return discoveryLabel(d);
   }
 
   protected setMode(remoteMode: RemoteMode): void {

@@ -1,37 +1,209 @@
-import { Injectable, Component, inject } from '@angular/core';
+import { Injectable, Component, inject, input } from '@angular/core';
 import { DIALOG_DATA, DialogClose, DialogTitle, QuaderDialog } from './ui/dialog';
 import { firstValueFrom } from 'rxjs';
 import { Versioned } from '../api/repositories-api';
 import { ApiError } from '../api/problem';
+import { NoValue } from './ui/no-value';
 
 export type ConflictDecision = 'reload' | 'overwrite';
+
+/**
+ * How the form names a field and shows its value (R-UI-042, Q-UI-1210): its label, and the value as the form shows it. Without `show` a
+ * list stands as its entries, a switch as On or Off, an empty value as none and any other value as its text.
+ */
+export interface ConflictField {
+  /** The form's label of the field. */
+  readonly label: string;
+  /** The value as the form shows it: one text, or the entries of a list. An empty answer is none. */
+  readonly show?: (value: unknown) => string | readonly string[];
+  /** A secret: its value never stands in the dialog, only that one is set. */
+  readonly secret?: boolean;
+  /** What the form shows for an empty value where that is a choice of its own ("Follow the browser"); left out, none. */
+  readonly empty?: string;
+}
+
+/**
+ * The form's fields by their JSON pointer (`/includePatterns`, `/remote/url`), as a table or as a function for a form whose pointers
+ * follow a rule (a format's member, a mirror's settings); a string is the label alone. A pointer the form does not name keeps its API
+ * name, the server's text; an object the form does not name is compared member by member.
+ */
+export type ConflictFields =
+  | Readonly<Record<string, ConflictField | string>>
+  | ((pointer: string) => ConflictField | string | null | undefined);
 
 export interface ConflictData {
   /** The user's draft. */
   readonly mine: Readonly<Record<string, unknown>>;
   /** The resource as stored now (re-read after the 412). */
   readonly theirs: Readonly<Record<string, unknown>>;
+  /** How the form names and shows its fields; left out, every field keeps its API name. */
+  readonly fields?: ConflictFields;
+}
+
+/** A value as the dialog shows it: the entries of a list, one entry for any other value, none for an empty one. */
+export interface ShownValue {
+  readonly entries: readonly string[];
 }
 
 export interface ConflictRow {
+  /** The field's JSON pointer in the compared documents. */
+  readonly pointer: string;
+  /** The form's label, or the field's API name (the pointer without its first slash) where the form does not show the field. */
   readonly field: string;
-  readonly mine: string;
-  readonly theirs: string;
+  /** True where the form does not name the field: its API name stands, as the server's text. */
+  readonly apiName: boolean;
+  readonly mine: ShownValue;
+  readonly theirs: ShownValue;
 }
 
-/** Fields whose values differ, top level, in the order of the draft then the stored object. */
+/** Member names that hold a secret wherever they stand: their values never reach the dialog, whatever the form says. */
+const SECRET_MEMBERS = new Set(['password', 'secret', 'token', 'clientSecret', 'privateKey', 'secretAccessKey']);
+
+function isPlainObject(v: unknown): v is Readonly<Record<string, unknown>> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+/** Empty in the eyes of a reader: no value, an empty text, an empty list or an object without members. */
+function isEmpty(v: unknown): boolean {
+  if (v === undefined || v === null || v === '') return true;
+  if (Array.isArray(v)) return v.length === 0;
+  return isPlainObject(v) && Object.keys(v).length === 0;
+}
+
+function describer(fields: ConflictFields | undefined): (pointer: string) => ConflictField | null {
+  if (!fields) return () => null;
+  const look = typeof fields === 'function' ? fields : (p: string) => fields[p];
+  return (pointer) => {
+    const f = look(pointer);
+    if (f === null || f === undefined) return null;
+    return typeof f === 'string' ? { label: f } : f;
+  };
+}
+
+/** Escapes a member name as a JSON pointer's segment (RFC 6901). */
+function segment(name: string): string {
+  return name.replace(/~/g, '~0').replace(/\//g, '~1');
+}
+
+/** The fields of a document by pointer: a member the form names, or a value that is no object, is one field; an object is its members. */
+function leaves(
+  value: unknown,
+  pointer: string,
+  describe: (pointer: string) => ConflictField | null,
+  out: Map<string, unknown>,
+): void {
+  if (pointer !== '' && describe(pointer)) {
+    out.set(pointer, value);
+    return;
+  }
+  if (isPlainObject(value)) {
+    for (const [name, member] of Object.entries(value)) leaves(member, `${pointer}/${segment(name)}`, describe, out);
+    return;
+  }
+  if (pointer !== '') out.set(pointer, value);
+}
+
+/** One value of a list, or of an object the form does not name, as text. */
+function entryText(v: unknown): string {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'boolean') return v ? $localize`:@@switch.on:On` : $localize`:@@switch.off:Off`;
+  if (typeof v === 'number' || typeof v === 'bigint') return String(v);
+  if (isPlainObject(v)) {
+    return Object.entries(v)
+      .filter(([, m]) => !isEmpty(m))
+      .map(([name, m]) => `${name}: ${Array.isArray(m) ? m.map(entryText).join(', ') : entryText(m)}`)
+      .join(', ');
+  }
+  if (Array.isArray(v)) return v.map(entryText).join(', ');
+  return String(v);
+}
+
+/** The value of the field at `pointer` as the form shows it (Q-UI-1210). */
+export function shownValue(value: unknown, pointer: string, field: ConflictField | null): ShownValue {
+  if (isEmpty(value)) return { entries: field?.empty ? [field.empty] : [] };
+  const secret = field?.secret ?? pointer.split('/').some((s) => SECRET_MEMBERS.has(s));
+  if (secret) return { entries: [$localize`:@@conflict.secret:Hidden`] };
+  if (field?.show) {
+    const shown = field.show(value);
+    const entries = typeof shown === 'string' ? [shown] : [...shown];
+    return { entries: entries.filter((e) => e !== '') };
+  }
+  if (Array.isArray(value)) return { entries: value.map(entryText) };
+  return { entries: [entryText(value)] };
+}
+
+/**
+ * The fields whose values differ (R-UI-042, Q-UI-1210), in the order of the draft then the stored object, each named by the form's
+ * label and shown as the form shows it. An object the form does not name is compared member by member; two empty values (none, an
+ * empty text, an empty list) do not differ.
+ */
 export function diffFields(data: ConflictData): ConflictRow[] {
-  const fields = [...new Set([...Object.keys(data.mine), ...Object.keys(data.theirs)])];
-  const show = (v: unknown): string => (v === undefined ? '' : JSON.stringify(v));
-  return fields
-    .map((field) => ({ field, mine: show(data.mine[field]), theirs: show(data.theirs[field]) }))
-    .filter((r) => r.mine !== r.theirs);
+  const describe = describer(data.fields);
+  const mine = new Map<string, unknown>();
+  const theirs = new Map<string, unknown>();
+  leaves(data.mine, '', describe, mine);
+  leaves(data.theirs, '', describe, theirs);
+  const pointers = [...new Set([...mine.keys(), ...theirs.keys()])];
+  const same = (a: unknown, b: unknown): boolean => (isEmpty(a) && isEmpty(b)) || JSON.stringify(a) === JSON.stringify(b);
+  return pointers
+    .filter((p) => !same(mine.get(p), theirs.get(p)))
+    .map((pointer) => {
+      const field = describe(pointer);
+      return {
+        pointer,
+        field: field?.label ?? pointer.slice(1),
+        apiName: field === null,
+        mine: shownValue(mine.get(pointer), pointer, field),
+        theirs: shownValue(theirs.get(pointer), pointer, field),
+      };
+    });
+}
+
+/** One value of a compared field (Q-UI-1210): the en dash for none (Q-UI-561), one text, or the entries of a list one per line. */
+@Component({
+  selector: 'quader-compare-value',
+  imports: [NoValue],
+  template: `
+    @switch (value().entries.length) {
+      @case (0) {
+        <quader-no-value />
+      }
+      @case (1) {
+        <span translate="no">{{ value().entries[0] }}</span>
+      }
+      @default {
+        <ul class="compare-entries" translate="no">
+          @for (e of value().entries; track $index) {
+            <li>{{ e }}</li>
+          }
+        </ul>
+      }
+    }
+  `,
+})
+export class CompareValue {
+  readonly value = input.required<ShownValue>();
+}
+
+/** The name of a compared field (Q-UI-1210): the form's label, or the field's API name as the server's text where the form has none. */
+@Component({
+  selector: 'quader-compare-field',
+  template: `
+    @if (row().apiName) {
+      <code translate="no">{{ row().field }}</code>
+    } @else {
+      {{ row().field }}
+    }
+  `,
+})
+export class CompareField {
+  readonly row = input.required<ConflictRow>();
 }
 
 /** "Changed by someone else since you opened it" (R-UI-042): their version against yours. */
 @Component({
   selector: 'quader-conflict-dialog',
-  imports: [DialogTitle, DialogClose],
+  imports: [DialogTitle, DialogClose, CompareField, CompareValue],
   template: `
     <h2 quaderDialogTitle i18n="@@conflict.title">Changed by someone else since you opened it</h2>
     <div class="dialog-body">
@@ -52,11 +224,11 @@ export function diffFields(data: ConflictData): ConflictRow[] {
               </tr>
             </thead>
             <tbody>
-              @for (row of rows; track row.field) {
+              @for (row of rows; track row.pointer) {
                 <tr>
-                  <th scope="row" translate="no">{{ row.field }}</th>
-                  <td data-label="Stored now" i18n-data-label="@@conflict.theirs"><code translate="no">{{ row.theirs }}</code></td>
-                  <td data-label="Yours" i18n-data-label="@@conflict.mine"><code translate="no">{{ row.mine }}</code></td>
+                  <th scope="row"><quader-compare-field [row]="row" /></th>
+                  <td data-label="Stored now" i18n-data-label="@@conflict.theirs"><quader-compare-value [value]="row.theirs" /></td>
+                  <td data-label="Yours" i18n-data-label="@@conflict.mine"><quader-compare-value [value]="row.mine" /></td>
                 </tr>
               }
             </tbody>
@@ -105,6 +277,8 @@ export interface GuardedPatch<T> {
   readonly etag: string;
   /** The members the user changed (the merge patch); only these are compared in the dialog. */
   readonly patch: Readonly<Record<string, unknown>>;
+  /** How the form names and shows the members of `patch` in the dialog (Q-UI-1210). */
+  readonly fields?: ConflictFields;
   /**
    * Sends the write with the given `ETag`. `current` is null on the first attempt. After "Overwrite" it is
    * the stored resource read now: a write that replaces the whole resource (PUT) must build its body from
@@ -157,7 +331,7 @@ export class ConflictResolver {
         // The first attempt of a retried write did commit: that is a success, not a conflict.
         return { outcome: 'saved', current: theirs };
       }
-      const decision = await this.resolve({ mine, theirs: theirPart });
+      const decision = await this.resolve({ mine, theirs: theirPart, fields: write.fields });
       if (decision === 'overwrite') return { outcome: 'saved', current: await write.send(theirs.etag, theirs.value) };
       if (decision === 'reload') return { outcome: 'reloaded', current: theirs };
       return { outcome: 'dismissed' };

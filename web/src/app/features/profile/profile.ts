@@ -11,7 +11,7 @@ import { SessionStore } from '../../core/session-store';
 import { SelectField, SelectOption, TextField } from '../../shared/access/fields';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { asApiError } from '../../shared/paged-resource';
-import { ConflictResolver } from '../../shared/conflict-dialog';
+import { ConflictFields, ConflictResolver } from '../../shared/conflict-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { AvatarStore } from '../../core/avatar-store';
 import { ProfileAvatar } from './profile-avatar';
@@ -144,6 +144,20 @@ export class Profile {
     this.notifier.status($localize`:@@profile.pref.saved:Preferences saved.`);
   }
 
+  /** The preferences' labels and the options their selects show, for the conflict dialog (R-UI-042, Q-UI-1210). */
+  private conflictFields(): ConflictFields {
+    const option = (options: readonly SelectOption[]) => (v: unknown) => options.find((o) => o.value === v)?.label ?? String(v);
+    return {
+      '/locale': {
+        label: $localize`:@@profile.pref.locale:Language`,
+        show: option(this.localeOptions),
+        empty: this.localeOptions[0]!.label,
+      },
+      '/theme': { label: $localize`:@@profile.pref.theme:Theme`, show: option(this.themeOptions), empty: this.themeOptions[0]!.label },
+      '/keyboardShortcuts': $localize`:@@profile.pref.shortcuts:Keyboard shortcuts with a single key, such as / for the search`,
+    };
+  }
+
   /** 412: show their version against mine; "Overwrite" sends mine with the ETag read now. */
   private async resolveConflict(): Promise<void> {
     const current = await this.preferencesApi.load();
@@ -152,7 +166,7 @@ export class Profile {
       theme: current.preferences.theme,
       keyboardShortcuts: current.preferences.keyboardShortcuts,
     };
-    const decision = await this.conflicts.resolve({ mine: this.patch(), theirs });
+    const decision = await this.conflicts.resolve({ mine: this.patch(), theirs, fields: this.conflictFields() });
     if (decision === 'overwrite') {
       try {
         await this.store(current.etag);

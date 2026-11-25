@@ -23,6 +23,7 @@ import { SessionStore } from '../../core/session-store';
 import { isSystemRepository, isUpstreamProject, mayServeClients } from '../../core/upstream-project';
 import { SelectField, SelectOption } from '../../shared/access/fields';
 import { Confirm } from '../../shared/confirm-dialog';
+import { repositoryConflictFields } from './conflict-fields';
 import { ConflictResolver } from '../../shared/conflict-dialog';
 import { DraftStore } from '../../shared/drafts';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -479,6 +480,11 @@ export class RepositoryDetail implements HasUnsavedChanges {
     () => $localize`:@@repo.settings.format-heading:${this.formatLabel()}:format: settings`,
   );
 
+  /** How the conflict dialog names and shows the page's fields (R-UI-042, Q-UI-1210). */
+  private conflictFields(): ReturnType<typeof repositoryConflictFields> {
+    return repositoryConflictFields(this.settingNodes());
+  }
+
   private pointerLabel(pointer: string): string {
     const upstream = this.upstreamSection() ? upstreamPointerLabel(pointer) : null;
     if (upstream) return upstream;
@@ -599,7 +605,7 @@ export class RepositoryDetail implements HasUnsavedChanges {
       this.notifier.status($localize`:@@repo.edit.saved:Repository saved.`);
       return;
     }
-    const decision = await this.conflicts.resolve({ mine: myPart, theirs: theirPart });
+    const decision = await this.conflicts.resolve({ mine: myPart, theirs: theirPart, fields: this.conflictFields() });
     if (decision === 'reload') {
       this.takeStored(theirs.value, theirs.etag, section);
     } else if (decision === 'overwrite') {
@@ -680,7 +686,7 @@ export class RepositoryDetail implements HasUnsavedChanges {
       this.takeStored(theirs.value, theirs.etag);
       return;
     }
-    const decision = await this.conflicts.resolve({ mine: { ...wanted }, theirs: { ...current } });
+    const decision = await this.conflicts.resolve({ mine: { ...wanted }, theirs: { ...current }, fields: this.conflictFields() });
     if (decision === 'reload') {
       this.takeStored(theirs.value, theirs.etag);
     } else if (decision === 'overwrite') {
@@ -913,7 +919,7 @@ export class RepositoryDetail implements HasUnsavedChanges {
       this.takeStoredPaused(theirs.value, theirs.etag);
       return;
     }
-    const decision = await this.conflicts.resolve({ mine: wanted, theirs: stored });
+    const decision = await this.conflicts.resolve({ mine: wanted, theirs: stored, fields: this.conflictFields() });
     if (decision === 'reload') {
       this.adopt(theirs);
     } else if (decision === 'overwrite') {

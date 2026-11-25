@@ -24,7 +24,7 @@ import { CI_PROJECT_PREFIX, PrincipalChoice, PrincipalField, PrincipalKind, TECH
 import { CallerCell } from './caller-cell';
 import { everyLabel, whoView } from './callers';
 import { FigureFields, FigureTexts, readTexts, textsOf } from './figure-fields';
-import { FIGURES, compactFigures, limitText } from './figures';
+import { FIGURES, compactFigures, limitConflictFields, limitText } from './figures';
 
 /** What "Applies to" offers (R-UI-179). */
 export type WhoChoice = 'user' | 'group' | 'technicalToken' | 'ciProject' | 'address' | 'every';
@@ -470,6 +470,7 @@ export class LimitRuleDialog {
       const result = await this.conflicts.save<LimitRule>({
         etag: stored.etag,
         patch: { ...body } as Record<string, unknown>,
+        fields: limitConflictFields(this.locale),
         send: (etag) => this.api.replaceRule(this.data.place, rule.id, body, etag),
         reload: () => this.api.rule(this.data.place, rule.id),
       });

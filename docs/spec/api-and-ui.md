@@ -5874,7 +5874,11 @@ Priority: **MVP** · Covers: quader-only
   that sentence (R-UI-216, which replaced "Unknown codes show the English `detail`" on 2026-11-25).
 - 412 `precondition_failed`: a conflict dialog "Changed by someone else since you opened it",
   showing their version against yours field by field, with "Reload (discard mine)", "Overwrite"
-  (re-sends with the new ETag after showing the diff) and "Copy my changes".
+  (re-sends with the new ETag after showing the diff) and "Copy my changes". A field is named by the label the form gives it and its
+  value shown as the form shows it: a list as its entries, a switch as On or Off, a choice as the option's text, an empty value as
+  the en dash of an empty cell (Q-UI-561) or the form's own word for it, a secret never; a field the form does not show keeps its API
+  name as the server's text ([Q-UI-1210](#q-ui-1210--the-conflict-dialog-names-a-field-by-the-forms-label-and-shows-a-value-as-the-form-does)).
+  The review before an exposure rule's save (R-EP-017) shows its fields the same way.
 - **Own permission changes** (INV-17, R-API-052, [authorization.md](authorization.md)
   R-AUTHZ-032). After a write that answers `Quader-Authz-Epoch` (a policy, a role binding, a project, its members, the
   move of a repository), the session store (R-UI-046) keeps the highest such epoch of the tab, and the
@@ -26188,6 +26192,28 @@ with the error notice of R-UI-216, and get no component of their own: a shared t
 their lists.
 
 **Applied in the spec:** R-UI-082, R-UI-216.
+
+### Q-UI-1210 · The conflict dialog names a field by the form's label and shows a value as the form does
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found on
+a picture of the dialog states (`conflict`, `diff` of `make ui-states`): the dialog of a save answered 412 named each field by its API
+member (`includePatterns`, `upstreamUrl`) and showed every value as JSON (`["a","b"]`, `true`, `"https://…"`), so a reader compared what
+the form calls **Include patterns**, one pattern per line, with a quoted array of strings.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The form that opens the dialog passes how it names and shows its fields (`ConflictData.fields`: a label per JSON pointer, a `show` for a value the form words, `secret`, `empty` for an empty value that is a choice of its own); the dialog compares field by field down to the members the form names, shows a list as its entries one per line, a switch as On or Off, an empty value as the en dash of an empty cell, a member named `password`, `secret`, `token`, `clientSecret`, `privateKey` or `secretAccessKey` as "Hidden" whatever the form says, and an unnamed member by its API name in the code face (chosen) | Every form's labels, reused from its own messages | The reader sees the words of the form; an unknown member still shows, as the server names it; a secret cannot leak by a form that forgot it | Every form that opens the dialog carries a table of its fields beside its template |
+| (b) A dictionary of API member names to labels in the dialog | One table | One place | One member name means different fields in different forms (`description`, `enabled`, `name`); the dialog would guess |
+| (c) Read the labels from the form's DOM | No table | — | A field the form shows in a closed section or not at all has no label in the DOM; a value's words (an option's text) are not there either |
+
+**Choice:** (a). The review before an exposure rule's save (R-EP-017) is the same table and gets the same fields. Two empty values (none,
+an empty text, an empty list) do not differ. **Applied in the spec:** R-UI-042. Code: [conflict-dialog.ts](../../web/src/app/shared/conflict-dialog.ts)
+(`diffFields`, `shownValue`, `CompareValue`, `CompareField`), the forms' fields in
+[conflict-fields.ts](../../web/src/app/features/repositories/conflict-fields.ts) (a repository's settings, its upstream, mirror, visibility
+and format members by the schema's titles), [figures.ts](../../web/src/app/features/limits/figures.ts) (`limitConflictFields`),
+[policy-model.ts](../../web/src/app/features/permissions/policy-model.ts), [endpoint-model.ts](../../web/src/app/features/endpoints/endpoint-model.ts)
+and each form that opens the dialog. Tests: the cases of R-UI-042 in [misc.spec.ts](../../web/src/app/core/misc.spec.ts) (unit,
+milliseconds), the states `conflict` and `diff` of `make ui-states` (labels, a list, a switch, a password, an unnamed member).
 
 ## What this does not cover
 

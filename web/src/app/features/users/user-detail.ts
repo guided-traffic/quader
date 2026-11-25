@@ -175,6 +175,10 @@ export class UserDetail {
         const result = await this.conflicts.save<User>({
           etag: this.etag,
           patch,
+          fields: {
+            '/email': $localize`:@@user.email:Email`,
+            '/displayName': $localize`:@@user.display-name:Display name`,
+          },
           send: (etag) => this.api.updateUser(u.username, patch as UserPatch, etag),
           reload: () => this.api.user(u.username),
         });
@@ -198,6 +202,7 @@ export class UserDetail {
         const result = await this.conflicts.save<User>({
           etag: this.etag,
           patch,
+          fields: { '/external': $localize`:@@user.external:External user` },
           send: (etag) => this.api.updateUser(u.username, patch, etag),
           reload: () => this.api.user(u.username),
         });

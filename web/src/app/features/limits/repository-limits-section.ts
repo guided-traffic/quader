@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, LOCALE_ID, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CeilingFigures, LimitCeilings, LimitPlace, LimitsApi } from '../../api/limits-api';
 import { ApiError } from '../../api/problem';
@@ -9,7 +9,7 @@ import { ConflictResolver } from '../../shared/conflict-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { Disclosure } from '../../shared/ui/disclosure';
-import { fromField, toField } from './figures';
+import { fromField, limitConflictFields, toField } from './figures';
 import { LimitRules } from './limit-rules';
 import { rulesNote } from './project-limits-section';
 
@@ -165,6 +165,7 @@ export class RepositoryLimitsSection {
   private readonly session = inject(SessionStore);
   private readonly notifier = inject(Notifier);
   private readonly conflicts = inject(ConflictResolver);
+  private readonly locale = inject(LOCALE_ID);
 
   readonly project = input.required<string>();
   /** The repository's key within the project. */
@@ -259,6 +260,7 @@ export class RepositoryLimitsSection {
       const result = await this.conflicts.save<LimitCeilings>({
         etag: stored.etag,
         patch: { [c]: figures },
+        fields: limitConflictFields(this.locale),
         send: (etag, current) =>
           this.api.replaceCeilings(this.ref(), current ? { anonymous: current.anonymous, signedIn: current.signedIn, [c]: figures } : body, etag),
         reload: () => this.api.ceilings(this.ref()),

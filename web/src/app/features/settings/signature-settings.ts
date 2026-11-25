@@ -306,7 +306,11 @@ export class SignatureSettingsPage {
       this.adopt(theirs);
       return;
     }
-    const decision = await this.conflicts.resolve({ mine: { projectAnchors: on }, theirs: { projectAnchors: theirs.settings.projectAnchors } });
+    const decision = await this.conflicts.resolve({
+      mine: { projectAnchors: on },
+      theirs: { projectAnchors: theirs.settings.projectAnchors },
+      fields: { '/projectAnchors': $localize`:@@sig.settings.switch:Project owners may add trust anchors for their project` },
+    });
     if (decision === 'overwrite') {
       try {
         this.adopt(await this.api.updateSettings(on, theirs.etag));

@@ -28,6 +28,29 @@ const toLines = (text: string): string[] => splitValues(text.replace(/,/g, '\n')
  * `ETag`; a 412 opens the conflict dialog. The 422 codes of the validation show next to the field they
  * name and as the notice of the form.
  */
+/** The issuer's fields by the labels of its read-only view, for the conflict dialog (R-UI-042, Q-UI-1210). */
+function issuerConflictFields(): Record<string, string> {
+  return {
+    '/name': $localize`:@@ci.form.name:Name`,
+    '/issuer': $localize`:@@ci.form.issuer:Issuer URL`,
+    '/description': $localize`:@@ci.form.description:Description`,
+    '/enabled': $localize`:@@ci.form.enabled:Enabled`,
+    '/allowedAudiences': $localize`:@@ci.form.audiences:Accepted audiences`,
+    '/exclusiveAudience': $localize`:@@ci.form.exclusive:Only these audiences`,
+    '/allowedAlgorithms': $localize`:@@ci.form.algorithms:Signing algorithms`,
+    '/publicIssuer': $localize`:@@ci.form.public:Public issuer`,
+    '/pinClaims': $localize`:@@ci.form.pin-claims:Pin claims`,
+    '/requiredClaims': $localize`:@@ci.form.required-claims:Required claims`,
+    '/clockSkewSeconds': $localize`:@@ci.form.skew:Clock skew (seconds)`,
+    '/maxTtlSeconds': $localize`:@@ci.form.max-ttl:Maximum token lifetime (seconds)`,
+    '/discoveryUrl': $localize`:@@ci.form.discovery:Discovery document`,
+    '/jwksUri': $localize`:@@ci.form.jwks:Key set URL`,
+    '/caBundleRef': $localize`:@@ci.form.ca:CA bundle`,
+    '/useOutboundProxy': $localize`:@@ci.form.proxy:Outbound proxy`,
+    '/singleUseSubjectTokens': $localize`:@@ci.form.single-use:Reject a second exchange of the same ID token`,
+  };
+}
+
 @Component({
   selector: 'quader-ci-issuer-form',
   imports: [Checkbox, ErrorNotice, Disclosure, TextField],
@@ -379,6 +402,7 @@ export class IssuerForm {
       const result = await this.conflicts.save<CiIssuer>({
         etag: this.etag(),
         patch,
+        fields: issuerConflictFields(),
         send: (etag, current) =>
           this.api.replaceIssuer(
             stored.name,

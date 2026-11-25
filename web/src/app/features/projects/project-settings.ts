@@ -422,6 +422,10 @@ export class ProjectSettings {
       const result = await this.conflicts.save<Project>({
         etag: current.etag,
         patch,
+        fields: {
+          '/displayName': $localize`:@@project-dialog.display-name:Display name`,
+          '/description': $localize`:@@project.description-optional:Description (optional)`,
+        },
         send: (etag) => this.api.replace(stored.key, { key: stored.key, ...body }, etag),
         reload: () => this.api.get(stored.key),
       });

@@ -17,7 +17,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
 import { TokensApi } from '../../api/tokens-api';
-import { AccountRights } from './account-rights';
+import { AccountRights, actionLabel } from './account-rights';
 import { TechnicalTokens } from './technical-tokens';
 
 /**
@@ -284,6 +284,13 @@ export class ServiceAccountDetail {
       const result = await this.conflicts.save<ServiceAccount>({
         etag: this.etag,
         patch,
+        fields: {
+          '/description': $localize`:@@sa.description:Description`,
+          '/actions': {
+            label: $localize`:@@sa-rights.legend:Rights on this repository`,
+            show: (v) => (Array.isArray(v) ? v.map((a) => actionLabel(a as RepositoryAction)) : [String(v)]),
+          },
+        },
         send: (etag) => this.api.updateServiceAccount(a.name, this.projectKey(), patch, etag, this.repositoryKey()),
         reload: () => this.api.serviceAccount(a.name, this.projectKey(), this.repositoryKey()),
       });

@@ -36,6 +36,7 @@ import {
   inputFromForm,
   lines,
   newRow,
+  policyConflictFields,
   warningText,
 } from './policy-model';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -576,7 +577,7 @@ export class PolicyEditor {
       this.afterWrite(current, $localize`:@@policy.saved:Policy saved.`);
       return;
     }
-    const decision = await this.conflicts.resolve({ mine: { ...mine }, theirs: { ...theirs } });
+    const decision = await this.conflicts.resolve({ mine: { ...mine }, theirs: { ...theirs }, fields: policyConflictFields() });
     if (decision === 'overwrite') {
       this.afterWrite(await this.api.replace(l.policy.name, l.policy.project, mine, current.etag), $localize`:@@policy.saved:Policy saved.`);
     } else {

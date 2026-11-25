@@ -147,7 +147,7 @@ describe('The sections of the repository settings page (R-UI-087)', () => {
       saveButton(r.root, 'Description (optional)').click();
       await settle(r.fixture);
       const dialog = r.root.ownerDocument.body.querySelector<HTMLElement>('[role="dialog"]')!;
-      expect(text(dialog)).toContain('description');
+      expect(text(dialog)).toContain('Description (optional)'); // the form's label, Q-UI-1210
       expect(text(dialog)).not.toContain('adminNotes');
       button(dialog, /Overwrite/).click();
       await settle(r.fixture);

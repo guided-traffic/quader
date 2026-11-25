@@ -336,7 +336,7 @@ describe('User detail (R-UI-024)', () => {
     await settle(fixture);
     const dialog = overlay().querySelector('quader-conflict-dialog') as HTMLElement;
     expect(dialog).toBeTruthy();
-    expect(text(dialog)).toContain('displayName');
+    expect(text(dialog)).toContain('Display name'); // the form's label, Q-UI-1210
     buttonByText(dialog, 'Overwrite').click();
     await sleep(fixture, 300);
     // The stale tag was refused (it never reached the guard's bump), then the tag read after the 412 went through.

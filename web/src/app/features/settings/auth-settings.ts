@@ -16,7 +16,7 @@ import { TextField } from '../../shared/access/fields';
 import { fieldErrorAt } from '../../shared/field-errors';
 import { Needs } from '../../shared/access/needs';
 import { asApiError } from '../../shared/paged-resource';
-import { ConflictResolver } from '../../shared/conflict-dialog';
+import { ConflictFields, ConflictResolver } from '../../shared/conflict-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { PageHeader } from '../../shared/ui/page-header';
 
@@ -218,12 +218,29 @@ export class AuthSettings {
     }
   }
 
+  /** The page's labels of the form's fields for the conflict dialog (R-UI-042, Q-UI-1210); a lifetime is named with its heading. */
+  private conflictFields(): ConflictFields {
+    const pat = $localize`:@@auth-settings.pat:Personal tokens`;
+    const sat = $localize`:@@auth-settings.sat:Service account tokens`;
+    const byDefault = $localize`:@@auth-settings.pat-default:Default lifetime (days)`;
+    const most = $localize`:@@auth-settings.pat-max:Maximum lifetime (days)`;
+    return {
+      '/newUsersExternal': $localize`:@@auth-settings.new-users-external:New users are external`,
+      '/patDefault': `${pat} · ${byDefault}`,
+      '/patMax': `${pat} · ${most}`,
+      '/satDefault': `${sat} · ${$localize`:@@auth-settings.sat-default:Default lifetime (days)`}`,
+      '/satMax': `${sat} · ${$localize`:@@auth-settings.sat-max:Maximum lifetime (days)`}`,
+      '/expiryNotice': $localize`:@@auth-settings.notice-lead:Notify this many days before a token expires`,
+    };
+  }
+
   /** 412: their stored values against mine; "Overwrite" sends my patch with the ETag read now. */
   private async resolveConflict(patch: AuthSettingsPatch, part: Part): Promise<void> {
     const theirs = await this.api.load();
     const decision = await this.conflicts.resolve({
       mine: { ...this.form() },
       theirs: { ...this.formOf(theirs.settings) },
+      fields: this.conflictFields(),
     });
     if (decision === 'overwrite') {
       try {

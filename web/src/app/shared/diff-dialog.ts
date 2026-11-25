@@ -1,7 +1,7 @@
 import { Component, Injectable, inject } from '@angular/core';
 import { DIALOG_DATA, DialogClose, DialogTitle, QuaderDialog } from './ui/dialog';
 import { firstValueFrom } from 'rxjs';
-import { ConflictData, diffFields } from './conflict-dialog';
+import { CompareField, CompareValue, ConflictData, diffFields } from './conflict-dialog';
 
 export interface DiffData extends ConflictData {
   readonly title: string;
@@ -11,7 +11,7 @@ export interface DiffData extends ConflictData {
 /** "What will change" before a save (R-EP-017): the stored values against the draft, field by field. */
 @Component({
   selector: 'quader-diff-dialog',
-  imports: [DialogTitle, DialogClose],
+  imports: [DialogTitle, DialogClose, CompareField, CompareValue],
   template: `
     <h2 quaderDialogTitle>{{ data.title }}</h2>
     <div class="dialog-body">
@@ -32,15 +32,11 @@ export interface DiffData extends ConflictData {
               </tr>
             </thead>
             <tbody>
-              @for (row of rows; track row.field) {
+              @for (row of rows; track row.pointer) {
                 <tr>
-                  <th scope="row" translate="no">{{ row.field }}</th>
-                  <td data-label="Stored now" i18n-data-label="@@diff.stored">
-                    <code translate="no">{{ row.theirs || '–' }}</code>
-                  </td>
-                  <td data-label="After saving" i18n-data-label="@@diff.new">
-                    <code translate="no">{{ row.mine || '–' }}</code>
-                  </td>
+                  <th scope="row"><quader-compare-field [row]="row" /></th>
+                  <td data-label="Stored now" i18n-data-label="@@diff.stored"><quader-compare-value [value]="row.theirs" /></td>
+                  <td data-label="After saving" i18n-data-label="@@diff.new"><quader-compare-value [value]="row.mine" /></td>
                 </tr>
               }
             </tbody>

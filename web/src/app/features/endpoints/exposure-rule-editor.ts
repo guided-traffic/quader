@@ -40,6 +40,7 @@ import {
   RuleForm,
   endpointAddress,
   flatRule,
+  ruleConflictFields,
   ruleFormOf,
   ruleOf,
 } from './endpoint-model';
@@ -375,6 +376,7 @@ export class ExposureRuleEditor implements HasUnsavedChanges {
         title: $localize`:@@ep.save.diff.title:Save changes to rule ${form.name}:name:?`,
         mine: flatRule(rule),
         theirs: flatRule(stored),
+        fields: ruleConflictFields(),
         confirmLabel: $localize`:@@ep.save.confirm:Save`,
       });
       if (!ok) return;
@@ -433,6 +435,7 @@ export class ExposureRuleEditor implements HasUnsavedChanges {
     const decision = await this.conflicts.resolve({
       mine: flatRule(mine),
       theirs: flatRule(theirs.value),
+      fields: ruleConflictFields(),
     });
     if (decision === 'reload') {
       this.adopt(theirs.value, theirs.etag);

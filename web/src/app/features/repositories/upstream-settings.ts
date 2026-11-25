@@ -81,6 +81,18 @@ export function upstreamPointerLabel(pointer: string): string | null {
   return $localize`:@@upstream.heading:Upstream`;
 }
 
+/** What the select **Authentication** shows for a value of `remote.authMode`. */
+export function upstreamAuthLabel(mode: string): string {
+  switch (mode) {
+    case 'basic':
+      return $localize`:@@upstream.auth.basic:Username and password`;
+    case 'bearer':
+      return $localize`:@@upstream.auth.bearer:Bearer token`;
+    default:
+      return $localize`:@@upstream.auth.none:None`;
+  }
+}
+
 /**
  * The upstream of a remote repository (R-UI-082, R-UI-084, R-UI-085, R-REPO-024, R-REPO-033, R-REPO-062, R-REPO-064): a button per
  * well-known registry of the format, the URL starting with the default one, the credentials (the password is write-only: sent
@@ -648,14 +660,7 @@ export class UpstreamSettings {
   }
 
   protected authLabel(mode: UpstreamAuthMode): string {
-    switch (mode) {
-      case 'basic':
-        return $localize`:@@upstream.auth.basic:Username and password`;
-      case 'bearer':
-        return $localize`:@@upstream.auth.bearer:Bearer token`;
-      default:
-        return $localize`:@@upstream.auth.none:None`;
-    }
+    return upstreamAuthLabel(mode);
   }
 
   protected problems(pointer: string): readonly FieldProblem[] {

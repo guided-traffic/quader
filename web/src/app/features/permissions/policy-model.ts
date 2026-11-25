@@ -1,4 +1,5 @@
 import { PermissionPolicy, PermissionPolicyInput } from '../../api/authz-api';
+import { ConflictField } from '../../shared/conflict-dialog';
 
 /** The six actions of R-AUTHZ-006 in the order the editor lists them. */
 export const POLICY_ACTIONS = ['read', 'annotate', 'deploy', 'overwrite', 'delete', 'manage'] as const;
@@ -100,6 +101,34 @@ export function inputFromForm(f: PolicyForm, withName: boolean, project?: string
       paths: { include: lines(f.pathsInclude), exclude: lines(f.pathsExclude) },
     },
     entries: f.entries.map((e) => ({ principal: e.principal.trim(), actions: [...e.actions] })),
+  };
+}
+
+/**
+ * How the conflict dialog names the members of a policy (R-UI-042, Q-UI-1210): by the editor's labels, a pattern list after its group,
+ * an entry as its principal and actions.
+ */
+export function policyConflictFields(): Record<string, ConflictField | string> {
+  const include = $localize`:@@policy.packages-include:Include`;
+  const exclude = $localize`:@@policy.packages-exclude:Exclude`;
+  const packages = $localize`:@@policy.packages:Package names`;
+  const paths = $localize`:@@policy.paths:Paths`;
+  return {
+    '/description': $localize`:@@policy.description:Description`,
+    '/resources/repositories': $localize`:@@policy.repositories:Repository selectors`,
+    '/resources/packages/include': `${packages} · ${include}`,
+    '/resources/packages/exclude': `${packages} · ${exclude}`,
+    '/resources/paths/include': `${paths} · ${include}`,
+    '/resources/paths/exclude': `${paths} · ${exclude}`,
+    '/entries': {
+      label: $localize`:@@policy.principals:Principals and actions`,
+      show: (v) =>
+        Array.isArray(v)
+          ? v.map((e: { principal?: unknown; actions?: unknown }) =>
+              `${String(e.principal)}: ${Array.isArray(e.actions) ? e.actions.join(', ') : ''}`,
+            )
+          : [String(v)],
+    },
   };
 }
 

@@ -1,7 +1,7 @@
 import { Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Checkbox } from '../../shared/ui/checkbox';
 import { Router, RouterLink } from '@angular/router';
-import { CiApi, CiMapping, CiMappingInput, CiWarning, SnippetFormat } from '../../api/ci-api';
+import { CiApi, CiCondition, CiGrants, CiMapping, CiMappingInput, CiWarning, SnippetFormat } from '../../api/ci-api';
 import { PolicyApi } from '../../api/authz-api';
 import { collectAll } from '../../api/pagination';
 import { ApiError } from '../../api/problem';
@@ -9,7 +9,7 @@ import { RepositoriesApi, Versioned } from '../../api/repositories-api';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
 import { SelectField, SelectOption, TextField } from '../../shared/access/fields';
-import { ConflictResolver } from '../../shared/conflict-dialog';
+import { ConflictFields, ConflictResolver } from '../../shared/conflict-dialog';
 import { DraftStore } from '../../shared/drafts';
 import { CopyButton } from '../../shared/copy-button';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -34,6 +34,7 @@ import {
   nodeFromCondition,
   pinsProject,
   summarizeCondition,
+  summarizeGrants,
   unprotectedWrite,
   withProtectedRef,
   writes,
@@ -150,6 +151,25 @@ export class MappingEditor implements HasUnsavedChanges {
     { value: 'deny', label: $localize`:@@ci.editor.cross.deny:Deny (a fork or merge request from another project gets nothing)` },
     { value: 'read_only', label: $localize`:@@ci.editor.cross.read-only:Read only (such a pipeline can read, never write)` },
   ];
+
+  /** The mapping's fields by the editor's labels, a condition as it reads and the grants as their lines (R-UI-042, Q-UI-1210). */
+  private conflictFields(): ConflictFields {
+    const cross = this.crossOptions;
+    return {
+      '/name': $localize`:@@ci.editor.name:Name`,
+      '/description': $localize`:@@ci.editor.description:Description`,
+      '/priority': $localize`:@@ci.editor.priority:Priority`,
+      '/enabled': $localize`:@@ci.editor.enabled:Enabled`,
+      '/match': { label: $localize`:@@ci.editor.condition:Condition`, show: (v) => summarizeCondition(v as CiCondition) },
+      '/grants': { label: $localize`:@@ci.editor.grants:Grants`, show: (v) => summarizeGrants(v as CiGrants) },
+      '/maxTtlSeconds': $localize`:@@ci.editor.max-ttl:Maximum token lifetime (seconds)`,
+      '/options/crossProjectSource': {
+        label: $localize`:@@ci.editor.cross:Pipelines from other projects`,
+        show: (v) => cross.find((o) => o.value === v)?.label ?? String(v),
+      },
+      '/options/allowUnprotectedRefs': $localize`:@@ci.editor.allow-unprotected: Allow unprotected refs to use write grants `.trim(),
+    };
+  }
 
   /** The bounds of the screen: the system administrators', or the Owners' of the project. */
   protected readonly state = computed(() => createState(this.session, this.project() ?? '', 'ci:write'));
@@ -478,6 +498,7 @@ export class MappingEditor implements HasUnsavedChanges {
       const result = await this.conflicts.save<CiMapping>({
         etag: stored.etag,
         patch,
+        fields: this.conflictFields(),
         send: (etag, current) =>
           this.api.replaceMapping(
             issuer,

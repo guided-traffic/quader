@@ -100,6 +100,33 @@ export function flatRule(rule: ExposureRule): Record<string, unknown> {
   };
 }
 
+/**
+ * How the conflict dialog and the review before a save name the fields of `flatRule` (R-UI-042, R-EP-017, Q-UI-1210): an include or an
+ * exclude list by its group's legend, as the editor shows them.
+ */
+export function ruleConflictFields(): Record<string, string> {
+  const include = $localize`:@@ep.conflict.include:Include`;
+  const exclude = $localize`:@@ep.conflict.exclude:Exclude`;
+  const packages = $localize`:@@ep.dim.packages:Package names`;
+  const versions = $localize`:@@ep.dim.versions:Versions`;
+  const tags = $localize`:@@ep.dim.tags:Tags (formats with tags only)`;
+  const paths = $localize`:@@ep.dim.paths:Paths`;
+  return {
+    '/description': $localize`:@@ep.field.description:Description`,
+    '/enabled': $localize`:@@ep.field.enabled:Enabled`,
+    '/packages.include': `${packages} · ${include}`,
+    '/packages.exclude': `${packages} · ${exclude}`,
+    '/paths.include': `${paths} · ${include}`,
+    '/paths.exclude': `${paths} · ${exclude}`,
+    '/versions.include': `${versions} · ${include}`,
+    '/versions.exclude': `${versions} · ${exclude}`,
+    '/versions.range': $localize`:@@ep.field.range:Version range`,
+    '/prereleases': $localize`:@@ep.field.prereleases:Expose pre-release versions`,
+    '/distTags.include': `${tags} · ${include}`,
+    '/distTags.exclude': `${tags} · ${exclude}`,
+  };
+}
+
 /** The route family a format's client address belongs to, to tell whether an endpoint serves it. */
 export function familyOfAddress(protocolBasePath: string): 'files' | 'packages' {
   return isFilesAddress(protocolBasePath) ? 'files' : 'packages';

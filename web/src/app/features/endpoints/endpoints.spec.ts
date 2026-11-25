@@ -345,7 +345,9 @@ describe('Exposure rule editor', () => {
     await settle(r.fixture);
     const body = r.root.ownerDocument.body;
     expect(text(body)).toContain('Save changes to rule releases?');
-    expect(text(body)).toContain('paths.include');
+    // The field by the editor's words, not its API member (Q-UI-1210).
+    expect(text(body)).toContain('Paths · Include');
+    expect(text(body)).not.toContain('paths.include');
     expect(r.endpoints.replaced).toHaveLength(0);
     button(body.querySelector('[role="dialog"]')!, 'Save').click();
     await settle(r.fixture);

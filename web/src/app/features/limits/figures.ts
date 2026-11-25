@@ -1,5 +1,6 @@
 import { formatNumber } from '@angular/common';
 import { Figure, FigureOverrides, Figures } from '../../api/limits-api';
+import { ConflictField } from '../../shared/conflict-dialog';
 
 /*
  * The figures of a profile as the screens show and edit them (R-UI-178, Q-UI-736): their groups, names, units and the
@@ -92,6 +93,35 @@ export function unitOf(figure: Figure): FigureUnit {
 function factorOf(figure: Figure): number {
   const unit = unitOf(figure);
   return unit === 'mb' ? MB : unit === 'gb' ? GB : 1;
+}
+
+/**
+ * How the conflict dialog names and shows the members of a profile, a rule and the ceilings (R-UI-042, Q-UI-1210): a figure by its name
+ * and its limit in its unit, a missing figure of a profile or a ceiling as unlimited; a ceiling's figure after its class.
+ */
+export function limitConflictFields(locale: string): (pointer: string) => ConflictField | null {
+  const unlimited = $localize`:@@limits.unlimited:Unlimited`;
+  const named: Record<string, string> = {
+    '/name': $localize`:@@limits.profile.name:Name`,
+    '/description': $localize`:@@limits.profile.description:Description (optional)`,
+    '/profile': $localize`:@@limits.rule.profile:Profile`,
+    '/note': $localize`:@@limits.rule.note:Note (optional)`,
+  };
+  const classes: Record<string, string> = {
+    anonymous: $localize`:@@limits.ceilings.anonymous:All anonymous callers`,
+    signedIn: $localize`:@@limits.ceilings.signed-in:All signed-in callers`,
+  };
+  return (pointer) => {
+    if (named[pointer]) return { label: named[pointer] };
+    const [, member, figure] = pointer.split('/');
+    if (!member || !figure || !(FIGURES as readonly string[]).includes(figure)) return null;
+    const f = figure as Figure;
+    const show = (v: unknown): string => limitText(f, typeof v === 'number' ? v : null, locale);
+    if (member === 'overrides') return { label: figureName(f), show };
+    if (member === 'figures') return { label: figureName(f), show, empty: unlimited };
+    if (classes[member]) return { label: `${classes[member]} · ${figureName(f)}`, show, empty: unlimited };
+    return null;
+  };
 }
 
 /** The label of a figure's field inside its group (R-UI-178). */
