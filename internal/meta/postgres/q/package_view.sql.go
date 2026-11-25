@@ -175,6 +175,8 @@ SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_
          WHERE r.class = 'remote' AND r.format = 'oci'
            AND e.repo_id = p.repo_id AND e.tag_name = p.name
            AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+           AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
+   AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
            AND NOT (-e.id = ANY($1::bigint[]))
            AND (p.repo_id = ANY($2::bigint[])
                 OR concat_ws(chr(31), p.repo_id::text, p.name, e.tag) = ANY($3::text[]))
@@ -516,6 +518,7 @@ SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sor
   FROM remote_cache_entries e
  WHERE e.repo_id = $1::bigint AND e.tag_name = $2::text
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+   AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
    AND e.tag_sort_key > $3::bytea
    AND NOT (-e.id = ANY($4::bigint[]))
    AND ($5::boolean OR e.tag = ANY($6::text[]))
@@ -580,6 +583,7 @@ SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sor
   FROM remote_cache_entries e
  WHERE e.repo_id = $1::bigint AND e.tag_name = $2::text
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+   AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
    AND e.tag_sort_key < $3::bytea
    AND NOT (-e.id = ANY($4::bigint[]))
    AND ($5::boolean OR e.tag = ANY($6::text[]))
@@ -646,6 +650,7 @@ SELECT e.tag::text AS version, e.fetched_at AS created_at
   FROM remote_cache_entries e
  WHERE e.repo_id = $1::bigint AND e.tag_name = $2::text
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+   AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
    AND (e.fetched_at, e.tag) > ($3::text::timestamptz, ($4::text COLLATE "C"))
    AND NOT (-e.id = ANY($5::bigint[]))
    AND ($6::boolean OR e.tag = ANY($7::text[]))
@@ -711,6 +716,7 @@ SELECT e.tag::text AS version, e.fetched_at AS created_at
   FROM remote_cache_entries e
  WHERE e.repo_id = $1::bigint AND e.tag_name = $2::text
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+   AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
    AND (e.fetched_at, e.tag) < ($3::text::timestamptz, ($4::text COLLATE "C"))
    AND NOT (-e.id = ANY($5::bigint[]))
    AND ($6::boolean OR e.tag = ANY($7::text[]))

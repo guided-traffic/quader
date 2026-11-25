@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -514,7 +515,8 @@ func gitlabProject(ctx context.Context, u discover.Upstream, project string, rq 
 
 // Package implements [discover.Catalogue]: an image's tags, which are its versions (Q-CUR-10). Docker Hub's and Quay's APIs tell each
 // tag's time, digest and size; every other upstream answers the tags list of the distribution API, ordered newest first by the
-// format's tag order (tagorder).
+// format's tag order (tagorder). An attachment tag (the referrers tag, cosign's .sig, .att, .sbom) is no version and is left out
+// everywhere (signatures.md R-SIG-024, Q-OCI-268).
 func (a remoteAdapter) Package(ctx context.Context, u discover.Upstream, name string, rq discover.VersionsRequest) (discover.PackageInfo, error) {
 	name = strings.ToLower(strings.TrimSpace(name))
 	if !validName(name) {
@@ -530,6 +532,7 @@ func (a remoteAdapter) Package(ctx context.Context, u discover.Upstream, name st
 	if err != nil || !found {
 		return discover.PackageInfo{}, err
 	}
+	tags = slices.DeleteFunc(tags, IsAttachmentTag)
 	sort.Slice(tags, func(i, j int) bool { return tagorder.Compare(tags[i], tags[j]) > 0 })
 	all := make([]discover.VersionFacts, 0, len(tags))
 	for _, t := range tags {
@@ -573,7 +576,8 @@ func hubTags(ctx context.Context, u discover.Upstream, name string, rq discover.
 	}
 	info := discover.PackageInfo{Found: true, Name: name, Total: a.Count}
 	for _, r := range a.Results {
-		if !ValidTag(r.Name) {
+		if !ValidTag(r.Name) || IsAttachmentTag(r.Name) {
+			info.Total--
 			continue
 		}
 		f := discover.VersionFacts{Version: r.Name, Published: parseTime(r.LastUpdated), Size: max(r.FullSize, 0), Digest: r.Digest}
@@ -621,7 +625,7 @@ func quayTags(ctx context.Context, u discover.Upstream, name string, rq discover
 	}
 	info := discover.PackageInfo{Found: true, Name: name, Total: -1}
 	for _, t := range a.Tags {
-		if !ValidTag(t.Name) {
+		if !ValidTag(t.Name) || IsAttachmentTag(t.Name) {
 			continue
 		}
 		f := discover.VersionFacts{Version: t.Name, Size: max(t.Size, 0), Digest: t.ManifestDigest}

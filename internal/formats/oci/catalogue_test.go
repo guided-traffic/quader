@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/errs"
@@ -167,4 +170,46 @@ func TestR_CUR_007_ALevelTheRegistryDoesNotHaveIsUnknown(t *testing.T) {
 			t.Fatalf("err = %v", err)
 		}
 	})
+}
+
+// TestR_SIG_024_AttachmentTagsAreNoVersionsOfTheUpstreamCatalogue: an attachment tag (the referrers tag, cosign's .sig, .att, .sbom) is
+// no version the upstream catalogue offers (R-SIG-024, R-CUR-007): neither from a distribution registry's tags list nor from Docker Hub's
+// or Quay's API, so the Upstream tab and "download every version" never take a signature for a version. Milliseconds, canned answers of a
+// few hundred bytes.
+func TestR_SIG_024_AttachmentTagsAreNoVersionsOfTheUpstreamCatalogue(t *testing.T) {
+	const hexPart = "5c700ccd073ae0f9bd8d6ed37bfadbabcfbe2a0cbd10564c6a94601233c3ed2a"
+	attachments := []string{"sha256-" + hexPart, "sha256-" + hexPart + ".sig", "sha256-" + hexPart + ".att", "sha256-" + hexPart + ".sbom"}
+	var hubRows, quayRows []string
+	for i, tag := range append([]string{"1.0"}, attachments...) {
+		hubRows = append(hubRows, fmt.Sprintf(`{"name":%q,"last_updated":"2026-11-0%dT10:00:00Z","full_size":1}`, tag, i+1))
+		quayRows = append(quayRows, fmt.Sprintf(`{"name":%q,"last_modified":"Mon, 0%d Nov 2026 10:00:00 -0000","size":1}`, tag, i+2))
+	}
+	for name, c := range map[string]*canned{
+		"a distribution registry": {base: "https://registry.example/", answers: map[string]discover.Response{
+			"https://registry.example/v2/acme/app/tags/list?n=1000": {Status: 200,
+				Body: []byte(`{"name":"acme/app","tags":["1.0","` + strings.Join(attachments, `","`) + `"]}`)},
+		}},
+		"Docker Hub": {base: "https://registry-1.docker.io/", answers: map[string]discover.Response{
+			"https://hub.docker.com/v2/namespaces/acme/repositories/app/tags?page=1&page_size=100": {Status: 200,
+				Body: []byte(`{"count":5,"next":null,"results":[` + strings.Join(hubRows, ",") + `]}`)},
+		}},
+		"Quay": {base: "https://quay.io/", answers: map[string]discover.Response{
+			"https://quay.io/api/v1/repository/acme/app/tag/?limit=100&onlyActiveTags=true&page=1": {Status: 200,
+				Body: []byte(`{"tags":[` + strings.Join(quayRows, ",") + `],"has_additional":false}`)},
+		}},
+	} {
+		t.Run("R-SIG-024 "+name, func(t *testing.T) {
+			p, err := remoteAdapter{}.Package(context.Background(), c, "acme/app", discover.VersionsRequest{Limit: 100})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got []string
+			for _, v := range p.Versions {
+				got = append(got, v.Version)
+			}
+			if !slices.Equal(got, []string{"1.0"}) || (p.Total >= 0 && p.Total != 1) {
+				t.Fatalf("versions %v, total %d, want 1.0 alone; asked %v", got, p.Total, c.asked)
+			}
+		})
+	}
 }

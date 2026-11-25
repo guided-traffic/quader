@@ -1303,7 +1303,9 @@ and the content page of [R-UI-052](../api-and-ui.md#r-ui-052--repository-content
 - **What is listed.** A tag is listed as a version of its image name while the cache holds its tag document (the metadata entry
   `<name>/_tags/<tag>`, R-OCI-007), the upstream has not marked that document gone (R-REPO-029), the manifest row of its digest exists, and a
   client fetched it through the repository (a download of its manifest by the tag or by its digest, R-API-079) or the repository is in mode
-  `mirror` (R-API-081, Q-OCI-222): a `HEAD` of a tag stores its document and lists nothing.
+  `mirror` (R-API-081, Q-OCI-222): a `HEAD` of a tag stores its document and lists nothing. An attachment tag (`sha256-<64 hex>`, with
+  or without `.sig`, `.att` or `.sbom`, [signatures.md](../signatures.md) R-SIG-024) is never listed, whatever fetched it
+  ([Q-OCI-268](#q-oci-268--an-attachment-tag-is-listed-in-no-remote-and-offered-by-no-upstream-catalogue)).
   The first three are the conditions under which the remote address serves the tag from its cache, so the screen lists what a pull of the tag
   would answer without asking the upstream. An image name with no listed tag is not listed: a name whose manifests were fetched by digest only
   has no tag to show.
@@ -1335,6 +1337,8 @@ Acceptance criteria:
 - A caller whose grant is narrowed to the package pattern `acme/*` lists `acme/a` and not `library/alpine`; a caller with no grant on the
   repository lists nothing and gets 404 for the package.
 - A tag whose cache entry is marked gone or deleted is not listed.
+- After a client's GET of an image's `.sig` tag through the remote, and in a mirror whose signature fetch stored the image's referrers tag and
+  `.sig` tag, the version list holds the image's tag alone (`TestR_SIG_026_…`).
 
 ### R-OCI-037 · Scan tokens: the registry token of the image scanning's pull
 Priority: **P1** · Covers: quader-only
@@ -4084,6 +4088,30 @@ join read from the manifest's side. **Applied in the spec:** H-829. Code: migrat
 [00113](../../../internal/meta/postgres/migrations/00113_version_list_keyset.sql), [package_view.sql](../../../internal/meta/postgres/queries/package_view.sql),
 [oci_manifests.sql](../../../internal/meta/postgres/queries/oci_manifests.sql). Test: `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit` in
 [test/integration/ociremote](../../../test/integration/ociremote/listing_keyset_test.go), and the listing tests of R-OCI-036.
+
+### Q-OCI-268 · An attachment tag is listed in no remote and offered by no upstream catalogue
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It carries
+[signatures.md](../signatures.md) Q-SIG-32 (an attachment tag is no version) to the two places that did not apply it, found on 2026-11-25
+while answering the owner's objection that signature tags stand beside the images on the tab Images.
+
+Context: a local push gives an attachment tag (`sha256-<64 hex>`, with or without `.sig`, `.att`, `.sbom`) no version row (R-SIG-024). A
+remote's tags are its cache entries, listed by the rules of R-OCI-036, which had no such check: a mirror lists every tag it stores, the
+referrers tag and the `.sig` tag the signature fetch stores (R-SIG-026) among them, and a pull-through remote lists a tag whose manifest a
+client fetched, which `cosign verify` does for the `.sig` tag. The upstream catalogue passed every valid tag of the distribution tags list,
+of Docker Hub's API and of Quay's, so the Upstream tab, its preview's count and "download every version" treated signatures as versions.
+Both were reproduced by a test that failed before the change (`TestR_SIG_026_…` after a client's GET of the `.sig` tag and in a mirror;
+`TestR_SIG_024_AttachmentTagsAreNoVersionsOfTheUpstreamCatalogue` for the three sources).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The listing rules leave out a tag of the attachment grammar: the view `oci_remote_tags` and every statement that restates its rules per entry; the catalogue drops it from every source (chosen) | Migration 00122; `package_view.sql`, `upstream_catalogue.sql`; `catalogue.go` | One rule for local and remote, by the name alone as Q-SIG-32 decided; a check per entry on rows the statements read anyway | The grammar is written in SQL beside `oci.IsAttachmentTag` |
+| (b) Keep a remote's attachment tags out of the cache | The fill and the fetch store no such tag document | Nothing to filter | A client's pull of a `.sig` tag would be a miss every time, and the signature fetch reads them through the cache |
+| (c) Mark the entries when the signature fetch stores them | A flag on the entry | No grammar in SQL | A client's own fetch of the tag sets no flag; two ways to the same answer |
+
+**Choice:** (a). **Applied in the spec:** R-OCI-036 and [signatures.md](../signatures.md) R-SIG-024. Code: migration
+[00122](../../../internal/meta/postgres/migrations/00122_oci_attachment_tags_unlisted.sql), [package_view.sql](../../../internal/meta/postgres/queries/package_view.sql),
+[upstream_catalogue.sql](../../../internal/meta/postgres/queries/upstream_catalogue.sql), [catalogue.go](../../../internal/formats/oci/catalogue.go).
 
 ## What this does not cover
 

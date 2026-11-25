@@ -11193,10 +11193,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OCI
 
-119 questions on [spec/formats/oci.md](spec/formats/oci.md).
+120 questions on [spec/formats/oci.md](spec/formats/oci.md).
 
 <details>
-<summary>Q-OCI: 119 questions</summary>
+<summary>Q-OCI: 120 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11319,6 +11319,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OCI-245](spec/formats/oci.md#q-oci-245--the-walk-goes-on-only-at-a-miss-or-a-failure-it-names) | The walk goes on only at a miss or a failure it names | Decided by the development agent | (a) One rule names the misses and failures for every format; every other answer ends the walk | — |
 | [Q-OCI-256](spec/formats/oci.md#q-oci-256--the-measurement-of-h-829-builds-no-index-the-cost-is-the-version-lists-statement-that-reads-every-row) | The measurement of H-829 builds no index: the cost is the version list's statement that reads every row | Decided by the development agent | (a) No index; H-829 stays open with the numbers and the order of the remedies | — |
 | [Q-OCI-267](spec/formats/oci.md#q-oci-267--a-remotes-tag-entries-store-their-name-and-tag-and-a-page-of-its-tags-is-a-keyset-query-on-them) | A remote's tag entries store their name and tag, and a page of its tags is a keyset query on them | Decided by the development agent | (a) The entry stores `tag_name` and `tag` as columns generated from its path, with the indexes `(repo_id, tag_name, fetched_at, tag)` and `(repo_id, tag_name, tag)`; the view reads them; a page of a name's tags is a keyset statement on the entries with the view's rules as checks per entry; a page's tags are read by the entry's primary key, the negated id | — |
+| [Q-OCI-268](spec/formats/oci.md#q-oci-268--an-attachment-tag-is-listed-in-no-remote-and-offered-by-no-upstream-catalogue) | An attachment tag is listed in no remote and offered by no upstream catalogue | Decided by the development agent | (a) The listing rules leave out a tag of the attachment grammar: the view `oci_remote_tags` and every statement that restates its rules per entry; the catalogue drops it from every source | — |
 
 </details>
 

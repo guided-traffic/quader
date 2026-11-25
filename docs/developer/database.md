@@ -838,6 +838,14 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
+## A remote lists no attachment tag (00122)
+
+[00122_oci_attachment_tags_unlisted](../../internal/meta/postgres/migrations/00122_oci_attachment_tags_unlisted.sql) replaces the view
+`oci_remote_tags` (the one of 00116) with the same columns and one more rule: a tag of the attachment grammar (`sha256-<64 hex>`, with or
+without `.sig`, `.att`, `.sbom`) is no version of a remote ([formats/oci.md](../spec/formats/oci.md) R-OCI-036, Q-OCI-268). The statements
+that restate the view's rules per entry (`PackageViewTagPage*`, `PackageViewTagKey*`, the remote branch of `PackageViewLatest`,
+`CatalogueStoredVersions`) check the same grammar. No table changes.
+
 ## An upstream's rate limit of a download queue (00120)
 
 [00120_remote_download_limits](../../internal/meta/postgres/migrations/00120_remote_download_limits.sql) adds `remote_download_limits`:

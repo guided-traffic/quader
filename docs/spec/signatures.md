@@ -1034,6 +1034,12 @@ UI they appear in no tag or version list and in no count, but at the image.
 
 - **On the wire, unchanged:** the referrers API (R-OCI-016), the tags list (R-OCI-015, which lists `_tags/` items and so the attachment tags
   as every tag), the manifests by tag and digest, `HEAD`. A client pushing the referrers tag or a `.sig` tag stores it and pulls it back.
+- **Not a version in a remote and in the upstream catalogue either** (built, [formats/oci.md](formats/oci.md)
+  [Q-OCI-268](formats/oci.md#q-oci-268--an-attachment-tag-is-listed-in-no-remote-and-offered-by-no-upstream-catalogue)): a remote's tags are
+  cache entries listed by the rules of R-OCI-036, which leave out an attachment tag by the same name rule, also once a client fetched it
+  through the remote (cosign verify does) and in a mirror, which lists every tag it stores, the ones the signature fetch stores
+  (R-SIG-026) among them; the upstream catalogue of [remote-curation.md](remote-curation.md) R-CUR-007 offers none of an upstream's
+  attachment tags as a version, so the Upstream tab, its preview and "download every version" never take a signature for a version.
 - **Not a version** (built: the commit hook of a local push, [hooks.go](../../internal/formats/oci/hooks.go); a remote's tags write no
   version rows) ([Q-SIG-32](#q-sig-32--an-attachment-tag-is-recognised-by-its-name-and-gets-no-version)): a tag whose name is
   `sha256-<64 hex>` or `sha256-<64 hex>.sig`, `.att` or `.sbom` gets no row of `package_versions` (its item is a `_tags/` item without a
@@ -1062,6 +1068,10 @@ Acceptance criteria:
   `.sig` tag pushed by the test's client: the package lists one version and counts one; `tags/list` answers `1.0`, `sha256-<hex>` and
   `sha256-<hex>.sig`; the version's signatures answer lists three attachments; the image scanning's selection names one manifest; a
   BuildKit index's attestation entry is in the attachments and not in the platforms.
+- Integration (area `ociremote`, `TestR_SIG_026_…`, one request more): after a client's GET of the `.sig` tag through a remote, and in a
+  mirror whose signature fetch stored the referrers tag and the `.sig` tag, the version list holds the tag `1.0` alone. Unit
+  (`TestR_SIG_024_AttachmentTagsAreNoVersionsOfTheUpstreamCatalogue`, milliseconds): the catalogue of a distribution registry, Docker Hub
+  and Quay offers none of an upstream's attachment tags.
 
 ### R-SIG-025 · OCI: an attachment follows its image
 Priority: **P1** · Covers: BEYOND-016

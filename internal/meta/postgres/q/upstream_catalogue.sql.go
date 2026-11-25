@@ -194,6 +194,7 @@ SELECT p.name, e.tag::text AS version
   FROM packages p
   JOIN remote_cache_entries e ON e.repo_id = p.repo_id AND e.tag_name = p.name
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+   AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
  WHERE p.repo_id = $1::bigint AND p.name = ANY($2::text[])
    AND EXISTS (SELECT 1 FROM repositories r WHERE r.id = p.repo_id AND r.class = 'remote' AND r.format = 'oci')
    AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)

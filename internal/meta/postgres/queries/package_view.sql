@@ -246,6 +246,7 @@ SELECT e.tag::text AS version, e.fetched_at AS created_at
   FROM remote_cache_entries e
  WHERE e.repo_id = sqlc.arg(repo_id)::bigint AND e.tag_name = sqlc.arg(name)::text
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+   AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
    AND (e.fetched_at, e.tag) < (sqlc.arg(after_at)::text::timestamptz, (sqlc.arg(after_version)::text COLLATE "C"))
    AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
    AND (sqlc.arg(whole)::boolean OR e.tag = ANY(sqlc.arg(allowed)::text[]))
@@ -265,6 +266,7 @@ SELECT e.tag::text AS version, e.fetched_at AS created_at
   FROM remote_cache_entries e
  WHERE e.repo_id = sqlc.arg(repo_id)::bigint AND e.tag_name = sqlc.arg(name)::text
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+   AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
    AND (e.fetched_at, e.tag) > (sqlc.arg(after_at)::text::timestamptz, (sqlc.arg(after_version)::text COLLATE "C"))
    AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
    AND (sqlc.arg(whole)::boolean OR e.tag = ANY(sqlc.arg(allowed)::text[]))
@@ -320,6 +322,8 @@ SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_
          WHERE r.class = 'remote' AND r.format = 'oci'
            AND e.repo_id = p.repo_id AND e.tag_name = p.name
            AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+           AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
+   AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
            AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
            AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
                 OR concat_ws(chr(31), p.repo_id::text, p.name, e.tag) = ANY(sqlc.arg(rows)::text[]))
@@ -393,6 +397,7 @@ SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sor
   FROM remote_cache_entries e
  WHERE e.repo_id = sqlc.arg(repo_id)::bigint AND e.tag_name = sqlc.arg(name)::text
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+   AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
    AND e.tag_sort_key < sqlc.arg(after_key)::bytea
    AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
    AND (sqlc.arg(whole)::boolean OR e.tag = ANY(sqlc.arg(allowed)::text[]))
@@ -412,6 +417,7 @@ SELECT e.tag::text AS version, e.fetched_at AS created_at, e.tag_sort_key AS sor
   FROM remote_cache_entries e
  WHERE e.repo_id = sqlc.arg(repo_id)::bigint AND e.tag_name = sqlc.arg(name)::text
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+   AND e.tag !~ '^sha256-[0-9a-f]{64}(\.(sig|att|sbom))?$'
    AND e.tag_sort_key > sqlc.arg(after_key)::bytea
    AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
    AND (sqlc.arg(whole)::boolean OR e.tag = ANY(sqlc.arg(allowed)::text[]))

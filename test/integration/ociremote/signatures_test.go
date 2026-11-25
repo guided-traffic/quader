@@ -100,6 +100,25 @@ func TestR_SIG_026_ARemotesSignaturesAreFetchedInTheBackground(t *testing.T) {
 		json.Unmarshal(a.Body, &list) != nil || len(list.Items) != 1 || list.Items[0].Signatures == nil || list.Items[0].Signatures.State == "none" {
 		t.Errorf("the remote's version list answers %d %s, want the tag with the badge of its manifest's signatures", a.Status, a.Body)
 	}
+	// An attachment tag is in no version list and no count of a remote (R-OCI-036, R-SIG-024): not once a client fetched the .sig tag
+	// through the remote (cosign verify does), and not in a remote whose every stored tag is listed (a mirror).
+	listed := func(repo, what string) {
+		t.Helper()
+		var got struct {
+			Items []struct {
+				Version string `json:"version"`
+			} `json:"items"`
+		}
+		a := e.st.Do(web, http.MethodGet, "/api/v1/packages/"+id+"/versions?repository="+url.QueryEscape(testenv.DefaultProject+"/"+repo), e.admin, nil)
+		if a.Status != http.StatusOK || json.Unmarshal(a.Body, &got) != nil || len(got.Items) != 1 || got.Items[0].Version != "1.0" {
+			t.Errorf("%s: the version list answers %d %s, want the tag 1.0 alone", what, a.Status, a.Body)
+		}
+	}
+	if a := e.doAs(web, e.admin, "pull", http.MethodGet, rAnon, "acme/signed/manifests/"+sigTag); a.Status != http.StatusOK {
+		t.Fatalf("the client's GET of the .sig tag: %d %s", a.Status, a.Body)
+	}
+	e.fetched(rAnon, sigManifest)
+	listed(rAnon, "after a client fetched the .sig tag")
 	// The fetch state the gate of stage 3 reads (Q-SIG-106): the image's row is fetched, carries its digest and is due no more; it goes
 	// with the manifest's row when the remote's manifest item is removed.
 	fetchRow := func() string {
@@ -126,6 +145,10 @@ func TestR_SIG_026_ARemotesSignaturesAreFetchedInTheBackground(t *testing.T) {
 	if n := e.stub.Counts().ManifestHeads("acme/signed", ocistub.FallbackTag(subject)); n != 1 {
 		t.Errorf("the referrers tag was asked %d times by HEAD, want 1", n)
 	}
+	// A mirror lists every tag it stores; the referrers tag and the .sig tag the fetch stored are still none of its versions.
+	e.st.Exec(`INSERT INTO mirror_state (repo_id) SELECT id FROM repositories WHERE key = $1`, rBasic)
+	listed(rBasic, "in a mirror")
+	e.st.Exec(`DELETE FROM mirror_state WHERE repo_id = (SELECT id FROM repositories WHERE key = $1)`, rBasic)
 
 	// signatures.fetch false: the pull is served and nothing more is asked.
 	e.stub.Reset()
