@@ -96,7 +96,7 @@
   [emptyText]="filtered() ? emptyFilteredText : emptyText"
   [hasMore]="list.hasMore()"
   (more)="list.more()"
-  (retry)="list.more()"
+  (retry)="retryList()"
 >
   @for (row of rows(); track refOf(row)) {
     <ng-container [ngTemplateOutlet]="repositoryRow" [ngTemplateOutletContext]="{ $implicit: row }" />
@@ -122,7 +122,7 @@
       [error]="systemFailure()"
       [empty]="systemRows().length === 0"
       [emptyText]="systemEmptyText"
-      (retry)="systemLoad.reload()"
+      (retry)="systemFailure.retry()"
     >
       @for (row of systemRows(); track refOf(row)) {
         <ng-container [ngTemplateOutlet]="repositoryRow" [ngTemplateOutletContext]="{ $implicit: row }" />

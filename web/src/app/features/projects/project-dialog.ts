@@ -37,6 +37,9 @@ import { PrincipalField } from '../../shared/ui/principal-field';
         @if (error(); as e) {
           <quader-error-notice [error]="e" />
         }
+        @if (choicesError(); as e) {
+          <quader-error-notice [error]="e" (retry)="readChoices()" />
+        }
         <quader-text-field
           width="name"
           i18n-label="@@project-dialog.key"
@@ -122,11 +125,22 @@ export class ProjectDialog {
   protected readonly error = signal<ApiError | null>(null);
   private readonly attempted = signal(false);
 
+  /** The failed read of the levels the installation offers, shown in the dialog and read again by its notice (R-UI-216). */
+  protected readonly choicesError = signal<ApiError | null>(null);
+
   constructor() {
-    this.visibilityApi
-      .choices()
-      .then((c) => this.choices.set(c))
-      .catch(() => undefined);
+    this.readChoices();
+  }
+
+  /** The levels the installation offers; without them every level read as open to choose, public among them. */
+  protected readChoices(): void {
+    this.visibilityApi.choices().then(
+      (c) => {
+        this.choicesError.set(null);
+        this.choices.set(c);
+      },
+      (e: unknown) => this.choicesError.set(asApiError(e)),
+    );
   }
 
   protected readonly ownerKinds = ['user', 'group'] as const;

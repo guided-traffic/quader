@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { PackageSummary, PackagesApi } from '../../../api/packages-api';
 import { collectAll } from '../../../api/pagination';
 import { splitRef } from '../../../api/repositories-api';
-import { asApiError, valueOf } from '../../../shared/paged-resource';
+import { failureOf, valueOf } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import {
   CLAMAV_FORMAT,
@@ -60,7 +60,7 @@ export interface DatabaseRow {
       [loaded]="rows.hasValue() || failure() !== null"
       [loading]="rows.isLoading()"
       [error]="failure()"
-      (retry)="rows.reload()"
+      (retry)="failure.retry()"
       [empty]="(valueRows() ?? []).length === 0"
       [emptyText]="emptyText"
     >
@@ -182,10 +182,8 @@ export class ClamavDatabases {
     );
   }
   protected readonly valueRows = computed(() => valueOf(this.rows));
-  protected readonly failure = computed(() => {
-    const e = this.rows.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The list's failure, kept while it reads again (R-UI-216). */
+  protected readonly failure = failureOf(this.rows);
 
   /** The set in use and, where it differs, the set before it (Q-MAL-82): a database that is not in the set before it keeps its version. */
   protected readonly sets = computed(() => {

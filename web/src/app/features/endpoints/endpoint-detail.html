@@ -10,7 +10,7 @@
 </quader-page-header>
 
 @if (failure(); as f) {
-  <quader-error-notice [error]="f" (retry)="detail.reload()" />
+  <quader-error-notice [error]="f" (retry)="failure.retry()" />
 } @else if (detail.isLoading() && !valueOf(detail)) {
   <p role="status" i18n="@@repo.loading">Loading.</p>
 } @else if (valueOf(detail); as e) {
@@ -64,8 +64,11 @@
       <quader-error-notice [error]="f" />
     }
     @if (rulesFailure(); as f) {
-      <quader-error-notice [error]="f" (retry)="rules.reload()" />
+      <quader-error-notice [error]="f" (retry)="rulesFailure.retry()" />
     } @else if (valueOf(rules); as list) {
+      @if (addressFailure(); as f) {
+        <quader-error-notice [error]="f" (retry)="addressFailure.retry()" />
+      }
       @if (list.length === 0) {
         <quader-empty-state text="This endpoint has no exposure rule." i18n-text="@@ep.rules.empty">
           @if (canWrite() && !inert()) {

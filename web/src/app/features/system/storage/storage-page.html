@@ -427,7 +427,7 @@
     [count]="damaged()?.items?.length ?? null"
   >
     @if (damagedFailure(); as f) {
-      <quader-error-notice [error]="f" (retry)="damagedResource.reload()" />
+      <quader-error-notice [error]="f" (retry)="damagedFailure.retry()" />
     } @else if (damaged(); as d) {
       @if (d.items.length === 0) {
         <p class="empty" i18n="@@storage.damaged.empty">No damaged blob.</p>
@@ -508,7 +508,7 @@
     hint="The reconciliation copies the gaps, the scrub reads every copy, the orphan sweep removes what no row stands for."
   >
     @if (tasksFailure(); as f) {
-      <quader-error-notice [error]="f" (retry)="tasksResource.reload()" />
+      <quader-error-notice [error]="f" (retry)="tasksFailure.retry()" />
     } @else if (tasks().length > 0) {
       <quader-data-table [caption]="tasksCaption" [columns]="taskColumns">
         @for (t of tasks(); track t.name) {

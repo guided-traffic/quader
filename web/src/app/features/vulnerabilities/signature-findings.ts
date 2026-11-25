@@ -89,7 +89,7 @@ export function findingKindWord(kind: SignatureFindingKind): string {
       [emptyText]="filtered() ? emptyFiltered : emptyText"
       [hasMore]="list.hasMore()"
       (more)="list.more()"
-      (retry)="list.more()"
+      (retry)="retry()"
     >
       @for (f of list.items(); track f.id) {
         <tr>
@@ -230,7 +230,20 @@ export class SignatureFindings {
     { id: 'found', label: $localize`:@@sig.findings.col.found:Found` },
   ];
 
+  /**
+   * The list's Retry (R-UI-216): the page of the list that failed, and the drawer's repositories that failed with it; read once and
+   * never again, the drawer offered no repository after the page came back.
+   */
+  protected retry(): void {
+    void this.list.more();
+    if (this.repositoryList.error()) this.repositoryList.reload();
+  }
+
   constructor() {
+    // The drawer's repositories that failed are read again when it opens (R-UI-216).
+    effect(() => {
+      if (this.panelOpen() && untracked(() => this.repositoryList.error())) untracked(() => this.repositoryList.reload());
+    });
     effect(() => {
       const filters = this.filters();
       untracked(() => {

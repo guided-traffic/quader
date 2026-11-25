@@ -8,7 +8,8 @@ import { CopyButton } from '../../shared/copy-button';
 import { ErrorNotice } from '../../shared/error-notice';
 import { FormatIconView } from '../../shared/format-icon';
 import { formatName } from '../../core/format-names';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
+import { failureMayPass, noneOnRefusal } from '../../shared/none-on-refusal';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { PageHeader } from '../../shared/ui/page-header';
 import { TabGroup, TabPage } from '../../shared/ui/tabs';
@@ -177,21 +178,17 @@ export class PackageVersionPage {
   });
 
   /**
-   * What the scanning says of the version in every readable repository (R-VULN-023). The page works without it: an answer that
-   * fails (no scanning on this replica, a reader who may not ask) leaves no tab, no grade and no banner, and no error.
+   * What the scanning says of the version in every readable repository (R-VULN-023). The page works without it: a refusal (no
+   * scanning on this replica, a reader who may not ask) leaves no tab, no grade and no banner, and no error. A failure that may pass is
+   * shown and read again (R-UI-216): swallowed, the page hid the tab, the grade and the banner "Blocked in" until a reload.
    */
   protected readonly vulnerabilities = resource({
     params: () => {
       const id = valueOf(this.summary)?.id;
       return id ? { id, version: this.version() } : undefined;
     },
-    loader: async ({ params }): Promise<VulnerabilityVersionReport | null> => {
-      try {
-        return await this.vulnerabilityApi.versionReport(params.id, params.version);
-      } catch {
-        return null;
-      }
-    },
+    loader: ({ params }): Promise<VulnerabilityVersionReport | null> =>
+      noneOnRefusal(this.vulnerabilityApi.versionReport(params.id, params.version)),
   });
   protected readonly vulnerabilityReport = computed(() => valueOf(this.vulnerabilities) ?? null);
   /** The version's grade, the worst of its repositories (R-VULN-038, Q-UI-375): the same grade the row of the versions table shows. */
@@ -274,10 +271,8 @@ export class PackageVersionPage {
   /** The whole tree; null while it loads, and after a refusal (then the tabs are gone). */
   protected readonly docsTree = computed<PackageDocTree | null>(() => valueOf(this.docs) ?? null);
   private readonly docsGone = computed(() => this.docs.hasValue() && this.docs.value() === null);
-  protected readonly docsFailure = computed(() => {
-    const e = this.docs.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The tree's failure, kept while its tab reads it again (R-UI-216). */
+  protected readonly docsFailure = failureOf(this.docs);
 
   protected readonly tabs = computed<readonly TabEntry[]>(() =>
     this.docsGone() ? this.announcedTabs().filter((t) => t.id !== 'documentation' && t.id !== 'contents') : this.announcedTabs(),
@@ -302,14 +297,6 @@ export class PackageVersionPage {
    */
   protected readonly activeTab = computed(() => this.tabs()[this.activeIndex()]?.id);
 
-  protected readonly loadFailure = computed(() => {
-    const e = this.summary.error() ?? this.details.error();
-    return e ? asApiError(e) : null;
-  });
-  protected readonly readmeFailure = computed(() => {
-    const e = this.readme.error();
-    return e ? asApiError(e) : null;
-  });
 
   /** The page's title: the package and the version, as a reader names it. */
   protected readonly heading = computed(() => `${this.name()} ${this.version()}`);
@@ -402,14 +389,27 @@ export class PackageVersionPage {
           try {
             await this.api.lookup('ansible', name);
             held.add(name);
-          } catch {
-            // Not held, or not visible to this caller: the name stays text.
+          } catch (e) {
+            // Not held, or not visible to this caller: the name stays text. A failure that may pass is no such answer: the lookups
+            // are read again with the page (R-UI-216).
+            if (failureMayPass(e)) throw e;
           }
         }),
       );
       return held;
     },
   });
+  /**
+   * The failure of the version's read, kept while its notice reads it again (R-UI-216); the reads beside it are read again with it
+   * when they failed too, so the page that comes back is the page of a fresh load: the scanning's report (its tab, its grade, its
+   * banner), the README, the tree of the documentation, the dependencies this installation holds.
+   */
+  protected readonly loadFailure = failureOf([this.summary, this.details], {
+    also: [this.vulnerabilities, this.readme, this.docs, this.heldDependencies],
+  });
+  protected readonly readmeFailure = failureOf(this.readme);
+  /** The scanning report's failure that may pass: without it, the tab Vulnerabilities, the grade and "Blocked in" were gone. */
+  protected readonly vulnerabilitiesFailure = failureOf(this.vulnerabilities);
   /** The router commands of a dependency's page, or null when the installation does not hold it. */
   protected dependencyLink(name: string): string[] | null {
     return this.detail()?.format === 'ansible' && valueOf(this.heldDependencies)?.has(name)
@@ -584,7 +584,7 @@ export class PackageVersionPage {
         await Promise.all([
           refreshResource(this.details, () => this.api.version(id, version)),
           this.vulnerabilities.hasValue()
-            ? refreshResource(this.vulnerabilities, () => this.vulnerabilityApi.versionReport(id, version).catch(() => null))
+            ? refreshResource(this.vulnerabilities, () => noneOnRefusal(this.vulnerabilityApi.versionReport(id, version)))
             : Promise.resolve(),
         ]);
       },

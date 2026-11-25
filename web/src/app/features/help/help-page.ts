@@ -4,7 +4,7 @@ import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 import { ManualApi } from '../../api/manual-api';
 import { PackageReadme } from '../../api/packages-api';
 import { ErrorNotice } from '../../shared/error-notice';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
 import { PackageReadmeView } from '../packages/package-readme';
 
 /**
@@ -41,7 +41,11 @@ export class HelpPage {
     const p = this.current();
     return p ? { contentType: 'text/markdown', html: p.html, truncated: false, externalImagesBlocked: 0 } : null;
   });
-  protected readonly error = asApiError;
+  /**
+   * The failure of the page's read, kept while its notice reads it again (R-UI-216); the contents beside it, whose failure leaves
+   * the list of pages empty, are read again with it.
+   */
+  protected readonly failure = failureOf(this.answer, { also: [this.contents] });
   protected readonly prevLabel = $localize`:@@help.previous:Previous page`;
   protected readonly nextLabel = $localize`:@@help.next:Next page`;
 

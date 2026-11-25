@@ -3,6 +3,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationCancel, NavigationEnd, NavigationError, Router, RoutesRecognized } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { collectAll } from '../api/pagination';
+import { ApiError } from '../api/problem';
+import { asFailure } from './http/failure';
 import { Project, ProjectsApi } from '../api/projects-api';
 import { FrequentPlaces } from './frequent-places';
 import { upstreamFirst } from './upstream-project';
@@ -38,6 +40,7 @@ export class ProjectContext {
 
   private readonly _projects = signal<readonly Project[]>([]);
   private readonly _loaded = signal(false);
+  private readonly _failure = signal<ApiError | null>(null);
   private pending: Promise<void> | null = null;
 
   /**
@@ -65,6 +68,11 @@ export class ProjectContext {
   readonly projects = this._projects.asReadonly();
   /** The list has been read (successfully or not); the start page waits for it. */
   readonly loaded = this._loaded.asReadonly();
+  /**
+   * The failure of the last read of the list, kept until a read answers (R-UI-216): the project list shows it instead of "You are
+   * not a member of a project yet", and the store reads again on its next use (`ready`) and by the list's notice.
+   */
+  readonly failure = this._failure.asReadonly();
   /** The record of the current project, when the caller sees it in the list. */
   readonly current = computed<Project | null>(() => {
     const key = this.key();
@@ -87,6 +95,7 @@ export class ProjectContext {
         else {
           this._projects.set([]);
           this._loaded.set(false);
+          this._failure.set(null);
         }
       });
     });
@@ -107,18 +116,20 @@ export class ProjectContext {
     return this.pending;
   }
 
-  /** The projects, read once: the start guard waits for them. */
+  /** The projects, read once, and again after a read that failed: the start guard waits for them. */
   async ready(): Promise<readonly Project[]> {
-    if (!this._loaded()) await this.refresh();
+    if (!this._loaded() || this._failure()) await this.refresh();
     return this._projects();
   }
 
   private async read(): Promise<void> {
     try {
       this._projects.set(upstreamFirst(await collectAll(this.api.list({})), (p) => p.key));
-    } catch {
-      // A convenience: without the list the switcher offers the recent keys only.
-      this._projects.set([]);
+      this._failure.set(null);
+    } catch (e) {
+      // A convenience for the switcher, which then offers the recent keys only; the list of projects shows the failure. The list
+      // read before stays: it is truer than none.
+      this._failure.set(asFailure(e));
     } finally {
       this._loaded.set(true);
     }

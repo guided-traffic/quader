@@ -163,9 +163,12 @@ export class App {
     { value: 'light', label: $localize`:@@shell.theme.light:Light`, icon: 'light_mode' },
     { value: 'dark', label: $localize`:@@shell.theme.dark:Dark`, icon: 'dark_mode' },
   ];
-  protected readonly loadFailure = computed(() =>
-    this.session.state() === 'failed' ? (this.session.loadError() ?? new ApiError(0, null, null)) : null,
-  );
+  /** The session's failed read, kept while it is read again, so its notice stays in place and counts (R-UI-216). */
+  protected readonly loadFailure = computed(() => {
+    const state = this.session.state();
+    if (state === 'failed') return this.session.loadError() ?? new ApiError(0, null, null);
+    return state === 'loading' ? this.session.loadError() : null;
+  });
 
   constructor() {
     inject(FocusOnNavigation).start();

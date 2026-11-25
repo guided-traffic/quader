@@ -3,7 +3,7 @@ import { ClientSetupApi } from '../../api/packages-api';
 import { AddressField } from '../../shared/address-field';
 import { CodeWindow } from '../../shared/code/code-window';
 import { ErrorNotice } from '../../shared/error-notice';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
 
 /** A command longer than this many lines is collapsed behind an expander (R-UI-009). */
 export const COLLAPSE_AFTER_LINES = 3;
@@ -21,7 +21,7 @@ export const COLLAPSE_AFTER_LINES = 3;
   imports: [AddressField, CodeWindow, ErrorNotice],
   template: `
     @if (failure(); as f) {
-      <quader-error-notice [error]="f" (retry)="answer.reload()" />
+      <quader-error-notice [error]="f" (retry)="failure.retry()" />
     } @else if (answer.isLoading()) {
       <p class="command-loading" role="status" i18n="@@pkg.install.loading">Loading the command.</p>
     } @else if (command()) {
@@ -110,10 +110,8 @@ export class ClientCommand {
    * inside the window (R-UI-215). The height follows it with the animation of the style guide.
    */
   protected readonly shownLines = computed(() => (this.collapsible() && !this.expanded() ? COLLAPSE_AFTER_LINES : null));
-  protected readonly failure = computed(() => {
-    const e = this.answer.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The command's failure, kept while its notice reads it again (R-UI-216). */
+  protected readonly failure = failureOf(this.answer);
   /** A command of one line is shown as one copyable field (Q-UI-320); a longer one is the snippet's window (Q-UI-801). */
   protected readonly oneLine = computed(() => !this.command().includes('\n'));
 

@@ -22,7 +22,8 @@ describe('describeProblem', () => {
     expect(said(new ApiError(500, null, null))).toBe('The server failed to answer this request.');
     expect(said(new ApiError(418, null, null))).toBe('The server refused this request.');
     expect(said(new ApiError(403, null, null))).toBe('You do not have the permission for this.');
-    expect(said(new ApiError(429, null, null, 30))).toContain('30');
+    expect(said(new ApiError(429, null, null, 30))).toBe('Too many requests. Try again in 30 seconds.');
+    expect(said(new ApiError(429, null, null, 1))).toBe('Too many requests. Try again in 1 second.');
     expect(said(new ApiError(200, null, null, null, { unreadable: true, fault: 'SyntaxError: Unexpected token <' }))).toBe(
       'The server answered, but its answer could not be read.',
     );

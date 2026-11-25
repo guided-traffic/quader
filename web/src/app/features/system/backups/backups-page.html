@@ -128,7 +128,7 @@
     </quader-filter-panel>
 
     @if (runs.error(); as f) {
-      <quader-error-notice [error]="f" (retry)="refresh()" />
+      <quader-error-notice [error]="f" (retry)="retryRuns()" />
     }
     @if (runs.loaded()) {
       @if (runs.items().length === 0) {
@@ -229,7 +229,7 @@
           </p>
         }
       }
-    } @else if (runs.loading()) {
+    } @else if (runs.loading() && !runs.error()) {
       <p role="status" i18n="@@system.loading">Loading.</p>
     }
   </section>
@@ -241,7 +241,7 @@
         <button class="btn btn-tertiary" type="button" (click)="close()" i18n="@@backups.detail.close">Close</button>
       </div>
       @if (detailFailure(); as f) {
-        <quader-error-notice [error]="f" (retry)="detail.reload()" />
+        <quader-error-notice [error]="f" (retry)="detailFailure.retry()" />
       }
       @if (detailRun(); as run) {
         <dl>

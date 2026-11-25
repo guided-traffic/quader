@@ -97,9 +97,9 @@ export class ProjectCi {
   }
 
   protected async load(): Promise<void> {
-    this.error.set(null);
     try {
       this.issuers.set(await this.api.projectIssuers(this.project()));
+      this.error.set(null);
       this.loaded.set(true);
     } catch (e) {
       this.error.set(asApiError(e));

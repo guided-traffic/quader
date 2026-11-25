@@ -3,7 +3,7 @@ import { Component, computed, inject, input, output, resource, signal } from '@a
 import { LIVE_IDLE_MS, live, refreshResource } from '../../core/live-refresh';
 import { SEVERITIES, VulnerabilitiesApi, VulnerabilitySeverity, VulnerabilityTrend } from '../../api/vulnerabilities-api';
 import { ErrorNotice } from '../../shared/error-notice';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
 import { severityIcon, severityLabel } from './vuln-labels';
 
 export type TrendRange = '30' | '90' | '365';
@@ -121,7 +121,7 @@ export function trendGeometry(trend: VulnerabilityTrend): TrendGeometry {
       </div>
       <div id="vuln-trend-body">
         @if (failure(); as f) {
-          <quader-error-notice [error]="f" (retry)="trend.reload()" />
+          <quader-error-notice [error]="f" (retry)="failure.retry()" />
         } @else if (!trend.hasValue()) {
           <p role="status" i18n="@@vuln.trend.loading">Loading the trend.</p>
         } @else if (asTable()) {
@@ -244,10 +244,8 @@ export class ReportTrend {
     const day = (d: Date): string => d.toISOString().slice(0, 10);
     return this.api.trend({ from: day(from), to: day(to), project: params.project, repository: params.repository, format: params.format });
   }
-  protected readonly failure = computed(() => {
-    const e = this.trend.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The trend's failure, kept while its notice reads it again (R-UI-216). */
+  protected readonly failure = failureOf(this.trend);
   /** How the counts are made (R-VULN-021), in the screen's words: the API answers the counts and no sentence, so the sentence follows the screen's language. */
   protected readonly basis = $localize`:@@vuln.trend.basis:A finding counts under its current severity, from the day it was detected until the day it resolved; a dismissed finding counts until it resolves.`;
   protected readonly points = computed(() => valueOf(this.trend)?.points ?? []);

@@ -1,4 +1,6 @@
+import { PolicyApi } from '../../api/authz-api';
 import { IdentityApi } from '../../api/identity-api';
+import { ApiError } from '../../api/problem';
 import { FakeIdentityApi } from '../../api/testing/access-fakes';
 import { buttonByText, choosePrincipal, renderScreen, settle, text, typeInto } from '../../testing/screen';
 import { seriousViolations } from '../../testing/axe';
@@ -95,6 +97,29 @@ describe('Groups (R-UI-025)', () => {
     const { root } = await renderScreen(GroupDetail, { inputs: { name: 'platform' } });
     expect(text(root)).toContain('repository-admin');
     expect(root.querySelector('a[href="/admin/roles"]')).toBeTruthy();
+    expect(text(root)).toContain('Permission policies naming this group');
+  });
+
+  it('R-UI-216 a failed read of the policies naming the group says so in their place and reads them again, not hidden as none', async () => {
+    const { root, fixture } = await renderScreen(GroupDetail, {
+      inputs: { name: 'platform' },
+      setup: (get) => {
+        const policies = get(PolicyApi);
+        const list = policies.list.bind(policies);
+        policies.list = () => {
+          policies.list = list;
+          return async () => {
+            throw new ApiError(502, null, null, null, { call: { method: 'GET', path: '/api/v1/policies' } });
+          };
+        };
+      },
+    });
+    expect(text(root)).not.toContain('Permission policies naming this group');
+    const notice = root.querySelector<HTMLElement>('[data-testid="error-notice"]')!;
+    expect(notice.textContent).toContain('/api/v1/policies');
+    buttonByText(notice, 'Retry').click();
+    await settle(fixture);
+    expect(root.querySelector('[data-testid="error-notice"]')).toBeNull();
     expect(text(root)).toContain('Permission policies naming this group');
   });
 

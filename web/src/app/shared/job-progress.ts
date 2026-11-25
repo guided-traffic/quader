@@ -144,9 +144,9 @@ export class JobProgress {
     });
   }
 
+  /** The notice's Retry: the failure stays until the job's read answers, so the notice stays in place (R-UI-216). */
   protected resume(): void {
     this.stop();
-    this.failure.set(null);
     const run = ++this.run;
     void this.poll(run);
   }
@@ -168,6 +168,7 @@ export class JobProgress {
     try {
       const job = await this.api.job(this.jobId());
       if (run !== this.run) return;
+      this.failure.set(null);
       this.job.set(job);
       this.announce(job);
       if (jobActive(job.state)) {

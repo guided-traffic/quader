@@ -5,7 +5,7 @@ import { RemoteDownloadPreview, RemoteDownloadRequest, RemoteDownloadsApi } from
 import { Checkbox } from '../../../shared/ui/checkbox';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../../shared/ui/dialog';
 import { ErrorNotice } from '../../../shared/error-notice';
-import { asApiError, valueOf } from '../../../shared/paged-resource';
+import { asApiError, failureOf, valueOf } from '../../../shared/paged-resource';
 import { formatSize } from '../../packages/format-size';
 
 /** The code of what a preview's counts leave open (R-CUR-010). */
@@ -56,7 +56,7 @@ function count(n: number): string {
     <form (submit)="submit($event)" novalidate>
       <div class="dialog-body">
         @if (failure(); as f) {
-          <quader-error-notice [error]="f" (retry)="read.reload()" />
+          <quader-error-notice [error]="f" (retry)="failure.retry()" />
         } @else if (preview(); as p) {
           <dl class="facts" data-testid="download-preview">
             <dt i18n="@@upstream.preview.versions">Versions</dt>
@@ -209,10 +209,8 @@ export class DownloadPreviewDialog {
     }
     return v ?? this.last;
   });
-  protected readonly failure = computed(() => {
-    const e = this.read.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The preview's failure, kept while it reads again (R-UI-216). */
+  protected readonly failure = failureOf(this.read);
 
   protected readonly number = count;
   protected readonly noteText = previewNoteText;

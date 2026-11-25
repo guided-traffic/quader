@@ -215,6 +215,18 @@ describe('the error notice (R-UI-216)', () => {
     expect(host.retried).toEqual([]);
   });
 
+  it('R-UI-216 the person\'s Retry keeps the notice in place saying that it tries again, until the read fails again', async () => {
+    const refused = new ApiError(403, { code: 'forbidden' }, null, null, read('/api/v1/a'));
+    const { host, fixture, shown } = await show([refused]);
+    (shown()[0]!.querySelector('.actions button') as HTMLButtonElement).click();
+    await settle(fixture);
+    expect(host.retried).toEqual([0]);
+    expect(shown()[0]!.querySelector('.retry-note')!.textContent).toBe('Trying again.');
+    host.errors.set([new ApiError(403, { code: 'forbidden' }, null, null, { ...read('/api/v1/a'), inRow: 2 })]);
+    await settle(fixture);
+    expect(shown()[0]!.querySelector('.retry-note')).toBeNull();
+  });
+
   it('R-UI-216 a notice whose screen bound no retry offers none and reads nothing again', async () => {
     const { root, buttons } = await show([], gateway());
     const notice = root.querySelector<HTMLElement>('.unbound [data-testid="error-notice"]')!;

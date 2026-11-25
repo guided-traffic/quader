@@ -316,10 +316,15 @@ export class UpstreamRegistries {
     void this.load();
   }
 
+  /**
+   * Reads the registries; the list's Retry (R-UI-216). The failure stays until the answer, so the notice stays in place while it reads
+   * again; the formats and the level choices that failed are read with it, so the page that comes back is the page of a fresh load.
+   */
   protected async load(): Promise<void> {
-    this.loadError.set(null);
+    for (const r of [this.formats, this.choices]) if (r.error()) r.reload();
     try {
       this.items.set(await this.api.list());
+      this.loadError.set(null);
     } catch (e) {
       this.loadError.set(asApiError(e));
     }

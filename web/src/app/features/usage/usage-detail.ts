@@ -213,9 +213,9 @@ export class UsageDetailPage {
   }
 
   protected async load(): Promise<void> {
-    this.failure.set(null);
     try {
       const d = await this.api.subjectUsage(this.usageScope(), this.kind() as UsageSubjectKind, this.id(), this.activePeriod());
+      this.failure.set(null);
       this.detail.set(d);
       if (blockedUntil(d) && this.canLift()) void this.findBlock(d.subject);
     } catch (e) {

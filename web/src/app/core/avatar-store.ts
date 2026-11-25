@@ -1,5 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { IdentityApi } from '../api/identity-api';
+import { ReadAgain } from './read-again';
 import { SessionStore } from './session-store';
 
 /**
@@ -16,6 +17,7 @@ export class AvatarStore {
   private readonly _url = signal<string | null>(null);
   /** The ID of the principal the URL belongs to, so a late answer of a signed-out session is dropped. */
   private owner: string | null = null;
+  private readonly again = new ReadAgain(() => this.refresh());
 
   readonly url = this._url.asReadonly();
   /** Whether the principal can have an avatar: users and the break-glass account (R-API-055). */
@@ -29,14 +31,21 @@ export class AvatarStore {
     const id = this.session.whoami()?.principal.id ?? null;
     this.owner = id;
     if (id === null || !this.available()) {
+      this.again.answered();
       this._url.set(null);
       return;
     }
     try {
       const user = await this.identity.me();
       if (this.owner === id) this._url.set(user.avatarUrl);
-    } catch {
-      if (this.owner === id) this._url.set(null);
+      this.again.answered();
+    } catch (e) {
+      // The robot while the record cannot be read, and the record read again after a failure that may pass (R-UI-216): it used to
+      // stay the robot for the whole session.
+      if (this.owner === id) {
+        this._url.set(null);
+        this.again.failed(e);
+      }
     }
   }
 
@@ -46,6 +55,7 @@ export class AvatarStore {
   }
 
   clear(): void {
+    this.again.answered();
     this.owner = null;
     this._url.set(null);
   }

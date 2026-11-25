@@ -129,7 +129,7 @@ export class RotateDialog {
         (revoke)="revoke($event)"
         (rotate)="rotate($event)"
       />
-    } @else if (list.loading()) {
+    } @else if (list.loading() && !list.error()) {
       <p role="status" i18n="@@tokens.loading">Loading tokens.</p>
     }
 

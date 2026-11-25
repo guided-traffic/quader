@@ -302,7 +302,10 @@ export class ErrorNotice implements OnInit {
   protected readonly copyIdLabel = $localize`:@@error.copy-request-id:Copy request ID`;
   /** The screen bound `(retry)`: set once the bindings exist. */
   private readonly bound = signal(false);
-  /** A read the notice started by itself runs: the notice says so until its view answers or fails again. */
+  /**
+   * A read again runs, started by the notice itself or by the person's Retry: the notice stays in place and says so until its view
+   * answers or fails again (Q-UI-1197).
+   */
   private readonly trying = signal(false);
 
   /** Another notice of the group stands first: this one shows nothing. */
@@ -315,6 +318,9 @@ export class ErrorNotice implements OnInit {
     const g = this.group();
     return g.length > 1 ? g.map((m) => m.error()) : [this.error()];
   });
+
+  /** The group's failures as such: another notice that joins or leaves the page elsewhere changes nothing here. */
+  private readonly failures = computed(() => this.errors(), { equal: (a, b) => a.length === b.length && a.every((e, i) => e === b[i]) });
 
   protected readonly sentence = computed(() => failureSentence(this.error()));
   protected readonly status = computed(() => statusText(this.error()));
@@ -347,8 +353,8 @@ export class ErrorNotice implements OnInit {
   /** The notice reads its view again by itself: a failed read that may pass, with a view to read (Q-UI-1184). */
   private readonly automatic = computed(() => this.retryable() && this.error().isRead && passes(this.error()));
   protected readonly retryNote = computed(() => {
-    if (!this.automatic()) return null;
     if (this.trying()) return $localize`:@@error.trying:Trying again.`;
+    if (!this.automatic()) return null;
     return $localize`:@@error.tries-again:This page tries again by itself in ${secondsText(Math.round(retryWaitMs(this.error()) / 1000))}:wait:.`;
   });
 
@@ -357,9 +363,9 @@ export class ErrorNotice implements OnInit {
       this.groups.join({ id: this.id, host: this.host, error: this.error, retry: this.bound() ? () => this.retry.emit() : null }),
     );
     inject(DestroyRef).onDestroy(() => this.groups.leave(this.id));
-    // A new failure ends the attempt that led to it.
+    // A new failure of the group ends the attempt that led to it; so does a view of the group that answered and left it.
     effect(() => {
-      this.error();
+      this.failures();
       untracked(() => this.trying.set(false));
     });
     // The read again by itself, while the window is seen; at once when it is seen again after it was hidden (R-UI-213).
@@ -385,7 +391,7 @@ export class ErrorNotice implements OnInit {
 
   /** Reads every view of the group again: by the person's Retry, or by itself (`auto`), which repeats reads only. */
   protected retryAll(auto = false): void {
-    this.trying.set(auto);
+    this.trying.set(true);
     const group = this.group();
     if (group.length === 0) {
       if (this.bound()) this.retry.emit();

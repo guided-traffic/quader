@@ -5,7 +5,7 @@ import { RepositorySignatureSettings, SignatureAnchor, SignatureGatePreview, Sig
 import { SessionStore } from '../../core/session-store';
 import { Confirm } from '../../shared/confirm-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { gateReasonWord, previewQuestion, previewReasonLines, previewRefused, previewStateLine } from '../../shared/signatures/gate-words';
 import { anchorKindWords, anchorScopeWords, shortFingerprint } from '../../shared/signatures/signature-words';
 import { Checkbox } from '../../shared/ui/checkbox';
@@ -131,7 +131,9 @@ export function anchorOptions(
                 <span i18n="@@repo.gate.these">These trust anchors</span>
               </label>
               @if (chosen()) {
-                @if (options().length === 0) {
+                @if (anchorsFailure(); as f) {
+                  <quader-error-notice [error]="f" (retry)="anchorsFailure.retry()" />
+                } @else if (options().length === 0) {
                   <p class="hint anchor-list" i18n="@@repo.gate.no-anchors">No trust anchor applies to this repository yet.</p>
                 } @else {
                   <ul class="anchor-list" data-testid="gate-anchor-list">
@@ -363,16 +365,16 @@ export class RepositorySignaturesSection {
   /** The anchors of the scope: the project's list for every member, the installation's own list (switched-off ones too) for `settings:read`. */
   private readonly anchors = resource({
     params: () => (this.opened() && !this.deb() ? { project: this.project(), full: this.session.has('settings:read') } : undefined),
+    // A failure of the project's list is shown where the anchors stand and read again (R-UI-216): read as an empty list, it said "No
+    // trust anchor applies" and marked every stored anchor as removed (Q-UI-1196).
     loader: async ({ params }) => {
-      try {
-        const list = await this.api.projectAnchors(params.project);
-        const installation = params.full ? await this.api.anchors().catch(() => list.installation) : list.installation;
-        return { installation, project: list.items, projectAnchorsOn: list.projectAnchors };
-      } catch {
-        return { installation: [], project: [], projectAnchorsOn: false };
-      }
+      const list = await this.api.projectAnchors(params.project);
+      const installation = params.full ? await this.api.anchors().catch(() => list.installation) : list.installation;
+      return { installation, project: list.items, projectAnchorsOn: list.projectAnchors };
     },
   });
+  /** The anchors' failure, kept while they read again (R-UI-216). */
+  protected readonly anchorsFailure = failureOf(this.anchors);
   protected readonly options = computed(() => {
     const a = valueOf(this.anchors);
     return anchorOptions(a?.installation ?? [], a?.project ?? [], a?.projectAnchorsOn ?? false, this.storedAnchors());

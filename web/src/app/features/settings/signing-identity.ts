@@ -192,9 +192,9 @@ export class SigningIdentitySection {
   }
 
   protected async load(first = false): Promise<void> {
-    this.loadError.set(null);
     try {
       const ov = await this.api.overview();
+      this.loadError.set(null);
       this.now.set(Date.now());
       this.overview.set(ov);
       if (first) await this.restoreDraft(ov);
@@ -230,7 +230,8 @@ export class SigningIdentitySection {
   }
 
   protected async createKey(replace: boolean, draft?: SigningKeyDraft): Promise<void> {
-    const baseUrl = await this.address.baseUrl();
+    // The address is only the default of the key's URI field: without it the field starts empty (R-UI-216: the read throws).
+    const baseUrl = await this.address.baseUrl().catch(() => null);
     const ref = this.dialog.open<SigningKeyDialog, SigningKeyDialogData, SigningIdentity>(SigningKeyDialog, {
       data: { replace, baseUrl, draft },
       maxWidth: '40rem',

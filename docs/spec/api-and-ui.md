@@ -9581,9 +9581,21 @@ the toast's **Details** in [failure-dialog.ts](../../web/src/app/shared/failure-
   screen binds `(retry)`. A failed read whose failure may pass (0, 408, 429, 5xx, an unreadable answer) reads its view again by itself
   while the window is seen: after 3 s, then twice as long after each further failure of the call, up to 5 minutes (R-UI-213's back-off),
   never before Retry-After; at once when the window is seen again; never while it is hidden. The notice says when it tries ("This page
-  tries again by itself in 6 seconds.") and stays in place while it does (`failureOf` of
-  [paged-resource.ts](../../web/src/app/shared/paged-resource.ts)). A refusal (403, 404, 422) is not read again by itself; **a write is
-  never repeated by itself**.
+  tries again by itself in 6 seconds.") and stays in place while it does, on every screen: a failed read's failure is cleared by the
+  read's answer, never by its start, in one form ([Q-UI-1195](#q-ui-1195--a-failed-reads-failure-is-cleared-by-its-answer-in-one-form-and-a-rule-refuses-the-other)):
+  `failureOf` of [paged-resource.ts](../../web/src/app/shared/paged-resource.ts) for a `resource()`, `PagedResource` for a list, and
+  a read of its own that sets its failure after the answer; a list shows no "Loading." under the notice, and the notice says "Trying
+  again." while a read runs, after the person's Retry too
+  ([Q-UI-1197](#q-ui-1197--the-notice-says-trying-again-after-the-persons-retry-too-and-a-list-shows-no-loading-under-it)). A refusal
+  (403, 404, 422) is not read again by itself; **a write is never repeated by itself**.
+- **A page comes back whole** ([Q-UI-1196](#q-ui-1196--the-pages-retry-reads-its-other-failed-reads-with-it-and-a-read-that-would-show-a-wrong-fact-shows-its-failure)):
+  the notice's Retry, the person's and its own, reads again every read of the page that failed with it (the formats, the server's
+  address, the caller's rights, a section's own read), so that the page after the recovery is the page of a fresh load. A read whose
+  failure would show a wrong fact while it lasts ("not scanned", "no members", "none", "off", the robot for an uploaded avatar) shows
+  its failure as what it is, in a notice of its own where its fact stands, which joins the page's notice when the cause is the same; a
+  read the page works without lets a failure that may pass through instead of answering "none", and a store of the whole app that read
+  once reads again after one by itself
+  ([Q-UI-1199](#q-ui-1199--a-read-the-page-works-without-lets-a-failure-that-may-pass-through-and-a-store-reads-again-after-one)).
 - **One cause, one notice** ([Q-UI-1185](#q-ui-1185--notices-of-one-cause-in-one-place-are-one-notice-by-themselves)): notices shown
   at once in one place (the page, or one overlay) whose failures have the same status, code and server's sentence are one notice, the
   first in the page's order, which names every call and whose Retry reads every view; the others show nothing. Every
@@ -9605,13 +9617,25 @@ is folded as text, never as markup, with its headers and the note that it was cu
 English, Retry-After, the request ID with Copy, the call sent twice and the failures in a row; a refusal lists its field problems; two
 calls of one cause are one notice naming both, whose Retry reads both; two causes stay two; Copy report holds the sentence, the facts and
 the folded part; a failed read reads again after 3 s and a write never; nothing is read while the window is hidden and at once when it is
-seen again; the wait doubles up to 5 minutes and a refusal is not read again; a notice without a bound retry offers none.
+seen again; the wait doubles up to 5 minutes and a refusal is not read again; a notice without a bound retry offers none; the person's
+Retry keeps the notice saying "Trying again." until the read fails again (twelve cases, about 0.3 s).
+[paged-resource.spec.ts](../../web/src/app/shared/paged-resource.spec.ts) (two cases, about 0.06 s): a failed resource keeps its
+failure while it reads again and its Retry reads the page's other failed reads with it and not one that answered; a list keeps its
+failure while it starts again and clears it with the first page. [lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs): the rule
+of [read-failure-rule.mjs](../../web/scripts/read-failure-rule.mjs) refuses a failure made by hand and a retry that clears its failure
+before the answer, of a notice and of a data table.
 [interceptors.spec.ts](../../web/src/app/core/http/interceptors.spec.ts) (three cases) and
 [failure.spec.ts](../../web/src/app/core/http/failure.spec.ts) (five): the facts of a 502 with a credential parameter, the failures
 in a row and their end, a problem in a Blob, the redaction of the query and of the headers, an unreadable answer without its body, a
 failure of the page that is no lost connection. [problem-messages.spec.ts](../../web/src/app/core/http/problem-messages.spec.ts): a
-sentence for every status without a problem document. [repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts):
-the repository's page comes back by itself with the formats that failed beside it. The notice's seven states in a browser
+sentence for every status without a problem document, one second singular. The pages' reads that came back wrong (Q-UI-1196), one case
+each where the screen's spec existed: [virtual-members.spec.ts](../../web/src/app/features/repositories/virtual-members.spec.ts) (the
+candidates), [groups.spec.ts](../../web/src/app/features/groups/groups.spec.ts) (the policies naming a group),
+[package-version.spec.ts](../../web/src/app/features/packages/package-version.spec.ts) (the scanning report),
+[session-store.spec.ts](../../web/src/app/core/session-store.spec.ts) (the session's failure kept while it is read again),
+[server-address.spec.ts](../../web/src/app/core/server-address.spec.ts) (the address's failure thrown, never "none configured"),
+[deb-signing-keys.spec.ts](../../web/src/app/features/repositories/deb-signing-keys.spec.ts) ("Trying again." in place after Retry). [repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts):
+the repository's page comes back by itself with the formats that failed beside it. The notice's eight states in a browser
 ([error-notice.states.spec.ts](../../web/src/app/shared/error-notice.states.spec.ts), `make ui-states`) and the render walk
 `repository-failures` in English and German ([failures.ts](../../web/e2e/renders/failures.ts),
 [Q-UI-1188](#q-ui-1188--the-notices-states-are-measured-in-make-ui-states-and-its-words-in-the-render-sets-german-pass)).
@@ -24576,8 +24600,9 @@ needs no person; one that does not needs no traffic.
 
 **Applied in the spec:** R-UI-042, R-UI-213, R-UI-216. Code: `passes`, `retryWaitMs` and the effect of
 [error-notice.ts](../../web/src/app/shared/error-notice.ts), `CallFailures` of [failure.ts](../../web/src/app/core/http/failure.ts),
-`failureOf` of [paged-resource.ts](../../web/src/app/shared/paged-resource.ts), `reread` of
-[repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts).
+`failureOf` of [paged-resource.ts](../../web/src/app/shared/paged-resource.ts) and its `also` in
+[repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts) (since Q-UI-1195 and Q-UI-1196 the form
+of every screen).
 
 ### Q-UI-1185 · Notices of one cause in one place are one notice, by themselves
 
@@ -24655,6 +24680,99 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (a). **Rationale:** a refusal of fields is fixed by the person, whose list is the summary; the answer's facts are for a report.
 
 **Applied in the spec:** R-UI-216. Code: [field-errors.ts](../../web/src/app/shared/field-errors.ts).
+
+### Q-UI-1195 · A failed read's failure is cleared by its answer, in one form, and a rule refuses the other
+
+Status: **The rule decided by the owner** (R-UI-213, 2026-11-24: never F5; R-UI-216, 2026-11-25); **the form decided by the development
+agent** — selected from the options below; the owner reviews it at the walkthrough. It closes H-1963.
+
+Context: 49 failures of a resource were made by hand (`computed` of `resource().error()`, in 35 components), and 42 reads of their own
+set their failure to null at the start of the read (in 40 components). Both cleared the notice's failure when its Retry began: the notice gave way to
+"Loading." and came back, so it could neither say that it tries again nor count, and a list's notice did the same in `PagedResource`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The failure is cleared by the answer, in three shapes: `failureOf(reads, { also })` for a `resource()`, `PagedResource` itself for a list, a read of its own that sets its failure after the answer; the lint rule `read-failure-rule.mjs` refuses the two forms that cleared it (chosen) | A screen takes its failure from `failureOf` or keeps its signal until the answer; the template shows the notice in place of "Loading." | Every notice of the app stays in place by the same rule; the rule makes the old form a lint error, so a new screen cannot forget it; nothing changes for a write | Three shapes, one rule; the rule reads text, not types (H-1965) |
+| (b) A wrapper component around a view (`<quader-read [failure] [loading]>`) | The notice, "Loading." and the content in one element | The order of the three is in one place | Content projection with conditions needs `ng-template` in every screen; 120 templates change shape; reads of their own still clear by hand |
+| (c) The notice keeps its last failure itself while it is hidden | No screen changes | One place | The screen removes the notice from the page when the failure is null: nothing is left to keep it |
+
+**Choice:** (a). `failureOf` takes one read or several (a page of several reads shows the first failure in their order) and returns the
+failure with its `retry`. `PagedResource.start` and `more` keep the error until a page answers. A read of its own sets its failure to
+null after its answer. **Rationale:** the defect was the failure's lifetime, not the notice; it is fixed where the failure lives.
+
+**Applied in the spec:** R-UI-216. Code: [paged-resource.ts](../../web/src/app/shared/paged-resource.ts),
+[read-failure-rule.mjs](../../web/scripts/read-failure-rule.mjs), [check-rules.mjs](../../web/scripts/check-rules.mjs).
+
+### Q-UI-1196 · The page's Retry reads its other failed reads with it, and a read that would show a wrong fact shows its failure
+
+Status: **The rule decided by the owner** (R-UI-216: "alle Infos die verfügbar sind"; R-UI-213); **the form decided by the development
+agent** — selected from the options below; the owner reviews it at the walkthrough. It closes H-1962, as far as H-1964 says.
+
+Context: a page's reads beside the one its notice reports (the formats, the server's address, the caller's rights, a section's list)
+were read once. Failed with the page, they stayed failed after it came back: the repository's page said "not scanned for
+vulnerabilities" of an npm repository; the audit of 2026-11-25 found the same on the repository's settings (format names, the address,
+the well-known state, the project's level, the move targets), the new repository, the downloads and the upstream tab (no actions),
+the virtual members (an empty pool), the signatures section ("No trust anchor applies"), a group's policies (hidden as none), an
+endpoint's addresses, the project list ("You are not a member of a project yet"), the package and the version page (no grades, no
+tab Vulnerabilities, no "Blocked in"), the upstream registry ("the definitions are not updated"), and the stores of the whole app.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The page's Retry reads every read of the page that failed (`failureOf(…, { also })`, or the read of its own); a read whose absence says a wrong fact shows its failure in a notice of its own where the fact stands (chosen) | One case of the same cause is one notice (Q-UI-1185), so a 502 of everything is still one; a section's failure alone is said in the section | The page after the recovery is the page of a fresh load; a wrong fact is never shown as a fact | A notice more in a section where the read failed alone |
+| (b) Every read of a page in its notice | One notice for the page | Simple | The page disappears behind the notice of a decoration (the format names) |
+| (c) Read again only by the next load | As before | — | The owner's F5 |
+
+**Choice:** (a). A read whose absence only leaves something out (a format's display name, the help's contents, a convenience button) is
+read again with the page and shows no notice. **Rationale:** the person sees either the fact or that it could not be read, never a
+"none" that is not true.
+
+**Applied in the spec:** R-UI-216. Code: `also` of `failureOf` in [paged-resource.ts](../../web/src/app/shared/paged-resource.ts), the
+screens of [web-ui.md](../developer/web-ui.md#errors-in-screens-r-ui-216).
+
+### Q-UI-1197 · The notice says "Trying again." after the person's Retry too, and a list shows no "Loading." under it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: since the notice stays in place (Q-UI-1195), a person's Retry changed nothing visible until the answer; "Trying again." was
+said only for the notice's own read. A list's notice stood above the table's "Loading." while the list read again.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) "Trying again." for every read again, until a failure of the notice's group changes; the data table shows "Loading." only without a failure (chosen) | The note ends with a new failure, or with a view of the group that answered and left it | The press of Retry is answered at once; one state of the list at a time | — |
+| (b) Retry disabled while it reads | No second press | — | A screen whose retry changes nothing would keep it disabled |
+
+**Choice:** (a). **Rationale:** the person sees that the press was taken.
+
+**Applied in the spec:** R-UI-216. Code: `trying` of [error-notice.ts](../../web/src/app/shared/error-notice.ts),
+[data-table.ts](../../web/src/app/shared/ui/data-table.ts); the state `notice-trying` of
+[error-notice.states.spec.ts](../../web/src/app/shared/error-notice.states.spec.ts).
+
+### Q-UI-1198 · A wait of one second is singular
+
+Status: **Decided by the development agent** (a defect of R-UI-216's sentences).
+
+"Too many requests. Try again in 1 seconds." became "… in 1 second." ("… in 1 Sekunde erneut."), by a unit of its own
+(`problem.rate_limited_wait_one`), as `secondsText` and `waitText` already do. **Applied in the spec:** R-UI-216. Code: `rateLimited` of
+[problem-messages.ts](../../web/src/app/core/http/problem-messages.ts).
+
+### Q-UI-1199 · A read the page works without lets a failure that may pass through, and a store reads again after one
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: reads that a page works without answered "none" for every failure: a version's grades (`.catch(() => null)`), the server's
+address ("no base URL configured"), a system repository's switch ("off"), the projects of the start page. The stores of the whole app
+(the format names, the malware and the download links switches, the avatar, the preferences, the system repositories' switches) read
+once per page load.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A refusal (403, 404) and `503 unavailable` of a service a replica has not wired stay "none"; a failure that may pass (`passes`) is thrown, so the page shows it and reads it again; a store reads again after one with the notice's back-off, only while the window is seen (chosen) | `noneOnRefusal`, `failureMayPass` of [none-on-refusal.ts](../../web/src/app/shared/none-on-refusal.ts); `ReadAgain` of [read-again.ts](../../web/src/app/core/read-again.ts); `ServerAddress` throws | "None" only where it is the answer | A store's read again is not announced: it has no notice |
+| (b) Every failure thrown | One rule | Simple | A reader without the right would see a notice for a section that is not theirs |
+
+**Choice:** (a). **Rationale:** "none" is a fact of the server, not of the network.
+
+**Applied in the spec:** R-UI-216. Code: [none-on-refusal.ts](../../web/src/app/shared/none-on-refusal.ts),
+[read-again.ts](../../web/src/app/core/read-again.ts), [server-address.ts](../../web/src/app/core/server-address.ts).
 
 ### Q-UI-1120 · N/A says its state in a word, and its sentence is the cell's description
 
@@ -25663,21 +25781,26 @@ keys; a Secret reaches the pods within two minutes."
 **Applied in the spec:** R-UI-188. Code: [upstream-words.ts](../../web/src/app/features/upstream/upstream-words.ts).
 ## What this does not cover
 
-### H-1962 · A read that fails without a notice of its own is not read again with its page
+### H-1964 · A read that fails alone while its page stands is read again only by the person or its next use
 
-Stage: a screen's reads beside the one its notice reports (R-UI-216, Q-UI-1184). Subject: a page that comes back after its backend
-restarted. A resource whose failure no notice shows (the formats, the server's address, a section's own read) is read once; when it
-failed with the page's read, the page comes back without it and says what it says without it. Found on the repository's page in the
-reproduction of 2026-11-25 ("not scanned for vulnerabilities" of an npm repository) and fixed there (`reread`); not audited on the other
-screens. Live today on a screen whose first load fails partly; real for as long as the screen is open. The remedy per screen is the
-repository page's: the notice's retry reads every read of the screen that failed.
+Stage: the reads of a page beside its own (R-UI-216, Q-UI-1196). Subject: a page that stands while one of its other reads failed. A
+read whose absence leaves something out and says nothing wrong has no notice of its own: the help's contents, the format names of the
+search results, the anchors' titles and the Bastions of **Set up client**, the held dependencies of an Ansible version, the list of a
+filter drawer. When it fails while the page's own read answers, nothing reads it again by itself: the page's Retry, a drawer opened
+again or the page's next load does. The advisory sources' scanners and the Bastions' download-link connections come back with the
+page's live read within a minute. The server's address is read again with the page's Retry; while it alone cannot be read, the offline
+commands of the malware settings and the advisory sources show the placeholder host they show for an installation without an address.
+Live today; real only for a failure of that one read while the rest of the page answers.
 
-### H-1963 · A notice gives way to "Loading." while it reads again, on the screens that keep no failure
+### H-1965 · The rule of a kept failure reads text, not types
 
-Stage: the read again by itself of R-UI-216 on a screen whose failure is `computed` from `resource().error()` (about 50, among them the
-repository's settings). Subject: the reader of such a notice while the page reads again. The notice disappears for the time of the
-read and comes back with a new error, so "Trying again." is not seen and the failures in a row are counted, but the notice is drawn anew.
-Live today; the repository's page uses `failureOf` and keeps its notice. The remedy: `failureOf` in place of the `computed` on each screen.
+Stage: the lint rule of Q-UI-1195 ([read-failure-rule.mjs](../../web/scripts/read-failure-rule.mjs)). Subject: a screen that brings a
+failure to its notice by another way. The rule sees a `computed` of `.error()` through a converter, a template's conversion of
+`x.error()`, and a notice or a data table whose `(retry)` clears its failure signal, in the method or in a method it calls first, before
+the first `await` or `.then(`. It does not see a failure that reaches the notice through a member of another kind (a service's signal, a
+`linkedSignal`), a clear in a method called after a wait, nor a read's notice that has no `(retry)` at all (which then offers no Retry
+and reads nothing again, R-UI-216). Dormant: every notice of a read had its `(retry)` on 2026-11-25; real for the next screen that takes
+one of these ways.
 
 ### H-1683 · The version list of a package several repositories hold, in the order of publication, reads every version, and the package list counts every version
 

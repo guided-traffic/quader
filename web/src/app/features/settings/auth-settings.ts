@@ -93,9 +93,9 @@ export class AuthSettings {
   }
 
   protected async load(): Promise<void> {
-    this.loadError.set(null);
     try {
       const loaded = await this.api.load();
+      this.loadError.set(null);
       this.adopt(loaded);
       const draft = this.drafts.take<Form>();
       if (draft) {

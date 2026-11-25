@@ -87,6 +87,8 @@ export class GroupDetail {
   protected readonly editError = signal<ApiError | null>(null);
   protected readonly memberError = signal<ApiError | null>(null);
   protected readonly policies = signal<readonly PermissionPolicy[] | null>(null);
+  /** The policies' read failed: said where the list stands, not hidden as if the caller could not read them (R-UI-216). */
+  protected readonly policiesError = signal<ApiError | null>(null);
   protected readonly members = new PagedResource<GroupMember>();
 
   protected readonly newName = signal('');
@@ -130,10 +132,19 @@ export class GroupDetail {
     });
   }
 
+  /**
+   * The page notice's Retry (R-UI-216): the group, its policies and a members list that failed with it, so the page that comes back
+   * is the page of a fresh load.
+   */
+  protected retry(): void {
+    void this.load();
+    if (this.members.error()) void this.members.reload();
+  }
+
   protected async load(): Promise<void> {
-    this.loadError.set(null);
     try {
       this.adopt(await this.api.group(this.name()));
+      this.loadError.set(null);
     } catch (e) {
       this.group.set(null);
       this.loadError.set(asApiError(e));
@@ -150,18 +161,22 @@ export class GroupDetail {
     this.autoJoin.set(loaded.value.autoJoin);
   }
 
-  private async loadPolicies(): Promise<void> {
+  protected async loadPolicies(): Promise<void> {
     if (!this.session.has('policies:read')) {
       this.policies.set(null);
-      return;
+    } else {
+      try {
+        this.policies.set(
+          await collectAll(this.policyApi.list({ principal: `group:${this.name()}`, expandGroups: false })),
+        );
+      } catch (e) {
+        this.policies.set(null);
+        this.policiesError.set(asApiError(e));
+        return;
+      }
     }
-    try {
-      this.policies.set(
-        await collectAll(this.policyApi.list({ principal: `group:${this.name()}`, expandGroups: false })),
-      );
-    } catch {
-      this.policies.set(null);
-    }
+    // The failure stays until the answer, so its notice stays in place while it reads again (R-UI-216).
+    this.policiesError.set(null);
   }
 
   protected fieldError(pointer: string): string | null {

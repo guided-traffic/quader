@@ -3,6 +3,7 @@ import { Injectable, LOCALE_ID, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { LoadedPreferences, PreferencesApi } from '../api/preferences-api';
 import { BrowserNavigation } from './browser-navigation';
+import { ReadAgain } from './read-again';
 
 export const LOCALES = ['en', 'de'] as const;
 export type UiLocale = (typeof LOCALES)[number];
@@ -32,6 +33,7 @@ export class PreferencesStore {
 
   private readonly _theme = signal<UiTheme | null>(null);
   private readonly _keyboardShortcuts = signal(true);
+  private readonly again = new ReadAgain(() => this.load());
   private loaded: LoadedPreferences | null = null;
 
   /** The explicit theme choice, or null when the browser setting decides. */
@@ -48,10 +50,13 @@ export class PreferencesStore {
       this.loaded = await this.api.load();
       this.applyTheme(asTheme(this.loaded.preferences.theme));
       this._keyboardShortcuts.set(this.loaded.preferences.keyboardShortcuts);
-    } catch {
+      this.again.answered();
+    } catch (e) {
       // Preferences are a convenience; defaults apply when they cannot be read (service
-      // accounts and CI tokens get 403, R-API-021).
+      // accounts and CI tokens get 403, R-API-021). A failure that may pass is read again by itself (R-UI-216): the default theme
+      // used to stay for the whole session.
       this.loaded = null;
+      this.again.failed(e);
     }
   }
 

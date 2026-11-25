@@ -210,10 +210,11 @@ export class GeneralSettings {
     void this.load();
   }
 
+  /** Reads the page; its notice's Retry reads it again, the visibility with it, and the failure stays until the answer (R-UI-216). */
   protected async load(): Promise<void> {
-    this.loadError.set(null);
     try {
       const [info, banner, mode] = await Promise.all([this.api.info(), this.api.banner(), this.api.maintenance()]);
+      this.loadError.set(null);
       this.info.set(info);
       this.adoptBanner(banner);
       this.adoptMode(mode);
@@ -225,9 +226,9 @@ export class GeneralSettings {
 
   /** Apart from the rest, so that a caller who may not read it sees its reason in the section and nothing else breaks. */
   protected async loadVisibility(): Promise<void> {
-    this.visibilityLoadError.set(null);
     try {
       this.adoptVisibility(await this.visibilityApi.load());
+      this.visibilityLoadError.set(null);
     } catch (e) {
       this.visibilityLoadError.set(asApiError(e));
     }

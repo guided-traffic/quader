@@ -106,7 +106,7 @@ function kindsOf(text: string | undefined): string[] {
           </p>
         }
       }
-    } @else if (list.loading()) {
+    } @else if (list.loading() && !list.error()) {
       <p role="status" i18n="@@system.loading">Loading.</p>
     }
   `,

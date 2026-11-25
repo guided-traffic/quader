@@ -140,9 +140,9 @@ export class ProfileUsage {
   }
 
   protected async load(): Promise<void> {
-    this.failure.set(null);
     try {
       this.detail.set(await this.api.myUsage(this.activePeriod()));
+      this.failure.set(null);
     } catch (e) {
       this.detail.set(null);
       this.failure.set(asApiError(e));

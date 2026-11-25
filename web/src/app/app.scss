@@ -3,3 +3,10 @@
   flex-direction: column;
   height: 100dvh;
 }
+
+// The session's notice stands above the page as a paragraph does, apart from the page's heading (R-UI-216); hidden while another
+// notice of its cause stands for it (Q-UI-1185).
+main > quader-error-notice:not([hidden]) {
+  display: block;
+  margin-block-end: var(--quader-space-4);
+}

@@ -600,7 +600,9 @@ export class MirrorStatusPanel {
         if (this.status() === null) return;
         const run = this.generation;
         const status = await this.api.mirrorStatus(this.key());
-        if (run === this.generation) this.status.set(status);
+        if (run !== this.generation) return;
+        this.status.set(status);
+        this.failure.set(null);
       },
       every: () => {
         const s = this.status();
@@ -618,9 +620,9 @@ export class MirrorStatusPanel {
     return jobStateText(job.state);
   }
 
+  /** Reads the status; a failure before stays until the answer, so its notice stays in place while it reads again (R-UI-216). */
   protected load(): void {
     this.stop();
-    this.failure.set(null);
     void this.poll(++this.generation);
   }
 
@@ -633,6 +635,7 @@ export class MirrorStatusPanel {
       const status = await this.api.mirrorStatus(this.key());
       if (run !== this.generation) return;
       this.status.set(status);
+      this.failure.set(null);
     } catch (e) {
       if (run === this.generation) this.failure.set(asApiError(e));
     }

@@ -187,7 +187,7 @@
   <!-- The bulk whose rows the list shows (a row's origin Bulk leads here): its subject, state, counters, bounds and Cancel bulk. -->
   <section class="bulk" aria-labelledby="dl-bulk-title" data-testid="download-bulk">
     @if (bulkFailure(); as f) {
-      <quader-error-notice [error]="f" (retry)="bulkRead.reload()" />
+      <quader-error-notice [error]="f" (retry)="bulkFailure.retry()" />
     } @else if (bulk(); as b) {
       <div class="bulk-head">
         <h2 id="dl-bulk-title" class="bulk-title">

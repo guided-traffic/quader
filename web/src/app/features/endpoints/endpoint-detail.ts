@@ -15,7 +15,7 @@ import { Tooltip } from '../../shared/ui/tooltip';
 import { ErrorNotice } from '../../shared/error-notice';
 import { TextField } from '../../shared/access/fields';
 import { Disclosure } from '../../shared/ui/disclosure';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { endpointAddress, patternSummary, versionSummary } from './endpoint-model';
 import { PageHeader } from '../../shared/ui/page-header';
 import { EmptyState } from '../../shared/ui/empty-state';
@@ -73,14 +73,14 @@ export class EndpointDetail {
   protected readonly actionFailure = signal<ApiError | null>(null);
 
   protected readonly canWrite = computed(() => this.session.has('endpoints:write'));
-  protected readonly failure = computed(() => {
-    const e = this.detail.error();
-    return e ? asApiError(e) : null;
-  });
-  protected readonly rulesFailure = computed(() => {
-    const e = this.rules.error();
-    return e ? asApiError(e) : null;
-  });
+  /**
+   * The endpoint's failure, kept while it reads again (R-UI-216); its Retry reads with it the rules, the formats and the repositories
+   * that failed with it, so the page that comes back shows the rules' client addresses as a fresh load does.
+   */
+  protected readonly failure = failureOf(this.detail, { also: [this.rules, this.formats, this.repos] });
+  protected readonly rulesFailure = failureOf(this.rules, { also: [this.formats, this.repos] });
+  /** The formats or the repositories failed: without them a rule shows no client address, which is said, not left out silently. */
+  protected readonly addressFailure = failureOf([this.formats, this.repos]);
   protected readonly modeAll = computed(
     () => valueOf(this.detail)?.configuration?.exposure === 'all',
   );

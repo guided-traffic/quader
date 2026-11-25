@@ -4,6 +4,9 @@ import { LimitPlace, LimitProfile, LimitsApi, ProjectMaximum } from '../../api/l
 import { Versioned } from '../../api/repositories-api';
 import { SessionStore } from '../../core/session-store';
 import { Disclosure } from '../../shared/ui/disclosure';
+import { ErrorNotice } from '../../shared/error-notice';
+import { asApiError } from '../../shared/paged-resource';
+import { ApiError } from '../../api/problem';
 import { LimitRules } from './limit-rules';
 
 /** The title line of a closed section: "2 rules", "1 rule", with the maximum where there is one. */
@@ -22,7 +25,7 @@ export function rulesNote(count: number | null, maximum: string | null): string 
 @Component({
   selector: 'quader-project-limits',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Disclosure, LimitRules, RouterLink],
+  imports: [Disclosure, ErrorNotice, LimitRules, RouterLink],
   template: `
     <quader-disclosure
       i18n-heading="@@limits.section.heading"
@@ -32,13 +35,18 @@ export function rulesNote(count: number | null, maximum: string | null): string 
       [note]="note()"
     >
       <p i18n="@@limits.section.project-sentence">Rules here apply to the project's repositories that have no rules of their own.</p>
-      <p class="hint">
-        @if (maximumName(); as name) {
-          <ng-container i18n="@@limits.section.maximum-given">Maximum given by an administrator: {{ name }}</ng-container>
-        } @else {
-          <ng-container i18n="@@limits.section.no-maximum">No maximum: you can set limits up to the instance's values.</ng-container>
-        }
-      </p>
+      @if (failure(); as e) {
+        <!-- The maximum is unknown while its read fails: never "No maximum" (R-UI-216). -->
+        <quader-error-notice [error]="e" (retry)="load(project())" />
+      } @else {
+        <p class="hint">
+          @if (maximumName(); as name) {
+            <ng-container i18n="@@limits.section.maximum-given">Maximum given by an administrator: {{ name }}</ng-container>
+          } @else {
+            <ng-container i18n="@@limits.section.no-maximum">No maximum: you can set limits up to the instance's values.</ng-container>
+          }
+        </p>
+      }
       @if (canWrite()) {
         <div class="head">
           <button class="btn btn-default" type="button" (click)="rules()?.add()" i18n="@@limits.rules.add">Add rule</button>
@@ -61,6 +69,10 @@ export function rulesNote(count: number | null, maximum: string | null): string 
       justify-content: flex-end;
       margin-block-end: var(--quader-space-2);
     }
+    quader-error-notice {
+      display: block;
+      margin-block-end: var(--quader-space-3);
+    }
     .usage {
       margin-block-start: var(--quader-space-3);
     }
@@ -76,6 +88,7 @@ export class ProjectLimitsSection {
   protected readonly place = computed<LimitPlace>(() => ({ kind: 'project', project: this.project() }));
   protected readonly count = signal<number | null>(null);
   private readonly maximum = signal<Versioned<ProjectMaximum> | null>(null);
+  protected readonly failure = signal<ApiError | null>(null);
   private readonly profiles = signal<readonly LimitProfile[]>([]);
   protected readonly maximumName = computed(() => {
     const m = this.maximum()?.value;
@@ -93,12 +106,16 @@ export class ProjectLimitsSection {
     });
   }
 
-  private async load(key: string): Promise<void> {
-    const [maximum, profiles] = await Promise.all([
-      this.api.maximum(key).catch(() => null),
-      this.api.profiles().catch(() => [] as readonly LimitProfile[]),
-    ]);
-    this.maximum.set(maximum);
-    this.profiles.set(profiles);
+  /**
+   * Reads the maximum and the profiles that name it. A failure is shown in the maximum's line and kept until the answer, so its
+   * notice stays in place while it reads again (R-UI-216); it used to read as "No maximum".
+   */
+  protected async load(key: string): Promise<void> {
+    const failed = (e: unknown): ApiError => asApiError(e);
+    const [maximum, profiles] = await Promise.all([this.api.maximum(key).catch(failed), this.api.profiles().catch(failed)]);
+    if (key !== this.project()) return;
+    if (!(maximum instanceof ApiError)) this.maximum.set(maximum);
+    if (!(profiles instanceof ApiError)) this.profiles.set(profiles);
+    this.failure.set(maximum instanceof ApiError ? maximum : profiles instanceof ApiError ? profiles : null);
   }
 }

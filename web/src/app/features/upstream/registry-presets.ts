@@ -215,12 +215,13 @@ export class RegistryPresets {
     void this.load();
   }
 
+  /** Reads the presets; the list's Retry. The failure stays until the answer, so the notice stays in place (R-UI-216). */
   protected async load(): Promise<void> {
-    this.loadError.set(null);
     try {
       const loaded = await this.api.registryPresets();
       this.list.set(loaded.presets);
       this.etag = loaded.etag;
+      this.loadError.set(null);
     } catch (e) {
       this.loadError.set(asApiError(e));
     }

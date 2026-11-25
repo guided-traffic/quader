@@ -128,7 +128,7 @@
       [caption]="caption"
       [columns]="columns"
       [loaded]="list.loaded()"
-      [loading]="list.loading()"
+      [loading]="list.loading() && !list.error()"
       [empty]="list.items().length === 0"
       [emptyText]="chips().length > 0 ? noMatch : noEvent"
       [hasMore]="list.hasMore()"
@@ -227,7 +227,7 @@
         </button>
       </div>
       @if (selectedFailure(); as f) {
-        <quader-error-notice [error]="f" (retry)="selected.reload()" />
+        <quader-error-notice [error]="f" (retry)="selectedFailure.retry()" />
       } @else if (valueOf(selected); as e) {
         <dl class="facts">
           <dt i18n="@@audit.col.time">Time</dt>

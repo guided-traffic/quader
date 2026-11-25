@@ -1,6 +1,7 @@
-import { Injectable, Signal, computed, inject, resource } from '@angular/core';
+import { DestroyRef, Injectable, Signal, computed, effect, inject, resource, untracked } from '@angular/core';
 import { UpstreamApi } from '../api/upstream-api';
 import { valueOf } from '../shared/paged-resource';
+import { ReadAgain } from './read-again';
 import { SessionStore } from './session-store';
 import { isSystemRepositoryName, mayServeClients, upstreamKeyOf } from './upstream-project';
 
@@ -33,9 +34,13 @@ export class SystemClients {
     const now = Date.now();
     const hit = this.kept.get(name);
     if (hit && now - hit.at < KEEP_MS) return hit.answer;
+    // A failed read is not kept: it says nothing of the switch, and the next question reads again (R-UI-216).
     const answer = this.upstream.get(key!).then(
       (r) => r.value.clients?.enabled === true,
-      () => false,
+      (e: unknown) => {
+        this.kept.delete(name);
+        throw e;
+      },
     );
     this.kept.set(name, { at: now, answer });
     return answer;
@@ -61,5 +66,13 @@ export function systemClosed(name: () => string | null | undefined): Signal<bool
     },
     loader: ({ params }) => clients.served(params),
   });
+  // Closed while the switch cannot be read, and read again with the notice's back-off (R-UI-216): a failure used to read as "off"
+  // until the page was opened again.
+  const again = new ReadAgain(() => served.reload());
+  effect(() => {
+    const e = served.error();
+    untracked(() => (e ? again.failed(e) : served.hasValue() && again.answered()));
+  });
+  inject(DestroyRef).onDestroy(() => again.answered());
   return computed(() => isSystemRepositoryName(name()) && valueOf(served) !== true);
 }

@@ -321,7 +321,7 @@
 
 <h2 i18n="@@dashboard.content-access">Content and access</h2>
 @if (overviewFailure(); as f) {
-  <quader-error-notice [error]="f" (retry)="overview.reload()" />
+  <quader-error-notice [error]="f" (retry)="overviewFailure.retry()" />
 }
 @if (valueOf(overview); as o) {
   <div class="cards">

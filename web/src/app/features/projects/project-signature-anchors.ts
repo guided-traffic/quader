@@ -5,8 +5,8 @@ import { SignatureAnchor, SignaturesApi } from '../../api/signatures-api';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
 import { GateActions } from '../../shared/signatures/gate-releases';
-import { ErrorNotice } from '../../shared/error-notice';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { ErrorNotice, passes } from '../../shared/error-notice';
+import { asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { AnchorDialog, AnchorDialogData } from '../../shared/signatures/anchor-dialog';
 import { AnchorRowControls, AnchorTable } from '../../shared/signatures/anchor-table';
 import { QuaderDialog } from '../../shared/ui/dialog';
@@ -23,6 +23,9 @@ import { Disclosure } from '../../shared/ui/disclosure';
   selector: 'quader-project-signature-anchors',
   imports: [AnchorTable, Disclosure, ErrorNotice],
   template: `
+    @if (failure(); as f) {
+      <quader-error-notice [error]="f" (retry)="failure.retry()" />
+    }
     @if (shown()) {
       @let l = list()!;
       <quader-disclosure i18n-heading="@@sig.project.heading" heading="Trust anchors" [hint]="hint()" [count]="items().length" data-testid="project-anchors">
@@ -78,17 +81,22 @@ export class ProjectSignatureAnchors {
   /** The project's key. */
   readonly project = input.required<string>();
 
-  /** A refusal (a member of another project, the signatures off) leaves the section out without an error. */
+  /**
+   * A refusal (a member of another project, the signatures off) leaves the section out without an error. A failure that may pass is
+   * shown and read again by its notice (R-UI-216): taken for a refusal, the section stayed out until the page was opened again.
+   */
   protected readonly answer = resource({
     params: () => ({ project: this.project() }),
     loader: async ({ params }) => {
       try {
         return await this.api.projectAnchors(params.project);
-      } catch {
+      } catch (e) {
+        if (passes(asApiError(e))) throw e;
         return null;
       }
     },
   });
+  protected readonly failure = failureOf(this.answer);
   protected readonly list = computed(() => valueOf(this.answer) ?? null);
   /** The project's own anchors, kept after a change without a reload. */
   private readonly changed = signal<readonly SignatureAnchor[] | null>(null);

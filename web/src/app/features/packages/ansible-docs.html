@@ -94,7 +94,7 @@
         <div class="pane-body">
           <div class="tree-scroll">
             @if (searchFailure(); as sf) {
-              <quader-error-notice [error]="sf" (retry)="search.reload()" />
+              <quader-error-notice [error]="sf" (retry)="searchFailure.retry()" />
             }
             @if (noMatch()) {
               <div class="pane-empty" data-testid="docs-no-match">
@@ -134,7 +134,7 @@
           </button>
         }
         @if (pageFailure(); as pf) {
-          <quader-error-notice [error]="pf" (retry)="page.reload()" />
+          <quader-error-notice [error]="pf" (retry)="pageFailure.retry()" />
         } @else if (page.isLoading()) {
           <p role="status" i18n="@@pkg.loading">Loading.</p>
         } @else if (pageValue(); as p) {

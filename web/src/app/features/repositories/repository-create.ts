@@ -23,7 +23,7 @@ import { SelectOption } from '../../shared/access/fields';
 import { DraftStore } from '../../shared/drafts';
 import { ErrorNotice } from '../../shared/error-notice';
 import { ErrorSummary, SummaryItem, fieldMessage, problemsAt } from '../../shared/field-errors';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { heldWhileFocused } from '../../shared/held-while-focused';
 import { HasUnsavedChanges } from '../../shared/unsaved-guard';
 import { Disclosure } from '../../shared/ui/disclosure';
@@ -159,10 +159,6 @@ export class RepositoryCreate implements HasUnsavedChanges {
   protected readonly unknownFormat = computed(() =>
     valueOf(this.formats) !== undefined && this.descriptor() === null ? (this.format() ?? '') : null,
   );
-  protected readonly loadFailure = computed(() => {
-    const e = this.formats.error();
-    return e ? asApiError(e) : null;
-  });
   protected readonly formatLabel = computed(() => this.descriptor()?.displayName ?? this.format() ?? '');
   protected readonly heading = computed(() => {
     const f = this.descriptor();
@@ -249,29 +245,23 @@ export class RepositoryCreate implements HasUnsavedChanges {
   protected readonly artifacts = computed(() => this.artifactsChoice() ?? this.defaultLevel());
   private readonly projectLevel = resource({
     params: () => this.chosenProject() || undefined,
-    loader: async ({ params }): Promise<VisibilityLevel | null> => {
-      try {
-        return (await this.projectsApi.get(params)).value.visibility;
-      } catch {
-        return null;
-      }
-    },
+    // A failure leaves the level unknown (null below) and is read again with the formats' Retry.
+    loader: async ({ params }): Promise<VisibilityLevel | null> => (await this.projectsApi.get(params)).value.visibility,
   });
   /** The caller's choices (R-API-076): a restricted level is off for whom may not choose it, and marked for an administrator. */
   private readonly visibilityApi = inject(VisibilityApi);
   private readonly choices = resource({
-    loader: async (): Promise<VisibilityChoices | null> => {
-      try {
-        return await this.visibilityApi.choices();
-      } catch {
-        return null;
-      }
-    },
+    loader: (): Promise<VisibilityChoices | null> => this.visibilityApi.choices(),
   });
   protected readonly levelReasons = computed(() =>
     firstReasons(aboveProjectReasons(valueOf(this.projectLevel) ?? null), installationReasons(valueOf(this.choices) ?? null)),
   );
   protected readonly levelNotes = computed(() => restrictedNotes(valueOf(this.choices) ?? null));
+  /**
+   * The formats' failure, kept while they read again (R-UI-216), and its Retry: the server's address and the levels' reads, which
+   * run beside the formats, are read again with them when they failed too (Q-UI-1196).
+   */
+  protected readonly loadFailure = failureOf(this.formats, { also: [this.baseUrl, this.projectLevel, this.choices] });
 
   // ---- Members of a virtual repository (R-UI-081, Q-UI-347) ----
 

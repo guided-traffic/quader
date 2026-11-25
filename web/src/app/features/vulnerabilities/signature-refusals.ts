@@ -14,7 +14,7 @@ import {
   SignaturesApi,
 } from '../../api/signatures-api';
 import { ErrorNotice } from '../../shared/error-notice';
-import { PagedResource, asApiError, valueOf } from '../../shared/paged-resource';
+import { PagedResource, failureOf, asApiError, valueOf } from '../../shared/paged-resource';
 import { GateActions } from '../../shared/signatures/gate-releases';
 import { gateReasonWord } from '../../shared/signatures/gate-words';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
@@ -140,7 +140,7 @@ export function refusalArtifact(r: Pick<SignatureRefusal, 'package' | 'version' 
       </div>
       @if (shownRepository(); as repo) {
         @if (releasesFailure(); as e) {
-          <quader-error-notice [error]="e" (retry)="releases.reload()" />
+          <quader-error-notice [error]="e" (retry)="releasesFailure.retry()" />
         } @else {
           <quader-data-table
             [caption]="releasesCaption"
@@ -290,10 +290,8 @@ export class SignatureRefusals {
     loader: ({ params }) => this.api.releases(params.repository),
   });
   protected readonly releaseItems = computed<readonly SignatureRelease[]>(() => valueOf(this.releases) ?? []);
-  protected readonly releasesFailure = computed(() => {
-    const e = this.releases.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The releases' failure, kept while its notice reads them again (R-UI-216). */
+  protected readonly releasesFailure = failureOf(this.releases);
   protected readonly releasesHint = $localize`:@@sig.releases.hint:Artifacts released for one repository, which it serves whatever their signatures say.`;
   protected readonly releasesCaption = $localize`:@@sig.releases.caption:Releases of the repository`;
   protected readonly releasesEmpty = $localize`:@@sig.releases.empty:No artifact is released for this repository.`;

@@ -12247,10 +12247,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-586 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+591 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 586 questions</summary>
+<summary>Q-UI: 591 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12840,6 +12840,11 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1190](spec/api-and-ui.md#q-ui-1190--an-npm-tag-is-a-badge-on-the-row-of-the-version-it-names-with-a-tooltip-that-says-what-it-is) | An npm tag is a badge on the row of the version it names, with a tooltip that says what it is | Decided by the development agent | (a) The run goes; a tag is a badge on the row of the version it names, `latest` first and the others by name, in the look of the package's page (`badge info`); each badge takes the focus and says in the shared tooltip "npm tag “next”: npm install @firebase/ai@next installs this version.", which also describes it to assistive technology; one component, `<quader-dist-tags>`, on the package's page, the version's page and the tab Upstream | — |
 | [Q-UI-1191](spec/api-and-ui.md#q-ui-1191--a-version-shows-three-tags-and-n-more-whose-tooltip-names-the-others) | A version shows three tags and "+N more", whose tooltip names the others | Decided by the development agent | (a) At most three badges, then "+N more" in muted text, which takes the focus and whose tooltip names the others ("Further npm tags of this version: next, rc"); the badges wrap between them under the version; a name wider than the cell alone is cut with an ellipsis, the whole in its tooltip; the version's own page shows every tag | — |
 | [Q-UI-1192](spec/api-and-ui.md#q-ui-1192--an-opened-upstream-package-says-its-state-once-the-row-shows-the-badge-the-head-the-rule) | An opened upstream package says its state once: the row shows the badge, the head the rule | Decided by the development agent | (a) Opened in a row the head holds the rule that decided ("Rule: @gitlab/*") where one did, and nothing where the mode did; looked up by name the badge and the rule stand as before | — |
+| [Q-UI-1195](spec/api-and-ui.md#q-ui-1195--a-failed-reads-failure-is-cleared-by-its-answer-in-one-form-and-a-rule-refuses-the-other) | A failed read's failure is cleared by its answer, in one form, and a rule refuses the other | The rule decided by the owner | (a) The failure is cleared by the answer, in three shapes: `failureOf(reads, { also })` for a `resource()`, `PagedResource` itself for a list, a read of its own that sets its failure after the answer; the lint rule `read-failure-rule.mjs` refuses the two forms that cleared it | — |
+| [Q-UI-1196](spec/api-and-ui.md#q-ui-1196--the-pages-retry-reads-its-other-failed-reads-with-it-and-a-read-that-would-show-a-wrong-fact-shows-its-failure) | The page's Retry reads its other failed reads with it, and a read that would show a wrong fact shows its failure | The rule decided by the owner | (a) The page's Retry reads every read of the page that failed (`failureOf(…, { also })`, or the read of its own); a read whose absence says a wrong fact shows its failure in a notice of its own where the fact stands | — |
+| [Q-UI-1197](spec/api-and-ui.md#q-ui-1197--the-notice-says-trying-again-after-the-persons-retry-too-and-a-list-shows-no-loading-under-it) | The notice says "Trying again." after the person's Retry too, and a list shows no "Loading." under it | Decided by the development agent | (a) "Trying again." for every read again, until a failure of the notice's group changes; the data table shows "Loading." only without a failure | — |
+| [Q-UI-1198](spec/api-and-ui.md#q-ui-1198--a-wait-of-one-second-is-singular) | A wait of one second is singular | Decided by the development agent | — | — |
+| [Q-UI-1199](spec/api-and-ui.md#q-ui-1199--a-read-the-page-works-without-lets-a-failure-that-may-pass-through-and-a-store-reads-again-after-one) | A read the page works without lets a failure that may pass through, and a store reads again after one | Decided by the development agent | (a) A refusal (403, 404) and `503 unavailable` of a service a replica has not wired stay "none"; a failure that may pass (`passes`) is thrown, so the page shows it and reads it again; a store reads again after one with the notice's back-off, only while the window is seen | — |
 
 </details>
 

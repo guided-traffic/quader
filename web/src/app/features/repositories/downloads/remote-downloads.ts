@@ -23,7 +23,7 @@ import { LIVE_SLOW_MS, live, refreshResource } from '../../../core/live-refresh'
 import { Notifier } from '../../../core/notifier';
 import { SessionStore } from '../../../core/session-store';
 import { ErrorNotice } from '../../../shared/error-notice';
-import { asApiError, valueOf } from '../../../shared/paged-resource';
+import { asApiError, failureOf, valueOf } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { TechnicalDetails } from '../../../shared/technical-details';
 import { NoValue } from '../../../shared/ui/no-value';
@@ -187,10 +187,6 @@ export class RemoteDownloads {
     loader: ({ params }) => (params ? this.api.bulk(params.repository, params.id) : Promise.resolve(null)),
   });
   protected readonly bulk = computed<RemoteDownloadBulk | null>(() => valueOf(this.bulkRead) ?? null);
-  protected readonly bulkFailure = computed(() => {
-    const e = this.bulkRead.error();
-    return e ? asApiError(e) : null;
-  });
 
   // ---- The repository's bulks (Q-CUR-168) ----
 
@@ -227,6 +223,8 @@ export class RemoteDownloads {
   });
   protected readonly manager = computed(() => valueOf(this.rights)?.manage ?? false);
   private readonly mayFill = computed(() => valueOf(this.rights)?.fill ?? false);
+  /** The bulk's failure, kept while it reads again (R-UI-216); the caller's rights are read again with it (Q-UI-1196). */
+  protected readonly bulkFailure = failureOf(this.bulkRead, { also: [this.rights] });
 
   /** The list reads itself again while the repository has a row that waits or runs, or a bulk shown expands or waits. */
   protected readonly live = computed(() => {
@@ -344,6 +342,8 @@ export class RemoteDownloads {
       this.countsChange.emit(page.counts);
       this.listError.set(null);
       this.loaded.set(true);
+      // The caller's rights failed with the list: read again with it, so the rows that came back offer their actions (Q-UI-1196).
+      if (this.rights.error()) this.rights.reload();
     } catch (e) {
       if (quiet && this.loaded()) throw e;
       if (generation === this.generation) this.listError.set(asApiError(e));

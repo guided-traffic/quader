@@ -1,4 +1,5 @@
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { failureMayPass } from '../../shared/none-on-refusal';
 import { Component, LOCALE_ID, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -19,7 +20,7 @@ import { Confirm } from '../../shared/confirm-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { TechnicalDetails } from '../../shared/technical-details';
 import { FormatIconView } from '../../shared/format-icon';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -193,13 +194,17 @@ export class UpstreamRegistry {
   protected readonly levelHeading = $localize`:@@repo.visibility.heading:Visibility`;
   // ---- Updater (R-UI-188 section 2 for clamav, Q-UI-913) ----
 
-  /** The scanner replicas, read for the updater's rows on the page of `clamav` only; a failure leaves the sentence why there are none. */
+  /**
+   * The scanner replicas, read for the updater's rows on the page of `clamav` only; a refusal leaves the sentence why there are none.
+   * A failure that may pass is shown in the section and read again (R-UI-216): swallowed, the page said "No updater reports".
+   */
   private readonly scanners = resource({
     params: () => (this.clamav() ? true : undefined),
     loader: async (): Promise<ScannerList | null> => {
       try {
         return await this.systemApi.scanners();
-      } catch {
+      } catch (e) {
+        if (failureMayPass(e)) throw e;
         return null;
       }
     },
@@ -210,11 +215,14 @@ export class UpstreamRegistry {
     loader: async () => {
       try {
         return (await this.malwareApi.settings()).settings;
-      } catch {
+      } catch (e) {
+        if (failureMayPass(e)) throw e;
         return null;
       }
     },
   });
+  /** The failure of the updater's reads that may pass, kept while its notice reads them again (R-UI-216). */
+  protected readonly updaterFailure = failureOf([this.scanners, this.malware]);
   /** The list, where the updater has rows: the section shows them in the shared table of the scanners. */
   protected readonly updaterRows = computed(() => {
     const list = valueOf(this.scanners);
@@ -334,10 +342,16 @@ export class UpstreamRegistry {
     });
   }
 
+  /**
+   * Reads the registry; the notice's Retry (R-UI-216). The failure stays until the answer, so the notice stays in place while it reads
+   * again; the page's other reads that failed are read with it (the level choices, the formats' names, the updater's reads, the
+   * dates of Details), so the page that comes back is the page of a fresh load.
+   */
   protected async load(key = this.key()): Promise<void> {
-    this.loadError.set(null);
+    for (const r of [this.choices, this.formats, this.scanners, this.malware, this.document]) if (r.error()) r.reload();
     try {
       this.take(await this.api.get(key));
+      this.loadError.set(null);
     } catch (e) {
       this.loadError.set(asApiError(e));
     }

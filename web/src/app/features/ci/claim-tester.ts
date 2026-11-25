@@ -442,7 +442,6 @@ export class ClaimTester {
 
   /** Reads what the sample needs (the issuer's URL and audience) and, when a mapping is named, the mapping, so the claims start out matching it. */
   protected async prepare(): Promise<void> {
-    this.loadError.set(null);
     const project = this.project();
     try {
       if (project) {
@@ -468,6 +467,8 @@ export class ClaimTester {
         this.text.set(pretty(claimsSatisfying(this.sample(), m.match)));
         if (this.view() === 'form') this.showForm();
       }
+      // The failure stays until the answer, so the notice stays in place while it reads again (R-UI-216).
+      this.loadError.set(null);
     } catch (e) {
       this.loadError.set(asApiError(e));
     }

@@ -52,7 +52,7 @@ import { ErrorNotice } from '../../shared/error-notice';
         [caption]="caption"
         [columns]="columns()"
         [loaded]="loaded()"
-        [loading]="loading()"
+        [loading]="loading() && !error()"
         [empty]="mappings().length === 0"
         i18n-emptyText="@@ci.mappings.empty"
         emptyText="No mapping yet. Without a mapping no job receives a token."
@@ -193,9 +193,9 @@ export class MappingList {
   protected async load(): Promise<void> {
     if (!this.project() && !this.issuer()) return;
     this.loading.set(true);
-    this.error.set(null);
     try {
       this.mappings.set(await this.api.listMappings(this.issuer(), this.project()));
+      this.error.set(null);
       this.loaded.set(true);
     } catch (e) {
       this.error.set(asApiError(e));

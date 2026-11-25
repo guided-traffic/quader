@@ -2,7 +2,7 @@
 <quader-needs capability="settings:write" />
 
 @if (loadError(); as e) {
-  <quader-error-notice [error]="e" (retry)="load()" />
+  <quader-error-notice [error]="e" (retry)="retry()" />
 }
 
 @if (settings(); as s) {

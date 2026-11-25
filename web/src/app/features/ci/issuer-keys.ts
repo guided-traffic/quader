@@ -115,9 +115,9 @@ export class IssuerKeys {
   }
 
   protected async load(): Promise<void> {
-    this.error.set(null);
     try {
       this.status.set(await this.api.keys(this.issuer()));
+      this.error.set(null);
     } catch (e) {
       this.error.set(asApiError(e));
     }

@@ -132,9 +132,9 @@ export class IssuerDetail {
   }
 
   protected async load(): Promise<void> {
-    this.error.set(null);
     try {
       const loaded = await this.api.getIssuer(this.issuer());
+      this.error.set(null);
       this.current.set(loaded.value);
       this.etag.set(loaded.etag);
     } catch (e) {

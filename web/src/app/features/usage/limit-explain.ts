@@ -191,7 +191,9 @@ export class LimitExplain {
       const all = await this.repositoriesApi.listAll();
       this.repositories.set(all.filter((r) => !isSystemRepository(r.project, r.key)).map((r) => `${r.project}/${r.key}`));
     } catch {
+      // The suggestions are read again when the explanation is opened again (R-UI-216).
       this.repositories.set([]);
+      this.loadedRepositories = false;
     }
   }
 

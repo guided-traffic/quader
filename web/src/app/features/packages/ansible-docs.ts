@@ -20,7 +20,7 @@ import { Router, RouterLink } from '@angular/router';
 import { PackageDocEntry, PackageDocFile, PackageDocTree, PackagesApi } from '../../api/packages-api';
 import { ApiError } from '../../api/problem';
 import { ErrorNotice } from '../../shared/error-notice';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
 import { AnsibleDocEntry } from './ansible-doc-entry';
 import {
   DocNode,
@@ -121,10 +121,8 @@ export class AnsibleDocs {
   });
   protected readonly searching = computed(() => this.committed() !== null);
   protected readonly searchPending = computed(() => this.searching() && this.search.isLoading());
-  protected readonly searchFailure = computed(() => {
-    const e = this.search.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The search's failure, kept while its notice reads it again (R-UI-216). */
+  protected readonly searchFailure = failureOf(this.search);
   protected readonly view = computed(() => this.narrowed() ?? this.tree());
 
   protected readonly nodes = computed<readonly DocNode[]>(() => {
@@ -173,10 +171,8 @@ export class AnsibleDocs {
           },
   });
   protected readonly pageValue = computed(() => valueOf(this.page));
-  protected readonly pageFailure = computed(() => {
-    const e = this.page.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The open page's failure, kept while its notice reads it again (R-UI-216). */
+  protected readonly pageFailure = failureOf(this.page);
 
   /** "5 of 32 entries" while a search narrows the tree; the sentence is a live region. */
   protected readonly matchText = computed(() => {

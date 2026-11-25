@@ -244,9 +244,9 @@ export class ServiceAccountDetail {
   }
 
   protected async load(): Promise<void> {
-    this.loadError.set(null);
     try {
       this.adopt(await this.api.serviceAccount(this.name(), this.projectKey(), this.repositoryKey()));
+      this.loadError.set(null);
     } catch (e) {
       this.account.set(null);
       this.loadError.set(asApiError(e));

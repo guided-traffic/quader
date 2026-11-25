@@ -4,7 +4,7 @@
 <quader-needs capability="identities:write" />
 
 @if (loadError(); as e) {
-  <quader-error-notice [error]="e" (retry)="load()" />
+  <quader-error-notice [error]="e" (retry)="retry()" />
 }
 
 @if (group(); as g) {
@@ -172,6 +172,8 @@
         </ul>
       }
     </quader-disclosure>
+  } @else if (policiesError(); as e) {
+    <quader-error-notice [error]="e" (retry)="loadPolicies()" />
   }
 
   @if (canWrite() && !readOnly()) {

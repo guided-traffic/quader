@@ -6,6 +6,8 @@ import { CreateTokenRequest } from '../../api/tokens-api';
 import { SessionStore } from '../../core/session-store';
 import { SelectField, SelectOption, TextField } from './fields';
 import { fieldMessage } from '../field-errors';
+import { ErrorNotice } from '../error-notice';
+import { asApiError } from '../paged-resource';
 
 export const TOKEN_ACTIONS = ['read', 'annotate', 'deploy', 'overwrite', 'delete', 'manage'] as const;
 type TokenAction = (typeof TOKEN_ACTIONS)[number];
@@ -59,7 +61,7 @@ export type TokenFormRequest = CreateTokenRequest & { readonly name?: string };
  */
 @Component({
   selector: 'quader-token-form',
-  imports: [Checkbox, SelectField, TextField],
+  imports: [Checkbox, ErrorNotice, SelectField, TextField],
   template: `
     <form class="form" (submit)="submit($event)" novalidate>
       @if (mode() === 'technical') {
@@ -172,6 +174,10 @@ export type TokenFormRequest = CreateTokenRequest & { readonly name?: string };
         }
       </fieldset>
 
+      @if (endpointsFailure(); as e) {
+        <!-- Without the endpoints the token could not be bound to one: the failure says so and reads them again (R-UI-216). -->
+        <quader-error-notice [error]="e" (retry)="readEndpoints()" />
+      }
       @if (endpointNames().length > 0) {
         <fieldset class="endpoints">
           <legend i18n="@@token-form.endpoints">Endpoints</legend>
@@ -291,6 +297,19 @@ export class TokenForm {
       .map((e) => e.name),
   );
   protected readonly endpoints = signal<readonly string[]>([]);
+  /** The failed read of the endpoints, kept until a read answers (R-UI-216). */
+  protected readonly endpointsFailure = signal<ApiError | null>(null);
+
+  /** Reads the endpoints a token can be bound to; the server still checks every name it is given. */
+  protected readEndpoints(): void {
+    this.endpointsApi.list().then(
+      (list) => {
+        this.endpointsFailure.set(null);
+        this.endpointList.set(list);
+      },
+      (e: unknown) => this.endpointsFailure.set(asApiError(e)),
+    );
+  }
   private readonly localErrors = signal<Readonly<Record<string, string>>>({});
 
   protected readonly lifetimeOptions = computed<readonly SelectOption[]>(() => [
@@ -306,13 +325,7 @@ export class TokenForm {
   ]);
 
   constructor() {
-    if (this.session.has('endpoints:read')) {
-      this.endpointsApi
-        .list()
-        .then((list) => this.endpointList.set(list))
-        // Without the list the token stays unbound; the server still checks every name it is given.
-        .catch(() => undefined);
-    }
+    if (this.session.has('endpoints:read')) this.readEndpoints();
     effect(() => {
       const d = this.restore();
       if (!d) return;

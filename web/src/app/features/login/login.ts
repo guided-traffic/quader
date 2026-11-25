@@ -11,6 +11,7 @@ import { SessionStore } from '../../core/session-store';
 import { Banner } from '../../shared/banner';
 import { QuaderMark } from '../../shared/brand/quader-mark';
 import { ErrorNotice } from '../../shared/error-notice';
+import { failureOf } from '../../shared/paged-resource';
 
 /**
  * Sign-in (R-UI-004, Q-UI-125). A screen without the shell, laid out as one column: the wordmark, the
@@ -42,8 +43,8 @@ import { ErrorNotice } from '../../shared/error-notice';
         </p>
       }
 
-      @if (options.error(); as failure) {
-        <quader-error-notice [error]="asApiError(failure)" (retry)="options.reload()" />
+      @if (optionsFailure(); as failure) {
+        <quader-error-notice [error]="failure" (retry)="optionsFailure.retry()" />
       } @else if (options.isLoading()) {
         <p role="status" class="state" i18n="@@login.loading">Loading the sign-in options.</p>
       } @else if (options.value(); as o) {
@@ -202,6 +203,8 @@ export class Login {
   protected readonly sessionEnded = signal(false);
 
   protected readonly options = resource({ loader: () => this.api.options() });
+  /** The failure of the sign-in options, kept while its notice reads them again (R-UI-216). */
+  protected readonly optionsFailure = failureOf(this.options);
   protected readonly redirecting = signal(false);
   protected readonly username = signal('');
   protected readonly password = signal('');
@@ -245,10 +248,6 @@ export class Login {
   /** Where "continue without signing in" leads: the route the caller wanted, or the start page. */
   protected continuePath(): string {
     return safeReturnTo(this.returnTo());
-  }
-
-  protected asApiError(e: unknown): ApiError {
-    return asFailure(e);
   }
 
   /**

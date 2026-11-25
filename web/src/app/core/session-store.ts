@@ -209,15 +209,18 @@ export class SessionStore {
   }
 
   private async doLoad(): Promise<void> {
+    // A failure of the read before stays until this one answers, so the shell's notice stays in place while it reads again
+    // (R-UI-216).
     this._state.set('loading');
-    this._loadError.set(null);
     try {
       this._whoami.set(await this.api.whoami());
       this._me.set(await this.api.authzMe());
+      this._loadError.set(null);
       this._state.set('authenticated');
       this._ended.set(false);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
+        this._loadError.set(null);
         this._whoami.set(null);
         this._me.set(null);
         // The code, not the status, tells an ended session from none (R-AUTH-002). After the dialog of an end during use the

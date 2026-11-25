@@ -9,6 +9,7 @@ import { FakeVulnerabilitiesApi, sampleGrade } from '../../api/testing/fakes-vul
 import { malwareStatus } from '../../api/testing/fakes-malware';
 import { vi } from 'vitest';
 import { VulnerabilitiesApi } from '../../api/vulnerabilities-api';
+import { ApiError } from '../../api/problem';
 import { spokenText } from '../../testing/axe';
 import { expectAccessible, inProject, renderScreen, settle, text } from '../../testing/screen';
 import { PackageMemory } from './package-memory';
@@ -107,6 +108,19 @@ describe('The page of a version (R-UI-111)', () => {
     expect(text(graded.root.querySelector('.facts-grade .grade-text')!)).toBe('Grade B · 2 findings · 1 fixable');
     const unscanned = await open({}, (_, v) => v.versionReports.set('pkg_01JBQ6V7S3K9/1.4.0', report(sampleGrade('N/A'))));
     expect(tabLabels(unscanned)).toEqual(['README', 'Files', 'Details', 'Vulnerabilities']);
+  });
+
+  it('R-UI-216 a scanning report that failed in a way that may pass is shown as such, a refusal leaves the page without it', async () => {
+    const failing = (status: number) => (_: FakePackagesApi, v: FakeVulnerabilitiesApi) => {
+      v.versionReport = async () => {
+        throw new ApiError(status, null, null, null, { call: { method: 'GET', path: '/api/v1/vulnerabilities/versions' } });
+      };
+    };
+    const gateway = await open({}, failing(502));
+    expect(gateway.root.querySelector('[data-testid="error-notice"]')).not.toBeNull();
+    const refused = await open({}, failing(403));
+    expect(refused.root.querySelector('[data-testid="error-notice"]')).toBeNull();
+    expect(tabLabels(refused)).toEqual(['README', 'Files', 'Details']);
   });
 
   it('R-UI-057 a version without a README, as for a caller who may not read the wiki, has no README tab and asks for none', async () => {

@@ -3,13 +3,12 @@ import { Component, DestroyRef, computed, inject, resource, signal } from '@angu
 import { live } from '../../../core/live-refresh';
 import { RouterLink } from '@angular/router';
 import { JobsApi, Task } from '../../../api/jobs-api';
-import { ApiError } from '../../../api/problem';
 import { DamagedBlob, DamagedBlobCopy, StorageApi, StorageConnection } from '../../../api/storage-api';
 import { Notifier } from '../../../core/notifier';
 import { SessionStore } from '../../../core/session-store';
 import { ErrorNotice } from '../../../shared/error-notice';
 import { jobStateText } from '../../../shared/job-progress';
-import { asApiError, valueOf } from '../../../shared/paged-resource';
+import { asApiError, failureOf, valueOf } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { Disclosure } from '../../../shared/ui/disclosure';
 import { NoValue } from '../../../shared/ui/no-value';
@@ -116,13 +115,14 @@ export class StoragePage {
     const d = this.damaged();
     return storageConditions(list, d ? { count: d.items.length, more: d.more } : null, this.now());
   });
-  protected readonly failure = computed(() => toApiError(this.connectionsResource.error()));
-  protected readonly damagedFailure = computed(() => toApiError(this.damagedResource.error()));
+  /** The connections' failure, kept while they read again (R-UI-216); its notice's Retry reads the whole page again (`refresh`). */
+  protected readonly failure = failureOf(this.connectionsResource);
+  protected readonly damagedFailure = failureOf(this.damagedResource);
   protected readonly tasks = computed<readonly Task[]>(() => {
     const all = valueOf(this.tasksResource) ?? [];
     return STORAGE_TASKS.flatMap((name) => all.filter((t) => t.name === name));
   });
-  protected readonly tasksFailure = computed(() => toApiError(this.tasksResource.error()));
+  protected readonly tasksFailure = failureOf(this.tasksResource);
   protected readonly canRecheck = computed(() => this.session.has('settings:write'));
 
   /** The connections whose fold is open. */
@@ -242,8 +242,4 @@ export class StoragePage {
   protected taskLink(t: Task): { kind: string } {
     return { kind: t.name };
   }
-}
-
-function toApiError(e: unknown): ApiError | null {
-  return e ? asApiError(e) : null;
 }

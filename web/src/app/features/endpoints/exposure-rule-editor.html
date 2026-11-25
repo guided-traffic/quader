@@ -5,7 +5,7 @@
 }
 
 @if (loadFailure(); as f) {
-  <quader-error-notice [error]="f" (retry)="loaded.reload()" />
+  <quader-error-notice [error]="f" (retry)="loadFailure.retry()" />
 } @else {
   <p class="subject">
     <span i18n="@@ep.editor.on">on endpoint</span>&ngsp;<strong translate="no">{{ endpoint() }}</strong>
@@ -109,6 +109,9 @@
               </option>
             }
           </select>
+          @if (reposFailure(); as f) {
+            <quader-error-notice [error]="f" (retry)="reposFailure.retry()" />
+          }
           @if (!creating()) {
             <p class="hint" i18n="@@ep.field.repository.fixed">
               The repository of a rule cannot be changed. Create a new rule for another repository.

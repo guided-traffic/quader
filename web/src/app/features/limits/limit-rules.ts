@@ -152,10 +152,12 @@ export class LimitRules {
   }
 
   async load(): Promise<void> {
-    this.failure.set(null);
     try {
-      const [rules, profiles] = await Promise.all([this.api.rules(this.place()), this.api.profiles().catch(() => [])]);
-      this.profiles.set(profiles);
+      const [rules, profiles] = await Promise.all([this.api.rules(this.place()), this.api.profiles().catch((e: unknown) => asApiError(e))]);
+      // The failure stays until the answer, so the notice stays in place while it reads again (R-UI-216). A failed read of the
+      // profiles is shown beside the rules, whose profile then stands by its key, and the notice's Retry reads it again.
+      this.failure.set(profiles instanceof ApiError ? profiles : null);
+      this.profiles.set(profiles instanceof ApiError ? [] : profiles);
       this.rules.set(rules);
       this.counted.emit(rules.length);
     } catch (e) {

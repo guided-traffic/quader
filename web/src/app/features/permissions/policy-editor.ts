@@ -230,7 +230,6 @@ export class PolicyEditor {
   }
 
   private async init(name: string | undefined): Promise<void> {
-    this.loadError.set(null);
     this.loaded.set(null);
     this.idempotencyKey = newIdempotencyKey();
     if (name === undefined) {
@@ -245,6 +244,8 @@ export class PolicyEditor {
         return;
       }
     }
+    // The failure stays until the answer, so the notice stays in place while it reads again (R-UI-216).
+    this.loadError.set(null);
     // A draft kept across re-authentication (R-UI-042).
     const draft = this.drafts.take<PolicyForm>();
     if (draft) {

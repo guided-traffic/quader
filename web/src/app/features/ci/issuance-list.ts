@@ -136,9 +136,12 @@ export class IssuanceDetailDialog {
 
   /** Reads the token's use; the notice's Retry reads it again (R-UI-216). */
   protected readUsage(): void {
-    this.error.set(null);
+    // The failure stays until the answer, so the notice stays in place while it reads again (R-UI-216).
     this.api.getIssuance(this.data.issuance.tokenId).then(
-      (d) => this.usage.set(d.usage),
+      (d) => {
+        this.error.set(null);
+        this.usage.set(d.usage);
+      },
       (e: unknown) => this.error.set(asApiError(e)),
     );
   }
@@ -216,7 +219,7 @@ function dayStart(value: string, plusDays = 0): string | undefined {
         [caption]="caption"
         [columns]="columns()"
         [loaded]="list.loaded()"
-        [loading]="list.loading()"
+        [loading]="list.loading() && !list.error()"
         [empty]="list.items().length === 0"
         [emptyText]="chips().length > 0 ? noMatch : noToken"
         [hasMore]="list.hasMore()"

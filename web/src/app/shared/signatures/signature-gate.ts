@@ -2,8 +2,8 @@ import { personName } from '../person-name';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, resource, signal } from '@angular/core';
 import { ApiError } from '../../api/problem';
 import { SignatureEntry, SignatureGateRefusedReason, SignatureGateView, SignaturesApi } from '../../api/signatures-api';
-import { ErrorNotice } from '../error-notice';
-import { asApiError, valueOf } from '../paged-resource';
+import { ErrorNotice, passes } from '../error-notice';
+import { asApiError, failureOf, valueOf } from '../paged-resource';
 import { TimeAgo } from '../ui/time-ago';
 import { GateActions } from './gate-releases';
 import { gateReasonSentence } from './gate-words';
@@ -58,6 +58,9 @@ export interface GateArtifact {
       </p>
       @if (actionError(); as e) {
         <quader-error-notice [error]="e" />
+      }
+      @if (releasesFailure(); as f) {
+        <quader-error-notice [error]="f" (retry)="releasesFailure.retry()" />
       }
       @switch (g.decision) {
         @case ('refused') {
@@ -232,11 +235,15 @@ export class SignatureGate {
     loader: async ({ params }) => {
       try {
         return await this.api.releases(params.repository);
-      } catch {
+      } catch (e) {
+        // A refusal leaves the release without its grantor; a failure that may pass is shown and read again by its notice
+        // (R-UI-216): taken for none, the reason and **Withdraw release** stayed away until the page was opened again.
+        if (passes(asApiError(e))) throw e;
         return [];
       }
     },
   });
+  protected readonly releasesFailure = failureOf(this.releases);
   protected readonly releaseOf = computed(() => {
     const digests = new Set(this.artifacts().map((a) => a.sha256));
     return (valueOf(this.releases) ?? []).find((r) => digests.has(r.sha256)) ?? null;

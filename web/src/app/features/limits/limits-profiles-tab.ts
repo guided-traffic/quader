@@ -145,9 +145,9 @@ export class LimitsProfilesTab {
   }
 
   protected async load(): Promise<void> {
-    this.failure.set(null);
     try {
       this.profiles.set(await this.api.profiles());
+      this.failure.set(null);
     } catch (e) {
       this.failure.set(asApiError(e));
     }

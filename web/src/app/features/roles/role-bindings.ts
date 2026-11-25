@@ -89,10 +89,10 @@ export class RoleBindings {
   }
 
   protected async load(): Promise<void> {
-    this.loadError.set(null);
     try {
       this.roles.set(await this.api.roles());
       this.bindings.set(await collectAll(this.api.bindings({})));
+      this.loadError.set(null);
       this.loaded.set(true);
     } catch (e) {
       this.loadError.set(asApiError(e));

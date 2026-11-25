@@ -13,7 +13,6 @@ import { ErrorNotice } from '../../shared/error-notice';
 // >>> M1 ui-a
 import { JobProgress } from '../../shared/job-progress';
 import { FailureToasts } from '../../shared/failure-dialog';
-import { asFailure } from '../../core/http/failure';
 import { JobTable } from './job-table';
 import { TasksCard } from './tasks-card';
 // <<< M1 ui-a
@@ -35,7 +34,7 @@ import {
   valkeyReasonText,
   valkeySummary,
 } from './system-status-model';
-import { valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { ScannerReplicas } from '../../shared/scanner/scanner-replicas';
 import { databaseLag, scannerGroups, waitingScanners } from '../../shared/scanner/scanner-model';
@@ -141,19 +140,13 @@ export class SystemStatus {
   protected readonly waitingScanners = computed(() => waitingScanners(this.scannerGroups()));
   /** The ready image scanners and how many of them hold an older database or none (Q-UI-915). */
   protected readonly databaseLag = databaseLag;
-  protected readonly scannersFailure = computed(() => {
-    const e = this.scanners.error();
-    return e ? asFailure(e) : null;
-  });
+  protected readonly scannersFailure = failureOf(this.scanners);
 
   // >>> M1 ui-a
   protected readonly recentJobs = resource({
     loader: async () => (await this.jobsApi.jobs({})(null, RECENT_JOBS)).items,
   });
-  protected readonly recentFailure = computed(() => {
-    const e = this.recentJobs.error();
-    return e ? asFailure(e) : null;
-  });
+  protected readonly recentFailure = failureOf(this.recentJobs);
   /** The job of a re-encryption started from the key card; followed until it ends. */
   protected readonly reencryptJob = signal<string | null>(null);
   protected readonly gaps = computed(() => {
@@ -168,14 +161,9 @@ export class SystemStatus {
   protected readonly reencrypting = signal(false);
   private disagreeSince: number | null = null;
 
-  protected readonly failure = computed(() => {
-    const e = this.info.error() ?? this.replicas.error();
-    return e ? asFailure(e) : null;
-  });
-  protected readonly encryptionFailure = computed(() => {
-    const e = this.encryption.error();
-    return e ? asFailure(e) : null;
-  });
+  /** The page's failure, kept while it reads again (R-UI-216); its notice's Retry reads the whole page again (`reload`). */
+  protected readonly failure = failureOf([this.info, this.replicas]);
+  protected readonly encryptionFailure = failureOf(this.encryption);
 
   protected readonly groups = computed(() => {
     const i = valueOf(this.info);

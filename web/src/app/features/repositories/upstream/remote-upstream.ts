@@ -7,7 +7,7 @@ import { UpstreamCatalogue, UpstreamCatalogueApi, UpstreamHit, UpstreamUnknownLe
 import { SessionStore } from '../../../core/session-store';
 import { LIVE_IDLE_MS, live, refreshResource } from '../../../core/live-refresh';
 import { ErrorNotice } from '../../../shared/error-notice';
-import { asApiError, valueOf } from '../../../shared/paged-resource';
+import { asApiError, failureOf, valueOf } from '../../../shared/paged-resource';
 import { Checkbox } from '../../../shared/ui/checkbox';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { QuaderDialog } from '../../../shared/ui/dialog';
@@ -114,10 +114,11 @@ export class RemoteUpstream {
     const c = this.caps();
     return c ? JSON.stringify([c.openRequests, c.queue]) : '';
   });
-  protected readonly capsFailure = computed(() => {
-    const e = this.capsRead.error();
-    return e ? asApiError(e) : null;
-  });
+  /**
+   * The capabilities' failure, kept while they read again (R-UI-216); the caller's rights are read again with them, so the tab that
+   * comes back offers its actions as a fresh load does (Q-UI-1196).
+   */
+  protected readonly capsFailure = failureOf(this.capsRead, { also: [this.actions.rights] });
   protected readonly capsState = computed(() => {
     const f = this.capsFailure();
     return f ? catalogueState(f) : null;

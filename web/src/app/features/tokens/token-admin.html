@@ -61,7 +61,7 @@
     (more)="list.more()"
     (revoke)="revokeOne($event)"
   />
-} @else if (list.loading()) {
+} @else if (list.loading() && !list.error()) {
   <p role="status" i18n="@@tokens-admin.loading">Loading tokens.</p>
 }
 

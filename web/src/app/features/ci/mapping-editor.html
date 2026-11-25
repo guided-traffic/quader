@@ -17,6 +17,8 @@
 
 @if (loadError(); as e) {
   <quader-error-notice [error]="e" (retry)="load()" />
+} @else if (contextError(); as e) {
+  <quader-error-notice [error]="e" (retry)="loadContext()" />
 }
 @if (saveError(); as e) {
   @if (summaryItems().length > 0) {

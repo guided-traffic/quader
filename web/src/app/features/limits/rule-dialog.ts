@@ -83,6 +83,9 @@ export const ADDRESS_PATTERN = /^(?:(?:\d{1,3}\.){3}\d{1,3}(?:\/\d{1,2})?|[0-9a-
         @if (failure(); as e) {
           <quader-error-notice [error]="e" />
         }
+        @if (profilesFailure(); as e) {
+          <quader-error-notice [error]="e" (retry)="loadProfiles()" />
+        }
         @if (fixedWho(); as who) {
           <div class="field">
             <span class="field-label" i18n="@@limits.rule.applies-to">Applies to</span>
@@ -266,6 +269,8 @@ export class LimitRuleDialog {
   protected readonly busy = signal(false);
   protected readonly attempted = signal(false);
   protected readonly failure = signal<ApiError | null>(null);
+  /** The failed read of the profiles, apart from a save's: its notice reads them again and stays until they answer (R-UI-216). */
+  protected readonly profilesFailure = signal<ApiError | null>(null);
   /** The caps a `422 limit_above_maximum` named, per figure. */
   private readonly caps = signal<Partial<Record<Figure, string>>>({});
 
@@ -302,9 +307,10 @@ export class LimitRuleDialog {
     void this.loadProfiles();
   }
 
-  private async loadProfiles(): Promise<void> {
+  protected async loadProfiles(): Promise<void> {
     try {
       const list = await this.api.profiles();
+      this.profilesFailure.set(null);
       this.profiles.set(list);
       const rule = this.data.rule;
       const start = list.find((p) => p.key === this.profileKey());
@@ -316,7 +322,7 @@ export class LimitRuleDialog {
     } catch (e) {
       // The select stops saying that it loads; the notice says why it is empty.
       this.profiles.set([]);
-      this.failure.set(asApiError(e));
+      this.profilesFailure.set(asApiError(e));
     }
   }
 

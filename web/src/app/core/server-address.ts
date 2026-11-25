@@ -18,7 +18,9 @@ export function protocolPath(format: FormatDescriptor, ref: string): string {
  * differs behind a proxy or on another host name. The server hands the base URL to every caller
  * that may list the formats, in the same answer that carries the format's path template, so no
  * permission is needed to show a client address. `null` means that the server has no base URL
- * configured: the caller shows no address instead of a wrong one.
+ * configured: the caller shows no address instead of a wrong one. A read that failed is thrown, not
+ * answered as "none configured" (R-UI-216): a page's resource of it fails, and its notice's Retry reads
+ * it again with the page (`failureOf(…, { also })`).
  */
 @Injectable({ providedIn: 'root' })
 export class ServerAddress {
@@ -27,7 +29,7 @@ export class ServerAddress {
   private known: string | null = null;
   private pending: Promise<string | null> | null = null;
 
-  /** The base URL without a trailing slash, or `null`. A `null` is not remembered. */
+  /** The base URL without a trailing slash, or `null`; a failed read is thrown. Neither is remembered. */
   baseUrl(): Promise<string | null> {
     if (this.known !== null) return Promise.resolve(this.known);
     this.pending ??= this.resolve().finally(() => {
@@ -37,12 +39,8 @@ export class ServerAddress {
   }
 
   private async resolve(): Promise<string | null> {
-    try {
-      const base = await this.repositories.baseUrl();
-      if (base) this.known = base.replace(/\/+$/, '');
-    } catch {
-      return null;
-    }
+    const base = await this.repositories.baseUrl();
+    if (base) this.known = base.replace(/\/+$/, '');
     return this.known;
   }
 }

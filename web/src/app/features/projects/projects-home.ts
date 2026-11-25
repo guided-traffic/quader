@@ -7,7 +7,7 @@ import { DisclosureMemory } from '../../core/disclosure-memory';
 import { ProjectContext } from '../../core/project-context';
 import { isUpstreamProject, projectDescription, upstreamFirst } from '../../core/upstream-project';
 import { SessionStore } from '../../core/session-store';
-import { valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
 import { Checkbox } from '../../shared/ui/checkbox';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
@@ -58,8 +58,10 @@ const DETAILS_ID = 'projects.details';
     <quader-data-table
       [caption]="caption()"
       [columns]="columns()"
-      [loaded]="context.loaded()"
+      [loaded]="context.loaded() && !listFailure()"
       [loading]="!context.loaded()"
+      [error]="listFailure()"
+      (retry)="retryList()"
       [empty]="shown().length === 0"
       [emptyText]="emptyText()"
     >
@@ -169,6 +171,16 @@ export class ProjectsHome {
     params: () => (this.onlyMine() ? true : undefined),
     loader: async () => collectAll(this.projectsApi.list({ membership: true })),
   });
+  private readonly mineFailure = failureOf(this.mine);
+  /**
+   * The failure of the list shown, kept while it reads again (R-UI-216): the store's projects, or the memberships while the filter
+   * is on. Either used to read as an empty list ("You are not a member of a project yet").
+   */
+  protected readonly listFailure = computed(() => (this.onlyMine() ? this.mineFailure() : this.context.failure()));
+  protected retryList(): void {
+    if (this.onlyMine()) this.mineFailure.retry();
+    else void this.context.refresh();
+  }
   /** The caller sees projects it is no member of: the filter has something to do. */
   protected readonly hasOthers = computed(() => this.context.projects().some((p) => p.role === undefined));
   /**

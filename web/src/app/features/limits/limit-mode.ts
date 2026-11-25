@@ -139,9 +139,9 @@ export class LimitModeDialog {
   }
 
   protected async loadPreview(): Promise<void> {
-    this.previewFailure.set(null);
     try {
       this.preview.set(await this.api.modePreview());
+      this.previewFailure.set(null);
     } catch (e) {
       this.previewFailure.set(asApiError(e));
     }
@@ -270,9 +270,9 @@ export class LimitModeLine {
   }
 
   async load(): Promise<void> {
-    this.failure.set(null);
     try {
       const s = await this.api.settings();
+      this.failure.set(null);
       this.settings.set(s);
       this.loaded.emit(s);
     } catch (e) {

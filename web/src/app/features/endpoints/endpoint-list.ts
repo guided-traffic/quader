@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { Endpoint, EndpointsApi } from '../../api/endpoints-api';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { NoValue } from '../../shared/ui/no-value';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
 import { PageHeader } from '../../shared/ui/page-header';
 
 /**
@@ -30,7 +30,7 @@ import { PageHeader } from '../../shared/ui/page-header';
       [empty]="rows().length === 0"
       i18n-emptyText="@@ep.list.empty"
       emptyText="There is no endpoint yet."
-      (retry)="endpoints.reload()"
+      (retry)="failure.retry()"
     >
       @for (e of rows(); track e.name) {
         <tr>
@@ -86,10 +86,8 @@ export class EndpointList {
   private readonly api = inject(EndpointsApi);
 
   protected readonly endpoints = resource({ loader: () => this.api.list() });
-  protected readonly failure = computed(() => {
-    const e = this.endpoints.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The list's failure, kept while it reads again (R-UI-216). */
+  protected readonly failure = failureOf(this.endpoints);
 
   protected readonly sort = signal<TableSort>({ column: 'name', direction: 'asc' });
   protected readonly caption = $localize`:@@ep.list.caption:Endpoints`;

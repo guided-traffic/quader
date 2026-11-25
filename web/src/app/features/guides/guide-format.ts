@@ -4,7 +4,7 @@ import { RepositoriesApi, RepositorySummary, refOf } from '../../api/repositorie
 import { repositoryCommands, setupCommands } from '../../core/project-links';
 import { isSystemRepository } from '../../core/upstream-project';
 import { ErrorNotice } from '../../shared/error-notice';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { PageHeader } from '../../shared/ui/page-header';
 import { VisibilityIcon } from '../../shared/ui/visibility-level';
@@ -23,7 +23,7 @@ import { classIcon, classLabel } from '../repositories/repository-class';
   imports: [RouterLink, PageHeader, ErrorNotice, DataTable, VisibilityIcon, ProjectLink],
   template: `
     @if (formatFailure(); as f) {
-      <quader-error-notice [error]="f" (retry)="formats.reload()" />
+      <quader-error-notice [error]="f" (retry)="formatFailure.retry()" />
     } @else if (descriptor(); as d) {
       <quader-page-header
         [heading]="heading()"
@@ -39,7 +39,7 @@ import { classIcon, classLabel } from '../repositories/repository-class';
         [error]="listFailure()"
         [empty]="rows().length === 0"
         [emptyText]="emptyText"
-        (retry)="repositories.reload()"
+        (retry)="listFailure.retry()"
       >
         @for (r of rows(); track refOf(r)) {
           <!-- The parts of the repository list (Q-UI-430): the visibility icon before the key, the description under it, the project
@@ -139,14 +139,12 @@ export class GuideFormat {
       .filter((r) => r.format === this.format() && !r.disabled && !isSystemRepository(r.project, r.key))
       .sort((a, b) => Number(b.class === 'virtual') - Number(a.class === 'virtual') || refOf(a).localeCompare(refOf(b))),
   );
-  protected readonly formatFailure = computed(() => {
-    const e = this.formats.error();
-    return e ? asApiError(e) : null;
-  });
-  protected readonly listFailure = computed(() => {
-    const e = this.repositories.error();
-    return e ? asApiError(e) : null;
-  });
+  /**
+   * The failure of the formats' read, kept while its notice reads it again (R-UI-216); the repositories' list, not shown while it
+   * stands, is read again with it when it failed too.
+   */
+  protected readonly formatFailure = failureOf(this.formats, { also: [this.repositories] });
+  protected readonly listFailure = failureOf(this.repositories);
   /** The columns of the repository list (Q-UI-330): the repository takes what the others leave. */
   protected readonly columns: readonly TableColumn[] = [
     { id: 'key', label: $localize`:@@repo.col.repository:Repository`, width: '13rem', prefer: true },

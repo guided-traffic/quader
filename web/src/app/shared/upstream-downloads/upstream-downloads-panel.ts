@@ -128,6 +128,8 @@ export class UpstreamDownloadsPanel {
   }
 
   private async load(): Promise<void> {
+    // The formats' names read again with the list after their read failed: they stood as keys until the page was opened again (R-UI-216).
+    if (this.formats.error()) this.formats.reload();
     try {
       const list = await this.api.list();
       this.list.set(list);

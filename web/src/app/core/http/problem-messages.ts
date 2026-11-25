@@ -201,10 +201,11 @@ function downloadsProblem(error: ApiError): ProblemText | null {
 }
 // <<< T-24 downloads
 
+/** The sentence of a rate limit, with its wait where the answer named one; one second is singular (Q-UI-1198). */
 function rateLimited(seconds: number | null): string {
-  return seconds === null
-    ? $localize`:@@problem.rate_limited:Too many requests. Wait a moment and try again.`
-    : $localize`:@@problem.rate_limited_wait:Too many requests. Try again in ${seconds}:seconds: seconds.`;
+  if (seconds === null) return $localize`:@@problem.rate_limited:Too many requests. Wait a moment and try again.`;
+  if (seconds === 1) return $localize`:@@problem.rate_limited_wait_one:Too many requests. Try again in 1 second.`;
+  return $localize`:@@problem.rate_limited_wait:Too many requests. Try again in ${seconds}:seconds: seconds.`;
 }
 
 /**

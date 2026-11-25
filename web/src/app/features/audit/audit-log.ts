@@ -25,7 +25,7 @@ import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { NoValue } from '../../shared/ui/no-value';
 import { ProjectLink } from '../../shared/ui/project-mark';
 import { TimeAgo } from '../../shared/ui/time-ago';
-import { PagedResource, asApiError, valueOf } from '../../shared/paged-resource';
+import { PagedResource, failureOf, valueOf } from '../../shared/paged-resource';
 import { actionSuggestions, auditActionLabel, categoryLabel, outcomeLabel } from './audit-labels';
 import { PageHeader } from '../../shared/ui/page-header';
 import { StickyWhenFits } from '../../shared/ui/sticky-when-fits';
@@ -230,10 +230,7 @@ export class AuditLog {
       return this.list.items().find((e) => e.id === params) ?? (await this.api.event(params));
     },
   });
-  protected readonly selectedFailure = computed(() => {
-    const e = this.selected.error();
-    return e ? asApiError(e) : null;
-  });
+  protected readonly selectedFailure = failureOf(this.selected);
   protected readonly details = computed(() => valueOf(this.selected)?.details ?? {});
 
   constructor() {

@@ -153,6 +153,8 @@
         <h2 id="wk-updater" i18n="@@clamav.updater.heading">Updater</h2>
         @if (updaterRows(); as list) {
           <quader-scanner-replicas [list]="list" kind="freshclam" view="open" />
+        } @else if (updaterFailure(); as f) {
+          <quader-error-notice [error]="f" (retry)="updaterFailure.retry()" />
         } @else if (updaterNote(); as note) {
           <p class="hint" data-testid="updater-none">{{ note }}</p>
         }

@@ -207,9 +207,9 @@ export class RepositoryLimitsSection {
   }
 
   async loadCeilings(): Promise<void> {
-    this.ceilingsFailure.set(null);
     try {
       this.show(await this.api.ceilings(this.ref()));
+      this.ceilingsFailure.set(null);
     } catch (e) {
       this.ceilingsFailure.set(asApiError(e));
     }

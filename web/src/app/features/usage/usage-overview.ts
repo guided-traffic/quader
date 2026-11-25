@@ -224,18 +224,25 @@ export class UsageOverview {
         { value: '', label: $localize`:@@usage.filter.any:Any` },
         ...all.map((p) => ({ value: p.key, label: p.displayName || p.key })),
       ]);
+      this.projectsFailed = false;
     } catch {
       this.projectOptions.set([]);
+      this.projectsFailed = true;
     }
   }
+  /** The project filter's choices failed to read: the list's next read reads them again. */
+  private projectsFailed = false;
 
   protected async load(scope = this.usageScope(), query = this.query()): Promise<void> {
     const generation = ++this.generation;
     this.loading.set(true);
-    this.failure.set(null);
+    // The project filter's choices read again with the list after their read failed (R-UI-216).
+    if (this.projectsFailed && this.scope() === 'instance') void this.loadProjects();
     try {
       const page = await this.api.usage(scope, query, null);
       if (generation !== this.generation) return;
+      // The failure stays until the answer, so the notice stays in place while it reads again (R-UI-216).
+      this.failure.set(null);
       this.rows.set(page.items);
       this.next.set(page.nextCursor);
       this.mode.set(page.mode);

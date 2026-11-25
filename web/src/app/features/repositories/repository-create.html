@@ -2,7 +2,7 @@
   <quader-repository-format-chooser [project]="project()" [unknownFormat]="name" />
 } @else if (loadFailure(); as f) {
   <quader-page-header i18n-heading="@@repo.new.heading" heading="New repository" />
-  <quader-error-notice [error]="f" (retry)="formats.reload()" />
+  <quader-error-notice [error]="f" (retry)="loadFailure.retry()" />
 } @else if (descriptor(); as fmt) {
   <quader-page-header [heading]="heading()" [description]="projectLine()">
     <a actions class="btn btn-default" [routerLink]="chooserLink()" i18n="@@repo.create.change-format"

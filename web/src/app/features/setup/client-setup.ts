@@ -1,4 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
+import { failureMayPass } from '../../shared/none-on-refusal';
 import { Component, DestroyRef, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../api/client';
@@ -18,7 +19,7 @@ import { CodeWindow } from '../../shared/code/code-window';
 import { ErrorNotice } from '../../shared/error-notice';
 import { formatAccent } from '../../shared/format-accent';
 import { FormatIconView } from '../../shared/format-icon';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
 import { VisibilityIcon } from '../../shared/ui/visibility-level';
@@ -189,7 +190,9 @@ export class ClientSetupPage {
       try {
         const list = await this.signaturesApi.projectAnchors(params.project);
         return new Map([...list.installation, ...list.items].map((a) => [`${a.scope}/${a.key}`, a.title]));
-      } catch {
+      } catch (e) {
+        // A failure that may pass is read again with the page (R-UI-216); a refusal leaves the references as they are.
+        if (failureMayPass(e)) throw e;
         return new Map();
       }
     },
@@ -257,9 +260,13 @@ export class ClientSetupPage {
       params.ref !== null ? this.guidesApi.repository(params.ref, params.client) : this.guidesApi.format(params.format, params.cls, params.client),
   });
   protected readonly guide = computed(() => valueOf(this.guideAnswer));
-  protected readonly loadFailure = computed(() => {
-    const e = this.loaded.error() ?? this.setupAnswer.error() ?? this.guideAnswer.error() ?? this.formats.error();
-    return e ? asApiError(e) : null;
+  /**
+   * The failure of the page's reads, kept while its notice reads them again (R-UI-216): the repository, the snippets, the guide, the
+   * formats. Its Retry reads each that failed, and the anchors' titles and the Bastions with them, so the page that comes back is the
+   * page of a fresh load (it used to read the snippets and the guide only, never the repository or the formats that had failed).
+   */
+  protected readonly loadFailure = failureOf([this.loaded, this.setupAnswer, this.guideAnswer, this.formats], {
+    also: [this.anchorTitles, this.bastions],
   });
   /**
    * A repository of a format without clients has nothing to set up; the guide of a class asks for a format with a guide and one of

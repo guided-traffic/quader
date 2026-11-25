@@ -43,12 +43,12 @@ describe('ServerAddress', () => {
     expect(await address.baseUrl()).toBe('https://quader.example.net');
   });
 
-  it('R-UI-021 an unreadable answer is null and is asked again', async () => {
+  it('R-UI-021 R-UI-216 a failed read is thrown, never "none configured", and is asked again', async () => {
     const { address, repos } = setup([]);
     repos.baseUrl = async () => {
       throw new Error('offline');
     };
-    expect(await address.baseUrl()).toBeNull();
+    await expect(address.baseUrl()).rejects.toThrow('offline');
     repos.baseUrl = async () => 'https://quader.example.net/';
     expect(await address.baseUrl()).toBe('https://quader.example.net');
   });

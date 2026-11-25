@@ -54,7 +54,8 @@ export class UpstreamActions {
   /** The subjects with a call open: their buttons wait. */
   readonly busy = signal<ReadonlySet<string>>(new Set());
 
-  private readonly rights = resource({
+  /** The caller's rights in the repository; the tab's notice reads them again with its own read when they failed with it (Q-UI-1196). */
+  readonly rights = resource({
     params: () => (this.repository() ? { repository: this.repository(), fill: this.fillAction() } : null),
     loader: async ({ params }) => {
       if (!params || this.session.state() !== 'authenticated') return { manage: false, fill: false };

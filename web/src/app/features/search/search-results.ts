@@ -52,7 +52,7 @@ const PAGE = 25;
             [emptyText]="emptyText()"
             [hasMore]="repositories.hasMore()"
             (more)="repositories.more()"
-            (retry)="repositories.reload()"
+            (retry)="retry(repositories)"
           >
             @for (row of repositories.items(); track refOf(row)) {
               <!-- The parts of the repository list (Q-UI-430): the visibility icon before the key, the description under it, the
@@ -102,7 +102,7 @@ const PAGE = 25;
             [emptyText]="emptyText()"
             [hasMore]="packages.hasMore()"
             (more)="packages.more()"
-            (retry)="packages.reload()"
+            (retry)="retry(packages)"
           >
             @for (row of packages.items(); track row.id) {
               @let at = placeOf(row);
@@ -141,7 +141,7 @@ const PAGE = 25;
             [emptyText]="emptyText()"
             [hasMore]="projects.hasMore()"
             (more)="projects.more()"
-            (retry)="projects.reload()"
+            (retry)="retry(projects)"
           >
             @for (p of projects.items(); track p.key) {
               <tr>
@@ -317,6 +317,15 @@ export class SearchResults {
 
   protected packageLink(row: PackageSummary): string[] {
     return packageCommands(this.placeOf(row).project, row.format, row.name);
+  }
+
+  /**
+   * A list's Retry (R-UI-216): the list, and the formats whose names the rows show when they failed with it (the rows named a format by
+   * its key until a reload).
+   */
+  protected retry(list: PagedResource<unknown>): void {
+    void list.reload();
+    if (this.formats.error()) this.formats.reload();
   }
 
   protected formatLabel(name: string): string {

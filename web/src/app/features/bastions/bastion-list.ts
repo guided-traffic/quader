@@ -89,10 +89,10 @@ export class BastionList {
 
   /** Reads the list again; the cards stay on screen meanwhile, so a card keeps a token it shows once. */
   protected async load(): Promise<void> {
-    this.error.set(null);
     let items: readonly Bastion[];
     try {
       items = await this.api.list();
+      this.error.set(null);
       this.items.set(items);
       this.loaded.set(true);
     } catch (e) {

@@ -183,9 +183,9 @@ export class TechnicalTokens {
   }
 
   async reload(): Promise<void> {
-    this.loadError.set(null);
     try {
       const [tokens, limits] = await Promise.all([this.api.list(this.address()), this.readLimits()]);
+      this.loadError.set(null);
       this.tokens.set(tokens);
       this.limits.set(limits);
       this.loaded.set(true);

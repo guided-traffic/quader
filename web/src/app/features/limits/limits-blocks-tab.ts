@@ -116,9 +116,9 @@ export class LimitsBlocksTab {
   }
 
   protected async load(): Promise<void> {
-    this.failure.set(null);
     try {
       const list = await this.api.blocks({ active: this.showEnded() ? false : true });
+      this.failure.set(null);
       this.blocks.set([...list].sort((a, b) => b.startedAt.localeCompare(a.startedAt)));
     } catch (e) {
       this.failure.set(asApiError(e));

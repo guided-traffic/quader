@@ -54,6 +54,8 @@ const states: Readonly<Record<string, () => readonly ApiError[]>> = {
     e.afterRetry = true;
     return [e];
   },
+  // The owner's case kept in place while it reads again (Q-UI-1197): the person's Retry runs, the notice says so and counts.
+  'notice-trying': () => [new ApiError(502, null, null, null, read(PATH, { inRow: 4 }))],
   'notice-503-retry-after': () => [
     new ApiError(
       503,
@@ -101,21 +103,25 @@ const states: Readonly<Record<string, () => readonly ApiError[]>> = {
   ],
 };
 
+/** The states that are seen after the person's Retry, while the read runs again. */
+const TRYING = new Set(['notice-trying']);
+
 /** Opens a state in the page, with its Technical details open where it has any. */
-async function open(errors: readonly ApiError[], dark: boolean): Promise<void> {
+async function open(name: string, errors: readonly ApiError[], dark: boolean): Promise<void> {
   if (dark) document.documentElement.setAttribute('data-theme', 'dark');
   else document.documentElement.removeAttribute('data-theme');
   await openInPage(NoticeHost, { errors });
   for (const toggle of Array.from(document.querySelectorAll<HTMLButtonElement>('quader-technical-details button.inline-toggle'))) toggle.click();
+  if (TRYING.has(name)) document.querySelector<HTMLButtonElement>('[data-testid="error-notice"] .actions button')?.click();
   await stable();
 }
 
 describe('the error notice in a browser (R-UI-216, R-UI-173, R-UI-175, R-UI-215)', () => {
   for (const [name, errors] of Object.entries(states)) {
     it(name, async () => {
-      await expectState(name, () => open(errors(), false));
+      await expectState(name, () => open(name, errors(), false));
       // A picture in the dark scheme too, when pictures are asked for: the layout is the light one's, measured above.
-      if (provided('picturesDir')) await expectState(`${name}-dark`, () => open(errors(), true));
+      if (provided('picturesDir')) await expectState(`${name}-dark`, () => open(name, errors(), true));
       document.documentElement.removeAttribute('data-theme');
     });
   }

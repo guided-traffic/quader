@@ -91,6 +91,9 @@ import { ProjectSignatureAnchors } from './project-signature-anchors';
           [hint]="visibilitySummary()"
         >
           <form (submit)="saveVisibility($event)" novalidate>
+            @if (choicesError(); as e) {
+              <quader-error-notice [error]="e" (retry)="readChoices()" />
+            }
             @if (visibilityError(); as e) {
               <quader-error-notice [error]="e" />
             }
@@ -239,6 +242,7 @@ export class ProjectSettings {
     const p = this.record();
     return p !== null && (this.displayName().trim() !== p.displayName || this.description().trim() !== (p.description ?? ''));
   });
+  protected readonly choicesError = signal<ApiError | null>(null);
   protected readonly loadError = signal<ApiError | null>(null);
 
   /** The chosen level; the stored one is `record().visibility`. */
@@ -297,18 +301,31 @@ export class ProjectSettings {
   }
 
   protected async load(): Promise<void> {
-    this.loadError.set(null);
-    this.visibilityApi
-      .choices()
-      .then((c) => this.choices.set(c))
-      .catch(() => undefined);
+    this.readChoices();
     try {
       const keepEdits = this.dirty();
-      this.show(await this.api.get(this.project()), keepEdits);
+      const loaded = await this.api.get(this.project());
+      // The failure stays until the answer, so the notice stays in place while it reads again (R-UI-216).
+      this.loadError.set(null);
+      this.show(loaded, keepEdits);
     } catch (e) {
       this.versioned.set(null);
       this.loadError.set(asApiError(e));
     }
+  }
+
+  /**
+   * The levels the installation offers. Their failure is shown in the section and read again by its notice and with the page
+   * (R-UI-216): without them every level read as open to choose, the restricted ones and public among them.
+   */
+  protected readChoices(): void {
+    this.visibilityApi.choices().then(
+      (c) => {
+        this.choicesError.set(null);
+        this.choices.set(c);
+      },
+      (e: unknown) => this.choicesError.set(asApiError(e)),
+    );
   }
 
   private show(loaded: Versioned<Project>, keepEdits = false): void {

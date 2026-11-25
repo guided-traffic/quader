@@ -23,7 +23,7 @@
     <span>{{ sentence }}</span>
   </p>
 } @else if (capsFailure(); as f) {
-  <quader-error-notice [error]="f" (retry)="capsRead.reload()" />
+  <quader-error-notice [error]="f" (retry)="capsFailure.retry()" />
 }
 
 @if (caps(); as c) {

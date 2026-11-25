@@ -220,7 +220,24 @@ export class PackageList {
 
   private defaultChecked = false;
 
+  /**
+   * The list's Retry (R-UI-216): the page of the list that failed, and the reads of the filter drawer's choices (the package types,
+   * the repositories) that failed with it; read once and never again, the drawer offered no choice after the page came back.
+   */
+  protected retry(): void {
+    void this.list.more();
+    this.rereadChoices();
+  }
+
+  private rereadChoices(): void {
+    for (const r of [this.formats, this.repositoryList]) if (r.error()) r.reload();
+  }
+
   constructor() {
+    // The drawer's choices that failed are read again when it opens (R-UI-216).
+    effect(() => {
+      if (this.panelOpen()) untracked(() => this.rereadChoices());
+    });
     effect(() => {
       const filters = this.filters();
       untracked(() => {

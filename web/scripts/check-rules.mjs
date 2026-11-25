@@ -19,6 +19,8 @@
 //    (tab-strip-rule.mjs).
 //  - R-UI-214: no template interpolates a server's English sentence (`{{ x.detail }}`, `{{ x.basis }}`, …): the screen says a
 //    code in its own words, a raw text goes through <quader-technical-details> (server-text-rule.mjs).
+//  - R-UI-216: a failed read's notice stays in place while the read is tried again: a resource's failure is failureOf, never made
+//    by hand, and a read of its own clears its notice's failure after the answer, not before (read-failure-rule.mjs).
 //  - a test's name carries a requirement ID, never a decision's number: no `describe`, `it` or `test` title of a spec, a journey or
 //    a script's test names a `Q-…` or an `ADR-…` (test-names-rule.mjs).
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -33,6 +35,7 @@ import { journeyTextFindings } from './journey-texts-rule.mjs';
 import { decisionNumbersInTestNames } from './test-names-rule.mjs';
 import { tabStripFindings } from './tab-strip-rule.mjs';
 import { serverTextFindings } from './server-text-rule.mjs';
+import { clearedBeforeAnswer, handMadeFailures } from './read-failure-rule.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
@@ -166,6 +169,18 @@ for (const file of sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('
     console.error(
       `R-UI-214: ${rel}:${line}: {{ ${expression} }} shows a server's English sentence; say its code with $localize, or pass a raw text to <quader-technical-details [text]>`,
     );
+  }
+}
+
+// A failed read's notice stays in place while the read is tried again (R-UI-216, Q-UI-1195): the failure is cleared by the answer.
+for (const file of sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('.spec.ts'))) {
+  const rel = relative(root, file).split(sep).join('/');
+  if (rel === 'src/app/shared/paged-resource.ts') continue;
+  const text = readFileSync(file, 'utf8');
+  const ts = file.endsWith('.html') ? (existsSync(file.replace(/\.html$/, '.ts')) ? readFileSync(file.replace(/\.html$/, '.ts'), 'utf8') : '') : text;
+  for (const { line, problem } of [...handMadeFailures(text), ...clearedBeforeAnswer(text, ts)]) {
+    failed = true;
+    console.error(`R-UI-216: ${rel}:${line}: ${problem}`);
   }
 }
 

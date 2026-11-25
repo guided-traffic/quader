@@ -87,7 +87,8 @@ const REMEASURE = 'quader-remeasure';
       <quader-error-notice [error]="e" (retry)="retry.emit()" />
     }
     @if (!loaded()) {
-      @if (loading()) {
+      <!-- A list read again after its failure keeps the notice in place and shows no "Loading." under it (R-UI-216). -->
+      @if (loading() && !error()) {
         <p class="table-status" role="status" i18n="@@table.loading">Loading.</p>
       }
     } @else if (empty()) {

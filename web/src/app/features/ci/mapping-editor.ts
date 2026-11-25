@@ -108,6 +108,8 @@ export class MappingEditor implements HasUnsavedChanges {
   protected readonly policyOptions = signal<readonly string[] | null>(null);
   /** The pickers are the same control while their lists load, held and saying so (Q-UI-334). */
   protected readonly policiesLoading = signal(true);
+  /** The first failure of the editor's other reads (policies, repositories, issuers, the issuer's audience), kept until they answer. */
+  protected readonly contextError = signal<ApiError | null>(null);
   protected readonly loadingPolicies = $localize`:@@ci.editor.policies-loading:Loading policies…`;
   /** The groups of a system mapping are chosen from the shared field (R-UI-150); the mapping keeps their names. */
   protected readonly groupKinds = ['group'] as const;
@@ -260,7 +262,6 @@ export class MappingEditor implements HasUnsavedChanges {
   /* ---- loading ---- */
 
   protected async load(): Promise<void> {
-    this.loadError.set(null);
     this.saveError.set(null);
     const project = this.project();
     try {
@@ -278,6 +279,8 @@ export class MappingEditor implements HasUnsavedChanges {
       this.baseline = JSON.stringify(inputFromForm(this.form(), project));
       this.jsonText.set(JSON.stringify(conditionFromNode(this.form().match), null, 2));
       this.jsonError.set(null);
+      // The failure stays until the answer, so the notice stays in place while it reads again (R-UI-216).
+      this.loadError.set(null);
       this.restoreDraft();
     } catch (e) {
       this.loaded.set(null);
@@ -298,25 +301,33 @@ export class MappingEditor implements HasUnsavedChanges {
   /**
    * The choices the editor offers: policies, the project's repositories and the issuer's kind of audience, read side by side. A
    * list's picker is held while it loads; a failure leaves typed names. The groups search as one types (the principal field).
+   * A failure of these reads is shown by a notice of its own, whose Retry reads them again (R-UI-216): an empty list of issuers
+   * or an issuer taken for not public would otherwise stand as a fact until the page was opened again.
    */
-  private async loadContext(): Promise<void> {
+  protected async loadContext(): Promise<void> {
     const project = this.project();
+    let failed: ApiError | null = null;
+    const fail = (e: unknown): void => {
+      failed ??= asApiError(e);
+    };
     this.policiesLoading.set(true);
     this.issuersLoading.set(true);
     const policies = async (): Promise<void> => {
       try {
         const list = await collectAll(this.policiesApi.list({ project: project ?? undefined, sort: 'name' }));
         this.policyOptions.set(list.map((p) => p.name));
-      } catch {
+      } catch (e) {
         this.policyOptions.set(null);
+        fail(e);
       }
       this.policiesLoading.set(false);
     };
     const repositories = async (): Promise<void> => {
       try {
         this.projectRepositories.set((await this.repositoriesApi.list({ project: project! })(null, 500)).items.map((r) => r.key));
-      } catch {
+      } catch (e) {
         this.projectRepositories.set([]);
+        fail(e);
       }
     };
     const issuers = async (): Promise<void> => {
@@ -327,24 +338,31 @@ export class MappingEditor implements HasUnsavedChanges {
           ...list.map((i) => ({ value: i.name, label: i.name })),
         ]);
         this.publicIssuer.set(list.find((i) => i.name === this.issuerName())?.publicIssuer ?? false);
-      } catch {
+      } catch (e) {
         this.issuerNames.set([]);
+        fail(e);
       }
       this.issuersLoading.set(false);
     };
     const audience = async (): Promise<void> => {
       try {
         this.publicIssuer.set((await this.api.getIssuer(this.issuer() ?? '')).value.publicIssuer);
-      } catch {
+      } catch (e) {
         this.publicIssuer.set(false);
+        fail(e);
       }
     };
     await Promise.all(project ? [policies(), repositories(), issuers()] : [policies(), audience()]);
+    this.contextError.set(failed);
   }
 
   protected chooseIssuer(name: string): void {
     this.issuerChoice.set(name);
-    void this.api.projectIssuers(this.project() ?? '').then((all) => this.publicIssuer.set(all.find((i) => i.name === name)?.publicIssuer ?? false));
+    void this.api.projectIssuers(this.project() ?? '').then(
+      (all) => this.publicIssuer.set(all.find((i) => i.name === name)?.publicIssuer ?? false),
+      // The audience of the chosen issuer is unknown: the notice says so, and its Retry reads the issuers again (R-UI-216).
+      (e: unknown) => this.contextError.set(asApiError(e)),
+    );
   }
 
   /* ---- the condition: builder and JSON ---- */

@@ -39,7 +39,7 @@ import { PageHeader } from '../../shared/ui/page-header';
       [caption]="caption"
       [columns]="columns"
       [loaded]="loaded()"
-      [loading]="loading()"
+      [loading]="loading() && !error()"
       [empty]="issuers().length === 0"
       i18n-emptyText="@@ci.issuers.empty"
       emptyText="There is no CI issuer yet."
@@ -127,9 +127,9 @@ export class IssuerList {
 
   protected async load(): Promise<void> {
     this.loading.set(true);
-    this.error.set(null);
     try {
       this.issuers.set(await this.api.listIssuers());
+      this.error.set(null);
       this.loaded.set(true);
     } catch (e) {
       this.error.set(asApiError(e));

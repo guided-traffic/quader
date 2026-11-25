@@ -155,7 +155,6 @@ export class SignatureSettingsPage {
   }
 
   protected async load(): Promise<void> {
-    this.loadError.set(null);
     try {
       const [settings, anchors, project, blocks] = await Promise.all([
         this.api.settings(),
@@ -163,6 +162,7 @@ export class SignatureSettingsPage {
         this.api.anchors('project'),
         this.api.blocks(),
       ]);
+      this.loadError.set(null);
       this.adopt(settings);
       this.anchors.set(anchors.filter((a) => a.scope !== 'project'));
       this.projectAnchorList.set(project);

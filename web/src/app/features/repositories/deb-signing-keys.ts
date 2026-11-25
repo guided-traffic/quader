@@ -337,11 +337,12 @@ export class DebSigningKeys {
     }
   }
 
+  /** Reads the keys; a failure before stays until the answer, so its notice stays in place while it reads again (R-UI-216). */
   protected async load(): Promise<void> {
-    this.failure.set(null);
     try {
       const list = await this.api.signingKeys(this.key());
       this.keys.set([...list].sort((a, b) => ORDER[a.state] - ORDER[b.state]));
+      this.failure.set(null);
     } catch (e) {
       this.failure.set(asApiError(e));
     }

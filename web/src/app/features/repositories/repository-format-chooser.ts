@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { FormatDescriptor, RepositoriesApi } from '../../api/repositories-api';
 import { ErrorNotice } from '../../shared/error-notice';
 import { FormatTiles } from '../../shared/ui/format-tiles';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
 import { PageHeader } from '../../shared/ui/page-header';
 
 /** The installed formats that match a search, by display name or name, case-insensitive (Q-UI-115). */
@@ -36,7 +36,7 @@ export function matchingFormats(formats: readonly FormatDescriptor[], query: str
       </p>
     }
     @if (loadFailure(); as f) {
-      <quader-error-notice [error]="f" (retry)="formats.reload()" />
+      <quader-error-notice [error]="f" (retry)="loadFailure.retry()" />
     } @else if (formats.isLoading()) {
       <p role="status" i18n="@@repo.loading">Loading.</p>
     } @else {
@@ -88,10 +88,8 @@ export class RepositoryFormatChooser {
   protected readonly query = signal('');
   protected readonly all = computed(() => valueOf(this.formats) ?? []);
   protected readonly shown = computed(() => matchingFormats(this.all(), this.query()));
-  protected readonly loadFailure = computed(() => {
-    const e = this.formats.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The formats' failure, kept while they read again (R-UI-216). */
+  protected readonly loadFailure = failureOf(this.formats);
   protected linkOf(f: FormatDescriptor): string {
     return `/projects/${encodeURIComponent(this.project() ?? '')}/repositories/new/${f.name}`;
   }

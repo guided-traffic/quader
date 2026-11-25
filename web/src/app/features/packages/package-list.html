@@ -230,7 +230,7 @@
       [hasMore]="list.hasMore()"
       (sortChange)="sortBy($event)"
       (more)="list.more()"
-      (retry)="list.more()"
+      (retry)="retry()"
     >
       @for (row of list.items(); track row.id) {
         <!-- What a reader chooses a package by (Q-UI-314): its name and description, format, latest version, when it

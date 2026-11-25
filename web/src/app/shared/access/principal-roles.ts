@@ -150,11 +150,12 @@ export class PrincipalRoles {
   }
 
   protected async load(): Promise<void> {
-    this.error.set(null);
     try {
       const principal = this.principal();
       this.bindings.set(await collectAll(this.api.bindings({ principal })));
       this.admins.set(await collectAll(this.api.bindings({ role: 'admin' })));
+      // The failure stays until the answer, so the notice stays in place while it reads again (R-UI-216).
+      this.error.set(null);
       this.loaded.set(true);
     } catch (e) {
       this.error.set(asApiError(e));

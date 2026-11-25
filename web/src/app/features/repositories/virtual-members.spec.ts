@@ -15,7 +15,9 @@ const repo = (key: string, cls: 'local' | 'remote' | 'virtual', extra: Partial<F
 const virtualDoc = (members: string[], deployTarget: string | null = null): Repository =>
   ({ key: 'npm-all', project: 'web', class: 'virtual', format: 'npm', layout: 'npm', virtual: { members, deployTarget } }) as unknown as Repository;
 
-async function render(options: { members?: string[]; target?: string | null; canWrite?: boolean; failure?: ApiError | null } = {}) {
+async function render(
+  options: { members?: string[]; target?: string | null; canWrite?: boolean; failure?: ApiError | null; candidatesFail?: ApiError } = {},
+) {
   const r = await renderScreen(VirtualMembers, {
     inputs: {
       repo: virtualDoc(options.members ?? ['npm-local'], options.target ?? null),
@@ -34,6 +36,14 @@ async function render(options: { members?: string[]; target?: string | null; can
         repo('files', 'local', { format: 'generic' }),
         repo('npm-gone', 'local', { lifecycle: 'deleting' } as Partial<FakeRepository>),
       ];
+      const fail = options.candidatesFail;
+      if (fail) {
+        const listAll = api.listAll.bind(api);
+        api.listAll = async () => {
+          api.listAll = listAll;
+          throw fail;
+        };
+      }
     },
   });
   const saves = TestBed.runInInjectionContext(() =>
@@ -65,6 +75,15 @@ async function click(fixture: Parameters<typeof settle>[0], el: HTMLElement): Pr
 const live = (root: ParentNode): string => text(root.querySelector('[data-testid="vm-live"]')!);
 
 describe('Virtual repository member editor (R-UI-022)', () => {
+  it('R-UI-216 candidates that could not be read are a notice, never an empty pool, and come back with its Retry', async () => {
+    const r = await render({ candidatesFail: new ApiError(502, null, null, null, { call: { method: 'GET', path: '/api/v1/repositories' } }) });
+    expect(r.root.querySelector('[data-testid="error-notice"]')?.textContent).toContain('The server did not answer through the gateway in front of it.');
+    button(r.root, 'Retry').click();
+    await settle(r.fixture);
+    expect(r.root.querySelector('[data-testid="error-notice"]')).toBeNull();
+    expect(text(r.root)).toContain('npm-team');
+  });
+
   it('R-UI-022 offers only the local and remote repositories of the own project and format that are not members, in two listboxes', async () => {
     const { root } = await render({ members: ['npm-local'] });
     expect(keys(root, 'vm-available')).toEqual(['npm-remote', 'npm-team']);

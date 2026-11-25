@@ -107,9 +107,9 @@ export class ProfileSessions {
   }
 
   protected async load(): Promise<void> {
-    this.error.set(null);
     try {
       this.sessions.set(await this.api.own());
+      this.error.set(null);
       this.loaded.set(true);
     } catch (e) {
       this.error.set(asApiError(e));

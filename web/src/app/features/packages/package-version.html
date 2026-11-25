@@ -27,7 +27,7 @@
 </quader-page-header>
 
 @if (loadFailure(); as f) {
-  <quader-error-notice [error]="f" (retry)="summary.reload()" />
+  <quader-error-notice [error]="f" (retry)="loadFailure.retry()" />
 } @else if (!detail()) {
   <p role="status" i18n="@@pkg.loading">Loading.</p>
 } @else if (detail(); as d) {
@@ -66,6 +66,10 @@
           ></span
         >
       </p>
+    }
+    <!-- The scanning's report failed in a way that may pass: said as what it is, not as a version without a grade (R-UI-216). -->
+    @if (vulnerabilitiesFailure(); as f) {
+      <quader-error-notice [error]="f" (retry)="vulnerabilitiesFailure.retry()" />
     }
     @if (blockedIn().length > 0) {
       <p class="banner-warning" role="note">
@@ -181,7 +185,7 @@
             }
             @case ('readme') {
               @if (readmeFailure(); as f) {
-                <quader-error-notice [error]="f" (retry)="readme.reload()" />
+                <quader-error-notice [error]="f" (retry)="readmeFailure.retry()" />
               } @else if (readme.isLoading()) {
                 <p role="status" i18n="@@pkg.loading">Loading.</p>
               } @else {

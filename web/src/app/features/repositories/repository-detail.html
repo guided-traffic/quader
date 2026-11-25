@@ -41,7 +41,7 @@
 </ng-template>
 
 @if (loadFailure(); as f) {
-  <quader-error-notice [error]="f" (retry)="loaded.reload()" />
+  <quader-error-notice [error]="f" (retry)="loadFailure.retry()" />
 } @else if (loaded.isLoading() && !stored() && !consumer()) {
   <p role="status" i18n="@@repo.loading">Loading.</p>
 } @else if (consumer(); as c) {
@@ -115,7 +115,7 @@
         <div class="open-section">
           <quader-repository-visibility
             [stored]="levels"
-            [projectLevel]="projectLevel.value() ?? null"
+            [projectLevel]="projectLevelValue()"
             [hasWiki]="format()?.wiki ?? false"
             [canWrite]="canChange() && !managed()"
             [managed]="managed()"

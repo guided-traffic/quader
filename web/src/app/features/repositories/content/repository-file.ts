@@ -5,7 +5,7 @@ import { FilesApi, Item } from '../../../api/files-api';
 import { AddressField } from '../../../shared/address-field';
 import { CopyButton } from '../../../shared/copy-button';
 import { ErrorNotice } from '../../../shared/error-notice';
-import { asApiError, valueOf } from '../../../shared/paged-resource';
+import { failureOf, valueOf } from '../../../shared/paged-resource';
 import { Disclosure } from '../../../shared/ui/disclosure';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { MalwareStatusView } from '../../../shared/malware/malware-status';
@@ -140,7 +140,7 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
           (expandedChange)="signaturesOpen.set($event)"
         >
           @if (signatureFailure(); as f) {
-            <quader-error-notice [error]="f" (retry)="signatureReport.reload()" />
+            <quader-error-notice [error]="f" (retry)="signatureFailure.retry()" />
           } @else if (valueOf(signatureReport); as report) {
             @if (report.gate; as g) {
               <quader-signature-gate
@@ -181,7 +181,7 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
         </dl>
         <h3 i18n="@@files.stats.heading">Downloads</h3>
         @if (statsFailure(); as f) {
-          <quader-error-notice [error]="f" (retry)="stats.reload()" />
+          <quader-error-notice [error]="f" (retry)="statsFailure.retry()" />
         } @else if (valueOf(stats); as s) {
           <dl class="facts">
             <dt i18n="@@files.stats.downloads">Downloads</dt>
@@ -242,10 +242,7 @@ export class RepositoryFile {
     params: () => (this.signaturesOpen() && this.item().signatures ? { repo: this.item().repository, path: this.item().path } : undefined),
     loader: ({ params }) => this.signaturesApi.file(params.repo, params.path),
   });
-  protected readonly signatureFailure = computed(() => {
-    const e = this.signatureReport.error();
-    return e ? asApiError(e) : null;
-  });
+  protected readonly signatureFailure = failureOf(this.signatureReport);
   protected readonly badged = (s: SignatureStatus): boolean => hasSignatureBadge(s);
   protected reasonWord(reason: SignatureGateRefusedReason | null | undefined): string {
     return gateReasonWord(reason ?? 'missing');
@@ -282,10 +279,7 @@ export class RepositoryFile {
     params: () => (this.detailsOpen() ? { repo: this.item().repository, path: this.item().path } : undefined),
     loader: ({ params }) => this.files.stats(params.repo, params.path),
   });
-  protected readonly statsFailure = computed(() => {
-    const e = this.stats.error();
-    return e ? asApiError(e) : null;
-  });
+  protected readonly statsFailure = failureOf(this.stats);
   protected readonly copyItem = $localize`:@@files.api.copy-json:Copy the description`;
   /**
    * Who created, changed or last downloaded the file, named as the other pages name a person (`priya`), never in a principal's syntax

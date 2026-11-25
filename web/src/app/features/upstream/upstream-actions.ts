@@ -1,4 +1,5 @@
 import { Component, Injectable, inject, signal } from '@angular/core';
+import { failureMayPass } from '../../shared/none-on-refusal';
 import { firstValueFrom } from 'rxjs';
 import { newIdempotencyKey } from '../../api/client';
 import { UpstreamApi, UpstreamRepository, UpstreamRepositoryBulkResult, UpstreamVisibilityLevel } from '../../api/upstream-api';
@@ -72,11 +73,15 @@ export class UpstreamActions {
   private readonly notifier = inject(Notifier);
   private readonly systemClients = inject(SystemClients);
 
-  /** The levels the caller may choose (R-API-076), for the reasons of a row's select and of the dialog; null when unknown. */
+  /**
+   * The levels the caller may choose (R-API-076), for the reasons of a row's select and of the dialog; null when refused (unknown). A
+   * failure that may pass is thrown, so the page reads the choices again with its own reads (R-UI-216).
+   */
   async choices(): Promise<VisibilityChoices | null> {
     try {
       return await this.visibility.choices();
-    } catch {
+    } catch (e) {
+      if (failureMayPass(e)) throw e;
       return null;
     }
   }
@@ -181,7 +186,8 @@ export class UpstreamActions {
 
   /** **Set visibility of all**: the dialog of the levels, then Public's question where it was chosen. */
   async setAllVisibility(): Promise<UpstreamRepositoryBulkResult | null> {
-    const choices = await this.choices();
+    // The dialog opens with what is known: unknown choices leave every level to the server's answer.
+    const choices = await this.choices().catch(() => null);
     const ref = this.dialog.open<SetAllVisibilityDialog, SetAllData, VisibilityLevel>(SetAllVisibilityDialog, {
       data: { choices },
       maxWidth: '40rem',

@@ -253,10 +253,16 @@ export class StorageSettingsPage {
     void this.load();
   }
 
+  /** The page notice's Retry (R-UI-216): the settings, and the formats' names when their read failed with them. */
+  protected retry(): void {
+    void this.load();
+    if (this.formats.error()) this.formats.reload();
+  }
+
   protected async load(): Promise<void> {
-    this.loadError.set(null);
     try {
       this.adopt(await this.api.settings());
+      this.loadError.set(null);
     } catch (e) {
       this.loadError.set(asApiError(e));
     }

@@ -42,6 +42,29 @@ describe('SessionStore', () => {
     expect(b.store.loadError()?.requestId).toBe('rid');
   });
 
+  it('R-UI-216 a failed read of the session keeps its failure while it is read again, and the answer clears it', async () => {
+    const { store, api } = setup();
+    const fine = api.whoamiResult;
+    api.whoamiResult = new ApiError(502, null, null);
+    await store.load();
+    const failure = store.loadError();
+    let answer!: () => void;
+    const gate = new Promise<void>((r) => (answer = r));
+    const whoami = api.whoami.bind(api);
+    vi.spyOn(api, 'whoami').mockImplementationOnce(async () => {
+      await gate;
+      return whoami();
+    });
+    api.whoamiResult = fine;
+    const reading = store.reload();
+    expect(store.state()).toBe('loading');
+    expect(store.loadError()).toBe(failure);
+    answer();
+    await reading;
+    expect(store.state()).toBe('authenticated');
+    expect(store.loadError()).toBeNull();
+  });
+
   it('R-UI-004 whoami answering session_expired is an ended session, told by the code and not by the status', async () => {
     const { store, api } = setup();
     api.whoamiResult = new ApiError(401, { code: 'session_expired' }, null);

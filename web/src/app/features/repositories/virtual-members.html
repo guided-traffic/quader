@@ -19,6 +19,10 @@
     }
   }
 
+  @if (candidatesFailure(); as f) {
+    <quader-error-notice [error]="f" (retry)="candidatesFailure.retry()" />
+  }
+
   <form (submit)="submit($event)" novalidate>
     <quader-member-picker
       [pool]="pool()"
@@ -96,7 +100,7 @@
     </button>
   </form>
   @if (explainError(); as e) {
-    <quader-error-notice [error]="e" />
+    <quader-error-notice [error]="e" (retry)="explainAgain()" />
   }
   @if (explanation(); as x) {
     <div data-testid="vm-explanation">

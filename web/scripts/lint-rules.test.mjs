@@ -14,6 +14,7 @@ import { journeyTextFindings } from './journey-texts-rule.mjs';
 import { decisionNumbersInTestNames } from './test-names-rule.mjs';
 import { tabStripFindings } from './tab-strip-rule.mjs';
 import { serverTextBindings, serverTextFindings } from './server-text-rule.mjs';
+import { clearedBeforeAnswer, handMadeFailures } from './read-failure-rule.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const eslint = new ESLint({ cwd: root });
@@ -368,4 +369,28 @@ test('R-UI-214 an allowed binding passes in its own file only', () => {
   const log = '<li><span class="level" translate="no">{{ m.level }}</span>&ngsp;<span lang="en" translate="no">{{ m.message }}</span></li>';
   assert.deepEqual(serverTextFindings('src/app/features/packages/ansible-import-log.ts', log), []);
   assert.deepEqual(serverTextFindings('src/app/features/packages/other.ts', log), [{ line: 1, expression: 'm.message' }]);
+});
+
+test("R-UI-216 a resource's failure made by hand and a read that clears its notice's failure before the answer fail the rule", () => {
+  const made = [
+    'readonly failure = computed(() => {\n  const e = this.loaded.error();\n  return e ? asApiError(e) : null;\n});',
+    'readonly failure = computed(() => toApiError(this.rows.error()));',
+    '@if (contents.error(); as e) {\n  <quader-error-notice [error]="error(e)" (retry)="contents.reload()" />\n}',
+  ];
+  assert.deepEqual(made.map((t) => handMadeFailures(t).length), [1, 1, 1]);
+  assert.deepEqual(handMadeFailures('readonly failure = failureOf(this.loaded, { also: [this.formats] });'), []);
+
+  const notice = '@if (loadError(); as e) {\n  <quader-error-notice [error]="e" (retry)="load()" />\n}';
+  const table = '<quader-data-table\n  [loaded]="loaded()"\n  [hasMore]="rows().length > 0"\n  [error]="error()"\n  (retry)="load()"\n>';
+  const clearing =
+    'class A {\n  async load(): Promise<void> {\n    this.loadError.set(null);\n    this.error.set(null);\n    try {\n      this.v.set(await this.api.get());\n    } catch (e) {\n      this.loadError.set(asApiError(e));\n    }\n  }\n}';
+  const keeping =
+    'class A {\n  async load(): Promise<void> {\n    try {\n      this.v.set(await this.api.get());\n      this.loadError.set(null);\n      this.error.set(null);\n    } catch (e) {\n      this.loadError.set(asApiError(e));\n    }\n  }\n}';
+  assert.deepEqual(clearedBeforeAnswer(notice, clearing).map((f) => f.line), [1]);
+  assert.deepEqual(clearedBeforeAnswer(table, clearing).map((f) => f.line), [1]);
+  assert.deepEqual(clearedBeforeAnswer(notice, keeping), []);
+  assert.deepEqual(clearedBeforeAnswer(table, keeping), []);
+  // A method the retry calls before it waits counts as its own.
+  const delegating = 'class A {\n  load(): void {\n    this.reset();\n    void this.fetch();\n  }\n  private reset(): void {\n    this.loadError.set(null);\n  }\n}';
+  assert.deepEqual(clearedBeforeAnswer(notice, delegating).map((f) => f.line), [1]);
 });

@@ -44,7 +44,7 @@ import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { NoValue } from '../../shared/ui/no-value';
 import { ProjectLink } from '../../shared/ui/project-mark';
 import { TimeAgo } from '../../shared/ui/time-ago';
-import { PagedResource, asApiError, valueOf } from '../../shared/paged-resource';
+import { PagedResource, asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { collectAll } from '../../api/pagination';
 import { FormatIconView } from '../../shared/format-icon';
 import { FrequentPlaces } from '../../core/frequent-places';
@@ -134,6 +134,14 @@ export class RepositoryList {
     return (valueOf(this.formats) ?? []).find((f) => f.name === name)?.displayName ?? name;
   }
   protected readonly list = new PagedResource<RepositorySummary>();
+  /**
+   * The list's Retry (R-UI-216): the list, and the formats when they failed with it, so the rows that come back name their formats as
+   * a fresh load does (Q-UI-1196).
+   */
+  protected retryList(): void {
+    void this.list.more();
+    if (this.formats.error()) this.formats.reload();
+  }
   /** Repositories whose deletion job is being followed, by qualified name. */
   protected readonly deleting = signal<ReadonlyMap<string, JobReference>>(new Map());
   protected readonly deleteFailure = signal<ApiError | null>(null);
@@ -251,10 +259,8 @@ export class RepositoryList {
     params: () => (this.upstreamPage() ? systemRepositoryNames() : undefined),
     loader: ({ params }) => collectAll(this.api.list({ project: UPSTREAM_PROJECT, name: params })),
   });
-  protected readonly systemFailure = computed(() => {
-    const e = this.systemLoad.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The section's failure, kept while it reads again (R-UI-216). */
+  protected readonly systemFailure = failureOf(this.systemLoad);
   /** The section's rows: those the filters of the head admit, by the list's own rules (Q-UI-894). */
   protected readonly systemRows = computed(() => {
     const filters = { q: this.q(), class: this.class(), format: this.format(), state: this.state() };

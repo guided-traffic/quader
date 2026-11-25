@@ -23,7 +23,7 @@
 </quader-page-header>
 
 @if (loadFailure(); as f) {
-  <quader-error-notice [error]="f" (retry)="summary.reload()" />
+  <quader-error-notice [error]="f" (retry)="loadFailure.retry()" />
 } @else if (!pkg() || versions.isLoading()) {
   <p role="status" i18n="@@pkg.loading">Loading.</p>
 } @else if (pkg(); as p) {
@@ -56,6 +56,9 @@
       }
     </div>
 
+    @if (reportFailure(); as f) {
+      <quader-error-notice [error]="f" (retry)="reportFailure.retry()" />
+    }
     <quader-data-table
       class="versions-table"
       [caption]="caption()"
@@ -142,7 +145,7 @@
   }
 
   @if (readmeFailure(); as f) {
-    <quader-error-notice [error]="f" (retry)="readme.reload()" />
+    <quader-error-notice [error]="f" (retry)="readmeFailure.retry()" />
   } @else if (readme.hasValue() && readme.value(); as r) {
     <section class="pkg-readme" aria-labelledby="pkg-readme-heading">
       <h2 id="pkg-readme-heading">

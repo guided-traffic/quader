@@ -226,7 +226,9 @@ export class DebIndexStatePanel {
         if (this.state() === null) return;
         const run = this.generation;
         const state = await this.api.indexState(this.key());
-        if (run === this.generation) this.state.set(state);
+        if (run !== this.generation) return;
+        this.state.set(state);
+        this.failure.set(null);
       },
       every: () => (this.waiting() ? this.intervalMs() : LIVE_SLOW_MS),
     });
@@ -247,9 +249,9 @@ export class DebIndexStatePanel {
     }
   }
 
+  /** Reads the state; a failure before stays until the answer, so its notice stays in place while it reads again (R-UI-216). */
   protected load(): void {
     this.stop();
-    this.failure.set(null);
     void this.poll(++this.generation);
   }
 
@@ -262,6 +264,7 @@ export class DebIndexStatePanel {
       const state = await this.api.indexState(this.key());
       if (run !== this.generation) return;
       this.state.set(state);
+      this.failure.set(null);
     } catch (e) {
       if (run === this.generation) this.failure.set(asApiError(e));
     }

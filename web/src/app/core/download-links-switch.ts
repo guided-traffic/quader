@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { ReadAgain } from './read-again';
 import { DownloadLinkSwitch, DownloadLinksApi } from '../api/download-links-api';
 
 /**
@@ -12,6 +13,7 @@ export class DownloadLinksSwitchStore {
   private readonly api = inject(DownloadLinksApi);
   private readonly value = signal<DownloadLinkSwitch | null>(null);
   private reading: Promise<void> | null = null;
+  private readonly again = new ReadAgain(() => this.load());
 
   /** The installation's switch; false until it is read. */
   readonly enabled = computed(() => this.value()?.enabled ?? false);
@@ -34,9 +36,12 @@ export class DownloadLinksSwitchStore {
   private async read(): Promise<void> {
     try {
       this.value.set(await this.api.switch());
-    } catch {
-      // Not known: the section says nothing of the installation, and a later page load reads again.
+      this.again.answered();
+    } catch (e) {
+      // Not known until a read answers: the next caller reads again, and so does the store itself after a failure that may pass
+      // (R-UI-216), which used to keep the screens on "not known" until the next page load.
       this.reading = null;
+      this.again.failed(e);
     }
   }
 }

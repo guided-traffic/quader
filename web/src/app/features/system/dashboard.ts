@@ -5,10 +5,9 @@ import { RouterLink } from '@angular/router';
 import { BackupsApi } from '../../api/backups-api';
 import { StorageApi } from '../../api/storage-api';
 import { EncryptionApi, SystemApi } from '../../api/system-api';
-import { asFailure } from '../../core/http/failure';
 import { SessionStore } from '../../core/session-store';
 import { ErrorNotice } from '../../shared/error-notice';
-import { valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
 import { formatSize } from '../packages/format-size';
 import { CheckSummary, checkSummary, lastBackup, roleLoad, share } from './dashboard-model';
 import { REFRESH_INTERVAL_MS } from './system-status';
@@ -124,14 +123,9 @@ export class Dashboard {
     const max = all.reduce((a, p) => a + p.max, 0);
     return { inUse, max, share: share(inUse, max) };
   });
-  protected readonly failure = computed(() => {
-    const e = this.info.error() ?? this.replicas.error();
-    return e ? asFailure(e) : null;
-  });
-  protected readonly overviewFailure = computed(() => {
-    const e = this.overview.error();
-    return e ? asFailure(e) : null;
-  });
+  /** The instance's failure, kept while it reads again (R-UI-216); its notice's Retry reads the whole page again (`reload`). */
+  protected readonly failure = failureOf([this.info, this.replicas]);
+  protected readonly overviewFailure = failureOf(this.overview);
 
   constructor() {
     // Read again while the page is seen and not paused, at once when it is seen again (R-UI-213).

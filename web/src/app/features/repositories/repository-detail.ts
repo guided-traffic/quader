@@ -29,7 +29,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { ErrorSummary, SummaryItem, fieldMessage } from '../../shared/field-errors';
 import { JobProgress } from '../../shared/job-progress';
 import { JsonObject } from '../../shared/merge-patch';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { HasUnsavedChanges } from '../../shared/unsaved-guard';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -166,10 +166,6 @@ export class RepositoryDetail implements HasUnsavedChanges {
   protected readonly canChange = computed(() => this.canWrite() && this.stored()?.lifecycle !== 'deleting');
   /** The section **Download limits** after Access details: for an Owner and the holders of `limits:read` (R-UI-180). */
   protected readonly limitsShown = computed(() => this.session.has('limits:read') || this.session.isOwnerOf(this.project()));
-  protected readonly loadFailure = computed(() => {
-    const e = this.loaded.error();
-    return e ? asApiError(e) : null;
-  });
   protected readonly format = computed(
     () => (valueOf(this.formats) ?? []).find((f) => f.name === this.stored()?.format) ?? null,
   );
@@ -197,13 +193,8 @@ export class RepositoryDetail implements HasUnsavedChanges {
   /** The admin area's item of the repository, for its state and its kind; read by a caller who may read it (R-REPO-073). */
   private readonly wellKnownRead = resource({
     params: () => (this.managed() && this.session.has('repositories:read-config') ? this.key() : undefined),
-    loader: async ({ params }): Promise<UpstreamRepository | null> => {
-      try {
-        return (await this.upstreamApi.get(params)).value;
-      } catch {
-        return null;
-      }
-    },
+    // A failure leaves the state unknown (null below) and is read again with the page's Retry (Q-UI-1196).
+    loader: async ({ params }): Promise<UpstreamRepository | null> => (await this.upstreamApi.get(params)).value,
   });
   protected readonly wellKnown = computed(() => valueOf(this.wellKnownRead) ?? null);
   /** `scanner-trivy`, a system repository: everything is the product's (R-REPO-070). Known by its key, for every caller. */
@@ -629,14 +620,11 @@ export class RepositoryDetail implements HasUnsavedChanges {
   /** The project's level bounds the repository's (R-UI-055); unknown when the caller cannot read the project, then the server decides. */
   protected readonly projectLevel = resource({
     params: () => this.project(),
-    loader: async ({ params }): Promise<VisibilityLevel | null> => {
-      try {
-        return (await this.projectsApi.get(params)).value.visibility;
-      } catch {
-        return null;
-      }
-    },
+    // A failure leaves the level unknown (null) and is read again with the page's Retry (Q-UI-1196).
+    loader: async ({ params }): Promise<VisibilityLevel | null> => (await this.projectsApi.get(params)).value.visibility,
   });
+  /** The project's level, or null while it is not known. */
+  protected readonly projectLevelValue = computed(() => valueOf(this.projectLevel) ?? null);
   protected readonly visibilitySaving = signal(false);
   protected readonly visibilityFailure = signal<ApiError | null>(null);
   protected readonly visibilityWarnings = signal<readonly string[]>([]);
@@ -1024,6 +1012,14 @@ export class RepositoryDetail implements HasUnsavedChanges {
       }
       return own;
     },
+  });
+  /**
+   * The repository's failure, kept while it reads again (R-UI-216), and its Retry: the page's reads that run beside it and failed with
+   * it are read again with it (Q-UI-1196), so the page that comes back shows the format's name, the address, the well-known state,
+   * the project's level and the move's targets as a fresh load does.
+   */
+  protected readonly loadFailure = failureOf(this.loaded, {
+    also: [this.formats, this.baseUrl, this.wellKnownRead, this.projectLevel, this.moveTargets],
   });
   protected readonly moveOptions = computed<readonly SelectOption[]>(() => [
     { value: '', label: $localize`:@@repo.move.choose:Choose a project` },

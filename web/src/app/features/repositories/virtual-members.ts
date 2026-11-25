@@ -9,7 +9,7 @@ import {
 import { SelectField, SelectOption, TextField } from '../../shared/access/fields';
 import { ErrorNotice } from '../../shared/error-notice';
 import { fieldErrorAt } from '../../shared/field-errors';
-import { asApiError } from '../../shared/paged-resource';
+import { asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { MemberPicker } from './member-picker';
 import { WellKnownMembers, memberState } from './well-known-members';
 
@@ -110,11 +110,16 @@ export class VirtualMembers {
   /** The format's well-known repositories, with what the caller learns of their states (Q-UI-840); null while they load. */
   private readonly wellKnownRead = resource({
     params: () =>
-      this.candidates.value() ? { format: this.repo().format, readable: this.candidates.value() ?? [], writes: this.canWrite() } : undefined,
+      valueOf(this.candidates) ? { format: this.repo().format, readable: valueOf(this.candidates) ?? [], writes: this.canWrite() } : undefined,
     loader: async ({ params }) =>
       this.wellKnownMembers.of(await this.wellKnownMembers.format(params.format), params.readable, params.writes),
   });
-  protected readonly wellKnown = computed(() => this.wellKnownRead.value() ?? null);
+  protected readonly wellKnown = computed(() => valueOf(this.wellKnownRead) ?? null);
+  /**
+   * The failure of the candidates or of the well-known repositories (R-UI-216): shown where they stand, so a pool that could not be
+   * read never reads as "no repository to add", and read again by itself (Q-UI-1196).
+   */
+  protected readonly candidatesFailure = failureOf([this.candidates, this.wellKnownRead]);
 
   /** The members that take no part, by name (R-UI-189): the section's head names them. */
   protected readonly skipped = computed(() => this.members().filter((k) => memberState(k, this.wellKnown()) !== null));
@@ -130,7 +135,7 @@ export class VirtualMembers {
   /** The repositories that may be members: same project and format, local or remote, not this one, not being deleted. */
   protected readonly pool = computed<readonly RepositorySummary[]>(() => {
     const r = this.repo();
-    return (this.candidates.value() ?? []).filter(
+    return (valueOf(this.candidates) ?? []).filter(
       (s) =>
         s.project === (r.project ?? '') &&
         s.format === r.format &&
@@ -231,13 +236,18 @@ export class VirtualMembers {
 
   protected async explain(event: Event): Promise<void> {
     event.preventDefault();
+    await this.explainAgain();
+  }
+
+  /** Reads the path's resolution; its notice's Retry reads it again, and its failure stays until the answer (R-UI-216). */
+  protected async explainAgain(): Promise<void> {
     const path = this.samplePath().trim();
     if (path === '' || this.explaining()) return;
     this.explaining.set(true);
-    this.explainError.set(null);
     try {
       const r = this.repo();
       this.explanation.set(await this.api.resolution(`${r.project ?? ''}/${r.key}`, path));
+      this.explainError.set(null);
     } catch (e) {
       this.explanation.set(null);
       this.explainError.set(asApiError(e));

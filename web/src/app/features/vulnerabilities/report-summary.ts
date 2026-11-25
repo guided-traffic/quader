@@ -7,7 +7,7 @@ import { OPEN_STATUSES, VulnerabilitiesApi, VulnerabilitySourceState, Vulnerabil
 import { SessionStore } from '../../core/session-store';
 import { VULN_CONTEXT } from './vuln-context';
 import { ErrorNotice } from '../../shared/error-notice';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
 import { BAR_SEVERITIES, BarQueries, SeverityBar } from '../../shared/vulnerability/severity-bar';
 import { timeAgo } from '../../shared/ui/time-ago';
 
@@ -43,9 +43,12 @@ export interface DataNotice {
   imports: [DecimalPipe, Disclosure, RouterLink, ErrorNotice, SeverityBar],
   template: `
     @if (failure(); as f) {
-      <quader-error-notice [error]="f" (retry)="summary.reload()" />
+      <quader-error-notice [error]="f" (retry)="failure.retry()" />
     }
     @if (canSources()) {
+      @if (sourcesFailure(); as f) {
+        <quader-error-notice [error]="f" (retry)="sourcesFailure.retry()" />
+      }
       @for (n of notices(); track n.key) {
         <p class="banner-warning" role="note">
           <span class="material-icons inline warn" aria-hidden="true">warning</span>
@@ -123,10 +126,13 @@ export class ReportSummary {
     loader: () => this.api.sources(),
   });
 
-  protected readonly failure = computed(() => {
-    const e = this.summary.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The counts' failure, kept while its notice reads them again (R-UI-216); the sources that failed with them are read again too. */
+  protected readonly failure = failureOf(this.summary, { also: [this.sources] });
+  /**
+   * The advisory sources' failure: without it the banners of failed synchronisations were missing, as if every source were current
+   * (R-UI-216).
+   */
+  protected readonly sourcesFailure = failureOf(this.sources);
 
   constructor() {
     // A scan or an advisory sync changes the counts: read again every minute in place while the page is seen (R-UI-213).

@@ -38,6 +38,9 @@ export interface MaximumDialogData {
         @if (failure(); as e) {
           <quader-error-notice [error]="e" />
         }
+        @if (profilesFailure(); as e) {
+          <quader-error-notice [error]="e" (retry)="loadProfiles()" />
+        }
         <p class="hint" i18n="@@limits.maximum.hint">The project's Owners can set limits up to this maximum, where it is above the instance's values.</p>
         @if (!data.project) {
           <quader-select-field
@@ -119,6 +122,8 @@ export class LimitMaximumDialog {
   protected readonly attempted = signal(false);
   protected readonly busy = signal(false);
   protected readonly failure = signal<ApiError | null>(null);
+  /** The failed read of the profiles, apart from a save's: its notice reads them again and stays until they answer (R-UI-216). */
+  protected readonly profilesFailure = signal<ApiError | null>(null);
   protected readonly errors = computed(() => {
     const read = readTexts(this.texts());
     return Object.fromEntries(FIGURES.filter((f) => this.overridden().has(f) && read.errors[f]).map((f) => [f, read.errors[f]!]));
@@ -128,9 +133,10 @@ export class LimitMaximumDialog {
     void this.loadProfiles();
   }
 
-  private async loadProfiles(): Promise<void> {
+  protected async loadProfiles(): Promise<void> {
     try {
       const list = await this.api.profiles();
+      this.profilesFailure.set(null);
       this.profiles.set(list);
       const start = list.find((p) => p.key === this.profileKey());
       const overrides = this.data.maximum?.value.overrides ?? {};
@@ -141,7 +147,7 @@ export class LimitMaximumDialog {
     } catch (e) {
       // The select stops saying that it loads; the notice says why it is empty.
       this.profiles.set([]);
-      this.failure.set(asApiError(e));
+      this.profilesFailure.set(asApiError(e));
     }
   }
 

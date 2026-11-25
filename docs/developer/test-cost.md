@@ -570,6 +570,12 @@ format's; a new format's dialog adds its own states once, a fraction of a second
 The error notice's seven states (R-UI-216, `shared/error-notice.states.spec.ts`) came later: measured on 2026-11-25 at a load of about
 17, 8.6 s for the file alone with pictures (`--include`), and the whole target 23.3 s wall with 78 tests [V], within the range above. They
 add about 1.5 s of the target's browser time; with `UI_STATES_PICTURES=1` each state also takes its two pictures in the dark scheme.
+The eighth, `notice-trying` (Q-UI-1197: the notice kept in place after Retry, "Trying again." and its failures in a row), came with
+S9b: about 0.2 s of browser time; the whole target measured 18.9 s wall with 79 tests on 2026-11-25 [V]. S9b's unit cases are
+component and unit tests in jsdom without data, milliseconds each: `paged-resource.spec.ts` (two, 0.06 s), one more case each in
+`error-notice.spec.ts`, `problem-messages.spec.ts`, `virtual-members.spec.ts`, `groups.spec.ts`, `package-version.spec.ts`,
+`session-store.spec.ts`, and the lint rule's case in `lint-rules.test.mjs` (2 ms); together under 1 s of `make web-test`, nothing per
+format.
 
 ### 3.6 Nightly legs, per test
 

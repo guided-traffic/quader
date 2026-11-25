@@ -1213,28 +1213,53 @@ read, a way to read again; the rest is the notice's.
 | `describeProblem` | [problem-messages.ts](../../web/src/app/core/http/problem-messages.ts) | The sentence: the code's, else the status's (`fallback`); never the bare status |
 | `failureReport`, `FAILURE_WORDS` | [failure-report.ts](../../web/src/app/shared/failure-report.ts) | The words of the facts and the plain text of **Copy report** |
 | `FailureGroups` | [failure-groups.ts](../../web/src/app/shared/failure-groups.ts) | One cause, one notice: notices of the same status, code and server's sentence in one place; the first shows them all |
-| `failureOf(resource)` | [paged-resource.ts](../../web/src/app/shared/paged-resource.ts) | A resource's failure that stays while it reads again, so the notice keeps its place and says "Trying again." |
+| `failureOf(reads, { also })` | [paged-resource.ts](../../web/src/app/shared/paged-resource.ts) | The failure of a view's `resource()` reads (the first in their order) that stays while they read again, so the notice keeps its place and says "Trying again."; its `retry()` reads again what failed, the reads named in `also` included ([Q-UI-1195](../spec/api-and-ui.md#q-ui-1195--a-failed-reads-failure-is-cleared-by-its-answer-in-one-form-and-a-rule-refuses-the-other), [Q-UI-1196](../spec/api-and-ui.md#q-ui-1196--the-pages-retry-reads-its-other-failed-reads-with-it-and-a-read-that-would-show-a-wrong-fact-shows-its-failure)) |
+| `PagedResource` | [paged-resource.ts](../../web/src/app/shared/paged-resource.ts) | A list's failure that stays while it starts again or loads more, until a page answers; the data table shows no "Loading." under it |
+| `noneOnRefusal`, `failureMayPass` | [none-on-refusal.ts](../../web/src/app/shared/none-on-refusal.ts) | A read the page works without: "none" for a refusal and for `503 unavailable`, a failure that may pass thrown ([Q-UI-1199](../spec/api-and-ui.md#q-ui-1199--a-read-the-page-works-without-lets-a-failure-that-may-pass-through-and-a-store-reads-again-after-one)) |
+| `ReadAgain` | [read-again.ts](../../web/src/app/core/read-again.ts) | A store of the whole app (format names, the switches, the avatar, the preferences, the system repositories) reads again after a failure that may pass, with the notice's back-off, only while the window is seen |
 | `FailureToasts` | [failure-dialog.ts](../../web/src/app/shared/failure-dialog.ts) | A failure in a toast with **Details**, which opens the whole notice in a dialog; `details(error)` for a row of a list |
 | `ErrorSummary.error` | [field-errors.ts](../../web/src/app/shared/field-errors.ts) | A form's summary folds the answer's report under its field list |
 
-**How a screen shows a failure:**
+**How a screen reads and fails** (the one form, [Q-UI-1195](../spec/api-and-ui.md#q-ui-1195--a-failed-reads-failure-is-cleared-by-its-answer-in-one-form-and-a-rule-refuses-the-other)):
+a failed read's failure is cleared by the read's answer, never by its start, so its notice stays in place while it reads again.
 
-1. A read: `protected readonly failure = failureOf(this.loaded);` and `<quader-error-notice [error]="f" (retry)="loaded.reload()" />`.
-   Bind `(retry)` to whatever reads the view again, every failed read of the view (the repository's page's `reread()` reads the
-   repository and the formats and the address that failed with it, H-1962). Without a binding the notice offers no Retry and reads
-   nothing again: the notice reads `retry.observed` of its decorated `EventEmitter` output.
-2. A write: `<quader-error-notice [error]="saveError()" />`, with `(retry)` only where repeating it is the person's act (the notice offers
-   it after no answer or a gateway's, 0, 502, 503, 504, never by itself).
-3. A toast of a failed action: `inject(FailureToasts).alert(e)` (or `.alert(e, sentence)` where the screen knows better), never
+1. A read through `resource()`: `protected readonly failure = failureOf(this.loaded, { also: [this.formats, this.baseUrl] });` and
+   `<quader-error-notice [error]="f" (retry)="failure.retry()" />`. Several reads of the view are `failureOf([this.info, this.replicas])`
+   (the first failure in their order). `also` names the page's other reads that have no notice of their own while this one stands: the
+   Retry reads each of them that failed, so the page after the recovery is the page of a fresh load. Never a `computed` of
+   `x.error()` through `asApiError`, `asFailure` or `toApiError`, and never `fn(e)` of `@if (x.error(); as e)` in a template: the lint
+   rule refuses both ([read-failure-rule.mjs](../../web/scripts/read-failure-rule.mjs), `R-UI-216` in `make web-lint`).
+2. A list: `PagedResource` keeps its error until a page answers, and `<quader-data-table [error]="list.error()" (retry)="list.reload()">`
+   shows no "Loading." under it; a page's other failed reads go into the table's retry (`retryList()` of the repository list).
+3. A read of its own (a `load()` with `await`): set the failure to null **after** the answer, in the `try` after the read, never at the
+   start; show the notice instead of "Loading." while the failure stands (`@if (failure(); as f) { notice } @else if (loading()) …`, or
+   `[loading]="loading() && !error()"` on a data table). The lint rule refuses a `(retry)` method of a notice or a data table that sets
+   the failure to null before its first `await` or `.then(`, itself or in a method it calls first.
+4. A read whose absence would say a wrong fact ("not scanned", "none", "no members", "off"): its failure is shown where the fact stands,
+   in a notice of its own with `(retry)` (it joins the page's notice when the cause is the same, Q-UI-1185), and it is in the page's
+   `also`. A read the page works without uses `noneOnRefusal` (a refusal is "none", a failure that may pass is thrown); a store of the
+   whole app uses `ReadAgain` ([Q-UI-1196](../spec/api-and-ui.md#q-ui-1196--the-pages-retry-reads-its-other-failed-reads-with-it-and-a-read-that-would-show-a-wrong-fact-shows-its-failure),
+   [Q-UI-1199](../spec/api-and-ui.md#q-ui-1199--a-read-the-page-works-without-lets-a-failure-that-may-pass-through-and-a-store-reads-again-after-one)).
+5. Every notice of a read binds `(retry)`: without a binding the notice offers no Retry and reads nothing again (it reads
+   `retry.observed` of its decorated `EventEmitter` output). The rule cannot see a missing binding
+   ([H-1965](../spec/api-and-ui.md#h-1965--the-rule-of-a-kept-failure-reads-text-not-types)).
+6. A write: `<quader-error-notice [error]="saveError()" />`, with `(retry)` only where repeating it is the person's act (the notice offers
+   it after no answer or a gateway's, 0, 502, 503, 504, never by itself). A write's failure may be cleared when it starts.
+7. A toast of a failed action: `inject(FailureToasts).alert(e)` (or `.alert(e, sentence)` where the screen knows better), never
    `notifier.alert(describeProblem(e).text)`.
-4. A cell or a row: the sentence, and a **Details** button calling `FailureToasts.details(error)`.
+8. A cell or a row: the sentence, and a **Details** button calling `FailureToasts.details(error)`.
 
 The notice reads a failed read again by itself after one that may pass (0, 408, 429, 5xx, an unreadable answer), after 3 s, 6 s, 12 s
 … up to 5 minutes and never before Retry-After, only while the window is seen (`PageVisibility`), at once when it is seen again
 (`passes`, `retryWaitMs`). Measured on instance 3 on 2026-11-25 with the backend stopped: the repository's page answered 502 for the
 session and the repository at once, showed one notice naming both calls, read again after 3, 6, 12 and 24 s, and stood again 14 s after
-the backend was ready, without a reload. Its states are [error-notice.states.spec.ts](../../web/src/app/shared/error-notice.states.spec.ts)
-(`make ui-states`, seven states, about 9 s) and the render walk `repository-failures` ([failures.ts](../../web/e2e/renders/failures.ts),
+the backend was ready, without a reload. Measured again on instance 3 after Q-UI-1195 with the backend stopped for the time of a
+rebuild (about 30 s): the repository's settings, the admin area's **System status** and the profile kept one notice in place for the
+whole outage, never "Loading." in its stead, "Trying again." while a read ran (caught by a 250 ms sampling on two of the three),
+"Failed in a row" counting 2, 3, 4 and the wait
+6, 12, 24 s, and each page came back 45 s after the load with the text of a fresh load. Its states are
+[error-notice.states.spec.ts](../../web/src/app/shared/error-notice.states.spec.ts) (`make ui-states`, eight states, about 10 s, among
+them `notice-trying`) and the render walk `repository-failures` ([failures.ts](../../web/e2e/renders/failures.ts),
 English and German).
 
 ## Test tiers (R-UI-047)

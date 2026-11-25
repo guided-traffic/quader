@@ -155,10 +155,12 @@ export class LimitsProjectsTab {
   }
 
   protected async load(): Promise<void> {
-    this.failure.set(null);
     try {
-      const [rows, profiles] = await Promise.all([this.api.projectRows(), this.api.profiles().catch(() => [])]);
-      this.profiles.set(profiles);
+      const [rows, profiles] = await Promise.all([this.api.projectRows(), this.api.profiles().catch((e: unknown) => asApiError(e))]);
+      // The failure stays until the answer, so the notice stays in place while it reads again (R-UI-216). A failed read of the
+      // profiles is shown beside the projects, whose maximum then names its profile by its key, and the notice's Retry reads it again.
+      this.failure.set(profiles instanceof ApiError ? profiles : null);
+      this.profiles.set(profiles instanceof ApiError ? [] : profiles);
       this.rows.set(rows);
     } catch (e) {
       this.failure.set(asApiError(e));

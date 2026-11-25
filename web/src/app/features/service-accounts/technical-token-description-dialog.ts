@@ -36,13 +36,15 @@ export interface TechnicalTokenDescriptionData {
           (keydown.enter)="save()"
         />
       </div>
-      @if (failure(); as f) {
+      @if (readFailure(); as f) {
+        <quader-error-notice [error]="f" (retry)="read()" />
+      } @else if (failure(); as f) {
         <quader-error-notice [error]="f" />
       }
     </div>
     <div class="dialog-actions">
       <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@tt-desc.cancel">Cancel</button>
-      <button class="btn btn-confirm" type="button" [disabled]="busy() || unchanged()" (click)="save()" i18n="@@tt-desc.save">Save changes</button>
+      <button class="btn btn-confirm" type="button" [disabled]="busy() || unchanged() || readFailure() !== null" (click)="save()" i18n="@@tt-desc.save">Save changes</button>
     </div>
   `,
   styles: `
@@ -65,6 +67,11 @@ export class TechnicalTokenDescriptionDialog {
   protected readonly description = signal(this.data.token.description ?? '');
   protected readonly busy = signal(true);
   protected readonly failure = signal<ApiError | null>(null);
+  /**
+   * The read of the token failed: its notice offers Retry and reads it again by itself, and stays while it does (R-UI-216); nothing
+   * is saved without the version the read gives.
+   */
+  protected readonly readFailure = signal<ApiError | null>(null);
   /** The token's version as the dialog opened: the save sends it in `If-Match`. */
   private etag = '';
 
@@ -72,13 +79,15 @@ export class TechnicalTokenDescriptionDialog {
     void this.read();
   }
 
-  private async read(): Promise<void> {
+  protected async read(): Promise<void> {
+    this.busy.set(true);
     try {
       const current = await this.api.get(this.data.account, this.data.token.name);
+      this.readFailure.set(null);
       this.etag = current.etag;
       this.description.set(current.value.description ?? '');
     } catch (e) {
-      this.failure.set(asApiError(e));
+      this.readFailure.set(asApiError(e));
     } finally {
       this.busy.set(false);
     }
@@ -89,7 +98,7 @@ export class TechnicalTokenDescriptionDialog {
   }
 
   protected async save(): Promise<void> {
-    if (this.busy() || this.unchanged()) return;
+    if (this.busy() || this.unchanged() || this.readFailure()) return;
     this.busy.set(true);
     this.failure.set(null);
     try {

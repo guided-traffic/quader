@@ -51,7 +51,7 @@ export const OPENED_OTHER_TAGS = 4;
       [error]="versions.error()"
       [empty]="versions.items().length === 0"
       [emptyText]="shape().emptyText"
-      (retry)="versions.reload()"
+      (retry)="retryVersions()"
     >
       @for (v of versions.items(); track v.digest ?? v.version) {
         <tr>
@@ -265,12 +265,23 @@ export class RepositoryItemVersions {
     });
   });
 
+  /**
+   * The list's Retry (R-UI-216): the versions, and their grades when their read failed with them, so the rows that come back carry
+   * their grades as a fresh load does (Q-UI-1196).
+   */
+  protected retryVersions(): void {
+    void this.versions.reload();
+    if (this.report.error()) this.report.reload();
+  }
+
   /** The versions and their grades again, in place; a failure keeps what is shown, and the next change of the row tries again. */
   private async readAgain(): Promise<void> {
     try {
       await this.versions.refresh();
       const params = { id: this.pkgId(), repository: this.repository() };
       if (this.report.hasValue()) await refreshResource(this.report, () => this.vulnerabilities.packageReport(params.id, [params.repository]));
+      // Grades whose read failed are read again with the versions, not only on the person's Retry.
+      else if (this.report.error()) this.report.reload();
     } catch {
       // Keep what is shown.
     }

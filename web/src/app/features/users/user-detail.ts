@@ -128,9 +128,9 @@ export class UserDetail {
   }
 
   protected async load(): Promise<void> {
-    this.loadError.set(null);
     try {
       this.adopt(await this.api.user(this.username()));
+      this.loadError.set(null);
     } catch (e) {
       this.user.set(null);
       this.loadError.set(asApiError(e));
@@ -147,10 +147,10 @@ export class UserDetail {
     this.external.set(loaded.value.external);
   }
 
-  private async loadSessions(): Promise<void> {
-    this.sessionError.set(null);
+  protected async loadSessions(): Promise<void> {
     try {
       this.sessions.set(await this.sessionsApi.ofUser(this.username()));
+      this.sessionError.set(null);
     } catch (e) {
       this.sessions.set(null);
       this.sessionError.set(asApiError(e));

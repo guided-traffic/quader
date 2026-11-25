@@ -329,7 +329,7 @@
     <!-- The scanner replicas: one more kind of row, a group of the role scanner with one sub-group per kind, named with its tool
          (R-OPS-048, Q-HA-372, Q-UI-897). A kind without a replica says why. -->
     @if (scannersFailure(); as f) {
-      <quader-error-notice [error]="f" (retry)="scanners.reload()" />
+      <quader-error-notice [error]="f" (retry)="scannersFailure.retry()" />
     } @else if (valueOf(scanners); as list) {
       @if (scannerGroups().length > 0) {
         <section class="role" aria-labelledby="role-scanner" data-testid="scanner-replicas">
@@ -430,7 +430,7 @@
 <section class="card" aria-labelledby="card-keys">
   <h2 id="card-keys" i18n="@@system.keys.heading">Stored-secret keys</h2>
   @if (encryptionFailure(); as f) {
-    <quader-error-notice [error]="f" (retry)="encryption.reload()" />
+    <quader-error-notice [error]="f" (retry)="encryptionFailure.retry()" />
   } @else if (valueOf(encryption); as e) {
     <p>
       <ng-container i18n="@@system.keys.active">Active key ID</ng-container>:
@@ -600,7 +600,7 @@
 <section class="card" aria-labelledby="card-jobs">
   <h2 id="card-jobs" i18n="@@system.jobs.heading">Recent jobs</h2>
   @if (recentFailure(); as f) {
-    <quader-error-notice [error]="f" (retry)="recentJobs.reload()" />
+    <quader-error-notice [error]="f" (retry)="recentFailure.retry()" />
   } @else if (valueOf(recentJobs); as jobs) {
     @if (jobs.length === 0) {
       <p class="empty" i18n="@@jobs.empty-recent">No job has run yet.</p>

@@ -31,7 +31,7 @@ import { DiffReview } from '../../shared/diff-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { ErrorSummary, SummaryItem, fieldMessage, problemsAt } from '../../shared/field-errors';
 import { DraftStore } from '../../shared/drafts';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { HasUnsavedChanges } from '../../shared/unsaved-guard';
 import { lines } from '../repositories/repository-model';
 import {
@@ -187,10 +187,13 @@ export class ExposureRuleEditor implements HasUnsavedChanges {
   private previewRun = 0;
 
   protected readonly canWrite = computed(() => this.session.has('endpoints:write'));
-  protected readonly loadFailure = computed(() => {
-    const e = this.info.error() ?? this.loaded.error();
-    return e ? asApiError(e) : null;
-  });
+  /**
+   * The endpoint's or the rule's failure, kept while they read again (R-UI-216); its Retry reads with them the repositories and the
+   * formats that failed with them, so the selector that comes back lists the repositories as a fresh load does.
+   */
+  protected readonly loadFailure = failureOf([this.info, this.loaded], { also: [this.repos, this.formats] });
+  /** The repositories or the formats failed: the selector would offer no repository, which is said instead (R-UI-216). */
+  protected readonly reposFailure = failureOf([this.repos, this.formats]);
   protected readonly configuration = computed(() => valueOf(this.info)?.configuration ?? null);
   protected readonly inert = computed(() => valueOf(this.info)?.inert ?? false);
   protected readonly modeAll = computed(() => this.configuration()?.exposure === 'all');

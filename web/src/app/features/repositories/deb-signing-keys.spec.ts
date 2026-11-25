@@ -209,11 +209,13 @@ describe('Debian signing keys panel', () => {
     expect(fake.calls.filter((c) => c === 'signingKeys').length).toBe(2);
   });
 
-  it('R-DEB-015 a failed read shows the error with a retry, and an unknown code is the shared notice', async () => {
+  it('R-DEB-015 R-UI-216 a failed read shows the error with a retry, which keeps it in place while it reads again', async () => {
     const { r } = await render([DEB_PRIMARY], true, new ApiError(503, { code: 'unavailable', detail: 'down' }, null));
     expect(r.root.querySelector('[role="alert"]')).not.toBeNull();
     expect(rows(r.root)).toEqual([]);
     buttonByText(r.root, 'Retry').click();
+    r.fixture.detectChanges();
+    expect(r.root.querySelector('[data-testid="error-notice"]')?.textContent).toContain('Trying again.');
     await settle(r.fixture);
     expect(states(r.root)).toEqual(['primary']);
   });

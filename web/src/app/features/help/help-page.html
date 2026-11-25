@@ -20,8 +20,8 @@
 
   <div class="help-main">
     <a class="help-back" routerLink="/help" i18n="@@help.all-pages">All documentation pages</a>
-    @if (answer.error(); as e) {
-      <quader-error-notice [error]="error(e)" (retry)="answer.reload()" />
+    @if (failure(); as f) {
+      <quader-error-notice [error]="f" (retry)="failure.retry()" />
     } @else if (current(); as p) {
       <article class="help-article" aria-labelledby="help-page-title">
         <h1 id="help-page-title" lang="en">{{ p.title }}</h1>

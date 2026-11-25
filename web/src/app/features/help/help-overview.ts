@@ -5,7 +5,7 @@ import { ManualApi } from '../../api/manual-api';
 import { SessionStore } from '../../core/session-store';
 import { ErrorNotice } from '../../shared/error-notice';
 import { Disclosure } from '../../shared/ui/disclosure';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
 
 /**
  * The start of the help area (R-UI-050): the two guides of the manual with every page's title and
@@ -21,8 +21,8 @@ import { asApiError, valueOf } from '../../shared/paged-resource';
     <p class="help-lead" i18n="@@help.lead">
       The manual of the Quader version this installation runs, for the people who use it and the people who run it.
     </p>
-    @if (contents.error(); as e) {
-      <quader-error-notice [error]="error(e)" (retry)="contents.reload()" />
+    @if (failure(); as f) {
+      <quader-error-notice [error]="f" (retry)="failure.retry()" />
     } @else if (value(); as c) {
       <ng-template #cards let-s>
         <ul class="help-cards" lang="en">
@@ -72,5 +72,6 @@ export class HelpOverview {
 
   protected readonly contents = resource({ loader: () => this.api.contents() });
   protected readonly value = computed(() => valueOf(this.contents));
-  protected readonly error = asApiError;
+  /** The failure of the manual's contents, kept while its notice reads them again (R-UI-216). */
+  protected readonly failure = failureOf(this.contents);
 }

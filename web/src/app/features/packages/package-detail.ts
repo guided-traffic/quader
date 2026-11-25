@@ -8,7 +8,8 @@ import { VulnerabilitiesApi, VulnerabilityGrade, VulnerabilityPackageReport } fr
 import { ErrorNotice } from '../../shared/error-notice';
 import { FormatIconView } from '../../shared/format-icon';
 import { formatName } from '../../core/format-names';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
+import { noneOnRefusal } from '../../shared/none-on-refusal';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -137,18 +138,12 @@ export class PackageDetail {
     loader: ({ params }) => this.api.readme(params.id, params.version),
   });
   /**
-   * The grade of every version (R-VULN-039, R-VULN-040). The page works without it: an answer that fails (no scanning, a reader who
-   * may not ask) leaves the column out (Q-UI-377).
+   * The grade of every version (R-VULN-039, R-VULN-040). The page works without it: a refusal (no scanning, a reader who may not ask)
+   * leaves the column out (Q-UI-377); a failure that may pass is shown above the versions and read again (R-UI-216).
    */
   protected readonly report = resource({
     params: () => this.pkg()?.id,
-    loader: async ({ params }): Promise<VulnerabilityPackageReport | null> => {
-      try {
-        return await this.vulnerabilityApi.packageReport(params);
-      } catch {
-        return null;
-      }
-    },
+    loader: ({ params }): Promise<VulnerabilityPackageReport | null> => noneOnRefusal(this.vulnerabilityApi.packageReport(params)),
   });
   private readonly grades = computed(
     () => new Map<string, VulnerabilityGrade>((valueOf(this.report)?.versions ?? []).map((v) => [v.version, v.grade])),
@@ -188,14 +183,16 @@ export class PackageDetail {
   protected readonly shown = computed(() => this.matching().slice(0, this.shownCount()));
   protected readonly showRepositories = computed(() => repositoriesDiffer(this.rows()));
 
-  protected readonly loadFailure = computed(() => {
-    const e = this.summary.error() ?? this.versions.error();
-    return e ? asApiError(e) : null;
-  });
-  protected readonly readmeFailure = computed(() => {
-    const e = this.readme.error();
-    return e ? asApiError(e) : null;
-  });
+  /**
+   * The failure of the package's read, kept while its notice reads it again (R-UI-216); the reads beside the versions are read again
+   * with it when they failed too, so the page that comes back is the page of a fresh load: the latest version (its distribution tags,
+   * its README, its documentation's link), the README, the grades.
+   */
+  protected readonly loadFailure = failureOf([this.summary, this.versions], { also: [this.latest, this.readme, this.report] });
+  /** The README's failure, and the latest version's that decides whether there is one: shown where the README stands. */
+  protected readonly readmeFailure = failureOf([this.latest, this.readme]);
+  /** The grades' failure that may pass: without it the column was left out as if the package were not scanned. */
+  protected readonly reportFailure = failureOf(this.report);
 
   protected readonly columns = computed<readonly TableColumn[]>(() => [
     {
@@ -265,7 +262,7 @@ export class PackageDetail {
         await refreshResource(this.summary, () => this.api.lookup(this.format(), this.name()));
         const reads: Promise<void>[] = [];
         if (this.report.hasValue()) {
-          reads.push(refreshResource(this.report, () => this.vulnerabilityApi.packageReport(id).catch(() => null)));
+          reads.push(refreshResource(this.report, () => noneOnRefusal(this.vulnerabilityApi.packageReport(id))));
         }
         if (this.stamp() !== before || this.clamav()) {
           reads.push(refreshResource(this.versions, () => collectAll(this.api.versions(id, this.versionQuery()))));

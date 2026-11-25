@@ -218,7 +218,7 @@
 
   <quader-disclosure i18n-heading="@@user.sessions" heading="Sessions" i18n-hint="@@user.sessions-hint" hint="Open sessions of this user.">
     @if (sessionError(); as e) {
-      <quader-error-notice [error]="e" (retry)="load()" />
+      <quader-error-notice [error]="e" (retry)="loadSessions()" />
     }
     @if (sessions(); as list) {
       @if (list.length === 0) {

@@ -8,7 +8,7 @@ import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
 import { ErrorNotice } from '../../shared/error-notice';
 import { JobProgress, jobStateText } from '../../shared/job-progress';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { FailureToasts } from '../../shared/failure-dialog';
 
@@ -30,7 +30,7 @@ import { FailureToasts } from '../../shared/failure-dialog';
         </button>
       </div>
       @if (failure(); as f) {
-        <quader-error-notice [error]="f" (retry)="tasks.reload()" />
+        <quader-error-notice [error]="f" (retry)="failure.retry()" />
       } @else if (valueOf(tasks); as list) {
         @if (list.length === 0) {
           <p class="empty" i18n="@@tasks.empty">No maintenance task is registered.</p>
@@ -134,10 +134,8 @@ export class TasksCard {
   private readonly keys = new Map<string, string>();
 
   protected readonly canRun = computed(() => this.session.has('settings:write'));
-  protected readonly failure = computed(() => {
-    const e = this.tasks.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The list's failure, kept while it reads again (R-UI-216). */
+  protected readonly failure = failureOf(this.tasks);
 
   /** Reloads the list; the system screen calls this on its refresh. */
   reload(): void {

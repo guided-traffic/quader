@@ -235,14 +235,15 @@ export class ProjectMembers {
   }
 
   protected async load(): Promise<void> {
-    this.loadError.set(null);
     try {
       this.members.set(await this.api.members(this.project()));
+      // The failure stays until the answer, so the notice stays in place while it reads again (R-UI-216); a list that failed shows
+      // no "No members" under it.
+      this.loadError.set(null);
+      this.loaded.set(true);
       this.count.emit(this.members().length);
     } catch (e) {
       this.loadError.set(asApiError(e));
-    } finally {
-      this.loaded.set(true);
     }
   }
 

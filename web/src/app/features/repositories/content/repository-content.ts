@@ -138,19 +138,13 @@ export class RepositoryContent {
   });
   protected readonly formats = resource({ loader: () => this.api.formats() });
   protected readonly repository = computed<Repository | RepositoryConsumerView | undefined>(() => valueOf(this.loaded)?.value);
-  /** The failure of the repository's read, kept while its notice reads it again (R-UI-216). */
-  protected readonly failure = failureOf(this.loaded);
-
   /**
-   * The notice's Retry, and its read again by itself (R-UI-216): the repository, and the page's other reads that failed with it. The
-   * formats fail without a notice of their own; read once and never again, a page that came back after its backend restarted said
-   * "not scanned for vulnerabilities" of an npm repository (the reproduction of 2026-11-25).
+   * The failure of the repository's read, kept while its notice reads it again, and the notice's Retry (R-UI-216, Q-UI-1196): the
+   * repository, and the page's other reads that failed with it. The formats and the address fail without a notice of their own while
+   * the repository's stands; read once and never again, a page that came back after its backend restarted said "not scanned for
+   * vulnerabilities" of an npm repository (the reproduction of 2026-11-25).
    */
-  protected reread(): void {
-    this.loaded.reload();
-    if (this.formats.error()) this.formats.reload();
-    if (this.baseUrl.error()) this.baseUrl.reload();
-  }
+  protected readonly failure = failureOf(this.loaded, { also: [this.formats, this.baseUrl] });
   protected readonly descriptor = computed<FormatDescriptor | undefined>(() =>
     (valueOf(this.formats) ?? []).find((f) => f.name === this.repository()?.format),
   );

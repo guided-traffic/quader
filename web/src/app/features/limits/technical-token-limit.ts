@@ -4,6 +4,8 @@ import { LimitPlace, LimitProfile, LimitRule, LimitsApi, UsageRow, UsageScope } 
 import { Versioned } from '../../api/repositories-api';
 import { TechnicalToken } from '../../api/technical-tokens-api';
 import { Confirm } from '../../shared/confirm-dialog';
+import { passes } from '../../shared/error-notice';
+import { asApiError } from '../../shared/paged-resource';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { formatBytes, formatCount } from './figures';
 import { LimitRuleDialog, RuleDialogData } from './rule-dialog';
@@ -105,11 +107,16 @@ export class TechnicalTokenLimits {
   private readonly dialog = inject(QuaderDialog);
   private readonly confirmer = inject(Confirm);
 
-  /** The profiles, for the names in **Limit**; a caller who may not read them gets none, and the cell names the profile's key. */
+  /**
+   * The profiles, for the names in **Limit**; a caller who may not read them gets none, and the cell names the profile's key. A
+   * failure that may pass (no answer, a gateway's, a server's) is thrown, so the page's notice shows it and its Retry reads the
+   * profiles again (R-UI-216): taken for a refusal, the keys stood in place of the names until the page was opened again.
+   */
   async profiles(): Promise<readonly LimitProfile[]> {
     try {
       return await this.api.profiles();
-    } catch {
+    } catch (e) {
+      if (passes(asApiError(e))) throw e;
       return [];
     }
   }
@@ -128,7 +135,9 @@ export class TechnicalTokenLimits {
         cursor = page.nextCursor;
       } while (cursor);
       return out;
-    } catch {
+    } catch (e) {
+      // A refusal hides the column; a failure that may pass is the page's, which reads it again (R-UI-216).
+      if (passes(asApiError(e))) throw e;
       return null;
     }
   }

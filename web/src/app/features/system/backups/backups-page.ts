@@ -9,7 +9,6 @@ import {
   BackupRun,
   BackupsApi,
 } from '../../../api/backups-api';
-import { ApiError } from '../../../api/problem';
 import { describeBackupProblem } from '../../../core/http/problem-messages-backup';
 import { SelectField, SelectOption } from '../../../shared/access/fields';
 import { ErrorNotice } from '../../../shared/error-notice';
@@ -17,7 +16,7 @@ import { EmptyState } from '../../../shared/ui/empty-state';
 import { FilterPanel } from '../../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../../shared/ui/list-head';
 import { NoValue } from '../../../shared/ui/no-value';
-import { PagedResource, asApiError, valueOf } from '../../../shared/paged-resource';
+import { PagedResource, failureOf, valueOf } from '../../../shared/paged-resource';
 import { formatSize } from '../../packages/format-size';
 import { REFRESH_INTERVAL_MS } from '../system-status';
 import { BackupState } from './backup-state';
@@ -107,8 +106,9 @@ export class BackupsPage {
 
   protected readonly summary = computed(() => valueOf(this.status)?.summary ?? null);
   protected readonly activeRun = computed(() => valueOf(this.status)?.active ?? null);
-  protected readonly statusFailure = computed(() => toApiError(this.status.error()));
-  protected readonly detailFailure = computed(() => toApiError(this.detail.error()));
+  /** The status's failure, kept while it reads again (R-UI-216); its notice's Retry reads the page again (`refresh`). */
+  protected readonly statusFailure = failureOf(this.status);
+  protected readonly detailFailure = failureOf(this.detail);
   protected readonly detailRun = computed(() => valueOf(this.detail) ?? null);
 
   /** The age of the last success, against the clock that ticks with the refresh. */
@@ -163,6 +163,14 @@ export class BackupsPage {
     if (this.selectedId() !== null) this.detail.reload();
     // The runs shown are read again in place: the rows, the open run and what **Load more** added stay (R-UI-213).
     void this.runs.refresh().catch(() => undefined);
+  }
+
+  /**
+   * The runs' notice's Retry (R-UI-216): a first page that failed is read again from the start, a **Load more** that failed is
+   * loaded again. `refresh` reads only a list that has its first page.
+   */
+  protected retryRuns(): void {
+    void (this.runs.loaded() ? this.runs.more() : this.runs.reload());
   }
 
   /** The drawer's fields back to the filters the list shows. */
@@ -220,8 +228,4 @@ export class BackupsPage {
   protected detailLabel(run: BackupRun): string {
     return $localize`:@@backups.details.label:Details of the run of pod ${run.pod}:pod:`;
   }
-}
-
-function toApiError(e: unknown): ApiError | null {
-  return e ? asApiError(e) : null;
 }

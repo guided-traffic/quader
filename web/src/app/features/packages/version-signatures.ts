@@ -4,7 +4,7 @@ import { repositoryOfContent } from '../../api/files-api';
 import { PackageFile } from '../../api/packages-api';
 import { SignatureRepositoryReport, SignaturesApi } from '../../api/signatures-api';
 import { ErrorNotice } from '../../shared/error-notice';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
 import { GateArtifact, SignatureGate } from '../../shared/signatures/signature-gate';
 import { SignatureReport } from '../../shared/signatures/signature-report';
 
@@ -20,7 +20,7 @@ import { SignatureReport } from '../../shared/signatures/signature-report';
   imports: [ErrorNotice, SignatureGate, SignatureReport],
   template: `
     @if (failure(); as f) {
-      <quader-error-notice [error]="f" (retry)="answer.reload()" />
+      <quader-error-notice [error]="f" (retry)="failure.retry()" />
     } @else if (report(); as r) {
       @if (r.repositories.length === 0) {
         <p i18n="@@sig.version.none">No repository you may read holds this version.</p>
@@ -83,10 +83,8 @@ export class VersionSignatures {
   protected readonly report = computed(() => valueOf(this.answer));
   /** What the page's own read says of the files' signatures; when it changes, the details here are read again (R-UI-213). */
   private readonly filesStamp = computed(() => JSON.stringify(this.files().map((f) => f.signatures ?? null)));
-  protected readonly failure = computed(() => {
-    const e = this.answer.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The signatures' failure, kept while its notice reads them again (R-UI-216). */
+  protected readonly failure = failureOf(this.answer);
   protected readonly classLabels: Record<string, string> = {
     local: $localize`:@@repo.class.local:Local`,
     remote: $localize`:@@repo.class.remote:Remote`,

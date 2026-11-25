@@ -160,17 +160,20 @@ export class LimitProfileEditor {
 
   constructor() {
     effect(() => {
-      this.key();
+      // A new profile has nothing to read and no failure of one.
+      if (!this.key()) untracked(() => this.loadFailure.set(null));
       untracked(() => void this.load());
     });
   }
 
   protected async load(): Promise<void> {
     const key = this.key();
-    this.loadFailure.set(null);
     if (!key) return;
     try {
-      this.show(await this.api.profile(key));
+      const p = await this.api.profile(key);
+      // The failure stays until the answer, so the notice stays in place while it reads again (R-UI-216).
+      this.loadFailure.set(null);
+      this.show(p);
     } catch (e) {
       this.loadFailure.set(asApiError(e));
     }

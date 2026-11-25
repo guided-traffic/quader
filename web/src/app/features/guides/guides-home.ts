@@ -1,7 +1,7 @@
 import { Component, computed, inject, resource } from '@angular/core';
 import { FormatDescriptor, RepositoriesApi } from '../../api/repositories-api';
 import { ErrorNotice } from '../../shared/error-notice';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { failureOf, valueOf } from '../../shared/paged-resource';
 import { FormatTiles } from '../../shared/ui/format-tiles';
 import { PageHeader } from '../../shared/ui/page-header';
 
@@ -20,7 +20,7 @@ import { PageHeader } from '../../shared/ui/page-header';
       description="How a package manager is set up for this installation, with the explanation. Choose the package type."
     />
     @if (failure(); as f) {
-      <quader-error-notice [error]="f" (retry)="formats.reload()" />
+      <quader-error-notice [error]="f" (retry)="failure.retry()" />
     } @else if (formats.isLoading()) {
       <p role="status" i18n="@@guides.loading">Loading.</p>
     } @else if (offered().length === 0) {
@@ -38,10 +38,8 @@ export class GuidesHome {
   protected readonly offered = computed<readonly FormatDescriptor[]>(() =>
     (valueOf(this.formats) ?? []).filter((f) => f.clients.length > 0),
   );
-  protected readonly failure = computed(() => {
-    const e = this.formats.error();
-    return e ? asApiError(e) : null;
-  });
+  /** The failure of the formats' read, kept while its notice reads it again (R-UI-216). */
+  protected readonly failure = failureOf(this.formats);
   protected readonly linkOf = (f: FormatDescriptor): string => `/guides/${f.name}`;
   protected readonly tilesLabel = $localize`:@@guides.formats:Package types`;
 }

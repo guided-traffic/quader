@@ -84,9 +84,9 @@ export class Profile {
   }
 
   protected async load(): Promise<void> {
-    this.loadError.set(null);
     try {
       const me = await this.identity.me();
+      this.loadError.set(null);
       this.user.set(me);
       this.avatars.set(me.avatarUrl);
     } catch (e) {
@@ -96,9 +96,9 @@ export class Profile {
   }
 
   private async loadPreferences(): Promise<void> {
-    this.prefError.set(null);
     try {
       this.adopt(await this.preferencesApi.load());
+      this.prefError.set(null);
     } catch (e) {
       // Service accounts and CI tokens have no preferences (R-API-021); the section says so.
       this.prefError.set(asApiError(e));
