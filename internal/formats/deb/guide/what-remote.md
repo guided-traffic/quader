@@ -11,3 +11,7 @@ A package file is fetched on the first request and kept. When the index of the a
 ### Suites and components
 
 Nothing has to be configured for them. Whatever suite the source line of the client names is fetched from the upstream: `stable`, `bookworm`, `noble-updates`, a flat directory such as `binary/`, or `./` for a repository whose address is the flat directory itself.
+
+### Delivery rules: use a virtual repository
+
+The release and the indexes of a remote are the upstream's, so APT lists every version the upstream has, also the ones the repository's delivery rules refuse: in the mode Only what is allowed, a version a rule blocks, and a version outside the range of versions a package is allowed with. APT installs the highest version it lists, and the remote refuses its file with `403 Forbidden`; APT shows the status line only. `apt install <package>=<version>` with a version the rules deliver works. A virtual repository over the remote leaves out the rows its member's rules refuse, so APT picks the highest version that is delivered: point the client at the virtual repository when this remote has delivery rules.

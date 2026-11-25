@@ -1,4 +1,4 @@
-contract version 13
+contract version 14
 formats.Action: alias authz.Action
 formats.AttestationItem: field Blob [32]byte
 formats.AttestationItem: field Path string
@@ -701,7 +701,6 @@ formats.LiveVersions: func(context.Context, *Request, PackageRow) ([]string, Rev
 formats.Lookup: func(string) (Format, bool)
 formats.MatchRoutes: func([]Route, string, string) (*Route, Params, error)
 formats.MemberDelivery: func(*Request, RepoRef) *MemberRules
-formats.ModeReason: func(*rules.Set) rc.Reason
 formats.NoMarkup: func() Markup
 formats.NoSignatures: func(string, string) SignatureAdapter
 formats.NoVulnerabilityData: func() VulnerabilityData
@@ -734,7 +733,7 @@ formats.ActionRead: value = authz.Read
 formats.Admin: value = (repeated, place 5 of its group)
 formats.Computed: value = (repeated, place 2 of its group)
 formats.Content: value PathKind = iota + 1 (place 0 of its group)
-formats.ContractVersion: value = 13
+formats.ContractVersion: value = 14
 formats.Current: value Currency = iota + 1 (place 0 of its group)
 formats.Delete: value = (repeated, place 4 of its group)
 formats.Download: value RouteKind = iota + 1 (place 0 of its group)
@@ -850,6 +849,7 @@ catalog.Entry: field ImageEcosystem string
 catalog.Entry: field Mirror bool
 catalog.Entry: field Names Names
 catalog.Entry: field VersionCanon VersionCanon
+catalog.Entry: field VersionOrder VersionOrder
 catalog.Entry: field VersionPath func(string, string) (string, bool)
 catalog.Entry: method HasSettings() bool
 catalog.Entry: method ValidateSettings(Class, json.RawMessage) []SettingViolation
@@ -897,6 +897,7 @@ catalog.Registry: method List() []Entry
 catalog.Registry: method Lookup(string) (Entry, bool)
 catalog.Registry: method NormalizeName(string, string) (string, bool)
 catalog.Registry: method Register(Entry)
+catalog.Registry: method VersionOrderOf(string) (VersionOrder, bool)
 catalog.RequestKind: type string
 catalog.SettingViolation: field Code string
 catalog.SettingViolation: field Detail string
@@ -910,6 +911,8 @@ catalog.UpstreamPreset: field ID string
 catalog.UpstreamPreset: field Settings json.RawMessage
 catalog.UpstreamPreset: field URL string
 catalog.VersionCanon: method Canonical(string) (string, bool)
+catalog.VersionOrder: method Compare(string, string) int
+catalog.VersionOrder: method SortKey(string) []byte
 catalog.Versioning: method InRange(string, string) bool
 catalog.Versioning: method Prerelease(string) (bool, bool)
 catalog.Versioning: method ValidateRange(string) error
@@ -1032,6 +1035,7 @@ discover.CatalogueCaps: field SearchHint SearchHint
 discover.CatalogueCaps: field SearchWindow int
 discover.CatalogueCaps: field Sizes string
 discover.Cursor: alias json.RawMessage
+discover.Delivering: method Delivers(string, string) bool
 discover.Header: method Head(context.Context, *url.URL, string) (*Response, error)
 discover.Hit: field Description string
 discover.Hit: field Flags []string

@@ -16,19 +16,42 @@ import (
 // transaction, as a write of a virtual repository's member rows does, and every replica rebuilds its snapshot within the area's bound
 // (H-132).
 
-// storedRule is one rule row as the snapshot reads it.
+// storedRule is one rule row as the snapshot reads it, with the range of a package's allow (R-CUR-026).
 type storedRule struct {
 	kind, pattern, name, version, effect string
+	rng                                  rc.Range
+}
+
+// rule is the row as the rule set compiles it.
+func (s storedRule) rule() rules.Rule {
+	return rules.Rule{Kind: rc.RuleKind(s.kind), Pattern: s.pattern, Name: s.name, Version: s.version, Effect: rc.Effect(s.effect), Range: s.rng}
+}
+
+// rangeOf is the range of a row's three columns (R-CUR-026).
+func rangeOf(from, to string, inclusive bool) rc.Range {
+	return rc.Range{From: from, To: to, ToInclusive: inclusive}.Normal()
 }
 
 // DeliveryCanon is what the rule set of a repository of the format folds names and versions with: the format's name rule and its
-// version canon (R-CUR-006 "Canonical forms").
+// version canon (R-CUR-006 "Canonical forms"), and its order of versions, which a range of a package's allow is compared by (R-CUR-026).
+// The catalog's entry is read once here, so a decision reads no registry.
 func DeliveryCanon(cat *catalog.Registry, format string) rules.Canon {
-	cat = catalog.Or(cat)
-	return rules.Canon{
-		Name:    func(s string) (string, bool) { return cat.NormalizeName(format, s) },
-		Version: func(s string) (string, bool) { return cat.CanonicalVersion(format, s) },
+	e, ok := catalog.Or(cat).Lookup(format)
+	c := rules.Canon{
+		Name:    func(s string) (string, bool) { return s, true },
+		Version: func(string) (string, bool) { return "", false },
 	}
+	if !ok {
+		return c
+	}
+	if e.Names != nil {
+		c.Name = e.Names.Normalize
+	}
+	if e.VersionCanon != nil {
+		c.Version = e.VersionCanon.Canonical
+	}
+	c.Order = e.VersionOrder
+	return c
 }
 
 // CompileSection compiles a folded section pattern with the one matcher of name patterns (Q-STOR-9).
@@ -54,7 +77,7 @@ func compileDelivery(r *Repository, list []storedRule, cat *catalog.Registry) er
 	}
 	rs := make([]rules.Rule, len(list))
 	for i, s := range list {
-		rs[i] = rules.Rule{Kind: rc.RuleKind(s.kind), Pattern: s.pattern, Name: s.name, Version: s.version, Effect: rc.Effect(s.effect)}
+		rs[i] = s.rule()
 	}
 	set, err := rules.Compile(mode, r.deliveryRevision, rs, CompileSection, DeliveryCanon(cat, r.Format))
 	if err != nil {
@@ -90,6 +113,7 @@ func rulesByRepository(ctx context.Context, qs *q.Queries) (map[int64][]storedRu
 	for _, row := range rows {
 		out[row.RepoID] = append(out[row.RepoID], storedRule{
 			kind: row.Kind, pattern: row.Pattern.String, name: row.Name.String, version: row.Version.String, effect: row.Effect,
+			rng: rangeOf(row.FromVersion.String, row.ToVersion.String, row.ToInclusive),
 		})
 	}
 	return out, nil
@@ -103,7 +127,10 @@ func rulesOfRepository(ctx context.Context, qs *q.Queries, id int64) ([]storedRu
 	}
 	out := make([]storedRule, len(rows))
 	for i, row := range rows {
-		out[i] = storedRule{kind: row.Kind, pattern: row.Pattern.String, name: row.Name.String, version: row.Version.String, effect: row.Effect}
+		out[i] = storedRule{
+			kind: row.Kind, pattern: row.Pattern.String, name: row.Name.String, version: row.Version.String, effect: row.Effect,
+			rng: rangeOf(row.FromVersion.String, row.ToVersion.String, row.ToInclusive),
+		}
 	}
 	return out, nil
 }

@@ -2,7 +2,6 @@ package nuget
 
 import (
 	"github.com/guided-traffic/quader/internal/formats"
-	rc "github.com/guided-traffic/quader/internal/remotecuration"
 	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 )
 
@@ -55,18 +54,11 @@ func (d *documentFilter) missing() error {
 }
 
 // noDeliveredVersion is the refusal of a document of an ID none of whose versions the rules deliver, for an ID whose own decision
-// delivers it (a version rule allows a version the upstream does not hold): the refusal of the package whole, with the reason the mode
-// gives a version no rule names (R-NUGET-035, R-CUR-004).
+// delivers it (a version rule allows a version the upstream does not hold, or none of its versions lies in the range of its allow): the
+// refusal of the package whole, with the reason an emptied document gives (rules.Set.EmptyReason; R-NUGET-035, R-CUR-004).
 func noDeliveredVersion(rq *formats.Request, lowerID string) error {
 	set := formats.Delivery(rq)
-	return formats.RefusalOf(rq, set, lowerID, "", modeReason(set), rules.KindDocument)
-}
-
-func modeReason(set *rules.Set) rc.Reason {
-	if set.Mode() == rc.OnlyAllowed {
-		return rc.ReasonNotAllowed
-	}
-	return rc.ReasonBlocked
+	return formats.RefusalOf(rq, set, lowerID, "", set.EmptyReason(lowerID), rules.KindDocument)
 }
 
 // deliveredBy is the predicate of a rule set over the versions (URL form) of one ID, nil for a nil set.

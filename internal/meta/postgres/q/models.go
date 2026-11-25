@@ -1272,17 +1272,20 @@ type RemoteDeliveryRequestAsker struct {
 }
 
 type RemoteDeliveryRule struct {
-	ID        pgtype.UUID
-	RepoID    int64
-	Kind      string
-	Pattern   pgtype.Text
-	Name      pgtype.Text
-	Version   pgtype.Text
-	Effect    string
-	Note      string
-	RequestID pgtype.UUID
-	CreatedBy pgtype.UUID
-	CreatedAt pgtype.Timestamptz
+	ID          pgtype.UUID
+	RepoID      int64
+	Kind        string
+	Pattern     pgtype.Text
+	Name        pgtype.Text
+	Version     pgtype.Text
+	Effect      string
+	Note        string
+	RequestID   pgtype.UUID
+	CreatedBy   pgtype.UUID
+	CreatedAt   pgtype.Timestamptz
+	FromVersion pgtype.Text
+	ToVersion   pgtype.Text
+	ToInclusive bool
 }
 
 type RemoteDownload struct {

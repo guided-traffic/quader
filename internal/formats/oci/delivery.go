@@ -6,7 +6,6 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/oci/manifest"
-	rc "github.com/guided-traffic/quader/internal/remotecuration"
 	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 )
 
@@ -17,12 +16,10 @@ import (
 // directly or through a stored index (oci_references). The rules name an image by the name the cache knows (remoteName: library/<n>
 // on Docker Hub). Nothing here runs for a repository without rules: formats.Delivery is nil (R-ARCH-027).
 
-// hasVersionRules reports whether the set holds a version rule of the image.
-func hasVersionRules(set *rules.Set, name string) bool { return set.VersionRules(name) }
-
 // manifestUndelivered is the refusal of the rules for the manifest with the digest ref under the image name (R-OCI-038): the image's
-// refusal, or, for an image with version rules, the refusal of a manifest that no delivered tag names. The refusal names the digest
-// where a version stands. It reads the stored tags list and two rows only for an image with version rules.
+// refusal, or, for an image whose versions the rules decide apart from it (a version rule, or a range of the image's allow, Q-CUR-230),
+// the refusal of a manifest that no delivered tag names, with the reason an emptied document gives (outsideRange under a range). The
+// refusal names the digest where a version stands. It reads the stored tags list and two rows only for such an image.
 func manifestUndelivered(ctx context.Context, rq *formats.Request, name, ref string, kind rules.RefusalKind) error {
 	set := formats.Delivery(rq)
 	if set == nil {
@@ -32,18 +29,14 @@ func manifestUndelivered(ctx context.Context, rq *formats.Request, name, ref str
 		return err
 	}
 	sum, ok := manifest.ParseDigest(ref)
-	if !ok || !hasVersionRules(set, name) {
+	if !ok || !set.NarrowsVersions(name) {
 		return nil
 	}
 	named, err := namedByDeliveredTag(ctx, rq, set, name, sum)
 	if err != nil || named {
 		return err
 	}
-	reason := rc.ReasonBlocked
-	if set.Mode() == rc.OnlyAllowed {
-		reason = rc.ReasonNotAllowed
-	}
-	return formats.RefusalOf(rq, set, name, ref, reason, kind)
+	return formats.RefusalOf(rq, set, name, ref, set.EmptyReason(name), kind)
 }
 
 // namedByDeliveredTag reports whether a tag of the stored tags list that the rules deliver has a stored document that is the manifest

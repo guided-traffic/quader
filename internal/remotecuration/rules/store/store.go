@@ -95,7 +95,10 @@ type Input struct {
 	Name    string
 	Version string
 	Effect  rc.Effect
-	Note    string
+	// Range is the range of versions of a package's allow (R-CUR-026), its bounds as the request spells them; one that bounds nothing
+	// is none.
+	Range rc.Range
+	Note  string
 	// RequestID is the request entry whose allow writes the rule (R-CUR-015); "" for none.
 	RequestID string
 }
@@ -120,13 +123,21 @@ type Written struct {
 
 // Canonical checks a rule as a request writes it and folds it by the format's rules (R-CUR-006): a name the format refuses answers
 // 422 invalid_name, a version it cannot read 422 invalid_version, a pattern the matcher refuses 422 invalid_pattern, each at its
-// pointer.
+// pointer; a range as canonicalRange says, its pointers /fromVersion and /toVersion.
 func (s *Store) Canonical(t Target, in Input) (rules.Rule, error) {
+	return s.canonical(t, in, "")
+}
+
+// canonical is Canonical with the pointers of a range below rangeAt (the switch's /range).
+func (s *Store) canonical(t Target, in Input, rangeAt string) (rules.Rule, error) {
 	var fields []errs.FieldError
 	add := func(ptr, code, detail string) {
 		fields = append(fields, errs.FieldError{Pointer: ptr, Code: code, Detail: detail})
 	}
 	r := rules.Rule{Kind: in.Kind, Effect: in.Effect}
+	if in.Range.Set() {
+		r.Range = s.canonicalRange(t.Format, in, rangeAt, add)
+	}
 	if in.Effect != rc.Allow && in.Effect != rc.Block {
 		add("/effect", "invalid_value", `must be "allow" or "block"`)
 	}
@@ -242,10 +253,15 @@ func (s *Store) PutTx(ctx context.Context, tx meta.Tx, t Target, c Caller, in In
 			return err
 		}
 		var previous rc.Effect
+		var previousRange rc.Range
 		id := ""
 		if len(have) > 0 {
 			id, previous = have[0].ID.String(), rc.Effect(have[0].Effect)
-			if err := qs.DeliveryRuleReplace(ctx, q.DeliveryRuleReplaceParams{ID: id, Effect: string(r.Effect), Note: in.Note, RequestID: in.RequestID}); err != nil {
+			previousRange = rangeOfColumns(have[0].FromVersion.String, have[0].ToVersion.String, have[0].ToInclusive)
+			if err := qs.DeliveryRuleReplace(ctx, q.DeliveryRuleReplaceParams{
+				ID: id, Effect: string(r.Effect), FromVersion: r.Range.From, ToVersion: r.Range.To, ToInclusive: r.Range.ToInclusive,
+				Note: in.Note, RequestID: in.RequestID,
+			}); err != nil {
 				return err
 			}
 		} else {
@@ -255,6 +271,7 @@ func (s *Store) PutTx(ctx context.Context, tx meta.Tx, t Target, c Caller, in In
 			id = uuid.Must(uuid.NewV7()).String()
 			if err := qs.DeliveryRuleInsert(ctx, q.DeliveryRuleInsertParams{
 				ID: id, RepoID: t.ID, Kind: string(r.Kind), Pattern: r.Pattern, Name: r.Name, Version: r.Version, Effect: string(r.Effect),
+				FromVersion: r.Range.From, ToVersion: r.Range.To, ToInclusive: r.Range.ToInclusive,
 				Note: in.Note, RequestID: in.RequestID, CreatedBy: c.PrincipalID,
 			}); err != nil {
 				return err
@@ -264,13 +281,20 @@ func (s *Store) PutTx(ctx context.Context, tx meta.Tx, t Target, c Caller, in In
 		if previous != "" {
 			event = audit.EventRemoteRuleUpdated
 		}
-		if err := s.record(ctx, tx, t, c, event, id, r, previous, in.Note, in.RequestID); err != nil {
+		if err := s.record(ctx, tx, t, c, event, id, r, previous, previousRange, in.Note, in.RequestID); err != nil {
 			return err
 		}
-		// A block, or an allow turned into a block, narrows what the repository delivers (R-CUR-006 "Journal").
+		// A block, or an allow turned into a block, narrows what the repository delivers (R-CUR-006 "Journal"); so does a range set on
+		// a package's allow (R-CUR-026, Q-CUR-225).
+		var n rules.Narrowing
 		if r.Effect == rc.Block && previous != rc.Block {
-			n := &rules.Narrowing{BlocksAdded: []rules.Subject{rules.SubjectOfRule(r)}}
-			if err := s.narrowed(ctx, tx, t, c, n); err != nil {
+			n.BlocksAdded = []rules.Subject{rules.SubjectOfRule(r)}
+		}
+		if narrowsRange(r, previous, previousRange) {
+			n.RangesNarrowed = []rules.RangeNarrowing{rangeNarrowed(r.Name, r.Range)}
+		}
+		if !n.Empty() {
+			if err := s.narrowed(ctx, tx, t, c, &n); err != nil {
 				return err
 			}
 		}
@@ -341,11 +365,15 @@ func (s *Store) DeleteTx(ctx context.Context, tx meta.Tx, t Target, c Caller, id
 			return errs.E(errs.NotFound, errs.CodeNotFound, "The repository holds no rule of this ID.")
 		}
 		row := rows[0]
-		r := rules.Rule{Kind: rc.RuleKind(row.Kind), Pattern: row.Pattern.String, Name: row.Name.String, Version: row.Version.String, Effect: rc.Effect(row.Effect)}
-		if err := s.record(ctx, tx, t, c, audit.EventRemoteRuleDeleted, id, r, r.Effect, row.Note, uuidText(row.RequestID.Valid, row.RequestID.String())); err != nil {
+		r := rules.Rule{
+			Kind: rc.RuleKind(row.Kind), Pattern: row.Pattern.String, Name: row.Name.String, Version: row.Version.String, Effect: rc.Effect(row.Effect),
+			Range: rangeOfColumns(row.FromVersion.String, row.ToVersion.String, row.ToInclusive),
+		}
+		if err := s.record(ctx, tx, t, c, audit.EventRemoteRuleDeleted, id, r, r.Effect, rc.Range{}, row.Note, uuidText(row.RequestID.Valid, row.RequestID.String())); err != nil {
 			return err
 		}
-		// Removing an allow narrows what the repository delivers (R-CUR-006 "Journal").
+		// Removing an allow narrows what the repository delivers (R-CUR-006 "Journal"); removing an allow with a range can widen it,
+		// which the replay decides against the restored rules (Q-CUR-225).
 		if r.Effect == rc.Allow {
 			if err := s.narrowed(ctx, tx, t, c, &rules.Narrowing{AllowsRemoved: []rules.Subject{rules.SubjectOfRule(r)}}); err != nil {
 				return err
@@ -445,17 +473,26 @@ func (s *Store) changed(ctx context.Context, tx meta.Tx, t Target) error {
 }
 
 // record writes the rule's event (R-CUR-019).
-func (s *Store) record(ctx context.Context, tx meta.Tx, t Target, c Caller, event, id string, r rules.Rule, previous rc.Effect, note, requestID string) error {
-	ev, err := eventOf(t, c, event, id, r, previous, note, requestID)
+func (s *Store) record(
+	ctx context.Context, tx meta.Tx, t Target, c Caller, event, id string, r rules.Rule, previous rc.Effect, previousRange rc.Range, note, requestID string,
+) error {
+	ev, err := eventOf(t, c, event, id, r, previous, previousRange, note, requestID)
 	if err != nil {
 		return err
 	}
 	return s.o.Recorder.RecordTx(ctx, tx, ev)
 }
 
-// eventOf is the rule's event (R-CUR-019).
-func eventOf(t Target, c Caller, event, id string, r rules.Rule, previous rc.Effect, note, requestID string) (audit.Event, error) {
+// eventOf is the rule's event (R-CUR-019): the range of a package's allow where it carries one, and the range a write replaced
+// (R-CUR-026).
+func eventOf(t Target, c Caller, event, id string, r rules.Rule, previous rc.Effect, previousRange rc.Range, note, requestID string) (audit.Event, error) {
 	d := map[string]any{"ruleId": id, "kind": string(r.Kind), "subject": r.Subject(), "effect": string(r.Effect), "note": note}
+	if r.Range.Set() {
+		d["range"] = rangeDetails(r.Range)
+	}
+	if previousRange.Set() && event == audit.EventRemoteRuleUpdated {
+		d["previousRange"] = rangeDetails(previousRange)
+	}
 	if previous != "" && event != audit.EventRemoteRuleCreated {
 		d["previousEffect"] = string(previous)
 	} else {
@@ -536,8 +573,11 @@ func (s *Store) List(ctx context.Context, repoID int64, f ListFilter, afterAt, a
 
 func storedOf(r q.DeliveryRuleGetRow) Stored {
 	out := Stored{
-		ID:   r.ID.String(),
-		Rule: rules.Rule{Kind: rc.RuleKind(r.Kind), Pattern: r.Pattern.String, Name: r.Name.String, Version: r.Version.String, Effect: rc.Effect(r.Effect)},
+		ID: r.ID.String(),
+		Rule: rules.Rule{
+			Kind: rc.RuleKind(r.Kind), Pattern: r.Pattern.String, Name: r.Name.String, Version: r.Version.String, Effect: rc.Effect(r.Effect),
+			Range: rangeOfColumns(r.FromVersion.String, r.ToVersion.String, r.ToInclusive),
+		},
 		Note: r.Note, CreatedByName: r.CreatedByName, CreatedAt: r.CreatedAt.Time.UTC(),
 	}
 	if r.RequestID.Valid {

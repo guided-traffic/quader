@@ -3,14 +3,15 @@
 -- replay of a narrowing, and the record of a client's refusal in the request list (R-CUR-004, R-CUR-015).
 
 -- name: DeliveryRulesAll :many
--- Every rule of every remote repository, for the replica's snapshot (R-CUR-006 "Propagation"): the subject and the effect only.
-SELECT r.repo_id, r.kind, r.pattern, r.name, r.version, r.effect
+-- Every rule of every remote repository, for the replica's snapshot (R-CUR-006 "Propagation"): the subject, the effect and the range
+-- of a package's allow (R-CUR-026) only.
+SELECT r.repo_id, r.kind, r.pattern, r.name, r.version, r.effect, r.from_version, r.to_version, r.to_inclusive
   FROM remote_delivery_rules r
  ORDER BY r.repo_id, r.kind, r.id;
 
 -- name: DeliveryRulesOfRepository :many
 -- The rules of one repository, for a snapshot entry looked up alone and for the replay of a narrowing.
-SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect
+SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.from_version, r.to_version, r.to_inclusive
   FROM remote_delivery_rules r
  WHERE r.repo_id = sqlc.arg(repo_id)::bigint
  ORDER BY r.kind, r.id;
@@ -18,8 +19,8 @@ SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect
 -- name: DeliveryRulesOfPackage :many
 -- The package and version rules of one package with what the API answers of them: what a write that decides a package or a version
 -- compiles beside the sections (R-CUR-024, Q-CUR-207), so its cost does not grow with the repository's other rules.
-SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.note, r.request_id, r.created_by, r.created_at,
-       COALESCE(p.name, '')::text AS created_by_name
+SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.from_version, r.to_version, r.to_inclusive, r.note, r.request_id,
+       r.created_by, r.created_at, COALESCE(p.name, '')::text AS created_by_name
   FROM remote_delivery_rules r
   LEFT JOIN principal p ON p.id = r.created_by
  WHERE r.repo_id = sqlc.arg(repo_id)::bigint AND r.name = sqlc.arg(name)::text
@@ -55,8 +56,8 @@ SELECT p.name
 -- name: DeliveryRulesList :many
 -- One page of a repository's rules, newest first (R-CUR-006): the optional kind and effect, q a substring of the subject, and the
 -- keyset of the previous page (created_at, id). The creator's name is joined.
-SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.note, r.request_id, r.created_by, r.created_at,
-       COALESCE(p.name, '')::text AS created_by_name
+SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.from_version, r.to_version, r.to_inclusive, r.note, r.request_id,
+       r.created_by, r.created_at, COALESCE(p.name, '')::text AS created_by_name
   FROM remote_delivery_rules r
   LEFT JOIN principal p ON p.id = r.created_by
  WHERE r.repo_id = sqlc.arg(repo_id)::bigint
@@ -69,8 +70,9 @@ SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.note, r.request_i
  LIMIT sqlc.arg(row_limit)::int;
 
 -- name: DeliveryRuleBySubject :many
--- The rule of a subject, locked: a write of a subject that has a rule replaces its effect and note (R-CUR-006 "One rule per subject").
-SELECT r.id, r.effect, r.note, r.request_id, r.created_by, r.created_at
+-- The rule of a subject, locked: a write of a subject that has a rule replaces its effect, its range and its note (R-CUR-006 "One rule
+-- per subject", R-CUR-026).
+SELECT r.id, r.effect, r.from_version, r.to_version, r.to_inclusive, r.note, r.request_id, r.created_by, r.created_at
   FROM remote_delivery_rules r
  WHERE r.repo_id = sqlc.arg(repo_id)::bigint AND r.kind = sqlc.arg(kind)::text
    AND COALESCE(r.pattern, '') = sqlc.arg(pattern)::text AND COALESCE(r.name, '') = sqlc.arg(name)::text
@@ -78,15 +80,22 @@ SELECT r.id, r.effect, r.note, r.request_id, r.created_by, r.created_at
    FOR UPDATE;
 
 -- name: DeliveryRuleInsert :exec
-INSERT INTO remote_delivery_rules (id, repo_id, kind, pattern, name, version, effect, note, request_id, created_by)
+-- A rule; from_version and to_version '' are no bound on that side (R-CUR-026), to_inclusive true without an upper bound.
+INSERT INTO remote_delivery_rules (id, repo_id, kind, pattern, name, version, effect, from_version, to_version, to_inclusive, note,
+                                   request_id, created_by)
 VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(repo_id)::bigint, sqlc.arg(kind)::text, NULLIF(sqlc.arg(pattern)::text, ''),
-        NULLIF(sqlc.arg(name)::text, ''), NULLIF(sqlc.arg(version)::text, ''), sqlc.arg(effect)::text, sqlc.arg(note)::text,
+        NULLIF(sqlc.arg(name)::text, ''), NULLIF(sqlc.arg(version)::text, ''), sqlc.arg(effect)::text,
+        NULLIF(sqlc.arg(from_version)::text, ''), NULLIF(sqlc.arg(to_version)::text, ''),
+        sqlc.arg(to_version)::text = '' OR sqlc.arg(to_inclusive)::boolean, sqlc.arg(note)::text,
         NULLIF(sqlc.arg(request_id)::text, '')::uuid, NULLIF(sqlc.arg(created_by)::text, '')::uuid);
 
 -- name: DeliveryRuleReplace :exec
--- A write of a subject that has a rule: its effect and note, and the request that caused the write when one did.
+-- A write of a subject that has a rule: its effect, its range (R-CUR-026; '' is no bound on that side, which a block always has) and
+-- note, and the request that caused the write when one did.
 UPDATE remote_delivery_rules
-   SET effect = sqlc.arg(effect)::text, note = sqlc.arg(note)::text,
+   SET effect = sqlc.arg(effect)::text, from_version = NULLIF(sqlc.arg(from_version)::text, ''),
+       to_version = NULLIF(sqlc.arg(to_version)::text, ''), to_inclusive = sqlc.arg(to_version)::text = '' OR sqlc.arg(to_inclusive)::boolean,
+       note = sqlc.arg(note)::text,
        request_id = COALESCE(NULLIF(sqlc.arg(request_id)::text, '')::uuid, request_id)
  WHERE id = sqlc.arg(id)::text::uuid;
 
@@ -94,11 +103,11 @@ UPDATE remote_delivery_rules
 -- Removes one rule of the repository and returns it.
 DELETE FROM remote_delivery_rules
  WHERE repo_id = sqlc.arg(repo_id)::bigint AND id = sqlc.arg(id)::text::uuid
-RETURNING id, kind, pattern, name, version, effect, note, request_id;
+RETURNING id, kind, pattern, name, version, effect, from_version, to_version, to_inclusive, note, request_id;
 
 -- name: DeliveryRuleGet :many
-SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.note, r.request_id, r.created_by, r.created_at,
-       COALESCE(p.name, '')::text AS created_by_name
+SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.from_version, r.to_version, r.to_inclusive, r.note, r.request_id,
+       r.created_by, r.created_at, COALESCE(p.name, '')::text AS created_by_name
   FROM remote_delivery_rules r
   LEFT JOIN principal p ON p.id = r.created_by
  WHERE r.repo_id = sqlc.arg(repo_id)::bigint AND r.id = sqlc.arg(id)::text::uuid;

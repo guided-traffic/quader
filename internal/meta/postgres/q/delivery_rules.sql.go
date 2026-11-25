@@ -96,7 +96,7 @@ func (q *Queries) DeliveryRefusalOpen(ctx context.Context, arg DeliveryRefusalOp
 }
 
 const deliveryRuleBySubject = `-- name: DeliveryRuleBySubject :many
-SELECT r.id, r.effect, r.note, r.request_id, r.created_by, r.created_at
+SELECT r.id, r.effect, r.from_version, r.to_version, r.to_inclusive, r.note, r.request_id, r.created_by, r.created_at
   FROM remote_delivery_rules r
  WHERE r.repo_id = $1::bigint AND r.kind = $2::text
    AND COALESCE(r.pattern, '') = $3::text AND COALESCE(r.name, '') = $4::text
@@ -113,15 +113,19 @@ type DeliveryRuleBySubjectParams struct {
 }
 
 type DeliveryRuleBySubjectRow struct {
-	ID        pgtype.UUID
-	Effect    string
-	Note      string
-	RequestID pgtype.UUID
-	CreatedBy pgtype.UUID
-	CreatedAt pgtype.Timestamptz
+	ID          pgtype.UUID
+	Effect      string
+	FromVersion pgtype.Text
+	ToVersion   pgtype.Text
+	ToInclusive bool
+	Note        string
+	RequestID   pgtype.UUID
+	CreatedBy   pgtype.UUID
+	CreatedAt   pgtype.Timestamptz
 }
 
-// The rule of a subject, locked: a write of a subject that has a rule replaces its effect and note (R-CUR-006 "One rule per subject").
+// The rule of a subject, locked: a write of a subject that has a rule replaces its effect, its range and its note (R-CUR-006 "One rule
+// per subject", R-CUR-026).
 func (q *Queries) DeliveryRuleBySubject(ctx context.Context, arg DeliveryRuleBySubjectParams) ([]DeliveryRuleBySubjectRow, error) {
 	rows, err := q.db.Query(ctx, deliveryRuleBySubject,
 		arg.RepoID,
@@ -140,6 +144,9 @@ func (q *Queries) DeliveryRuleBySubject(ctx context.Context, arg DeliveryRuleByS
 		if err := rows.Scan(
 			&i.ID,
 			&i.Effect,
+			&i.FromVersion,
+			&i.ToVersion,
+			&i.ToInclusive,
 			&i.Note,
 			&i.RequestID,
 			&i.CreatedBy,
@@ -177,7 +184,7 @@ func (q *Queries) DeliveryRuleCounts(ctx context.Context, repoID int64) (Deliver
 const deliveryRuleDelete = `-- name: DeliveryRuleDelete :many
 DELETE FROM remote_delivery_rules
  WHERE repo_id = $1::bigint AND id = $2::text::uuid
-RETURNING id, kind, pattern, name, version, effect, note, request_id
+RETURNING id, kind, pattern, name, version, effect, from_version, to_version, to_inclusive, note, request_id
 `
 
 type DeliveryRuleDeleteParams struct {
@@ -186,14 +193,17 @@ type DeliveryRuleDeleteParams struct {
 }
 
 type DeliveryRuleDeleteRow struct {
-	ID        pgtype.UUID
-	Kind      string
-	Pattern   pgtype.Text
-	Name      pgtype.Text
-	Version   pgtype.Text
-	Effect    string
-	Note      string
-	RequestID pgtype.UUID
+	ID          pgtype.UUID
+	Kind        string
+	Pattern     pgtype.Text
+	Name        pgtype.Text
+	Version     pgtype.Text
+	Effect      string
+	FromVersion pgtype.Text
+	ToVersion   pgtype.Text
+	ToInclusive bool
+	Note        string
+	RequestID   pgtype.UUID
 }
 
 // Removes one rule of the repository and returns it.
@@ -213,6 +223,9 @@ func (q *Queries) DeliveryRuleDelete(ctx context.Context, arg DeliveryRuleDelete
 			&i.Name,
 			&i.Version,
 			&i.Effect,
+			&i.FromVersion,
+			&i.ToVersion,
+			&i.ToInclusive,
 			&i.Note,
 			&i.RequestID,
 		); err != nil {
@@ -227,8 +240,8 @@ func (q *Queries) DeliveryRuleDelete(ctx context.Context, arg DeliveryRuleDelete
 }
 
 const deliveryRuleGet = `-- name: DeliveryRuleGet :many
-SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.note, r.request_id, r.created_by, r.created_at,
-       COALESCE(p.name, '')::text AS created_by_name
+SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.from_version, r.to_version, r.to_inclusive, r.note, r.request_id,
+       r.created_by, r.created_at, COALESCE(p.name, '')::text AS created_by_name
   FROM remote_delivery_rules r
   LEFT JOIN principal p ON p.id = r.created_by
  WHERE r.repo_id = $1::bigint AND r.id = $2::text::uuid
@@ -246,6 +259,9 @@ type DeliveryRuleGetRow struct {
 	Name          pgtype.Text
 	Version       pgtype.Text
 	Effect        string
+	FromVersion   pgtype.Text
+	ToVersion     pgtype.Text
+	ToInclusive   bool
 	Note          string
 	RequestID     pgtype.UUID
 	CreatedBy     pgtype.UUID
@@ -269,6 +285,9 @@ func (q *Queries) DeliveryRuleGet(ctx context.Context, arg DeliveryRuleGetParams
 			&i.Name,
 			&i.Version,
 			&i.Effect,
+			&i.FromVersion,
+			&i.ToVersion,
+			&i.ToInclusive,
 			&i.Note,
 			&i.RequestID,
 			&i.CreatedBy,
@@ -286,25 +305,32 @@ func (q *Queries) DeliveryRuleGet(ctx context.Context, arg DeliveryRuleGetParams
 }
 
 const deliveryRuleInsert = `-- name: DeliveryRuleInsert :exec
-INSERT INTO remote_delivery_rules (id, repo_id, kind, pattern, name, version, effect, note, request_id, created_by)
+INSERT INTO remote_delivery_rules (id, repo_id, kind, pattern, name, version, effect, from_version, to_version, to_inclusive, note,
+                                   request_id, created_by)
 VALUES ($1::text::uuid, $2::bigint, $3::text, NULLIF($4::text, ''),
-        NULLIF($5::text, ''), NULLIF($6::text, ''), $7::text, $8::text,
-        NULLIF($9::text, '')::uuid, NULLIF($10::text, '')::uuid)
+        NULLIF($5::text, ''), NULLIF($6::text, ''), $7::text,
+        NULLIF($8::text, ''), NULLIF($9::text, ''),
+        $9::text = '' OR $10::boolean, $11::text,
+        NULLIF($12::text, '')::uuid, NULLIF($13::text, '')::uuid)
 `
 
 type DeliveryRuleInsertParams struct {
-	ID        string
-	RepoID    int64
-	Kind      string
-	Pattern   string
-	Name      string
-	Version   string
-	Effect    string
-	Note      string
-	RequestID string
-	CreatedBy string
+	ID          string
+	RepoID      int64
+	Kind        string
+	Pattern     string
+	Name        string
+	Version     string
+	Effect      string
+	FromVersion string
+	ToVersion   string
+	ToInclusive bool
+	Note        string
+	RequestID   string
+	CreatedBy   string
 }
 
+// A rule; from_version and to_version ” are no bound on that side (R-CUR-026), to_inclusive true without an upper bound.
 func (q *Queries) DeliveryRuleInsert(ctx context.Context, arg DeliveryRuleInsertParams) error {
 	_, err := q.db.Exec(ctx, deliveryRuleInsert,
 		arg.ID,
@@ -314,6 +340,9 @@ func (q *Queries) DeliveryRuleInsert(ctx context.Context, arg DeliveryRuleInsert
 		arg.Name,
 		arg.Version,
 		arg.Effect,
+		arg.FromVersion,
+		arg.ToVersion,
+		arg.ToInclusive,
 		arg.Note,
 		arg.RequestID,
 		arg.CreatedBy,
@@ -347,22 +376,31 @@ func (q *Queries) DeliveryRuleInsertMany(ctx context.Context, arg DeliveryRuleIn
 
 const deliveryRuleReplace = `-- name: DeliveryRuleReplace :exec
 UPDATE remote_delivery_rules
-   SET effect = $1::text, note = $2::text,
-       request_id = COALESCE(NULLIF($3::text, '')::uuid, request_id)
- WHERE id = $4::text::uuid
+   SET effect = $1::text, from_version = NULLIF($2::text, ''),
+       to_version = NULLIF($3::text, ''), to_inclusive = $3::text = '' OR $4::boolean,
+       note = $5::text,
+       request_id = COALESCE(NULLIF($6::text, '')::uuid, request_id)
+ WHERE id = $7::text::uuid
 `
 
 type DeliveryRuleReplaceParams struct {
-	Effect    string
-	Note      string
-	RequestID string
-	ID        string
+	Effect      string
+	FromVersion string
+	ToVersion   string
+	ToInclusive bool
+	Note        string
+	RequestID   string
+	ID          string
 }
 
-// A write of a subject that has a rule: its effect and note, and the request that caused the write when one did.
+// A write of a subject that has a rule: its effect, its range (R-CUR-026; ” is no bound on that side, which a block always has) and
+// note, and the request that caused the write when one did.
 func (q *Queries) DeliveryRuleReplace(ctx context.Context, arg DeliveryRuleReplaceParams) error {
 	_, err := q.db.Exec(ctx, deliveryRuleReplace,
 		arg.Effect,
+		arg.FromVersion,
+		arg.ToVersion,
+		arg.ToInclusive,
 		arg.Note,
 		arg.RequestID,
 		arg.ID,
@@ -405,24 +443,28 @@ func (q *Queries) DeliveryRuleSections(ctx context.Context, repoID int64) ([]Del
 
 const deliveryRulesAll = `-- name: DeliveryRulesAll :many
 
-SELECT r.repo_id, r.kind, r.pattern, r.name, r.version, r.effect
+SELECT r.repo_id, r.kind, r.pattern, r.name, r.version, r.effect, r.from_version, r.to_version, r.to_inclusive
   FROM remote_delivery_rules r
  ORDER BY r.repo_id, r.kind, r.id
 `
 
 type DeliveryRulesAllRow struct {
-	RepoID  int64
-	Kind    string
-	Pattern pgtype.Text
-	Name    pgtype.Text
-	Version pgtype.Text
-	Effect  string
+	RepoID      int64
+	Kind        string
+	Pattern     pgtype.Text
+	Name        pgtype.Text
+	Version     pgtype.Text
+	Effect      string
+	FromVersion pgtype.Text
+	ToVersion   pgtype.Text
+	ToInclusive bool
 }
 
 // Statements of the delivery rules of a remote repository (remote-curation.md R-CUR-001 to R-CUR-006, work package R2 of
 // docs/developer/remote-curation.md): the snapshot's read of every rule set, the rules' API, the revision of a rule set, the journal's
 // replay of a narrowing, and the record of a client's refusal in the request list (R-CUR-004, R-CUR-015).
-// Every rule of every remote repository, for the replica's snapshot (R-CUR-006 "Propagation"): the subject and the effect only.
+// Every rule of every remote repository, for the replica's snapshot (R-CUR-006 "Propagation"): the subject, the effect and the range
+// of a package's allow (R-CUR-026) only.
 func (q *Queries) DeliveryRulesAll(ctx context.Context) ([]DeliveryRulesAllRow, error) {
 	rows, err := q.db.Query(ctx, deliveryRulesAll)
 	if err != nil {
@@ -439,6 +481,9 @@ func (q *Queries) DeliveryRulesAll(ctx context.Context) ([]DeliveryRulesAllRow, 
 			&i.Name,
 			&i.Version,
 			&i.Effect,
+			&i.FromVersion,
+			&i.ToVersion,
+			&i.ToInclusive,
 		); err != nil {
 			return nil, err
 		}
@@ -507,8 +552,8 @@ func (q *Queries) DeliveryRulesDeleteVersions(ctx context.Context, arg DeliveryR
 }
 
 const deliveryRulesList = `-- name: DeliveryRulesList :many
-SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.note, r.request_id, r.created_by, r.created_at,
-       COALESCE(p.name, '')::text AS created_by_name
+SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.from_version, r.to_version, r.to_inclusive, r.note, r.request_id,
+       r.created_by, r.created_at, COALESCE(p.name, '')::text AS created_by_name
   FROM remote_delivery_rules r
   LEFT JOIN principal p ON p.id = r.created_by
  WHERE r.repo_id = $1::bigint
@@ -538,6 +583,9 @@ type DeliveryRulesListRow struct {
 	Name          pgtype.Text
 	Version       pgtype.Text
 	Effect        string
+	FromVersion   pgtype.Text
+	ToVersion     pgtype.Text
+	ToInclusive   bool
 	Note          string
 	RequestID     pgtype.UUID
 	CreatedBy     pgtype.UUID
@@ -571,6 +619,9 @@ func (q *Queries) DeliveryRulesList(ctx context.Context, arg DeliveryRulesListPa
 			&i.Name,
 			&i.Version,
 			&i.Effect,
+			&i.FromVersion,
+			&i.ToVersion,
+			&i.ToInclusive,
 			&i.Note,
 			&i.RequestID,
 			&i.CreatedBy,
@@ -588,8 +639,8 @@ func (q *Queries) DeliveryRulesList(ctx context.Context, arg DeliveryRulesListPa
 }
 
 const deliveryRulesOfPackage = `-- name: DeliveryRulesOfPackage :many
-SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.note, r.request_id, r.created_by, r.created_at,
-       COALESCE(p.name, '')::text AS created_by_name
+SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.from_version, r.to_version, r.to_inclusive, r.note, r.request_id,
+       r.created_by, r.created_at, COALESCE(p.name, '')::text AS created_by_name
   FROM remote_delivery_rules r
   LEFT JOIN principal p ON p.id = r.created_by
  WHERE r.repo_id = $1::bigint AND r.name = $2::text
@@ -608,6 +659,9 @@ type DeliveryRulesOfPackageRow struct {
 	Name          pgtype.Text
 	Version       pgtype.Text
 	Effect        string
+	FromVersion   pgtype.Text
+	ToVersion     pgtype.Text
+	ToInclusive   bool
 	Note          string
 	RequestID     pgtype.UUID
 	CreatedBy     pgtype.UUID
@@ -633,6 +687,9 @@ func (q *Queries) DeliveryRulesOfPackage(ctx context.Context, arg DeliveryRulesO
 			&i.Name,
 			&i.Version,
 			&i.Effect,
+			&i.FromVersion,
+			&i.ToVersion,
+			&i.ToInclusive,
 			&i.Note,
 			&i.RequestID,
 			&i.CreatedBy,
@@ -650,19 +707,22 @@ func (q *Queries) DeliveryRulesOfPackage(ctx context.Context, arg DeliveryRulesO
 }
 
 const deliveryRulesOfRepository = `-- name: DeliveryRulesOfRepository :many
-SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect
+SELECT r.id, r.kind, r.pattern, r.name, r.version, r.effect, r.from_version, r.to_version, r.to_inclusive
   FROM remote_delivery_rules r
  WHERE r.repo_id = $1::bigint
  ORDER BY r.kind, r.id
 `
 
 type DeliveryRulesOfRepositoryRow struct {
-	ID      pgtype.UUID
-	Kind    string
-	Pattern pgtype.Text
-	Name    pgtype.Text
-	Version pgtype.Text
-	Effect  string
+	ID          pgtype.UUID
+	Kind        string
+	Pattern     pgtype.Text
+	Name        pgtype.Text
+	Version     pgtype.Text
+	Effect      string
+	FromVersion pgtype.Text
+	ToVersion   pgtype.Text
+	ToInclusive bool
 }
 
 // The rules of one repository, for a snapshot entry looked up alone and for the replay of a narrowing.
@@ -682,6 +742,9 @@ func (q *Queries) DeliveryRulesOfRepository(ctx context.Context, repoID int64) (
 			&i.Name,
 			&i.Version,
 			&i.Effect,
+			&i.FromVersion,
+			&i.ToVersion,
+			&i.ToInclusive,
 		); err != nil {
 			return nil, err
 		}

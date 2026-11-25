@@ -1200,8 +1200,9 @@ func (e DeliveryDecisionDecidedByMode) Valid() bool {
 
 // Defines values for DeliveryDecisionReason.
 const (
-	DeliveryDecisionReasonBlocked    DeliveryDecisionReason = "blocked"
-	DeliveryDecisionReasonNotAllowed DeliveryDecisionReason = "notAllowed"
+	DeliveryDecisionReasonBlocked      DeliveryDecisionReason = "blocked"
+	DeliveryDecisionReasonNotAllowed   DeliveryDecisionReason = "notAllowed"
+	DeliveryDecisionReasonOutsideRange DeliveryDecisionReason = "outsideRange"
 )
 
 // Valid indicates whether the value is a known member of the DeliveryDecisionReason enum.
@@ -1210,6 +1211,8 @@ func (e DeliveryDecisionReason) Valid() bool {
 	case DeliveryDecisionReasonBlocked:
 		return true
 	case DeliveryDecisionReasonNotAllowed:
+		return true
+	case DeliveryDecisionReasonOutsideRange:
 		return true
 	default:
 		return false
@@ -3132,8 +3135,9 @@ func (e PackageVersionRepositoryClass) Valid() bool {
 
 // Defines values for PackageVersionRepositoryUnavailableReason.
 const (
-	PackageVersionRepositoryUnavailableReasonBlocked    PackageVersionRepositoryUnavailableReason = "blocked"
-	PackageVersionRepositoryUnavailableReasonNotAllowed PackageVersionRepositoryUnavailableReason = "notAllowed"
+	PackageVersionRepositoryUnavailableReasonBlocked      PackageVersionRepositoryUnavailableReason = "blocked"
+	PackageVersionRepositoryUnavailableReasonNotAllowed   PackageVersionRepositoryUnavailableReason = "notAllowed"
+	PackageVersionRepositoryUnavailableReasonOutsideRange PackageVersionRepositoryUnavailableReason = "outsideRange"
 )
 
 // Valid indicates whether the value is a known member of the PackageVersionRepositoryUnavailableReason enum.
@@ -3142,6 +3146,8 @@ func (e PackageVersionRepositoryUnavailableReason) Valid() bool {
 	case PackageVersionRepositoryUnavailableReasonBlocked:
 		return true
 	case PackageVersionRepositoryUnavailableReasonNotAllowed:
+		return true
+	case PackageVersionRepositoryUnavailableReasonOutsideRange:
 		return true
 	default:
 		return false
@@ -3273,9 +3279,10 @@ func (e ProjectRole) Valid() bool {
 
 // Defines values for RemoteDownloadDelivery.
 const (
-	DownloadDeliveryBlocked    RemoteDownloadDelivery = "blocked"
-	DownloadDeliveryDelivered  RemoteDownloadDelivery = "delivered"
-	DownloadDeliveryNotAllowed RemoteDownloadDelivery = "notAllowed"
+	DownloadDeliveryBlocked      RemoteDownloadDelivery = "blocked"
+	DownloadDeliveryDelivered    RemoteDownloadDelivery = "delivered"
+	DownloadDeliveryNotAllowed   RemoteDownloadDelivery = "notAllowed"
+	DownloadDeliveryOutsideRange RemoteDownloadDelivery = "outsideRange"
 )
 
 // Valid indicates whether the value is a known member of the RemoteDownloadDelivery enum.
@@ -3286,6 +3293,8 @@ func (e RemoteDownloadDelivery) Valid() bool {
 	case DownloadDeliveryDelivered:
 		return true
 	case DownloadDeliveryNotAllowed:
+		return true
+	case DownloadDeliveryOutsideRange:
 		return true
 	default:
 		return false
@@ -10491,16 +10500,23 @@ type DeliveryCheckInput struct {
 
 // DeliveryDecision The decision of R-CUR-001 and what made it.
 type DeliveryDecision struct {
-	// DecidedBy The rule that decided (`kind`, `subject`, `effect`), or the mode when no rule matched (`mode`).
+	// DecidedBy The rule that decided (`kind`, `subject`, `effect`, and `range` where a package's allow with a range decided), or the mode
+	// when no rule matched (`mode`).
 	DecidedBy struct {
-		Effect  *DeliveryDecisionDecidedByEffect `json:"effect,omitempty"`
-		Kind    *DeliveryDecisionDecidedByKind   `json:"kind,omitempty"`
-		Mode    *DeliveryDecisionDecidedByMode   `json:"mode,omitempty"`
-		Subject *string                          `json:"subject,omitempty"`
+		Effect *DeliveryDecisionDecidedByEffect `json:"effect,omitempty"`
+		Kind   *DeliveryDecisionDecidedByKind   `json:"kind,omitempty"`
+		Mode   *DeliveryDecisionDecidedByMode   `json:"mode,omitempty"`
+
+		// Range The range of versions of a package's allow (R-CUR-026, Q-CUR-220), its bounds in the format's canonical form and compared in the
+		// format's own order: a version inside it is delivered by the rule, a version outside it is not (the reason `outsideRange`), and a
+		// tag that is no version (`latest`) lies outside it.
+		Range   *DeliveryRange `json:"range,omitempty"`
+		Subject *string        `json:"subject,omitempty"`
 	} `json:"decidedBy"`
 	Delivered bool `json:"delivered"`
 
-	// Reason Why the rules do not deliver it; absent when delivered.
+	// Reason Why the rules do not deliver it; absent when delivered. `outsideRange`: the package's allow carries a range of versions and
+	// the version lies outside it (R-CUR-026).
 	Reason *DeliveryDecisionReason `json:"reason,omitempty"`
 }
 
@@ -10513,8 +10529,33 @@ type DeliveryDecisionDecidedByKind string
 // DeliveryDecisionDecidedByMode defines model for DeliveryDecision.DecidedBy.Mode.
 type DeliveryDecisionDecidedByMode string
 
-// DeliveryDecisionReason Why the rules do not deliver it; absent when delivered.
+// DeliveryDecisionReason Why the rules do not deliver it; absent when delivered. `outsideRange`: the package's allow carries a range of versions and
+// the version lies outside it (R-CUR-026).
 type DeliveryDecisionReason string
+
+// DeliveryRange The range of versions of a package's allow (R-CUR-026, Q-CUR-220), its bounds in the format's canonical form and compared in the
+// format's own order: a version inside it is delivered by the rule, a version outside it is not (the reason `outsideRange`), and a
+// tag that is no version (`latest`) lies outside it.
+type DeliveryRange struct {
+	// FromVersion The lowest version delivered, included; null for no lower bound.
+	FromVersion *string `json:"fromVersion"`
+
+	// ToInclusive Whether `toVersion` is delivered; false delivers the versions below it. True without an upper bound.
+	ToInclusive bool `json:"toInclusive"`
+
+	// ToVersion The highest version; null for no upper bound.
+	ToVersion *string `json:"toVersion"`
+}
+
+// DeliveryRangeInput A range of versions as a package's switch sets it (R-CUR-026): `fromVersion` (included), `toVersion` (included unless
+// `toInclusive` is false), either or both; neither is every version, which removes the range.
+type DeliveryRangeInput struct {
+	FromVersion *string `json:"fromVersion,omitempty"`
+
+	// ToInclusive Whether `toVersion` is delivered; false delivers the versions below it. True when absent.
+	ToInclusive *bool   `json:"toInclusive,omitempty"`
+	ToVersion   *string `json:"toVersion,omitempty"`
+}
 
 // DeliveryRequest A request entry (R-CUR-015): one per subject, with the people who ask in it (`askerCount`) and the refusals clients met
 // (`refusals`, R-CUR-004), its examination and its decision.
@@ -10643,6 +10684,9 @@ type DeliveryRule struct {
 	Note    string             `json:"note"`
 	Pattern *string            `json:"pattern,omitempty"`
 
+	// Range The range of versions of a package's allow (R-CUR-026); absent where the rule has none.
+	Range *DeliveryRange `json:"range,omitempty"`
+
 	// RequestId The request entry whose allow wrote the rule (R-CUR-015).
 	RequestId *openapi_types.UUID `json:"requestId"`
 
@@ -10664,16 +10708,29 @@ type DeliveryRuleCounts struct {
 }
 
 // DeliveryRuleInput A delivery rule as a request writes it (R-CUR-001, R-CUR-006): a `section` holds a name pattern of R-AUTHZ-005, a `package` a
-// name (every version, future ones included), a `version` a name and one exact version (no range).
+// name (every version, future ones included), a `version` a name and one exact version. A `package` rule with the effect `allow`
+// takes an optional range of versions (R-CUR-026): `fromVersion` (included), `toVersion` (included unless `toInclusive` is false,
+// then below it), or both, in the format's own order; a write without them removes the range. A bound the format does not rank (a
+// tag such as `latest`) answers `422 invalid_version` at its pointer, a range that holds no version `422 validation_failed` at
+// `/toVersion` with the field code `out_of_range`, a range on another rule `422 validation_failed` with `not_applicable`.
 type DeliveryRuleInput struct {
 	Effect DeliveryRuleInputEffect `json:"effect"`
-	Kind   DeliveryRuleInputKind   `json:"kind"`
-	Name   *string                 `json:"name,omitempty"`
+
+	// FromVersion The lowest version a package's allow delivers, included (R-CUR-026); absent for no lower bound.
+	FromVersion *string               `json:"fromVersion,omitempty"`
+	Kind        DeliveryRuleInputKind `json:"kind"`
+	Name        *string               `json:"name,omitempty"`
 
 	// Note Seen only by those who may read the rules.
 	Note    *string `json:"note,omitempty"`
 	Pattern *string `json:"pattern,omitempty"`
-	Version *string `json:"version,omitempty"`
+
+	// ToInclusive Whether `toVersion` is delivered; false delivers the versions below it. True when absent.
+	ToInclusive *bool `json:"toInclusive,omitempty"`
+
+	// ToVersion The highest version a package's allow delivers (R-CUR-026); absent for no upper bound.
+	ToVersion *string `json:"toVersion,omitempty"`
+	Version   *string `json:"version,omitempty"`
 }
 
 // DeliveryRuleInputEffect defines model for DeliveryRuleInput.Effect.
@@ -10701,6 +10758,9 @@ type DeliveryRuleWritten struct {
 	Name    *string                   `json:"name,omitempty"`
 	Note    string                    `json:"note"`
 	Pattern *string                   `json:"pattern,omitempty"`
+
+	// Range The range of versions of a package's allow (R-CUR-026); absent where the rule has none.
+	Range *DeliveryRange `json:"range,omitempty"`
 
 	// RequestId The request entry whose allow wrote the rule (R-CUR-015).
 	RequestId *openapi_types.UUID `json:"requestId"`
@@ -10773,6 +10833,11 @@ type DeliverySwitchInput struct {
 
 	// Note The note of a rule the switch writes; seen only by those who may read the rules.
 	Note *string `json:"note,omitempty"`
+
+	// Range A package turned on only (R-CUR-026): the range of versions its allow delivers, written whatever the package inherits; `{}` is
+	// every version, which removes the range. Absent keeps the range the package's allow has. On a version or a package turned off
+	// `422 validation_failed` at `/range`; a bound as in `DeliveryRuleInput`, at `/range/fromVersion` and `/range/toVersion`.
+	Range *DeliveryRangeInput `json:"range,omitempty"`
 
 	// ResetVersions A package only; also removes every version rule of the package in the same transaction (**Reset them**).
 	ResetVersions *bool   `json:"resetVersions,omitempty"`
@@ -13519,8 +13584,9 @@ type PackageVersionRepository struct {
 	Key         string                        `json:"key"`
 	PublishedAt time.Time                     `json:"publishedAt"`
 
-	// UnavailableReason Why a remote repository's delivery rules do not deliver the stored version: a rule blocks it, or the repository delivers
-	// only what is allowed and no rule allows it (R-CUR-014). Absent where the repository delivers it or `available` is false
+	// UnavailableReason Why a remote repository's delivery rules do not deliver the stored version: a rule blocks it, the repository delivers
+	// only what is allowed and no rule allows it (R-CUR-014), or the version lies outside the range of versions of the package's
+	// allow (R-CUR-026). Absent where the repository delivers it or `available` is false
 	// for another reason.
 	UnavailableReason *PackageVersionRepositoryUnavailableReason `json:"unavailableReason,omitempty"`
 }
@@ -13528,8 +13594,9 @@ type PackageVersionRepository struct {
 // PackageVersionRepositoryClass defines model for PackageVersionRepository.Class.
 type PackageVersionRepositoryClass string
 
-// PackageVersionRepositoryUnavailableReason Why a remote repository's delivery rules do not deliver the stored version: a rule blocks it, or the repository delivers
-// only what is allowed and no rule allows it (R-CUR-014). Absent where the repository delivers it or `available` is false
+// PackageVersionRepositoryUnavailableReason Why a remote repository's delivery rules do not deliver the stored version: a rule blocks it, the repository delivers
+// only what is allowed and no rule allows it (R-CUR-014), or the version lies outside the range of versions of the package's
+// allow (R-CUR-026). Absent where the repository delivers it or `available` is false
 // for another reason.
 type PackageVersionRepositoryUnavailableReason string
 

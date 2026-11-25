@@ -53,15 +53,19 @@ const (
 	ReasonBlocked Reason = "blocked"
 	// ReasonNotAllowed: no rule matched and the mode is onlyAllowed.
 	ReasonNotAllowed Reason = "notAllowed"
+	// ReasonOutsideRange: the package's allow carries a range of versions, and the version lies outside it (R-CUR-026, Q-CUR-222).
+	ReasonOutsideRange Reason = "outsideRange"
 )
 
 // DecidedBy names what made a decision, as delivery-rules/check answers it (R-CUR-006): a rule (its kind, its subject and its effect),
-// or the mode when no rule matched (Kind empty, Mode set).
+// or the mode when no rule matched (Kind empty, Mode set). Range is the range of versions of a package's allow that decided (R-CUR-026),
+// nil for any other rule.
 type DecidedBy struct {
 	Kind    RuleKind
 	Subject string
 	Effect  Effect
 	Mode    Mode
+	Range   *Range
 }
 
 // Decision is the answer of the rules for a package name and, where one is asked, a version (R-CUR-001).

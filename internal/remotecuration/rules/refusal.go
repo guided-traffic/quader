@@ -52,8 +52,11 @@ func (r *Refusal) Text(base string) string {
 		v = "any version"
 	}
 	why := "blocked by a rule of the repository."
-	if r.Reason == rc.ReasonNotAllowed {
+	switch r.Reason {
+	case rc.ReasonNotAllowed:
 		why = "this repository delivers only what is allowed."
+	case rc.ReasonOutsideRange:
+		why = "outside the versions a rule of the repository allows."
 	}
 	ask := base + "/ui/projects/" + url.PathEscape(r.Repo.Project) + "/repositories/" + url.PathEscape(r.Repo.Key) +
 		"/upstream?name=" + url.QueryEscape(r.Name)
@@ -76,10 +79,14 @@ func RefusalOf(err error) (*Refusal, bool) {
 	return nil, false
 }
 
-// EventReason is the event's spelling of a reason: blocked or not_allowed (the schema of remote.delivery.refused).
+// EventReason is the event's spelling of a reason: blocked, not_allowed or outside_range (the schema of remote.delivery.refused, the
+// metric's label reason).
 func EventReason(r rc.Reason) string {
-	if r == rc.ReasonNotAllowed {
+	switch r {
+	case rc.ReasonNotAllowed:
 		return "not_allowed"
+	case rc.ReasonOutsideRange:
+		return "outside_range"
 	}
 	return "blocked"
 }

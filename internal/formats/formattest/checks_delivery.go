@@ -15,7 +15,8 @@ import (
 // CheckDelivery is check 23 (remote-curation.md R-CUR-003, R-CUR-004, R-CUR-022), for a format with the class remote: against a remote
 // repository whose rules refuse one version of the fixture's package, no document of the format lists that version and the version's
 // file answers 403 with Cache-Control: no-store in the format's shape; against one whose rules refuse the package whole, every document
-// of the package answers that refusal. Checks 21 and 22 of R-ARCH-010 were taken (the package shapes, the upstream catalogue), so the
+// of the package answers that refusal; against one whose package's allow carries a range of versions that holds Kept and not Refused
+// (R-CUR-026), no document lists Refused and its file answers the refusal with the reason outsideRange. Checks 21 and 22 of R-ARCH-010 were taken (the package shapes, the upstream catalogue), so the
 // delivery rules are the next free number (R-ARCH-010).
 const CheckDelivery Check = 23
 
@@ -27,7 +28,8 @@ type DeliveryFixture struct {
 	Remote func() *MemRemote
 	// Package is the normalized name of the package; Refused the version the check's rule refuses, Kept one it keeps. The check reads
 	// a document's body for Refused as text, so it is chosen not to occur in the documents otherwise (no other version or digest
-	// contains it).
+	// contains it). Both are versions the format ranks (its view adapter's sort key of the class Version): the range of a package's
+	// allow is built between them (R-CUR-026), and a tag such as latest lies outside every range.
 	Package, Refused, Kept string
 	// Documents are the escaped request paths of every document of the format that lists the package's versions (a package document, a
 	// version list, a tag list, a registration): each answers 200 without Refused under the version rule, and the refusal under the
@@ -65,6 +67,9 @@ func (h *Host) withDelivery(o HostOptions) {
 	}
 	if d.VersionCanon != nil {
 		canon.Version = d.VersionCanon.Canonical
+	}
+	if v := h.f.View(); v != nil {
+		canon.Order = v
 	}
 	repo, err := repository.WithRules(*h.repo, o.Delivery.Mode, o.Delivery.Rules, canon)
 	if err != nil {
@@ -125,20 +130,8 @@ func (r *run) delivery() {
 	version := &DeliveryRules{Mode: rc.AllExceptBlocked, Rules: []rules.Rule{{Kind: rc.KindVersion, Name: fx.Package, Version: r.canonical(fx.Refused), Effect: rc.Block}}}
 	whole := &DeliveryRules{Mode: rc.AllExceptBlocked, Rules: []rules.Rule{{Kind: rc.KindPackage, Name: fx.Package, Effect: rc.Block}}}
 	for _, p := range fx.Documents {
-		resp, ok := r.deliveryRequest(fx, version, p)
-		if !ok {
-			continue
-		}
-		switch body := resp.Body.String(); {
-		case resp.Code != http.StatusOK:
-			r.failf("document %s answered %d under a rule that refuses %s alone, want 200", p, resp.Code, fx.Refused)
-		case strings.Contains(body, fx.Refused):
-			r.failf("document %s lists %s, which the rules refuse", p, fx.Refused)
-		case !strings.Contains(body, fx.Kept):
-			r.failf("document %s does not list %s, which the rules deliver", p, fx.Kept)
-		}
-		resp, ok = r.deliveryRequest(fx, whole, p)
-		if ok {
+		r.listsKeptOnly(fx, version, p, "a rule that refuses "+fx.Refused+" alone")
+		if resp, ok := r.deliveryRequest(fx, whole, p); ok {
 			r.refused(resp, "document "+p+" of a package the rules refuse whole")
 		}
 	}
@@ -168,6 +161,78 @@ func (r *run) delivery() {
 	if resp, ok := r.deliveryRequest(fx, version, fx.Artifact); ok {
 		r.refused(resp, "the file "+fx.Artifact+" of the refused version")
 	}
+	r.deliveryRange(fx)
+}
+
+// deliveryRange is the range case of check 23 (R-CUR-026): under a package's allow whose range holds Kept and not Refused, no document
+// lists Refused, a passthrough document stays the upstream's bytes, and Refused's file answers the refusal with the reason
+// outsideRange. A format without a view adapter has no order of versions, and the store refuses a range there (not_applicable): the
+// case does not apply.
+func (r *run) deliveryRange(fx *DeliveryFixture) {
+	view := r.f.View()
+	if view == nil {
+		return
+	}
+	// The range is compared by the view adapter's order, which check 11 holds: an order that does not order Kept and Refused one way
+	// (equal, or each above the other) is check 11's finding, not this one's.
+	kept, refused := r.canonical(fx.Kept), r.canonical(fx.Refused)
+	if d := view.Compare(kept, refused); d == 0 || (d < 0) == (view.Compare(refused, kept) < 0) {
+		return
+	}
+	ranged, ok := r.rangeRules(fx)
+	if !ok {
+		return
+	}
+	for _, p := range fx.Documents {
+		r.listsKeptOnly(fx, ranged, p, "a range of the package's allow that holds "+fx.Kept+" and not "+fx.Refused)
+	}
+	for _, p := range fx.Passthrough {
+		resp, ok := r.deliveryRequest(fx, ranged, p)
+		if ok && resp.Code != http.StatusOK {
+			r.failf("passthrough document %s answered %d under a range of the package's allow: a signed document passes unchanged", p, resp.Code)
+		}
+	}
+	if resp, ok := r.deliveryRequest(fx, ranged, fx.Artifact); ok {
+		r.refused(resp, "the file "+fx.Artifact+" of a version outside the range")
+		if body := resp.Body.String(); resp.Code == http.StatusForbidden && !strings.Contains(body, "outside the versions a rule of the repository allows") {
+			r.failf("the file %s of a version outside the range answered 403 without the reason outsideRange: %s", fx.Artifact, snippet(body))
+		}
+	}
+}
+
+// listsKeptOnly holds a document under the rules d to 200, listing Kept and not Refused.
+func (r *run) listsKeptOnly(fx *DeliveryFixture, d *DeliveryRules, p, under string) {
+	resp, ok := r.deliveryRequest(fx, d, p)
+	if !ok {
+		return
+	}
+	switch body := resp.Body.String(); {
+	case resp.Code != http.StatusOK:
+		r.failf("document %s answered %d under %s, want 200", p, resp.Code, under)
+	case strings.Contains(body, fx.Refused):
+		r.failf("document %s lists %s under %s, which refuses it", p, fx.Refused, under)
+	case !strings.Contains(body, fx.Kept):
+		r.failf("document %s does not list %s under %s, which delivers it", p, fx.Kept, under)
+	}
+}
+
+// rangeRules are the rules of the range case (R-CUR-026): the package's allow with a range that holds Kept and not Refused, in the
+// format's order: below Refused where Kept is older, else from Kept.
+func (r *run) rangeRules(fx *DeliveryFixture) (*DeliveryRules, bool) {
+	view := r.f.View()
+	o := rc.Order{View: view}
+	kept, refused := r.canonical(fx.Kept), r.canonical(fx.Refused)
+	_, keptRanked := o.Rank(kept)
+	_, refusedRanked := o.Rank(refused)
+	if !keptRanked || !refusedRanked {
+		r.failf("the Delivery fixture's Kept %q and Refused %q are not both versions the format ranks: the range case needs two", fx.Kept, fx.Refused)
+		return nil, false
+	}
+	rng := rc.Range{From: kept}
+	if view.Compare(kept, refused) < 0 {
+		rng = rc.Range{To: refused}
+	}
+	return &DeliveryRules{Mode: rc.AllExceptBlocked, Rules: []rules.Rule{{Kind: rc.KindPackage, Name: fx.Package, Effect: rc.Allow, Range: rng}}}, true
 }
 
 // canonical is the version in the format's canon, as the store keeps a rule's version.

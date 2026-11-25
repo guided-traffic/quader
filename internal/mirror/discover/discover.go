@@ -205,6 +205,22 @@ func BoundsOf(u Upstream) (maxVersions int, includePrereleases bool) {
 	return 0, true
 }
 
+// Delivering is implemented by the [Upstream] of the engine and tells a plan which versions the repository's delivery rules deliver
+// (remote-curation.md R-CUR-026, Q-CUR-226): the engine keeps its newest MaxVersions among them, so a plan that leaves out versions by
+// [Bounded] counts only the delivered ones, and reads nothing of a version outside the range of a package's allow. A format asks with
+// [DeliveredBy]; an Upstream that does not implement it, a download ahead's, delivers every version.
+type Delivering interface {
+	Delivers(name, version string) bool
+}
+
+// DeliveredBy returns what u delivers: every version when u does not say.
+func DeliveredBy(u Upstream) func(name, version string) bool {
+	if d, ok := u.(Delivering); ok {
+		return d.Delivers
+	}
+	return func(string, string) bool { return true }
+}
+
 // Lister is the optional interface of a format's remote adapter whose upstream packages can be discovered (ADR-152).
 // The engine calls MirrorNames from one goroutine per pass, and MirrorPlan from up to the pass's window at once, for
 // different names.

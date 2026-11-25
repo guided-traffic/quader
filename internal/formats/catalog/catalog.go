@@ -277,6 +277,16 @@ type VersionCanon interface {
 	Canonical(version string) (canonical string, ok bool)
 }
 
+// VersionOrder is a format's order of versions (api-and-ui.md R-API-029): the part of its view adapter that orders, which
+// formats.CatalogEntry hands over. The range of a package's allow is compared by it (remote-curation.md R-CUR-026, Q-CUR-221), in the
+// rules' store, the replica's compiled rule set and the replay of a restore, none of which may import the format registry.
+type VersionOrder interface {
+	// Compare orders two versions by the format's precedence: negative when a is older than b.
+	Compare(a, b string) int
+	// SortKey is the stored sort key of a version; its first byte is the class of internal/formats/versionkey.
+	SortKey(version string) []byte
+}
+
 // Versioning is what the decision point compiles a format's rules with (R-EP-012,
 // R-EP-018): the format's range syntax, from its exposure adapter, and its notion of
 // a pre-release, from its view adapter beside its order of versions (api-and-ui.md
@@ -312,6 +322,9 @@ type Entry struct {
 	Names Names
 	// VersionCanon is the format's canonical form of a version (R-CUR-006); nil for a format without the class remote.
 	VersionCanon VersionCanon
+	// VersionOrder is the format's order of versions, its view adapter's (R-API-029); nil for a format without one, whose package's
+	// allow takes no range of versions (R-CUR-026, Q-CUR-221). formats.CatalogEntry derives it.
+	VersionOrder VersionOrder
 	// DocumentPath returns the canonical path of the package document of a normalized name, the format's
 	// PackageDocumentPath (R-REPO-029); ok is false for a string the format takes for no name. formats.Register
 	// derives it for a format with package names. The decision point decides a question about a package as a whole
@@ -602,6 +615,16 @@ func (r *Registry) NormalizeName(format, name string) (string, bool) {
 		return name, true
 	}
 	return e.Names.Normalize(name)
+}
+
+// VersionOrderOf returns the format's order of versions; ok is false for a format the registry does not know and for one without an
+// order, whose package's allow takes no range (R-CUR-026).
+func (r *Registry) VersionOrderOf(format string) (VersionOrder, bool) {
+	e, ok := r.Lookup(format)
+	if !ok || e.VersionOrder == nil {
+		return nil, false
+	}
+	return e.VersionOrder, true
 }
 
 // CanonicalVersion returns the canonical form of a version by the format's [VersionCanon] (R-CUR-006); ok is false for a string that

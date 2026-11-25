@@ -16,13 +16,15 @@ import (
 )
 
 // Rule is one delivery rule as the store holds it (R-CUR-006): a subject and an effect. The subject's members are in their canonical
-// forms: Pattern folded by the format's name rule, Name normalized, Version in the format's version canon.
+// forms: Pattern folded by the format's name rule, Name normalized, Version in the format's version canon. Range is the range of
+// versions of a package's allow (R-CUR-026), its bounds in the version canon; it bounds nothing on any other rule.
 type Rule struct {
 	Kind    rc.RuleKind
 	Pattern string
 	Name    string
 	Version string
 	Effect  rc.Effect
+	Range   rc.Range
 }
 
 // Subject is the rule's subject as the API and the events name it (R-CUR-006): the pattern of a section, the name of a package, and
@@ -42,10 +44,12 @@ func SubjectOf(kind rc.RuleKind, pattern, name, version string) string {
 
 // Canon is what a rule set folds what it is asked with: the format's name rule and its version canon (R-CUR-006 "Canonical forms").
 // A nil function leaves its input unchanged; a name or version the function refuses is compared as given, so it meets no rule that
-// was stored in the canonical form and the mode decides it.
+// was stored in the canonical form and the mode decides it. Order is the format's order of versions, which a range of a package's allow
+// is compared by (R-CUR-026, Q-CUR-221); nil for a format without one, whose set holds no range.
 type Canon struct {
 	Name    func(string) (string, bool)
 	Version func(string) (string, bool)
+	Order   rc.VersionOrder
 }
 
 func (c Canon) name(s string) string {
@@ -90,7 +94,10 @@ type versionRule struct {
 // not a map (Q-CUR-207): the first version rule of a package would allocate a map's header and its first group of eight slots, about
 // 300 bytes, where the slice holds the one rule in 32.
 type pkgRules struct {
-	effect   rc.Effect // "" without a package rule
+	effect rc.Effect // "" without a package rule
+	// rng is the range of versions of the package's allow, nil without one (R-CUR-026): a pointer, so a package without a range pays
+	// eight bytes for it.
+	rng      *rc.Range
 	versions []versionRule
 	// allows is true when a version rule of the package allows: the package's decision then delivers (R-CUR-001).
 	allows bool
@@ -121,8 +128,9 @@ type Set struct {
 }
 
 // Compile builds the set of a repository in the mode from its rules. It returns nil, a set that delivers everything and costs nothing,
-// for the mode allExceptBlocked without a rule (R-CUR-003). A section whose pattern does not compile cannot have been written by the
-// store; it is an error, and the repository model then loads the repository disabled (fail closed).
+// for the mode allExceptBlocked without a rule (R-CUR-003). A section whose pattern does not compile, and a range the store cannot have
+// written (on another rule than a package's allow, in a format without an order, or with a bound the format does not rank), are an
+// error, and the repository model then loads the repository disabled (fail closed).
 func Compile(mode rc.Mode, revision int64, list []Rule, compile Compiler, canon Canon) (*Set, error) {
 	if !mode.Valid() {
 		mode = rc.AllExceptBlocked
@@ -132,6 +140,9 @@ func Compile(mode rc.Mode, revision int64, list []Rule, compile Compiler, canon 
 	}
 	s := &Set{mode: mode, revision: revision, canon: canon, pkgs: map[string]*pkgRules{}, rules: len(list)}
 	for _, r := range list {
+		if r.Kind != rc.KindPackage && r.Range.Set() {
+			return nil, errRangeOnRule
+		}
 		switch r.Kind {
 		case rc.KindSection:
 			m, err := compile(r.Pattern)
@@ -141,7 +152,15 @@ func Compile(mode rc.Mode, revision int64, list []Rule, compile Compiler, canon 
 			s.sections = append(s.sections, section{pattern: r.Pattern, effect: r.Effect, match: m})
 			continue
 		case rc.KindPackage:
-			s.pkg(r.Name).effect = r.Effect
+			p := s.pkg(r.Name)
+			p.effect = r.Effect
+			if r.Range.Set() {
+				rng, err := canon.compileRange(r)
+				if err != nil {
+					return nil, err
+				}
+				p.rng = rng
+			}
 		case rc.KindVersion:
 			p := s.pkg(r.Name)
 			p.versions = append(p.versions, versionRule{version: r.Version, effect: r.Effect})
@@ -224,16 +243,6 @@ func (s *Set) Fold(name, version string) (string, string) {
 	return s.canon.name(name), s.canon.version(version)
 }
 
-// VersionRules reports whether the set holds a version rule of the package: a manifest by digest of an image with version rules is
-// delivered only through a delivered tag that names it (R-OCI-038, Q-CUR-10).
-func (s *Set) VersionRules(name string) bool {
-	if s == nil {
-		return false
-	}
-	p := s.pkgs[s.canon.name(name)]
-	return p != nil && len(p.versions) > 0
-}
-
 // VersionRuleCounts is the number of the package's version rules that allow and that block: the package's switch asks whether they are
 // kept when it is turned (R-CUR-024). Zero for a nil set.
 func (s *Set) VersionRuleCounts(name string) (allow, block int) {
@@ -255,7 +264,8 @@ func (s *Set) Counts() (allow, block, sections int) {
 }
 
 // Decide is the decision of R-CUR-001 for one version of a package, steps 1 to 3: the narrowest kind that matches decides, a block
-// wins at equal width, and without a matching rule the mode decides. name and version are folded by the format's rules first.
+// wins at equal width, and without a matching rule the mode decides. A package's allow with a range delivers only the versions inside
+// it (R-CUR-026). name and version are folded by the format's rules first.
 func (s *Set) Decide(name, version string) rc.Decision {
 	if s == nil {
 		return rc.Delivered()
@@ -266,13 +276,25 @@ func (s *Set) Decide(name, version string) rc.Decision {
 			return decided(rc.KindVersion, SubjectOf(rc.KindVersion, "", name, version), e)
 		}
 	}
-	return s.level(name)
+	return s.inherited(name, version)
 }
 
-// Inherited is what a version of the package inherits (R-CUR-024): the decision of R-CUR-001 without the version's own rule, which is
-// the package level's, the same for every version. A version's switch writes a rule only where it departs from it.
-func (s *Set) Inherited(name, _ string) rc.Decision {
-	return s.Level(name)
+// Inherited is what a version of the package inherits (R-CUR-024): the decision of R-CUR-001 without the version's own rule: the package
+// level's, and outside the range of the package's allow not delivered (R-CUR-026). A version's switch writes a rule only where it
+// departs from it, so a version outside the range, or a tag that is no version, is switched on by a version rule of its own (Q-CUR-223).
+func (s *Set) Inherited(name, version string) rc.Decision {
+	if s == nil {
+		return rc.Delivered()
+	}
+	return s.inherited(s.canon.name(name), s.canon.version(version))
+}
+
+// inherited is Inherited of a folded name and version.
+func (s *Set) inherited(name, version string) rc.Decision {
+	if p := s.pkgs[name]; !s.inRange(p, version) {
+		return outside(name, p.rng)
+	}
+	return s.level(name)
 }
 
 // Level is the decision of the package level (R-CUR-024): the package's rule, else the sections, else the mode. A version's own rule
@@ -309,10 +331,14 @@ func (s *Set) ModeDecides(name string) bool {
 	return !ok
 }
 
-// level is the package level of a folded name.
+// level is the package level of a folded name: a package's allow names its range (R-CUR-026).
 func (s *Set) level(name string) rc.Decision {
 	if p := s.pkgs[name]; p != nil && p.effect != "" {
-		return decided(rc.KindPackage, name, p.effect)
+		d := decided(rc.KindPackage, name, p.effect)
+		if p.effect == rc.Allow {
+			d.By.Range = p.rng
+		}
+		return d
 	}
 	if d, ok := s.sectionDecision(name); ok {
 		return d

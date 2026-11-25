@@ -299,7 +299,7 @@ func TestR_CUR_010_ABulkIsExpandedWithinItsBounds(t *testing.T) {
 // testOrder is a format's order as a range reads it: MAJOR.MINOR.PATCH with an optional pre-release after a "-", which sorts below its
 // release; a missing part is 0 for the canon, so that "5.4" and "5.4.0" meet as NuGet's "1.0" and "1.0.0" do; anything else is a tag
 // the canon accepts that is no version (the class NotVersion, as OCI's "latest").
-var testOrder = Order{View: testView{}, Canon: testCanon{}}
+var testOrder = remotecuration.Order{View: testView{}, Canon: testCanon{}}
 
 type (
 	testView  struct{}
@@ -374,7 +374,7 @@ func TestR_CUR_010_ABulkTakesARangeOfVersionsInTheFormatsOrder(t *testing.T) {
 	big := Settings{PerRepository: 2, MaxWaiting: 100, MaxAttempts: 5}
 	for _, tc := range []struct {
 		name     string
-		rng      Range
+		rng      remotecuration.Range
 		noPre    bool
 		max      int
 		maxBytes int64
@@ -382,15 +382,15 @@ func TestR_CUR_010_ABulkTakesARangeOfVersionsInTheFormatsOrder(t *testing.T) {
 		bound    string
 	}{
 		{name: "no bound takes every string, versions or not", want: []string{"6.0.0-rc.1", "5.4.7", "5.4.0", "5.0.0", "4.2.0", "main", "latest"}},
-		{name: "from a version, included", rng: Range{From: "5.0.0"}, want: []string{"6.0.0-rc.1", "5.4.7", "5.4.0", "5.0.0"}},
-		{name: "up to a version, included", rng: Range{To: "5.4.7", ToInclusive: true}, want: []string{"5.4.7", "5.4.0", "5.0.0", "4.2.0"}},
-		{name: "below a version", rng: Range{To: "5.4.7"}, want: []string{"5.4.0", "5.0.0", "4.2.0"}},
-		{name: "both bounds", rng: Range{From: "5.0.0", To: "5.4.7", ToInclusive: true}, want: []string{"5.4.7", "5.4.0", "5.0.0"}},
-		{name: "bounds the upstream does not list", rng: Range{From: "5.1.0", To: "5.5.0"}, want: []string{"5.4.7", "5.4.0"}},
-		{name: "a bound in another spelling meets its version", rng: Range{From: "5.4", To: "5.4", ToInclusive: true}, want: []string{"5.4.0"}},
-		{name: "the range first, then the pre-releases", rng: Range{From: "5.0.0"}, noPre: true, want: []string{"5.4.7", "5.4.0", "5.0.0"}},
-		{name: "then the newest maxVersions", rng: Range{From: "4.0.0"}, noPre: true, max: 2, want: []string{"5.4.7", "5.4.0"}},
-		{name: "then maxBytes", rng: Range{To: "5.4.7", ToInclusive: true}, maxBytes: 25, want: []string{"5.4.7", "5.4.0"}, bound: CodeBulkMaxBytes},
+		{name: "from a version, included", rng: remotecuration.Range{From: "5.0.0"}, want: []string{"6.0.0-rc.1", "5.4.7", "5.4.0", "5.0.0"}},
+		{name: "up to a version, included", rng: remotecuration.Range{To: "5.4.7", ToInclusive: true}, want: []string{"5.4.7", "5.4.0", "5.0.0", "4.2.0"}},
+		{name: "below a version", rng: remotecuration.Range{To: "5.4.7"}, want: []string{"5.4.0", "5.0.0", "4.2.0"}},
+		{name: "both bounds", rng: remotecuration.Range{From: "5.0.0", To: "5.4.7", ToInclusive: true}, want: []string{"5.4.7", "5.4.0", "5.0.0"}},
+		{name: "bounds the upstream does not list", rng: remotecuration.Range{From: "5.1.0", To: "5.5.0"}, want: []string{"5.4.7", "5.4.0"}},
+		{name: "a bound in another spelling meets its version", rng: remotecuration.Range{From: "5.4", To: "5.4", ToInclusive: true}, want: []string{"5.4.0"}},
+		{name: "the range first, then the pre-releases", rng: remotecuration.Range{From: "5.0.0"}, noPre: true, want: []string{"5.4.7", "5.4.0", "5.0.0"}},
+		{name: "then the newest maxVersions", rng: remotecuration.Range{From: "4.0.0"}, noPre: true, max: 2, want: []string{"5.4.7", "5.4.0"}},
+		{name: "then maxBytes", rng: remotecuration.Range{To: "5.4.7", ToInclusive: true}, maxBytes: 25, want: []string{"5.4.7", "5.4.0"}, bound: CodeBulkMaxBytes},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			f := newFixture(t, big)
@@ -438,9 +438,9 @@ func TestR_CUR_010_ABulkTakesARangeOfVersionsInTheFormatsOrder(t *testing.T) {
 	}
 	t.Run("a range counts the strings it leaves out because they are no version", func(t *testing.T) {
 		for _, tc := range []struct {
-			rng  Range
+			rng  remotecuration.Range
 			want int
-		}{{Range{}, 0}, {Range{From: "1.0.0"}, 2}} {
+		}{{remotecuration.Range{}, 0}, {remotecuration.Range{From: "1.0.0"}, 2}} {
 			p := Picker{Selection: Selection{Range: tc.rng, IncludePrereleases: true}, Order: testOrder}
 			for _, v := range listed {
 				p.Take(v.Version, false)
@@ -455,13 +455,13 @@ func TestR_CUR_010_ABulkTakesARangeOfVersionsInTheFormatsOrder(t *testing.T) {
 			t.Error("latest is ranked")
 		}
 		for _, tc := range []struct {
-			rng   Range
+			rng   remotecuration.Range
 			empty bool
 		}{
-			{Range{From: "5.0.0", To: "4.0.0", ToInclusive: true}, true},
-			{Range{From: "5.0.0", To: "5.0.0"}, true},
-			{Range{From: "5.0.0", To: "5.0.0", ToInclusive: true}, false},
-			{Range{From: "5.0.0"}, false},
+			{remotecuration.Range{From: "5.0.0", To: "4.0.0", ToInclusive: true}, true},
+			{remotecuration.Range{From: "5.0.0", To: "5.0.0"}, true},
+			{remotecuration.Range{From: "5.0.0", To: "5.0.0", ToInclusive: true}, false},
+			{remotecuration.Range{From: "5.0.0"}, false},
 		} {
 			if got := tc.rng.Empty(testOrder); got != tc.empty {
 				t.Errorf("range %+v empty %v, want %v", tc.rng, got, tc.empty)

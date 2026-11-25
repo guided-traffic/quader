@@ -260,11 +260,13 @@ func (remoteAdapter) MirrorPlan(ctx context.Context, u discover.Upstream, name s
 	}
 	sort.SliceStable(vs, func(i, j int) bool { return version.Compare(vs[i].v, vs[j].v) > 0 })
 	maxVersions, includePre := discover.BoundsOf(u)
+	delivers := discover.DeliveredBy(u)
 	plan := discover.Plan{Name: name}
 	kept := 0
 	for _, p := range vs {
 		pre := len(p.v.Pre) > 0
-		if pre && !includePre {
+		// A version the delivery rules do not deliver takes no place of the newest (remote-curation.md R-CUR-026, Q-CUR-226).
+		if (pre && !includePre) || !delivers(name, p.raw) {
 			continue
 		}
 		if maxVersions > 0 && kept >= maxVersions {

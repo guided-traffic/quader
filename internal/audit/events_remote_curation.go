@@ -51,8 +51,14 @@ func init() {
 		reqID   = `"requestId":{"type":["string","null"]}`
 	)
 	effect := `{"type":"string","enum":["allow","block"]}`
+	// The range of versions of a package's allow (R-CUR-026): present where the rule carries one, previousRange where a write replaced
+	// one; a bound null is no bound on that side.
+	bound := `{"type":["string","null"],"maxLength":256}`
+	versionRange := `{"type":"object","properties":{"fromVersion":` + bound + `,"toVersion":` + bound + `,"toInclusive":{"type":"boolean"}},` +
+		`"required":["fromVersion","toVersion","toInclusive"],"additionalProperties":false}`
 	rule := `{"type":"object","properties":{"ruleId":{"type":"string"},"kind":{"type":"string","enum":["section","package","version"]},` +
 		subject + `,"effect":` + effect + `,"previousEffect":{"anyOf":[` + effect + `,{"type":"null"}]},` +
+		`"range":` + versionRange + `,"previousRange":` + versionRange + `,` +
 		`"note":{"type":"string","maxLength":1000},` + reqID + `},` +
 		`"required":["ruleId","kind","subject","effect"],"additionalProperties":false}`
 	for _, n := range []string{EventRemoteRuleCreated, EventRemoteRuleUpdated, EventRemoteRuleDeleted} {
@@ -61,7 +67,7 @@ func init() {
 	Register(EventType{
 		Name: EventRemoteDeliveryRefused, Category: CategoryContent, Mode: Async,
 		Schema: `{"type":"object","properties":{"path":{"type":"string"},"package":{"type":"string"},` + version + `,` +
-			`"reason":{"type":"string","enum":["blocked","not_allowed"]},"kind":{"type":"string","enum":["document","artifact"]}},` +
+			`"reason":{"type":"string","enum":["blocked","not_allowed","outside_range"]},"kind":{"type":"string","enum":["document","artifact"]}},` +
 			`"required":["path","package","version","reason","kind"],"additionalProperties":false}`,
 	})
 	request := `{"type":"object","properties":{` + reqID + `,` + name + `,` + version + `,"reason":{"type":"string","maxLength":1000}},` +

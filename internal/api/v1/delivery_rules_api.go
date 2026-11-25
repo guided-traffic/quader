@@ -184,7 +184,10 @@ func (s *Server) PutDeliveryRule(w http.ResponseWriter, r *http.Request, project
 		httpserver.Problem(w, r, errs.Wrap(err, "api.putDeliveryRule"))
 		return
 	}
-	input := store.Input{Kind: rc.RuleKind(in.Kind), Effect: rc.Effect(in.Effect), Pattern: strOf(in.Pattern), Name: strOf(in.Name), Version: strOf(in.Version), Note: strOf(in.Note)}
+	input := store.Input{
+		Kind: rc.RuleKind(in.Kind), Effect: rc.Effect(in.Effect), Pattern: strOf(in.Pattern), Name: strOf(in.Name), Version: strOf(in.Version),
+		Range: rangeInput(in.FromVersion, in.ToVersion, in.ToInclusive), Note: strOf(in.Note),
+	}
 	c := ruleCaller(r)
 	err = s.idem.Do(w, r, body, IdempotentOp{Run: func(ctx context.Context, tx meta.Tx) (Outcome, error) {
 		wr, err := s.o.DeliveryRules.Store.PutTx(ctx, tx, t, c, input)
@@ -329,6 +332,10 @@ func (s *Server) SwitchDeliveryRule(w http.ResponseWriter, r *http.Request, proj
 	if in.ResetVersions != nil {
 		input.ResetVersions = *in.ResetVersions
 	}
+	if in.Range != nil {
+		rng := rangeInput(in.Range.FromVersion, in.Range.ToVersion, in.Range.ToInclusive)
+		input.Range = &rng
+	}
 	c := ruleCaller(r)
 	err = s.idem.Do(w, r, body, IdempotentOp{Run: func(ctx context.Context, tx meta.Tx) (Outcome, error) {
 		sw, err := s.o.DeliveryRules.Store.SwitchTx(ctx, tx, t, c, input)
@@ -420,10 +427,26 @@ func (s *Server) AllowStoredPackages(w http.ResponseWriter, r *http.Request, pro
 	}
 }
 
+// rangeInput is a range of versions as a request writes it (R-CUR-026): an absent bound is none on that side, toInclusive true unless
+// it is false. The store checks and folds it.
+func rangeInput(from, to *string, inclusive *bool) rc.Range {
+	return rc.Range{From: strOf(from), To: strOf(to), ToInclusive: inclusive == nil || *inclusive}
+}
+
+// toDeliveryRange is a range as the API answers it; nil for one that bounds nothing.
+func toDeliveryRange(r *rc.Range) *gen.DeliveryRange {
+	if r == nil || !r.Set() {
+		return nil
+	}
+	n := r.Normal()
+	return &gen.DeliveryRange{FromVersion: optionalString(n.From), ToVersion: optionalString(n.To), ToInclusive: n.ToInclusive}
+}
+
 func toDeliveryRule(st store.Stored) gen.DeliveryRule {
 	out := gen.DeliveryRule{
 		Kind: gen.DeliveryRuleKind(st.Kind), Subject: st.Subject(), Effect: gen.DeliveryRuleEffect(st.Effect), Note: st.Note,
 		Pattern: strPtr(st.Pattern), Name: strPtr(st.Name), Version: strPtr(st.Version), CreatedAt: st.CreatedAt,
+		Range: toDeliveryRange(&st.Range),
 	}
 	out.Id = parseUUID(st.ID)
 	if st.RequestID != "" {
@@ -443,7 +466,7 @@ func toDeliveryRuleWritten(wr store.Written) gen.DeliveryRuleWritten {
 	r := toDeliveryRule(wr.Stored)
 	return gen.DeliveryRuleWritten{
 		Id: r.Id, Kind: gen.DeliveryRuleWrittenKind(r.Kind), Subject: r.Subject, Pattern: r.Pattern, Name: r.Name, Version: r.Version,
-		Effect: gen.DeliveryRuleWrittenEffect(r.Effect), Note: r.Note, RequestId: r.RequestId, CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt,
+		Effect: gen.DeliveryRuleWrittenEffect(r.Effect), Range: r.Range, Note: r.Note, RequestId: r.RequestId, CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt,
 		Revision: wr.Revision,
 	}
 }
@@ -457,6 +480,7 @@ func toDeliveryDecision(d rc.Decision, mode rc.Mode) gen.DeliveryDecision {
 	if d.By.Kind != "" {
 		kind, effect, subject := gen.DeliveryDecisionDecidedByKind(d.By.Kind), gen.DeliveryDecisionDecidedByEffect(d.By.Effect), d.By.Subject
 		out.DecidedBy.Kind, out.DecidedBy.Effect, out.DecidedBy.Subject = &kind, &effect, &subject
+		out.DecidedBy.Range = toDeliveryRange(d.By.Range)
 		return out
 	}
 	m := gen.DeliveryDecisionDecidedByMode(mode)

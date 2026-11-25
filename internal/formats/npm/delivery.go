@@ -5,7 +5,6 @@ import (
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
-	rc "github.com/guided-traffic/quader/internal/remotecuration"
 	"github.com/guided-traffic/quader/internal/remotecuration/rules"
 )
 
@@ -34,18 +33,11 @@ func rulesViewOf(rq *formats.Request) tagView {
 }
 
 // noDeliveredVersion is the refusal of a package document none of whose versions the rules deliver (R-NPM-049, R-CUR-004), for a
-// package whose own decision delivers it (a version rule allows a version the upstream does not hold): the refusal of the package
-// whole, with the reason the mode gives a version no rule names.
+// package whose own decision delivers it (a version rule allows a version the upstream does not hold, or none of its versions lies in
+// the range of its allow): the refusal of the package whole, with the reason an emptied document gives (rules.Set.EmptyReason).
 func noDeliveredVersion(rq *formats.Request, n string) error {
 	set := formats.Delivery(rq)
-	return formats.RefusalOf(rq, set, n, "", modeReason(set), rules.KindDocument)
-}
-
-func modeReason(set *rules.Set) rc.Reason {
-	if set.Mode() == rc.OnlyAllowed {
-		return rc.ReasonNotAllowed
-	}
-	return rc.ReasonBlocked
+	return formats.RefusalOf(rq, set, n, "", set.EmptyReason(n), rules.KindDocument)
 }
 
 // memberWithRules is the rules of a remote member of the request's virtual repository (formats.MemberDelivery); nil for a member

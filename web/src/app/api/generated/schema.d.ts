@@ -12390,12 +12390,13 @@ export interface components {
             /** @description A client gets the version through this repository. False where the repository is disabled, where it is a remote repository whose delivery rules do not deliver the version (remote-curation.md R-CUR-014, Q-CUR-26: stored, listed and not delivered), and where it is a virtual repository whose members that hold and deliver the version are all disabled, since a virtual repository leaves a disabled member out (R-REPO-019): the version page offers no install command and no download through it (Q-UI-965). */
             available: boolean;
             /**
-             * @description Why a remote repository's delivery rules do not deliver the stored version: a rule blocks it, or the repository delivers
-             *     only what is allowed and no rule allows it (R-CUR-014). Absent where the repository delivers it or `available` is false
+             * @description Why a remote repository's delivery rules do not deliver the stored version: a rule blocks it, the repository delivers
+             *     only what is allowed and no rule allows it (R-CUR-014), or the version lies outside the range of versions of the package's
+             *     allow (R-CUR-026). Absent where the repository delivers it or `available` is false
              *     for another reason.
              * @enum {string}
              */
-            unavailableReason?: "blocked" | "notAllowed";
+            unavailableReason?: "blocked" | "notAllowed" | "outsideRange";
         };
         PackageFile: {
             /** @description The path of the file item in the repository that holds it. */
@@ -15534,7 +15535,11 @@ export interface components {
         };
         /**
          * @description A delivery rule as a request writes it (R-CUR-001, R-CUR-006): a `section` holds a name pattern of R-AUTHZ-005, a `package` a
-         *     name (every version, future ones included), a `version` a name and one exact version (no range).
+         *     name (every version, future ones included), a `version` a name and one exact version. A `package` rule with the effect `allow`
+         *     takes an optional range of versions (R-CUR-026): `fromVersion` (included), `toVersion` (included unless `toInclusive` is false,
+         *     then below it), or both, in the format's own order; a write without them removes the range. A bound the format does not rank (a
+         *     tag such as `latest`) answers `422 invalid_version` at its pointer, a range that holds no version `422 validation_failed` at
+         *     `/toVersion` with the field code `out_of_range`, a range on another rule `422 validation_failed` with `not_applicable`.
          */
         DeliveryRuleInput: {
             /** @enum {string} */
@@ -15544,8 +15549,37 @@ export interface components {
             version?: string;
             /** @enum {string} */
             effect: "allow" | "block";
+            /** @description The lowest version a package's allow delivers, included (R-CUR-026); absent for no lower bound. */
+            fromVersion?: string;
+            /** @description The highest version a package's allow delivers (R-CUR-026); absent for no upper bound. */
+            toVersion?: string;
+            /** @description Whether `toVersion` is delivered; false delivers the versions below it. True when absent. */
+            toInclusive?: boolean;
             /** @description Seen only by those who may read the rules. */
             note?: string;
+        };
+        /**
+         * @description The range of versions of a package's allow (R-CUR-026, Q-CUR-220), its bounds in the format's canonical form and compared in the
+         *     format's own order: a version inside it is delivered by the rule, a version outside it is not (the reason `outsideRange`), and a
+         *     tag that is no version (`latest`) lies outside it.
+         */
+        DeliveryRange: {
+            /** @description The lowest version delivered, included; null for no lower bound. */
+            fromVersion: string | null;
+            /** @description The highest version; null for no upper bound. */
+            toVersion: string | null;
+            /** @description Whether `toVersion` is delivered; false delivers the versions below it. True without an upper bound. */
+            toInclusive: boolean;
+        };
+        /**
+         * @description A range of versions as a package's switch sets it (R-CUR-026): `fromVersion` (included), `toVersion` (included unless
+         *     `toInclusive` is false), either or both; neither is every version, which removes the range.
+         */
+        DeliveryRangeInput: {
+            fromVersion?: string;
+            toVersion?: string;
+            /** @description Whether `toVersion` is delivered; false delivers the versions below it. True when absent. */
+            toInclusive?: boolean;
         };
         /** @description A delivery rule as stored, its members in the format's canonical forms (R-CUR-006). */
         DeliveryRule: {
@@ -15560,6 +15594,8 @@ export interface components {
             version?: string;
             /** @enum {string} */
             effect: "allow" | "block";
+            /** @description The range of versions of a package's allow (R-CUR-026); absent where the rule has none. */
+            range?: components["schemas"]["DeliveryRange"];
             note: string;
             /**
              * Format: uuid
@@ -15592,17 +15628,22 @@ export interface components {
         DeliveryDecision: {
             delivered: boolean;
             /**
-             * @description Why the rules do not deliver it; absent when delivered.
+             * @description Why the rules do not deliver it; absent when delivered. `outsideRange`: the package's allow carries a range of versions and
+             *     the version lies outside it (R-CUR-026).
              * @enum {string}
              */
-            reason?: "blocked" | "notAllowed";
-            /** @description The rule that decided (`kind`, `subject`, `effect`), or the mode when no rule matched (`mode`). */
+            reason?: "blocked" | "notAllowed" | "outsideRange";
+            /**
+             * @description The rule that decided (`kind`, `subject`, `effect`, and `range` where a package's allow with a range decided), or the mode
+             *     when no rule matched (`mode`).
+             */
             decidedBy: {
                 /** @enum {string} */
                 kind?: "section" | "package" | "version";
                 subject?: string;
                 /** @enum {string} */
                 effect?: "allow" | "block";
+                range?: components["schemas"]["DeliveryRange"];
                 /** @enum {string} */
                 mode?: "allExceptBlocked" | "onlyAllowed";
             };
@@ -15617,6 +15658,12 @@ export interface components {
              * @default false
              */
             resetVersions: boolean;
+            /**
+             * @description A package turned on only (R-CUR-026): the range of versions its allow delivers, written whatever the package inherits; `{}` is
+             *     every version, which removes the range. Absent keeps the range the package's allow has. On a version or a package turned off
+             *     `422 validation_failed` at `/range`; a bound as in `DeliveryRuleInput`, at `/range/fromVersion` and `/range/toVersion`.
+             */
+            range?: components["schemas"]["DeliveryRangeInput"];
             /** @description The note of a rule the switch writes; seen only by those who may read the rules. */
             note?: string;
         };
@@ -17310,7 +17357,7 @@ export interface components {
              * @description Whether the delivery rules deliver the version (R-CUR-009); a row that fetches what they do not deliver stores it for examination.
              * @enum {string}
              */
-            delivery: "delivered" | "blocked" | "notAllowed";
+            delivery: "delivered" | "blocked" | "notAllowed" | "outsideRange";
         };
         RemoteDownloadCounts: {
             /** Format: int64 */

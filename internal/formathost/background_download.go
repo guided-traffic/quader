@@ -356,12 +356,12 @@ func (m *MirrorHost) Versions(ctx context.Context, repoID int64, name string, se
 
 // rangeOrder is the order a range of the format's versions is read by (Q-CUR-190): the registered format's view adapter and its
 // canon (R-CUR-006); ok is false for a format without a view adapter. The API's preview builds the same order.
-func rangeOrder(format string) (queue.Order, bool) {
+func rangeOrder(format string) (remotecuration.Order, bool) {
 	f, ok := formats.Lookup(format)
 	if !ok || f.View() == nil {
-		return queue.Order{}, false
+		return remotecuration.Order{}, false
 	}
-	o := queue.Order{View: f.View()}
+	o := remotecuration.Order{View: f.View()}
 	if c := f.Descriptor().VersionCanon; c != nil {
 		o.Canon = c
 	}

@@ -102,21 +102,12 @@ func findMember(ms []repository.Repository, ref RepoRef, depth int) *MemberRules
 // Q-CUR-8), as the virtual walk answers the first member's refusal when nothing serves.
 func (m *MemberRules) Refusal(rq *Request, name string) error {
 	n, _ := m.Set.Fold(name, "")
-	rf := &rules.Refusal{RepoID: m.Ref.ID, Repo: m.Ref.Name, Name: n, Reason: ModeReason(m.Set), Kind: rules.KindDocument, Path: rq.Path.Path}
+	rf := &rules.Refusal{RepoID: m.Ref.ID, Repo: m.Ref.Name, Name: n, Reason: m.Set.EmptyReason(n), Kind: rules.KindDocument, Path: rq.Path.Path}
 	base := ""
 	if rq.Host != nil {
 		base = rq.Host.Links(rq).Base()
 	}
 	return rf.Err(base)
-}
-
-// ModeReason is the reason a package with no delivered version is refused for when its own decision delivers it (a version rule
-// allows a version the upstream does not hold): the reason the mode gives a version no rule names.
-func ModeReason(set *rules.Set) rc.Reason {
-	if set.Mode() == rc.OnlyAllowed {
-		return rc.ReasonNotAllowed
-	}
-	return rc.ReasonBlocked
 }
 
 // DeliveryView is the rules of the request's repository as a document's filter reads them, the shape of [ExposureView]: a package is

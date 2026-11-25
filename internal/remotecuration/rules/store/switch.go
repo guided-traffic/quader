@@ -22,11 +22,23 @@ import (
 // errNoCompile is a rule set that does not compile: the store cannot have written it.
 var errNoCompile = errors.New("rules: the stored rule set does not compile")
 
-// canon is the format's folding of names and versions (R-CUR-006 "Canonical forms").
+// canon is the format's folding of names and versions (R-CUR-006 "Canonical forms") and its order of versions (R-CUR-026).
 func (s *Store) canon(format string) rules.Canon {
-	return rules.Canon{
+	c := rules.Canon{
 		Name:    func(n string) (string, bool) { return s.o.Catalog.NormalizeName(format, n) },
 		Version: func(v string) (string, bool) { return s.o.Catalog.CanonicalVersion(format, v) },
+	}
+	if o, ok := s.o.Catalog.VersionOrderOf(format); ok {
+		c.Order = o
+	}
+	return c
+}
+
+// ruleOfRow is a rule as a row of the package's rules holds it.
+func ruleOfRow(row q.DeliveryRulesOfPackageRow) rules.Rule {
+	return rules.Rule{
+		Kind: rc.RuleKind(row.Kind), Name: row.Name.String, Version: row.Version.String, Effect: rc.Effect(row.Effect),
+		Range: rangeOfColumns(row.FromVersion.String, row.ToVersion.String, row.ToInclusive),
 	}
 }
 
@@ -54,7 +66,7 @@ func (s *Store) compileSubject(ctx context.Context, qs *q.Queries, t Target, nam
 		rs = append(rs, rules.Rule{Kind: rc.KindSection, Pattern: row.Pattern.String, Effect: rc.Effect(row.Effect)})
 	}
 	for _, row := range own {
-		rs = append(rs, rules.Rule{Kind: rc.RuleKind(row.Kind), Name: row.Name.String, Version: row.Version.String, Effect: rc.Effect(row.Effect)})
+		rs = append(rs, ruleOfRow(row))
 	}
 	set, err := rules.Compile(modeOf(t.Mode), 0, rs, s.o.Compile, s.canon(t.Format))
 	if err != nil {
@@ -71,7 +83,10 @@ func (s *Store) compileRepository(ctx context.Context, qs *q.Queries, t Target) 
 	}
 	rs := make([]rules.Rule, len(list))
 	for i, row := range list {
-		rs[i] = rules.Rule{Kind: rc.RuleKind(row.Kind), Pattern: row.Pattern.String, Name: row.Name.String, Version: row.Version.String, Effect: rc.Effect(row.Effect)}
+		rs[i] = rules.Rule{
+			Kind: rc.RuleKind(row.Kind), Pattern: row.Pattern.String, Name: row.Name.String, Version: row.Version.String, Effect: rc.Effect(row.Effect),
+			Range: rangeOfColumns(row.FromVersion.String, row.ToVersion.String, row.ToInclusive),
+		}
 	}
 	set, err := rules.Compile(modeOf(t.Mode), 0, rs, s.o.Compile, s.canon(t.Format))
 	if err != nil {
@@ -81,11 +96,13 @@ func (s *Store) compileRepository(ctx context.Context, qs *q.Queries, t Target) 
 }
 
 // SwitchInput is a switch as a request turns it (R-CUR-024): a package (Version "") or one version, the state asked for, and for a
-// package whether its version rules are removed with it.
+// package whether its version rules are removed with it. Range is the range of versions of a package turned on (R-CUR-026): nil keeps
+// the range its allow has, one that bounds nothing removes it (every version), one that bounds something is written.
 type SwitchInput struct {
 	Name, Version string
 	Delivered     bool
 	ResetVersions bool
+	Range         *rc.Range
 	Note          string
 }
 
@@ -106,8 +123,8 @@ type switchWrite struct {
 	removed []Stored
 }
 
-func (w *switchWrite) event(t Target, c Caller, event, id string, r rules.Rule, previous rc.Effect, note, requestID string) error {
-	ev, err := eventOf(t, c, event, id, r, previous, note, requestID)
+func (w *switchWrite) event(t Target, c Caller, event, id string, r rules.Rule, previous rc.Effect, previousRange rc.Range, note, requestID string) error {
+	ev, err := eventOf(t, c, event, id, r, previous, previousRange, note, requestID)
 	if err != nil {
 		return err
 	}
@@ -123,7 +140,7 @@ func (w *switchWrite) removedRule(t Target, c Caller, st Stored) error {
 	} else {
 		w.widened = true
 	}
-	return w.event(t, c, audit.EventRemoteRuleDeleted, st.ID, st.Rule, st.Effect, st.Note, st.RequestID)
+	return w.event(t, c, audit.EventRemoteRuleDeleted, st.ID, st.Rule, st.Effect, rc.Range{}, st.Note, st.RequestID)
 }
 
 // SwitchTx turns the switch of a package or a version in the caller's transaction (R-CUR-024): under the revision's row lock it reads
@@ -143,7 +160,15 @@ func (s *Store) SwitchTx(ctx context.Context, tx meta.Tx, t Target, c Caller, in
 	if in.Delivered {
 		effect = rc.Allow
 	}
-	r, err := s.Canonical(t, Input{Kind: kind, Name: in.Name, Version: in.Version, Effect: effect, Note: in.Note})
+	if in.Range != nil && (kind != rc.KindPackage || !in.Delivered) {
+		return Switched{}, errs.E(errs.Unprocessable, errs.CodeValidation, "A range of versions is part of a package turned on; a version and a package turned off have none.",
+			errs.WithFields(errs.FieldError{Pointer: "/range", Code: errs.CodeNotApplicable, Detail: "a version and a package turned off have no range"}))
+	}
+	asked := Input{Kind: kind, Name: in.Name, Version: in.Version, Effect: effect, Note: in.Note}
+	if in.Range != nil {
+		asked.Range = *in.Range
+	}
+	r, err := s.canonical(t, asked, "/range")
 	if err != nil {
 		return Switched{}, err
 	}
@@ -192,46 +217,68 @@ func (s *Store) SwitchTx(ctx context.Context, tx meta.Tx, t Target, c Caller, in
 	return s.switched(ctx, qs, t, r, ruleID, out)
 }
 
+// ownRuleWanted is what the subject's own rule is after a switch (Q-CUR-200, R-CUR-026): none where the asked state equals what the
+// subject inherits and no range is asked or kept, else the rule with the asked effect and the range. A package turned on with a range
+// keeps its allow whatever it inherits: a range narrows what the package level would deliver. A package turned on without a range given
+// keeps the range its allow has.
+func ownRuleWanted(in SwitchInput, r rules.Rule, inherits bool, have *q.DeliveryRulesOfPackageRow) (rules.Rule, bool) {
+	if in.Range == nil && in.Delivered && have != nil && rc.Effect(have.Effect) == rc.Allow {
+		if kept := ruleOfRow(*have).Range; kept.Set() {
+			r.Range = kept
+			return r, true
+		}
+	}
+	if in.Delivered == inherits && !r.Range.Set() {
+		return rules.Rule{}, false
+	}
+	return r, true
+}
+
 // switchOwnRule writes what the asked state needs of the subject's own rule (Q-CUR-200): the state the subject inherits removes its
-// rule; the other state writes the rule with that effect, or replaces one of the other effect. It answers the ID of the rule the
-// subject has after the write, "" where it has none.
+// rule; the other state writes the rule with that effect, or replaces one of the other effect or range. It answers the ID of the rule
+// the subject has after the write, "" where it has none.
 func (s *Store) switchOwnRule(
 	ctx context.Context, qs *q.Queries, t Target, c Caller, in SwitchInput, r rules.Rule, inherits bool,
 	have *q.DeliveryRulesOfPackageRow, w *switchWrite,
 ) (string, error) {
+	want, keep := ownRuleWanted(in, r, inherits, have)
 	switch {
-	case in.Delivered == inherits && have != nil:
+	case !keep && have != nil:
 		if _, err := qs.DeliveryRuleDelete(ctx, q.DeliveryRuleDeleteParams{RepoID: t.ID, ID: have.ID.String()}); err != nil {
 			return "", err
 		}
 		return "", w.removedRule(t, c, storedOf(q.DeliveryRuleGetRow(*have)))
-	case in.Delivered != inherits && have == nil:
-		if err := s.withinLimits(ctx, qs, t.ID, r.Kind, 1); err != nil {
+	case keep && have == nil:
+		if err := s.withinLimits(ctx, qs, t.ID, want.Kind, 1); err != nil {
 			return "", err
 		}
 		ruleID := uuid.Must(uuid.NewV7()).String()
 		if err := qs.DeliveryRuleInsert(ctx, q.DeliveryRuleInsertParams{
-			ID: ruleID, RepoID: t.ID, Kind: string(r.Kind), Name: r.Name, Version: r.Version, Effect: string(r.Effect), Note: in.Note, CreatedBy: c.PrincipalID,
+			ID: ruleID, RepoID: t.ID, Kind: string(want.Kind), Name: want.Name, Version: want.Version, Effect: string(want.Effect),
+			FromVersion: want.Range.From, ToVersion: want.Range.To, ToInclusive: want.Range.ToInclusive, Note: in.Note, CreatedBy: c.PrincipalID,
 		}); err != nil {
 			return "", err
 		}
-		if err := w.event(t, c, audit.EventRemoteRuleCreated, ruleID, r, "", in.Note, ""); err != nil {
+		if err := w.event(t, c, audit.EventRemoteRuleCreated, ruleID, want, "", rc.Range{}, in.Note, ""); err != nil {
 			return "", err
 		}
-		w.wrote(r, "")
+		w.wrote(want, "", rc.Range{})
 		return ruleID, nil
-	case in.Delivered != inherits:
+	case keep:
 		ruleID := have.ID.String()
-		if rc.Effect(have.Effect) == r.Effect {
+		before := ruleOfRow(*have)
+		if before.Effect == want.Effect && before.Range == want.Range {
 			return ruleID, nil
 		}
-		if err := qs.DeliveryRuleReplace(ctx, q.DeliveryRuleReplaceParams{ID: ruleID, Effect: string(r.Effect), Note: in.Note}); err != nil {
+		if err := qs.DeliveryRuleReplace(ctx, q.DeliveryRuleReplaceParams{
+			ID: ruleID, Effect: string(want.Effect), FromVersion: want.Range.From, ToVersion: want.Range.To, ToInclusive: want.Range.ToInclusive, Note: in.Note,
+		}); err != nil {
 			return "", err
 		}
-		if err := w.event(t, c, audit.EventRemoteRuleUpdated, ruleID, r, rc.Effect(have.Effect), in.Note, ""); err != nil {
+		if err := w.event(t, c, audit.EventRemoteRuleUpdated, ruleID, want, before.Effect, before.Range, in.Note, ""); err != nil {
 			return "", err
 		}
-		w.wrote(r, rc.Effect(have.Effect))
+		w.wrote(want, before.Effect, before.Range)
 		return ruleID, nil
 	}
 	return "", nil
@@ -279,13 +326,16 @@ func (s *Store) switched(ctx context.Context, qs *q.Queries, t Target, r rules.R
 	return out, nil
 }
 
-// wrote records a rule written with the effect, over a rule of the previous effect ("" for a new one): a block that was none narrows,
-// an allow that was none widens.
-func (w *switchWrite) wrote(r rules.Rule, previous rc.Effect) {
+// wrote records a rule written with the effect, over a rule of the previous effect and range ("" for a new one): a block that was none
+// narrows, and so does a range set on an allow (R-CUR-026); an allow that was none, or whose range changed, can widen.
+func (w *switchWrite) wrote(r rules.Rule, previous rc.Effect, previousRange rc.Range) {
 	if r.Effect == rc.Block && previous != rc.Block {
 		w.narrow.BlocksAdded = append(w.narrow.BlocksAdded, rules.SubjectOfRule(r))
 	}
-	if r.Effect == rc.Allow && previous != rc.Allow {
+	if narrowsRange(r, previous, previousRange) {
+		w.narrow.RangesNarrowed = append(w.narrow.RangesNarrowed, rangeNarrowed(r.Name, r.Range))
+	}
+	if r.Effect == rc.Allow && (previous != rc.Allow || previousRange != r.Range) {
 		w.widened = true
 	}
 }
@@ -351,7 +401,7 @@ func (s *Store) AllowStoredTx(ctx context.Context, tx meta.Tx, t Target, c Calle
 		ids := make([]string, len(batch))
 		for i, n := range batch {
 			ids[i] = uuid.Must(uuid.NewV7()).String()
-			ev, err := eventOf(t, c, audit.EventRemoteRuleCreated, ids[i], rules.Rule{Kind: rc.KindPackage, Name: n, Effect: rc.Allow}, "", "", "")
+			ev, err := eventOf(t, c, audit.EventRemoteRuleCreated, ids[i], rules.Rule{Kind: rc.KindPackage, Name: n, Effect: rc.Allow}, "", rc.Range{}, "", "")
 			if err != nil {
 				return 0, 0, err
 			}

@@ -43,9 +43,12 @@ import (
 // ([Descriptor.VersionCanon]). Version 12 is the stored sort key's (api-and-ui.md R-API-029, Q-API-429, ADR-278): a format's
 // [ViewAdapter] gives the key of its order of versions (SortKey), which the host stores with every version row. Version 13 is the
 // pre-release's (api-and-ui.md R-API-029, Q-API-433): a format's [ViewAdapter] says which of its versions is a pre-release (Prerelease),
-// beside its order, and the [ExposureAdapter] no longer does; the catalog's Versioning takes the answer from the view adapter. A format
-// declares the literal it was written against in [Descriptor.ContractVersion], and Register panics on a mismatch.
-const ContractVersion = 13
+// beside its order, and the [ExposureAdapter] no longer does; the catalog's Versioning takes the answer from the view adapter. Version 14
+// is the range of a package's allow (remote-curation.md R-CUR-026, Q-CUR-221, Q-CUR-226, ADR-283): ModeReason leaves (an emptied
+// document's reason is the rule set's EmptyReason, outsideRange under a range), the catalog's entry carries the view adapter's order
+// (catalog.Entry.VersionOrder) and the mirror's upstream says what the rules deliver (discover.Delivering); no format's code changes. A
+// format declares the literal it was written against in [Descriptor.ContractVersion], and Register panics on a mismatch.
+const ContractVersion = 14
 
 // The types of other packages under the names a format spells them: one type
 // each, no mirrors (Q-ARCH-188, Q-ARCH-189). A format imports this package and
@@ -413,6 +416,9 @@ func CapabilitiesFor(id ID) Capabilities {
 func CatalogEntry(f Format) catalog.Entry {
 	d := f.Descriptor()
 	e := catalog.Entry{Facts: d.Facts, Names: d.Names, VersionCanon: d.VersionCanon}
+	if v := f.View(); v != nil {
+		e.VersionOrder = v
+	}
 	if d.PackageNames {
 		e.DocumentPath = func(name string) (string, bool) {
 			p, ok := f.PackageDocumentPath(name)

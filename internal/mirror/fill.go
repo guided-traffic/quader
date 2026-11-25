@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The fill of a pass (R-REPO-053 step 3): the pending names in name order, each package filled through the host under the
@@ -161,7 +162,7 @@ func (p *pass) fillPackage(ctx context.Context, name string) {
 	}
 	var transient, permanent error
 	stored := map[string]bool{} // the paths this attempt stored or found: an artifact that two versions name is filled once
-	for _, item := range SelectItems(plan.Items, rs.Mirror.IncludePrereleases, rs.Mirror.MaxVersionsPerPackage) {
+	for _, item := range SelectItems(plan.Items, rs.Mirror.IncludePrereleases, rs.Mirror.MaxVersionsPerPackage, deliveredOf(repo, name)) {
 		if p.isHalted() {
 			p.keep(ctx, name, st)
 			return
@@ -320,4 +321,14 @@ func (p *pass) failPackage(ctx context.Context, name string, st pkgState, err er
 		}
 	})
 	p.log.Warn("a package could not be filled", "attempts", attempts, "error", sanitize(err.Error()))
+}
+
+// deliveredOf is whether the delivery rules of the repository deliver a version of the package, for the version bounds (Q-CUR-226); nil
+// for a repository without rules, which delivers every version. A file of no version is the package's and passes.
+func deliveredOf(repo repository.Repository, name string) func(version string) bool {
+	set := repo.Delivery()
+	if set == nil {
+		return nil
+	}
+	return func(version string) bool { return version == "" || set.Decide(name, version).Delivered }
 }

@@ -38,8 +38,8 @@ type Sync struct {
 }
 
 // Range is the sync's range of versions.
-func (s Sync) Range() Range {
-	return Range{From: s.FromVersion, To: s.ToVersion, ToInclusive: s.ToInclusive}
+func (s Sync) Range() remotecuration.Range {
+	return remotecuration.Range{From: s.FromVersion, To: s.ToVersion, ToInclusive: s.ToInclusive}
 }
 
 // SyncActor is the actor of a sync's run the dispatch starts (R-CUR-019): system:download-sync. A person's **Run now** is the
@@ -137,7 +137,7 @@ type SyncSpec struct {
 	MaxVersions        int
 	MaxBytes           int64
 	IncludePrereleases bool
-	Range              Range
+	Range              remotecuration.Range
 	CreatedBy          string
 }
 

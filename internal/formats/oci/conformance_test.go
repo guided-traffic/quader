@@ -177,18 +177,19 @@ func conformance() formattest.Fixture {
 		},
 		Catalogue: catalogueFixture(),
 		// The delivery rules of a remote (check 23, R-CUR-003, R-OCI-038): the version is the tag, so a rule that refuses the tag
-		// "legacy" leaves it out of the tags list and refuses its manifest, and a rule that refuses the image refuses its tags list.
+		// "2.0.0" leaves it out of the tags list and refuses its manifest, and a rule that refuses the image refuses its tags list. The
+		// tags are versions of the tag order, so the range of the image's allow can hold one and not the other (R-CUR-026).
 		Delivery: &formattest.DeliveryFixture{
 			Remote: func() *formattest.MemRemote {
 				return &formattest.MemRemote{Docs: map[string][]byte{
-					TaglistPath("app"):       []byte(`{"name":"app","tags":["legacy","stable"]}`),
-					TagPath("app", "stable"): seedManifest,
-					TagPath("app", "legacy"): imageManifestBytes(sha(seedConfig), sha([]byte("old layer"))),
+					TaglistPath("app"):      []byte(`{"name":"app","tags":["1.0.0","2.0.0"]}`),
+					TagPath("app", "1.0.0"): seedManifest,
+					TagPath("app", "2.0.0"): imageManifestBytes(sha(seedConfig), sha([]byte("old layer"))),
 				}}
 			},
-			Package: "app", Refused: "legacy", Kept: "stable",
+			Package: "app", Refused: "2.0.0", Kept: "1.0.0",
 			Documents: []string{"app/tags/list"},
-			Artifact:  "app/manifests/legacy",
+			Artifact:  "app/manifests/2.0.0",
 		},
 		// The one document the members of a virtual repository contribute to is the tags list of an image name (R-OCI-027): the union of
 		// the members' tags, each attributed to the member the tier resolution picks.

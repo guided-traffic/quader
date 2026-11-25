@@ -23,7 +23,7 @@ func checkDeliveryParts(e narrowedEntry) string {
 	if e.Rules == nil {
 		return ""
 	}
-	if len(e.Rules.BlocksAdded)+len(e.Rules.AllowsRemoved) > rules.DefaultMaxRules*2 {
+	if len(e.Rules.BlocksAdded)+len(e.Rules.AllowsRemoved)+len(e.Rules.RangesNarrowed) > rules.DefaultMaxRules*2 {
 		return "the rules part is longer than a repository can hold"
 	}
 	for _, list := range [][]rules.Subject{e.Rules.BlocksAdded, e.Rules.AllowsRemoved} {
@@ -31,6 +31,11 @@ func checkDeliveryParts(e narrowedEntry) string {
 			if !s.Valid() {
 				return "a subject of the rules part is not one of a rule"
 			}
+		}
+	}
+	for _, n := range e.Rules.RangesNarrowed {
+		if !n.Valid() {
+			return "a range of the rules part names no package or bounds nothing"
 		}
 	}
 	return ""
@@ -78,17 +83,11 @@ func (r *replayer) deliveryRules(n *rules.Narrowing) error {
 	}
 	changed := false
 	for _, s := range n.AllowsRemoved {
-		rows, err := r.qs.DeliveryRuleBySubject(r.ctx, subjectParams(r.id, s))
+		removed, err := r.removeAllow(s)
 		if err != nil {
 			return err
 		}
-		if len(rows) == 0 || rows[0].Effect != string(rc.Allow) {
-			continue
-		}
-		if _, err := r.qs.DeliveryRuleDelete(r.ctx, q.DeliveryRuleDeleteParams{RepoID: r.id, ID: rows[0].ID.String()}); err != nil {
-			return err
-		}
-		changed = true
+		changed = changed || removed
 	}
 	for _, s := range n.BlocksAdded {
 		rows, err := r.qs.DeliveryRuleBySubject(r.ctx, subjectParams(r.id, s))
@@ -121,6 +120,13 @@ func (r *replayer) deliveryRules(n *rules.Narrowing) error {
 		}
 		changed = true
 	}
+	for _, rn := range n.RangesNarrowed {
+		done, stop, err := r.narrowRange(rn)
+		if err != nil || stop {
+			return err
+		}
+		changed = changed || done
+	}
 	if !changed {
 		return nil
 	}
@@ -134,4 +140,117 @@ func (r *replayer) deliveryRules(n *rules.Narrowing) error {
 
 func subjectParams(id int64, s rules.Subject) q.DeliveryRuleBySubjectParams {
 	return q.DeliveryRuleBySubjectParams{RepoID: id, Kind: string(s.Kind), Pattern: s.Pattern, Name: s.Name, Version: s.Version}
+}
+
+// The replay of a range of a package's allow (remote-curation.md R-CUR-026, Q-CUR-225): a restore keeps the narrower of the range it
+// restored and the range written after the restore point, and a removed allow with a range is removed only where its package level
+// without it delivers nothing more: removing it where the sections or the mode deliver would widen what the repository delivers.
+
+// replayedSet compiles the restored rules of the repository with its mode as the replay left it, to decide what a package inherits.
+func (r *replayer) replayedSet() (*rules.Set, error) {
+	rows, err := rulesOfRepository(r.ctx, r.qs, r.id)
+	if err != nil {
+		return nil, err
+	}
+	rs := make([]rules.Rule, len(rows))
+	for i, s := range rows {
+		rs[i] = s.rule()
+	}
+	return rules.Compile(r.deliveryModeOfDoc(), 0, rs, CompileSection, DeliveryCanon(r.cat, r.format))
+}
+
+// deliveryModeOfDoc is remote.delivery.mode of the document as the replay left it; allExceptBlocked where it says none.
+func (r *replayer) deliveryModeOfDoc() rc.Mode {
+	var section struct {
+		Delivery struct {
+			Mode rc.Mode `json:"mode"`
+		} `json:"delivery"`
+	}
+	if raw, ok := r.doc["remote"]; ok {
+		_ = json.Unmarshal(raw, &section)
+	}
+	if !section.Delivery.Mode.Valid() {
+		return rc.AllExceptBlocked
+	}
+	return section.Delivery.Mode
+}
+
+// removeAllow replays one journaled removed allow: the restored allow of the subject is removed, unless it carries a range and the
+// package level without it delivers (Q-CUR-225).
+func (r *replayer) removeAllow(s rules.Subject) (bool, error) {
+	rows, err := r.qs.DeliveryRuleBySubject(r.ctx, subjectParams(r.id, s))
+	if err != nil {
+		return false, err
+	}
+	if len(rows) == 0 || rows[0].Effect != string(rc.Allow) {
+		return false, nil
+	}
+	if rows[0].FromVersion.Valid || rows[0].ToVersion.Valid {
+		set, err := r.replayedSet()
+		if err != nil {
+			return false, nil //nolint:nilerr // a restored set that does not compile disables the repository when the snapshot reads it
+		}
+		if set.LevelInherited(s.Name).Delivered {
+			return false, nil
+		}
+	}
+	if _, err := r.qs.DeliveryRuleDelete(r.ctx, q.DeliveryRuleDeleteParams{RepoID: r.id, ID: rows[0].ID.String()}); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// narrowRange replays one journaled range (Q-CUR-225): a restored allow of the package keeps the narrower of its range and the
+// journaled one, and becomes a block where the two hold no version in common; a package without a rule of its own whose package level
+// delivers gets an allow with the journaled range; a block stays. stop is true where the repository was disabled: the format has no
+// order to compare the range by, or the rules would exceed the bounds of a repository.
+func (r *replayer) narrowRange(n rules.RangeNarrowing) (changed, stop bool, err error) {
+	view, ok := r.cat.VersionOrderOf(r.format)
+	if !ok {
+		r.suspend(partRules)
+		return false, true, nil
+	}
+	o := rc.Order{View: view}
+	journaled := n.Range()
+	rows, err := r.qs.DeliveryRuleBySubject(r.ctx, subjectParams(r.id, rules.Subject{Kind: rc.KindPackage, Name: n.Name}))
+	if err != nil {
+		return false, false, err
+	}
+	if len(rows) > 0 {
+		row := rows[0]
+		if row.Effect != string(rc.Allow) {
+			return false, false, nil
+		}
+		restored := rc.Range{From: row.FromVersion.String, To: row.ToVersion.String, ToInclusive: row.ToInclusive}.Normal()
+		next := journaled
+		if restored.Set() {
+			next = restored.Intersect(o, journaled)
+		}
+		if next == restored {
+			return false, false, nil
+		}
+		p := q.DeliveryRuleReplaceParams{ID: row.ID.String(), Effect: string(rc.Allow), Note: row.Note}
+		if next.Empty(o) {
+			p.Effect = string(rc.Block)
+		} else {
+			p.FromVersion, p.ToVersion, p.ToInclusive = next.From, next.To, next.ToInclusive
+		}
+		return true, false, r.qs.DeliveryRuleReplace(r.ctx, p)
+	}
+	set, err := r.replayedSet()
+	if err != nil || !set.LevelInherited(n.Name).Delivered {
+		return false, false, nil //nolint:nilerr // a restored set that does not compile disables the repository when the snapshot reads it
+	}
+	counts, err := r.qs.DeliveryRuleCounts(r.ctx, r.id)
+	if err != nil {
+		return false, false, err
+	}
+	if counts.Rules >= rules.DefaultMaxRules {
+		r.suspend(partRules)
+		return false, true, nil
+	}
+	return true, false, r.qs.DeliveryRuleInsert(r.ctx, q.DeliveryRuleInsertParams{
+		ID: uuid.Must(uuid.NewV7()).String(), RepoID: r.id, Kind: string(rc.KindPackage), Name: n.Name, Effect: string(rc.Allow),
+		FromVersion: journaled.From, ToVersion: journaled.To, ToInclusive: journaled.ToInclusive,
+	})
 }

@@ -244,14 +244,27 @@ func TestR_REPO_051_TheVersionBoundsKeepTheNewestAndThePinned(t *testing.T) {
 	}
 	// The example of the acceptance criterion: 1.0.0, 1.1.0 (latest), 2.0.0-rc.1, 1.2.0 with maxVersionsPerPackage 2 and no prereleases.
 	plan := []discover.Item{item("2.0.0-rc.1", true, false), item("1.2.0", false, false), item("1.1.0", false, true), item("1.0.0", false, false)}
-	mustContain(t, "n=2 without prereleases", versions(SelectItems(plan, false, 2)), "1.2.0", "1.1.0")
-	mustContain(t, "n=2 with prereleases", versions(SelectItems(plan, true, 2)), "2.0.0-rc.1", "1.2.0", "1.1.0")
-	mustContain(t, "n=0 is all", versions(SelectItems(plan, true, 0)), "2.0.0-rc.1", "1.2.0", "1.1.0", "1.0.0")
-	mustContain(t, "n=0 without prereleases", versions(SelectItems(plan, false, 0)), "1.2.0", "1.1.0", "1.0.0")
+	mustContain(t, "n=2 without prereleases", versions(SelectItems(plan, false, 2, nil)), "1.2.0", "1.1.0")
+	mustContain(t, "n=2 with prereleases", versions(SelectItems(plan, true, 2, nil)), "2.0.0-rc.1", "1.2.0", "1.1.0")
+	mustContain(t, "n=0 is all", versions(SelectItems(plan, true, 0, nil)), "2.0.0-rc.1", "1.2.0", "1.1.0", "1.0.0")
+	mustContain(t, "n=0 without prereleases", versions(SelectItems(plan, false, 0, nil)), "1.2.0", "1.1.0", "1.0.0")
 	// A pinned version beyond the bound stays besides the newest n, and a pinned prerelease stays although prereleases are off.
 	plan = []discover.Item{item("3.0.0", false, false), item("2.0.0", false, false), item("1.0.0", false, true), item("0.9.0-beta", true, true)}
-	mustContain(t, "pinned beyond the bound", versions(SelectItems(plan, false, 1)), "3.0.0", "1.0.0", "0.9.0-beta")
-	mustContain(t, "no items", versions(SelectItems(nil, true, 3)))
+	mustContain(t, "pinned beyond the bound", versions(SelectItems(plan, false, 1, nil)), "3.0.0", "1.0.0", "0.9.0-beta")
+	mustContain(t, "no items", versions(SelectItems(nil, true, 3, nil)))
+}
+
+// TestR_CUR_026_TheMirrorCountsDeliveredVersions: the mirror keeps its newest n among the versions the delivery rules deliver
+// (remote-curation.md R-CUR-026, Q-CUR-226): a version outside the range of the package's allow takes no place of the newest, so the
+// mirror keeps n versions inside it and not fewer.
+func TestR_CUR_026_TheMirrorCountsDeliveredVersions(t *testing.T) {
+	plan := []discover.Item{{Version: "3.1.0", Path: "a"}, {Version: "3.0.0", Path: "b"}, {Version: "2.1.0", Path: "c"}, {Version: "2.0.0", Path: "d"}, {Version: "1.0.0", Path: "e"}}
+	below3 := func(v string) bool { return v < "3" } // the range: below 3.0.0
+	var got []string
+	for _, it := range SelectItems(plan, true, 2, below3) {
+		got = append(got, it.Version)
+	}
+	mustContainExactly(t, "the newest two inside the range", got, []string{"2.1.0", "2.0.0"})
 }
 
 // R-REPO-051: a pass is full when there is no cursor of a complete feed pass, the method differs, the patterns changed, the
@@ -319,11 +332,11 @@ func TestR_REPO_051_TheVersionBoundsCountVersionsNotItems(t *testing.T) {
 		}
 		return out
 	}
-	mustContainExactly(t, "two versions of three items and two", paths(SelectItems(plan, true, 2)), []string{"a", "b", "c", "d", "e", "g", "h"})
-	mustContainExactly(t, "all", paths(SelectItems(plan, true, 0)), []string{"a", "b", "c", "d", "e", "f", "g", "h"})
-	mustContainExactly(t, "one version and the pinned one", paths(SelectItems(plan, true, 1)), []string{"a", "b", "c", "g", "h"})
+	mustContainExactly(t, "two versions of three items and two", paths(SelectItems(plan, true, 2, nil)), []string{"a", "b", "c", "d", "e", "g", "h"})
+	mustContainExactly(t, "all", paths(SelectItems(plan, true, 0, nil)), []string{"a", "b", "c", "d", "e", "f", "g", "h"})
+	mustContainExactly(t, "one version and the pinned one", paths(SelectItems(plan, true, 1, nil)), []string{"a", "b", "c", "g", "h"})
 	pre := []discover.Item{item("2.0-rc1", "p", true, false), item("2.0-rc1", "q", true, false), item("1.0", "r", false, false)}
-	mustContainExactly(t, "a prerelease version goes with all its items", paths(SelectItems(pre, false, 1)), []string{"r"})
+	mustContainExactly(t, "a prerelease version goes with all its items", paths(SelectItems(pre, false, 1, nil)), []string{"r"})
 }
 
 func mustContainExactly(t *testing.T, what string, got, want []string) {

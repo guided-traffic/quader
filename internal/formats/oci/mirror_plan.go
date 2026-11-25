@@ -33,10 +33,16 @@ func (a remoteAdapter) MirrorPlan(ctx context.Context, u discover.Upstream, name
 	}
 	ms := mirrorMemberOf(u.Settings())
 	maxVersions, prereleases := discover.BoundsOf(u)
+	delivers := discover.DeliveredBy(u)
 	kept := 0
 	for _, ct := range selectTags(tags, ms) {
-		// The engine keeps the newest maxVersions of the tags that are not prereleases and every pinned tag; a tag it would drop is
-		// not read, so that a tag outside the bound costs no manifest request (it stays available by pull-through).
+		// The engine keeps the newest maxVersions of the tags the delivery rules deliver that are not prereleases, and every pinned
+		// tag; a tag it would drop is not read, so that a tag outside the bound costs no manifest request (it stays available by
+		// pull-through). A tag the rules do not deliver (outside the range of the image's allow, R-CUR-026) takes no place of the
+		// newest (Q-CUR-226), and the engine's admission would refuse it.
+		if !delivers(upName, ct.Tag) {
+			continue
+		}
 		if !ct.Pinned {
 			if (!prereleases && tagorder.Prerelease(ct.Tag)) || (maxVersions > 0 && kept >= maxVersions) {
 				continue

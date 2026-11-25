@@ -472,6 +472,19 @@ func (u *passUpstream) VersionBounds() (int, bool) {
 	return u.rem.Settings.Mirror.MaxVersionsPerPackage, u.rem.Settings.Mirror.IncludePrereleases
 }
 
+var _ discover.Delivering = (*passUpstream)(nil)
+
+// Delivers implements [discover.Delivering]: a pass of the mirror and a row of a sync's run fetch only what the delivery rules deliver
+// (R-CUR-017, R-CUR-027), as the admission of fillPath decides; any other row of the queue is a download ahead, which they do not decide
+// (R-CUR-014). The rules are the repository's as the pass began.
+func (u *passUpstream) Delivers(name, version string) bool {
+	ahead := (u.fill == fillDownloadAhead || u.fill == fillBackgroundDownload) && u.queue.QueueOrigin != remotecuration.OriginSync
+	if ahead || version == "" {
+		return true
+	}
+	return u.repo.Delivery().Decide(name, version).Delivered
+}
+
 // Get implements [discover.Upstream] through [proxy.Engine.Get]: the host check, the credential rule and the background slot are
 // the engine's; a rate-limit answer is returned as the engine's typed error, which discover.AsRateLimited finds.
 func (u *passUpstream) Get(ctx context.Context, target *url.URL, accept string, max int64) (*discover.Response, error) {

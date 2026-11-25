@@ -40,7 +40,7 @@ type BulkSpec struct {
 	IncludePrereleases bool
 	// Range is the bulk's range of versions of a package, canonical and checked by the caller (Q-CUR-190); the zero value bounds
 	// nothing.
-	Range     Range
+	Range     remotecuration.Range
 	StartedBy string
 	// Origin, RequestID and Ticket are those of a bulk a request or an allow starts for the newest versions of a package (Q-CUR-141):
 	// its rows take the origin, the request and the charge; the zero values are a person's bulk.

@@ -189,8 +189,8 @@ type downloadBounds struct {
 }
 
 // versionRange is the bounds' range of versions.
-func (b downloadBounds) versionRange() queue.Range {
-	var r queue.Range
+func (b downloadBounds) versionRange() remotecuration.Range {
+	var r remotecuration.Range
 	if b.FromVersion != nil {
 		r.From = *b.FromVersion
 	}
@@ -318,12 +318,12 @@ func rangeField(kind errs.Kind, code, ptr, fieldCode, detail string) error {
 // versionOrder is the order a range of the format's versions is read by (Q-CUR-190): the registered format's view adapter, whose
 // Compare and sort key order every list of the format, and its canon (R-CUR-006). ok is false for a format without a view adapter.
 // The format host's planner builds the same order (formathost.rangeOrder).
-func versionOrder(format string) (queue.Order, bool) {
+func versionOrder(format string) (remotecuration.Order, bool) {
 	f, ok := formats.Lookup(format)
 	if !ok || f.View() == nil {
-		return queue.Order{}, false
+		return remotecuration.Order{}, false
 	}
-	o := queue.Order{View: f.View()}
+	o := remotecuration.Order{View: f.View()}
 	if c := f.Descriptor().VersionCanon; c != nil {
 		o.Canon = c
 	}
@@ -577,6 +577,8 @@ func (s *Server) downloadView(ctx context.Context, acc *edge.Access, t downloadT
 		out["delivery"] = "delivered"
 	case d.Reason == remotecuration.ReasonBlocked:
 		out["delivery"] = "blocked"
+	case d.Reason == remotecuration.ReasonOutsideRange:
+		out["delivery"] = "outsideRange"
 	default:
 		out["delivery"] = "notAllowed"
 	}

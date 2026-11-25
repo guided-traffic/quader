@@ -148,19 +148,21 @@ func Fingerprint(include, exclude []string, rules string) []byte {
 	return h.Sum(nil)
 }
 
-// SelectItems applies the version bounds of R-REPO-051 to a plan's items (newest first): the prerelease versions go when
-// includePrereleases is false, the newest max versions of the rest stay (0: all), and a pinned version always stays besides them
-// (Q-NPM-71). The bounds count versions, not items: the items of one version (an image's manifests, configs and layers, Q-OCI-180)
-// are kept or dropped together, decided at the first item of the version, and a version is pinned when any of its items is. The
-// order is the plan's.
-func SelectItems(items []discover.Item, includePrereleases bool, max int) []discover.Item {
+// SelectItems applies the version bounds of R-REPO-051 to a plan's items (newest first): the versions the delivery rules do not deliver
+// go first (delivers false; nil delivers every version), then the prerelease versions when includePrereleases is false, the newest max
+// versions of the rest stay (0: all), and a pinned version always stays besides them (Q-NPM-71). The mirror keeps its newest max among
+// what the rules deliver (remote-curation.md R-CUR-026, Q-CUR-226): a version outside the range of a package's allow, or one a version
+// rule blocks, does not take a place of the newest. The bounds count versions, not items: the items of one version (an image's
+// manifests, configs and layers, Q-OCI-180) are kept or dropped together, decided at the first item of the version, and a version is
+// pinned when any of its items is. The order is the plan's.
+func SelectItems(items []discover.Item, includePrereleases bool, max int, delivers func(version string) bool) []discover.Item {
 	out := make([]discover.Item, 0, len(items))
 	kept := 0
 	decided := map[string]bool{}
 	for _, it := range items {
 		keep, ok := decided[it.Version]
 		if !ok {
-			candidate := includePrereleases || !it.Prerelease
+			candidate := (includePrereleases || !it.Prerelease) && (delivers == nil || delivers(it.Version))
 			within := candidate && (max <= 0 || kept < max)
 			if within {
 				kept++

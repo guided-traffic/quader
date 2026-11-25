@@ -96,8 +96,8 @@ type Bulk struct {
 }
 
 // Range is the bulk's range of versions.
-func (b Bulk) Range() Range {
-	return Range{From: b.FromVersion, To: b.ToVersion, ToInclusive: b.ToInclusive}
+func (b Bulk) Range() remotecuration.Range {
+	return remotecuration.Range{From: b.FromVersion, To: b.ToVersion, ToInclusive: b.ToInclusive}
 }
 
 // RowOrigin is the origin of the rows the bulk queues: bulk unless a request, an allow or a sync started it.
