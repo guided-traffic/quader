@@ -4,6 +4,7 @@ import { DeliveryRulesApi, DeliverySwitchResult } from '../../../api/delivery-ru
 import { ApiError } from '../../../api/problem';
 import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError } from '../../../shared/paged-resource';
+import { Busy } from '../../../shared/ui/busy';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../../shared/ui/dialog';
 import { rangeErrorText } from './download-preview-dialog';
 import { DeliveryRange } from './upstream-words';
@@ -34,7 +35,7 @@ const AT = '/range';
  */
 @Component({
   selector: 'quader-version-range-dialog',
-  imports: [DialogClose, DialogTitle, ErrorNotice],
+  imports: [Busy, DialogClose, DialogTitle, ErrorNotice],
   template: `
     <h2 quaderDialogTitle i18n="@@upstream.range.title">Limit the versions of {{ data.name }}</h2>
     <form (submit)="submit($event)" novalidate>
@@ -111,7 +112,7 @@ const AT = '/range';
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@upstream.dialog.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="saving()" i18n="@@upstream.range.save">Save</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="saving()" [quaderBusy]="saving()" i18n="@@upstream.range.save">Save</button>
       </div>
     </form>
   `,

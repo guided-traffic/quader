@@ -3438,7 +3438,7 @@ export const screens: readonly Screen[] = [
   { id: 'failure-signature-root', path: '/ui/admin/settings/signatures', kinds: admins, walk: signatureRootFailure, de: true },
   { id: 'failure-signature-note', path: `${ver(P, manyVersionsPackage, signedVersions.invalid)}?tab=signatures`, kinds: ['plain'], walk: signatureNote, de: true },
 
-  // The page and shell states no walk above opens (states.ts, R-UI-173, R-UI-175, Q-UI-1231 to Q-UI-1235). An overlay is taken at 1,440 and
+  // The page and shell states no walk above opens (states.ts, R-UI-173, R-UI-175, Q-UI-1231 to Q-UI-1233). An overlay is taken at 1,440 and
   // 390 px, in dark at 1,440 px; what a person opens on a page (a section, a page of its own) at every width.
   // The shell's menus and notices, the same for every kind of user: theme, user menu and its language submenu; the maintenance mode and a
   // critical banner above a list; the banner on the sign-in page.
