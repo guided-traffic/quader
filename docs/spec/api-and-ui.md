@@ -6826,7 +6826,9 @@ Priority: **P1** · Covers: quader-only
   accessible description, and the rule of the version page's card, which folds a failed or put-off scan's `stateCode` under
   **Technical details** ([technical-details.ts](../../web/src/app/shared/technical-details.ts), R-UI-214). One component says it in every
   list of every format (`<quader-grade>`), so a list's new rows take it as it is. `<quader-grade>` and `<quader-grade-card>` take
-  `image` (the format is OCI), for the rule of S.
+  `image` (the format is OCI), for the rule of S. A state an administrator must repair ("No scanner", "No database", "No advisory data",
+  "Scan failed") stands in the warning's colour, in a list, on the version's line and on its card; a state that passes or was chosen
+  stays neutral, by the one rule of both scans ([Q-UI-1214](#q-ui-1214--a-scans-state-is-a-warning-where-an-administrator-must-repair-something-and-neutral-otherwise)).
   **Revised on 2026-11-18 (owner, walk objection W-9): beside its shield the letter is not written a second time.** The shield
   carries the letter; the text beside it is the count that decides ("13 Critical", "OS end of life", "no known vulnerabilities",
   "not scanned"), in a list, on a version's row and facts line, and on the card. A screen reader still hears "Grade E · 13
@@ -26312,6 +26314,26 @@ R-UI-184 and R-UI-185 (the steps and a budget's rule). Code: `starterText`, `sta
 Tests: `R-UI-184 names the steps and links a token to its account` of [usage.spec.ts](../../web/src/app/features/usage/usage.spec.ts) and
 the bulk's line of [remote-downloads.spec.ts](../../web/src/app/features/repositories/downloads/remote-downloads.spec.ts) (unit,
 milliseconds, English; the German targets are read in the translation file and on the German picture of the tab).
+
+### Q-UI-1214 · A scan's state is a warning where an administrator must repair something, and neutral otherwise
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found on the
+pictures of the lists of versions and images and the version's line: the vulnerability cell's "Scan failed", "No scanner" and "No
+database" stood in the text's colour beside the grey N/A shield, while the malware cell's kindred states ("No scanner", "No
+signatures", "Could not be checked") stood in amber with their icon ([malware-scanning.md](malware-scanning.md) R-MAL-024: "the last two
+as a warning"). Two rules for one question: does someone have to act.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One rule for both scans: a warning where an administrator must repair something before the artifact is checked (no scanner, no database or advisory data, a scan that failed, went over the limits or could not read the image; for malware no scanner, no signatures, could not be checked), neutral where nothing is wrong (queued, being scanned, switched off by choice, not matched, internal, no image, checked, released); never green (Q-UI-96); the vulnerability cell's word, the version's line and its card take the warning's colour, the N/A shield stays the grade's (chosen) | `checkTone` of `grade-words.ts` beside the malware's `tone` | A reader sees at a glance which artifacts wait for an administrator, in both columns alike | A scan that failed once and is tried again is amber until it answers |
+| (b) Both neutral | The malware cell loses its amber | Calm | A missing scanner, which no one but an administrator can repair, looks like a queue |
+| (c) The shield in amber | A colour of the grade | Large mark | The shield's colours are the grade's (Q-UI-370); an amber N/A would read as a grade |
+
+**Choice:** (a). The malware cell already followed it; its words are not touched. **Applied in the spec:** R-UI-091, R-VULN-039,
+[malware-scanning.md](malware-scanning.md) R-MAL-024. Code: `checkTone` of [grade-words.ts](../../web/src/app/shared/vulnerability/grade-words.ts),
+[grade.ts](../../web/src/app/shared/vulnerability/grade.ts), [grade-card.ts](../../web/src/app/shared/vulnerability/grade-card.ts); the
+malware's `tone` of [malware-status.ts](../../web/src/app/shared/malware/malware-status.ts). Test: the case of R-VULN-039 R-UI-091 in
+[grade-words.spec.ts](../../web/src/app/shared/vulnerability/grade-words.spec.ts) (unit, milliseconds, every state).
 
 ## What this does not cover
 
