@@ -626,6 +626,11 @@ td.class-cell .material-icons {
     text-align: center;
   }
 
+  // A list's load (R-UI-217) is often the page's last box: its room below stays within what the panel may scroll past its content.
+  .table-status {
+    margin-block-end: var(--quader-space-4);
+  }
+
   .table-more {
     margin-block: var(--quader-space-3) 0;
   }
