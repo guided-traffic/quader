@@ -233,7 +233,8 @@ func (remoteAdapter) Children(ctx context.Context, u discover.Upstream, rq disco
 
 // Package implements [discover.Catalogue]: the full package document, from the store when the remote holds it, read without storing
 // otherwise; its versions newest first by SemVer precedence, with the time of each, deprecated and prerelease, the unpacked size where the
-// document has it, and the integrity as the digest. The dist-tags are the package's tags.
+// document has it, and the integrity as the digest. The dist-tags are the package's tags, and the filter finds a version by the name of a
+// tag that points at it (Q-CUR-182).
 func (remoteAdapter) Package(ctx context.Context, u discover.Upstream, pkg string, rq discover.VersionsRequest) (discover.PackageInfo, error) {
 	n, err := name.Parse(pkg)
 	if err != nil {
@@ -276,7 +277,7 @@ func (remoteAdapter) Package(ctx context.Context, u discover.Upstream, pkg strin
 	for _, e := range es {
 		all = append(all, versionFacts(e.text, e.v, parsed.Versions[e.text], times[e.text]))
 	}
-	info.Versions, info.Total, info.Cursor, info.Done = discover.PageVersions(all, rq)
+	info.Versions, info.Total, info.Cursor, info.Done = discover.PageTaggedVersions(all, info.Tags, rq)
 	return info, nil
 }
 

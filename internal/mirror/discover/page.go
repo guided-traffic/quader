@@ -36,11 +36,23 @@ func OffsetCursor(offset int) Cursor {
 // holds rq.Filter (case-insensitive; "" for all), from the cursor's offset, at most rq.Limit (at most [MaxVersionsOnPage] when the limit
 // is 0). total counts the versions the filter keeps.
 func PageVersions(all []VersionFacts, rq VersionsRequest) (page []VersionFacts, total int, next Cursor, done bool) {
+	return PageTaggedVersions(all, nil, rq)
+}
+
+// PageTaggedVersions is [PageVersions] for a package with tags (tag to version, npm's dist-tags): the filter also keeps a version that a
+// tag whose name holds it points at, so typing a tag's name finds its version on any page (Q-CUR-182).
+func PageTaggedVersions(all []VersionFacts, tags map[string]string, rq VersionsRequest) (page []VersionFacts, total int, next Cursor, done bool) {
 	kept := all
 	if f := strings.ToLower(strings.TrimSpace(rq.Filter)); f != "" {
+		named := map[string]bool{}
+		for tag, version := range tags {
+			if strings.Contains(strings.ToLower(tag), f) {
+				named[version] = true
+			}
+		}
 		kept = make([]VersionFacts, 0, len(all))
 		for _, v := range all {
-			if strings.Contains(strings.ToLower(v.Version), f) {
+			if strings.Contains(strings.ToLower(v.Version), f) || named[v.Version] {
 				kept = append(kept, v)
 			}
 		}

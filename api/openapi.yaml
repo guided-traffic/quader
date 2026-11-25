@@ -20890,7 +20890,7 @@ paths:
             maxLength: 512
         - name: filter
           in: query
-          description: A substring of the version, applied by Quader.
+          description: A substring of the version or of the name of a tag that points at it (npm's dist-tags), case-insensitive, applied by Quader (Q-CUR-182).
           schema:
             type: string
             maxLength: 128
@@ -34823,7 +34823,7 @@ components:
           type: object
           additionalProperties:
             type: string
-          description: npm's dist-tags; empty for a format without.
+          description: npm's dist-tags, tag to version; empty for every other format (an image's tags are its versions).
         delivery:
           $ref: "#/components/schemas/DeliveryDecision"
         stored:

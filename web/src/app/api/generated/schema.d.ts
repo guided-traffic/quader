@@ -17178,7 +17178,7 @@ export interface components {
         UpstreamPackage: {
             name: string;
             description: string;
-            /** @description npm's dist-tags; empty for a format without. */
+            /** @description npm's dist-tags, tag to version; empty for every other format (an image's tags are its versions). */
             tags: {
                 [key: string]: string;
             };
@@ -34180,7 +34180,7 @@ export interface operations {
             query: {
                 /** @description The package's exact name in any spelling the format reads. */
                 name: string;
-                /** @description A substring of the version, applied by Quader. */
+                /** @description A substring of the version or of the name of a tag that points at it (npm's dist-tags), case-insensitive, applied by Quader (Q-CUR-182). */
                 filter?: string;
                 /** @description The `nextCursor` of the previous page; opaque, valid for the same call and arguments. */
                 cursor?: string;

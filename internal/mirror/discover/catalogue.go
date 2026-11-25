@@ -231,7 +231,8 @@ type VersionsRequest struct {
 	Cursor Cursor
 	// Limit is at most 100.
 	Limit int
-	// Filter is a substring of the version, applied by Quader.
+	// Filter is a substring of the version, applied by Quader; a format with tags also finds a version by a tag's name
+	// ([PageTaggedVersions], Q-CUR-182).
 	Filter string
 }
 

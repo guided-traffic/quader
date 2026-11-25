@@ -16982,7 +16982,7 @@ type UpstreamPackage struct {
 	Request *UpstreamRequestState `json:"request"`
 	Stored  UpstreamPackageStored `json:"stored"`
 
-	// Tags npm's dist-tags; empty for a format without.
+	// Tags npm's dist-tags, tag to version; empty for every other format (an image's tags are its versions).
 	Tags     map[string]string `json:"tags"`
 	Total    *int              `json:"total"`
 	Versions []UpstreamVersion `json:"versions"`
@@ -20044,7 +20044,7 @@ type GetUpstreamPackageParams struct {
 	// Name The package's exact name in any spelling the format reads.
 	Name string `form:"name" json:"name"`
 
-	// Filter A substring of the version, applied by Quader.
+	// Filter A substring of the version or of the name of a tag that points at it (npm's dist-tags), case-insensitive, applied by Quader (Q-CUR-182).
 	Filter *string `form:"filter,omitempty" json:"filter,omitempty"`
 
 	// Cursor The `nextCursor` of the previous page; opaque, valid for the same call and arguments.
