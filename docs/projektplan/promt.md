@@ -259,7 +259,31 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 | S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:17 |
 | M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847). Each is run once and its numbers are written down; a defect a number shows is repaired or entered | in work since 06:17 |
 | S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | in work since 06:40 |
-| P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows (dialogs, error states, hover, open menus), what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | a planner since 06:17 |
+| P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows, what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | back at 06:42 (a planner, 25 minutes, read-only; kept in the session's scratch directory as `p1-render-guard-blind-spots-plan.md`); its three packages are G1 to G3 below |
+
+**The render guard's blind spots, as the plan of 06:42 reads them (counted in the code by its planner; the estimates are
+marked).** About 120 states of the web application are in no picture: 21 of 36 dialogs, the confirm dialog's shapes
+"type to confirm" (7 places) and "choice" (3), every failure and 13 of 14 validations inside a dialog, the conflict dialog,
+both session dialogs, the secret of a new token, 10 of 17 menus, 3 of 15 filter drawers, the person search's list inside a
+drawer or a dialog, about 19 closed sections on 13 pages, the banner and the maintenance notice, two selection states, and
+11 routes with no screen at all (a finding's page, the advisory page, the CI issuer's and mapping's pages, a policy's page).
+Of the layout defects seen by eye between 2026-11-12 and 2026-11-25 nine were states the set never opened (three of them
+the owner's: the key marked red before typing, the switcher's name, the toasts), five were absolutely placed elements or
+text drawn by CSS, one a control beside a framed box, one an offset below a pixel. So the states come first, then the
+overlays; a general check beside a framed box and anything below a pixel are not built. **Three sentences of Q-UI-1060
+are wrong by the record and are corrected by G1:** a defect beside a framed box was seen (the joined copy button,
+2026-11-19); text drawn by CSS is measured since 2026-11-19 through a span in its place; a text cut at the start of a
+wrapped line was seen (2026-11-19), so its condition to build a check is met.
+
+| Package | What it builds | Cost (the planner's estimate, to be measured by its builder) | State |
+|---|---|---|---|
+| G2 · Every dialog in a real browser, without the stack | the 21 dialogs, the two confirm shapes, 17 failures and 13 validations inside a dialog, the conflict and the session dialogs, the token's secret, tooltips at the window's edge: about 62 states at 390 and 1,440 px, measured by the layout checks' own function in the unit-test builder's browser mode; one new development dependency (the unit-test runner's browser provider, pinned) | 2 to 3 minutes of the job `UI layout checks`, nothing per format | waits for a builder's place (four run) |
+| G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | after S1 and S2 have landed (the same files) |
+| G3 · Page and shell states on the stack | the 10 menus, 3 drawers, the person search's list in a drawer, about 19 sections, 11 routes, the banner and the maintenance notice, a failure of an action inside a section, the editors' refusals with their summary, two selection states, the command menus of NuGet, Ansible Galaxy and generic | 5 to 6 minutes of the render step (the job at about 61 to 64 of its 75 minutes), about 3 s per format | after G1 |
+
+Not built, by the plan: hover and loading states, a rule against an overlay covering a control, a walk per place of the
+confirm dialog or of the error notice (one component each: its shapes and its containers are rendered). A table of refused
+second words for one thing in the glossary, read by a unit test, is a small item of its own (seven such pairs were seen).
 
 **What stays open and is not built by this run, each with its reason:** F-126, F-95, the `npm ci` binding and the
 unreachable github.com of `e2e (bastion)` wait for a recurrence (section 8); the stall without a neighbour is a standing
