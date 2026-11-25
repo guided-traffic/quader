@@ -258,10 +258,10 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 | S1 · A screen says a server's failure in its own language | the thirteen screens of section 8, Product ("Thirteen more screens show a server's English text as their own"), from the kept diff `.dev/server-sentences-full-scope.diff`, which no longer applies to `main` as it is | landed and pushed at 07:28 (one commit, Test and Release 45560824204; R-UI-214, Q-UI-1080; its builder worked from 06:17 to 07:18; the landing's gates on its own worktree, each exit 0: build, vet, the whole unit run, lint, the documents' checks, the web's lint, tests, translation check and layout fixtures; two of its pictures looked at by the development agent) |
 | S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:17 |
 | M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847) | landed and pushed at 07:14 (eight commits, Test and Release 45559185462; its builder worked from 06:17 to 07:12, every gate exit 0); what it measured and changed is below |
-| S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | landed and pushed at 08:25 (two commits, migration 00120; Q-CUR-170 to Q-CUR-176, Q-UI-1100 to Q-UI-1104, gaps H-1880 to H-1884; its builder worked from 06:40 to 08:05; the landing's gates each exit 0; two of its pictures looked at by the development agent) |
+| S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | landed and pushed at 08:11 (two commits, migration 00120; Q-CUR-170 to Q-CUR-176, Q-UI-1100 to Q-UI-1104, gaps H-1880 to H-1884; its builder worked from 06:40 to 08:05; the landing's gates each exit 0; two of its pictures looked at by the development agent) |
 | S4 · One scrollbar per page | the owner's finding of 06:45 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | the plan is back at 07:12 (P2, 25 minutes, read-only; kept in the session's scratch directory as `p2-one-scrollbar-per-page-plan.md`): one package, see below; a builder in M1's place since 07:16 |
-| S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | the plan is back at 07:20 (P3, 27 minutes, read-only; kept as `.dev/plans/p3-one-row-per-image-newest-first-plan.md` of the main checkout, not in git): two packages in order, S5a the server and S5b the screens, see below; S5a when a place is free |
-| S6 · "Not scanned" says why and what comes | the owner's finding of 06:55 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | in work since 07:19, in S1's place |
+| S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | the plan is back at 07:20 (P3, 27 minutes, read-only; kept as `.dev/plans/p3-one-row-per-image-newest-first-plan.md` of the main checkout, not in git): two packages in order, S5a the server and S5b the screens, see below; S5a in work since 08:12, in S3's place; S5b after it and after S4 |
+| S6 · "Not scanned" says why and what comes | the owner's finding of 06:55 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | landed and pushed at 08:50 (two commits, migration 00121; Q-VULN-274 to Q-VULN-279, Q-UI-1120 to Q-UI-1123, Q-ARCH-1064, gaps H-1890 and H-1891; its builder worked from 07:19 to 08:25); what it built and left is in section 8, Product |
 | P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows, what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | back at 06:42 (a planner, 25 minutes, read-only; kept in the session's scratch directory as `p1-render-guard-blind-spots-plan.md`); its three packages are G1 to G3 below |
 
 **The render guard's blind spots, as the plan of 06:42 reads them (counted in the code by its planner; the estimates are
@@ -932,6 +932,30 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **Closed in part on 2026-11-25, 08:50, by S6: "not scanned" says why (finding (1) of the owner's three of 06:55,
+  below).** Every list's cell and the version's card say a scan's state by its cause from one derivation on the server
+  (`internal/vuln/report/check.go`, per manifest for an image): queued (with "since"), scanning, no scanner connected, no
+  database, no advisory data, the scan failed, scanning off, not matched, internal, a format that is not scanned, not an
+  image; in English and German, the sentence as the cell's tooltip and description; no state promises a time
+  (Q-VULN-278). The malware cell of a waiting file says queued, no scanner or no signatures. An OCI artifact that is no
+  image no longer waits for its scan for ever (Q-VULN-275). The lists cost no statement more in the steady state. **The
+  UI profile scans images for vulnerabilities** (the product's scanner and database loader beside the backend, Trivy from
+  the one pin, the database fetched once, about 143 MB and 1.7 GB on disk; `UI_SCANNERS=0` runs none and is the render
+  runs' default; Q-ARCH-1064 against Q-ARCH-563 for the profile); an image of quay.io was scanned there end to end, read
+  at the API. **Open:**
+  - **The profile runs no malware scanner (H-1891):** the product reaches `clamd` through a Unix socket only, which a
+    container of Docker Desktop cannot share with macOS; the options with their costs are in the gap (the scan listener on
+    every interface, Linux hosts only, a TCP link to `clamd` in the product). The owner's requirement R-MAL-035 does not
+    show on the profile until then.
+  - **An image of a remote shows its malware state in no list:** the version answer of a remote's OCI tag lists no files
+    (found by S6's builder, not repaired).
+  - **H-1890:** an opened item's older tags show a changed scan state only when the item's own row changes (for S5b's rows).
+  - **Seen by the development agent on the pictures:** in the vulnerability cell "Scan failed", "No scanner" and "No
+    database" stand in the same grey as "Queued", while the malware cell shows the states that cannot scan in amber.
+  - The security dashboard's coverage line counts repositories that are not covered without their cause.
+  - At the landing: the lint of the rebased commits found four places its builder's lint had not (three files' formatting,
+    one inferred type), repaired in the commit; the migration became 00121 behind S3's 00120.
+
 - **The audit log and the security dashboard's findings sent no read during 60 and 75 s of a seen tab (H-1871; M1,
   2026-11-25, two runs in a browser on the UI profile):** both read at once when the window is seen again and their unit
   tests pass. Not read to its cause: which interval each uses (`LIVE_SLOW_MS` is 30 s, `LIVE_IDLE_MS` 60 s) and whether a
@@ -977,7 +1001,7 @@ records the recorder that tells such a stall apart).
   "Vulnerabilities" stands over a size and "Updated" over "not scanned". A planner reads every scroll region of the web
   application and cuts the package (P2, since 06:47); the builder follows when a place is free (S4 of section 1).
 
-- **Closed on 2026-11-25, 08:25, by S3 (R-CUR-011, R-CUR-018, R-UI-211; Q-CUR-170 to Q-CUR-176, Q-UI-1100 to
+- **Closed on 2026-11-25, 08:11, by S3 (R-CUR-011, R-CUR-018, R-UI-211; Q-CUR-170 to Q-CUR-176, Q-UI-1100 to
   Q-UI-1104):** **the cause:** without a time from the upstream the run's back-off is capped at 300 s and a run ended only
   on a wait above 300 s, so a run at a limit never ended; each of the four rows held its job until the 30-minute bound,
   would have ended failed, and the next four would have started into the same limit. **Now, in the shared engine and so
