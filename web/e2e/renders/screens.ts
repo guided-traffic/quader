@@ -3160,6 +3160,9 @@ export const screens: readonly Screen[] = [
   // remote guidedtraffic delivers only what is allowed.
   { id: 'repository-settings-npm-delivery', path: `${P}/repositories/npmjs/settings#delivery`, kinds: owners },
   { id: 'repository-settings-oci-delivery', path: `${O}/repositories/guidedtraffic/settings#delivery`, kinds: admins },
+  // The section Kept in sync of a remote (R-CUR-027): the interval, the pause and the byte bound; editable for who may write the
+  // configuration, read-only for the plain user.
+  { id: 'repository-settings-npm-syncs', path: `${P}/repositories/npmjs/settings#syncs`, kinds: all, de: true },
   { id: 'repository-settings-npm-virtual', path: `${P}/repositories/npm/settings`, kinds: all, walk: allSections },
   { id: 'repository-settings-generic', path: `${P}/repositories/assets/settings`, kinds: owners, walk: allSections },
   { id: 'repository-settings-generic-advanced', path: `${P}/repositories/assets/settings`, kinds: admins, walk: advancedOpen },

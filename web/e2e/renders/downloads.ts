@@ -276,9 +276,59 @@ function heldRows(): Record<string, unknown>[] {
   return [...waiting, ...done];
 }
 
+/** A run of a sync: a bulk of the origin sync (R-CUR-027). */
+function syncRun(id: string, sync: string, over: Record<string, unknown>): Record<string, unknown> {
+  return { ...bulk, id, origin: 'sync', sync, bounds: { ...noRange, maxVersions: 3, includePrereleases: false }, versionsRefused: 0, startedBy: null, ...over };
+}
+
+function sync(id: string, over: Record<string, unknown>): Record<string, unknown> {
+  return {
+    id,
+    level: 'package',
+    subject: '',
+    bounds: { ...noRange, maxVersions: 3, includePrereleases: false },
+    state: 'active',
+    nextRunAt: at(42),
+    lastRunAt: at(-18),
+    lastOutcome: 'started',
+    lastBulk: null,
+    createdBy: { id: null, name: null },
+    createdAt: at(-60 * 24 * 9),
+    ...over,
+  };
+}
+
+/**
+ * The syncs of a repository that keeps five subjects current (R-CUR-027, the states of W-28's sketch): a run in progress, a run that
+ * found nothing new and left out a version the rules do not deliver, one that waits for its previous run, one an upstream's limit
+ * holds, and a paused one of a range with a long name.
+ */
+function syncs(me: { id: string; name: string | null }): Record<string, unknown>[] {
+  const S = (n: number) => `0193a1b2-0000-7000-8000-0000000000c${n}`;
+  return [
+    sync(S(1), {
+      subject: '@acme/design-tokens', createdBy: me, lastRunAt: at(-2),
+      lastBulk: syncRun('0193a1b2-0000-7000-8000-0000000000d1', S(1), { state: 'queued', versionsFound: 3, versionsQueued: 2, rows: { running: 1, waiting: 1 }, createdAt: at(-2) }),
+    }),
+    sync(S(2), {
+      subject: 'typescript', createdBy: { id: '0193a1b2-0000-7000-8000-0000000000aa', name: 'Priya Raman' },
+      bounds: { ...noRange, maxVersions: 5, fromVersion: '5.0.0', includePrereleases: false },
+      lastBulk: syncRun('0193a1b2-0000-7000-8000-0000000000d2', S(2), { state: 'done', versionsFound: 5, versionsQueued: 0, versionsRefused: 1, rows: {}, createdAt: at(-18), finishedAt: at(-18) }),
+    }),
+    sync(S(3), { subject: 'react', lastOutcome: 'overlapped', nextRunAt: at(1), lastRunAt: at(-1) }),
+    sync(S(4), { level: 'section', subject: '@customer-portal', lastOutcome: 'limited', nextRunAt: at(17) }),
+    sync(S(5), {
+      subject: '@customer-portal/release-candidates-for-the-frontend-design-system-components', state: 'paused', nextRunAt: null,
+      bounds: { ...noRange, maxVersions: 10, fromVersion: '2.0.0', toVersion: '3.0.0', toInclusive: false, includePrereleases: true },
+      lastBulk: syncRun('0193a1b2-0000-7000-8000-0000000000d5', S(5), { state: 'done', versionsFound: 10, versionsQueued: 1, rows: { done: 1 }, createdAt: at(-300), finishedAt: at(-298) }),
+    }),
+  ];
+}
+
 const listUrl = (url: URL): boolean => /^\/api\/v1\/projects\/[^/]+\/repositories\/[^/]+\/downloads$/.test(url.pathname);
 const bulkUrl = (url: URL): boolean => /^\/api\/v1\/projects\/[^/]+\/repositories\/[^/]+\/download-bulks\/[^/]+$/.test(url.pathname);
 const bulksUrl = (url: URL): boolean => /^\/api\/v1\/projects\/[^/]+\/repositories\/[^/]+\/download-bulks$/.test(url.pathname);
+const syncsUrl = (url: URL): boolean => /^\/api\/v1\/projects\/[^/]+\/repositories\/[^/]+\/download-syncs$/.test(url.pathname);
 const rowsOfTab = 'main quader-remote-downloads [data-testid="download-rows"] tbody tr:not(.expansion)';
 
 /**
@@ -322,6 +372,20 @@ export async function* downloadsWalk(p: Page): AsyncGenerator<string> {
   await expect(p.locator(rowsOfTab)).toHaveCount(9);
   await expect(p.locator('main [data-testid="download-bulks"] tbody tr')).toHaveCount(3);
   yield 'queue';
+  // The downloads it keeps in sync above its bulks (R-CUR-027), each row's menu for who may change it.
+  await p.route(syncsUrl, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: syncs({ id: me.id, name: me.name ?? null }), nextCursor: null, intervalSeconds: 21_600, paused: false, maxSyncs: 100 }),
+    }),
+  );
+  await p.reload();
+  await expect(p.locator('main [data-testid="download-syncs"] tbody tr')).toHaveCount(5);
+  yield 'syncs';
+  await p.unroute(syncsUrl);
+  await p.reload();
+  await expect(p.locator(rowsOfTab)).toHaveCount(9);
   // The controls by their place, not their words: the German pass walks the tab too (UI_RENDERS_LOCALE=de).
   await p.locator('main quader-remote-downloads button[aria-controls="dl-0193a1b2-0000-7000-8000-000000000005"]').click();
   await expect(p.locator('main quader-remote-downloads .collapse-region.open pre.excerpt')).toBeVisible();

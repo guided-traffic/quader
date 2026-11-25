@@ -289,6 +289,8 @@ const preview = {
   notVersions: 0,
   bounds: { maxVersions: 10000, maxBytes: 107374182400, includePrereleases: true, fromVersion: null, toVersion: null, toInclusive: true },
   note: 'sizes_unannounced',
+  // What keeping the package in sync would do (R-CUR-027): the two delivered versions it has not stored.
+  sync: { versions: 2, delivered: true, intervalSeconds: 3600, paused: false, existing: null },
 };
 
 /** The preview of what the dialog asks: a range of versions (Q-CUR-190) counts the 37 versions between its bounds and keeps them. */
