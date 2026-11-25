@@ -19,13 +19,15 @@ import { parseBannerText } from './banner-text';
         [attr.aria-label]="label(notice)"
       >
         <span class="material-icons icon" aria-hidden="true">{{ icon(notice) }}</span>
+        <!-- The parts stand as the message writes them: a text part in its own element, so the template's line breaks around it
+             add no space ("the change record CHG-2026-1184 ." stood with a space before its full stop, 2026-11-25). -->
         <p>
-          <strong class="lead">{{ lead(notice) }}</strong>
+          <strong class="lead">{{ lead(notice) }}</strong>&ngsp;
           @for (part of parts(notice); track $index) {
             @if (part.kind === 'link') {
               <a [href]="part.href" target="_blank" rel="noopener noreferrer">{{ part.text }}</a>
             } @else {
-              {{ part.text }}
+              <ng-container>{{ part.text }}</ng-container>
             }
           }
         </p>
@@ -53,13 +55,16 @@ import { parseBannerText } from './banner-text';
     p {
       margin: 0;
     }
-    a {
+    /* The notice's colour, on the sign-in page too, whose links are the link colour (_shell.scss, .bare a). */
+    .banner a:not(.btn) {
       color: inherit;
       text-decoration: underline;
     }
+    /* The icon is a line of the message high, so its middle is the first line's (R-UI-175): at its own 18 px it stood 1.8 px high. */
     .icon {
       flex: none;
       font-size: 1.25em;
+      line-height: var(--quader-line);
     }
   `,
 })

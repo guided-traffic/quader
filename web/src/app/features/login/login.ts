@@ -133,6 +133,11 @@ import { failureOf } from '../../shared/paged-resource';
     </div>
   `,
   styles: `
+    /* The banner stands apart from the wordmark under it; it renders nothing (only Angular's comments) while there is none. */
+    quader-banner:not(:empty) {
+      display: block;
+      margin-block-end: var(--quader-space-6);
+    }
     .local,
     .providers {
       display: flex;
