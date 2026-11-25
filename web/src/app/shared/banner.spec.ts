@@ -47,6 +47,17 @@ describe('Banner', () => {
     expect(r.root.querySelector('img')).toBeNull();
   });
 
+  it('R-UI-214 the message stands as its administrator wrote it, marked not to be translated, its full stop right after a link', async () => {
+    const r = await render((api) => {
+      api.bannerResult = { enabled: true, message: 'Details: [the change record](https://status.example.com/c/1).' };
+    });
+    const p = r.root.querySelector('section p')!;
+    const written = [...p.querySelectorAll('[translate="no"]')].map((e) => e.textContent).join('');
+    expect(written).toBe('Details: the change record.');
+    expect(p.querySelector('.lead')?.getAttribute('translate')).toBeNull();
+    expect(text(p)).toContain('the change record.');
+  });
+
   it('R-UI-033 the read-only maintenance mode shows its message above the banner, for a signed-in caller', async () => {
     const r = await renderScreen(Banner, {
       setup: (get) => {

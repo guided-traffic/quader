@@ -20,14 +20,15 @@ import { parseBannerText } from './banner-text';
       >
         <span class="material-icons icon" aria-hidden="true">{{ icon(notice) }}</span>
         <!-- The parts stand as the message writes them: a text part in its own element, so the template's line breaks around it
-             add no space ("the change record CHG-2026-1184 ." stood with a space before its full stop, 2026-11-25). -->
+             add no space ("the change record CHG-2026-1184 ." stood with a space before its full stop, 2026-11-25). The message is the
+             administrator's, in the language they wrote it: shown as written, never as a text of the page to translate (R-UI-214). -->
         <p>
           <strong class="lead">{{ lead(notice) }}</strong>&ngsp;
           @for (part of parts(notice); track $index) {
             @if (part.kind === 'link') {
-              <a [href]="part.href" target="_blank" rel="noopener noreferrer">{{ part.text }}</a>
+              <a [href]="part.href" target="_blank" rel="noopener noreferrer" translate="no">{{ part.text }}</a>
             } @else {
-              <ng-container>{{ part.text }}</ng-container>
+              <span translate="no">{{ part.text }}</span>
             }
           }
         </p>
