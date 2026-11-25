@@ -31,6 +31,10 @@ func init() {
 	} {
 		tables.Register(t, tables.Data, tables.Options{})
 	}
+	// What the reader of the data archives kept (R-DEB-039, migration 00132_deb_contents) is derived from the stored files: a backup
+	// does not export it, and after a restore the task remote-describe, which a starting worker queues while a file is unread, reads
+	// the files again.
+	tables.Register("deb_contents", tables.Transient, tables.Options{})
 	// Clients hold a suite's changeSeq for the index state read (R-DEB-014): a restore raises both numbers by 2^32 so that none
 	// repeats with different content (R-ARCH-009, R-BAK-022, R-DEB-032).
 	meta.RegisterRevisionColumn("deb_suites", "change_seq")

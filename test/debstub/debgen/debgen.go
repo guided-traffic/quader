@@ -46,6 +46,14 @@ type Spec struct {
 	Source string
 	// Line is the line the installed script prints; default "hello from <Package> <Version> (<Architecture>)".
 	Line string
+	// Recommends, Suggests, Breaks and Replaces are further relation fields of the control file.
+	Recommends, Suggests, Breaks, Replaces string
+	// Changelog is the text of /usr/share/doc/<Package>/changelog.Debian.gz, which the generator compresses; Copyright the text of
+	// /usr/share/doc/<Package>/copyright; Files the paths of further empty files (absolute, below /usr). A spec without them gives the
+	// bytes it gave before they existed.
+	Changelog string
+	Copyright string
+	Files     []string
 }
 
 func (s Spec) maintainer() string {
@@ -133,7 +141,11 @@ func ControlText(s Spec, installedKiB int) string {
 	field("Installed-Size", strconv.Itoa(installedKiB))
 	field("Pre-Depends", s.PreDepends)
 	field("Depends", s.Depends)
+	field("Recommends", s.Recommends)
+	field("Suggests", s.Suggests)
+	field("Breaks", s.Breaks)
 	field("Conflicts", s.Conflicts)
+	field("Replaces", s.Replaces)
 	field("Provides", s.Provides)
 	field("Section", s.section())
 	field("Priority", s.priority())
@@ -169,12 +181,17 @@ func Build(s Spec) (*Deb, error) {
 	if err != nil {
 		return nil, err
 	}
-	dataTar, err := tarGz([]entry{
+	data := []entry{
 		{name: "./", dir: true},
 		{name: "./usr/", dir: true},
 		{name: "./usr/bin/", dir: true},
 		{name: "." + s.ScriptPath(), data: script, mode: 0o755},
-	})
+	}
+	docs, err := s.docEntries()
+	if err != nil {
+		return nil, err
+	}
+	dataTar, err := tarGz(append(data, docs...))
 	if err != nil {
 		return nil, err
 	}
@@ -184,6 +201,33 @@ func Build(s Spec) (*Deb, error) {
 		{name: "data.tar.gz", data: dataTar},
 	})
 	return &Deb{Spec: s, Bytes: deb, Control: control, InstalledSize: installedKiB}, nil
+}
+
+// docEntries are the changelog, the copyright and the further files of the spec, none when it names none.
+func (s Spec) docEntries() ([]entry, error) {
+	var out []entry
+	doc := "./usr/share/doc/" + s.Package + "/"
+	if s.Changelog != "" {
+		var b bytes.Buffer
+		gz, err := gzip.NewWriterLevel(&b, gzip.BestCompression)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := gz.Write([]byte(s.Changelog)); err != nil {
+			return nil, err
+		}
+		if err := gz.Close(); err != nil {
+			return nil, err
+		}
+		out = append(out, entry{name: doc + "changelog.Debian.gz", data: b.Bytes(), mode: 0o644})
+	}
+	if s.Copyright != "" {
+		out = append(out, entry{name: doc + "copyright", data: []byte(s.Copyright), mode: 0o644})
+	}
+	for _, f := range s.Files {
+		out = append(out, entry{name: "." + f, mode: 0o644})
+	}
+	return out, nil
 }
 
 type entry struct {

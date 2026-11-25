@@ -353,7 +353,9 @@ Priority: **P2** · Covers: PKG-DEB-009, PKG-DEB-010
   member is `debian-binary` holding `2.<n>` and a newline; then `control.tar`, `control.tar.gz`, `control.tar.xz` or
   `control.tar.zst`; then `data.tar` with any compression; members whose names start with `_` (signatures of package signing
   tools) may follow and are not read. Another order, a duplicate or unknown member, or a control archive in another compression
-  answers 422 `deb_invalid_archive` or `deb_unsupported_compression`. The data archive is never decompressed.
+  answers 422 `deb_invalid_archive` or `deb_unsupported_compression`. The upload never decompresses the data archive: what it tells
+  (the changelog, the copyright, the file list) is read after the file is stored, by a job under bounds of its own (R-DEB-039,
+  Q-DEB-140).
 - **Control file.** Only the member `./control` (or `control`) of the control archive is read; it must be a regular file. It is
   one deb822 paragraph ([Debian Policy, chapter 5](https://www.debian.org/doc/debian-policy/ch-controlfields.html)):
   `Package`, `Version`, `Architecture`, `Maintainer` and `Description` are required; names follow R-DEB-002.
@@ -1430,8 +1432,10 @@ Priority: **P2** · Covers: PKG-DEB-010
 
 - The view adapter orders versions by dpkg order (`Compare`, R-DEB-002) and describes a version from its rows: the first line of
   `Description`, and as metadata the architectures, the coordinates, `Maintainer`, `Section`, `Priority`, `Installed-Size`,
-  `Homepage`, `Depends` and `Source`. There is no README, so the format has no wiki content
-  ([authorization.md](../authorization.md) R-AUTHZ-034) and a repository's wiki level decides nothing for it.
+  `Homepage` and `Source`, with the relations parsed, the long description, `Multi-Arch` and `Essential` of R-DEB-038; the licences are
+  those of the copyright file (R-DEB-039). There is no README; the changelog and the copyright file of R-DEB-039 are the format's wiki
+  content ([authorization.md](../authorization.md) R-AUTHZ-034), answered by their own operation, and a repository's wiki level
+  decides who reads them (Q-DEB-143).
 - For a remote repository the screens show the versions whose files are stored, named by the parsed rows (R-DEB-023) and described
   as a local version from the control paragraph of the cached file (R-DEB-037); their coordinates are the suites and components of the
   parsed indexes that list the file.
@@ -1457,7 +1461,8 @@ regularly carries is shown wherever it is present
 
 - **The row.** Every live package file a remote holds of a listed version has a row of `deb_binaries` with its normalized control
   paragraph, as a local file's (R-DEB-007): the paragraph of the file's control archive, read within the bounds of R-DEB-034, without the
-  fields an index computes. The data archive is never read. A cached file gets no row of `deb_coordinates`, raises no suite and is part of
+  fields an index computes; the data archive is read afterwards by the job of R-DEB-039, which this job queues once it wrote the rows. A
+  cached file gets no row of `deb_coordinates`, raises no suite and is part of
   no index build: its coordinates on the screens are the suites and components of the parsed `Packages` indexes below `dists/` that list
   its path (R-DEB-023); a file of a flat directory has none.
 - **The job.** The job `deb-remote-describe` (queue `index`, coalesce per repository and package, key
@@ -1483,6 +1488,111 @@ Acceptance criteria:
   `debremote`).
 - The paragraph of a refused file, of one without an index row and the error that is tried again
   (`TestR_DEB_037_ACachedFileIsDescribedOnceWhateverIsReadable`, unit).
+
+### R-DEB-038 · A version shows its relations, its long description and its package facts
+Priority: **P1** · Covers: PKG-DEB-010
+
+By the owner's rule of 2026-11-25 ("when the metadata is there, we use it and show it"), a version shows what `apt show` tells about
+it, from the normalized paragraph of its first package file by architecture (R-DEB-007, R-DEB-037), local and cached alike.
+
+- **Relations.** `Pre-Depends`, `Depends`, `Recommends`, `Suggests`, `Enhances`, `Breaks`, `Conflicts`, `Replaces` and `Provides`
+  are sent parsed in the version's `metadata.relations`, one member per field (`preDepends`, `depends`, `recommends`, `suggests`,
+  `enhances`, `breaks`, `conflicts`, `replaces`, `provides`), each a list of groups and each group a list of alternatives (`|`): the
+  `name`, the architecture qualifier `arch` (`python3:any`), the constraint `op` and `version` (`<<`, `<=`, `=`, `>=`, `>>`; the
+  obsolete `<` and `>` read as `<=` and `>=`, as dpkg reads them), and, where a binary paragraph carries them, the architecture
+  restriction `architectures` and the build profiles `profiles`. A field that does not follow the grammar of Debian Policy 7.1 is
+  sent as text in `metadata.relationsText` under the same member, and the screen shows it as text. At most 2,000 alternatives per field.
+- **Long description.** The lines of `Description` after the synopsis are `metadata.longDescription`, a list of paragraphs: a line
+  ` .` ends a paragraph, a line with a further leading space is verbatim (lists, tables, examples) and keeps its spacing, every other
+  line is text the screen wraps (Debian Policy 5.6.13). It is the uploader's or the upstream's text and is shown as text, never as
+  markup.
+- **Facts.** `Multi-Arch` is `metadata.multiArch`, `Essential: yes` is `metadata.essential: true`; `Maintainer`, `Section`,
+  `Priority`, `Installed-Size`, `Homepage` and `Source` stay as R-DEB-030 lists them. `Depends` is no longer a text member.
+- **The source package's binaries.** Debian versions have no keywords: the package list's keyword filter (`keyword=`) matches, for
+  Debian, the source package (`Source`, else the package's own name), so the list of a source's binaries is the package list filtered
+  by it, and the screen's source package links there
+  ([Q-DEB-142](#q-deb-142--the-keyword-of-a-debian-search-is-the-source-package)).
+- **Provides.** A name a package provides is found by the package search (`q=`), which matches the whole control paragraph
+  (R-DEB-030); nothing is added for it.
+
+Acceptance criteria:
+
+- An uploaded package with `Depends: libc6 (>= 2.34), python3:any | python3-minimal`, a long description with a verbatim list and
+  `Provides: quader-doc-reader` answers the relations as two groups, the second with two alternatives and the qualifier `any`, the
+  description in paragraphs with the list verbatim; `q=quader-doc-reader` and `keyword=<its source>` list it
+  (`TestR_DEB_038_039_AnUploadedPackageShowsWhatItTellsAboutItself`, integration, area `deblocal`). A cached package answers its
+  `Depends` parsed (`TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph`, area `debremote`).
+- The grammar of the relations, a field that does not follow it, the bound, and the paragraph rules of the long description
+  (`TestR_DEB_038_RelationsAreReadIntoGroupsOfAlternatives`, `TestR_DEB_038_TheLongDescriptionKeepsDebiansParagraphRules`, unit).
+
+### R-DEB-039 · A package file's changelog, copyright and file list are read from its data archive, under bounds
+Priority: **P1** · Covers: quader-only
+
+Debian policy puts a changelog and a copyright file into every binary package, below `/usr/share/doc/<package>/`; with the list of the
+files a package installs they are what `apt changelog`, `/usr/share/doc` and `dpkg -c` tell a person. By the owner's rule of 2026-11-25
+they are shown wherever they are present. This revises R-DEB-007, which never read the data archive
+([Q-DEB-140](#q-deb-140--the-data-archive-is-read-after-the-file-is-stored-by-a-job-under-bounds-of-its-own)).
+
+- **What is read.** The data archive (`data.tar`, `.gz`, `.xz` or `.zst`) of every live package file of a local repository and of
+  every file a remote cached, as a stream, never extracted: no entry is written anywhere, a symbolic link, a hard link or a device is a
+  name in the list and is never followed or opened, and only two entries' content is read, each only as far as it is kept:
+  - **the changelog**: `usr/share/doc/<package>/changelog.Debian.gz`, else `changelog.gz` (a native package's), inflated as gzip and
+    kept for its newest 64 KiB, cut after the last whole entry (a trailer line ` -- `) that fits, with a mark that it was cut;
+  - **the copyright file**: `usr/share/doc/<package>/copyright`, its first 64 KiB cut at a line, with a mark; when it is in the
+    machine-readable format (it starts with `Format:`), the first lines of its `License` fields are the version's licences (at most 32,
+    in the order they first appear), which the package API answers as `licenses`;
+  - **the file list**: the path, the declared size of a regular file, the kind (`file`, `link`, `hardlink`, `special`) and a link's
+    target as text, for every entry that is not a directory, in the archive's order; the first 10,000 entries and at most 1 MiB of
+    names are kept, and every entry is counted;
+  - a package whose `usr/share/doc/<package>` is a symbolic link to another package's directory (packages of one source do this) has
+    no changelog or copyright of its own; the link's target is kept and named.
+- **The bounds** (R-ARCH-028, Q-DEB-141): at most 2 GiB inflated in all, 200,000 entries walked, 2 minutes per file, a dictionary
+  (xz) or a window (Zstandard) of at most 64 MiB per block or frame; `bzip2` and `lzma`, which dpkg-deb reads and no longer writes by
+  default, are not read. The xz container is parsed by Quader, block by block, so that a block's dictionary is refused before the
+  decoder allocates it.
+- **A refusal.** An archive that crosses a bound, is not a valid tar in its compression, or uses a compression that is not read is
+  refused whole: none of its facts are kept, the row says why (`unsupported_compression`, `invalid_archive`, `too_large`,
+  `too_many_entries`, `timeout`, `no_content`) with a sentence, and the file stays stored, indexed and served. An upload or a fill is
+  never refused for it: the reading runs after them.
+- **Where it runs.** The job `deb-contents` (queue `default`, coalesce per repository and package, key
+  `deb-contents:<repository id>:<package>`, 5 attempts, 30 minutes) reads, for every live package file of the package in the
+  repository that has no row of `deb_contents` from the current reader, the stored file with ranged reads of 4 MiB and writes the row;
+  it holds no transaction while it reads. A blob store that fails is tried again; only the archive's own faults are refusals. The upload
+  of a local file queues it in the upload's transaction; the job `deb-remote-describe` queues it once it wrote a cached file's row of
+  `deb_binaries` (R-DEB-037). The row goes with the file's row of `deb_binaries` (removal, purge, the deletion of the repository).
+- **Files stored before.** The task `remote-describe` (R-DEB-037) also queues `deb-contents` for every package of a local or remote
+  Debian repository that holds a live file without a row of the current reader: a starting worker queues the task while such a file
+  exists, so a store upgraded to this reader is read within its first runs, without an upstream request; until then the version shows
+  its relations, long description and facts (they come from the control paragraph, R-DEB-038) and its contents are `pending`. A change
+  of what the reader keeps raises its version (`deb_contents.reader`), and the task reads every file again.
+- **The operation.** `GET /api/v1/packages/{packageId}/versions/{version}/contents` answers, for one package file of a visible version
+  (the first architecture, or `architecture=`), the state (`available`, `pending`, `unavailable`), the architectures, the changelog, the
+  copyright with its licences, the target of a linked documentation directory, and a page of the file list (`q` filters the paths
+  without case, `offset`, `limit` of at most 1,000) with the total, the number kept and the number that match. The repository is chosen
+  as the documentation operations choose it (`repository=`; else local before remote; a virtual repository by its members). The
+  reason of a refusal is told only to a caller who reads the repository's configuration.
+- **Wiki content.** The changelog and the copyright are the uploader's or the upstream's text: wiki content (R-AUTHZ-034), absent for a
+  caller who may read the artifacts and not the wiki; they are shown as text, never as markup, and an address in them is not made a
+  link. The file list and the licences are facts of the artifact.
+- **Derived data.** `deb_contents` is not exported by a backup (R-BAK-004); after a restore the task reads the files again.
+
+Acceptance criteria:
+
+- The package files `dpkg-deb` builds with xz, Zstandard and gzip (fixtures of [testdata](../../../internal/formats/deb/debfile/testdata/make-fixtures.sh))
+  are read alike: the changelog, the copyright with `Apache-2.0` and `GPL-2+`, the file list with the link as a name
+  (`TestR_DEB_039_ThePackageFilesOfDpkgDebAreRead`, unit).
+- A data archive that inflates past the cap (a file of kilobytes), one with more entries than the walk reads, one in bzip2, one that is
+  no tar and one whose reading takes too long are refused with their reasons; what is kept is bounded (a changelog of thirty entries
+  cut after a whole entry, a long copyright cut at a line, a file list cut and counted); a linked documentation directory is named and
+  not followed; a store that fails is no refusal (`TestR_DEB_039_TheReaderStopsAtItsBounds`, `TestR_DEB_039_WhatIsKeptIsBounded`,
+  `TestR_DEB_039_AStoreThatFailsIsTriedAgain`, unit). The xz block reader refuses a block that declares a 4 GiB dictionary before
+  it decodes it (`TestR_DEB_039_TheXZBlockReaderBoundsTheDictionary`, unit).
+- An uploaded package's contents answer its changelog, its copyright with the licence (which is the version's licence too) and its file
+  list, filtered; a reader without the wiki gets the file list without the changelog and the copyright; a package whose data archive
+  is no tar is stored and served, its contents are `unavailable`, and the reason reaches an administrator and not a writer; with the
+  rows deleted, as for a store from before the reader, the contents are `pending` and the task reads them again
+  (`TestR_DEB_038_039_AnUploadedPackageShowsWhatItTellsAboutItself`, integration, area `deblocal`). A cached package file's file list
+  answers after its description (`TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph`, area `debremote`).
 
 ### R-DEB-031 · Debian on n replicas, without Valkey and during a drain
 Priority: **P2** · Covers: quader-only
@@ -1604,13 +1714,14 @@ format reads it through `internal/formats/untrusted` with these bounds, which on
 
 | Input | Bounds |
 |---|---|
-| `.deb` archive (`untrusted.NewAr`) | at most 8 members, names of at most 16 bytes, member sizes that add up to the body; the data archive is skipped, never decompressed, so its symbolic links, which packages hold as a matter of course, are never met (the option of [ansible.md](ansible.md#q-ans-91--a-symbolic-link-that-stays-inside-a-collection-is-admitted-and-never-followed) Q-ANS-91 is not needed) |
+| `.deb` archive (`untrusted.NewAr`) | at most 8 members, names of at most 16 bytes, member sizes that add up to the body; the upload skips the data archive and never decompresses it |
+| Data archive (R-DEB-039, read by the job `deb-contents` after the file is stored) | gz, xz or Zstandard, inflated as a stream and never extracted; 2 GiB inflated, 200,000 entries, 2 minutes per file, a dictionary or window of 64 MiB (xz parsed block by block by Quader); kept: the changelog's newest 64 KiB, the copyright's first 64 KiB, 10,000 file names and 1 MiB of them; links and devices are names, never followed (the option of [ansible.md](ansible.md#q-ans-91--a-symbolic-link-that-stays-inside-a-collection-is-admitted-and-never-followed) Q-ANS-91 is not needed: no entry is opened by its name); a crossed bound refuses the archive's facts and never the file (Q-DEB-141) |
 | Control archive | 16 MiB compressed, 64 MiB decompressed, 1,000 entries, a ratio of 100:1, `control` at most 1 MiB, no link in place of `control` |
 | deb822 paragraphs (control, `Release`, `Packages`, `Sources`) | 512 fields per paragraph, 1 MiB per field, field names and continuation lines as R-DEB-007 |
 | Release documents | 16 MiB, 100,000 checksum lines; one cleartext message; a `Hash` armor header, when present, matches its signatures |
 | `Packages` and `Sources` of a remote; a member index a virtual build merges | R-DEB-023: 1 GiB decompressed, 1,000,000 paragraphs |
 | OpenPGP input | `deb.upstreamKeys`: 256 KiB, 32 certificates; an imported secret key: 64 KiB; 32 signatures per document |
-| Every pass | the 30 s deadline of R-ARCH-028, except the parse job (its own timeout of 10 minutes) |
+| Every pass | the 30 s deadline of R-ARCH-028, except the parse job (its own timeout of 10 minutes) and the reading of a data archive (2 minutes per file) |
 
 - **Index injection.** Every paragraph Quader writes is built from parsed fields, never from bytes copied unparsed: a field value
   cannot hold a blank line (which would start a new paragraph), a computed field (`Filename`, `Size`, the digests) is never taken
@@ -1915,6 +2026,9 @@ Acceptance criteria:
   ahead is refused (R-DEB-019).
 - **Trust narrowings survive a restore.** Removed upstream keys, removed coordinates, deleted packages and retired keys are
   journaled and re-applied, fail-closed (R-DEB-032).
+- **A data archive is read as a stream, never extracted.** The reading of R-DEB-039 runs in a job after the file is stored, inflates
+  within bounds that refuse a bomb of kilobytes, writes no entry anywhere, follows no link and keeps text only; the changelog and the
+  copyright are wiki content shown as text (Q-DEB-141, Q-DEB-143, [deb-contents.md](../../security/deb-contents.md)).
 - **Indexes are written from parsed fields.** An uploaded control file or an upstream paragraph cannot add paragraphs or computed
   fields to an index, and upstream paths cannot leave the repository (R-DEB-007, R-DEB-034).
 - **Dependency confusion.** APT takes the highest version from every source; claims keep a remote's paragraphs of an internal name
@@ -4001,6 +4115,109 @@ R-DEB-023 keeps paragraphs for another reason.
 `TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph` (integration, area `debremote`), the queue and the removal in
 `TestR_API_081_ARemoteListsThePackageFileItCachedAndItsRemovalTakesTheVersion` (unit).
 
+### Q-DEB-140 · The data archive is read after the file is stored, by a job, under bounds of its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. W-30 (G8),
+2026-11-25: the owner's rule that documentation a format regularly carries is shown, and Debian policy, which puts a changelog and a
+copyright file into every package, revise R-DEB-007's "the data archive is never decompressed".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Read it in the upload's request | The pattern of the control archive | The facts exist with the upload | An upload of hundreds of megabytes waits seconds to minutes for an inflation it does not need, and a remote's fill has no request to do it in |
+| (b) Read it on demand when a page asks | No stored row | No job | Every page view inflates the archive again; a list of 10,000 files cannot be filtered or paged without reading it whole each time |
+| (c) A job after the upload and after a cached file's description, one row per package file (chosen) | `deb-contents`, `deb_contents` | The upload and the fill stay as they are; the row serves every view; a refusal is a row, never a failed upload | The facts exist seconds after the upload; one more job kind and table |
+
+**Choice:** (c), in the queue `default`, so that a long read never holds back an index build (queue `index`). **Rationale:** the
+inflation of a data archive is the one read of a package file that grows with its size; a job holds no transaction and no request
+while it runs, and the page reads itself again until the row exists (R-UI-213). The row is derived from the stored file, so it is not
+exported, and a reader version lets a later reader read every file again. Revisit if a client of the format needs the facts with the
+upload's answer.
+
+**Applied in the spec:** R-DEB-007 (revised), R-DEB-030, R-DEB-034, R-DEB-037, R-DEB-039. Code:
+[contents.go](../../../internal/formatdata/deb/contents.go), [debfile/contents.go](../../../internal/formats/deb/debfile/contents.go),
+migration [00132_deb_contents](../../../internal/meta/postgres/migrations/00132_deb_contents.sql).
+
+### Q-DEB-141 · The reader's bounds: 2 GiB, 200,000 entries, two minutes, a 64 MiB dictionary; a crossed bound refuses the whole archive
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The defaults of R-ARCH-028 as they are (10,000 entries, 30 s, 64 MiB into memory) | No bound of its own | One set of numbers | A package of 10,001 files, common for fonts, documentation and kernel modules, would be refused; 30 s does not inflate 2 GiB of xz |
+| (b) Bounds of the walk apart from what is kept: 2 GiB inflated (R-ARCH-028's bound of a pass that keeps nothing), 200,000 entries walked, 2 minutes, 64 MiB of dictionary or window; kept: 64 KiB of changelog, 64 KiB of copyright, 10,000 names and 1 MiB of them (chosen) | | Real packages are read whole; memory is bounded by what is kept and the decoder's 64 MiB, not by the archive | A package with more than 2 GiB of content (debug symbols) shows no contents |
+| (c) Keep what was read when a bound is crossed | Partial facts | A package past a bound shows its first files | A bomb's partial list looks like a package's list; the screen could not tell a cut list from a cut walk |
+
+**Choice:** (b), and a crossed bound refuses the whole archive (not (c)). xz is parsed block by block by Quader's own reader
+(`untrusted.NewXZBlocksReader`): the xz module allocates the dictionary a block header declares, up to 4 GiB, before it decodes a byte,
+and the module offers no bound on it; the reader refuses a block over 64 MiB (`xz -9` and dpkg-deb's presets stay at or below it) and
+accepts the one filter chain the module decodes, a lone LZMA2 filter. Zstandard's window is bounded by the module's option. bzip2 and
+lzma are not read. **Rationale:** the walk must keep nothing of what it skips, and the time bound stops what the other bounds let
+through. Revisit if a package of the owner's exceeds a bound.
+
+**Applied in the spec:** R-DEB-034, R-DEB-039. Code: [debfile/contents.go](../../../internal/formats/deb/debfile/contents.go),
+[xzblocks.go](../../../internal/formats/untrusted/xzblocks.go), `NewZstdReaderWindow` in [zstd.go](../../../internal/formats/untrusted/zstd.go).
+
+### Q-DEB-142 · The keyword of a Debian search is the source package
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. W-30's plan
+asks that the source package links to the list of its binaries.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Link to the text search `q=<source>` | No server change | Nothing to build | The text search matches every package whose paragraph names the source, its reverse dependencies among them: not the list of its binaries |
+| (b) A filter `source=` of its own on the package list | A new parameter | A word of its own | A parameter one format answers, in the API and the screen's filters |
+| (c) Debian answers the keyword filter with the source package (chosen) | `keyword=<source>` lists the versions whose `Source` (else the name) is it | One SQL statement; Debian has no keywords, so the filter meant nothing for it | The filter's chip reads "Keyword" unless the screen names it for Debian |
+
+**Choice:** (c); the screen names the filter "Source package" while the list shows Debian only. **Rationale:** the source package is
+what groups Debian binaries, as keywords group npm packages; it reuses the filter and the index the search has. Revisit when the
+search gains facets per format.
+
+**Applied in the spec:** R-DEB-038. Code: `Find` in [view.go](../../../internal/formats/deb/view.go), `DebFindSourceVersions`.
+
+### Q-DEB-143 · The changelog and the copyright are wiki content; the file list and the licences are not
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Everything is wiki content | One rule | The level of the wiki decides the whole operation | The licence and the list of files describe the artifact a reader installs; hiding them hides what the reader is given |
+| (b) The changelog and the copyright are wiki content, the file list and the licences are artifact facts (chosen) | As a README and as npm's licence | Prose of the uploader or the upstream is treated as README text is (R-AUTHZ-034) | Two rules in one answer |
+| (c) Nothing is wiki content | | Simple | A repository that keeps its wiki private would show the prose a README shows only to wiki readers |
+
+**Choice:** (b). The text is shown as text: no markup is rendered and no address is made a link. **Rationale:** what a README is for
+npm, the changelog and the copyright are for Debian; the file list and the licence are what the version is. Revisit with the owner's
+walk of the wiki levels.
+
+**Applied in the spec:** R-DEB-030, R-DEB-039.
+
+### Q-DEB-144 · Files stored before the reader are read by the task remote-describe
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A task of its own | `deb-contents-backfill` | A name that says what it does | A second task, schedule and start-up rule for the same walk |
+| (b) The reindex of a local repository queues it | The reindex exists | An operator's act | A remote has no reindex, and nothing happens without the act |
+| (c) The task `remote-describe` gains a format entry that queues `deb-contents` (chosen) | One more entry of its list | Its batches, its cursor, its bound of waiting jobs, its daily schedule and its start-up rule hold as they are | The name says "remote" and now also covers local repositories |
+
+**Choice:** (c), and the name stays (H-2135). **Rationale:** the task already walks stored files without an upstream request; a
+second walker would duplicate its bounds. Revisit when the task is renamed for its broader work.
+
+**Applied in the spec:** R-DEB-037, R-DEB-039, [operations-and-observability.md](../operations-and-observability.md) (the task's row).
+Code: [wire_remote_describe.go](../../../internal/app/wire_remote_describe.go), `ContentsPort` in
+[contents.go](../../../internal/formatdata/deb/contents.go).
+
+### Q-DEB-145 · The contents are those of one package file, chosen by its architecture
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The first file by architecture only, as the control fields | One answer per version | Simple | The file list of `arm64` differs from that of `amd64` (`/usr/lib/aarch64-linux-gnu/…`) |
+| (b) One answer per file, chosen by `architecture=`, the first by default (chosen) | The screen offers the architectures when there are several | What `dpkg -c` shows of the file a person installs | One parameter more |
+
+**Choice:** (b). **Applied in the spec:** R-DEB-039.
+
 ## What this does not cover
 
 ### H-1971 · A pre-release spelled with a tilde is a package's latest version on the screens
@@ -4133,3 +4350,33 @@ such a file; the store of many files cached before the job existed is H-2090 of 
 Component: the job `deb-remote-describe` (R-DEB-037). Subject: the first screen of a version a client fetched a moment ago. Until the job
 ran the version is listed without its control fields; the page reads it again by itself while it is open (R-UI-213). Live; the time is
 the pick-up of a job of the queue `index`, longer while that queue is busy with index builds.
+
+### H-2130 · A package file over the reader's bounds shows no changelog, copyright or file list
+
+Component: the job `deb-contents` (R-DEB-039, Q-DEB-141). Subject: a package whose data archive inflates past 2 GiB (debug symbol
+packages, large data packages), holds more than 200,000 entries, takes longer than two minutes, uses bzip2 or lzma, or an xz filter
+chain other than a lone LZMA2 filter (dpkg-deb writes none by default). Its contents are `unavailable`; the reason reaches who reads the
+configuration. The file is stored and served. Live for such packages, local and cached.
+
+### H-2131 · A package whose documentation directory is a link shows the target's name, not its changelog
+
+Component: the reader (R-DEB-039). Subject: a binary package whose `/usr/share/doc/<package>` links to another binary of its source (a
+`-dev` or `-data` package often does). Its changelog and copyright are the other package's; Quader names the target and does not look
+up that package's row, so the version shows neither. Live for such packages; the target's own version shows them.
+
+### H-2132 · Only the first 10,000 files of a package are listed and searchable
+
+Component: the reader and the operation of R-DEB-039. Subject: a package with more than 10,000 files (or names longer than 1 MiB in
+all). The list says how many there are and that it is cut; a path after the cut is neither listed nor found by the filter. Live for such
+packages.
+
+### H-2133 · A changelog or copyright file that is not UTF-8 shows replacement characters
+
+Component: the reader (R-DEB-039). Subject: an old package whose changelog is Latin-1. Its bytes that are not UTF-8 are shown as the
+replacement character; the text is otherwise kept. Live for such packages.
+
+### H-2135 · The task remote-describe also reads the data archives of local repositories under its old name
+
+Component: the task `remote-describe` (Q-DEB-144). Subject: an operator who reads the task's name and schedule. It queues `deb-contents`
+for local Debian repositories too; its name says "remote". Live; renaming it touches the configuration key
+`maintenance.tasks.remote-describe` and its documentation.

@@ -2,6 +2,9 @@
 // remote repository cached (npm-remote-describe, deb-remote-describe) for every package that holds a cached version or file without its
 // row, so that what a remote cached before those jobs existed, and a version whose job failed, is described without waiting for a
 // change at the upstream. It reads and requests nothing of an upstream: the jobs read the stored documents, tarballs and package files.
+// A further Debian entry queues deb-contents, the reading of a package file's data archive (R-DEB-039, Q-DEB-144), for every package of
+// a local or a remote Debian repository with a file the current reader has not read: the task walks stored files, whatever class holds
+// them.
 //
 // A worker that starts queues a run when such a package exists (the start-up rule of R-HA-022's background data migrations); the
 // scheduler runs it once a day, and an operator runs it with POST /api/v1/system/tasks/remote-describe/run (R-OPS-019). A run walks the

@@ -10440,10 +10440,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-DEB
 
-112 questions on [spec/formats/debian.md](spec/formats/debian.md).
+118 questions on [spec/formats/debian.md](spec/formats/debian.md).
 
 <details>
-<summary>Q-DEB: 112 questions</summary>
+<summary>Q-DEB: 118 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10559,6 +10559,12 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-DEB-133](spec/formats/debian.md#q-deb-133--a-release-is-recorded-under-the-keys-its-recording-transaction-reads) | A release is recorded under the keys its recording transaction reads | Decided by the development agent | (a), in `OnFill` ([remote.go](../internal/formats/deb/remote.go)) with `checkRelease`, the port's `UpstreamKeys` and `RecordVerified` ([remote_store.go](../internal/formatdata/deb/remote_store.go)), the statement `DebRemoteUpstreamKeysShared`. | — |
 | [Q-DEB-134](spec/formats/debian.md#q-deb-134--a-test-that-waits-for-the-build-a-change-enqueued-waits-for-every-build-enqueued-before-the-change-answered) | A test that waits for the build a change enqueued waits for every build enqueued before the change answered | Decided by the development agent | (a), `buildsEnded` and `builds` in [members_test.go](../test/integration/debvirtual/members_test.go), used by `failedWith` for `member_unverified` and `member_rollback`. | — |
 | [Q-DEB-135](spec/formats/debian.md#q-deb-135--a-package-file-a-remote-cached-is-described-by-a-job-that-reads-its-control-archive) | A package file a remote cached is described by a job that reads its control archive | Decided by the development agent | (d); what was cached before the job existed is described by the task `remote-describe` ([formats/npm.md](spec/formats/npm.md) Q-NPM-92). | — |
+| [Q-DEB-140](spec/formats/debian.md#q-deb-140--the-data-archive-is-read-after-the-file-is-stored-by-a-job-under-bounds-of-its-own) | The data archive is read after the file is stored, by a job, under bounds of its own | Decided by the development agent | (c), in the queue `default`, so that a long read never holds back an index build (queue `index`). | — |
+| [Q-DEB-141](spec/formats/debian.md#q-deb-141--the-readers-bounds-2-gib-200000-entries-two-minutes-a-64-mib-dictionary-a-crossed-bound-refuses-the-whole-archive) | The reader's bounds: 2 GiB, 200,000 entries, two minutes, a 64 MiB dictionary; a crossed bound refuses the whole archive | Decided by the development agent | (b), and a crossed bound refuses the whole archive (not (c)). xz is parsed block by block by Quader's own reader (`untrusted.NewXZBlocksReader`): the xz module allocates the dictionary a block header declares, up to 4 GiB, before it decodes a byte, and the module offers no bound on it; the reader refuses a block over 64 MiB (`xz -9` and dpkg-deb's presets stay at or below it) and accepts the one filter chain the module decodes, a lone LZMA2 filter. | — |
+| [Q-DEB-142](spec/formats/debian.md#q-deb-142--the-keyword-of-a-debian-search-is-the-source-package) | The keyword of a Debian search is the source package | Decided by the development agent | (c); the screen names the filter "Source package" while the list shows Debian only. | — |
+| [Q-DEB-143](spec/formats/debian.md#q-deb-143--the-changelog-and-the-copyright-are-wiki-content-the-file-list-and-the-licences-are-not) | The changelog and the copyright are wiki content; the file list and the licences are not | Decided by the development agent | (b) The changelog and the copyright are wiki content, the file list and the licences are artifact facts | — |
+| [Q-DEB-144](spec/formats/debian.md#q-deb-144--files-stored-before-the-reader-are-read-by-the-task-remote-describe) | Files stored before the reader are read by the task remote-describe | Decided by the development agent | (c), and the name stays (H-2135). | — |
+| [Q-DEB-145](spec/formats/debian.md#q-deb-145--the-contents-are-those-of-one-package-file-chosen-by-its-architecture) | The contents are those of one package file, chosen by its architecture | Decided by the development agent | (b) One answer per file, chosen by `architecture=`, the first by default | — |
 
 </details>
 

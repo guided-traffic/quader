@@ -483,6 +483,8 @@ type VersionView struct {
 	Coordinates   []Coordinate
 	Description   string
 	Fields        map[string]string
+	// Licenses are the licences of the copyright file of the version's first file, as the reader of its data archive kept them.
+	Licenses []string
 }
 
 // RepositoryMeta is the key, class and upstream of a repository as a virtual build names its members.
@@ -494,4 +496,45 @@ type RepositoryMeta struct {
 	Format  string
 	// URL is remote.url of a remote repository: its upstream identity (R-REPO-011, Q-DEB-43).
 	URL string
+}
+
+// The states of the reading of a package file's data archive (R-DEB-039, the column deb_contents.state); a file without a row is
+// ContentsPending.
+const (
+	ContentsPending = ""
+	ContentsRead    = "read"
+	ContentsRefused = "refused"
+)
+
+// ContentsHead is what the reader kept of one package file of a version, without its file list (R-DEB-039).
+type ContentsHead struct {
+	Architecture       string
+	ItemID             int64
+	State              string
+	Reason, Detail     string
+	Changelog          string
+	ChangelogFile      string
+	ChangelogTruncated bool
+	Copyright          string
+	CopyrightTruncated bool
+	Licenses           []string
+	DocLink            string
+	// FilesKept is the length of the kept list, FileCount every entry of the archive that is not a directory.
+	FilesKept, FileCount int
+	ReadAt               time.Time
+}
+
+// ContentsFile is one entry of a kept file list: the path, the declared size of a regular file, the kind ("" for a regular file,
+// "link", "hardlink", "special") and the target a link names.
+type ContentsFile struct {
+	Path   string `json:"p"`
+	Size   int64  `json:"s,omitempty"`
+	Kind   string `json:"k,omitempty"`
+	Target string `json:"t,omitempty"`
+}
+
+// ContentsPage is a page of a kept file list and the number of its entries that match the filter.
+type ContentsPage struct {
+	Files   []ContentsFile
+	Matched int
 }

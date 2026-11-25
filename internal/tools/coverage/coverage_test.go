@@ -122,8 +122,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// W-30).
 		// 1288 since a collection's documentation reads like the documentation site (R-ANS-048 to R-ANS-050, three P1 requirements of
 		// W-30). 1289 since a package leads with the documentation its format carries (R-UI-218, one MVP requirement of W-30).
-		if len(m.Reqs) != 1289 || count[prioMVP] != 721 || count[prioP1] != 529 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1289 (721, 529, 39)",
+		// 1291 since a Debian package shows its relations, long description, changelog, copyright and file list (R-DEB-038, R-DEB-039,
+		// two P1 requirements of W-30).
+		if len(m.Reqs) != 1291 || count[prioMVP] != 721 || count[prioP1] != 531 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1291 (721, 531, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

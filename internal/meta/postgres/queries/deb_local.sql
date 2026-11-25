@@ -118,10 +118,12 @@ SELECT EXISTS (
      AND trashed_at IS NULL AND blob_sha256 = sqlc.arg(sha256)::bytea)::boolean;
 
 -- name: DebViewRows :many
--- What the package screens show of versions: the files of each, with their control paragraph.
-SELECT i.version_id, b.architecture, b.control, b.source
+-- What the package screens show of versions: the files of each, with their control paragraph and the licences of the copyright file the
+-- reader of the data archive kept (R-DEB-039; none before it read the file).
+SELECT i.version_id, b.architecture, b.control, b.source, COALESCE(c.licenses, '{}')::text[] AS licenses
   FROM deb_binaries b
   JOIN items i ON i.id = b.item_id
+  LEFT JOIN deb_contents c ON c.item_id = b.item_id
  WHERE i.version_id = ANY(sqlc.arg(version_ids)::bigint[]) AND i.trashed_at IS NULL
  ORDER BY i.version_id, b.architecture;
 

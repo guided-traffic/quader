@@ -27,6 +27,18 @@ func NewZstdReaderMax(r io.Reader, max int64) (io.Reader, error) {
 	return &zstdReader{zr: zr, r: Limit(zr, max)}, nil
 }
 
+// NewZstdReaderWindow is [NewZstdReaderMax] with a bound of its own on the window a frame may declare (R-DEB-039): the decoder keeps
+// a window's bytes in memory, and a frame may declare up to the decompressed cap; a stream that keeps nothing (the walk of a data
+// archive) needs no more than the window of the compressors' levels, which dpkg-deb never sets above 8 MiB by default.
+func NewZstdReaderWindow(r io.Reader, max, window int64) (io.Reader, error) {
+	zr, err := zstd.NewReader(r, zstd.WithDecoderConcurrency(1), zstd.WithDecoderMaxMemory(uint64(max)), //nolint:gosec // G115: positive bounds
+		zstd.WithDecoderMaxWindow(uint64(window))) //nolint:gosec // G115: positive bounds
+	if err != nil {
+		return nil, Refused("The content is not a valid Zstandard stream.", errs.WithCause(err))
+	}
+	return &zstdReader{zr: zr, r: Limit(zr, max)}, nil
+}
+
 // zstdReader releases the decoder's goroutines when the stream ends or fails.
 type zstdReader struct {
 	zr *zstd.Decoder
@@ -37,7 +49,7 @@ func (z *zstdReader) Read(p []byte) (int, error) {
 	n, err := z.r.Read(p)
 	if err != nil {
 		z.zr.Close()
-		if errors.Is(err, zstd.ErrDecoderSizeExceeded) {
+		if errors.Is(err, zstd.ErrDecoderSizeExceeded) || errors.Is(err, zstd.ErrWindowSizeExceeded) {
 			err = TooLarge("the content is larger than the limit for a decompressed stream")
 		}
 	}

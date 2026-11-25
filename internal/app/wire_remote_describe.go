@@ -18,9 +18,10 @@ import (
 // The jobs that describe what a remote repository cached (npm R-NPM-050, Debian R-DEB-037): their kinds are registered with the format
 // jobs (registerFormatJobs), with handlers that find the data port's handler built here on a replica that claims jobs.
 
-// startRemoteDescribe builds the handlers of npm-remote-describe and deb-remote-describe over the data ports, and the task
-// remote-describe, which it queues when a remote holds a cached version or file without its row (R-NPM-050, R-DEB-037): what was cached
-// before the jobs existed is described after the upgrade without a change at the upstream.
+// startRemoteDescribe builds the handlers of npm-remote-describe, deb-remote-describe and deb-contents over the data ports, and the
+// task remote-describe, which it queues when a remote holds a cached version or file without its row (R-NPM-050, R-DEB-037), or a
+// Debian repository a package file whose data archive the current reader has not read (R-DEB-039): what was stored before the jobs
+// existed is described after the upgrade without a change at the upstream.
 func (a *App) startRemoteDescribe(ctx context.Context, in infra, ports map[formats.ID]any) error {
 	npm, ok := ports[npmformat.ID].(*npmdata.Store)
 	if !ok {
@@ -32,9 +33,15 @@ func (a *App) startRemoteDescribe(ctx context.Context, in infra, ports map[forma
 	}
 	a.npmDescribe.set(npmdata.DescribeHandler(npm))
 	a.debDescribe.set(debdata.DescribeHandler(deb))
+	a.debContents.set(debdata.ContentsHandler(deb))
 	task, err := remotedescribe.New(remotedescribe.Options{
 		DB: in.db, Jobs: in.queue,
-		Formats: []remotedescribe.Format{{Kind: npmdata.DescribeJobKind, Port: npm}, {Kind: debdata.DescribeJobKind, Port: deb}},
+		Formats: []remotedescribe.Format{
+			{Kind: npmdata.DescribeJobKind, Port: npm},
+			{Kind: debdata.DescribeJobKind, Port: deb},
+			// The data archives of Debian package files a local or a remote repository stored before the reader existed (R-DEB-039).
+			{Kind: debdata.ContentsJobKind, Port: debdata.ContentsPort{S: deb}},
+		},
 	})
 	if err != nil {
 		return err
@@ -76,7 +83,8 @@ func npmBlobs(s *blob.Store) npmdata.BlobReader {
 
 type npmBlobReader struct{ s *blob.Store }
 
-// debBlobs is the blob reader of the Debian data port: the control archive of a stored package file, with ranged reads (R-DEB-037).
+// debBlobs is the blob reader of the Debian data port: the control archive of a stored package file (R-DEB-037) and its data archive
+// (R-DEB-039), with ranged reads; the data archive's reader asks for 4 MiB at a time.
 func debBlobs(s *blob.Store) debdata.BlobRanges {
 	if s == nil {
 		return nil

@@ -303,6 +303,9 @@ type Options struct {
 	DebKeys DebKeyStore
 	// Ansible is the data port's management group behind the Ansible Galaxy operations (ansible_stub.go); nil answers them with 503.
 	Ansible AnsibleStore
+	// DebContents is the Debian data port's reads of what the reader of a package file's data archive kept (deb_contents.go,
+	// R-DEB-039); nil answers the operation with 503.
+	DebContents DebContentsStore
 	// Reindexers are the formats with a job-built index by format ID (reindex.go); a format not listed answers the reindex with 405.
 	Reindexers map[string]Reindexer
 	// <<< T-17 deb

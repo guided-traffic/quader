@@ -6,14 +6,16 @@ import (
 	"strings"
 
 	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/deb/control"
 	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 	"github.com/guided-traffic/quader/internal/formats/deb/version"
 	"github.com/guided-traffic/quader/internal/formats/versionkey"
 )
 
 // viewAdapter is the format's part of the package screens (R-DEB-030): the versions in dpkg order and, from the rows of the stored
-// files, the first line of the Description, the architectures, the coordinates and some control fields. There is no README. It runs no
-// SQL: the data port answers.
+// files, the first line of the Description, the architectures, the coordinates, the control fields with the relations parsed (R-DEB-038)
+// and the licences of the copyright file (R-DEB-039). There is no README; the changelog, the copyright and the file list are read by
+// their own operation (R-DEB-039). It runs no SQL: the data port answers.
 type viewAdapter struct{}
 
 var _ formats.ViewAdapter = viewAdapter{}
@@ -62,7 +64,7 @@ func (viewAdapter) Describe(ctx context.Context, ports formats.DataPorts, vs []f
 	}
 	out := make(map[formats.VersionID]formats.ViewData, len(got))
 	for id, v := range got {
-		d := formats.ViewData{Description: v.Description}
+		d := formats.ViewData{Description: v.Description, Licenses: v.Licenses}
 		if want.Has(formats.ViewDetails) {
 			d.Metadata = metadataOf(v)
 		}
@@ -71,7 +73,9 @@ func (viewAdapter) Describe(ctx context.Context, ports formats.DataPorts, vs []f
 	return out, nil
 }
 
-// metadataOf is the `metadata` object of a version's details: the architectures, the coordinates and the control fields of R-DEB-030.
+// metadataOf is the `metadata` object of a version's details: the architectures, the coordinates and the control fields of R-DEB-030,
+// and of R-DEB-038 the relations parsed into groups of alternatives (a field that does not follow the grammar is sent as text under
+// relationsText), the extended description in its paragraphs, Multi-Arch and Essential.
 func metadataOf(v rows.VersionView) map[string]any {
 	m := map[string]any{}
 	arch := append([]string(nil), v.Architectures...)
@@ -84,25 +88,55 @@ func metadataOf(v rows.VersionView) map[string]any {
 	m["coordinates"] = coords
 	for field, key := range map[string]string{
 		"Maintainer": "maintainer", "Section": "section", "Priority": "priority", "Installed-Size": "installedSize",
-		"Homepage": "homepage", "Depends": "depends", "Source": "source",
+		"Homepage": "homepage", "Source": "source", "Multi-Arch": "multiArch",
 	} {
 		if val, ok := v.Fields[field]; ok && val != "" {
 			m[key] = val
 		}
 	}
+	if strings.EqualFold(strings.TrimSpace(v.Fields["Essential"]), "yes") {
+		m["essential"] = true
+	}
+	if long := control.LongDescription(v.Fields["Description"]); len(long) > 0 {
+		m["longDescription"] = long
+	}
+	relations, text := map[string]any{}, map[string]string{}
+	for _, f := range control.RelationFields {
+		val := strings.TrimSpace(v.Fields[f.Field])
+		if val == "" {
+			continue
+		}
+		if groups, err := control.ParseRelations(val); err == nil {
+			relations[f.Key] = groups
+		} else {
+			text[f.Key] = strings.Join(strings.Fields(val), " ")
+		}
+	}
+	if len(relations) > 0 {
+		m["relations"] = relations
+	}
+	if len(text) > 0 {
+		m["relationsText"] = text
+	}
 	return m
 }
 
-// Find searches the control data of the versions of the repositories.
+// Find searches the control data of the versions of the repositories. Debian versions have no keywords: the keyword of a search is the
+// source package, so that the list of a source's binaries is the package list filtered by it (R-DEB-038, Q-DEB-142).
 func (viewAdapter) Find(ctx context.Context, ports formats.DataPorts, f formats.ViewFind, limit int) ([]formats.VersionID, error) {
-	if f.Text == "" {
-		return nil, nil // Debian versions have no keywords
+	if f.Text == "" && f.Keyword == "" {
+		return nil, nil
 	}
 	st, err := viewStoreOf(ports)
 	if err != nil {
 		return nil, err
 	}
-	ids, err := st.Find(ctx, f.Repos, f.Text, limit+1)
+	var ids []int64
+	if f.Keyword != "" {
+		ids, err = st.FindSource(ctx, f.Repos, f.Keyword, limit+1)
+	} else {
+		ids, err = st.Find(ctx, f.Repos, f.Text, limit+1)
+	}
 	if err != nil {
 		return nil, err
 	}

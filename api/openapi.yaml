@@ -11277,6 +11277,106 @@ paths:
           $ref: "#/components/responses/Internal"
         "503":
           $ref: "#/components/responses/Unavailable"
+  /api/v1/packages/{packageId}/versions/{version}/contents:
+    parameters:
+      - $ref: "#/components/parameters/PackageId"
+      - $ref: "#/components/parameters/PackageVersionPath"
+    get:
+      operationId: getPackageVersionContents
+      tags: [packages]
+      summary: Read what Quader read from a version's package file
+      description: |
+        What the reader of a Debian package file's data archive kept (formats/debian.md R-DEB-039): the newest part of the changelog, the
+        copyright file with the licences of its machine-readable fields, and the list of the files the package installs, for one package
+        file of a visible version, one architecture. The reader runs in a job after the file is stored; until it has run the state is
+        `pending`, and a page reads the operation again (R-UI-213). A file whose archive the reader refused is `unavailable`; why
+        (`reason`, `detail`) is told only to a caller who reads the configuration of the repository (`repositories:read-config`, or an
+        Owner of the project). The changelog and the copyright are wiki content (R-AUTHZ-034): they are absent for a caller who may not
+        read the wiki of the repository. `repository` selects the repository (`<projectKey>/<repoKey>`); without it the first repository
+        the caller may read that holds the version is used, local before remote; a virtual repository is resolved to its first member
+        that holds it. `architecture` selects the file; without it the first architecture in name order. A version of another format, and
+        a version that is not visible, are `404`. A read never queries an upstream. The `ETag` is a strong tag over the representation.
+      x-quader-permission:
+        public: true
+      parameters:
+        - $ref: "#/components/parameters/DocRepository"
+        - name: architecture
+          in: query
+          description: The architecture of the package file (`amd64`, `all`, ...).
+          schema:
+            type: string
+            maxLength: 64
+        - name: q
+          in: query
+          description: Only the files whose path contains this text, compared without case; at most 256 characters.
+          schema:
+            type: string
+            maxLength: 256
+        - name: offset
+          in: query
+          description: The number of matching files to skip.
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            maximum: 10000
+            default: 0
+        - name: limit
+          in: query
+          description: The number of files to answer.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 1000
+            default: 200
+        - $ref: "#/components/parameters/IfNoneMatch"
+      responses:
+        "200":
+          description: What was read.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PackageVersionContents"
+              example:
+                state: available
+                repository: web/deb-local
+                architecture: amd64
+                architectures: [amd64, arm64]
+                readAt: "2026-11-25T21:14:02.118Z"
+                changelog:
+                  file: changelog.Debian.gz
+                  text: "hello (2.10-3) unstable; urgency=medium\n\n  * Rebuild.\n\n -- A Maintainer <a@example.org>  Mon, 03 Mar 2025 10:00:00 +0000\n"
+                  truncated: false
+                copyright:
+                  text: "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\n..."
+                  truncated: false
+                  licenses: [GPL-3+]
+                files:
+                  total: 2
+                  kept: 2
+                  matched: 2
+                  offset: 0
+                  items:
+                    - {path: /usr/bin/hello, size: 26936, kind: file}
+                    - {path: /usr/bin/hi, kind: link, target: hello}
+        "304":
+          $ref: "#/components/responses/NotModified"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   /api/v1/packages/{packageId}/versions/{version}/docs:
     parameters:
       - $ref: "#/components/parameters/PackageId"
@@ -27804,6 +27904,126 @@ components:
           type: integer
           format: int32
           description: The number of entries; set with `available`.
+    PackageVersionContents:
+      type: object
+      additionalProperties: false
+      required: [state, repository, architecture, architectures]
+      description: |
+        What the reader of a package file's data archive kept (formats/debian.md R-DEB-039). For the states `pending` and `unavailable`
+        only the state, the repository, the architectures and, for a caller who reads the configuration, `reason` and `detail` are present.
+      properties:
+        state:
+          type: string
+          enum: [available, pending, unavailable]
+        reason:
+          type: string
+          enum: [unsupported_compression, invalid_archive, too_large, too_many_entries, timeout, no_content]
+          description: Why the reader refused the archive; set with `unavailable`, for a caller who reads the configuration only.
+        detail:
+          type: string
+          description: The reader's sentence on the refusal; with `reason`.
+        repository:
+          type: string
+          description: The repository the file was read from, `<projectKey>/<repoKey>`.
+        architecture:
+          type: string
+          description: The architecture of the package file answered.
+        architectures:
+          type: array
+          description: The architectures of the version's package files in the repository, in name order.
+          items:
+            type: string
+        readAt:
+          type: string
+          format: date-time
+        changelog:
+          $ref: "#/components/schemas/PackageChangelog"
+        copyright:
+          $ref: "#/components/schemas/PackageCopyright"
+        docLink:
+          type: string
+          description: |
+            The package whose documentation directory this package's `/usr/share/doc/<package>` links to, as the link names it; the
+            changelog and the copyright are then that package's.
+        files:
+          $ref: "#/components/schemas/PackageFileList"
+    PackageChangelog:
+      type: object
+      additionalProperties: false
+      required: [file, text, truncated]
+      description: The newest part of the changelog, at most 64 KiB ending with a whole entry. Wiki content.
+      properties:
+        file:
+          type: string
+          description: Its name below `/usr/share/doc/<package>/`.
+          enum: [changelog.Debian.gz, changelog.gz]
+        text:
+          type: string
+          description: Plain text; the client shows it as text and never as markup.
+        truncated:
+          type: boolean
+          description: The changelog holds older entries that were not kept.
+    PackageCopyright:
+      type: object
+      additionalProperties: false
+      required: [text, truncated, licenses]
+      description: The copyright file, at most 64 KiB. Wiki content; the licences are also the version's `licenses`.
+      properties:
+        text:
+          type: string
+          description: Plain text; the client shows it as text and never as markup.
+        truncated:
+          type: boolean
+        licenses:
+          type: array
+          description: The short names of its `License` fields when it is in the machine-readable format, in the order they first appear.
+          items:
+            type: string
+    PackageFileList:
+      type: object
+      additionalProperties: false
+      required: [total, kept, matched, offset, items]
+      description: |
+        The files the package installs, in the archive's order, without directories: Quader keeps the first 10,000 (and at most 1 MiB of
+        names); `total` counts every one.
+      properties:
+        total:
+          type: integer
+          format: int32
+        kept:
+          type: integer
+          format: int32
+          description: The entries Quader kept; fewer than `total` when the list was cut.
+        matched:
+          type: integer
+          format: int32
+          description: The kept entries that match `q` (all of them without it).
+        offset:
+          type: integer
+          format: int32
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageFileEntry"
+    PackageFileEntry:
+      type: object
+      additionalProperties: false
+      required: [path, kind]
+      properties:
+        path:
+          type: string
+          description: The absolute path the package installs.
+        size:
+          type: integer
+          format: int64
+          description: The size the archive declares for a regular file.
+        kind:
+          type: string
+          enum: [file, link, hardlink, special]
+          description: A link is a name and its target, never followed; `special` is a device or a pipe.
+        target:
+          type: string
+          description: What a link points at, as the archive spells it.
     PackageDocTree:
       type: object
       additionalProperties: false

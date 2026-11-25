@@ -3918,6 +3918,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/packages/{packageId}/versions/{version}/contents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The server-generated package identifier (R-API-029). */
+                packageId: components["parameters"]["PackageId"];
+                /** @description The version string, percent-encoded. */
+                version: components["parameters"]["PackageVersionPath"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Read what Quader read from a version's package file
+         * @description What the reader of a Debian package file's data archive kept (formats/debian.md R-DEB-039): the newest part of the changelog, the
+         *     copyright file with the licences of its machine-readable fields, and the list of the files the package installs, for one package
+         *     file of a visible version, one architecture. The reader runs in a job after the file is stored; until it has run the state is
+         *     `pending`, and a page reads the operation again (R-UI-213). A file whose archive the reader refused is `unavailable`; why
+         *     (`reason`, `detail`) is told only to a caller who reads the configuration of the repository (`repositories:read-config`, or an
+         *     Owner of the project). The changelog and the copyright are wiki content (R-AUTHZ-034): they are absent for a caller who may not
+         *     read the wiki of the repository. `repository` selects the repository (`<projectKey>/<repoKey>`); without it the first repository
+         *     the caller may read that holds the version is used, local before remote; a virtual repository is resolved to its first member
+         *     that holds it. `architecture` selects the file; without it the first architecture in name order. A version of another format, and
+         *     a version that is not visible, are `404`. A read never queries an upstream. The `ETag` is a strong tag over the representation.
+         */
+        get: operations["getPackageVersionContents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/packages/{packageId}/versions/{version}/docs": {
         parameters: {
             query?: never;
@@ -12489,6 +12523,94 @@ export interface components {
              * @description The number of entries; set with `available`.
              */
             entries?: number;
+        };
+        /**
+         * @description What the reader of a package file's data archive kept (formats/debian.md R-DEB-039). For the states `pending` and `unavailable`
+         *     only the state, the repository, the architectures and, for a caller who reads the configuration, `reason` and `detail` are present.
+         */
+        PackageVersionContents: {
+            /** @enum {string} */
+            state: "available" | "pending" | "unavailable";
+            /**
+             * @description Why the reader refused the archive; set with `unavailable`, for a caller who reads the configuration only.
+             * @enum {string}
+             */
+            reason?: "unsupported_compression" | "invalid_archive" | "too_large" | "too_many_entries" | "timeout" | "no_content";
+            /** @description The reader's sentence on the refusal; with `reason`. */
+            detail?: string;
+            /** @description The repository the file was read from, `<projectKey>/<repoKey>`. */
+            repository: string;
+            /** @description The architecture of the package file answered. */
+            architecture: string;
+            /** @description The architectures of the version's package files in the repository, in name order. */
+            architectures: string[];
+            /** Format: date-time */
+            readAt?: string;
+            changelog?: components["schemas"]["PackageChangelog"];
+            copyright?: components["schemas"]["PackageCopyright"];
+            /**
+             * @description The package whose documentation directory this package's `/usr/share/doc/<package>` links to, as the link names it; the
+             *     changelog and the copyright are then that package's.
+             */
+            docLink?: string;
+            files?: components["schemas"]["PackageFileList"];
+        };
+        /** @description The newest part of the changelog, at most 64 KiB ending with a whole entry. Wiki content. */
+        PackageChangelog: {
+            /**
+             * @description Its name below `/usr/share/doc/<package>/`.
+             * @enum {string}
+             */
+            file: "changelog.Debian.gz" | "changelog.gz";
+            /** @description Plain text; the client shows it as text and never as markup. */
+            text: string;
+            /** @description The changelog holds older entries that were not kept. */
+            truncated: boolean;
+        };
+        /** @description The copyright file, at most 64 KiB. Wiki content; the licences are also the version's `licenses`. */
+        PackageCopyright: {
+            /** @description Plain text; the client shows it as text and never as markup. */
+            text: string;
+            truncated: boolean;
+            /** @description The short names of its `License` fields when it is in the machine-readable format, in the order they first appear. */
+            licenses: string[];
+        };
+        /**
+         * @description The files the package installs, in the archive's order, without directories: Quader keeps the first 10,000 (and at most 1 MiB of
+         *     names); `total` counts every one.
+         */
+        PackageFileList: {
+            /** Format: int32 */
+            total: number;
+            /**
+             * Format: int32
+             * @description The entries Quader kept; fewer than `total` when the list was cut.
+             */
+            kept: number;
+            /**
+             * Format: int32
+             * @description The kept entries that match `q` (all of them without it).
+             */
+            matched: number;
+            /** Format: int32 */
+            offset: number;
+            items: components["schemas"]["PackageFileEntry"][];
+        };
+        PackageFileEntry: {
+            /** @description The absolute path the package installs. */
+            path: string;
+            /**
+             * Format: int64
+             * @description The size the archive declares for a regular file.
+             */
+            size?: number;
+            /**
+             * @description A link is a name and its target, never followed; `special` is a device or a pipe.
+             * @enum {string}
+             */
+            kind: "file" | "link" | "hardlink" | "special";
+            /** @description What a link points at, as the archive spells it. */
+            target?: string;
         };
         /**
          * @description The documentation tree of a version (R-ANS-036). For the states `pending`, `unavailable` and `none` only `state`, `reason` where
@@ -26846,6 +26968,99 @@ export interface operations {
                      *     }
                      */
                     "application/json": components["schemas"]["PackageReadme"];
+                };
+            };
+            304: components["responses"]["NotModified"];
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getPackageVersionContents: {
+        parameters: {
+            query?: {
+                /**
+                 * @description The repository to read the documentation from, `<projectKey>/<repoKey>` (R-ANS-036). Without it, the first repository the caller may
+                 *     read that holds the version with a state other than `none` is used (local before remote). A virtual repository is resolved to the
+                 *     member that serves the version document.
+                 */
+                repository?: components["parameters"]["DocRepository"];
+                /** @description The architecture of the package file (`amd64`, `all`, ...). */
+                architecture?: string;
+                /** @description Only the files whose path contains this text, compared without case; at most 256 characters. */
+                q?: string;
+                /** @description The number of matching files to skip. */
+                offset?: number;
+                /** @description The number of files to answer. */
+                limit?: number;
+            };
+            header?: {
+                /** @description An ETag the client holds; a match answers `304` (R-API-012). */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
+            path: {
+                /** @description The server-generated package identifier (R-API-029). */
+                packageId: components["parameters"]["PackageId"];
+                /** @description The version string, percent-encoded. */
+                version: components["parameters"]["PackageVersionPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description What was read. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "state": "available",
+                     *       "repository": "web/deb-local",
+                     *       "architecture": "amd64",
+                     *       "architectures": [
+                     *         "amd64",
+                     *         "arm64"
+                     *       ],
+                     *       "readAt": "2026-11-25T21:14:02.118Z",
+                     *       "changelog": {
+                     *         "file": "changelog.Debian.gz",
+                     *         "text": "hello (2.10-3) unstable; urgency=medium\n\n  * Rebuild.\n\n -- A Maintainer <a@example.org>  Mon, 03 Mar 2025 10:00:00 +0000\n",
+                     *         "truncated": false
+                     *       },
+                     *       "copyright": {
+                     *         "text": "Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\n...",
+                     *         "truncated": false,
+                     *         "licenses": [
+                     *           "GPL-3+"
+                     *         ]
+                     *       },
+                     *       "files": {
+                     *         "total": 2,
+                     *         "kept": 2,
+                     *         "matched": 2,
+                     *         "offset": 0,
+                     *         "items": [
+                     *           {
+                     *             "path": "/usr/bin/hello",
+                     *             "size": 26936,
+                     *             "kind": "file"
+                     *           },
+                     *           {
+                     *             "path": "/usr/bin/hi",
+                     *             "kind": "link",
+                     *             "target": "hello"
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["PackageVersionContents"];
                 };
             };
             304: components["responses"]["NotModified"];

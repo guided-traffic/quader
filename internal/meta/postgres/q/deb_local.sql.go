@@ -829,9 +829,10 @@ func (q *Queries) DebViewRemoteCoordinates(ctx context.Context, versionIds []int
 }
 
 const debViewRows = `-- name: DebViewRows :many
-SELECT i.version_id, b.architecture, b.control, b.source
+SELECT i.version_id, b.architecture, b.control, b.source, COALESCE(c.licenses, '{}')::text[] AS licenses
   FROM deb_binaries b
   JOIN items i ON i.id = b.item_id
+  LEFT JOIN deb_contents c ON c.item_id = b.item_id
  WHERE i.version_id = ANY($1::bigint[]) AND i.trashed_at IS NULL
  ORDER BY i.version_id, b.architecture
 `
@@ -841,9 +842,11 @@ type DebViewRowsRow struct {
 	Architecture string
 	Control      string
 	Source       string
+	Licenses     []string
 }
 
-// What the package screens show of versions: the files of each, with their control paragraph.
+// What the package screens show of versions: the files of each, with their control paragraph and the licences of the copyright file the
+// reader of the data archive kept (R-DEB-039; none before it read the file).
 func (q *Queries) DebViewRows(ctx context.Context, versionIds []int64) ([]DebViewRowsRow, error) {
 	rows, err := q.db.Query(ctx, debViewRows, versionIds)
 	if err != nil {
@@ -858,6 +861,7 @@ func (q *Queries) DebViewRows(ctx context.Context, versionIds []int64) ([]DebVie
 			&i.Architecture,
 			&i.Control,
 			&i.Source,
+			&i.Licenses,
 		); err != nil {
 			return nil, err
 		}

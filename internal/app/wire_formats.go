@@ -198,6 +198,7 @@ func (a *App) registerFormatJobs(r *jobs.Registry) {
 	ansibledata.RegisterJobs(r, ansibledata.Handlers{Reindex: a.ansibleReindexHandler(), DocsFill: a.ansibleDocsFillHandler(), ImportTaskKeep: a.cfg.Ansible.ImportTaskKeep})
 	npm.RegisterJobs(r, a.npmDescribe.handler("npm remote describe", runLate))
 	debdata.RegisterDescribeJob(r, a.debDescribe.handler("Debian remote describe", runLate))
+	debdata.RegisterContentsJob(r, a.debContents.handler("the reading of a Debian data archive", runLate))
 	a.registerRemoteDescribeTask(r)
 	a.registerDownloadJobs(r)
 	sigfetch.RegisterKind(r, a.signatureFetchHandler())
@@ -564,6 +565,19 @@ func (a *App) debKeyStore() v1.DebKeyStore {
 		return nil
 	}
 	if s, ok := fp.bindings.Get(debformat.ID).(v1.DebKeyStore); ok {
+		return s
+	}
+	return nil
+}
+
+// debContentsStore is the Debian data port's reads of what the reader of a package file's data archive kept (R-DEB-039); nil on a
+// replica without the ports.
+func (a *App) debContentsStore() v1.DebContentsStore {
+	fp := part[formatPortsArea](a.parts)
+	if fp.bindings == nil {
+		return nil
+	}
+	if s, ok := fp.bindings.Get(debformat.ID).(v1.DebContentsStore); ok {
 		return s
 	}
 	return nil

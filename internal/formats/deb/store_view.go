@@ -17,6 +17,9 @@ type ViewStore interface {
 	// Find returns the ids of at most limit versions of the repositories (by "<project>/<repository>") whose control data contains the
 	// text, compared without case (R-DEB-030). Debian versions have no keywords.
 	Find(ctx context.Context, repos []string, text string, limit int) ([]int64, error)
+	// FindSource returns the ids of at most limit versions of the repositories whose package files name the source package: the
+	// binaries of one source (R-DEB-038, Q-DEB-142).
+	FindSource(ctx context.Context, repos []string, source string, limit int) ([]int64, error)
 	// Withheld returns the ids of the live versions of the repositories (by "<project>/<repository>") all of whose live files the
 	// journal replay withheld (R-DEB-032).
 	Withheld(ctx context.Context, repos []string) ([]int64, error)

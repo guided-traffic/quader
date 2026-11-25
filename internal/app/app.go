@@ -191,6 +191,8 @@ type App struct {
 	npmDescribe late[jobs.Handler]
 	// debDescribe is the handler of the job deb-remote-describe (wire_remote_describe.go).
 	debDescribe late[jobs.Handler]
+	// debContents is the handler of the job deb-contents, which reads a package file's data archive (wire_remote_describe.go).
+	debContents late[jobs.Handler]
 	// remoteDescribe is the task remote-describe (wire_remote_describe.go).
 	remoteDescribe late[*remotedescribe.Task]
 	// signatureFetch is the handler of the job signature-fetch (wire_signature_fetch.go).
@@ -621,7 +623,7 @@ func (a *App) startClient() error {
 			// The backup runs, the summary and the backup block of the system information (wire_backup_gauges.go).
 			Backup: a.backupAPI(),
 			// The signing keys of the Debian repositories (wire_formats.go).
-			DebKeys: a.debKeyStore(), Ansible: a.ansibleStore(), Reindexers: a.reindexers(),
+			DebKeys: a.debKeyStore(), Ansible: a.ansibleStore(), DebContents: a.debContentsStore(), Reindexers: a.reindexers(),
 			// The banner and the read-only maintenance mode (R-OPS-024, R-OPS-025).
 			SystemState: part[infra](a.parts).sys,
 			// The download limits and the usage overview (wire_limits.go).

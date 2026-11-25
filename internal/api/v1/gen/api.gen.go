@@ -2896,6 +2896,24 @@ func (e OwnedPackageState) Valid() bool {
 	}
 }
 
+// Defines values for PackageChangelogFile.
+const (
+	ChangelogDebianGz PackageChangelogFile = "changelog.Debian.gz"
+	ChangelogGz       PackageChangelogFile = "changelog.gz"
+)
+
+// Valid indicates whether the value is a known member of the PackageChangelogFile enum.
+func (e PackageChangelogFile) Valid() bool {
+	switch e {
+	case ChangelogDebianGz:
+		return true
+	case ChangelogGz:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PackageDocEntrySource.
 const (
 	PackageDocEntrySourceGenerated PackageDocEntrySource = "generated"
@@ -3013,6 +3031,30 @@ func (e PackageDocTreeState) Valid() bool {
 	}
 }
 
+// Defines values for PackageFileEntryKind.
+const (
+	PackageFileEntryKindFile     PackageFileEntryKind = "file"
+	PackageFileEntryKindHardlink PackageFileEntryKind = "hardlink"
+	PackageFileEntryKindLink     PackageFileEntryKind = "link"
+	PackageFileEntryKindSpecial  PackageFileEntryKind = "special"
+)
+
+// Valid indicates whether the value is a known member of the PackageFileEntryKind enum.
+func (e PackageFileEntryKind) Valid() bool {
+	switch e {
+	case PackageFileEntryKindFile:
+		return true
+	case PackageFileEntryKindHardlink:
+		return true
+	case PackageFileEntryKindLink:
+		return true
+	case PackageFileEntryKindSpecial:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PackageOwnerReason.
 const (
 	PackageOwnerReasonAdded        PackageOwnerReason = "added"
@@ -3064,6 +3106,57 @@ const (
 func (e PackageReadmeContentType) Valid() bool {
 	switch e {
 	case PackageReadmeContentTypeTextmarkdown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PackageVersionContentsReason.
+const (
+	PackageVersionContentsReasonInvalidArchive         PackageVersionContentsReason = "invalid_archive"
+	PackageVersionContentsReasonNoContent              PackageVersionContentsReason = "no_content"
+	PackageVersionContentsReasonTimeout                PackageVersionContentsReason = "timeout"
+	PackageVersionContentsReasonTooLarge               PackageVersionContentsReason = "too_large"
+	PackageVersionContentsReasonTooManyEntries         PackageVersionContentsReason = "too_many_entries"
+	PackageVersionContentsReasonUnsupportedCompression PackageVersionContentsReason = "unsupported_compression"
+)
+
+// Valid indicates whether the value is a known member of the PackageVersionContentsReason enum.
+func (e PackageVersionContentsReason) Valid() bool {
+	switch e {
+	case PackageVersionContentsReasonInvalidArchive:
+		return true
+	case PackageVersionContentsReasonNoContent:
+		return true
+	case PackageVersionContentsReasonTimeout:
+		return true
+	case PackageVersionContentsReasonTooLarge:
+		return true
+	case PackageVersionContentsReasonTooManyEntries:
+		return true
+	case PackageVersionContentsReasonUnsupportedCompression:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PackageVersionContentsState.
+const (
+	PackageVersionContentsStateAvailable   PackageVersionContentsState = "available"
+	PackageVersionContentsStatePending     PackageVersionContentsState = "pending"
+	PackageVersionContentsStateUnavailable PackageVersionContentsState = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the PackageVersionContentsState enum.
+func (e PackageVersionContentsState) Valid() bool {
+	switch e {
+	case PackageVersionContentsStateAvailable:
+		return true
+	case PackageVersionContentsStatePending:
+		return true
+	case PackageVersionContentsStateUnavailable:
 		return true
 	default:
 		return false
@@ -13132,6 +13225,31 @@ type OwnedPackageList struct {
 	NextCursor *string        `json:"nextCursor"`
 }
 
+// PackageChangelog The newest part of the changelog, at most 64 KiB ending with a whole entry. Wiki content.
+type PackageChangelog struct {
+	// File Its name below `/usr/share/doc/<package>/`.
+	File PackageChangelogFile `json:"file"`
+
+	// Text Plain text; the client shows it as text and never as markup.
+	Text string `json:"text"`
+
+	// Truncated The changelog holds older entries that were not kept.
+	Truncated bool `json:"truncated"`
+}
+
+// PackageChangelogFile Its name below `/usr/share/doc/<package>/`.
+type PackageChangelogFile string
+
+// PackageCopyright The copyright file, at most 64 KiB. Wiki content; the licences are also the version's `licenses`.
+type PackageCopyright struct {
+	// Licenses The short names of its `License` fields when it is in the machine-readable format, in the order they first appear.
+	Licenses []string `json:"licenses"`
+
+	// Text Plain text; the client shows it as text and never as markup.
+	Text      string `json:"text"`
+	Truncated bool   `json:"truncated"`
+}
+
 // PackageDocAttribute defines model for PackageDocAttribute.
 type PackageDocAttribute struct {
 	Description *[]string `json:"description,omitempty"`
@@ -13413,6 +13531,38 @@ type PackageFile struct {
 	SizeBytes  int64            `json:"sizeBytes"`
 }
 
+// PackageFileEntry defines model for PackageFileEntry.
+type PackageFileEntry struct {
+	// Kind A link is a name and its target, never followed; `special` is a device or a pipe.
+	Kind PackageFileEntryKind `json:"kind"`
+
+	// Path The absolute path the package installs.
+	Path string `json:"path"`
+
+	// Size The size the archive declares for a regular file.
+	Size *int64 `json:"size,omitempty"`
+
+	// Target What a link points at, as the archive spells it.
+	Target *string `json:"target,omitempty"`
+}
+
+// PackageFileEntryKind A link is a name and its target, never followed; `special` is a device or a pipe.
+type PackageFileEntryKind string
+
+// PackageFileList The files the package installs, in the archive's order, without directories: Quader keeps the first 10,000 (and at most 1 MiB of
+// names); `total` counts every one.
+type PackageFileList struct {
+	Items []PackageFileEntry `json:"items"`
+
+	// Kept The entries Quader kept; fewer than `total` when the list was cut.
+	Kept int32 `json:"kept"`
+
+	// Matched The kept entries that match `q` (all of them without it).
+	Matched int32 `json:"matched"`
+	Offset  int32 `json:"offset"`
+	Total   int32 `json:"total"`
+}
+
 // PackageList defines model for PackageList.
 type PackageList struct {
 	Items      []PackageSummary `json:"items"`
@@ -13598,6 +13748,47 @@ type PackageVersion_Metadata struct {
 	Docs                 *PackageVersionDocs    `json:"docs,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
+
+// PackageVersionContents What the reader of a package file's data archive kept (formats/debian.md R-DEB-039). For the states `pending` and `unavailable`
+// only the state, the repository, the architectures and, for a caller who reads the configuration, `reason` and `detail` are present.
+type PackageVersionContents struct {
+	// Architecture The architecture of the package file answered.
+	Architecture string `json:"architecture"`
+
+	// Architectures The architectures of the version's package files in the repository, in name order.
+	Architectures []string `json:"architectures"`
+
+	// Changelog The newest part of the changelog, at most 64 KiB ending with a whole entry. Wiki content.
+	Changelog *PackageChangelog `json:"changelog,omitempty"`
+
+	// Copyright The copyright file, at most 64 KiB. Wiki content; the licences are also the version's `licenses`.
+	Copyright *PackageCopyright `json:"copyright,omitempty"`
+
+	// Detail The reader's sentence on the refusal; with `reason`.
+	Detail *string `json:"detail,omitempty"`
+
+	// DocLink The package whose documentation directory this package's `/usr/share/doc/<package>` links to, as the link names it; the
+	// changelog and the copyright are then that package's.
+	DocLink *string `json:"docLink,omitempty"`
+
+	// Files The files the package installs, in the archive's order, without directories: Quader keeps the first 10,000 (and at most 1 MiB of
+	// names); `total` counts every one.
+	Files  *PackageFileList `json:"files,omitempty"`
+	ReadAt *time.Time       `json:"readAt,omitempty"`
+
+	// Reason Why the reader refused the archive; set with `unavailable`, for a caller who reads the configuration only.
+	Reason *PackageVersionContentsReason `json:"reason,omitempty"`
+
+	// Repository The repository the file was read from, `<projectKey>/<repoKey>`.
+	Repository string                      `json:"repository"`
+	State      PackageVersionContentsState `json:"state"`
+}
+
+// PackageVersionContentsReason Why the reader refused the archive; set with `unavailable`, for a caller who reads the configuration only.
+type PackageVersionContentsReason string
+
+// PackageVersionContentsState defines model for PackageVersionContents.State.
+type PackageVersionContentsState string
 
 // PackageVersionDocs The announcement of the documentation of a version, `metadata.docs` of the version details for the format Ansible Galaxy
 // (R-ANS-036, Q-API-263), so that the page chooses its tabs without a probing request.
@@ -19873,6 +20064,29 @@ type GetPackageVersionParams struct {
 	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
 }
 
+// GetPackageVersionContentsParams defines parameters for GetPackageVersionContents.
+type GetPackageVersionContentsParams struct {
+	// Repository The repository to read the documentation from, `<projectKey>/<repoKey>` (R-ANS-036). Without it, the first repository the caller may
+	// read that holds the version with a state other than `none` is used (local before remote). A virtual repository is resolved to the
+	// member that serves the version document.
+	Repository *DocRepository `form:"repository,omitempty" json:"repository,omitempty"`
+
+	// Architecture The architecture of the package file (`amd64`, `all`, ...).
+	Architecture *string `form:"architecture,omitempty" json:"architecture,omitempty"`
+
+	// Q Only the files whose path contains this text, compared without case; at most 256 characters.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Offset The number of matching files to skip.
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Limit The number of files to answer.
+	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// IfNoneMatch An ETag the client holds; a match answers `304` (R-API-012).
+	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
+}
+
 // GetPackageVersionDocsParams defines parameters for GetPackageVersionDocs.
 type GetPackageVersionDocsParams struct {
 	// Repository The repository to read the documentation from, `<projectKey>/<repoKey>` (R-ANS-036). Without it, the first repository the caller may
@@ -23080,6 +23294,9 @@ type ServerInterface interface {
 	// GetPackageVersion Read a version of a package
 	// (GET /api/v1/packages/{packageId}/versions/{version})
 	GetPackageVersion(w http.ResponseWriter, r *http.Request, packageId PackageId, version PackageVersionPath, params GetPackageVersionParams)
+	// GetPackageVersionContents Read what Quader read from a version's package file
+	// (GET /api/v1/packages/{packageId}/versions/{version}/contents)
+	GetPackageVersionContents(w http.ResponseWriter, r *http.Request, packageId PackageId, version PackageVersionPath, params GetPackageVersionContentsParams)
 	// GetPackageVersionDocs Read the documentation tree of a version
 	// (GET /api/v1/packages/{packageId}/versions/{version}/docs)
 	GetPackageVersionDocs(w http.ResponseWriter, r *http.Request, packageId PackageId, version PackageVersionPath, params GetPackageVersionDocsParams)
@@ -28200,6 +28417,130 @@ func (siw *ServerInterfaceWrapper) GetPackageVersion(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetPackageVersion(w, r, packageId, version, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPackageVersionContents operation middleware
+func (siw *ServerInterfaceWrapper) GetPackageVersionContents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "packageId" -------------
+	var packageId PackageId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "packageId", r.PathValue("packageId"), &packageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "packageId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version" -------------
+	var version PackageVersionPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version", r.PathValue("version"), &version, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetPackageVersionContentsParams
+
+	// ------------- Optional query parameter "repository" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "repository", r.URL.Query(), &params.Repository, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "repository"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repository", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "architecture" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "architecture", r.URL.Query(), &params.Architecture, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "architecture"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "architecture", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "offset"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-None-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-None-Match")]; found {
+		var IfNoneMatch IfNoneMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-None-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-None-Match", valueList[0], &IfNoneMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-None-Match", Err: err})
+			return
+		}
+
+		params.IfNoneMatch = &IfNoneMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPackageVersionContents(w, r, packageId, version, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -43617,6 +43958,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions", wrapper.ListPackageVersions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}", wrapper.GetPackageVersion)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/readme", wrapper.GetPackageVersionReadme)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/contents", wrapper.GetPackageVersionContents)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/docs", wrapper.GetPackageVersionDocs)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/docs/entries/{type}/{name}", wrapper.GetPackageVersionDocEntry)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/docs/files/{file}", wrapper.GetPackageVersionDocFile)

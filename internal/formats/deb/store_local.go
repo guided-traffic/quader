@@ -14,8 +14,9 @@ type LocalStore interface {
 	// are created as they are first named) and the raise of change_seq of every suite the file is listed in, so the next build
 	// reflects it. The identical bytes stored already add the coordinates and change nothing else (UploadResult.Created false);
 	// other bytes for a stored package, version and architecture are refused with deb_version_exists by the caller, which asks
-	// Binary first, and a unique violation here is the same refusal (Q-DEB-4). It enqueues nothing: the build is enqueued by the
-	// caller through the job queue in the same transaction.
+	// Binary first, and a unique violation here is the same refusal (Q-DEB-4). It enqueues no build: the build is enqueued by the
+	// caller through the job queue in the same transaction. A file it creates queues the reading of its data archive (deb-contents,
+	// R-DEB-039).
 	RecordUpload(ctx context.Context, tx formats.Tx, in rows.UploadInput) (rows.UploadResult, error)
 	// SetCoordinates replaces the coordinates of a stored file (R-DEB-009) and raises change_seq of every suite that gained or
 	// lost it. It returns what was added and removed, so the caller can decide `deploy` and `delete` per side, journal the removal

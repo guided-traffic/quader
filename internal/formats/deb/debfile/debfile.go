@@ -122,7 +122,7 @@ func knownCompression(ext string) bool {
 	return false
 }
 
-// validDataSuffix admits the compressions dpkg writes for the data archive, which quader never decompresses.
+// validDataSuffix admits the compressions dpkg writes for the data archive; Read never decompresses it.
 func validDataSuffix(ext string) bool {
 	switch ext {
 	case "", ".gz", ".xz", ".zst", ".bz2", ".lzma":

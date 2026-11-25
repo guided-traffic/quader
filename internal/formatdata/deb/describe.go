@@ -21,7 +21,8 @@ import (
 
 // The description of the package files a remote repository cached (R-DEB-037): the job deb-remote-describe reads the control paragraph
 // of every live package file a remote holds of a package and has no row of deb_binaries for, out of the stored file with ranged reads
-// (the ar headers and the control archive; the data archive is never read, R-DEB-007), and writes the row a local file has. The fill of
+// (the ar headers and the control archive; the data archive is read by the job deb-contents it queues then, R-DEB-039), and writes the
+// row a local file has. The fill of
 // a package file queues it in the fill's transaction; the removal of a cached file takes its row in the removal's transaction. The job
 // holds no transaction while it reads a blob.
 
@@ -137,7 +138,14 @@ func (s *Store) DescribeCached(ctx context.Context, repoID int64, pkg string) er
 			return err
 		}
 	}
-	return nil
+	if len(files) == 0 {
+		return nil
+	}
+	// The rows exist now: the data archives of the files are read by a job of their own, which needs them (R-DEB-039).
+	return s.o.DB.InTx(ctx, func(tx meta.Tx) error {
+		_, err := s.remoteStore.queueContents(ctx, tx, repoID, pkg, 0)
+		return err
+	})
 }
 
 // errNoBlob is the read of a file whose item names no blob: a refusal, as for a file the reader refuses.

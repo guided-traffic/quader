@@ -3,6 +3,7 @@
 package debremote
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"strings"
@@ -46,13 +47,18 @@ func TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph(t *testing
 	if p := e.st.Do(e.r, "GET", "/api/v1/packages/"+id, e.admin, nil).JSON(t); p["description"] != "prints a fixed line" {
 		t.Errorf("description %v, want the paragraph's first line", p["description"])
 	}
-	for key, want := range map[string]string{
-		"depends": "libquader1 (>= 1.2)", "maintainer": "quader test archive <debstub@quader.invalid>",
-	} {
-		if md[key] != want {
-			t.Errorf("metadata.%s %v, want %q", key, md[key], want)
-		}
+	if md["maintainer"] != "quader test archive <debstub@quader.invalid>" {
+		t.Errorf("metadata.maintainer %v", md["maintainer"])
 	}
+	// The relations are sent parsed (R-DEB-038).
+	if rel, _ := md["relations"].(map[string]any); !strings.Contains(jsonText(t, rel["depends"]), `{"name":"libquader1","op":">=","version":"1.2"}`) {
+		t.Errorf("metadata.relations %v", md["relations"])
+	}
+	// The job that wrote the row queued the reading of the cached file's data archive (R-DEB-039): the file list answers.
+	eventually(t, 30*time.Second, "the data archive read", func() bool {
+		a := e.st.Do(e.r, "GET", "/api/v1/packages/"+id+"/versions/"+url.PathEscape(version)+"/contents", e.admin, nil)
+		return a.Status == http.StatusOK && strings.Contains(string(a.Body), `"path":"/usr/bin/quader-hello"`)
+	})
 	if arch, _ := md["architectures"].([]any); len(arch) != 1 || arch[0] != "amd64" {
 		t.Errorf("architectures %v, want [amd64]", md["architectures"])
 	}
@@ -102,4 +108,16 @@ func runTask(t *testing.T, e *denv, task string) string {
 		t.Fatalf("the run of %s ended %s: %s", task, s, e.st.Text(`SELECT COALESCE(error::text, '') FROM job WHERE kind = $1 ORDER BY created_at DESC LIMIT 1`, task))
 	}
 	return e.st.Text(`SELECT COALESCE(result::text, '') FROM job WHERE kind = $1 ORDER BY created_at DESC LIMIT 1`, task)
+}
+
+// jsonText is v as JSON without the escaping of HTML characters.
+func jsonText(t *testing.T, v any) string {
+	t.Helper()
+	var b strings.Builder
+	enc := json.NewEncoder(&b)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		t.Fatal(err)
+	}
+	return strings.TrimSpace(b.String())
 }

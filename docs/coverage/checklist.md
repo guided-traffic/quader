@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,289 spec requirements:
-791 cover catalog features, 498 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,291 spec requirements:
+792 cover catalog features, 499 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2420,7 +2420,7 @@ Catalog page: [formats/debian.md](../features/formats/debian.md) · specified by
 | PKG-DEB-007 | Source packages | P2 | open | – |
 | PKG-DEB-008 | Automatic index calculation for local repositories | P2 | specified | [R-DEB-010](../spec/formats/debian.md) |
 | PKG-DEB-009 | Package metadata validation and index status | P2 | specified | [R-DEB-007](../spec/formats/debian.md) |
-| PKG-DEB-010 | Package metadata as searchable properties | P2 | specified | [R-DEB-007](../spec/formats/debian.md), [R-DEB-030](../spec/formats/debian.md) |
+| PKG-DEB-010 | Package metadata as searchable properties | P2 | specified | [R-DEB-007](../spec/formats/debian.md), [R-DEB-030](../spec/formats/debian.md), [R-DEB-038](../spec/formats/debian.md) |
 | PKG-DEB-011 | Index compression formats | P2 | specified | [R-DEB-011](../spec/formats/debian.md) |
 | PKG-DEB-012 | Debug-symbol package indexing | P2 | open | – |
 | PKG-DEB-013 | Acquire-by-hash | P2 | specified | [R-DEB-003](../spec/formats/debian.md), [R-DEB-012](../spec/formats/debian.md), [R-DEB-021](../spec/formats/debian.md) |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>498 requirements</summary>
+<summary>499 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3236,6 +3236,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-DEB-005 | Errors and response headers | P2 | [formats/debian.md](../spec/formats/debian.md) |
 | R-DEB-024 | Mirror settings of a Debian remote | P2 | [formats/debian.md](../spec/formats/debian.md) |
 | R-DEB-037 | A package file a remote cached is described by its control paragraph | P1 | [formats/debian.md](../spec/formats/debian.md) |
+| R-DEB-039 | A package file's changelog, copyright and file list are read from its data archive, under bounds | P1 | [formats/debian.md](../spec/formats/debian.md) |
 | R-DEB-031 | Debian on n replicas, without Valkey and during a drain | P2 | [formats/debian.md](../spec/formats/debian.md) |
 | R-DEB-032 | Debian data in backups and restores | P2 | [formats/debian.md](../spec/formats/debian.md) |
 | R-DEB-033 | Audit events and metrics | P2 | [formats/debian.md](../spec/formats/debian.md) |

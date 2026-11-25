@@ -108,6 +108,12 @@ func (s localStore) RecordUpload(ctx context.Context, tx meta.Tx, in rows.Upload
 		return res, err
 	}
 	res.Created = n == 1
+	if res.Created {
+		// The data archive is read after the upload, by a job (R-DEB-039): its changelog, copyright and file list.
+		if _, err := s.queueContents(ctx, tx, in.RepoID, in.Package, 0); err != nil {
+			return res, err
+		}
+	}
 	touched := map[string]bool{}
 	fresh := map[string]bool{}
 	for _, c := range in.Coordinates {

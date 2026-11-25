@@ -536,6 +536,24 @@ type DebBinary struct {
 	Control      string
 }
 
+type DebContent struct {
+	ItemID             int64
+	Reader             int32
+	State              string
+	Reason             string
+	Detail             string
+	Changelog          string
+	ChangelogFile      string
+	ChangelogTruncated bool
+	Copyright          string
+	CopyrightTruncated bool
+	Licenses           []string
+	DocLink            string
+	Files              json.RawMessage
+	FileCount          int32
+	ReadAt             pgtype.Timestamptz
+}
+
 type DebCoordinate struct {
 	ItemID    int64
 	RepoID    int64

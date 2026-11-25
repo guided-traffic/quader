@@ -838,6 +838,16 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
+## What the reader of a Debian data archive kept (00132)
+
+[00132_deb_contents](../../internal/meta/postgres/migrations/00132_deb_contents.sql) adds `deb_contents`, one row per Debian package file
+([formats/debian.md](../spec/formats/debian.md) R-DEB-039, Q-DEB-140): the state (`read` or `refused`, with a reason from a fixed list and a
+sentence), the changelog's newest 64 KiB and its file name, the copyright's first 64 KiB, the licences of its machine-readable fields, the
+target of a linked documentation directory, the file list as a JSON array of `{p, s, k, t}` (at most 10,000 entries) and the count of every
+entry, the reader's version and the time. The key is `item_id`, a foreign key to `deb_binaries` with `ON DELETE CASCADE`, so the row goes
+with the file's row in every removal the format already handles. The table is export class `transient` (derived from the stored files); after
+a restore the task `remote-describe` reads the files again. Expand phase only: a file stored before has no row and is read by that task.
+
 ## A range of versions in a package's allow (00131)
 
 [00131_remote_delivery_rule_range](../../internal/meta/postgres/migrations/00131_remote_delivery_rule_range.sql) adds the range of versions

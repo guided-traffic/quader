@@ -13,7 +13,8 @@ import (
 type viewStore struct{ *group }
 
 // Describe reads, for the versions with the given ids, what a package screen shows: the architectures, the coordinates, the first line
-// of the description and the control fields of R-DEB-030. The control data of the version is that of its first file by architecture;
+// of the description, the control fields of R-DEB-030 and R-DEB-038 (the whole Description among them) and the licences the reader of
+// the data archive kept (R-DEB-039). The control data of the version is that of its first file by architecture;
 // the packages of one version differ in the architecture and rarely in the rest.
 func (s viewStore) Describe(ctx context.Context, versionIDs []int64) (map[int64]rows.VersionView, error) {
 	out := map[int64]rows.VersionView{}
@@ -34,12 +35,13 @@ func (s viewStore) Describe(ctx context.Context, versionIDs []int64) (map[int64]
 				v = rows.VersionView{VersionID: f.VersionID.Int64, Fields: map[string]string{}}
 				if p, err := control.Parse([]byte(f.Control)); err == nil {
 					v.Description, _, _ = strings.Cut(p.Value("Description"), "\n")
-					for _, name := range []string{"Maintainer", "Section", "Priority", "Installed-Size", "Homepage", "Depends", "Source"} {
+					for _, name := range viewFields() {
 						if val, ok := p.Get(name); ok {
 							v.Fields[name] = val
 						}
 					}
 				}
+				v.Licenses = f.Licenses
 			}
 			v.Architectures = append(v.Architectures, f.Architecture)
 			out[f.VersionID.Int64] = v
@@ -70,6 +72,15 @@ func (s viewStore) Describe(ctx context.Context, versionIDs []int64) (map[int64]
 	return out, err
 }
 
+// viewFields are the control fields a package screen shows (R-DEB-030, R-DEB-038).
+func viewFields() []string {
+	out := []string{"Maintainer", "Section", "Priority", "Installed-Size", "Homepage", "Source", "Multi-Arch", "Essential", "Description"}
+	for _, r := range control.RelationFields {
+		out = append(out, r.Field)
+	}
+	return out
+}
+
 // Stored lists the versions of a package a repository serves, newest arrival first: the versions with a live file that the replay did
 // not withhold.
 func (s viewStore) Stored(ctx context.Context, repoID int64, pkg string, limit int) ([]string, error) {
@@ -90,6 +101,24 @@ func (s viewStore) Find(ctx context.Context, repos []string, text string, limit 
 	}
 	err := s.read(ctx, nil, func(qs *q.Queries) error {
 		ids, err := qs.DebFindVersions(ctx, q.DebFindVersionsParams{Repos: repos, Needle: text, MaxRows: int64(limit)})
+		for _, id := range ids {
+			if id.Valid {
+				out = append(out, id.Int64)
+			}
+		}
+		return err
+	})
+	return out, err
+}
+
+// FindSource returns the ids of at most limit versions of the repositories whose package files name the source package (R-DEB-038).
+func (s viewStore) FindSource(ctx context.Context, repos []string, source string, limit int) ([]int64, error) {
+	var out []int64
+	if source == "" || len(repos) == 0 {
+		return nil, nil
+	}
+	err := s.read(ctx, nil, func(qs *q.Queries) error {
+		ids, err := qs.DebFindSourceVersions(ctx, q.DebFindSourceVersionsParams{Repos: repos, Source: source, MaxRows: int64(limit)})
 		for _, id := range ids {
 			if id.Valid {
 				out = append(out, id.Int64)

@@ -10,7 +10,7 @@ client, the remote class, the mirror, the virtual class, a restore, the screens,
 [ADR-171](../decisions.md#adr-171--every-debian-local-and-virtual-repository-has-its-own-eddsalegacy-signing-key-generated-by-quader-and-sealed-with-the-stored-secret-key-ring-rotation-by-a-co-signing-next-key-the-journal-withholds-keys-and-never-erases-them)
 and [ADR-172](../decisions.md#adr-172--the-format-contract-gains-the-remote-name-index-and-the-serve-facts-kinds-deb_local-and-deb_remote).
 The security views are [deb-signing.md](../security/deb-signing.md), [deb-index.md](../security/deb-index.md),
-[deb-remote.md](../security/deb-remote.md) and [deb-mirror.md](../security/deb-mirror.md); the manual pages are
+[deb-remote.md](../security/deb-remote.md), [deb-mirror.md](../security/deb-mirror.md) and [deb-contents.md](../security/deb-contents.md); the manual pages are
 [apt-packages.md](../manual/user/apt-packages.md) and [apt-repositories.md](../manual/admin/apt-repositories.md).
 
 ## What has to be in your head first
@@ -96,7 +96,8 @@ deployment target by the dispatcher before the format sees it (Q-DEB-67).
 Migrations [00060_deb](../../internal/meta/postgres/migrations/00060_deb.sql), [00061_deb_signing_keys](../../internal/meta/postgres/migrations/00061_deb_signing_keys.sql),
 [00062_deb_remote](../../internal/meta/postgres/migrations/00062_deb_remote.sql), [00063_deb_binaries_detached](../../internal/meta/postgres/migrations/00063_deb_binaries_detached.sql),
 [00064_deb_remote_files](../../internal/meta/postgres/migrations/00064_deb_remote_files.sql) and [00065_deb_suites_dirty_since](../../internal/meta/postgres/migrations/00065_deb_suites_dirty_since.sql)
-are expand steps; every table is export class `data` ([tables_deb.go](../../internal/formatdata/deb/tables_deb.go)).
+are expand steps; every table is export class `data` ([tables_deb.go](../../internal/formatdata/deb/tables_deb.go)) except `deb_contents`
+([00132_deb_contents](../../internal/meta/postgres/migrations/00132_deb_contents.sql)), which is derived from the stored files and `transient`.
 
 | Table | Rows |
 |---|---|
@@ -104,6 +105,7 @@ are expand steps; every table is export class `data` ([tables_deb.go](../../inte
 | `deb_binaries`, `deb_coordinates` | a stored package file with its normalized control paragraph (detached from `items` by 00063, Q-DEB-50), and the suites and components it is listed in |
 | `deb_generations` | the published and the retained generations of a suite, with the SHA-256 of every index file and the fingerprints that signed it |
 | `deb_tombstones` | a package file the journal replay withheld |
+| `deb_contents` | what the reader of a package file's data archive kept (R-DEB-039): the changelog's newest 64 KiB, the copyright and its licences, the target of a linked documentation directory, the file list as a JSON array, or the reason of a refusal; `reader` is the reader's version (`deb.ContentsReader`); the row goes with the file's row of `deb_binaries` by its foreign key |
 | `deb_signing_keys` | a repository's keys; `private_key` is sealed and `NULL` once retired |
 | `deb_remote_releases`, `deb_remote_files`, `deb_remote_indexes`, `deb_remote_entries` | a remote's cache rows: the stored release of a directory with `verified_by` and `floor_date`, the files it lists, the parsed indexes and their entries |
 
@@ -360,6 +362,21 @@ Each run is counted in `quader_deb_remote_parse_total{outcome}` through `RemoteJ
 of `deb-index-refresh` enqueues it. The runtime is `RemoteJobs`; the composition root wires it as a late value on a replica that claims jobs
 ([wire_deb_remote.go](../../internal/app/wire_deb_remote.go), ADR-187) and implements `Background` over the mirror host.
 
+**A package file's contents** (R-DEB-039, Q-DEB-140 to Q-DEB-145): the reader is `debfile.ReadContents`
+([debfile/contents.go](../../internal/formats/deb/debfile/contents.go)): the ar headers, then the data member as a stream through `bufio` reads of 4 MiB
+(one ranged request of the blob each), inflated by gzip, `untrusted.NewXZBlocksReader` (Quader's own xz container parse, which bounds the dictionary
+before the module allocates it) or `untrusted.NewZstdReaderWindow`, and a walk of `archive/tar` that reads only the changelog and the copyright and keeps
+the file list; the bounds are the constants of that file (a test lowers them through `bounds`). A `*debfile.Refusal` is a row with its reason; an error of
+the blob store is returned and the job tries again. The job is `deb-contents` (`ContentsHandler` and `ReadContents` in
+[contents.go](../../internal/formatdata/deb/contents.go), queue `default`): `RecordUpload` queues it for a new local file and `DescribeCached` after it
+wrote a cached file's rows. The task `remote-describe` has a third entry, `ContentsPort`, that queues it for every package with a live file whose row an
+older reader wrote or that has none (`DebUnreadPackages`). Raise `ContentsReader` when the reader keeps something new: every file is read again. The
+operation is `GetPackageVersionContents` ([deb_contents.go](../../internal/api/v1/deb_contents.go)) over `VersionContents` and `ContentsFiles` of the view
+group; it chooses the repository as the documentation operations do (`docsCandidates`). The relations and the long description are parsed by
+[control/relations.go](../../internal/formats/deb/control/relations.go) in `metadataOf`; Debian's keyword search is the source package
+(`FindSource`, Q-DEB-142). The fixtures of the reader are package files built by `dpkg-deb` itself:
+[testdata/make-fixtures.sh](../../internal/formats/deb/debfile/testdata/make-fixtures.sh) runs the pinned Debian 13 image and writes them again.
+
 **A cached file's control paragraph** (R-DEB-037, Q-DEB-135): `commitFill` ([hooks.go](../../internal/formats/deb/hooks.go)) queues `deb-remote-describe`
 for the package (`RemoteStore.QueueDescribe`, coalesced per repository and package); its handler (`DescribeCached` in
 [describe.go](../../internal/formatdata/deb/describe.go)) reads every live file of the package without a row of `deb_binaries` with `debfile.Read` over ranged
@@ -499,7 +516,7 @@ the delay bound with a 70,000-paragraph member index and `compression: ["xz"]` (
 ## The screens, the setup and the guide
 
 [view.go](../../internal/formats/deb/view.go) is the view adapter (dpkg order, the first line of the description, the architectures and coordinates, the
-control fields; `metadataOf`). [setup_local.go](../../internal/formats/deb/setup_local.go) is the client `apt` (a key file, a source file and an
+control fields, the relations parsed and the long description of R-DEB-038, the licences of R-DEB-039; `metadataOf`). [setup_local.go](../../internal/formats/deb/setup_local.go) is the client `apt` (a key file, a source file and an
 `auth.conf.d` file named by `SetupData.Project` and `Key`, Q-ARCH-420; snippets `apt.shell.configure`, `apt.list.configure`, `apt.install`,
 `apt.curl.publish`), [setup_remote.go](../../internal/formats/deb/setup_remote.go) adds `apt.shell.configure.upstream-keyring` for a remote without keys;
 [guide_local.go](../../internal/formats/deb/guide_local.go), [guide_remote.go](../../internal/formats/deb/guide_remote.go) and
@@ -515,7 +532,8 @@ and its fake in the same step; the ids of the setup snippets (`apt.*`) are check
 ## Tests
 
 **Unit.** The leaves ([version](../../internal/formats/deb/version/version_test.go), [control](../../internal/formats/deb/control/control_test.go),
-[debfile](../../internal/formats/deb/debfile/debfile_test.go), [index](../../internal/formats/deb/index/index_test.go) with `FuzzPackages`,
+[debfile](../../internal/formats/deb/debfile/debfile_test.go) with the data archive's reader ([contents_test.go](../../internal/formats/deb/debfile/contents_test.go): the
+fixtures of dpkg-deb, the bounds with bombs of kilobytes, what is kept), [index](../../internal/formats/deb/index/index_test.go) with `FuzzPackages`,
 [release](../../internal/formats/deb/release/release_test.go)), the OpenPGP library ([key_test.go](../../internal/openpgp/key_test.go),
 [verify_test.go](../../internal/openpgp/verify_test.go), and `FuzzParseCertificates`, `FuzzParseSecret`, `FuzzVerifyClear` in
 [fuzz_test.go](../../internal/openpgp/fuzz_test.go): `go test ./internal/openpgp -run xxx -fuzz FuzzVerifyClear`), the format with the twin of the
@@ -533,7 +551,7 @@ shard `c`, `debkeys` in shard `b` and `debvirtual` in shard `d` of `make test-in
 
 | Area | What it proves |
 |---|---|
-| [deblocal](../../test/integration/deblocal) | `local_test.go` and `replay_test.go` (upload, coordinates, deletion, replay), `index_test.go` (a published generation, retention, reindex, `waitFor`, fault injection, co-signing), `replicas_test.go` (three replicas: fifty parallel uploads, by-hash on every replica, a deleted by-hash item written again, identical full builds), `times_test.go` (twenty key changes in five seconds, a freshly bound imported key), `delay_test.go` (`TestR_DEB_010_DelayBound`, the p99 under `QUADER_PERF_GATE=1` in `make test-performance`), `actionmap_test.go` (`TestR_AUTHZ_007_DebActionMap`), `crafted_test.go` (R-DEB-034 over HTTP), `apt_test.go` (`apt-get update --error-on=any` and `apt-get install` in `debian:13` and `ubuntu:22.04`, also with xz; skipped without docker). The replicas run with the role `all`, because the builder is a job and the role `web` claims none; the stack seeds repositories by SQL, so a test creates and promotes a key where the creation hook would have. The stack runs without Valkey unless a test asks (`envOpts.valkey`) |
+| [deblocal](../../test/integration/deblocal) | `local_test.go` and `replay_test.go` (upload, coordinates, deletion, replay), `index_test.go` (a published generation, retention, reindex, `waitFor`, fault injection, co-signing), `replicas_test.go` (three replicas: fifty parallel uploads, by-hash on every replica, a deleted by-hash item written again, identical full builds), `times_test.go` (twenty key changes in five seconds, a freshly bound imported key), `delay_test.go` (`TestR_DEB_010_DelayBound`, the p99 under `QUADER_PERF_GATE=1` in `make test-performance`), `actionmap_test.go` (`TestR_AUTHZ_007_DebActionMap`), `crafted_test.go` (R-DEB-034 over HTTP), `contents_test.go` (R-DEB-038 and R-DEB-039: the relations, the contents read after the upload, the wiki rule, a refused archive, the task for files stored before), `apt_test.go` (`apt-get update --error-on=any` and `apt-get install` in `debian:13` and `ubuntu:22.04`, also with xz; skipped without docker). The replicas run with the role `all`, because the builder is a job and the role `web` claims none; the stack seeds repositories by SQL, so a test creates and promotes a key where the creation hook would have. The stack runs without Valkey unless a test asks (`envOpts.valkey`) |
 | [debkeys](../../test/integration/debkeys) | production composition root, repositories created through the API: the first key and its sealing, which repositories have keys, the import rules, the rotation with the signing path of the build, the permissions, concurrent changes, the sealed column's row binding, `signing-key.asc`, the replay in every case of the security page's table, and the reindex (`reindex_test.go`) |
 | [debremote](../../test/integration/debremote) | production composition root in the role `all` against [test/debstub](../../test/debstub) on loopback: the release and its verification cases, the pair, the absent suite, `signing-key.asc`, indexes as one snapshot, by-hash, the flat directory and the flat root, pool digests and the `require` policy, the parse rows and their follow-up by pdiff, the paragraph bound, the shadowing check, the key removal with its journal entry, the replay and the purge; the cases that wait for a period take a minute or two |
 | [debvirtual](../../test/integration/debvirtual) | the virtual class: the merge and its signature, the claim, the gate, the member paths, the upload through the deploy target, the shadowing check through a real virtual repository, the member rules, the bound of R-DEB-026, the action map, and real `apt-get` clients ([below](#the-virtual-class)) |
