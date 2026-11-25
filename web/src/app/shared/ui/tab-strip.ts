@@ -3,6 +3,12 @@ import { DestroyRef, Directive, ElementRef, afterNextRender, inject } from '@ang
 /** How far a fade reaches into the strip, in px: GitLab's 2rem. A tab is scrolled clear of it. */
 export const TAB_FADE = 32;
 
+/**
+ * The class of a strip whose tabs do not fit at their own padding (Q-UI-1090): `.tab-nav.tight` of _controls.scss takes each tab's
+ * padding at its sides from 12 to 8 px, and the strip scrolls only where they do not fit that way either.
+ */
+export const TAB_TIGHT = 'tight';
+
 /** The current tab of a strip: a link's `aria-current`, a tab's `aria-selected`. */
 const CURRENT = ':scope > [aria-current="page"], :scope > [aria-selected="true"]';
 
@@ -13,6 +19,11 @@ const CURRENT = ':scope > [aria-current="page"], :scope > [aria-selected="true"]
  * as GitLab's scrolling tabs have it, and a click on it scrolls the strip by its width less the two fades. The current tab is
  * scrolled clear of the fades when the strip appears, when its width changes and when the current tab changes; a
  * focused tab is scrolled clear of them too, so Tab and the arrow keys always show the tab they reach.
+ *
+ * Before it scrolls, a strip takes its tabs closer (Q-UI-1090): where the tabs at their own padding are wider than the strip, it carries
+ * the class `tight`, and it scrolls only where they do not fit that way either. Seven tabs of an Ansible collection's version in German
+ * were 13 px wider than the strip at 1,024 px, the narrowest window with the pinned sidebar, and scrolled there, which R-UI-173 does not
+ * allow from 1,024 px on. The fit is measured again when the strip's width, its current tab (whose label is bolder) or a label changes.
  *
  * The fades are for the pointer: out of the tab order and hidden from assistive technology, which reach every tab without them.
  * They stand inside the strip, sticky at its edges and taking no room, so a strip needs no wrapper and a tablist stays one.
@@ -33,6 +44,7 @@ export class TabStrip {
       this.start.addEventListener('click', () => this.page(-1));
       this.end.addEventListener('click', () => this.page(1));
       const settle = (): void => {
+        this.fit();
         this.update();
         this.reveal(this.strip.querySelector<HTMLElement>(CURRENT));
       };
@@ -42,9 +54,13 @@ export class TabStrip {
       };
       this.strip.addEventListener('scroll', onScroll, { passive: true });
       this.strip.addEventListener('focusin', onFocus);
-      // A changed label (a count that arrives) moves the fades only; a new current tab is scrolled to, and a strip the reader
-      // scrolled stays where it is until then.
-      const mutations = new MutationObserver((records) => (records.some((r) => r.type === 'attributes') ? settle() : this.update()));
+      // A changed label (a count that arrives) changes the fit and moves the fades only; a new current tab is scrolled to, and a
+      // strip the reader scrolled stays where it is until then.
+      const changed = (): void => {
+        this.fit();
+        this.update();
+      };
+      const mutations = new MutationObserver((records) => (records.some((r) => r.type === 'attributes') ? settle() : changed()));
       mutations.observe(this.strip, { subtree: true, childList: true, characterData: true, attributeFilter: ['aria-current', 'aria-selected'] });
       const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(settle);
       resize?.observe(this.strip);
@@ -58,6 +74,15 @@ export class TabStrip {
         this.strip.removeEventListener('focusin', onFocus);
       });
     });
+  }
+
+  /**
+   * Takes the tabs closer where they do not fit at their own padding (Q-UI-1090). The class is taken off to measure and put back in
+   * the same task, so no frame shows the other form; the strip's own size does not change with it, so its observer is not woken.
+   */
+  private fit(): void {
+    this.strip.classList.remove(TAB_TIGHT);
+    if (this.strip.scrollWidth > this.strip.clientWidth + 1) this.strip.classList.add(TAB_TIGHT);
   }
 
   /** Shows a fade at each edge beyond which tabs lie. */

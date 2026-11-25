@@ -11,7 +11,7 @@ export interface LayoutFinding {
   /**
    * Which check found it: `icon-apart`, `broken`, `row-offset`, `row-actions`, `stacked-offset`, `stacked-place`, `label-apart`,
    * `empty-cell`, `cell-overflow`, `clipped`, `cramped`, `stacked-fits`, `sideways`, `empty-scroll`, `tab-scrollbar`, `english`,
-   * `inner-scroll`.
+   * `inner-scroll`, `heading-broken`.
    */
   readonly check: string;
   /** The element, as a path of up to four tags with their first two classes. */
@@ -922,6 +922,48 @@ export function layoutFindings(): LayoutFinding[] {
     const style = getComputedStyle(strip);
     const bar = strip.offsetHeight - strip.clientHeight - parseFloat(style.borderTopWidth) - parseFloat(style.borderBottomWidth);
     if (bar >= 1) add('tab-scrollbar', strip, strip.getAttribute('aria-label') ?? '', `a scrollbar of ${Math.round(bar)} px under the tabs`);
+  }
+
+  // ---- heading-broken: a heading broken inside a word (R-UI-171, Q-UI-1091) ------------------------------------------------
+  // "Authentifizierungseinstellung" / "en", the German heading of the authentication settings at 390 px. A heading wraps between its
+  // words, after a hyphen, and at a soft hyphen, where the browser draws the hyphen (a German compound longer than a line carries
+  // them, web/src/locale/GLOSSARY.md); never between two letters or digits. A name (`translate="no"`) or `code` longer than 16
+  // characters is a token that breaks where it must, as in a list's cell (Q-UI-425).
+  for (const heading of Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"]'))) {
+    if (!shown(heading) || lineCount(textRects(heading)) < 2) continue;
+    const walker = document.createTreeWalker(heading, NodeFilter.SHOW_TEXT);
+    const range = document.createRange();
+    let broken: string | null = null;
+    for (let n = walker.nextNode(); n && !broken; n = walker.nextNode()) {
+      const text = n.nodeValue ?? '';
+      const parent = n.parentElement;
+      if (!/\S/.test(text) || !parent || inIcon(parent) || !shown(parent)) continue;
+      const token = parent.closest('code, [translate="no"]') !== null;
+      let top: number | null = null;
+      for (let i = 0; i < text.length && !broken; i++) {
+        range.setStart(n, i);
+        range.setEnd(n, i + 1);
+        // The last box: Chromium gives the first letter after a soft hyphen a second box, the hyphen's at the end of the line above.
+        const rects = range.getClientRects();
+        const r = rects[rects.length - 1];
+        if (!r) continue;
+        if (top !== null && r.top > top + 2 && /[\p{L}\p{N}]/u.test(text[i - 1] ?? '') && /[\p{L}\p{N}]/u.test(text[i] ?? '')) {
+          const before = /\S*$/u.exec(text.slice(0, i))?.[0] ?? '';
+          const after = /^\S*/u.exec(text.slice(i))?.[0] ?? '';
+          if (!token || before.length + after.length <= 16) broken = `${before}|${after}`;
+        }
+        top = r.top;
+      }
+    }
+    if (broken) {
+      const [head, tail] = broken.split('|');
+      add(
+        'heading-broken',
+        heading,
+        textOf(heading),
+        `the word "${head}${tail}" broken inside itself ("${head}" / "${tail}"), the heading ${Math.round(heading.getBoundingClientRect().width)} px wide`,
+      );
+    }
   }
 
   // ---- stacked-fits: a table whose rows stand as blocks although its columns fit (R-UI-174) -------------------------------

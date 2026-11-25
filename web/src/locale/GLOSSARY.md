@@ -10,6 +10,12 @@ A term keeps one grammatical gender in every text. "Token" is neuter, "das Token
 screens' second round found 15 masculine ones beside about 36 neuter ones ([Q-UI-1052](../../../docs/spec/api-and-ui.md#q-ui-1052--token-is-neuter-in-every-german-text)); the same spec
 refuses a masculine "Token" in a target.
 
+A German word of more than 20 letters carries a soft hyphen, written `&#xAD;`, at a joint of its compound, so that no run of
+letters is longer: `Authentifizierungs&#xAD;einstellungen`, `Berechtigungs&#xAD;richtlinien`. The browser draws nothing there
+unless the line is too short, and then breaks at the joint with a hyphen; without it the word broke between two letters
+("Authentifizierungseinstellung" / "en" in a heading at 390 px, [Q-UI-1091](../../../docs/spec/api-and-ui.md#q-ui-1091--a-long-german-word-carries-soft-hyphens-at-the-joints-of-its-compound-and-a-heading-never-breaks-inside-a-word)).
+`make web-i18n-check` names a word without one. The table below writes the terms without their soft hyphens.
+
 | English | German |
 |---|---|
 | permission policy | Berechtigungsrichtlinie |

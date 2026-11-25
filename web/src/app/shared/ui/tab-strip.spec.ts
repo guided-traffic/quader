@@ -3,19 +3,22 @@ import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { seriousViolations } from '../../testing/axe';
 import { settle } from '../../testing/screen';
-import { TAB_FADE, TabStrip } from './tab-strip';
+import { TAB_FADE, TAB_TIGHT, TabStrip } from './tab-strip';
 import { TabGroup, TabPage } from './tabs';
 
 /**
- * jsdom lays nothing out, so the strip's geometry is a model: every tab is 100 px wide, side by side from the strip's left edge,
- * and the strip is `width` px wide; `scrollLeft` is kept per element and clamped as a browser clamps it.
+ * jsdom lays nothing out, so the strip's geometry is a model: every tab is 100 px wide, 92 px in a strip that takes its tabs closer
+ * (`tight`: 4 px less padding at each side), side by side from the strip's left edge, and the strip is `width` px wide; `scrollLeft`
+ * is kept per element and clamped as a browser clamps it.
  */
 const TAB = 100;
+const TIGHT = 92;
 let width = 250;
 const scrolled = new WeakMap<Element, number>();
 const isStrip = (el: Element): boolean => el.classList.contains('tab-nav');
 const tabsOf = (strip: Element): Element[] => [...strip.children].filter((c) => !c.classList.contains('tab-strip-fade'));
-const stripWidth = (strip: Element): number => tabsOf(strip).length * TAB;
+const tabWidth = (strip: Element): number => (strip.classList.contains(TAB_TIGHT) ? TIGHT : TAB);
+const stripWidth = (strip: Element): number => tabsOf(strip).length * tabWidth(strip);
 
 beforeEach(() => {
   width = 250;
@@ -26,7 +29,7 @@ beforeEach(() => {
     return isStrip(this) ? Math.max(width, stripWidth(this)) : 0;
   });
   vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (this: HTMLElement) {
-    return this.parentElement && isStrip(this.parentElement) ? TAB : 0;
+    return this.parentElement && isStrip(this.parentElement) ? tabWidth(this.parentElement) : 0;
   });
   vi.spyOn(Element.prototype, 'scrollLeft', 'get').mockImplementation(function (this: Element) {
     return scrolled.get(this) ?? 0;
@@ -36,8 +39,9 @@ beforeEach(() => {
   });
   vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
     const strip = this.parentElement;
-    const left = strip && isStrip(strip) ? tabsOf(strip).indexOf(this) * TAB - (scrolled.get(strip) ?? 0) : 0;
-    return DOMRect.fromRect({ x: left, y: 0, width: TAB, height: 48 });
+    const tab = strip && isStrip(strip) ? tabWidth(strip) : TAB;
+    const left = strip && isStrip(strip) ? tabsOf(strip).indexOf(this) * tab - (scrolled.get(strip) ?? 0) : 0;
+    return DOMRect.fromRect({ x: left, y: 0, width: tab, height: 48 });
   });
 });
 
@@ -87,6 +91,20 @@ describe('Tab strip', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
+  it('R-UI-173 a strip whose tabs fit only closer together takes them closer and does not scroll; one that fits keeps their padding', async () => {
+    // Five tabs: 500 px at their own padding, 460 px closer together.
+    width = 480;
+    const first = await render();
+    expect(first.strip.classList.contains(TAB_TIGHT)).toBe(true);
+    expect(first.strip.scrollWidth).toBe(width);
+    expect(first.shown()).toEqual([]);
+    TestBed.resetTestingModule();
+    width = 500;
+    const second = await render();
+    expect(second.strip.classList.contains(TAB_TIGHT)).toBe(false);
+    expect(second.shown()).toEqual([]);
+  });
+
   it('R-UI-173 a strip wider than its place shows a fade at each edge beyond which tabs lie, and a click on one scrolls it', async () => {
     const { fixture, strip, fade, shown } = await render();
     expect(shown()).toEqual(['end']);
@@ -107,8 +125,10 @@ describe('Tab strip', () => {
 
   it('R-UI-173 the current tab is scrolled clear of the fade when the strip appears and when the current tab changes', async () => {
     const { fixture, strip } = await render(3);
-    // Vulnerabilities spans 300 to 400 px: its right edge and the fade's width at the strip's right edge.
-    expect(strip.scrollLeft).toBe(4 * TAB + TAB_FADE - width);
+    // Vulnerabilities spans 276 to 368 px in the strip that takes its tabs closer: its right edge and the fade's width at the strip's
+    // right edge.
+    expect(strip.classList.contains(TAB_TIGHT)).toBe(true);
+    expect(strip.scrollLeft).toBe(4 * TIGHT + TAB_FADE - width);
     fixture.componentInstance.current.set(0);
     await settle(fixture);
     expect(strip.scrollLeft).toBe(0);
@@ -118,7 +138,7 @@ describe('Tab strip', () => {
     const { strip } = await render();
     const tab = strip.querySelectorAll<HTMLElement>('a.tab-link')[2]!;
     tab.focus();
-    expect(strip.scrollLeft).toBe(3 * TAB + TAB_FADE - width);
+    expect(strip.scrollLeft).toBe(3 * TIGHT + TAB_FADE - width);
   });
 
   it('R-UI-044 the tabs of a tab group scroll the same way and stay a tablist of tabs alone for assistive technology', async () => {
@@ -142,7 +162,7 @@ describe('Tab strip', () => {
     const root = fixture.nativeElement as HTMLElement;
     const list = root.querySelector<HTMLElement>('[role="tablist"]')!;
     // The last tab: scrolled to the end, where no fade stands.
-    expect(list.scrollLeft).toBe(4 * TAB - width);
+    expect(list.scrollLeft).toBe(4 * TIGHT - width);
     expect(list.querySelector('.tab-strip-fade.end')?.hasAttribute('hidden')).toBe(true);
     expect(list.querySelector('.tab-strip-fade.start')?.hasAttribute('hidden')).toBe(false);
     expect(await seriousViolations(root)).toEqual([]);

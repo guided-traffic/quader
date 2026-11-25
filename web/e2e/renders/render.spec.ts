@@ -49,7 +49,7 @@ export interface Shot {
 
 // The German pass renders the screens marked `de` (Q-UI-1048): their walks find no control by an English word.
 for (const screen of locale === 'de' ? screens.filter((s) => s.de) : screens) {
-  for (const kind of screen.kinds) {
+  for (const kind of locale === 'de' && Array.isArray(screen.de) ? screen.de : screen.kinds) {
     test(`${screen.id} as ${kind}`, { tag: `@${kind}` }, async ({ page }) => {
       forget(kind, screen);
       const failures = watch(page, screen);

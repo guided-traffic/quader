@@ -98,8 +98,9 @@ export interface Screen {
   /**
    * Rendered in the German pass too (UI_RENDERS_LOCALE=de, Q-UI-1048), into `.out/ui-renders-de`: a screen whose German words were
    * not looked at otherwise. Its walk finds its controls by their place (a selector, a test id, an ID), never by an English word.
+   * A list of kinds renders it as those kinds only in the German pass, where one kind shows what the pass is for (Q-UI-1090).
    */
-  readonly de?: boolean;
+  readonly de?: boolean | readonly Kind[];
 }
 
 /**
@@ -2877,7 +2878,9 @@ export const screens: readonly Screen[] = [
   { id: 'package-version-oci-probed', path: `${ver(O, { format: 'oci', name: remoteImage.name }, probedCache.tag)}?tab=details`, kinds: all },
   { id: 'package-version-nuget', path: ver(O, nugetPackage, nugetPackage.versions[1]), kinds: all },
   { id: 'package-version-deb', path: ver(O, debPackage, debPackage.versions[1]), kinds: all, de: true },
-  { id: 'package-version-ansible', path: ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1]), kinds: all },
+  // In German as the plain user: the strip of the most tabs with the longest labels of every format's version page, the one strip of
+  // in-place tabs they share (Q-UI-1090: 13 px wider than its place at 1,024 px before its tabs stood closer).
+  { id: 'package-version-ansible', path: ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1]), kinds: all, de: ['plain'] },
   // The folders and files of a repository on its page (R-UI-010 to R-UI-012, ADR-203): a folder with the Owner's operations, a
   // folder deep in a path of long names, a folder of more than a page, an empty folder, a file and a package format's raw files.
   { id: 'files-folder', path: `${P}/repositories/assets/files/releases/design-system/2.5.0`, kinds: all, walk: folderOperations },
@@ -3187,7 +3190,8 @@ export const screens: readonly Screen[] = [
   { id: 'admin-system-jobs', path: '/ui/admin/system/jobs', kinds: admins, de: true },
   { id: 'admin-system-backups', path: '/ui/admin/system/backups', kinds: admins },
   { id: 'admin-system-storage', path: '/ui/admin/system/storage', kinds: admins, walk: systemStorage },
-  { id: 'admin-settings-auth', path: '/ui/admin/settings/auth', kinds: admins },
+  // In German: the longest word of a heading, "Authentifizierungseinstellungen", which broke inside itself at 390 px (Q-UI-1091).
+  { id: 'admin-settings-auth', path: '/ui/admin/settings/auth', kinds: admins, de: true },
   { id: 'admin-settings-general', path: '/ui/admin/settings/general', kinds: admins, walk: restrictedLevels },
   // The malware scanning's page (R-MAL-023): every state of the administrator's, and the auditor's read-only page with the link to the finds.
   { id: 'admin-settings-malware', path: '/ui/admin/settings/malware', kinds: admins, walk: malwareSettings },

@@ -4,7 +4,10 @@
 // translated and a unit of a removed hint. This script extracts into a temporary directory and fails when:
 //   - messages.xlf differs from the extraction by one byte;
 //   - messages.de.xlf lacks a unit of the extraction (an English text with no German one), holds a unit the extraction no longer has,
-//     or holds a unit whose location notes or whose English source differ from the extraction's.
+//     or holds a unit whose location notes or whose English source differ from the extraction's;
+//   - a German text holds a word of more than LONG_WORD letters without a soft hyphen (`&#xAD;`) at a joint of its compound, so
+//     that no run of letters between hyphens, soft hyphens and other characters is longer (Q-UI-1091): such a word is wider than the
+//     narrowest heading's line and broke inside itself ("Authentifizierungseinstellung" / "en" at 390 px).
 // `--write` puts the extraction in place and rewrites the German file in the extraction's order with the extraction's notes; it
 // drops the units the extraction no longer has and keeps every target and every German unit's own source. A missing unit or a
 // changed source still fails after `--write`: a person writes the German text (web/src/locale/GLOSSARY.md), and a changed source is
@@ -34,6 +37,31 @@ export function units(xliff) {
       source: text.match(SOURCE)?.[0] ?? '',
       target: text.match(TARGET)?.[0] ?? '',
     });
+  }
+  return out;
+}
+
+/**
+ * The most letters a run without a hyphen or a soft hyphen may have in a German text (Q-UI-1091): 20 letters of the first heading's
+ * size at 390 px take some 250 px, which every heading's line holds; the page's heading there holds 358 px.
+ */
+export const LONG_WORD = 20;
+
+/**
+ * longWords answers the words of the German file's targets that are longer than LONG_WORD letters without a soft hyphen or a hyphen
+ * in them, with their unit: the target's text without its placeholders and markup (whose attributes hold the English code), its
+ * soft hyphens written as `&#xAD;`.
+ */
+export function longWords(german) {
+  const out = [];
+  for (const u of units(german)) {
+    const text = u.target
+      .replace(/^<target>|<\/target>$/g, '')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/&#xAD;|&#173;|\u00AD/gi, '\u00AD');
+    for (const m of text.matchAll(/[\p{L}\p{M}\u00AD]+/gu)) {
+      if (m[0].split('\u00AD').some((part) => part.length > LONG_WORD)) out.push({ id: u.id, word: m[0].replace(/\u00AD/g, '') });
+    }
   }
   return out;
 }
@@ -136,6 +164,12 @@ function main(write) {
   list('units of src/locale/messages.de.xlf with stale location notes: run make web-i18n', d.notes);
   list('units whose English source changed since the German text was written: correct the source and the target', d.source);
   if (d.missing.length + d.stale.length + d.notes.length + d.source.length > 0) ok = false;
+  const long = longWords(german);
+  list(
+    `German words of more than ${LONG_WORD} letters without a soft hyphen (&#xAD;) at a joint of the compound (web/src/locale/GLOSSARY.md)`,
+    long.map((w) => `${w.id}: ${w.word}`),
+  );
+  if (long.length > 0) ok = false;
   console.log(ok ? `i18n: ${units(extracted).length} units, the source and the German file match the extraction` : 'i18n: failed');
   return ok;
 }

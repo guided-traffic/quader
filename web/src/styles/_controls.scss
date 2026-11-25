@@ -199,6 +199,12 @@ quader-copy-button.on-line {
   > * {
     flex: none;
   }
+
+  // Tabs wider than the strip at their own padding stand closer before the strip scrolls (Q-UI-1090, `tight` of tab-strip.ts): 8 px at
+  // each side instead of 12. Seven tabs of an Ansible collection's version in German fit at 1,024 px that way, 13 px too wide before.
+  &.tight > .tab-link {
+    padding-inline: var(--quader-space-2);
+  }
 }
 
 // A fade of an edge: 2rem from the page's fill to nothing over the tabs, the chevron at the edge. It sticks to its edge inside the

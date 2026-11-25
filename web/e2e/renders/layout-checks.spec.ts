@@ -746,6 +746,40 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
   });
 });
 
+test.describe('a heading broken inside a word (R-UI-171)', () => {
+  // The German heading of the authentication settings at 390 px (2026-11-24): "Authentifizierungseinstellung" / "en" in a heading of
+  // 358 px at the first heading's size, as the page header sets it (`overflow-wrap: anywhere`, the last resort for a name).
+  const css = `h1 { margin: 0; inline-size: 358px; font-size: 24px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }`;
+  const lines = (page: Page): Promise<number> =>
+    page.evaluate(() => {
+      const range = document.createRange();
+      range.selectNodeContents(document.querySelector('h1')!.firstChild!);
+      return new Set(Array.from(range.getClientRects()).filter((r) => r.width > 0.5).map((r) => Math.round(r.top))).size;
+    });
+
+  test('R-UI-171 a heading broken between two letters of its word is found', async ({ page }) => {
+    const found = await check(page, '<h1>Authentifizierungseinstellungen</h1>', css);
+    const broken = only(found, 'heading-broken');
+    expect(broken, describe(found)).toHaveLength(1);
+    expect(broken[0]!.detail).toMatch(/^the word "Authentifizierungseinstellungen" broken inside itself/);
+  });
+
+  test('R-UI-171 the same word with a soft hyphen at the joint of its compound breaks there with a hyphen and passes', async ({ page }) => {
+    const found = await check(page, '<h1>Authentifizierungs&#xAD;einstellungen</h1>', css);
+    expect(await lines(page)).toBe(2);
+    expect(only(found, 'heading-broken'), describe(found)).toEqual([]);
+  });
+
+  test('R-UI-171 a heading that wraps between its words, and a long name that breaks where it must, pass', async ({ page }) => {
+    const words = await check(page, '<h1>Einstellungen zur Authentifizierung</h1>', css);
+    expect(await lines(page)).toBe(2);
+    expect(only(words, 'heading-broken'), describe(words)).toEqual([]);
+    const name = await check(page, '<h1 translate="no">customerportalreleasedeliveryartifacts</h1>', css);
+    expect(await lines(page)).toBe(2);
+    expect(only(name, 'heading-broken'), describe(name)).toEqual([]);
+  });
+});
+
 test.describe('a short text cramped beside a column with room to spare (R-UI-173)', () => {
   // W-5's row (2026-11-20): a version's grade, "3 findings ·" over "0 fixable", beside a column whose width was set wider than any of
   // its values at 1,024 px. The grade as quader-grade builds it: the shield, then the parts, each on one line.

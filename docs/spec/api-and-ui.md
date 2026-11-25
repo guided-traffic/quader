@@ -8140,9 +8140,22 @@ the cell's second line (the signatures' **Signed**
 with "signer not trusted", Q-UI-1076). A list of facts (`dl.facts`) puts each term above its value below 36 rem of content, so a
 value has the whole line and breaks inside itself only where it is longer than that line (Q-UI-1077).
 
+A heading wraps between its words, after a hyphen, or at a soft hyphen, where the browser draws the hyphen; never between two letters
+of a word (the German heading of the authentication settings read "Authentifizierungseinstellung" / "en" at 390 px). A German word
+longer than 20 letters carries a soft hyphen at a joint of its compound, so that no run of letters is longer, and breaks there with a
+hyphen wherever its line is too short (a heading, a label of the sidebar); a name in a heading (an element marked `translate="no"`)
+longer than 16 characters is a token that may break where it must (Q-UI-425)
+([Q-UI-1091](#q-ui-1091--a-long-german-word-carries-soft-hyphens-at-the-joints-of-its-compound-and-a-heading-never-breaks-inside-a-word)).
+
 Acceptance criteria:
 
-- The render run's report names no `broken` finding (the check `broken` of [layout.ts](../../web/e2e/renders/layout.ts)).
+- The render run's report names no `broken` finding (the check `broken` of [layout.ts](../../web/e2e/renders/layout.ts)) and no
+  `heading-broken` finding (a heading broken between two letters of a word).
+- Fixtures (`layout-checks.spec.ts`, Chromium, Firefox and WebKit): "Authentifizierungseinstellungen" in a heading of 358 px at the
+  first heading's size is found; with a soft hyphen at its joint it breaks there and passes; a heading that wraps between its words and a
+  long name pass.
+- `make web-i18n-check` fails on a German text with a word of more than 20 letters without a soft hyphen (`longWords` of
+  [i18n-check.mjs](../../web/scripts/i18n-check.mjs), tested by `lint-rules.test.mjs`).
 
 ### R-UI-172 · A row reads along one line, and its actions are built like its neighbours'
 Priority: **MVP** · Covers: quader-only
@@ -8171,6 +8184,9 @@ Priority: **MVP** · Covers: quader-only
 - A tab strip whose tabs are wider than its place keeps them on one line and scrolls sideways without a scrollbar; at an edge
   beyond which tabs lie a fade with a chevron says so and scrolls it by a click, and the current tab and a focused tab stand clear
   of the fades ([Q-UI-1074](#q-ui-1074--a-tab-strip-wider-than-its-place-scrolls-without-a-scrollbar-with-a-fade-and-a-chevron-at-the-edge)).
+  Before it scrolls, a strip takes its tabs closer (8 px at each side of a label instead of 12), so that it scrolls only where they do
+  not fit that way either: the seven tabs of an Ansible collection's version in German were 13 px wider than their place at 1,024 px
+  ([Q-UI-1090](#q-ui-1090--a-tab-strip-takes-its-tabs-closer-before-it-scrolls)).
 - Neither the window nor the shell's panel scrolls past the content. The panel and a table's room are the containing blocks of what
   is positioned inside them: a text for assistive technology only (`.visually-hidden`) in rows a region hid stood at its place, far
   below the window's end, and a package's 33 versions had 900 px of empty page under them (the check `empty-scroll`).
@@ -8186,7 +8202,8 @@ Acceptance criteria:
 
 - The render run's report names no `clipped`, no `cramped`, no `sideways` and no `tab-scrollbar` finding (the checks of the same
   names in [layout.ts](../../web/e2e/renders/layout.ts) and [render.spec.ts](../../web/e2e/renders/render.spec.ts)).
-- Unit (`tab-strip.spec.ts`): a strip whose tabs fit shows no fade; a wider one shows a fade at each edge beyond which tabs lie and
+- Unit (`tab-strip.spec.ts`): a strip whose tabs fit keeps their padding and shows no fade; one whose tabs fit only closer together
+  takes them closer and shows none; a wider one shows a fade at each edge beyond which tabs lie and
   a click on it scrolls by the strip's width less the fades; the current tab and a focused tab are scrolled clear of the fades;
   the fades add no text, no tab stop and nothing for a screen reader. The web lint refuses a strip without `quaderTabStrip` and a component with one that does not
   import the directive (`tab-strip-rule.mjs`, tested by `lint-rules.test.mjs`).
@@ -24989,6 +25006,80 @@ spec:** R-API-010, R-API-029, R-UI-052, R-UI-110. Code: `Images`, `imageWalk`, `
 (unit), `TestR_API_029_TheListByContentIsTheGroupingOfTheListByTag` (area `ociremote`, the oracle and the budget),
 `TestR_API_029_AMovedTagMovesBetweenImagesOfTheListByContent` (area `oci`), `TestR_API_029_VersionList` (area `packages`).
 
+### Q-UI-1090 · A tab strip takes its tabs closer before it scrolls
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the version of an Ansible collection has seven tabs (**Dokumentation, Inhalt 1, Dateien, Signaturen, Details,
+Schwachstellen, Import-Protokoll**). In German at 1,024 px, the narrowest window with the pinned sidebar, they were 710 px wide and
+their strip 697 px, the content's width less the panel's scrollbar of 15 px; the strip scrolled by 11 to 14 px (the current tab's
+bolder label decides how far), which R-UI-173 does not allow from 1,024 px on and the check `sideways` flagged (2026-11-24). Every
+format's version page shares the strip (`quader-tab-group`); Ansible's is the one with the most tabs, and the other eight strips of
+Quader (links, `.tab-nav`) hold four tabs at most. The labels and the number of tabs are decided elsewhere (Q-UI-456).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A strip whose tabs at their own padding are wider than it takes them closer: 8 px at each side of a label instead of 12 (the class `tight` of `quaderTabStrip`); it scrolls with its fades only where they do not fit that way either (chosen) | One measurement of the strip where it already measures (`TabStrip`: on its width, its current tab and a label changing) | Every strip and every format's version page in every language; 56 px of room for seven tabs, so the Ansible strip fits at 1,024 px with 43 px to spare; a strip that fits looks as before | A strip that is a little too wide shows its tabs 8 px closer than one that fits |
+| (b) Shorter German labels ("Doku", "Importlog") | The texts | No code | Holds for one strip and one language; the next tab or language is the same defect; worse words |
+| (c) Allow a tab strip to scroll at 1,024 px (an exception of the check `sideways` for `.tab-nav`) | The check | The strip's fades say that more tabs lie beyond | R-UI-173 says nothing scrolls sideways from 1,024 px; an exception hides the next too wide strip; the fade hid **Import-Protokoll** behind its chevron |
+| (d) Narrower tab padding everywhere | The stylesheet | Simple | Changes every strip, also those that fit, away from the reference's measure (Q-UI-128) |
+
+**Choice:** (a). **Rationale:** the defect is a strip a few pixels too wide for its place, whatever the labels say; taking the tabs
+closer is the smallest change that holds for every strip, language and future tab, and keeps the reference's measure where the tabs
+fit. The class is taken off to measure and put back in the same task, so no frame shows the other form. The development agent
+revisits (d) if the owner's GitLab draws its tabs with less room, and (c) if a strip ever holds more tabs than fit closer at 1,024 px.
+
+The German pass renders `package-version-ansible` as the plain user only (`de: ['plain']` of a screen, which names the kinds of the
+German pass): one version page holds the shared strip with the most tabs and the longest German labels; every kind would add 84
+pictures that show the same strip.
+
+**Applied in the spec:** R-UI-173. Code: [tab-strip.ts](../../web/src/app/shared/ui/tab-strip.ts) (`fit`, `TAB_TIGHT`), `.tab-nav.tight` of
+[_controls.scss](../../web/src/styles/_controls.scss); the German pass's kinds in [screens.ts](../../web/e2e/renders/screens.ts) and
+[render.spec.ts](../../web/e2e/renders/render.spec.ts). Tests: "R-UI-173 a strip whose tabs fit only closer together takes them closer and
+does not scroll; one that fits keeps their padding" in [tab-strip.spec.ts](../../web/src/app/shared/ui/tab-strip.spec.ts). Docs:
+[design-language.md](../developer/design-language.md), [web-ui.md](../developer/web-ui.md).
+
+### Q-UI-1091 · A long German word carries soft hyphens at the joints of its compound, and a heading never breaks inside a word
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the German heading of the authentication settings, **Authentifizierungseinstellungen** (31 letters), is wider than the
+page's heading of 358 px at 390 px; the page header lets a heading break anywhere (`overflow-wrap: anywhere`, the last resort for a
+long name), so it read "Authentifizierungseinstellung" / "en" (2026-11-24). No check measured headings. The German file held 33 words
+of more than 20 letters (74 places), each a compound (**Berechtigungsrichtlinien**, **Schwachstellendatenbank**,
+**Sichtbarkeitseinstellungen**), in headings, labels and sentences alike.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A soft hyphen (`&#xAD;`) at a joint of every German compound of more than 20 letters, so that no run of letters is longer; `make web-i18n-check` refuses such a word without one; the render check `heading-broken` refuses a heading broken between two letters (chosen) | 74 places of the German file, a rule of the check, a check of the renders | Breaks at a joint with a hyphen, as German print does, only where the line is too short; the same in Chromium, Firefox and WebKit (a soft hyphen needs no dictionary); every place of the word, not only headings | A translator writes `&#xAD;` into a long compound (the glossary says so, the check names the word) |
+| (b) Hyphenation by the browser (`hyphens: auto` with the page's `lang`) | The stylesheet | No change of the texts | Chromium on Linux, the runner's engine, brings no hyphenation dictionary, so the renders and the machines break differently (Q-UI-1068 (b)) |
+| (c) A smaller heading at narrow widths | The heading's size | No change of the texts | Away from the reference's sizes (Q-UI-128); a 35-letter word breaks again |
+| (d) A shorter phrase where it breaks ("Einstellungen zur Authentifizierung", the breadcrumb's) | One text | Reads well | One screen at a time; the next long compound is the same defect |
+
+**Choice:** (a). The threshold: 20 letters of the first heading's size take some 250 px at 390 px, which every heading's line holds
+(the page's heading holds 358 px, about 29 letters); 20 keeps a dialog's and a card's heading safe too. **Rationale:** a word broken
+between two letters is the defect the owner's eye catches first; a soft hyphen is the typographic answer that every engine honours
+without a dictionary, and the rule over the German file catches the word before any screen shows it, where the render check
+catches only the screens of the German pass. The development agent revisits (b) once every engine of the renders and the runner
+brings a German dictionary. What it leaves: [H-1860](#h-1860--a-heading-narrower-than-20-letters-and-a-heading-of-a-screen-outside-the-german-pass-are-held-by-no-check).
+
+A label of the sidebar that now wraps at its soft hyphen (**Berechtigungs-** / **richtlinien**: the word ran a few pixels past the
+sidebar's line before) keeps its icon on the middle of its first line (R-UI-175): the sidebar's entries stand at their row's top, the
+icon with the line rule's margins, and the padding puts a label of one line where the centring put it.
+
+The render check `heading-broken` ([layout.ts](../../web/e2e/renders/layout.ts)) measures each heading (`h1` to `h6`, `role="heading"`)
+of two lines or more letter by letter; a break between two letters or digits is a finding, unless the text is `code` or a name
+(`translate="no"`) longer than 16 characters (Q-UI-425). It takes each letter's last box: Chromium gives the first letter after a soft
+hyphen a second box, the hyphen's, at the end of the line above.
+
+**Applied in the spec:** R-UI-171. Code: [i18n-check.mjs](../../web/scripts/i18n-check.mjs) (`longWords`, `LONG_WORD`),
+[messages.de.xlf](../../web/src/locale/messages.de.xlf), `.nav-link` of [_shell.scss](../../web/src/styles/_shell.scss), the check
+`heading-broken` of [layout.ts](../../web/e2e/renders/layout.ts); `admin-settings-auth` joins the German pass. Tests: "R-UI-171 a German
+word longer than the narrowest heading's line carries a soft hyphen at a joint of its compound" in
+[lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs); the group "a heading broken inside a word (R-UI-171)" in
+[layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts). Docs: [GLOSSARY.md](../../web/src/locale/GLOSSARY.md),
+[ui-style-guide.md](../developer/ui-style-guide.md), [web-ui.md](../developer/web-ui.md).
+
 ## What this does not cover
 
 ### H-1683 · The version list of a package several repositories hold, in the order of publication, reads every version, and the package list counts every version
@@ -25119,6 +25210,16 @@ dialog, a drawer or a list that opens over the page. Live: `sideways` measures `
 stands inside the window, so the states' pictures, not their checks, showed a dialog's table wider than the dialog (2026-11-25); a
 scroll inside a dialog's one scroll is measured (`innerScroll`, R-UI-215). What would close it: the checks of the overlays planned
 for the render set, imported here as they land.
+
+### H-1860 · A heading narrower than 20 letters, and a heading of a screen outside the German pass, are held by no check
+
+The rule of the German file (Q-UI-1091) puts a soft hyphen into every German word of more than 20 letters; a word of 20 letters or
+fewer has none, and the English texts have no such rule. Such a word breaks between two letters in a heading whose line is narrower than
+the word (some 250 px at the first heading's size, less at a smaller one): no heading of Quader is that narrow today, but a heading in a
+narrow column (a card in a grid, a side panel) would be. The render check `heading-broken` finds it only on the screens it renders: in
+German the screens of the German pass, in English every screen. Live today for neither: the survey of 2026-11-25 rendered every
+German screen without a walk at 390 and 1,024 px (253 each) and found no heading broken. Real once a heading stands in a column narrower
+than 250 px, or a German screen outside the pass has one of 20 letters in a line too short for it.
 
 ### H-43 · General API rate limits are per replica
 

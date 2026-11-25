@@ -394,15 +394,22 @@ quader-root {
   }
 
   // An entry as the reference draws it: 28 px, 8 px round, a 16 px icon in a 24 px box, the label at weight 425.
+  // A label longer than the sidebar's line wraps (a German compound at its soft hyphen, "Berechtigungs-" / "richtlinien", Q-UI-1091):
+  // the icon and the chevron stand on the middle of its first line (R-UI-175), not of its two. The items stand at the row's top, and
+  // the padding puts a label of one line where the centring put it, in the middle of the 28 px.
   .nav-link {
     position: relative;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--quader-space-2);
     inline-size: 100%;
     box-sizing: border-box;
     min-block-size: 28px;
-    padding: 2px var(--quader-space-1);
+    padding: calc((28px - var(--quader-line)) / 2) var(--quader-space-1);
+
+    > .material-icons {
+      margin-block: calc((var(--quader-line) - 1rem) / 2);
+    }
     border: 0;
     border-radius: var(--quader-radius-m);
     background: none;

@@ -9,7 +9,7 @@ import { linksToRemovedRoutes } from './removed-routes-rule.mjs';
 import { bareIconsInCells } from './status-rule.mjs';
 import { wordActionsSideBySide } from './row-actions-rule.mjs';
 import { offTheLine } from './line-rule.mjs';
-import { compare, rewrite } from './i18n-check.mjs';
+import { LONG_WORD, compare, longWords, rewrite } from './i18n-check.mjs';
 import { journeyTextFindings } from './journey-texts-rule.mjs';
 import { decisionNumbersInTestNames } from './test-names-rule.mjs';
 import { tabStripFindings } from './tab-strip-rule.mjs';
@@ -205,6 +205,21 @@ test('R-UI-047 the German file is held to the extraction: a missing, a removed a
     ['d', 'src/d.ts:1', 'Open', 'Öffnen'],
   ]);
   assert.deepEqual(compare(extracted, de), { missing: [], stale: [], notes: [], source: [] });
+});
+
+test('R-UI-171 a German word longer than the narrowest heading\'s line carries a soft hyphen at a joint of its compound', () => {
+  assert.equal(LONG_WORD, 20);
+  const german = xliff('de', [
+    ['a', 'src/a.ts:1', 'Authentication settings', 'Authentifizierungseinstellungen'],
+    ['b', 'src/b.ts:1', 'Authentication settings', 'Authentifizierungs&#xAD;einstellungen'],
+    ['c', 'src/c.ts:1', 'Group sync', 'Gruppen-Synchronisierungseinstellung'],
+    ['d', 'src/d.ts:1', 'Policies of {$PH}', 'Richtlinien von <ph id="0" equiv="PH" disp="{{ averyveryverylongidentifiername }}"/>'],
+    ['e', 'src/e.ts:1', 'Unit', 'Organisationseinheit'],
+  ]);
+  assert.deepEqual(longWords(german), [
+    { id: 'a', word: 'Authentifizierungseinstellungen' },
+    { id: 'c', word: 'Synchronisierungseinstellung' },
+  ]);
 });
 
 test('R-UI-047 the rewrite takes the extraction\'s order and notes and keeps every target and a changed source', () => {

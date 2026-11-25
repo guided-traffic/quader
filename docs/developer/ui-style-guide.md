@@ -100,6 +100,12 @@ side bar (**Tokens**). The description is one sentence, the header's `descriptio
   longer than that line (`overflow-wrap: anywhere`, the last resort for an address or a path;
   [Q-UI-1077](../spec/api-and-ui.md#q-ui-1077--below-36-rem-of-content-a-facts-term-stands-above-its-value)). A page does not give
   its facts a grid of its own.
+- **A heading** wraps between its words, after a hyphen, or at a soft hyphen; never between two letters. A long word is not
+  answered by a smaller heading or by the browser's hyphenation: a German word of more than 20 letters carries a soft hyphen
+  (`&#xAD;`) at a joint of its compound in the German file, which `make web-i18n-check` holds
+  ([GLOSSARY.md](../../web/src/locale/GLOSSARY.md)), and the renders' check `heading-broken` refuses a heading broken inside a word
+  ([Q-UI-1091](../spec/api-and-ui.md#q-ui-1091--a-long-german-word-carries-soft-hyphens-at-the-joints-of-its-compound-and-a-heading-never-breaks-inside-a-word)).
+  A label of the sidebar that wraps keeps its icon on its first line.
   An icon never stands directly in a table cell: a status is the badge, an icon before a text that may wrap is `.icon-name`
   (`status-rule.mjs` fails the lint otherwise; [Q-UI-560](../spec/api-and-ui.md#q-ui-560--an-icon-in-a-table-cell-is-one-element-with-its-word),
   [Q-UI-564](../spec/api-and-ui.md#q-ui-564--a-status-word-starts-with-a-capital)).
@@ -536,7 +542,7 @@ Before a screen is committed:
 - [ ] Rendered with `make ui-renders` ([web-ui.md](web-ui.md#renders-of-every-screen)) and every changed screen looked at in
       both schemes and at 390 px, as each kind of user that reaches it; the contact sheet lists no failure, no page that scrolls
       sideways at any width and no region that does at 1024 px and wider, that the change brought; no layout finding (an icon apart
-      from its label, a short thing broken, a row off its line or with other actions, a cut text with room, a stacked field at another place than in the other blocks, a cell that shows nothing, a table stacked though
+      from its label, a short thing broken, a heading broken inside a word, a row off its line or with other actions, a cut text with room, a stacked field at another place than in the other blocks, a cell that shows nothing, a table stacked though
       it fits, a page that scrolls into nothing, a control or an icon off its text's line, a box that scrolls by itself in the page
       (`inner-scroll`, R-UI-215): [the checks](web-ui.md#renders-of-every-screen), R-UI-170 to R-UI-176); and in
       each picture what the checks do not see: a table that ends before the lines above it, a field far wider than its input, two
@@ -548,7 +554,7 @@ Before a screen is committed:
 - [ ] A row's one action is its quiet word, several are its menu **Actions for &lt;name&gt;**; no menu of one entry.
 - [ ] Every value to copy of one line is an address field; a page shows one client address, further ones labelled in Details.
 - [ ] Every control named; the keyboard reaches everything; a spec of the screen calls `seriousViolations` and it passes.
-- [ ] Every string has an `i18n` ID and a German translation.
+- [ ] Every string has an `i18n` ID and a German translation; a German word of more than 20 letters has its soft hyphen.
 - [ ] The spec names the decision, and the manual describes the screen where it did.
 
 ## Deliberate differences

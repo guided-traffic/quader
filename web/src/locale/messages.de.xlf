@@ -394,7 +394,7 @@
       </notes>
       <segment>
         <source>Permission policies</source>
-        <target>Berechtigungsrichtlinien</target>
+        <target>Berechtigungs&#xAD;richtlinien</target>
       </segment>
     </unit>
     <unit id="route.roles.title">
@@ -813,7 +813,7 @@
       </notes>
       <segment>
         <source>A personal token cannot be created with this credential.</source>
-        <target>Mit diesem Berechtigungsnachweis kann kein persönliches Token erstellt werden.</target>
+        <target>Mit diesem Berechtigungs&#xAD;nachweis kann kein persönliches Token erstellt werden.</target>
       </segment>
     </unit>
     <unit id="problem.ci_token_restricted">
@@ -831,7 +831,7 @@
       </notes>
       <segment>
         <source>The current credential is not a token.</source>
-        <target>Der aktuelle Berechtigungsnachweis ist kein Token.</target>
+        <target>Der aktuelle Berechtigungs&#xAD;nachweis ist kein Token.</target>
       </segment>
     </unit>
     <unit id="problem.invalid_action">
@@ -921,7 +921,7 @@
       </notes>
       <segment>
         <source>A service account of a project can only be granted by the policies of its own project.</source>
-        <target>Ein Servicekonto eines Projekts kann nur durch die Berechtigungsrichtlinien des eigenen Projekts berechtigt werden.</target>
+        <target>Ein Servicekonto eines Projekts kann nur durch die Berechtigungs&#xAD;richtlinien des eigenen Projekts berechtigt werden.</target>
       </segment>
     </unit>
     <unit id="problem.project_account_not_groupable">
@@ -2012,7 +2012,7 @@
       </notes>
       <segment>
         <source>The Helm values name the signing identity. Change it in the values; uploads and key requests are refused while they name one.</source>
-        <target>Die Helm-Werte legen die Signaturidentität fest. Ändern Sie sie in den Werten; solange sie eine festlegen, werden Uploads und Schlüsselanforderungen abgelehnt.</target>
+        <target>Die Helm-Werte legen die Signaturidentität fest. Ändern Sie sie in den Werten; solange sie eine festlegen, werden Uploads und Schlüssel&#xAD;anforderungen abgelehnt.</target>
       </segment>
     </unit>
     <unit id="problem.signing_identity_pending">
@@ -2784,7 +2784,7 @@
       </notes>
       <segment>
         <source>Permission policies</source>
-        <target>Berechtigungsrichtlinien</target>
+        <target>Berechtigungs&#xAD;richtlinien</target>
       </segment>
     </unit>
     <unit id="nav.roles">
@@ -3244,7 +3244,7 @@
       </notes>
       <segment>
         <source>Permission policy created</source>
-        <target>Berechtigungsrichtlinie angelegt</target>
+        <target>Berechtigungs&#xAD;richtlinie angelegt</target>
       </segment>
     </unit>
     <unit id="audit.action.authz.policy.deleted">
@@ -3253,7 +3253,7 @@
       </notes>
       <segment>
         <source>Permission policy deleted</source>
-        <target>Berechtigungsrichtlinie gelöscht</target>
+        <target>Berechtigungs&#xAD;richtlinie gelöscht</target>
       </segment>
     </unit>
     <unit id="audit.action.authz.policy.updated">
@@ -3262,7 +3262,7 @@
       </notes>
       <segment>
         <source>Permission policy changed</source>
-        <target>Berechtigungsrichtlinie geändert</target>
+        <target>Berechtigungs&#xAD;richtlinie geändert</target>
       </segment>
     </unit>
     <unit id="audit.action.authz.project.created">
@@ -4171,7 +4171,7 @@
       </notes>
       <segment>
         <source>Upstream changed a cached file&apos;s digest</source>
-        <target>Upstream hat den Digest einer zwischengespeicherten Datei geändert</target>
+        <target>Upstream hat den Digest einer zwischen&#xAD;gespeicherten Datei geändert</target>
       </segment>
     </unit>
     <unit id="audit.action.proxy.upstream_gone">
@@ -4468,7 +4468,7 @@
       </notes>
       <segment>
         <source>Authentication settings changed</source>
-        <target>Authentifizierungseinstellungen geändert</target>
+        <target>Authentifizierungs&#xAD;einstellungen geändert</target>
       </segment>
     </unit>
     <unit id="audit.action.signature.anchor.created">
@@ -4999,7 +4999,7 @@
       </notes>
       <segment>
         <source>Group memberships synchronised</source>
-        <target>Gruppenmitgliedschaften abgeglichen</target>
+        <target>Gruppen&#xAD;mitgliedschaften abgeglichen</target>
       </segment>
     </unit>
     <unit id="audit.action.user.rename_conflict">
@@ -5768,7 +5768,7 @@
       </notes>
       <segment>
         <source>Interface version <ph id="0" equiv="INTERPOLATION" disp="{{ c.interfaceVersion }}"/></source>
-        <target>Schnittstellenversion <ph id="0" equiv="INTERPOLATION" disp="{{ c.interfaceVersion }}"/></target>
+        <target>Schnittstellen&#xAD;version <ph id="0" equiv="INTERPOLATION" disp="{{ c.interfaceVersion }}"/></target>
       </segment>
     </unit>
     <unit id="bastion.tokens">
@@ -6317,7 +6317,7 @@
       </notes>
       <segment>
         <source>Public addresses in the storage settings</source>
-        <target>Öffentliche Adressen in den Speichereinstellungen</target>
+        <target>Öffentliche Adressen in den Speicher&#xAD;einstellungen</target>
       </segment>
     </unit>
     <unit id="bastion.handover.switch-label">
@@ -9388,7 +9388,7 @@
       </notes>
       <segment>
         <source>Only the permission policies of this project can be named. Groups are global and not available here.</source>
-        <target>Es können nur die Berechtigungsrichtlinien dieses Projekts genannt werden. Gruppen sind global und hier nicht verfügbar.</target>
+        <target>Es können nur die Berechtigungs&#xAD;richtlinien dieses Projekts genannt werden. Gruppen sind global und hier nicht verfügbar.</target>
       </segment>
     </unit>
     <unit id="ci.editor.groups">
@@ -9559,7 +9559,7 @@
       </notes>
       <segment>
         <source> Allow unprotected refs to use write grants </source>
-        <target> Ungeschützte Refs dürfen Schreibberechtigungen nutzen</target>
+        <target> Ungeschützte Refs dürfen Schreib&#xAD;berechtigungen nutzen</target>
       </segment>
     </unit>
     <unit id="ci.editor.allow-unprotected-warning">
@@ -9947,7 +9947,7 @@
       </notes>
       <segment>
         <source>Mappings in evaluation order</source>
-        <target>Zuordnungen in Auswertungsreihenfolge</target>
+        <target>Zuordnungen in Auswertungs&#xAD;reihenfolge</target>
       </segment>
     </unit>
     <unit id="ci.mappings.col.order">
@@ -11660,7 +11660,7 @@
       </notes>
       <segment>
         <source>The identity provider no longer fills this group: a restore found it renamed after the restore point and detached it from group synchronization, and removed its members from the identity provider.</source>
-        <target>Der Identitätsanbieter füllt diese Gruppe nicht mehr: Eine Wiederherstellung hat sie nach dem Wiederherstellungspunkt umbenannt vorgefunden, von der Gruppensynchronisierung gelöst und ihre Mitglieder aus dem Identitätsanbieter entfernt.</target>
+        <target>Der Identitätsanbieter füllt diese Gruppe nicht mehr: Eine Wiederherstellung hat sie nach dem Wiederherstellungs&#xAD;punkt umbenannt vorgefunden, von der Gruppen&#xAD;synchronisierung gelöst und ihre Mitglieder aus dem Identitätsanbieter entfernt.</target>
       </segment>
     </unit>
     <unit id="group.attach">
@@ -11669,7 +11669,7 @@
       </notes>
       <segment>
         <source>Attach to group synchronization again</source>
-        <target>Wieder an die Gruppensynchronisierung anbinden</target>
+        <target>Wieder an die Gruppen&#xAD;synchronisierung anbinden</target>
       </segment>
     </unit>
     <unit id="group.name">
@@ -11903,7 +11903,7 @@
       </notes>
       <segment>
         <source>Permission policies naming this group</source>
-        <target>Berechtigungsrichtlinien, die diese Gruppe nennen</target>
+        <target>Berechtigungs&#xAD;richtlinien, die diese Gruppe nennen</target>
       </segment>
     </unit>
     <unit id="group.policies-hint">
@@ -15502,7 +15502,7 @@
       </notes>
       <segment>
         <source>Documentation fragments that are not merged into this page:</source>
-        <target>Dokumentationsfragmente, die nicht in diese Seite eingearbeitet sind:</target>
+        <target>Dokumentations&#xAD;fragmente, die nicht in diese Seite eingearbeitet sind:</target>
       </segment>
     </unit>
     <unit id="docs.parameters">
@@ -16190,7 +16190,7 @@
       </notes>
       <segment>
         <source>The upstream sent a documentation document that Quader cannot read.</source>
-        <target>Der Upstream hat ein Dokumentationsdokument geschickt, das Quader nicht lesen kann.</target>
+        <target>Der Upstream hat ein Dokumentations&#xAD;dokument geschickt, das Quader nicht lesen kann.</target>
       </segment>
     </unit>
     <unit id="docs.unavailable.unknown">
@@ -16209,7 +16209,7 @@
       </notes>
       <segment>
         <source>There are no install instructions for this package type yet.</source>
-        <target>Für diesen Pakettyp gibt es noch keine Installationsanleitung.</target>
+        <target>Für diesen Pakettyp gibt es noch keine Installations&#xAD;anleitung.</target>
       </segment>
     </unit>
     <unit id="pkg.install.client">
@@ -17749,7 +17749,7 @@
       </notes>
       <segment>
         <source>Development dependencies</source>
-        <target>Entwicklungsabhängigkeiten</target>
+        <target>Entwicklungs&#xAD;abhängigkeiten</target>
       </segment>
     </unit>
     <unit id="pkg.meta.peer-dependencies">
@@ -18020,7 +18020,7 @@
       </notes>
       <segment>
         <source>New permission policy</source>
-        <target>Neue Berechtigungsrichtlinie</target>
+        <target>Neue Berechtigungs&#xAD;richtlinie</target>
       </segment>
     </unit>
     <unit id="route.permissions.detail.title">
@@ -18030,7 +18030,7 @@
       </notes>
       <segment>
         <source>Permission policy</source>
-        <target>Berechtigungsrichtlinie</target>
+        <target>Berechtigungs&#xAD;richtlinie</target>
       </segment>
     </unit>
     <unit id="policy-diff.title">
@@ -18111,7 +18111,7 @@
       </notes>
       <segment>
         <source>New permission policy</source>
-        <target>Neue Berechtigungsrichtlinie</target>
+        <target>Neue Berechtigungs&#xAD;richtlinie</target>
       </segment>
     </unit>
     <unit id="policy.heading">
@@ -18120,7 +18120,7 @@
       </notes>
       <segment>
         <source>Permission policy</source>
-        <target>Berechtigungsrichtlinie</target>
+        <target>Berechtigungs&#xAD;richtlinie</target>
       </segment>
     </unit>
     <unit id="policy.project">
@@ -18948,7 +18948,7 @@
       </notes>
       <segment>
         <source>Permission policies</source>
-        <target>Berechtigungsrichtlinien</target>
+        <target>Berechtigungs&#xAD;richtlinien</target>
       </segment>
     </unit>
     <unit id="policies.new">
@@ -19068,7 +19068,7 @@
       </notes>
       <segment>
         <source>Permission policies</source>
-        <target>Berechtigungsrichtlinien</target>
+        <target>Berechtigungs&#xAD;richtlinien</target>
       </segment>
     </unit>
     <unit id="policies.col.name">
@@ -19843,7 +19843,7 @@
       </notes>
       <segment>
         <source>Your group memberships and where each comes from.</source>
-        <target>Ihre Gruppenmitgliedschaften und woher jede stammt.</target>
+        <target>Ihre Gruppen&#xAD;mitgliedschaften und woher jede stammt.</target>
       </segment>
     </unit>
     <unit id="profile.claim.absent">
@@ -20425,7 +20425,7 @@
       </notes>
       <segment>
         <source>The project has no permission policy yet.</source>
-        <target>Das Projekt hat noch keine Berechtigungsrichtlinie.</target>
+        <target>Das Projekt hat noch keine Berechtigungs&#xAD;richtlinie.</target>
       </segment>
     </unit>
     <unit id="project-policies.inert">
@@ -20443,7 +20443,7 @@
       </notes>
       <segment>
         <source>Permission policies of the project</source>
-        <target>Berechtigungsrichtlinien des Projekts</target>
+        <target>Berechtigungs&#xAD;richtlinien des Projekts</target>
       </segment>
     </unit>
     <unit id="project-policies.col.name">
@@ -20750,7 +20750,7 @@
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ p.members }}"/> members, <ph id="1" equiv="INTERPOLATION_1" disp="{{ p.repositories }}"/> repositories, <ph id="2" equiv="INTERPOLATION_2" disp="{{ p.policies }}"/> policies, <ph id="3" equiv="INTERPOLATION_3" disp="{{ p.serviceAccounts }}"/> service accounts</source>
-        <target><ph id="0" equiv="INTERPOLATION" disp="{{ p.members }}"/> Mitglieder, <ph id="1" equiv="INTERPOLATION_1" disp="{{ p.repositories }}"/> Repositories, <ph id="2" equiv="INTERPOLATION_2" disp="{{ p.policies }}"/> Berechtigungsrichtlinien, <ph id="3" equiv="INTERPOLATION_3" disp="{{ p.serviceAccounts }}"/> Servicekonten</target>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ p.members }}"/> Mitglieder, <ph id="1" equiv="INTERPOLATION_1" disp="{{ p.repositories }}"/> Repositories, <ph id="2" equiv="INTERPOLATION_2" disp="{{ p.policies }}"/> Berechtigungs&#xAD;richtlinien, <ph id="3" equiv="INTERPOLATION_3" disp="{{ p.serviceAccounts }}"/> Servicekonten</target>
       </segment>
     </unit>
     <unit id="project.storage">
@@ -20795,7 +20795,7 @@
       </notes>
       <segment>
         <source>The project&apos;s policies are deleted with it.</source>
-        <target>Die Berechtigungsrichtlinien des Projekts werden mit gelöscht.</target>
+        <target>Die Berechtigungs&#xAD;richtlinien des Projekts werden mit gelöscht.</target>
       </segment>
     </unit>
     <unit id="project.delete-note">
@@ -20930,7 +20930,7 @@
       </notes>
       <segment>
         <source>The project, its permission policies and its member entries are deleted. The policies stop granting at once on every replica. This cannot be undone.</source>
-        <target>Das Projekt, seine Berechtigungsrichtlinien und seine Mitgliedseinträge werden gelöscht. Die Richtlinien gewähren sofort auf jedem Replikat nichts mehr. Das lässt sich nicht rückgängig machen.</target>
+        <target>Das Projekt, seine Berechtigungs&#xAD;richtlinien und seine Mitgliedseinträge werden gelöscht. Die Richtlinien gewähren sofort auf jedem Replikat nichts mehr. Das lässt sich nicht rückgängig machen.</target>
       </segment>
     </unit>
     <unit id="project.delete-confirm">
@@ -24331,7 +24331,7 @@
       </notes>
       <segment>
         <source>Vulnerability check before the download</source>
-        <target>Schwachstellenprüfung vor dem Download</target>
+        <target>Schwachstellen&#xAD;prüfung vor dem Download</target>
       </segment>
     </unit>
     <unit id="downloads.step.store">
@@ -24682,7 +24682,7 @@
       </notes>
       <segment>
         <source>This installation does not trust the certificate of <ph id="0" equiv="host" disp="host"/>. An administrator adds the certificate authority that signed it.</source>
-        <target>Diese Installation vertraut dem Zertifikat von <ph id="0" equiv="host" disp="host"/> nicht. Ein Administrator fügt die Zertifizierungsstelle hinzu, die es signiert hat.</target>
+        <target>Diese Installation vertraut dem Zertifikat von <ph id="0" equiv="host" disp="host"/> nicht. Ein Administrator fügt die Zertifizierungs&#xAD;stelle hinzu, die es signiert hat.</target>
       </segment>
     </unit>
     <unit id="downloads.why.class.tls">
@@ -24691,7 +24691,7 @@
       </notes>
       <segment>
         <source>This installation does not trust the upstream&apos;s certificate. An administrator adds the certificate authority that signed it.</source>
-        <target>Diese Installation vertraut dem Zertifikat des Upstreams nicht. Ein Administrator fügt die Zertifizierungsstelle hinzu, die es signiert hat.</target>
+        <target>Diese Installation vertraut dem Zertifikat des Upstreams nicht. Ein Administrator fügt die Zertifizierungs&#xAD;stelle hinzu, die es signiert hat.</target>
       </segment>
     </unit>
     <unit id="downloads.why.class.egress-host">
@@ -25675,7 +25675,7 @@
       </notes>
       <segment>
         <source>Members in resolution order</source>
-        <target>Mitglieder in Auflösungsreihenfolge</target>
+        <target>Mitglieder in Auflösungs&#xAD;reihenfolge</target>
       </segment>
     </unit>
     <unit id="virtual.keys-hint">
@@ -27201,7 +27201,7 @@
       </notes>
       <segment>
         <source>Deployment target</source>
-        <target>Veröffentlichungsziel</target>
+        <target>Veröffentlichungs&#xAD;ziel</target>
       </segment>
     </unit>
     <unit id="repo.create.target-hint">
@@ -32306,7 +32306,7 @@
       </notes>
       <segment>
         <source>Effective resolution order</source>
-        <target>Wirksame Auflösungsreihenfolge</target>
+        <target>Wirksame Auflösungs&#xAD;reihenfolge</target>
       </segment>
     </unit>
     <unit id="virtual.effective-hint">
@@ -34493,7 +34493,7 @@
       </notes>
       <segment>
         <source>Authentication settings</source>
-        <target>Authentifizierungseinstellungen</target>
+        <target>Authentifizierungs&#xAD;einstellungen</target>
       </segment>
     </unit>
     <unit id="auth-settings.new-users-external">
@@ -35307,7 +35307,7 @@
       </notes>
       <segment>
         <source>Visibility settings saved.</source>
-        <target>Sichtbarkeitseinstellungen gespeichert.</target>
+        <target>Sichtbarkeits&#xAD;einstellungen gespeichert.</target>
       </segment>
     </unit>
     <unit id="general.banner.saved">
@@ -35867,7 +35867,7 @@
       </notes>
       <segment>
         <source>Storage settings</source>
-        <target>Speichereinstellungen</target>
+        <target>Speicher&#xAD;einstellungen</target>
       </segment>
     </unit>
     <unit id="sig.settings.heading">
@@ -36374,7 +36374,7 @@
       </notes>
       <segment>
         <source> Quader makes an ECDSA P-256 key and keeps it sealed; it never leaves Quader. You get a certificate request for your company&apos;s CA. </source>
-        <target> Quader erzeugt einen ECDSA-P-256-Schlüssel und hält ihn versiegelt; er verlässt Quader nie. Sie erhalten eine Zertifikatsanforderung für die CA Ihres Unternehmens. </target>
+        <target> Quader erzeugt einen ECDSA-P-256-Schlüssel und hält ihn versiegelt; er verlässt Quader nie. Sie erhalten eine Zertifikats&#xAD;anforderung für die CA Ihres Unternehmens. </target>
       </segment>
     </unit>
     <unit id="signing.key.replace-lead">
@@ -36931,7 +36931,7 @@
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 receipt attestation} other {<ph id="0" equiv="INTERPOLATION"/> receipt attestations}}</source>
-        <target>{VAR_PLURAL, plural, =1 {1 Empfangsattestierung} other {<ph id="0" equiv="INTERPOLATION"/> Empfangsattestierungen}}</target>
+        <target>{VAR_PLURAL, plural, =1 {1 Empfangsattestierung} other {<ph id="0" equiv="INTERPOLATION"/> Empfangs&#xAD;attestierungen}}</target>
       </segment>
     </unit>
     <unit id="signing.backlog.oldest">
@@ -36958,7 +36958,7 @@
       </notes>
       <segment>
         <source>Certificate request</source>
-        <target>Zertifikatsanforderung</target>
+        <target>Zertifikats&#xAD;anforderung</target>
       </segment>
     </unit>
     <unit id="signing.fact.requested">
@@ -38085,7 +38085,7 @@
       </notes>
       <segment>
         <source> This virtual repository has no default deployment target, so there is nothing to publish to through it. Publish to one of its local repositories instead. </source>
-        <target> Dieses virtuelle Repository hat kein Standard-Veröffentlichungsziel, deshalb gibt es darüber nichts zu veröffentlichen. Veröffentlichen Sie stattdessen in eines seiner lokalen Repositories. </target>
+        <target> Dieses virtuelle Repository hat kein Standard-Veröffentlichungs&#xAD;ziel, deshalb gibt es darüber nichts zu veröffentlichen. Veröffentlichen Sie stattdessen in eines seiner lokalen Repositories. </target>
       </segment>
     </unit>
     <unit id="setup.publish.members">
@@ -38328,7 +38328,7 @@
       </notes>
       <segment>
         <source>Adds the source to your user configuration. On Linux and macOS the token is stored there in clear text.</source>
-        <target>Fügt die Quelle Ihrer Benutzerkonfiguration hinzu. Unter Linux und macOS steht das Token dort im Klartext.</target>
+        <target>Fügt die Quelle Ihrer Benutzer&#xAD;konfiguration hinzu. Unter Linux und macOS steht das Token dort im Klartext.</target>
       </segment>
     </unit>
     <unit id="setup.caption.nuget-source">
@@ -38337,7 +38337,7 @@
       </notes>
       <segment>
         <source>Adds the source to your user configuration.</source>
-        <target>Fügt die Quelle Ihrer Benutzerkonfiguration hinzu.</target>
+        <target>Fügt die Quelle Ihrer Benutzer&#xAD;konfiguration hinzu.</target>
       </segment>
     </unit>
     <unit id="setup.caption.nuget-config">
@@ -38815,7 +38815,7 @@
       </notes>
       <segment>
         <source>Operator documentation</source>
-        <target>Betriebsdokumentation</target>
+        <target>Betriebs&#xAD;dokumentation</target>
       </segment>
     </unit>
     <unit id="backups.status.heading">
@@ -42573,7 +42573,7 @@
       </notes>
       <segment>
         <source>Image scanning: the Trivy scanner of this replica cannot analyse images (its analyser is missing or does not run, its certificate did not load, or its working directory is not writable), so new images get no vulnerability results until it works again.</source>
-        <target>Image-Analyse: Der Trivy-Scanner dieses Replikats kann keine Images analysieren (sein Analyseprogramm fehlt oder läuft nicht, sein Zertifikat wurde nicht geladen oder sein Arbeitsverzeichnis ist nicht beschreibbar), daher erhalten neue Images keine Schwachstellenergebnisse, bis er wieder arbeitet.</target>
+        <target>Image-Analyse: Der Trivy-Scanner dieses Replikats kann keine Images analysieren (sein Analyseprogramm fehlt oder läuft nicht, sein Zertifikat wurde nicht geladen oder sein Arbeitsverzeichnis ist nicht beschreibbar), daher erhalten neue Images keine Schwachstellen&#xAD;ergebnisse, bis er wieder arbeitet.</target>
       </segment>
     </unit>
     <unit id="system.check.malwareScannerClamav">
@@ -43927,7 +43927,7 @@
       </notes>
       <segment>
         <source>Where Quader&apos;s certificate is issued by an internal certificate authority, freshclam must trust it: set CURL_CA_BUNDLE to the authority&apos;s file in freshclam&apos;s environment, or add the authority to the system store.</source>
-        <target>Wenn das Zertifikat von Quader von einer internen Zertifizierungsstelle ausgestellt ist, muss freshclam ihr vertrauen: Setzen Sie CURL_CA_BUNDLE in der Umgebung von freshclam auf die Datei der Zertifizierungsstelle, oder nehmen Sie die Zertifizierungsstelle in den Systemspeicher auf.</target>
+        <target>Wenn das Zertifikat von Quader von einer internen Zertifizierungs&#xAD;stelle ausgestellt ist, muss freshclam ihr vertrauen: Setzen Sie CURL_CA_BUNDLE in der Umgebung von freshclam auf die Datei der Zertifizierungs&#xAD;stelle, oder nehmen Sie die Zertifizierungs&#xAD;stelle in den Systemspeicher auf.</target>
       </segment>
     </unit>
     <unit id="clamav.setup.token-below">
@@ -43954,7 +43954,7 @@
       </notes>
       <segment>
         <source>With a client certificate, at Internal and Public: freshclam 1.2 or later names the endpoint that admits certificates and finds the certificate, its key and the authority of the endpoint in its environment, for the systemd unit in a drop-in such as /etc/systemd/system/clamav-freshclam.service.d/quader.conf (the unit&apos;s name is the distribution&apos;s). The certificate must be issued by an authority the endpoint admits; the key is readable by freshclam&apos;s user only.</source>
-        <target>Mit einem Client-Zertifikat, bei Intern und Öffentlich: freshclam ab 1.2 nennt den Endpunkt, der Zertifikate zulässt, und findet das Zertifikat, seinen Schlüssel und die Zertifizierungsstelle des Endpunkts in seiner Umgebung, für die systemd-Unit in einem Drop-in wie /etc/systemd/system/clamav-freshclam.service.d/quader.conf (der Name der Unit ist der der Distribution). Das Zertifikat muss von einer Stelle ausgestellt sein, die der Endpunkt zulässt; den Schlüssel liest nur der Benutzer von freshclam.</target>
+        <target>Mit einem Client-Zertifikat, bei Intern und Öffentlich: freshclam ab 1.2 nennt den Endpunkt, der Zertifikate zulässt, und findet das Zertifikat, seinen Schlüssel und die Zertifizierungs&#xAD;stelle des Endpunkts in seiner Umgebung, für die systemd-Unit in einem Drop-in wie /etc/systemd/system/clamav-freshclam.service.d/quader.conf (der Name der Unit ist der der Distribution). Das Zertifikat muss von einer Stelle ausgestellt sein, die der Endpunkt zulässt; den Schlüssel liest nur der Benutzer von freshclam.</target>
       </segment>
     </unit>
     <unit id="clamav.setup.without-text">
@@ -46084,7 +46084,7 @@
       </notes>
       <segment>
         <source>Group memberships and where each comes from.</source>
-        <target>Gruppenmitgliedschaften und woher jede stammt.</target>
+        <target>Gruppen&#xAD;mitgliedschaften und woher jede stammt.</target>
       </segment>
     </unit>
     <unit id="user.claim-missing.keep">
@@ -46120,7 +46120,7 @@
       </notes>
       <segment>
         <source>Group memberships and their sources</source>
-        <target>Gruppenmitgliedschaften und ihre Quellen</target>
+        <target>Gruppen&#xAD;mitgliedschaften und ihre Quellen</target>
       </segment>
     </unit>
     <unit id="user.group">
@@ -46534,7 +46534,7 @@
       </notes>
       <segment>
         <source>Group membership added.</source>
-        <target>Gruppenmitgliedschaft hinzugefügt.</target>
+        <target>Gruppen&#xAD;mitgliedschaft hinzugefügt.</target>
       </segment>
     </unit>
     <unit id="user.group-removed">
@@ -46543,7 +46543,7 @@
       </notes>
       <segment>
         <source>Group membership removed.</source>
-        <target>Gruppenmitgliedschaft entfernt.</target>
+        <target>Gruppen&#xAD;mitgliedschaft entfernt.</target>
       </segment>
     </unit>
     <unit id="user.end-sessions-title">
@@ -47545,7 +47545,7 @@
       </notes>
       <segment>
         <source>The vulnerability report of this version is not available.</source>
-        <target>Der Schwachstellenbericht dieser Version ist nicht verfügbar.</target>
+        <target>Der Schwachstellen&#xAD;bericht dieser Version ist nicht verfügbar.</target>
       </segment>
     </unit>
     <unit id="vuln.banner.sources">
@@ -47626,7 +47626,7 @@
       </notes>
       <segment>
         <source>Coverage of the repositories you can read: <ph id="0" equiv="scanned" disp="c.evaluated"/> scanned, <ph id="1" equiv="internal" disp="c.internal"/> internal names only, <ph id="2" equiv="pending" disp="c.pendingData"/> waiting for advisory data, <ph id="3" equiv="pendingDatabase" disp="c.pendingDatabase"/> waiting for the vulnerability database for images, <ph id="4" equiv="notCovered" disp="c.notCovered"/> not covered.</source>
-        <target>Abdeckung der Repositories, die Sie lesen dürfen: <ph id="0" equiv="scanned" disp="c.evaluated"/> geprüft, <ph id="1" equiv="internal" disp="c.internal"/> nur interne Namen, <ph id="2" equiv="pending" disp="c.pendingData"/> warten auf Advisory-Daten, <ph id="3" equiv="pendingDatabase" disp="c.pendingDatabase"/> warten auf die Schwachstellendatenbank für Images, <ph id="4" equiv="notCovered" disp="c.notCovered"/> nicht abgedeckt.</target>
+        <target>Abdeckung der Repositories, die Sie lesen dürfen: <ph id="0" equiv="scanned" disp="c.evaluated"/> geprüft, <ph id="1" equiv="internal" disp="c.internal"/> nur interne Namen, <ph id="2" equiv="pending" disp="c.pendingData"/> warten auf Advisory-Daten, <ph id="3" equiv="pendingDatabase" disp="c.pendingDatabase"/> warten auf die Schwachstellen&#xAD;datenbank für Images, <ph id="4" equiv="notCovered" disp="c.notCovered"/> nicht abgedeckt.</target>
       </segment>
     </unit>
     <unit id="vuln.coverage">
@@ -47644,7 +47644,7 @@
       </notes>
       <segment>
         <source>No vulnerability database for images has been imported yet. Images are not scanned until it has.</source>
-        <target>Für Images wurde noch keine Schwachstellendatenbank importiert. Images werden erst geprüft, wenn sie da ist.</target>
+        <target>Für Images wurde noch keine Schwachstellen&#xAD;datenbank importiert. Images werden erst geprüft, wenn sie da ist.</target>
       </segment>
     </unit>
     <unit id="vuln.banner.image-database-stale">
@@ -47653,7 +47653,7 @@
       </notes>
       <segment>
         <source>The vulnerability database for images is stale, it was last synchronised <ph id="0" equiv="age" disp="age"/>.</source>
-        <target>Die Schwachstellendatenbank für Images ist veraltet, zuletzt synchronisiert <ph id="0" equiv="age" disp="age"/>.</target>
+        <target>Die Schwachstellen&#xAD;datenbank für Images ist veraltet, zuletzt synchronisiert <ph id="0" equiv="age" disp="age"/>.</target>
       </segment>
     </unit>
     <unit id="vuln.banner.pending">
@@ -48639,7 +48639,7 @@
       </notes>
       <segment>
         <source>no vulnerability database for images has been imported yet</source>
-        <target>für Images wurde noch keine Schwachstellendatenbank importiert</target>
+        <target>für Images wurde noch keine Schwachstellen&#xAD;datenbank importiert</target>
       </segment>
     </unit>
     <unit id="vuln.missing-data.image-not-scanned">
@@ -49690,7 +49690,7 @@
       </notes>
       <segment>
         <source>Vulnerability findings</source>
-        <target>Schwachstellenbefunde</target>
+        <target>Schwachstellen&#xAD;befunde</target>
       </segment>
     </unit>
     <unit id="vuln.list.empty">
@@ -51617,7 +51617,7 @@
       </notes>
       <segment>
         <source>The malware scan compares every artifact with ClamAV&apos;s signatures of known malware. It does not find malware that no signature describes yet, such as a malicious install script published today; for npm and NuGet, the vulnerability scanning blocks known malicious packages by name.</source>
-        <target>Die Malware-Prüfung vergleicht jedes Artefakt mit den Signaturen bekannter Malware von ClamAV. Sie findet keine Malware, die noch keine Signatur beschreibt, etwa ein heute veröffentlichtes bösartiges Installationsskript; für npm und NuGet sperrt die Schwachstellenprüfung bekannte bösartige Pakete nach ihrem Namen.</target>
+        <target>Die Malware-Prüfung vergleicht jedes Artefakt mit den Signaturen bekannter Malware von ClamAV. Sie findet keine Malware, die noch keine Signatur beschreibt, etwa ein heute veröffentlichtes bösartiges Installationsskript; für npm und NuGet sperrt die Schwachstellen&#xAD;prüfung bekannte bösartige Pakete nach ihrem Namen.</target>
       </segment>
     </unit>
     <unit id="malware.state.clean">
@@ -53580,7 +53580,7 @@
       </notes>
       <segment>
         <source>· released by a security administrator</source>
-        <target>· von einer Sicherheitsadministration freigegeben</target>
+        <target>· von einer Sicherheits&#xAD;administration freigegeben</target>
       </segment>
     </unit>
     <unit id="sig.receipt.scanned">
@@ -53742,7 +53742,7 @@
       </notes>
       <segment>
         <source>A signature tells who signed an artifact and whether a trust anchor knows the signer. It does not tell that the content is safe; the malware scan and the vulnerability scanning check that.</source>
-        <target>Eine Signatur sagt, wer ein Artefakt signiert hat und ob ein Vertrauensanker den Signierer kennt. Sie sagt nicht, dass der Inhalt sicher ist; das prüfen die Malware-Prüfung und die Schwachstellenanalyse.</target>
+        <target>Eine Signatur sagt, wer ein Artefakt signiert hat und ob ein Vertrauensanker den Signierer kennt. Sie sagt nicht, dass der Inhalt sicher ist; das prüfen die Malware-Prüfung und die Schwachstellen&#xAD;analyse.</target>
       </segment>
     </unit>
     <unit id="sig.badge.verified-public">
@@ -54138,7 +54138,7 @@
       </notes>
       <segment>
         <source>Not covered by the vulnerability scanning</source>
-        <target>Nicht von der Schwachstellenprüfung erfasst</target>
+        <target>Nicht von der Schwachstellen&#xAD;prüfung erfasst</target>
       </segment>
     </unit>
     <unit id="sig.receipt.served-referrer">
@@ -55425,7 +55425,7 @@
       </notes>
       <segment>
         <source>Vulnerability database</source>
-        <target>Schwachstellendatenbank</target>
+        <target>Schwachstellen&#xAD;datenbank</target>
       </segment>
     </unit>
     <unit id="upstream-downloads.outcome.failed">
@@ -56105,7 +56105,7 @@
       </notes>
       <segment>
         <source>Waits for its vulnerability scan since <ph id="0" equiv="time" disp="since"/>. It is scanned in turn, without anyone having to act.</source>
-        <target>Wartet seit <ph id="0" equiv="time" disp="since"/> auf die Schwachstellenprüfung. Sie läuft der Reihe nach, ohne dass jemand etwas tun muss.</target>
+        <target>Wartet seit <ph id="0" equiv="time" disp="since"/> auf die Schwachstellen&#xAD;prüfung. Sie läuft der Reihe nach, ohne dass jemand etwas tun muss.</target>
       </segment>
     </unit>
     <unit id="vuln.check.queued">
@@ -56114,7 +56114,7 @@
       </notes>
       <segment>
         <source>Waits for its vulnerability scan. It is scanned in turn, without anyone having to act.</source>
-        <target>Wartet auf die Schwachstellenprüfung. Sie läuft der Reihe nach, ohne dass jemand etwas tun muss.</target>
+        <target>Wartet auf die Schwachstellen&#xAD;prüfung. Sie läuft der Reihe nach, ohne dass jemand etwas tun muss.</target>
       </segment>
     </unit>
     <unit id="vuln.check.scanning-since">
@@ -56150,7 +56150,7 @@
       </notes>
       <segment>
         <source>No vulnerability database for images has been imported yet, so it cannot be scanned now. It is scanned once the database is there.</source>
-        <target>Es wurde noch keine Schwachstellendatenbank für Images importiert, daher kann jetzt nicht geprüft werden. Die Prüfung folgt, sobald die Datenbank vorhanden ist.</target>
+        <target>Es wurde noch keine Schwachstellen&#xAD;datenbank für Images importiert, daher kann jetzt nicht geprüft werden. Die Prüfung folgt, sobald die Datenbank vorhanden ist.</target>
       </segment>
     </unit>
     <unit id="vuln.check.no-advisory-data">
@@ -56195,7 +56195,7 @@
       </notes>
       <segment>
         <source>Vulnerability scanning is switched off for this installation.</source>
-        <target>Die Schwachstellenprüfung ist für diese Installation ausgeschaltet.</target>
+        <target>Die Schwachstellen&#xAD;prüfung ist für diese Installation ausgeschaltet.</target>
       </segment>
     </unit>
     <unit id="vuln.check.off-repository">
@@ -56204,7 +56204,7 @@
       </notes>
       <segment>
         <source>Vulnerability scanning is switched off for this repository.</source>
-        <target>Die Schwachstellenprüfung ist für dieses Repository ausgeschaltet.</target>
+        <target>Die Schwachstellen&#xAD;prüfung ist für dieses Repository ausgeschaltet.</target>
       </segment>
     </unit>
     <unit id="vuln.check.not-matched">
