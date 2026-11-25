@@ -12,13 +12,22 @@ import (
 // test exercises, with a wait until a replica's snapshot decides by it.
 
 // Rule is one delivery rule: Kind "section" with Pattern, "package" with Name, "version" with Name and Version; Effect "allow" or
-// "block".
+// "block". A package's allow takes a range of versions (R-CUR-026): FromVersion, ToVersion and ToInclusive (nil: true).
 type Rule struct {
-	Kind    string `json:"kind"`
-	Pattern string `json:"pattern,omitempty"`
-	Name    string `json:"name,omitempty"`
-	Version string `json:"version,omitempty"`
-	Effect  string `json:"effect"`
+	Kind        string `json:"kind"`
+	Pattern     string `json:"pattern,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Version     string `json:"version,omitempty"`
+	Effect      string `json:"effect"`
+	FromVersion string `json:"fromVersion,omitempty"`
+	ToVersion   string `json:"toVersion,omitempty"`
+	ToInclusive *bool  `json:"toInclusive,omitempty"`
+}
+
+// RangeRule is a package's allow with a range of versions (R-CUR-026): from a version (included, "" for none) up to a version (included
+// when toInclusive, else below it; "" for none), in the format's canonical form.
+func RangeRule(name, from, to string, toInclusive bool) Rule {
+	return Rule{Kind: "package", Name: name, Effect: "allow", FromVersion: from, ToVersion: to, ToInclusive: &toInclusive}
 }
 
 // SectionRule is a rule on the names a pattern matches; it stands for an include pattern (allow, with the mode onlyAllowed) or an exclude
@@ -51,9 +60,11 @@ func (s *Stack) DeliveryRule(key string, r Rule) {
 		}
 		return v
 	}
-	s.Exec(`INSERT INTO remote_delivery_rules (id, repo_id, kind, pattern, name, version, effect)
-		SELECT gen_random_uuid(), r.id, $3, $4, $5, $6, $7 FROM repositories r JOIN project p ON p.id = r.project_id WHERE p.key = $1 AND r.key = $2`,
-		project, k, r.Kind, null(r.Pattern), null(r.Name), null(r.Version), r.Effect)
+	inclusive := r.ToVersion == "" || r.ToInclusive == nil || *r.ToInclusive
+	s.Exec(`INSERT INTO remote_delivery_rules (id, repo_id, kind, pattern, name, version, effect, from_version, to_version, to_inclusive)
+		SELECT gen_random_uuid(), r.id, $3, $4, $5, $6, $7, $8, $9, $10 FROM repositories r JOIN project p ON p.id = r.project_id
+		 WHERE p.key = $1 AND r.key = $2`,
+		project, k, r.Kind, null(r.Pattern), null(r.Name), null(r.Version), r.Effect, null(r.FromVersion), null(r.ToVersion), inclusive)
 	s.Exec(`UPDATE repositories SET delivery_rules_revision = delivery_rules_revision + 1
 		WHERE key = $2 AND project_id = (SELECT id FROM project WHERE key = $1)`, project, k)
 }
