@@ -72,7 +72,13 @@ const packageViewFiles = `-- name: PackageViewFiles :many
 SELECT i.path, i.size, encode(i.blob_sha256, 'hex')::text AS sha256
   FROM items i
  WHERE i.version_id = $1::bigint AND i.kind = 'file' AND i.trashed_at IS NULL
- ORDER BY i.path
+UNION ALL
+SELECT i.path, i.size, encode(i.blob_sha256, 'hex')::text AS sha256
+  FROM remote_cache_entries e
+  JOIN items i ON i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+              AND i.kind = 'file' AND i.trashed_at IS NULL
+ WHERE $1::bigint < 0 AND e.id = -$1::bigint AND e.tag_name IS NOT NULL
+ ORDER BY path
 `
 
 type PackageViewFilesRow struct {
@@ -81,7 +87,10 @@ type PackageViewFilesRow struct {
 	Sha256 string
 }
 
-// The files of a version: the live file items linked to it.
+// The files of a version: the live file items linked to it. A remote repository's image tag is a version of oci_remote_tags, whose id
+// is the negative id of its cache entry (00067), and owns no item: its file is the live item of the manifest document the tag names, as
+// a local tag's file is the tag item whose content is that document, so that its malware scan and its signature stand where a local
+// image's do (malware-scanning.md R-MAL-024, Q-MAL-111; formats/oci.md R-OCI-036).
 func (q *Queries) PackageViewFiles(ctx context.Context, versionID int64) ([]PackageViewFilesRow, error) {
 	rows, err := q.db.Query(ctx, packageViewFiles, versionID)
 	if err != nil {

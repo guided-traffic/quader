@@ -771,11 +771,20 @@ SELECT i.blob_sha256::bytea AS digest, COALESCE(sum(st.downloads), 0)::bigint AS
  GROUP BY i.blob_sha256;
 
 -- name: PackageViewFiles :many
--- The files of a version: the live file items linked to it.
+-- The files of a version: the live file items linked to it. A remote repository's image tag is a version of oci_remote_tags, whose id
+-- is the negative id of its cache entry (00067), and owns no item: its file is the live item of the manifest document the tag names, as
+-- a local tag's file is the tag item whose content is that document, so that its malware scan and its signature stand where a local
+-- image's do (malware-scanning.md R-MAL-024, Q-MAL-111; formats/oci.md R-OCI-036).
 SELECT i.path, i.size, encode(i.blob_sha256, 'hex')::text AS sha256
   FROM items i
  WHERE i.version_id = sqlc.arg(version_id)::bigint AND i.kind = 'file' AND i.trashed_at IS NULL
- ORDER BY i.path;
+UNION ALL
+SELECT i.path, i.size, encode(i.blob_sha256, 'hex')::text AS sha256
+  FROM remote_cache_entries e
+  JOIN items i ON i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+              AND i.kind = 'file' AND i.trashed_at IS NULL
+ WHERE sqlc.arg(version_id)::bigint < 0 AND e.id = -sqlc.arg(version_id)::bigint AND e.tag_name IS NOT NULL
+ ORDER BY path;
 
 -- name: PackageViewCandidates :many
 -- The (repository, package, version) triples of the given repositories, for the

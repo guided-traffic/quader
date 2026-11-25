@@ -1331,7 +1331,9 @@ and the content page of [R-UI-052](../api-and-ui.md#r-ui-052--repository-content
 - **What a listed tag shows.** The version is the tag; `publishedAt` is the time the stored tag document was fetched, so the tag
   that moved upstream is listed with the time of the fetch that stored the new document; the metadata is that of R-OCI-031 (`digest`,
   `mediaType`, `size`, `artifactType`, `platforms`), read from the manifest row of the entry's document. `downloadCount` and `lastDownloadedAt`
-  are the pulls of the tag's manifest through the repository (Q-OCI-222). A tag is never a pre-release.
+  are the pulls of the tag's manifest through the repository (Q-OCI-222). A tag is never a pre-release. Its `files` are the stored item
+  of the manifest document it names (`<name>/_manifests/sha256:<digest>`), with the member `malware` of that file, as a local tag lists its
+  tag item ([malware-scanning.md](../malware-scanning.md) R-MAL-024, Q-MAL-111).
 - **A tag that moved, expired or vanished upstream** (Q-OCI-216). A tag shows the digest of the document the cache holds: a moved tag
   shows its old digest until a request revalidates it and the fill stores the new document (R-OCI-022), then the new one, with a new
   time. An entry past its metadata period is still listed (it is still served stale, R-REPO-029). A tag the upstream answered 404 or 410 for at

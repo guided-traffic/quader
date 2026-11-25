@@ -123,6 +123,19 @@ func TestR_OCI_036_ARemoteListsTheImagesAndTagsItHasCachedAndOnlyToWhoMayReadThe
 	if at, _ := vs[0]["lastDownloadedAt"].(string); at == "" {
 		t.Error("the pulled tag lists no last download (R-API-065)")
 	}
+	// The tag's file is the manifest document it names, as a local tag's is, so its malware scan and its signature stand on the
+	// version's page as a local image's do (malware-scanning.md R-MAL-024, Q-MAL-111).
+	detail := e.st.Do(rep, "GET", "/api/v1/packages/"+alpineID+"/versions/3.19?repository="+url.QueryEscape(testenv.DefaultProject+"/"+rAnon), e.reader, nil)
+	if detail.Status != 200 {
+		t.Fatalf("the tag's page: %d %s", detail.Status, detail.Body)
+	}
+	files, _ := detail.JSON(t)["files"].([]any)
+	if len(files) != 1 {
+		t.Fatalf("the tag lists the files %v, want its manifest document", files)
+	}
+	if f := files[0].(map[string]any); f["path"] != "library/alpine/_manifests/"+alpine || "sha256:"+f["sha256"].(string) != alpine {
+		t.Errorf("the tag's file: %v, want the manifest %s", f, alpine)
+	}
 
 	// A caller whose grant names the image names acme/* lists those and no others; the image it may not read answers like one that does not exist.
 	if names := keysOf(e.listing(rep, narrowTok, rAnon)); !slices.Equal(names, []string{"acme/a"}) {

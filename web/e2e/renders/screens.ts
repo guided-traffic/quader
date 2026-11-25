@@ -2920,6 +2920,14 @@ export const screens: readonly Screen[] = [
   { id: 'package-oci-cache', path: pkg(O, { format: 'oci', name: remoteImage.name }), kinds: all },
   { id: 'package-version-oci-cache-partial', path: `${ver(O, { format: 'oci', name: remoteImage.name }, remoteImage.partial)}?tab=details`, kinds: all },
   { id: 'package-version-oci-cache-unknown', path: `${ver(O, { format: 'oci', name: remoteImage.name }, remoteImage.unknown)}?tab=details`, kinds: ['plain'] },
+  // A cached tag's file is the manifest document it names, with its malware scan, as a local tag's (R-MAL-024, Q-MAL-111).
+  {
+    id: 'package-version-oci-cache-files',
+    path: `${ver(O, { format: 'oci', name: remoteImage.name }, remoteImage.single)}?tab=files`,
+    kinds: ['plain'],
+    de: true,
+    tables: 'quader-data-table.version-files',
+  },
   // The tag a background download stored (W-25): its platforms, two stored and one not fetched.
   { id: 'package-version-oci-probed', path: `${ver(O, { format: 'oci', name: remoteImage.name }, probedCache.tag)}?tab=details`, kinds: all },
   { id: 'package-version-nuget', path: ver(O, nugetPackage, nugetPackage.versions[1]), kinds: all },
