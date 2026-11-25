@@ -283,7 +283,7 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | Package | What it builds | Cost (the planner's estimate, to be measured by its builder) | State |
 |---|---|---|---|
 | G2 · Every dialog in a real browser, without the stack | the 21 dialogs, the two confirm shapes, 17 failures and 13 validations inside a dialog, the conflict and the session dialogs, the token's secret, tooltips at the window's edge: about 62 states at 390 and 1,440 px, measured by the layout checks' own function in the unit-test builder's browser mode; one new development dependency (the unit-test runner's browser provider, pinned) | 2 to 3 minutes of the job `UI layout checks`, nothing per format | landed and pushed at 10:13 (twelve commits; Q-UI-1140 to Q-UI-1149, gaps H-1910 to H-1912; its builder worked from 08:53 to 10:07; the landing's gates and `make ui-states` each exit 0): 69 states, twelve defects of the product found and repaired (section 8, Product) |
-| S9 · A failed call says everything the answer carried | the owner's finding of 11:14 (section 8, Product): the error notice of every screen says what happened in a sentence for every status, shows the status, the call, the time, the request ID, the code and the server's sentence, keeps the answer's body and headers one click away, offers Retry for every read and reads again by itself; one cause is one notice | landed and pushed at 12:08 (one commit; R-UI-216; H-1960 to H-1963; its builder worked from 11:14 to 12:00); S9b (the about 50 screens whose notice gives way while it retries, and every screen's secondary reads) in work since 12:10 |
+| S9 · A failed call says everything the answer carried | the owner's finding of 11:14 (section 8, Product): the error notice of every screen says what happened in a sentence for every status, shows the status, the call, the time, the request ID, the code and the server's sentence, keeps the answer's body and headers one click away, offers Retry for every read and reads again by itself; one cause is one notice | landed and pushed at 12:08 (one commit; R-UI-216; H-1960 to H-1963; its builder worked from 11:14 to 12:00); **S9b landed and pushed at 13:50** (the notice stays while it retries on every screen, and every screen's secondary reads are read again; 75 components) |
 | S10 · An upstream package's npm tags stand on their versions | the owner's finding of 11:22 (section 8, Product): the unlabelled run of dist-tags above an opened upstream package goes; a tag stands as a badge on its version's row, as on the package's page, says what it is, and the filter finds a version by it; the package's state is not said twice | landed and pushed at 12:37 (two commits; its builder worked from 11:23 to 12:26) |
 | S11 · A system-only format is offered nowhere for something new | the owner's finding of 12:36 (section 8, Product): the chooser of "New repository" offers ClamAV definitions although R-CLAMAV-001 says it must not; no code of the UI reads `systemOnly`; an audit of every place that lists formats and of every write that takes one | in work since 12:36 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | in work since 11:13 |
@@ -1172,7 +1172,27 @@ records the recorder that tells such a stall apart).
     by a timeout. Two findings. (1) The container of `clamd` read "unhealthy" while it scanned: the image's own health
     check asks a `clamd` of the image's default configuration. Repaired with S2's landing: the container's health check
     is the chart's readiness probe (`deploy/ui-dev/malware.sh`; the command answered `PONG` in the running container).
-    (2) **Open, to be read:** 17 blobs of `upstream/docker-hub`, each a layer of 7.33 to 7.34 MiB of the image
+    (2) **Read on 2026-11-25, 13:20 to 13:42, by a research of the development agent (no code changed): a false
+    positive of ClamAV on a Go program, known upstream and open there.** Every Go program that links `net/http` holds
+    the marker of a RAR archive in its table for content sniffing; ClamAV takes it for an embedded archive, reads the
+    bytes after it as headers without checking their sums, and in the build v3.4.35 one byte reads as a file header that
+    declares 1.25 PiB; ClamAV compares the declared size with what is left of `MaxScanSize` before it reads anything and,
+    with `AlertExceedsMax yes`, answers `Heuristics.Limits.Exceeded.MaxScanSize` (about 52 MiB were scanned). The clean
+    neighbour v3.5.0 differs by that one byte. Shown through `clamd` of the pinned image with the profile's
+    configuration, narrowed to a prefix of 13,279 bytes, and reproduced by a fixture of 68 bytes. No version of ClamAV
+    is free of it (1.5.5 is the newest; `main` is the same there; the call site carries the publisher's own note that
+    the header is not checked). Verified for one of the 17 layers; the other 16 are the same image's builds and sizes,
+    not fetched. **What the product does:** the artifact is `unscannable` by `limits_exceeded` and is served unless the
+    gate "only checked" is on for its repository, where it waits for an auditor's release of the digest (R-MAL-021); on
+    the owner's profile the gate is off, so the 17 images are usable (read from the database and the code, no pull
+    made). **Weighed and refused, each tried or reasoned:** `AlertExceedsMax no` (a real archive of 68 bytes that
+    declares 3 GiB then answers OK: against R-MAL-007 and the owner's Q-MAL-3 and Q-MAL-10); higher limits (no effect);
+    scanning the members (the program alone trips); ignoring the limit on a small blob or a second pass without RAR
+    (both let unread content pass). **To build (S12):** the answer carries which heuristic tripped and the finds show
+    it, so an auditor releases on facts; the class of Go programs is written into the security page. **The owner's to
+    decide:** whether the cause and the fixture are reported to ClamAV's open issue, under his account. The research's
+    files are in the session's scratchpad (`unscannable/`: the two layers, the fixtures, the scripts, the traces).
+    As it stood: 17 blobs of `upstream/docker-hub`, each a layer of 7.33 to 7.34 MiB of the image
     `guidedtraffic/s3-encryption-proxy`, are `unscannable` by `limits_exceeded` (`clamd`:
     `Heuristics.Limits.Exceeded.MaxScanSize`, the limit 2 GiB), while layers of the same size of other versions are clean.
     Not known: what in a layer of 7 MiB makes `clamd` read 2 GiB (a file scanned again in several forms, or a count that
@@ -1314,7 +1334,22 @@ records the recorder that tells such a stall apart).
   6, 12 and 24 s, the page back 14 s after the backend was ready, without a reload; a defect found there and repaired
   (the formats' read had failed silently, so the page said "not scanned" after the recovery). **Left open:** about 50
   screens let the notice give way to "Loading." while it retries (H-1963: each needs `failureOf`), and a read without a
-  notice of its own is retried with its page on the repository's page only (H-1962): S9b; the report shows what the
+  notice of its own is retried with its page on the repository's page only (H-1962): **both closed by S9b, landed and
+  pushed at 13:50** (one commit; Q-UI-1195 to Q-UI-1199; gaps H-1964, H-1965): a failure lives until its read
+  answers (`failureOf(reads, { also })` with a `retry()` that reads again every read that failed beside it; a list
+  keeps its error until a page answers), 91 places in 75 components brought to it, a lint rule refuses the old forms
+  (`web/scripts/read-failure-rule.mjs`), the notice says "Trying again." after the person's Retry too, "Try again in
+  1 second."; the secondary reads of some forty screens that showed a wrong fact after a failure ("not scanned", "no
+  address", "Nothing to add", "You are not a member of a project yet", a profile by its key) are read again with their
+  page or carry a notice of their own; the stores of the shell (format names, switches, avatar, preferences) read
+  again by themselves while the window is seen. Its builder reproduced the owner's case on the repository's settings,
+  the system status and the profile: the notice stayed and counted, each page came back whole after 45 s without a
+  reload. **The landing:** thirteen gates and `make ui-states` each exit 0; because the change touches
+  every screen and its builder had rendered none, the whole English set (529 screens, 45.4 minutes) and the German
+  pass (94 screens, 8.6 minutes) ran at the landing: 0 failed, 0 layout findings; looked at by the development agent:
+  the page that is not ready, dark at 1,440 px (the code, the server's sentence, "tries again by itself in 120
+  seconds"). Open: a read whose absence only leaves something out is read again by the page's Retry or its
+  next use only (H-1964); the lint rule reads text, not types (H-1965); the report shows what the
   answer named, internal host names among it (H-1960, by design); the redaction goes by a parameter's name (H-1961, no
   call carries one today); "Try again in 1 seconds."; not seen behind the installation's edge, in Firefox or WebKit.
   **The landing:** the translation files and one import were joined by hand (42 hunks of location notes, written
