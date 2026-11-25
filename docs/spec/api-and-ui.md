@@ -9715,6 +9715,69 @@ the repository's page comes back by itself with the formats that failed beside i
 `repository-failures` in English and German ([failures.ts](../../web/e2e/renders/failures.ts),
 [Q-UI-1188](#q-ui-1188--the-notices-states-are-measured-in-make-ui-states-and-its-words-in-the-render-sets-german-pass)).
 
+### R-UI-217 · Every load shows the spinner the owner picked
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-25, at an opened upstream package that only read "Reading the package from the upstream.", whole: "Es gibt
+verschiedene Stellen in unserem Frontend, die remote Inhalte nachladen und dafür einige Zeit brauchen. Ich hätte gerne dass das Laden
+immer von einem Spinner begleitet wird. Den Spinner will ich mir aber aussuchen". Of four candidates he chose the bricks of the
+product's mark: "Quader spinner sieht gut aus, aber bitte 3 reihen Steine und damit viereckig." Later the same day, at the tab Upstream
+of `upstream/galaxy`, where the results' box said only "Loading.": "Hier auch loading ohne Spinner. Finde selbstständig alle Stellen die
+einen Spinner brauchen. Tipp: der OIDC Login ebenso", and at a search for "common" that took 5.9 s: "Hier suche nach upstream repos in
+ansibil galaxy, spinner". The search had shown the level's 38,655 packages as its hits and said that nothing matched, until its 392 hits
+arrived.
+
+*Built*: [spinner.ts](../../web/src/app/shared/ui/spinner.ts) (`quader-spinner`), [loading.ts](../../web/src/app/shared/ui/loading.ts)
+(`quader-loading`), [busy.ts](../../web/src/app/shared/ui/busy.ts) (`[quaderBusy]`, `busyActInterceptor`), the look and the delay in
+[_spinner.scss](../../web/src/styles/_spinner.scss), the first paint in [index.html](../../web/src/index.html); how a screen uses them is on
+[web-ui.md](../developer/web-ui.md#loads-and-the-spinner-r-ui-217).
+
+- **The spinner is the mark** ([Q-UI-1229](#q-ui-1229--the-spinner-is-the-mark-three-rows-of-six-stones-lit-clockwise-in-sandstone)): its
+  square of three rows, six stones, drawn inline from the mark's geometry. At rest each stone has the quiet neutral
+  `--quader-spinner-stone`; one after another, clockwise from the top left, a stone lights up in the mark's sandstone
+  (`--quader-mark-accent`) and fades back, a round in 1.8 s. Three sizes: on a line of text (16 px, centred on the line by R-UI-175), in a
+  button (its icon's 16 px) and for a page or a large area (48 px, the next size above 40 px at which every stone and joint falls on whole
+  pixels). It is decoration for assistive technology (`aria-hidden`); the sentence beside it is the place's one status. Sandstone is no
+  state colour of the product and the spinner is the one place it moves.
+- **The sentence stays and says what loads.** The spinner stands before the sentence ("Loading the members.", "Reading the package from
+  the upstream."); a list says it in its table's place (`loadingText` of the data table); "Loading." stays only where nothing more is
+  known. A place that had no sentence has one (the dashboard's parts, the security dashboard's summary, the first screen, the sign-out).
+- **A load that answers within 300 ms shows nothing** ([Q-UI-1230](#q-ui-1230--a-load-shows-after-300-ms-by-the-stylesheet-in-the-place-its-content-will-take)):
+  the sentence and the spinner keep their place from the start and become visible after the delay, so nothing moves when they appear.
+- **Reduced motion** ([Q-UI-1237](#q-ui-1237--under-reduced-motion-no-light-travels-the-first-stone-stays-lit-and-the-mark-breathes)): no
+  light travels; the first stone stays lit and the mark breathes slowly.
+- **What shows one**: a first load of a page, a tab, a section, a dialog that reads before it shows, an opened row; a load after the
+  person's act (a search, a filter, a level, a page, **Load more** where its rows arrive); a field whose choices load (the spinner inside
+  the select or the field, its one option or its placeholder saying what loads); a search's suggestions ("Searching…"); an act that waits
+  for the server (its button, [Q-UI-1235](#q-ui-1235--a-busy-button-spins-where-the-person-pressed-by-its-flag-or-by-the-writes-its-press-started));
+  a switch whose answer is open (in place of its word); the first paint before the app starts and until its first screen stands
+  ([Q-UI-1236](#q-ui-1236--the-first-paint-holds-the-spinner-until-the-first-screen-stands)); the sign-in's redirect to the provider; the
+  sign-out.
+- **What shows none**: a live view's read again of what it shows (R-UI-213,
+  [Q-UI-1238](#q-ui-1238--a-live-views-read-again-shows-no-spinner)); a count on a tab's label or a badge that appears when known; an
+  avatar's image.
+- **A new question shows its load, never the answer of the question before**
+  ([Q-UI-1234](#q-ui-1234--a-new-question-shows-its-load-never-the-answer-of-the-question-before)): while a read that answers another
+  search, level, filter or page runs, the area shows the spinner and the sentence; a count line and an empty sentence belong to the
+  answer and are not shown under the new question's words. The data table shows its load whenever it loads and holds no row, so "loaded
+  and empty" while it loads cannot show the empty sentence. A list of suggestions as one types keeps the matches of the text before
+  while it reads, with the spinner on its status line: they still name real people and things.
+- **Held** by the lint rule of [busy-rule.mjs](../../web/scripts/busy-rule.mjs)
+  ([Q-UI-1239](#q-ui-1239--a-lint-rule-refuses-a-load-without-the-spinner-by-its-sentence-its-list-its-button-and-a-spin-of-its-own)) and the
+  render walk `loading-states` ([loading.ts](../../web/e2e/renders/loading.ts)), which holds calls open to picture the loads.
+
+Acceptance criteria (Vitest, milliseconds each): [spinner.spec.ts](../../web/src/app/shared/ui/spinner.spec.ts), six cases, about
+0.1 s: the stones lit clockwise from the top left; `index.html`'s first paint draws the same stones in the same order with its sentence in
+both languages; the spinner is decoration, the sentence the one status, the delay and reduced motion the stylesheet's; a busy button with
+a flag keeps its label and spins only where it was pressed; one without a flag spins while the write its press started is open, refuses a
+second press, and spins for no read of a live view and no write that something else started; a switch whose answer is open shows the
+spinner in place of its word. [data-table.spec.ts](../../web/src/app/shared/ui/data-table.spec.ts): a list that loads a new question
+shows its load and never its empty sentence, and **Load more** spins where its rows arrive.
+[remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts): the owner's case, a search started
+after a level's page with its answer held, shows its load, neither the level's total as hits nor the empty sentence, and its button is
+held. [lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs), two cases. The states `download-preview-loading` and
+`limits-rule-profiles-loading` of `make ui-states`.
+
 ## Deferred
 
 P2, Later and Out-of-scope entries of the three catalog pages this page draws on, plus P1 entries
@@ -26492,7 +26555,166 @@ of the project's repositories (`policy-editor.scss`).
 **Applied in the spec:** R-UI-171, R-UI-173. Code: [principal-field.ts](../../web/src/app/shared/ui/principal-field.ts),
 [name-picker.ts](../../web/src/app/features/ci/name-picker.ts), [policy-editor.scss](../../web/src/app/features/permissions/policy-editor.scss).
 
+### Q-UI-1229 · The spinner is the mark: three rows of six stones, lit clockwise in sandstone
+
+Status: **The owner's choice** (2026-11-25, of four candidates shown to him: "Quader spinner sieht gut aus, aber bitte 3 reihen Steine und
+damit viereckig."); the details below are the development agent's. R-UI-217.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The mark itself, `quader-mark.svg`'s square of three rows, six stones from `mark-geometry.ts`; at rest a quiet neutral of its own token, one stone after another lit in the mark's sandstone, clockwise from the top left, a round in 1.8 s; inline SVG, sizes 16 px (a line, a button) and 48 px (a page) (chosen) | One geometry, the brand's | The owner's pick; the spinner cannot drift from the mark, which `brand-logo.mjs` writes; whole pixels at 16 and 48 px | Sandstone near the warning's amber (`#995715` / `#d99530` beside `#b4690e` / `#e9a13b`) |
+| (b) The candidate of two rows | — | — | Refused by the owner: not square |
+| (c) A ring or the font's `autorenew` turned | The platform's look | Familiar | Not the owner's pick |
+
+**Choice:** (a). The resting tone `--quader-spinner-stone` is `#c9c8cd` in the light scheme and `#5c5b62` in the dark one: grey of no hue,
+lighter than the muted text and darker than the hairline, so it reads on the page, a dialog, a card, the frame and a disabled button and
+is no text; the lit stone and its trail are the mark's sandstone, which moves, while a warning's amber is a badge with an icon and a word
+that stands still: in the render walk's picture `loading-states-package` the spinner stands two rows above the badge **Blocked**; the two
+share a hue, and are told apart by their form (a square of grey stones with one lit, a pill with an icon and a word) and by the movement;
+the resting tone was kept grey for that reason, not tinted.
+40 px of the brief would put the stones on half pixels (a stone 10 px, a joint 2.5): 48 px keeps them whole (12 and 3). Still (a picture,
+no animation), the first stone is lit. **Applied in the spec:** R-UI-217. Code: [spinner.ts](../../web/src/app/shared/ui/spinner.ts),
+[_spinner.scss](../../web/src/styles/_spinner.scss), `--quader-spinner-stone` of [_tokens.scss](../../web/src/styles/_tokens.scss).
+
+### Q-UI-1230 · A load shows after 300 ms, by the stylesheet, in the place its content will take
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. R-UI-217: a fast
+answer shows no spinner.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `quader-loading` is in the page from the load's start, hidden until an animation of no length after 300 ms makes it visible; a busy button's spinner takes no room and its icon stays until then (`display` animated) (chosen) | The global stylesheet's `quader-appear`, `quader-busy-in`, `quader-busy-out` | No timer of the page's own; the screens keep their `@if (loading())` as it was; the sentence and the spinner keep their place, so nothing moves when they appear; a fast answer changes nothing | A screen reader may hear the sentence when it appears, not when the load started |
+| (b) A directive `quaderLoading` with a timer per load | A signal 300 ms after the load's start | The delay in code | A timer per place; every screen's template changes shape |
+| (c) No delay | — | Simple | A spinner flashes for every answer of 50 ms |
+
+**Choice:** (a). The sentence is inside `quader-loading` and has the same delay. The first screen of the app counts the delay from the
+page's start (Q-UI-1236). A spinner without a sentence (inside a select) takes `quader-spinner-delayed`. **Applied in the spec:** R-UI-217.
+Code: [_spinner.scss](../../web/src/styles/_spinner.scss), [loading.ts](../../web/src/app/shared/ui/loading.ts).
+
+### Q-UI-1237 · Under reduced motion no light travels: the first stone stays lit and the mark breathes
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. R-UI-217.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The first stone stays lit and the six stones' opacity goes from 1 to 0.45 and back in 2.4 s (chosen) | `@media (prefers-reduced-motion: reduce)` | Nothing moves across the mark; the mark still says that something runs | A pulse is a change over time too |
+| (b) The lit stone moves at a third of the speed | 5.4 s a round | The same picture as without the setting | Still a light that travels |
+| (c) No animation | — | Nothing moves | A load and a mark at rest look alike |
+
+**Choice:** (a). **Applied in the spec:** R-UI-217. Code: [_spinner.scss](../../web/src/styles/_spinner.scss).
+
+### Q-UI-1238 · A live view's read again shows no spinner
+
+Status: **Decided by the development agent**, as the brief of the package said; the owner reviews it at the walkthrough. R-UI-213,
+R-UI-217.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A read again of what a view shows (`live()`, `PagedResource.refresh`, `refreshResource`, a resource's `reload` while it holds its value) shows no spinner; a first load, a load after the person's act and a busy act do (chosen) | The reads again set no loading state, as R-UI-213 already wants | A page that stands still stays still every 30 s; nothing flickers | A slow read again is not seen |
+| (b) A small spinner beside the page's title while a read again runs | — | The reader sees the page read | A spinner every 15 to 60 s on every page |
+
+**Choice:** (a). The dashboard's parts and the security dashboard's summary show their load only before their first answer (`!x.hasValue()`).
+**Applied in the spec:** R-UI-217.
+
+### Q-UI-1239 · A lint rule refuses a load without the spinner by its sentence, its list, its button and a spin of its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. R-UI-217.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) [busy-rule.mjs](../../web/scripts/busy-rule.mjs) in `make web-lint`: a template's element with an i18n ID whose text starts with Loading, Reading, Searching, Checking, Testing, Fetching or Redirecting that is not `quader-loading` (an `option` excepted); a data table that binds `[loading]` without `loadingText`; a button whose `[disabled]` reads a flag of an act (`busy()`, `saving()`, `testing()`, …) without `quaderBusy`, unless it closes or cancels or stands in `allowed` with its reason; a `@keyframes` that rotates (chosen) | Four exact patterns | Each refuses the shape a load without the spinner took on 2026-11-25; few exceptions, each reasoned | It reads text |
+| (b) A rule on `loading()` signals in templates | — | Broad | A signal named so is often no load (a field's choices, a flag of an act) |
+
+**Choice:** (a). What it cannot catch: a load that shows nothing at all while its read runs (a section that stays empty), an act whose
+button is not held while it runs, a flag of another name, a sentence built in code and bound as `{{ text }}`. Those are the inventory of
+R-UI-217 and the render walk `loading-states`. **Applied in the spec:** R-UI-217. Tests: `lint-rules.test.mjs` (two cases).
+
+### Q-UI-1234 · A new question shows its load, never the answer of the question before
+
+Status: **Decided by the development agent** on the owner's case of 2026-11-25 (the tab Upstream of `upstream/galaxy`); the owner reviews
+it at the walkthrough. R-UI-217.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A read that answers another search, level, filter or page clears what answered the question before (the rows, the count line), so the area shows the spinner and the sentence; the data table shows its load whenever it loads and holds no row; a read after a write asks the same question and keeps its rows; a list of suggestions as one types keeps the matches of the text before, with the spinner on its line (chosen) | One rule per kind of list | No false count and no false "nothing matches"; the table makes the wrong pair impossible | The rows go away for the time of the read |
+| (b) Keep the rows, dimmed, and hide the count and the empty sentence | — | Less movement | The dimmed rows stand under the new question's words |
+
+**Choice:** (a). Changed beside the tab Upstream (`remote-upstream.ts`, which kept the level's page and its total of 38,655 while the
+search ran): an upstream package's version filter (`upstream-package.ts`), the delivery rules' filter (`delivery-rules-dialog.ts`) and the
+usage overview's scope and filters (`usage-overview.ts`). Checked and right already: the lists on `PagedResource` (packages, repositories,
+the audit log, the tokens, the users, the groups, the policies, the service accounts, the findings, the malware finds, the signature
+findings, the search's results), whose `start` clears the rows; the tab Downloads (`load(…, fresh)` clears them); the person search and the
+top bar's search (suggestions, as above). **Applied in the spec:** R-UI-217. Tests: R-UI-217 of
+[remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts) and of
+[data-table.spec.ts](../../web/src/app/shared/ui/data-table.spec.ts).
+
+### Q-UI-1235 · A busy button spins where the person pressed, by its flag or by the writes its press started
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. R-UI-217: "a
+busy button keeps its label and gets the spinner in front, disabled while it works".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `[quaderBusy]="flag()"` where the act has a flag (the button names `[disabled]` with it); several buttons of one flag spin only where the person pressed; the bare `quaderBusy` where it has none: the writes of the app that start after its press (and a read within 100 ms of it) are its act, counted by `busyActInterceptor`, a press elsewhere ends its claim, and while it is busy it is `aria-disabled` and a press does nothing; a menu's trigger carries it for its menu's acts; the spinner stands before the label or in place of the icon (chosen) | One directive for every act | About 130 buttons with a flag and 40 acts without one get the spinner without a flag added to each; a later act gets it from one attribute | The bare form infers its act from the app's calls |
+| (b) A flag added to every act | — | Explicit | 40 screens change their code and their tests |
+| (c) The spinner in the page's status line, not in the button | — | — | Not where the person looks |
+
+**Choice:** (a). A button with a sentence of its own act (**Test connection** with "Testing the connection.") spins in both places: where
+the person pressed and where the answer comes. A switch whose answer is open shows the spinner in place of its word **On** or **Off**
+(after the track where it shows no word), so it reads as busy as a button does. **Applied in the spec:** R-UI-217. Code:
+[busy.ts](../../web/src/app/shared/ui/busy.ts), [switch.ts](../../web/src/app/shared/ui/switch.ts),
+[app.config.ts](../../web/src/app/app.config.ts).
+
+### Q-UI-1236 · The first paint holds the spinner until the first screen stands
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. R-UI-217, the
+owner's "der OIDC Login ebenso".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `index.html` holds the spinner of 48 px and "Loading Quader." in both languages inside `<quader-root>`, drawn by the global stylesheet's rules (a blocking stylesheet, no inline style, nothing the content security policy refuses), the build's `<html lang>` showing the one sentence; the app keeps the same in the same place until its first navigation ends, its delay counted from the page's start (chosen) | The page before the app and the app's first wait look the same | A cold load, the return from the identity provider and a reload show the mark at once and then the screen; no blink between the two | Two copies of the stones' order, which `spinner.spec.ts` holds equal; the sentence of `index.html` is not in the translation files |
+| (b) Nothing before the app starts | — | — | A white page while the scripts load and the session is read |
+
+**Choice:** (a). The server renders no page of the sign-in path that loads: the provider's return is a redirect to the app, the failure
+page (`internal/api/login/page.go`) is final. The click on a provider shows "Redirecting to the identity provider." with the spinner until
+the page unloads; the break-glass form's **Sign in** is a busy button; the sign-out says "Signing out." with the spinner in the top bar.
+**Applied in the spec:** R-UI-217. Code: [index.html](../../web/src/index.html), [app.html](../../web/src/app/app.html),
+[login.ts](../../web/src/app/features/login/login.ts), [session-store.ts](../../web/src/app/core/session-store.ts).
+
 ## What this does not cover
+
+### H-2050 · A busy button without a flag takes its act from the app's calls
+
+Stage: the bare `quaderBusy` of Q-UI-1235 ([busy.ts](../../web/src/app/shared/ui/busy.ts)). Subject: an act whose button carries no flag of
+its own (about 40: deletes behind a confirmation, a row's menu, Run a pass now, Revoke all tokens, Export CSV). The button spins while the
+app's writes that started after its press are open, and a read that starts within 100 ms of it. It does not see a call that goes past
+`HttpClient` (the upload client of R-UI-012, which shows each file's progress instead), and it takes a write that a timer starts after the
+press, before the person pressed anything else, as the button's (no screen does so today). Dormant; real for the first act that writes
+on a timer after a button's press.
+
+### H-2051 · The rule of the spinner reads text
+
+Stage: [busy-rule.mjs](../../web/scripts/busy-rule.mjs) (Q-UI-1239). Subject: a new screen. It refuses a loading sentence by its first
+word, a data table without `loadingText` and a held button without `quaderBusy`; it does not see a section that shows nothing while its
+read runs, an act whose button is not held, a flag of another name, a sentence built in code. Live: the inventory of R-UI-217 found ten
+components that read without any loading state and gave the four that show content (the dashboard, the security dashboard's summary,
+the project's CI issuers, the first screen) one; a new one is found only by its renders.
+
+### H-2052 · The first paint's sentence is outside the translation files
+
+Stage: [index.html](../../web/src/index.html) (Q-UI-1236). Subject: a third language. The page before the app starts is not translated by
+the build; it holds "Loading Quader." and "Quader wird geladen." and the stylesheet shows the one of `<html lang>`. A language added to
+`angular.json` shows the English sentence there until a span of its own is added. Dormant: English and German are the two languages.
+
+### H-2053 · The renders picture the spinner standing still
+
+Stage: the render walk `loading-states` and `make ui-states` (R-UI-217). Subject: the travelling light, its round of 1.8 s and the
+breathing under reduced motion. A picture is taken with animations stopped, so it shows the still frame (the first stone lit) at its
+place, size and colours; the movement was looked at by hand in Chromium on 2026-11-25 (frames a step apart, both schemes, reduced motion:
+the light goes round clockwise with its trail, the mark breathes with the first stone lit), and no check measures it. Seen then too: a
+change of the scheme while a spinner turns keeps the stones' colours of the scheme it started in until its load ends (Chromium resolves
+the colours of a running animation once). Live; real for a change of `_spinner.scss`'s keyframes, and for a reader who switches the scheme
+during a long load.
 
 ### H-1964 · A read that fails alone while its page stands is read again only by the person or its next use
 

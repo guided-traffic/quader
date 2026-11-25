@@ -81,6 +81,11 @@ repository type, but allow detailed settings."
   andere ist zu vermeiden."): the page scrolls, nothing in it scrolls up and down by itself; a list of any length grows the page, a list
   opened in a row is bounded and links to the whole; never two scrollbars nested, never one for a list that fills the screen
   ([R-UI-215](docs/spec/api-and-ui.md#r-ui-215--one-scrollbar-per-page), the render check `inner-scroll`).
+- **Every load shows the spinner** (owner, 2026-11-25: "Ich hätte gerne dass das Laden immer von einem Spinner begleitet wird. Den Spinner
+  will ich mir aber aussuchen", and of the four shown: "Quader spinner sieht gut aus, aber bitte 3 reihen Steine und damit viereckig."): a
+  load, a list's new question and an act that waits for the server show the mark's three rows of stones with the sentence of what loads,
+  never a spinner of their own and never the answer of the question before ([R-UI-217](docs/spec/api-and-ui.md#r-ui-217--every-load-shows-the-spinner-the-owner-picked),
+  `<quader-loading>`, `[quaderBusy]` of `web/src/app/shared/ui/`).
 - **Every UI change is rendered and looked at before it lands** (rule 11 of [promt.md](docs/projektplan/promt.md)): both schemes, wide and
   narrow, realistic data. The renders are never committed.
 

@@ -269,6 +269,16 @@ holds both colours at 3:1 against the top bar and the page in both schemes: the 
 coloured stone 3.6:1 on the light top bar, 4.2:1 on the light page, 6.8:1 and 8.2:1 on the dark ones. To change the
 geometry or a colour, change the script (a colour also in `_tokens.scss`) and run `node scripts/brand-logo.mjs` in `web/`.
 
+The mark is also the spinner of every load, the owner's pick of 2026-11-25
+([R-UI-217](../spec/api-and-ui.md#r-ui-217--every-load-shows-the-spinner-the-owner-picked),
+[Q-UI-1229](../spec/api-and-ui.md#q-ui-1229--the-spinner-is-the-mark-three-rows-of-six-stones-lit-clockwise-in-sandstone)):
+`<quader-spinner>` ([shared/ui/spinner.ts](../../web/src/app/shared/ui/spinner.ts)) draws the same six stones from `mark-geometry.ts`,
+at rest in `--quader-spinner-stone` (`#c9c8cd` light, `#5c5b62` dark: a grey of no hue between the hairline and the muted text), one
+after another lit in the coloured stone's sandstone, clockwise from the top left, a round in 1.8 s; 16 px on a line or in a button, 48 px
+for a page (16 and 48 keep every edge on a whole pixel). Under reduced motion the first stone stays lit and the mark breathes. The look is
+[_spinner.scss](../../web/src/styles/_spinner.scss), global, because [index.html](../../web/src/index.html) draws the spinner before the
+app starts. The spinner is the one place the sandstone moves; it is no state colour.
+
 ## Format logos
 
 A package format is shown by its owner's logo where the owner's terms allow it, else by the neutral `inventory_2` glyph

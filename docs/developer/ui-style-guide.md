@@ -353,6 +353,29 @@ content's bottom padding into itself, so nothing shows below it
 Use a dialog for a short, self-contained step that leaves the page behind it in place (adding a member, confirming a deletion). A
 long or repeated form is a page. Open it with `QuaderDialog`: focus, Escape and the return of focus come with it.
 
+## Loads
+
+Every load of remote content shows the spinner the owner picked, the mark's three rows of stones lit one after another in sandstone
+([R-UI-217](../spec/api-and-ui.md#r-ui-217--every-load-shows-the-spinner-the-owner-picked)); the pieces and how a screen uses them are
+in [web-ui.md](web-ui.md#loads-and-the-spinner-r-ui-217).
+
+| Place | How |
+|---|---|
+| A page, a tab or a large area that loads | `<quader-loading size="page">` with the sentence of what loads ("Loading the repository."): the spinner of 48 px above it, centred, where the page will stand |
+| A section, an opened row, a dialog's body | `<quader-loading>`: the spinner of 16 px on the sentence's first line, before it ("Reading the package from the upstream.") |
+| A list | the data table's `loadingText` ("Loading the members."): shown in the table's place whenever it loads and holds no row; **Load more** spins where the rows arrive |
+| A select or a field whose choices load | the field held, its one option or placeholder saying what loads, the spinner inside its box |
+| A button whose act waits for the server | `[quaderBusy]="flag()"` beside `[disabled]="flag()"`, or the bare `quaderBusy` for an act without a flag: the label stays, the spinner stands before it or in place of its icon |
+| A switch whose answer is open | `[busy]`: the spinner in place of **On** or **Off** |
+
+- **The sentence says what loads.** "Loading." only where nothing more is known; a list's sentence names the list ("Loading the
+  tokens."), a search names the text ("Searching the upstream for “common”.").
+- **Nothing shows for a fast answer**: the delay of 300 ms is the stylesheet's, and the load takes its place from the start, so nothing
+  moves when it appears.
+- **A live view's read again shows nothing** (R-UI-213); a new question (another search, filter, level or page) shows its load and never
+  the answer or the empty sentence of the question before.
+- **Never another spinner**: no turning icon, no spin of a component's own. Sandstone moves only here; it is no state colour.
+
 ## Address field
 
 `<quader-address-field>` (`web/src/app/shared/address-field.ts`, [R-UI-065](../spec/api-and-ui.md#r-ui-065--one-read-only-address-field-with-a-joined-copy-button-for-every-client-address)) shows
@@ -557,6 +580,7 @@ Before a screen is committed:
 - [ ] Every value to copy of one line is an address field; a page shows one client address, further ones labelled in Details.
 - [ ] Every control named; the keyboard reaches everything; a spec of the screen calls `seriousViolations` and it passes.
 - [ ] Every string has an `i18n` ID and a German translation; a German word of more than 20 letters has its soft hyphen.
+- [ ] Every load shows the spinner with the sentence of what loads, every act that waits for the server its busy button (R-UI-217).
 - [ ] The spec names the decision, and the manual describes the screen where it did.
 
 ## Deliberate differences
@@ -584,6 +608,6 @@ written earlier were not reviewed against it, so this list is what is known, not
 
 - The settings rules and the 56 rem column are read from one screenshot of the reference, not measured from its rendered page; the
   values of Q-UI-128 come from its admin dashboard and user list.
-- Nothing enforces this page except the lint rules of R-UI-046 and R-UI-175, the layout checks of the renders and their fixtures (R-UI-170 to R-UI-176) and the
+- Nothing enforces this page except the lint rules of R-UI-046, R-UI-175 and R-UI-217, the layout checks of the renders and their fixtures (R-UI-170 to R-UI-176) and the
   review before a commit. Whether a screen matches the reference
   cannot be tested automatically.
