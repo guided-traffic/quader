@@ -215,6 +215,12 @@ export const definitionsExpected = [
     why: 'the profile stores no definitions: the first load reads the database before the walk routes its answer',
   },
   {
+    // An instance whose freshclam updater ran (malware.sh) stores real definitions: its first load finds the database, then not the
+    // walk's version 28190, before the walk routes them (2026-11-25, instance 3).
+    match: /^GET \/api\/v1\/packages\/pkg_\w+\/versions\/28190(\/vulnerabilities\S*)? answered 404$/,
+    why: "an instance that stores real definitions: the first load finds the database but not the walk's version, before the walk routes it",
+  },
+  {
     match: /^GET \/api\/v1\/packages\/pkg_clamav\w+\/(versions\/[^/]+\/)?vulnerabilities\S* answered 404$/,
     why: 'the definitions are not matched against advisories: the walk answers their reports 404, which the page takes as no grade',
   },
