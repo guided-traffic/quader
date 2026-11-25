@@ -97,6 +97,14 @@ How the owner wants the development agent to work, beyond rules 1 to 11 above. `
 others and is not repeated here: pre-alpha without backward compatibility, CI and releases until the first stable release, tests
 stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUDE.md)).
 
+- **The scanner's false alarm on Go programs is followed at its publisher** (the owner, 2026-11-25: "Merk dir das als offenen
+  Punkt, den wir immer mal wieder abklopfen sollten um den Fortschritt zu überprüfen"): he posted the cause and a reproducer of 68
+  bytes at ClamAV's issue 725 (`Cisco-Talos/clamav`) on 2026-11-25. At the start of every run, and whenever `CLAMAV_IMAGE` moves,
+  the issue is read (its state, the maintainers' answers, a linked change, a release that names it) and he is told in one line
+  what changed or that nothing did. A question of a maintainer is answered by a draft he posts himself, in that repository's
+  manner. A release with the repair: the pin is raised, the fixture must scan clean, the digests it held are scanned again, and
+  the note on Go programs leaves the release dialog and the security page. Last read: 2026-11-25, 14:45, open, his comment the
+  third.
 - **One question at a time** (the owner's review of 2026-11-06): a new question during the run is asked one at a time, with
   options and a recommendation, and what depends on it is not built before the answer.
 - **This plan is kept current, always** (owner, 2026-11-20: "halte bitte immer die docs/projektplan/promt.md auf Stand"): every
@@ -285,8 +293,12 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | G2 · Every dialog in a real browser, without the stack | the 21 dialogs, the two confirm shapes, 17 failures and 13 validations inside a dialog, the conflict and the session dialogs, the token's secret, tooltips at the window's edge: about 62 states at 390 and 1,440 px, measured by the layout checks' own function in the unit-test builder's browser mode; one new development dependency (the unit-test runner's browser provider, pinned) | 2 to 3 minutes of the job `UI layout checks`, nothing per format | landed and pushed at 10:13 (twelve commits; Q-UI-1140 to Q-UI-1149, gaps H-1910 to H-1912; its builder worked from 08:53 to 10:07; the landing's gates and `make ui-states` each exit 0): 69 states, twelve defects of the product found and repaired (section 8, Product) |
 | S9 · A failed call says everything the answer carried | the owner's finding of 11:14 (section 8, Product): the error notice of every screen says what happened in a sentence for every status, shows the status, the call, the time, the request ID, the code and the server's sentence, keeps the answer's body and headers one click away, offers Retry for every read and reads again by itself; one cause is one notice | landed and pushed at 12:08 (one commit; R-UI-216; H-1960 to H-1963; its builder worked from 11:14 to 12:00); **S9b landed and pushed at 13:50** (the notice stays while it retries on every screen, and every screen's secondary reads are read again; 75 components) |
 | S10 · An upstream package's npm tags stand on their versions | the owner's finding of 11:22 (section 8, Product): the unlabelled run of dist-tags above an opened upstream package goes; a tag stands as a badge on its version's row, as on the package's page, says what it is, and the filter finds a version by it; the package's state is not said twice | landed and pushed at 12:37 (two commits; its builder worked from 11:23 to 12:26) |
-| S11 · A system-only format is offered nowhere for something new | the owner's finding of 12:36 (section 8, Product): the chooser of "New repository" offers ClamAV definitions although R-CLAMAV-001 says it must not; no code of the UI reads `systemOnly`; an audit of every place that lists formats and of every write that takes one | in work since 12:36 |
-| G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | in work since 11:13 |
+| S11 · A system-only format is offered nowhere for something new | the owner's finding of 12:36 (section 8, Product): the chooser of "New repository" offers ClamAV definitions although R-CLAMAV-001 says it must not; no code of the UI reads `systemOnly`; an audit of every place that lists formats and of every write that takes one | landed and pushed at 14:55 (one commit; Q-UI-1200 to Q-UI-1203, Q-CLAMAV-19, H-1980; its builder worked from 12:36 to 13:20) |
+| S12 · A scan that could not be read to its end says which limit was passed | the research of 13:20 (section 8, Tests and tools, under the malware scanner on the owner's profile): the scanner's answer, the row, the API and the screens carry the heuristic's name; the release dialog says that a Go program can trip the scan-size limit; nothing of the limits changes | in work since 13:52 |
+| S13 · Small findings of the screens | the monospace token that is used nowhere; the conflict dialog's API names and JSON; links in a drawer in the browser's colours; the grey of the vulnerability cell's failed states beside the malware cell's amber; a host that breaks at its hyphen; the walk `mirrorFilled`'s order; a doubled breadcrumb; H-1871 (the audit log and the security dashboard read too seldom); H-1980 | in work since 13:54 |
+| S14 · What the product says about its scanners' replicas is true | a "Lost" row of the previous replica after every restart; "1 scan running" beside no place in use; the image scanner's processes under the host's name on the profile (whether two containers of one pod's name register side by side); no malware state in a remote's lists | in work since 13:54 |
+| S15 · A connection test says what it learned, and reads a token handshake right | the owner's finding of 14:15 (section 8, Product): the registry's test calls an accepted account an error (the challenge's 401 fails the screen's own rule) and shows one sentence of an answer that holds the status, the duration, the token service, the certificate and an error's code; one verdict at one place, the facts shown as R-UI-216 shows a failed call, for every place that tests something | in work since 14:20 |
+| G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
 | G3 · Page and shell states on the stack | the 10 menus, 3 drawers, the person search's list in a drawer, about 19 sections, 11 routes, the banner and the maintenance notice, a failure of an action inside a section, the editors' refusals with their summary, two selection states, the command menus of NuGet, Ansible Galaxy and generic | 5 to 6 minutes of the render step (the job at about 61 to 64 of its 75 minutes), about 3 s per format | after G1 |
 
 Not built, by the plan: hover and loading states, a rule against an overlay covering a control, a walk per place of the
@@ -539,6 +551,16 @@ one command to encrypt it in its head), the block `decryption` of the Kustomizat
 `upstream/docker-hub` is declared by the product (`internal/wellknown`), not read on his cluster. His installation runs
 chart 0.125.0, which has no such value yet: the value and the encrypted Secret are committed together, on his word,
 once the release with S8a is out.
+**Filled by the owner at about 14:00 ("…env habe ich gefüllt. …unenc.yml ist gefüllt und enc datei erzeugt, dann
+commited und gepusht.").** His commit `b561fe9` of the deployment repository holds the value, the block `decryption`,
+the encrypted Secret and the README together. Read on his installation at 14:03, inspection only: the Kustomization
+`quader` applied that revision, the HelmRelease runs chart 0.127.0, the Secret `quader-upstream-docker-hub` exists with
+the keys `token` and `username` (names only), a `packages` pod carries the projected volume `upstream-accounts`, 20
+pods run. **Not verified there:** that the files are readable and Docker Hub takes the account (the image has no shell
+and the development agent signs in nowhere on his installation: the registry's page, "Files" and **Test connection**,
+is his look). **On his UI profile**, restarted at 14:05 (down 22 s): the two files are written with mode 0600, the
+configuration declares the account, and the registry's connection test answers `reachable: true, authenticated: true`
+with the token service `auth.docker.io` (one request, made by the development agent through the API; no value read).
 
 **What stays open and is not built by this run, each with its reason:** F-126, F-95, the `npm ci` binding and the
 unreachable github.com of `e2e (bastion)` wait for a recurrence (section 8); the stall without a neighbour is a standing
@@ -1152,7 +1174,8 @@ records the recorder that tells such a stall apart).
   - The conflict dialog names a field by its API name (`includePatterns`, `upstreamUrl`) and shows values as JSON (seen
     by the development agent; not a layout defect).
   - The states are English and the light scheme only (H-1910, H-1911); an overlay outside the window or a dialog region
-    that scrolls sideways is found by the eye only (H-1912; G1's checks).
+    that scrolls sideways was found by the eye only (H-1912, closed by G1 on 2026-11-25: `overlay-out` and `sideways` in
+    an overlay run in `layoutFindings`, so `make ui-states` runs them too).
   - One early run collected 67 of 70 tests with a stack trace; five later runs were clean. For a recurrence.
   - **`make versions-check` fails on the development machine by two tools that exist twice:** Trivy 0.69.3 of the
     machine's package manager against the pin 0.76.2, and the Buildx of Docker Desktop v0.28.0 against the pin v0.38.1
@@ -1190,7 +1213,12 @@ records the recorder that tells such a stall apart).
     scanning the members (the program alone trips); ignoring the limit on a small blob or a second pass without RAR
     (both let unread content pass). **To build (S12):** the answer carries which heuristic tripped and the finds show
     it, so an auditor releases on facts; the class of Go programs is written into the security page. **The owner's to
-    decide:** whether the cause and the fixture are reported to ClamAV's open issue, under his account. The research's
+    decide:** whether the cause and the fixture are reported to ClamAV's open issue, under his account. **Decided at 14:15 ("Bitte bereite den Kommentar am issue vor. Achte darauf, die dort so zu
+    verhalten, wie es in dem Remote-Repo üblich ist"):** the comment is drafted in `.dev/drafts/clamav-issue-725-comment.md`
+    of the main checkout (not in git) in the issue's own form (the maintainer's debug-log style, no project named);
+    its statements were checked again at 14:15 (the 68 bytes against 1.5.5 with a one-signature database, the source
+    places read); **posted by him at about 14:18** (the issue's third comment); followed from now on by the standing
+    rule of section 0. The research's
     files are in the session's scratchpad (`unscannable/`: the two layers, the fixtures, the scripts, the traces).
     As it stood: 17 blobs of `upstream/docker-hub`, each a layer of 7.33 to 7.34 MiB of the image
     `guidedtraffic/s3-encryption-proxy`, are `unscannable` by `limits_exceeded` (`clamd`:
@@ -1271,7 +1299,49 @@ records the recorder that tells such a stall apart).
   his picture shows `3.8.51, sha-5ccfd1a, 3.8.52, …`, oldest first with the commit tags between. To do (S5): every list
   of versions defaults to the format's own version order, newest first, in every format.
 
-- **"New repository" offers ClamAV definitions (owner, 2026-11-25, 12:36, UI profile, the format chooser with seven
+- **"Gestartet von Sie" (owner, 2026-11-25, 14:25, his installation in German, the head of a bulk download on the tab
+  Downloads of `upstream/docker-hub`; his words: ""Gestartet von Sie" ist falsch. "Gestartet von Ihnen""):** verified in
+  the code: the one word "You" (German "Sie", right where it stands alone as a cell's value) is put into the sentence
+  "Started by …" of another unit (`remote-downloads.ts`, `starterText`; the template's lines 84, 224 and 419), where
+  German needs "Ihnen" and English no capital. Given to S13 as its tenth finding at 14:25: a sentence that names the
+  reader is a unit of its own, and every place that puts a translated word for the reader or an actor into another
+  unit's sentence is read for its German (the usage page hands "Sie" to the limits' explanation as a name).
+
+- **"Test connection" says an error and nothing else (owner, 2026-11-25, 14:15, his installation, Admin area ›
+  Upstream registries › Docker Hub, with the account of the Helm values and "Auf diesem Server lesbar"; the screen:
+  a warning sign and "Der Upstream hat mit einem Fehler geantwortet."; his words: "ich bekomme mal wieder im Frontend
+  eine Fehlermeldung ohne technische Details was mich und dich überhaupt nicht weiter bringt."):** two defects, both
+  verified in the code. (1) **The screen calls a success an error.** A registry with a token service answers its probe
+  with 401 and a challenge; the server runs the handshake and judges the account by the token service
+  (`internal/proxy/upstream/probe.go`); for an accepted account it answers `reachable: true, httpStatus: 401,
+  authenticated: true, error: null` (read from the UI profile with the owner's account at 14:06), and the screen's own
+  rule (`upstream-registry.ts`, `testSummary`: good only below 400; the same rule a second time in
+  `upstream-settings.ts`) makes that "answered with an error". His account is most likely accepted on his
+  installation too; **not verified there** (no sign-in, and the pods' logs of 40 minutes name no request to Docker
+  Hub). (2) **The result shows one sentence** of an answer that holds the status, the duration, the certificate, the
+  token service, the proxy, the source address and an error's code and sentence: against his rule of the morning
+  (R-UI-216 covered failed calls, not a test's result). S15: one verdict at one place (the server's answer, by the
+  development agent's preference), the facts of a test shown for a success and a failure alike, and every other
+  "Test …" of the UI in the same form. For the briefs: R-UI-216's rule holds for every result a screen shows of
+  something that can fail, not for failed API calls alone.
+
+- **Closed on 2026-11-25, 14:55, by S11 (Q-UI-1200 to Q-UI-1203, Q-CLAMAV-19; gap H-1980):** "New repository" offers six
+  formats; a direct address of the form with a system-only format shows a note with a link to `upstream/clamav` and no
+  form; a filter or a display of what exists keeps the format, a choice for something new drops it (the audit's rule,
+  every reader of the formats' list read). By the owner's choice A the repository of a system-only format carries the
+  class **System** with a gear, a tooltip and the sentence "Filled by this installation itself, on a schedule; nobody
+  publishes to it." in every place that names a class; the lists' filter by class has System as a value of its own (by
+  the API's existing parameters), and Local no longer answers it. The server's writes were audited: one accepted what
+  it must not, a package owner on `upstream/clamav` (201), and answers 404 now as for any repository without
+  ownership. Looked at by the development agent at the landing: the repository's page dark at 1,440 px (the badge
+  System, the sentence) and the chooser (6 of 6). Open: the admin dashboard counts it under Local (H-1980, in S13);
+  the tooltip's bubble was in no picture. **G1 landed with it:** the render checks `overlay-out`, `sideways` in an
+  overlay, `cut` and `separator-start` (with a lint rule), no growth of the window while an overlay holds content; on
+  the real screens they found one defect, a breadcrumb's second line that began with its slash at 390 px (the
+  separators are drawn after the step before them now), and the existing check `empty-cell` found the jobs' list
+  without a dash for a job that has no result yet; `on-box` was measured and not built (576 pairs, 18 flagged, none a
+  defect). Three conflicts of S11 with S9b in code were joined by hand at the landing. As it stood:
+  **"New repository" offers ClamAV definitions (owner, 2026-11-25, 12:36, UI profile, the format chooser with seven
   formats; his words, whole: "Macht es Sinn, dass man "ClamAV definitions" auswählen kann? es gibt doch nur eine public
   Quelle und die haben wir bereits über Upstream angebunden... Oder sehe ich das falsch. Außerdem kann man nicht mal
   die CLass auf Remote stellen? Bitte Diskutiere das offen mit mir."):** he sees it rightly, and the specification says
