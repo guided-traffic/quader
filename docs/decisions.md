@@ -12330,10 +12330,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-627 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+633 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 627 questions</summary>
+<summary>Q-UI: 633 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12963,6 +12963,12 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1237](spec/api-and-ui.md#q-ui-1237--under-reduced-motion-no-light-travels-the-first-stone-stays-lit-and-the-mark-breathes) | Under reduced motion no light travels: the first stone stays lit and the mark breathes | Decided by the development agent | (a) The first stone stays lit and the six stones' opacity goes from 1 to 0.45 and back in 2.4 s | — |
 | [Q-UI-1238](spec/api-and-ui.md#q-ui-1238--a-live-views-read-again-shows-no-spinner) | A live view's read again shows no spinner | Decided by the development agent | (a) A read again of what a view shows (`live()`, `PagedResource.refresh`, `refreshResource`, a resource's `reload` while it holds its value) shows no spinner; a first load, a load after the person's act and a busy act do | — |
 | [Q-UI-1239](spec/api-and-ui.md#q-ui-1239--a-lint-rule-refuses-a-load-without-the-spinner-by-its-sentence-its-list-its-button-and-a-spin-of-its-own) | A lint rule refuses a load without the spinner by its sentence, its list, its button and a spin of its own | Decided by the development agent | (a) [busy-rule.mjs](../web/scripts/busy-rule.mjs) in `make web-lint`: a template's element with an i18n ID whose text starts with Loading, Reading, Searching, Checking, Testing, Fetching or Redirecting that is not `quader-loading` (an `option` excepted); a data table that binds `[loading]` without `loadingText`; a button whose `[disabled]` reads a flag of an act (`busy()`, `saving()`, `testing()`, …) without `quaderBusy`, unless it closes or cancels or stands in `allowed` with its reason; a `@keyframes` that rotates | — |
+| [Q-UI-1240](spec/api-and-ui.md#q-ui-1240--the-panel-of-a-versions-commands-is-a-tab-per-client-and-set-up-client-at-the-rows-end) | The panel of a version's commands is a tab per client and Set up client at the row's end | Decided by the owner on 2026-11-25 | as marked. | — |
+| [Q-UI-1241](spec/api-and-ui.md#q-ui-1241--a-versions-page-has-its-command-behind-the-verbs-button-in-its-head-the-box-is-gone) | A version's page has its command behind the verb's button in its head; the box is gone | Decided by the owner on 2026-11-25 | as marked. | — |
+| [Q-UI-1242](spec/api-and-ui.md#q-ui-1242--a-packages-address-is-its-newest-version-where-its-format-leads-with-its-documentation-its-table-is--versions) | A package's address is its newest version where its format leads with its documentation; its table is `…/-/versions` | Decided by the owner on 2026-11-25 | (a) The package's own address is the newest version's page; the table moves to `…/{name…}/-/versions` | — |
+| [Q-UI-1243](spec/api-and-ui.md#q-ui-1243--the-switch-between-the-versions-is-a-menu-of-the-ten-newest-in-the-head-with-a-link-to-all) | The switch between the versions is a menu of the ten newest in the head, with a link to all | Decided by the development agent | (a) A button that names the version shown, its menu the ten newest by the format's order with **Latest** and **Pre-release** marks and the current one marked, then **All 30 versions** | — |
+| [Q-UI-1244](spec/api-and-ui.md#q-ui-1244--not-checked-for-vulnerabilities-says-the-reason-of-the-format) | Not checked for vulnerabilities says the reason of the format | Decided by the owner on 2026-11-25 | — | — |
+| [Q-UI-1245](spec/api-and-ui.md#q-ui-1245--a-version-without-documentation-opens-on-its-first-tab-with-content-and-its-readme-tab-says-so) | A version without documentation opens on its first tab with content, and its README tab says so | Decided by the development agent | (a) The name opens the newest version's page all the same, on its first tab with content; the README tab stays and says "This version has no README to show." | — |
 | [Q-UI-1246](spec/api-and-ui.md#q-ui-1246--an-entrys-parameters-and-return-values-are-two-columns-as-the-documentation-site-has-them) | An entry's parameters and return values are two columns, as the documentation site has them | Decided by the development agent on 2026-11-25 | (a) Two columns: Name (aliases, type, Required, "added in" under it) and Description (the prose, then Choices with the default bold and "(default)", or Default, then Configuration; for a return value Returned and Sample) | — |
 
 </details>

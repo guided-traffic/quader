@@ -21,7 +21,10 @@ import { AnsibleDocs } from './ansible-docs';
 import { AnsibleImportLog } from './ansible-import-log';
 import { formatSize } from './format-size';
 import { TimeAgo } from '../../shared/ui/time-ago';
-import { InstallPanel } from './install-panel';
+import { ClientCommandMenu } from './client-command-menu';
+import { VersionSwitch } from './version-switch';
+import { clamavInstallNote, versionCommand } from './version-command';
+import { contentShapeOf, leadsWithDocumentation } from '../repositories/content/content-shape';
 import { EXTERNAL_REL, packageCommands } from './package-links';
 import { PackageMemory } from './package-memory';
 import { PackageReadmeView } from './package-readme';
@@ -79,6 +82,8 @@ export type VersionTab = 'vulnerabilities' | 'documentation' | 'contents' | 'rea
 
 /** The content routes of the system repositories, `/api/v1/projects/upstream/repositories/<key>/content/` (R-API-025, Q-UI-898). */
 const SYSTEM_CONTENT = systemRepositoryNames().map((name) => contentPath(name, ''));
+/** How many of the newest versions the switch in the head lists before its link to all of them (Q-UI-1243). */
+export const SWITCH_VERSIONS = 10;
 /** The content route of `upstream/clamav`, whose files are downloaded while ClamAV definition updates is on (R-UI-194). */
 const CLAMAV_CONTENT = contentPath(upstreamName(CLAMAV_KEY), '');
 
@@ -91,13 +96,17 @@ interface TabEntry {
 
 /**
  * The page of one version (R-UI-111, the owner's walk of 2026-11-18): `/packages/{format}/{name…}@{version}`, an address of its
- * own that can be linked and sent. The header names the package and the version with its tags and its facts (published, size or that
- * it is not known, the last download by a client, the downloads, licences; R-API-079, R-API-080) and its vulnerabilities in one
- * statement (R-UI-112); the install command follows at the page's width,
- * so it is read in full (R-UI-009). The tabs: **Vulnerabilities** (a grade card per repository and the open findings at the page's
+ * own that can be linked and sent; for a format whose packages lead with their documentation (R-UI-218: Ansible Galaxy, npm, NuGet) the
+ * package's own address `/packages/{format}/{name…}` is this page of its newest version (`version` absent: the package's
+ * `latestVersion`, the highest that is no pre-release, Q-UI-1242). The header names the package and the version with its tags and its
+ * facts (published, size or that it is not known, the last download by a client, the downloads, licences; R-API-079, R-API-080) and its
+ * vulnerabilities in one statement (R-UI-112); at its right the switch between the versions where the format leads with its
+ * documentation (Q-UI-1243) and the button with the format's client verb that opens the clients' commands (Q-UI-1241), or the note
+ * why no client can install the version. The tabs: **Vulnerabilities** (a grade card per repository and the open findings at the page's
  * width, R-VULN-023), the documentation of an Ansible collection (R-UI-060), **README**, **Files**, **Details** (the format's
  * metadata and the repositories that hold the version) and an Ansible collection's **Import log**. The open tab is the `tab`
- * parameter; the first tab is Vulnerabilities where the version is graded, else its documentation (Q-UI-456).
+ * parameter; a format that leads with its documentation shows it first and opens on it where the version carries one (Q-UI-1245),
+ * else the first tab is Vulnerabilities where the version is graded, else its documentation (Q-UI-456).
  */
 @Component({
   selector: 'quader-package-version',
@@ -112,7 +121,8 @@ interface TabEntry {
     DataTable,
     ErrorNotice,
     FormatIconView,
-    InstallPanel,
+    ClientCommandMenu,
+    VersionSwitch,
     PackageReadmeView,
     AnsibleContents,
     AnsibleDocs,
@@ -144,7 +154,8 @@ export class PackageVersionPage {
   /** The format's name in the header, never its key (R-UI-006): **OCI (Docker)**, not `oci`. */
   protected readonly formatName = formatName(() => this.format());
   readonly name = input.required<string>();
-  readonly version = input.required<string>();
+  /** The version of the address; absent on a package's own address, which shows its newest version (R-UI-218, Q-UI-1242). */
+  readonly version = input<string | undefined>();
   /** Query parameters: the open tab, the open page of the Documentation tab and its search text (R-UI-060), the severity filter. */
   readonly tab = input<string | undefined>();
   readonly doc = input<string | undefined>();
@@ -156,10 +167,15 @@ export class PackageVersionPage {
     loader: ({ params }) => this.api.lookup(params.format, params.name),
   });
   protected readonly pkg = computed(() => valueOf(this.summary));
+  /** The version shown: the address's, or the package's newest (Q-UI-1242); null until the package has answered. */
+  protected readonly shown = computed(() => this.version() ?? this.pkg()?.latestVersion ?? null);
+  /** The format's packages lead with their documentation (R-UI-218): it comes first, and the head switches between the versions. */
+  protected readonly leads = computed(() => leadsWithDocumentation(this.format()));
   protected readonly details = resource({
     params: () => {
       const id = valueOf(this.summary)?.id;
-      return id ? { id, version: this.version() } : undefined;
+      const version = this.shown();
+      return id && version ? { id, version } : undefined;
     },
     loader: ({ params }) => this.api.version(params.id, params.version),
   });
@@ -189,7 +205,8 @@ export class PackageVersionPage {
   protected readonly vulnerabilities = resource({
     params: () => {
       const id = valueOf(this.summary)?.id;
-      return id ? { id, version: this.version() } : undefined;
+      const version = this.shown();
+      return id && version ? { id, version } : undefined;
     },
     loader: ({ params }): Promise<VulnerabilityVersionReport | null> =>
       noneOnRefusal(this.vulnerabilityApi.versionReport(params.id, params.version)),
@@ -225,9 +242,14 @@ export class PackageVersionPage {
     const announcement = this.docsAnnouncement();
     const vulnerabilities: TabEntry[] =
       this.vulnerabilityReport() !== null ? [{ id: 'vulnerabilities', label: $localize`:@@pkg.tab.vulnerabilities:Vulnerabilities` }] : [];
-    // A graded version opens on its vulnerabilities; one that is not scanned opens on what it is, and the tab says why it is not.
+    // A graded version opens on its vulnerabilities; one that is not scanned opens on what it is, and the tab says why it is not. A
+    // format that leads with its documentation shows it first (R-UI-218): its README tab stands even where the version has none, and
+    // says so (Q-UI-1245).
     const gradedFirst = this.grade() !== null && this.grade()?.grade !== 'N/A';
+    const readme: TabEntry[] =
+      d && d.format !== 'ansible' && (d.hasReadme || this.leads()) ? [{ id: 'readme', label: $localize`:@@pkg.tab.readme:README` }] : [];
     return [
+      ...(this.leads() ? readme : []),
       ...(gradedFirst ? vulnerabilities : []),
       ...(this.docsAnnounced() ? [{ id: 'documentation' as const, label: $localize`:@@pkg.tab.documentation:Documentation` }] : []),
       ...(this.docsAnnounced() && announcement?.state !== 'none'
@@ -239,7 +261,7 @@ export class PackageVersionPage {
             },
           ]
         : []),
-      ...(d?.hasReadme && d.format !== 'ansible' ? [{ id: 'readme' as const, label: $localize`:@@pkg.tab.readme:README` }] : []),
+      ...(this.leads() ? [] : readme),
       { id: 'files', label: $localize`:@@pkg.tab.files:Files` },
       // The details of the signatures while the installation checks them (R-SIG-035): the member is absent while they are off.
       ...(d?.signatures !== undefined ? [{ id: 'signatures' as const, label: $localize`:@@pkg.tab.signatures:Signatures` }] : []),
@@ -251,8 +273,8 @@ export class PackageVersionPage {
   /** Whether the tab that is open needs the tree: asked of the announced tabs, so the tree is requested only when its tab is shown. */
   private readonly wantsDocs = computed(() => {
     const tabs = this.announcedTabs();
-    const i = tabs.findIndex((t) => t.id === this.tab());
-    const open = tabs[i < 0 ? 0 : i]?.id;
+    const first = tabs.find((t) => t.id !== 'readme' || this.detail()?.hasReadme === true)?.id;
+    const open = tabs.find((t) => t.id === this.tab())?.id ?? first;
     return (open === 'documentation' || open === 'contents') && !this.docsReadmeOnly();
   });
   private readonly docsKey = computed(() => {
@@ -282,7 +304,12 @@ export class PackageVersionPage {
     this.docsGone() ? this.announcedTabs().filter((t) => t.id !== 'documentation' && t.id !== 'contents') : this.announcedTabs(),
   );
   /** The version the page shows, by value. */
-  private readonly shownVersion = computed(() => `${this.format()}\n${this.name()}\n${this.version()}`);
+  private readonly shownVersion = computed(() => `${this.format()}\n${this.name()}\n${this.shown() ?? ''}`);
+  /**
+   * The tab the page opens on: the first, but a README tab of a version without a README (Q-UI-1245), which says only that there is
+   * none: a format that leads with its documentation opens such a version on its first tab with content.
+   */
+  private readonly firstTab = computed(() => this.tabs().find((t) => t.id !== 'readme' || this.detail()?.hasReadme === true)?.id);
   /**
    * The tab the page opened on without a tab in its address, fixed once the version and its scanning have answered: the page reads
    * the version again while it is open (R-UI-213), and a scan that finishes meanwhile adds the tab Vulnerabilities in front, which
@@ -291,7 +318,7 @@ export class PackageVersionPage {
   private readonly landingTab = signal<{ readonly key: string; readonly id: VersionTab } | null>(null);
   protected readonly activeIndex = computed(() => {
     const landing = this.landingTab();
-    const wanted = this.tab() ?? (landing?.key === this.shownVersion() ? landing.id : undefined);
+    const wanted = this.tab() ?? (landing?.key === this.shownVersion() ? landing.id : this.firstTab());
     const i = this.tabs().findIndex((t) => t.id === wanted);
     return i < 0 ? 0 : i;
   });
@@ -303,11 +330,11 @@ export class PackageVersionPage {
 
 
   /** The page's title: the package and the version, as a reader names it. */
-  protected readonly heading = computed(() => `${this.name()} ${this.version()}`);
+  protected readonly heading = computed(() => `${this.name()} ${this.shown() ?? ''}`.trimEnd());
   /** The distribution tags that point at this version (npm `latest`, Q-UI-453). */
   protected readonly tags = computed(() =>
     distTagsOf(this.detail()?.metadata)
-      .filter(([, v]) => v === this.version())
+      .filter(([, v]) => v === this.shown())
       .map(([t]) => t),
   );
   protected readonly metadata = computed(() => this.detail()?.metadata ?? {});
@@ -330,6 +357,27 @@ export class PackageVersionPage {
   });
   /** The digest, media type, artifact type and size of an OCI tag, and the platforms of an index (R-OCI-031). */
   protected readonly image = computed(() => imageFacts(this.metadata()));
+
+  // ---- The clients' commands and the switch between the versions in the head (Q-UI-1241, Q-UI-1243) ----
+
+  /** The format's client verb, the button's word (Q-UI-1066). */
+  protected readonly verb = computed(() => contentShapeOf(this.format()).commandVerb);
+  /** What the head offers a client: the verb's button, ClamAV's Set up client, or the note why no client can install the version. */
+  protected readonly command = computed(() => {
+    const d = this.detail();
+    return d ? versionCommand(this.format(), d, this.clamavClosed()) : null;
+  });
+  protected readonly clamavNote = clamavInstallNote();
+  /**
+   * The newest versions the switch offers (Q-UI-1243): one page of ten by the format's order, read with the page and again while it is
+   * seen (R-UI-213), only where the format leads with its documentation.
+   */
+  protected readonly switchVersions = resource({
+    params: () => (this.leads() ? this.pkg()?.id : undefined),
+    loader: async ({ params }) => (await this.api.versions(params, { sort: '-version' })(null, SWITCH_VERSIONS)).items,
+  });
+  /** The tab the switch keeps for the version it switches to: the one in the address (the same tab of the other version). */
+  protected readonly switchTab = computed(() => this.tab() ?? null);
 
   // ---- The ClamAV definitions (R-UI-194, R-CLAMAV-003) ----
 
@@ -583,7 +631,7 @@ export class PackageVersionPage {
     effect(() => {
       const key = this.shownVersion();
       const settled = this.details.hasValue() && !this.vulnerabilities.isLoading() && !this.summary.isLoading();
-      const first = this.tabs()[0]?.id;
+      const first = this.firstTab();
       untracked(() => {
         if (settled && first && this.landingTab()?.key !== key) this.landingTab.set({ key, id: first });
       });
@@ -591,10 +639,13 @@ export class PackageVersionPage {
     live({
       reload: async () => {
         const id = valueOf(this.summary)?.id;
-        if (!id) return;
-        const version = this.version();
+        const version = this.shown();
+        if (!id || !version) return;
         await Promise.all([
           refreshResource(this.details, () => this.api.version(id, version)),
+          this.switchVersions.hasValue()
+            ? refreshResource(this.switchVersions, async () => (await this.api.versions(id, { sort: '-version' })(null, SWITCH_VERSIONS)).items)
+            : Promise.resolve(),
           this.vulnerabilities.hasValue()
             ? refreshResource(this.vulnerabilities, () => noneOnRefusal(this.vulnerabilityApi.versionReport(id, version)))
             : Promise.resolve(),

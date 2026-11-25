@@ -3709,7 +3709,8 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/projects` | The projects of the caller (start page) | R-UI-041 |
 | `/projects/{project}` | Answers with the repositories of the project (Q-UI-216) | R-UI-041, R-UI-052 |
 | `/projects/{project}/packages` | Packages list | R-UI-006 |
-| `/projects/{project}/packages/{format}/{name…}` (`?q=&sort=`) | A package: its versions | R-UI-007, R-UI-110 |
+| `/projects/{project}/packages/{format}/{name…}` (`?q=&sort=`; npm, NuGet, Ansible Galaxy: `?tab=&severity=&doc=&q=`) | A package: its versions; for a format that leads with its documentation its newest version | R-UI-007, R-UI-110, R-UI-218 |
+| `/projects/{project}/packages/{format}/{name…}/-/versions` (`?q=&sort=`) | The versions of a package whose format leads with its documentation | R-UI-110, R-UI-218 |
 | `/projects/{project}/packages/{format}/{name…}@{version}` (`?tab=&severity=&doc=&q=`) | A version | R-UI-111 |
 | `/projects/{project}/vulnerabilities` (`?repository=&severity=&status=&…`), `/projects/{project}/vulnerabilities/findings/{id}`, `/projects/{project}/vulnerabilities/advisories/{ecosystem}/{id}` | Vulnerability report of the project, finding, advisory (from M4b) | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
 | `/projects/{project}/repositories`, `/projects/{project}/repositories/new`, `/projects/{project}/repositories/new/{format}` | Repositories of the project; a new repository: the format first, then the form of that format | R-UI-020, R-UI-021, R-UI-080 |
@@ -4052,9 +4053,17 @@ Acceptance criteria:
 ### R-UI-009 · Install command panel
 Priority: **MVP** · Covers: UI-010
 
-- Client picker per format (npm, pnpm, Yarn; .NET CLI, NuGet CLI, `PackageReference` XML); a
-  repository picker when the version exists in more than one repository (default: a virtual
-  repository containing it, else the first local one).
+*Revised on 2026-11-25 (the owner, W-30, [Q-UI-1240](#q-ui-1240--the-panel-of-a-versions-commands-is-a-tab-per-client-and-set-up-client-at-the-rows-end),
+[Q-UI-1241](#q-ui-1241--a-versions-page-has-its-command-behind-the-verbs-button-in-its-head-the-box-is-gone)):* the panel is the
+panel of the verb's button (R-UI-052, [client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts)), in a
+repository's list and in the head of the version's page; no box of a command stands on any page.
+
+- A tab per client of the format (Docker | Podman; npm | pnpm | Yarn Berry | Yarn Classic; .NET CLI | NuGet CLI | Visual Studio),
+  in the order of the setup's clients, each named by the client's short name; a format of one client (APT, ansible-galaxy, curl)
+  shows the client's name as the row's label instead of a strip of one tab. At the end of the row **Set up client**, which opens the
+  client setup of the repository with the chosen client (R-UI-126). A repository picker (a select **Repository** above the row) when
+  the version exists in more than one repository a client can use (default: a virtual repository containing it, else the first local
+  one); the command and the setup follow it.
 - A repository the version is not `available` through (R-API-029: disabled, or a virtual one that reaches it only through disabled
   members) is never offered; a version that only disabled repositories hold gets one muted sentence instead of the command, naming
   them: "The repository web/npm-local is disabled: nobody can install this version until it is enabled again."
@@ -4062,13 +4071,13 @@ Priority: **MVP** · Covers: UI-010
 - The command comes from the install snippet of R-API-030 with package and version, requested with
   `credentials=none` (the install command carries no credentials). A command of one line is an address field of R-UI-065
   with its joined copy button; a command of several lines is a code block with its copy button (Q-UI-320); either way a
-  live region announces "Copied". The client picker lists the clients of the format that the UI has instructions for
-  (Q-UI-70).
-- The panel stands on the version's page (R-UI-111) at the page's width, before the tabs. Its selects (client, repository) stand
-  side by side, each 16 rem at most, and wrap where the panel is narrow; a one-line command is as wide as its text, up to the
-  panel's width, so it is read in full where it is shown (Q-UI-455, revisits Q-UI-320).
-- npm and NuGet install commands carry no credentials; the panel's **Set up client** (R-UI-126) opens the page of the chosen
-  repository with the chosen client for configuring the client once.
+  live region announces "Copied". The tabs list the clients of the format that the UI has instructions for (Q-UI-70).
+- Every client's command is in the panel, the ones not chosen hidden, so the panel is as wide as its longest command (24 to 48 rem,
+  never wider than the window less 16 px each side) and switching tabs moves nothing; a one-line command is read in full where there
+  is room (Q-UI-455, revisits Q-UI-320). Where the row has no room for the tabs and **Set up client** (npm's four at 390 px), the
+  button goes to a line of its own under the tabs, at its end.
+- npm and NuGet install commands carry no credentials; **Set up client** opens the page of the chosen repository with the chosen
+  client for configuring the client once.
 - Commands longer than three lines are folded after the third with an expander: the fold cuts the rest, it does not scroll it, and an
   unfolded command, or a short one, is as tall as its lines wrap to (R-UI-215).
 
@@ -4079,8 +4088,13 @@ Acceptance criteria:
 
 - Copying the npm command for `@team-a/ui@1.4.0` and running it in a project configured by the
   client setup installs that version.
+- Unit ([client-command-menu.spec.ts](../../web/src/app/features/packages/client-command-menu.spec.ts),
+  [package-version.spec.ts](../../web/src/app/features/packages/package-version.spec.ts), milliseconds): npm's panel has the tabs npm,
+  pnpm, Yarn Berry, Yarn Classic and **Set up client** to `…/npm-local/setup?client=npm`; the tab Yarn Berry shows `yarn add
+  @team-a/ui@1.4.0` and the setup with `client=yarn`, and the panel opens again on it; Debian's panel names APT and has no tablist; a
+  version in `web/npm-all` and `web/npm-local` offers both, the virtual one first.
 - Rendered (rule 11): at 1440 px the command `npm install image-convert-tools@4.0.1` is shown whole, and its field ends within a
-  few characters of the command's end.
+  few characters of the command's end; the panel of every format at 390, 1,024 and 1,440 px, in English and German.
 
 ### R-UI-052 · Repository content page
 Priority: **MVP** · Covers: quader-only
@@ -4120,7 +4134,8 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
   `…/vulnerabilities?repository=…` report, one request each per opened item.
 - The row of an item opens in place (`collapse-region`) to its ten newest versions, newest first by the format's order (R-API-029),
   under a head of their own, with no scroll and no "Load more"; where the item holds more, a link under them, **All 103 tags** or **All 33
-  versions** (the count of the row), leads to the package's page, which lists every version with filter, sort and "Load more" (R-UI-110,
+  versions** (the count of the row), leads to the table of the package's versions (its page, or `…/-/versions` where the package's page is
+  its newest version, R-UI-218), which lists every version with filter, sort and "Load more" (R-UI-110,
   R-UI-215, [Q-UI-1111](#q-ui-1111--an-opened-item-shows-its-ten-newest-versions-and-links-all-of-them)). For an image the ten are its
   newest images (`group=content`, one row per manifest, the owner's word of 2026-11-25,
   [Q-UI-1130](#q-ui-1130--an-image-is-one-row-with-its-tags-on-the-opened-item-and-on-the-packages-page)): the leading tag as the link,
@@ -4135,15 +4150,18 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
   versions with size and published time. Each row with the grade of its version in this repository.
   No box of a command stands in the list. At the end of each version's row, and of each item's row for its latest version, a button
   with the format's client verb and a chevron (**Pull** for an image, **Install** for a package, **Download** for a file;
-  [Q-UI-1066](#q-ui-1066--a-versions-commands-are-a-menu-hung-from-a-button-with-the-formats-client-verb)) opens a menu hung from the
-  button, as GitLab's **Code** menu: a section per client of the format, headed by the client's name, each with the version's command
-  as a read-only field and its joined copy button (a command of several lines as the snippet's window). A command is the install
+  [Q-UI-1066](#q-ui-1066--a-versions-commands-are-a-menu-hung-from-a-button-with-the-formats-client-verb)) opens a panel hung from the
+  button, as GitLab's **Code** menu: a tab per client of the format, then free room and **Set up client** at the row's end, and under
+  the row the chosen client's command as a read-only field with its joined copy button (a command of several lines as the snippet's
+  window); a format of one client names it as the row's label (R-UI-009,
+  [Q-UI-1240](#q-ui-1240--the-panel-of-a-versions-commands-is-a-tab-per-client-and-set-up-client-at-the-rows-end)). A command is the install
   snippet of R-API-030 for this repository and that client (`credentials=none`, so it never holds a token), asked when the menu
   opens: `docker pull`/`podman pull` with this installation's real address for OCI, the install command of the format elsewhere.
   The menu is a non-modal dialog named by the verb, the item and the version; it takes the focus, keeps Tab inside, and Escape, a
   click outside and the button close it with the focus back on the button; as wide as its longest command (24 to 48 rem, Q-UI-455) and never wider than the window less
   16 px each side. A system repository that answers no client and a disabled repository have no such button (Q-UI-898, Q-UI-965).
-  The item's name links to the package's page (R-UI-007), a version's name to the version's page (R-UI-111). A long name wraps inside
+  The item's name links to the package's page (R-UI-007; for a format that leads with its documentation the page of its newest version,
+  R-UI-218), a version's name to the version's page (R-UI-111). A long name wraps inside
   itself beside its chevron, and its row starts where its neighbours do (Q-UI-520).
 - A generic repository's content is its files: the page is the root folder of R-UI-010, and a folder or a file is the page at
   `…/files/{path…}`. A package format's raw files are a detail on demand: **Files** in the header's menu opens their root (`…/files`)
@@ -4174,12 +4192,12 @@ Acceptance criteria:
 - `/projects/web` opens the repositories of the project; the sidebar lists Repositories first; the project switcher and the start page lead there.
 - `/projects/web/repositories/<oci-key>` lists the images; opening one shows one row per manifest, led by its highest tag with the other
   tags muted after it, with digest, size and pushed time, and a row's
-  **Pull** opens a menu with the sections **Docker CLI (with Buildx)** and **Podman**, each a copyable
+  **Pull** opens a panel with the tabs **Docker** and **Podman** and **Set up client**, each tab a copyable
   `docker pull <host>/web/<oci-key>/<image>:<tag>` or `podman pull …`; Escape closes it and the focus is on **Pull** again.
 - `/projects/web/repositories/<oci-remote-key>`, after a pull through it, lists the pulled image with its tag, the digest and a **Fetched** time; before any pull it says
   that the repository has cached no images yet (R-OCI-036, Q-UI-217).
 - `/projects/web/repositories/<npm-key>` lists the packages with the grade of their latest version, and a version's **Install**
-  shows `npm install <name>@<version>` in its section **npm**; a reader without `repositories:read-config` sees no Settings action.
+  shows `npm install <name>@<version>` in its tab **npm**; a reader without `repositories:read-config` sees no Settings action.
 - `/projects/web/repositories/<npm-key>` has the tabs **Packages** and **Details**; `…/details` shows the address for downloads by
   path, and a remote repository's strip reads **Packages**, **Upstream**, **Downloads**, **Details**.
 - The Edit action of the repository list and the Settings action of the content page open `…/settings`, and leaving it with unsaved changes asks first.
@@ -6835,7 +6853,11 @@ Priority: **P1** · Covers: quader-only
   Beside the N/A shield stands the word of the grade's `state` (R-VULN-039), the server's, never a sentence of the server's: "Queued",
   "Scanning", "No scanner", "No database", "No advisory data", "Scan failed", "Scanning off", "Not matched", "Internal", "Not scanned",
   "Not an image" (German "Wartet", "Wird geprüft", "Kein Scanner", "Keine Datenbank", "Keine Advisory-Daten", "Prüfung fehlgeschlagen",
-  "Prüfung aus", "Nicht abgeglichen", "Intern", "Nicht geprüft", "Kein Image"). Its sentence, why and what comes ("Waits for its
+  "Prüfung aus", "Nicht abgeglichen", "Intern", "Nicht geprüft", "Kein Image"). The sentence of **Not scanned** (`format_not_scanned`)
+  says the reason of the format where the screen knows the format (the owner, 2026-11-25,
+  [Q-UI-1244](#q-ui-1244--not-checked-for-vulnerabilities-says-the-reason-of-the-format)): an Ansible collection has no public advisory source that lists it by version, Debian's advisories
+  name source packages and releases and the matching is not built yet, a file has no package name and version an advisory could name.
+  Its sentence, why and what comes ("Waits for its
   vulnerability scan since 25 Nov 2026, 08:31. It is scanned in turn, without anyone having to act."), is the cell's tooltip and
   accessible description, and the rule of the version page's card, which folds a failed or put-off scan's `stateCode` under
   **Technical details** ([technical-details.ts](../../web/src/app/shared/technical-details.ts), R-UI-214). One component says it in every
@@ -7289,6 +7311,11 @@ The owner's walk of 2026-11-18 (W-7): "a click on a package shows its versions a
 case is a user who looks for one version of a dependency, or for the vulnerabilities of that version. What a row carries is the
 owner's reference screen's; its look is Quader's own.
 
+- **Its address** ([R-UI-218](#r-ui-218--a-package-leads-with-the-documentation-its-format-carries), [Q-UI-1242](#q-ui-1242--a-packages-address-is-its-newest-version-where-its-format-leads-with-its-documentation-its-table-is--versions)): the package's own address
+  `/projects/{project}/packages/{format}/{name…}` for a format whose content is its list (OCI, Debian, generic files), and
+  `…/{name…}/-/versions` for a format whose packages lead with their documentation (Ansible Galaxy, npm, NuGet), whose own address is the
+  newest version's page; there the breadcrumb reads Packages › the package (a link to its address) › **Versions**. It loses nothing:
+  the table, the README of the latest version below it and the details are the same at either address.
 - The table holds every version the reader may read (`GET …/versions?sort=-version`, read once, every page), with the grades of
   the package report (`GET …/vulnerabilities`, R-VULN-039) and the distribution tags of the latest version's details. **For an image a row
   is an image, not a tag** (the owner's word of 2026-11-25, which changes his word of W-7 "one row per version" for OCI,
@@ -7337,16 +7364,25 @@ page's width. Not chosen by the owner: a row that opens inside the table, and a 
   (`/packages/npm/@team-a/ui@1.4.0`, `/packages/oci/portal/web@1.4.0`)
   ([Q-UI-451](#q-ui-451--a-versions-address-is-the-packages-with--and-the-version)). The breadcrumb reads
   Packages › the package (a link to its page) › the version. Every link to a version leads here: the versions table, the repository
-  content page (R-UI-052), the finding and the advisory pages and the report (R-VULN-022).
+  content page (R-UI-052), the finding and the advisory pages and the report (R-VULN-022). For a format whose packages lead with their
+  documentation the package's own address is this page of its newest version ([R-UI-218](#r-ui-218--a-package-leads-with-the-documentation-its-format-carries)), and its breadcrumb ends at the
+  package.
 - **Header**: the package name and the version as the `h1` ("image-convert-tools 4.0.1"), the format, the npm tags that point at the
   version (every one, the badge of
   [Q-UI-1190](#q-ui-1190--an-npm-tag-is-a-badge-on-the-row-of-the-version-it-names-with-a-tooltip-that-says-what-it-is)) and the mark
-  **Pre-release**, the package's description.
+  **Pre-release**, the package's description. At its right the page's acts (the place of the repository page's **Set up client**):
+  for a format that leads with its documentation the switch between the versions ([Q-UI-1243](#q-ui-1243--the-switch-between-the-versions-is-a-menu-of-the-ten-newest-in-the-head-with-a-link-to-all)), then the button with the
+  format's client verb (**Pull**, **Install**) whose panel is R-UI-009's ([Q-UI-1241](#q-ui-1241--a-versions-page-has-its-command-behind-the-verbs-button-in-its-head-the-box-is-gone)); a version of the ClamAV definitions
+  has **Set up client** with freshclam instead (R-UI-194). Where no client can install the version (held only by disabled
+  repositories, Q-UI-965, or only by system repositories, Q-UI-898, Q-UI-899) the head has no button, and the sentence why stands under
+  the facts.
 - **Facts**, one line with the style guide's separator: the grade with the total and the fixable findings (R-UI-112), a link to
   the tab Vulnerabilities; when it was published; its size (R-API-080); when a client last downloaded it (R-API-065, "never"); its downloads; its
   licences. Below them the banners **Unlisted.**, **Blocked in <repository>** and **Deprecated.**
-- **Install** (R-UI-009) at the page's width, before the tabs.
-- **Tabs** (`tab`): **Vulnerabilities** (R-VULN-023), the first tab of a version whose grade is not N/A; for the format `ansible`
+- No box of a command before the tabs (the owner, 2026-11-25, [Q-UI-1241](#q-ui-1241--a-versions-page-has-its-command-behind-the-verbs-button-in-its-head-the-box-is-gone)): the command is the head's button.
+- **Tabs** (`tab`): for a format that leads with its documentation its documentation first, the tab the page opens on where the version
+  carries it ([R-UI-218](#r-ui-218--a-package-leads-with-the-documentation-its-format-carries), [Q-UI-1245](#q-ui-1245--a-version-without-documentation-opens-on-its-first-tab-with-content-and-its-readme-tab-says-so)); **Vulnerabilities** (R-VULN-023), the first tab of a version whose grade is
+  not N/A otherwise; for the format `ansible`
   **Documentation** and **Contents** (R-UI-060, R-UI-062); **README** (R-UI-008, when `hasReadme`); **Files** (path with its size and
   its SHA-256's first twelve characters and copy button under it, the path the file's download where it offers one; the malware
   scan, the signature;
@@ -7361,9 +7397,10 @@ page's width. Not chosen by the owner: a row that opens inside the table, and a 
 
 Acceptance criteria:
 
-- Unit: `@team-a/ui@1.4.0` reads "@team-a/ui 1.4.0" with `latest`, its facts, the command `npm install @team-a/ui@1.4.0`
-  before the tabs, and the tabs README, Files, Details; graded B it opens on Vulnerabilities; the breadcrumb of
-  `/projects/web/packages/npm/@team-a/ui@1.4.0` is Projects, web, Packages, @team-a/ui, 1.4.0.
+- Unit: `@team-a/ui@1.4.0` reads "@team-a/ui 1.4.0" with `latest`, its facts, the head's **Install** whose panel shows
+  `npm install @team-a/ui@1.4.0`, no box before the tabs, and the tabs README, Files, Details; graded B it opens on its README with
+  Vulnerabilities second (npm leads with its documentation); the breadcrumb of `/projects/web/packages/npm/@team-a/ui@1.4.0` is
+  Projects, web, Packages, @team-a/ui, 1.4.0.
 - Rendered (rule 11): the version pages of npm (with and without a grade, with fixable findings, the longest name), the image tag,
   NuGet, Debian and Ansible as plain user, power user and administrator, every tab.
 
@@ -9139,7 +9176,7 @@ nacharbeiten. Das ist alles wichtig und muss umgesetzt werden." A system reposit
   (R-UI-192); a project's package list lists what a system repository holds.
 
 Acceptance criteria (Vitest, about 1 s together: the R-UI-193 cases of `core/upstream-project.spec.ts`, `system-repositories.spec.ts`,
-`repository-content.spec.ts`, `install-panel.spec.ts`, `package-version.spec.ts`, `guides.spec.ts`, `endpoints.spec.ts`,
+`repository-content.spec.ts`, `version-command.spec.ts`, `package-version.spec.ts`, `guides.spec.ts`, `endpoints.spec.ts`,
 `security-dashboard.spec.ts`, `malware-finds.spec.ts`, `usage.spec.ts`, `search-field.spec.ts`, `search-results.spec.ts`, and the
 Q-UI-900 case of `upstream-registries.spec.ts`; rendered under rule 11: `all-repositories-upstream`, `files-system`, `admin-upstream`,
 `search-system`, `search-field-system`):
@@ -9625,7 +9662,7 @@ stop and no region ([data-table.spec.ts](../../web/src/app/shared/ui/data-table.
 ([sticky-when-fits.spec.ts](../../web/src/app/shared/ui/sticky-when-fits.spec.ts)); closing an audit event gives the focus back to its
 row ([audit-log.spec.ts](../../web/src/app/features/audit/audit-log.spec.ts)); a new documentation page brings its pane's top into
 view and **Back to the tree** the entry ([ansible-docs.spec.ts](../../web/src/app/features/packages/ansible-docs.spec.ts)); an opened
-command has no cap ([install-panel.spec.ts](../../web/src/app/features/packages/install-panel.spec.ts)).
+command has no cap ([client-command.spec.ts](../../web/src/app/features/packages/client-command.spec.ts)).
 
 ### R-UI-216 · A failure shows every fact of its answer
 Priority: **P1** · Covers: quader-only
@@ -9790,6 +9827,64 @@ after a level's page with its answer held, shows its load, neither the level's t
 held. [remote-downloads.spec.ts](../../web/src/app/features/repositories/downloads/remote-downloads.spec.ts): an empty queue read again by
 itself keeps its empty sentence and shows no load. [lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs), two cases. The states `download-preview-loading` and
 `limits-rule-profiles-loading` of `make ui-states`.
+### R-UI-218 · A package leads with the documentation its format carries
+Priority: **MVP** · Covers: quader-only
+
+The owner, 2026-11-25, at the package list of `upstream/galaxy`: "Wenn man auf eine Collection klickt, sollte man meiner Meinung nach
+direkt in der Doku der neusten Version landen. Das wäre das normale Verhalten in Ansible Galaxy." And: "Ansible-Collections haben die
+spezifische Eigenschaft einer Dokumenation die hervorzuheben ist. Wir versuchen im Raum 'Ansible' die Galaxy vollständig und ebenbürdig
+zu ersetzen." Asked whether npm and NuGet packages open the same way (about 21:00): "Ja sollen sie, wenn die dafür notwendigen
+Metainformationen vorhanden sind, soll sie von uns verwendet und dargestellt werden. Das gilt immer: Doku die mit zum Format gehört und
+regelmäßig vorhanden ist, soll auch bei uns umgesetzt werden. Schau zum Beispiel bei Ansible Galaxy: hier wird erst die Doku eingeblendet
+(neuste Version) und man von dort aus in den Versionen zurück blättern wenn gewünscht."
+
+*Built*: `leadsWithDocumentation` of [content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts), the routes of
+[packages.routes.ts](../../web/src/app/features/packages/packages.routes.ts), `versionsCommands` of
+[package-links.ts](../../web/src/app/features/packages/package-links.ts),
+[package-version.ts](../../web/src/app/features/packages/package-version.ts),
+[version-switch.ts](../../web/src/app/features/packages/version-switch.ts).
+
+- **The rule.** Documentation that belongs to a format and is regularly present is what a package of that format opens on. The format
+  says so with `leadsWithDocumentation` of its content shape, not a screen with the format's name: on for Ansible Galaxy (a collection's
+  documentation, R-UI-060), npm and NuGet (a version's README, R-UI-008); off for OCI, Debian and generic files, whose content is their
+  list of tags, versions or files. A format joins by one line.
+- **Addresses** ([Q-UI-1242](#q-ui-1242--a-packages-address-is-its-newest-version-where-its-format-leads-with-its-documentation-its-table-is--versions)): `/projects/{project}/packages/{format}/{name…}` of such a format is the page of the package's
+  newest version (R-UI-111): `latestVersion` of R-API-029, the highest that is no pre-release, or the highest pre-release where none is
+  stable, as the lists' column **Latest** says. `…/{name…}@{version}` is a version's page as for every format; `…/{name…}/-/versions` is
+  the table of every version (R-UI-110), which the package's own address shows for the other formats. Every link to a package by its
+  name (a repository's list, **Packages**, search hits and suggestions, the breadcrumb, a collection's dependency, **Recently opened**)
+  leads to the package's address, so to its newest version's documentation; a link that means every version (an opened row's
+  **All 33 versions**, the switch's last item) leads to the table.
+- **The documentation first** ([Q-UI-1245](#q-ui-1245--a-version-without-documentation-opens-on-its-first-tab-with-content-and-its-readme-tab-says-so)): the tab of the documentation is the first of the version's page (**Documentation**
+  and **Contents** of a collection, **README** of an npm and a NuGet package), and the page opens on it. Where the version carries none,
+  the page opens on its first tab with content, and an npm or NuGet version's tab **README** stays and says "This version has no README
+  to show."; a collection without documentation (a role archive) opens on the tab it has.
+- **The switch between the versions** ([Q-UI-1243](#q-ui-1243--the-switch-between-the-versions-is-a-menu-of-the-ten-newest-in-the-head-with-a-link-to-all)) in the head of the version's page, before the verb's button: a button that
+  names the version shown, whose menu lists the ten newest versions by the format's order, the one shown marked as the current page,
+  the newest marked **Latest**, a pre-release marked **Pre-release**, and under them **All 30 versions**, the table. A version switched
+  to opens on the tab of the address, the page of a collection's documentation (`doc`) and the address's fragment (an option's
+  `#parameter-…`), so a reader of the documentation reads the other version's. While the ten are first read the menu shows the spinner
+  (R-UI-217).
+- **Deep links** keep their query and fragment on every address: the package's own address with `?tab=documentation&doc=module/<name>#parameter-<path>`
+  shows that page of the newest version at that anchor; `…@{version}` with the same opens that version; `…/-/versions` keeps `q`, `sort`
+  and a fragment.
+
+Acceptance criteria:
+
+- Unit ([package-version.spec.ts](../../web/src/app/features/packages/package-version.spec.ts),
+  [app.routes.spec.ts](../../web/src/app/app.routes.spec.ts), milliseconds): `/projects/web/packages/npm/@team-a/ui` shows "@team-a/ui
+  1.4.0" with the breadcrumb Projects, web, Packages, @team-a/ui; `…/-/versions` is the table, titled **Versions**, the breadcrumb's
+  package a link to `…/npm/@team-a/ui`; an image's own address is its table and `…/-/versions` names no image's table; the switch lists
+  1.5.0-beta.1 (**Pre-release**), 1.4.0 (**Latest**, the current page), 1.3.0 and **All 3 versions**, and keeps `?tab=details`; a
+  version without a README opens on **Files**, its README tab saying so; a graded npm version opens on its README;
+  `/projects/web/packages/ansible/acme.tools?tab=documentation&doc=module%2Fcheck_host_reachable#parameter-host` shows that page of
+  1.2.0 with the address, query and fragment unchanged, and the switch's 1.0.0 is the same address with `@1.0.0`; `acme.tools@1.0.0` with
+  the same query and fragment opens 1.0.0.
+- Journeys: `08-packages` (the name opens the newest version on its README, the switch leads to the table), `21-visibility` (a visitor
+  without the wiki lands on **Files**), `ansible-docs` (a collection opens on **Documentation**).
+- Rendered (rule 11): the npm, NuGet and Ansible Galaxy packages as their names open them, with the switch open and the command panel
+  open, a package of thirty versions, one of pre-releases only, a version in three repositories, a long README, the tables at
+  `…/-/versions`, in English and German, light and dark, at 390, 1,024 and 1,440 px.
 
 ## Deferred
 
@@ -17513,7 +17608,7 @@ was empty.
 
 **Choice:** (a). **Rationale:** the command is the page's main job after the findings, and reading it whole is part of the job.
 Revisits Q-UI-3 (the sticky side panel) and Q-UI-320 (the stacked selects at the panel's width). The development agent records no
-revisit condition. **Applied in the spec:** R-UI-009, R-UI-111; [install-panel.scss](../../web/src/app/features/packages/install-panel.scss).
+revisit condition. **Applied in the spec:** R-UI-009, R-UI-111; [client-command.scss](../../web/src/app/features/packages/client-command.scss).
 
 ### Q-UI-456 · The version page opens on its vulnerabilities when it is graded
 
@@ -21358,7 +21453,7 @@ address field of Q-UI-320. Q-API-191 is superseded.
 revisits it if a snippet's language needs more than its shapes (a long script), when a library may pay for itself.
 
 **Applied in the spec:** R-UI-016, R-UI-121, R-API-030 (the languages). Code: [code-window.ts](../../web/src/app/shared/code/code-window.ts),
-[code-syntax.ts](../../web/src/app/shared/code/code-syntax.ts), [install-command.html](../../web/src/app/features/packages/install-command.html),
+[code-syntax.ts](../../web/src/app/shared/code/code-syntax.ts), [client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts),
 [packages_api.go](../../internal/api/v1/packages_api.go) `clientSnippet`, [_tokens.scss](../../web/src/styles/_tokens.scss).
 
 ### Q-UI-802 · The server names the reader's parts of a snippet, and an image has one word
@@ -21893,7 +21988,7 @@ The development agent would revisit the guides' rows if the owner wants system r
 repository today, R-UI-190).
 
 **Applied in the spec:** R-UI-190, R-UI-192. Code: [repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts),
-[guide-format.ts](../../web/src/app/features/guides/guide-format.ts), [install-panel.html](../../web/src/app/features/packages/install-panel.html).
+[guide-format.ts](../../web/src/app/features/guides/guide-format.ts), [version-command.ts](../../web/src/app/features/packages/version-command.ts).
 
 ### Q-UI-898 · Nothing offers what a system repository refuses: no address, no download, no command
 
@@ -21931,7 +22026,7 @@ has not occurred: `RepositorySummary` and `Repository` carry no kind, only the a
 [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts),
 [repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts),
 [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts),
-[install-panel.ts](../../web/src/app/features/packages/install-panel.ts), [package-version.ts](../../web/src/app/features/packages/package-version.ts).
+[version-command.ts](../../web/src/app/features/packages/version-command.ts), [package-version.ts](../../web/src/app/features/packages/package-version.ts).
 
 ### Q-UI-899 · Where a download or a command is left out, one sentence names the work that reads it
 
@@ -22893,7 +22988,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) While the switch is on: one sentence that a ClamAV installation always takes the version in use, and **Set up client** with the client `freshclam`; while off, the sentence of R-UI-193 (chosen) | No command per version | Nothing on the page suggests a version can be picked | The line itself is one click away |
 | (b) The snippet of `freshclam.conf` in the panel | The line on the page | One click less | The same line on every version's page, which reads as if it were that version's |
 
-**Choice:** (a). **Applied in the spec:** R-UI-194. Code: [install-panel.html](../../web/src/app/features/packages/install-panel.html).
+**Choice:** (a). **Applied in the spec:** R-UI-194. Code: [version-command.ts](../../web/src/app/features/packages/version-command.ts).
 
 
 ### Q-UI-912 · Only `daily` is outdated by its age, as ClamAV warns only about `daily`
@@ -23143,7 +23238,7 @@ callers (an administrator's `content:bypass`, Q-AUTHZ-162, applies to deletes on
 [repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts),
 [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts), `ConsumerView` of
 [document.go](../../internal/repository/document.go); on a version's page
-[install-panel.ts](../../web/src/app/features/packages/install-panel.ts),
+[version-command.ts](../../web/src/app/features/packages/version-command.ts),
 [package-version.ts](../../web/src/app/features/packages/package-version.ts) and `addAvailable` of
 [packages_api.go](../../internal/api/v1/packages_api.go).
 
@@ -24025,6 +24120,8 @@ the tooltip now reads). Rendered: `profile-tokens-tooltip` (the token's **Rotate
 ### Q-UI-1066 · A version's commands are a menu hung from a button with the format's client verb
 
 Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+**Revised by the owner on 2026-11-25** ([Q-UI-1240](#q-ui-1240--the-panel-of-a-versions-commands-is-a-tab-per-client-and-set-up-client-at-the-rows-end)): the panel's sections are tabs, one per client, with **Set up client**
+at the row's end; the button stands in a version page's head too ([Q-UI-1241](#q-ui-1241--a-versions-page-has-its-command-behind-the-verbs-button-in-its-head-the-box-is-gone)).
 The request is the owner's (2026-11-24, 09:50, with a picture of `upstream/docker-hub` and one of GitLab's **Code** menu): "Der Kaste
 „Pull-Befehl" ist einfach mitten drin und passt dort nicht gut hinein. Der Pull-Befehl soll viel mehr in ein overlay wie in
 screenshot 2 abgebildet überführt werden. Neben einer Version des Artefakts gibt es einen Button, aktuell „Befehl anzeigen" (Scheiß
@@ -24077,8 +24174,8 @@ would revisit (b) of the panel if a format comes with more than four clients, so
 
 **Applied in the spec:** R-UI-052 (the versions, the row of an item, the acceptance criteria), R-UI-010 and R-UI-193 (no button where no
 client is answered). Code: [client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts),
-[client-command.ts](../../web/src/app/features/packages/client-command.ts) (one client's command, which the version page's
-`install-command.ts` now uses too), `commandVerb` of [content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts),
+[client-command.ts](../../web/src/app/features/packages/client-command.ts) (one client's command, which the head of the version page
+uses too since Q-UI-1241), `commandVerb` of [content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts),
 [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts),
 [repository-items.ts](../../web/src/app/features/repositories/content/repository-items.ts). Tests:
 [client-command-menu.spec.ts](../../web/src/app/features/packages/client-command-menu.spec.ts) (open, the sections, the copy, Escape,
@@ -26695,6 +26792,169 @@ page (`internal/api/login/page.go`) is final. The click on a provider shows "Red
 the page unloads; the break-glass form's **Sign in** is a busy button; the sign-out says "Signing out." with the spinner in the top bar.
 **Applied in the spec:** R-UI-217. Code: [index.html](../../web/src/index.html), [app.html](../../web/src/app/app.html),
 [login.ts](../../web/src/app/features/login/login.ts), [session-store.ts](../../web/src/app/core/session-store.ts).
+### Q-UI-1240 · The panel of a version's commands is a tab per client and Set up client at the row's end
+
+Status: **Decided by the owner on 2026-11-25** (the tabs, their order and **Set up client** at the row's end); the details below were
+**decided by the development agent** — selected from the options below; the owner reviews them at the walkthrough. The owner's words, at
+an image's **Pull**: "der pull-hover soll mit einem Reiter ausgestattet sein, links docker, rechts daneben podman, dann platz und daneben
+ein button set up client, der einen weiterleitet." His rule: what he decides at one format holds for every format and every place that
+shows the same thing.
+
+Context: the panel of Q-UI-1066 was a section per client, each headed by the client's long name ("Docker CLI (with Buildx)"), all
+commands at once; **Set up client** was in the box of the version's page only.
+
+**The tab's words.**
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The client's long name (`Yarn Berry (2 and later)`, `.NET CLI (dotnet)`) | The setup's words | One name everywhere | npm's four tabs and the button need about 540 px, a panel at 390 px has 334 |
+| (b) A short name of its own per client, a product name: Docker, Podman; npm, pnpm, Yarn Berry, Yarn Classic; .NET CLI, NuGet CLI, Visual Studio; APT, ansible-galaxy, curl (chosen) | `tab` of [clients.ts](../../web/src/app/features/setup/clients.ts) | npm's four tabs fit 390 px; the long name stays the field's accessible name ("Command for Yarn Berry (2 and later)") and the setup's | A second name per client |
+
+**Where the button goes where the row is narrow.**
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) It wraps to a line of its own under the tabs, at its end (chosen) | The row is a flex row that wraps; the strip is as wide as its tabs and grows to the button | The tabs never scroll where they fit alone; the button keeps its place at the end | Two lines at 390 px for npm and NuGet |
+| (b) The strip scrolls and the button stays on the row | The strip's fades | One line | A tab of four hidden behind a fade on a phone |
+| (c) The button below the command | — | One line of tabs | The owner placed it on the tabs' row |
+
+**Every command at once or the chosen one.** (a) Every client's command is asked when the panel opens and kept in the panel, the
+ones not chosen hidden and inert, so the panel is as wide as the longest and switching tabs moves nothing (chosen; the request count of
+Q-UI-1066 stays: two for OCI, three for NuGet, four for npm); (b) only the chosen tab's: one request at a time, a panel that changes
+its width at every tab. The product's tabs (`<quader-tab-group>`, `@angular/aria`'s tabs pattern, the arrow keys) carry it: they got
+`keepAll`, `compact` and a slot `tabsEnd` for the action, no second tabs component.
+
+**The chosen tab** is kept while the button stands: the panel opens again on the client last chosen; a new page starts at the first.
+
+**A format of one client** shows no strip of one tab: the client's short name is the row's label, on the hairline a strip stands on.
+
+**Choice:** as marked. **Applied in the spec:** R-UI-009, R-UI-052, R-UI-111, Q-UI-1066. Code:
+[client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts), [tabs.ts](../../web/src/app/shared/ui/tabs.ts),
+`compact` of `_controls.scss`, `tab` of [clients.ts](../../web/src/app/features/setup/clients.ts). Tests:
+[client-command-menu.spec.ts](../../web/src/app/features/packages/client-command-menu.spec.ts) (the tabs, the setup per tab, the tab
+kept, one client), [repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts) (OCI's two
+tabs, npm's four), the journey `08-packages`; rendered `repository-*-menu` with the last tab chosen, every format, English and German.
+
+### Q-UI-1241 · A version's page has its command behind the verb's button in its head; the box is gone
+
+Status: **Decided by the owner on 2026-11-25** (the box goes, the command is behind a button as an image's **Pull**, for every format);
+the details below were **decided by the development agent** — selected from the options below; the owner reviews them at the
+walkthrough. The owner's words, at `community.docker 5.4.1`: "ich finde der eingerahmte Platz ist verschwendet, dieses Feld, in dem die
+Installation der Collection beschreiben ist, gehört hinter einen Button wie bei docker image 'pull' mit einer hover-maske. Du musst dir
+solche Angaben von mir echt selbstständig merken und auch auf andere Registries anwenden."
+
+**Where the button stands.** (a) In the page's head at the right, where a page's acts stand (the repository page's **Set up client**,
+**Settings**), the same button and panel as a list's row (chosen); (b) under the facts, before the tabs: a button alone on a line,
+the space the owner called wasted.
+
+**The repository picker** of a version in several repositories: (a) a select **Repository** at the panel's top, above the tabs; the
+command and **Set up client** follow it (chosen; its label and its value read as one line); (b) a select after the tabs: the reader
+picks a client, then the place, while the place decides every command.
+
+**Where no command is offered** (no command that would fail, Q-UI-965, Q-UI-896 to Q-UI-899, R-UI-194):
+
+| Case | Option chosen | The other weighed |
+|---|---|---|
+| Held only by disabled repositories | No button; the sentence ("The repository web/npm-local is disabled: nobody can install this version until it is enabled again.") as a muted line under the facts | A button whose panel says only that: a click to learn that nothing can be done |
+| Held only by system repositories of `upstream` | No button; the sentence of Q-UI-899 under the facts | The same |
+| The ClamAV definitions while their updates are on | **Set up client** with freshclam in the head, the sentence "A ClamAV installation always takes the version in use…" under the facts | A button **Install** with a panel of that sentence: there is no command per version |
+| A format without clients | Nothing; no format has none today | The old sentence "There are no install instructions for this package type yet.", which no format can show |
+
+**Other places that showed a command in a box or a field of its own** (looked for on 2026-11-25): the version's page was the only one;
+a package's page, a search hit, an image's tag page (its version page) had none, and the files of a generic repository show a file's
+download address, not a client's command.
+
+**Choice:** as marked. **Applied in the spec:** R-UI-009, R-UI-111. Code: [version-command.ts](../../web/src/app/features/packages/version-command.ts)
+(what the head offers, which repositories, the notes; the install panel's rules moved there), the head of
+[package-version.html](../../web/src/app/features/packages/package-version.html); `install-panel.*` and `install-command.*` are gone.
+Tests: [version-command.spec.ts](../../web/src/app/features/packages/version-command.spec.ts) (the repositories and their order, the
+disabled and the system notes, ClamAV, no clients), [package-version.spec.ts](../../web/src/app/features/packages/package-version.spec.ts)
+(the head's button, the picker in the panel, the notes, ClamAV's Set up client).
+
+### Q-UI-1242 · A package's address is its newest version where its format leads with its documentation; its table is `…/-/versions`
+
+Status: **Decided by the owner on 2026-11-25** (a collection's name, and an npm and a NuGet package's, leads to its newest version's
+documentation, R-UI-218); the addresses were **decided by the development agent** — selected from the options below; the owner reviews
+them at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The package's own address is the newest version's page; the table moves to `…/{name…}/-/versions` (chosen) | One route for the name, chosen by the format's shape | Every link by name leads there without knowing the newest version (the breadcrumb, a search suggestion, a dependency, Recently opened); the address reads as Galaxy's collection page does, always the newest | Two addresses show the newest version (the package's and its `@version`) |
+| (b) Every link to a name carries the newest version (`name@5.4.1`), the package's address stays the table | — | One address per page | Every place that links a name must know the newest version; the breadcrumb has no way to; a bookmark of the package stays on a version |
+| (c) The table behind a query (`?view=versions`) | — | No new route | Not an address of its own |
+
+`-` is a segment no package name of those formats holds (npm and NuGet names and Ansible's `namespace.name` hold at most one slash,
+an npm scope's, which starts with `@`); for OCI, Debian and generic files `…/-/versions` is no route, their table keeps the package's
+address. The breadcrumb of the table is Packages › the package › **Versions**. No address is kept for the old table of a collection
+(pre-alpha, no redirects).
+
+**Choice:** (a). **Applied in the spec:** R-UI-218, R-UI-110, R-UI-111, R-UI-052. Code:
+[packages.routes.ts](../../web/src/app/features/packages/packages.routes.ts) (`versionsMatcher`, the `canMatch` of the shape),
+`crumbTail` of [breadcrumbs.ts](../../web/src/app/core/breadcrumbs.ts), `versionsCommands` of
+[package-links.ts](../../web/src/app/features/packages/package-links.ts). Tests: [app.routes.spec.ts](../../web/src/app/app.routes.spec.ts).
+
+### Q-UI-1243 · The switch between the versions is a menu of the ten newest in the head, with a link to all
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A button that names the version shown, its menu the ten newest by the format's order with **Latest** and **Pre-release** marks and the current one marked, then **All 30 versions** (chosen) | The bounded list of Q-UI-1111 | One click to a recent version, two to any; the list never grows with the package | A version older than ten is reached through the table |
+| (b) A select of every version | — | Every version in one control | A select of 600 npm versions; no marks; a form control in a head |
+| (c) A menu with a search field | GitLab's branch switcher | Any version by typing | A second search of versions beside the table's (R-UI-110) |
+
+The ten are one page of the version list (`sort=-version`, `limit=10`), read with the page and again while it is seen (R-UI-213), only
+for a format that leads with its documentation; the first read shows the spinner in the menu (R-UI-217). A version switched to opens on
+the tab of the address (`?tab=`), on the same page of a collection's documentation (`doc`) and at the address's fragment, so a reader of
+the documentation stays on it; without one it lands on its documentation by Q-UI-1245. The button's icon is the history mark, its accessible
+name "Version 5.4.1, switch the version"; a long version is cut with its whole as the title.
+
+**Choice:** (a). **Applied in the spec:** R-UI-218, R-UI-111. Code: [version-switch.ts](../../web/src/app/features/packages/version-switch.ts),
+`switchVersions` of [package-version.ts](../../web/src/app/features/packages/package-version.ts). Tests:
+[package-version.spec.ts](../../web/src/app/features/packages/package-version.spec.ts) (the list, the marks, the link to all, the tab
+kept). The decision to turn npm and NuGet on is the owner's (2026-11-25, R-UI-218).
+
+### Q-UI-1244 · Not checked for vulnerabilities says the reason of the format
+
+Status: **Decided by the owner on 2026-11-25** (collections stay unscanned, and the screen says why); the sentences were **decided by
+the development agent**. The owner asked why collections are not scanned and chose to keep the state with its reason on the screen.
+
+| Format | The sentence |
+|---|---|
+| Ansible Galaxy | "Collections are not checked for vulnerabilities: no public advisory source lists Ansible collections by version." ([Q-ANS-15](formats/ansible.md#q-ans-15--no-vulnerability-adapter-the-state-is-not_covered), [H-841](formats/ansible.md#h-841--collections-are-not-evaluated-for-vulnerabilities)) |
+| Debian | "Debian packages are not checked for vulnerabilities yet: Debian's advisories name source packages and releases, and matching a package against them is not built yet." ([Q-DEB-26](formats/debian.md#q-deb-26--no-exposure-rules-no-bastion-and-no-vulnerability-matching-for-the-format-in-this-phase)) |
+| Generic files | "Files are not checked for vulnerabilities: a file has no package name and version that an advisory could name." |
+| Another, or where the screen does not know the format | "Packages of this type are not scanned for vulnerabilities." |
+
+The sentence is the format's content shape's (`notScannedText` of
+[content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts)): the note of a repository's list and the
+sentence of `format_not_scanned` beside a version's N/A (the tooltip in a list, the rule of the version page's card), which
+`<quader-grade>`, `<quader-grade-card>` and the tab of findings take with the format. The malware scan is not named: no place had room
+for a second sentence that helps, and it runs whatever the vulnerability scanning does. No date is promised.
+
+**Applied in the spec:** R-UI-091, [vulnerability-scanning.md](vulnerability-scanning.md) (the state `format_not_scanned`). Tests: the
+cases of the sentences in [grade-words.spec.ts](../../web/src/app/shared/vulnerability/grade-words.spec.ts).
+
+### Q-UI-1245 · A version without documentation opens on its first tab with content, and its README tab says so
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner's
+rule is per package, by what is there ("wenn die dafür notwendigen Metainformationen vorhanden sind").
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The name opens the newest version's page all the same, on its first tab with content; the README tab stays and says "This version has no README to show." (chosen) | One kind of page per format | A name always leads to the same kind of page within a format; the reader sees at once that there is nothing to read, and why the page did not open on it | A tab whose content is one sentence |
+| (b) A package whose newest version has no README opens on its table | The format's old page | — | The page a name opens changes with a version's content; the head has no switch there |
+| (c) No README tab where there is none | As before | No empty tab | The documentation's place says nothing; the reader wonders where it is |
+
+The sentence says "to show", not "carries none": a caller who may not read the repository's wiki is told no README exists (R-UI-057,
+Q-UI-244), so the page must not claim more than it was told. A NuGet package's description in the nuspec is not a document to read:
+the README is the file the nuspec names. A collection without documentation (a role archive) has no Documentation tab and opens on its
+first tab, as before.
+
+**Choice:** (a). **Applied in the spec:** R-UI-218, R-UI-111. Code: `firstTab` and the tab list of
+[package-version.ts](../../web/src/app/features/packages/package-version.ts). Tests:
+[package-version.spec.ts](../../web/src/app/features/packages/package-version.spec.ts) (opens on Files, the tab's sentence, no README
+asked), the journey `21-visibility`.
 
 ### Q-UI-1246 · An entry's parameters and return values are two columns, as the documentation site has them
 
@@ -27050,3 +27310,23 @@ download link and a Bastion's handover (`links.reason.quader-host`, `links.reaso
 policy explainer (`explain.covered`, `explain.not-covered`) and the install note (`pkg.install.disabled-note`). What makes it real: a
 value with a hyphen or a dot that reaches the end of a line. The remedy is the one of Q-UI-1213 per sentence: the component splits the
 sentence with `aroundValue` and the template sets the value as `<code translate="no">`.
+
+### H-2080 · A remote package's README is shown only once a version is stored
+
+The README of an npm or a NuGet version is read from what Quader stores: the version's tarball or manifest for npm, the file the nuspec
+names inside the stored package for NuGet. A remote repository's package whose versions no client has fetched yet is listed under
+**Upstream** (R-CUR-018) and has no version page, so the README its upstream offers (npm's packument `readme`, NuGet's README of
+`ReadmeUriTemplate`) is not shown before a version is stored. Not built: a read of the upstream's README for a package that is not
+stored.
+
+### H-2081 · Documentation that belongs to OCI, Debian and generic files is not shown as documentation
+
+R-UI-218 turns on a format whose documentation is regularly present; OCI, Debian and generic files keep their table. Documentation some
+of their packages carry is not shown: a Helm chart's README inside an OCI artifact, an image's `org.opencontainers.image.description`
+annotation, a Debian package's long description and its `/usr/share/doc` files. Each would need a reader of its own and a decision of the
+owner whether it is regularly present.
+
+### H-2082 · The switch between the versions lists the ten newest only
+
+A version older than the ten newest is reached through the table of every version (`…/-/versions`), not through the switch; the switch
+has no search (Q-UI-1243).

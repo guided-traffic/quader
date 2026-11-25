@@ -6,6 +6,14 @@ import { routes } from './app.routes';
 import { FakeSessionApi, provideFakeApis } from './api/testing/fakes';
 import { SessionApi } from './api/session-api';
 import { Breadcrumbs } from './core/breadcrumbs';
+import { PackagesApi } from './api/packages-api';
+import { FakePackagesApi, ansibleDocsFixture, ansibleFixture } from './api/testing/fakes-packages';
+
+/** The collection of the fakes with the documentation of its newest version. */
+const withDocs = (f: FakePackagesApi): void => {
+  ansibleFixture(f);
+  ansibleDocsFixture(f);
+};
 import { QuaderTitleStrategy } from './core/title-strategy';
 import { seriousViolations } from './testing/axe';
 
@@ -84,7 +92,7 @@ const SCREENS: readonly (readonly [url: string, heading: string, h1?: string])[]
 ];
 
 /** Opens `url` in the whole app; `capabilities` replace the administrator's of the fake session. */
-async function open(url: string, capabilities?: readonly string[]) {
+async function open(url: string, capabilities?: readonly string[], fixture?: (packages: FakePackagesApi) => void) {
   TestBed.resetTestingModule();
   await TestBed.configureTestingModule({
     imports: [App],
@@ -96,10 +104,11 @@ async function open(url: string, capabilities?: readonly string[]) {
     ],
   }).compileComponents();
   if (capabilities) (TestBed.inject(SessionApi) as FakeSessionApi).meResult = { capabilities: [...capabilities] };
-  const fixture = TestBed.createComponent(App);
+  fixture?.(TestBed.inject(PackagesApi) as FakePackagesApi);
+  const app = TestBed.createComponent(App);
   await TestBed.inject(Router).navigateByUrl(url);
-  await fixture.whenStable();
-  return fixture.nativeElement as HTMLElement;
+  await app.whenStable();
+  return app.nativeElement as HTMLElement;
 }
 
 describe('route map', () => {
@@ -139,14 +148,66 @@ describe('route map', () => {
     }
   });
 
-  it('R-UI-003 R-UI-007 /projects/{project}/packages/{format}/{name…} captures the format and the scoped name with its slash, shows the name as heading and passes the accessibility check', async () => {
-    const root = await open('/projects/web/packages/npm/@team-a/ui?tab=metadata');
+  it('R-UI-003 R-UI-007 R-UI-218 /projects/{project}/packages/{format}/{name…} captures the format and the scoped name with its slash; an npm package opens its newest version, the table of its versions is …/-/versions', async () => {
+    const root = await open('/projects/web/packages/npm/@team-a/ui');
     expect(leaf().params['project']).toBe('web');
     expect(leaf().params['format']).toBe('npm');
     expect(leaf().params['name']).toBe('@team-a/ui');
-    expect(root.querySelector('main h1')?.textContent?.trim()).toBe('@team-a/ui');
+    expect(leaf().params['version']).toBeUndefined();
+    // npm leads with its documentation (R-UI-218): the package's address is its newest version's page.
+    expect(root.querySelector('main h1')?.textContent?.trim()).toBe('@team-a/ui 1.4.0');
     expect(document.title).toBe('Package – Quader');
+    expect(TestBed.inject(Breadcrumbs).trail().map((c) => c.label)).toEqual(['Projects', 'web', 'Packages', '@team-a/ui']);
     expect(await seriousViolations(root)).toEqual([]);
+
+    const table = await open('/projects/web/packages/npm/@team-a/ui/-/versions');
+    expect(leaf().params['name']).toBe('@team-a/ui');
+    expect(table.querySelector('main h1')?.textContent?.trim()).toBe('@team-a/ui');
+    expect(table.querySelector('main quader-data-table')).not.toBeNull();
+    expect(document.title).toBe('Versions – Quader');
+    const trail = TestBed.inject(Breadcrumbs).trail();
+    expect(trail.map((c) => c.label)).toEqual(['Projects', 'web', 'Packages', '@team-a/ui', 'Versions']);
+    expect(trail[3]?.commands).toEqual(['/', 'projects', 'web', 'packages', 'npm', '@team-a', 'ui']);
+  });
+
+  it('R-UI-218 a collection\'s address with a page of its documentation and an anchor shows that page of the newest version, keeps both, and its switch carries them to another version', async () => {
+    const at = '?tab=documentation&doc=module%2Fcheck_host_reachable#parameter-host';
+    const root = await open(`/projects/web/packages/ansible/acme.tools${at}`, undefined, withDocs);
+    expect(root.querySelector('main h1')?.textContent?.trim()).toBe('acme.tools 1.2.0');
+    const router = TestBed.inject(Router);
+    expect(router.url).toBe(`/projects/web/packages/ansible/acme.tools${at}`);
+    expect(leaf().queryParams['doc']).toBe('module/check_host_reachable');
+    expect(leaf().fragment).toBe('parameter-host');
+    expect(root.querySelector('main [role="tab"][aria-selected="true"]')?.textContent?.trim()).toBe('Documentation');
+    expect(root.querySelector('main .pane-details')?.textContent).toContain('check_host_reachable');
+    // The switch keeps the tab, the page and the anchor for the version it switches to.
+    root.querySelector<HTMLButtonElement>('main quader-version-switch button')!.click();
+    await TestBed.inject(Router).navigateByUrl(router.url);
+    const older = [...document.querySelectorAll<HTMLAnchorElement>('.version-menu a.menu-item')].find((a) => a.querySelector('.item-version')?.textContent === '1.0.0');
+    expect(older?.getAttribute('href')).toBe(`/projects/web/packages/ansible/acme.tools@1.0.0${at}`);
+  });
+
+  it('R-UI-111 a link that names a version opens that version, with its page of the documentation and its anchor', async () => {
+    const at = '?tab=documentation&doc=module%2Fcheck_host_reachable#parameter-host';
+    const root = await open(`/projects/web/packages/ansible/acme.tools@1.0.0${at}`, undefined, withDocs);
+    expect(root.querySelector('main h1')?.textContent?.trim()).toBe('acme.tools 1.0.0');
+    expect(leaf().params['version']).toBe('1.0.0');
+    expect(leaf().fragment).toBe('parameter-host');
+    expect(TestBed.inject(Router).url).toBe(`/projects/web/packages/ansible/acme.tools@1.0.0${at}`);
+    // The table of the versions answers at …/-/versions, a query and all.
+    await open('/projects/web/packages/ansible/acme.tools/-/versions?q=1.1#top', undefined, withDocs);
+    expect(leaf().params['name']).toBe('acme.tools');
+    expect(leaf().queryParams['q']).toBe('1.1');
+    expect(leaf().fragment).toBe('top');
+  });
+
+  it('R-UI-007 R-UI-110 an image keeps its table at its own address, and has no …/-/versions', async () => {
+    const root = await open('/projects/web/packages/oci/team/app');
+    expect(leaf().params['name']).toBe('team/app');
+    expect(root.querySelector('main h1')?.textContent?.trim()).toBe('team/app');
+    expect(root.querySelector('main quader-package-detail')).not.toBeNull();
+    await open('/projects/web/packages/oci/team/app/-/versions');
+    expect(leaf().params['name']).toBe('team/app/-/versions');
   });
 
   it('R-VULN-022 /projects/{project}/vulnerabilities/advisories/{ecosystem}/{id} binds both parameters and the trail names the advisory once, with a link that exists', async () => {

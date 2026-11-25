@@ -32,7 +32,9 @@ export interface CrumbSpec {
  * - a matcher route with `data.crumbParam` adds one step with that parameter's value (a package
  *   name such as `@team-a/ui`, whose slash belongs to the name); so does a path route with
  *   `data.crumbParam` (the project of `/projects/:project`), whose step links to that route itself; a resolved
- *   `crumbLabel` of that route replaces the parameter's value (the format of `/guides/:format`, Q-UI-553).
+ *   `crumbLabel` of that route replaces the parameter's value (the format of `/guides/:format`, Q-UI-553);
+ * - a matcher route with `data.crumbTail` (the table of a package's versions, `…/{name}/-/versions`, Q-UI-1242) adds the package,
+ *   linked to its address without the last `crumbTail` segments, and then the route's title.
  *
  * A trail of one step repeats the page title and is not shown.
  */
@@ -104,7 +106,13 @@ export function collect(root: ActivatedRouteSnapshot): Crumb[] {
       // (`data.crumbVersion`, `ui@1.4.0`) adds the package, linked to its page without the version, and then the version.
       const versionParam = config.data?.['crumbVersion'] as string | undefined;
       const version = versionParam ? route.params[versionParam] : undefined;
-      if (version) {
+      // The table of a package's versions where its own address is its newest version (`…/-/versions`, `data.crumbTail` segments
+      // after the name, Q-UI-1242): the package, linked to its address without them, then the page's title.
+      const tail = (config.data?.['crumbTail'] as number | undefined) ?? 0;
+      if (tail > 0 && own.length > tail) {
+        add({ label: route.params[crumbParam] ?? crumbParam, commands: [...before, ...own.slice(0, -tail)], literal: true });
+        add({ label: title ?? '', commands: [...before, ...own], literal: false });
+      } else if (version) {
         const last = own.length - 1;
         const unversioned = own.map((s, i) => (i === last ? s.slice(0, s.length - version.length - 1) : s));
         add({ label: route.params[crumbParam] ?? crumbParam, commands: [...before, ...unversioned], literal: true });

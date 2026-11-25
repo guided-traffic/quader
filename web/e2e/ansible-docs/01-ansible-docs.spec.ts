@@ -119,23 +119,24 @@ test('R-UI-060 R-UI-061 R-UI-062 R-UI-063 R-ANS-046 a collection published with 
   await signOut(page);
 });
 
-test('R-UI-060 R-UI-064 the Documentation tab with the install panel above it at 1440 px and on its own at 390 px', async ({ page }, info) => {
+test('R-UI-060 R-UI-064 the Documentation tab under the head with its Install button at 1440 px, and on its own at 390 px', async ({ page }, info) => {
   await signInLocal(page);
 
-  await test.step('at 1440 px the tree and the page are side by side, the install panel above them', async () => {
+  await test.step('at 1440 px the tree and the page are side by side, the command behind the head\'s Install', async () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(pageUrl(local, '?doc=module%2Fping_host'));
     await expect(page.locator('.doc-title')).toBeVisible();
     const tree = await page.locator('.pane-tree').boundingBox();
     const body = await page.locator('.pane-details').boundingBox();
-    const install = await page.locator('quader-install-panel').boundingBox();
+    const install = await page.locator('quader-page-header quader-client-command-menu').boundingBox();
     expect(tree, 'the tree pane is shown').not.toBeNull();
     expect(body, 'the page pane is shown').not.toBeNull();
-    expect(install, 'the install panel is shown').not.toBeNull();
+    expect(install, 'the head\'s Install is shown').not.toBeNull();
     // side by side, the page wide enough to read (more than the tree), nothing wider than the viewport
     expect(body!.x).toBeGreaterThanOrEqual(tree!.x + tree!.width);
     expect(body!.width).toBeGreaterThanOrEqual(tree!.width);
-    // the install panel stays above the tabs for this tab, so the page pane has room for the parameter table (Q-UI-257)
+    // the command is the head's button (Q-UI-1241): no box stands between the head and the tabs, and the page pane has room for the
+    // parameter table (Q-UI-257)
     expect(install!.y + install!.height).toBeLessThanOrEqual(tree!.y);
     expect(body!.width).toBeGreaterThan(640);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

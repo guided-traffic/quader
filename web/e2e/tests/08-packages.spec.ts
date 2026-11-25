@@ -158,12 +158,14 @@ test('E2.8 R-UI-006 R-UI-008 R-UI-016 the published version in the list, its san
     await expect(page.getByRole('heading', { name: repoKey, level: 1 })).toBeVisible();
     const row = page.getByRole('table', { name: 'Packages' }).getByRole('row', { name: new RegExp(pkgName) });
     await row.getByRole('button', { name: `Show the versions of ${pkgName}` }).click();
-    // The version's button Install opens its commands, a section per client; a one-line command is a field with its joined copy
-    // button (Q-UI-1066, Q-UI-320). Escape closes it and gives the focus back to the button.
+    // The version's button Install opens its commands, a tab per client with Set up client at the row's end; a one-line command is a
+    // field with its joined copy button (Q-UI-1066, Q-UI-1240, Q-UI-320). Escape closes it and gives the focus back to the button.
     const install = page.locator('quader-repository-item-versions').getByRole('button', { name: `${version}: Install` });
     await install.click();
     const menu = page.getByRole('dialog', { name: `Install ${pkgName} ${version}` });
+    await expect(menu.getByRole('tab', { name: 'npm', exact: true })).toHaveAttribute('aria-selected', 'true');
     await expect(menu.getByRole('textbox', { name: 'Command for npm' })).toHaveValue(new RegExp(`install ${pkgName}@${version}`));
+    await expect(menu.getByRole('link', { name: 'Set up client npm', exact: true })).toHaveAttribute('href', new RegExp(`/repositories/${repoKey}/setup\\?client=npm$`));
     await expectAccessible(page, 'repository content, package and the commands of its version');
     await page.keyboard.press('Escape');
     await expect(menu).toBeHidden();
@@ -175,16 +177,16 @@ test('E2.8 R-UI-006 R-UI-008 R-UI-016 the published version in the list, its san
     await expectAccessible(page, 'set up client of the repository');
   });
 
-  await test.step('the README renders, and what the sanitizer must drop is gone', async () => {
+  await test.step('the name opens the newest version on its README, and what the sanitizer must drop is gone', async () => {
     await page.goto(`/ui/en/projects/${e2eProject}/packages`);
     const drawer = await openFilters(page);
     await drawer.getByRole('checkbox', { name: qualified(repoKey), exact: true }).check();
     await applyFilters(page);
     await page.getByRole('link', { name: pkgName }).click();
-    await expect(page.getByRole('heading', { name: pkgName, level: 1 }).first()).toBeVisible();
-    // The package page is its versions, the README of the latest version below them (R-UI-110).
-    await expect(page.locator('.pkg-versions').getByRole('link', { name: version, exact: true })).toBeVisible();
-    await expect(page.getByRole('heading', { name: `README of ${version}`, level: 2 })).toBeVisible();
+    // npm leads with its documentation (R-UI-218): the package's address is its newest version's page, open on its README.
+    await expect(page).toHaveURL(new RegExp(`/packages/npm/${pkgName}$`));
+    await expect(page.getByRole('heading', { name: `${pkgName} ${version}`, level: 1 })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'README', exact: true })).toHaveAttribute('aria-selected', 'true');
     const rendered = page.locator('quader-package-readme .readme');
     await expect(rendered.getByRole('heading', { name: 'Usage', level: 2 })).toHaveAttribute(
       'id',
@@ -196,15 +198,21 @@ test('E2.8 R-UI-006 R-UI-008 R-UI-016 the published version in the list, its san
     expect(
       await page.evaluate(() => (window as unknown as { quaderReadmeRan?: string }).quaderReadmeRan),
     ).toBeUndefined();
-    await expectAccessible(page, 'package detail with the README');
+    await expectAccessible(page, 'the newest version with its README');
+    // The switch in the head leads to the table of every version (R-UI-110), one step away (Q-UI-1243).
+    await page.getByRole('button', { name: `Version ${version}, switch the version` }).click();
+    await page.getByRole('menuitem', { name: /^All (\d+ )?versions$/ }).click();
+    await expect(page).toHaveURL(new RegExp(`/packages/npm/${pkgName}/-/versions$`));
+    await expect(page.locator('.pkg-versions').getByRole('link', { name: version, exact: true })).toBeVisible();
   });
 
   await test.step('the page Set up client shows the configure snippet of every matrix client verbatim', async () => {
-    // The install panel is the version's (R-UI-111): its page has its own address, with the version after an @.
+    // A version has its own address, with the version after an @ (R-UI-111); Set up client is in the panel of its Install (Q-UI-1240).
     await page.locator('.pkg-versions').getByRole('link', { name: version, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/packages/npm/${pkgName}@${version.replaceAll('.', '\\.')}$`));
     await expect(page.getByRole('heading', { name: `${pkgName} ${version}`, level: 1 })).toBeVisible();
-    await page.getByRole('link', { name: 'Set up client', exact: true }).click();
+    await page.locator('quader-page-header').getByRole('button', { name: `${version}: Install` }).click();
+    await page.getByRole('dialog', { name: `Install ${pkgName} ${version}` }).getByRole('link', { name: 'Set up client npm', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Set up client', level: 1 })).toBeVisible();
     // The credential is one line, the environment variable by default (R-UI-122).
     await expect(page.locator('.credential')).toContainText('The snippets read it from QUADER_TOKEN.');

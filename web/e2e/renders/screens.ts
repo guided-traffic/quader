@@ -39,6 +39,7 @@ import { withVerify } from './verify';
 import { routeTooMany } from './suggestions';
 import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
 import { mirrorFilled } from './mirror';
+import { headLoading, longReadmeHead, manyVersionsHead, rowCommand, threeRepositoriesHead, versionHead } from './version-heads';
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
 import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { downloadsWalk } from './downloads';
@@ -240,20 +241,6 @@ async function* imageTagsFiltered(page: Page): AsyncGenerator<string> {
   await page.locator('main .versions-filter input').fill('1.1');
   await expect(page.locator('main .pkg-versions tbody tr')).toHaveCount(3);
   yield 'filtered';
-}
-
-/**
- * The menu of a version's commands (Q-UI-1066): the first item opened, then the button of its first version clicked, so that the panel
- * hangs from it with a section and a command per client of the format.
- */
-async function* commandMenuOpen(page: Page): AsyncGenerator<string> {
-  await page.locator('main .name-cell button[aria-expanded="false"]').first().click();
-  const versions = page.locator('main .collapse-region.open quader-repository-item-versions');
-  await expect(versions.locator('table.data tbody tr').first()).toBeVisible();
-  await versions.locator('tbody quader-client-command-menu button').first().click();
-  const panel = page.locator('.client-command-panel');
-  await expect(panel.locator('quader-address-field input, quader-code-window').first()).toBeVisible();
-  yield 'menu';
 }
 
 /**
@@ -2890,6 +2877,8 @@ const refusedStates: NonNullable<Screen['states']> = { ...sections, ...overlays(
 /** The address of a package page (R-UI-007) and of a version page (R-UI-111, `…/<name>@<version>`). */
 const pkg = (base: string, p: { readonly format: string; readonly name: string }): string => `${base}/packages/${p.format}/${p.name}`;
 const ver = (base: string, p: { readonly format: string; readonly name: string }, version: string): string => `${pkg(base, p)}@${version}`;
+/** The table of a package's versions where its name opens its newest version (R-UI-218, Q-UI-1242). */
+const table = (base: string, p: { readonly format: string; readonly name: string }): string => `${pkg(base, p)}/-/versions`;
 const collectionName = `${ansiblePackage.namespace}.${ansiblePackage.name}`;
 
 export const screens: readonly Screen[] = [
@@ -3003,26 +2992,49 @@ export const screens: readonly Screen[] = [
   // A remote's list after a mirror pass (W-24, Q-UI-1092): the rows a pass stored, answered in the browser (mirror.ts), as a reader.
   { id: 'repository-oci-mirror-filled', path: `${O}/repositories/docker-hub-remote`, kinds: ['plain'], walk: mirrorFilled },
   { id: 'repository-deb-mirror-filled', path: `${O}/repositories/debian`, kinds: ['plain'], walk: mirrorFilled },
-  // The menu of a version's commands (Q-UI-1066), hung from its button: an OCI remote's tag (Pull), an npm package's version and a
-  // Debian package's version (Install).
-  { id: 'repository-oci-cache-menu', path: `${O}/repositories/${remoteCache.key}`, kinds: ['power'], walk: commandMenuOpen, de: true },
-  { id: 'repository-npm-vendor-menu', path: `${P}/repositories/npm-vendor`, kinds: ['plain'], walk: commandMenuOpen, de: true },
-  { id: 'repository-deb-menu', path: `${O}/repositories/${longDebKey}`, kinds: ['power'], walk: commandMenuOpen, de: true },
+  // The panel of a version's commands (Q-UI-1066, Q-UI-1240), hung from its button: a tab per client and Set up client at the row's end,
+  // as it opens and with its last tab chosen: an OCI remote's tag (Pull: Docker, Podman), an npm package's version (Install: four
+  // tabs), a NuGet package's (three), a Debian package's and an Ansible collection's (one client, its name as the row's label).
+  { id: 'repository-oci-cache-menu', path: `${O}/repositories/${remoteCache.key}`, kinds: ['power'], walk: rowCommand, de: true },
+  { id: 'repository-npm-vendor-menu', path: `${P}/repositories/npm-vendor`, kinds: ['plain'], walk: rowCommand, de: true },
+  { id: 'repository-nuget-menu', path: `${O}/repositories/nuget`, kinds: ['plain'], walk: rowCommand, de: true },
+  { id: 'repository-deb-menu', path: `${O}/repositories/${longDebKey}`, kinds: ['power'], walk: rowCommand, de: true },
+  { id: 'repository-ansible-menu', path: `${O}/repositories/collections`, kinds: ['plain'], walk: rowCommand, de: true },
   { id: 'repository-nuget-virtual', path: `${O}/repositories/nuget`, kinds: all },
   { id: 'repository-ansible', path: `${O}/repositories/collections`, kinds: all },
   { id: 'packages', path: `${P}/packages`, kinds: all, walk: filtersOpen(packageChips) },
   { id: 'packages-other-project', path: `${O}/packages`, kinds: all, walk: filtersOpen() },
-  // A package's page is its versions (R-UI-110), a version's page its findings, install command, files and details (R-UI-111).
-  { id: 'package-npm', path: pkg(P, npmPackage), kinds: all },
-  { id: 'package-npm-many', path: pkg(P, manyVersionsPackage), kinds: all, walk: versionsTable },
+  // A package of a format that leads with its documentation (R-UI-218: npm, NuGet, Ansible Galaxy) opens its newest version on its
+  // documentation, with the switch between the versions and the verb's button in the head; its table of versions is …/-/versions
+  // (R-UI-110). An image's, a Debian package's page is its table (R-UI-110). A version's page has its findings, files and details, its
+  // command behind the head's button (R-UI-111, Q-UI-1241).
+  { id: 'package-npm', path: pkg(P, npmPackage), kinds: all, walk: versionHead, de: true },
+  { id: 'package-npm-versions', path: table(P, npmPackage), kinds: all },
+  { id: 'package-npm-many', path: table(P, manyVersionsPackage), kinds: all, walk: versionsTable },
   { id: 'package-npm-graded', path: pkg(P, gradedPackage), kinds: all },
-  { id: 'package-npm-long-name', path: pkg(P, longNamePackage), kinds: ['plain'] },
+  { id: 'package-npm-long-name', path: pkg(P, longNamePackage), kinds: ['plain'], walk: versionHead, de: true },
+  // The newest version with a long README (tables, code, an image); a package of thirty versions, the switch bounded at ten; one of
+  // pre-releases only; a version held by three repositories, picked in the panel (answered in the browser, version-heads.ts).
+  { id: 'package-npm-long-readme', path: pkg(P, npmPackage), kinds: ['plain'], walk: longReadmeHead, de: true },
+  { id: 'package-npm-thirty', path: pkg(P, npmPackage), kinds: ['plain'], walk: manyVersionsHead(), de: true },
+  { id: 'package-npm-prereleases', path: pkg(P, longNamePackage), kinds: ['plain'], walk: manyVersionsHead(true) },
+  { id: 'package-npm-three-repositories', path: pkg(P, npmPackage), kinds: ['plain'], walk: threeRepositoriesHead, de: true },
   { id: 'package-oci', path: pkg(P, ociPackage), kinds: all, de: true },
   // An image's page of twelve images: every tag in its row, the header's count of tags, the filter by any tag (Q-UI-1130).
   { id: 'package-oci-many', path: pkg(P, { format: 'oci', name: 'portal/worker' }), kinds: ['plain'], walk: imageTagsFiltered, de: true },
-  { id: 'package-nuget', path: pkg(O, nugetPackage), kinds: all },
+  { id: 'package-nuget', path: pkg(O, nugetPackage), kinds: all, walk: versionHead, de: true },
+  { id: 'package-nuget-versions', path: table(O, nugetPackage), kinds: ['plain'] },
   { id: 'package-deb', path: pkg(O, debPackage), kinds: all },
-  { id: 'package-ansible', path: pkg(O, { format: 'ansible', name: collectionName }), kinds: all },
+  { id: 'package-ansible', path: pkg(O, { format: 'ansible', name: collectionName }), kinds: all, walk: versionHead, de: true },
+  // The head's loads (R-UI-217): the panel while the commands are read, the switch while its versions are.
+  { id: 'package-npm-loading', path: pkg(P, npmPackage), kinds: ['plain'], walk: headLoading, de: true },
+  { id: 'package-ansible-versions', path: table(O, { format: 'ansible', name: collectionName }), kinds: ['plain'] },
+  // A collection of thirty versions and 96 entries of documentation: the strip, the switch and the panel in German at 1,024 px too.
+  { id: 'package-ansible-thirty', path: pkg(O, { format: 'ansible', name: collectionName }), kinds: ['plain'], walk: manyVersionsHead(), de: true },
+  // The head of a version's page per format: the verb's button and its panel (Q-UI-1241).
+  { id: 'package-version-oci-head', path: ver(P, ociPackage, '1.4.0'), kinds: ['plain'], walk: versionHead, de: true },
+  { id: 'package-version-deb-head', path: ver(O, debPackage, debPackage.versions[1]), kinds: ['plain'], walk: versionHead, de: true },
+  { id: 'package-version-nuget-head', path: ver(O, nugetPackage, nugetPackage.versions[1]), kinds: ['plain'], walk: versionHead, de: true },
   { id: 'package-version-npm', path: ver(P, npmPackage, '1.1.0'), kinds: all, de: true },
   { id: 'package-version-npm-graded', path: ver(P, gradedPackage, gradedPackage.version), kinds: all },
   { id: 'package-version-npm-many', path: ver(P, manyVersionsPackage, '3.7.0'), kinds: ['plain'] },

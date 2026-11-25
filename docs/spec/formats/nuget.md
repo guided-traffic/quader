@@ -2001,6 +2001,14 @@ Priority: **P1** · Covers: PKG-NUGET-055
 Packages may embed an icon, a license file and a README
 ([implementation guide](https://learn.microsoft.com/en-us/nuget/api/implementation-guide)).
 
+- **A package leads with its README** (the owner, 2026-11-25,
+  [R-UI-218](../api-and-ui.md#r-ui-218--a-package-leads-with-the-documentation-its-format-carries)): a package's name opens its newest
+  version's page on the tab **README**, the file the `.nuspec` names; the head switches between the versions, and the table of every
+  version is `…/<id>/-/versions`. A version without one opens on its first tab with content and its README tab says that there is none
+  to show; the nuspec's `description` is not a document to read
+  ([Q-UI-1245](../api-and-ui.md#q-ui-1245--a-version-without-documentation-opens-on-its-first-tab-with-content-and-its-readme-tab-says-so)).
+  The README of a remote's package that no client fetched yet is not shown (H-2080 of api-and-ui.md).
+
 - The files the `.nuspec` names in `icon`, `license` (type `file`) and `readme` are read out of the stored `.nupkg` when a client
   asks for one, through the one reader of a stored package (`nupkg.Open`, the reader the package view's README uses), with ranged
   reads: the end record, the central directory and the entry. No file is extracted at ingestion and none is stored as an item

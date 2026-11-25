@@ -94,7 +94,7 @@ export const GRADE_SORT_MAX = 1000;
           @if (graded()) {
             <td>
               @if (p.vulnerabilityGrade; as g) {
-                <quader-grade [grade]="g" [image]="p.format === 'oci'" />
+                <quader-grade [grade]="g" [image]="p.format === 'oci'" [format]="p.format" />
               }
             </td>
           }

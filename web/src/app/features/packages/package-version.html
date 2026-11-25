@@ -24,6 +24,41 @@
       </span>
     }
   </span>
+  <!-- The page's acts at the right of its head (Q-UI-1241, Q-UI-1243): the switch between the versions where the format leads with its
+       documentation, then the verb's button with the clients' commands, or Set up client of the ClamAV definitions. -->
+  <ng-container actions>
+    @if (leads() && pkg(); as p) {
+      @if (shown(); as v) {
+        <quader-version-switch
+          [project]="project()"
+          [format]="format()"
+          [name]="p.name"
+          [shown]="v"
+          [latest]="p.latestVersion"
+          [count]="p.versionCount"
+          [versions]="switchVersions.hasValue() ? switchVersions.value() : null"
+          [loading]="switchVersions.isLoading() && !switchVersions.hasValue()"
+          [tab]="switchTab()"
+          [doc]="doc() ?? null"
+        />
+      }
+    }
+    @if (command(); as c) {
+      @if (c.kind === 'menu' && detail(); as d) {
+        <quader-client-command-menu
+          size="page"
+          [format]="format()"
+          [name]="d.name"
+          [version]="d.version"
+          [repository]="c.repository"
+          [repositories]="c.repositories"
+          [verb]="verb()"
+        />
+      } @else if (c.kind === 'clamav') {
+        <a class="btn btn-default" [routerLink]="c.setup" [queryParams]="{ client: 'freshclam' }" i18n="@@repo.content.tab.setup">Set up client</a>
+      }
+    }
+  </ng-container>
 </quader-page-header>
 
 @if (loadFailure(); as f) {
@@ -36,7 +71,7 @@
       <span class="dot-separated">
         @if (grade(); as g) {
           <a class="facts-grade" [routerLink]="[]" [queryParams]="{ tab: 'vulnerabilities' }" queryParamsHandling="merge">
-            <quader-grade [grade]="g" [image]="format() === 'oci'" />
+            <quader-grade [grade]="g" [image]="format() === 'oci'" [format]="format()" />
           </a>
         }
         <span
@@ -56,6 +91,15 @@
         }
       </span>
     </p>
+    <!-- Why no client can install the version, where the head has no button (Q-UI-965, Q-UI-898, Q-UI-899), and why a version of the
+         ClamAV definitions has no command (R-UI-194): muted, under the facts. -->
+    @if (command(); as c) {
+      @if (c.kind === 'note') {
+        <p class="version-note" [attr.data-testid]="c.cause === 'disabled' ? 'install-disabled' : 'install-system'">{{ c.note }}</p>
+      } @else if (c.kind === 'clamav') {
+        <p class="version-note" data-testid="install-clamav">{{ clamavNote }}</p>
+      }
+    }
     @if (unlisted()) {
       <p class="banner-warning" role="note">
         <span class="material-icons inline warn" aria-hidden="true">visibility_off</span>
@@ -150,7 +194,6 @@
     }
   </section>
 
-  <quader-install-panel class="version-install" [format]="format()" [name]="d.name" [version]="d" />
 
   <quader-tab-group class="version-tabs" [selectedIndex]="activeIndex()" (selectedIndexChange)="selectTab($event)">
     @for (t of tabs(); track t.id) {
@@ -159,7 +202,7 @@
           @switch (t.id) {
             @case ('vulnerabilities') {
               @if (activeTab() === 'vulnerabilities') {
-                <quader-package-vulnerabilities [report]="vulnerabilityReport()" [packageName]="d.name" [image]="format() === 'oci'" [severity]="severityFilter()" />
+                <quader-package-vulnerabilities [report]="vulnerabilityReport()" [packageName]="d.name" [image]="format() === 'oci'" [format]="format()" [severity]="severityFilter()" />
               }
             }
             @case ('documentation') {
@@ -193,6 +236,9 @@
                 <quader-error-notice [error]="f" (retry)="readmeFailure.retry()" />
               } @else if (readme.isLoading()) {
                 <quader-loading i18n="@@pkg.readme.loading">Loading the README.</quader-loading>
+              } @else if (!d.hasReadme || (readme.hasValue() && readme.value() === null)) {
+                <!-- A format that leads with its documentation keeps the tab where the version carries none, and says so (Q-UI-1245). -->
+                <p class="version-note" data-testid="no-readme" i18n="@@pkg.readme.none">This version has no README to show.</p>
               } @else {
                 <quader-package-readme [readme]="readme.hasValue() ? (readme.value() ?? null) : null" />
               }

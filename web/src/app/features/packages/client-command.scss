@@ -1,0 +1,27 @@
+// A one-line command is as wide as its text, up to its place's width (Q-UI-455): read in full where there is room, never a field far
+// wider than its command. The field's font is the input's, so that a character of `--command-chars` is one of the command's; the rest
+// is the input's padding and border and the joined copy button.
+.command-field {
+  inline-size: min(100%, calc((var(--command-chars) + 2) * 1ch + 4.5rem));
+  max-inline-size: none;
+  font-family: var(--quader-font-mono);
+  font-size: 0.875rem;
+}
+
+.expander {
+  margin-block: var(--quader-space-2) 0;
+}
+
+// In the panel of a version's commands (Q-UI-1066, Q-UI-1240) the field asks for its command's width, which sizes the panel, and then
+// takes the panel's width: a command longer than the panel scrolls inside its field, from its start. The sentence while it loads is
+// muted, as a note.
+:host(.in-menu) .command-field {
+  inline-size: calc((var(--command-chars) + 2) * 1ch + 4.5rem);
+  min-inline-size: 100%;
+  max-inline-size: 100%;
+}
+
+.command-loading {
+  margin: 0;
+  color: var(--quader-text-muted);
+}

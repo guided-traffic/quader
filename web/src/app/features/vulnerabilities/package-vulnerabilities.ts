@@ -57,6 +57,7 @@ export function blockedRepositories(report: VulnerabilityVersionReport | null): 
             [packageName]="packageName()"
             [findingVersions]="findingVersions(repo, r.version)"
             [image]="image() || repo.images !== undefined"
+            [format]="format()"
             [barQueries]="barQueries"
             [activeSeverity]="severity()"
           />
@@ -102,6 +103,8 @@ export class PackageVulnerabilities {
    * carries no `images` (an installation whose image scanning is off).
    */
   readonly image = input(false);
+  /** The version's format: an N/A of a format that is not scanned says the format's reason (Q-UI-1244). */
+  readonly format = input<string | null>(null);
   /** The severity the card's bar narrowed the findings to (the address's `severity`), or null. */
   readonly severity = input<BarSeverity | null>(null);
 

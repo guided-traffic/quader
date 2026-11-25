@@ -1,6 +1,6 @@
 # Packages
 
-The Packages screen lists the packages of all repositories you may read, with filters, sorting and saved views. A package opens on the table of its versions; each version has a page of its own with its vulnerabilities, a ready-made install command, its files and its metadata. This page explains each part.
+The Packages screen lists the packages of all repositories you may read, with filters, sorting and saved views. An npm or NuGet package and an Ansible collection open on their newest version's documentation, from where you switch to older versions; a container image and a Debian package open on the table of their versions. Each version has a page of its own with its documentation, its vulnerabilities, its files, its metadata and, behind Install or Pull, a ready-made command. This page explains each part.
 
 ## What the list shows
 
@@ -15,8 +15,8 @@ A package appears once, however many repositories hold it. Everything in its row
 | **Latest** | The highest stable version you may see. A pre-release is shown only while no stable version exists |
 | **Updated** | When the latest version you may see was published, as a relative time ("4 minutes ago"); point at it for the exact time |
 
-When a version was published, how large it is, its vulnerabilities and when a client last downloaded it are in the versions table of the
-package's page.
+When a version was published, how large it is, its vulnerabilities and when a client last downloaded it are in the table of the
+package's versions.
 
 The **?** next to some column headings explains the column. The list shows one page at a time; **Load more** adds the next page. When nothing is published yet, the list says **No package has been published yet.** and offers **Set up a client to publish the first package**. **Set up a client** at the top of the screen opens the client setup at any time.
 
@@ -63,13 +63,25 @@ When you are signed in, two more tabs appear next to **All packages**:
 
 Both are kept in this browser only, separately for each user. They are not available where the browser blocks site storage, and they do not follow you to another browser.
 
-## A package's page: its versions
+## A package's page
 
-Select a package name to open its page. The page shows the name, the format, the description of the latest version, how many
-versions you may see and the latest one. The address of a package is `/projects/<project>/packages/<format>/<name>`, for example
+Select a package name to open its page. The address of a package is `/projects/<project>/packages/<format>/<name>`, for example
 `https://quader.example.com/ui/en/projects/web/packages/npm/@team-a/ui`.
 
-The page is a table of every version you may see, the highest version first:
+**npm, NuGet and Ansible Galaxy: the newest version's documentation.** Their packages carry documentation, so the name opens the page
+of the newest version (the highest that is no pre-release; a package of pre-releases only opens its highest) on its documentation: the
+**README** of an npm or a NuGet package, the tab **Documentation** of a collection, as Ansible Galaxy does. In the head, the button
+with the version (for example **5.4.1**) lists the ten newest versions, the one you read marked, the newest marked **Latest**, and
+under them **All 30 versions**, the table of every version below. A version you choose opens on the tab you were reading, and for a collection on the same page of its documentation. A version
+without a README opens on its next tab, and its tab **README** says that there is none to show; a collection without documentation, such
+as a role, opens on the tab it has. The table of every version has the address `…/<name>/-/versions`.
+
+**Container images and Debian packages: the table of their versions.** Their name opens the table directly.
+
+## The table of a package's versions
+
+The table shows the name, the format, the description of the latest version, how many versions you may see and the latest one, then
+every version you may see, the highest version first:
 
 | Column | Meaning |
 |---|---|
@@ -102,6 +114,11 @@ repositories that hold the package, its keywords, its downloads and when it was 
 Select a version to open its page. Its address is the package's with `@` and the version, for example
 `https://quader.example.com/ui/en/projects/web/packages/npm/@team-a/ui@1.4.0`; send it to point a colleague at exactly this version.
 
+At the right of the head stand the version's acts: for npm, NuGet and Ansible Galaxy the switch between the versions, then **Install**
+or **Pull** with the commands of this version ([below](#the-command-of-a-version)). Where no client can install the version (only a
+disabled repository or a system repository holds it) there is no button, and a sentence under the facts says why; a version of the
+ClamAV definitions has **Set up client** there instead, since a ClamAV installation always takes the version in use.
+
 Under the name and the version, one line holds the facts of the version: its grade with the number of findings and how many have a
 fix (select it to open the findings), when it was published, its size, when a client last downloaded it, its downloads and its licences. A
 version that its publisher marked as deprecated shows **Deprecated.** with the publisher's message; a version whose download a
@@ -113,8 +130,8 @@ ends with **Downloads are refused.** (see [the malware scan's states](files.md#t
 
 | Tab | What it shows |
 |---|---|
-| **Vulnerabilities** | For each repository that holds the version, its grade card and its open findings, the worst first (see [Vulnerabilities](vulnerabilities.md#on-the-page-of-a-version)). The first tab of a version that is checked |
-| **README** | The README of this version. Shown only when the version has one |
+| **README** | The README of this version. The first tab of an npm or a NuGet package, also where the version has none: it then says so. For a container image and a Debian package shown only when the version has one |
+| **Vulnerabilities** | For each repository that holds the version, its grade card and its open findings, the worst first (see [Vulnerabilities](vulnerabilities.md#on-the-page-of-a-version)). The first tab of a checked container image; after the README of an npm or a NuGet package; after **Details** for a version that is not checked |
 | **Files** | The files of this version, each path with its size and the first twelve characters of its SHA-256 under it (point at the hash for the whole), and the columns **Malware scan** (while the installation scans for malware: **No malware found**, **Queued**, **No scanner**, **No signatures**, **Malware found**, **Could not be checked** or **Released**, see [the malware scan's states](files.md#the-malware-scans-states)) and a **Download** link, which a file the malware scan refuses does not have. **Copy SHA-256** copies the checksum; compare it with the output of `sha256sum` on the downloaded file |
 | **Details** | **Links** (**Homepage**, **Source repository**, **Issue tracker**), **Authors**, **Dependencies**, **Development dependencies**, **Peer dependencies**, **Optional dependencies** and **Required runtimes**, as far as the version declares them; for an image its digest, media type, size and platforms, each platform with its own size or, in a remote repository, **Not fetched** until a client pulls it; then **Repositories**: each repository that holds the version, its **Class** and when it was **Published** there |
 
@@ -127,15 +144,16 @@ beside the version it points at, and only tags that point at a version you may s
 
 You change tags with your package manager, not in the UI, for example `npm dist-tag add @team-a/ui@1.4.0 next`. That needs the deploy permission and, where the package has owners, ownership of it. The guide on the repository's page **Set up client** has the commands for each client; see [Connecting a package client](client-setup.md). The content page of a repository also lists its packages with their install commands; see [Repositories](repositories.md#the-content-of-a-repository).
 
-## The install panel
+## The command of a version
 
-The panel **Install** stands on a version's page, under its facts and above its tabs. It shows the command that installs this version, in full.
+**Install** (**Pull** for a container image) in the head of a version's page, and at the end of a version's row in a repository's list,
+opens the commands of this version:
 
-1. Under **Client**, choose npm, pnpm, Yarn Berry (2 and later) or Yarn Classic (1.x).
-2. Under **Repository**, choose the repository to install from. The picker appears only when several repositories hold the version; Quader preselects a virtual repository, otherwise a local one. A system repository of the project Upstream is never offered: no client can install from it, and a version only such a repository holds shows one sentence instead of a command. Nor is a disabled repository, or a virtual one that holds the version only through disabled members; a version only disabled repositories hold names them in one sentence, and its files have no **Download**.
-3. Select **Copy install command** beside the **Install command**. A command of several lines is shown as a block; one longer than three lines is collapsed, **Show the whole command** expands it and **Show less** collapses it again.
+1. Where several repositories you can install from hold the version, choose one under **Repository** at the top; Quader preselects a virtual repository, otherwise a local one. A system repository of the project Upstream is never offered: no client can install from it. Nor is a disabled repository, or a virtual one that holds the version only through disabled members.
+2. Choose your client's tab: **npm**, **pnpm**, **Yarn Berry**, **Yarn Classic** for npm; **.NET CLI**, **NuGet CLI**, **Visual Studio** for NuGet; **Docker** and **Podman** for an image. A package type with one client (APT, ansible-galaxy, curl) names it instead. The arrow keys move between the tabs, and the panel opens again on the tab you chose last.
+3. Select the copy button at the end of the command. A command of several lines is shown as a block; one longer than three lines is collapsed, **Show the whole command** expands it and **Show less** collapses it again.
 
-The command assumes that your package manager is already configured for the repository; it never contains a token. **Set up client** opens the page of the chosen repository with the chosen client, where you configure that once; see [Connecting a package client](client-setup.md).
+The command assumes that your package manager is already configured for the repository; it never contains a token. **Set up client**, at the end of the row of tabs, opens the page of the chosen repository with the chosen client, where you configure that once; see [Connecting a package client](client-setup.md). Escape or a click outside closes the panel.
 
 ## The README
 

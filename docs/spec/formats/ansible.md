@@ -966,6 +966,15 @@ Priority: **P1** · Covers: PKG-ANSIBLE-004
   `keywords` fields of the version. A member that is empty is left out and not shown.
 - The **Documentation and Contents tabs** of the package page, the operations behind them and the setting `ansible.fetchDocumentation` (remote only, in the
   format's settings schema) are R-ANS-033 to R-ANS-037 and R-ANS-039 to R-ANS-043, and [Q-UI-240](../api-and-ui.md#q-ui-240--an-ansible-package-has-a-documentation-tab-and-a-contents-tab-the-readme-tab-is-its-first-page) to Q-UI-244; for the format the README tab is replaced by the Documentation tab.
+- **A collection leads with its documentation** (the owner, 2026-11-25, W-30: "Wenn man auf eine Collection klickt, sollte man meiner
+  Meinung nach direkt in der Doku der neusten Version landen. Das wäre das normale Verhalten in Ansible Galaxy";
+  [R-UI-218](../api-and-ui.md#r-ui-218--a-package-leads-with-the-documentation-its-format-carries)): a collection's name, wherever it is
+  a link, opens the page of its newest version (the highest that is no pre-release) on the tab **Documentation**; the head switches
+  between its versions and the table of every version is `…/<namespace>.<name>/-/versions`. A version without documentation (a role
+  archive, a collection whose archive carries none) opens on the tab it has. The install command is behind the head's **Install**
+  (one client, `ansible-galaxy`, its name the panel's label, [Q-UI-1241](../api-and-ui.md#q-ui-1241--a-versions-page-has-its-command-behind-the-verbs-button-in-its-head-the-box-is-gone)).
+  A collection is not checked for vulnerabilities, and the screens say why (Q-ANS-15,
+  [Q-UI-1244](../api-and-ui.md#q-ui-1244--not-checked-for-vulnerabilities-says-the-reason-of-the-format)).
 - The **deploy dialog** (UI-013) is not offered for the format: `/files/` deploys nothing into a repository with a protocol of its own
   (R-STOR-007), so the screens show `ansible-galaxy collection publish` and the raw-body publish of R-ANS-008 instead (Q-ANS-34).
 - The UI shows the import tasks of a local repository on its edit form (a lazy tab, newest first, state and messages) through the

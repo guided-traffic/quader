@@ -15,7 +15,7 @@ import { GradeLabel } from '../../../shared/vulnerability/grade';
 import { checkWaits } from '../../../shared/vulnerability/grade-words';
 import { ClientCommandMenu } from '../../packages/client-command-menu';
 import { VersionSize } from '../../packages/version-size';
-import { packageCommands, versionCommands } from '../../packages/package-links';
+import { versionCommands, versionsCommands } from '../../packages/package-links';
 import { ImageTags } from '../../packages/image-tags';
 import { ContentShape } from './content-shape';
 
@@ -95,7 +95,7 @@ export const OPENED_OTHER_TAGS = 4;
           @if (scanned()) {
             <td>
               @if (gradeOf(v.version); as g) {
-                <quader-grade [grade]="g" [image]="pkg().format === 'oci'" />
+                <quader-grade [grade]="g" [image]="pkg().format === 'oci'" [format]="pkg().format" />
               }
             </td>
           }
@@ -207,7 +207,7 @@ export class RepositoryItemVersions {
   protected readonly allText = computed(() => this.shape().allVersionsText(formatNumber(this.more(), this.locale)));
   /** The package's page, which lists every version with filter, sort and **Load more** (R-UI-110). */
   protected packageLink(): string[] {
-    return packageCommands(splitRef(this.repository()).project, this.pkg().format, this.pkg().name);
+    return versionsCommands(splitRef(this.repository()).project, this.pkg().format, this.pkg().name);
   }
   /** The page of a version (R-UI-111). */
   protected versionLink(version: string): string[] {

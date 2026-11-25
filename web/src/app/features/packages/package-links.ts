@@ -1,3 +1,5 @@
+import { leadsWithDocumentation } from '../repositories/content/content-shape';
+
 /**
  * A link taken from package metadata (npm `homepage`, `repository.url`, `bugs.url`): a package
  * author sets it, so it becomes a link only when its scheme is `http` or `https` (R-UI-007).
@@ -22,6 +24,20 @@ export const EXTERNAL_REL = 'nofollow noopener noreferrer';
 /** The router commands of a package page in its project: the name keeps its slash as a separator (`@team-a/ui`). */
 export function packageCommands(project: string, format: string, name: string): string[] {
   return ['/projects', project, 'packages', format, ...name.split('/')];
+}
+
+/** The segments after a package's name that address the table of its versions where the name opens its newest version (Q-UI-1242). */
+export const VERSIONS_SEGMENTS: readonly string[] = ['-', 'versions'];
+
+/**
+ * The router commands of the table of a package's versions (R-UI-110): the package's own address for a format whose content is its
+ * list (OCI, Debian, generic files), and `…/{name…}/-/versions` for a format whose packages lead with their documentation (R-UI-218),
+ * whose own address is its newest version's page. No package name of those formats holds a segment `-` (npm and NuGet names and
+ * Ansible's `namespace.name` have at most one slash, of an npm scope that starts with `@`), so the two never meet.
+ */
+export function versionsCommands(project: string, format: string, name: string): string[] {
+  const commands = packageCommands(project, format, name);
+  return leadsWithDocumentation(format) ? [...commands, ...VERSIONS_SEGMENTS] : commands;
 }
 
 /**

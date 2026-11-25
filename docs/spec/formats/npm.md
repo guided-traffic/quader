@@ -791,6 +791,12 @@ Priority: **MVP** · Covers: PKG-NPM-025, PKG-NPM-029, FMT-011
   `maintainers` lists the distinct principal names that published the versions present, by name and
   without e-mail; it is informational (ownership is R-AUTHZ-018). The versions and the `time` map
   are in SemVer order, and no version object carries a `readme` (Q-NPM-31).
+- **A package leads with its README on the screens** (the owner, 2026-11-25,
+  [R-UI-218](../api-and-ui.md#r-ui-218--a-package-leads-with-the-documentation-its-format-carries)): a package's name opens its newest
+  version's page on the tab **README** (the version's `npm_versions.readme`); the head switches between the versions, and the table of
+  every version is `…/<name>/-/versions`. A version without a README, or a caller who may not read the wiki, gets the page on its first
+  tab with content and a README tab that says there is none to show
+  ([Q-UI-1245](../api-and-ui.md#q-ui-1245--a-version-without-documentation-opens-on-its-first-tab-with-content-and-its-readme-tab-says-so)).
 - **The README is wiki content** ([authorization.md](../authorization.md) R-AUTHZ-034). `readme` and `readmeFilename` are
   present only for a caller who may read the wiki of the repository that supplies the version `latest` points to, asked
   through `Host.WikiReadable`; for any other caller both members are absent and the rest of the document is unchanged. The wiki content

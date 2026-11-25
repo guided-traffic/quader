@@ -110,12 +110,11 @@ describe('The Documentation tab of an Ansible collection', () => {
       expect(r.root.querySelector('[role="alert"]')).toBeNull();
     });
 
-    it('R-UI-060 R-UI-111 the install panel stands above the tabs at the width of the page, so the documentation has the whole width below it', async () => {
+    it('R-UI-060 R-UI-111 the command is the button of the head, so no box stands between the facts and the tabs', async () => {
       const r = await open();
-      const panel = r.root.querySelector('quader-install-panel')!;
+      expect(r.root.querySelector('quader-page-header quader-client-command-menu')).not.toBeNull();
       const tabs = r.root.querySelector('quader-tab-group')!;
-      expect(panel.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-      expect(panel.parentElement).toBe(tabs.parentElement);
+      expect(tabs.previousElementSibling?.classList.contains('version-facts')).toBe(true);
     });
 
     it('R-UI-060 the tree is requested when its tab is open, once for the version, and not again when the user comes back', async () => {

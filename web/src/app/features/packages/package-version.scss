@@ -83,10 +83,11 @@ dl.digests {
   white-space: nowrap;
 }
 
-// The install command at the page's width, so a command is read in full where it is shown (R-UI-009, Q-UI-455).
-.version-install {
-  display: block;
-  margin-block-end: var(--quader-space-4);
+// Why no client can install the version, or why it has no command of its own (Q-UI-1241), and a version without a README (Q-UI-1245):
+// muted, as a note.
+.version-note {
+  margin: 0;
+  color: var(--quader-text-muted);
 }
 
 .version-tabs {

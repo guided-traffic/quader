@@ -4,7 +4,7 @@ import { npmPublishBody } from '../npm-publish';
 // R-UI-047 journey "visibility" (R-UI-053 to R-UI-057, R-AUTHZ-030, R-AUTHZ-033, R-AUTHZ-034): an administrator sets the installation's
 // default level and a project's level and confirms a lowering that names the repository it lowers; the Owner of a public project sets the
 // artifacts of a repository to Public and its wiki to Internal; an anonymous visitor finds the public project, opens a package of it and
-// sees no README tab and makes no README request; an external user's start page holds the public project and no internal one. With
+// sees no README and makes no README request; an external user's start page holds the public project and no internal one. With
 // Public restricted to administrators (R-UI-140, R-UI-141), the Owner keeps a public level and cannot choose it for the wiki.
 //
 // The journey needs the deployed backend of T-18 (the visibility handlers) and an installation whose default endpoint admits anonymous
@@ -197,17 +197,19 @@ test('R-UI-057 an anonymous visitor finds the public project and a package witho
 
   await visitor.goto(`/ui/en/projects/${publicProject}/packages`);
   await visitor.getByRole('link', { name: pkgName }).click();
-  await expect(visitor.getByRole('heading', { name: pkgName, level: 1 }).first()).toBeVisible();
-  // The package page is its versions (R-UI-110); without the wiki there is no README below them.
+  // npm leads with its documentation (R-UI-218): the name opens the newest version. Without the wiki it has no README to show, so the
+  // page opens on its first tab with content, and the tab README says only that there is none (Q-UI-1245).
+  await expect(visitor.getByRole('heading', { name: `${pkgName} ${version}`, level: 1 })).toBeVisible();
+  await expect(visitor.getByRole('tab', { name: 'Files' })).toHaveAttribute('aria-selected', 'true');
+  await visitor.getByRole('tab', { name: 'README' }).click();
+  await expect(visitor.getByText('This version has no README to show.')).toBeVisible();
+  await expectAccessible(visitor, 'version page of an anonymous visitor');
+  // The table of its versions (R-UI-110) has no README below it either.
+  await visitor.goto(`/ui/en/projects/${publicProject}/packages/npm/${pkgName}/-/versions`);
   await expect(visitor.locator('.pkg-versions').getByRole('link', { name: version, exact: true })).toBeVisible();
   await expect(visitor.locator('.pkg-readme')).toHaveCount(0);
-  await expectAccessible(visitor, 'package page of an anonymous visitor');
-  // The version's own page (R-UI-111) has no README tab either.
-  await visitor.locator('.pkg-versions').getByRole('link', { name: version, exact: true }).click();
-  await expect(visitor.getByRole('tab', { name: 'Files' })).toBeVisible();
-  await expect(visitor.getByRole('tab', { name: 'README' })).toHaveCount(0);
   expect(readmeRequests, 'README requests of an anonymous visitor').toEqual([]);
-  await expectAccessible(visitor, 'version page of an anonymous visitor');
+  await expectAccessible(visitor, 'package page of an anonymous visitor');
   await context.close();
 });
 

@@ -40,9 +40,31 @@ async function set(r: Opened, inputs: Record<string, unknown>) {
 }
 
 const tabLabels = (r: Opened) => [...r.root.querySelectorAll('[role="tab"]')].map((t) => text(t));
-const command = (r: Opened) =>
-  r.root.querySelector<HTMLInputElement>('quader-install-panel quader-address-field input')?.value ??
-  r.root.querySelector('quader-install-panel pre')?.textContent;
+/** The button of the head that opens the clients' commands (Q-UI-1241); null where the head offers none. */
+const commandButton = (r: Opened) => r.root.querySelector<HTMLButtonElement>('quader-page-header quader-client-command-menu button');
+/** The panel the button opened, hung in the overlay. */
+const commandPanel = (r: Opened) => {
+  const id = commandButton(r)?.getAttribute('aria-controls');
+  return id ? document.getElementById(id) : null;
+};
+/** Opens the head's panel and reads the command of the chosen client; undefined where the head has no button. */
+async function command(r: Opened): Promise<string | undefined> {
+  const button = commandButton(r);
+  if (!button) return undefined;
+  if (button.getAttribute('aria-expanded') !== 'true') {
+    button.click();
+    await settle(r.fixture);
+  }
+  const shown = commandPanel(r)!.querySelector('[role="tabpanel"]:not([inert]) quader-client-command, .command-body quader-client-command')!;
+  return shown.querySelector<HTMLInputElement>('quader-address-field input')?.value ?? shown.querySelector('pre')?.textContent ?? undefined;
+}
+async function closeCommand(r: Opened): Promise<void> {
+  const button = commandButton(r);
+  if (button?.getAttribute('aria-expanded') === 'true') {
+    button.click();
+    await settle(r.fixture);
+  }
+}
 const pairs = (r: Opened) =>
   [...r.root.querySelectorAll('.version-tabs dl.facts')].flatMap((dl) =>
     [...dl.querySelectorAll('dt')].map((dt) => `${text(dt)} ${text(dt.nextElementSibling!)}`),
@@ -76,18 +98,38 @@ describe('The page of a version (R-UI-111)', () => {
     expect(text(gone.root)).toContain('does not exist');
   });
 
-  it('R-UI-009 R-UI-111 the install command of this version stands before the tabs, at the page\'s width, and fits its command', async () => {
+  it('R-UI-009 R-UI-111 the command of this version is behind the head\'s Install, a tab per client with Set up client at the row\'s end, and no box stands before the tabs', async () => {
     const r = await open();
-    expect(command(r)).toBe('npm install @team-a/ui@1.4.0');
-    const panel = r.root.querySelector('quader-install-panel')!;
-    const tabs = r.root.querySelector('quader-tab-group')!;
-    expect(panel.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Q-UI-1241: the box is gone; the verb's button stands in the page's head.
+    expect(r.root.querySelector('quader-install-panel, #install-heading')).toBeNull();
+    expect(spokenText(commandButton(r)!)).toBe('1.4.0: Install');
+    expect(await command(r)).toBe('npm install @team-a/ui@1.4.0');
+    const panel = commandPanel(r)!;
+    expect([...panel.querySelectorAll('[role="tab"]')].map((t) => text(t))).toEqual(['npm', 'pnpm', 'Yarn Berry', 'Yarn Classic']);
+    // The repository the panel starts at is a virtual one that holds the version; the setup is its, with the chosen client.
+    const setup = panel.querySelector<HTMLAnchorElement>('a.setup-link')!;
+    expect(setup.getAttribute('href')).toBe('/projects/web/repositories/npm-all/setup?client=npm');
     // Q-UI-455: the field is as wide as its command, which the style reads from this custom property.
-    expect(r.root.querySelector<HTMLElement>('quader-address-field.command-field')?.style.getPropertyValue('--command-chars')).toBe(
+    expect(panel.querySelector<HTMLElement>('quader-address-field.command-field')?.style.getPropertyValue('--command-chars')).toBe(
       String('npm install @team-a/ui@1.4.0'.length),
     );
+    await closeCommand(r);
     await set(r, { version: '1.3.0' });
-    expect(command(r)).toBe('npm install @team-a/ui@1.3.0');
+    expect(await command(r)).toBe('npm install @team-a/ui@1.3.0');
+    await closeCommand(r);
+  });
+
+  it('R-UI-009 R-UI-111 a version in more than one repository offers them in the panel, the virtual one first, and the command and the setup follow the one picked', async () => {
+    const r = await open();
+    await command(r);
+    const panel = commandPanel(r)!;
+    const select = panel.querySelector<HTMLSelectElement>('.command-repository select')!;
+    expect([...select.options].map((o) => o.value)).toEqual(['web/npm-all', 'web/npm-local']);
+    select.value = 'web/npm-local';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    await settle(r.fixture);
+    expect(panel.querySelector('a.setup-link')!.getAttribute('href')).toBe('/projects/web/repositories/npm-local/setup?client=npm');
+    await closeCommand(r);
   });
 
   it('R-UI-111 R-UI-008 without a grade the tabs are README, Files and Details, the README first', async () => {
@@ -97,14 +139,16 @@ describe('The page of a version (R-UI-111)', () => {
     expect(r.fake.readmeCalls).toEqual(['pkg_01JBQ6V7S3K9@1.4.0']);
   });
 
-  it('R-UI-111 a graded version opens on Vulnerabilities; one that is not scanned keeps the tab after Details', async () => {
+  it('R-UI-111 R-UI-218 a graded npm version opens on its README with Vulnerabilities beside it; one that is not scanned keeps the tab after Details', async () => {
     const report = (grade: ReturnType<typeof sampleGrade>) => ({
       packageId: 'pkg_01JBQ6V7S3K9',
       version: '1.4.0',
       repositories: [{ repository: 'web/npm-local', evaluation: grade.evaluation, blocked: false, blockReason: null, findings: [], grade }],
     });
     const graded = await open({}, (_, v) => v.versionReports.set('pkg_01JBQ6V7S3K9/1.4.0', report(sampleGrade('B', { medium: 2 }, { fixable: 1 }))));
-    expect(tabLabels(graded)).toEqual(['Vulnerabilities', 'README', 'Files', 'Details']);
+    // npm leads with its documentation (R-UI-218): the README comes first and is the tab the page opens on, the grade after it.
+    expect(tabLabels(graded)).toEqual(['README', 'Vulnerabilities', 'Files', 'Details']);
+    expect(text(graded.root.querySelector('[role="tab"][aria-selected="true"]')!)).toBe('README');
     expect(text(graded.root.querySelector('.facts-grade .grade-text')!)).toBe('Grade B · 2 findings · 1 fixable');
     const unscanned = await open({}, (_, v) => v.versionReports.set('pkg_01JBQ6V7S3K9/1.4.0', report(sampleGrade('N/A'))));
     expect(tabLabels(unscanned)).toEqual(['README', 'Files', 'Details', 'Vulnerabilities']);
@@ -123,10 +167,38 @@ describe('The page of a version (R-UI-111)', () => {
     expect(tabLabels(refused)).toEqual(['README', 'Files', 'Details']);
   });
 
-  it('R-UI-057 a version without a README, as for a caller who may not read the wiki, has no README tab and asks for none', async () => {
+  it('R-UI-218 an npm version without a README keeps the tab, which says so, asks for none and opens on its first tab with content', async () => {
     const r = await open({ version: '1.5.0-beta.1' });
-    expect(tabLabels(r)).toEqual(['Files', 'Details']);
+    expect(tabLabels(r)).toEqual(['README', 'Files', 'Details']);
+    expect(text(r.root.querySelector('[role="tab"][aria-selected="true"]')!)).toBe('Files');
     expect(r.fake.readmeCalls).toEqual([]);
+    await set(r, { tab: 'readme' });
+    expect(text(r.root.querySelector('[data-testid="no-readme"]')!)).toBe('This version has no README to show.');
+  });
+
+  it('R-UI-218 on the package\'s own address (no version) the page shows its newest version, and the head switches between the versions', async () => {
+    const r = await open({ version: undefined });
+    expect(text(r.root.querySelector('h1')!)).toBe('@team-a/ui 1.4.0');
+    const trigger = r.root.querySelector<HTMLButtonElement>('quader-version-switch button')!;
+    expect(trigger.getAttribute('aria-label')).toBe('Version 1.4.0, switch the version');
+    trigger.click();
+    await settle(r.fixture);
+    const items = [...document.querySelectorAll<HTMLAnchorElement>('.version-menu a.menu-item')];
+    // The newest by the format's order, the one shown current and the newest marked Latest; then the link to the whole table.
+    const row = (a: Element) => [a.querySelector('.item-version'), a.querySelector('.badge')].map((e) => (e ? text(e) : '')).join(' ').trim();
+    expect(items.map((a) => (a.querySelector('.item-version') ? row(a) : text(a)))).toEqual(['1.5.0-beta.1 Pre-release', '1.4.0 Latest', '1.3.0', 'All 3 versions']);
+    expect(items[1]!.getAttribute('aria-current')).toBe('page');
+    expect(items[2]!.getAttribute('href')).toBe('/projects/web/packages/npm/@team-a/ui@1.3.0');
+    expect(items[3]!.getAttribute('href')).toBe('/projects/web/packages/npm/@team-a/ui/-/versions');
+    await expectAccessible(r.root);
+  });
+
+  it('R-UI-218 the switch keeps the tab of the address for the version switched to', async () => {
+    const r = await open({ tab: 'details' });
+    r.root.querySelector<HTMLButtonElement>('quader-version-switch button')!.click();
+    await settle(r.fixture);
+    const older = [...document.querySelectorAll<HTMLAnchorElement>('.version-menu a.menu-item')].find((a) => a.querySelector('.item-version')?.textContent === '1.3.0')!;
+    expect(older.getAttribute('href')).toBe('/projects/web/packages/npm/@team-a/ui@1.3.0?tab=details');
   });
 
   it('R-UI-111 the Details tab lists the dependency kinds, the authors, the links and the repositories that hold the version', async () => {
@@ -188,7 +260,7 @@ describe('The page of a version (R-UI-111)', () => {
     expect(r.root.querySelector('.version-files a[download]')).toBeNull();
     expect([...r.root.querySelectorAll('.version-tabs thead th')].map((th) => text(th))).not.toContain('Download');
     expect(text(r.root.querySelector('[data-testid="install-system"]')!)).toBe("Only Quader's image scanning reads this version; clients cannot install it.");
-    expect(command(r)).toBeUndefined();
+    expect(await command(r)).toBeUndefined();
     await expectAccessible(r.root);
   });
 
@@ -204,7 +276,7 @@ describe('The page of a version (R-UI-111)', () => {
     expect(text(r.root.querySelector('[data-testid="install-disabled"]')!)).toBe(
       'The repository web/npm-local is disabled: nobody can install this version until it is enabled again.',
     );
-    expect(command(r)).toBeUndefined();
+    expect(await command(r)).toBeUndefined();
     expect(r.root.querySelector('[data-testid="install-system"]')).toBeNull();
     await expectAccessible(r.root);
   });
@@ -224,8 +296,9 @@ describe('The page of a version (R-UI-111)', () => {
       );
     });
     // One repository serves the version: its command, no picker of repositories, no sentence.
-    expect(command(r)).toBe('npm install @team-a/ui@1.4.0');
-    expect(r.root.querySelectorAll('quader-install-panel select')).toHaveLength(1);
+    expect(await command(r)).toBe('npm install @team-a/ui@1.4.0');
+    expect(commandPanel(r)!.querySelector('.command-repository')).toBeNull();
+    await closeCommand(r);
     expect(r.root.querySelector('[data-testid="install-disabled"]')).toBeNull();
     // The file is web/npm-local's copy: its path is no download.
     expect(r.root.querySelector('.version-files a[download]')).toBeNull();
@@ -281,7 +354,9 @@ describe('The page of a version (R-UI-111)', () => {
 
     it('R-UI-009 the install command is the .NET CLI\'s for this version', async () => {
       const r = await nuget();
-      expect(command(r)?.trim()).toBe('dotnet add package Contoso.Logging --version 2.3.1');
+      expect((await command(r))?.trim()).toBe('dotnet add package Contoso.Logging --version 2.3.1');
+      expect([...commandPanel(r)!.querySelectorAll('[role="tab"]')].map((t) => text(t))).toEqual(['.NET CLI', 'NuGet CLI', 'Visual Studio']);
+      await closeCommand(r);
     });
   });
 
@@ -453,9 +528,14 @@ describe('The page of a version (R-UI-111)', () => {
     const facts = (r: Opened) =>
       Object.fromEntries([...r.root.querySelectorAll('[data-testid="ansible-facts"] dt')].map((dt) => [text(dt), text(dt.nextElementSibling!)]));
 
-    it('R-ANS-025 the install panel shows the collection install command of the version, and no error notice', async () => {
+    it('R-ANS-025 the head\'s Install shows the collection install command of the version under the client\'s name, no strip of one tab, and no error notice', async () => {
       const r = await collection();
-      expect(command(r)?.trim()).toBe('ansible-galaxy collection install acme.tools:1.2.0');
+      expect((await command(r))?.trim()).toBe('ansible-galaxy collection install acme.tools:1.2.0');
+      const panel = commandPanel(r)!;
+      expect(panel.querySelector('[role="tablist"]')).toBeNull();
+      expect(text(panel.querySelector('.command-client')!)).toBe('ansible-galaxy');
+      expect(panel.querySelector('a.setup-link')!.getAttribute('href')).toContain('/setup?client=ansible-galaxy');
+      await closeCommand(r);
       expect(r.root.querySelector('quader-error-notice')).toBeNull();
     });
 
@@ -500,11 +580,13 @@ describe('The page of a version (R-UI-111)', () => {
       await expectAccessible(root);
     });
 
-    it('R-UI-194 while ClamAV definition updates is on, a stored container downloads and the install panel leads to the client setup', async () => {
+    it('R-UI-194 while ClamAV definition updates is on, a stored container downloads and the head leads to the client setup, with no command per version', async () => {
       const { root } = await definition('files', true);
       expect(root.querySelector('a[download]')!.getAttribute('href')).toBe('/api/v1/projects/upstream/repositories/clamav/content/daily/28190/daily.cvd');
       expect(text(root.querySelector('[data-testid="install-clamav"]')!)).toContain('A ClamAV installation always takes the version in use');
-      expect(root.querySelector('.setup-link a')!.getAttribute('href')).toBe('/projects/upstream/repositories/clamav/setup?client=freshclam');
+      expect(root.querySelector('quader-page-header quader-client-command-menu')).toBeNull();
+      const setup = [...root.querySelectorAll('quader-page-header a')].find((a) => text(a) === 'Set up client')!;
+      expect(setup.getAttribute('href')).toBe('/projects/upstream/repositories/clamav/setup?client=freshclam');
     });
 
     it('R-UI-194 R-CLAMAV-003 Details shows every field of the header as text and the two MD5 in a closed fold', async () => {
@@ -575,7 +657,7 @@ describe('The page of a version (R-UI-111)', () => {
       vulns!.versionReports.set('pkg_01JBQ6V7S3K9/1.4.0', report(sampleGrade('B', { medium: 2 }, { fixable: 1 })));
       vi.advanceTimersByTime(60_000);
       await settle(r.fixture);
-      expect(tabLabels(r)).toEqual(['Vulnerabilities', 'README', 'Files', 'Details']);
+      expect(tabLabels(r)).toEqual(['README', 'Vulnerabilities', 'Files', 'Details']);
       expect(selected()).toBe('README');
     } finally {
       vi.useRealTimers();

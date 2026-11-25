@@ -13,9 +13,8 @@ export const COLLAPSE_AFTER_LINES = 3;
  * The install command of one version in one repository for one client (R-UI-009): the install snippet of the client setup answer
  * (R-API-030) for that client, with the package and the version filled in and quoted by the server. It asks with
  * `credentials=none`, so it never holds a token. A command of one line is one copyable field (Q-UI-320), a longer one the snippet's
- * window (Q-UI-801), collapsed after three lines. The version page's install panel shows it for the client chosen in its picker
- * (`<quader-install-command>`); the menu of a version in a repository's list shows it once per client of the format
- * (`<quader-client-command-menu>`, Q-UI-1066).
+ * window (Q-UI-801), collapsed after three lines. The panel of a version's commands (`<quader-client-command-menu>`, Q-UI-1066,
+ * Q-UI-1240), in a repository's list and in the head of a version's page, shows it once per client of the format, a tab each.
  */
 @Component({
   selector: 'quader-client-command',
@@ -65,7 +64,7 @@ export const COLLAPSE_AFTER_LINES = 3;
       }
     }
   `,
-  styleUrl: './install-panel.scss',
+  styleUrl: './client-command.scss',
   host: { class: 'client-command' },
 })
 export class ClientCommand {
