@@ -96,6 +96,32 @@ type RemoteSettings struct {
 	// Delivery is remote.delivery: the delivery mode and the switches of the curation (remote-curation.md R-CUR-001, R-CUR-020). The
 	// rules themselves are rows (remote_delivery_rules), not members of the document.
 	Delivery DeliverySettings `json:"delivery"`
+	// Syncs is remote.syncs: the interval, the pause and the byte bound of the repository's downloads kept in sync
+	// (remote-curation.md R-CUR-027, R-CUR-020). The syncs themselves are rows (remote_download_syncs), not members of the document.
+	Syncs SyncSettings `json:"syncs"`
+}
+
+// SyncSettings is remote.syncs (remote-curation.md R-CUR-020, R-CUR-027): configuration of the repository, which only
+// repositories:write-config and the project's Owner set (R-CUR-005); the syncs are set up by the holders of manage.
+type SyncSettings struct {
+	// IntervalSeconds is the time from one run of a sync to its next, the same for every sync of the repository (Q-CUR-242).
+	IntervalSeconds int `json:"intervalSeconds"`
+	// Paused: no sync of the repository starts a run; a run in progress goes on.
+	Paused bool `json:"paused"`
+	// MaxBytes is the repository's folded bytes at which its syncs start no run; nil: no bound of their own (Q-CUR-246).
+	MaxBytes *int64 `json:"maxBytes"`
+}
+
+// The bounds and the default of remote.syncs (R-CUR-020): an hour by default, as the mirror's interval; five minutes to 30 days.
+const (
+	DefaultSyncIntervalSeconds = 3600
+	minSyncInterval            = 300
+	maxSyncInterval            = 2592000
+)
+
+// DefaultSyncSettings are the defaults of remote.syncs.
+func DefaultSyncSettings() SyncSettings {
+	return SyncSettings{IntervalSeconds: DefaultSyncIntervalSeconds}
 }
 
 // DeliverySettings is remote.delivery (remote-curation.md R-CUR-001, R-CUR-020): configuration of the repository, which only
@@ -330,6 +356,13 @@ type remoteInput struct {
 	Mirror                *mirrorInput          `json:"mirror"`
 	DownloadOnProbe       *bool                 `json:"downloadOnProbe"`
 	Delivery              *deliveryInput        `json:"delivery"`
+	Syncs                 *syncsInput           `json:"syncs"`
+}
+
+type syncsInput struct {
+	IntervalSeconds *int   `json:"intervalSeconds"`
+	Paused          *bool  `json:"paused"`
+	MaxBytes        *int64 `json:"maxBytes"`
 }
 
 type deliveryInput struct {
@@ -419,7 +452,9 @@ func (r Repository) Remote() (RemoteSettings, bool) {
 // their defaults first, so that a section stored before they existed reads back with them (R-REPO-050, Q-REPO-130, R-REPO-065); a
 // member the stored section holds overwrites its default.
 func parseStoredRemote(raw json.RawMessage) (*RemoteSettings, error) {
-	s := RemoteSettings{Mode: ModePullThrough, Mirror: DefaultMirrorSettings(), DownloadOnProbe: true, Delivery: DefaultDeliverySettings()}
+	s := RemoteSettings{
+		Mode: ModePullThrough, Mirror: DefaultMirrorSettings(), DownloadOnProbe: true, Delivery: DefaultDeliverySettings(), Syncs: DefaultSyncSettings(),
+	}
 	if err := json.Unmarshal(raw, &s); err != nil {
 		return nil, err
 	}

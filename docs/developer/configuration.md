@@ -296,6 +296,7 @@ proxy:
     done_retention: 168h                   # default; at least 1h
     failed_retention: 720h                 # default; at least 1h
     client_failures_per_repository: 1000   # default; 1 to 100000 (Q-CUR-19)
+    max_syncs_per_repository: 100          # default; 1 to 10000, downloads kept in sync per repository (R-CUR-027)
   upstream_downloads:
     publish_interval: 2s                   # default; 1s to 30s, how often a replica writes its running downloads (R-OPS-050, Q-OPS-424)
 jobs:

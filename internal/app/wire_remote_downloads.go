@@ -5,11 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formathost"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/jobs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/proxy"
@@ -51,6 +55,7 @@ func (a *App) buildDownloads() (*queue.Service, error) {
 	store := queue.NewPGStore(db, jobEnqueuer{a})
 	o := queue.Options{
 		Store: store, Maintenance: store, Settings: a.downloadSettings, Planner: downloadPlanner{a}, Jobs: jobCanceller{a},
+		Syncs: syncRepositories{a: a, store: store}, Decider: part[deliveryRulesArea](a.parts).decider, OnSyncRun: a.syncRunEvent,
 		Log: a.log.With("component", "remote-downloads"),
 	}
 	if a.tele != nil {
@@ -81,7 +86,103 @@ func (a *App) downloadSettings() queue.Settings {
 	return queue.Settings{
 		PerRepository: d.PerRepository, MaxWaiting: d.MaxWaitingPerRepository, MaxAttempts: d.MaxAttempts,
 		DoneRetention: d.DoneRetention, FailedRetention: d.FailedRetention, ClientFailures: d.ClientFailuresPerRepository,
+		MaxSyncs: d.MaxSyncsPerRepository,
 	}
+}
+
+// syncRunEvent writes remote.download.started for a run of a sync the dispatch started, with the actor system:download-sync, in the
+// run's transaction (R-CUR-019, R-CUR-027).
+func (a *App) syncRunEvent(ctx context.Context, tx meta.Tx, run queue.SyncRun) error {
+	rec := a.auditRecorder()
+	name, project := "", ""
+	if r := a.Repositories(); r != nil {
+		if repo, err := r.ByID(ctx, run.Sync.RepoID); err == nil {
+			name, project = repo.Name.String(), repo.Name.Project
+		}
+	}
+	details, err := json.Marshal(map[string]any{
+		"level": run.Sync.Level, "subject": run.Sync.Subject, "bulk": run.Bulk.ID, "sync": run.Sync.ID, "count": 0,
+		"bounds": v1.SyncBounds(run.Sync),
+	})
+	if err != nil {
+		return err
+	}
+	id := strconv.FormatInt(run.Sync.RepoID, 10)
+	return rec.RecordTx(ctx, tx, audit.Event{
+		Type: audit.EventRemoteDownloadStarted, Actor: queue.SyncActor, Outcome: audit.Success,
+		Subject: audit.Subject{Kind: "repository", ID: id, Name: name}, Repository: name, Project: project, Details: details,
+	})
+}
+
+// syncRepositories is what the syncs read of their repositories (queue.SyncRepositories, R-CUR-027): remote.syncs and whether the
+// repository may run from the replica's snapshot, the offline state from the remote engine where the process has one, and the
+// version rows a run leaves out.
+type syncRepositories struct {
+	a     *App
+	store *queue.PGStore
+}
+
+func (s syncRepositories) SyncState(ctx context.Context, repoID int64) (queue.SyncState, error) {
+	r := s.a.Repositories()
+	if r == nil {
+		return queue.SyncState{}, errors.New("app: this process has no repository snapshot")
+	}
+	repo, err := r.ByID(ctx, repoID)
+	if errs.KindOf(err) == errs.NotFound {
+		return queue.SyncState{}, nil
+	}
+	if err != nil {
+		return queue.SyncState{}, err
+	}
+	st, ok := repo.Remote()
+	out := queue.SyncState{Found: true, Runnable: ok && !repo.Disabled, Interval: queue.DefaultSyncInterval}
+	if !ok {
+		return out, nil
+	}
+	out.Interval, out.Paused = time.Duration(st.Syncs.IntervalSeconds)*time.Second, st.Syncs.Paused
+	if st.Syncs.MaxBytes != nil {
+		out.MaxBytes = *st.Syncs.MaxBytes
+	}
+	if mh, err := (downloadPlanner{s.a}).host(); err == nil && mh.Offline(repo) {
+		out.Runnable = false
+	}
+	return out, nil
+}
+
+// Fixed compares the package's live version rows with versions in the format's canonical form (Q-CUR-244).
+func (s syncRepositories) Fixed(ctx context.Context, repoID int64, name string, versions []string) (map[string]bool, error) {
+	format := ""
+	if r := s.a.Repositories(); r != nil {
+		if repo, err := r.ByID(ctx, repoID); err == nil {
+			format = repo.Format
+		}
+	}
+	cat := catalog.Default()
+	names := []string{name}
+	if n, ok := cat.NormalizeName(format, name); ok && n != name {
+		names = append(names, n)
+	}
+	stored, err := s.store.FixedVersions(ctx, repoID, names)
+	if err != nil {
+		return nil, err
+	}
+	canon := func(v string) string {
+		if c, ok := cat.CanonicalVersion(format, v); ok {
+			return c
+		}
+		return v
+	}
+	held := make(map[string]bool, len(stored))
+	for _, v := range stored {
+		held[canon(v)] = true
+	}
+	out := map[string]bool{}
+	for _, v := range versions {
+		if held[canon(v)] {
+			out[v] = true
+		}
+	}
+	return out, nil
 }
 
 // probeMetrics are the queue's counters, which the format host counts the decisions on probes with; nil without them.

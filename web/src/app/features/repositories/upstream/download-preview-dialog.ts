@@ -8,6 +8,7 @@ import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../../share
 import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError, failureOf, valueOf } from '../../../shared/paged-resource';
 import { formatSize } from '../../packages/format-size';
+import { syncIntervalSentence } from '../downloads/download-words';
 
 /** The code of what a preview's counts leave open (R-CUR-010). */
 export type PreviewNote = NonNullable<RemoteDownloadPreview['note']>;
@@ -50,6 +51,15 @@ export function rangeErrorText(error: ApiError | null, pointer: RangePointer): s
   }
 }
 
+/** How a bulk is downloaded: once, or kept in sync (R-CUR-027). */
+export type DownloadMode = 'once' | 'sync';
+
+/** What the dialog closes with: the started bulk, and whether it is the first run of a sync. */
+export interface DownloadPreviewResult {
+  readonly bulk: string;
+  readonly sync: boolean;
+}
+
 export interface DownloadPreviewData {
   readonly repository: string;
   /** A package's or a sub-section's bulk, without bounds: the preview answers the installation's. */
@@ -66,7 +76,10 @@ function count(n: number): string {
 }
 
 /**
- * The preview of a bulk download (remote-curation.md R-CUR-010, R-CUR-018): what will be fetched (versions, packages, bytes, the
+ * The preview of a bulk download (remote-curation.md R-CUR-010, R-CUR-018, R-CUR-027): **Once** or **Keep in sync** first; with a sync
+ * chosen the count is what its first run fetches, the sentence under it says the repository's interval and that a sync stores only
+ * what the rules deliver, and a subject the rules do not deliver at all, or one kept in sync already, is said instead of being set up.
+ * Then what will be fetched (versions, packages, bytes, the
  * versions whose size the upstream does not tell), what is stored already and what is not delivered here (fetched for examination),
  * the bounds as fields with their values, which may only be lowered, and **Start download**. A package's bulk takes a range of its
  * versions (Q-CUR-190 to Q-CUR-194): **From version** and **Up to version** with **included** or **below**, empty for no bound,
@@ -81,10 +94,50 @@ function count(n: number): string {
     <h2 quaderDialogTitle>{{ data.title }}</h2>
     <form (submit)="submit($event)" novalidate>
       <div class="dialog-body">
+        <fieldset class="plain modes" [disabled]="starting()">
+          <legend class="field-label" i18n="@@upstream.preview.mode">How often</legend>
+          <label class="mode-option">
+            <input type="radio" name="download-mode" value="once" [checked]="mode() === 'once'" (change)="mode.set('once')" />
+            <span class="mode-title" i18n="@@upstream.preview.mode.once">Once</span>
+            <span class="hint" i18n="@@upstream.preview.mode.once-hint">Downloads what the bounds take now.</span>
+          </label>
+          <label class="mode-option">
+            <input type="radio" name="download-mode" value="sync" [checked]="mode() === 'sync'" (change)="mode.set('sync')" />
+            <span class="mode-title" i18n="@@upstream.preview.mode.sync">Keep in sync</span>
+            <span class="hint" i18n="@@upstream.preview.mode.sync-hint">Downloads it now and again at every interval: what is new and delivered here.</span>
+          </label>
+        </fieldset>
+        @if (syncing() && preview()?.sync; as s) {
+          <!-- What a sync does, said where it is chosen (R-CUR-027): or why it is not set up. -->
+          @if (s.existing) {
+            <p class="banner-warning sync-block" role="status" data-testid="download-sync-existing" i18n="@@upstream.preview.sync-existing">This is kept in sync already. The tab Downloads lists it, where it can be run, paused or removed.</p>
+          } @else if (!s.delivered) {
+            <p class="banner-warning sync-block" role="status" data-testid="download-sync-undelivered" i18n="@@upstream.preview.sync-undelivered">This repository does not deliver it, so a sync would store nothing. Allow it first, or download it once for examination.</p>
+          } @else {
+            <p class="hint sync-block" data-testid="download-sync-note">
+              {{ intervalSentence(s.intervalSeconds) }}&ngsp;<ng-container i18n="@@upstream.preview.sync-rules">A sync stores only what the rules deliver and removes nothing.</ng-container>
+            </p>
+            @if (s.paused) {
+              <p class="hint sync-block" i18n="@@upstream.preview.sync-paused">The syncs of this repository are paused in its settings: this one runs now and then waits until they are resumed.</p>
+            }
+          }
+        }
         @if (failure(); as f) {
           <quader-error-notice [error]="f" (retry)="failure.retry()" />
         } @else if (preview(); as p) {
           <dl class="facts" data-testid="download-preview">
+            @if (syncing() && !syncRefused() && p.sync; as s) {
+              <!-- A sync's first run downloads what is new and delivered here (R-CUR-027): the count the person decides on. -->
+              <dt i18n="@@upstream.preview.first-run">First run</dt>
+              <dd>
+                @if (s.versions !== null) {
+                  {{ number(s.versions) }}
+                  <span class="secondary" i18n="@@upstream.preview.first-run-hint">New versions delivered here; each later run downloads what is new since.</span>
+                } @else {
+                  <span i18n="@@upstream.preview.first-run-unknown">Counted when it runs</span>
+                }
+              </dd>
+            }
             <dt i18n="@@upstream.preview.versions">Versions</dt>
             <dd>
               @if (p.versions !== null) {
@@ -119,7 +172,9 @@ function count(n: number): string {
             <dt i18n="@@upstream.preview.not-delivered">Not delivered here</dt>
             <dd>
               {{ number(p.notDelivered) }}
-              @if (p.notDelivered > 0) {
+              @if (p.notDelivered > 0 && syncing()) {
+                <span class="secondary" i18n="@@upstream.preview.not-delivered-sync-hint">Left out: a sync stores only what the rules deliver.</span>
+              } @else if (p.notDelivered > 0) {
                 <span class="secondary" i18n="@@upstream.preview.not-delivered-hint">Fetched for examination: stored and scanned, not delivered until a rule allows them.</span>
               }
             </dd>
@@ -134,6 +189,7 @@ function count(n: number): string {
           @if (p.note; as code) {
             <p class="hint">{{ noteText(code) }}</p>
           }
+
         } @else {
           <p role="status" i18n="@@upstream.preview.loading">Reading what the download would fetch.</p>
         }
@@ -199,7 +255,13 @@ function count(n: number): string {
               </datalist>
             }
             <div class="bound-row">
-              <label class="field-label" for="preview-max-versions" i18n="@@upstream.preview.max-versions">At most this many versions</label>
+              <label class="field-label" for="preview-max-versions">
+                @if (syncing()) {
+                  <ng-container i18n="@@upstream.preview.max-versions-sync">Keep this many of the newest versions</ng-container>
+                } @else {
+                  <ng-container i18n="@@upstream.preview.max-versions">At most this many versions</ng-container>
+                }
+              </label>
               <input
                 id="preview-max-versions"
                 class="text-input field-w-number"
@@ -235,11 +297,53 @@ function count(n: number): string {
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@upstream.dialog.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="!preview() || !!failure() || starting()" i18n="@@upstream.preview.start">Start download</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="!preview() || !!failure() || starting() || syncRefused()">
+          @if (syncing()) {
+            <ng-container i18n="@@upstream.preview.start-sync">Keep in sync</ng-container>
+          } @else {
+            <ng-container i18n="@@upstream.preview.start">Start download</ng-container>
+          }
+        </button>
       </div>
     </form>
   `,
   styles: `
+    /* The two ways as the delivery mode's choices (repository-delivery.ts): a choice and its sentence. */
+    .modes {
+      display: flex;
+      flex-direction: column;
+      gap: var(--quader-space-2);
+      margin: 0 0 var(--quader-space-3);
+      padding: 0;
+      border: 0;
+
+      legend {
+        padding: 0;
+        margin-block-end: var(--quader-space-1);
+      }
+    }
+    .mode-option {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      column-gap: var(--quader-space-2);
+      padding: var(--quader-space-2) var(--quader-space-3);
+      border: 1px solid var(--quader-border);
+      border-radius: var(--quader-radius-l);
+
+      input {
+        grid-row: 1 / span 2;
+      }
+      .hint {
+        grid-column: 2;
+        margin: 0;
+      }
+    }
+    .mode-title {
+      font-weight: 600;
+    }
+    .sync-block {
+      margin: 0 0 var(--quader-space-3);
+    }
     .facts {
       margin-block: 0 var(--quader-space-3);
       grid-template-columns: 11rem minmax(0, 1fr);
@@ -283,7 +387,17 @@ export class DownloadPreviewDialog {
   private readonly api = inject(RemoteDownloadsApi);
   private readonly catalogue = inject(UpstreamCatalogueApi);
   protected readonly data = inject<DownloadPreviewData>(DIALOG_DATA);
-  private readonly ref = inject<DialogRef<string, DownloadPreviewDialog>>(DialogRef);
+  private readonly ref = inject<DialogRef<DownloadPreviewResult, DownloadPreviewDialog>>(DialogRef);
+
+  /** Once, or kept in sync (R-CUR-027); the preview answers both, the screen shows the chosen one's counts. */
+  protected readonly mode = signal<DownloadMode>('once');
+  protected readonly syncing = computed(() => this.mode() === 'sync');
+  /** A sync that would store nothing, or one the subject has already: not set up (R-CUR-027). */
+  protected readonly syncRefused = computed(() => {
+    const s = this.preview()?.sync;
+    return this.syncing() && !!s && (!!s.existing || !s.delivered);
+  });
+  protected readonly intervalSentence = syncIntervalSentence;
 
   /** The bounds the person lowered; null keeps the installation's. */
   protected readonly maxVersions = signal<number | null>(null);
@@ -371,12 +485,17 @@ export class DownloadPreviewDialog {
 
   protected async submit(event: Event): Promise<void> {
     event.preventDefault();
-    if (!this.preview() || this.failure() || this.starting()) return;
+    if (!this.preview() || this.failure() || this.starting() || this.syncRefused()) return;
     this.starting.set(true);
     this.startFailure.set(null);
     try {
+      if (this.syncing()) {
+        const run = await this.api.createSync(this.data.repository, this.request(), newIdempotencyKey());
+        this.ref.close({ bulk: run.bulk.id, sync: true });
+        return;
+      }
       const started = await this.api.start(this.data.repository, this.request(), newIdempotencyKey());
-      this.ref.close(started.bulk?.id ?? '');
+      this.ref.close({ bulk: started.bulk?.id ?? '', sync: false });
     } catch (e) {
       this.startFailure.set(asApiError(e));
     } finally {

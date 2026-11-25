@@ -20,6 +20,7 @@ import (
 	"github.com/guided-traffic/quader/internal/mirror"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
 	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/remotecuration"
 	"github.com/guided-traffic/quader/internal/repository"
 )
 
@@ -226,8 +227,9 @@ func (m *MirrorHost) fillPath(ctx context.Context, repo repository.Repository, p
 	fetch := &remote{h: m.h, e: m.e}
 	rq := m.request(ctx, repo, p)
 	// A row of the download queue (a probe's, a person's, a request's, an allow's, a bulk's) is a download ahead: the delivery rules do
-	// not decide what it stores (R-CUR-014); a pass of the mirror fetches only what they deliver (R-CUR-017).
-	ahead := bf.fill == fillDownloadAhead || bf.fill == fillBackgroundDownload
+	// not decide what it stores (R-CUR-014); a pass of the mirror fetches only what they deliver (R-CUR-017), and so does a row of a
+	// sync's run, which keeps current what the repository delivers (R-CUR-027, Q-CUR-243).
+	ahead := (bf.fill == fillDownloadAhead || bf.fill == fillBackgroundDownload) && bf.queue.QueueOrigin != remotecuration.OriginSync
 	if !m.admitted(repo, p, !ahead) {
 		// The repository's include and exclude patterns hold for a background fill as for a client's fetch, which the dispatcher
 		// and Host.Authorize refuse before the engine is asked (R-REPO-005, R-REPO-065).
@@ -286,8 +288,9 @@ func mirrorScope(repo repository.Repository) (func(string) bool, error) {
 
 // admitted reports whether the repository's include and exclude patterns admit the artifact at p: its package name for a format whose
 // patterns match names, else its path (R-REPO-005), and, with rules, whether the delivery rules deliver its version: a pass of the
-// mirror fetches only what the rules deliver (remote-curation.md R-CUR-017), a row of the download queue whatever they say, since a
-// download ahead stores for examination what they do not deliver (R-CUR-014, Q-CUR-147).
+// mirror and a row of a sync's run fetch only what the rules deliver (remote-curation.md R-CUR-017, R-CUR-027), any other row of the
+// download queue whatever they say, since a download ahead stores for examination what they do not deliver (R-CUR-014, Q-CUR-147,
+// revised for the origin sync by Q-CUR-243).
 // A format whose items have a second spelling (an official image of Docker Hub, `library/nginx` stored, `nginx` typed and written in the
 // patterns, Q-OCI-129) is admitted when either spelling is, as the names a pass discovers are.
 func (m *MirrorHost) admitted(repo repository.Repository, p formats.Path, rules bool) bool {

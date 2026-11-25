@@ -122,8 +122,10 @@ const (
 	OriginRequest Origin = "request"
 	OriginAllow   Origin = "allow"
 	OriginBulk    Origin = "bulk"
-	OriginProbe   Origin = "probe"
-	OriginClient  Origin = "client"
+	// OriginSync is a row of a sync's run (R-CUR-027): system work whose fill asks the delivery rules (Q-CUR-243).
+	OriginSync   Origin = "sync"
+	OriginProbe  Origin = "probe"
+	OriginClient Origin = "client"
 )
 
 // Outcome is how a done row ended (R-CUR-011).

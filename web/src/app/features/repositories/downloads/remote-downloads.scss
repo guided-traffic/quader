@@ -301,3 +301,23 @@ th.wrap-name > a {
   display: block;
   font-size: var(--quader-text-muted-size);
 }
+
+// The section Kept in sync (R-CUR-027): the repository's interval in a sentence under its title, then its syncs as the bulks are.
+.syncs-note {
+  margin: 0 0 var(--quader-space-3);
+  color: var(--quader-text-muted);
+}
+
+.syncs-paused {
+  margin: 0 0 var(--quader-space-3);
+}
+
+.sync-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+// A run's failure in words stands under its line and wraps between its words.
+.sync-failure {
+  overflow-wrap: anywhere;
+}

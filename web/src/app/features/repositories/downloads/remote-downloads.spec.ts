@@ -7,7 +7,7 @@ import { RepositoriesApi } from '../../../api/repositories-api';
 import { SessionApi } from '../../../api/session-api';
 import { FakeRepositoriesApi, PACKAGE_FORMAT } from '../../../api/testing/fakes-catalog';
 import { FakeSessionApi } from '../../../api/testing/fakes';
-import { FakeRemoteDownloadsApi, downloadBulk, downloadFailure, downloadLimit, downloadRow } from '../../../api/testing/fakes-remote-downloads';
+import { FakeRemoteDownloadsApi, downloadBulk, downloadFailure, downloadLimit, downloadRow, downloadSync } from '../../../api/testing/fakes-remote-downloads';
 import { LIVE_SLOW_MS } from '../../../core/live-refresh';
 import { Notifier } from '../../../core/notifier';
 import { expectAccessible, renderScreen, settle, text } from '../../../testing/screen';
@@ -502,6 +502,124 @@ describe('The tab Downloads of a remote repository', () => {
     expect(text(root.querySelector('[data-testid="download-limit"] .limit-sentence span:last-child')!)).toMatch(
       /^registry\.npmjs\.org limits how often Quader may ask it, since .+\. The downloads that wait start at .+, the time registry\.npmjs\.org named\./,
     );
+  });
+});
+
+/** The syncs of the cases (R-CUR-027): a run in progress, nothing new, a run that waits for its previous one, a limit, a paused one. */
+function syncs(fake: FakeRemoteDownloadsApi): void {
+  queue(fake);
+  fake.syncs = [
+    downloadSync({
+      id: 's-run', subject: 'lodash', createdBy: { id: SELF, name: 'Alice' },
+      lastBulk: downloadBulk({ id: 'b-s1', origin: 'sync', sync: 's-run', state: 'queued', versionsFound: 2, versionsQueued: 1, rows: { running: 1 } }),
+    }),
+    downloadSync({
+      id: 's-none', subject: 'react', createdBy: { id: 'other', name: 'Bob' },
+      bounds: { maxVersions: 5, maxBytes: 107374182400, includePrereleases: true, fromVersion: '19.0.0', toVersion: null, toInclusive: true },
+      lastBulk: downloadBulk({ id: 'b-s2', origin: 'sync', sync: 's-none', state: 'done', versionsFound: 5, versionsQueued: 0, versionsRefused: 1, rows: {} }),
+    }),
+    downloadSync({ id: 's-over', subject: '@acme/build-helpers', lastOutcome: 'overlapped' }),
+    downloadSync({ id: 's-lim', level: 'section', subject: '@acme', lastOutcome: 'limited' }),
+    downloadSync({ id: 's-pause', subject: 'left-pad', state: 'paused', nextRunAt: null }),
+  ];
+}
+
+function syncRow(root: HTMLElement, subject: string): HTMLTableRowElement {
+  return [...root.querySelectorAll<HTMLTableRowElement>('[data-testid="download-syncs"] tbody tr')].find((tr) =>
+    tr.querySelector('th')?.textContent?.includes(subject),
+  )!;
+}
+
+describe('The downloads a remote repository keeps in sync', () => {
+  it('R-CUR-027 R-CUR-018 the syncs stand above the bulks: what each keeps, its last run in words, its next run or Paused', async () => {
+    const { root } = await open({ manage: true, rows: syncs, upstreamName: 'Docker Hub' });
+    const section = root.querySelector<HTMLElement>('[data-testid="download-syncs"]')!;
+    expect(section.compareDocumentPosition(root.querySelector('[data-testid="download-bulks"]')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(text(section)).toContain('Quader downloads what is new every hour, the interval of this repository. A sync stores only what the rules deliver and removes nothing.');
+    expect(text(syncRow(root, 'lodash'))).toContain('Every version of lodash');
+    expect(text(syncRow(root, 'lodash'))).toContain('The newest 2, without pre-releases');
+    expect(text(syncRow(root, 'lodash'))).toContain('Set up by you');
+    expect(text(syncRow(root, 'lodash'))).toContain('Downloading 1 new');
+    expect(text(syncRow(root, 'react'))).toContain('From 19.0.0');
+    expect(text(syncRow(root, 'react'))).toContain('Set up by Bob');
+    expect(text(syncRow(root, 'react'))).toContain('Nothing new');
+    expect(text(syncRow(root, 'react'))).toContain('1 not delivered');
+    expect(syncRow(root, 'react').querySelector('a')?.getAttribute('href')).toContain('bulk=b-s2');
+    expect(text(syncRow(root, '@acme/build-helpers'))).toContain('Its previous run has not ended yet.');
+    expect(text(syncRow(root, 'The sub-section @acme'))).toContain('Docker Hub limits how often Quader may ask it.');
+    expect(text(syncRow(root, 'left-pad'))).toContain('Paused');
+    await expectAccessible(root);
+  });
+
+  it('R-CUR-027 R-UI-163 a holder of manage runs, pauses, resumes and removes a sync from its menu; a reader has no menu', async () => {
+    const { root, fixture, fake } = await open({ manage: true, rows: syncs });
+    const menu = (subject: string): HTMLButtonElement => syncRow(root, subject).querySelector<HTMLButtonElement>('td.actions button[aria-haspopup]')!;
+    expect(menu('lodash').getAttribute('aria-label')).toBe('Actions for lodash');
+    menu('lodash').click();
+    await settle(fixture);
+    expect([...document.querySelectorAll('.menu .menu-item')].map((e) => text(e))).toEqual(['Run now', 'Pause', 'Remove…']);
+    [...document.querySelectorAll<HTMLButtonElement>('.menu .menu-item')][0]!.click();
+    await settle(fixture);
+    expect(fake.calls).toContain('run-sync web/npmjs s-run');
+    menu('left-pad').click();
+    await settle(fixture);
+    expect([...document.querySelectorAll('.menu .menu-item')].map((e) => text(e))).toEqual(['Run now', 'Resume', 'Remove…']);
+    [...document.querySelectorAll<HTMLButtonElement>('.menu .menu-item')][1]!.click();
+    await settle(fixture);
+    expect(fake.calls).toContain('resume-sync web/npmjs s-pause');
+    menu('react').click();
+    await settle(fixture);
+    [...document.querySelectorAll<HTMLButtonElement>('.menu .menu-item')][2]!.click();
+    await settle(fixture);
+    const confirm = [...document.querySelectorAll<HTMLButtonElement>('.dialog-actions button')].find((b) => text(b) === 'Remove')!;
+    expect(text(document.querySelector('.quader-dialog')!)).toContain('Stop keeping react in sync?');
+    confirm.click();
+    await settle(fixture);
+    expect(fake.calls).toContain('remove-sync web/npmjs s-none');
+    expect(syncRow(root, 'react')).toBeUndefined();
+
+    const reader = await open({ rows: syncs });
+    expect(reader.root.querySelector('[data-testid="download-syncs"] td.actions')).toBeNull();
+  });
+
+  it('R-CUR-027 R-UI-213 the syncs are read every five seconds while a run is in progress, every 30 s otherwise; a repository without one shows none', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const { fixture, fake } = await open({ rows: syncs });
+      const reads = () => fake.calls.filter((c) => c.startsWith('syncs ')).length;
+      const before = reads();
+      vi.advanceTimersByTime(DOWNLOADS_REFRESH_MS);
+      await settle(fixture);
+      expect(reads()).toBe(before + 1);
+      fake.syncs = fake.syncs.map((s) => ({ ...s, lastBulk: s.lastBulk && { ...s.lastBulk, state: 'done' as const } }));
+      vi.advanceTimersByTime(DOWNLOADS_REFRESH_MS);
+      await settle(fixture);
+      const settled = reads();
+      vi.advanceTimersByTime(DOWNLOADS_REFRESH_MS * 3);
+      await settle(fixture);
+      expect(reads()).toBe(settled);
+      vi.advanceTimersByTime(LIVE_SLOW_MS);
+      await settle(fixture);
+      expect(reads()).toBe(settled + 1);
+    } finally {
+      vi.useRealTimers();
+    }
+    const none = await open();
+    expect(none.root.querySelector('[data-testid="download-syncs"]')).toBeNull();
+  });
+
+  it("R-CUR-027 R-UI-216 a failed read of the syncs says every fact of the answer and reads again on Try again", async () => {
+    const { root } = await open({
+      rows: (f) => {
+        syncs(f);
+        f.listSyncs = async () => {
+          throw new ApiError(503, { code: 'unavailable', detail: 'The download queue is not available on this replica.' }, 'rid-503');
+        };
+      },
+    });
+    const section = root.querySelector<HTMLElement>('[data-testid="download-syncs"]')!;
+    expect(text(section)).toContain('rid-503');
+    expect(text(section)).toContain('503');
   });
 });
 

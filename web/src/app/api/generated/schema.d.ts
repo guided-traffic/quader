@@ -7722,7 +7722,9 @@ export interface paths {
          *     how many are stored already and how many the delivery rules do not deliver, and the bounds that apply. Where the upstream
          *     catalogue cannot count a level, `versions` and `bytes` are `null` and `note` says that the bounds cut while the bulk runs. Nothing
          *     is queued and nothing is fetched. A package's range of versions is counted as the bulk takes it, and `notVersions` says how many
-         *     strings of the package it left out because the format does not rank them (Q-CUR-192). Needs what the start of the same download
+         *     strings of the package it left out because the format does not rank them (Q-CUR-192). `sync` says what keeping the package or the
+         *     sub-section in sync would do (R-CUR-027): what its first run would queue, whether the rules deliver the package at all, the
+         *     repository's interval and the sync the subject has already. Needs what the start of the same download
          *     needs (R-CUR-005); a local or virtual repository answers `400 not_applicable`, a sub-section of an upstream that lists no levels
          *     `400 catalogue_not_offered`, a bound the format does not rank `422 invalid_version` at its pointer.
          */
@@ -7962,6 +7964,156 @@ export interface paths {
          *     started it, `manage` or the system role `admin`. Writes `remote.download.cancelled`.
          */
         post: operations["cancelRemoteDownloadBulk"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * List the downloads a remote repository keeps in sync
+         * @description The repository's syncs (R-CUR-027), newest first, each with its bounds, its state, the time of its next run and its newest run
+         *     as a bulk with the counts of its rows by state, beside the repository's interval, its pause and the bound of syncs. Cursor
+         *     pagination (R-API-010). Needs `read` on the repository; a repository hidden from the caller answers `404`, a local or virtual one
+         *     `400 not_applicable`. `createdBy` names a person only to those who may set rules and to that person.
+         */
+        get: operations["listRemoteDownloadSyncs"];
+        put?: never;
+        /**
+         * Keep a package or a sub-section of a remote repository in sync
+         * @description Sets up a sync (R-CUR-027): the body of `POST downloads` with the level `package` or `section`, whose bounds the dispatch applies
+         *     again every `remote.syncs.intervalSeconds` of the repository. The first run starts at once as a bulk of the origin `sync`. A run
+         *     stores only what the delivery rules deliver, leaves out the versions the repository stores as version rows (an OCI tag is
+         *     revalidated and fetched again when it moved) and removes nothing. Needs `manage` on the repository or the system role `admin`.
+         *     `409 already_synced` names the sync of the same subject; `422 too_many_syncs` at `proxy.downloads.max_syncs_per_repository`;
+         *     `422 validation_failed` at `/level` for the level `version`. Writes `remote.sync.created` and the run's `remote.download.started`.
+         */
+        post: operations["createRemoteDownloadSync"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The sync's ID; any other text names no sync (`404`). */
+                syncId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Stop keeping a package or a sub-section in sync
+         * @description Removes the sync (R-CUR-027); a run in progress goes on as a bulk, and nothing it stored is removed. A sync is not edited: it is
+         *     removed and set up again (Q-CUR-248). Needs `manage` on the repository or the system role `admin`. Writes `remote.sync.deleted`.
+         */
+        delete: operations["deleteRemoteDownloadSync"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The sync's ID; any other text names no sync (`404`). */
+                syncId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run a sync now
+         * @description Starts a run of the sync now (R-CUR-027, **Run now**), as the person: a bulk of the origin `sync`; the next run follows an
+         *     interval after it. `409 sync_running` names the previous run while its rows wait or run. Needs `manage` on the repository or the
+         *     system role `admin`. Writes `remote.download.started`.
+         */
+        post: operations["runRemoteDownloadSync"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The sync's ID; any other text names no sync (`404`). */
+                syncId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pause a sync
+         * @description Pauses the sync (R-CUR-027): it starts no run until it is resumed; a run in progress goes on. Needs `manage` on the repository or
+         *     the system role `admin`. Writes `remote.sync.paused`.
+         */
+        post: operations["pauseRemoteDownloadSync"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The sync's ID; any other text names no sync (`404`). */
+                syncId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume a sync
+         * @description Resumes a paused sync (R-CUR-027): a sync whose next run passed while it was paused runs at the next dispatch. Needs `manage` on
+         *     the repository or the system role `admin`. Writes `remote.sync.resumed`.
+         */
+        post: operations["resumeRemoteDownloadSync"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12718,6 +12870,7 @@ export interface components {
             mode: "pullThrough" | "mirror";
             mirror?: components["schemas"]["MirrorSettings"];
             delivery?: components["schemas"]["DeliverySettings"];
+            syncs?: components["schemas"]["SyncSettings"];
             /**
              * @description A request that names exactly one version or file without fetching its content (the manifest of an OCI tag, an npm version
              *     document, a HEAD of a file) starts the download of that version's content in the background, charged to the caller's
@@ -15245,6 +15398,30 @@ export interface components {
             examinedRetentionDays: number;
         };
         /**
+         * @description The downloads a remote repository keeps in sync (`remote.syncs`, remote-curation.md R-CUR-020, R-CUR-027): configuration, which
+         *     `repositories:write-config` and the project's Owner set. The syncs themselves are set up through `…/download-syncs` by the
+         *     holders of `manage`.
+         */
+        SyncSettings: {
+            /**
+             * @description The time from one run of a sync to its next, the same for every sync of the repository (Q-CUR-242).
+             * @default 3600
+             */
+            intervalSeconds: number;
+            /**
+             * @description No sync of the repository starts a run; a run in progress goes on.
+             * @default false
+             */
+            paused: boolean;
+            /**
+             * Format: int64
+             * @description The repository's stored bytes (its folded counter) at which its syncs start no run; null for no bound of their own
+             *     (Q-CUR-246).
+             * @default null
+             */
+            maxBytes: number | null;
+        };
+        /**
          * @description How a pass discovers names (R-REPO-051).
          * @enum {string}
          */
@@ -16855,7 +17032,7 @@ export interface components {
          * @description The origin of the queue row a download of origin `queue` belongs to (remote-curation.md R-CUR-011).
          * @enum {string}
          */
-        UpstreamDownloadQueueOrigin: "person" | "request" | "allow" | "bulk" | "probe";
+        UpstreamDownloadQueueOrigin: "person" | "request" | "allow" | "bulk" | "sync" | "probe";
         /**
          * @description The class of a failure (remote-curation.md R-CUR-011, Q-CUR-20).
          * @enum {string}
@@ -16947,7 +17124,7 @@ export interface components {
             /** @description The version; empty for a file of no version (an OCI blob). */
             version: string;
             /** @enum {string} */
-            origin: "person" | "request" | "allow" | "bulk" | "probe" | "client";
+            origin: "person" | "request" | "allow" | "bulk" | "sync" | "probe" | "client";
             /** @enum {string} */
             state: "waiting" | "running" | "done" | "failed" | "cancelled";
             /** @description The outcome of a done row: completed, bounded, refused, skipped; null for a row that is not done. */
@@ -17042,6 +17219,8 @@ export interface components {
             toInclusive: boolean;
         };
         RemoteDownloadPreview: {
+            /** @description What keeping the package or the sub-section in sync would do (R-CUR-027); null for one version. */
+            sync: components["schemas"]["RemoteDownloadSyncPreview"] | null;
             versions: number | null;
             packages: number | null;
             /** Format: int64 */
@@ -17067,15 +17246,22 @@ export interface components {
             subject: string;
             /**
              * @description Who started the bulk: `person` (a person's bulk of a package or a sub-section), `request` (the examination of a package a
-             *     request starts) or `allow` (the newest versions an allow downloads, Q-CUR-141).
+             *     request starts), `allow` (the newest versions an allow downloads, Q-CUR-141) or `sync` (a run of a sync, R-CUR-027).
              * @enum {string}
              */
-            origin: "person" | "request" | "allow";
+            origin: "person" | "request" | "allow" | "sync";
             /** @enum {string} */
             state: "expanding" | "queued" | "done" | "bounded" | "cancelled" | "failed";
             bounds: components["schemas"]["RemoteDownloadBounds"];
             versionsFound: number;
             versionsQueued: number;
+            /** @description The versions a sync's run left out because the delivery rules do not deliver them (Q-CUR-243); 0 for any other bulk. */
+            versionsRefused: number;
+            /**
+             * Format: uuid
+             * @description The sync whose run the bulk is (origin `sync`); null for another bulk and for a run whose sync was removed.
+             */
+            sync: string | null;
             failure: components["schemas"]["RemoteDownloadFailure"] | null;
             startedBy: components["schemas"]["RemoteDownloadStarter"] | null;
             /** Format: date-time */
@@ -17090,6 +17276,72 @@ export interface components {
         RemoteDownloadBulkPage: {
             items: components["schemas"]["RemoteDownloadBulk"][];
             nextCursor: string | null;
+        };
+        /**
+         * @description What a sync of the previewed package or sub-section would do (R-CUR-027): its first run's count, whether the rules deliver the
+         *     package at all (a sync stores only what they deliver), the repository's interval and pause, and the sync of the same subject.
+         */
+        RemoteDownloadSyncPreview: {
+            /** @description The versions the first run would queue: the counted versions the rules deliver that the repository does not store as version rows (an OCI tag counts, since its run revalidates it); null where the versions are not counted (a sub-section, no catalogue). */
+            versions: number | null;
+            /** @description Whether the delivery rules deliver the package or a version of it; false means a sync would store nothing. */
+            delivered: boolean;
+            /** @description The repository's `remote.syncs.intervalSeconds`, the time from one run to the next. */
+            intervalSeconds: number;
+            /** @description The repository's `remote.syncs.paused`; while it holds, a sync starts no run after its first. */
+            paused: boolean;
+            /**
+             * Format: uuid
+             * @description The sync of the same subject the repository has; null for none.
+             */
+            existing: string | null;
+        };
+        /**
+         * @description What the last look at a sync did (R-CUR-027): `started` a run; or why none started: `overlapped` (the previous run's rows had
+         *     not all ended; the run starts once they have), `limited` (the upstream's rate limit held the queue), `bounded` (the repository's
+         *     folded bytes reached `remote.syncs.maxBytes`), `disabled` (the repository is disabled, offline or no longer remote), `paused`
+         *     (`remote.syncs.paused` holds).
+         * @enum {string}
+         */
+        RemoteDownloadSyncOutcome: "started" | "overlapped" | "limited" | "bounded" | "disabled" | "paused";
+        /** @description A download kept in sync (R-CUR-027), with its newest run. */
+        RemoteDownloadSync: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            level: "package" | "section";
+            subject: string;
+            bounds: components["schemas"]["RemoteDownloadBounds"];
+            /** @enum {string} */
+            state: "active" | "paused";
+            /**
+             * Format: date-time
+             * @description When the dispatch looks at the sync next; null while it is paused.
+             */
+            nextRunAt: string | null;
+            /** Format: date-time */
+            lastRunAt: string | null;
+            lastOutcome: components["schemas"]["RemoteDownloadSyncOutcome"] | null;
+            /** @description The newest run, as `GET download-bulks/{id}` answers it; null once the retention removed it. */
+            lastBulk: components["schemas"]["RemoteDownloadBulk"] | null;
+            createdBy: components["schemas"]["RemoteDownloadStarter"] | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        RemoteDownloadSyncPage: {
+            items: components["schemas"]["RemoteDownloadSync"][];
+            nextCursor: string | null;
+            /** @description The repository's `remote.syncs.intervalSeconds`, the same for every sync of it (Q-CUR-242). */
+            intervalSeconds: number;
+            /** @description The repository's `remote.syncs.paused`; no sync of it starts a run while it holds. */
+            paused: boolean;
+            /** @description `proxy.downloads.max_syncs_per_repository`. */
+            maxSyncs: number;
+        };
+        /** @description A sync with the run that a set-up or a Run now started (R-CUR-027). */
+        RemoteDownloadSyncRun: {
+            sync: components["schemas"]["RemoteDownloadSync"];
+            bulk: components["schemas"]["RemoteDownloadBulk"];
         };
         /** @description The answer of a start (R-CUR-010): the row of one version, or the bulk of a package or a sub-section. */
         RemoteDownloadStarted: {
@@ -33697,7 +33949,14 @@ export interface operations {
                      *         "toVersion": "5.4.7",
                      *         "toInclusive": true
                      *       },
-                     *       "note": null
+                     *       "note": null,
+                     *       "sync": {
+                     *         "versions": 2,
+                     *         "delivered": true,
+                     *         "intervalSeconds": 3600,
+                     *         "paused": false,
+                     *         "existing": null
+                     *       }
                      *     }
                      */
                     "application/json": components["schemas"]["RemoteDownloadPreview"];
@@ -34061,6 +34320,238 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RemoteDownloadBulk"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listRemoteDownloadSyncs: {
+        parameters: {
+            query?: {
+                /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
+                limit?: components["parameters"]["Limit"];
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of syncs. */
+            200: {
+                headers: {
+                    Link: components["headers"]["Link"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoteDownloadSyncPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createRemoteDownloadSync: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoteDownloadRequest"];
+            };
+        };
+        responses: {
+            /** @description The sync and its first run. */
+            201: {
+                headers: {
+                    /** @description The address of the syncs' list. */
+                    Location?: string;
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoteDownloadSyncRun"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    deleteRemoteDownloadSync: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The sync's ID; any other text names no sync (`404`). */
+                syncId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The sync is removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    runRemoteDownloadSync: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The sync's ID; any other text names no sync (`404`). */
+                syncId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The sync and the run it started. */
+            202: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoteDownloadSyncRun"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    pauseRemoteDownloadSync: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The sync's ID; any other text names no sync (`404`). */
+                syncId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The paused sync. */
+            200: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoteDownloadSync"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    resumeRemoteDownloadSync: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The sync's ID; any other text names no sync (`404`). */
+                syncId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The resumed sync. */
+            200: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoteDownloadSync"];
                 };
             };
             400: components["responses"]["BadRequest"];

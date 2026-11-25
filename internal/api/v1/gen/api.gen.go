@@ -3282,6 +3282,7 @@ const (
 	DownloadOriginPerson  RemoteDownloadOrigin = "person"
 	DownloadOriginProbe   RemoteDownloadOrigin = "probe"
 	DownloadOriginRequest RemoteDownloadOrigin = "request"
+	DownloadOriginSync    RemoteDownloadOrigin = "sync"
 )
 
 // Valid indicates whether the value is a known member of the RemoteDownloadOrigin enum.
@@ -3298,6 +3299,8 @@ func (e RemoteDownloadOrigin) Valid() bool {
 	case DownloadOriginProbe:
 		return true
 	case DownloadOriginRequest:
+		return true
+	case DownloadOriginSync:
 		return true
 	default:
 		return false
@@ -3354,6 +3357,7 @@ const (
 	BulkOriginAllow   RemoteDownloadBulkOrigin = "allow"
 	BulkOriginPerson  RemoteDownloadBulkOrigin = "person"
 	BulkOriginRequest RemoteDownloadBulkOrigin = "request"
+	BulkOriginSync    RemoteDownloadBulkOrigin = "sync"
 )
 
 // Valid indicates whether the value is a known member of the RemoteDownloadBulkOrigin enum.
@@ -3364,6 +3368,8 @@ func (e RemoteDownloadBulkOrigin) Valid() bool {
 	case BulkOriginPerson:
 		return true
 	case BulkOriginRequest:
+		return true
+	case BulkOriginSync:
 		return true
 	default:
 		return false
@@ -3544,6 +3550,72 @@ func (e RemoteDownloadRequestLevel) Valid() bool {
 	case DownloadLevelSection:
 		return true
 	case DownloadLevelVersion:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RemoteDownloadSyncLevel.
+const (
+	SyncLevelPackage RemoteDownloadSyncLevel = "package"
+	SyncLevelSection RemoteDownloadSyncLevel = "section"
+)
+
+// Valid indicates whether the value is a known member of the RemoteDownloadSyncLevel enum.
+func (e RemoteDownloadSyncLevel) Valid() bool {
+	switch e {
+	case SyncLevelPackage:
+		return true
+	case SyncLevelSection:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RemoteDownloadSyncState.
+const (
+	SyncStateActive RemoteDownloadSyncState = "active"
+	SyncStatePaused RemoteDownloadSyncState = "paused"
+)
+
+// Valid indicates whether the value is a known member of the RemoteDownloadSyncState enum.
+func (e RemoteDownloadSyncState) Valid() bool {
+	switch e {
+	case SyncStateActive:
+		return true
+	case SyncStatePaused:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RemoteDownloadSyncOutcome.
+const (
+	SyncOutcomeBounded    RemoteDownloadSyncOutcome = "bounded"
+	SyncOutcomeDisabled   RemoteDownloadSyncOutcome = "disabled"
+	SyncOutcomeLimited    RemoteDownloadSyncOutcome = "limited"
+	SyncOutcomeOverlapped RemoteDownloadSyncOutcome = "overlapped"
+	SyncOutcomePaused     RemoteDownloadSyncOutcome = "paused"
+	SyncOutcomeStarted    RemoteDownloadSyncOutcome = "started"
+)
+
+// Valid indicates whether the value is a known member of the RemoteDownloadSyncOutcome enum.
+func (e RemoteDownloadSyncOutcome) Valid() bool {
+	switch e {
+	case SyncOutcomeBounded:
+		return true
+	case SyncOutcomeDisabled:
+		return true
+	case SyncOutcomeLimited:
+		return true
+	case SyncOutcomeOverlapped:
+		return true
+	case SyncOutcomePaused:
+		return true
+	case SyncOutcomeStarted:
 		return true
 	default:
 		return false
@@ -5555,6 +5627,7 @@ const (
 	UpstreamDownloadQueuePerson  UpstreamDownloadQueueOrigin = "person"
 	UpstreamDownloadQueueProbe   UpstreamDownloadQueueOrigin = "probe"
 	UpstreamDownloadQueueRequest UpstreamDownloadQueueOrigin = "request"
+	UpstreamDownloadQueueSync    UpstreamDownloadQueueOrigin = "sync"
 )
 
 // Valid indicates whether the value is a known member of the UpstreamDownloadQueueOrigin enum.
@@ -5569,6 +5642,8 @@ func (e UpstreamDownloadQueueOrigin) Valid() bool {
 	case UpstreamDownloadQueueProbe:
 		return true
 	case UpstreamDownloadQueueRequest:
+		return true
+	case UpstreamDownloadQueueSync:
 		return true
 	default:
 		return false
@@ -13949,23 +14024,29 @@ type RemoteDownloadBulk struct {
 	Level      RemoteDownloadBulkLevel `json:"level"`
 
 	// Origin Who started the bulk: `person` (a person's bulk of a package or a sub-section), `request` (the examination of a package a
-	// request starts) or `allow` (the newest versions an allow downloads, Q-CUR-141).
+	// request starts), `allow` (the newest versions an allow downloads, Q-CUR-141) or `sync` (a run of a sync, R-CUR-027).
 	Origin RemoteDownloadBulkOrigin `json:"origin"`
 
 	// Rows The bulk's rows by state.
-	Rows           map[string]int64        `json:"rows"`
-	StartedBy      *RemoteDownloadStarter  `json:"startedBy"`
-	State          RemoteDownloadBulkState `json:"state"`
-	Subject        string                  `json:"subject"`
-	VersionsFound  int                     `json:"versionsFound"`
-	VersionsQueued int                     `json:"versionsQueued"`
+	Rows      map[string]int64        `json:"rows"`
+	StartedBy *RemoteDownloadStarter  `json:"startedBy"`
+	State     RemoteDownloadBulkState `json:"state"`
+	Subject   string                  `json:"subject"`
+
+	// Sync The sync whose run the bulk is (origin `sync`); null for another bulk and for a run whose sync was removed.
+	Sync           *openapi_types.UUID `json:"sync"`
+	VersionsFound  int                 `json:"versionsFound"`
+	VersionsQueued int                 `json:"versionsQueued"`
+
+	// VersionsRefused The versions a sync's run left out because the delivery rules do not deliver them (Q-CUR-243); 0 for any other bulk.
+	VersionsRefused int `json:"versionsRefused"`
 }
 
 // RemoteDownloadBulkLevel defines model for RemoteDownloadBulk.Level.
 type RemoteDownloadBulkLevel string
 
 // RemoteDownloadBulkOrigin Who started the bulk: `person` (a person's bulk of a package or a sub-section), `request` (the examination of a package a
-// request starts) or `allow` (the newest versions an allow downloads, Q-CUR-141).
+// request starts), `allow` (the newest versions an allow downloads, Q-CUR-141) or `sync` (a run of a sync, R-CUR-027).
 type RemoteDownloadBulkOrigin string
 
 // RemoteDownloadBulkState defines model for RemoteDownloadBulk.State.
@@ -14086,7 +14167,10 @@ type RemoteDownloadPreview struct {
 	Packages    *int                       `json:"packages"`
 	SizeUnknown int                        `json:"sizeUnknown"`
 	Stored      int                        `json:"stored"`
-	Versions    *int                       `json:"versions"`
+
+	// Sync What keeping the package or the sub-section in sync would do (R-CUR-027); null for one version.
+	Sync     *RemoteDownloadSyncPreview `json:"sync"`
+	Versions *int                       `json:"versions"`
 }
 
 // RemoteDownloadPreviewNote The code of what the counts leave open, which the screen says in its own words (R-UI-214): `section_uncounted` (the upstream does not tell a sub-section's versions and sizes; the bounds cut while the bulk runs), `sizes_unannounced` (no size is announced; a size counts once the file is stored), `more_versions` (the upstream lists more versions than one answer holds; the bulk counts the rest while it runs), `size_once_stored` and `counted_on_expand` (without the catalogue: a version's size is known once it is stored; a package's versions are counted when the bulk is expanded); `null` when the counts are complete.
@@ -14146,6 +14230,79 @@ type RemoteDownloadStarted struct {
 type RemoteDownloadStarter struct {
 	Id   *string `json:"id"`
 	Name *string `json:"name"`
+}
+
+// RemoteDownloadSync A download kept in sync (R-CUR-027), with its newest run.
+type RemoteDownloadSync struct {
+	Bounds    RemoteDownloadBounds   `json:"bounds"`
+	CreatedAt time.Time              `json:"createdAt"`
+	CreatedBy *RemoteDownloadStarter `json:"createdBy"`
+	Id        openapi_types.UUID     `json:"id"`
+
+	// LastBulk The newest run, as `GET download-bulks/{id}` answers it; null once the retention removed it.
+	LastBulk    *RemoteDownloadBulk        `json:"lastBulk"`
+	LastOutcome *RemoteDownloadSyncOutcome `json:"lastOutcome"`
+	LastRunAt   *time.Time                 `json:"lastRunAt"`
+	Level       RemoteDownloadSyncLevel    `json:"level"`
+
+	// NextRunAt When the dispatch looks at the sync next; null while it is paused.
+	NextRunAt *time.Time              `json:"nextRunAt"`
+	State     RemoteDownloadSyncState `json:"state"`
+	Subject   string                  `json:"subject"`
+}
+
+// RemoteDownloadSyncLevel defines model for RemoteDownloadSync.Level.
+type RemoteDownloadSyncLevel string
+
+// RemoteDownloadSyncState defines model for RemoteDownloadSync.State.
+type RemoteDownloadSyncState string
+
+// RemoteDownloadSyncOutcome What the last look at a sync did (R-CUR-027): `started` a run; or why none started: `overlapped` (the previous run's rows had
+// not all ended; the run starts once they have), `limited` (the upstream's rate limit held the queue), `bounded` (the repository's
+// folded bytes reached `remote.syncs.maxBytes`), `disabled` (the repository is disabled, offline or no longer remote), `paused`
+// (`remote.syncs.paused` holds).
+type RemoteDownloadSyncOutcome string
+
+// RemoteDownloadSyncPage defines model for RemoteDownloadSyncPage.
+type RemoteDownloadSyncPage struct {
+	// IntervalSeconds The repository's `remote.syncs.intervalSeconds`, the same for every sync of it (Q-CUR-242).
+	IntervalSeconds int                  `json:"intervalSeconds"`
+	Items           []RemoteDownloadSync `json:"items"`
+
+	// MaxSyncs `proxy.downloads.max_syncs_per_repository`.
+	MaxSyncs   int     `json:"maxSyncs"`
+	NextCursor *string `json:"nextCursor"`
+
+	// Paused The repository's `remote.syncs.paused`; no sync of it starts a run while it holds.
+	Paused bool `json:"paused"`
+}
+
+// RemoteDownloadSyncPreview What a sync of the previewed package or sub-section would do (R-CUR-027): its first run's count, whether the rules deliver the
+// package at all (a sync stores only what they deliver), the repository's interval and pause, and the sync of the same subject.
+type RemoteDownloadSyncPreview struct {
+	// Delivered Whether the delivery rules deliver the package or a version of it; false means a sync would store nothing.
+	Delivered bool `json:"delivered"`
+
+	// Existing The sync of the same subject the repository has; null for none.
+	Existing *openapi_types.UUID `json:"existing"`
+
+	// IntervalSeconds The repository's `remote.syncs.intervalSeconds`, the time from one run to the next.
+	IntervalSeconds int `json:"intervalSeconds"`
+
+	// Paused The repository's `remote.syncs.paused`; while it holds, a sync starts no run after its first.
+	Paused bool `json:"paused"`
+
+	// Versions The versions the first run would queue: the counted versions the rules deliver that the repository does not store as version rows (an OCI tag counts, since its run revalidates it); null where the versions are not counted (a sub-section, no catalogue).
+	Versions *int `json:"versions"`
+}
+
+// RemoteDownloadSyncRun A sync with the run that a set-up or a Run now started (R-CUR-027).
+type RemoteDownloadSyncRun struct {
+	// Bulk A bulk download (R-CUR-010, R-CUR-012), expanded into rows within its bounds.
+	Bulk RemoteDownloadBulk `json:"bulk"`
+
+	// Sync A download kept in sync (R-CUR-027), with its newest run.
+	Sync RemoteDownloadSync `json:"sync"`
 }
 
 // RemoteExtraHost defines model for RemoteExtraHost.
@@ -14255,6 +14412,11 @@ type RemoteSettings struct {
 	// single address is saved with the warning `source_network_single_address`; a value that is not
 	// a prefix is `422 invalid_source_network`.
 	SourceNetwork *string `json:"sourceNetwork,omitempty"`
+
+	// Syncs The downloads a remote repository keeps in sync (`remote.syncs`, remote-curation.md R-CUR-020, R-CUR-027): configuration, which
+	// `repositories:write-config` and the project's Owner set. The syncs themselves are set up through `…/download-syncs` by the
+	// holders of `manage`.
+	Syncs *SyncSettings `json:"syncs,omitempty"`
 
 	// Url The upstream base URL (NuGet: the service index URL): absolute `http` or `https`, without user
 	// information and without a fragment. Stored normalized: scheme and host in lower case, the
@@ -16479,6 +16641,21 @@ type StoredBackups struct {
 	AsOf  time.Time          `json:"asOf"`
 	Items []StoredBackup     `json:"items"`
 	RunId openapi_types.UUID `json:"runId"`
+}
+
+// SyncSettings The downloads a remote repository keeps in sync (`remote.syncs`, remote-curation.md R-CUR-020, R-CUR-027): configuration, which
+// `repositories:write-config` and the project's Owner set. The syncs themselves are set up through `…/download-syncs` by the
+// holders of `manage`.
+type SyncSettings struct {
+	// IntervalSeconds The time from one run of a sync to its next, the same for every sync of the repository (Q-CUR-242).
+	IntervalSeconds *int `json:"intervalSeconds,omitempty"`
+
+	// MaxBytes The repository's stored bytes (its folded counter) at which its syncs start no run; null for no bound of their own
+	// (Q-CUR-246).
+	MaxBytes *int64 `json:"maxBytes,omitempty"`
+
+	// Paused No sync of the repository starts a run; a run in progress goes on.
+	Paused *bool `json:"paused,omitempty"`
 }
 
 // SystemInfo defines model for SystemInfo.
@@ -20031,6 +20208,45 @@ type CancelRemoteDownloadBulkParams struct {
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
 
+// ListRemoteDownloadSyncsParams defines parameters for ListRemoteDownloadSyncs.
+type ListRemoteDownloadSyncsParams struct {
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// CreateRemoteDownloadSyncParams defines parameters for CreateRemoteDownloadSync.
+type CreateRemoteDownloadSyncParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// DeleteRemoteDownloadSyncParams defines parameters for DeleteRemoteDownloadSync.
+type DeleteRemoteDownloadSyncParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// PauseRemoteDownloadSyncParams defines parameters for PauseRemoteDownloadSync.
+type PauseRemoteDownloadSyncParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// ResumeRemoteDownloadSyncParams defines parameters for ResumeRemoteDownloadSync.
+type ResumeRemoteDownloadSyncParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// RunRemoteDownloadSyncParams defines parameters for RunRemoteDownloadSync.
+type RunRemoteDownloadSyncParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
 // ListRemoteDownloadsParams defines parameters for ListRemoteDownloads.
 type ListRemoteDownloadsParams struct {
 	State  *ListRemoteDownloadsParamsState  `form:"state,omitempty" json:"state,omitempty"`
@@ -21373,6 +21589,9 @@ type PutDeliveryRuleJSONRequestBody = DeliveryRuleInput
 
 // CheckDeliveryRulesJSONRequestBody defines body for CheckDeliveryRules for application/json ContentType.
 type CheckDeliveryRulesJSONRequestBody = DeliveryCheckInput
+
+// CreateRemoteDownloadSyncJSONRequestBody defines body for CreateRemoteDownloadSync for application/json ContentType.
+type CreateRemoteDownloadSyncJSONRequestBody = RemoteDownloadRequest
 
 // StartRemoteDownloadJSONRequestBody defines body for StartRemoteDownload for application/json ContentType.
 type StartRemoteDownloadJSONRequestBody = RemoteDownloadRequest
@@ -22873,6 +23092,24 @@ type ServerInterface interface {
 	// CancelRemoteDownloadBulk Cancel a bulk download
 	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}/cancel)
 	CancelRemoteDownloadBulk(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, bulkId string, params CancelRemoteDownloadBulkParams)
+	// ListRemoteDownloadSyncs List the downloads a remote repository keeps in sync
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs)
+	ListRemoteDownloadSyncs(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params ListRemoteDownloadSyncsParams)
+	// CreateRemoteDownloadSync Keep a package or a sub-section of a remote repository in sync
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs)
+	CreateRemoteDownloadSync(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params CreateRemoteDownloadSyncParams)
+	// DeleteRemoteDownloadSync Stop keeping a package or a sub-section in sync
+	// (DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId})
+	DeleteRemoteDownloadSync(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, syncId string, params DeleteRemoteDownloadSyncParams)
+	// PauseRemoteDownloadSync Pause a sync
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}/pause)
+	PauseRemoteDownloadSync(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, syncId string, params PauseRemoteDownloadSyncParams)
+	// ResumeRemoteDownloadSync Resume a sync
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}/resume)
+	ResumeRemoteDownloadSync(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, syncId string, params ResumeRemoteDownloadSyncParams)
+	// RunRemoteDownloadSync Run a sync now
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}/run)
+	RunRemoteDownloadSync(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, syncId string, params RunRemoteDownloadSyncParams)
 	// ListRemoteDownloads List the download queue of a remote repository
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads)
 	ListRemoteDownloads(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params ListRemoteDownloadsParams)
@@ -32533,6 +32770,401 @@ func (siw *ServerInterfaceWrapper) CancelRemoteDownloadBulk(w http.ResponseWrite
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CancelRemoteDownloadBulk(w, r, projectKey, repoKey, bulkId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRemoteDownloadSyncs operation middleware
+func (siw *ServerInterfaceWrapper) ListRemoteDownloadSyncs(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRemoteDownloadSyncsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRemoteDownloadSyncs(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateRemoteDownloadSync operation middleware
+func (siw *ServerInterfaceWrapper) CreateRemoteDownloadSync(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateRemoteDownloadSyncParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRemoteDownloadSync(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteRemoteDownloadSync operation middleware
+func (siw *ServerInterfaceWrapper) DeleteRemoteDownloadSync(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "syncId" -------------
+	var syncId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "syncId", r.PathValue("syncId"), &syncId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "syncId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteRemoteDownloadSyncParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteRemoteDownloadSync(w, r, projectKey, repoKey, syncId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PauseRemoteDownloadSync operation middleware
+func (siw *ServerInterfaceWrapper) PauseRemoteDownloadSync(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "syncId" -------------
+	var syncId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "syncId", r.PathValue("syncId"), &syncId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "syncId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PauseRemoteDownloadSyncParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PauseRemoteDownloadSync(w, r, projectKey, repoKey, syncId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResumeRemoteDownloadSync operation middleware
+func (siw *ServerInterfaceWrapper) ResumeRemoteDownloadSync(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "syncId" -------------
+	var syncId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "syncId", r.PathValue("syncId"), &syncId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "syncId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ResumeRemoteDownloadSyncParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResumeRemoteDownloadSync(w, r, projectKey, repoKey, syncId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RunRemoteDownloadSync operation middleware
+func (siw *ServerInterfaceWrapper) RunRemoteDownloadSync(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "syncId" -------------
+	var syncId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "syncId", r.PathValue("syncId"), &syncId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "syncId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RunRemoteDownloadSyncParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RunRemoteDownloadSync(w, r, projectKey, repoKey, syncId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -42769,6 +43401,12 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks", wrapper.ListRemoteDownloadBulks)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}", wrapper.GetRemoteDownloadBulk)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}/cancel", wrapper.CancelRemoteDownloadBulk)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs", wrapper.ListRemoteDownloadSyncs)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs", wrapper.CreateRemoteDownloadSync)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}", wrapper.DeleteRemoteDownloadSync)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}/run", wrapper.RunRemoteDownloadSync)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}/pause", wrapper.PauseRemoteDownloadSync)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}/resume", wrapper.ResumeRemoteDownloadSync)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream", wrapper.GetUpstreamCatalogue)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/search", wrapper.SearchUpstreamCatalogue)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/levels", wrapper.ListUpstreamLevel)

@@ -222,13 +222,14 @@ DELETE FROM remote_download
    OFFSET sqlc.arg(max_rows)::int);
 
 -- name: RemoteDownloadBulkInsert :one
--- A person's bulk with its bounds; from_version and to_version '' are no bound on that side (R-CUR-010, Q-CUR-193).
+-- A person's bulk, or a sync's run (origin sync with the sync's id, R-CUR-027), with its bounds; from_version and to_version '' are no
+-- bound on that side (R-CUR-010, Q-CUR-193).
 INSERT INTO remote_download_bulks (id, repo_id, level, subject, max_versions, max_bytes, include_prereleases, state, started_by,
-                                   from_version, to_version, to_inclusive)
+                                   from_version, to_version, to_inclusive, origin, sync_id)
 VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(repo_id)::bigint, sqlc.arg(level)::text, sqlc.arg(subject)::text,
         sqlc.arg(max_versions)::int, sqlc.arg(max_bytes)::bigint, sqlc.arg(include_prereleases)::bool, 'expanding',
         NULLIF(sqlc.arg(started_by)::text, '')::uuid, NULLIF(sqlc.arg(from_version)::text, ''), NULLIF(sqlc.arg(to_version)::text, ''),
-        sqlc.arg(to_inclusive)::bool)
+        sqlc.arg(to_inclusive)::bool, sqlc.arg(origin)::text, NULLIF(sqlc.arg(sync_id)::text, '')::uuid)
 RETURNING to_jsonb(remote_download_bulks.*)::text AS doc;
 
 -- name: RemoteDownloadBulkGet :many
@@ -250,6 +251,7 @@ SELECT id::text AS id, repo_id FROM remote_download_bulks WHERE state = 'expandi
 -- name: RemoteDownloadBulkUpdate :execrows
 UPDATE remote_download_bulks
    SET state = sqlc.arg(state)::text, versions_found = sqlc.arg(versions_found)::int, versions_queued = sqlc.arg(versions_queued)::int,
+       versions_refused = sqlc.arg(versions_refused)::int,
        cursor = NULLIF(sqlc.arg(cursor)::text, '')::jsonb, failure = NULLIF(sqlc.arg(failure)::text, '')::jsonb,
        finished_at = CASE WHEN sqlc.arg(state)::text IN ('done', 'bounded', 'cancelled', 'failed') THEN now() ELSE NULL END
  WHERE id = sqlc.arg(id)::text::uuid;
@@ -322,3 +324,111 @@ DELETE FROM remote_download_limits WHERE repo_id = sqlc.arg(repo_id)::bigint;
 DELETE FROM remote_download_limits l
  WHERE l.until < to_timestamp(sqlc.arg(now_us)::bigint / 1000000.0)
    AND NOT EXISTS (SELECT 1 FROM remote_download d WHERE d.repo_id = l.repo_id AND d.state IN ('waiting', 'running'));
+
+-- Downloads kept in sync (R-CUR-027, migration 00130): a sync is the stored definition of a bulk that the dispatch starts again every
+-- remote.syncs.intervalSeconds of its repository. A sync crosses the boundary as the JSON text of to_jsonb, as a bulk does.
+
+-- name: RemoteDownloadSyncInsert :many
+-- A new sync; a second sync of the same subject inserts nothing (remote_download_syncs_subject): the answer is empty.
+INSERT INTO remote_download_syncs (id, repo_id, level, subject, max_versions, max_bytes, include_prereleases, from_version, to_version,
+                                   to_inclusive, next_run_at, last_run_at, last_outcome, created_by)
+VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(repo_id)::bigint, sqlc.arg(level)::text, sqlc.arg(subject)::text,
+        sqlc.arg(max_versions)::int, sqlc.arg(max_bytes)::bigint, sqlc.arg(include_prereleases)::bool,
+        NULLIF(sqlc.arg(from_version)::text, ''), NULLIF(sqlc.arg(to_version)::text, ''), sqlc.arg(to_inclusive)::bool,
+        to_timestamp(sqlc.arg(next_run_us)::bigint / 1000000.0), to_timestamp(sqlc.arg(now_us)::bigint / 1000000.0), 'started',
+        NULLIF(sqlc.arg(created_by)::text, '')::uuid)
+ON CONFLICT DO NOTHING
+RETURNING to_jsonb(remote_download_syncs.*)::text AS doc;
+
+-- name: RemoteDownloadSyncOfSubject :many
+-- The sync of a subject of a repository (409 already_synced names it).
+SELECT to_jsonb(s.*)::text AS doc
+  FROM remote_download_syncs s
+ WHERE s.repo_id = sqlc.arg(repo_id)::bigint AND s.level = sqlc.arg(level)::text AND s.subject = sqlc.arg(subject)::text;
+
+-- name: RemoteDownloadSyncCount :one
+-- The syncs of a repository: proxy.downloads.max_syncs_per_repository bounds them (422 too_many_syncs).
+SELECT count(*)::int AS n FROM remote_download_syncs WHERE repo_id = sqlc.arg(repo_id)::bigint;
+
+-- name: RemoteDownloadSyncGet :many
+-- One sync of a repository.
+SELECT to_jsonb(s.*)::text AS doc
+  FROM remote_download_syncs s
+ WHERE s.id = sqlc.arg(id)::text::uuid AND s.repo_id = sqlc.arg(repo_id)::bigint;
+
+-- name: RemoteDownloadSyncLock :many
+-- One sync for a run, a pause or a removal, locked so that the dispatch and a person do not start two runs at once.
+SELECT to_jsonb(s.*)::text AS doc
+  FROM remote_download_syncs s
+ WHERE s.id = sqlc.arg(id)::text::uuid AND s.repo_id = sqlc.arg(repo_id)::bigint
+   FOR UPDATE;
+
+-- name: RemoteDownloadSyncLockDue :many
+-- A sync whose next run came, locked for the dispatch's look at it; skipped while another dispatch or a person holds it.
+SELECT to_jsonb(s.*)::text AS doc
+  FROM remote_download_syncs s
+ WHERE s.id = sqlc.arg(id)::text::uuid AND NOT s.paused AND s.next_run_at <= to_timestamp(sqlc.arg(now_us)::bigint / 1000000.0)
+   FOR UPDATE SKIP LOCKED;
+
+-- name: RemoteDownloadSyncsDue :many
+-- The syncs whose next run came, at most 100 per dispatch, the longest due first (remote_download_syncs_due).
+SELECT id::text AS id, repo_id
+  FROM remote_download_syncs
+ WHERE NOT paused AND next_run_at <= to_timestamp(sqlc.arg(now_us)::bigint / 1000000.0)
+ ORDER BY next_run_at, id
+ LIMIT 100;
+
+-- name: RemoteDownloadSyncRan :exec
+-- What a look at a sync did: its time, the next run's time and the outcome (R-CUR-027).
+UPDATE remote_download_syncs
+   SET last_run_at = to_timestamp(sqlc.arg(now_us)::bigint / 1000000.0),
+       next_run_at = to_timestamp(sqlc.arg(next_run_us)::bigint / 1000000.0), last_outcome = sqlc.arg(outcome)::text
+ WHERE id = sqlc.arg(id)::text::uuid;
+
+-- name: RemoteDownloadSyncSetPaused :many
+-- A sync is paused or resumed (Q-CUR-248).
+UPDATE remote_download_syncs
+   SET paused = sqlc.arg(paused)::bool
+ WHERE id = sqlc.arg(id)::text::uuid AND repo_id = sqlc.arg(repo_id)::bigint
+RETURNING to_jsonb(remote_download_syncs.*)::text AS doc;
+
+-- name: RemoteDownloadSyncDelete :execrows
+-- A sync is removed; its runs stay as bulks (remote_download_bulks.sync_id SET NULL).
+DELETE FROM remote_download_syncs WHERE id = sqlc.arg(id)::text::uuid AND repo_id = sqlc.arg(repo_id)::bigint;
+
+-- name: RemoteDownloadSyncList :many
+-- One page of a repository's syncs (GET download-syncs): newest first; the cursor is the last sync's creation time and id.
+SELECT to_jsonb(s.*)::text AS doc
+  FROM remote_download_syncs s
+ WHERE s.repo_id = sqlc.arg(repo_id)::bigint
+   AND (sqlc.arg(after_id)::text = ''
+        OR (extract(epoch FROM s.created_at) * 1000000)::bigint < sqlc.arg(after_us)::bigint
+        OR ((extract(epoch FROM s.created_at) * 1000000)::bigint = sqlc.arg(after_us)::bigint AND s.id::text < sqlc.arg(after_id)::text))
+ ORDER BY s.created_at DESC, s.id::text DESC
+ LIMIT sqlc.arg(max_rows)::int;
+
+-- name: RemoteDownloadSyncLastBulks :many
+-- The newest run of each of the syncs (remote_download_bulks_sync): its bulk, as the list of bulks answers it.
+SELECT DISTINCT ON (b.sync_id) to_jsonb(b.*)::text AS doc
+  FROM remote_download_bulks b
+ WHERE b.sync_id = ANY(sqlc.arg(sync_ids)::text[]::uuid[])
+ ORDER BY b.sync_id, b.created_at DESC;
+
+-- name: RemoteDownloadSyncGauge :many
+-- The syncs by repository and state, for the gauge quader_remote_download_syncs (R-CUR-019).
+SELECT repo_id, (CASE WHEN paused THEN 'paused' ELSE 'active' END)::text AS state, count(*)::bigint AS n
+  FROM remote_download_syncs
+ GROUP BY repo_id, paused;
+
+-- name: RemoteDownloadSyncUsage :one
+-- The repository's folded bytes (R-STOR-003): remote.syncs.maxBytes stops its syncs at them (Q-CUR-246). No counter row is 0.
+SELECT COALESCE((SELECT logical_bytes FROM repository_usage WHERE repo_id = sqlc.arg(repo_id)::bigint), 0)::bigint AS logical_bytes;
+
+-- name: RemoteDownloadFixedVersions :many
+-- The live version rows of a package of a repository: what a sync's run leaves out, since a version row's content does not change
+-- (Q-CUR-244). An OCI tag is a cache entry and no version row, so its run is queued again and revalidates it (Q-CUR-245). names are
+-- the name as the catalogue spells it and in the format's folded form, which a format may store.
+SELECT DISTINCT v.version
+  FROM packages p
+  JOIN package_versions v ON v.package_id = p.id AND v.trashed_at IS NULL
+ WHERE p.repo_id = sqlc.arg(repo_id)::bigint AND p.name = ANY(sqlc.arg(names)::text[]);

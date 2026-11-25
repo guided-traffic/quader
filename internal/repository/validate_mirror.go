@@ -99,6 +99,23 @@ func (r *remoteResolver) delivery(s *RemoteSettings, in remoteInput) {
 	r.rng("/remote/delivery/examinedRetentionDays", s.Delivery.ExaminedRetentionDays, 1, maxExaminedRetentionDays)
 }
 
+// syncs resolves remote.syncs (remote-curation.md R-CUR-020, R-CUR-027): the interval of five minutes to 30 days, the pause, and the
+// byte bound of at least 1 MiB or null.
+func (r *remoteResolver) syncs(s *RemoteSettings, in remoteInput) {
+	var y syncsInput
+	if in.Syncs != nil {
+		y = *in.Syncs
+	}
+	def := DefaultSyncSettings()
+	s.Syncs = SyncSettings{
+		IntervalSeconds: intOr(y.IntervalSeconds, def.IntervalSeconds), Paused: boolOr(y.Paused, def.Paused), MaxBytes: y.MaxBytes,
+	}
+	r.rng("/remote/syncs/intervalSeconds", s.Syncs.IntervalSeconds, minSyncInterval, maxSyncInterval)
+	if b := s.Syncs.MaxBytes; b != nil && (*b < minMirrorMaxBytes || *b > maxMirrorMaxBytes) {
+		r.v.add("/remote/syncs/maxBytes", codeOutOfRange, "must be at least 1 MiB (1048576), at most 2^62, or null for no bound of their own")
+	}
+}
+
 // checkMirrorURL refuses a query in the url of a mirror (Q-REPO-194): the formats' requests drop it, so a url that
 // differs from the well-known upstream by a query would be that upstream without the bound of R-REPO-052.
 func (r *remoteResolver) checkMirrorURL(s *RemoteSettings) {

@@ -11,7 +11,7 @@ import { Confirm } from '../../../shared/confirm-dialog';
 import { valueOf } from '../../../shared/paged-resource';
 import { QuaderDialog } from '../../../shared/ui/dialog';
 import { AskDialog, AskDialogData } from './request-dialogs';
-import { DownloadPreviewDialog, DownloadPreviewData } from './download-preview-dialog';
+import { DownloadPreviewDialog, DownloadPreviewData, DownloadPreviewResult } from './download-preview-dialog';
 import { FailureToasts } from '../../../shared/failure-dialog';
 
 /** The subject of an act: a package with every version, one version of it, or a sub-section (a name pattern or a level). */
@@ -137,18 +137,25 @@ export class UpstreamActions {
 
   /** **Download every version…** of a package, or **Download this sub-section…**: the preview first, then the bulk (R-CUR-010). */
   async downloadBulk(request: RemoteDownloadRequest, title: string): Promise<void> {
-    const ref = this.dialog.open<DownloadPreviewDialog, DownloadPreviewData, string>(DownloadPreviewDialog, {
+    const ref = this.dialog.open<DownloadPreviewDialog, DownloadPreviewData, DownloadPreviewResult>(DownloadPreviewDialog, {
       data: { repository: this.repository(), request, title },
       width: '36rem',
     });
-    const bulk = await firstValueFrom(ref.closed);
-    if (bulk === undefined || bulk === null) return;
+    const out = await firstValueFrom(ref.closed);
+    if (!out) return;
     this.changed.update((n) => n + 1);
     // The bulk has no row yet: it reads the versions from the upstream first and queues them then, or fails with the cause, which the
-    // tab Downloads shows on the bulk (Q-CUR-168).
+    // tab Downloads shows on the bulk (Q-CUR-168). A sync's first run is such a bulk; the tab lists the sync above it (R-CUR-027).
+    if (out.sync) {
+      this.notifier.status(
+        $localize`:@@upstream.download.sync-started:Kept in sync: the first run has started, and the tab Downloads lists the sync.`,
+        this.showDownloads(),
+      );
+      return;
+    }
     this.notifier.status(
       $localize`:@@upstream.download.bulk-started:The bulk download has started; Quader reads its versions first, then queues them.`,
-      bulk ? this.showBulk(bulk) : this.showDownloads(),
+      out.bulk ? this.showBulk(out.bulk) : this.showDownloads(),
     );
   }
 

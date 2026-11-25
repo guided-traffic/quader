@@ -70,6 +70,11 @@ var ownerRightsExempt = map[string]string{
 	"cancelRemoteDownload":     "as retryRemoteDownload",
 	"retryRemoteDownloads":     "manage through the decision point with the scope (R-CUR-005)",
 	"cancelRemoteDownloadBulk": "the starter of the bulk or manage through the decision point with the scope (R-CUR-005)",
+	"createRemoteDownloadSync": "manage through the decision point with the scope (R-CUR-005, R-CUR-027)",
+	"runRemoteDownloadSync":    "manage through the decision point with the scope (R-CUR-005, R-CUR-027)",
+	"pauseRemoteDownloadSync":  "manage through the decision point with the scope (R-CUR-005, R-CUR-027)",
+	"resumeRemoteDownloadSync": "manage through the decision point with the scope (R-CUR-005, R-CUR-027)",
+	"deleteRemoteDownloadSync": "manage through the decision point with the scope (R-CUR-005, R-CUR-027)",
 	// <<< T-24 downloads
 	// >>> T-24 requests
 	"askDeliveryRequest": "read on the repository and no manage, through the decision point with the scope (requestSetup, R-CUR-005); " +
@@ -113,6 +118,7 @@ var ownerRightsReads = map[string]string{
 	"getRemoteDownload":       "as listRemoteDownloads",
 	"getRemoteDownloadBulk":   "as listRemoteDownloads",
 	"listRemoteDownloadBulks": "as listRemoteDownloads",
+	"listRemoteDownloadSyncs": "as listRemoteDownloads",
 	// <<< T-24 downloads
 	// >>> T-24 requests
 	"listDeliveryRequests": "read on the repository through the decision point with the scope (requestSetup, R-CUR-005); a caller " +

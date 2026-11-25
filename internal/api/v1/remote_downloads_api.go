@@ -65,6 +65,8 @@ type downloadTarget struct {
 	// RaisesLimit is the limit's accountRaisesLimit: the preset of Upstream says an account allows more, and the remote sends no
 	// credential, stored or declared on this replica (Q-UI-1160).
 	RaisesLimit bool
+	// Syncs is the remote's remote.syncs: the interval and the pause a sync's screens say (R-CUR-027).
+	Syncs repository.SyncSettings
 }
 
 // downloadAccess resolves the request's decisions on the repository; 503 without a decision point.
@@ -121,7 +123,7 @@ func (s *Server) downloadRemote(ctx context.Context, key qname.Repo) (downloadTa
 	}
 	t := downloadTarget{ID: id, Key: key, Format: st.Repository.Format}
 	if rs, ok := st.Repository.Remote(); ok {
-		t.Upstream = rs.URL
+		t.Upstream, t.Syncs = rs.URL, rs.Syncs
 		_, declared := svc.ConfiguredAccountFor(key.Project, key.Key)
 		t.RaisesLimit = svc.AccountRaisesLimit(t.Format, rs.URL, declared || rs.AuthMode != repository.AuthNone)
 	}
@@ -549,6 +551,8 @@ func (s *Server) downloadError(ctx context.Context, acc *edge.Access, t download
 		return errs.E(errs.RateLimited, errs.CodeDownloadQueueFull,
 			"The download queue of "+strconv.Quote(t.Key.String())+" holds "+strconv.Itoa(fe.Waiting)+" waiting downloads, as many as it may.",
 			errs.WithRetryAfter(time.Minute), errs.WithExtension("waiting", fe.Waiting))
+	case errors.Is(err, queue.ErrAlreadySynced), errors.Is(err, queue.ErrTooManySyncs), errors.Is(err, queue.ErrSyncRunning):
+		return s.syncError(ctx, acc, t, err)
 	case errors.Is(err, queue.ErrNotRetryable):
 		return errs.E(errs.Conflict, errs.CodeNotRetryable, "Only a failed or cancelled download can be retried.")
 	case errors.Is(err, queue.ErrNotFound):
@@ -637,9 +641,9 @@ func (s *Server) bulkView(ctx context.Context, acc *edge.Access, t downloadTarge
 		origin = string(o)
 	}
 	return map[string]any{
-		"id": b.ID, "level": b.Level, "subject": b.Subject, "origin": origin, "state": b.State,
+		"id": b.ID, "level": b.Level, "subject": b.Subject, "origin": origin, "sync": nullString(b.SyncID), "state": b.State,
 		"bounds":        boundsOf(b),
-		"versionsFound": b.VersionsFound, "versionsQueued": b.VersionsQueued, "failure": failureView(b.Failure),
+		"versionsFound": b.VersionsFound, "versionsQueued": b.VersionsQueued, "versionsRefused": b.VersionsRefused, "failure": failureView(b.Failure),
 		"startedBy": s.starter(ctx, acc, t, b.StartedBy), "createdAt": b.CreatedAt.UTC(), "finishedAt": nullTime(b.FinishedAt), "rows": rows,
 	}
 }
@@ -1041,9 +1045,14 @@ const (
 // the bulk's maxVersions, a sub-section by its level's count where the upstream tells it. Without the catalogue a version is one version
 // of unknown size and a package is not counted.
 func (s *Server) preview(ctx context.Context, t downloadTarget, in downloadRequest, b downloadBounds) (map[string]any, error) {
-	out := map[string]any{"bounds": b, "stored": 0, "notDelivered": 0, "sizeUnknown": 0, "notVersions": 0, "note": nil}
+	out := map[string]any{"bounds": b, "stored": 0, "notDelivered": 0, "sizeUnknown": 0, "notVersions": 0, "note": nil, "sync": nil}
 	repoID := strconv.FormatInt(t.ID, 10)
 	eng := s.o.RemoteDownloads.Catalogue
+	sync, err := s.syncPreview(ctx, t, in)
+	if err != nil {
+		return nil, err
+	}
+	out["sync"] = sync
 	if in.Level == string(queue.LevelSection) {
 		if err := s.sectionOffered(ctx, t, in.Section); err != nil {
 			return nil, err
@@ -1105,6 +1114,11 @@ func (s *Server) preview(ctx context.Context, t downloadTarget, in downloadReque
 		}
 	}
 	out["versions"], out["packages"], out["sizeUnknown"], out["stored"], out["notDelivered"] = len(picked), 1, unknown, held, refused
+	if sync != nil {
+		if sync["versions"], err = s.firstRun(ctx, t, info.Name, picked); err != nil {
+			return nil, err
+		}
+	}
 	switch {
 	case unknown == len(picked):
 		out["bytes"] = nil

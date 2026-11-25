@@ -88,11 +88,11 @@ func (q *Queries) RemoteDownloadBulkGet(ctx context.Context, arg RemoteDownloadB
 
 const remoteDownloadBulkInsert = `-- name: RemoteDownloadBulkInsert :one
 INSERT INTO remote_download_bulks (id, repo_id, level, subject, max_versions, max_bytes, include_prereleases, state, started_by,
-                                   from_version, to_version, to_inclusive)
+                                   from_version, to_version, to_inclusive, origin, sync_id)
 VALUES ($1::text::uuid, $2::bigint, $3::text, $4::text,
         $5::int, $6::bigint, $7::bool, 'expanding',
         NULLIF($8::text, '')::uuid, NULLIF($9::text, ''), NULLIF($10::text, ''),
-        $11::bool)
+        $11::bool, $12::text, NULLIF($13::text, '')::uuid)
 RETURNING to_jsonb(remote_download_bulks.*)::text AS doc
 `
 
@@ -108,9 +108,12 @@ type RemoteDownloadBulkInsertParams struct {
 	FromVersion        string
 	ToVersion          string
 	ToInclusive        bool
+	Origin             string
+	SyncID             string
 }
 
-// A person's bulk with its bounds; from_version and to_version ” are no bound on that side (R-CUR-010, Q-CUR-193).
+// A person's bulk, or a sync's run (origin sync with the sync's id, R-CUR-027), with its bounds; from_version and to_version ” are no
+// bound on that side (R-CUR-010, Q-CUR-193).
 func (q *Queries) RemoteDownloadBulkInsert(ctx context.Context, arg RemoteDownloadBulkInsertParams) (string, error) {
 	row := q.db.QueryRow(ctx, remoteDownloadBulkInsert,
 		arg.ID,
@@ -124,6 +127,8 @@ func (q *Queries) RemoteDownloadBulkInsert(ctx context.Context, arg RemoteDownlo
 		arg.FromVersion,
 		arg.ToVersion,
 		arg.ToInclusive,
+		arg.Origin,
+		arg.SyncID,
 	)
 	var doc string
 	err := row.Scan(&doc)
@@ -235,18 +240,20 @@ func (q *Queries) RemoteDownloadBulkStateCounts(ctx context.Context, bulkID stri
 const remoteDownloadBulkUpdate = `-- name: RemoteDownloadBulkUpdate :execrows
 UPDATE remote_download_bulks
    SET state = $1::text, versions_found = $2::int, versions_queued = $3::int,
-       cursor = NULLIF($4::text, '')::jsonb, failure = NULLIF($5::text, '')::jsonb,
+       versions_refused = $4::int,
+       cursor = NULLIF($5::text, '')::jsonb, failure = NULLIF($6::text, '')::jsonb,
        finished_at = CASE WHEN $1::text IN ('done', 'bounded', 'cancelled', 'failed') THEN now() ELSE NULL END
- WHERE id = $6::text::uuid
+ WHERE id = $7::text::uuid
 `
 
 type RemoteDownloadBulkUpdateParams struct {
-	State          string
-	VersionsFound  int32
-	VersionsQueued int32
-	Cursor         string
-	Failure        string
-	ID             string
+	State           string
+	VersionsFound   int32
+	VersionsQueued  int32
+	VersionsRefused int32
+	Cursor          string
+	Failure         string
+	ID              string
 }
 
 func (q *Queries) RemoteDownloadBulkUpdate(ctx context.Context, arg RemoteDownloadBulkUpdateParams) (int64, error) {
@@ -254,6 +261,7 @@ func (q *Queries) RemoteDownloadBulkUpdate(ctx context.Context, arg RemoteDownlo
 		arg.State,
 		arg.VersionsFound,
 		arg.VersionsQueued,
+		arg.VersionsRefused,
 		arg.Cursor,
 		arg.Failure,
 		arg.ID,
@@ -601,6 +609,41 @@ func (q *Queries) RemoteDownloadDueRepositories(ctx context.Context, nowUs int64
 			return nil, err
 		}
 		items = append(items, repo_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const remoteDownloadFixedVersions = `-- name: RemoteDownloadFixedVersions :many
+SELECT DISTINCT v.version
+  FROM packages p
+  JOIN package_versions v ON v.package_id = p.id AND v.trashed_at IS NULL
+ WHERE p.repo_id = $1::bigint AND p.name = ANY($2::text[])
+`
+
+type RemoteDownloadFixedVersionsParams struct {
+	RepoID int64
+	Names  []string
+}
+
+// The live version rows of a package of a repository: what a sync's run leaves out, since a version row's content does not change
+// (Q-CUR-244). An OCI tag is a cache entry and no version row, so its run is queued again and revalidates it (Q-CUR-245). names are
+// the name as the catalogue spells it and in the format's folded form, which a format may store.
+func (q *Queries) RemoteDownloadFixedVersions(ctx context.Context, arg RemoteDownloadFixedVersionsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, remoteDownloadFixedVersions, arg.RepoID, arg.Names)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var version string
+		if err := rows.Scan(&version); err != nil {
+			return nil, err
+		}
+		items = append(items, version)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -1208,6 +1251,443 @@ func (q *Queries) RemoteDownloadStateCounts(ctx context.Context, arg RemoteDownl
 		&i.Done,
 	)
 	return i, err
+}
+
+const remoteDownloadSyncCount = `-- name: RemoteDownloadSyncCount :one
+SELECT count(*)::int AS n FROM remote_download_syncs WHERE repo_id = $1::bigint
+`
+
+// The syncs of a repository: proxy.downloads.max_syncs_per_repository bounds them (422 too_many_syncs).
+func (q *Queries) RemoteDownloadSyncCount(ctx context.Context, repoID int64) (int32, error) {
+	row := q.db.QueryRow(ctx, remoteDownloadSyncCount, repoID)
+	var n int32
+	err := row.Scan(&n)
+	return n, err
+}
+
+const remoteDownloadSyncDelete = `-- name: RemoteDownloadSyncDelete :execrows
+DELETE FROM remote_download_syncs WHERE id = $1::text::uuid AND repo_id = $2::bigint
+`
+
+type RemoteDownloadSyncDeleteParams struct {
+	ID     string
+	RepoID int64
+}
+
+// A sync is removed; its runs stay as bulks (remote_download_bulks.sync_id SET NULL).
+func (q *Queries) RemoteDownloadSyncDelete(ctx context.Context, arg RemoteDownloadSyncDeleteParams) (int64, error) {
+	result, err := q.db.Exec(ctx, remoteDownloadSyncDelete, arg.ID, arg.RepoID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const remoteDownloadSyncGauge = `-- name: RemoteDownloadSyncGauge :many
+SELECT repo_id, (CASE WHEN paused THEN 'paused' ELSE 'active' END)::text AS state, count(*)::bigint AS n
+  FROM remote_download_syncs
+ GROUP BY repo_id, paused
+`
+
+type RemoteDownloadSyncGaugeRow struct {
+	RepoID int64
+	State  string
+	N      int64
+}
+
+// The syncs by repository and state, for the gauge quader_remote_download_syncs (R-CUR-019).
+func (q *Queries) RemoteDownloadSyncGauge(ctx context.Context) ([]RemoteDownloadSyncGaugeRow, error) {
+	rows, err := q.db.Query(ctx, remoteDownloadSyncGauge)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []RemoteDownloadSyncGaugeRow{}
+	for rows.Next() {
+		var i RemoteDownloadSyncGaugeRow
+		if err := rows.Scan(&i.RepoID, &i.State, &i.N); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const remoteDownloadSyncGet = `-- name: RemoteDownloadSyncGet :many
+SELECT to_jsonb(s.*)::text AS doc
+  FROM remote_download_syncs s
+ WHERE s.id = $1::text::uuid AND s.repo_id = $2::bigint
+`
+
+type RemoteDownloadSyncGetParams struct {
+	ID     string
+	RepoID int64
+}
+
+// One sync of a repository.
+func (q *Queries) RemoteDownloadSyncGet(ctx context.Context, arg RemoteDownloadSyncGetParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, remoteDownloadSyncGet, arg.ID, arg.RepoID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var doc string
+		if err := rows.Scan(&doc); err != nil {
+			return nil, err
+		}
+		items = append(items, doc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const remoteDownloadSyncInsert = `-- name: RemoteDownloadSyncInsert :many
+
+INSERT INTO remote_download_syncs (id, repo_id, level, subject, max_versions, max_bytes, include_prereleases, from_version, to_version,
+                                   to_inclusive, next_run_at, last_run_at, last_outcome, created_by)
+VALUES ($1::text::uuid, $2::bigint, $3::text, $4::text,
+        $5::int, $6::bigint, $7::bool,
+        NULLIF($8::text, ''), NULLIF($9::text, ''), $10::bool,
+        to_timestamp($11::bigint / 1000000.0), to_timestamp($12::bigint / 1000000.0), 'started',
+        NULLIF($13::text, '')::uuid)
+ON CONFLICT DO NOTHING
+RETURNING to_jsonb(remote_download_syncs.*)::text AS doc
+`
+
+type RemoteDownloadSyncInsertParams struct {
+	ID                 string
+	RepoID             int64
+	Level              string
+	Subject            string
+	MaxVersions        int32
+	MaxBytes           int64
+	IncludePrereleases bool
+	FromVersion        string
+	ToVersion          string
+	ToInclusive        bool
+	NextRunUs          int64
+	NowUs              int64
+	CreatedBy          string
+}
+
+// Downloads kept in sync (R-CUR-027, migration 00130): a sync is the stored definition of a bulk that the dispatch starts again every
+// remote.syncs.intervalSeconds of its repository. A sync crosses the boundary as the JSON text of to_jsonb, as a bulk does.
+// A new sync; a second sync of the same subject inserts nothing (remote_download_syncs_subject): the answer is empty.
+func (q *Queries) RemoteDownloadSyncInsert(ctx context.Context, arg RemoteDownloadSyncInsertParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, remoteDownloadSyncInsert,
+		arg.ID,
+		arg.RepoID,
+		arg.Level,
+		arg.Subject,
+		arg.MaxVersions,
+		arg.MaxBytes,
+		arg.IncludePrereleases,
+		arg.FromVersion,
+		arg.ToVersion,
+		arg.ToInclusive,
+		arg.NextRunUs,
+		arg.NowUs,
+		arg.CreatedBy,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var doc string
+		if err := rows.Scan(&doc); err != nil {
+			return nil, err
+		}
+		items = append(items, doc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const remoteDownloadSyncLastBulks = `-- name: RemoteDownloadSyncLastBulks :many
+SELECT DISTINCT ON (b.sync_id) to_jsonb(b.*)::text AS doc
+  FROM remote_download_bulks b
+ WHERE b.sync_id = ANY($1::text[]::uuid[])
+ ORDER BY b.sync_id, b.created_at DESC
+`
+
+// The newest run of each of the syncs (remote_download_bulks_sync): its bulk, as the list of bulks answers it.
+func (q *Queries) RemoteDownloadSyncLastBulks(ctx context.Context, syncIds []string) ([]string, error) {
+	rows, err := q.db.Query(ctx, remoteDownloadSyncLastBulks, syncIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var doc string
+		if err := rows.Scan(&doc); err != nil {
+			return nil, err
+		}
+		items = append(items, doc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const remoteDownloadSyncList = `-- name: RemoteDownloadSyncList :many
+SELECT to_jsonb(s.*)::text AS doc
+  FROM remote_download_syncs s
+ WHERE s.repo_id = $1::bigint
+   AND ($2::text = ''
+        OR (extract(epoch FROM s.created_at) * 1000000)::bigint < $3::bigint
+        OR ((extract(epoch FROM s.created_at) * 1000000)::bigint = $3::bigint AND s.id::text < $2::text))
+ ORDER BY s.created_at DESC, s.id::text DESC
+ LIMIT $4::int
+`
+
+type RemoteDownloadSyncListParams struct {
+	RepoID  int64
+	AfterID string
+	AfterUs int64
+	MaxRows int32
+}
+
+// One page of a repository's syncs (GET download-syncs): newest first; the cursor is the last sync's creation time and id.
+func (q *Queries) RemoteDownloadSyncList(ctx context.Context, arg RemoteDownloadSyncListParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, remoteDownloadSyncList,
+		arg.RepoID,
+		arg.AfterID,
+		arg.AfterUs,
+		arg.MaxRows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var doc string
+		if err := rows.Scan(&doc); err != nil {
+			return nil, err
+		}
+		items = append(items, doc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const remoteDownloadSyncLock = `-- name: RemoteDownloadSyncLock :many
+SELECT to_jsonb(s.*)::text AS doc
+  FROM remote_download_syncs s
+ WHERE s.id = $1::text::uuid AND s.repo_id = $2::bigint
+   FOR UPDATE
+`
+
+type RemoteDownloadSyncLockParams struct {
+	ID     string
+	RepoID int64
+}
+
+// One sync for a run, a pause or a removal, locked so that the dispatch and a person do not start two runs at once.
+func (q *Queries) RemoteDownloadSyncLock(ctx context.Context, arg RemoteDownloadSyncLockParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, remoteDownloadSyncLock, arg.ID, arg.RepoID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var doc string
+		if err := rows.Scan(&doc); err != nil {
+			return nil, err
+		}
+		items = append(items, doc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const remoteDownloadSyncLockDue = `-- name: RemoteDownloadSyncLockDue :many
+SELECT to_jsonb(s.*)::text AS doc
+  FROM remote_download_syncs s
+ WHERE s.id = $1::text::uuid AND NOT s.paused AND s.next_run_at <= to_timestamp($2::bigint / 1000000.0)
+   FOR UPDATE SKIP LOCKED
+`
+
+type RemoteDownloadSyncLockDueParams struct {
+	ID    string
+	NowUs int64
+}
+
+// A sync whose next run came, locked for the dispatch's look at it; skipped while another dispatch or a person holds it.
+func (q *Queries) RemoteDownloadSyncLockDue(ctx context.Context, arg RemoteDownloadSyncLockDueParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, remoteDownloadSyncLockDue, arg.ID, arg.NowUs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var doc string
+		if err := rows.Scan(&doc); err != nil {
+			return nil, err
+		}
+		items = append(items, doc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const remoteDownloadSyncOfSubject = `-- name: RemoteDownloadSyncOfSubject :many
+SELECT to_jsonb(s.*)::text AS doc
+  FROM remote_download_syncs s
+ WHERE s.repo_id = $1::bigint AND s.level = $2::text AND s.subject = $3::text
+`
+
+type RemoteDownloadSyncOfSubjectParams struct {
+	RepoID  int64
+	Level   string
+	Subject string
+}
+
+// The sync of a subject of a repository (409 already_synced names it).
+func (q *Queries) RemoteDownloadSyncOfSubject(ctx context.Context, arg RemoteDownloadSyncOfSubjectParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, remoteDownloadSyncOfSubject, arg.RepoID, arg.Level, arg.Subject)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var doc string
+		if err := rows.Scan(&doc); err != nil {
+			return nil, err
+		}
+		items = append(items, doc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const remoteDownloadSyncRan = `-- name: RemoteDownloadSyncRan :exec
+UPDATE remote_download_syncs
+   SET last_run_at = to_timestamp($1::bigint / 1000000.0),
+       next_run_at = to_timestamp($2::bigint / 1000000.0), last_outcome = $3::text
+ WHERE id = $4::text::uuid
+`
+
+type RemoteDownloadSyncRanParams struct {
+	NowUs     int64
+	NextRunUs int64
+	Outcome   string
+	ID        string
+}
+
+// What a look at a sync did: its time, the next run's time and the outcome (R-CUR-027).
+func (q *Queries) RemoteDownloadSyncRan(ctx context.Context, arg RemoteDownloadSyncRanParams) error {
+	_, err := q.db.Exec(ctx, remoteDownloadSyncRan,
+		arg.NowUs,
+		arg.NextRunUs,
+		arg.Outcome,
+		arg.ID,
+	)
+	return err
+}
+
+const remoteDownloadSyncSetPaused = `-- name: RemoteDownloadSyncSetPaused :many
+UPDATE remote_download_syncs
+   SET paused = $1::bool
+ WHERE id = $2::text::uuid AND repo_id = $3::bigint
+RETURNING to_jsonb(remote_download_syncs.*)::text AS doc
+`
+
+type RemoteDownloadSyncSetPausedParams struct {
+	Paused bool
+	ID     string
+	RepoID int64
+}
+
+// A sync is paused or resumed (Q-CUR-248).
+func (q *Queries) RemoteDownloadSyncSetPaused(ctx context.Context, arg RemoteDownloadSyncSetPausedParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, remoteDownloadSyncSetPaused, arg.Paused, arg.ID, arg.RepoID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var doc string
+		if err := rows.Scan(&doc); err != nil {
+			return nil, err
+		}
+		items = append(items, doc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const remoteDownloadSyncUsage = `-- name: RemoteDownloadSyncUsage :one
+SELECT COALESCE((SELECT logical_bytes FROM repository_usage WHERE repo_id = $1::bigint), 0)::bigint AS logical_bytes
+`
+
+// The repository's folded bytes (R-STOR-003): remote.syncs.maxBytes stops its syncs at them (Q-CUR-246). No counter row is 0.
+func (q *Queries) RemoteDownloadSyncUsage(ctx context.Context, repoID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, remoteDownloadSyncUsage, repoID)
+	var logical_bytes int64
+	err := row.Scan(&logical_bytes)
+	return logical_bytes, err
+}
+
+const remoteDownloadSyncsDue = `-- name: RemoteDownloadSyncsDue :many
+SELECT id::text AS id, repo_id
+  FROM remote_download_syncs
+ WHERE NOT paused AND next_run_at <= to_timestamp($1::bigint / 1000000.0)
+ ORDER BY next_run_at, id
+ LIMIT 100
+`
+
+type RemoteDownloadSyncsDueRow struct {
+	ID     string
+	RepoID int64
+}
+
+// The syncs whose next run came, at most 100 per dispatch, the longest due first (remote_download_syncs_due).
+func (q *Queries) RemoteDownloadSyncsDue(ctx context.Context, nowUs int64) ([]RemoteDownloadSyncsDueRow, error) {
+	rows, err := q.db.Query(ctx, remoteDownloadSyncsDue, nowUs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []RemoteDownloadSyncsDueRow{}
+	for rows.Next() {
+		var i RemoteDownloadSyncsDueRow
+		if err := rows.Scan(&i.ID, &i.RepoID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const remoteDownloadWaiting = `-- name: RemoteDownloadWaiting :one

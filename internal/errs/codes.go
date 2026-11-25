@@ -419,6 +419,12 @@ const (
 	CodeAlreadyQueued = "already_queued"
 	// CodeNotRetryable: a retry of a row that is neither failed nor cancelled (409, R-CUR-012).
 	CodeNotRetryable = "not_retryable"
+	// CodeAlreadySynced: the repository keeps the subject in sync already; the answer names the sync (409, R-CUR-027).
+	CodeAlreadySynced = "already_synced"
+	// CodeTooManySyncs: the repository has proxy.downloads.max_syncs_per_repository syncs (422, R-CUR-027).
+	CodeTooManySyncs = "too_many_syncs"
+	// CodeSyncRunning: a run of a sync while its previous run's rows wait or run; the answer names that run (409, R-CUR-027).
+	CodeSyncRunning = "sync_running"
 	// CodeAlreadyDelivered: a request for a subject the rules deliver (409, R-CUR-015).
 	CodeAlreadyDelivered = "already_delivered"
 	// CodeTooManyRequests: a person holds proxy.delivery.open_requests_per_person open requests in the repository (429, R-CUR-015).
@@ -1040,6 +1046,9 @@ var registry = []CodeInfo{
 	{CodeDownloadQueueFull, RateLimited, "Download queue full", "The repository's download queue holds as many waiting downloads as it may (proxy.downloads.max_waiting_per_repository). Wait until rows finish, or cancel some."},
 	{CodeAlreadyQueued, Conflict, "Already queued", "A download of this version is waiting or running in the repository's queue; the answer names its row."},
 	{CodeNotRetryable, Conflict, "Not retryable", "Only a failed or cancelled row of the download queue can be retried; this row is waiting, running or done."},
+	{CodeAlreadySynced, Conflict, "Already kept in sync", "The repository keeps this package or sub-section in sync already; the answer names the sync. Remove it and set it up again to change it."},
+	{CodeTooManySyncs, Unprocessable, "Too many syncs", "The repository keeps as many downloads in sync as it may (proxy.downloads.max_syncs_per_repository). Remove a sync first, or keep a sub-section in sync instead of many packages."},
+	{CodeSyncRunning, Conflict, "Sync running", "The sync's previous run still has downloads that wait or run; the answer names it. Run it again once that run has ended."},
 	{CodeAlreadyDelivered, Conflict, "Already delivered", "The repository's delivery rules deliver this package or version; there is nothing to ask for."},
 	{CodeTooManyRequests, RateLimited, "Too many open requests", "You hold the most open requests you may in this repository (proxy.delivery.open_requests_per_person). Withdraw one, or wait for a decision."},
 	{CodeDelivered, Conflict, "Delivered", "The repository's delivery rules deliver the version, so it is not held for examination and is not discarded. Remove it as any cached item, or block it first."},

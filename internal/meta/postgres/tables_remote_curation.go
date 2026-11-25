@@ -24,6 +24,9 @@ func init() {
 	} {
 		tables.Register(t, tables.Data, tables.Options{})
 	}
+	// remote_download_syncs (00130): a sync is a person's decision to keep a package or a sub-section current (R-CUR-027, Q-CUR-249),
+	// as a rule is; a restore keeps the syncs of the restore point, and the next dispatch starts the ones whose time came.
+	tables.Register("remote_download_syncs", tables.Data, tables.Options{})
 	// remote_download_limits (00120): an upstream's rate limit that holds a repository's queue (R-CUR-011, Q-CUR-173) is a live state
 	// of an upstream, no decision: it is empty after a restore, and the first row that meets the limit again writes it anew.
 	tables.Register("remote_download_limits", tables.Transient, tables.Options{})

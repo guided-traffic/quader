@@ -985,7 +985,7 @@ Priority: **P1** · Covers: quader-only
   | `total` | the length the upstream announced (`Content-Length`); none when it announced none |
   | `startedAt`, elapsed | the begin on the replica's wall clock; the time since then on its monotonic clock |
   | `origin` | `client`, `queue`, `mirror`, `scanner_database` |
-  | `queueOrigin`, `queueRow` | for `queue`: the row's origin (`person`, `request`, `allow`, `bulk`, `probe`) and its id |
+  | `queueOrigin`, `queueRow` | for `queue`: the row's origin (`person`, `request`, `allow`, `bulk`, `sync`, `probe`) and its id |
   | `by` | the principal who caused it: a client's caller; the person who started the queue row, its bulk or its request; none for system work. An anonymous caller and a removed principal read as none |
   | `replica` | the pod name of the replica that reads the body |
 

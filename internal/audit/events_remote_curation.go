@@ -2,7 +2,7 @@ package audit
 
 // The event types of the curation of a remote repository (remote-curation.md R-CUR-019). Every event names the repository by its ID and
 // qualified name, as every event of a repository does; the actor is the person, or a system subject for a task
-// (system:examination-cleanup for the retention of R-CUR-016).
+// (system:examination-cleanup for the retention of R-CUR-016, system:download-sync for the run of a sync the dispatch starts, R-CUR-027).
 //
 // Only a discard of what was fetched for examination is journaled (R-CUR-016): a restore removes it again. A narrowing of the rules or
 // of the mode is recorded as repository.narrowed beside its own event (R-CUR-006); the rules' events carry no journal flag of their own.
@@ -30,6 +30,14 @@ const (
 	EventRemoteDownloadRetried = "remote.download.retried"
 	// EventRemoteDownloadCancelled: a row of the queue or a bulk was cancelled (R-CUR-012).
 	EventRemoteDownloadCancelled = "remote.download.cancelled"
+	// EventRemoteSyncCreated: a person set up a download kept in sync (R-CUR-027); its first run writes remote.download.started.
+	EventRemoteSyncCreated = "remote.sync.created"
+	// EventRemoteSyncPaused: a sync was paused.
+	EventRemoteSyncPaused = "remote.sync.paused"
+	// EventRemoteSyncResumed: a paused sync was resumed.
+	EventRemoteSyncResumed = "remote.sync.resumed"
+	// EventRemoteSyncDeleted: a sync was removed; a run in progress goes on as a bulk.
+	EventRemoteSyncDeleted = "remote.sync.deleted"
 	// EventRemoteExaminationDiscarded: what a download ahead stored for examination was removed, by a person, by a decline or by the
 	// retention task (R-CUR-016). Journaled: the replay evicts what is stored of the subject and is still not delivered.
 	EventRemoteExaminationDiscarded = "remote.examination.discarded"
@@ -63,9 +71,14 @@ func init() {
 	}
 	download := `{"type":"object","properties":{"level":{"type":"string","enum":["version","package","section"]},` + subject + `,` +
 		version + `,"bounds":{"type":"object"},"bulk":{"type":["string","null"]},"row":{"type":["string","null"]},` +
-		`"count":{"type":"integer","minimum":0}},"additionalProperties":false}`
+		`"sync":{"type":["string","null"]},"count":{"type":"integer","minimum":0}},"additionalProperties":false}`
 	for _, n := range []string{EventRemoteDownloadStarted, EventRemoteDownloadRetried, EventRemoteDownloadCancelled} {
 		Register(EventType{Name: n, Category: CategoryRepository, Mode: Transactional, Schema: download})
+	}
+	sync := `{"type":"object","properties":{"sync":{"type":"string"},"level":{"type":"string","enum":["package","section"]},` + subject +
+		`,"bounds":{"type":"object"}},"required":["sync","level","subject"],"additionalProperties":false}`
+	for _, n := range []string{EventRemoteSyncCreated, EventRemoteSyncPaused, EventRemoteSyncResumed, EventRemoteSyncDeleted} {
+		Register(EventType{Name: n, Category: CategoryRepository, Mode: Transactional, Schema: sync})
 	}
 	Register(EventType{
 		Name: EventRemoteExaminationDiscarded, Category: CategoryContent, Mode: Transactional, Journal: JournalRevocation,

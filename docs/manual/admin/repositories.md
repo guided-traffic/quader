@@ -261,6 +261,18 @@ system role `admin`. A system repository of the project `upstream` has no sectio
 | **Fetch for examination when someone asks** | `remote.delivery.examineOnRequest` | on | A request downloads what it asks for at once, charged to the person who asked, so that it is scanned before anyone decides; it is not delivered until it is allowed |
 | **Remove what was examined and not allowed after this many days** | `remote.delivery.examinedRetentionDays` | `30` | 1 to 365; a daily task removes what was fetched for examination and is still not delivered after these days |
 
+The closed section **Kept in sync** (`#syncs` in the address opens it) holds how the repository's downloads kept in sync run
+([Curating a remote repository](../user/remote-curation.md)). The syncs themselves are set up on the tab **Upstream** and listed on
+the tab **Downloads** by Maintainers, Owners and administrators; these members need `repositories:write-config` or the project's Owner.
+
+| UI label | Document key | Default | Meaning |
+|---|---|---|---|
+| **Run every this many minutes** | `remote.syncs.intervalSeconds` (in seconds) | `3600` (60 minutes) | 5 minutes to 30 days; the time from one run of a sync to its next, the same for every sync of the repository; a changed interval applies from each sync's next run |
+| **Pause every sync of this repository** | `remote.syncs.paused` | off | No sync starts a run; a run in progress goes on |
+| **Stop at this many GiB stored** | `remote.syncs.maxBytes` (in bytes) | empty (`null`) | At least 1 MiB; once the repository stores this much, its syncs start no run |
+
+The installation bounds the syncs of a repository with `proxy.downloads.max_syncs_per_repository` (100).
+
 The section saves these members alone. A rule binds every client, administrators included; a client the rules refuse gets
 `403 not_allowed_in_repository` with a link to the tab, and a virtual repository goes on to its next member.
 

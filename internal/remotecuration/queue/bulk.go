@@ -128,6 +128,7 @@ func (s *Service) expand(ctx context.Context, b Bulk, describe func(error) remot
 	}
 	var add []NewRow
 	bounded := ""
+	refused := 0
 	for cur.Index < len(names) && len(add) < room {
 		name := names[cur.Index]
 		vs, err := s.o.Planner.Versions(ctx, b.RepoID, name, Selection{Range: b.Range(), IncludePrereleases: b.IncludePrereleases, Max: b.MaxVersions})
@@ -139,23 +140,13 @@ func (s *Service) expand(ctx context.Context, b Bulk, describe func(error) remot
 		} else if cur.Next == 0 {
 			b.VersionsFound += len(vs)
 		}
-		for cur.Next < len(vs) && len(add) < room {
-			if b.VersionsQueued+len(add) >= b.MaxVersions {
-				bounded = CodeBulkMaxVersions
-				break
-			}
-			v := vs[cur.Next]
-			if v.Size > 0 && cur.Bytes+v.Size > b.MaxBytes {
-				bounded = CodeBulkMaxBytes
-				break
-			}
-			cur.Bytes += v.Size
-			add = append(add, NewRow{
-				RepoID: b.RepoID, Name: name, Version: v.Version, Origin: b.RowOrigin(), BulkID: b.ID, StartedBy: b.StartedBy,
-				RequestID: b.RequestID, Ticket: b.Ticket,
-			})
-			cur.Next++
+		filter, err := s.filterOf(ctx, b, name, vs[min(cur.Next, len(vs)):])
+		if err != nil {
+			return err
 		}
+		var n int
+		add, bounded, n = b.take(name, vs, filter, &cur, add, room)
+		refused += n
 		if bounded != "" || cur.Next < len(vs) {
 			break
 		}
@@ -186,7 +177,7 @@ func (s *Service) expand(ctx context.Context, b Bulk, describe func(error) remot
 			}
 			queued++
 		}
-		locked.VersionsQueued, locked.VersionsFound = queued, b.VersionsFound
+		locked.VersionsQueued, locked.VersionsFound, locked.VersionsRefused = queued, b.VersionsFound, locked.VersionsRefused+refused
 		switch {
 		case bounded != "":
 			locked.State, locked.Failure = BulkQueued, boundFailure(s.o.Now(), bounded)
@@ -205,6 +196,36 @@ func (s *Service) expand(ctx context.Context, b Bulk, describe func(error) remot
 		}
 		return t.UpdateBulk(ctx, locked)
 	})
+}
+
+// take queues the versions of one package from the cursor's next one, until the step's room, the bulk's maxVersions or the announced
+// sizes' maxBytes: it answers the rows, the bound's code that cut it ("" for none) and the versions a sync's run left out as not
+// delivered. A sync's run leaves out what the rules do not deliver and what is stored as a version row (Q-CUR-243, Q-CUR-244).
+func (b Bulk) take(name string, vs []PlannedVersion, filter *syncFilter, cur *bulkCursor, add []NewRow, room int) ([]NewRow, string, int) {
+	refused := 0
+	for cur.Next < len(vs) && len(add) < room {
+		if b.VersionsQueued+len(add) >= b.MaxVersions {
+			return add, CodeBulkMaxVersions, refused
+		}
+		v := vs[cur.Next]
+		if filter != nil && (filter.refused[v.Version] || filter.fixed[v.Version]) {
+			if filter.refused[v.Version] {
+				refused++
+			}
+			cur.Next++
+			continue
+		}
+		if v.Size > 0 && cur.Bytes+v.Size > b.MaxBytes {
+			return add, CodeBulkMaxBytes, refused
+		}
+		cur.Bytes += v.Size
+		add = append(add, NewRow{
+			RepoID: b.RepoID, Name: name, Version: v.Version, Origin: b.RowOrigin(), BulkID: b.ID, StartedBy: b.StartedBy,
+			RequestID: b.RequestID, Ticket: b.Ticket,
+		})
+		cur.Next++
+	}
+	return add, "", refused
 }
 
 // bulkNames are the packages of the step: the package of a package bulk, one page of a section's.

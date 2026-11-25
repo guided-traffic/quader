@@ -9322,8 +9322,8 @@ template, its words in [download-words.ts](../../web/src/app/shared/upstream-dow
   - Line 4, muted and small: the format's name (R-UI-006), the repository `project/key` as a link to the repository's page, and the
     origin in words ([Q-UI-1072](#q-ui-1072--a-row-says-what-what-it-took-and-who-caused-it-a-queued-one-links-the-queue)):
     - **Client · sam**, or **Client** when `by` is null;
-    - for the queue: the person (**priya**, else **A person**), **Bulk**, **Probe**, **Request**, **Allow** (the queue's words,
-      R-CUR-018);
+    - for the queue: the person (**priya**, else **A person**), **Bulk**, **Sync** (a run of a download kept in sync, R-CUR-027),
+      **Probe**, **Request**, **Allow** (the queue's words, R-CUR-018);
     - **Mirror pass**;
     - **Vulnerability database**.
 

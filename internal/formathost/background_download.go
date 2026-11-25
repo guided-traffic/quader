@@ -201,6 +201,16 @@ func (m *MirrorHost) downloadable(ctx context.Context, row queue.Row) (repositor
 	return repo, st, f, true, nil
 }
 
+// Offline reports whether the remote engine holds the repository offline (R-REPO-030): a sync starts no run of it (R-CUR-027).
+func (m *MirrorHost) Offline(repo repository.Repository) bool {
+	off, ok := m.e.(interface{ Offline(proxy.Remote) bool })
+	if !ok {
+		return false
+	}
+	rem, err := proxy.NewRemote(repo)
+	return err == nil && off.Offline(rem)
+}
+
 // planOf is what the run starts from: the probe the row holds (a probe's, R-CUR-013), else the format's VersionProbe through the
 // worker's upstream (the step plan, R-CUR-011). A version the upstream does not have is a failure upstream_not_found.
 func (m *MirrorHost) planOf(ctx context.Context, row queue.Row, repo repository.Repository, u *backgroundUpstream) (formats.Probe, error) {

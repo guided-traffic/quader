@@ -2465,6 +2465,9 @@ R-CUR-017). Clients cannot deploy into it. Every setting below is a member of th
 | `delivery.examineOnRequest` | A request for an allow starts the download of what it asks for, for examination | `true` | | SEC-029 | R-CUR-015 |
 | `delivery.examinedRetentionDays` | Days after which what a download ahead stored for examination, and the rules still do not deliver, is removed | `30` | 1–365 | — | R-CUR-016 |
 | `mirror.include` | The mirror's scope: name patterns; empty is everything the rules deliver | `[]` | ≤ 100 | — | R-CUR-017 |
+| `syncs.intervalSeconds` | The time from one run of a download kept in sync to its next, the same for every sync of the repository | `3600` | 300–2592000 | — | [remote-curation.md](remote-curation.md) R-CUR-027 |
+| `syncs.paused` | No sync of the repository starts a run; a run in progress goes on | `false` | | — | R-CUR-027 |
+| `syncs.maxBytes` | The repository's stored bytes (its folded counter) at which its syncs start no run, `null` = none of their own | `null` | 1048576–2^62 | — | R-CUR-027 |
 
 </details>
 

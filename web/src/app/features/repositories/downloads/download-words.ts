@@ -61,6 +61,8 @@ export function queueOriginText(origin: RemoteDownloadOrigin): string {
       return $localize`:@@downloads.origin.allow:Allow`;
     case 'bulk':
       return $localize`:@@downloads.origin.bulk:Bulk`;
+    case 'sync':
+      return $localize`:@@downloads.origin.sync:Sync`;
     case 'probe':
       return $localize`:@@downloads.origin.probe:Probe`;
     case 'client':
@@ -360,4 +362,25 @@ export function classSentence(c: RemoteDownloadFailureClass, host: string | null
     case 'internal':
       return $localize`:@@downloads.why.class.internal:The download failed inside Quader. A later attempt may succeed; if not, an administrator finds the cause in the server's log.`;
   }
+}
+
+/**
+ * The sentence of a repository's interval of syncs (R-CUR-027, Q-CUR-242), in words a person reads: "every hour", "every 6 hours",
+ * "every day". A sentence of its own per unit, so that no number word is put into another language's sentence (Q-UI-1219).
+ */
+export function syncIntervalSentence(seconds: number): string {
+  const days = seconds / 86_400;
+  const hours = seconds / 3_600;
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  if (Number.isInteger(days)) {
+    return days === 1
+      ? $localize`:@@sync.interval.day:Quader downloads what is new every day, the interval of this repository.`
+      : $localize`:@@sync.interval.days:Quader downloads what is new every ${days}:count: days, the interval of this repository.`;
+  }
+  if (Number.isInteger(hours)) {
+    return hours === 1
+      ? $localize`:@@sync.interval.hour:Quader downloads what is new every hour, the interval of this repository.`
+      : $localize`:@@sync.interval.hours:Quader downloads what is new every ${hours}:count: hours, the interval of this repository.`;
+  }
+  return $localize`:@@sync.interval.minutes:Quader downloads what is new every ${minutes}:count: minutes, the interval of this repository.`;
 }

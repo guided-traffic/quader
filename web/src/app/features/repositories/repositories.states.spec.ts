@@ -32,7 +32,7 @@ const rules = () =>
     data: { repository: 'platform-engineering/npmjs-remote', canChange: true, example: '@acme/*' },
   });
 
-describe('dialogs of repositories in a browser (R-CUR-005, R-CUR-010, R-CUR-015, R-CUR-018, R-UI-011, R-UI-042, R-UI-173, R-UI-175)', () => {
+describe('dialogs of repositories in a browser (R-CUR-005, R-CUR-010, R-CUR-015, R-CUR-018, R-CUR-027, R-UI-011, R-UI-042, R-UI-173, R-UI-175)', () => {
   it('Request a version from the upstream, as it opens', async () => {
     await expectState('upstream-request-ask', () => openDialog(AskDialog, { data: { subject: SUBJECT, version: true } }));
   });
@@ -111,6 +111,34 @@ describe('dialogs of repositories in a browser (R-CUR-005, R-CUR-010, R-CUR-015,
       await until(() => !!panel.querySelector('#preview-to-version-error'), 'the refusal of the upper bound');
     });
   });
+
+  // A sync chosen (R-CUR-027): the first run's count, the interval in words and that a sync stores only what the rules deliver; and a
+  // package the rules do not deliver, said instead of being set up.
+  for (const [state, delivered] of [['download-preview-sync', true], ['download-preview-sync-undelivered', false]] as const) {
+    it(`a download ahead kept in sync${delivered ? '' : ', of a package the rules do not deliver'}`, async () => {
+      await expectState(state, async () => {
+        const { panel } = await openDialog(DownloadPreviewDialog, {
+          width: '36rem',
+          data: {
+            repository: 'platform-engineering/npmjs-remote',
+            request: { level: 'package', name: '@platform-engineering/kubernetes-infrastructure-operators' },
+            title: 'Every version of @platform-engineering/kubernetes-infrastructure-operators',
+          },
+          setup: (get) => {
+            const fake = get(RemoteDownloadsApi) as FakeRemoteDownloadsApi;
+            fake.previewAnswer = {
+              ...fake.previewAnswer,
+              notDelivered: delivered ? 1 : 3,
+              sync: { versions: delivered ? 2 : 0, delivered, intervalSeconds: 21_600, paused: false, existing: null },
+            };
+          },
+        });
+        await until(() => !!panel.querySelector('[data-testid="download-preview"]'), 'the preview');
+        panel.querySelector<HTMLInputElement>('input[name="download-mode"][value="sync"]')!.click();
+        await until(() => !!panel.querySelector(delivered ? '[data-testid="download-sync-note"]' : '[data-testid="download-sync-undelivered"]'), 'the sync');
+      });
+    });
+  }
 
   it('New folder, failed: the error notice with its request ID', async () => {
     await expectState('folder-new-failed', async () => {

@@ -3409,6 +3409,14 @@
               "x-quader-env": "QUADER_PROXY_DOWNLOADS_MAX_BYTES_PER_BULK",
               "x-quader-type": "bytes"
             },
+            "max_syncs_per_repository": {
+              "default": 100,
+              "description": "Downloads kept in sync per repository; one more answers 422 too_many_syncs (R-CUR-027). Each runs every remote.syncs.intervalSeconds of its repository.",
+              "maximum": 10000,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_PROXY_DOWNLOADS_MAX_SYNCS_PER_REPOSITORY"
+            },
             "max_versions_per_bulk": {
               "default": 10000,
               "description": "The default and the highest value of a bulk's maxVersions, which the person may lower (R-CUR-010).",

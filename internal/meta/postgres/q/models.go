@@ -1337,6 +1337,8 @@ type RemoteDownloadBulk struct {
 	FromVersion        pgtype.Text
 	ToVersion          pgtype.Text
 	ToInclusive        bool
+	SyncID             pgtype.UUID
+	VersionsRefused    int32
 }
 
 type RemoteDownloadLimit struct {
@@ -1347,6 +1349,25 @@ type RemoteDownloadLimit struct {
 	Hinted    bool
 	Failure   json.RawMessage
 	UpdatedAt pgtype.Timestamptz
+}
+
+type RemoteDownloadSync struct {
+	ID                 pgtype.UUID
+	RepoID             int64
+	Level              string
+	Subject            string
+	MaxVersions        int32
+	MaxBytes           int64
+	IncludePrereleases bool
+	FromVersion        pgtype.Text
+	ToVersion          pgtype.Text
+	ToInclusive        bool
+	Paused             bool
+	NextRunAt          pgtype.Timestamptz
+	LastRunAt          pgtype.Timestamptz
+	LastOutcome        pgtype.Text
+	CreatedBy          pgtype.UUID
+	CreatedAt          pgtype.Timestamptz
 }
 
 type RemoteExamination struct {

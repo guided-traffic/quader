@@ -57,6 +57,17 @@
   }
 }
 
+@if (bulkId() === null && name() === null) {
+  <quader-download-syncs
+    [repository]="repository()"
+    [manager]="manager()"
+    [paused]="paused()"
+    [upstreamName]="upstreamName()"
+    [self]="selfId()"
+    (changed)="refresh()"
+  />
+}
+
 @if (showsBulkList()) {
   <!-- The repository's bulks, newest first, above its rows (Q-CUR-168): a bulk whose expansion failed before it queued a row is seen
        here with its cause, and a person's failed bulk starts again. The title opens the bulk with its rows. -->
@@ -80,6 +91,9 @@
             <a [routerLink]="[]" [queryParams]="bulkLink(b.id)" queryParamsHandling="merge" [attr.aria-label]="bulkLinkLabel(b)">{{ bulkTitle(b) }}</a>
             <span class="secondary"
               ><span class="dot-separated">
+                @if (b.origin === 'sync') {
+                  <span i18n="@@downloads.bulk.of-sync">A run of a sync</span>
+                }
                 @if (bulkRange(b); as range) {
                   <span>{{ range }}</span>
                 }

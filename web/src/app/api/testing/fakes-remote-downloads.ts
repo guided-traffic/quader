@@ -13,6 +13,9 @@ import {
   RemoteDownloadPreview,
   RemoteDownloadRequest,
   RemoteDownloadStarted,
+  RemoteDownloadSync,
+  RemoteDownloadSyncPage,
+  RemoteDownloadSyncRun,
   RemoteDownloadsApi,
 } from '../remote-downloads-api';
 
@@ -104,13 +107,36 @@ export function downloadBulk(over: Partial<RemoteDownloadBulk> = {}): RemoteDown
     origin: 'person',
     state: 'queued',
     bounds: { maxVersions: 100, maxBytes: 107374182400, includePrereleases: true, fromVersion: null, toVersion: null, toInclusive: true },
+    sync: null,
     versionsFound: 3,
     versionsQueued: 3,
+    versionsRefused: 0,
     failure: null,
     startedBy: null,
     createdAt: '2026-11-24T07:59:00Z',
     finishedAt: null,
     rows: { running: 1, waiting: 2 },
+    ...over,
+  };
+}
+
+/** A sync of the newest two versions of a package, active, whose last run found one new version and stored it (R-CUR-027). */
+export function downloadSync(over: Partial<RemoteDownloadSync> = {}): RemoteDownloadSync {
+  return {
+    id: '01900000-0000-7000-8000-0000000000c1',
+    level: 'package',
+    subject: 'lodash',
+    bounds: { maxVersions: 2, maxBytes: 107374182400, includePrereleases: false, fromVersion: null, toVersion: null, toInclusive: true },
+    state: 'active',
+    nextRunAt: '2026-11-24T09:00:00Z',
+    lastRunAt: '2026-11-24T08:00:00Z',
+    lastOutcome: 'started',
+    lastBulk: downloadBulk({
+      id: '01900000-0000-7000-8000-0000000000b9', origin: 'sync', sync: '01900000-0000-7000-8000-0000000000c1', state: 'done',
+      versionsFound: 2, versionsQueued: 1, rows: { done: 1 }, finishedAt: '2026-11-24T08:01:00Z',
+    }),
+    createdBy: null,
+    createdAt: '2026-11-20T08:00:00Z',
     ...over,
   };
 }
@@ -129,6 +155,12 @@ export class FakeRemoteDownloadsApi extends RemoteDownloadsApi {
   /** Answers every retry or cancel with this error, where set. */
   actError: ApiError | null = null;
   readonly calls: string[] = [];
+  /** The repository's syncs, newest first, with its interval and pause (R-CUR-027). */
+  syncs: RemoteDownloadSync[] = [];
+  syncInterval = 3600;
+  syncsPaused = false;
+  /** Answers every act on a sync with this error, where set. */
+  syncError: ApiError | null = null;
   readonly listCalls: { repository: string; filters: RemoteDownloadFilters; cursor: string | null; limit: number }[] = [];
 
   override async list(repository: string, filters: RemoteDownloadFilters, cursor: string | null, limit: number): Promise<RemoteDownloadPage> {
@@ -208,6 +240,7 @@ export class FakeRemoteDownloadsApi extends RemoteDownloadsApi {
     notVersions: 0,
     bounds: { maxVersions: 10000, maxBytes: 107374182400, includePrereleases: true, fromVersion: null, toVersion: null, toInclusive: true },
     note: null,
+    sync: { versions: 2, delivered: true, intervalSeconds: 3600, paused: false, existing: null },
   };
   readonly previews: RemoteDownloadRequest[] = [];
   readonly starts: RemoteDownloadRequest[] = [];
@@ -246,6 +279,64 @@ export class FakeRemoteDownloadsApi extends RemoteDownloadsApi {
     const bulk = downloadBulk({ id: `bulk-${this.starts.length}`, level: request.level === 'section' ? 'section' : 'package', subject: request.name ?? request.section ?? '', state: 'expanding' });
     this.bulks = [...this.bulks, bulk];
     return { bulk };
+  }
+
+  override async listSyncs(repository: string, cursor: string | null, limit: number): Promise<RemoteDownloadSyncPage> {
+    this.calls.push(`syncs ${repository}`);
+    if (this.listError) throw this.listError;
+    const start = cursor === null ? 0 : Number(cursor);
+    return {
+      items: this.syncs.slice(start, start + limit),
+      nextCursor: start + limit < this.syncs.length ? String(start + limit) : null,
+      intervalSeconds: this.syncInterval,
+      paused: this.syncsPaused,
+      maxSyncs: 100,
+    };
+  }
+
+  override async createSync(repository: string, request: RemoteDownloadRequest): Promise<RemoteDownloadSyncRun> {
+    this.starts.push(request);
+    this.calls.push(`sync ${repository} ${request.level} ${request.name ?? request.section ?? ''}`);
+    if (this.startError) throw this.startError;
+    const id = `sync-${this.starts.length}`;
+    const bulk = downloadBulk({ id: `bulk-${this.starts.length}`, origin: 'sync', sync: id, subject: request.name ?? request.section ?? '', state: 'expanding' });
+    const sync = downloadSync({ id, subject: bulk.subject, lastBulk: bulk });
+    this.syncs = [sync, ...this.syncs];
+    this.bulks = [...this.bulks, bulk];
+    return { sync, bulk };
+  }
+
+  override async runSync(repository: string, id: string): Promise<RemoteDownloadSyncRun> {
+    this.calls.push(`run-sync ${repository} ${id}`);
+    if (this.syncError) throw this.syncError;
+    const sync = this.syncOf(id);
+    const bulk = downloadBulk({ id: `bulk-run-${this.calls.length}`, origin: 'sync', sync: id, subject: sync.subject, state: 'expanding' });
+    return { sync: this.changeSync(id, { lastBulk: bulk, lastOutcome: 'started' }), bulk };
+  }
+
+  override async pauseSync(repository: string, id: string, paused: boolean): Promise<RemoteDownloadSync> {
+    this.calls.push(`${paused ? 'pause' : 'resume'}-sync ${repository} ${id}`);
+    if (this.syncError) throw this.syncError;
+    return this.changeSync(id, { state: paused ? 'paused' : 'active', nextRunAt: paused ? null : '2026-11-24T09:00:00Z' });
+  }
+
+  override async removeSync(repository: string, id: string): Promise<void> {
+    this.calls.push(`remove-sync ${repository} ${id}`);
+    if (this.syncError) throw this.syncError;
+    this.syncOf(id);
+    this.syncs = this.syncs.filter((x) => x.id !== id);
+  }
+
+  private syncOf(id: string): RemoteDownloadSync {
+    const s = this.syncs.find((x) => x.id === id);
+    if (!s) throw new ApiError(404, { code: 'not_found', detail: 'The sync does not exist in this repository.' }, 'rid-404');
+    return s;
+  }
+
+  private changeSync(id: string, over: Partial<RemoteDownloadSync>): RemoteDownloadSync {
+    const next = { ...this.syncOf(id), ...over };
+    this.syncs = this.syncs.map((x) => (x.id === id ? next : x));
+    return next;
   }
 
   private change(id: string, over: Partial<RemoteDownload>): RemoteDownload {

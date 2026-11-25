@@ -89,6 +89,10 @@ type Bulk struct {
 	FromVersion string `json:"from_version"`
 	ToVersion   string `json:"to_version"`
 	ToInclusive bool   `json:"to_inclusive"`
+	// SyncID is the sync whose run the bulk is (origin sync, R-CUR-027); "" for any other bulk and for a run whose sync was removed.
+	SyncID string `json:"sync_id"`
+	// VersionsRefused counts the versions a sync's run left out because the rules do not deliver them (Q-CUR-243); 0 for another bulk.
+	VersionsRefused int `json:"versions_refused"`
 }
 
 // Range is the bulk's range of versions.
@@ -96,13 +100,17 @@ func (b Bulk) Range() Range {
 	return Range{From: b.FromVersion, To: b.ToVersion, ToInclusive: b.ToInclusive}
 }
 
-// RowOrigin is the origin of the rows the bulk queues: bulk unless a request or an allow started it.
+// RowOrigin is the origin of the rows the bulk queues: bulk unless a request, an allow or a sync started it.
 func (b Bulk) RowOrigin() remotecuration.Origin {
-	if b.Origin == remotecuration.OriginRequest || b.Origin == remotecuration.OriginAllow {
+	switch b.Origin {
+	case remotecuration.OriginRequest, remotecuration.OriginAllow, remotecuration.OriginSync:
 		return b.Origin
 	}
 	return remotecuration.OriginBulk
 }
+
+// Active reports whether the bulk's expansion goes on or its rows have not all ended.
+func (b Bulk) Active() bool { return b.State == BulkExpanding || b.State == BulkQueued }
 
 // Level is the level of a download ahead (R-CUR-010).
 type Level string
@@ -141,13 +149,15 @@ type Settings struct {
 	DoneRetention, FailedRetention time.Duration
 	// ClientFailures is the bound of rows of clients' failed fetches per repository.
 	ClientFailures int
+	// MaxSyncs is the bound of syncs per repository (R-CUR-027).
+	MaxSyncs int
 }
 
 // DefaultSettings are the configuration's defaults (internal/config/remote_curation.go).
 func DefaultSettings() Settings {
 	return Settings{
 		PerRepository: 4, MaxWaiting: 10000, MaxAttempts: 5, DoneRetention: 168 * time.Hour, FailedRetention: 720 * time.Hour,
-		ClientFailures: 1000,
+		ClientFailures: 1000, MaxSyncs: 100,
 	}
 }
 
@@ -220,10 +230,11 @@ func (e *QueuedError) Error() string { return ErrAlreadyQueued.Error() }
 func (e *QueuedError) Is(target error) bool { return target == ErrAlreadyQueued }
 
 // originRank is the order in which waiting rows of a repository run (R-CUR-011): a person's, a request's and an allow's (and a
-// client's after its retry) before a bulk's and a probe's; then by creation. RemoteDownloadDue orders by the same rank.
+// client's after its retry) before a bulk's, a sync's and a probe's (Q-CUR-247); then by creation. RemoteDownloadDue orders by the
+// same rank.
 func originRank(o remotecuration.Origin) int {
 	switch o {
-	case remotecuration.OriginBulk, remotecuration.OriginProbe:
+	case remotecuration.OriginBulk, remotecuration.OriginSync, remotecuration.OriginProbe:
 		return 1
 	}
 	return 0

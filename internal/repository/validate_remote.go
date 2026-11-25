@@ -180,6 +180,7 @@ func (r *remoteResolver) resolve(in remoteInput) RemoteSettings {
 	r.limits(&s, in)
 	r.mirror(&s, in)
 	r.delivery(&s, in)
+	r.syncs(&s, in)
 	return s
 }
 

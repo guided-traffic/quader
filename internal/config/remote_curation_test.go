@@ -32,7 +32,7 @@ func TestR_CUR_020_TheKeysHaveTheirDefaults(t *testing.T) {
 	}
 	if d := c.Proxy.Downloads; d != (ProxyDownloads{
 		PerRepository: 4, MaxWaitingPerRepository: 10000, MaxVersionsPerBulk: 10000, MaxBytesPerBulk: 100 << 30, MaxAttempts: 5,
-		DoneRetention: 168 * time.Hour, FailedRetention: 720 * time.Hour, ClientFailuresPerRepository: 1000,
+		DoneRetention: 168 * time.Hour, FailedRetention: 720 * time.Hour, ClientFailuresPerRepository: 1000, MaxSyncsPerRepository: 100,
 	}) {
 		t.Errorf("proxy.downloads %+v", d)
 	}

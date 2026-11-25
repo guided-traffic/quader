@@ -285,6 +285,14 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.remote.request.declined:Request for a package declined`;
     case 'remote.request.withdrawn':
       return $localize`:@@audit.action.remote.request.withdrawn:Request for a package withdrawn`;
+    case 'remote.sync.created':
+      return $localize`:@@audit.action.remote.sync.created:Download kept in sync set up`;
+    case 'remote.sync.deleted':
+      return $localize`:@@audit.action.remote.sync.deleted:Download kept in sync removed`;
+    case 'remote.sync.paused':
+      return $localize`:@@audit.action.remote.sync.paused:Download kept in sync paused`;
+    case 'remote.sync.resumed':
+      return $localize`:@@audit.action.remote.sync.resumed:Download kept in sync resumed`;
     case 'remote.rule.created':
       return $localize`:@@audit.action.remote.rule.created:Delivery rule of a remote repository added`;
     case 'remote.rule.deleted':

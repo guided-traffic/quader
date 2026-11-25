@@ -50,13 +50,10 @@ import {
   versionRangeText,
 } from './download-words';
 import { FailureToasts } from '../../../shared/failure-dialog';
+import { DOWNLOADS_REFRESH_MS } from './downloads-refresh';
+import { DownloadSyncs } from './download-syncs';
 
-/**
- * How often the tab reads the queue again while a row waits or runs (R-CUR-018; WCAG 2.2.2: with a pause control); while nothing
- * does, or while an upstream's rate limit holds the queue and nothing runs, it reads every `LIVE_SLOW_MS` (api-and-ui.md R-UI-213,
- * Q-UI-1102).
- */
-export const DOWNLOADS_REFRESH_MS = 5_000;
+export { DOWNLOADS_REFRESH_MS };
 
 /** The bulks the tab shows at first and adds per **Show more** (Q-CUR-168). */
 export const BULKS_PAGE = 5;
@@ -67,7 +64,7 @@ type FilterState = (typeof FILTER_STATES)[number];
 
 /**
  * The tab **Downloads** of a remote repository (remote-curation.md R-CUR-018, `…/repositories/{key}/downloads`): the repository's
- * download queue (R-CUR-011, R-CUR-012). The counts by state are the filter, with **Failure** by class; the filters and a bulk live
+ * download queue (R-CUR-011, R-CUR-012), with the downloads it keeps in sync above its bulks (R-CUR-027, `DownloadSyncs`). The counts by state are the filter, with **Failure** by class; the filters and a bulk live
  * in the address (`state`, `failure`, `bulk`, `name`). A row names its subject, its origin, its state with the attempt, its progress and its
  * failure in one line, and opens in place to the whole failure: the step, the code, the address without its query, the upstream's
  * status, the excerpt of its answer and Quader's sentence. A row offers **Retry** or **Cancel** to whoever may (R-CUR-005); a
@@ -80,7 +77,7 @@ type FilterState = (typeof FILTER_STATES)[number];
  */
 @Component({
   selector: 'quader-remote-downloads',
-  imports: [DataTable, ErrorNotice, NoValue, RouterLink, TechnicalDetails, TimeAgo],
+  imports: [DataTable, DownloadSyncs, ErrorNotice, NoValue, RouterLink, TechnicalDetails, TimeAgo],
   templateUrl: './remote-downloads.html',
   styleUrl: './remote-downloads.scss',
 })
@@ -206,6 +203,8 @@ export class RemoteDownloads {
   protected readonly bulkBusy = signal<ReadonlySet<string>>(new Set());
 
   private readonly self = computed(() => this.session.whoami()?.principal.id ?? null);
+  /** The reader's principal, for the syncs' "Set up by you". */
+  protected readonly selfId = this.self;
   /**
    * What the caller may do in the repository (R-CUR-005): `manage` (the roles Maintainer and Owner) or the system role `admin`, and
    * the fill of a client, which retries and cancels a row a probe or a client caused.

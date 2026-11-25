@@ -6,7 +6,7 @@ import { Schema } from './types';
 export type RemoteDownload = Schema<'RemoteDownload'>;
 /** A row's state: `waiting`, `running`, `done`, `failed`, `cancelled`. */
 export type RemoteDownloadState = RemoteDownload['state'];
-/** Who or what put a row into the queue: `person`, `request`, `allow`, `bulk`, `probe`, `client`. */
+/** Who or what put a row into the queue: `person`, `request`, `allow`, `bulk`, `sync`, `probe`, `client`. */
 export type RemoteDownloadOrigin = RemoteDownload['origin'];
 /** The failure of a row's attempt in its own words (Q-CUR-20). */
 export type RemoteDownloadFailure = Schema<'RemoteDownloadFailure'>;
@@ -37,6 +37,16 @@ export type RemoteDownloadRequest = Omit<Schema<'RemoteDownloadRequest'>, 'inclu
 export type RemoteDownloadPreview = Schema<'RemoteDownloadPreview'>;
 /** The answer of a start: the row of one version, or the bulk (R-CUR-010). */
 export type RemoteDownloadStarted = Schema<'RemoteDownloadStarted'>;
+/** What keeping a package or a sub-section in sync would do: its first run, whether the rules deliver it, the interval (R-CUR-027). */
+export type RemoteDownloadSyncPreview = Schema<'RemoteDownloadSyncPreview'>;
+/** A download kept in sync with its newest run (R-CUR-027). */
+export type RemoteDownloadSync = Schema<'RemoteDownloadSync'>;
+/** What the last look at a sync did: `started`, or why no run started. */
+export type RemoteDownloadSyncOutcome = Schema<'RemoteDownloadSyncOutcome'>;
+/** One page of a repository's syncs with its interval, its pause and the bound of syncs. */
+export type RemoteDownloadSyncPage = Schema<'RemoteDownloadSyncPage'>;
+/** A sync with the run its set-up or **Run now** started. */
+export type RemoteDownloadSyncRun = Schema<'RemoteDownloadSyncRun'>;
 
 /** The states of a row in the order the tab lists them (R-CUR-018). */
 export const DOWNLOAD_STATES: readonly RemoteDownloadState[] = ['waiting', 'running', 'failed', 'done', 'cancelled'];
@@ -107,6 +117,16 @@ export abstract class RemoteDownloadsApi {
   abstract preview(repository: string, request: RemoteDownloadRequest): Promise<RemoteDownloadPreview>;
   /** `POST …/downloads`: the row of one version, or the bulk of a package or a sub-section (R-CUR-010). */
   abstract start(repository: string, request: RemoteDownloadRequest, idempotencyKey: string): Promise<RemoteDownloadStarted>;
+  /** `GET …/download-syncs`: one page of the repository's syncs, newest first, with its interval and pause (R-CUR-027). */
+  abstract listSyncs(repository: string, cursor: string | null, limit: number): Promise<RemoteDownloadSyncPage>;
+  /** `POST …/download-syncs`: keeps a package or a sub-section in sync; its first run starts at once. */
+  abstract createSync(repository: string, request: RemoteDownloadRequest, idempotencyKey: string): Promise<RemoteDownloadSyncRun>;
+  /** `POST …/download-syncs/{id}/run`: a run now (**Run now**). */
+  abstract runSync(repository: string, id: string, idempotencyKey: string): Promise<RemoteDownloadSyncRun>;
+  /** `POST …/download-syncs/{id}/pause` or `…/resume`: the sync after it. */
+  abstract pauseSync(repository: string, id: string, paused: boolean, idempotencyKey: string): Promise<RemoteDownloadSync>;
+  /** `DELETE …/download-syncs/{id}`: the sync is removed; a run in progress goes on as a bulk. */
+  abstract removeSync(repository: string, id: string, idempotencyKey: string): Promise<void>;
 }
 
 /** `/api/v1/projects/{project}/repositories/{key}` of a qualified name. */
@@ -167,5 +187,28 @@ export class HttpRemoteDownloadsApi extends RemoteDownloadsApi {
 
   async start(repository: string, request: RemoteDownloadRequest, idempotencyKey: string): Promise<RemoteDownloadStarted> {
     return (await this.client.post<RemoteDownloadStarted>(`${base(repository)}/downloads`, request, { idempotencyKey })).body;
+  }
+
+  async listSyncs(repository: string, cursor: string | null, limit: number): Promise<RemoteDownloadSyncPage> {
+    const params: Record<string, string | number> = { limit };
+    if (cursor !== null) params['cursor'] = cursor;
+    return (await this.client.getJson<RemoteDownloadSyncPage>(`${base(repository)}/download-syncs`, { params })).body;
+  }
+
+  async createSync(repository: string, request: RemoteDownloadRequest, idempotencyKey: string): Promise<RemoteDownloadSyncRun> {
+    return (await this.client.post<RemoteDownloadSyncRun>(`${base(repository)}/download-syncs`, request, { idempotencyKey })).body;
+  }
+
+  async runSync(repository: string, id: string, idempotencyKey: string): Promise<RemoteDownloadSyncRun> {
+    return (await this.client.post<RemoteDownloadSyncRun>(`${base(repository)}/download-syncs/${encodeURIComponent(id)}/run`, undefined, { idempotencyKey })).body;
+  }
+
+  async pauseSync(repository: string, id: string, paused: boolean, idempotencyKey: string): Promise<RemoteDownloadSync> {
+    const act = paused ? 'pause' : 'resume';
+    return (await this.client.post<RemoteDownloadSync>(`${base(repository)}/download-syncs/${encodeURIComponent(id)}/${act}`, undefined, { idempotencyKey })).body;
+  }
+
+  async removeSync(repository: string, id: string, idempotencyKey: string): Promise<void> {
+    await this.client.delete(`${base(repository)}/download-syncs/${encodeURIComponent(id)}`, { idempotencyKey });
   }
 }

@@ -1,0 +1,98 @@
+@if (shown()) {
+  <!-- The repository's syncs above its bulks (R-CUR-027, Q-CUR-250): what each keeps current, its last run and its next. -->
+  <section class="bulks syncs" aria-labelledby="dl-syncs-title" data-testid="download-syncs">
+    <h2 id="dl-syncs-title" class="bulks-title" i18n="@@syncs.title">Kept in sync</h2>
+    <p class="syncs-note">
+      {{ intervalText() }}&ngsp;<ng-container i18n="@@syncs.note">A sync stores only what the rules deliver and removes nothing.</ng-container>
+    </p>
+    @if (allPaused()) {
+      <p class="banner-warning syncs-paused" role="status" data-testid="download-syncs-paused" i18n="@@syncs.all-paused">The syncs of this repository are paused in its settings: none starts a run until they are resumed.</p>
+    }
+    <quader-data-table
+      [caption]="caption"
+      [columns]="columns()"
+      [loaded]="loaded()"
+      [loading]="loading()"
+      [error]="error()"
+      [empty]="syncs().length === 0"
+      [hasMore]="hasMore()"
+      (more)="more()"
+      (retry)="retry()"
+    >
+      @for (s of syncs(); track s.id) {
+        <tr>
+          <th scope="row" class="wrap-name">
+            <span class="sync-title">{{ title(s) }}</span>
+            <span class="secondary"
+              ><span class="dot-separated">
+                @if (range(s); as r) {
+                  <span>{{ r }}</span>
+                }
+                <span>{{ newest(s) }}</span>
+                @if (setUpBySelf(s)) {
+                  <span i18n="@@syncs.set-up-by-you">Set up by you</span>
+                } @else if (setUpBy(s); as who) {
+                  <span><ng-container i18n="@@syncs.set-up-by">Set up by {{ who }}</ng-container></span>
+                }
+              </span></span
+            >
+          </th>
+          <td class="sync-last">
+            @let words = runWords(s);
+            <span [class]="words.cls"><span class="material-icons" aria-hidden="true">{{ words.icon }}</span>{{ words.text }}</span>
+            @if (words.reason; as why) {
+              <span class="secondary sync-failure">{{ why }}</span>
+            }
+            <span class="secondary"
+              ><span class="dot-separated">
+                @if (s.lastRunAt) {
+                  <span><quader-time-ago [at]="s.lastRunAt" absolute="title" /></span>
+                }
+                @if (s.lastBulk; as b) {
+                  @if (runLine(b); as line) {
+                    <span>{{ line }}</span>
+                  }
+                  <a [routerLink]="[]" [queryParams]="runLink(b)" queryParamsHandling="merge" [attr.aria-label]="runLinkLabel(s)" i18n="@@syncs.run.show">Show the run</a>
+                }
+              </span></span
+            >
+            @if (failedRun(s); as f) {
+              <span class="secondary sync-failure">{{ failure(f) }}</span>
+            }
+          </td>
+          <td class="keep">
+            @if (s.state === 'paused') {
+              <span class="badge"><span class="material-icons" aria-hidden="true">pause</span><ng-container i18n="@@syncs.state.paused">Paused</ng-container></span>
+            } @else if (s.nextRunAt) {
+              <quader-time-ago [at]="s.nextRunAt" absolute="title" />
+            }
+          </td>
+          @if (hasActions()) {
+            <td class="actions">
+              <button
+                class="btn btn-tertiary btn-icon"
+                type="button"
+                [disabled]="isBusy(s)"
+                [attr.aria-label]="menuLabel(s)"
+                [cdkMenuTriggerFor]="syncMenu"
+              >
+                <span class="material-icons" aria-hidden="true">more_vert</span>
+              </button>
+              <ng-template #syncMenu>
+                <div class="menu" cdkMenu>
+                  <button class="menu-item" type="button" cdkMenuItem (cdkMenuItemTriggered)="run(s)" i18n="@@syncs.run-now">Run now</button>
+                  @if (s.state === 'paused') {
+                    <button class="menu-item" type="button" cdkMenuItem (cdkMenuItemTriggered)="setPaused(s, false)" i18n="@@syncs.resume">Resume</button>
+                  } @else {
+                    <button class="menu-item" type="button" cdkMenuItem (cdkMenuItemTriggered)="setPaused(s, true)" i18n="@@syncs.pause">Pause</button>
+                  }
+                  <button class="menu-item" type="button" cdkMenuItem (cdkMenuItemTriggered)="remove(s)" i18n="@@syncs.remove">Remove…</button>
+                </div>
+              </ng-template>
+            </td>
+          }
+        </tr>
+      }
+    </quader-data-table>
+  </section>
+}

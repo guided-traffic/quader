@@ -139,6 +139,10 @@ func TestMirrorSettings(t *testing.T) {
 			`{"mirror":{"maxBytes":1024}}`:                `/remote/mirror/maxBytes`,
 			`{"mirror":{"discovery":"crawl"}}`:            `/remote/mirror/discovery`,
 			`{"mode":"replica"}`:                          `/remote/mode`,
+			// remote.syncs (R-CUR-027): five minutes to 30 days, a byte bound of at least 1 MiB.
+			`{"syncs":{"intervalSeconds":299}}`:     `/remote/syncs/intervalSeconds`,
+			`{"syncs":{"intervalSeconds":2592001}}`: `/remote/syncs/intervalSeconds`,
+			`{"syncs":{"maxBytes":1024}}`:           `/remote/syncs/maxBytes`,
 		} {
 			full := `{"url":"https://partner.example.test/",` + strings.TrimPrefix(remote, "{")
 			_, v := validateMirrorDoc(t, "mirrorable", "", full)
@@ -150,7 +154,7 @@ func TestMirrorSettings(t *testing.T) {
 				t.Errorf("%s: %s = %q, want %q (%v)", remote, pointer, got, want, fieldCodes(v))
 			}
 		}
-		_, v := validateMirrorDoc(t, "mirrorable", "", `{"url":"https://partner.example.test/","mode":"mirror","mirror":{"fullPassIntervalSeconds":0,"maxBytes":1048576,"concurrency":64}}`)
+		_, v := validateMirrorDoc(t, "mirrorable", "", `{"url":"https://partner.example.test/","mode":"mirror","mirror":{"fullPassIntervalSeconds":0,"maxBytes":1048576,"concurrency":64},"syncs":{"intervalSeconds":300,"maxBytes":1048576}}`)
 		if err := v.err(); err != nil {
 			t.Fatalf("the bounds themselves are refused: %v", err)
 		}

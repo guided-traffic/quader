@@ -74,6 +74,7 @@ import { RepositoryDownloadLinksSection } from './repository-download-links';
 // <<< download-links
 // >>> T-24 delivery
 import { DeliverySettings, RepositoryDeliverySection } from './repository-delivery';
+import { RepositorySyncsSection, SyncSettings } from './repository-syncs';
 // <<< T-24 delivery
 
 /** The closed sections whose content loads when it is first opened (a list read from the server). */
@@ -111,6 +112,7 @@ type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombs
     RepositoryServiceAccounts,
     RepositoryDownloadLinksSection,
     RepositoryDeliverySection,
+    RepositorySyncsSection,
     RepositoryLimitsSection,
     RepositoryMalwareSection,
     RepositorySignaturesSection,
@@ -822,6 +824,29 @@ export class RepositoryDetail implements HasUnsavedChanges {
       this.deliveryFailure.set(asApiError(e));
     } finally {
       this.deliverySaving.set(false);
+    }
+  }
+
+  protected readonly syncsSaving = signal(false);
+  protected readonly syncsFailure = signal<ApiError | null>(null);
+
+  /** Stores `remote.syncs` with the loaded `ETag` (R-CUR-027); the merge patch carries that member only. */
+  protected async saveSyncs(syncs: SyncSettings): Promise<void> {
+    if (this.syncsSaving() || !this.stored()) return;
+    this.syncsSaving.set(true);
+    this.syncsFailure.set(null);
+    try {
+      const saved = await this.api.patch(this.ref(), { remote: { syncs } }, this.etag);
+      this.takeStored(saved.value, saved.etag);
+      this.notifier.status(
+        syncs.paused
+          ? $localize`:@@syncs.settings.saved-paused:Saved. No sync of this repository starts a run until they are resumed.`
+          : $localize`:@@syncs.settings.saved:Saved. The syncs of this repository run at the new interval from their next run.`,
+      );
+    } catch (e) {
+      this.syncsFailure.set(asApiError(e));
+    } finally {
+      this.syncsSaving.set(false);
     }
   }
   // <<< T-24 delivery

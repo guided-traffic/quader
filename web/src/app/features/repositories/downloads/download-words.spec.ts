@@ -3,7 +3,7 @@ import { clearTranslations, loadTranslations } from '@angular/localize';
 import { downloadFailure } from '../../../api/testing/fakes-remote-downloads';
 import { RemoteDownloadFailure } from '../../../api/remote-downloads-api';
 import { DOWNLOAD_FAILURE_CLASSES } from '../../../api/remote-downloads-api';
-import { failureSentence, versionRangeText } from './download-words';
+import { failureSentence, syncIntervalSentence, versionRangeText } from './download-words';
 
 // The sentence of a failure is the screen's, written from its code and its members, never the server's detail (R-CUR-011, R-CUR-018).
 // Unit tier, milliseconds: pure functions over a failure of a few hundred bytes.
@@ -108,5 +108,16 @@ describe('The range of a bulk in words', () => {
     expect(r(null, '5.4.7')).toBe('Up to 5.4.7');
     expect(r(null, '6.0.0', false)).toBe('Below 6.0.0');
     expect(r(null, null)).toBeNull();
+  });
+});
+
+describe('The interval of a sync in words', () => {
+  it('R-CUR-027 the repository\'s interval is said as a person reads it: every hour, every 6 hours, every day, in days or minutes', () => {
+    expect(syncIntervalSentence(3600)).toBe('Quader downloads what is new every hour, the interval of this repository.');
+    expect(syncIntervalSentence(21_600)).toBe('Quader downloads what is new every 6 hours, the interval of this repository.');
+    expect(syncIntervalSentence(86_400)).toBe('Quader downloads what is new every day, the interval of this repository.');
+    expect(syncIntervalSentence(2_592_000)).toBe('Quader downloads what is new every 30 days, the interval of this repository.');
+    expect(syncIntervalSentence(300)).toBe('Quader downloads what is new every 5 minutes, the interval of this repository.');
+    expect(syncIntervalSentence(5_400)).toBe('Quader downloads what is new every 90 minutes, the interval of this repository.');
   });
 });

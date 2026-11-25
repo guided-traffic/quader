@@ -70,7 +70,7 @@ func TestRemoteDefaults(t *testing.T) {
 			Mode:         "pullThrough",
 			Mirror:       MirrorSettings{IntervalSeconds: 3600, FullPassIntervalSeconds: 604800, Discovery: "auto", Concurrency: 4, IncludePrereleases: true, Include: []string{}},
 			// R-REPO-065: a probe starts the background download unless the repository turns it off.
-			DownloadOnProbe: true, Delivery: DefaultDeliverySettings(),
+			DownloadOnProbe: true, Delivery: DefaultDeliverySettings(), Syncs: DefaultSyncSettings(),
 		}
 		if got := settingsOf(t, d); !reflect.DeepEqual(got, want) {
 			t.Fatalf("settings =\n%+v\nwant\n%+v", got, want)

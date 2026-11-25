@@ -29,6 +29,15 @@ type Options struct {
 	Jobs JobCanceller
 	// Metrics counts the ends of rows; nil counts nothing.
 	Metrics *Metrics
+	// Syncs reads what a sync reads of its repository (R-CUR-027); nil: a sync runs every hour, nothing holds it and its runs leave out
+	// no stored version.
+	Syncs SyncRepositories
+	// Decider decides whether the rules deliver a version: a sync's run leaves out what they do not deliver (Q-CUR-243); nil leaves
+	// out nothing.
+	Decider remotecuration.Decider
+	// OnSyncRun writes what a run the dispatch started records, in the run's transaction (the event remote.download.started with the
+	// actor system:download-sync, R-CUR-019); nil writes nothing.
+	OnSyncRun func(ctx context.Context, tx meta.Tx, run SyncRun) error
 	// Now and Jitter are the clock and the spread of the waits (a number in [0, 1)); nil: the system's.
 	Now    func() time.Time
 	Jitter func() float64

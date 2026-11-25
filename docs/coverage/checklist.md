@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,277 spec requirements:
-787 cover catalog features, 490 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,278 spec requirements:
+788 cover catalog features, 490 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -204,7 +204,7 @@ Catalog page: [remote-repositories.md](../features/remote-repositories.md) · sp
 | RMT-024 | HEAD request bypass | P2 | open | – |
 | RMT-025 | Eager fetching of companion artifacts | P2 | open | – |
 | RMT-026 | Cache invalidation | MVP | specified | [R-ARCH-018](../spec/architecture.md), [R-NPM-024](../spec/formats/npm.md), [R-REPO-045](../spec/repositories-and-proxy.md) |
-| RMT-027 | Cache pre-population without client transfer | P2 | specified | [R-CUR-010](../spec/remote-curation.md), [R-CUR-011](../spec/remote-curation.md), [R-CUR-012](../spec/remote-curation.md) |
+| RMT-027 | Cache pre-population without client transfer | P2 | specified | [R-CUR-010](../spec/remote-curation.md), [R-CUR-011](../spec/remote-curation.md), [R-CUR-012](../spec/remote-curation.md), [R-CUR-027](../spec/remote-curation.md) |
 | RMT-028 | Download redirect for cached artifacts | P2 | open | – |
 | RMT-029 | Assumed-offline period | MVP | specified | [R-ARCH-013](../spec/architecture.md), [R-REPO-029](../spec/repositories-and-proxy.md) |
 | RMT-030 | Repository offline mode | MVP | specified | [R-REPO-004](../spec/repositories-and-proxy.md), [R-REPO-030](../spec/repositories-and-proxy.md) |

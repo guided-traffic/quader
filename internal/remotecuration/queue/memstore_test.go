@@ -26,6 +26,9 @@ type memStore struct {
 	examined []examinedRow
 	// limits are the repositories' upstream rate limits (remote_download_limits).
 	limits map[int64]Limit
+	// syncs are the syncs (remote_download_syncs), usage the repositories' folded bytes.
+	syncs map[string]*Sync
+	usage map[int64]int64
 }
 
 type examinedRow struct {
@@ -34,7 +37,7 @@ type examinedRow struct {
 }
 
 func newMemStore(now func() time.Time) *memStore {
-	return &memStore{bulks: map[string]*Bulk{}, now: now, limits: map[int64]Limit{}}
+	return &memStore{bulks: map[string]*Bulk{}, now: now, limits: map[int64]Limit{}, syncs: map[string]*Sync{}, usage: map[int64]int64{}}
 }
 
 var (

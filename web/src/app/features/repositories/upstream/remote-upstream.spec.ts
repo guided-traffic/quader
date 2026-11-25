@@ -346,6 +346,60 @@ describe('The tab Upstream of a remote repository', () => {
     await expectAccessible(root);
   });
 
+  it('R-CUR-027 the preview offers Once and Keep in sync: a sync counts its first run, says the interval and that it stores only what is delivered', async () => {
+    const { root, fixture, downloads } = await open({ manage: true, url: '/projects/web/repositories/npmjs/upstream?name=lodash' });
+    downloads.previewAnswer = { ...downloads.previewAnswer, notDelivered: 1, sync: { versions: 2, delivered: true, intervalSeconds: 21_600, paused: false, existing: null } };
+    button(root.querySelector('quader-upstream-package')!, 'Download every version').click();
+    await settle(fixture);
+    const d = dialog();
+    const once = d.querySelector<HTMLInputElement>('input[name="download-mode"][value="once"]')!;
+    const sync = d.querySelector<HTMLInputElement>('input[name="download-mode"][value="sync"]')!;
+    expect(once.checked).toBe(true);
+    expect(text(d)).not.toContain('First run');
+    expect(text(d)).toContain('Fetched for examination');
+    sync.click();
+    await settle(fixture);
+    expect(text(d)).toContain('First run');
+    expect(text(d.querySelector('[data-testid="download-preview"] dd')!)).toContain('2');
+    expect(text(d)).toContain('Left out: a sync stores only what the rules deliver.');
+    expect(text(d.querySelector('[data-testid="download-sync-note"]')!)).toBe(
+      'Quader downloads what is new every 6 hours, the interval of this repository. A sync stores only what the rules deliver and removes nothing.',
+    );
+    const status = vi.spyOn(TestBed.inject(Notifier), 'status');
+    button(d, 'Keep in sync').click();
+    await settle(fixture);
+    expect(downloads.calls).toContain('sync web/npmjs package lodash');
+    await waitUntil(fixture, () => status.mock.calls.length > 0, 'the notice of the sync');
+    expect(status.mock.calls.at(-1)![0]).toBe('Kept in sync: the first run has started, and the tab Downloads lists the sync.');
+    await expectAccessible(root);
+  });
+
+  it('R-CUR-027 a package the rules do not deliver, or one kept in sync already, is said instead of being set up', async () => {
+    const { root, fixture, downloads } = await open({ manage: true, url: '/projects/web/repositories/npmjs/upstream?name=lodash' });
+    downloads.previewAnswer = { ...downloads.previewAnswer, sync: { versions: 0, delivered: false, intervalSeconds: 3600, paused: false, existing: null } };
+    button(root.querySelector('quader-upstream-package')!, 'Download every version').click();
+    await settle(fixture);
+    let d = dialog();
+    d.querySelector<HTMLInputElement>('input[name="download-mode"][value="sync"]')!.click();
+    await settle(fixture);
+    expect(text(d.querySelector('[data-testid="download-sync-undelivered"]')!)).toContain('so a sync would store nothing');
+    expect(button(d, 'Keep in sync').disabled).toBe(true);
+    // Once stays open for an examination: a bulk stores what the rules do not deliver for examination (R-CUR-014).
+    d.querySelector<HTMLInputElement>('input[name="download-mode"][value="once"]')!.click();
+    await settle(fixture);
+    expect(button(d, 'Start download').disabled).toBe(false);
+    button(d, 'Cancel').click();
+    await waitUntil(fixture, () => !document.querySelector('.quader-dialog'), 'the preview to close');
+    downloads.previewAnswer = { ...downloads.previewAnswer, sync: { versions: 0, delivered: true, intervalSeconds: 3600, paused: false, existing: 'sync-1' } };
+    button(root.querySelector('quader-upstream-package')!, 'Download every version').click();
+    await settle(fixture);
+    d = dialog();
+    d.querySelector<HTMLInputElement>('input[name="download-mode"][value="sync"]')!.click();
+    await settle(fixture);
+    expect(text(d.querySelector('[data-testid="download-sync-existing"]')!)).toContain('This is kept in sync already.');
+    expect(button(d, 'Keep in sync').disabled).toBe(true);
+  });
+
   it('R-CUR-018 R-CUR-009 a reader in mode onlyAllowed reads the withheld hits, its own requests, and requests a version; no rules, no bulk', async () => {
     const { root, fixture, requests } = await open({
       manage: false,

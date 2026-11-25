@@ -20060,7 +20060,9 @@ paths:
         how many are stored already and how many the delivery rules do not deliver, and the bounds that apply. Where the upstream
         catalogue cannot count a level, `versions` and `bytes` are `null` and `note` says that the bounds cut while the bulk runs. Nothing
         is queued and nothing is fetched. A package's range of versions is counted as the bulk takes it, and `notVersions` says how many
-        strings of the package it left out because the format does not rank them (Q-CUR-192). Needs what the start of the same download
+        strings of the package it left out because the format does not rank them (Q-CUR-192). `sync` says what keeping the package or the
+        sub-section in sync would do (R-CUR-027): what its first run would queue, whether the rules deliver the package at all, the
+        repository's interval and the sync the subject has already. Needs what the start of the same download
         needs (R-CUR-005); a local or virtual repository answers `400 not_applicable`, a sub-section of an upstream that lists no levels
         `400 catalogue_not_offered`, a bound the format does not rank `422 invalid_version` at its pointer.
       x-quader-permission:
@@ -20094,6 +20096,7 @@ paths:
                 notVersions: 0
                 bounds: {maxVersions: 100, maxBytes: 107374182400, includePrereleases: true, fromVersion: "5.0.0", toVersion: "5.4.7", toInclusive: true}
                 note: null
+                sync: {versions: 2, delivered: true, intervalSeconds: 3600, paused: false, existing: null}
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -20599,6 +20602,322 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RemoteDownloadBulk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    get:
+      operationId: listRemoteDownloadSyncs
+      tags: [remote-curation]
+      summary: List the downloads a remote repository keeps in sync
+      description: |
+        The repository's syncs (R-CUR-027), newest first, each with its bounds, its state, the time of its next run and its newest run
+        as a bulk with the counts of its rows by state, beside the repository's interval, its pause and the bound of syncs. Cursor
+        pagination (R-API-010). Needs `read` on the repository; a repository hidden from the caller answers `404`, a local or virtual one
+        `400 not_applicable`. `createdBy` names a person only to those who may set rules and to that person.
+      x-quader-permission:
+        authenticated: true
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: One page of syncs.
+          headers:
+            Link:
+              $ref: "#/components/headers/Link"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteDownloadSyncPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    post:
+      operationId: createRemoteDownloadSync
+      tags: [remote-curation]
+      summary: Keep a package or a sub-section of a remote repository in sync
+      description: |
+        Sets up a sync (R-CUR-027): the body of `POST downloads` with the level `package` or `section`, whose bounds the dispatch applies
+        again every `remote.syncs.intervalSeconds` of the repository. The first run starts at once as a bulk of the origin `sync`. A run
+        stores only what the delivery rules deliver, leaves out the versions the repository stores as version rows (an OCI tag is
+        revalidated and fetched again when it moved) and removes nothing. Needs `manage` on the repository or the system role `admin`.
+        `409 already_synced` names the sync of the same subject; `422 too_many_syncs` at `proxy.downloads.max_syncs_per_repository`;
+        `422 validation_failed` at `/level` for the level `version`. Writes `remote.sync.created` and the run's `remote.download.started`.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoteDownloadRequest"
+      responses:
+        "201":
+          description: The sync and its first run.
+          headers:
+            Location:
+              description: The address of the syncs' list.
+              schema:
+                type: string
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteDownloadSyncRun"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+      - name: syncId
+        in: path
+        required: true
+        description: The sync's ID; any other text names no sync (`404`).
+        schema:
+          type: string
+    delete:
+      operationId: deleteRemoteDownloadSync
+      tags: [remote-curation]
+      summary: Stop keeping a package or a sub-section in sync
+      description: |
+        Removes the sync (R-CUR-027); a run in progress goes on as a bulk, and nothing it stored is removed. A sync is not edited: it is
+        removed and set up again (Q-CUR-248). Needs `manage` on the repository or the system role `admin`. Writes `remote.sync.deleted`.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "204":
+          description: The sync is removed.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}/run:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+      - name: syncId
+        in: path
+        required: true
+        description: The sync's ID; any other text names no sync (`404`).
+        schema:
+          type: string
+    post:
+      operationId: runRemoteDownloadSync
+      tags: [remote-curation]
+      summary: Run a sync now
+      description: |
+        Starts a run of the sync now (R-CUR-027, **Run now**), as the person: a bulk of the origin `sync`; the next run follows an
+        interval after it. `409 sync_running` names the previous run while its rows wait or run. Needs `manage` on the repository or the
+        system role `admin`. Writes `remote.download.started`.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: The sync and the run it started.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteDownloadSyncRun"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}/pause:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+      - name: syncId
+        in: path
+        required: true
+        description: The sync's ID; any other text names no sync (`404`).
+        schema:
+          type: string
+    post:
+      operationId: pauseRemoteDownloadSync
+      tags: [remote-curation]
+      summary: Pause a sync
+      description: |
+        Pauses the sync (R-CUR-027): it starts no run until it is resumed; a run in progress goes on. Needs `manage` on the repository or
+        the system role `admin`. Writes `remote.sync.paused`.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: The paused sync.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteDownloadSync"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}/resume:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+      - name: syncId
+        in: path
+        required: true
+        description: The sync's ID; any other text names no sync (`404`).
+        schema:
+          type: string
+    post:
+      operationId: resumeRemoteDownloadSync
+      tags: [remote-curation]
+      summary: Resume a sync
+      description: |
+        Resumes a paused sync (R-CUR-027): a sync whose next run passed while it was paused runs at the next dispatch. Needs `manage` on
+        the repository or the system role `admin`. Writes `remote.sync.resumed`.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: The resumed sync.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteDownloadSync"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -28083,6 +28402,8 @@ components:
           $ref: "#/components/schemas/MirrorSettings"
         delivery:
           $ref: "#/components/schemas/DeliverySettings"
+        syncs:
+          $ref: "#/components/schemas/SyncSettings"
         downloadOnProbe:
           type: boolean
           default: true
@@ -31942,6 +32263,32 @@ components:
           maximum: 365
           default: 30
           description: What was fetched for examination and is still not delivered is removed after these days (R-CUR-016).
+    SyncSettings:
+      type: object
+      additionalProperties: false
+      description: |
+        The downloads a remote repository keeps in sync (`remote.syncs`, remote-curation.md R-CUR-020, R-CUR-027): configuration, which
+        `repositories:write-config` and the project's Owner set. The syncs themselves are set up through `…/download-syncs` by the
+        holders of `manage`.
+      properties:
+        intervalSeconds:
+          type: integer
+          minimum: 300
+          maximum: 2592000
+          default: 3600
+          description: The time from one run of a sync to its next, the same for every sync of the repository (Q-CUR-242).
+        paused:
+          type: boolean
+          default: false
+          description: No sync of the repository starts a run; a run in progress goes on.
+        maxBytes:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1048576
+          default: null
+          description: |
+            The repository's stored bytes (its folded counter) at which its syncs start no run; null for no bound of their own
+            (Q-CUR-246).
     MirrorMethod:
       type: string
       enum: [feed, listing, names]
@@ -34269,8 +34616,8 @@ components:
     UpstreamDownloadQueueOrigin:
       type: string
       description: The origin of the queue row a download of origin `queue` belongs to (remote-curation.md R-CUR-011).
-      enum: [person, request, allow, bulk, probe]
-      x-enum-varnames: [UpstreamDownloadQueuePerson, UpstreamDownloadQueueRequest, UpstreamDownloadQueueAllow, UpstreamDownloadQueueBulk, UpstreamDownloadQueueProbe]
+      enum: [person, request, allow, bulk, sync, probe]
+      x-enum-varnames: [UpstreamDownloadQueuePerson, UpstreamDownloadQueueRequest, UpstreamDownloadQueueAllow, UpstreamDownloadQueueBulk, UpstreamDownloadQueueSync, UpstreamDownloadQueueProbe]
     RemoteDownloadFailureClass:
       type: string
       description: The class of a failure (remote-curation.md R-CUR-011, Q-CUR-20).
@@ -34398,8 +34745,8 @@ components:
           description: The version; empty for a file of no version (an OCI blob).
         origin:
           type: string
-          enum: [person, request, allow, bulk, probe, client]
-          x-enum-varnames: [DownloadOriginPerson, DownloadOriginRequest, DownloadOriginAllow, DownloadOriginBulk, DownloadOriginProbe, DownloadOriginClient]
+          enum: [person, request, allow, bulk, sync, probe, client]
+          x-enum-varnames: [DownloadOriginPerson, DownloadOriginRequest, DownloadOriginAllow, DownloadOriginBulk, DownloadOriginSync, DownloadOriginProbe, DownloadOriginClient]
         state:
           type: string
           enum: [waiting, running, done, failed, cancelled]
@@ -34568,8 +34915,13 @@ components:
     RemoteDownloadPreview:
       type: object
       additionalProperties: false
-      required: [versions, packages, bytes, sizeUnknown, stored, notDelivered, notVersions, bounds, note]
+      required: [versions, packages, bytes, sizeUnknown, stored, notDelivered, notVersions, bounds, note, sync]
       properties:
+        sync:
+          description: What keeping the package or the sub-section in sync would do (R-CUR-027); null for one version.
+          oneOf:
+            - $ref: "#/components/schemas/RemoteDownloadSyncPreview"
+            - type: "null"
         versions:
           type: [integer, "null"]
         packages:
@@ -34604,7 +34956,8 @@ components:
       type: object
       additionalProperties: false
       description: A bulk download (R-CUR-010, R-CUR-012), expanded into rows within its bounds.
-      required: [id, level, subject, origin, state, bounds, versionsFound, versionsQueued, failure, startedBy, createdAt, finishedAt, rows]
+      required: [id, level, subject, origin, sync, state, bounds, versionsFound, versionsQueued, versionsRefused, failure, startedBy,
+        createdAt, finishedAt, rows]
       properties:
         id:
           type: string
@@ -34619,9 +34972,9 @@ components:
           type: string
           description: |
             Who started the bulk: `person` (a person's bulk of a package or a sub-section), `request` (the examination of a package a
-            request starts) or `allow` (the newest versions an allow downloads, Q-CUR-141).
-          enum: [person, request, allow]
-          x-enum-varnames: [BulkOriginPerson, BulkOriginRequest, BulkOriginAllow]
+            request starts), `allow` (the newest versions an allow downloads, Q-CUR-141) or `sync` (a run of a sync, R-CUR-027).
+          enum: [person, request, allow, sync]
+          x-enum-varnames: [BulkOriginPerson, BulkOriginRequest, BulkOriginAllow, BulkOriginSync]
         state:
           type: string
           enum: [expanding, queued, done, bounded, cancelled, failed]
@@ -34632,6 +34985,14 @@ components:
           type: integer
         versionsQueued:
           type: integer
+        versionsRefused:
+          type: integer
+          description: >-
+            The versions a sync's run left out because the delivery rules do not deliver them (Q-CUR-243); 0 for any other bulk.
+        sync:
+          type: [string, "null"]
+          format: uuid
+          description: The sync whose run the bulk is (origin `sync`); null for another bulk and for a run whose sync was removed.
         failure:
           oneOf:
             - $ref: "#/components/schemas/RemoteDownloadFailure"
@@ -34663,6 +35024,115 @@ components:
             $ref: "#/components/schemas/RemoteDownloadBulk"
         nextCursor:
           type: [string, "null"]
+    RemoteDownloadSyncPreview:
+      type: object
+      additionalProperties: false
+      description: |
+        What a sync of the previewed package or sub-section would do (R-CUR-027): its first run's count, whether the rules deliver the
+        package at all (a sync stores only what they deliver), the repository's interval and pause, and the sync of the same subject.
+      required: [versions, delivered, intervalSeconds, paused, existing]
+      properties:
+        versions:
+          type: [integer, "null"]
+          description: >-
+            The versions the first run would queue: the counted versions the rules deliver that the repository does not store as version
+            rows (an OCI tag counts, since its run revalidates it); null where the versions are not counted (a sub-section, no catalogue).
+        delivered:
+          type: boolean
+          description: Whether the delivery rules deliver the package or a version of it; false means a sync would store nothing.
+        intervalSeconds:
+          type: integer
+          description: The repository's `remote.syncs.intervalSeconds`, the time from one run to the next.
+        paused:
+          type: boolean
+          description: The repository's `remote.syncs.paused`; while it holds, a sync starts no run after its first.
+        existing:
+          type: [string, "null"]
+          format: uuid
+          description: The sync of the same subject the repository has; null for none.
+    RemoteDownloadSyncOutcome:
+      type: string
+      description: |
+        What the last look at a sync did (R-CUR-027): `started` a run; or why none started: `overlapped` (the previous run's rows had
+        not all ended; the run starts once they have), `limited` (the upstream's rate limit held the queue), `bounded` (the repository's
+        folded bytes reached `remote.syncs.maxBytes`), `disabled` (the repository is disabled, offline or no longer remote), `paused`
+        (`remote.syncs.paused` holds).
+      enum: [started, overlapped, limited, bounded, disabled, paused]
+      x-enum-varnames: [SyncOutcomeStarted, SyncOutcomeOverlapped, SyncOutcomeLimited, SyncOutcomeBounded, SyncOutcomeDisabled, SyncOutcomePaused]
+    RemoteDownloadSync:
+      type: object
+      additionalProperties: false
+      description: A download kept in sync (R-CUR-027), with its newest run.
+      required: [id, level, subject, bounds, state, nextRunAt, lastRunAt, lastOutcome, lastBulk, createdBy, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        level:
+          type: string
+          enum: [package, section]
+          x-enum-varnames: [SyncLevelPackage, SyncLevelSection]
+        subject:
+          type: string
+        bounds:
+          $ref: "#/components/schemas/RemoteDownloadBounds"
+        state:
+          type: string
+          enum: [active, paused]
+          x-enum-varnames: [SyncStateActive, SyncStatePaused]
+        nextRunAt:
+          type: [string, "null"]
+          format: date-time
+          description: When the dispatch looks at the sync next; null while it is paused.
+        lastRunAt:
+          type: [string, "null"]
+          format: date-time
+        lastOutcome:
+          oneOf:
+            - $ref: "#/components/schemas/RemoteDownloadSyncOutcome"
+            - type: "null"
+        lastBulk:
+          description: The newest run, as `GET download-bulks/{id}` answers it; null once the retention removed it.
+          oneOf:
+            - $ref: "#/components/schemas/RemoteDownloadBulk"
+            - type: "null"
+        createdBy:
+          oneOf:
+            - $ref: "#/components/schemas/RemoteDownloadStarter"
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+    RemoteDownloadSyncPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor, intervalSeconds, paused, maxSyncs]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RemoteDownloadSync"
+        nextCursor:
+          type: [string, "null"]
+        intervalSeconds:
+          type: integer
+          description: The repository's `remote.syncs.intervalSeconds`, the same for every sync of it (Q-CUR-242).
+        paused:
+          type: boolean
+          description: The repository's `remote.syncs.paused`; no sync of it starts a run while it holds.
+        maxSyncs:
+          type: integer
+          description: "`proxy.downloads.max_syncs_per_repository`."
+    RemoteDownloadSyncRun:
+      type: object
+      additionalProperties: false
+      description: A sync with the run that a set-up or a Run now started (R-CUR-027).
+      required: [sync, bulk]
+      properties:
+        sync:
+          $ref: "#/components/schemas/RemoteDownloadSync"
+        bulk:
+          $ref: "#/components/schemas/RemoteDownloadBulk"
     RemoteDownloadStarted:
       type: object
       additionalProperties: false

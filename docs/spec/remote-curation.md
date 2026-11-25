@@ -289,10 +289,11 @@ Priority: **P1** · Covers: SEC-035
 | Read the rules with their notes | `manage` on the repository, `repositories:read-config`, or the system role `admin` | `repositories:read-config` |
 | Ask which rule decides a name and version (`delivery-rules/check`) | `read` | `read` |
 | Add, change or remove a rule | `manage` on the repository (the roles Maintainer and Owner, R-AUTHZ-026), or the system role `admin` | `admin` only: such a repository has no members (R-REPO-066) |
-| Set the mode and the repository's switches of R-CUR-020 | configuration: `repositories:write-config` or the project's Owner (R-AUTHZ-006) | `repositories:write-config` |
+| Set the mode and the repository's switches of R-CUR-020 (`remote.delivery`, `remote.syncs`) | configuration: `repositories:write-config` or the project's Owner (R-AUTHZ-006) | `repositories:write-config` |
 | Download one version the rules deliver | the person's populate right: `read` plus the action of `cacheFillAction` (R-AUTHZ-008), asked without the session-cookie refusal (R-CUR-010) | the same |
 | Download one version the rules do not deliver (examination), every version of a package, a sub-section | `manage`, or `admin` | `admin` |
-| See the queue | `read` | `read` |
+| Set up, pause, resume, run or remove a sync (R-CUR-027) | `manage`, or `admin` | `admin` |
+| See the queue and the syncs | `read` | `read` |
 | Retry or cancel a row | the person who started it, `manage`, or `admin`; a row a probe or a client caused: who may download that version | the same |
 | Ask for an allow (a request) | a signed-in caller with `read` who may not set rules | the same |
 | See the requests | `manage` or `admin` see all; a person sees the entries they asked in | the same |
@@ -786,13 +787,16 @@ Priority: **P1** · Covers: RMT-027
     created_at          timestamptz NOT NULL DEFAULT now(),
     finished_at         timestamptz NULL,
     -- a bulk a request or an allow starts for the newest versions of a package (Q-CUR-141): its rows' origin, request and charge
-    origin              text        NOT NULL DEFAULT 'bulk' CHECK (origin IN ('bulk', 'request', 'allow')),
+    origin              text        NOT NULL DEFAULT 'bulk' CHECK (origin IN ('bulk', 'request', 'allow', 'sync')),
     request_id          uuid        NULL REFERENCES remote_delivery_requests (id) ON DELETE SET NULL,
     ticket              jsonb       NULL,
     -- a package's range of versions in the format's canonical form (R-CUR-010, Q-CUR-193, migration 00129): NULL is no bound
     from_version        text        NULL CHECK (char_length(from_version) BETWEEN 1 AND 256),
     to_version          text        NULL CHECK (char_length(to_version) BETWEEN 1 AND 256),
-    to_inclusive        boolean     NOT NULL DEFAULT true
+    to_inclusive        boolean     NOT NULL DEFAULT true,
+    -- a sync's run (R-CUR-027, migration 00130): its sync, NULL once removed, and the versions it left out as not delivered
+    sync_id             uuid        NULL REFERENCES remote_download_syncs (id) ON DELETE SET NULL,
+    versions_refused    integer     NOT NULL DEFAULT 0
   );
   CREATE INDEX remote_download_bulks_repo ON remote_download_bulks (repo_id, created_at DESC, id);
 
@@ -802,7 +806,7 @@ Priority: **P1** · Covers: RMT-027
     name            text        NOT NULL CHECK (char_length(name) BETWEEN 1 AND 1024),
     version         text        NOT NULL CHECK (char_length(version) <= 256), -- '' for a file of no version (an OCI blob)
     probe           jsonb       NULL,      -- {files[], document, digest}: what the run starts from, when a probe or a plan named it
-    origin          text        NOT NULL CHECK (origin IN ('person', 'request', 'allow', 'bulk', 'probe', 'client')),
+    origin          text        NOT NULL CHECK (origin IN ('person', 'request', 'allow', 'bulk', 'sync', 'probe', 'client')),
     bulk_id         uuid        NULL REFERENCES remote_download_bulks (id) ON DELETE CASCADE,
     request_id      uuid        NULL REFERENCES remote_delivery_requests (id) ON DELETE SET NULL,
     started_by      uuid        NULL REFERENCES principal (id) ON DELETE SET NULL,
@@ -837,7 +841,7 @@ Priority: **P1** · Covers: RMT-027
   `bounded` at the bounds of R-REPO-065, `refused` when every file was refused by a gate before the fill, `skipped` when the repository
   is gone, no longer remote, disabled or offline), `failed` (attempts spent, or a failure that no attempt can overcome), `cancelled`.
 - **Execution.** At most `proxy.downloads.per_repository` (4) rows of a repository are `running` at once; the rest wait, in the order of
-  their creation, rows of a person and of a request before rows of a bulk and of a probe. A row becomes `running` when its repository has a
+  their creation, rows of a person and of a request before rows of a bulk, of a sync and of a probe (Q-CUR-247). A row becomes `running` when its repository has a
   free place: at its insert, at the end of another row's run (in that run's settling transaction), and by the task `remote-downloads-dispatch`
   (every minute, on the queue `maintenance` as the mirror's dispatch, R-OPS-019) for rows whose `not_before` came. Each run is one job `remote-download` on the queue `downloads`
   (`jobs.workers.downloads`, 4 per replica by default), `MaxAttempts 1`, exclusive per row, 30 minutes (R-REPO-065's bounds of one
@@ -849,7 +853,8 @@ Priority: **P1** · Covers: RMT-027
   `RemoteAdapter.ProbeContent` and each file through the format's gate, the vulnerability miss gate (R-CUR-014), the integrity checks and
   the store, as a background request (a slot of the background share, the circuit read and never moved, R-REPO-054, R-REPO-055). A rate
   limit of at most 10 s is waited out inside the run; a longer one ends the attempt and holds the repository's queue (below). The rules
-  are not asked (R-CUR-014). A file another fetch stored meanwhile costs nothing.
+  are not asked (R-CUR-014), except for a row of a sync's run, whose fills store only what they deliver (R-CUR-027, Q-CUR-243). A file
+  another fetch stored meanwhile costs nothing.
 - **An upstream's rate limit holds the queue** (the owner's report of 2026-11-25: Docker Hub answered every manifest request `429` after
   105 of 315 versions, and four rows read "Running" for half an hour each, asking again every minute or so, while the top bar said
   nothing ran; [Q-CUR-170](#q-cur-170--a-rate-limited-attempt-hands-its-row-back-and-the-upstreams-limit-holds-the-repositorys-queue)
@@ -969,10 +974,11 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
   "startedBy": {"id", "name"} | null, "bulk", "request", "files", "stored", "present", "refused", "bytes", "failure", "createdAt",
   "startedAt", "finishedAt", "delivery"}` (`delivery` as in R-CUR-009, so an examined row says it is not delivered). `startedBy` names a
   person to those who may set rules and to that person; to other readers it reads `{"id": null, "name": null}` with `origin`.
-- A bulk's representation: `{"id", "level", "subject", "origin", "state", "bounds", "versionsFound", "versionsQueued", "failure",
-  "startedBy", "createdAt", "finishedAt", "rows"}`; `bounds` is `{"maxVersions", "maxBytes", "includePrereleases", "fromVersion",
+- A bulk's representation: `{"id", "level", "subject", "origin", "sync", "state", "bounds", "versionsFound", "versionsQueued",
+  "versionsRefused", "failure", "startedBy", "createdAt", "finishedAt", "rows"}`; `bounds` is `{"maxVersions", "maxBytes", "includePrereleases", "fromVersion",
   "toVersion", "toInclusive"}`, the range's versions `null` for no bound and `toInclusive` true without an upper one (R-CUR-010,
-  Q-CUR-193); `origin` is `person`, `request` (a request's examination) or `allow` (Q-CUR-141);
+  Q-CUR-193); `origin` is `person`, `request` (a request's examination), `allow` (Q-CUR-141) or `sync` (a run of the sync `sync`,
+  R-CUR-027, whose `versionsRefused` counts the versions it left out as not delivered);
   `failure` is the expansion's, in a row's form, or the note of the bound that stopped it (class `bound`, codes `bulk_max_versions`,
   `bulk_max_bytes`, `bulk_stored_bytes`); `rows` counts its rows by state.
 - A failure's `code` and its members are what a client says the failure from; `detail` is an English sentence for a script and an
@@ -1312,7 +1318,10 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
     ([Q-CUR-157](#q-cur-157--a-packages-versions-are-three-columns-the-facts-under-the-version-the-rule-under-the-delivery-the-verdicts-under-the-cache)).
     The catalogue's states are sentences in a warning line
     ([Q-CUR-155](#q-cur-155--the-catalogues-own-states-are-sentences-of-the-screen-the-upstreams-own-sentences-stand-as-the-upstream-wrote-them)).
-- **The preview of a bulk** (a dialog): what will be fetched (versions, packages, bytes, "size of 12 versions not told by the upstream;
+- **The preview of a bulk** (a dialog): **Once** or **Keep in sync** first (R-CUR-027; with a sync chosen the sentence of the
+  repository's interval and that a sync stores only what the rules deliver, the **First run**'s count, and instead of a set-up the
+  sentence that the package is not delivered or kept in sync already; the start button reads **Keep in sync**); what will be fetched
+  (versions, packages, bytes, "size of 12 versions not told by the upstream;
   the bound of 100 GiB stops the download when it is reached"), what is stored already, how much is not delivered (fetched for
   examination), how many tags a range left out because they name no version, the bounds as fields with their values, **Start
   download**. A package's preview has **From version** and **Up to version** with **included** or **below it** above the other bounds
@@ -1325,7 +1334,7 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
   (pattern) with its effect; the sentence "The narrowest rule decides; at equal width a block wins.".
 - **The tab Downloads** (`…/downloads`): the counts by state as filters (**Waiting 12**, **Running 4**, **Failed 2**, **Done**), the filter
   **Failure** by class, and a table: subject (name and version), origin (**You**, a person's name for those who may see it, **Request**,
-  **Allow**, **Bulk** with a link to its bulk, **Probe**, **Client**), state, progress (files stored of files, bytes), attempts ("Attempt
+  **Allow**, **Bulk** with a link to its bulk, **Sync**, **Probe**, **Client**), state, progress (files stored of files, bytes), attempts ("Attempt
   2 of 5, next at 10:41"), and for a failed row the failure in one line ("TLS · `registry.example.com:443` · certificate not trusted");
   the row opens to the whole failure: step, code, address (with "query removed"), status, the excerpt in a code block, the detail, and
   **Retry**; **Retry all failed** (with the class filter) and **Cancel** for those who may. A bulk's line shows its counters and
@@ -1354,6 +1363,10 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
     The origin **Bulk** links to `?bulk=<id>`, which shows the bulk's line over its rows: what it downloads, its state, "38 of 38
     versions found are queued" ("Versions found –" while nothing is found, as the list's dash), its rows by state, its bounds, who
     started it, **Cancel bulk** and **Show every download**.
+    Over the bulks, once the repository has a sync, a table **Kept in sync** (R-CUR-027, Q-CUR-250) with the sentence of the
+    repository's interval, each sync's subject, range, newest so many and who set it up, its last run and its next run or **Paused**,
+    and the menu **Run now**, **Pause** or **Resume**, **Remove…** for those who may; a run of a sync in the table of bulks says "A run
+    of a sync".
     Over the head, once the repository has a bulk, a table **Bulk downloads**, newest first, five and **Load more**: what it downloads
     (a link to `?bulk=<id>`, who started it and when under it), its state, "2 of 100 queued" with its rows by state, and where its
     expansion failed the cause in words ("Docker Hub's version list could not be read", the upstream's preset name where the reader
@@ -1503,10 +1516,12 @@ Priority: **P1** · Covers: SEC-032
 | `remote.rule.created`, `remote.rule.updated`, `remote.rule.deleted` | transactional | — (a narrowing writes `repository.narrowed`, R-CUR-006) | yes | `ruleId`, `kind`, `subject`, `effect`, `previousEffect`, `note`, `requestId` |
 | `remote.delivery.refused` | async, throttled (R-CUR-004) | — | no | `path`, `package`, `version`, `reason`, `kind` |
 | `remote.request.created`, `.allowed`, `.declined`, `.withdrawn` | transactional | — | yes | `requestId`, `name`, `version`, `reason` (declined) |
-| `remote.download.started`, `.retried`, `.cancelled` | transactional | — | no | the level, the subject, the bulk, the count, the row |
+| `remote.download.started`, `.retried`, `.cancelled` | transactional | — | no | the level, the subject, the bulk, the sync, the count, the row |
+| `remote.sync.created`, `.paused`, `.resumed`, `.deleted` | transactional | — | no | `sync`, `level`, `subject`, `bounds` (R-CUR-027) |
 | `remote.examination.discarded` | transactional | `revocation` | no | `name`, `version`, `files`, `cause` (`person`, `retention`, `declined`) |
 
-- Every event names the repository by its ID and qualified name; the actor is the person, or a system subject for the task.
+- Every event names the repository by its ID and qualified name; the actor is the person, or a system subject for the task
+  (`system:download-sync` for a run of a sync the dispatch starts, R-CUR-027).
 - The Bastion's feed classifies every new journaled event (R-BAS-015): `remote.examination.discarded` yields none (what it removes was
   never delivered, so a Bastion holds none of it); the new parts of `repository.narrowed` are `content` as every part is.
 
@@ -1516,6 +1531,8 @@ Priority: **P1** · Covers: SEC-032
 | `quader_remote_downloads_total` | `repo`, `origin`, `outcome` | ends of queue runs (`completed`, `bounded`, `refused`, `skipped`, `failed`, `cancelled`) and the decisions on probes (`off`, `stored`, `active`, `queue_full`, `limited`, `busy`, `not_admitted`) |
 | `quader_remote_downloads` | `repo`, `state` | rows by state (gauge, read by the dispatch task every minute) |
 | `quader_remote_download_failures_total` | `repo`, `class` | failed attempts |
+| `quader_remote_download_sync_runs_total` | `repo`, `outcome` | looks at due syncs and **Run now** (`started`, `overlapped`, `limited`, `bounded`, `disabled`, `paused`; R-CUR-027) |
+| `quader_remote_download_syncs` | `repo`, `state` | syncs by state, `active` or `paused` (gauge, read by the dispatch task every minute) |
 | `quader_remote_catalogue_requests_total` | `repo`, `call`, `outcome` | catalogue calls (`ok`, `cached`, `budget`, `upstream_error`, `not_offered`, `too_large`, `shape`) |
 | `quader_remote_catalogue_seconds` | `call` | duration of a catalogue call (histogram) |
 | `quader_remote_delivery_requests_open` | `repo` | open request entries (gauge; specified, not built) |
@@ -1540,6 +1557,10 @@ remote:
     examinedRetentionDays: 30       # default (proposed); 1 to 365
   mirror:
     include: ["@acme/*"]            # example; default (proposed) []: everything the rules deliver
+  syncs:                            # R-CUR-027
+    intervalSeconds: 3600           # default; 300 to 2592000, the time from one run of a sync to its next
+    paused: false                   # default; true: no sync of the repository starts a run
+    maxBytes: null                  # default; at least 1048576: the folded bytes at which its syncs start no run
 ```
 
 The installation's keys ([remote_curation.go](../../internal/config/remote_curation.go), [jobs.go](../../internal/config/jobs.go),
@@ -1571,6 +1592,7 @@ proxy:
     done_retention: 168h                      # default; at least 1h
     failed_retention: 720h                    # default; at least 1h
     client_failures_per_repository: 1000      # default; 1 to 100000
+    max_syncs_per_repository: 100             # default; 1 to 10000, downloads kept in sync per repository (R-CUR-027)
 jobs:
   workers:
     downloads: 4                              # default; the queue downloads
@@ -1591,7 +1613,7 @@ Priority: **P1** · Covers: quader-only
   nothing a client is served (INV-3); the budgets use the cluster limiter and fall back to a share per replica without Valkey; the queue
   is rows, its runs jobs, so any `worker` replica runs a row and a drained worker releases its job, whose row the dispatch task finds
   `running` with a job that ended and sets `waiting` without counting the attempt (as the job framework does not count a release).
-- **Backups and restores.** The rules, requests, askers, the queue and its bulks are export class `data`. A restore to a point *t*
+- **Backups and restores.** The rules, requests, askers, the queue and its bulks, and the syncs (R-CUR-027) are export class `data`. A restore to a point *t*
   replays the journal's narrowings after *t* (R-CUR-006, R-REPO-061) and the discards (R-CUR-016); it sets every `running` row `waiting`.
   `repositories.delivery_rules_revision` is a client-held revision and is raised as R-BAK-022 raises every one, so no filtered document
   rendered under rules after *t* is answered `304` under the restored ones. A Debian remote's `deb_remote_descriptions` are its cache rows,
@@ -1602,7 +1624,9 @@ Priority: **P1** · Covers: quader-only
   [Q-REPO-376](repositories-and-proxy.md#q-repo-376--a-preset-the-product-no-longer-offers-leaves-a-tombstone-without-content)): the purge
   removes its queue rows, its bulks and its examination rows, which are derived work, and the Debian descriptions with their index; it
   keeps its rules and its requests with their askers, which are people's decisions, as it keeps the repository's configuration
-  ([Q-CUR-111](#q-cur-111--the-purge-of-a-retired-repository-removes-its-queue-and-examinations-and-keeps-its-rules-and-requests)).
+  ([Q-CUR-111](#q-cur-111--the-purge-of-a-retired-repository-removes-its-queue-and-examinations-and-keeps-its-rules-and-requests)), and
+  its syncs, which then look `disabled` and run no more
+  ([Q-CUR-249](#q-cur-249--syncs-are-data-a-retired-repository-keeps-them-and-they-do-not-run)).
 
 ### R-CUR-022 · Tests and what they cost
 Priority: **P1** · Covers: quader-only
@@ -1637,6 +1661,124 @@ owner's word of 08:09):
 | Maven | `upstream`: Central's search service on its own host, declared by the preset | group IDs as path levels (directory listings of the repository) | `maven-metadata.xml` per artifact | `unknown` (a `HEAD` per file) | search by group and artifact; the group tree |
 | Helm (classic) | `index`: `index.yaml` of the repository | none | the index's entries | `unknown` | search over chart names and descriptions |
 | RubyGems | `upstream`: `api/v1/search.json` | none | `/info/<gem>` | `unknown` | search, versions |
+
+### R-CUR-027 · Downloads kept in sync
+Priority: **P1** · Covers: RMT-027
+
+The owner's task of 2026-11-25 (working paper W-28): "Wir brauchen einen Weg um einen Regelmäßigen sync einzurichten und dass auch mit
+bestimmten Versionen." and "es muss auch möglich sein, einen sync einzuschalten bei dem wir regelmäßig und automatisch erneut
+syncronisieren aber auch hier wieder.. ggf. AB einer bestimmten Version, oder bis zu einer bestimmten Version."
+
+- **A sync** ([Q-CUR-240](#q-cur-240--a-sync-is-a-stored-bulk-the-dispatch-starts-again)) is the stored definition of a bulk of R-CUR-010
+  (the level `package` or `section`, the subject, `fromVersion`, `toVersion`, `toInclusive`, `maxVersions` as "the newest so many",
+  `maxBytes`, `includePrereleases`) that the task `remote-downloads-dispatch` starts again as a bulk of the origin `sync` every
+  `remote.syncs.intervalSeconds` of its repository (one interval per repository, 3,600 s by default,
+  [Q-CUR-242](#q-cur-242--one-interval-per-repository-a-run-starts-at-its-time-or-once-its-previous-run-ended)). There is no second engine
+  beside the bulk's: a run is a bulk, expanded and run as every bulk is, and the mirror stays as it is (R-CUR-017).
+- **When a run starts.** The dispatch looks at each sync whose `next_run_at` came, at most 100 per run, each in a transaction of its own
+  that holds its repository's lock (Q-CUR-82), and starts its run unless, in this order: the repository is gone (nothing is written);
+  it is disabled, offline or no longer remote (`disabled`); `remote.syncs.paused` holds (`paused`); the rows of the sync's previous run
+  have not all ended (`overlapped`: it looks again at the next dispatch, so a run starts at its time or once its previous run ended,
+  whichever is later); the upstream's limit holds the queue (R-CUR-011, `limited`: it looks again at the limit's time); the repository's
+  folded bytes reach `remote.syncs.maxBytes` (`bounded`, [Q-CUR-246](#q-cur-246--a-repositorys-syncs-stop-at-a-byte-bound-of-their-own)).
+  Every other outcome, `started` among them, looks again an interval later. The sync keeps `last_run_at`, `next_run_at` and the outcome
+  of the last look. A changed interval applies from the next look on.
+- **What a run stores** ([Q-CUR-243](#q-cur-243--a-sync-stores-only-what-the-rules-deliver)): only what the rules deliver. Its expansion
+  leaves out the versions they refuse (counted as the run's `versionsRefused`), and its rows' fills ask them, so a rule changed between
+  the two holds; a one-time download keeps storing for examination (R-CUR-014). A run leaves out the versions the repository stores as
+  version rows (`package_versions`, compared in the format's canonical form), whose content does not change; an OCI tag, which is a cache
+  entry and no version row, is queued again: its row revalidates the tag (a `HEAD` the registry does not count as a pull), and a tag that
+  moved is fetched with its new image, the earlier one staying
+  ([Q-CUR-244](#q-cur-244--a-syncs-run-leaves-out-what-is-stored-as-a-version-row-an-oci-tag-is-queued-again),
+  [Q-CUR-245](#q-cur-245--a-moved-tag-is-fetched-again-the-earlier-image-stays)). A sync removes nothing.
+- **What a run without news costs the upstream** (measured by the counting stubs, below): one read of the package's versions per sync and
+  run (npm: one request of the package document, conditional where the stored one has a validator), and for OCI one `HEAD` of the
+  manifest of every tag the run takes, beside the read of the tags; nothing is fetched.
+- **Who** ([Q-CUR-241](#q-cur-241--the-holders-of-manage-set-up-syncs-at-most-100-per-repository)): the holders of `manage` and the system
+  role `admin` set up, pause, resume, run and remove a sync, at most `proxy.downloads.max_syncs_per_repository` (100) per repository; one
+  sync per subject ([Q-CUR-248](#q-cur-248--a-sync-is-not-edited-one-sync-per-subject)). The interval, the pause of every sync and the
+  byte bound are configuration (R-CUR-005). A run is system work (Q-CUR-17), charged to no one; a person's **Run now** names the person
+  as its starter and the event's actor.
+- **The API** (below `/api/v1/projects/{projectKey}/repositories/{repoKey}`, tag `remote-curation`):
+
+  | Method and path | What | Answers |
+  |---|---|---|
+  | `GET download-syncs?cursor=&limit=` | the syncs, newest first; `read` | `200`, cursor paging: `{"items", "nextCursor", "intervalSeconds", "paused", "maxSyncs"}`; each item `{"id", "level", "subject", "bounds", "state": "active" \| "paused", "nextRunAt" (null while paused), "lastRunAt", "lastOutcome", "lastBulk": <bulk> \| null, "createdBy", "createdAt"}` |
+  | `POST download-syncs` | the body of `POST downloads` with the level `package` or `section`; the first run starts at once | `201` `{"sync", "bulk"}`; `409 already_synced` naming the sync of the same subject (`sync`); `422 too_many_syncs`; `422 validation_failed` at `/level` for the level `version`; the range's refusals of R-CUR-010; `400 catalogue_not_offered` |
+  | `POST download-syncs/{syncId}/run` | a run now (**Run now**) | `202` `{"sync", "bulk"}`; `409 sync_running` naming the previous run (`bulk`) while its rows wait or run |
+  | `POST download-syncs/{syncId}/pause`, `…/resume` | | `200` with the sync |
+  | `DELETE download-syncs/{syncId}` | removes the sync; a run in progress goes on as a bulk | `204` |
+
+  The preview (`POST downloads/preview`) answers `sync`, what keeping the package or the sub-section in sync would do: `versions` (what
+  the first run would queue: the counted versions the rules deliver that are not stored as version rows; `null` where nothing is
+  counted), `delivered` (the rules deliver the package or a version of it; false means a sync would store nothing), the repository's
+  `intervalSeconds` and `paused`, and `existing`, the sync the subject has already. A sync is not edited: it is removed and set up again
+  (Q-CUR-248).
+- **The screens** ([Q-CUR-250](#q-cur-250--the-tab-downloads-lists-the-syncs-over-the-bulks-the-bulk-dialog-offers-once-and-keep-in-sync)):
+  the preview of a bulk offers **Once** and **Keep in sync**; with a sync chosen it says under the choice "Quader downloads what is new
+  every 6 hours, the interval of this repository. A sync stores only what the rules deliver and removes nothing." (the interval in the
+  words a person reads: "every hour", "every 6 hours", "every day"), counts the **First run**, and says instead of setting one up that the
+  repository does not deliver the package or that it is kept in sync already; the start button reads **Keep in sync**. The tab
+  **Downloads** shows **Kept in sync** above **Bulk downloads** once the repository has a sync: what it keeps (the package or the
+  sub-section, the range, the newest so many, who set it up), its last run (its word, "Downloading 2 new", "Nothing new", or **Waits** and
+  **Not run** with why under it: "Its previous run has not ended yet.", "Docker Hub limits how often Quader may ask it."; its time,
+  what it left out and **Show the run**), its next run or
+  **Paused**, and the row's menu **Run now**, **Pause** or **Resume**, **Remove…** for those who may (R-UI-163). The section reads itself
+  again while it is seen (R-UI-213): every 5 s while a run of a sync is in progress, every 30 s otherwise. The settings' closed section
+  **Kept in sync** (`#syncs`) holds the interval in minutes, **Pause every sync of this repository** and **Stop at this many GiB stored**.
+- **Audit and metrics** (R-CUR-019): `remote.sync.created`, `.paused`, `.resumed`, `.deleted` (transactional, no webhook, no journal); every
+  run's `remote.download.started` with the member `sync`, the actor `system:download-sync` for a run the dispatch starts and the person for
+  a set-up's first run and **Run now**; `quader_remote_download_sync_runs_total{repo,outcome}` (`started`, `overlapped`, `limited`,
+  `bounded`, `disabled`, `paused`), `quader_remote_download_syncs{repo,state}` (`active`, `paused`); the rows count under `origin="sync"`
+  in `quader_remote_downloads_total`.
+- **Storage** (migration 00130): `remote_download_syncs` (export class `data`, kept by the purge of a retired repository with its row,
+  [Q-CUR-249](#q-cur-249--syncs-are-data-a-retired-repository-keeps-them-and-they-do-not-run)), `remote_download_bulks.sync_id` (null for
+  another bulk and once its sync is removed) and `versions_refused`, and the origin `sync` in the checks of the bulks, the rows and the
+  top bar's finished downloads.
+
+  ```sql
+  CREATE TABLE remote_download_syncs (
+    id                  uuid        PRIMARY KEY,                      -- UUIDv7
+    repo_id             bigint      NOT NULL REFERENCES repositories (id) ON DELETE CASCADE,
+    level               text        NOT NULL CHECK (level IN ('package', 'section')),
+    subject             text        NOT NULL CHECK (char_length(subject) BETWEEN 1 AND 1024),
+    max_versions        integer     NOT NULL CHECK (max_versions >= 1),
+    max_bytes           bigint      NOT NULL CHECK (max_bytes >= 1),
+    include_prereleases boolean     NOT NULL,
+    from_version        text        NULL,                             -- the range of 00129, canonical; NULL is no bound
+    to_version          text        NULL,
+    to_inclusive        boolean     NOT NULL DEFAULT true,
+    paused              boolean     NOT NULL DEFAULT false,
+    next_run_at         timestamptz NOT NULL,
+    last_run_at         timestamptz NULL,
+    last_outcome        text        NULL CHECK (last_outcome IN ('started', 'overlapped', 'limited', 'bounded', 'disabled', 'paused')),
+    created_by          uuid        NULL REFERENCES principal (id) ON DELETE SET NULL,
+    created_at          timestamptz NOT NULL DEFAULT now()
+  );
+  CREATE UNIQUE INDEX remote_download_syncs_subject ON remote_download_syncs (repo_id, level, subject);
+  CREATE INDEX remote_download_syncs_due ON remote_download_syncs (next_run_at) WHERE NOT paused;
+  ```
+
+Acceptance criteria:
+
+- Unit (`internal/remotecuration/queue`, milliseconds, the store in memory and a fixed clock):
+  `TestR_CUR_027_ADueSyncStartsABulkOnceAtATime` (the first run at once, the next an interval later, overlapped, disabled, paused by the
+  repository, limited, bounded, a paused sync, Run now while the previous run runs, one sync per subject, `MaxSyncs`, the removal),
+  `TestR_CUR_027_ASyncsExpansionLeavesOutWhatIsStoredAndWhatIsNotDelivered` (and a person's bulk of the same leaves out nothing).
+- Integration (area `npm`, `TestR_CUR_027_ASyncRunsAgainAndStoresWhatIsNewAndDelivered`, about 4 s, three tarballs and one the stub
+  publishes; the test makes the sync due and runs the task through the system tasks' API): the first run stores the newest two; the
+  stub publishes two versions and a rule blocks one; the next run, started by the system, queues only the other and counts the blocked
+  one as refused, and the event names the actor `system:download-sync`; a run without news reads the package's document once and
+  fetches no tarball (measured 2026-11-25: one document request, nothing else); a Reader `403`, the same subject `409 already_synced`, one
+  version `422`, the third of `max_syncs_per_repository: 2` `422 too_many_syncs`, a pause, a removal whose runs stay as bulks. The
+  permissions live in this case rather than in the area `repository`, since the case's stack is up already.
+- Integration (area `ociremote`, `TestR_CUR_027_ASyncFetchesATagThatMovedAgain`, about 4 s, manifests of a few hundred bytes): a sync of
+  the range `1.0` to `1.0`; a run of an unchanged tag costs one `HEAD` of its manifest and no `GET` or blob (measured: two requests in
+  all, the tags list and the `HEAD`); the stub moves `1.0` to a new manifest; the next run stores it with its layers, the tag's entry names
+  it, and the first manifest stays.
+- Web unit (`remote-downloads.spec.ts`, `remote-upstream.spec.ts`, `download-words.spec.ts`, about 1 s): **Once** and **Keep in sync**,
+  the first run, the interval's words, a package not delivered and one kept in sync already; the section's states, its menu, its live
+  reads and a failed read.
 
 ## Changes to other pages
 
@@ -3437,6 +3579,169 @@ R-CUR-018 (the preview). Code: `DownloadPreviewDialog` and `rangeErrorText` in
 takes a range of versions…` ([remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts)), the
 state `download-preview-range-refused` ([repositories.states.spec.ts](../../web/src/app/features/repositories/repositories.states.spec.ts)).
 
+### Q-CUR-240 · A sync is a stored bulk the dispatch starts again
+
+Status: **Decided by the owner on 2026-11-25** (working paper W-28, d3 = a).
+
+Context: the owner asked for a regular, automatic sync of a package, from a version or up to one. The download queue already expands a
+bulk with a range (R-CUR-010, Q-CUR-190) and runs its rows; the mirror (R-CUR-017) keeps a whole scope current with a pass engine of its
+own, in the mode `mirror` only, configured by `repositories:write-config`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A sync is the stored definition of a bulk, which the task `remote-downloads-dispatch` starts again as a bulk of the origin `sync` (chosen) | A table of syncs and a step of the dispatch | One engine: the bulk's range, bounds, rate limit, retries and tab; works for a pull-through remote | A run re-reads the package's versions every interval |
+| (b) The mirror engine with entries per package | Bounds per `remote.mirror.include` entry | The mirror's discovery | Needs the mode `mirror`, `repositories:write-config`, and the tab Downloads shows nothing of it |
+| (c) The mirror as it is | Nothing built | — | No sync of one package with a range |
+
+**Choice:** (a), the owner's. **Applied in the spec:** R-CUR-027, R-CUR-011 (`origin`, `sync_id`), R-CUR-012, R-CUR-018. Code:
+[sync.go](../../internal/remotecuration/queue/sync.go) (`CreateSync`, `RunSync`, `startSyncs`), [dispatch.go](../../internal/remotecuration/queue/dispatch.go),
+[00130_remote_download_syncs.sql](../../internal/meta/postgres/migrations/00130_remote_download_syncs.sql).
+
+### Q-CUR-241 · The holders of manage set up syncs, at most 100 per repository
+
+Status: **Decided by the owner on 2026-11-25** (working paper W-28, d4 = a).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The holders of `manage` and `admin`, as they start a bulk, bounded by `proxy.downloads.max_syncs_per_repository` (100) and the repository's interval (chosen) | `mayKeepInSync`; the bound in the set-up's transaction | A Maintainer who downloads a package once can keep it current | 100 syncs of a repository each read their package every interval |
+| (b) Only `repositories:write-config` | Configuration | The installation decides what repeats | A Maintainer asks an administrator for every package |
+
+**Choice:** (a), the owner's. **Applied in the spec:** R-CUR-005, R-CUR-020, R-CUR-027. Code: `mayKeepInSync` in
+[download_syncs_api.go](../../internal/api/v1/download_syncs_api.go), `CreateSync` (`TooManySyncsError`).
+
+### Q-CUR-242 · One interval per repository; a run starts at its time or once its previous run ended
+
+Status: **Decided by the development agent** in working paper W-28; the owner did not object to it on 2026-11-25 (one interval per
+repository). The default of an hour and what an overlap does are the development agent's (2026-11-25).
+
+Context: a run of a large section can outlast the interval; a slow upstream or its limit holds rows for hours. The mirror's interval
+defaults to an hour, and the paper's sketch shown to the owner said "every hour".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `remote.syncs.intervalSeconds` of the repository, 3,600 by default, 300 to 2,592,000; a look that finds the previous run's rows active looks again at the next dispatch, so the run starts at its time or once the previous ended, whichever is later (chosen) | One field per repository | Two runs of a sync never overlap; a slow upstream loses no run, it starts late | A sync cannot have an interval of its own |
+| (b) Skip the run while the previous one runs | — | Simple | A slow upstream skips runs and falls behind for a whole interval |
+| (c) An interval per sync | A member of the sync | Flexible | A field the plain path does not need (R-UI-067); 100 schedules per repository |
+
+**Choice:** (a). **Rationale:** an hour is what the owner was shown and what the mirror does; an overlap waits one dispatch at a time.
+A changed interval applies from the next look, which keeps the stored `next_run_at` honest. The development agent would revisit (c) if
+one repository needs a package hourly and another daily. **Applied in the spec:** R-CUR-020, R-CUR-027, R-REPO-024. Code:
+`SyncSettings` in [remote.go](../../internal/repository/remote.go), `syncCheck` and `overlapAgain` in
+[sync.go](../../internal/remotecuration/queue/sync.go).
+
+### Q-CUR-243 · A sync stores only what the rules deliver
+
+Status: **Decided by the development agent** in working paper W-28; the owner did not object to it on 2026-11-25. It revises Q-CUR-147 for
+the origin `sync`.
+
+Context: a row of the queue stores whatever the rules say, for examination (R-CUR-014, Q-CUR-147). A sync repeats without a person
+looking at it; storing what is not delivered every interval would fill the cache with examination nobody asked for.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The expansion leaves out the versions the rules refuse and counts them; the row's fill asks the rules for the origin `sync` (chosen) | `Options.Decider` in the queue; `fillPath` asks the rules for a sync's row | A rule changed between the expansion and the fill holds; nothing is stored for examination unasked | Two decisions per version |
+| (b) Only the expansion filters | — | One decision | A block written after the expansion is fetched anyway |
+
+**Choice:** (a). The preview's `sync.delivered` says when the package is not delivered at all, and the dialog says so instead of setting
+up a sync that stores nothing. **Applied in the spec:** R-CUR-014 stays; R-CUR-027. Code: `filterOf` in
+[sync.go](../../internal/remotecuration/queue/sync.go), `expand` in [bulk.go](../../internal/remotecuration/queue/bulk.go), `fillPath` and
+`admitted` in [mirror_host.go](../../internal/formathost/mirror_host.go).
+
+### Q-CUR-244 · A sync's run leaves out what is stored as a version row; an OCI tag is queued again
+
+Status: **Decided by the development agent** (2026-11-25) — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a repeated bulk re-plans every version: each row's run reads the package document again (one conditional request per version
+and run for npm, NuGet, Ansible Galaxy). A version row's content does not change once stored; an OCI tag is a cache entry that can move.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The repository's live `package_versions` of the package mark what is fixed; the run leaves those out, compared in the format's canonical form, and queues the rest (chosen) | One statement per package and step (`RemoteDownloadFixedVersions`) and the composition root's canon | No contract change; OCI's tags are no version rows, so they are queued and revalidated; a run without news costs one document read | A version stored and then trashed is fetched again |
+| (b) A catalog fact `MovableVersions` per format | A format declares which versions move | Explicit | A contract change for one bit the data already says |
+| (c) Queue everything | — | Simple | One conditional request per version and run |
+
+**Choice:** (a). **Rationale:** the stored rows already say what is fixed. Measured by the counting stubs (2026-11-25): an npm run
+without news asks one package document, an OCI run of an unchanged tag the tags list and one `HEAD`. **Applied in the spec:** R-CUR-027.
+Code: `SyncRepositories.Fixed` (`syncRepositories` in [wire_remote_downloads.go](../../internal/app/wire_remote_downloads.go)),
+`RemoteDownloadFixedVersions` in [remote_downloads.sql](../../internal/meta/postgres/queries/remote_downloads.sql).
+
+### Q-CUR-245 · A moved tag is fetched again; the earlier image stays
+
+Status: **Decided by the development agent** in working paper W-28; the owner did not object to "a sync removes nothing" on 2026-11-25.
+
+Context: a tag's row revalidates the tag with a `HEAD` and compares its digest (`oci/remote_revalidate.go`); a moved tag names a manifest
+the cache does not hold.
+
+**Choice:** the row's run fetches the new image and its layers, and the tag's entry names it; the earlier manifest and its layers stay,
+since a sync removes nothing. The space they take is the retention's (R-STOR-045, not built: H-2031). **Applied in the spec:** R-CUR-027.
+Test: `TestR_CUR_027_ASyncFetchesATagThatMovedAgain`.
+
+### Q-CUR-246 · A repository's syncs stop at a byte bound of their own
+
+Status: **Decided by the development agent** (2026-11-25) — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: no repository-wide byte bound applies to queue work (quotas, R-STOR-029, are not built: H-506); `remote.mirror.maxBytes` is the
+mirror's, frozen for an Owner (Q-REPO-142).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `remote.syncs.maxBytes`, none by default, against the repository's folded counter (R-STOR-003) at each look (chosen) | One member and one read | A repository that keeps many packages current can be bounded | The counter lags a fold; a run started under the bound may cross it by its own `maxBytes` |
+| (b) None until the quotas | — | Nothing new | Nothing bounds a hundred syncs |
+| (c) Reuse `remote.mirror.maxBytes` | — | One field | The mirror's field, in effect in the mode `mirror` only |
+
+**Choice:** (a). **Applied in the spec:** R-CUR-020, R-CUR-027. Code: `syncCheck` (`StoredBytes`) in
+[sync.go](../../internal/remotecuration/queue/sync.go), `RemoteDownloadSyncUsage`.
+
+### Q-CUR-247 · A sync's bulks and rows carry the origin sync, ranked with a bulk's
+
+Status: **Decided by the development agent** (2026-11-25) — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The origin `sync` for the bulk and its rows, run after a person's and a request's rows as a bulk's are (chosen) | CHECKs of 00130, `originRank` | The fill tells a sync's row from a person's bulk (Q-CUR-243); the tab and the top bar say **Sync** | One more origin in every list of origins |
+| (b) Keep `bulk` | — | No new origin | The fill cannot tell that it must ask the rules |
+
+**Choice:** (a). **Applied in the spec:** R-CUR-011, R-CUR-012, R-CUR-018, R-OPS-049, R-UI-211. Code: `OriginSync` in
+[contracts.go](../../internal/remotecuration/contracts.go), `originRank` and `RowOrigin` in [queue.go](../../internal/remotecuration/queue/queue.go).
+
+### Q-CUR-248 · A sync is not edited; one sync per subject
+
+Status: **Decided by the development agent** (2026-11-25) — selected from the options below; the owner reviews it at the walkthrough.
+
+**Choice:** a sync is paused, resumed, run and removed; to change its bounds it is removed and set up again from the preview, which shows
+what the new one would fetch. One sync per level and subject (`remote_download_syncs_subject`); a second answers `409 already_synced`
+with the first, and the preview says so before. **Rationale:** an edit form would repeat the preview without its counts. The development
+agent would revisit an edit once a person keeps many syncs whose bounds change often.
+
+### Q-CUR-249 · Syncs are data; a retired repository keeps them and they do not run
+
+Status: **Decided by the development agent** (2026-11-25) — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Export class `data`; the purge of a retired well-known repository keeps them with its row, as it keeps the rules (Q-CUR-111); a retired repository's sync looks `disabled` (chosen) | `tables.Data`; the conventions' list of kept tables | A person's decision survives a restore and a retirement | A retired repository's syncs stay listed |
+| (b) Purge them | — | Nothing stays | A decision is lost with the content |
+
+**Choice:** (a). A restore keeps the syncs of the restore point; the next dispatch starts the ones whose time came. **Applied in the
+spec:** R-CUR-021. Code: [tables_remote_curation.go](../../internal/meta/postgres/tables_remote_curation.go).
+
+### Q-CUR-250 · The tab Downloads lists the syncs over the bulks; the bulk dialog offers Once and Keep in sync
+
+Status: **Decided by the development agent** (2026-11-25) — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The preview of a bulk offers **Once** and **Keep in sync**; the tab Downloads shows **Kept in sync** above **Bulk downloads** once the repository has a sync, with a row menu; the interval, the pause and the bound are a closed section of the settings (chosen) | One dialog, one section, one settings section | The person decides after seeing what it would fetch; the plain path is unchanged (R-UI-067) | A sync is set up only from a package's or a section's preview |
+| (b) A page of its own for syncs | — | Room | A second place for the same act |
+
+**Choice:** (a). The sentence of the interval is a unit per unit of time ("every hour", "every 6 hours", "every day", in days or
+minutes), so no word is put into another language's sentence (Q-UI-1219). The section is a component of its own
+(`DownloadSyncs`) with its own live read, which the tab's **Pause automatic refresh** pauses as well. **Applied in the spec:** R-CUR-018,
+R-CUR-027. Code: [download-preview-dialog.ts](../../web/src/app/features/repositories/upstream/download-preview-dialog.ts),
+[download-syncs.ts](../../web/src/app/features/repositories/downloads/download-syncs.ts),
+[repository-syncs.ts](../../web/src/app/features/repositories/repository-syncs.ts), `syncIntervalSentence` in
+[download-words.ts](../../web/src/app/features/repositories/downloads/download-words.ts).
+
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 
 Status: **Decided by the development agent** — selected from the options below while building the download queue (R4); the owner reviews
@@ -3869,6 +4174,9 @@ more expensively than its plan.
   page's mechanisms, on its security page.
 - [H-1975](#h-1975--the-rows-latest-and-the-opened-packages-latest-tag-come-from-two-answers): the column **Latest** and the badge
   `latest` of an opened npm package read two answers of the registry.
+- [H-2030](#h-2030--a-syncs-reads-of-the-upstream-have-no-budget-over-time) to
+  [H-2034](#h-2034--a-dispatch-without-the-remote-engine-does-not-see-that-a-repository-is-offline): the gaps of the downloads kept in
+  sync (R-CUR-027).
 - The conditions of a curation policy and their wizard (SEC-009 to SEC-011), curation across sites (SEC-040, REPL-061).
 - Rules of a local or a virtual repository.
 - PyPI and every other format that does not exist (R-CUR-023).
@@ -3882,6 +4190,42 @@ documents. A hit's **Latest** is the version the registry's search answers (`pac
 the badge `latest` on an opened package's row is its document's dist-tag; the search's index is the registry's own and not the
 document, so the two can name different versions for as long as the index lags, and the screen does not say which is newer. A row of a
 level (an npm scope) has no **Latest** at all. What makes it real: a publish followed at once by a search for the package.
+
+### H-2030 · A sync's reads of the upstream have no budget over time
+
+Component: the expansion of a sync's run (R-CUR-027), which reads through the worker's upstream as every bulk's does
+(`downloadUpstream` with no row), not through the catalogue engine. Subject: an upstream that a repository with many syncs asks. Live,
+bounded. What bounds it: the interval of the repository (at least five minutes), `proxy.downloads.max_syncs_per_repository` (100), one run
+of a sync at a time, the queue's running rows (`per_repository`) and the upstream's own limit, which holds the queue (R-CUR-011); a run
+without news costs one read of the package's versions (and for OCI a `HEAD` per tag it takes). It does not spend
+`proxy.catalogue.requests_per_minute`, so 100 syncs of a section at the shortest interval are about 100 reads of the upstream every five
+minutes plus what a section's levels page. What makes it real: an upstream whose anonymous budget is smaller than that.
+
+### H-2031 · A moved tag's earlier images stay
+
+Component: a sync of an OCI image (Q-CUR-245). Subject: the storage of a repository that keeps a moving tag in sync. Live. A run that
+finds a tag moved stores the new image beside the old one; a sync removes nothing, and the retention of what no tag names (R-STOR-045) is
+not built. A tag that moves every interval adds an image every interval. What makes it real: a sync of `latest`-like version tags that a
+publisher rebuilds, for weeks.
+
+### H-2032 · A lowered interval applies from each sync's next look
+
+Component: `remote.syncs.intervalSeconds` (Q-CUR-242). Subject: a configuration writer who shortens the interval. Live. Every look stores
+the next time from the interval in force; a sync whose next run lies a day ahead keeps that time after the interval was lowered to an
+hour, until its next look. **Run now** starts a run at once. What makes it real: an interval lowered from days to hours.
+
+### H-2033 · The byte bound of the syncs is read at a look
+
+Component: `remote.syncs.maxBytes` (Q-CUR-246). Subject: the storage of a repository with a bound. Live. The bound is compared with the
+folded counter (R-STOR-003) when a run would start, not while it runs: a run started below it stores up to its own `maxBytes`, and the
+counter lags its fold. What makes it real: a bound close to the repository's size and runs of large versions.
+
+### H-2034 · A dispatch without the remote engine does not see that a repository is offline
+
+Component: the look of the dispatch at a due sync (R-CUR-027). Subject: an offline remote (R-REPO-030). Dormant: the task runs on the
+queue `maintenance`, which a `worker` claims, and a worker builds the remote engine. A process that runs the task without it (a role
+that claims the queue `maintenance` and builds no engine) treats the repository as online: the run starts, its expansion fails or its
+rows end `skipped`, and the sync's last outcome reads `started`. What makes it real: such a role running the maintenance queue.
 
 ### H-1884 · An account that lifts an upstream's limit is offered only where the preset says so
 

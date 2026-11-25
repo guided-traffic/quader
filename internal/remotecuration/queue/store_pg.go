@@ -311,7 +311,7 @@ func (t *pgTx) InsertBulk(ctx context.Context, b Bulk) (Bulk, error) {
 	if b.ID == "" {
 		b.ID = uuid.Must(uuid.NewV7()).String()
 	}
-	if b.RowOrigin() != remotecuration.OriginBulk {
+	if o := b.RowOrigin(); o != remotecuration.OriginBulk && o != remotecuration.OriginSync {
 		ticket := ""
 		if len(b.Ticket) > 0 && string(b.Ticket) != "null" {
 			ticket = string(b.Ticket)
@@ -326,10 +326,14 @@ func (t *pgTx) InsertBulk(ctx context.Context, b Bulk) (Bulk, error) {
 		}
 		return decodeBulk(doc)
 	}
+	origin := remotecuration.OriginBulk
+	if b.Origin == remotecuration.OriginSync {
+		origin = remotecuration.OriginSync
+	}
 	doc, err := t.qs.RemoteDownloadBulkInsert(ctx, q.RemoteDownloadBulkInsertParams{
 		ID: b.ID, RepoID: b.RepoID, Level: string(b.Level), Subject: b.Subject, MaxVersions: int32(b.MaxVersions), //nolint:gosec // bounded by the configuration
 		MaxBytes: b.MaxBytes, IncludePrereleases: b.IncludePrereleases, StartedBy: b.StartedBy,
-		FromVersion: b.FromVersion, ToVersion: b.ToVersion, ToInclusive: b.ToInclusive,
+		FromVersion: b.FromVersion, ToVersion: b.ToVersion, ToInclusive: b.ToInclusive, Origin: string(origin), SyncID: b.SyncID,
 	})
 	if err != nil {
 		return Bulk{}, err
@@ -353,7 +357,8 @@ func (t *pgTx) UpdateBulk(ctx context.Context, b Bulk) error {
 	}
 	_, err = t.qs.RemoteDownloadBulkUpdate(ctx, q.RemoteDownloadBulkUpdateParams{
 		ID: b.ID, State: string(b.State), VersionsFound: int32(b.VersionsFound), VersionsQueued: int32(b.VersionsQueued), //nolint:gosec // bounded by max_versions
-		Cursor: string(b.Cursor), Failure: failure,
+		VersionsRefused: int32(b.VersionsRefused), //nolint:gosec // bounded by max_versions
+		Cursor:          string(b.Cursor), Failure: failure,
 	})
 	return err
 }

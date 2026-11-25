@@ -838,6 +838,20 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
+## Downloads kept in sync (00130)
+
+[00130_remote_download_syncs](../../internal/meta/postgres/migrations/00130_remote_download_syncs.sql) adds `remote_download_syncs`, the
+stored definition of a bulk that the task `remote-downloads-dispatch` starts again every `remote.syncs.intervalSeconds` of its repository
+([remote-curation.md](../spec/remote-curation.md) R-CUR-027, Q-CUR-240): the level, the subject, the bounds and the range of 00129,
+`paused`, `next_run_at` (the due index `remote_download_syncs_due` holds the unpaused ones), `last_run_at`, `last_outcome` and who set it
+up; one sync per level and subject (`remote_download_syncs_subject`). `remote_download_bulks` gains `sync_id` (the run's sync, set NULL
+when the sync is removed, so a run in progress stays as a bulk) and `versions_refused` (the versions a run left out as not delivered),
+and the origin `sync` joins the CHECKs of `remote_download_bulks.origin`, `remote_download.origin` and
+`upstream_download_finished.queue_origin` (Q-CUR-247). The table is export class `data` and kept by the purge of a retired repository
+(Q-CUR-249; the conventions' list of kept tables). Expand phase only. The statements are `RemoteDownloadSync*`, `RemoteDownloadFixedVersions`
+(a package's live version rows, which a run leaves out, Q-CUR-244) and `RemoteDownloadSyncUsage` (the folded counter, Q-CUR-246) in
+[remote_downloads.sql](../../internal/meta/postgres/queries/remote_downloads.sql).
+
 ## A bulk download keeps its range of versions (00129)
 
 [00129_remote_download_bulk_range](../../internal/meta/postgres/migrations/00129_remote_download_bulk_range.sql) adds a package's range

@@ -36,4 +36,5 @@ type ProxyDownloads struct {
 	DoneRetention               time.Duration `yaml:"done_retention" default:"168h" validate:"min=1h" doc:"How long a done or cancelled row stays after it finished (R-CUR-011)."`
 	FailedRetention             time.Duration `yaml:"failed_retention" default:"720h" validate:"min=1h" doc:"How long a failed row stays after it finished (R-CUR-011)."`
 	ClientFailuresPerRepository int           `yaml:"client_failures_per_repository" default:"1000" validate:"min=1,max=100000" doc:"Rows of clients' failed fetches per repository; beyond it the oldest is removed (R-CUR-011, Q-CUR-19)."`
+	MaxSyncsPerRepository       int           `yaml:"max_syncs_per_repository" default:"100" validate:"min=1,max=10000" doc:"Downloads kept in sync per repository; one more answers 422 too_many_syncs (R-CUR-027). Each runs every remote.syncs.intervalSeconds of its repository."`
 }

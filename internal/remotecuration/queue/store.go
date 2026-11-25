@@ -57,6 +57,8 @@ type Tx interface {
 	PutLimit(ctx context.Context, l Limit) error
 	// ClearLimit removes the repository's limit.
 	ClearLimit(ctx context.Context, repoID int64) error
+	// SyncTx is what a transaction does with the syncs (R-CUR-027).
+	SyncTx
 	// Meta is the transaction for a statement of another package (the audit event of the act); nil in memory.
 	Meta() meta.Tx
 }
@@ -80,6 +82,35 @@ type Reader interface {
 	Waiting(ctx context.Context, repoID int64) (int, error)
 	// Limit reads the upstream's rate limit of a repository; found is false for none (Q-CUR-170).
 	Limit(ctx context.Context, repoID int64) (l Limit, found bool, err error)
+	// ListSyncs returns one page of a repository's syncs, newest first, with the newest run of each by the sync's ID and the counts of
+	// that run's rows by state, by the bulk's ID (R-CUR-027).
+	ListSyncs(ctx context.Context, f BulkFilter) ([]Sync, map[string]Bulk, map[string]map[string]int64, error)
+	// GetSync reads one sync of a repository with its newest run (found false for none) and that run's rows by state.
+	GetSync(ctx context.Context, repoID int64, id string) (Sync, *Bulk, map[string]int64, bool, error)
+}
+
+// SyncTx is what one transaction of the queue does with the syncs (remote_download_syncs, R-CUR-027).
+type SyncTx interface {
+	// InsertSync adds a sync; created is false when the repository has a sync of the subject already.
+	InsertSync(ctx context.Context, s Sync) (out Sync, created bool, err error)
+	// SyncOfSubject reads the sync of a subject; found is false for none.
+	SyncOfSubject(ctx context.Context, repoID int64, level Level, subject string) (Sync, bool, error)
+	// SyncCount is the count of a repository's syncs.
+	SyncCount(ctx context.Context, repoID int64) (int, error)
+	// LockSync reads one sync of a repository, locked; found is false for none.
+	LockSync(ctx context.Context, repoID int64, id string) (Sync, bool, error)
+	// LockDueSync reads a sync whose next run came, locked; false when another transaction holds it, it is paused or not due.
+	LockDueSync(ctx context.Context, id string, now time.Time) (Sync, bool, error)
+	// SyncRan writes what a look at a sync did: now, the next run's time and the outcome.
+	SyncRan(ctx context.Context, id string, now, next time.Time, outcome SyncOutcome) error
+	// SetSyncPaused pauses or resumes a sync; found is false for none.
+	SetSyncPaused(ctx context.Context, repoID int64, id string, paused bool) (Sync, bool, error)
+	// DeleteSync removes a sync; its runs stay as bulks.
+	DeleteSync(ctx context.Context, repoID int64, id string) error
+	// LastRun reads the newest run of a sync; found is false for none.
+	LastRun(ctx context.Context, syncID string) (Bulk, bool, error)
+	// StoredBytes are the repository's folded bytes (R-STOR-003), which remote.syncs.maxBytes bounds (Q-CUR-246).
+	StoredBytes(ctx context.Context, repoID int64) (int64, error)
 }
 
 // Maintenance is what the dispatch task does outside a repository's start.
@@ -100,6 +131,10 @@ type Maintenance interface {
 	ClientFailure(ctx context.Context, r Row, file string, trim int) error
 	// PruneLimits removes the limits that ended before now of the repositories that have no waiting or running row left.
 	PruneLimits(ctx context.Context, now time.Time) (int64, error)
+	// DueSyncs are the syncs whose next run came, at most 100, the longest due first (R-CUR-027).
+	DueSyncs(ctx context.Context, now time.Time) ([]Sync, error)
+	// SyncGauge are the syncs by repository and state (active, paused).
+	SyncGauge(ctx context.Context) ([]GaugeRow, error)
 }
 
 // Filter selects a page of the list (R-CUR-012).

@@ -93,6 +93,13 @@ For Maintainers, Owners and administrators the tab adds:
   (an image's `latest` or `main`) lies outside every range, and the preview says how many it leaves out. The range is applied first,
   then **Include pre-releases**, then **At most this many versions** (the newest of the range) and the size. The tab **Downloads**
   says the range on the bulk's line ("From 5.0.0 up to 5.4.7").
+- Both previews also offer **Keep in sync** beside **Once**: Quader downloads what the bounds take now and then, at every interval of
+  the repository (every hour unless its settings say otherwise), what is new. The preview then counts the **First run** and says the
+  interval in words. A sync stores only what the rules deliver, so the preview says so instead of setting one up when the repository does
+  not deliver the package; it leaves out the versions the repository has stored already, and it removes nothing. An image's tag is
+  checked at every run (one quick request to the registry), and a tag the publisher moved is downloaded again; the earlier image stays.
+  Keeping a package from a version on ("from 5.0.0") keeps every newer version of it current; **Keep this many of the newest versions**
+  keeps only the newest so many.
 - **Rules** lists the repository's rules with their notes, adds a rule for a sub-section, and removes rules.
 
 A reader who may fetch a version through the repository sees **Download** on a delivered version too; it is charged to their download
@@ -136,6 +143,12 @@ a cache while it is being built and to find out why a client's fetch failed.
   started; on the downloads of clients and probes if you may fetch that version through the repository; and on every row if you are a
   Maintainer or Owner of the project or an administrator, who also see **Retry all failed**, which retries every failed download of the
   kind **Failure** shows.
+- **Kept in sync**, above the bulk downloads once the repository keeps something in sync, lists each package or sub-section with its
+  range and how many of the newest versions it keeps, who set it up, its last run ("Downloading 2 new", "Nothing new", or **Waits** or
+  **Not run** with the reason under it, such as "Docker Hub limits how often Quader may ask it.") with **Show the run**, and when it runs next, or
+  **Paused**. Maintainers, Owners and administrators have a menu per row: **Run now**, **Pause** or **Resume**, **Remove…** (what was
+  stored stays). A sync is not edited: remove it and set it up again from the preview. A run of a sync is a bulk download, listed under
+  **Bulk downloads** as "A run of a sync" and its rows with the origin **Sync**.
 - **Bulk downloads**, above the filters once the repository has one, lists its bulk downloads, newest first: what each downloads, who
   started it and when, its state (**Finding versions** while Quader reads the upstream's list of versions, **Queued** while its rows
   wait or run, **Done**, **Stopped at a bound**, **Cancelled**, **Failed**), how many versions it queued of those it found, and its

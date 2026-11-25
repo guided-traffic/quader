@@ -273,6 +273,15 @@
             [failure]="deliveryFailure()"
             (save)="saveDelivery($event)"
           />
+          <!-- The interval, the pause and the byte bound of the downloads kept in sync (R-CUR-027): a closed section; the syncs are
+               the tab Downloads'. -->
+          <quader-repository-syncs
+            [stored]="repo.remote?.syncs"
+            [canChange]="canChange()"
+            [saving]="syncsSaving()"
+            [failure]="syncsFailure()"
+            (save)="saveSyncs($event)"
+          />
         }
         <!-- <<< T-24 delivery -->
 
