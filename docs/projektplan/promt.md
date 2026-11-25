@@ -255,7 +255,7 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 
 | Package | What it closes | State |
 |---|---|---|
-| S1 · A screen says a server's failure in its own language | the thirteen screens of section 8, Product ("Thirteen more screens show a server's English text as their own"), from the kept diff `.dev/server-sentences-full-scope.diff`, which no longer applies to `main` as it is | landed and pushed at 07:40 (one commit; R-UI-214, Q-UI-1080; its builder worked from 06:17 to 07:18; the landing's gates on its own worktree, each exit 0: build, vet, the whole unit run, lint, the documents' checks, the web's lint, tests, translation check and layout fixtures; two of its pictures looked at by the development agent) |
+| S1 · A screen says a server's failure in its own language | the thirteen screens of section 8, Product ("Thirteen more screens show a server's English text as their own"), from the kept diff `.dev/server-sentences-full-scope.diff`, which no longer applies to `main` as it is | landed and pushed at 07:28 (one commit, Test and Release 45560824204; R-UI-214, Q-UI-1080; its builder worked from 06:17 to 07:18; the landing's gates on its own worktree, each exit 0: build, vet, the whole unit run, lint, the documents' checks, the web's lint, tests, translation check and layout fixtures; two of its pictures looked at by the development agent) |
 | S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:17 |
 | M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847) | landed and pushed at 07:14 (eight commits, Test and Release 45559185462; its builder worked from 06:17 to 07:12, every gate exit 0); what it measured and changed is below |
 | S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | in work since 06:40 |
@@ -835,6 +835,14 @@ order is what a user or an operator meets first. The state is kept here.
   the others, so its pulls count against the account. Not started again: a re-run meets the same limit. Open: whether
   another job pulls without the account (the run of the repair shows it), and the profile's queue, which takes each new
   hour's 100 pulls as long as its 206 rows wait (the owner's test; S3 changes what a limited queue does).
+  **The other job that pulled without the account, read at 07:51:** `e2e (push)` of the repair's run (45559612705, job
+  139022372346) ended at `make dev-up` after 25 minutes: the kind nodes pull the operators' images themselves
+  (`guidedtraffic/internal-secrets-operator`, `guidedtraffic/valkey-operator`), without a credential, and the cluster state
+  holds four "429 Too Many Requests". Every kind leg meets it while the address is limited. **Repaired at 07:55:** `up.sh`
+  gives every node's kubelet the host's Docker Hub entry where the host's Docker stores one (`node_registry_credentials`;
+  `docs/developer/e2e.md`). Not run on a cluster before the push: a developer's machine keeps no secret in the file, so only
+  the pipeline's legs show it; the first leg's log line "the nodes pull from Docker Hub with the account" and its operators
+  coming up are what to read. `SBOM generator` was green in that run with its login.
 
 - **Two red jobs of R5b's push (2026-11-24; Test and Release 45324445298, read at 06:25):** `UI layout checks`: the
   renders `repository-npm-remote-upstream` as power and admin ended with eight `cramped` findings at 1440 px (the
@@ -975,7 +983,7 @@ records the recorder that tells such a stall apart).
   without signatures" ("no connection of this replica holds a present copy") for manifests the bulk had just stored.
   Given to a builder at 06:40 (package S3 of section 1), for every format's upstream.
 
-- **Closed on 2026-11-25, 07:40, by S1 (R-UI-214, Q-UI-1080):** each of the eleven groups says the server's failure,
+- **Closed on 2026-11-25, 07:28, by S1 (R-UI-214, Q-UI-1080):** each of the eleven groups says the server's failure,
   warning or note in the screen's language from a code the server sends (87 codes, English and German), and the server's
   own text folds under one shared "Technical details" (`web/src/app/shared/technical-details.ts`, which the download
   queue's failures use too); Valkey's reasons got a code of their own (`reasonCode`), since the kept diff had taken free
