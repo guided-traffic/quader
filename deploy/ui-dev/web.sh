@@ -19,6 +19,13 @@ case "${UI_LOCALE:-}" in
   *) echo "UI_LOCALE=$UI_LOCALE: empty (English) or de" >&2; exit 1 ;;
 esac
 cd "$root/web"
+# The packages are installed again when the lock file is newer than the last install: a checkout that took a new dependency by a merge
+# kept its old node_modules, the dev server's build failed on the missing package, and the browser went on showing the bundle of
+# before without a sign (seen 2026-11-25).
+if [ ! -f node_modules/.package-lock.json ] || [ package-lock.json -nt node_modules/.package-lock.json ]; then
+  echo "web: package-lock.json is newer than node_modules; npm ci" >&2
+  npm ci
+fi
 # exec: the ng process itself, so that a TERM (renders.sh stops what it started) reaches it.
 NODE_EXTRA_CA_CERTS="$certs/ca.crt" QUADER_UI_DEV_BACKEND="https://localhost:$UI_BACKEND_PORT" \
   exec node_modules/.bin/ng serve --configuration "local${UI_LOCALE:+,$UI_LOCALE}" --port "$UI_WEB_PORT" --ssl-cert "$certs/server.crt" --ssl-key "$certs/server.key" "$@"
