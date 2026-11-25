@@ -258,7 +258,7 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 | S1 · A screen says a server's failure in its own language | the thirteen screens of section 8, Product ("Thirteen more screens show a server's English text as their own"), from the kept diff `.dev/server-sentences-full-scope.diff`, which no longer applies to `main` as it is | landed and pushed at 07:28 (one commit, Test and Release 45560824204; R-UI-214, Q-UI-1080; its builder worked from 06:17 to 07:18; the landing's gates on its own worktree, each exit 0: build, vet, the whole unit run, lint, the documents' checks, the web's lint, tests, translation check and layout fixtures; two of its pictures looked at by the development agent) |
 | S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:17 |
 | M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847) | landed and pushed at 07:14 (eight commits, Test and Release 45559185462; its builder worked from 06:17 to 07:12, every gate exit 0); what it measured and changed is below |
-| S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | in work since 06:40 |
+| S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | landed and pushed at 08:25 (two commits, migration 00120; Q-CUR-170 to Q-CUR-176, Q-UI-1100 to Q-UI-1104, gaps H-1880 to H-1884; its builder worked from 06:40 to 08:05; the landing's gates each exit 0; two of its pictures looked at by the development agent) |
 | S4 · One scrollbar per page | the owner's finding of 06:45 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | the plan is back at 07:12 (P2, 25 minutes, read-only; kept in the session's scratch directory as `p2-one-scrollbar-per-page-plan.md`): one package, see below; a builder in M1's place since 07:16 |
 | S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | the plan is back at 07:20 (P3, 27 minutes, read-only; kept as `.dev/plans/p3-one-row-per-image-newest-first-plan.md` of the main checkout, not in git): two packages in order, S5a the server and S5b the screens, see below; S5a when a place is free |
 | S6 · "Not scanned" says why and what comes | the owner's finding of 06:55 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | in work since 07:19, in S1's place |
@@ -977,7 +977,31 @@ records the recorder that tells such a stall apart).
   "Vulnerabilities" stands over a size and "Updated" over "not scanned". A planner reads every scroll region of the web
   application and cuts the package (P2, since 06:47); the builder follows when a place is free (S4 of section 1).
 
-- **A download queue that an upstream's rate limit stops reads as running, and the overview reads as done (owner,
+- **Closed on 2026-11-25, 08:25, by S3 (R-CUR-011, R-CUR-018, R-UI-211; Q-CUR-170 to Q-CUR-176, Q-UI-1100 to
+  Q-UI-1104):** **the cause:** without a time from the upstream the run's back-off is capped at 300 s and a run ended only
+  on a wait above 300 s, so a run at a limit never ended; each of the four rows held its job until the 30-minute bound,
+  would have ended failed, and the next four would have started into the same limit. **Now, in the shared engine and so
+  for every format:** a wait of at most 10 s is waited out, a longer one ends the attempt; the row goes back to waiting,
+  the attempt is not counted, and one row of `remote_download_limits` (migration 00120) holds the repository's queue until
+  the upstream's own time (at most 6 h) or a back-off of its own up to an hour, after which one row runs first; no row
+  starts and no bulk expands meanwhile, so the queue stops using up the limit of its address. The tab says it in a
+  sentence above the list, on each waiting row ("Rate limit until 06:47") and on the bulk's line, with the upstream's
+  answer and its limit headers under "Technical details"; the administrators' overview has a section "Waiting for an
+  upstream (n)" above Running, with the count, the upstream and the time. The tab reads through `live()`, every 5 s while
+  something runs, every 30 s otherwise, never hidden. **The warnings of the signatures' detector were a defect of every
+  first pull by a tag, a client's too:** the alias's commit hook read the manifest through the object store on another
+  connection before its copy was committed, so an image's attestation entries and a referrer's subject were lost; the
+  link keeps the fill's spool now (`TestR_SIG_004_TheHookOfAnAliasReadsTheDocumentItsFillStored`, which fails without it
+  with the log's own error). **Three points change what the owner chose and were told to him:** a limit's answer is no
+  longer one of the five attempts; the tab reads every 30 s at rest; the overview names the upstream. Left open by its
+  builder: the German render pass of the overview's walk fails on the check `english` of S1, by a seeded project
+  description behind the drawer (not in the pipeline; S2's German pass meets it); whether Docker Hub's answers carry the
+  header that names the address was not asked of Docker Hub; gaps H-1880 to H-1884 (the queue and a mirror pass meet a
+  limit separately, a probe sends up to five requests into it, a client's fetch still asks a limited upstream, readers of
+  the queue see the quota left, no hint that an account lifts a limit). **Seen by the development agent on its pictures
+  and open:** the links of the overview's drawer ("Show in queue", a repository's name) stand in the browser's default
+  colours and underline, not in the style of the product's links (so on `main` since T-26, also in the owner's picture
+  of 06:31). As it stood: **A download queue that an upstream's rate limit stops reads as running, and the overview reads as done (owner,
   2026-11-25, 06:31, on the UI profile; his words: "Ich glaube der Download ist fertig aber das UI für Downloads spiegelt
   das nicht. Running & Waiting haben noch Pillen die auf ausstehende Downloads hinweisen. Bitte einmal prüfen. Ich will
   niergends F5 drücken müssen."):** the bulk of every version of `guidedtraffic/s3-encryption-proxy` (315) on the remote
