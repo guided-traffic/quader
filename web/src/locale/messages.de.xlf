@@ -28393,7 +28393,7 @@
     <unit id="upstream.auth.basic">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:240</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:720</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:702</note>
         <note category="location">src/app/features/upstream/upstream-account.ts:15</note>
       </notes>
       <segment>
@@ -28404,7 +28404,7 @@
     <unit id="upstream.auth.bearer">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:242</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:722</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:704</note>
         <note category="location">src/app/features/upstream/upstream-account.ts:16</note>
       </notes>
       <segment>
@@ -29831,7 +29831,7 @@
     <unit id="upstream.password.stored">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:240,242</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:678</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:673</note>
       </notes>
       <segment>
         <source>A password is stored and is not shown. Leave the field empty to keep it; type one to replace it.</source>
@@ -30101,68 +30101,9 @@
         <target>Die Zugangsdaten gehen an <ph id="0" equiv="hosts" disp="list"/>.</target>
       </segment>
     </unit>
-    <unit id="upstream.test.unreachable">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:672</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:321</note>
-      </notes>
-      <segment>
-        <source>The upstream could not be reached.</source>
-        <target>Der Upstream war nicht erreichbar.</target>
-      </segment>
-    </unit>
-    <unit id="upstream.test.token-foreign">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:674</note>
-      </notes>
-      <segment>
-        <source>The upstream answered, and its login is on a host this repository may not reach.</source>
-        <target>Der Upstream hat geantwortet, und seine Anmeldung liegt auf einem Host, den dieses Repository nicht erreichen darf.</target>
-      </segment>
-    </unit>
-    <unit id="upstream.test.denied">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:676</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:322</note>
-      </notes>
-      <segment>
-        <source>The upstream answered and refused the credentials.</source>
-        <target>Der Upstream hat geantwortet und die Zugangsdaten abgelehnt.</target>
-      </segment>
-    </unit>
-    <unit id="upstream.test.ok-credentials">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:678</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:323</note>
-      </notes>
-      <segment>
-        <source>The upstream answered and accepted the credentials.</source>
-        <target>Der Upstream hat geantwortet und die Zugangsdaten akzeptiert.</target>
-      </segment>
-    </unit>
-    <unit id="upstream.test.ok">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:680</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:324</note>
-      </notes>
-      <segment>
-        <source>The upstream answered.</source>
-        <target>Der Upstream hat geantwortet.</target>
-      </segment>
-    </unit>
-    <unit id="upstream.test.answered-error">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:682</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:325</note>
-      </notes>
-      <segment>
-        <source>The upstream answered with an error.</source>
-        <target>Der Upstream hat mit einem Fehler geantwortet.</target>
-      </segment>
-    </unit>
     <unit id="upstream.test.token-not-allowed">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:711</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:693</note>
       </notes>
       <segment>
         <source>not allowed for this repository</source>
@@ -30171,7 +30112,7 @@
     </unit>
     <unit id="upstream.test.token-credential">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:713</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:695</note>
       </notes>
       <segment>
         <source>allowed, receives the credential</source>
@@ -30180,7 +30121,7 @@
     </unit>
     <unit id="upstream.test.token-no-credential">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:714</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:696</note>
       </notes>
       <segment>
         <source>allowed, receives no credential</source>
@@ -30189,7 +30130,7 @@
     </unit>
     <unit id="upstream.auth.none">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:724</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:706</note>
         <note category="location">src/app/features/upstream/upstream-account.ts:14</note>
       </notes>
       <segment>
@@ -30197,9 +30138,108 @@
         <target>Keine</target>
       </segment>
     </unit>
+    <unit id="upstream.test.ok-credentials">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:39</note>
+      </notes>
+      <segment>
+        <source>The upstream answered and accepted the credentials.</source>
+        <target>Der Upstream hat geantwortet und die Zugangsdaten akzeptiert.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.test.ok">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:41</note>
+      </notes>
+      <segment>
+        <source>The upstream answered.</source>
+        <target>Der Upstream hat geantwortet.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.test.login-asked">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:43</note>
+      </notes>
+      <segment>
+        <source>The registry answered and asks for a login at its token service. No credential was tested.</source>
+        <target>Die Registry hat geantwortet und verlangt eine Anmeldung bei ihrem Token-Dienst. Es wurden keine Zugangsdaten geprüft.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.test.credential-withheld">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:45</note>
+      </notes>
+      <segment>
+        <source>The registry answered and asks for a login at its token service, which does not receive the credential: the registry is used without it.</source>
+        <target>Die Registry hat geantwortet und verlangt eine Anmeldung bei ihrem Token-Dienst, der die Zugangsdaten nicht erhält: Die Registry wird ohne sie genutzt.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.test.denied">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:47</note>
+      </notes>
+      <segment>
+        <source>The upstream answered and refused the credentials.</source>
+        <target>Der Upstream hat geantwortet und die Zugangsdaten abgelehnt.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.test.login-required">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:49</note>
+      </notes>
+      <segment>
+        <source>The upstream answered and asks for a login, and no credential is set.</source>
+        <target>Der Upstream hat geantwortet und verlangt eine Anmeldung, aber es sind keine Zugangsdaten gesetzt.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.test.token-foreign">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:51</note>
+      </notes>
+      <segment>
+        <source>The upstream answered, and its login is on a host this repository may not reach.</source>
+        <target>Der Upstream hat geantwortet, und seine Anmeldung liegt auf einem Host, den dieses Repository nicht erreichen darf.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.test.token-failed">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:53</note>
+      </notes>
+      <segment>
+        <source>The upstream answered, and its token service failed.</source>
+        <target>Der Upstream hat geantwortet, aber sein Token-Dienst ist gescheitert.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.test.answered-error">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:55</note>
+      </notes>
+      <segment>
+        <source>The upstream answered with an error.</source>
+        <target>Der Upstream hat mit einem Fehler geantwortet.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.test.unreachable">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:57</note>
+      </notes>
+      <segment>
+        <source>The upstream could not be reached.</source>
+        <target>Der Upstream war nicht erreichbar.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.test.not-sent">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:59</note>
+      </notes>
+      <segment>
+        <source>No request was sent to the upstream.</source>
+        <target>Es wurde keine Anfrage an den Upstream gesendet.</target>
+      </segment>
+    </unit>
     <unit id="upstream.test.error.dns">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-test-words.ts:13</note>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:70</note>
       </notes>
       <segment>
         <source>The upstream&apos;s host name could not be resolved.</source>
@@ -30208,7 +30248,7 @@
     </unit>
     <unit id="upstream.test.error.refused">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-test-words.ts:15</note>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:72</note>
       </notes>
       <segment>
         <source>The upstream&apos;s host refused the connection.</source>
@@ -30217,7 +30257,7 @@
     </unit>
     <unit id="upstream.test.error.timeout">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-test-words.ts:17</note>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:74</note>
       </notes>
       <segment>
         <source>The upstream did not answer in time.</source>
@@ -30226,7 +30266,7 @@
     </unit>
     <unit id="upstream.test.error.tls">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-test-words.ts:19</note>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:76</note>
       </notes>
       <segment>
         <source>The upstream&apos;s certificate is not trusted by this installation.</source>
@@ -30235,7 +30275,7 @@
     </unit>
     <unit id="upstream.test.error.egress">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-test-words.ts:21</note>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:78</note>
       </notes>
       <segment>
         <source>This installation does not allow connections to the upstream&apos;s address.</source>
@@ -30244,7 +30284,7 @@
     </unit>
     <unit id="upstream.test.error.source-network">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-test-words.ts:23</note>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:80</note>
       </notes>
       <segment>
         <source>The replica that ran the test has no address in the repository&apos;s source network.</source>
@@ -30253,7 +30293,7 @@
     </unit>
     <unit id="upstream.test.error.secret">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-test-words.ts:25</note>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:82</note>
       </notes>
       <segment>
         <source>A secret of the upstream&apos;s settings, such as its password, could not be read on this replica. Enter it again.</source>
@@ -30262,7 +30302,7 @@
     </unit>
     <unit id="upstream.test.error.offline">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-test-words.ts:27</note>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:84</note>
       </notes>
       <segment>
         <source>The repository, or the whole installation, is set to offline, so no upstream is contacted.</source>
@@ -30271,7 +30311,7 @@
     </unit>
     <unit id="upstream.test.error.redirects">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-test-words.ts:29</note>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:86</note>
       </notes>
       <segment>
         <source>The upstream redirected too many times.</source>
@@ -30280,7 +30320,7 @@
     </unit>
     <unit id="upstream.test.error.insecure-redirect">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-test-words.ts:31</note>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:88</note>
       </notes>
       <segment>
         <source>The upstream redirected from https to plain http, which is not followed.</source>
@@ -30289,7 +30329,7 @@
     </unit>
     <unit id="upstream.test.error.request">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-test-words.ts:33</note>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:90</note>
       </notes>
       <segment>
         <source>The request to the upstream failed.</source>
@@ -30298,7 +30338,7 @@
     </unit>
     <unit id="upstream.test.error.foreign-host">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-test-words.ts:35</note>
+        <note category="location">src/app/features/repositories/upstream-test-words.ts:92</note>
       </notes>
       <segment>
         <source>The upstream sends its login to a host this repository may not reach.</source>
@@ -44629,7 +44669,7 @@
     </unit>
     <unit id="wellknown.address.held">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:521</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:516</note>
       </notes>
       <segment>
         <source>The account of this registry comes from the installation&apos;s configuration, so an address that sends it to other hosts is changed there too.</source>
@@ -44638,7 +44678,7 @@
     </unit>
     <unit id="wellknown.address.saved">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:534</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:529</note>
       </notes>
       <segment>
         <source>Address saved.</source>
@@ -44647,8 +44687,8 @@
     </unit>
     <unit id="wellknown.address.reset-done">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:550</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:568</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:545</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:563</note>
       </notes>
       <segment>
         <source>The address is Quader&apos;s again.</source>
@@ -44657,7 +44697,7 @@
     </unit>
     <unit id="wellknown.reset.title">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:561</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:556</note>
       </notes>
       <segment>
         <source>Reset the address and remove the account?</source>
@@ -44666,7 +44706,7 @@
     </unit>
     <unit id="wellknown.reset.text">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:562</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:557</note>
       </notes>
       <segment>
         <source>The account goes to <ph id="0" equiv="hosts" disp="hosts"/> only, and Quader&apos;s address uses other hosts. The reset removes it; enter it again afterwards if Quader&apos;s address needs one.</source>
@@ -44675,7 +44715,7 @@
     </unit>
     <unit id="wellknown.reset.confirm">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:563</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:558</note>
       </notes>
       <segment>
         <source>Reset and remove the account</source>
@@ -44684,7 +44724,7 @@
     </unit>
     <unit id="wellknown.account.saved">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:619</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:614</note>
       </notes>
       <segment>
         <source>Account saved.</source>
@@ -44693,7 +44733,7 @@
     </unit>
     <unit id="wellknown.account.removed">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:634</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:629</note>
       </notes>
       <segment>
         <source>Account removed.</source>
@@ -44702,7 +44742,7 @@
     </unit>
     <unit id="wellknown.listed.none">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:682</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:677</note>
       </notes>
       <segment>
         <source>No virtual repository lists it.</source>
@@ -44711,7 +44751,7 @@
     </unit>
     <unit id="wellknown.listed.one">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:683</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:678</note>
       </notes>
       <segment>
         <source>1 virtual repository lists it.</source>
@@ -44720,7 +44760,7 @@
     </unit>
     <unit id="wellknown.listed.many-one-project">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:685</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:680</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> virtual repositories in 1 project list it.</source>
@@ -44729,7 +44769,7 @@
     </unit>
     <unit id="wellknown.listed.many">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:686</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:681</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> virtual repositories in <ph id="1" equiv="projects" disp="projects"/> projects list it.</source>
@@ -44738,7 +44778,7 @@
     </unit>
     <unit id="wellknown.listed.other">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:692</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:687</note>
       </notes>
       <segment>
         <source>And 1 more virtual repository.</source>
@@ -44747,7 +44787,7 @@
     </unit>
     <unit id="wellknown.listed.others">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:693</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:688</note>
       </notes>
       <segment>
         <source>And <ph id="0" equiv="count" disp="n"/> more virtual repositories.</source>

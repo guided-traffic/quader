@@ -1662,15 +1662,22 @@ function upstreamWalk(preset: string | null, full: boolean): Screen['walk'] {
       await page.locator('#f-remote-password').fill('a-password-of-the-renders');
       yield 'preset-credentials';
       const answers: [string, Record<string, unknown>][] = [
-        ['test-accepted', testAnswer({ authenticated: true, tokenService: { host: 'gitlab.com', allowed: true, receivesCredential: true } })],
-        ['test-refused', testAnswer({ authenticated: false, tokenService: { host: 'gitlab.com', allowed: true, receivesCredential: true } })],
+        ['test-accepted', testAnswer({ verdict: 'accepted', authenticated: true, tokenService: { host: 'gitlab.com', allowed: true, receivesCredential: true } })],
+        ['test-refused', testAnswer({ verdict: 'refused', authenticated: false, tokenService: { host: 'gitlab.com', allowed: true, receivesCredential: true } })],
         [
           'test-unreachable',
-          testAnswer({ reachable: false, httpStatus: null, tls: null, error: { code: 'dns_error', message: 'The name registry.gitlab.com does not resolve.' } }),
+          testAnswer({
+            verdict: 'unreachable',
+            reachable: false,
+            httpStatus: null,
+            tls: null,
+            error: { code: 'dns_error', message: 'The name registry.gitlab.com does not resolve.' },
+          }),
         ],
         [
           'test-token-foreign',
           testAnswer({
+            verdict: 'token_service_denied',
             tokenService: { host: 'gitlab.example-company.com', allowed: false, receivesCredential: false },
             error: {
               code: 'foreign_host_denied',

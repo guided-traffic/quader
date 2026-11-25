@@ -29,7 +29,7 @@ import {
   upstreamTestBody,
 } from './upstream-model';
 import { controlIdOf, numberOrText } from './settings-schema';
-import { upstreamTestErrorText } from './upstream-test-words';
+import { upstreamTestErrorText, upstreamVerdictText, upstreamVerdictTone } from './upstream-test-words';
 
 /** The id of the section; a server error at a pointer of the upstream settings that has no control lands here. */
 export const UPSTREAM_SECTION_ID = 'f-remote-upstream';
@@ -289,8 +289,8 @@ export function upstreamPointerLabel(pointer: string): string | null {
           <quader-error-notice [error]="f" />
         }
         @if (outcome(); as o) {
-          <p class="verdict" [class.ok]="o.good" [class.warn]="!o.good" data-testid="upstream-test-result">
-            <span class="material-icons inline" aria-hidden="true">{{ o.good ? 'check_circle' : 'warning' }}</span>
+          <p class="verdict" [class.ok]="o.good" [class.warn]="o.tone === 'warn' || o.tone === 'error'" data-testid="upstream-test-result">
+            <span class="material-icons inline" aria-hidden="true">{{ o.good ? 'check_circle' : o.tone === 'info' ? 'info' : 'warning' }}</span>
             <strong>{{ o.summary }}</strong>
           </p>
           @if (foreignTokenHost(); as host) {
@@ -658,30 +658,12 @@ export class UpstreamSettings {
     return $localize`:@@upstream.credential-hosts:The credential is sent to ${list}:hosts:.`;
   });
 
-  /** The verdict in words, so that the state is not carried by colour alone (R-UI-044). */
+  /** The server's verdict in words, so that the state is not carried by colour alone (R-UI-044, Q-REPO-488): none from the status. */
   protected readonly outcome = computed(() => {
     const result = this.result();
     if (!result) return null;
-    const good =
-      result.reachable &&
-      result.error === null &&
-      result.authenticated !== false &&
-      (result.httpStatus === null || result.httpStatus < 400 || result.tokenService !== null);
-    let summary: string;
-    if (!result.reachable) {
-      summary = $localize`:@@upstream.test.unreachable:The upstream could not be reached.`;
-    } else if (result.error?.code === 'foreign_host_denied') {
-      summary = $localize`:@@upstream.test.token-foreign:The upstream answered, and its login is on a host this repository may not reach.`;
-    } else if (result.authenticated === false) {
-      summary = $localize`:@@upstream.test.denied:The upstream answered and refused the credentials.`;
-    } else if (result.authenticated === true && good) {
-      summary = $localize`:@@upstream.test.ok-credentials:The upstream answered and accepted the credentials.`;
-    } else if (good) {
-      summary = $localize`:@@upstream.test.ok:The upstream answered.`;
-    } else {
-      summary = $localize`:@@upstream.test.answered-error:The upstream answered with an error.`;
-    }
-    return { result, good, summary };
+    const tone = upstreamVerdictTone(result.verdict);
+    return { result, good: tone === 'ok', tone, summary: upstreamVerdictText(result.verdict) };
   });
 
   /** The host of a token service the repository may not reach, which the user may allow (R-UI-082, Q-UI-346). */

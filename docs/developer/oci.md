@@ -428,8 +428,9 @@ read handlers of the local class hand a request addressed to a remote repository
   queries). The upstream's `Link` does not reach the format, so the `Link` is Quader's: set whenever the stored list was cut or a pass-through page was used,
   and a page that is empty ends the list. When the upstream cannot be asked (`unreachable`: offline, the circuit open, a caller who may not fill) the stored
   window answers; referrers answer 404 (Q-OCI-128).
-- **The upstream test** requests `/v2/` at the root of the host (Q-REPO-281); a `401` with a Bearer challenge reads as reachable with `authenticated: null`
-  (`catalog.Facts.ProbeChallengeReachable`, Q-REPO-280), unless `authMode` is `bearer`. `Register` refuses the fact without the class remote, a probe path and a
+- **The upstream test** requests `/v2/` at the root of the host (Q-REPO-281); a `401` with a Bearer challenge is reachable, and the token service's answer is
+  the verdict on the credential (`catalog.Facts.ProbeChallengeReachable`, Q-REPO-280, R-REPO-064), unless `authMode` is `bearer`: `verdict` is `accepted`,
+  `refused` or, without a credential, `login_asked`, never an error (Q-REPO-488). `Register` refuses the fact without the class remote, a probe path and a
   remote adapter that implements `Authenticator`.
 - **A stood `401`.** `StoodMissing` (the optional `formats.StoodChallengeReader` of the `Authenticator`) reads a Bearer challenge with
   `error="insufficient_scope"` as a missing image: the engine answers it as a 404 with a negative entry and keeps the remembered challenge (Q-OCI-127).

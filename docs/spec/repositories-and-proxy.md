@@ -2524,6 +2524,7 @@ API, besides R-REPO-009 to R-REPO-013:
 
 ```json
 {
+  "verdict": "answered",
   "reachable": true,
   "httpStatus": 200,
   "authenticated": true,
@@ -2548,6 +2549,23 @@ egress rules, proxy and credentials that real fetches use (Q-REPO-90).
   (OCI, [Q-REPO-325](#q-repo-325--the-upstream-test-runs-a-registrys-login-for-a-typed-credential)), and `tokenService` names the
   challenge's token service (`null` without one); `tls` describes the leaf certificate of the host that answered and is
   `null` over plain `http`; `outboundProxy` is `null` until named proxies exist.
+- `verdict` is what the test concluded from everything it saw, made in one place on the server
+  ([Q-REPO-488](#q-repo-488--the-upstream-tests-answer-carries-its-verdict)); a reader says it and derives no verdict from
+  `httpStatus`, whose `401` is a registry's Bearer challenge as often as a refusal:
+
+  | `verdict` | When |
+  |---|---|
+  | `accepted` | The upstream answered below 400 to a request with the repository's credential, or its token service accepted the credential (R-REPO-064) |
+  | `answered` | The upstream answered below 400, and no credential took part |
+  | `login_asked` | A Bearer challenge names a token service the repository may reach, and the repository has no credential to judge |
+  | `credential_withheld` | The same, but the repository has a credential and the token service's host does not receive it |
+  | `refused` | The credential sent was refused: `401` or `403` of the upstream, or of its token service |
+  | `login_required` | `401` or `403` to a request without a credential and without a token handshake |
+  | `token_service_denied` | `foreign_host_denied` or `insecure_redirect` at the token service, which was not asked |
+  | `token_service_failed` | The token service failed (a transport failure) or answered without a verdict (`request_failed`) |
+  | `upstream_error` | Any other status from 400 on, or a challenge whose realm is no URL |
+  | `unreachable` | No answer: `dns_error`, `connection_refused`, `timeout`, `tls_untrusted`, `too_many_redirects`, `insecure_redirect`, `request_failed` |
+  | `not_sent` | The probe was not sent: `offline`, `egress_denied`, `source_network_unavailable`, `upstream_secret_unavailable` |
 - `error` is `null` or `{"code", "message"}` with one of `dns_error`, `connection_refused`,
   `timeout`, `tls_untrusted`, `egress_denied`, `source_network_unavailable`,
   `upstream_secret_unavailable`, `offline`, `too_many_redirects`, `insecure_redirect`,
@@ -2677,6 +2695,10 @@ challenge's realm ([Q-REPO-325](#q-repo-325--the-upstream-test-runs-a-registrys-
 - `reachable` stays `true` in every case above: the registry answered. A realm reached over `http` from an `https` upstream is
   `insecure_redirect` with `allowed: false`, and a transport failure at the realm is the code of that failure, naming its host.
 - `authMode: bearer` runs no handshake, as before (R-OCI-021), and `tokenService` is `null`.
+- The answer's `verdict` (R-REPO-024, [Q-REPO-488](#q-repo-488--the-upstream-tests-answer-carries-its-verdict)) reads these cases:
+  `accepted` for `authenticated: true`, `refused` for `false`, `login_asked` for `null` without a credential, `credential_withheld`
+  for `null` with a credential the host does not receive, `token_service_denied` for a host that is not allowed, and
+  `token_service_failed` for another answer or a transport failure at the token service. The registry's `401` is never an error.
 - Built in `Clients.tokenCheck` of [probe.go](../../internal/proxy/upstream/probe.go), with the client's `Allowed` and
   `CredentialHost`, so the host and credential rules are those of a pull.
 
@@ -10662,6 +10684,36 @@ reference lets any holder of `repositories:write-config` send a mounted file to 
 a client reads one code for one meaning.
 
 **Applied in the spec:** R-REPO-069, R-REPO-073; [security/data-and-secret-flow.md](../security/data-and-secret-flow.md) H-281.
+
+### Q-REPO-488 · The upstream test's answer carries its verdict
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner, 2026-11-25, on **Admin area › Upstream registries › Docker Hub** with an account from the Helm values: **Test connection**
+said "The upstream answered with an error." although the token service had accepted the account. The answer was `httpStatus: 401`,
+`authenticated: true` and an allowed `tokenService`; the page computed its own verdict from the status (`httpStatus < 400`), so the
+challenge's `401` read as an error. The repository's settings page had the same sentence built a second time with a different rule
+(it let any `401` with a token service pass), and a third reader of the API would have made a third.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The answer carries `verdict`, made by one function on the server from everything the test saw (chosen) | Every screen and every other reader of the API says the same; the screen maps a code to a sentence | The server alone knows whether a credential went with the probe and which host received it; one table-driven test over every case | A member of the answer (pre-alpha: no compatibility to keep) |
+| (b) One shared function of the UI | The screens agree | No API change | The API's other readers (a script, the CLI) derive it again; the UI cannot tell an anonymous `200` from an accepted credential |
+| (c) Fix both screens' rules | Smallest change | — | Two rules again, the defect's cause |
+
+**Choice:** (a). `verdict` is one of `accepted`, `answered`, `login_asked`, `credential_withheld`, `refused`, `login_required`,
+`token_service_denied`, `token_service_failed`, `upstream_error`, `unreachable` and `not_sent` (the table of R-REPO-024). A registry that
+answers with a Bearer challenge and has no account is `login_asked`, not an error: the registry works, and whether it lets one in
+without an account is not what the probe asks (R-REPO-064 sends no anonymous login). An anonymous `200` is `answered`; the
+screen no longer says "accepted the credentials" for a request that carried none. `authenticated` stays the raw fact it was.
+
+**Rationale:** the verdict needs a fact only the server has (whether the probe carried the credential), and a code in the answer is
+what R-ARCH-025 makes stable for every reader.
+
+**Applied in the spec:** R-REPO-024, R-REPO-064, [api-and-ui.md](api-and-ui.md) R-UI-082 and
+[Q-UI-1225](api-and-ui.md#q-ui-1225--a-test-says-the-servers-verdict-with-one-tone-table). Code: `verdict` in
+[verdict.go](../../internal/proxy/upstream/verdict.go). Tests: `TestR_REPO_024_TheVerdictOfTheUpstreamTest` (26 cases, pure, under a
+millisecond), the verdicts asserted in `TestR_REPO_064_TheUpstreamTestRunsTheRegistrysLogin` and `TestUpstreamTest`.
 
 ## What this does not cover
 

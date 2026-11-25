@@ -313,6 +313,29 @@ describe('An account the configuration declares on a well-known repository (R-UI
     await expectAccessible(root);
   });
 
+  it("R-UI-082 R-REPO-064 the registry's 401 with an account its token service accepted is a success, and without an account no error", async () => {
+    const tokenService = { host: 'auth.docker.io', allowed: true, receivesCredential: true };
+    const { fixture, root, api } = await render('docker-hub', {
+      setup: (a) => {
+        a.set('docker-hub', { account: configuredAccount('readable'), accountRaisesLimit: false });
+        a.testResult = { ...a.testResult, verdict: 'accepted', httpStatus: 401, authenticated: true, tokenService };
+      },
+    });
+    buttonByText(section(root), 'Test connection').click();
+    await settle(fixture);
+    const verdict = root.querySelector('.test-result .verdict')!;
+    expect(text(verdict)).toContain('The upstream answered and accepted the credentials.');
+    expect(text(verdict)).not.toContain('error');
+    expect(verdict.querySelector('.ok-icon')).not.toBeNull();
+
+    api.testResult = { ...api.testResult, verdict: 'login_asked', httpStatus: 401, authenticated: null, tokenService };
+    buttonByText(section(root), 'Test connection').click();
+    await settle(fixture);
+    expect(text(root.querySelector('.test-result .verdict')!)).toContain('The registry answered and asks for a login at its token service.');
+    expect(root.querySelector('.test-result .verdict .warn-icon')).toBeNull();
+    await expectAccessible(root);
+  });
+
   it('R-REPO-077 missing files warn that every request fails until the Secret exists; a configuration without the chart names no Secret', async () => {
     const { root } = await render('docker-hub', {
       setup: (a) => a.set('docker-hub', { account: configuredAccount('missing'), accountRaisesLimit: false }),

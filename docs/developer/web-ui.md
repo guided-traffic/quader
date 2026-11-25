@@ -973,8 +973,9 @@ order:
   `credentialLine` names every host the credential goes to (`credentialHosts`: the URL's host and the further hosts with `sendCredentials`), joined with
   `Intl.ListFormat` of `LOCALE_ID`. An emptied URL of a format with presets shows the default preset's again once left (`leaveUrl`, R-UI-084).
 - *Test connection.* `RepositoriesApi.testUpstream` posts `upstreamTestBody(form.upstream, format)`: the format and the section with the URL the repository would
-  use and the further hosts as shown, without a stored password. The result is a verdict sentence plus the facts of `UpstreamTestResult`, the token service
-  among them; any change of the form clears it. A result `foreign_host_denied` with a `tokenService` that is not allowed shows the host and **Allow <host>**
+  use and the further hosts as shown, without a stored password. The result is the server's `verdict` in words with its tone (`upstreamVerdictText`
+  and `upstreamVerdictTone` of [upstream-test-words.ts](../../web/src/app/features/repositories/upstream-test-words.ts), Q-UI-1225; no screen derives a
+  verdict from the status) plus the facts of `UpstreamTestResult`, the token service among them; any change of the form clears it. A result `foreign_host_denied` with a `tokenService` that is not allowed shows the host and **Allow <host>**
   (`allow`): the host becomes a further host, receiving the credential unless the authentication is none, and the test runs again.
 - *Upstream details.* A `btn-tertiary` toggle with `aria-expanded` and `aria-controls` over a `collapse-region`, closed at first and opened by the user or by a
   field error under `/remote/extraHosts`, `/remote/cache` or `/remote/availability` (`detailsOpen`, R-UI-083). It holds **Further hosts** (a row per host: the

@@ -124,6 +124,11 @@ R-REPO-064 (Q-REPO-325): `bearerParams` reads the realm and the service, `Client
 error text of the request, which repeats the URL. An offline repository and `proxy.global_offline` are not contacted. The test touches no
 circuit state: this package has no handle on it.
 
+Every result leaves through `concluded` of [verdict.go](../../internal/proxy/upstream/verdict.go), which sets `verdict` from the result and
+from whether the probe carried the repository's credential (the hop policy's header, which only this package knows): the one place that
+concludes a test (Q-REPO-488). A screen or another reader of the API says the verdict and derives none from `httpStatus`; a new case of the
+probe adds its row to `TestR_REPO_024_TheVerdictOfTheUpstreamTest`.
+
 ### Wiring
 
 [wire_proxy.go](../../internal/app/wire_proxy.go) builds `Clients` (the outbound factory, `repository.NewSecretStore`, the key ring, the cache

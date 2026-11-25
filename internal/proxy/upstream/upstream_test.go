@@ -937,7 +937,7 @@ func TestR_REPO_024_ABearerChallengeOfAHandshakeFormatIsReachable(t *testing.T) 
 	}
 	// A format without the fact reads a Basic or Bearer 401 as a refusal.
 	res = f.clients.TestSaved(t.Context(), handshake(102, "basic", "basicfmt"), settings(srv.URL+"/basic/", repository.AuthNone))
-	if !res.Reachable || res.Authenticated == nil || *res.Authenticated {
+	if !res.Reachable || res.Authenticated == nil || *res.Authenticated || res.Verdict != VerdictLoginRequired {
 		t.Fatalf("a Basic challenge is the refusal of a credential: %+v", res)
 	}
 	if len(asked) != 3 || asked[0] != "/v2/" || asked[1] != "/v2/" || asked[2] != "/basic/v2/" {
@@ -981,7 +981,8 @@ func TestUpstreamTest(t *testing.T) {
 
 	t.Run("R-REPO-024 the test of a reachable upstream reports the status, the certificate and the duration", func(t *testing.T) {
 		res := f.clients.TestSaved(t.Context(), repo(91, "npm-up", 1), settings(srv.URL+"/", repository.AuthNone))
-		if !res.Reachable || res.HTTPStatus == nil || *res.HTTPStatus != 200 || res.Authenticated == nil || !*res.Authenticated || res.Error != nil {
+		if !res.Reachable || res.HTTPStatus == nil || *res.HTTPStatus != 200 || res.Authenticated == nil || !*res.Authenticated || res.Error != nil ||
+			res.Verdict != VerdictAnswered {
 			t.Fatalf("result = %+v", res)
 		}
 		if res.TLS == nil || res.TLS.PeerSubject == "" || res.TLS.NotAfter.Before(time.Now()) || res.SourceAddress != nil || res.OutboundProxy != nil {
@@ -1031,19 +1032,19 @@ func TestUpstreamTest(t *testing.T) {
 		f.seal(93, "bad")
 		s := settings(locked.URL+"/", repository.AuthBearer)
 		res := f.clients.TestSaved(t.Context(), repo(93, "npm-locked", 1), s)
-		if !res.Reachable || *res.HTTPStatus != 401 || *res.Authenticated {
+		if !res.Reachable || *res.HTTPStatus != 401 || *res.Authenticated || res.Verdict != VerdictRefused {
 			t.Fatalf("result = %+v", res)
 		}
 		f.seal(93, "good")
 		res = f.clients.TestSaved(t.Context(), repo(93, "npm-locked", 2), s)
-		if !res.Reachable || *res.HTTPStatus != 200 || !*res.Authenticated {
+		if !res.Reachable || *res.HTTPStatus != 200 || !*res.Authenticated || res.Verdict != VerdictAccepted {
 			t.Fatalf("result = %+v", res)
 		}
 	})
 
 	t.Run("R-REPO-024 an unknown host reaches nothing and the error is a DNS error", func(t *testing.T) {
 		res := f.clients.TestSaved(t.Context(), repo(94, "npm-nx", 1), settings("https://registry.does-not-exist.invalid/", repository.AuthNone))
-		if res.Reachable || res.HTTPStatus != nil || res.Error == nil || res.Error.Code != "dns_error" {
+		if res.Reachable || res.HTTPStatus != nil || res.Error == nil || res.Error.Code != "dns_error" || res.Verdict != VerdictUnreachable {
 			t.Fatalf("result = %+v", res)
 		}
 		if strings.Contains(res.Error.Message, "https://") {
@@ -1053,7 +1054,8 @@ func TestUpstreamTest(t *testing.T) {
 
 	t.Run("R-REPO-038 http://169.254.169.254/ is egress_denied and nothing connects", func(t *testing.T) {
 		res := f.clients.TestSaved(t.Context(), repo(95, "npm-imds", 1), settings("http://169.254.169.254/latest/", repository.AuthNone))
-		if res.Reachable || res.Error == nil || res.Error.Code != "egress_denied" || !strings.Contains(res.Error.Message, "169.254.169.254") {
+		if res.Reachable || res.Error == nil || res.Error.Code != "egress_denied" || !strings.Contains(res.Error.Message, "169.254.169.254") ||
+			res.Verdict != VerdictNotSent {
 			t.Fatalf("result = %+v", res)
 		}
 	})
@@ -1124,7 +1126,7 @@ func TestUpstreamTest(t *testing.T) {
 		s := settings(srv.URL+"/", repository.AuthNone)
 		s.Availability.Mode = repository.AvailabilityOffline
 		res := f.clients.TestSaved(t.Context(), repo(101, "npm-off", 1), s)
-		if res.Reachable || res.Error == nil || res.Error.Code != "offline" {
+		if res.Reachable || res.Error == nil || res.Error.Code != "offline" || res.Verdict != VerdictNotSent {
 			t.Fatalf("offline: %+v", res)
 		}
 		g := newFixture(t, fixtureOpts{servers: []*httptest.Server{srv}, proxy: config.Proxy{GlobalOffline: true}})

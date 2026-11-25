@@ -2931,19 +2931,19 @@ func (e PackageDocGroupCategory) Valid() bool {
 
 // Defines values for PackageDocTreeReason.
 const (
-	InvalidDocument PackageDocTreeReason = "invalid_document"
-	TooLarge        PackageDocTreeReason = "too_large"
-	UpstreamError   PackageDocTreeReason = "upstream_error"
+	PackageDocTreeReasonInvalidDocument PackageDocTreeReason = "invalid_document"
+	PackageDocTreeReasonTooLarge        PackageDocTreeReason = "too_large"
+	PackageDocTreeReasonUpstreamError   PackageDocTreeReason = "upstream_error"
 )
 
 // Valid indicates whether the value is a known member of the PackageDocTreeReason enum.
 func (e PackageDocTreeReason) Valid() bool {
 	switch e {
-	case InvalidDocument:
+	case PackageDocTreeReasonInvalidDocument:
 		return true
-	case TooLarge:
+	case PackageDocTreeReasonTooLarge:
 		return true
-	case UpstreamError:
+	case PackageDocTreeReasonUpstreamError:
 		return true
 	default:
 		return false
@@ -5839,6 +5839,51 @@ func (e UpstreamTestResultErrorCode) Valid() bool {
 	case UpstreamTestResultErrorCodeTooManyRedirects:
 		return true
 	case UpstreamTestResultErrorCodeUpstreamSecretUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamTestResultVerdict.
+const (
+	UpstreamTestResultVerdictAccepted           UpstreamTestResultVerdict = "accepted"
+	UpstreamTestResultVerdictAnswered           UpstreamTestResultVerdict = "answered"
+	UpstreamTestResultVerdictCredentialWithheld UpstreamTestResultVerdict = "credential_withheld"
+	UpstreamTestResultVerdictLoginAsked         UpstreamTestResultVerdict = "login_asked"
+	UpstreamTestResultVerdictLoginRequired      UpstreamTestResultVerdict = "login_required"
+	UpstreamTestResultVerdictNotSent            UpstreamTestResultVerdict = "not_sent"
+	UpstreamTestResultVerdictRefused            UpstreamTestResultVerdict = "refused"
+	UpstreamTestResultVerdictTokenServiceDenied UpstreamTestResultVerdict = "token_service_denied"
+	UpstreamTestResultVerdictTokenServiceFailed UpstreamTestResultVerdict = "token_service_failed"
+	UpstreamTestResultVerdictUnreachable        UpstreamTestResultVerdict = "unreachable"
+	UpstreamTestResultVerdictUpstreamError      UpstreamTestResultVerdict = "upstream_error"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamTestResultVerdict enum.
+func (e UpstreamTestResultVerdict) Valid() bool {
+	switch e {
+	case UpstreamTestResultVerdictAccepted:
+		return true
+	case UpstreamTestResultVerdictAnswered:
+		return true
+	case UpstreamTestResultVerdictCredentialWithheld:
+		return true
+	case UpstreamTestResultVerdictLoginAsked:
+		return true
+	case UpstreamTestResultVerdictLoginRequired:
+		return true
+	case UpstreamTestResultVerdictNotSent:
+		return true
+	case UpstreamTestResultVerdictRefused:
+		return true
+	case UpstreamTestResultVerdictTokenServiceDenied:
+		return true
+	case UpstreamTestResultVerdictTokenServiceFailed:
+		return true
+	case UpstreamTestResultVerdictUnreachable:
+		return true
+	case UpstreamTestResultVerdictUpstreamError:
 		return true
 	default:
 		return false
@@ -17453,10 +17498,36 @@ type UpstreamTestResult struct {
 		Host               string `json:"host"`
 		ReceivesCredential bool   `json:"receivesCredential"`
 	} `json:"tokenService"`
+
+	// Verdict What the test concluded from everything it saw (Q-REPO-488). A reader says this and derives no verdict from
+	// `httpStatus`: the `401` of a registry's Bearer challenge is `accepted` when its token service accepted the account.
+	// `accepted`: the upstream answered and the credential sent was accepted, by the upstream or by its token service.
+	// `answered`: the upstream answered with success and no credential took part. `login_asked`: a registry answered with a
+	// Bearer challenge whose token service the repository may reach, and the repository has no credential to judge.
+	// `credential_withheld`: the same, but the token service's host does not receive the repository's credential.
+	// `refused`: the credential sent was refused. `login_required`: the upstream refused a request without a credential.
+	// `token_service_denied`: the token service is on a host the repository may not reach, or on plain http; it was not
+	// asked. `token_service_failed`: the token service failed or gave no verdict. `upstream_error`: the upstream answered
+	// with an error status of its own. `unreachable`: no answer came. `not_sent`: the probe was not sent (offline, the
+	// egress policy, the source network, a credential this replica cannot read).
+	Verdict UpstreamTestResultVerdict `json:"verdict"`
 }
 
 // UpstreamTestResultErrorCode defines model for UpstreamTestResult.Error.Code.
 type UpstreamTestResultErrorCode string
+
+// UpstreamTestResultVerdict What the test concluded from everything it saw (Q-REPO-488). A reader says this and derives no verdict from
+// `httpStatus`: the `401` of a registry's Bearer challenge is `accepted` when its token service accepted the account.
+// `accepted`: the upstream answered and the credential sent was accepted, by the upstream or by its token service.
+// `answered`: the upstream answered with success and no credential took part. `login_asked`: a registry answered with a
+// Bearer challenge whose token service the repository may reach, and the repository has no credential to judge.
+// `credential_withheld`: the same, but the token service's host does not receive the repository's credential.
+// `refused`: the credential sent was refused. `login_required`: the upstream refused a request without a credential.
+// `token_service_denied`: the token service is on a host the repository may not reach, or on plain http; it was not
+// asked. `token_service_failed`: the token service failed or gave no verdict. `upstream_error`: the upstream answered
+// with an error status of its own. `unreachable`: no answer came. `not_sent`: the probe was not sent (offline, the
+// egress policy, the source network, a credential this replica cannot read).
+type UpstreamTestResultVerdict string
 
 // UpstreamUnknownLevel Why a level lists nothing: the upstream does not have it (R-CUR-007, Q-CUR-165). `rule` and `forbidden` are set when the
 // level's name breaks the format's naming rule, which is certain, so that nothing asked the upstream for it; `suggestion` is a

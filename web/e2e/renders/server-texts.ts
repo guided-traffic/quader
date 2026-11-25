@@ -78,6 +78,7 @@ export async function* remoteSettingsFailures(page: Page): AsyncGenerator<string
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
+        verdict: 'unreachable',
         reachable: false,
         httpStatus: null,
         authenticated: null,
@@ -114,6 +115,7 @@ export async function* registryTestFailure(page: Page): AsyncGenerator<string> {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
+        verdict: 'unreachable',
         reachable: false,
         httpStatus: null,
         authenticated: null,

@@ -36,7 +36,7 @@ import { ScannerList, SystemApi } from '../../api/system-api';
 import { ScannerReplicas } from '../../shared/scanner/scanner-replicas';
 import { scannerGroup } from '../../shared/scanner/scanner-model';
 import { groupedFingerprint } from '../repositories/deb-signing-keys';
-import { upstreamTestErrorText } from '../repositories/upstream-test-words';
+import { upstreamTestErrorText, upstreamVerdictText, upstreamVerdictTone } from '../repositories/upstream-test-words';
 import { AccountAgainAnswer, AccountAgainData, AccountAgainDialog } from './account-again-dialog';
 import { AuthMode, HostRow, authOptions, credentialHostsOf, hostOf, sameHosts } from './upstream-account';
 import { UpstreamActions } from './upstream-actions';
@@ -313,17 +313,12 @@ export class UpstreamRegistry {
   protected readonly testResult = signal<UpstreamTestResult | null>(null);
   protected readonly testError = signal<ApiError | null>(null);
   protected readonly errorText = upstreamTestErrorText;
+  /** The server's verdict in words (Q-REPO-488): the screen derives none from the status. */
   protected readonly testSummary = computed(() => {
     const r = this.testResult();
     if (!r) return null;
-    const good = r.reachable && r.error === null && r.authenticated !== false && (r.httpStatus === null || r.httpStatus < 400);
-    let text: string;
-    if (!r.reachable) text = $localize`:@@upstream.test.unreachable:The upstream could not be reached.`;
-    else if (r.authenticated === false) text = $localize`:@@upstream.test.denied:The upstream answered and refused the credentials.`;
-    else if (r.authenticated === true && good) text = $localize`:@@upstream.test.ok-credentials:The upstream answered and accepted the credentials.`;
-    else if (good) text = $localize`:@@upstream.test.ok:The upstream answered.`;
-    else text = $localize`:@@upstream.test.answered-error:The upstream answered with an error.`;
-    return { good, text, error: r.error };
+    const tone = upstreamVerdictTone(r.verdict);
+    return { good: tone === 'ok', tone, text: upstreamVerdictText(r.verdict), error: r.error };
   });
 
   // ---- Details (R-UI-188 section 4) ----

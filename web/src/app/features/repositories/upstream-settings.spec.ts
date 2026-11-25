@@ -296,6 +296,7 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
       const r = await remoteStep([GENERIC_FORMAT, NPM], 'npm');
       const fake = r.get(RepositoriesApi) as FakeRepositoriesApi;
       fake.upstreamTestResult = sampleUpstreamTestResult({
+        verdict: 'unreachable',
         reachable: false,
         httpStatus: null,
         authenticated: null,
@@ -311,7 +312,7 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
       expect(facts(r.root.querySelector('.test-result')!)['Reason']).toContain("The upstream's host name could not be resolved.");
       expect(text(r.root.querySelector('.test-result [data-testid="technical-details"]')!)).toBe('npm.internal.example does not resolve dns_error');
 
-      fake.upstreamTestResult = sampleUpstreamTestResult({ httpStatus: 401, authenticated: false });
+      fake.upstreamTestResult = sampleUpstreamTestResult({ verdict: 'refused', httpStatus: 401, authenticated: false });
       button(r.root, 'Test connection').click();
       await settle(r.fixture);
       result = r.root.querySelector('[data-testid="upstream-test-result"]')!;
@@ -501,6 +502,7 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
       const r = await section(OCI_FORMAT, {
         setup: (fake) => {
           fake.upstreamTestResult = sampleUpstreamTestResult({
+            verdict: 'token_service_denied',
             httpStatus: 401,
             authenticated: null,
             tokenService: { host: 'gitlab.example.com', allowed: false, receivesCredential: false },

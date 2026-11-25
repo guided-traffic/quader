@@ -160,6 +160,7 @@ function notFound(key: string): ApiError {
 
 /** A test that reached the upstream and was let in. */
 export const REACHED: UpstreamTestResult = {
+  verdict: 'accepted',
   reachable: true,
   httpStatus: 200,
   authenticated: true,

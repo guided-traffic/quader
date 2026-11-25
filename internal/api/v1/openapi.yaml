@@ -11985,8 +11985,9 @@ paths:
       description: |
         Sends one request to the format's probe resource (npm: `-/ping`; OCI: `v2/`; a format whose URL is its
         service index: the URL itself) through the client, the egress address rules, the source
-        network and the credentials that real fetches use (R-REPO-024). The answer is always `200`:
-        an upstream that cannot be reached is a result with `reachable: false` and the reason in
+        network and the credentials that real fetches use (R-REPO-024). The answer is always `200`
+        and carries the test's `verdict` (Q-REPO-488), which a reader says as it is: an upstream that
+        cannot be reached is a result with `reachable: false` and the reason in
         `error` (`dns_error`, `connection_refused`, `timeout`, `tls_untrusted`, `egress_denied`,
         `source_network_unavailable`, `upstream_secret_unavailable`, `too_many_redirects`,
         `insecure_redirect`, `request_failed`). A repository in offline mode, and any repository while
@@ -12006,6 +12007,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpstreamTestResult"
               example:
+                verdict: answered
                 reachable: true
                 httpStatus: 200
                 authenticated: true
@@ -28138,8 +28140,34 @@ components:
           $ref: "#/components/schemas/RemoteSettings"
     UpstreamTestResult:
       type: object
-      required: [reachable, httpStatus, authenticated, durationMs, tls, outboundProxy, sourceAddress, tokenService, error]
+      required: [verdict, reachable, httpStatus, authenticated, durationMs, tls, outboundProxy, sourceAddress, tokenService, error]
       properties:
+        verdict:
+          type: string
+          description: |
+            What the test concluded from everything it saw (Q-REPO-488). A reader says this and derives no verdict from
+            `httpStatus`: the `401` of a registry's Bearer challenge is `accepted` when its token service accepted the account.
+            `accepted`: the upstream answered and the credential sent was accepted, by the upstream or by its token service.
+            `answered`: the upstream answered with success and no credential took part. `login_asked`: a registry answered with a
+            Bearer challenge whose token service the repository may reach, and the repository has no credential to judge.
+            `credential_withheld`: the same, but the token service's host does not receive the repository's credential.
+            `refused`: the credential sent was refused. `login_required`: the upstream refused a request without a credential.
+            `token_service_denied`: the token service is on a host the repository may not reach, or on plain http; it was not
+            asked. `token_service_failed`: the token service failed or gave no verdict. `upstream_error`: the upstream answered
+            with an error status of its own. `unreachable`: no answer came. `not_sent`: the probe was not sent (offline, the
+            egress policy, the source network, a credential this replica cannot read).
+          enum:
+            - accepted
+            - answered
+            - login_asked
+            - credential_withheld
+            - refused
+            - login_required
+            - token_service_denied
+            - token_service_failed
+            - upstream_error
+            - unreachable
+            - not_sent
         reachable:
           type: boolean
           description: The upstream answered with an HTTP response, whatever its status.

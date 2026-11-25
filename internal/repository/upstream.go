@@ -21,6 +21,12 @@ import (
 // fails is a 200 with Reachable false and the reason in Error: the question the
 // operation answers is whether the upstream works, and "no" is an answer.
 type UpstreamTestResult struct {
+	// Verdict is what the test concluded from all it saw, one of the verdicts of
+	// internal/proxy/upstream (accepted, answered, login_asked, credential_withheld,
+	// refused, login_required, token_service_denied, token_service_failed,
+	// upstream_error, unreachable, not_sent; Q-REPO-488). Every reader says it as it
+	// is and derives no verdict from the status.
+	Verdict string `json:"verdict"`
 	// Reachable is true when the upstream answered with an HTTP response, whatever
 	// its status.
 	Reachable  bool `json:"reachable"`

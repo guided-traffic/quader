@@ -183,7 +183,7 @@ func (c *Clients) offline(s repository.RemoteSettings) (repository.UpstreamTestR
 }
 
 func failed(e *repository.UpstreamTestError) repository.UpstreamTestResult {
-	return repository.UpstreamTestResult{Error: e}
+	return concluded(repository.UpstreamTestResult{Error: e}, false)
 }
 
 func mustParse(raw string) *url.URL {
@@ -236,6 +236,8 @@ func (c *Clients) probe(ctx context.Context, cl *Client, format string) reposito
 	if err != nil {
 		return failed(&repository.UpstreamTestError{Code: CodeRequestFailed, Message: "The probe request cannot be built from the upstream URL."})
 	}
+	// The hop policy puts the repository's credential on the request to the upstream's origin (R-REPO-033).
+	sent := cl.cred.headers().Get("Authorization") != ""
 	start := time.Now()
 	resp, err := cl.http.Do(req)
 	res := repository.UpstreamTestResult{DurationMs: time.Since(start).Milliseconds()}
@@ -244,7 +246,7 @@ func (c *Clients) probe(ctx context.Context, cl *Client, format string) reposito
 	}
 	if err != nil {
 		res.Error = probeError(err, target)
-		return res
+		return concluded(res, sent)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, maxProbeBody))
@@ -264,7 +266,7 @@ func (c *Clients) probe(ctx context.Context, cl *Client, format string) reposito
 		leaf := resp.TLS.PeerCertificates[0]
 		res.TLS = &repository.UpstreamTLS{PeerSubject: leaf.Subject.String(), NotAfter: leaf.NotAfter.UTC()}
 	}
-	return res
+	return concluded(res, sent)
 }
 
 // maxChallengeBytes bounds a WWW-Authenticate value the test reads; a longer one reads as no challenge.

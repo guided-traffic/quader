@@ -11523,10 +11523,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-REPO
 
-242 questions on [spec/repositories-and-proxy.md](spec/repositories-and-proxy.md).
+243 questions on [spec/repositories-and-proxy.md](spec/repositories-and-proxy.md).
 
 <details>
-<summary>Q-REPO: 242 questions</summary>
+<summary>Q-REPO: 243 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11772,6 +11772,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-REPO-485](spec/repositories-and-proxy.md#q-repo-485--a-missing-empty-or-wrong-file-fails-that-registrys-fetches-and-stops-nothing-else) | A missing, empty or wrong file fails that registry's fetches and stops nothing else | Decided by the development agent | (a) That registry's fetches answer 502 `upstream_secret_unavailable`; the log names the path; the page shows the files' state; no readiness check, metric or alert | — |
 | [Q-REPO-486](spec/repositories-and-proxy.md#q-repo-486--a-declared-account-follows-its-registry-an-address-that-moves-its-hosts-is-refused) | A declared account follows its registry; an address that moves its hosts is refused | Decided by the development agent | (a) The account follows the product's address of its registry; an address or a reset that moves the hosts receiving it answers 409 `managed_by_config` | — |
 | [Q-REPO-487](spec/repositories-and-proxy.md#q-repo-487--the-account-operation-of-a-well-known-repository-takes-a-value-only) | The account operation of a well-known repository takes a value only | Decided by the development agent | (a) A value only; a `secretRef` answers 422 `secret_value_required` at `/password/secretRef` | — |
+| [Q-REPO-488](spec/repositories-and-proxy.md#q-repo-488--the-upstream-tests-answer-carries-its-verdict) | The upstream test's answer carries its verdict | Decided by the development agent | (a) The answer carries `verdict`, made by one function on the server from everything the test saw | — |
 
 </details>
 
@@ -12256,10 +12257,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-602 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+603 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 602 questions</summary>
+<summary>Q-UI: 603 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12865,6 +12866,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1204](spec/api-and-ui.md#q-ui-1204--a-limit-is-named-in-plain-words-with-its-value) | A limit is named in plain words with its value | Decided by the development agent | (a) The reason names the bound by what it bounds, with its configured value where the verdict holds it: "the scanner's limit for the data it reads from one file (2.0 GiB) was passed"; German "die Prüfgrenze des Scanners für die gelesene Datenmenge je Datei (2,0 GiB) wurde überschritten"; content the unpacking cannot read is "a compressed stream or an archive inside it cannot be read", a bound the product does not name "one of the scanner's limits was passed" | — |
 | [Q-UI-1205](spec/api-and-ui.md#q-ui-1205--the-scanners-text-stands-under-technical-details-wherever-the-verdict-does) | The scanner's text stands under Technical details wherever the verdict does | Decided by the development agent | (a) Wherever an `unscannable` verdict's reason stands (a file's fact, a version's Files cell, the dashboard's opened row, the release dialog), a closed **Technical details** under it with clamd's name as the server's text and "In `<member>`" before it when the scanner unpacked the member; in the dashboard's list in the opened row, so that the row stays one line | — |
 | [Q-UI-1206](spec/api-and-ui.md#q-ui-1206--the-release-dialog-says-the-false-alarm-of-a-go-program-as-a-fact-with-the-manuals-page) | The release dialog says the false alarm of a Go program as a fact, with the manual's page | Decided by the development agent | (a) For a find past `max_scan_size` only, one sentence under the verdict: "A program written in Go can pass this limit without holding an archive: a known false alarm of the scanner." and the link "What content that could not be checked means" to the manual's section; the warning that nothing checked the bytes stays; no advice | — |
+| [Q-UI-1225](spec/api-and-ui.md#q-ui-1225--a-test-says-the-servers-verdict-with-one-tone-table) | A test says the server's verdict with one tone table | Decided by the development agent | (a) One table in `upstream-test-words.ts`: a sentence and a tone per verdict, `ok` (green, check), `info` (neutral, info), `warn` (warning) and `error` | — |
 
 </details>
 

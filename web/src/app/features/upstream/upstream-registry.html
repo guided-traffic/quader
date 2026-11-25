@@ -465,7 +465,7 @@
             }
             @if (testSummary(); as s) {
               <p class="verdict">
-                <span class="material-icons inline" [class.ok-icon]="s.good" [class.warn-icon]="!s.good" aria-hidden="true">{{ s.good ? 'check_circle' : 'warning' }}</span>
+                <span class="material-icons inline" [class.ok-icon]="s.good" [class.warn-icon]="s.tone !== 'ok' && s.tone !== 'info'" aria-hidden="true">{{ s.good ? 'check_circle' : s.tone === 'info' ? 'info' : 'warning' }}</span>
                 <strong>{{ s.text }}</strong>
                 @if (s.error; as err) {
                   <span class="secondary">{{ errorText(err.code) }}</span>

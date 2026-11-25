@@ -6535,7 +6535,9 @@ Priority: **MVP** · Covers: UI-031, RMT-004
   and **Password or token** follow (write-only, Q-UI-123). Under the password one muted line names where the credential goes: the
   URL's host and every further host that receives it ("The credential is sent to registry.gitlab.com and gitlab.com.").
 - **Test connection** follows the credentials. It sends the unsaved section (`testUpstream`, R-REPO-024, R-REPO-064) and shows the
-  verdict in words (Q-UI-124); a result goes when a field of the section changes. When the answer is `foreign_host_denied` with a
+  server's `verdict` in words (Q-UI-124, [Q-REPO-488](repositories-and-proxy.md#q-repo-488--the-upstream-tests-answer-carries-its-verdict),
+  [Q-UI-1225](#q-ui-1225--a-test-says-the-servers-verdict-with-one-tone-table)); no screen derives a verdict from the status. A result
+  goes when a field of the section changes. When the answer is `foreign_host_denied` with a
   `tokenService`, the result names that host and offers **Allow <host>**, which adds it to the further hosts (receiving the credential
   when Authentication is not None) and runs the test again ([Q-UI-346](#q-ui-346--test-connection-names-a-token-service-that-is-not-allowed-and-offers-to-allow-it)).
 - Inside the group, the region **Upstream details** (a toggle with `aria-expanded`, closed by default) holds **Further hosts** (one
@@ -26075,6 +26077,30 @@ so for that reason.
 **Applied in the spec:** R-UI-171. Code: `.breadcrumbs` of [_shell.scss](../../web/src/styles/_shell.scss), `.path` of
 [_browse.scss](../../web/src/styles/_browse.scss), `.level-trail` of
 [remote-upstream.scss](../../web/src/app/features/repositories/upstream/remote-upstream.scss).
+
+### Q-UI-1225 · A test says the server's verdict with one tone table
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: two screens of the connection test (a project's remote repository and the admin area's upstream registries) each built the
+verdict from the status with rules of their own, and the admin area's called an accepted account at Docker Hub an error (the owner,
+2026-11-25). The server's answer now carries `verdict`
+([Q-REPO-488](repositories-and-proxy.md#q-repo-488--the-upstream-tests-answer-carries-its-verdict)); what the screens still need is its
+sentence and how it stands.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One table in `upstream-test-words.ts`: a sentence and a tone per verdict, `ok` (green, check), `info` (neutral, info), `warn` (warning) and `error` (chosen) | Every screen of the test reads it | One place; the registry that asks for a login without an account is neither green nor a warning | Four tones where there were two |
+| (b) Green or warning, as before | Two tones | Simple | `login_asked` is neither a success to be green about (nothing was judged) nor a warning (nothing is wrong) |
+
+**Choice:** (a). `accepted` and `answered` are `ok`; `login_asked` is `info`; `credential_withheld`, `login_required` and
+`token_service_denied` are `warn` (the upstream answers, a setting keeps it from working as meant); every other verdict is `error`.
+Green stays for a positive status only.
+
+**Applied in the spec:** R-UI-082. Code: `upstreamVerdictText` and `upstreamVerdictTone` of
+[upstream-test-words.ts](../../web/src/app/features/repositories/upstream-test-words.ts). Tests: `upstream-registry.spec.ts` (the owner's
+case: an accepted account at a token registry, and the same registry without one), `upstream-settings.spec.ts`.
+
 ## What this does not cover
 
 ### H-1964 · A read that fails alone while its page stands is read again only by the person or its next use
