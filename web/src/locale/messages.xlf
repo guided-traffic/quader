@@ -31874,7 +31874,7 @@
     <unit id="malware.rescan.confirm">
       <notes>
         <note category="location">src/app/features/settings/malware-settings.html:99,102</note>
-        <note category="location">src/app/features/settings/malware-settings.ts:292</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:295</note>
       </notes>
       <segment>
         <source>Scan everything again</source>
@@ -32051,7 +32051,7 @@
     </unit>
     <unit id="malware.settings.backlog-question">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:225</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:228</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="unchecked" disp="n"/> artifacts have no verdict yet and <ph id="1" equiv="notCheckable" disp="m"/> could not be checked. They will wait or be refused until they are scanned or released.</source>
@@ -32059,7 +32059,7 @@
     </unit>
     <unit id="malware.settings.confirm-title">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:235</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:238</note>
       </notes>
       <segment>
         <source>Let only checked artifacts be downloaded?</source>
@@ -32067,7 +32067,7 @@
     </unit>
     <unit id="malware.settings.confirm">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:237</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:240</note>
       </notes>
       <segment>
         <source>Switch on</source>
@@ -32075,7 +32075,7 @@
     </unit>
     <unit id="malware.settings.saved-on">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:247</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:250</note>
       </notes>
       <segment>
         <source>Only checked artifacts can be downloaded now.</source>
@@ -32083,7 +32083,7 @@
     </unit>
     <unit id="malware.settings.saved-off">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:248</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:251</note>
       </notes>
       <segment>
         <source>Artifacts that are not checked can be downloaded again.</source>
@@ -32091,7 +32091,7 @@
     </unit>
     <unit id="malware.rescan.title">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:288</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:291</note>
       </notes>
       <segment>
         <source>Scan every artifact again?</source>
@@ -32099,7 +32099,7 @@
     </unit>
     <unit id="malware.rescan.text">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:290</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:293</note>
       </notes>
       <segment>
         <source>Every verdict is scanned again with the signature database in use, after the work that waits. Each verdict stays in force until its new scan.</source>
@@ -32107,7 +32107,7 @@
     </unit>
     <unit id="malware.rescan.done">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:300</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:303</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> verdicts are marked to be scanned again.</source>
