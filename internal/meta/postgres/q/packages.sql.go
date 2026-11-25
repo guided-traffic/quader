@@ -621,6 +621,40 @@ func (q *Queries) SetPackageAttributes(ctx context.Context, arg SetPackageAttrib
 	return result.RowsAffected(), nil
 }
 
+const setPackageDisplayName = `-- name: SetPackageDisplayName :many
+UPDATE packages SET display_name = $1::text
+ WHERE repo_id = $2::bigint AND name = $3::text AND display_name <> $1::text
+RETURNING id
+`
+
+type SetPackageDisplayNameParams struct {
+	DisplayName string
+	RepoID      int64
+	Name        string
+}
+
+// Gives an existing package another display name (the name the screens show, never the one a rule or a grant decides on); a package
+// that does not exist, or has the name already, is left alone and nothing comes back.
+func (q *Queries) SetPackageDisplayName(ctx context.Context, arg SetPackageDisplayNameParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, setPackageDisplayName, arg.DisplayName, arg.RepoID, arg.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setPackageVersionAttributes = `-- name: SetPackageVersionAttributes :many
 UPDATE package_versions SET attributes = $1::text::jsonb
  WHERE id = $2::bigint

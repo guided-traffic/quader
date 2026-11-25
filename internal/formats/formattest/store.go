@@ -218,6 +218,23 @@ func (w *writer) EnsureLocked(_ context.Context, repo formats.RepoRef, name, dis
 	return w.ref(p), true, nil
 }
 
+func (w *writer) SetDisplayName(_ context.Context, repo formats.RepoRef, name, displayName string) (bool, error) {
+	if repo.ID != w.h.ref.ID {
+		return false, errs.E(errs.Internal, errs.CodeInternal, "formattest: the repository is not the host's")
+	}
+	w.h.mu.Lock()
+	defer w.h.mu.Unlock()
+	p, ok := w.h.pkgs[name]
+	if !ok || displayName == "" || p.display == displayName {
+		return false, nil
+	}
+	old := p.display
+	p.display = displayName
+	w.tx.undo = append(w.tx.undo, func() { p.display = old })
+	w.touch(p)
+	return true, nil
+}
+
 func (w *writer) live(p *pkgRec) []formats.VersionRow {
 	var out []formats.VersionRow
 	for _, v := range w.h.vers {

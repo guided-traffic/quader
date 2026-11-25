@@ -30,12 +30,14 @@ const (
 	ClassArtifact    = "artifact"     // a collection archive, also behind the redirect of the public Galaxy
 	ClassRole        = "role"         // the v1 role routes: lookup, role document, version lists
 	ClassRoleArchive = "role-archive" // a role archive on the GitHub stand-in or the unlisted host, and on the codeload host
+	ClassRoleContent = "role-content" // a role's content document, whose readme_html is its README (R-ANS-056)
+	ClassRoleSearch  = "role-search"  // the role search of ansible-galaxy role search (R-ANS-056)
 	ClassRealm       = "realm"        // the token endpoint of the realm
 	ClassOther       = "other"
 	ClassAll         = "all"
 )
 
-var classes = []string{ClassRoot, ClassIndex, ClassCollection, ClassVersions, ClassVersion, ClassDocs, ClassArtifact, ClassRole, ClassRoleArchive, ClassRealm, ClassOther, ClassAll}
+var classes = []string{ClassRoot, ClassIndex, ClassCollection, ClassVersions, ClassVersion, ClassDocs, ClassArtifact, ClassRole, ClassRoleArchive, ClassRoleContent, ClassRoleSearch, ClassRealm, ClassOther, ClassAll}
 
 // The modes of the docs-blob route (Mode.Docs): how the stub answers the documentation of a version.
 const (

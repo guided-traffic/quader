@@ -77,6 +77,11 @@ type roleDef struct {
 	user, repo        string
 	branch, summaryTx string
 	versions          []roleVersion
+	// tags, downloads and readme are what the role's document and its content document name (R-ANS-056); a role without a readme has
+	// a content document whose readme_html is empty.
+	tags      []string
+	downloads int
+	readme    string
 }
 
 func (r *roleDef) find(tag string) (roleVersion, bool) {
@@ -142,6 +147,7 @@ func defaultCorpus(fillers int) ([]*collectionDef, []*roleDef) {
 		{
 			id: 16, owner: "geerlingguy", name: "pip", user: "geerlingguy", repo: "ansible-role-pip", branch: "master",
 			summaryTx: "Pip (Python package manager) for Linux.", versions: roleVersions(siteGitHub, "1.0.0", "1.1.0", "2.0.0"),
+			tags: []string{"python", "pip", "development"}, downloads: 1234, readme: pipReadme,
 		},
 		// 0.9.0 points to a host that is no GitHub host: a remote must drop that version from its list.
 		{
@@ -155,6 +161,19 @@ func defaultCorpus(fillers int) ([]*collectionDef, []*roleDef) {
 	}
 	return cols, roles
 }
+
+// pipReadme is the README the stub's role geerlingguy.pip has, as the Galaxy renders one: HTML with a heading, a table and a code block,
+// and two things a sanitizer must remove (R-ANS-039).
+const pipReadme = `<h1>Ansible Role: Pip</h1>
+<p>An Ansible Role that installs <a href="https://pip.pypa.io/">Pip</a> on Linux.</p>
+<h2>Role Variables</h2>
+<table><thead><tr><th>Variable</th><th>Default</th></tr></thead><tbody><tr><td><code>pip_package</code></td><td><code>python3-pip</code></td></tr></tbody></table>
+<pre><code class="language-yaml">- hosts: all
+  roles:
+    - geerlingguy.pip
+</code></pre>
+<script>alert("readme")</script><img src="x" onerror="alert(1)">
+`
 
 // archiveKey names a generated archive.
 type archiveKey struct {

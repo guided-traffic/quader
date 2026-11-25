@@ -170,6 +170,13 @@ func (w *writer) TrashOrDeleteVersion(ctx context.Context, v formats.VersionID, 
 	return w.w.TrashOrDeleteVersion(ctx, int64(v), purge)
 }
 
+func (w *writer) SetDisplayName(ctx context.Context, repo formats.RepoRef, name, displayName string) (bool, error) {
+	if err := w.owns(repo); err != nil {
+		return false, err
+	}
+	return w.w.SetDisplayName(ctx, repo.ID, name, displayName)
+}
+
 func (w *writer) SetPackageAttributes(ctx context.Context, pkg formats.PackageRef, attrs json.RawMessage) error {
 	return w.w.SetPackageAttributes(ctx, pkgRef(pkg), attrs)
 }

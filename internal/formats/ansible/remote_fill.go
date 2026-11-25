@@ -33,7 +33,7 @@ func (remoteAdapter) InspectsFill(p formats.Path) bool {
 // and its declared identity must be the path's: another namespace, name or version is 502 upstream_unavailable with the reason
 // identity_mismatch, and an archive the reader refuses cannot be checked and is refused alike. A role archive has no manifest: it
 // must be a gzip-compressed tar archive within the same bounds, and nothing else of it is claimed (R-ANS-020, H-840).
-func (a remoteAdapter) InspectFill(ctx context.Context, _ formats.RemoteContext, p formats.Path, sp formats.Spooled) (*formats.Inspection, error) {
+func (a remoteAdapter) InspectFill(ctx context.Context, rc formats.RemoteContext, p formats.Path, sp formats.Spooled) (*formats.Inspection, error) {
 	t, err := parseTarget(p)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,15 @@ func (a remoteAdapter) InspectFill(ctx context.Context, _ formats.RemoteContext,
 	defer func() { _ = body.Close() }()
 	lim := untrusted.DefaultLimits().Tighten(a.f.Descriptor().Limits)
 	if t.kind == kindRoleArchive {
-		return nil, checkRoleArchive(ctx, body, lim)
+		if err := checkRoleArchive(ctx, body, lim); err != nil {
+			return nil, err
+		}
+		// The role's package and the version's name, which the commit records as a cached collection's (R-ANS-056); nothing of the
+		// archive is claimed.
+		return &formats.Inspection{
+			Package: RolePackage(t.roleID), Version: t.roleRef, Properties: map[string]string{"ansible.role_id": t.roleID},
+			Payload: &inspectedRole{id: t.roleID, fetchDocs: memberSettings(rc.Settings).FetchDocumentation},
+		}, nil
 	}
 	arc, err := collection.ReadArchive(ctx, body, lim)
 	if err != nil {
@@ -79,6 +87,9 @@ func (a remoteAdapter) CommitFill(ctx context.Context, tx formats.Tx, c formats.
 	in := c.Inspection
 	if in == nil || in.Package == "" || in.Version == "" {
 		return nil
+	}
+	if r, ok := in.Payload.(*inspectedRole); ok {
+		return commitRole(ctx, tx, c, r)
 	}
 	pkg, _, err := c.Packages.EnsureLocked(ctx, c.Repo, in.Package, in.Package)
 	if err != nil {
@@ -143,6 +154,69 @@ func (a remoteAdapter) putManifest(ctx context.Context, tx formats.Tx, c formats
 		SHA256: sumOf(c.Digests.SHA256), Size: c.Size, RequiresAnsible: arc.RequiresAnsible, Dependencies: arc.Dependencies,
 		CollectionInfo: arc.Info, PublishedAt: at,
 	})
+}
+
+// inspectedRole is what InspectFill hands the commit of a role archive.
+type inspectedRole struct {
+	id        string
+	fetchDocs bool
+}
+
+// commitRole records the generic package and version rows of a role archive a remote cached (R-ANS-056): the package "role/<id>"
+// (Q-ANS-36) with the display name "<owner>.<name>" when the lookup's facts are there, the version named as the upstream names it, and
+// the fetch of the role's README when it has none for the role's commit. A role whose facts are not there yet keeps the display name
+// "role/<id>" until its next lookup.
+func commitRole(ctx context.Context, tx formats.Tx, c formats.CommitEvent, r *inspectedRole) error {
+	st, err := storeOf(c.Data)
+	if err != nil {
+		return err
+	}
+	id, err := strconv.ParseInt(r.id, 10, 64)
+	if err != nil {
+		return errs.E(errs.Internal, errs.CodeInternal, "A role archive names no role id.")
+	}
+	facts, found, err := st.Role(ctx, tx, c.Repo.ID, id)
+	if err != nil {
+		return err
+	}
+	in := c.Inspection
+	display := in.Package
+	if found {
+		display = facts.Owner + "." + facts.Name
+	}
+	pkg, _, err := c.Packages.EnsureLocked(ctx, c.Repo, in.Package, display)
+	if err != nil {
+		return err
+	}
+	if _, err := c.Packages.SetDisplayName(ctx, c.Repo, in.Package, display); err != nil {
+		return err
+	}
+	live, err := c.Packages.Versions(ctx, pkg)
+	if err != nil {
+		return err
+	}
+	linked := false
+	for _, v := range live {
+		if v.Version == in.Version {
+			if err := c.Packages.LinkItem(ctx, c.Item, v.ID, true); err != nil {
+				return err
+			}
+			linked = true
+			break
+		}
+	}
+	if !linked {
+		if _, err := c.Packages.InsertVersion(ctx, pkg, formats.NewVersion{Version: in.Version, DisplayVersion: in.Version, LeadItem: &c.Item}); err != nil {
+			return err
+		}
+		if _, _, err := c.Packages.BumpRevision(ctx, pkg); err != nil {
+			return err
+		}
+	}
+	if err := c.Packages.SetProperties(ctx, c.Item, in.Properties); err != nil {
+		return err
+	}
+	return queueRoleReadme(ctx, tx, st, c.Repo.ID, id, r.fetchDocs)
 }
 
 // checkRoleArchive reads a role archive to its end within the bounds of R-ANS-031: a gzip-compressed tar archive without a hard link, a

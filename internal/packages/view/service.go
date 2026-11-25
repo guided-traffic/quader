@@ -1528,7 +1528,7 @@ func (s *Service) ReadmeOf(ctx context.Context, sc Scope, format, name, version 
 	if !ok || data.Readme == "" {
 		return Readme{}, false, nil
 	}
-	return Readme{Source: data.Readme, FileName: data.ReadmeFile}, true, nil
+	return Readme{Source: data.Readme, FileName: data.ReadmeFile, HTML: data.ReadmeHTML}, true, nil
 }
 
 // oneHolders are the holders of a version's package and the withheld versions of the scope, as oneVersion read them.

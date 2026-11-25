@@ -38,6 +38,11 @@ func (w *fakeWriter) EnsureLocked(_ context.Context, repo formats.RepoRef, n, _ 
 	return formats.PackageRef{ID: 42, Repo: repo, Name: n, RevSeq: 1}, w.created, nil
 }
 
+func (w *fakeWriter) SetDisplayName(context.Context, formats.RepoRef, string, string) (bool, error) {
+	w.note("SetDisplayName")
+	return false, nil
+}
+
 func (w *fakeWriter) Versions(context.Context, formats.PackageRef) ([]formats.VersionRow, error) {
 	w.note("Versions")
 	return w.live, nil

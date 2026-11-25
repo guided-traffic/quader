@@ -1,0 +1,4 @@
+{
+ "readme": "README.md",
+ "readme_html": "<h1>Ansible Role: Docker</h1>\n<p><a href=\"https://github.com/geerlingguy/ansible-role-docker/actions/workflows/ci.yml\" rel=\"noopener noreferrer\"><img alt=\"CI\" src=\"https://github.com/geerlingguy/ansible-role-docker/actions/workflows/ci.yml/badge.svg\"></a></p>\n<p>An Ansible Role that installs <a href=\"https://www.docker.com\" rel=\"noopener noreferrer\">Docker</a> on Linux.</p>\n"
+}

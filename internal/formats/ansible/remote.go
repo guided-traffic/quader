@@ -125,6 +125,9 @@ type fillData struct {
 	fetchDocs, docsURL bool
 	// docs is the parsed docs-blob document of a documentation fill.
 	docs *rows.DocSet
+	// roles are the facts of the roles of a lookup (R-ANS-056); content is the README of a role's content document.
+	roles   []rows.Role
+	content *roleContent
 }
 
 // PrepareFill checks a fetched metadata document before anything is stored, outside every transaction (R-ARCH-019): an upstream
@@ -185,7 +188,14 @@ func (a remoteAdapter) PrepareFill(_ context.Context, rc formats.RemoteContext, 
 			err = errs.E(errs.Internal, errs.CodeInternal, "The role lookup is stored with the variant owner=<owner>&name=<name>.")
 			break
 		}
-		err = checkRoleLookup(doc)
+		if err = checkRoleLookup(doc); err == nil {
+			data.roles, data.fetchDocs = parseRoleFacts(doc), memberSettings(rc.Settings).FetchDocumentation
+		}
+	case kindRoleContent:
+		var c roleContent
+		if c, err = parseRoleContent(doc); err == nil {
+			data.content = &c
+		}
 	case kindRoleVersions:
 		if _, ok := parsePageVariant(variant); !ok {
 			err = errs.E(errs.Internal, errs.CodeInternal, "The versions of a role are stored in pages with the variant page=<n>.")
@@ -322,8 +332,15 @@ func (a remoteAdapter) OnFill(ctx context.Context, tx formats.Tx, ev formats.Fil
 		}
 		a.f.countFill(ev.Data, fillAvailable)
 	}
-	if data.kind == kindRoleVersions {
+	switch data.kind {
+	case kindRoleVersions:
 		rep.rolesDropped(ev.Repo.Name.String(), data.dropped)
+	case kindRoleLookup:
+		if err := a.onRoleLookup(ctx, tx, ev, data); err != nil {
+			return formats.FillByFetchTime, err
+		}
+	case kindRoleContent:
+		return formats.FillByFetchTime, onRoleContent(ctx, tx, ev, data)
 	}
 	if data.pkg == "" {
 		return formats.FillByFetchTime, nil
@@ -397,8 +414,9 @@ func (a remoteAdapter) Rewrite(_ context.Context, rc formats.RemoteContext, p fo
 		}
 		v.Filename = ArtifactFile(t.ns, t.name, t.version)
 		return galaxydoc.RenderVersion(v, addr), nil
-	case kindDocs:
-		// The documentation holds HTML of the upstream, which only the Host's renderer sanitizes: the route renders it (remoteDocs).
+	case kindDocs, kindRoleContent:
+		// The documentation and a role's README hold HTML of the upstream, which only the Host's renderer sanitizes: a route or the
+		// screens render it (remoteDocs, R-ANS-056), never this document as it came.
 		return nil, missing()
 	case kindRoleLookup:
 		return renderRoleLookup(doc, repo, "", "")

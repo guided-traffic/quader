@@ -61,6 +61,12 @@ collections:
 # roles:
 #   - name: <owner>.<role>
 `
+	roleRequirements := `---
+roles:
+  - name: ` + formats.SetupPackageRef + `
+# Install it with
+#   ansible-galaxy role install -r requirements.yml
+`
 	publish := `ansible-galaxy collection publish ` + exampleArchive + ` --server {{shell .RegistryURL}} --token=` + formats.SetupTokenRef + "\n"
 	return []formats.SetupTemplate{
 		{ID: "ansible-galaxy.ansible-cfg.configure", Client: ClientGalaxy, Section: "configure", Lang: "ini", File: "ansible.cfg", Template: cfg},
@@ -76,6 +82,16 @@ collections:
 		{
 			ID: "ansible-galaxy.requirements.install", Client: ClientGalaxy, Section: "install", Lang: "yaml", File: "requirements.yml",
 			Template: requirements, VersionSpec: "\n    version: \"" + formats.SetupVersionRef + "\"",
+		},
+		// A role a remote read (R-ANS-056): its package "role/<id>" is written by its display name "<owner>.<name>", the name
+		// ansible-galaxy looks it up by, and its version follows a comma.
+		{
+			ID: "ansible-galaxy.role.install", Client: ClientGalaxy, Section: "install", Lang: "shell", Packages: RolePrefix,
+			Template: "ansible-galaxy role install " + formats.SetupPackageRef + "\n", VersionSpec: "," + formats.SetupVersionRef,
+		},
+		{
+			ID: "ansible-galaxy.role-requirements.install", Client: ClientGalaxy, Section: "install", Lang: "yaml", File: "requirements.yml",
+			Packages: RolePrefix, Template: roleRequirements, VersionSpec: "\n    version: \"" + formats.SetupVersionRef + "\"",
 		},
 
 		{ID: "ansible-galaxy.collection.publish", Client: ClientGalaxy, Section: "publish", Lang: "shell", Template: publish, Examples: []string{exampleArchive}},

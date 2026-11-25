@@ -235,6 +235,15 @@ func (s *Server) serveGalaxy(w http.ResponseWriter, r *http.Request, rt route, m
 			return
 		}
 		writeDoc(w, r, m, http.StatusOK, s.roleVersions(r.Host, role, q))
+	case kRoleContent:
+		role := s.findRole(rt.roleID)
+		if role == nil {
+			writeDoc(w, r, m, http.StatusNotFound, roleNotFound())
+			return
+		}
+		writeDoc(w, r, m, http.StatusOK, roleContent(role))
+	case kRoleSearch:
+		writeDoc(w, r, m, http.StatusOK, roleSearch(s.roleList(), q))
 	default:
 		writeDoc(w, r, m, http.StatusNotFound, notFound())
 	}

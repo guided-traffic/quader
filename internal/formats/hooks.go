@@ -288,6 +288,11 @@ type PackageWriter interface {
 	// UPDATE and inserts it when it is missing. It does not bump the revision of a
 	// package that exists; a created package starts at revision 1.
 	EnsureLocked(ctx context.Context, repo RepoRef, name, displayName string) (pkg PackageRef, created bool, err error)
+	// SetDisplayName gives an existing package of repo another display name, the
+	// name the screens show; the normalized name, which rules and grants decide on,
+	// stays. changed is false for a package that does not exist or has the name
+	// already; a change raises the package's revision.
+	SetDisplayName(ctx context.Context, repo RepoRef, name, displayName string) (changed bool, err error)
 	// Versions lists the live versions of a locked package.
 	Versions(ctx context.Context, pkg PackageRef) ([]VersionRow, error)
 	// InsertVersion adds a version and links its lead item.

@@ -22,6 +22,7 @@ func TestR_LIM_036_EveryRouteOfEveryFormatCountsByItsKind(t *testing.T) {
 			"ansible.role.archive":       formats.Download,
 			"ansible.role.versions":      formats.Metadata,
 			"ansible.roles.find":         formats.Volatile,
+			"ansible.roles.search":       formats.Volatile,
 			"ansible.root.get":           formats.Computed,
 			"ansible.version.docs":       formats.Metadata,
 			"ansible.version.get":        formats.Metadata,

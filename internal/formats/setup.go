@@ -55,6 +55,12 @@ type SetupTemplate struct {
 	// image). "" keeps the placeholder. Meaningful for an install template that
 	// places the package only (kit check 8).
 	PackageExample string
+	// Packages is the prefix of the normalized names an install template is for ("role/" for an Ansible role,
+	// ansible.md R-ANS-056), "" for every package. For a package a prefixed install template of the client claims,
+	// the client's install templates without a prefix are left out and the package is written by its display name,
+	// the name the client knows it by; for any other package, and when the request names none, the prefixed ones are
+	// left out.
+	Packages string
 	// Examples are the literal values of the template that the reader replaces with
 	// their own: a file to publish, an image name, a path. The API names each one
 	// that stands in a rendered snippet, so that a screen can mark it (R-API-030);

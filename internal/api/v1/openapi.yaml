@@ -27903,8 +27903,10 @@ components:
       properties:
         contentType:
           type: string
-          enum: [text/markdown]
-          description: The type of the source; `html` is always sanitized HTML.
+          enum: [text/markdown, text/html]
+          description: |
+            The type of the source: `text/markdown` is rendered, `text/html` is an upstream's HTML (an Ansible role's README, R-ANS-039,
+            R-ANS-056) sanitized as it is; `html` is always sanitized HTML.
         html:
           type: string
         truncated:

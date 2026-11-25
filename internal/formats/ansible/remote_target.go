@@ -24,6 +24,8 @@ const (
 	kindRoleVersions
 	kindRoleArchive
 	kindDocs
+	// kindRoleContent is the content document of a role, whose readme_html is the role's README (R-ANS-056).
+	kindRoleContent
 )
 
 // The variants of the stored documents (Q-ANS-12, R-ANS-020): the upstream's bytes as they came, per document. A version list is
@@ -58,7 +60,7 @@ func (t target) pkg() string {
 	switch t.kind {
 	case kindCollection, kindVersions, kindVersion, kindArchive, kindDocs:
 		return t.ns + "." + t.name
-	case kindRoleVersions, kindRoleArchive:
+	case kindRoleVersions, kindRoleArchive, kindRoleContent:
 		return RolePackage(t.roleID)
 	}
 	return ""
@@ -122,6 +124,9 @@ func parseRoleTarget(rest []string) (target, error) {
 	case len(rest) == 2 && digits(rest[0], maxRoleIDDigits):
 		if rest[1] == roleVersionsDocument {
 			return target{kind: kindRoleVersions, roleID: rest[0]}, nil
+		}
+		if rest[1] == RoleContentDocument {
+			return target{kind: kindRoleContent, roleID: rest[0]}, nil
 		}
 		if ref, ok := strings.CutSuffix(rest[1], collection.ArchiveSuffix); ok && roleRefOK(ref) {
 			return target{kind: kindRoleArchive, roleID: rest[0], roleRef: ref}, nil

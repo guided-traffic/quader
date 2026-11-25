@@ -2,6 +2,7 @@ package ansiblestub
 
 import (
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -59,7 +60,7 @@ func roleDocument(r *roleDef) map[string]any {
 	for i, v := range r.versions {
 		versions = append(versions, map[string]any{"id": r.id*1000 + i, "name": v.name, "release_date": stamp(roleVersionTime(i))})
 	}
-	return map[string]any{
+	doc := map[string]any{
 		"id": r.id, "url": roleHref(r.id),
 		"related": map[string]string{"versions": roleHref(r.id) + "versions/"},
 		"summary_fields": map[string]any{
@@ -70,10 +71,58 @@ func roleDocument(r *roleDef) map[string]any {
 			"versions": versions,
 		},
 		"created": stamp(corpusStart), "modified": stamp(corpusStart), "imported": stamp(corpusStart),
-		"github_user": r.user, "github_repo": r.repo, "github_branch": r.branch, "github_reference": "",
+		"github_user": r.user, "github_repo": r.repo, "github_branch": r.branch, "github_reference": "", "username": r.owner,
 		"name": r.name, "description": r.summaryTx, "role_type": "ANS", "min_ansible_version": "2.14", "license": "MIT",
-		"is_valid": true, "active": true, "download_count": 0,
+		"is_valid": true, "active": true, "download_count": r.downloads, "commit": strings.Repeat("c", 39) + strconv.Itoa(r.id%10),
 	}
+	if len(r.tags) > 0 {
+		doc["summary_fields"].(map[string]any)["tags"] = r.tags
+	}
+	return doc
+}
+
+// roleContent answers v1/roles/<id>/content/ as the public Galaxy does: the README's file name and the HTML it rendered of it.
+func roleContent(r *roleDef) map[string]any {
+	if r.readme == "" {
+		return map[string]any{"readme": "", "readme_html": ""}
+	}
+	return map[string]any{"readme": "README.md", "readme_html": r.readme}
+}
+
+// roleSearch answers v1/search/roles/: the roles whose owner, name or description holds autocomplete, whose tags hold every word of
+// tags_autocomplete and whose owner is username_autocomplete, paged as the Galaxy pages. The public Galaxy answers its next link with an
+// http address; the stub answers it relative to the host, as its other links.
+func roleSearch(roles []*roleDef, q url.Values) map[string]any {
+	text := strings.ToLower(q.Get("autocomplete"))
+	var match []*roleDef
+	for _, r := range roles {
+		if text != "" && !strings.Contains(strings.ToLower(r.owner+"."+r.name+" "+r.summaryTx), text) {
+			continue
+		}
+		if u := q.Get("username_autocomplete"); u != "" && u != r.owner {
+			continue
+		}
+		if !hasTags(r.tags, strings.Fields(strings.ReplaceAll(q.Get("tags_autocomplete"), "+", " "))) {
+			continue
+		}
+		match = append(match, r)
+	}
+	return v1Page("/api/v1/search/roles/", q, len(match), func(lo, hi int) []any {
+		out := make([]any, 0, hi-lo)
+		for _, r := range match[lo:hi] {
+			out = append(out, roleDocument(r))
+		}
+		return out
+	})
+}
+
+func hasTags(have, want []string) bool {
+	for _, w := range want {
+		if !slices.Contains(have, w) {
+			return false
+		}
+	}
+	return true
 }
 
 // roleLookup answers v1/roles/ with the roles that match owner__username and name, the whole list without them.

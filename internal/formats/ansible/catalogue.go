@@ -276,6 +276,9 @@ func (remoteAdapter) Children(ctx context.Context, u discover.Upstream, rq disco
 // remote holds it), newest first by SemVer precedence, with the time and the required Ansible of each; the collection document's
 // deprecated marks every version.
 func (remoteAdapter) Package(ctx context.Context, u discover.Upstream, name string, rq discover.VersionsRequest) (discover.PackageInfo, error) {
+	if id := roleIDOf(name); id != "" {
+		return rolePackageInfo(ctx, u, id, rq) // a role, by the name the rules see (R-ANS-056)
+	}
 	ns, n, ok := collection.SplitName(strings.ToLower(strings.TrimSpace(name)))
 	if !ok {
 		return discover.PackageInfo{}, nil

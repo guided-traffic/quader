@@ -1,0 +1,61 @@
+{
+ "count": 1,
+ "next": null,
+ "previous": null,
+ "results": [
+  {
+   "id": 10923,
+   "upstream_id": null,
+   "created": "2023-05-08T20:49:45.679874Z",
+   "modified": "2026-11-16T04:14:51.676857Z",
+   "imported": "2026-11-16T04:14:50.861408",
+   "github_user": "geerlingguy",
+   "username": "geerlingguy",
+   "github_repo": "ansible-role-docker",
+   "github_branch": "master",
+   "commit": "5daab495728fb2b6fa35613039bd26b4034cf414",
+   "commit_message": "Merge pull request #551 from geerlingguy/ci-ubuntu26-iptables\n\nLoad legacy iptables modules in CI for ubuntu-26.04 runners",
+   "name": "docker",
+   "description": "Docker for Linux.",
+   "summary_fields": {
+    "dependencies": [],
+    "namespace": {
+     "id": 2492,
+     "name": "geerlingguy",
+     "avatar_url": "https://galaxy.ansible.com/api/pulp/api/v3/content/ansible/namespaces/018d1a01-d1d5-7a2c-9d61-04c690efd88d/avatar/"
+    },
+    "provider_namespace": {
+     "id": 103,
+     "name": "geerlingguy",
+     "pulp_href": "/api/pulp/api/v3/pulp_ansible/namespaces/103/"
+    },
+    "repository": {
+     "name": "ansible-role-docker",
+     "original_name": "ansible-role-docker"
+    },
+    "tags": [
+     "web",
+     "system",
+     "containers",
+     "docker",
+     "orchestration",
+     "compose",
+     "server"
+    ],
+    "versions": [
+     {
+      "id": "4f0f3dd6-8d5f-413b-a792-4a8bd4daaedd",
+      "name": "8.0.1",
+      "release_date": "2026-11-15T22:13:59-06:00"
+     },
+     {
+      "id": "3d5d4c5b-ff3b-46a0-ba4a-7a03337d4b56",
+      "name": "8.0.0",
+      "release_date": "2026-01-15T10:31:08-06:00"
+     }
+    ]
+   },
+   "download_count": 30832123
+  }
+ ]
+}

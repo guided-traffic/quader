@@ -75,6 +75,13 @@ SELECT rev_seq, clock_timestamp()::timestamptz AS at
   FROM packages
  WHERE id = sqlc.arg(id)::bigint;
 
+-- name: SetPackageDisplayName :many
+-- Gives an existing package another display name (the name the screens show, never the one a rule or a grant decides on); a package
+-- that does not exist, or has the name already, is left alone and nothing comes back.
+UPDATE packages SET display_name = sqlc.arg(display_name)::text
+ WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND display_name <> sqlc.arg(display_name)::text
+RETURNING id;
+
 -- name: SetPackageAttributes :execrows
 UPDATE packages SET attributes = sqlc.arg(attributes)::text::jsonb
  WHERE id = sqlc.arg(id)::bigint;

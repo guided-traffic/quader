@@ -323,6 +323,7 @@ formats.PackageWriter: method EnsureLocked(context.Context, RepoRef, string, str
 formats.PackageWriter: method InsertVersion(context.Context, PackageRef, NewVersion) (VersionID, error)
 formats.PackageWriter: method LinkItem(context.Context, ItemRef, VersionID, bool) error
 formats.PackageWriter: method Notify(string, any) error
+formats.PackageWriter: method SetDisplayName(context.Context, RepoRef, string, string) (bool, error)
 formats.PackageWriter: method SetPackageAttributes(context.Context, PackageRef, json.RawMessage) error
 formats.PackageWriter: method SetProperties(context.Context, ItemRef, map[string]string) error
 formats.PackageWriter: method SetVersionAttributes(context.Context, VersionID, json.RawMessage) error
@@ -520,6 +521,7 @@ formats.SetupTemplate: field File string
 formats.SetupTemplate: field ID string
 formats.SetupTemplate: field Lang string
 formats.SetupTemplate: field PackageExample string
+formats.SetupTemplate: field Packages string
 formats.SetupTemplate: field Section string
 formats.SetupTemplate: field Template string
 formats.SetupTemplate: field VersionSpec string
@@ -646,6 +648,7 @@ formats.ViewData: field Licenses []string
 formats.ViewData: field Metadata map[string]any
 formats.ViewData: field Readme string
 formats.ViewData: field ReadmeFile string
+formats.ViewData: field ReadmeHTML bool
 formats.ViewData: field WikiMetadata []string
 formats.ViewFields: method Has(ViewFields) bool
 formats.ViewFields: type uint8

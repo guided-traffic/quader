@@ -78,13 +78,14 @@ func conformance(t testing.TB) formattest.Fixture {
 			{Name: "documentation of a version", Path: "v3/collections/acme/tools/versions/1.0.0/docs-blob/", Seed: seed("1.0.0")},
 			{Name: "an unknown collection", Path: "v3/collections/acme/nope/", Status: http.StatusNotFound},
 			{Name: "an unknown task", Path: "v3/imports/collections/6f1c0000-0000-4000-8000-000000000002/", Status: http.StatusNotFound},
-			// The kit's host is a local repository, which has no role API: the remote and virtual classes serve the three role
+			// The kit's host is a local repository, which has no role API: the remote and virtual classes serve the four role
 			// routes, and the remote handlers are proven over HTTP in test/integration/ansibleremote.
 			{Name: "role lookup", Path: "v1/roles/", Status: http.StatusNotImplemented},
 			{Name: "role versions", Path: "v1/roles/16/versions/", Status: http.StatusNotImplemented},
 			{Name: "role archive", Path: "v1/roles/archives/16/v1.0.0.tar.gz", Status: http.StatusNotImplemented},
+			{Name: "role search", Path: "v1/search/roles/", Status: http.StatusNotImplemented},
 		},
-		NoContent: map[string]string{routeImport: noTask, routeRolesFind: notLocal, routeRoleVersions: notLocal, routeRoleArchive: notLocal},
+		NoContent: map[string]string{routeImport: noTask, routeRolesFind: notLocal, routeRoleVersions: notLocal, routeRoleArchive: notLocal, routeRoleSearch: notLocal},
 		Changes: []formattest.ChangeCase{
 			{Name: "a first publish (OnCommit)", Package: "acme.tools", Do: do(publishVersion("1.0.0"))},
 			{Name: "a later version (OnCommit)", Package: "acme.tools", Seed: seed("1.0.0"), Do: do(publishVersion("1.1.0"))},

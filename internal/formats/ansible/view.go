@@ -109,7 +109,7 @@ func versionIDs(ids []int64) []formats.VersionID {
 }
 
 // Describe reads the description and the tags of the versions and, with ViewDetails, the licenses, the README flag and the Galaxy
-// metadata; the README text only when asked for. The links carry the names the other formats use (homepage, repositoryUrl, bugsUrl, and
+// metadata; the README text only when asked for. A version of a role a remote cached is described by the role's facts (describeRole). The links carry the names the other formats use (homepage, repositoryUrl, bugsUrl, and
 // documentationUrl in the same style), and the licenses and tags travel in the generic fields (R-ANS-026). A collection has no member that names other versions, so the visibility function is
 // not needed.
 func (viewAdapter) Describe(ctx context.Context, ports formats.DataPorts, vs []formats.ViewVersion, want formats.ViewFields, _ func(string) bool) (map[formats.VersionID]formats.ViewData, error) {
@@ -117,11 +117,33 @@ func (viewAdapter) Describe(ctx context.Context, ports formats.DataPorts, vs []f
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]int64, len(vs))
-	for i, v := range vs {
-		ids[i] = int64(v.ID)
+	ids := make([]int64, 0, len(vs))
+	var roles []int64
+	for _, v := range vs {
+		if isRole(v.Package) {
+			roles = append(roles, int64(v.ID))
+			continue
+		}
+		ids = append(ids, int64(v.ID))
 	}
 	out := make(map[formats.VersionID]formats.ViewData, len(vs))
+	if len(roles) > 0 {
+		// A version of a role a remote cached is described by the facts of the role's lookup (R-ANS-056).
+		rs, err := p.ViewRoles(ctx, roles, want.Has(formats.ViewReadme))
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range rs {
+			d := describeRole(r)
+			if !want.Has(formats.ViewDetails) {
+				d = formats.ViewData{Description: d.Description, Keywords: d.Keywords}
+			}
+			out[formats.VersionID(r.VersionID)] = d
+		}
+	}
+	if len(ids) == 0 {
+		return out, nil
+	}
 	if !want.Has(formats.ViewDetails) {
 		ss, err := p.ViewSummaries(ctx, ids)
 		if err != nil {

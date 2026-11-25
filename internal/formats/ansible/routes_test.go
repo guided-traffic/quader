@@ -34,6 +34,7 @@ func TestR_ANS_003_TheRouteTable(t *testing.T) {
 		{routeRolesFind, "GET", formats.Volatile, formats.ActionRead, []formats.Class{remote, virtual}},
 		{routeRoleVersions, "GET", formats.Metadata, formats.ActionRead, []formats.Class{remote, virtual}},
 		{routeRoleArchive, "GET", formats.Download, formats.ActionRead, []formats.Class{remote, virtual}},
+		{routeRoleSearch, "GET", formats.Volatile, formats.ActionRead, []formats.Class{remote, virtual}},
 	}
 	got := allClasses().Routes()
 	if len(got) != len(want) {
@@ -55,7 +56,7 @@ func TestR_ANS_003_TheRouteTable(t *testing.T) {
 	localOnly := &Format{classes: []formats.Class{formats.Local}}
 	localOnly.routes = localOnly.buildRoutes()
 	for _, r := range localOnly.Routes() {
-		if r.Name == routeRolesFind || r.Name == routeRoleVersions || r.Name == routeRoleArchive {
+		if r.Name == routeRolesFind || r.Name == routeRoleVersions || r.Name == routeRoleArchive || r.Name == routeRoleSearch {
 			t.Errorf("the table of a format with the local class alone holds %s", r.Name)
 		}
 		if len(r.Classes) > 0 && !reflect.DeepEqual(r.Classes, []formats.Class{local}) {
@@ -87,6 +88,7 @@ func TestR_ANS_003_MatchResolvesTheProtocolPaths(t *testing.T) {
 		{"POST", "v3/artifacts/collections", routePublish, formats.Params{}},
 		{"GET", "v3/imports/collections/abc/", routeImport, formats.Params{"id": "abc"}},
 		{"GET", "v1/roles/", routeRolesFind, formats.Params{}},
+		{"GET", "v1/search/roles/", routeRoleSearch, formats.Params{}},
 		{"GET", "v1/roles/16/versions/", routeRoleVersions, formats.Params{"id": "16"}},
 		{"GET", "v1/roles/archives/16/v1.0.0.tar.gz", routeRoleArchive, formats.Params{"id": "16", "file": "v1.0.0.tar.gz"}},
 	} {

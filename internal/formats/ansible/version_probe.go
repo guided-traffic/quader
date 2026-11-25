@@ -14,6 +14,9 @@ var _ formats.VersionProber = remoteAdapter{}
 // filled through u (it carries the archive's digest the gate checks), and the archive is the probe's file. A version whose document
 // the upstream does not have is not there.
 func (remoteAdapter) VersionProbe(ctx context.Context, u discover.Upstream, name, version string) (formats.Probe, bool, error) {
+	if id := roleIDOf(name); id != "" && version != "" {
+		return roleVersionProbe(ctx, u, id, version)
+	}
 	ns, n, ok := collection.SplitName(name)
 	if !ok || version == "" {
 		return formats.Probe{}, false, nil

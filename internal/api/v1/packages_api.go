@@ -707,10 +707,13 @@ func downloadURL(base, format string, repo qname.Repo, path string) string {
 // readmeTag is the strong tag of a README answer: the source, the renderer version
 // and the hash of the image origin list (R-API-029). It is computed before the
 // rendering, so a request that holds it costs no rendering.
-func readmeTag(rd *readme.Renderer, source string) string {
+func readmeTag(rd *readme.Renderer, source string, html bool) string {
 	h := sha256.New()
 	h.Write([]byte(source))
 	h.Write([]byte{0})
+	if html {
+		h.Write([]byte("html\x00"))
+	}
 	h.Write([]byte(strconv.Itoa(readme.Version)))
 	h.Write([]byte{0})
 	h.Write([]byte(rd.PolicyHash()))
@@ -749,13 +752,17 @@ func (s *Server) GetPackageVersionReadme(w http.ResponseWriter, r *http.Request,
 		httpserver.Problem(w, r, err)
 		return
 	}
-	tag := readmeTag(ps.Readme, rd.Source)
+	tag := readmeTag(ps.Readme, rd.Source, rd.HTML)
 	if NotModified(w, r, tag) {
 		return
 	}
-	res := ps.Readme.Render(rd.Source)
+	// An upstream's HTML (an Ansible role's README, R-ANS-039) is sanitized as it is; every other source is Markdown.
+	res, contentType := ps.Readme.Render(rd.Source), gen.PackageReadmeContentTypeTextmarkdown
+	if rd.HTML {
+		res, contentType = ps.Readme.RenderHTML(rd.Source), gen.PackageReadmeContentTypeTexthtml
+	}
 	b, err := json.Marshal(gen.PackageReadme{
-		ContentType: "text/markdown", Html: res.HTML, Truncated: res.Truncated,
+		ContentType: contentType, Html: res.HTML, Truncated: res.Truncated,
 		ExternalImagesBlocked: res.ExternalImagesBlocked,
 	})
 	if err != nil {
@@ -785,6 +792,19 @@ func (s *Server) GetClientSetup(w http.ResponseWriter, r *http.Request, projectK
 		return
 	}
 	writeJSON(w, r, http.StatusOK, out)
+}
+
+// setupDisplayName is the display name of a package the caller may read, "" when there is none.
+func (s *Server) setupDisplayName(r *http.Request, ps PackageServices, format, name string) string {
+	ctx, sc, err := s.packageScope(r, ps, view.ScopeRequest{Formats: []string{format}, ExactName: name})
+	if err != nil {
+		return ""
+	}
+	p, found, err := ps.View.Package(ctx, sc, format, name)
+	if err != nil || !found || p.Name == name {
+		return ""
+	}
+	return p.Name
 }
 
 // maxSetupValue bounds a value the snippets embed.
@@ -868,6 +888,11 @@ func (s *Server) clientSetup(r *http.Request, ps PackageServices, repoKey qname.
 			return gen.ClientSetup{}, badParam("package", "is not a package name of the format "+repo.Format)
 		}
 		values["package"] = norm
+		if claimingPrefix(templates, p.Client, norm) != "" {
+			// A package an install template of its own claims is written by its display name, the name its client knows (an
+			// Ansible role's "<owner>.<name>" for its package "role/<id>", R-ANS-056), when the caller may read the package.
+			values["displayName"] = s.setupDisplayName(r, ps, repo.Format, norm)
+		}
 	}
 
 	var registry, registryKey string
@@ -908,7 +933,7 @@ func (s *Server) clientSetup(r *http.Request, ps PackageServices, repoKey qname.
 			RegistryURL: registry, ImagePrefix: imagePrefix(f, registry), Repository: repoKey.String(), Project: repoKey.Project, Key: repoKey.Key, Endpoint: acc.Subject.Endpoint,
 			RequiresAuth: requiresAuth, Bastion: bastion,
 		},
-		Package: values["package"], Version: values["version"], Scope: scopeName, MayPublish: mayPublish,
+		Package: values["package"], Version: values["version"], DisplayName: values["displayName"], Scope: scopeName, MayPublish: mayPublish,
 	})
 	if err != nil {
 		return gen.ClientSetup{}, errs.Wrap(err, "api.clientSetup")

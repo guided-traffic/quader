@@ -74,6 +74,28 @@ type AnsibleImportTask struct {
 	FinishedAt       time.Time
 }
 
+type AnsibleRole struct {
+	RepoID       int64
+	RoleID       int64
+	Owner        string
+	Name         string
+	Description  string
+	GithubUser   string
+	GithubRepo   string
+	GithubBranch string
+	Tags         json.RawMessage
+	Dependencies json.RawMessage
+	Downloads    pgtype.Int8
+	CommitSha    string
+	ImportedAt   pgtype.Timestamptz
+	ReadmeState  string
+	ReadmeReason string
+	ReadmeFile   string
+	ReadmeHtml   string
+	ReadmeCommit string
+	RecordedAt   pgtype.Timestamptz
+}
+
 type AnsibleTombstone struct {
 	RepoID    int64
 	Name      string

@@ -77,7 +77,7 @@ func (k docKind) label() string {
 		return "versions"
 	case kindVersion:
 		return "version"
-	case kindRoleLookup, kindRoleVersions:
+	case kindRoleLookup, kindRoleVersions, kindRoleContent:
 		return "role"
 	}
 	return "other"

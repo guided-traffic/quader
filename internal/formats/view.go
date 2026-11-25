@@ -205,6 +205,10 @@ type ViewData struct {
 	// only with ViewReadme.
 	Readme     string
 	ReadmeFile string
+	// ReadmeHTML says that Readme is HTML an upstream rendered, untrusted, which the
+	// host sanitizes as it is instead of rendering it as Markdown (an Ansible role's
+	// readme_html, R-ANS-039, R-ANS-056).
+	ReadmeHTML bool
 }
 
 // ViewFind is a search the adapter answers (ViewAdapter.Find): one of Text and

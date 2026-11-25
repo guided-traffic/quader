@@ -3099,12 +3099,15 @@ func (e PackageOwnersState) Valid() bool {
 
 // Defines values for PackageReadmeContentType.
 const (
+	PackageReadmeContentTypeTexthtml     PackageReadmeContentType = "text/html"
 	PackageReadmeContentTypeTextmarkdown PackageReadmeContentType = "text/markdown"
 )
 
 // Valid indicates whether the value is a known member of the PackageReadmeContentType enum.
 func (e PackageReadmeContentType) Valid() bool {
 	switch e {
+	case PackageReadmeContentTypeTexthtml:
+		return true
 	case PackageReadmeContentTypeTextmarkdown:
 		return true
 	default:
@@ -13614,7 +13617,8 @@ type PackageOwnersState string
 
 // PackageReadme defines model for PackageReadme.
 type PackageReadme struct {
-	// ContentType The type of the source; `html` is always sanitized HTML.
+	// ContentType The type of the source: `text/markdown` is rendered, `text/html` is an upstream's HTML (an Ansible role's README, R-ANS-039,
+	// R-ANS-056) sanitized as it is; `html` is always sanitized HTML.
 	ContentType PackageReadmeContentType `json:"contentType"`
 
 	// ExternalImagesBlocked The number of external images replaced by links.
@@ -13625,7 +13629,8 @@ type PackageReadme struct {
 	Truncated bool `json:"truncated"`
 }
 
-// PackageReadmeContentType The type of the source; `html` is always sanitized HTML.
+// PackageReadmeContentType The type of the source: `text/markdown` is rendered, `text/html` is an upstream's HTML (an Ansible role's README, R-ANS-039,
+// R-ANS-056) sanitized as it is; `html` is always sanitized HTML.
 type PackageReadmeContentType string
 
 // PackageSuggestion defines model for PackageSuggestion.

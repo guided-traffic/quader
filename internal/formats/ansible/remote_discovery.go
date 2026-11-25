@@ -168,6 +168,8 @@ func upstreamURL(root *url.URL, d *discovery, t target, variant string) (*url.UR
 		return build(d.v1, "roles/"+t.roleID+"/versions/", "page_size="+strconv.Itoa(roleVersionsPageSize)+"&page="+strconv.Itoa(page))
 	case kindRoleArchive:
 		return build(d.v1, "roles/archives/"+t.roleID+"/"+escapeSeg(t.roleRef)+collection.ArchiveSuffix, "")
+	case kindRoleContent:
+		return build(d.v1, "roles/"+t.roleID+"/content/", "")
 	}
 	return nil, missing()
 }

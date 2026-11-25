@@ -2068,6 +2068,10 @@ type SetupTemplate struct {
 	// PackageExample is what an install template shows in place of SetupPackageRef when the request names no package, the
 	// example the format's other snippets write ("myapp:1.0"); "" keeps the placeholder (ADR-208).
 	PackageExample string
+	// Packages is the prefix of the normalized names an install template is for ("role/" for an Ansible role), "" for every
+	// package: for a package a prefixed template claims, the client's unprefixed install templates are left out and the package is
+	// written by its display name (ADR-285).
+	Packages string
 	// Examples are the literal values of the template the reader replaces (a file to publish, an image); the API names each
 	// one that stands in a snippet as a mark of the reader's (api-and-ui.md R-API-030, ADR-208).
 	Examples []string
@@ -2158,6 +2162,7 @@ type (
 		Metadata    map[string]any
 		Readme      string
 		ReadmeFile  string
+		ReadmeHTML  bool // Readme is an upstream's HTML, which the host sanitizes and does not render (an Ansible role's README, R-ANS-039, ADR-285)
 	}
 	ViewFields uint8
 )
@@ -2761,6 +2766,8 @@ type PackageStore interface {
 // transaction of the hook or of Host.Write that handed it out (Q-ARCH-212).
 type PackageWriter interface {
 	EnsureLocked(ctx context.Context, repo RepoRef, name, displayName string) (pkg PackageRef, created bool, err error)
+	// SetDisplayName renames what the screens show of an existing package; the normalized name stays (ADR-285).
+	SetDisplayName(ctx context.Context, repo RepoRef, name, displayName string) (changed bool, err error)
 	Versions(ctx context.Context, pkg PackageRef) ([]VersionRow, error)
 	InsertVersion(ctx context.Context, pkg PackageRef, v NewVersion) (VersionID, error)
 	TrashOrDeleteVersion(ctx context.Context, v VersionID, purge bool) error

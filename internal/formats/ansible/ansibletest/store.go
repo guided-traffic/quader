@@ -32,6 +32,10 @@ type Store struct {
 	DocsJobs []DocsFillJob
 	docs     map[key]docRow
 	fetches  map[key]fetchRow
+	// RoleJobs are the README fetches of roles the store was asked to queue, "<repository id>/role/<id>", in order.
+	RoleJobs []string
+	roles    map[roleKey]rows.Role
+	packaged map[roleKey]bool
 }
 
 type key struct {

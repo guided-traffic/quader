@@ -25,6 +25,7 @@ type Store interface {
 	LocalStore
 	RemoteStore
 	DocsStore
+	RoleStore
 }
 
 // LocalStore is the part of the data port the local class writes and reads (R-ANS-008 to R-ANS-012).
@@ -79,6 +80,9 @@ type ViewStore interface {
 	ViewStored(ctx context.Context, repoID int64, name string, limit int) ([]string, error)
 	// ViewWithheld lists the generic versions of the repositories (by key) whose number a tombstone withholds.
 	ViewWithheld(ctx context.Context, repos []string) ([]int64, error)
+	// ViewRoles reads the facts of the roles of the given generic versions (R-ANS-056) and, with readme, the README HTML; a version of
+	// a role without facts, and a version of a collection, is absent.
+	ViewRoles(ctx context.Context, ids []int64, readme bool) ([]rows.RoleView, error)
 }
 
 // RemoteStore is the part of the data port the remote class writes and reads (R-ANS-018).
@@ -94,6 +98,22 @@ type RemoteStore interface {
 	// package screens read for the description, the licences, the dependencies and the links. It writes no event and no tombstone; a row of
 	// the same version is replaced, and it goes with the cached item.
 	PutCachedVersion(ctx context.Context, tx formats.Tx, v rows.VersionRow) error
+}
+
+// RoleStore is the part of the data port that keeps the facts of the roles a remote read from its upstream (R-ANS-056): the table
+// ansible_roles (migration ansible_roles). The rows are derived from the upstream's documents and decide nothing: the package of a role
+// stays "role/<id>" (Q-ANS-36).
+type RoleStore interface {
+	// PutRoles records the facts of the roles of a lookup in the transaction of its fill (OnFill); a role's README and its state stay.
+	PutRoles(ctx context.Context, tx formats.Tx, repoID int64, roles []rows.Role) error
+	// Role reads the facts of a role without the README's HTML, in tx or alone (nil); found is false when the remote has none.
+	Role(ctx context.Context, tx formats.Tx, repoID, id int64) (rows.Role, bool, error)
+	// SetRoleReadme records the README of a role and its state, in the fill's transaction (tx) or alone (nil); a role without facts is
+	// left alone.
+	SetRoleReadme(ctx context.Context, tx formats.Tx, repoID, id int64, r rows.RoleReadme) error
+	// EnqueueRoleReadme marks the README of a role queued and queues the job ansible-docs-fill for it in tx; it queues nothing when a job
+	// for the role exists.
+	EnqueueRoleReadme(ctx context.Context, tx formats.Tx, repoID, id int64) error
 }
 
 // DocsStore is the part of the data port that keeps the documentation of a collection version (R-ANS-033 to R-ANS-036): the tables

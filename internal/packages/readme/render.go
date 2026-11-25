@@ -180,6 +180,17 @@ func (r *Renderer) SanitizeHTMLLinked(src string, links Links) string {
 	return out
 }
 
+// RenderHTML sanitizes HTML an upstream rendered (an Ansible role's readme_html, R-ANS-039): the allowlist, the link rules and the image
+// rules of a rendered Markdown source, with the count of the external images it replaced. A source above MaxHTMLBytes is shown as its
+// escaped text, cut, with Truncated set.
+func (r *Renderer) RenderHTML(src string) Result {
+	if len(src) > MaxHTMLBytes {
+		return Result{HTML: plain(cutRunes(src, MaxHTMLBytes)), Truncated: true}
+	}
+	out, blocked := r.finish(r.policy.SanitizeBytes([]byte(src)), nil)
+	return Result{HTML: out, ExternalImagesBlocked: blocked}
+}
+
 // Links resolves the target of a link that is neither an absolute http, https or
 // mailto address: a fragment or a relative reference. It returns the target the
 // link keeps, or false to remove it like any other relative link.

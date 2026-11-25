@@ -34,6 +34,7 @@ func init() {
 
 		routeRoleVersions: func(f *Format) formats.HandlerFunc { return f.virtualRoleVersions },
 		routeRoleArchive:  func(f *Format) formats.HandlerFunc { return f.virtualRoleArchive },
+		routeRoleSearch:   func(f *Format) formats.HandlerFunc { return f.virtualRoleSearch },
 	} {
 		registerHandler(formats.Virtual, route, h)
 	}

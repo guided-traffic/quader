@@ -29,6 +29,8 @@ const (
 	kRoleLookup   = "role-lookup"
 	kRoleDoc      = "role-doc"
 	kRoleVersions = "role-versions"
+	kRoleContent  = "role-content"
+	kRoleSearch   = "role-search"
 	kOther        = "other"
 )
 
@@ -64,6 +66,10 @@ func (rt route) class() string {
 		return ClassArtifact
 	case kRoleLookup, kRoleDoc, kRoleVersions:
 		return ClassRole
+	case kRoleContent:
+		return ClassRoleContent
+	case kRoleSearch:
+		return ClassRoleSearch
 	}
 	return ClassOther
 }
@@ -94,6 +100,8 @@ func parseGalaxy(path string) route {
 		return route{kind: kPulp, file: segs[3]}
 	case segs[0] == "v1" && len(segs) >= 2 && segs[1] == "roles":
 		return roleRoute(segs[2:])
+	case segs[0] == "v1" && len(segs) == 3 && segs[1] == "search" && segs[2] == "roles":
+		return route{kind: kRoleSearch}
 	}
 	return route{kind: kOther}
 }
@@ -137,6 +145,10 @@ func roleRoute(rest []string) route {
 	case len(rest) == 2 && rest[1] == "versions":
 		if id, err := strconv.Atoi(rest[0]); err == nil {
 			return route{kind: kRoleVersions, roleID: id}
+		}
+	case len(rest) == 2 && rest[1] == "content":
+		if id, err := strconv.Atoi(rest[0]); err == nil {
+			return route{kind: kRoleContent, roleID: id}
 		}
 	}
 	return route{kind: kOther}

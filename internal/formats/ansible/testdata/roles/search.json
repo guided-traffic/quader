@@ -1,0 +1,86 @@
+{
+ "count": 1590,
+ "next": "http://galaxy.ansible.com/api/v1/search/roles/?autocomplete=docker&page=2&page_size=3",
+ "previous": null,
+ "results": [
+  {
+   "id": 50,
+   "upstream_id": 43936,
+   "created": "2023-05-08T20:18:15.115621Z",
+   "modified": "2023-10-29T18:44:32.034030Z",
+   "imported": "2019-10-11T05:57:02.334432-04:00",
+   "github_user": "0x28d",
+   "username": "0x28d",
+   "github_repo": "ansible-role-docker-ce",
+   "github_branch": "master",
+   "commit": "6483e893b1a71bb180e838105967674bf9b76020",
+   "commit_message": "Set role_name",
+   "name": "docker_ce",
+   "description": "Ansible role for Docker CE",
+   "summary_fields": {
+    "dependencies": [],
+    "namespace": {
+     "id": 9,
+     "name": "0x28d",
+     "avatar_url": "https://galaxy.ansible.com/api/pulp/api/v3/content/ansible/namespaces/018d1a01-edbd-7a0c-a4dc-91c3dbd6d51f/avatar/"
+    },
+    "provider_namespace": {
+     "id": 13612,
+     "name": "gh_0x28d",
+     "pulp_href": "/api/pulp/api/v3/pulp_ansible/namespaces/13612/"
+    },
+    "repository": {
+     "name": "ansible-role-docker-ce",
+     "original_name": "ansible-role-docker-ce"
+    },
+    "tags": [
+     "docker"
+    ],
+    "versions": []
+   },
+   "download_count": 3879
+  },
+  {
+   "id": 57,
+   "upstream_id": 47102,
+   "created": "2023-05-08T20:18:16.700491Z",
+   "modified": "2023-10-29T18:44:32.095185Z",
+   "imported": "2020-03-07T23:56:58.868051-05:00",
+   "github_user": "0x646e78",
+   "username": "0x646e78",
+   "github_repo": "ansible-role-docker-debian",
+   "github_branch": "master",
+   "commit": "939471cd900a823439bb65d921dca310561b55d7",
+   "commit_message": "update readme",
+   "name": "docker_debian",
+   "description": "Install docker-ce on Debian",
+   "summary_fields": {
+    "dependencies": [],
+    "namespace": {
+     "id": 13,
+     "name": "0x646e78",
+     "avatar_url": "https://galaxy.ansible.com/api/pulp/api/v3/content/ansible/namespaces/018d1a01-f010-73da-96d4-70dcd7cd0dfe/avatar/"
+    },
+    "provider_namespace": {
+     "id": 13616,
+     "name": "gh_0x646e78",
+     "pulp_href": "/api/pulp/api/v3/pulp_ansible/namespaces/13616/"
+    },
+    "repository": {
+     "name": "ansible-role-docker-debian",
+     "original_name": "ansible-role-docker-debian"
+    },
+    "tags": [
+     "compose",
+     "debian",
+     "debian10",
+     "docker",
+     "dockerce",
+     "dockercompose"
+    ],
+    "versions": []
+   },
+   "download_count": 226
+  }
+ ]
+}

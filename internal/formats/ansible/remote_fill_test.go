@@ -54,7 +54,9 @@ func TestR_ANS_020_ARoleArchiveMustBeAGzipTarArchive(t *testing.T) {
 	path := formats.Path{Path: "roles/16/1.0.0.tar.gz"}
 	tarball := collectiontest.Pack([]collectiontest.Entry{{Name: "role-1.0.0/", Dir: true}, {Name: "role-1.0.0/tasks/main.yml", Body: []byte("---\n")}})
 
-	if ins, err := a.InspectFill(context.Background(), formats.RemoteContext{}, path, spooled{tarball}); err != nil || ins != nil {
+	// A role archive is the version of the role's package (R-ANS-056); nothing of the archive is claimed.
+	if ins, err := a.InspectFill(context.Background(), formats.RemoteContext{}, path, spooled{tarball}); err != nil || ins == nil ||
+		ins.Package != "role/16" || ins.Version != "1.0.0" {
 		t.Errorf("a role archive: %+v %v", ins, err)
 	}
 	for name, b := range map[string][]byte{"text": []byte("<html>not found</html>"), "empty": nil, "truncated": tarball[:len(tarball)/2]} {

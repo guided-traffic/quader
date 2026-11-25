@@ -45,8 +45,9 @@ type setupInput struct {
 	// snippet without a credential has nothing for an always-auth switch to send.
 	Data formats.SetupData
 	// Package and Version name what an install snippet installs; Package empty keeps
-	// the placeholder.
-	Package, Version string
+	// the placeholder. DisplayName is the package's display name, which an install
+	// template with a Packages prefix writes in place of Package (R-ANS-056).
+	Package, Version, DisplayName string
 	// Scope is the scope of the scoped configure variant, without its "@"; empty for
 	// none.
 	Scope string
@@ -126,12 +127,16 @@ func renderSnippets(in setupInput) ([]snippet, error) {
 		data.RequiresAuth = false
 	}
 	var out []snippet
+	claimed := claimingPrefix(in.Templates, in.Client, in.Package)
 	for _, t := range in.Templates {
 		if t.Client != in.Client {
 			continue
 		}
 		if t.Section == "publish" && !in.MayPublish {
 			continue
+		}
+		if t.Section == "install" && t.Packages != claimed {
+			continue // an install template for other packages (formats.SetupTemplate.Packages)
 		}
 		variants := []string{""}
 		if in.Scope != "" && hasScopedVariant(t) {
@@ -146,7 +151,11 @@ func renderSnippets(in setupInput) ([]snippet, error) {
 			}
 			content = applyCredentials(content, in)
 			if t.Section == "install" {
-				content = substitutePackage(content, t, in.Package, in.Version)
+				name := in.Package
+				if t.Packages != "" && in.DisplayName != "" {
+					name = in.DisplayName
+				}
+				content = substitutePackage(content, t, name, in.Version)
 			}
 			s := snippet{ID: snippetID(t, scope != ""), Tab: t.Section, FileName: t.File, Language: t.Lang, Content: content}
 			s.Marks = snippetMarks(content, t, in)
@@ -154,6 +163,20 @@ func renderSnippets(in setupInput) ([]snippet, error) {
 		}
 	}
 	return out, nil
+}
+
+// claimingPrefix is the Packages prefix of the client's install templates that claims the package, "" when none does (or no package is
+// named): the install templates whose Packages equals it are the ones rendered.
+func claimingPrefix(templates []formats.SetupTemplate, client, pkg string) string {
+	if pkg == "" {
+		return ""
+	}
+	for _, t := range templates {
+		if t.Client == client && t.Section == "install" && t.Packages != "" && strings.HasPrefix(pkg, t.Packages) {
+			return t.Packages
+		}
+	}
+	return ""
 }
 
 // runTemplate executes a template over the data with the quoting functions. A

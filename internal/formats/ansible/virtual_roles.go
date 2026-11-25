@@ -148,6 +148,44 @@ func (f *Format) virtualRolesFind(ctx context.Context, rq *formats.Request, w ht
 	return errNoSuchRole()
 }
 
+// virtualRoleSearch answers `ansible-galaxy role search` through the first remote member that answers it (R-ANS-056), with the roles
+// of the answer given the id of that member, as a lookup's are. A member whose upstream has no v1 API is passed over; the member's own
+// patterns, rules and the caller's read of it decide the hits, as for a search of the member itself.
+func (f *Format) virtualRoleSearch(ctx context.Context, rq *formats.Request, w http.ResponseWriter) error {
+	if _, err := roleSearchParams(rq.URL.Query()); err != nil {
+		return err
+	}
+	members, err := f.remoteMembers(ctx, rq, roleSearchPath)
+	if err != nil {
+		return err
+	}
+	handle, err := f.memberHandler(routeRoleSearch)
+	if err != nil {
+		return err
+	}
+	var failure error
+	for _, m := range members {
+		c := &capture{}
+		if err := handle(ctx, m.rq, c); err != nil {
+			if failure == nil && errs.KindOf(err) != errs.NotFound && errs.KindOf(err) != errs.Forbidden {
+				failure = err
+			}
+			continue
+		}
+		body, _, err := rewriteRoleFind(c.buf.Bytes(), m.planned.Member.Name.Key)
+		if err != nil {
+			return err
+		}
+		c.buf.Reset()
+		c.buf.Write(body)
+		return writeCaptured(w, c)
+	}
+	if failure != nil {
+		return failure
+	}
+	return errs.E(errs.NotFound, errs.CodeNotFound, "No remote member of this repository searches roles.")
+}
+
 // rewriteRoleFind gives the roles of a lookup answer the id of the member and returns the number of roles.
 func rewriteRoleFind(body []byte, member string) ([]byte, int, error) {
 	var doc map[string]json.RawMessage

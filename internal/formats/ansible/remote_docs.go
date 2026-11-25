@@ -186,12 +186,12 @@ func renderRoleVersions(doc []byte, id string, repo string, allowed func(string)
 		obj["download_url"] = rawString(repo + "v1/roles/archives/" + id + "/" + e.ref + ".tar.gz")
 		results = append(results, obj)
 	}
-	return renderRolePage(page.doc, results, repo, "v1/roles/"+id+"/versions/", nil)
+	return renderRolePage(page.doc, results, repo, "v1/roles/"+id+"/versions/", nil, roleVersionsPageSize)
 }
 
 // renderRolePage writes the members of a v1 page with the given results and the links of the page on the repository's address
-// base + path. extra are query parameters every link carries (the lookup's owner and name).
-func renderRolePage(doc map[string]json.RawMessage, results []map[string]json.RawMessage, repo, path string, extra url.Values) ([]byte, error) {
+// base + path. extra are query parameters every link carries (the lookup's owner and name, a search's words), size the page_size it names.
+func renderRolePage(doc map[string]json.RawMessage, results []map[string]json.RawMessage, repo, path string, extra url.Values, size int) ([]byte, error) {
 	out := make(map[string]json.RawMessage, len(doc))
 	for k, v := range doc {
 		out[k] = v
@@ -217,7 +217,7 @@ func renderRolePage(doc map[string]json.RawMessage, results []map[string]json.Ra
 			q[k] = v
 		}
 		q.Set("page", strconv.Itoa(page))
-		q.Set("page_size", strconv.Itoa(roleVersionsPageSize))
+		q.Set("page_size", strconv.Itoa(size))
 		return rawString(repo + path + "?" + q.Encode())
 	}
 	for _, k := range []string{"next", "next_link"} {
@@ -271,7 +271,7 @@ func renderRoleLookup(doc []byte, repo string, owner, name string) ([]byte, erro
 		q.Set("owner__username", owner)
 		q.Set("name", name)
 	}
-	return renderRolePage(page, kept, repo, "v1/roles/", q)
+	return renderRolePage(page, kept, repo, "v1/roles/", q, roleVersionsPageSize)
 }
 
 func rawString(s string) json.RawMessage {

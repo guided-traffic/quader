@@ -7,7 +7,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 )
 
-// The names of the routes (R-ANS-003 to R-ANS-009, R-ANS-020): "ansible.<resource>.<operation>". The request log and the metrics
+// The names of the routes (R-ANS-003 to R-ANS-009, R-ANS-020, R-ANS-056): "ansible.<resource>.<operation>". The request log and the metrics
 // name the handler of a request by it, and a class file registers its handler by it (handlers.go).
 const (
 	routeRoot         = "ansible.root.get"
@@ -21,6 +21,7 @@ const (
 	routeRolesFind    = "ansible.roles.find"
 	routeRoleVersions = "ansible.role.versions"
 	routeRoleArchive  = "ansible.role.archive"
+	routeRoleSearch   = "ansible.roles.search"
 )
 
 // artifactClientDigest declares that ansible-galaxy checks a collection archive against the SHA-256 the collection version names, so
@@ -80,6 +81,8 @@ func (f *Format) buildRoutes() []formats.Route {
 			"v1/roles/16/versions", "v1/roles/16/versions/"),
 		route(routeRoleArchive, http.MethodGet, "v1/roles/archives/{id}/{file}", formats.Download, read, []formats.Class{remote, virtual}, matchRoleArchive,
 			"v1/roles/archives/16/v1.0.0.tar.gz"),
+		route(routeRoleSearch, http.MethodGet, "v1/search/roles", formats.Volatile, read, []formats.Class{remote, virtual}, matchRoleSearch,
+			"v1/search/roles", "v1/search/roles/"),
 	}
 	for i := range all {
 		// The documentation of a version is the wiki of the repository (R-ANS-037, R-AUTHZ-034): the dispatcher refuses a caller who may not read it.

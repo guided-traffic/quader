@@ -27,6 +27,7 @@ const (
 	segImports     = "imports"
 	segRoles       = "roles"
 	segArchives    = "archives"
+	segSearch      = "search"
 )
 
 // protocolSegments splits the escaped repository-relative path of a request into decoded segments. One trailing slash is not a
@@ -137,6 +138,14 @@ func matchImport(escaped string) (formats.Params, bool) {
 // matchRoleFind matches "v1/roles", the lookup of a role by owner and name.
 func matchRoleFind(escaped string) (formats.Params, bool) {
 	if _, ok := shape(escaped, 2, map[int]string{0: segV1, 1: segRoles}); !ok {
+		return nil, false
+	}
+	return formats.Params{}, true
+}
+
+// matchRoleSearch matches "v1/search/roles", the search of `ansible-galaxy role search` (R-ANS-056).
+func matchRoleSearch(escaped string) (formats.Params, bool) {
+	if _, ok := shape(escaped, 3, map[int]string{0: segV1, 1: segSearch, 2: segRoles}); !ok {
 		return nil, false
 	}
 	return formats.Params{}, true

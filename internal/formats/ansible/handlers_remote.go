@@ -34,6 +34,7 @@ func init() {
 		routeRolesFind:    func(f *Format) formats.HandlerFunc { return f.remoteRoleFind },
 		routeRoleVersions: func(f *Format) formats.HandlerFunc { return f.remoteRoleVersions },
 		routeRoleArchive:  func(f *Format) formats.HandlerFunc { return f.remoteRoleArchive },
+		routeRoleSearch:   func(f *Format) formats.HandlerFunc { return f.remoteRoleSearch },
 	} {
 		registerHandler(formats.Remote, route, h)
 	}

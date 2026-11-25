@@ -99,6 +99,8 @@ type Data struct {
 	ContentPaths    []string
 	Readme          string
 	ReadmeFile      string
+	// ReadmeHTML: Readme is an upstream's HTML, sanitized and not rendered (R-ANS-039).
+	ReadmeHTML bool
 }
 
 // Find is a search the adapter answers: one of Text and Keyword is set.
@@ -210,4 +212,6 @@ type VersionDetail struct {
 type Readme struct {
 	Source   string
 	FileName string
+	// HTML says that Source is an upstream's HTML: the answer sanitizes it and renders no Markdown (R-ANS-039).
+	HTML bool
 }

@@ -229,6 +229,19 @@ func (w *Writer) TrashOrDeleteVersion(ctx context.Context, version int64, purge 
 	return w.touch(ctx, pkgs[0])
 }
 
+// SetDisplayName gives an existing package of the repository another display name and raises its revision; changed is false for a
+// package that does not exist or has the name already (ansible.md R-ANS-056: a role's owner and name arrive after its package).
+func (w *Writer) SetDisplayName(ctx context.Context, repoID int64, name, displayName string) (bool, error) {
+	if displayName == "" {
+		return false, nil
+	}
+	ids, err := w.qs.SetPackageDisplayName(ctx, q.SetPackageDisplayNameParams{RepoID: repoID, Name: name, DisplayName: displayName})
+	if err != nil || len(ids) == 0 {
+		return false, err
+	}
+	return true, w.touch(ctx, ids[0])
+}
+
 // SetPackageAttributes replaces the attributes of a package.
 func (w *Writer) SetPackageAttributes(ctx context.Context, pkg Ref, attrs json.RawMessage) error {
 	a, err := attributes(attrs)

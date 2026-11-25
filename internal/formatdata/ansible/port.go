@@ -8,8 +8,8 @@
 // schema is checked against the registry (cmd/quader/registry.go).
 //
 // The port is three groups, each in files of its own: local_store.go (the local class: versions, tombstones, tasks, the reindex step),
-// remote_store.go (the remote class: the digests a remote's version documents announce) and docs_store.go (the documentation of
-// collections, R-ANS-033). A group that is not built yet answers
+// remote_store.go (the remote class: the digests a remote's version documents announce), docs_store.go (the documentation of
+// collections, R-ANS-033) and roles_store.go (the facts of the roles a remote read, R-ANS-056). A group that is not built yet answers
 // not_implemented, so nothing is silently empty; the package that builds a group replaces its files and no other. The job handlers are
 // in jobs.go.
 package ansible
@@ -58,6 +58,7 @@ type Store struct {
 	remoteStore
 	viewStore
 	docsStore
+	roleStore
 }
 
 // New creates the store.
@@ -69,7 +70,7 @@ func New(o Options) (*Store, error) {
 		return nil, errs.E(errs.Internal, errs.CodeInternal, "ansible: the data port needs an audit recorder")
 	}
 	g := &group{o: o}
-	return &Store{o: o, localStore: localStore{g}, remoteStore: remoteStore{g}, viewStore: viewStore{g}, docsStore: docsStore{g}}, nil
+	return &Store{o: o, localStore: localStore{g}, remoteStore: remoteStore{g}, viewStore: viewStore{g}, docsStore: docsStore{g}, roleStore: roleStore{g}}, nil
 }
 
 // group is what every group of the port shares: the options. A group embeds a pointer to it, so the composition is one value.

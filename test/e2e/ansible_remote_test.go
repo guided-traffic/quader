@@ -9,6 +9,7 @@ package e2e
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -73,13 +74,14 @@ func TestAnsibleRemote(t *testing.T) {
 				"test -s roles/geerlingguy.pip/meta/main.yml && test -s coll/ansible_collections/acme/signed/MANIFEST.json")
 			c.must(script, env)
 			if img.name == ansibleImages[0].name {
-				afterRoles = s.ansibleCounts(t).Total()
+				afterRoles = clientRequests(s.ansibleCounts(t))
 			}
 		})
 	}
 
 	t.Run("R-ANS-020 R-ANS-032 the second client's role install costs the upstream no request", func(t *testing.T) {
-		if got := s.ansibleCounts(t).Total(); got != afterRoles {
+		// The README of the role is fetched once by a job after the first install (R-ANS-056), whenever it runs: it is no client's request.
+		if got := clientRequests(s.ansibleCounts(t)); got != afterRoles {
 			t.Fatalf("the test upstream saw %d requests after both role installs, %d after the first: %+v", got, afterRoles, s.ansibleCounts(t).Entries)
 		}
 	})
@@ -93,6 +95,14 @@ func TestAnsibleRemote(t *testing.T) {
 		}
 		if !unauthorized.MatchString(out) {
 			t.Errorf("the client's message does not name the authentication failure:\n%s", tailLines(out, 20))
+		}
+	})
+
+	t.Run("R-ANS-056 ansible-galaxy role search finds a role of the upstream through the remote", func(t *testing.T) {
+		c := fx.client(t, ansibleCore221)
+		out := c.must(withCfg(cfg, "ansible-galaxy role search pip"), env)
+		if !strings.Contains(out, "geerlingguy.pip") || !strings.Contains(out, "Pip (Python package manager) for Linux.") {
+			t.Errorf("the search's output:\n%s", tailLines(out, 20))
 		}
 	})
 
@@ -114,6 +124,12 @@ func TestAnsibleRemote(t *testing.T) {
 			t.Errorf("the versions offered for acme.rolex: %s", vs)
 		}
 	})
+}
+
+// clientRequests is what the upstream saw for the clients: every request but the README fetch of a role, which a job makes once after
+// the first install of the role (R-ANS-056).
+func clientRequests(c ansiblestub.Counts) int {
+	return c.Total() - c.OfKind(ansiblestub.ClassRoleContent, http.MethodGet)
 }
 
 // manifestVersions is a script that prints "<collection> <version>" for each collection installed below ./coll.

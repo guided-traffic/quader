@@ -953,6 +953,31 @@ func TestR_ANS_022_ARoleLookupNobodyAnswersIsEmptyAndOneAMemberCouldNotAnswerIsA
 	}
 }
 
+// TestR_ANS_056_ARoleSearchIsAnsweredByTheFirstRemoteMemberThatAnswersWithTheMembersIdInIt: a member whose upstream has no v1 API
+// (404) is passed over, the next one answers, and its hits carry the member's id; a query outside the bounds asks no member.
+func TestR_ANS_056_ARoleSearchIsAnsweredByTheFirstRemoteMemberThatAnswersWithTheMembersIdInIt(t *testing.T) {
+	w := newWorld(t, local("loc", 1, 0), remote("rem-a", 2, 1), remote("rem-b", 3, 2))
+	var asked []string
+	withHandler(t, formats.Remote, routeRoleSearch, func(_ context.Context, rq *formats.Request, rw http.ResponseWriter) error {
+		asked = append(asked, rq.Repo.Name.Key)
+		if rq.Repo.Name.Key == "rem-a" {
+			return missing()
+		}
+		_, _ = rw.Write([]byte(`{"count":1,"results":[{"id":16,"url":"/api/v1/roles/16/","username":"geerlingguy","name":"pip"}]}`))
+		return nil
+	})
+	r := w.get("v1/search/roles/", query("autocomplete=pip"))
+	if r.Code != http.StatusOK || !strings.Contains(r.Body.String(), `"id":"rem-b-16"`) || !strings.Contains(r.Body.String(), "/api/v1/roles/rem-b-16/") {
+		t.Fatalf("%d %s", r.Code, r.Body.String())
+	}
+	if strings.Join(asked, ",") != "rem-a,rem-b" {
+		t.Errorf("members asked: %v", asked)
+	}
+	if r := w.get("v1/search/roles/", query("page_size=0")); r.Code != http.StatusBadRequest || len(asked) != 2 {
+		t.Errorf("a query outside its bounds: %d, asked %v", r.Code, asked)
+	}
+}
+
 func TestR_ANS_022_TheRoleVersionsAndTheArchiveAreAskedOfTheMemberTheIdNamesWithTheUpstreamsId(t *testing.T) {
 	w, asked := roleWorld(t)
 	r := w.get("v1/roles/rem-b-16/versions/")
