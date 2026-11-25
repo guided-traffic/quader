@@ -59,8 +59,8 @@ func TestR_OCI_042_AChartsPageShowsItsFactsReadmeAndValues(t *testing.T) {
 	})
 	m, _ := json.Marshal(map[string]any{
 		"schemaVersion": 2, "mediaType": manifestType,
-		"config": map[string]any{"mediaType": "application/vnd.cncf.helm.config.v1+json", "digest": digestOf(cfg), "size": len(cfg)},
-		"layers": []any{map[string]any{"mediaType": "application/vnd.cncf.helm.chart.content.v1.tar+gzip", "digest": digestOf(content), "size": len(content)}},
+		"config":      map[string]any{"mediaType": "application/vnd.cncf.helm.config.v1+json", "digest": digestOf(cfg), "size": len(cfg)},
+		"layers":      []any{map[string]any{"mediaType": "application/vnd.cncf.helm.chart.content.v1.tar+gzip", "digest": digestOf(content), "size": len(content)}},
 		"annotations": map[string]string{"org.opencontainers.image.title": "web", "org.opencontainers.image.version": "0.3.0"},
 	})
 	want(t, p.pushImage(p.as("admin"), repoLocal, "charts/web", "0.3.0", image{config: cfg, layers: [][]byte{content}, manifest: m}), http.StatusCreated, "")

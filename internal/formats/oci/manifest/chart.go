@@ -37,8 +37,15 @@ func (r *configReader) chart(root node) (*rows.ChartConfig, bool) {
 		dst  *string
 		name string
 	}{
-		{&c.APIVersion, "apiVersion"}, {&c.Name, "name"}, {&c.Version, "version"}, {&c.AppVersion, "appVersion"},
-		{&c.Description, "description"}, {&c.Type, "type"}, {&c.KubeVersion, "kubeVersion"}, {&c.Home, "home"}, {&c.Icon, "icon"},
+		{&c.APIVersion, "apiVersion"},
+		{&c.Name, "name"},
+		{&c.Version, "version"},
+		{&c.AppVersion, "appVersion"},
+		{&c.Description, "description"},
+		{&c.Type, "type"},
+		{&c.KubeVersion, "kubeVersion"},
+		{&c.Home, "home"},
+		{&c.Icon, "icon"},
 	} {
 		v, ok := r.str(obj, s.name)
 		if !ok {

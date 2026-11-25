@@ -176,9 +176,9 @@ type Omitted struct {
 type TagFacts struct {
 	VersionID int64
 	// RepoID is the repository that holds the tag.
-	RepoID int64
-	Image     ManifestFacts
-	Children  []ManifestFacts
+	RepoID   int64
+	Image    ManifestFacts
+	Children []ManifestFacts
 }
 
 // ManifestFacts are the facts of one manifest row. Blobs and ConfigFacts are nil when they were not asked for or are not known.
