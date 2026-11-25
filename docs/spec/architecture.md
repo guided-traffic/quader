@@ -2466,8 +2466,9 @@ format pays nothing without rules; `Undelivered` is the refusal of a package's o
 `not_allowed_in_repository` with `Cache-Control: no-store`, the `rules.Refusal` its cause); `DeliveryView` is the rules as an
 `ExposureView`, `JoinViews` joins two views and `DocumentView` the endpoint's exposure with the rules (an endpoint with rules whose
 view is missing exposes nothing), and `DocumentFingerprint` names both in a rendition's key and validator. `MemberDelivery` returns
-the rules of a remote member of the request's virtual repository (`MemberRules`), and `ModeReason` the reason of a package refused
-whole whose own decision delivers it. `Host.RecordRefusal` is the core's record of a refusal that reaches the client, which
+the rules of a remote member of the request's virtual repository (`MemberRules`); the reason of a package refused whole whose own
+decision delivers it is the rule set's `EmptyReason` (`outsideRange` under a range of its allow, else the mode's; `ModeReason` left with
+contract version 14, [remote-curation.md](remote-curation.md) R-CUR-026, ADR-283). `Host.RecordRefusal` is the core's record of a refusal that reaches the client, which
 `ServeRoute` calls (R-CUR-004). These are additions of services: the contract version stays 11 (R-ARCH-025).
 
 The blocks above are held equal to the code: `TestR_ARCH_008_TheWrittenContractEqualsTheCode`
@@ -2716,7 +2717,9 @@ type UploadSession struct {
 // discover.Bounded is an optional interface of the Upstream the engine lends: VersionBounds() (maxVersions int, includePrereleases bool)
 // tells a plan the bounds of R-REPO-051, and discover.BoundsOf(u) reads them (no bound and prereleases included for an Upstream
 // that does not implement it). A plan whose versions cost a request each leaves out the versions the engine would drop (Q-OCI-182).
-// It is an addition: ContractVersion stays 3 (ADR-182).
+// It is an addition: ContractVersion stays 3 (ADR-182). discover.Delivering, Delivers(name, version) bool, says which versions the
+// repository's delivery rules deliver, so such a plan counts only those (DeliveredBy reads it; every version for an Upstream without it,
+// a download ahead's; remote-curation.md R-CUR-026, Q-CUR-226, ADR-283).
 //
 // catalog.Facts gains RegistryRoot (the one format whose client address is the root of a host: ProtocolBasePath is
 // catalog.RegistryRootBasePath, "/v2/{project}/{key}/"; the catalog refuses a second format that declares it, Q-OCI-4) and

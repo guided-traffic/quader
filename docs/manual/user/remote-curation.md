@@ -93,6 +93,15 @@ For Maintainers, Owners and administrators the tab adds:
 - The package's switch, at the right of an opened package and in the column **State** of a closed row: it decides every version that
   has no setting of its own, future versions included. Where some versions have settings of their own, Quader asks first; they are kept
   unless you tick **Reset them**.
+- Under the package's switch, **All versions** or the range of versions the package is delivered with, and **Limit versions…**: a range
+  delivers only the versions from one version on (**From version**), up to one (**Up to version** with **included**) or below it
+  (**below it**), or between two. This is how you deliver "every version from 5.0.0 on", or keep out every version below or above one.
+  The fields offer the versions the package lists, and you may type any version; leave both empty for every version. Saving turns the
+  package's switch on with the range. A version outside the range shows **Outside the allowed versions** and the rule "Rule: the package,
+  from 5.0.0"; switch it on in its row to deliver it anyway. The versions are compared in the format's own order, so a tag that names no
+  version, such as an image's `latest`, lies outside every range: `docker pull` without a tag asks for `latest`, so switch `latest` on in
+  its row when your clients pull it. A Debian remote's clients see every version in the archive's lists; use a virtual repository over
+  the remote, which lists only what is delivered.
 - The cache's one action beside its state: **Download**, **Download for examination** (for a version the repository does not deliver:
   it is stored and scanned, not delivered) or **Discard** (removes what was fetched for examination).
 - On a package: **Download every version…** at the left; on a level: **Download this sub-section…**. Both downloads open a preview of how
@@ -191,8 +200,9 @@ By default, finished and cancelled downloads leave the list a week after they en
 ## What your client shows when the rules refuse
 
 A refused download answers `403` with the code `not_allowed_in_repository` and a text that names the package, the version (or "any
-version"), the repository and the reason, followed by where to ask: "left-pad any version is not allowed in web/npmjs: this repository
-delivers only what is allowed. Ask for it at https://quader.example.com/ui/projects/web/repositories/npmjs/upstream?name=left-pad". The
+version"), the repository and the reason ("blocked by a rule of the repository", "this repository delivers only what is allowed" or,
+for a version outside the range a package is delivered with, "outside the versions a rule of the repository allows"), followed by where
+to ask: "left-pad any version is not allowed in web/npmjs: this repository delivers only what is allowed. Ask for it at https://quader.example.com/ui/projects/web/repositories/npmjs/upstream?name=left-pad". The
 answer is never cached, so an allow reaches every client within seconds, through a Bastion too: no cached refusal outlives it.
 
 What the clients print, measured on 2026-11-24 against a remote that delivers only what is allowed:

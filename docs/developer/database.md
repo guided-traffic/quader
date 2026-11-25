@@ -838,6 +838,17 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
+## A range of versions in a package's allow (00131)
+
+[00131_remote_delivery_rule_range](../../internal/meta/postgres/migrations/00131_remote_delivery_rule_range.sql) adds the range of versions
+of a package's allow to `remote_delivery_rules` ([remote-curation.md](../spec/remote-curation.md) R-CUR-026, Q-CUR-220): `from_version`
+and `to_version` (the format's canonical form, 1 to 256 characters; NULL is no bound on that side) and `to_inclusive` (a constant default
+of true, so the step rewrites no row), with the names of 00129. The CHECK `remote_delivery_rules_range` lets only a `package` rule with
+the effect `allow` carry a bound, and keeps `to_inclusive` true without an upper bound, the one spelling of such a range. Every statement
+of [delivery_rules.sql](../../internal/meta/postgres/queries/delivery_rules.sql) that reads or writes a rule carries the three columns;
+`DeliveryRuleReplace` writes them with the effect, so an allow turned into a block loses its range in the same statement. Expand phase
+only: a rule of before has no range.
+
 ## Downloads kept in sync (00130)
 
 [00130_remote_download_syncs](../../internal/meta/postgres/migrations/00130_remote_download_syncs.sql) adds `remote_download_syncs`, the

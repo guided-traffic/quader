@@ -2706,6 +2706,33 @@ was ever marked a pre-release, although both formats know their pre-releases (th
 disagree on a version. npm's exposure rules read a version as npm's order does: a string with a leading `v` or blanks is no version there
 either. A new format writes one method more.
 
+### ADR-283 · The catalog carries a format's order of versions, and the mirror's upstream says what the rules deliver
+
+**Status:** Decided by the development agent on 2026-11-25 — owner review at the walkthrough
+([Q-CUR-221](spec/remote-curation.md#q-cur-221--the-bounds-are-compared-in-the-formats-order-the-catalog-hands-it-to-the-rules),
+[Q-CUR-224](spec/remote-curation.md#q-cur-224--the-packages-decision-of-a-ranged-allow-is-delivered),
+[Q-CUR-226](spec/remote-curation.md#q-cur-226--the-mirror-keeps-its-newest-versions-among-what-the-rules-deliver)). It changes the
+frozen format contract: `ContractVersion` 14.
+
+**Context.** The owner's range of versions in a package's allow (W-28, d2 = a, [R-CUR-026](spec/remote-curation.md#r-cur-026--a-range-of-versions-in-a-packages-allow))
+is compared in the format's order by the rules' store, by every replica's compiled rule set and by the replay of a restore, none of which
+may import the format registry; the mirror counted its newest versions before the rules decided; and the reason an emptied document
+gives was the mode's alone (`formats.ModeReason`).
+
+**Decision.**
+- `catalog.Entry.VersionOrder` (`Compare`, `SortKey`) is the view adapter's order, which `formats.CatalogEntry` hands over;
+  `Registry.VersionOrderOf` reads it. The range type and its comparison (`remotecuration.Range`, `Order`, `Contains`, `Intersect`) are the
+  one comparison of a bulk's, a sync's and an allow's range.
+- `discover.Delivering` (`Delivers(name, version)`) is an optional interface of the Upstream the engine lends; `DeliveredBy` reads it. A
+  pass's upstream answers by the rules, a download ahead's delivers every version. OCI's and Ansible Galaxy's plans count only delivered
+  versions; the engine's `SelectItems` takes the same predicate.
+- `formats.ModeReason` leaves: an emptied document's reason is the rule set's `EmptyReason`. A removal raises the contract version;
+  every format declares `formats.ContractVersion`, so no format's code changes.
+
+**Consequences.** A format with a view adapter takes ranges with no code of its own; a format without one refuses a range
+(`not_applicable`). Kit check 23 holds every format with the class remote to a range case. The decision of a version under a range costs
+one canonical read and at most two comparisons; a package without a range pays one nil check.
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -10270,10 +10297,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-117 questions on [spec/remote-curation.md](spec/remote-curation.md).
+128 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 117 questions</summary>
+<summary>Q-CUR: 128 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10383,6 +10410,17 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-207](spec/remote-curation.md#q-cur-207--max_rules-50000-a-packages-version-rules-a-sorted-slice-the-store-compiles-only-what-can-decide-the-subject) | max_rules 50,000; a package's version rules a sorted slice; the store compiles only what can decide the subject | Decided by the development agent on 2026-11-25 | (a) 50,000; the version rules a sorted slice; a package's or a version's write compiles the package's rules and the sections | — |
 | [Q-CUR-208](spec/remote-curation.md#q-cur-208--every-rule-of-a-bulk-write-records-its-own-event) | Every rule of a bulk write records its own event | Decided by the development agent on 2026-11-25 | (a); a switch's events go the same way. | — |
 | [Q-CUR-209](spec/remote-curation.md#q-cur-209--a-change-to-allexceptblocked-is-a-confirmation-with-the-counts-of-the-rules) | A change to allExceptBlocked is a confirmation with the counts of the rules | Decided by the development agent on 2026-11-25 | (a) A confirmation: every package and version no rule blocks is delivered; the allow rules stay and decide again when the mode returns | — |
+| [Q-CUR-220](spec/remote-curation.md#q-cur-220--a-range-is-one-optional-pair-of-bounds-of-a-packages-allow) | A range is one optional pair of bounds of a package's allow | Decided by the owner on 2026-11-25 (working paper W-28, d2 = a) | (a), the owner's. | — |
+| [Q-CUR-221](spec/remote-curation.md#q-cur-221--the-bounds-are-compared-in-the-formats-order-the-catalog-hands-it-to-the-rules) | The bounds are compared in the format's order; the catalog hands it to the rules | Decided by the development agent on 2026-11-25 | (a) The catalog's entry carries the view adapter's order (`catalog.Entry.VersionOrder`); the range type and its comparison move from the queue to `internal/remotecuration` and serve the bulk, the sync and the allow | [ADR-283](#adr-283--the-catalog-carries-a-formats-order-of-versions-and-the-mirrors-upstream-says-what-the-rules-deliver) |
+| [Q-CUR-222](spec/remote-curation.md#q-cur-222--outside-the-range-is-a-reason-of-its-own) | Outside the range is a reason of its own | Decided by the development agent on 2026-11-25 | (a) `outsideRange`, with its own sentence, badge, event value and metric label | — |
+| [Q-CUR-223](spec/remote-curation.md#q-cur-223--a-string-that-is-no-version-is-outside-every-range) | A string that is no version is outside every range | Decided by the owner on 2026-11-25 (working paper W-28, d5 = a) | (a), the owner's. | — |
+| [Q-CUR-224](spec/remote-curation.md#q-cur-224--the-packages-decision-of-a-ranged-allow-is-delivered) | The package's decision of a ranged allow is delivered | Decided by the development agent on 2026-11-25 | (a) Delivered; the documents decide per version, and a document none of whose versions is inside answers the refusal with `outsideRange` | [ADR-283](#adr-283--the-catalog-carries-a-formats-order-of-versions-and-the-mirrors-upstream-says-what-the-rules-deliver) |
+| [Q-CUR-225](spec/remote-curation.md#q-cur-225--a-narrowed-range-is-journaled-and-the-replay-keeps-the-narrower) | A narrowed range is journaled, and the replay keeps the narrower | Decided by the development agent on 2026-11-25 | (a) `rules.rangesNarrowed` per range written; the replay intersects it with the restored range, blocks where they share nothing, adds the allow where the package had no rule and its level delivers; a removed allow with a range is not removed where its level delivers | — |
+| [Q-CUR-226](spec/remote-curation.md#q-cur-226--the-mirror-keeps-its-newest-versions-among-what-the-rules-deliver) | The mirror keeps its newest versions among what the rules deliver | Decided by the development agent on 2026-11-25 | (a); a pass's upstream delivers by the rules, a download ahead's every version. | [ADR-283](#adr-283--the-catalog-carries-a-formats-order-of-versions-and-the-mirrors-upstream-says-what-the-rules-deliver) |
+| [Q-CUR-227](spec/remote-curation.md#q-cur-227--debian-the-remotes-guide-names-the-virtual-repository-whenever-rules-can-refuse-a-version) | Debian: the remote's guide names the virtual repository whenever rules can refuse a version | Decided by the development agent on 2026-11-25 | (a) The remote's guide always says that a remote with delivery rules is used through a virtual repository over it, and why | — |
+| [Q-CUR-228](spec/remote-curation.md#q-cur-228--the-range-is-set-in-a-dialog-under-the-packages-switch-with-the-download-dialogs-fields) | The range is set in a dialog under the package's switch, with the download dialog's fields | Decided by the development agent on 2026-11-25 | (a) **Limit versions…** on the line under the switch opens a dialog of the download dialog's two fields, offered the loaded versions; no preview count | — |
+| [Q-CUR-229](spec/remote-curation.md#q-cur-229--a-bound-is-the-canonical-text-and-the-refusals-are-the-bulks) | A bound is the canonical text, and the refusals are the bulk's | Decided by the development agent on 2026-11-25 | (a) The store keeps the canonical form (NuGet `1.0` is `1.0.0`); a range of none is `validation_failed` with `out_of_range` at `toVersion`, as a bulk's | — |
+| [Q-CUR-230](spec/remote-curation.md#q-cur-230--an-image-with-a-range-routes-a-manifest-by-digest-through-its-delivered-tags) | An image with a range routes a manifest by digest through its delivered tags | Decided by the development agent on 2026-11-25 | (a); the cost of that path is accepted. | — |
 | [Q-CUR-240](spec/remote-curation.md#q-cur-240--a-sync-is-a-stored-bulk-the-dispatch-starts-again) | A sync is a stored bulk the dispatch starts again | Decided by the owner on 2026-11-25 | (a), the owner's. | — |
 | [Q-CUR-241](spec/remote-curation.md#q-cur-241--the-holders-of-manage-set-up-syncs-at-most-100-per-repository) | The holders of manage set up syncs, at most 100 per repository | Decided by the owner on 2026-11-25 | (a), the owner's. | — |
 | [Q-CUR-242](spec/remote-curation.md#q-cur-242--one-interval-per-repository-a-run-starts-at-its-time-or-once-its-previous-run-ended) | One interval per repository; a run starts at its time or once its previous run ended | Decided by the development agent in working paper W-28 | (a) `remote.syncs.intervalSeconds` of the repository, 3,600 by default, 300 to 2,592,000; a look that finds the previous run's rows active looks again at the next dispatch, so the run starts at its time or once the previous ended, whichever is later | — |

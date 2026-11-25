@@ -100,7 +100,16 @@ who can make Quader download how much, and what is kept of content that no clien
 - What a rule does not reach: content by digest of an image whose tags are partly allowed ([H-1724](#h-1724--a-blob-of-a-refused-tag-can-be-fetched-by-its-digest-when-the-image-is-partly-allowed));
   the indexes of a Debian remote addressed directly, which list what its rules refuse ([H-1726](#h-1726--a-debian-remote-addressed-directly-lists-what-its-rules-refuse));
   a replica that has not rebuilt its snapshot ([H-132](repository-model.md#h-132--a-replica-enforces-the-previous-repository-settings-until-its-snapshot-is-rebuilt)).
-- A narrowing (a block added, an allow removed, the mode set to `onlyAllowed`) is journaled, so a restore keeps it; a widening is not.
+- A narrowing (a block added, an allow removed, a range of versions set on a package's allow, the mode set to `onlyAllowed`) is
+  journaled, so a restore keeps it; a widening is not. The replay of a range keeps the narrower of the restored and the journaled one and
+  never widens: a removed allow with a range is not replayed where the package would then be delivered whole (R-CUR-026, Q-CUR-225).
+- A range of versions (R-CUR-026) is compared in the format's own order, the one every list of the format shows; a string the format
+  does not rank as a version (an image's `latest`, a branch tag) lies outside every range, so a range cannot be passed by a tag name that
+  points at an image outside it (Q-CUR-223). A manifest by digest of an image with a range is decided by the stored tags that name it, as
+  with version rules (Q-CUR-230); a blob stays reachable by its digest
+  ([H-1724](#h-1724--a-blob-of-a-refused-tag-can-be-fetched-by-its-digest-when-the-image-is-partly-allowed)). A bound the store cannot have
+  written (on a block, in a format without an order, a bound the format does not rank) makes the snapshot load the repository disabled
+  (fail closed).
 - A switch (R-CUR-024) is decided by the server in its own transaction, under the rule set's row lock, against the rules and the mode as
   stored; it is a rule's write for who may (`manage`, the administrator) and journals its narrowings as one. The change of the mode to
   `onlyAllowed` writes its allows first (`allow-stored`, R-CUR-025), a widening that is not journaled
@@ -178,7 +187,7 @@ makes it real: a change of the Hub API.
 ### H-1724 · A blob of a refused tag can be fetched by its digest when the image is partly allowed
 
 Component: the delivery rules for OCI (R-OCI-038, Q-CUR-10). Subject: an image of a remote with version rules (some tags allowed or
-blocked). Live since the delivery rules are built. A blob by digest is delivered when some version of the image is, because a blob names no tag; a client
+blocked) or with a range of versions of its allow (R-CUR-026, Q-CUR-230: a tag outside the range is refused like a blocked one). Live since the delivery rules are built. A blob by digest is delivered when some version of the image is, because a blob names no tag; a client
 that knows the digest of a layer of a refused tag fetches it, through the remote and from the upstream. Manifests by digest are decided by
 the stored tags that name them, so a client cannot pull the refused tag's image as a whole. What makes it real: a layer that a refused tag
 holds and an allowed one does not, and a client that learned its digest elsewhere; the signature gate made the same cut (H-1196). A
@@ -200,8 +209,10 @@ Maintainer who downloads a large section, or several, of a registry with a pull 
 Component: the delivery rules for Debian (R-DEB-036, Q-CUR-9). Subject: an APT client that uses a Debian remote directly instead of a
 virtual repository over it. Live since the delivery rules are built. The upstream's signed indexes pass unchanged, so `apt` lists every package and is
 refused the file with a status line that carries no reason; the refused content is not served, but the listing shows what the rules
-were meant to keep out of view. What makes it real: a client set up against the remote in mode `onlyAllowed`; the client setup names the
-virtual repository instead.
+were meant to keep out of view. Under a range of a package's allow (R-CUR-026) APT also picks the highest version listed, which lies
+outside the range when the upstream moved past it, and the install fails. What makes it real: a client set up against the remote while
+it has rules that refuse a version (the mode `onlyAllowed`, a block, a range); the remote's guide names the virtual repository instead
+(Q-CUR-227).
 
 ### H-1727 · Content fetched for examination lies in the object store until it is discarded
 

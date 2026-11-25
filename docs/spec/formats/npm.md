@@ -2759,7 +2759,8 @@ from the protocol research of 2026-11-23 (the public registry's documentation an
 - **Documents** follow the rules as R-NPM-048 follows an endpoint's exposure, after the rewrite of R-NPM-024: `versions` and `time` of
   the full and the abbreviated document list the delivered versions; a tag other than `latest` whose version is refused is dropped;
   `latest` moves to the highest delivered version that is no prerelease (else the highest delivered); the top-level fields come from the
-  moved `latest`; a package without a delivered version answers the refusal of R-CUR-004. The single-version document of a refused
+  moved `latest`; a package without a delivered version answers the refusal of R-CUR-004, with the reason `outsideRange` where none of
+  its versions lies in the range of its allow ([remote-curation.md](../remote-curation.md) R-CUR-026). The single-version document of a refused
   version and its tarball answer the refusal. The search of the protocol (R-NPM-037) drops a result whose package is not delivered.
   One filter serves the endpoint's view and the rules' view, so a document lists what both let through.
 - **What `npm` shows:** `npm install <name>@^1` resolves within the delivered versions; a refused tarball fails with `npm error 403 403

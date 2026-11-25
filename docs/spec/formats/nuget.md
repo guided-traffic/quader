@@ -2719,7 +2719,7 @@ the protocol research of 2026-11-23:
 - **Documents** follow the rules as R-NUGET-034 follows an endpoint's exposure: the flat container's version list and the registration
   hives (paging over the delivered versions), the search and autocomplete of the protocol (forwarded results of R-NUGET-016 included,
   `totalHits` reduced by what was removed); an ID without a delivered version answers the refusal of R-CUR-004 at its version list and
-  registration index; the `.nupkg` and `.nuspec` of a refused version answer it.
+  registration index, with the reason `outsideRange` where none of its versions lies in the range of its allow ([remote-curation.md](../remote-curation.md) R-CUR-026); the `.nupkg` and `.nuspec` of a refused version answer it.
 - **The search guard** of R-NUGET-016 withholds a term that a blocking rule covers, and in mode `onlyAllowed` a term that no allowing rule
   covers ([remote-curation.md](../remote-curation.md) R-CUR-002).
 - **What `dotnet` shows:** `dotnet restore` resolves a floating or ranged reference within the delivered versions; a refused package

@@ -1662,8 +1662,11 @@ search field, a code the screen says in its language ([Q-CUR-166](../remote-cura
   Docker Hub's and Quay's tags are read whole up to five pages of 100 and sorted; an image with more is listed from `tags/list` in the tag
   order, without the API's facts. An attachment tag (R-SIG-024) is offered by no upstream (Q-OCI-268).
 - **The version is the tag** (Q-CUR-10); its canon is the tag as given. A manifest by digest is delivered when the image is delivered with
-  no version rule of it, or when a delivered tag's stored document names the digest, directly or through a stored index
-  (`oci_references`); a blob by digest when some version of the image is delivered. A tag that moves upstream delivers what it names when it
+  no version rule of it and no range of versions of its allow ([remote-curation.md](../remote-curation.md) R-CUR-026, Q-CUR-230), or when a delivered tag's stored
+  document names the digest, directly or through a stored index (`oci_references`); otherwise it answers the refusal with the reason an
+  emptied tags list gives (`outsideRange` under a range); a blob by digest when some version of the image is delivered. Under a range a tag
+  that is no version of the tag order (`latest`, `main`) lies outside it (Q-CUR-223): `docker pull` without a tag is refused until
+  `latest` is switched on by a version rule of its own. A tag that moves upstream delivers what it names when it
   is read.
 - **One version's download** is the probe's content (R-REPO-065, Q-OCI-224): the tag's manifest; of an index the manifests of
   `oci.platforms` with their attestations; their configs and layers.

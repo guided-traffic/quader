@@ -112,7 +112,7 @@ Priority: **P1** · Covers: SEC-007
   | Subject (`kind`) | Holds | Matches a package name and version when |
   |---|---|---|
   | `section` | `pattern`: a name pattern of R-AUTHZ-005, folded by the format's name rule ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-005), matched by the one matcher of Q-STOR-9 | the pattern matches the name |
-  | `package` | `name`: one normalized package name | the name equals it; every version, future ones included |
+  | `package` | `name`: one normalized package name; on an `allow`, an optional range of versions (R-CUR-026) | the name equals it; every version, future ones included, or with a range the versions inside it |
   | `version` | `name` and `version`: the version in the format's canonical form (R-CUR-006) | both equal |
 
   The effect is `allow` or `block`. A rule has an optional note (at most 1,000 characters) that only those who may read the rules
@@ -135,9 +135,10 @@ Priority: **P1** · Covers: SEC-007
   | `package lodash allow`, `version lodash@4.17.20 block` | delivered | refused | refused | refused |
   | `section @acme/* allow`, `section @acme/ui* block` | refused | refused | refused (the block wins at equal width) | refused |
   | `section @acme/* block`, `package @acme/ui allow` (mode `allExceptBlocked`) | delivered | delivered | delivered (the package is narrower) | delivered |
+  | `package lodash allow` from `4.17.21` (R-CUR-026) | delivered | refused (`outsideRange`) | refused | refused |
 
-- A rule is **exact**: a version rule names one version, never a range (Q-CUR-3). To allow a subset of a blocked section, allow its
-  packages.
+- A `version` rule names one version; a range is part of a package's allow (R-CUR-026, Q-CUR-3 as revisited by
+  [Q-CUR-220](#q-cur-220--a-range-is-one-optional-pair-of-bounds-of-a-packages-allow)). To allow a subset of a blocked section, allow its packages.
 - The mode and the rules bind **every caller**, administrators included, on the package protocols and on `/files/`, as the patterns
   did (R-REPO-005): they say what the repository delivers, not who may read it.
 
@@ -246,7 +247,8 @@ Priority: **P1** · Covers: SEC-007, SEC-032
   | `/files/` | `403` problem with `code` | — |
 
 - **The text** names the package, the version (or "any version"), the repository, the reason and where to ask: "`<name>` `<version>`
-  is not allowed in `<project>/<repo>`: blocked by a rule of the repository." or "… this repository delivers only what is allowed."
+  is not allowed in `<project>/<repo>`: blocked by a rule of the repository.", "… this repository delivers only what is allowed." or,
+  for a version outside the range of its package's allow, "… outside the versions a rule of the repository allows." (R-CUR-026),
   followed by "Ask for it at `<base URL>/ui/projects/<project>/repositories/<repo>/upstream?name=<name>`." It names no rule's note and
   no other repository.
 - **Existence.** The refusal is asked after the decision point (R-AUTHZ-015) and before any upstream request, so a caller who may not
@@ -264,7 +266,7 @@ Priority: **P1** · Covers: SEC-007, SEC-032
   clients at once.
 - **Audit:** `remote.delivery.refused` (R-CUR-019), asynchronous, at most once a minute per repository, package, version and client
   address on each replica, as `vulnerability.download_blocked` is throttled; details: the path, the package, the version, the reason
-  (`blocked` or `not_allowed`), the kind (`document` or `artifact`).
+  (`blocked`, `not_allowed` or `outside_range`), the kind (`document` or `artifact`).
 - **Metric:** `quader_remote_delivery_refusals_total{repo,reason,kind}`.
 - **Record:** every refusal on a client's request also counts in the request list's entry of its subject (R-CUR-015): one row per
   repository, package and version, with the first and last time and the count, summed on each replica and written at most every 5 s per
@@ -328,9 +330,15 @@ CREATE TABLE remote_delivery_rules (
   request_id  uuid        NULL REFERENCES remote_delivery_requests (id) ON DELETE SET NULL,
   created_by  uuid        NULL REFERENCES principal (id) ON DELETE SET NULL,
   created_at  timestamptz NOT NULL DEFAULT now(),
+  -- The range of versions of a package's allow (R-CUR-026, migration 00131): NULL is no bound on that side, a bound in the format's
+  -- canonical form; to_inclusive is true without an upper bound.
+  from_version text       NULL CHECK (char_length(from_version) BETWEEN 1 AND 256),
+  to_version   text       NULL CHECK (char_length(to_version) BETWEEN 1 AND 256),
+  to_inclusive boolean    NOT NULL DEFAULT true,
   CHECK ((kind = 'section' AND pattern IS NOT NULL AND name IS NULL AND version IS NULL)
       OR (kind = 'package' AND pattern IS NULL AND name IS NOT NULL AND version IS NULL)
-      OR (kind = 'version' AND pattern IS NULL AND name IS NOT NULL AND version IS NOT NULL))
+      OR (kind = 'version' AND pattern IS NULL AND name IS NOT NULL AND version IS NOT NULL)),
+  CHECK (((from_version IS NULL AND to_version IS NULL) OR (kind = 'package' AND effect = 'allow')) AND (to_version IS NOT NULL OR to_inclusive))
 );
 CREATE UNIQUE INDEX remote_delivery_rules_subject
   ON remote_delivery_rules (repo_id, kind, coalesce(pattern, ''), coalesce(name, ''), coalesce(version, ''));
@@ -343,7 +351,8 @@ ALTER TABLE repositories ADD COLUMN delivery_rules_revision bigint NOT NULL DEFA
 The migration of every table of this page is
 [00114_remote_curation.sql](../../internal/meta/postgres/migrations/00114_remote_curation.sql) (built), with the columns
 [00115_remote_examination_files.sql](../../internal/meta/postgres/migrations/00115_remote_examination_files.sql) adds (Q-CUR-140, Q-CUR-141,
-R-CUR-015); beside the statements of this page
+R-CUR-015) and the range of
+[00131_remote_delivery_rule_range.sql](../../internal/meta/postgres/migrations/00131_remote_delivery_rule_range.sql) (R-CUR-026); beside the statements of this page
 it bounds every counter at zero from below and every bulk's bounds at one.
 
 - **One rule per subject.** A write of a subject that has a rule replaces its effect and note; the subject is the identity.
@@ -352,7 +361,7 @@ it bounds every counter at zero from below and every bulk's bounds at one.
   Ansible Galaxy the SemVer text as given, NuGet the identity of its versions, the URL form of R-NUGET-003 (normalized, lowercased,
   without build metadata, so `1.0.0-Beta` and `1.0.0-beta` are one, Q-CUR-3), Debian the version as the index row has it, OCI the tag as given. A
   name the rule refuses answers `422 invalid_name` (registered with the rules' package, `internal/errs/codes.go`), a version the format
-  cannot read `422 invalid_version`, a pattern the matcher refuses `422 invalid_pattern`; the decision folds what it is
+  cannot read `422 invalid_version`, a pattern the matcher refuses `422 invalid_pattern`, a range as R-CUR-026 says; the decision folds what it is
   asked with the same functions, so `NuGet 1.0` and a rule on `1.0.0` meet (the gap of H-380 does not arise).
 - **Limits:** at most `proxy.delivery.max_rules` (50,000 by default,
   [Q-CUR-207](#q-cur-207--max_rules-50000-a-packages-version-rules-a-sorted-slice-the-store-compiles-only-what-can-decide-the-subject))
@@ -365,25 +374,26 @@ it bounds every counter at zero from below and every bulk's bounds at one.
   185 a version rule of a package of its own (131 and 54), 50 a version rule of a package with a hundred; 6.5 MB per repository at the
   limit of package rules, at most 9.5 MB, twice that while a snapshot is rebuilt; compiled in 7 ms. A snapshot that starts reads every
   rule of every repository (`DeliveryRulesAll`).
-- **Journal.** A write that narrows what the repository delivers (a `block` added, an `allow` removed or turned into a `block`, the
-  mode set to `onlyAllowed`) records `repository.narrowed` beside its own event, with the part `rules`
-  (`{"blocksAdded": [<subject>], "allowsRemoved": [<subject>]}`) or `deliveryMode` (`"onlyAllowed"`), so a restore keeps it narrowed
-  ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-061; replay: the blocks are added, the allows removed, the mode set; a
-  rule set that would exceed the limit disables the repository).
+- **Journal.** A write that narrows what the repository delivers (a `block` added, an `allow` removed or turned into a `block`, a range
+  set on a package's allow, the mode set to `onlyAllowed`) records `repository.narrowed` beside its own event, with the part `rules`
+  (`{"blocksAdded": [<subject>], "allowsRemoved": [<subject>], "rangesNarrowed": [{"name", "fromVersion", "toVersion", "toInclusive"}]}`)
+  or `deliveryMode` (`"onlyAllowed"`), so a restore keeps it narrowed
+  ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-061; replay: the blocks are added, the allows removed, the mode set, the
+  narrower of two ranges kept ([Q-CUR-225](#q-cur-225--a-narrowed-range-is-journaled-and-the-replay-keeps-the-narrower)); a rule set that would exceed the limit disables the repository).
 - **The API** (tag `remote-curation`, below `/api/v1/projects/{projectKey}/repositories/{repoKey}`; R-CUR-005 for who):
 
   | Method and path | What | Answers |
   |---|---|---|
   | `GET delivery-rules?kind=&effect=&q=&cursor=` | the rules, newest first, `q` a substring of the subject | `200`, cursor paging (R-API-010) |
-  | `POST delivery-rules` | `{"kind", "pattern" \| "name" [, "version"], "effect", "note"}`; creates or replaces the subject's rule | `201` (created), `200` (replaced) with the rule and `"revision"`; `422` as above; `400 not_applicable` for a local or virtual repository |
+  | `POST delivery-rules` | `{"kind", "pattern" \| "name" [, "version"], "effect", "note"}`, a package's allow with `fromVersion`, `toVersion`, `toInclusive` (R-CUR-026); creates or replaces the subject's rule, its range with it | `201` (created), `200` (replaced) with the rule and `"revision"`; `422` as above; `400 not_applicable` for a local or virtual repository |
   | `DELETE delivery-rules/{ruleId}` | removes the rule | `204` |
-  | `POST delivery-rules/check` | `{"name" [, "version"]}`: the decision of R-CUR-001 and the rule that made it (`"decidedBy": {"kind", "subject", "effect"} \| {"mode"}`) | `200` |
+  | `POST delivery-rules/check` | `{"name" [, "version"]}`: the decision of R-CUR-001 and the rule that made it (`"decidedBy": {"kind", "subject", "effect" [, "range"]} \| {"mode"}`) | `200` |
   | `POST delivery-rules/switch` | a package's or a version's switch: writes or removes the subject's rule by what it inherits (R-CUR-024) | `200` |
   | `GET delivery-rules/summary` | the counts of the rules and the stored packages the mode decides (R-CUR-025) | `200` |
   | `POST delivery-rules/allow-stored` | one allowing package rule for each of those packages (R-CUR-025) | `200` |
 
-  The rule's representation: `{"id", "kind", "subject", "pattern"?, "name"?, "version"?, "effect", "note", "requestId", "createdBy": {"id",
-  "name"}, "createdAt"}`. Writes take `Idempotency-Key` (R-API-014).
+  The rule's representation: `{"id", "kind", "subject", "pattern"?, "name"?, "version"?, "effect", "range"?: {"fromVersion", "toVersion",
+  "toInclusive"}, "note", "requestId", "createdBy": {"id", "name"}, "createdAt"}`. Writes take `Idempotency-Key` (R-API-014).
 
 Acceptance criteria:
 
@@ -1705,7 +1715,7 @@ the download; a switch on every version; the row's menu dissolved.
   package's switch at the right, apart from **Download every version…** at the left; in a closed package row of the results the
   package's switch in the column **State**; in a version row the version's switch in the column **Delivery**. A version row has no
   menu and no action cell, and the head has no **Allow every version**, **Block every version**, **Remove the allow** or **Remove the
-  block**. The line under the package's switch is left free for the range of versions of a package's allow (P2 of W-28).
+  block**. The line under the package's switch carries the range of versions of the package's allow with **Limit versions…** (R-CUR-026).
 - **The cache's act stands in the cache's cell**, at most one, by the state it changes: **Download** (not stored, delivered; a holder of
   `manage`, or a reader who may fill the repository), **Download for examination** (not stored, not delivered; `manage`), **Discard**
   (stored for examination; `manage`). A waiting or running download shows its state and no act; **Open the version** stays the link
@@ -1783,6 +1793,83 @@ Acceptance criteria:
   `allExceptBlocked`; the order of the calls on the settings page (`allow-stored`, then `PATCH`).
 - UI states (`repositories.states.spec.ts`, `make ui-states`): the package switch's confirmation, and the mode's dialog with the offer,
   without the right, beyond the room, with nothing to offer, towards `allExceptBlocked`, and with its summary failed.
+
+### R-CUR-026 · A range of versions in a package's allow
+Priority: **P1** · Covers: SEC-007
+
+The owner's task (W-28, 2026-11-25): "Es muss möglich sein, nur einfach alle versionen herunterzuladen, sondern alle Versionen ab einer
+bestimmten Version […] Oder blockieren aller Versionen unterhalb einer bestimten Version ODER oberhalb einer bestimmten Version."
+
+- **The range** ([Q-CUR-220](#q-cur-220--a-range-is-one-optional-pair-of-bounds-of-a-packages-allow)) is an optional part of a `package` rule with the effect `allow`: a lower bound `fromVersion`
+  (included) and an upper bound `toVersion` with `toInclusive` (true: "up to", false: "below"), either or both. A version inside the range
+  is delivered by the rule, a version outside it is not, in either mode. A `version` rule stays the exception above it: a version outside
+  the range is switched on by its own allow, and one inside it switched off by its own block. The decision of R-CUR-001 becomes: a
+  `version` rule of `n@v`, else the `package` rule of `n` with its range, else the sections, else the mode. A `block`, a `section` and a
+  `version` rule have no range.
+- **The bounds** are versions of the format in its canonical form (R-CUR-006), compared in the format's own order, the view adapter's
+  `Compare` and sort key (R-API-029) that every list of the format and the range of a bulk (R-CUR-010) read, never a range syntax
+  ([Q-CUR-221](#q-cur-221--the-bounds-are-compared-in-the-formats-order-the-catalog-hands-it-to-the-rules)). The refusals are the bulk's ([Q-CUR-229](#q-cur-229--a-bound-is-the-canonical-text-and-the-refusals-are-the-bulks)): a bound the format does not rank (an OCI tag `latest`)
+  answers `422 invalid_version` at its pointer; a range that holds no version (`fromVersion` above `toVersion`, or equal with
+  `toInclusive` false) `422 validation_failed` at `toVersion` with the field code `out_of_range`; a range on another rule, and on a
+  format without an order of versions, `422 validation_failed` with the field code `not_applicable`. A version that differs from a bound
+  by build metadata only lies after it.
+- **A string that is no version** of the format (an OCI tag `latest`, a branch name `main`) lies outside every range: it is not
+  delivered, and is switched on alone by a `version` rule of its own ([Q-CUR-223](#q-cur-223--a-string-that-is-no-version-is-outside-every-range), the owner's d5 = a). An image's `docker
+  pull` without a tag asks for `latest` and is refused under a range until `latest` is switched on; the screen says so where the range of
+  an image is set.
+- **Outside the range** is the reason `outsideRange` ([Q-CUR-222](#q-cur-222--outside-the-range-is-a-reason-of-its-own)): the client's refusal reads "… is not allowed in
+  `<project>/<repo>`: outside the versions a rule of the repository allows." (R-CUR-004); the catalogue's badge **Outside the allowed
+  versions**, the version's rule line "Rule: the package, from 2.0.0 below 3.0.0", the listing's `unavailableReason` (R-API-081), a
+  download row's `delivery`, the event `remote.delivery.refused` (`outside_range`) and the metric's label `reason` say it.
+- **The package's decision** of a ranged allow is delivered: no place that decides a package asks the upstream for its versions. The
+  documents list the versions inside the range; a document none of whose versions is inside answers the refusal with `outsideRange`
+  ([Q-CUR-224](#q-cur-224--the-packages-decision-of-a-ranged-allow-is-delivered)).
+- **OCI** ([formats/oci.md](formats/oci.md) R-OCI-038): an image with a range is decided as an image with version rules: a manifest by
+  digest is delivered only where a delivered tag's stored document names it, with the reason `outsideRange` otherwise; a blob stays
+  reachable by its digest (H-1724, [Q-CUR-230](#q-cur-230--an-image-with-a-range-routes-a-manifest-by-digest-through-its-delivered-tags)).
+- **The mirror and the syncs** (R-CUR-017, R-CUR-027, [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-051): the mirror keeps
+  its newest `maxVersionsPerPackage` among the versions the rules deliver, so a version outside the range takes no place of the newest,
+  and an OCI or Ansible Galaxy plan reads nothing of it ([Q-CUR-226](#q-cur-226--the-mirror-keeps-its-newest-versions-among-what-the-rules-deliver)); a sync stores only what the rules deliver (Q-CUR-243)
+  and so nothing outside the range. A download ahead (R-CUR-010) is not decided by the rules: it stores for examination what lies
+  outside.
+- **Debian** ([formats/debian.md](formats/debian.md) R-DEB-036, Q-CUR-9): a remote addressed directly lists every version; APT takes the
+  highest and is refused when it lies outside the range. The guide of a Debian remote names the virtual repository over it as the one to
+  use whenever its rules can refuse a version ([Q-CUR-227](#q-cur-227--debian-the-remotes-guide-names-the-virtual-repository-whenever-rules-can-refuse-a-version)).
+- **The journal**: a write that sets a range on a package's allow records `repository.narrowed` with `rules.rangesNarrowed`; the replay
+  keeps the narrower of the restored and the journaled range, blocks the package where they share no version, and gives a package without
+  a rule of its own whose package level delivers the journaled range. A removed allow with a range is replayed only where the package
+  level without it does not deliver ([Q-CUR-225](#q-cur-225--a-narrowed-range-is-journaled-and-the-replay-keeps-the-narrower)).
+- **The screens** ([Q-CUR-228](#q-cur-228--the-range-is-set-in-a-dialog-under-the-packages-switch-with-the-download-dialogs-fields)): under the package's switch, for those who decide, the line **All versions** or **Versions from
+  2.0.0 below 3.0.0** with **Limit versions…**: a dialog with the download dialog's fields **From version** (included) and **Up to
+  version** with **included** or **below it**, each offered the versions the opened package lists and open to any version typed, both
+  empty for every version; an image says that `latest` lies outside. **Save** turns the package's switch on with the range; the head and
+  the rows show the server's answer without a reload (R-UI-213), and a refused save keeps the values and says the refusal at its field
+  with every fact of the answer (R-UI-216). A reader sees the range under the package's state; the rule list names a package's range.
+- **The API**: `DeliveryRuleInput` gains `fromVersion`, `toVersion`, `toInclusive`; `DeliveryRule` gains `range` (`{"fromVersion",
+  "toVersion", "toInclusive"}`, a bound `null` for none); `DeliveryDecision.decidedBy` gains `range` and `reason` gains `outsideRange`;
+  `POST delivery-rules/switch` gains `range` for a package turned on: written whatever the package inherits, `{}` every version (the range
+  removed), absent the range the allow has kept; on a version or a package turned off `422 validation_failed` at `/range`.
+
+Acceptance criteria:
+
+- Unit (`internal/remotecuration/rules`, milliseconds, `TestR_CUR_026_TheRangeDecides`, about 25 cases): inside, below and above, at each
+  bound included and excluded, an open lower and upper bound, a version rule above the range in both directions, `latest` and `main`
+  outside, a section block under the package's ranged allow, the package's decision and level delivered with the range, `Inherited`, the
+  reason of an emptied document; `TestR_CUR_026_ARangeTheStoreCannotWriteDisablesTheRepository`,
+  `TestR_CUR_026_TheRefusalSaysOutsideTheRange`; `internal/remotecuration` `TestR_CUR_026_TheNarrowerOfTwoRanges`.
+- Unit (`internal/remotecuration/rules/store`, milliseconds): `TestR_CUR_026_TheStoreChecksARangeAndWritesItCanonical`,
+  `TestR_CUR_026_ASwitchKeepsOrWritesTheRange`.
+- Unit (kit check 23, per format, milliseconds): with `package <fixture> allow` whose range holds `Kept` and not `Refused`, no document
+  lists `Refused`, a passthrough document stays the upstream's, and the file of `Refused` answers `403` with the text of `outsideRange`.
+- Unit (`internal/mirror`, `TestR_CUR_026_TheMirrorCountsDeliveredVersions`; `internal/formats/oci`,
+  `TestR_CUR_026_ATagThatIsNoVersionIsOutside`).
+- Integration (area `npm`, `TestR_CUR_026_ARangeOfAPackageDeliversItsVersionsOnly`, about 2 s): mode `allExceptBlocked`, a package
+  allowed from its second version below its newest: `view` lists the versions inside, the newest's tarball answers `403` with the range's
+  text and the stub records no request, `check` answers `decidedBy.range`.
+- Integration (area `repository`, `TestR_CUR_026_ARangeIsWrittenThroughTheSwitchAndThePut`, about 2 s, no upstream); area `backup`,
+  `TestR_CUR_026_TheReplayKeepsTheNarrowerRange` (about 0.5 s).
+- Web unit (`remote-upstream.spec.ts`, two cases, about 0.3 s): the range's line, a version outside with its badge and rule, the
+  dialog with a refused bound kept at its field, the head after the save; a reader's line; an image's word on `latest`.
 
 ### R-CUR-027 · Downloads kept in sync
 Priority: **P1** · Covers: RMT-027
@@ -1939,7 +2026,6 @@ Made in the same change as this page, each named in a decision block below or on
 
 ## Deferred
 
-- A version range as a rule (Q-CUR-3).
 - Conditions of a curation policy (a minimum age of a release, a licence, a severity), the rest of SEC-007 to SEC-011: a rule is a
   subject and an effect. The parked "minimum release age" idea of [FULL.md](../projektplan/FULL.md) stays parked.
 - Pre-warming from a lock file or an SBOM (parked in FULL.md): a bulk names a package or a level, not a file.
@@ -2018,6 +2104,10 @@ the patterns use (Q-STOR-9); what is not taken from the exposure rules is their 
 development agent would offer ranges for npm and NuGet if allow lists grow to hundreds of versions per package in practice.
 
 **Applied in the spec:** R-CUR-001, R-CUR-006.
+
+**Revisited by [Q-CUR-220](#q-cur-220--a-range-is-one-optional-pair-of-bounds-of-a-packages-allow) (2026-11-25):** the owner asked for "all versions from a certain version" and for blocking "every
+version below or above a certain version" (W-28). A range of two bounds in the format's own order, never a range syntax, is part of a
+package's allow (R-CUR-026); a `version` rule still names one version.
 
 **Corrected with the contracts package (2026-11-23).** R-CUR-006 named NuGet's canon "its normalized version". R-NUGET-003's normalized
 form keeps the pre-release label's case, while two NuGet versions are one when their URL forms are equal (`1.0.0-Beta` and `1.0.0-beta`);
@@ -4016,6 +4106,159 @@ Status: **Decided by the development agent on 2026-11-25** — selected from the
 | (b) No dialog | — | — | A widening without a word |
 
 **Choice:** (a). **Applied in the spec:** R-CUR-025.
+
+### Q-CUR-220 · A range is one optional pair of bounds of a package's allow
+
+Status: **Decided by the owner on 2026-11-25 (working paper W-28, d2 = a)**, the development agent's favourite of three.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One range per package, at its allow: from a version included, up to a version included or below it (chosen) | `fromVersion`, `toVersion`, `toInclusive` on the package's allow | One line per package a plain user reads; "every version from 2.0", "below 3.0" and "2.x" are one shape; a version rule stays the exception | Two disjoint ranges of one package need version rules |
+| (b) Free range rules, several per package, allow or block, a block winning | A rule kind `range` | Any set of ranges | A list of ranges per package to read and to reconcile; a fourth kind beside the three of Q-CUR-3 |
+| (c) No ranges | — | Nothing to build | The owner's task stays open |
+
+**Choice:** (a), the owner's. A block has no range: "block everything below 2.0" is an allow from 2.0, in either mode. **Applied in the
+spec:** R-CUR-001, R-CUR-026. Code: [rules.go](../../internal/remotecuration/rules/rules.go),
+[range.go](../../internal/remotecuration/rules/range.go), [00131](../../internal/meta/postgres/migrations/00131_remote_delivery_rule_range.sql).
+
+### Q-CUR-221 · The bounds are compared in the format's order; the catalog hands it to the rules
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below while building W-28's range; the owner
+reviews it at the walkthrough.
+
+Context: the rules' store, the replica's rule set and the replay of a restore must compare versions without importing the format
+registry; P3's range of a bulk compares with the view adapter's `Compare` through `queue.Order`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The catalog's entry carries the view adapter's order (`catalog.Entry.VersionOrder`); the range type and its comparison move from the queue to `internal/remotecuration` and serve the bulk, the sync and the allow (chosen) | One `Range.Contains` | One comparison for every range of the product; the snapshot resolves the entry once per compile | A contract change (ADR-283) |
+| (b) A function injected by the composition root into the store, the model, the replay and the kit | — | No contract change | Four wirings of one fact |
+| (c) Byte keys of `SortKey` compiled into the rule set | Two `bytes.Compare` per decision | A little faster | A second comparison beside the bulk's |
+
+**Choice:** (a). The class of the asked version's sort key is read before any comparison: a key of the class `NotVersion` would sort below
+every version and lie inside a range without a lower bound. **Rationale:** the owner's brief asks for the comparison the downloads read,
+not a second one; the development agent would revisit it if a decision under a range measured above a microsecond. **Applied in the
+spec:** R-CUR-026; [decisions.md](../decisions.md) ADR-283. Code: [version_range.go](../../internal/remotecuration/version_range.go),
+[catalog.go](../../internal/formats/catalog/catalog.go) `VersionOrder`.
+
+### Q-CUR-222 · Outside the range is a reason of its own
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `outsideRange`, with its own sentence, badge, event value and metric label (chosen) | A third reason | Says why in both modes; a reader sees which rule to ask about | One more word everywhere a decision is said |
+| (b) `notAllowed` | — | No new word | Wrong in mode `allExceptBlocked`: the repository does deliver what is not allowed |
+| (c) `blocked` | — | No new word | No rule blocks it; a person looks for a block that is not there |
+
+**Choice:** (a). **Applied in the spec:** R-CUR-004, R-CUR-026; [api-and-ui.md](api-and-ui.md) R-API-081. Code:
+[refusal.go](../../internal/remotecuration/rules/refusal.go), [upstream-words.ts](../../web/src/app/features/repositories/upstream/upstream-words.ts).
+
+### Q-CUR-223 · A string that is no version is outside every range
+
+Status: **Decided by the owner on 2026-11-25 (working paper W-28, d5 = a)**, the development agent's favourite of three.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Outside; it is switched on alone by its own version rule (chosen) | `latest`, `main` not delivered under a range | A range says exactly which versions; nothing delivers an image outside it through another name | `docker pull` without a tag is refused until `latest` is switched on |
+| (b) It follows the package | Delivered whatever the range | `docker pull` keeps working | `latest` can deliver an image outside the range |
+| (c) It follows the digest it names (OCI) | Decided by the version tags that name the same manifest | Precise | An upstream request before a decision, against R-CUR-003; a database read per tags list |
+
+**Choice:** (a), the owner's. The screen of an image says it where the range is set and under the package's switch. **Applied in the
+spec:** R-CUR-026. Code: [version_range.go](../../internal/remotecuration/version_range.go) `Rank`.
+
+### Q-CUR-224 · The package's decision of a ranged allow is delivered
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Delivered; the documents decide per version, and a document none of whose versions is inside answers the refusal with `outsideRange` (chosen) | As a version allow makes the package delivered | No upstream request before a decision (R-CUR-003); every place that decides a package stays as built | A package of which no version lies in the range is refused at its document, after the upstream's document was read |
+| (b) Ask the upstream for the versions at the package's decision | — | The refusal before the document | An upstream request before a refusal, at a dozen places |
+
+**Choice:** (a). `rules.Set.EmptyReason` replaces the formats' `ModeReason` (contract version 14, ADR-283). **Applied in the spec:**
+R-CUR-026. Code: [range.go](../../internal/remotecuration/rules/range.go) `EmptyReason`.
+
+### Q-CUR-225 · A narrowed range is journaled, and the replay keeps the narrower
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `rules.rangesNarrowed` per range written; the replay intersects it with the restored range, blocks where they share nothing, adds the allow where the package had no rule and its level delivers; a removed allow with a range is not removed where its level delivers (chosen) | A replay that never widens | A restore keeps every narrowing; journaling a widening too is harmless, since an intersection never widens | Three cases in the replay |
+| (b) Journal the whole rule and replay it as written | — | Simple | A restore could widen: a range written wider after t would replace a narrower one at t |
+
+**Choice:** (a). **Applied in the spec:** R-CUR-006, R-CUR-026; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-061. Code:
+[journal_replay_delivery.go](../../internal/repository/journal_replay_delivery.go) `narrowRange`, `removeAllow`.
+
+### Q-CUR-226 · The mirror keeps its newest versions among what the rules deliver
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `SelectItems` counts only delivered versions; a plan that reads per version (OCI, Ansible Galaxy) asks `discover.Delivering` before it counts (chosen) | The newest N inside the range | A range keeps N versions, not fewer; nothing outside is read | An optional interface (ADR-283) |
+| (b) The engine filters, the plans still read the N newest | — | No interface | Fewer than N stored; manifest requests for tags the admission refuses |
+| (c) As built | — | — | Wrong already for a version block |
+
+**Choice:** (a); a pass's upstream delivers by the rules, a download ahead's every version. **Applied in the spec:** R-CUR-026;
+[repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-051. Code: [policy.go](../../internal/mirror/policy.go) `SelectItems`,
+[discover.go](../../internal/mirror/discover/discover.go) `Delivering`.
+
+### Q-CUR-227 · Debian: the remote's guide names the virtual repository whenever rules can refuse a version
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-DEB-036 said the client setup of a Debian remote in mode `onlyAllowed` names the virtual repository; no setup or guide said
+it. A range refuses versions in mode `allExceptBlocked` too.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The remote's guide always says that a remote with delivery rules is used through a virtual repository over it, and why (chosen) | A section of the guide's "What a remote repository is" | True for every rule that refuses a version (the mode, a block, a range); the guide reads no rules | Said also to a remote without rules |
+| (b) Only where the mode is `onlyAllowed` | A condition in the guide | — | A range or a block in the other mode is not covered; the guide's template has no rules to read |
+
+**Choice:** (a). **Applied in the spec:** R-CUR-026; [formats/debian.md](formats/debian.md) R-DEB-036. Code:
+[what-remote.md](../../internal/formats/deb/guide/what-remote.md).
+
+### Q-CUR-228 · The range is set in a dialog under the package's switch, with the download dialog's fields
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Limit versions…** on the line under the switch opens a dialog of the download dialog's two fields, offered the loaded versions; no preview count (chosen) | One pattern for the range of a download and of a rule | The reader meets one shape twice; the list after the save shows the result | No count before the save |
+| (b) A preview call per keystroke | — | A count | A call per key for a decision the list shows anyway |
+
+**Choice:** (a). Where the package is not delivered the line holds the act alone, and saving allows the package with the range.
+**Applied in the spec:** R-CUR-024, R-CUR-026. Code:
+[version-range-dialog.ts](../../web/src/app/features/repositories/upstream/version-range-dialog.ts),
+[upstream-package.html](../../web/src/app/features/repositories/upstream/upstream-package.html).
+
+### Q-CUR-229 · A bound is the canonical text, and the refusals are the bulk's
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The store keeps the canonical form (NuGet `1.0` is `1.0.0`); a range of none is `validation_failed` with `out_of_range` at `toVersion`, as a bulk's (chosen) | P3's codes | One sentence per refusal for both dialogs | No code of its own for a range of none |
+| (b) A new code `invalid_range` | — | A code of its own | Two codes for one refusal of two ranges |
+
+**Choice:** (a). Build metadata ranks after its release, as `Compare` orders it: an inclusive `2.0.0` leaves `2.0.0+build.1` out (npm,
+Ansible Galaxy); NuGet's canon has none. **Applied in the spec:** R-CUR-026. Code:
+[store/range.go](../../internal/remotecuration/rules/store/range.go).
+
+### Q-CUR-230 · An image with a range routes a manifest by digest through its delivered tags
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) As an image with version rules (R-OCI-038): a manifest by digest is delivered where a delivered tag's stored document names it; a blob stays reachable by digest (chosen) | `rules.Set.NarrowsVersions` | A range cannot be passed by pulling the digest of a tag outside it | Each such GET reads the stored tags list, `TagTargets` and `ReferencedBy` |
+| (b) The image's decision decides a digest | — | Cheap | Any image outside the range by its digest |
+
+**Choice:** (a); the cost of that path is accepted. A blob of a tag outside the range stays reachable by its digest, as H-1724 says of
+version rules. **Applied in the spec:** R-CUR-026; [formats/oci.md](formats/oci.md) R-OCI-038. Code:
+[delivery.go](../../internal/formats/oci/delivery.go).
 
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 

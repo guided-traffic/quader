@@ -1817,8 +1817,10 @@ answers what `apt search` answers.
 - **Documents** (Q-CUR-9): a Debian remote passes its upstream's `InRelease`, `Release` and indexes through byte for byte (R-DEB-019), so
   a client that uses it directly lists every package and is refused the files the rules refuse, with the status line `403 Forbidden`
   only (apt shows no body). The filtered view is a virtual repository over the remote: its merge (R-DEB-025) leaves out the rows that its
-  member's rules refuse, and a change of a remote's rules enqueues the `deb-index` job of each virtual repository that lists it. The
-  client setup of a Debian remote in mode `onlyAllowed` names the virtual repository as the one to use.
+  member's rules refuse, and a change of a remote's rules enqueues the `deb-index` job of each virtual repository that lists it. Any rule
+  that refuses a version (the mode `onlyAllowed`, a block, a range of versions of a package's allow, [remote-curation.md](../remote-curation.md) R-CUR-026) leaves APT
+  the highest version listed, which the remote then refuses; the guide of a Debian remote names the virtual repository over it as the one
+  to use when it has delivery rules ([Q-CUR-227](../remote-curation.md#q-cur-227--debian-the-remotes-guide-names-the-virtual-repository-whenever-rules-can-refuse-a-version)).
 
 Acceptance criteria:
 

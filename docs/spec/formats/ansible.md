@@ -1771,7 +1771,8 @@ R-CUR-007), from the protocol research of 2026-11-23:
 
 - **Documents:** the version list served from the stored pages lists the delivered versions, `meta.count` counts them and the links are
   computed over them; the collection document's `highest_version` is the highest delivered version; the version document and the
-  archive of a refused version answer the refusal of R-CUR-004; a collection without a delivered version answers it at its document.
+  archive of a refused version answer the refusal of R-CUR-004; a collection without a delivered version answers it at its document, with the reason `outsideRange` where none of
+  its versions lies in the range of its allow ([remote-curation.md](../remote-curation.md) R-CUR-026).
 - **The rules** see a collection by `<ns>.<name>` and a role by the name the format gives it, as the patterns did (H-856 stands).
 - **What `ansible-galaxy` shows:** the refusal's text from the error's `detail`; a version range resolves within the delivered versions.
 - No rate limit of the public Galaxy was found; Red Hat's hosted hub needs its own sign-in (not verified, H-842).

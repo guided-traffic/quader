@@ -417,7 +417,7 @@ behind it. Specified in R-REPO-054, R-REPO-055 and R-REPO-057; the decisions are
 - **`Upstream.Artifact`** is `Fill` plus a read-back, for a plan that has to read an artifact before it can name what is below it (an image index's manifests; the APT builders'
   indexes): the same gate, the same background request and populate event, found=false on an upstream 404, the stored bytes when they are at most `max`. What it stored is
   reported to the package's tally with `mirror.ReportStored` (read from the plan's context), so the pass counts it as an item and in `maxBytes`; an artifact that was stored costs
-  nothing and is not reported. The Upstream also implements `discover.Bounded` (the version bounds), which a plan whose versions cost a request each reads with `discover.BoundsOf`
+  nothing and is not reported. The Upstream also implements `discover.Bounded` (the version bounds) and `discover.Delivering` (what the delivery rules deliver: by the rules for a pass and a sync's row, every version for a download ahead; R-CUR-026, Q-CUR-226), which a plan whose versions cost a request each reads with `discover.BoundsOf` and `discover.DeliveredBy`
   (ADR-182, [oci.md](oci.md#the-mirror-r-oci-026)).
 - **`Admits`** applies the mirror's scope (`remote.mirror.include`, empty: every name) and the delivery rules (a name of which the rules deliver no
   version is never asked for, remote-curation.md R-CUR-017), the format's name rule
