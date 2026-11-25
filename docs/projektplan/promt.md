@@ -283,8 +283,9 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | Package | What it builds | Cost (the planner's estimate, to be measured by its builder) | State |
 |---|---|---|---|
 | G2 · Every dialog in a real browser, without the stack | the 21 dialogs, the two confirm shapes, 17 failures and 13 validations inside a dialog, the conflict and the session dialogs, the token's secret, tooltips at the window's edge: about 62 states at 390 and 1,440 px, measured by the layout checks' own function in the unit-test builder's browser mode; one new development dependency (the unit-test runner's browser provider, pinned) | 2 to 3 minutes of the job `UI layout checks`, nothing per format | landed and pushed at 10:13 (twelve commits; Q-UI-1140 to Q-UI-1149, gaps H-1910 to H-1912; its builder worked from 08:53 to 10:07; the landing's gates and `make ui-states` each exit 0): 69 states, twelve defects of the product found and repaired (section 8, Product) |
-| S9 · A failed call says everything the answer carried | the owner's finding of 11:14 (section 8, Product): the error notice of every screen says what happened in a sentence for every status, shows the status, the call, the time, the request ID, the code and the server's sentence, keeps the answer's body and headers one click away, offers Retry for every read and reads again by itself; one cause is one notice | landed and pushed at 12:08 (one commit; R-UI-216; H-1960 to H-1963; its builder worked from 11:14 to 12:00); S9b (the about 50 screens whose notice gives way while it retries) follows |
-| S10 · An upstream package's npm tags stand on their versions | the owner's finding of 11:22 (section 8, Product): the unlabelled run of dist-tags above an opened upstream package goes; a tag stands as a badge on its version's row, as on the package's page, says what it is, and the filter finds a version by it; the package's state is not said twice | in work since 11:23 |
+| S9 · A failed call says everything the answer carried | the owner's finding of 11:14 (section 8, Product): the error notice of every screen says what happened in a sentence for every status, shows the status, the call, the time, the request ID, the code and the server's sentence, keeps the answer's body and headers one click away, offers Retry for every read and reads again by itself; one cause is one notice | landed and pushed at 12:08 (one commit; R-UI-216; H-1960 to H-1963; its builder worked from 11:14 to 12:00); S9b (the about 50 screens whose notice gives way while it retries, and every screen's secondary reads) in work since 12:10 |
+| S10 · An upstream package's npm tags stand on their versions | the owner's finding of 11:22 (section 8, Product): the unlabelled run of dist-tags above an opened upstream package goes; a tag stands as a badge on its version's row, as on the package's page, says what it is, and the filter finds a version by it; the package's state is not said twice | landed and pushed at 12:37 (two commits; its builder worked from 11:23 to 12:26) |
+| S11 · A system-only format is offered nowhere for something new | the owner's finding of 12:36 (section 8, Product): the chooser of "New repository" offers ClamAV definitions although R-CLAMAV-001 says it must not; no code of the UI reads `systemOnly`; an audit of every place that lists formats and of every write that takes one | in work since 12:36 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | in work since 11:13 |
 | G3 · Page and shell states on the stack | the 10 menus, 3 drawers, the person search's list in a drawer, about 19 sections, 11 routes, the banner and the maintenance notice, a failure of an action inside a section, the editors' refusals with their summary, two selection states, the command menus of NuGet, Ansible Galaxy and generic | 5 to 6 minutes of the render step (the job at about 61 to 64 of its 75 minutes), about 3 s per format | after G1 |
 
@@ -1224,7 +1225,32 @@ records the recorder that tells such a stall apart).
   his picture shows `3.8.51, sha-5ccfd1a, 3.8.52, …`, oldest first with the commit tags between. To do (S5): every list
   of versions defaults to the format's own version order, newest first, in every format.
 
-- **A run of names and versions above an opened upstream package that nobody explains (owner, 2026-11-25, 11:22, UI
+- **"New repository" offers ClamAV definitions (owner, 2026-11-25, 12:36, UI profile, the format chooser with seven
+  formats; his words, whole: "Macht es Sinn, dass man "ClamAV definitions" auswählen kann? es gibt doch nur eine public
+  Quelle und die haben wir bereits über Upstream angebunden... Oder sehe ich das falsch. Außerdem kann man nicht mal
+  die CLass auf Remote stellen? Bitte Diskutiere das offen mit mir."):** he sees it rightly, and the specification says
+  so already: the format is system only (R-CLAMAV-001, Q-CLAMAV-4: "the creation form does not offer it", a create
+  answers `422 format_system_only`). Verified: no code under `web/src/app` reads `systemOnly`, and the fakes hold no
+  such format, so no test saw it: a defect of the screens, S11. **Under discussion with him, not decided:** how the one
+  repository `upstream/clamav` names what it is. Its class is `local` because the product's updater is the only one
+  that asks ClamAV's network, on a schedule, and the readers are served what is stored (ClamAV's network blocks
+  addresses that ask too often; a pull-through per reader's request would ask it at the readers' pace), but in the
+  project `upstream` a reader takes it for an upstream, as he did. S11 leaves that alone.
+
+- **Closed on 2026-11-25, 12:37, by S10, on the owner's word of 11:47 "Ja, bau S10 erstmal wie vorgeschalgen."
+  (Q-UI-1190 to Q-UI-1192, Q-CUR-182; gap H-1975):** the run above the versions is gone; an npm tag stands as a badge
+  on the row of the version it names, `latest` first, three at most and "+N more" with the hidden names in its
+  tooltip; a badge says "npm tag “next”: npm install <package>@next installs this version."; the filter reads "Filter
+  versions and npm tags" where a package has tags and finds a version by its tag on any page (the server filters the
+  whole list: `discover.PageTaggedVersions`, the format contract's types unchanged); an opened package says its state
+  once (the head keeps a rule's line only; a lookup by name, which has no row above it, keeps the badge). The package's
+  page and a version's page use the same badge (`quader-dist-tags`). npm alone sets such names. The landing's thirteen
+  gates each exit 0, the screen rendered without a finding; looked at by the development agent: the opened package
+  dark at 1,440 px (5.0.0-beta.2 with `beta`, `canary`, a long tag and "+2 more"; 4.98.1 `latest`). Open: the search
+  row's Latest comes from the upstream's search answer and the badge from the package's document, so they may differ
+  for a moment after a publish (H-1975); npm's registry was never asked (the walk answers in the browser); what a
+  screen reader says at a badge. As it stood:
+  **A run of names and versions above an opened upstream package that nobody explains (owner, 2026-11-25, 11:22, UI
   profile, the tab Upstream of `upstream/npmjs`, the opened package `@firebase/ai`; he framed two lines of muted names
   each followed by a version, `caching-fdc 2.3.0-caching-fdc.9f17eac6e · canary 2.10.0-canary.bfb9accdc · … · latest
   3.1.0 · next 3.1.0-2026…`, that reach the panel's right edge; his words, whole: "Ich habe dir auf dem Screenshot
