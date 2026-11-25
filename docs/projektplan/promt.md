@@ -259,6 +259,7 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 | S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:17 |
 | M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847). Each is run once and its numbers are written down; a defect a number shows is repaired or entered | in work since 06:17 |
 | S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | in work since 06:40 |
+| S4 · One scrollbar per page | the owner's finding of 06:50 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | a planner (P2) since 06:55; a builder when a place is free, ahead of G2 |
 | P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows, what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | back at 06:42 (a planner, 25 minutes, read-only; kept in the session's scratch directory as `p1-render-guard-blind-spots-plan.md`); its three packages are G1 to G3 below |
 
 **The render guard's blind spots, as the plan of 06:42 reads them (counted in the code by its planner; the estimates are
@@ -833,6 +834,20 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Three scrollbars side by side on a list (owner, 2026-11-25, 06:50, on the UI profile, the tab Images of
+  `upstream/docker-hub` with an opened image of about a hundred tags; his words, whole: "Ich sehe auf dieser Seite 3
+  scrollbars neben einander. Das sieht echt scheiße aus und sollte vermieden werden. Optimal wäre wenn es wirklich nur
+  eine Scrollbar pro Seite gibt, die äußerste. Alles andere ist zu vermeiden. Bei kleinen Tabellen, ist evtl mal eine
+  zweite Scrollbar in Ordnung, aber nicht bei einer Tabelle die eh schon allein den gesamten Bildschirm füllt."):** his
+  rule, for every screen: a page has one scrollbar, the outermost; a second one at most for a small boxed list, never for
+  a list that fills the screen, never nested. **Read by the development agent:** the cause is a decision of its own, not a
+  slip: every data table's `.table-scroll` scrolls by itself under a height cap so that its head stays in view
+  (`web/src/styles/_list-screens.scss`, "the region scrolls, not the page", Q-UI-427), the opened image's tags are a list
+  with a region of its own inside it, and the page scrolls as well. He reverses that decision. **Seen by the development
+  agent in the same picture:** the outer table's head stays above the opened image's rows, whose columns are others, so
+  "Vulnerabilities" stands over a size and "Updated" over "not scanned". A planner reads every scroll region of the web
+  application and cuts the package (P2, since 06:55); the builder follows when a place is free (S4 of section 1).
 
 - **A download queue that an upstream's rate limit stops reads as running, and the overview reads as done (owner,
   2026-11-25, 06:31, on the UI profile; his words: "Ich glaube der Download ist fertig aber das UI für Downloads spiegelt
