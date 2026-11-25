@@ -10,7 +10,6 @@ import (
 	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/vuln"
 	"github.com/guided-traffic/quader/internal/vuln/advisory"
-	"github.com/guided-traffic/quader/internal/vuln/evaluate"
 	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
@@ -46,22 +45,8 @@ func (s *Service) stale(syncedAt *time.Time, now time.Time) bool {
 // (R-VULN-010, [evaluate.ScopeOf]): name is the package of a version, "" for the repository as a whole, which a local
 // repository's names count as public for.
 func (s *Service) evaluation(ctx context.Context, r repository.Repository, name string, data map[string]DataInfo) vuln.Evaluation {
-	p := r.VulnerabilityPolicy(s.cfg.Enabled, s.cfg.Enforcement)
-	if !p.Enabled {
-		return vuln.EvaluationNotCovered
-	}
-	// An error of the rule leaves the name matched, as the evaluation does: a rule that cannot read a claim withholds less.
-	sc, _, _ := evaluate.ScopeOf(ctx, r, name, s.rule, s.cfg.PublicUpstreams)
-	switch sc {
-	case evaluate.ScopeInternal:
-		return vuln.EvaluationInternal
-	case evaluate.ScopeNotCovered:
-		return vuln.EvaluationNotCovered
-	}
-	if data[p.Ecosystem].Complete {
-		return vuln.EvaluationEvaluated
-	}
-	return vuln.EvaluationPendingData
+	e, _ := s.coverage(ctx, r, name, data)
+	return e
 }
 
 // RepositoryVersion is what the scanning says of one version in one repository.
@@ -94,6 +79,10 @@ type ImageState struct {
 	// EOSL says that the distribution no longer provides security updates, so that an absence of findings says little.
 	EOSL     bool
 	Packages int
+	// CreatedAt is when the manifest was queued, StartedAt when a call of the scanner for it started (Q-VULN-276); Kind what a tag's own
+	// manifest is when it stands alone (store.ImageKind*).
+	CreatedAt, StartedAt *time.Time
+	Kind                 string
 	// Detected and Judged are what the gate of a pull reads of the scan row (R-VULN-015): whether a detection has finished at some time,
 	// and what a terminal failure was judged under.
 	Detected bool
@@ -110,12 +99,20 @@ func imagesOf(all []store.ImageManifest, repoID int64) []ImageState {
 		if state == "" {
 			state = store.ImageScanPending
 		}
-		out = append(out, ImageState{Digest: m.Digest, Platform: m.Platform, State: state, ErrorCode: m.ErrorCode, ScannedAt: m.ScannedAt, OSFamily: m.OSFamily, OSName: m.OSName, EOSL: m.EOSL, Packages: m.Packages, Detected: m.Detected, Judged: m.Judged})
+		out = append(out, imageStateOf(m, state))
 	}
 	return out
 }
 
 // manifestDigests are the versions of the findings of what a reference stands for: the digest itself when the caller asked by digest.
+// imageStateOf is a manifest of the store as the views read it, with the state its row has ("" read as pending).
+func imageStateOf(m store.ImageManifest, state string) ImageState {
+	return ImageState{
+		Digest: m.Digest, Platform: m.Platform, State: state, ErrorCode: m.ErrorCode, ScannedAt: m.ScannedAt, OSFamily: m.OSFamily, OSName: m.OSName,
+		EOSL: m.EOSL, Packages: m.Packages, Detected: m.Detected, Judged: m.Judged, CreatedAt: m.CreatedAt, StartedAt: m.StartedAt, Kind: m.Kind,
+	}
+}
+
 func manifestDigests(all []store.ImageManifest, version string) []string {
 	seen := map[string]bool{}
 	out := []string{version}
@@ -249,12 +246,20 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 		return nil, false, err
 	}
 	out := make([]RepositoryVersion, 0, len(repos))
+	scanners := &presenceOnce{s: s.scanners}
 	for _, id := range repos {
 		r, _ := sc.snap.Repository(id)
-		rv := RepositoryVersion{Repository: r.Name.String(), Evaluation: s.evaluation(ctx, r, name, data), Findings: []Finding{}}
+		eval, base := s.coverage(ctx, r, name, data)
+		rv := RepositoryVersion{Repository: r.Name.String(), Evaluation: eval, Findings: []Finding{}}
+		check := Check{State: base}
 		if format == imageFormat {
 			rv.Images = imagesOf(images, id)
 			rv.Evaluation = imageEvaluation(rv.Evaluation, rv.Images)
+			presence, err := scanners.get(ctx, rv.Images)
+			if err != nil {
+				return nil, false, err
+			}
+			check = imageCheck(base, rv.Images, presence, s.now(), s.cfg.ScanCallBound)
 		}
 		p := s.policy(sc.snap, id)
 		for _, f := range fs {
@@ -280,6 +285,7 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 		rv.Blocked, rv.BlockReason = b.Active(), b.Reason
 		rv.Missing = notChecked(format == imageFormat, rv.Evaluation, missing)
 		rv.Grade = gradeIn(rv.Repository, rv.Evaluation, open[id], rv.Images, info.SyncedAt)
+		rv.Grade.Check = check
 		out = append(out, rv)
 	}
 	return out, true, nil

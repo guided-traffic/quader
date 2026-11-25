@@ -6723,14 +6723,18 @@ Acceptance criteria:
 Priority: **P1** · Covers: quader-only
 
 - **The text** is the grade and the count that decides it, as R-VULN-038 words it: "E · 13 Critical", "C · OS end of life",
-  "S · no known vulnerabilities", "N/A · not scanned"; the letter at weight 600. **The rule** is the sentence of R-VULN-038's
-  table; for S of an image "No known vulnerabilities, and the OS is supported", for N/A why it is not checked: a package by its
-  evaluation state ("Waiting for advisory data"), an image by what its scan is missing, never as advisory data ("Waiting for the
-  vulnerability database for images", "Waiting for its scan", "The scan did not finish and is tried again", "The image exceeds the
-  limits of the scan", "The scan could not read the image"). The card of a version's page reads the cause from `missingData` of the
-  version report; a list's tooltip, which has only the evaluation, says an image's `pending_data` as the database for images
-  ([Q-VULN-273](vulnerability-scanning.md#q-vuln-273--a-version-that-is-not-checked-names-what-it-is-missing-blocked-or-not)).
-  `<quader-grade>` and `<quader-grade-card>` take `image` (the format is OCI) and the card `missing`.
+  "S · no known vulnerabilities", "N/A · Queued"; the letter at weight 600. **The rule** is the sentence of R-VULN-038's
+  table; for S of an image "No known vulnerabilities, and the OS is supported".
+- **N/A is never said bare** (the owner, 2026-11-25; [Q-UI-1120](#q-ui-1120--na-says-its-state-in-a-word-and-its-sentence-is-the-cells-description)).
+  Beside the N/A shield stands the word of the grade's `state` (R-VULN-039), the server's, never a sentence of the server's: "Queued",
+  "Scanning", "No scanner", "No database", "No advisory data", "Scan failed", "Scanning off", "Not matched", "Internal", "Not scanned",
+  "Not an image" (German "Wartet", "Wird geprüft", "Kein Scanner", "Keine Datenbank", "Keine Advisory-Daten", "Prüfung fehlgeschlagen",
+  "Prüfung aus", "Nicht abgeglichen", "Intern", "Nicht geprüft", "Kein Image"). Its sentence, why and what comes ("Waits for its
+  vulnerability scan since 25 Nov 2026, 08:31. It is scanned in turn, without anyone having to act."), is the cell's tooltip and
+  accessible description, and the rule of the version page's card, which folds a failed or put-off scan's `stateCode` under
+  **Technical details** ([technical-details.ts](../../web/src/app/shared/technical-details.ts), R-UI-214). One component says it in every
+  list of every format (`<quader-grade>`), so a list's new rows take it as it is. `<quader-grade>` and `<quader-grade-card>` take
+  `image` (the format is OCI), for the rule of S.
   **Revised on 2026-11-18 (owner, walk objection W-9): beside its shield the letter is not written a second time.** The shield
   carries the letter; the text beside it is the count that decides ("13 Critical", "OS end of life", "no known vulnerabilities",
   "not scanned"), in a list, on a version's row and facts line, and on the card. A screen reader still hears "Grade E · 13
@@ -6752,6 +6756,8 @@ Acceptance criteria:
 - A table test of the text, the rule and the rank over the boundaries of R-VULN-038 (0, 10 and 11 Low, 1, 5 and 6 Critical, the
   end of life, N/A) and of the order E · 13 > E · 6 > D · 4 > D · 2 > C · 120 > S > N/A.
 - Unit: `<quader-grade>` shows the shield and the text, its tooltip names every count; axe finds no serious violation.
+- Unit (Vitest, milliseconds): every `state`'s word and sentence, in English and in the German build; the cell's tooltip and accessible
+  description; the card's code under **Technical details**.
 
 ### R-UI-092 · The severity bar
 Priority: **P1** · Covers: quader-only
@@ -24106,6 +24112,59 @@ the development agent would build (b) if the owner wants the remedy said.
 
 **Applied in the spec:** [remote-curation.md](remote-curation.md) H-1884.
 
+### Q-UI-1120 · N/A says its state in a word, and its sentence is the cell's description
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It follows the
+owner's objection of 2026-11-25 on the opened image's tags ("ich habe auch keine Ahnung ob hier eine geplant ist, es gibt keinen Hinweis
+darauf") and [vulnerability-scanning.md](vulnerability-scanning.md) Q-VULN-274, which gives every grade its state.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The N/A shield and one or two words of the state ("Queued", "No scanner", "Scanning off", "Scan failed"); the sentence is the tooltip and the accessible description; the version's card says the sentence and folds a code under Technical details (chosen) | The cell keeps its width and its shield | A reader scanning a column sees why at a glance, and the sentence one hover away; the shield column stays a column of grades | Two words can mean several states ("Scan failed" for three classes, "Scanning off" for three switches); the sentence tells them apart |
+| (b) The sentence in the cell | Everything visible | Nothing hidden | A sentence per row of a hundred tags; the column takes the table's width at 1,024 px |
+| (c) An icon per state instead of the shield | Hourglass, plug, switch | Shapes tell states apart | A column of grades loses its shield for the very rows that have no grade; an icon alone needs its words anyway |
+
+**Choice:** (a). No colour: a state that waits or is off is no finding, and green stays for a positive status only (Q-UI-96).
+
+### Q-UI-1121 · A package's versions keep the column Vulnerabilities unless its format is not scanned
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It revises
+[Q-UI-377](#q-ui-377--a-list-without-grades-has-no-grade-column) for the package page.
+
+Context: the package page left the column out when every version was N/A, which hid exactly the image whose tags all wait for their scan,
+or whose scanner is missing.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The column is left out only when every version's state is `format_not_scanned` (Debian, Ansible Galaxy, generic files) (chosen) | The page says the format once, as before | A version that waits, fails or is off says so in its row | A package of internal names shows "Internal" in every row |
+| (b) As before: left out when every version is N/A | No change | A column of one word in every row is gone | The owner's case: no hint at all |
+
+**Choice:** (a).
+
+### Q-UI-1122 · A version's page reads fast only while its scan passes on its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It narrows
+[H-1870](#h-1870--a-versions-page-reads-every-3-s-for-as-long-as-its-scan-waits).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every 3 s while an image is `queued` or `scanning`, or a file's malware scan is `queued`; every minute when it waits for what the installation lacks (`no_scanner`, `no_database`) (chosen) | The state decides the cadence | A profile or an installation without scanners no longer keeps every seen version page on 40 calls a minute | A scanner that comes back shows within a minute, not 3 s |
+| (b) As before: every 3 s while anything is not checked | No change | — | H-1870 live wherever a scanner is missing, for ever |
+
+**Choice:** (a). What stays of H-1870 is a long queue: an image queued for an hour keeps its page on the fast reads.
+
+### Q-UI-1123 · A pending file says why it waits, and one that cannot be checked now is a warning
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It follows
+[vulnerability-scanning.md](vulnerability-scanning.md) Q-VULN-279.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The word of `waiting` ("Queued", "No scanner", "No signatures"; German "Wartet", "Kein Scanner", "Keine Signaturen") with its icon (hourglass, plug off, cloud off) and the sentence under it; neutral for queued, the warning's colour for no scanner and no signatures (chosen) | As "Could not be checked" | The file cannot be checked now for a reason an administrator removes, which is a warning; a queued file never looks clean or wrong | Amber where nothing is wrong with the file |
+| (b) **Checking** for all three, the cause under it | One word as before | — | The cell's first line tells nothing apart |
+
+**Choice:** (a).
+
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 
 Status: **Decided by the owner, 2026-11-23** (T-25, 19:30, whole: "Ich finde Projects und Repositories haben im Admin-Mneü nichts
@@ -24475,6 +24534,10 @@ deployed while the scanning is on, a backlog after an advisory sync; on the UI d
 requests, not correctness. A fast cadence that slows after some minutes of waiting (3 s, then 15 s, then the page's 60 s) would bound it
 without a change on the server.
 
+Narrowed on 2026-11-25 by [Q-UI-1122](#q-ui-1122--a-versions-page-reads-fast-only-while-its-scan-passes-on-its-own): the page reads
+fast only while the scan's state passes on its own (an image `queued` or `scanning`, a file's malware scan `queued`); a scan that waits
+for a missing scanner or database reads every minute. What stays live is a long queue.
+
 ### H-1871 · Two live lists were not read again while seen in a browser
 
 In the measurement of 2026-11-25 ([web-ui.md](../developer/web-ui.md#what-an-open-tab-asks-of-the-server-measured)) the audit log (every
@@ -24485,6 +24548,16 @@ moving range). Not explained: whether `PagedResource.refresh` returns early for 
 loading), or a timer of the view is set again before it fires. Live, as far as measured, for an administrator who keeps the audit log
 or the security dashboard open: a new event or finding shows only when the tab is seen again or the page is opened again, which is
 what R-UI-213 forbids.
+
+### H-1890 · An opened item's versions read their states again only when the item's row changes
+
+Component: the opened item of a repository's list (`repository-item-versions.ts`, R-UI-213). Subject: a reader who keeps an image with
+many tags opened. Live since the states of R-VULN-039. The list above is live; the opened item reads its versions and their grades again
+only when its row changes (the count, the latest version, the latest's grade, `checkedAt` or `state`). While the latest tag is scanned and
+the older tags wait, the row changes and the versions are read again; once the latest is checked, a change of an older tag alone (queued
+to scanning to checked) shows at the next change of the row, or when the item is opened again. What makes it real: an image whose latest
+tag is scanned first, then a hundred older tags in turn. The rows of one image with all its tags (S5 of the plan) rebuild this list; the
+fix belongs there: the opened item read again while one of its versions waits (`checkWaits`).
 
 ### H-43 · General API rate limits are per replica
 

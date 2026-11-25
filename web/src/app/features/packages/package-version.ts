@@ -12,7 +12,7 @@ import { asApiError, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { PageHeader } from '../../shared/ui/page-header';
 import { TabGroup, TabPage } from '../../shared/ui/tabs';
-import { worstGrade } from '../../shared/vulnerability/grade-words';
+import { checkWaits, worstGrade } from '../../shared/vulnerability/grade-words';
 import { barSeverityOf, blockedRepositories, PackageVulnerabilities } from '../vulnerabilities/package-vulnerabilities';
 import { AnsibleContents } from './ansible-contents';
 import { AnsibleDocs } from './ansible-docs';
@@ -552,18 +552,17 @@ export class PackageVersionPage {
 
   /**
    * Something of the version has not answered yet (R-UI-213): a file's malware scan, a signature check, or an image's vulnerability
-   * scan. The page reads the version again every few seconds until it has, and every minute after. A check that failed reads
-   * as **not checked** like one that waits (the API does not tell them apart), and keeps the fast reads.
+   * scan. The page reads the version again every few seconds until it has, and every minute after. A scan waits only while its state
+   * passes on its own (R-VULN-039, Q-UI-1122): a file queued for its malware scan, an image queued or being scanned; one that waits for
+   * what the installation lacks (no scanner, no database) reads every minute, as a page with nothing in flight.
    */
   protected readonly inFlight = computed(() => {
     const d = this.detail();
     if (!d) return false;
     const signaturePending = (s: SignatureStatus | undefined): boolean => s?.state === 'not_checked' || s?.refusedReason === 'pending';
     if (signaturePending(d.signatures)) return true;
-    if (d.files.some((f) => f.malware?.state === 'pending' || signaturePending(f.signatures))) return true;
-    return (this.vulnerabilityReport()?.repositories ?? []).some(
-      (r) => r.evaluation === 'pending_scan' || (r.images ?? []).some((i) => i.state === 'pending'),
-    );
+    if (d.files.some((f) => f.malware?.waiting === 'queued' || signaturePending(f.signatures))) return true;
+    return (this.vulnerabilityReport()?.repositories ?? []).some((r) => checkWaits(r.grade.state));
   });
 
   constructor() {

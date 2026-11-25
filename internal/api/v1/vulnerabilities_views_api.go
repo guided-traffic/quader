@@ -37,6 +37,7 @@ func toGrade(g report.VersionGrade) gen.VulnerabilityGrade {
 	out := gen.VulnerabilityGrade{
 		Grade: gen.VulnerabilityGradeGrade(g.Grade), Open: toSeverityCounts(g.Open), Fixable: g.Fixable, Eosl: g.EOSL, CheckedAt: g.CheckedAt,
 		Evaluation: gen.VulnerabilityEvaluation(g.Evaluation), Repository: g.Repository,
+		State: gen.VulnerabilityCheckState(g.Check.State), StateSince: g.Check.Since, StateCode: optionalText(g.Check.Code),
 	}
 	if g.OS != "" {
 		out.Os = &g.OS

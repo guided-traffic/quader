@@ -76,6 +76,8 @@ type Rows interface {
 	PruneSBOMs(ctx context.Context) (int64, error)
 	Failed(ctx context.Context, repoID int64, name string, digest [32]byte, f store.ImageFailure) error
 	Deferred(ctx context.Context, repoID int64, name string, digest [32]byte, code, detail string, wait time.Duration) error
+	// Started marks a batch as taken for calls to the scanner (Q-VULN-276), so that a list says "Scanning" of it until its results.
+	Started(ctx context.Context, due []store.ImageDue) error
 	Rearm(ctx context.Context, repoID int64) (int64, error)
 }
 
@@ -329,6 +331,9 @@ func (s *Service) resolveOrphans(ctx context.Context) error {
 // scanBatch scans the manifests in parallel. An image whose scan fails is recorded and the run goes on; only an error of the worker's own
 // (the database, a released context) or errDatabaseLoading ends it.
 func (s *Service) scanBatch(ctx context.Context, due []store.ImageDue, digest string) error {
+	if err := s.o.Images.Started(ctx, due); err != nil {
+		return err
+	}
 	return s.each(due, func(d store.ImageDue) error { return s.scanOne(ctx, d, digest) })
 }
 

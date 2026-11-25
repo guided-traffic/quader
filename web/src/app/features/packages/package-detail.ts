@@ -137,10 +137,11 @@ export class PackageDetail {
     () => new Map<string, VulnerabilityGrade>((valueOf(this.report)?.versions ?? []).map((v) => [v.version, v.grade])),
   );
   /**
-   * The column Vulnerabilities is there when a version has a grade other than N/A (Q-UI-377): a format that is not scanned
-   * (Debian, Ansible) and a package of internal names answer N/A for every version, a column that would tell no row from another.
+   * The column Vulnerabilities is there unless every version is of a format that is not scanned (Debian, Ansible Galaxy, generic files,
+   * Q-UI-377), which the page says once. A version that is not checked for any other cause says why in its cell (R-VULN-039, Q-UI-1121):
+   * an image that waits for its scan, a repository whose scanning is off, an internal name.
    */
-  protected readonly graded = computed(() => [...this.grades().values()].some((g) => g.grade !== 'N/A'));
+  protected readonly graded = computed(() => [...this.grades().values()].some((g) => g.state !== 'format_not_scanned'));
 
   protected readonly rows = computed(() =>
     versionRows(valueOf(this.versions) ?? [], this.grades(), distTagsOf(valueOf(this.latest)?.metadata)),

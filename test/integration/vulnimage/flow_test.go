@@ -384,6 +384,8 @@ type imageGrade struct {
 	Os         *string `json:"os"`
 	CheckedAt  *string `json:"checkedAt"`
 	Evaluation string  `json:"evaluation"`
+	State      string  `json:"state"`
+	StateSince *string `json:"stateSince"`
 	Fixable    int64   `json:"fixable"`
 	Open       struct {
 		Critical int64 `json:"critical"`
@@ -459,12 +461,44 @@ func TestR_VULN_034_AnImageIsScannedAfterItsPushAndItsFindingsReachThePackageAPI
 
 // R-VULN-034, Q-VULN-268: with a scan delay the run the commit woke finds the new manifest not yet due; it runs again when the manifest
 // becomes due, so the image is scanned without the task's schedule (switched off here) and without a start of the task.
+// R-VULN-039, Q-VULN-274: while it waits, the version report and the repository's list say it is queued, since the time discovery queued
+// it; once scanned, both say it is checked. The stack's scanner replica reports itself, so a connected scanner is not read as missing.
 func TestR_VULN_034_APushedImageIsScannedWhenItsScanDelayEndsWithoutTheSchedule(t *testing.T) {
-	f := newFlowWith(t, options{stackEnv: []string{"QUADER_VULNERABILITIES_IMAGES_SCAN_DELAY=2s"}})
+	f := newFlowWith(t, options{stackEnv: []string{"QUADER_VULNERABILITIES_IMAGES_SCAN_DELAY=4s"}})
 	f.push("app", "1.0", newImage(t))
-	if r := f.waitEvaluation("app", "1.0", "evaluated"); len(r.Repositories[0].Findings) != 1 {
-		t.Fatalf("findings: %+v", r.Repositories[0].Findings)
+	var queued imageGrade
+	testenv.WaitFor(t, "the image queued since its discovery", 4*time.Second, func() bool {
+		queued = f.versionReport("app", "1.0").Repositories[0].Grade
+		return queued.State == "queued" && queued.StateSince != nil
+	})
+	if queued.Grade != "N/A" {
+		t.Fatalf("a queued image's grade: %+v", queued)
 	}
+	if g := f.listGrade(); g.State != "queued" && g.State != "scanning" && g.State != "checked" {
+		t.Fatalf("the list says %q of the queued image", g.State)
+	}
+	r := f.waitEvaluation("app", "1.0", "evaluated")
+	if len(r.Repositories[0].Findings) != 1 || r.Repositories[0].Grade.State != "checked" || r.Repositories[0].Grade.StateSince != nil {
+		t.Fatalf("the scanned image: %+v", r.Repositories[0])
+	}
+	if g := f.listGrade(); g.State != "checked" {
+		t.Fatalf("the list says %q of the scanned image", g.State)
+	}
+}
+
+// listGrade is the grade of the one image of GET /packages with its grades (R-VULN-039).
+func (f *flow) listGrade() imageGrade {
+	f.t.Helper()
+	a := f.do("GET", "/api/v1/packages?format=oci&include=vulnerabilities", nil)
+	var page struct {
+		Items []struct {
+			VulnerabilityGrade *imageGrade `json:"vulnerabilityGrade"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(a.Body, &page); err != nil || a.Status != http.StatusOK || len(page.Items) != 1 || page.Items[0].VulnerabilityGrade == nil {
+		f.t.Fatalf("list: %d %s", a.Status, a.Body)
+	}
+	return *page.Items[0].VulnerabilityGrade
 }
 
 // R-VULN-038: an image whose OS is at its end of life grades C at best, without a finding; the list grades the image by that tag.

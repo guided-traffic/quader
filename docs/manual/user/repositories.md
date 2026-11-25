@@ -133,7 +133,8 @@ for the rule of the letter and every count. Select its heading to sort by grade:
 grade loads up to 1,000 entries first; in a larger repository the list says that it sorted only those. The column is not shown when
 you are signed out, or when the installation does not scan.
 
-Debian packages are not scanned for vulnerabilities yet; the page says so and shows no vulnerability column for them.
+Debian packages are not scanned for vulnerabilities yet; the page says so and shows no vulnerability column for them. A version that is
+not checked says why in its cell, for example **Queued**, **No scanner** or **Scanning off**; hover the cell for the full sentence.
 
 ### The upstream and the downloads of a remote repository
 

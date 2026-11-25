@@ -2119,6 +2119,8 @@ type VulnImageScan struct {
 	OsEosl      bool
 	Packages    int32
 	Judged      pgtype.Text
+	CreatedAt   pgtype.Timestamptz
+	StartedAt   pgtype.Timestamptz
 }
 
 type VulnKev struct {

@@ -513,14 +513,14 @@ describe('The page of a version (R-UI-111)', () => {
       const pending = (fake: FakePackagesApi, state: 'pending' | 'clean') => {
         fake.versionList = fake.versionList.map((v) =>
           v.packageId === 'pkg_01JBQ6V7S3K9' && v.version === '1.4.0'
-            ? { ...v, files: v.files.map((f) => ({ ...f, malware: malwareStatus({ state, scannedAt: state === 'clean' ? '2026-11-24T10:00:00Z' : null }) })) }
+            ? { ...v, files: v.files.map((f) => ({ ...f, malware: malwareStatus({ state, scannedAt: state === 'clean' ? '2026-11-24T10:00:00Z' : null, waiting: state === 'pending' ? 'queued' : null }) })) }
             : v,
         );
       };
       const r = await open({ tab: 'files' }, (fake) => pending(fake, 'pending'));
       const reads = vi.spyOn(r.fake, 'version');
       const malwareCell = () => text(r.root.querySelector('quader-malware-status')!);
-      expect(malwareCell()).toContain('Checking');
+      expect(malwareCell()).toContain('Queued');
       const tab = r.root.querySelector('[role="tab"][aria-selected="true"]');
       vi.advanceTimersByTime(3_000);
       await settle(r.fixture);

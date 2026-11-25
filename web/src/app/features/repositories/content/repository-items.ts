@@ -199,7 +199,7 @@ export class RepositoryItems {
       columns.push({
         id: 'grade',
         label: $localize`:@@repo.content.col.vulnerabilities:Vulnerabilities`,
-        help: $localize`:@@repo.content.help.grade:The grade of the latest version in this repository, from S (no known vulnerabilities) to E (more than 5 Critical); N/A when it is not scanned.`,
+        help: $localize`:@@repo.content.help.grade:The grade of the latest version in this repository, from S (no known vulnerabilities) to E (more than 5 Critical); N/A when it is not checked, with the reason beside it.`,
         sortable: true,
       });
     }

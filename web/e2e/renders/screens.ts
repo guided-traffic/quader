@@ -30,6 +30,7 @@ import {
 } from './seed';
 import { gradedPackage, manyVersionsPackage } from './advisories';
 import { malwarePackage, quarantine } from './malware';
+import { malwareWaiting, scanFailedCard, scanStatesList, scanStatesPackage } from './scan-states';
 import { trivyDatabases } from './scanners';
 import { signedFile, signedImage, signedVersions } from './signatures';
 import { issuedFile, issuedImage, issuedVersion } from './receipts';
@@ -2811,6 +2812,9 @@ export const screens: readonly Screen[] = [
   { id: 'repository-long-key', path: `${P}/repositories/${longNpmKey}`, kinds: all },
   { id: 'repository-generic', path: `${P}/repositories/assets`, kinds: all },
   { id: 'repository-oci', path: `${P}/repositories/images`, kinds: all, walk: rowOpened },
+  // Every state of a check by its cause in the list and the opened item (R-VULN-039, Q-UI-1120): a word beside the N/A shield, the
+  // sentence as the tooltip; the German words in the narrow cell.
+  { id: 'repository-oci-scan-states', path: `${P}/repositories/images`, kinds: ['plain'], walk: scanStatesList, de: true },
   // The grades of R-VULN-038: S to E in the vendored packages, N/A in the internal ones and the images (advisories.ts).
   { id: 'repository-npm-vendor', path: `${P}/repositories/npm-vendor`, kinds: all, walk: rowOpened },
   { id: 'repository-npm-vendor-by-grade', path: `${P}/repositories/npm-vendor?sort=-grade`, kinds: ['plain'] },
@@ -2861,6 +2865,10 @@ export const screens: readonly Screen[] = [
   // An image the render database has no database for images to scan with, in a repository that does not block it: the card says it
   // waits for that database, never for advisory data (Q-VULN-273). The tab alone: the other tabs are package-version-oci's.
   { id: 'package-version-oci-unscanned', path: `${ver(P, ociPackage, '1.4.0')}?tab=vulnerabilities`, kinds: ['plain'], walk: vulnerabilitiesTab, de: true },
+  // A failed scan on the card: its class in words, its code under Technical details (Q-UI-1120).
+  { id: 'package-version-oci-scan-failed', path: `${ver(P, ociPackage, '1.4.0')}?tab=vulnerabilities`, kinds: ['plain'], walk: scanFailedCard, de: true },
+  // The package page's versions, every state in a row, the column kept (Q-UI-1121).
+  { id: 'package-oci-scan-states', path: pkg(P, ociPackage), kinds: ['plain'], walk: scanStatesPackage, de: true },
   // The image a remote cached (W-24): its versions, and the tags whose index it holds one platform of and none of, with their platforms.
   { id: 'package-oci-cache', path: pkg(O, { format: 'oci', name: remoteImage.name }), kinds: all },
   { id: 'package-version-oci-cache-partial', path: `${ver(O, { format: 'oci', name: remoteImage.name }, remoteImage.partial)}?tab=details`, kinds: all },
@@ -2906,6 +2914,15 @@ export const screens: readonly Screen[] = [
     walk: malwareFiles,
   },
   { id: 'package-version-malware', path: `${ver(P, malwarePackage, '2.3.0')}?tab=files`, kinds: ['plain'], walk: malwareVersions, tables: 'quader-data-table.version-files' },
+  // A file whose malware scan waits, by why (Q-UI-1123): queued with its time, no scanner, no signatures.
+  {
+    id: 'package-version-malware-waiting',
+    path: `${ver(P, malwarePackage, '2.3.0')}?tab=files`,
+    kinds: ['plain'],
+    walk: malwareWaiting,
+    tables: 'quader-data-table.version-files',
+    de: true,
+  },
   // The signatures at a version, an image and a file (R-SIG-035, R-SIG-024, R-SIG-010): what a plain user meets; the same for every kind.
   { id: 'package-version-signatures', path: `${ver(P, manyVersionsPackage, signedVersions.public)}?tab=signatures`, kinds: ['plain'], walk: signatureVersions },
   { id: 'package-version-signatures-files', path: `${ver(P, manyVersionsPackage, signedVersions.public)}?tab=files`, kinds: ['plain'], tables: 'quader-data-table.version-files' },

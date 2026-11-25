@@ -34,7 +34,8 @@ says what that found; a file Quader writes itself (a Debian index) has none.
 | State | What it means | Downloads |
 |---|---|---|
 | **No malware found**, with the date of the ClamAV database | No signature matched. A signature scan does not find malware that no signature describes yet | Served |
-| **Checking** | The file is not checked yet | Served, or, where only checked artifacts can be downloaded, the download waits for the scan for up to 25 seconds |
+| **Queued** | The file is not checked yet and waits for its scan, since the time named; it is checked in turn | Served, or, where only checked artifacts can be downloaded, the download waits for the scan for up to 25 seconds |
+| **No scanner**, **No signatures** | The file cannot be checked now: no malware scanner is connected, or no ClamAV signature database has been imported yet. It is checked once an administrator provides it | As **Queued** |
 | **Malware found**, with the signature and, inside an archive, the file it was found in | A signature matched | Refused |
 | **Could not be checked**, with the reason: too large, a scan limit was reached inside it, encrypted, or every scan failed | Nothing could check the bytes | Served, or refused where only checked artifacts can be downloaded |
 | **Released**, by whom and when | An instance auditor released these bytes after looking at them | Served |

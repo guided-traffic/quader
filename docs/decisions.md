@@ -12167,10 +12167,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-546 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+550 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 546 questions</summary>
+<summary>Q-UI: 550 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12720,15 +12720,19 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1102](spec/api-and-ui.md#q-ui-1102--the-tab-downloads-is-live-by-the-shared-poll-5-s-while-something-moves-30-s-otherwise) | The tab Downloads is live by the shared poll: 5 s while something moves, 30 s otherwise | Decided by the development agent | (a); `DOWNLOADS_REFRESH_MS` stays 5 s, the tab's own interval of R-CUR-018. | — |
 | [Q-UI-1103](spec/api-and-ui.md#q-ui-1103--the-strips-label-reads-the-queues-counts-itself-on-every-other-tab-every-30-s) | The strip's label reads the queue's counts itself on every other tab, every 30 s | Decided by the development agent | (a) The open tab Downloads (or Upstream) passes its counts; on every other tab the strip reads one row of the list for its counts, at once and every 30 s while the window is seen | — |
 | [Q-UI-1104](spec/api-and-ui.md#q-ui-1104--the-limits-sentence-offers-no-account-the-presets-do-not-say-which-upstream-an-account-lifts) | The limit's sentence offers no account: the presets do not say which upstream an account lifts | Decided by the development agent | (a) No such sentence while no preset carries the fact | — |
+| [Q-UI-1120](spec/api-and-ui.md#q-ui-1120--na-says-its-state-in-a-word-and-its-sentence-is-the-cells-description) | N/A says its state in a word, and its sentence is the cell's description | Decided by the development agent | (a) The N/A shield and one or two words of the state ("Queued", "No scanner", "Scanning off", "Scan failed"); the sentence is the tooltip and the accessible description; the version's card says the sentence and folds a code under Technical details | — |
+| [Q-UI-1121](spec/api-and-ui.md#q-ui-1121--a-packages-versions-keep-the-column-vulnerabilities-unless-its-format-is-not-scanned) | A package's versions keep the column Vulnerabilities unless its format is not scanned | Decided by the development agent | (a) The column is left out only when every version's state is `format_not_scanned` (Debian, Ansible Galaxy, generic files) | — |
+| [Q-UI-1122](spec/api-and-ui.md#q-ui-1122--a-versions-page-reads-fast-only-while-its-scan-passes-on-its-own) | A version's page reads fast only while its scan passes on its own | Decided by the development agent | (a) Every 3 s while an image is `queued` or `scanning`, or a file's malware scan is `queued`; every minute when it waits for what the installation lacks (`no_scanner`, `no_database`) | — |
+| [Q-UI-1123](spec/api-and-ui.md#q-ui-1123--a-pending-file-says-why-it-waits-and-one-that-cannot-be-checked-now-is-a-warning) | A pending file says why it waits, and one that cannot be checked now is a warning | Decided by the development agent | (a) The word of `waiting` ("Queued", "No scanner", "No signatures"; German "Wartet", "Kein Scanner", "Keine Signaturen") with its icon (hourglass, plug off, cloud off) and the sentence under it; neutral for queued, the warning's colour for no scanner and no signatures | — |
 
 </details>
 
 ### Q-VULN
 
-190 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
+196 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
 
 <details>
-<summary>Q-VULN: 190 questions</summary>
+<summary>Q-VULN: 196 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12922,6 +12926,12 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-VULN-271](spec/vulnerability-scanning.md#q-vuln-271--a-manifest-that-is-no-image-to-scan-passes-the-missing-data-rule) | A manifest that is no image to scan passes the missing-data rule | Decided by the development agent | (a) The gate's statement applies the discovery's selection (R-VULN-034, Q-VULN-269) to the manifest's row: what it leaves out passes the missing-data rule, a blocking finding still refuses; a manifest without a row counts as an image | — |
 | [Q-VULN-272](spec/vulnerability-scanning.md#q-vuln-272--a-missing-data-block-names-what-is-missing-by-the-state-of-the-scan) | A missing-data block names what is missing by the state of the scan | Decided by the development agent | (a) One cause beside the reason (`vuln.MissingCause`: `advisory_data`, `image_database`, `image_not_scanned`, `image_scan_retried`, `image_over_limits`, `image_unreadable`), decided where the verdict is read and carried into the refusal's text, the audit event and the version view | — |
 | [Q-VULN-273](spec/vulnerability-scanning.md#q-vuln-273--a-version-that-is-not-checked-names-what-it-is-missing-blocked-or-not) | A version that is not checked names what it is missing, blocked or not | Decided by the development agent | (a) The version report's `missingData` names the cause for every version that is not checked, blocked or not; the card words an image's N/A by it; a list, which has no such field, words an image's `pending_data` as the database for images; the summary counts a repository of images waiting for the database as `pendingDatabase` | — |
+| [Q-VULN-274](spec/vulnerability-scanning.md#q-vuln-274--every-grade-carries-the-state-of-its-check-by-its-cause) | Every grade carries the state of its check by its cause | Decided by the development agent | (a) An enum `state` on `VulnerabilityGrade`, derived by the report from the repository's settings and the scan rows per manifest, with `stateSince` and `stateCode` | — |
+| [Q-VULN-275](spec/vulnerability-scanning.md#q-vuln-275--an-artifact-that-is-no-image-says-so-instead-of-waiting-for-ever) | An artifact that is no image says so instead of waiting for ever | Decided by the development agent | (a) The grade statements read the kind of the tag's own manifest when it stands alone (image, index, other) by discovery's selection, and `other` reads `not_an_image` | — |
+| [Q-VULN-276](spec/vulnerability-scanning.md#q-vuln-276--being-scanned-is-a-mark-the-job-writes-when-it-takes-a-row) | Being scanned is a mark the job writes when it takes a row | Decided by the development agent | (a) `started_at`, written for a batch in one statement before its calls and cleared by the record of each result; read as running only within the call's deadline (`pull_timeout` + `timeout` + 1 m) | — |
+| [Q-VULN-277](spec/vulnerability-scanning.md#q-vuln-277--whether-a-scanner-is-connected-is-read-once-per-answer-and-only-when-an-image-waits) | Whether a scanner is connected is read once per answer, and only when an image waits | Decided by the development agent | (a) The rows of the System page's list of scanner replicas (R-OPS-048): a live, ready row of the kind proves one, whatever the reading replica's configuration says; without one, no address of the kind in its configuration (the chart gives every role the same) or replicas that report themselves mean none, and replicas that cannot report leave it unknown, when a pending row's own code (`scanner_unavailable`, `registry_unavailable`, `pull_refused`) names a scanner its last call could not reach. Read lazily, once per answer, only when an image of the answer waits | — |
+| [Q-VULN-278](spec/vulnerability-scanning.md#q-vuln-278--no-state-promises-when-an-image-is-scanned) | No state promises when an image is scanned | Decided by the development agent | (a) "Queued since" the time, and "it is scanned in turn", without a promise of when | — |
+| [Q-VULN-279](spec/vulnerability-scanning.md#q-vuln-279--a-pending-file-says-why-it-waits-from-the-same-facts) | A pending file says why it waits, from the same facts | Decided by the development agent | (a) `waiting` on `MalwareStatus`: `queued` (with `queuedSince`, the row's `created_at`), `no_scanner`, `no_database`, read once per answer for a pending file: the signature database first (`malware_database.version`), then the scanner by Q-VULN-277's rule for `clamav` | — |
 
 </details>
 <!-- coverage-gen:end decisions -->

@@ -146,6 +146,20 @@ func (s *Images) Deferred(ctx context.Context, repoID int64, name string, digest
 	})
 }
 
+// Started marks the rows of a batch as taken for calls to the scanner now (Q-VULN-276); the record of each call's result clears the mark.
+func (s *Images) Started(ctx context.Context, due []ImageDue) error {
+	if len(due) == 0 {
+		return nil
+	}
+	ids, names, digests := make([]int64, 0, len(due)), make([]string, 0, len(due)), make([][]byte, 0, len(due))
+	for _, d := range due {
+		ids, names, digests = append(ids, d.RepoID), append(names, d.Name), append(digests, d.Digest[:])
+	}
+	return s.tx(ctx, func(qs *q.Queries) error {
+		return qs.VulnImageStarted(ctx, q.VulnImageStartedParams{RepoIds: ids, Names: names, Digests: digests})
+	})
+}
+
 // Rearm makes every manifest of a repository due again.
 func (s *Images) Rearm(ctx context.Context, repoID int64) (n int64, err error) {
 	err = s.tx(ctx, func(qs *q.Queries) (err error) {
@@ -302,6 +316,28 @@ type ImageManifest struct {
 	// gate of a pull reads (R-VULN-015).
 	Detected bool
 	Judged   string
+	// CreatedAt is when discovery wrote the row, StartedAt when the job took it for a call to the scanner (cleared with the call's result);
+	// nil without a row or a call (Q-VULN-274, Q-VULN-276).
+	CreatedAt, StartedAt *time.Time
+	// Kind is what the manifest is when it stands for its tag alone (Q-VULN-275): ImageKindImage, ImageKindIndex or ImageKindOther.
+	Kind string
+}
+
+// The kinds of a manifest that stands for its tag alone (VulnImageManifests, VulnImageGradeScans): an image to scan (or a manifest the
+// repository holds no row of yet), an index none of whose platform images is stored, or an artifact that is no container image.
+const (
+	ImageKindImage = "image"
+	ImageKindIndex = "index"
+	ImageKindOther = "other"
+)
+
+// microTimePtr is a time of a statement's microseconds, nil for 0.
+func microTimePtr(us int64) *time.Time {
+	if us <= 0 {
+		return nil
+	}
+	t := microTime(us)
+	return &t
 }
 
 // Manifests lists what a tag stands for in the repositories.
@@ -314,7 +350,11 @@ func (s *Images) Manifests(ctx context.Context, repos []int64, name, tag string)
 		}
 		out = make([]ImageManifest, 0, len(rows))
 		for _, r := range rows {
-			m := ImageManifest{RepoID: r.RepoID, Digest: r.Digest, Platform: r.Platform, State: r.State, ErrorCode: r.ErrorCode, OSFamily: r.OsFamily, OSName: r.OsName, EOSL: r.OsEosl, Packages: int(r.Packages), Detected: r.Detected, Judged: r.Judged}
+			m := ImageManifest{
+				RepoID: r.RepoID, Digest: r.Digest, Platform: r.Platform, State: r.State, ErrorCode: r.ErrorCode, OSFamily: r.OsFamily, OSName: r.OsName,
+				EOSL: r.OsEosl, Packages: int(r.Packages), Detected: r.Detected, Judged: r.Judged, CreatedAt: microTimePtr(r.CreatedUs),
+				StartedAt: microTimePtr(r.StartedUs), Kind: r.Kind,
+			}
 			if r.ScannedUs > 0 {
 				at := microTime(r.ScannedUs)
 				m.ScannedAt = &at
@@ -363,6 +403,7 @@ func (s *Images) GradeScans(ctx context.Context, repos []int64, pairs []NameVers
 		for _, r := range rows {
 			m := TagManifest{Name: r.Name, Tag: r.Version, ImageManifest: ImageManifest{
 				RepoID: r.RepoID, Digest: r.Digest, Platform: r.Platform, State: r.State, OSFamily: r.OsFamily, OSName: r.OsName, EOSL: r.OsEosl,
+				ErrorCode: r.ErrorCode, Judged: r.Judged, CreatedAt: microTimePtr(r.CreatedUs), StartedAt: microTimePtr(r.StartedUs), Kind: r.Kind,
 			}}
 			if r.ScannedUs > 0 {
 				at := microTime(r.ScannedUs)

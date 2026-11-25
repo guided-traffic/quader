@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"time"
 
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
 	"github.com/guided-traffic/quader/internal/authz"
@@ -32,8 +33,11 @@ func (a *App) wireVulnAPI(_ context.Context, in infra, az authzArea, repo reposi
 	st := store.NewAPI(in.db)
 	rep, err := report.New(report.Options{
 		Store: st, Repositories: repo.reader, Advisories: vz.advisories, Rule: vz.rule, Images: store.NewImages(in.db),
+		Scanners: scannerPresence{a: a},
 		Config: report.Config{
-			Enabled: cfg.Enabled, Enforcement: enforcement, StaleAfter: cfg.StaleAfter, ExportMaxRows: cfg.Export.MaxRows,
+			// The deadline of the worker's call of the scanner (R-VULN-048): a mark older than it is a lost call's (Q-VULN-276).
+			ScanCallBound: cfg.Images.PullTimeout + cfg.Images.Timeout + time.Minute,
+			Enabled:       cfg.Enabled, Enforcement: enforcement, StaleAfter: cfg.StaleAfter, ExportMaxRows: cfg.Export.MaxRows,
 			PublicUpstreams: cfg.Matching.PublicUpstreams, OSVMode: cfg.Sources.OSV.Mode, KEVMode: cfg.Sources.KEV.Mode,
 			OSVRepository: cfg.Sources.OSV.Repository, KEVRepository: cfg.Sources.KEV.Repository,
 			Ecosystems:    cfg.Sources.OSV.EffectiveEcosystems(),

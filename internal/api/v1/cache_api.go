@@ -210,13 +210,11 @@ func (s *Server) addCacheMalware(ctx context.Context, key qname.Repo, rows []inv
 	if err != nil {
 		return err
 	}
-	c, err := mc.of(key)
-	if err != nil {
-		return err
-	}
 	for i, e := range rows {
 		if e.Kind == invalidation.EntryKindArtifact {
-			out[i].Malware = edge.DescribeMalware(verdicts[blob.Digest(e.SHA256)], c, false)
+			if out[i].Malware, err = mc.describe(key, verdicts[blob.Digest(e.SHA256)], false); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

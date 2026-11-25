@@ -28902,6 +28902,14 @@ components:
         The state of a blob's verdict (R-MAL-002): `pending` not checked yet (also a blob the scanning has not reached), `clean` no
         signature matched, `infected` ClamAV named a signature, `unscannable` nothing could check it (`reason`: `too_large`,
         `limits_exceeded`, `encrypted`), `failed` the scans that may pass did not (`reason`: the last code).
+    MalwareWaiting:
+      type: string
+      enum: [queued, no_scanner, no_database]
+      description: |
+        Why a pending file is not checked yet (R-MAL-024, Q-VULN-279): `queued`, it waits for its turn and is checked without anyone's act;
+        `no_scanner`, no malware scanner is connected (none configured, or none of those that report themselves is ready); `no_database`,
+        no signature set of ClamAV has been imported yet. The answer reads the two facts of the installation once, and only for a pending
+        file (Q-VULN-277).
     MalwareFindState:
       type: string
       enum: [infected, unscannable, failed]
@@ -29033,7 +29041,7 @@ components:
     MalwareStatus:
       type: object
       additionalProperties: false
-      required: [state, scannedAt, database, databaseBuiltAt, signature, part, reason, released, releasedBy, releasedAt, refused]
+      required: [state, scannedAt, database, databaseBuiltAt, signature, part, reason, released, releasedBy, releasedAt, refused, waiting, queuedSince]
       description: |
         The member `malware` of a stored file (R-MAL-022, R-MAL-024): the verdict of its blob, the release that passes it and
         whether the gate refuses it in the file's repository now. Absent for a generated item and while the scanning is off.
@@ -29072,6 +29080,15 @@ components:
           description: |
             The gate refuses the file in its repository now (Q-MAL-45): infected without a release, or unscannable or failed where
             only checked artifacts can be downloaded. A pending file is not refused; it waits for its scan.
+        waiting:
+          description: Why a `pending` file is not checked yet (R-MAL-024, Q-VULN-279); null for every other state and for a released file.
+          oneOf:
+            - $ref: "#/components/schemas/MalwareWaiting"
+            - type: "null"
+        queuedSince:
+          type: [string, "null"]
+          format: date-time
+          description: "`waiting: queued`: when the file's row was written; null otherwise and before discovery has reached the file."
     MalwareRelease:
       type: object
       additionalProperties: false
@@ -31363,7 +31380,7 @@ components:
     VulnerabilityGrade:
       type: object
       additionalProperties: false
-      required: [grade, open, fixable, eosl, checkedAt, evaluation, repository]
+      required: [grade, open, fixable, eosl, checkedAt, evaluation, state, stateSince, stateCode, repository]
       description: |
         The grade of a version in a repository (R-VULN-038, R-VULN-039): S without an open finding,
         A with only Low, None or Unknown (at most 10), B with Medium or more than 10 Low, None or Unknown, C with High, D with 1 to 5
@@ -31390,7 +31407,31 @@ components:
           format: date-time
           description: "An image: the oldest scan of its manifests in the repository. Every other format: when the advisory data it was evaluated against was synchronised. null for N/A."
         evaluation: {$ref: "#/components/schemas/VulnerabilityEvaluation"}
+        state: {$ref: "#/components/schemas/VulnerabilityCheckState"}
+        stateSince:
+          type: [string, "null"]
+          format: date-time
+          description: "`queued`: when the image's earliest waiting manifest was queued; `scanning`: when the running call started; null otherwise and when not known."
+        stateCode:
+          type: [string, "null"]
+          description: "The code of R-VULN-034 of a failed scan (`scan_failed`, `over_limits`, `unreadable`), or of a row put off for a reason of the installation (`queued`: `scanner_busy`, `spool_too_small`, …; `no_scanner`: `scanner_unavailable`, `registry_unavailable`, `pull_refused`): technical detail for a reader who reports it, never a sentence of its own. null otherwise."
         repository: {type: string, description: The qualified name of the repository whose grade it is.}
+    VulnerabilityCheckState:
+      type: string
+      enum: [checked, queued, scanning, no_scanner, no_database, no_advisory_data, scan_failed, over_limits, unreadable, off_installation, off_repository, not_matched, unknown_upstream, internal, format_not_scanned, not_an_image]
+      description: |
+        Whether a version is checked for vulnerabilities and, when it is not, why and what comes (R-VULN-039, Q-VULN-274): the one state
+        every list cell, the version page's card and the security screens say, in the reader's language. `checked`: evaluated, the grade
+        says the rest. Waits and is checked without anyone's act: `queued` (an image waits for its scan), `scanning` (a call of the scanner
+        for it runs now, Q-VULN-276). Cannot be checked now: `no_scanner` (no scanner of images is connected, Q-VULN-277), `no_database` (no
+        vulnerability database for images has been imported), `no_advisory_data` (a package's ecosystem's advisory data is incomplete). The
+        scan failed (`stateCode` has the code): `scan_failed` (it is tried again), `over_limits` (a bound of the scanning; an operator raises
+        it), `unreadable` (a release that reads it). Not checked by setting or by what it is: `off_installation` (the installation's scanning,
+        or for an image its image scanning, is off), `off_repository` (the repository's), `not_matched` (the repository's
+        `matchPublicAdvisories` is `never`), `unknown_upstream` (a remote whose upstream is no public registry of its format, R-VULN-010),
+        `internal` (a name of the organisation's own), `format_not_scanned` (a format without the vulnerability adapter: Debian, Ansible
+        Galaxy, generic files), `not_an_image` (an OCI artifact that is no container image, Q-VULN-275). Every state but `checked` has the
+        grade N/A. An image's state is read per manifest, so every tag of one image says the same.
     VulnerabilitySummary:
       type: object
       additionalProperties: false

@@ -139,6 +139,8 @@ type VersionGrade struct {
 	// used was synchronised; nil for N/A.
 	CheckedAt  *time.Time
 	Evaluation vuln.Evaluation
+	// Check is the state of the check by its cause (R-VULN-039, Q-VULN-274): checked, or why not and what comes.
+	Check Check
 	// Repository is the qualified name of the repository.
 	Repository string
 }
@@ -264,7 +266,12 @@ func (s *Service) grades(ctx context.Context, sc Scope, format string, holders [
 		}
 	}
 	// The evaluation of a repository depends on the name, not the version (R-VULN-010); an image's is refined by its scans.
-	evals := map[holderKey]vuln.Evaluation{}
+	type covered struct {
+		eval  vuln.Evaluation
+		state vuln.CheckState
+	}
+	evals := map[holderKey]covered{}
+	scanners := &presenceOnce{s: s.scanners}
 	for _, h := range holders {
 		r, ok := sc.snap.Repository(h.RepoID)
 		if !ok {
@@ -273,21 +280,27 @@ func (s *Service) grades(ctx context.Context, sc Scope, format string, holders [
 		ek := holderKey{h.RepoID, gradeKey{Name: h.Package}}
 		base, done := evals[ek]
 		if !done {
-			base = s.evaluation(ctx, r, h.Package, data)
+			base.eval, base.state = s.coverage(ctx, r, h.Package, data)
 			evals[ek] = base
 		}
 		k := holderKey{h.RepoID, gradeKey{Name: h.Package, Version: h.Version}}
 		var images []ImageState
-		eval := base
+		eval, check := base.eval, Check{State: base.state}
 		if image {
 			images = scans[k]
 			if images == nil {
 				images = []ImageState{}
 			}
-			eval = imageEvaluation(base, images)
+			eval = imageEvaluation(base.eval, images)
+			presence, err := scanners.get(ctx, images)
+			if err != nil {
+				return nil, err
+			}
+			check = imageCheck(base.state, images, presence, s.now(), s.cfg.ScanCallBound)
 		}
 		p := s.policy(sc.snap, h.RepoID)
 		g := gradeIn(r.Name.String(), eval, open[k], images, data[p.Ecosystem].SyncedAt)
+		g.Check = check
 		if prev, ok := out[k.gradeKey]; ok {
 			g = worst(prev, g)
 		}
@@ -312,7 +325,7 @@ func (s *Service) tagScans(ctx context.Context, repos []int64, pairs []store.Nam
 		if state == "" {
 			state = store.ImageScanPending
 		}
-		out[k] = append(out[k], ImageState{Digest: m.Digest, Platform: m.Platform, State: state, ScannedAt: m.ScannedAt, OSFamily: m.OSFamily, OSName: m.OSName, EOSL: m.EOSL})
+		out[k] = append(out[k], imageStateOf(m.ImageManifest, state))
 	}
 	return out, nil
 }

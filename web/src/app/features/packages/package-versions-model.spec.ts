@@ -119,7 +119,7 @@ describe('The versions table of a package (R-UI-110)', () => {
     );
     expect(gradeSummaryText(sampleGrade('A', { low: 1 }), 'en')).toBe('1 finding · 0 fixable');
     expect(gradeSummaryText(sampleGrade('S'), 'en')).toBe('no findings');
-    expect(gradeSummaryText(sampleGrade('N/A'), 'en')).toBe('not scanned');
+    expect(gradeSummaryText(sampleGrade('N/A', {}, { state: 'no_scanner' }), 'en')).toBe('No scanner');
     expect(gradeSummaryText(sampleGrade('C', { high: 1234 }, { fixable: 1000 }), 'de')).toBe('1.234 findings · 1.000 fixable');
   });
 });

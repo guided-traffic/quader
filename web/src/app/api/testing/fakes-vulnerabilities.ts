@@ -546,6 +546,9 @@ export function sampleGrade(
     eosl: false,
     checkedAt: grade === 'N/A' ? null : '2026-11-12T12:31:51Z',
     evaluation: grade === 'N/A' ? 'not_covered' : 'evaluated',
+    state: grade === 'N/A' ? 'off_repository' : 'checked',
+    stateSince: null,
+    stateCode: null,
     repository: 'web/npm-local',
     ...over,
   };

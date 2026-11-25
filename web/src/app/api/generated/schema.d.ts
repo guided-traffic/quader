@@ -13221,6 +13221,14 @@ export interface components {
          * @enum {string}
          */
         MalwareState: "pending" | "clean" | "infected" | "unscannable" | "failed";
+        /**
+         * @description Why a pending file is not checked yet (R-MAL-024, Q-VULN-279): `queued`, it waits for its turn and is checked without anyone's act;
+         *     `no_scanner`, no malware scanner is connected (none configured, or none of those that report themselves is ready); `no_database`,
+         *     no signature set of ClamAV has been imported yet. The answer reads the two facts of the installation once, and only for a pending
+         *     file (Q-VULN-277).
+         * @enum {string}
+         */
+        MalwareWaiting: "queued" | "no_scanner" | "no_database";
         /** @enum {string} */
         MalwareFindState: "infected" | "unscannable" | "failed";
         MalwareSwitch: {
@@ -13334,6 +13342,13 @@ export interface components {
              *     only checked artifacts can be downloaded. A pending file is not refused; it waits for its scan.
              */
             refused: boolean;
+            /** @description Why a `pending` file is not checked yet (R-MAL-024, Q-VULN-279); null for every other state and for a released file. */
+            waiting: components["schemas"]["MalwareWaiting"] | null;
+            /**
+             * Format: date-time
+             * @description `waiting: queued`: when the file's row was written; null otherwise and before discovery has reached the file.
+             */
+            queuedSince: string | null;
         };
         MalwareRelease: {
             sha256: string;
@@ -14803,9 +14818,33 @@ export interface components {
              */
             checkedAt: string | null;
             evaluation: components["schemas"]["VulnerabilityEvaluation"];
+            state: components["schemas"]["VulnerabilityCheckState"];
+            /**
+             * Format: date-time
+             * @description `queued`: when the image's earliest waiting manifest was queued; `scanning`: when the running call started; null otherwise and when not known.
+             */
+            stateSince: string | null;
+            /** @description The code of R-VULN-034 of a failed scan (`scan_failed`, `over_limits`, `unreadable`), or of a row put off for a reason of the installation (`queued`: `scanner_busy`, `spool_too_small`, …; `no_scanner`: `scanner_unavailable`, `registry_unavailable`, `pull_refused`): technical detail for a reader who reports it, never a sentence of its own. null otherwise. */
+            stateCode: string | null;
             /** @description The qualified name of the repository whose grade it is. */
             repository: string;
         };
+        /**
+         * @description Whether a version is checked for vulnerabilities and, when it is not, why and what comes (R-VULN-039, Q-VULN-274): the one state
+         *     every list cell, the version page's card and the security screens say, in the reader's language. `checked`: evaluated, the grade
+         *     says the rest. Waits and is checked without anyone's act: `queued` (an image waits for its scan), `scanning` (a call of the scanner
+         *     for it runs now, Q-VULN-276). Cannot be checked now: `no_scanner` (no scanner of images is connected, Q-VULN-277), `no_database` (no
+         *     vulnerability database for images has been imported), `no_advisory_data` (a package's ecosystem's advisory data is incomplete). The
+         *     scan failed (`stateCode` has the code): `scan_failed` (it is tried again), `over_limits` (a bound of the scanning; an operator raises
+         *     it), `unreadable` (a release that reads it). Not checked by setting or by what it is: `off_installation` (the installation's scanning,
+         *     or for an image its image scanning, is off), `off_repository` (the repository's), `not_matched` (the repository's
+         *     `matchPublicAdvisories` is `never`), `unknown_upstream` (a remote whose upstream is no public registry of its format, R-VULN-010),
+         *     `internal` (a name of the organisation's own), `format_not_scanned` (a format without the vulnerability adapter: Debian, Ansible
+         *     Galaxy, generic files), `not_an_image` (an OCI artifact that is no container image, Q-VULN-275). Every state but `checked` has the
+         *     grade N/A. An image's state is read per manifest, so every tag of one image says the same.
+         * @enum {string}
+         */
+        VulnerabilityCheckState: "checked" | "queued" | "scanning" | "no_scanner" | "no_database" | "no_advisory_data" | "scan_failed" | "over_limits" | "unreadable" | "off_installation" | "off_repository" | "not_matched" | "unknown_upstream" | "internal" | "format_not_scanned" | "not_an_image";
         /** @description The open findings the caller can read (R-VULN-021). */
         VulnerabilitySummary: {
             bySeverity: components["schemas"]["VulnerabilitySeverityCounts"];

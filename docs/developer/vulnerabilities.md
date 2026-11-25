@@ -88,9 +88,17 @@ A `missing_data` block carries what it is missing, `Block.Missing` ([missing.go]
 `enforce.missingText` words each cause with what the client does next (the table of R-VULN-016), `record` writes `missingData` and
 `scanError` into the audit event, and the version report sets the API's `missingData` from the same cause. The version report names it for
 every version that is not checked, blocked or not (`report.notChecked`, Q-VULN-273): a package waiting for its data `advisory_data`, an image
-the cause `imageMissing` reads from its scan rows; the version page's grade card words an image's N/A by it (`gradeRule` in
-[grade-words.ts](../../web/src/app/shared/vulnerability/grade-words.ts)), and a list, which has no such field, by the evaluation, with
-`pending_data` of an image as the database for images. The summary's coverage counts a repository of images waiting for that database
+the cause `imageMissing` reads from its scan rows; it is the cause of a block. What every screen says of a version that is not checked
+is the grade's `state` (R-VULN-039, Q-VULN-274), one derivation in [report/check.go](../../internal/vuln/report/check.go): `coverOf`
+decides the repository's cause from facts `coverage` reads (the format, the installation's and the repository's switch, the scope, the
+data), and `imageCheck` the state of an image's scan per manifest from the rows of `VulnImageGradeScans` and `VulnImageManifests`
+(`created_at`, `started_at`, `error_code`, `judged`, and the `kind` of a tag's own manifest). Whether a scanner is connected is
+`Options.Scanners`, the App's `scannerPresence` ([scanner_presence.go](../../internal/app/scanner_presence.go)), asked through
+`presenceOnce` at most once per answer and only for a waiting image. The job marks a batch with `Images.Started` before its calls, and
+every record of a result clears the mark. The screens say the state with `checkWord` and `checkSentence`
+([grade-words.ts](../../web/src/app/shared/vulnerability/grade-words.ts)). A new state is one constant in
+[check.go](../../internal/vuln/check.go), its rule in `coverOf` or `imageCheck`, its value in `VulnerabilityCheckState` of the API, and
+its word and sentence. The summary's coverage counts a repository of images waiting for that database
 as `pendingDatabase`, apart from `pendingData` (`Coverage.add` in [summary.go](../../internal/vuln/report/summary.go)).
 `Policy.BlockReasonOf(kind, status)` is the same rule for the API's `blocked` and `blockReason`, so the report and the download agree.
 

@@ -216,7 +216,9 @@ type fakeRows struct {
 	failed   []string
 	failures []store.ImageFailure
 	deferred []string
-	deletes  int
+	// started are the rows the job marked as taken for a call before it (Q-VULN-276).
+	started []string
+	deletes int
 	// nextNew is what NextNew answers once due is empty: the wait of a discovered manifest, hasNew whether one waits.
 	nextNew time.Duration
 	hasNew  bool
@@ -231,6 +233,16 @@ func (f *fakeRows) Orphans(context.Context, int) ([]string, error)              
 func (f *fakeRows) DueCount(context.Context, string) (int64, error)             { return int64(len(f.due)), nil }
 func (f *fakeRows) PruneSBOMs(context.Context) (int64, error)                   { return 0, nil }
 func (f *fakeRows) Rearm(context.Context, int64) (int64, error)                 { return 0, nil }
+
+func (f *fakeRows) Started(_ context.Context, due []store.ImageDue) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, d := range due {
+		f.started = append(f.started, d.Name)
+	}
+	return nil
+}
+
 func (f *fakeRows) Unanalysed(context.Context, store.Retry, int) ([]store.ImageDue, error) {
 	return nil, nil
 }
@@ -380,6 +392,25 @@ func TestR_VULN_048_WhileTheScannersLoadTheDatabaseTheRunEndsAndNoRowChanges(t *
 	}
 	if len(r.rows.failed)+len(r.rows.deferred)+len(r.applied) != 0 || len(r.scanner.analyses) != 0 {
 		t.Fatalf("a row changed: failed %v, deferred %v, applied %d, analyses %v", r.rows.failed, r.rows.deferred, len(r.applied), r.scanner.analyses)
+	}
+}
+
+// R-VULN-039, Q-VULN-276: the job marks the rows of a batch as taken before it calls the scanner, so that a list says "Scanning" of them
+// while the call runs; the record of the result clears the mark (the statements of the store).
+func TestR_VULN_039_ABatchIsMarkedAsBeingScannedBeforeItsCalls(t *testing.T) {
+	r := newJobRig(t, testAnalyser)
+	var marked []string
+	r.scanner.detect = func(DetectCall) (Detection, error) {
+		r.rows.mu.Lock()
+		marked = append(marked, r.rows.started...)
+		r.rows.mu.Unlock()
+		return Detection{}, nil
+	}
+	if err := r.svc.RunScan(t.Context(), &fakeRun{}); err != nil {
+		t.Fatal(err)
+	}
+	if len(marked) != 1 || marked[0] != "app" {
+		t.Fatalf("the rows marked when the scanner was called: %v, want [app]", marked)
 	}
 }
 

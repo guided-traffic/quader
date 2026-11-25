@@ -53,6 +53,9 @@ type Config struct {
 	Ecosystems []string
 	// MaxScopeRows overrides DefaultMaxScopeRows; zero keeps it.
 	MaxScopeRows int
+	// ScanCallBound is the deadline of the worker's call of the image scanner (pull_timeout plus timeout plus a minute, R-VULN-048): a
+	// manifest marked as taken longer ago is read as waiting, not as being scanned (Q-VULN-276). Zero reads every mark as running.
+	ScanCallBound time.Duration
 }
 
 // Options configure [New].
@@ -68,6 +71,8 @@ type Options struct {
 	Rule evaluate.ClaimRule
 	// Images reads how far the manifests of an image version have been scanned; nil reports none.
 	Images ImageReader
+	// Scanners answers whether a scanner of images is connected (Q-VULN-277); nil reads it from the rows alone.
+	Scanners Scanners
 	// Now returns the current time; nil is time.Now.
 	Now func() time.Time
 }
@@ -87,8 +92,9 @@ type Service struct {
 	adv  vuln.Advisories
 	rule evaluate.ClaimRule
 	// images is nil while the image scanning is not wired.
-	images ImageReader
-	now    func() time.Time
+	images   ImageReader
+	scanners Scanners
+	now      func() time.Time
 }
 
 // New returns the report.
@@ -96,7 +102,7 @@ func New(o Options) (*Service, error) {
 	if o.Store == nil || o.Repositories == nil {
 		return nil, errs.E(errs.Internal, errs.CodeInternal, "vuln report: the store and the repository snapshot are required")
 	}
-	s := &Service{st: o.Store, repo: o.Repositories, cfg: o.Config, adv: o.Advisories, rule: o.Rule, images: o.Images, now: o.Now}
+	s := &Service{st: o.Store, repo: o.Repositories, cfg: o.Config, adv: o.Advisories, rule: o.Rule, images: o.Images, scanners: o.Scanners, now: o.Now}
 	if s.now == nil {
 		s.now = time.Now
 	}

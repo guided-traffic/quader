@@ -4,7 +4,7 @@ import { PackagesApi } from '../../api/packages-api';
 import { FakePackagesApi, ansibleDocsFixture, ansibleFixture, debFixture, ociFixture } from '../../api/testing/fakes-packages';
 import { clamavFixture } from '../../api/testing/fakes-clamav';
 import { FakeVulnerabilitiesApi, sampleGrade } from '../../api/testing/fakes-vulnerabilities';
-import { VulnerabilitiesApi } from '../../api/vulnerabilities-api';
+import { VulnerabilitiesApi, VulnerabilityGrade } from '../../api/vulnerabilities-api';
 import { buttonByText, expectAccessible, inProject, renderScreen, settle, text } from '../../testing/screen';
 import { PackageDetail } from './package-detail';
 import { RepositoriesApi } from '../../api/repositories-api';
@@ -114,18 +114,26 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect(headers(graded)).toEqual(['Version', 'Size', 'Vulnerabilities', 'Published', 'Last download']);
     const cell = (v: string) => rows(graded).find((tr) => text(tr.querySelector('th a')!) === v)!.querySelectorAll('td')[1]!;
     expect(text(cell('1.4.0').querySelector('.grade-text')!)).toBe('Grade E · 1,145 findings · 112 fixable');
-    expect(text(cell('1.3.0').querySelector('.grade-text')!)).toBe('Grade N/A · not scanned');
+    expect(text(cell('1.3.0').querySelector('.grade-text')!)).toBe('Grade N/A · Scanning off');
     await expectAccessible(graded.root);
     const plain = await open();
     expect(headers(plain)).not.toContain('Vulnerabilities');
-    // Every version N/A, as a format that is not scanned answers: no column.
+    // Every version of a format that is not scanned: no column (Q-UI-377); every version queued: the column, with why (Q-UI-1121).
+    const na = (state: VulnerabilityGrade['state']) => sampleGrade('N/A', {}, { state });
     const unscanned = await open({}, (_, v) =>
       v.packageReports.set('pkg_01JBQ6V7S3K9', {
         packageId: 'pkg_01JBQ6V7S3K9',
-        versions: [{ version: '1.4.0', grade: sampleGrade('N/A') }, { version: '1.3.0', grade: sampleGrade('N/A') }],
+        versions: [{ version: '1.4.0', grade: na('format_not_scanned') }, { version: '1.3.0', grade: na('format_not_scanned') }],
       }),
     );
     expect(headers(unscanned)).not.toContain('Vulnerabilities');
+    const queued = await open({}, (_, v) =>
+      v.packageReports.set('pkg_01JBQ6V7S3K9', {
+        packageId: 'pkg_01JBQ6V7S3K9',
+        versions: [{ version: '1.4.0', grade: na('queued') }, { version: '1.3.0', grade: na('no_scanner') }],
+      }),
+    );
+    expect(headers(queued)).toContain('Vulnerabilities');
   });
 
   it('R-UI-110 the filter narrows the rows as one types, by version and by tag, and the address follows without a new entry', async () => {

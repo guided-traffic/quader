@@ -57,7 +57,6 @@ export function blockedRepositories(report: VulnerabilityVersionReport | null): 
             [packageName]="packageName()"
             [findingVersions]="findingVersions(repo, r.version)"
             [image]="image() || repo.images !== undefined"
-            [missing]="repo.missingData"
             [barQueries]="barQueries"
             [activeSeverity]="severity()"
           />

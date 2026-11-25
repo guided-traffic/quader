@@ -583,11 +583,11 @@ func (s *Server) addMalwareStatus(ctx context.Context, d view.VersionDetail, fil
 		if !ok {
 			continue
 		}
-		c, err := mc.of(f.Repo)
+		m, err := mc.describe(f.Repo, verdicts[dg], false)
 		if err != nil {
 			return err
 		}
-		files[i].Malware = malwareStatusRep(edge.DescribeMalware(verdicts[dg], c, false))
+		files[i].Malware = malwareStatusRep(m)
 	}
 	return nil
 }

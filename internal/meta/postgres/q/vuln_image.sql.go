@@ -145,7 +145,7 @@ func (q *Queries) VulnImageDatabaseStale(ctx context.Context, arg VulnImageDatab
 const vulnImageDeferred = `-- name: VulnImageDeferred :exec
 UPDATE vuln_image_scan
    SET state = 'pending', not_before = now() + make_interval(secs => $1::float8),
-       error_code = $2::text, error_detail = left($3::text, 1024), judged = NULL
+       error_code = $2::text, error_detail = left($3::text, 1024), judged = NULL, started_at = NULL
  WHERE repo_id = $4::bigint AND name = $5::text AND digest = $6
 `
 
@@ -320,7 +320,7 @@ const vulnImageFailed = `-- name: VulnImageFailed :exec
 UPDATE vuln_image_scan
    SET state = 'failed', attempts = attempts + 1, not_before = now() + make_interval(secs => $1::float8),
        error_code = $2::text, error_detail = left($3::text, 1024),
-       judged = NULLIF($4::text, '')
+       judged = NULLIF($4::text, ''), started_at = NULL
  WHERE repo_id = $5::bigint AND name = $6::text AND digest = $7
 `
 
@@ -550,9 +550,21 @@ WITH wanted AS (
 SELECT g.repo_id::bigint AS repo_id, g.name::text AS name, g.tag::text AS version, ('sha256:' || encode(g.digest, 'hex'))::text AS digest,
        g.platform::text AS platform, COALESCE(s.state, '')::text AS state,
        COALESCE((extract(epoch FROM s.scanned_at) * 1000000)::bigint, 0)::bigint AS scanned_us,
-       COALESCE(s.os_family, '')::text AS os_family, COALESCE(s.os_name, '')::text AS os_name, COALESCE(s.os_eosl, false)::boolean AS os_eosl
+       COALESCE((extract(epoch FROM s.created_at) * 1000000)::bigint, 0)::bigint AS created_us,
+       COALESCE((extract(epoch FROM s.started_at) * 1000000)::bigint, 0)::bigint AS started_us,
+       COALESCE(s.error_code, '')::text AS error_code, COALESCE(s.judged, '')::text AS judged,
+       COALESCE(s.os_family, '')::text AS os_family, COALESCE(s.os_name, '')::text AS os_name, COALESCE(s.os_eosl, false)::boolean AS os_eosl,
+       (CASE WHEN g.child OR m.digest IS NULL THEN 'image'
+             WHEN m.media_type IN ('application/vnd.oci.image.index.v1+json', 'application/vnd.docker.distribution.manifest.list.v2+json') THEN 'index'
+             WHEN m.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json')
+              AND COALESCE(m.artifact_type, '') IN ('', 'application/vnd.oci.image.config.v1+json', 'application/vnd.docker.container.image.v1+json')
+              AND m.subject IS NULL AND NOT m.attachment
+              AND NOT EXISTS (SELECT 1 FROM signatures sg JOIN signature_attachments sa ON sa.signature_id = sg.id
+                               WHERE sg.object_sha256 = m.digest AND sa.repo_id = m.repo_id) THEN 'image'
+             ELSE 'other' END)::text AS kind
   FROM images g
   LEFT JOIN vuln_image_scan s ON s.repo_id = g.repo_id AND s.name = g.name AND s.digest = g.digest
+  LEFT JOIN oci_manifests m ON NOT g.child AND m.repo_id = g.repo_id AND m.name = g.name AND m.digest = g.digest
  WHERE g.child OR NOT EXISTS (
          SELECT 1 FROM images c WHERE c.repo_id = g.repo_id AND c.name = g.name AND c.tag = g.tag AND c.child)
  ORDER BY g.repo_id, g.name, g.tag, g.platform, g.digest
@@ -572,15 +584,22 @@ type VulnImageGradeScansRow struct {
 	Platform  string
 	State     string
 	ScannedUs int64
+	CreatedUs int64
+	StartedUs int64
+	ErrorCode string
+	Judged    string
 	OsFamily  string
 	OsName    string
 	OsEosl    bool
+	Kind      string
 }
 
 // The manifests the given (name, tag) pairs stand for in the repositories, with how far each is scanned, its OS and whether that OS is at
 // its end of life: the scan facts of the grades of R-VULN-038 and of the list's grade (R-VULN-039). As VulnImageManifests, for many tags at
 // once: for an index its platform images, the children the repository stores that VulnImageDiscover's selection scans (Q-VULN-269), and
-// the index alone only while no platform image is stored.
+// the index alone only while no platform image is stored. created_us, started_us, error_code and judged say why a manifest is not scanned
+// (R-VULN-039, Q-VULN-274), and kind what the tag's own manifest is when it stands alone: an image (or one the repository holds no row of
+// yet), an index without a stored platform image, or another artifact (a chart, a signature), which is never scanned (Q-VULN-275).
 func (q *Queries) VulnImageGradeScans(ctx context.Context, arg VulnImageGradeScansParams) ([]VulnImageGradeScansRow, error) {
 	rows, err := q.db.Query(ctx, vulnImageGradeScans, arg.Names, arg.Tags, arg.Repos)
 	if err != nil {
@@ -598,9 +617,14 @@ func (q *Queries) VulnImageGradeScans(ctx context.Context, arg VulnImageGradeSca
 			&i.Platform,
 			&i.State,
 			&i.ScannedUs,
+			&i.CreatedUs,
+			&i.StartedUs,
+			&i.ErrorCode,
+			&i.Judged,
 			&i.OsFamily,
 			&i.OsName,
 			&i.OsEosl,
+			&i.Kind,
 		); err != nil {
 			return nil, err
 		}
@@ -664,10 +688,21 @@ WITH tagged AS (
 SELECT g.repo_id::bigint AS repo_id, ('sha256:' || encode(g.digest, 'hex'))::text AS digest, g.platform::text AS platform,
        COALESCE(s.state, '')::text AS state, COALESCE(s.error_code, '')::text AS error_code,
        COALESCE((extract(epoch FROM s.scanned_at) * 1000000)::bigint, 0)::bigint AS scanned_us,
+       COALESCE((extract(epoch FROM s.created_at) * 1000000)::bigint, 0)::bigint AS created_us,
+       COALESCE((extract(epoch FROM s.started_at) * 1000000)::bigint, 0)::bigint AS started_us,
        COALESCE(s.os_family, '')::text AS os_family, COALESCE(s.os_name, '')::text AS os_name, COALESCE(s.os_eosl, false)::boolean AS os_eosl,
-       COALESCE(s.packages, 0)::int AS packages, (s.db_digest IS NOT NULL)::boolean AS detected, COALESCE(s.judged, '')::text AS judged
+       COALESCE(s.packages, 0)::int AS packages, (s.db_digest IS NOT NULL)::boolean AS detected, COALESCE(s.judged, '')::text AS judged,
+       (CASE WHEN g.child OR m.digest IS NULL THEN 'image'
+             WHEN m.media_type IN ('application/vnd.oci.image.index.v1+json', 'application/vnd.docker.distribution.manifest.list.v2+json') THEN 'index'
+             WHEN m.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json')
+              AND COALESCE(m.artifact_type, '') IN ('', 'application/vnd.oci.image.config.v1+json', 'application/vnd.docker.container.image.v1+json')
+              AND m.subject IS NULL AND NOT m.attachment
+              AND NOT EXISTS (SELECT 1 FROM signatures sg JOIN signature_attachments sa ON sa.signature_id = sg.id
+                               WHERE sg.object_sha256 = m.digest AND sa.repo_id = m.repo_id) THEN 'image'
+             ELSE 'other' END)::text AS kind
   FROM images g
   LEFT JOIN vuln_image_scan s ON s.repo_id = g.repo_id AND s.name = g.name AND s.digest = g.digest
+  LEFT JOIN oci_manifests m ON NOT g.child AND m.repo_id = g.repo_id AND m.name = g.name AND m.digest = g.digest
  WHERE g.child OR NOT EXISTS (SELECT 1 FROM images c WHERE c.repo_id = g.repo_id AND c.child)
  ORDER BY g.repo_id, g.platform, g.digest
 `
@@ -685,12 +720,15 @@ type VulnImageManifestsRow struct {
 	State     string
 	ErrorCode string
 	ScannedUs int64
+	CreatedUs int64
+	StartedUs int64
 	OsFamily  string
 	OsName    string
 	OsEosl    bool
 	Packages  int32
 	Detected  bool
 	Judged    string
+	Kind      string
 }
 
 // The manifests a tag stands for in the repositories, with how far each is scanned (detected and judged as the gate of a pull reads them,
@@ -699,6 +737,7 @@ type VulnImageManifestsRow struct {
 // are its platform images (Q-VULN-269): the children the repository stores that VulnImageDiscover's selection scans. A child that is an
 // attachment (Docker's attestation manifest, platform unknown/unknown) is no image of the tag, and a child a remote has not fetched is not
 // in the repository and has nothing to check. An index has no scan row of its own and stands alone only while no platform image is stored.
+// The times, the code and the kind are those of VulnImageGradeScans: the version page and the lists read one state (Q-VULN-274).
 func (q *Queries) VulnImageManifests(ctx context.Context, arg VulnImageManifestsParams) ([]VulnImageManifestsRow, error) {
 	rows, err := q.db.Query(ctx, vulnImageManifests, arg.Repos, arg.Name, arg.Tag)
 	if err != nil {
@@ -715,12 +754,15 @@ func (q *Queries) VulnImageManifests(ctx context.Context, arg VulnImageManifests
 			&i.State,
 			&i.ErrorCode,
 			&i.ScannedUs,
+			&i.CreatedUs,
+			&i.StartedUs,
 			&i.OsFamily,
 			&i.OsName,
 			&i.OsEosl,
 			&i.Packages,
 			&i.Detected,
 			&i.Judged,
+			&i.Kind,
 		); err != nil {
 			return nil, err
 		}
@@ -810,7 +852,7 @@ func (q *Queries) VulnImagePackageID(ctx context.Context, arg VulnImagePackageID
 
 const vulnImageRearm = `-- name: VulnImageRearm :execrows
 UPDATE vuln_image_scan
-   SET state = 'pending', not_before = now(), attempts = 0, judged = NULL
+   SET state = 'pending', not_before = now(), attempts = 0, judged = NULL, started_at = NULL
  WHERE repo_id = $1::bigint
 `
 
@@ -906,6 +948,7 @@ func (q *Queries) VulnImageSBOMPut(ctx context.Context, arg VulnImageSBOMPutPara
 const vulnImageScanned = `-- name: VulnImageScanned :exec
 UPDATE vuln_image_scan
    SET state = 'scanned', db_digest = $1::text, scanned_at = now(), attempts = 0, error_code = NULL, error_detail = NULL, judged = NULL,
+       started_at = NULL,
        os_family = NULLIF($2::text, ''), os_name = NULLIF($3::text, ''), os_eosl = $4::boolean,
        packages = $5::int
  WHERE repo_id = $6::bigint AND name = $7::text AND digest = $8
@@ -959,6 +1002,27 @@ func (q *Queries) VulnImageSetComponents(ctx context.Context, arg VulnImageSetCo
 		arg.Version,
 		arg.AdvisoryID,
 	)
+	return err
+}
+
+const vulnImageStarted = `-- name: VulnImageStarted :exec
+UPDATE vuln_image_scan s
+   SET started_at = now()
+  FROM (SELECT unnest($1::bigint[]) AS repo_id, unnest($2::text[]) AS name,
+               unnest($3::bytea[]) AS digest) t
+ WHERE s.repo_id = t.repo_id AND s.name = t.name AND s.digest = t.digest
+`
+
+type VulnImageStartedParams struct {
+	RepoIds []int64
+	Names   []string
+	Digests [][]byte
+}
+
+// The rows the job takes for calls to the scanner now (Q-VULN-276): a list says "Scanning" of them until the call's result clears the mark,
+// and only within the call's deadline, so that the mark of a lost worker's call does not stand for ever. One statement per batch.
+func (q *Queries) VulnImageStarted(ctx context.Context, arg VulnImageStartedParams) error {
+	_, err := q.db.Exec(ctx, vulnImageStarted, arg.RepoIds, arg.Names, arg.Digests)
 	return err
 }
 

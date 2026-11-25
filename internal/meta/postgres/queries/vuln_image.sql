@@ -91,6 +91,7 @@ SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s
 -- The record of a finished detection.
 UPDATE vuln_image_scan
    SET state = 'scanned', db_digest = sqlc.arg(db_digest)::text, scanned_at = now(), attempts = 0, error_code = NULL, error_detail = NULL, judged = NULL,
+       started_at = NULL,
        os_family = NULLIF(sqlc.arg(os_family)::text, ''), os_name = NULLIF(sqlc.arg(os_name)::text, ''), os_eosl = sqlc.arg(os_eosl)::boolean,
        packages = sqlc.arg(packages)::int
  WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND digest = sqlc.arg(digest);
@@ -102,7 +103,7 @@ UPDATE vuln_image_scan
 UPDATE vuln_image_scan
    SET state = 'failed', attempts = attempts + 1, not_before = now() + make_interval(secs => sqlc.arg(backoff_seconds)::float8),
        error_code = sqlc.arg(error_code)::text, error_detail = left(sqlc.arg(error_detail)::text, 1024),
-       judged = NULLIF(sqlc.arg(judged)::text, '')
+       judged = NULLIF(sqlc.arg(judged)::text, ''), started_at = NULL
  WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND digest = sqlc.arg(digest);
 
 -- name: VulnImageDeferred :exec
@@ -110,14 +111,23 @@ UPDATE vuln_image_scan
 -- after the wait, and its attempts are not spent, because nothing about the image failed. A row that had a detection is pending again, as after a failure, and keeps its findings until the next detection.
 UPDATE vuln_image_scan
    SET state = 'pending', not_before = now() + make_interval(secs => sqlc.arg(wait_seconds)::float8),
-       error_code = sqlc.arg(error_code)::text, error_detail = left(sqlc.arg(error_detail)::text, 1024), judged = NULL
+       error_code = sqlc.arg(error_code)::text, error_detail = left(sqlc.arg(error_detail)::text, 1024), judged = NULL, started_at = NULL
  WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND digest = sqlc.arg(digest);
 
 -- name: VulnImageRearm :execrows
 -- A rescan: every manifest of the repository is due again, and an analysis is not repeated (the document of the analysis stays).
 UPDATE vuln_image_scan
-   SET state = 'pending', not_before = now(), attempts = 0, judged = NULL
+   SET state = 'pending', not_before = now(), attempts = 0, judged = NULL, started_at = NULL
  WHERE repo_id = sqlc.arg(repo_id)::bigint;
+
+-- name: VulnImageStarted :exec
+-- The rows the job takes for calls to the scanner now (Q-VULN-276): a list says "Scanning" of them until the call's result clears the mark,
+-- and only within the call's deadline, so that the mark of a lost worker's call does not stand for ever. One statement per batch.
+UPDATE vuln_image_scan s
+   SET started_at = now()
+  FROM (SELECT unnest(sqlc.arg(repo_ids)::bigint[]) AS repo_id, unnest(sqlc.arg(names)::text[]) AS name,
+               unnest(sqlc.arg(digests)::bytea[]) AS digest) t
+ WHERE s.repo_id = t.repo_id AND s.name = t.name AND s.digest = t.digest;
 
 -- name: VulnImageOrphanFindings :many
 -- The findings of images whose manifest is gone from the repository (the scan row went with it): they resolve with version_removed.
@@ -255,6 +265,7 @@ SELECT COALESCE(blk.id::text, '')::text AS finding_id, COALESCE(blk.advisory_id,
 -- are its platform images (Q-VULN-269): the children the repository stores that VulnImageDiscover's selection scans. A child that is an
 -- attachment (Docker's attestation manifest, platform unknown/unknown) is no image of the tag, and a child a remote has not fetched is not
 -- in the repository and has nothing to check. An index has no scan row of its own and stands alone only while no platform image is stored.
+-- The times, the code and the kind are those of VulnImageGradeScans: the version page and the lists read one state (Q-VULN-274).
 WITH tagged AS (
     SELECT p.repo_id, p.name, i.blob_sha256 AS digest, ''::text AS platform
       FROM packages p
@@ -281,10 +292,21 @@ WITH tagged AS (
 SELECT g.repo_id::bigint AS repo_id, ('sha256:' || encode(g.digest, 'hex'))::text AS digest, g.platform::text AS platform,
        COALESCE(s.state, '')::text AS state, COALESCE(s.error_code, '')::text AS error_code,
        COALESCE((extract(epoch FROM s.scanned_at) * 1000000)::bigint, 0)::bigint AS scanned_us,
+       COALESCE((extract(epoch FROM s.created_at) * 1000000)::bigint, 0)::bigint AS created_us,
+       COALESCE((extract(epoch FROM s.started_at) * 1000000)::bigint, 0)::bigint AS started_us,
        COALESCE(s.os_family, '')::text AS os_family, COALESCE(s.os_name, '')::text AS os_name, COALESCE(s.os_eosl, false)::boolean AS os_eosl,
-       COALESCE(s.packages, 0)::int AS packages, (s.db_digest IS NOT NULL)::boolean AS detected, COALESCE(s.judged, '')::text AS judged
+       COALESCE(s.packages, 0)::int AS packages, (s.db_digest IS NOT NULL)::boolean AS detected, COALESCE(s.judged, '')::text AS judged,
+       (CASE WHEN g.child OR m.digest IS NULL THEN 'image'
+             WHEN m.media_type IN ('application/vnd.oci.image.index.v1+json', 'application/vnd.docker.distribution.manifest.list.v2+json') THEN 'index'
+             WHEN m.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json')
+              AND COALESCE(m.artifact_type, '') IN ('', 'application/vnd.oci.image.config.v1+json', 'application/vnd.docker.container.image.v1+json')
+              AND m.subject IS NULL AND NOT m.attachment
+              AND NOT EXISTS (SELECT 1 FROM signatures sg JOIN signature_attachments sa ON sa.signature_id = sg.id
+                               WHERE sg.object_sha256 = m.digest AND sa.repo_id = m.repo_id) THEN 'image'
+             ELSE 'other' END)::text AS kind
   FROM images g
   LEFT JOIN vuln_image_scan s ON s.repo_id = g.repo_id AND s.name = g.name AND s.digest = g.digest
+  LEFT JOIN oci_manifests m ON NOT g.child AND m.repo_id = g.repo_id AND m.name = g.name AND m.digest = g.digest
  WHERE g.child OR NOT EXISTS (SELECT 1 FROM images c WHERE c.repo_id = g.repo_id AND c.child)
  ORDER BY g.repo_id, g.platform, g.digest;
 
@@ -328,7 +350,9 @@ SELECT g.repo_id::bigint AS repo_id, g.name::text AS name, g.tag::text AS versio
 -- The manifests the given (name, tag) pairs stand for in the repositories, with how far each is scanned, its OS and whether that OS is at
 -- its end of life: the scan facts of the grades of R-VULN-038 and of the list's grade (R-VULN-039). As VulnImageManifests, for many tags at
 -- once: for an index its platform images, the children the repository stores that VulnImageDiscover's selection scans (Q-VULN-269), and
--- the index alone only while no platform image is stored.
+-- the index alone only while no platform image is stored. created_us, started_us, error_code and judged say why a manifest is not scanned
+-- (R-VULN-039, Q-VULN-274), and kind what the tag's own manifest is when it stands alone: an image (or one the repository holds no row of
+-- yet), an index without a stored platform image, or another artifact (a chart, a signature), which is never scanned (Q-VULN-275).
 WITH wanted AS (
     SELECT unnest(sqlc.arg(names)::text[]) AS name, unnest(sqlc.arg(tags)::text[]) AS tag
 ), tagged AS (
@@ -359,9 +383,21 @@ WITH wanted AS (
 SELECT g.repo_id::bigint AS repo_id, g.name::text AS name, g.tag::text AS version, ('sha256:' || encode(g.digest, 'hex'))::text AS digest,
        g.platform::text AS platform, COALESCE(s.state, '')::text AS state,
        COALESCE((extract(epoch FROM s.scanned_at) * 1000000)::bigint, 0)::bigint AS scanned_us,
-       COALESCE(s.os_family, '')::text AS os_family, COALESCE(s.os_name, '')::text AS os_name, COALESCE(s.os_eosl, false)::boolean AS os_eosl
+       COALESCE((extract(epoch FROM s.created_at) * 1000000)::bigint, 0)::bigint AS created_us,
+       COALESCE((extract(epoch FROM s.started_at) * 1000000)::bigint, 0)::bigint AS started_us,
+       COALESCE(s.error_code, '')::text AS error_code, COALESCE(s.judged, '')::text AS judged,
+       COALESCE(s.os_family, '')::text AS os_family, COALESCE(s.os_name, '')::text AS os_name, COALESCE(s.os_eosl, false)::boolean AS os_eosl,
+       (CASE WHEN g.child OR m.digest IS NULL THEN 'image'
+             WHEN m.media_type IN ('application/vnd.oci.image.index.v1+json', 'application/vnd.docker.distribution.manifest.list.v2+json') THEN 'index'
+             WHEN m.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json')
+              AND COALESCE(m.artifact_type, '') IN ('', 'application/vnd.oci.image.config.v1+json', 'application/vnd.docker.container.image.v1+json')
+              AND m.subject IS NULL AND NOT m.attachment
+              AND NOT EXISTS (SELECT 1 FROM signatures sg JOIN signature_attachments sa ON sa.signature_id = sg.id
+                               WHERE sg.object_sha256 = m.digest AND sa.repo_id = m.repo_id) THEN 'image'
+             ELSE 'other' END)::text AS kind
   FROM images g
   LEFT JOIN vuln_image_scan s ON s.repo_id = g.repo_id AND s.name = g.name AND s.digest = g.digest
+  LEFT JOIN oci_manifests m ON NOT g.child AND m.repo_id = g.repo_id AND m.name = g.name AND m.digest = g.digest
  WHERE g.child OR NOT EXISTS (
          SELECT 1 FROM images c WHERE c.repo_id = g.repo_id AND c.name = g.name AND c.tag = g.tag AND c.child)
  ORDER BY g.repo_id, g.name, g.tag, g.platform, g.digest;

@@ -141,7 +141,7 @@ export class RepositoryItemVersions {
   private readonly stamp = computed(() => {
     const p = this.pkg();
     const g = p.vulnerabilityGrade;
-    return `${p.versionCount} ${p.latestVersion} ${p.updatedAt} ${g?.grade ?? ''} ${g?.checkedAt ?? ''}`;
+    return `${p.versionCount} ${p.latestVersion} ${p.updatedAt} ${g?.grade ?? ''} ${g?.checkedAt ?? ''} ${g?.state ?? ''}`;
   });
   protected readonly report = resource({
     params: () => (this.scanned() && this.session.state() !== 'anonymous' ? { id: this.pkgId(), repository: this.repository() } : undefined),

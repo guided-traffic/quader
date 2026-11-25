@@ -2386,6 +2386,27 @@ func (e MalwareState) Valid() bool {
 	}
 }
 
+// Defines values for MalwareWaiting.
+const (
+	MalwareWaitingNoDatabase MalwareWaiting = "no_database"
+	MalwareWaitingNoScanner  MalwareWaiting = "no_scanner"
+	MalwareWaitingQueued     MalwareWaiting = "queued"
+)
+
+// Valid indicates whether the value is a known member of the MalwareWaiting enum.
+func (e MalwareWaiting) Valid() bool {
+	switch e {
+	case MalwareWaitingNoDatabase:
+		return true
+	case MalwareWaitingNoScanner:
+		return true
+	case MalwareWaitingQueued:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ManualHeadingLevel.
 const (
 	N2 ManualHeadingLevel = 2
@@ -6217,6 +6238,66 @@ func (e VulnerabilityBlockReason) Valid() bool {
 	case VulnerabilityBlockReasonMalicious:
 		return true
 	case VulnerabilityBlockReasonTriage:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for VulnerabilityCheckState.
+const (
+	VulnerabilityCheckStateChecked          VulnerabilityCheckState = "checked"
+	VulnerabilityCheckStateFormatNotScanned VulnerabilityCheckState = "format_not_scanned"
+	VulnerabilityCheckStateInternal         VulnerabilityCheckState = "internal"
+	VulnerabilityCheckStateNoAdvisoryData   VulnerabilityCheckState = "no_advisory_data"
+	VulnerabilityCheckStateNoDatabase       VulnerabilityCheckState = "no_database"
+	VulnerabilityCheckStateNoScanner        VulnerabilityCheckState = "no_scanner"
+	VulnerabilityCheckStateNotAnImage       VulnerabilityCheckState = "not_an_image"
+	VulnerabilityCheckStateNotMatched       VulnerabilityCheckState = "not_matched"
+	VulnerabilityCheckStateOffInstallation  VulnerabilityCheckState = "off_installation"
+	VulnerabilityCheckStateOffRepository    VulnerabilityCheckState = "off_repository"
+	VulnerabilityCheckStateOverLimits       VulnerabilityCheckState = "over_limits"
+	VulnerabilityCheckStateQueued           VulnerabilityCheckState = "queued"
+	VulnerabilityCheckStateScanFailed       VulnerabilityCheckState = "scan_failed"
+	VulnerabilityCheckStateScanning         VulnerabilityCheckState = "scanning"
+	VulnerabilityCheckStateUnknownUpstream  VulnerabilityCheckState = "unknown_upstream"
+	VulnerabilityCheckStateUnreadable       VulnerabilityCheckState = "unreadable"
+)
+
+// Valid indicates whether the value is a known member of the VulnerabilityCheckState enum.
+func (e VulnerabilityCheckState) Valid() bool {
+	switch e {
+	case VulnerabilityCheckStateChecked:
+		return true
+	case VulnerabilityCheckStateFormatNotScanned:
+		return true
+	case VulnerabilityCheckStateInternal:
+		return true
+	case VulnerabilityCheckStateNoAdvisoryData:
+		return true
+	case VulnerabilityCheckStateNoDatabase:
+		return true
+	case VulnerabilityCheckStateNoScanner:
+		return true
+	case VulnerabilityCheckStateNotAnImage:
+		return true
+	case VulnerabilityCheckStateNotMatched:
+		return true
+	case VulnerabilityCheckStateOffInstallation:
+		return true
+	case VulnerabilityCheckStateOffRepository:
+		return true
+	case VulnerabilityCheckStateOverLimits:
+		return true
+	case VulnerabilityCheckStateQueued:
+		return true
+	case VulnerabilityCheckStateScanFailed:
+		return true
+	case VulnerabilityCheckStateScanning:
+		return true
+	case VulnerabilityCheckStateUnknownUpstream:
+		return true
+	case VulnerabilityCheckStateUnreadable:
 		return true
 	default:
 		return false
@@ -11988,6 +12069,9 @@ type MalwareStatus struct {
 	// Part The member of an archive the signature was found in, when the scanner unpacked it.
 	Part *string `json:"part"`
 
+	// QueuedSince `waiting: queued`: when the file's row was written; null otherwise and before discovery has reached the file.
+	QueuedSince *time.Time `json:"queuedSince"`
+
 	// Reason The reason of an unscannable verdict or the code of a failed one.
 	Reason *string `json:"reason"`
 
@@ -12006,6 +12090,9 @@ type MalwareStatus struct {
 	// signature matched, `infected` ClamAV named a signature, `unscannable` nothing could check it (`reason`: `too_large`,
 	// `limits_exceeded`, `encrypted`), `failed` the scans that may pass did not (`reason`: the last code).
 	State MalwareState `json:"state"`
+
+	// Waiting Why a `pending` file is not checked yet (R-MAL-024, Q-VULN-279); null for every other state and for a released file.
+	Waiting *MalwareWaiting `json:"waiting"`
 }
 
 // MalwareSwitch defines model for MalwareSwitch.
@@ -12016,6 +12103,12 @@ type MalwareSwitch struct {
 	// OnlyChecked The installation's switch **Only checked artifacts can be downloaded** (R-MAL-019).
 	OnlyChecked bool `json:"onlyChecked"`
 }
+
+// MalwareWaiting Why a pending file is not checked yet (R-MAL-024, Q-VULN-279): `queued`, it waits for its turn and is checked without anyone's act;
+// `no_scanner`, no malware scanner is connected (none configured, or none of those that report themselves is ready); `no_database`,
+// no signature set of ClamAV has been imported yet. The answer reads the two facts of the installation once, and only for a pending
+// file (Q-VULN-277).
+type MalwareWaiting string
 
 // ManualContents defines model for ManualContents.
 type ManualContents struct {
@@ -17826,6 +17919,20 @@ type VulnerabilityAffectedRangesType string
 // VulnerabilityBlockReason Why the version's download is refused (R-VULN-015).
 type VulnerabilityBlockReason string
 
+// VulnerabilityCheckState Whether a version is checked for vulnerabilities and, when it is not, why and what comes (R-VULN-039, Q-VULN-274): the one state
+// every list cell, the version page's card and the security screens say, in the reader's language. `checked`: evaluated, the grade
+// says the rest. Waits and is checked without anyone's act: `queued` (an image waits for its scan), `scanning` (a call of the scanner
+// for it runs now, Q-VULN-276). Cannot be checked now: `no_scanner` (no scanner of images is connected, Q-VULN-277), `no_database` (no
+// vulnerability database for images has been imported), `no_advisory_data` (a package's ecosystem's advisory data is incomplete). The
+// scan failed (`stateCode` has the code): `scan_failed` (it is tried again), `over_limits` (a bound of the scanning; an operator raises
+// it), `unreadable` (a release that reads it). Not checked by setting or by what it is: `off_installation` (the installation's scanning,
+// or for an image its image scanning, is off), `off_repository` (the repository's), `not_matched` (the repository's
+// `matchPublicAdvisories` is `never`), `unknown_upstream` (a remote whose upstream is no public registry of its format, R-VULN-010),
+// `internal` (a name of the organisation's own), `format_not_scanned` (a format without the vulnerability adapter: Debian, Ansible
+// Galaxy, generic files), `not_an_image` (an OCI artifact that is no container image, Q-VULN-275). Every state but `checked` has the
+// grade N/A. An image's state is read per manifest, so every tag of one image says the same.
+type VulnerabilityCheckState string
+
 // VulnerabilityCvss The vector the severity was scored from (R-VULN-007); Quader never mixes versions in one value.
 type VulnerabilityCvss struct {
 	Score   float32                  `json:"score"`
@@ -18010,6 +18117,26 @@ type VulnerabilityGrade struct {
 
 	// Repository The qualified name of the repository whose grade it is.
 	Repository string `json:"repository"`
+
+	// State Whether a version is checked for vulnerabilities and, when it is not, why and what comes (R-VULN-039, Q-VULN-274): the one state
+	// every list cell, the version page's card and the security screens say, in the reader's language. `checked`: evaluated, the grade
+	// says the rest. Waits and is checked without anyone's act: `queued` (an image waits for its scan), `scanning` (a call of the scanner
+	// for it runs now, Q-VULN-276). Cannot be checked now: `no_scanner` (no scanner of images is connected, Q-VULN-277), `no_database` (no
+	// vulnerability database for images has been imported), `no_advisory_data` (a package's ecosystem's advisory data is incomplete). The
+	// scan failed (`stateCode` has the code): `scan_failed` (it is tried again), `over_limits` (a bound of the scanning; an operator raises
+	// it), `unreadable` (a release that reads it). Not checked by setting or by what it is: `off_installation` (the installation's scanning,
+	// or for an image its image scanning, is off), `off_repository` (the repository's), `not_matched` (the repository's
+	// `matchPublicAdvisories` is `never`), `unknown_upstream` (a remote whose upstream is no public registry of its format, R-VULN-010),
+	// `internal` (a name of the organisation's own), `format_not_scanned` (a format without the vulnerability adapter: Debian, Ansible
+	// Galaxy, generic files), `not_an_image` (an OCI artifact that is no container image, Q-VULN-275). Every state but `checked` has the
+	// grade N/A. An image's state is read per manifest, so every tag of one image says the same.
+	State VulnerabilityCheckState `json:"state"`
+
+	// StateCode The code of R-VULN-034 of a failed scan (`scan_failed`, `over_limits`, `unreadable`), or of a row put off for a reason of the installation (`queued`: `scanner_busy`, `spool_too_small`, …; `no_scanner`: `scanner_unavailable`, `registry_unavailable`, `pull_refused`): technical detail for a reader who reports it, never a sentence of its own. null otherwise.
+	StateCode *string `json:"stateCode"`
+
+	// StateSince `queued`: when the image's earliest waiting manifest was queued; `scanning`: when the running call started; null otherwise and when not known.
+	StateSince *time.Time `json:"stateSince"`
 }
 
 // VulnerabilityGradeGrade defines model for VulnerabilityGrade.Grade.
