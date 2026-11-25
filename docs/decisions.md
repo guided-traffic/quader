@@ -12286,10 +12286,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-615 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+618 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 615 questions</summary>
+<summary>Q-UI: 618 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12908,6 +12908,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1226](spec/api-and-ui.md#q-ui-1226--a-tests-result-shows-what-it-learned-in-one-shared-component-with-copy-report) | A test's result shows what it learned, in one shared component with Copy report | Decided by the development agent | (a) One component, `quader-upstream-test-result`, for every place that tests an upstream: the verdict, the facts without a click, the upstream's error answer folded, **Copy report**; the same facts for a success | — |
 | [Q-UI-1227](spec/api-and-ui.md#q-ui-1227--an-issuers-key-error-shows-its-facts-without-a-click) | An issuer's key error shows its facts without a click | Decided by the development agent | (a) The line's facts below the sentence: **Code**, **HTTP status** with its reason phrase, **Host**, and the line itself as the server's text | — |
 | [Q-UI-1228](spec/api-and-ui.md#q-ui-1228--every-place-that-tests-something-and-the-form-of-its-result) | Every place that tests something, and the form of its result | Decided by the development agent | the table. | — |
+| [Q-UI-1231](spec/api-and-ui.md#q-ui-1231--a-screen-whose-every-state-an-overlay-alone-changes-is-loaded-at-the-widths-its-states-are-taken-at) | A screen whose every state an overlay alone changes is loaded at the widths its states are taken at | Decided by the development agent on 2026-11-25 | (a) An optional `only` of a screen in [screens.ts](../web/e2e/renders/screens.ts): the run's widths it is loaded at | — |
+| [Q-UI-1232](spec/api-and-ui.md#q-ui-1232--the-page-and-shell-states-the-render-set-did-not-open-are-taken-in-the-full-stack-once-each) | The page and shell states the render set did not open are taken in the full stack, once each | Decided by the development agent on 2026-11-25 | (a) Walks of their own in [states.ts](../web/e2e/renders/states.ts), each state once, as the one kind of user that shows it whole; an overlay at 1,440 and 390 px and dark at 1,440 px (Q-UI-1172, Q-UI-1231); a page state at every width; a state that another walk sets up is added after that walk's state (`withStates`), not walked again | — |
+| [Q-UI-1233](spec/api-and-ui.md#q-ui-1233--a-long-name-in-a-chip-or-in-a-button-of-a-field-is-cut-with-an-ellipsis-never-broken) | A long name in a chip or in a button of a field is cut with an ellipsis, never broken | Decided by the development agent on 2026-11-25 | (a) The chip or the button is at most its field's width; the name in it may shrink and is cut with an ellipsis, the whole in its title and its accessible name | — |
 
 </details>
 

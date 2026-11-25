@@ -533,7 +533,7 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    repositories, the packages, the findings and the users once more with filters set through the drawer (`<screen>-chips-…`:
    the chips beside **Filters**, at 390 px more than fit); a list whose only filter is the name is taken with a text in its search
    (`<screen>-search-…`, the walk `searched`). The scrollbars are shown, as on a desktop with a mouse (below 600 px they take no
-   room, as on a phone), and before the window grows each picture's regions are measured once more, sideways (a boxed list taller
+   room, as on a phone, on every load of the page, a walk's own too), and before the window grows each picture's regions are measured once more, sideways (a boxed list taller
    than its box has its scrollbar beside its rows then, which takes their width) and for `inner-scroll`.
 4. **A failure is loud.** A screen fails when it shows an error notice, when a call of the app's own API (`/api/`, `/auth/`)
    answers 4xx or 5xx, when the console reports an error, when its walk or a tab stops (`stopped at <width> px: …`, with the
@@ -635,11 +635,33 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    widths only (`states` in `screens.ts`, by the name the walk yields: `{ menu: { widths: [1440, 390], dark: [1440] } }`; the light
    picture is taken wherever the state is, since the checks measure it): a state that only an overlay changes shows at 1,024 px
    nothing that 1,440 and 390 px do not, and its dark picture only a colour
-   ([Q-UI-1172](../spec/api-and-ui.md#q-ui-1172--a-walks-state-is-taken-at-the-widths-and-in-the-schemes-its-screen-names-for-it)). The
-   states the set takes today keep every width and both schemes.
+   ([Q-UI-1172](../spec/api-and-ui.md#q-ui-1172--a-walks-state-is-taken-at-the-widths-and-in-the-schemes-its-screen-names-for-it)). A
+   screen whose every state an overlay alone changes is loaded at those widths only (`only` in `screens.ts`, `narrowAndWide`:
+   [Q-UI-1231](../spec/api-and-ui.md#q-ui-1231--a-screen-whose-every-state-an-overlay-alone-changes-is-loaded-at-the-widths-its-states-are-taken-at)).
+   The states the set took before 2026-11-25 keep every width and both schemes.
+
+   **The page and shell states** ([renders/states.ts](../../web/e2e/renders/states.ts),
+   [Q-UI-1232](../spec/api-and-ui.md#q-ui-1232--the-page-and-shell-states-the-render-set-did-not-open-are-taken-in-the-full-stack-once-each)):
+   what needs the real page and shell behind it, once each, as the kind of user that shows it whole; an overlay at 1,440 and 390 px and
+   dark at 1,440 px, a page state at every width with its dark picture at 1,440 px.
+
+   | Screen | States |
+   |---|---|
+   | `shell-menus` (plain, also German) | the theme menu, the user menu, its language submenu |
+   | `shell-notices` (plain, also German), `login-notices` (anonymous) | the maintenance mode's notice and a critical banner with a link above a list, answered in the browser; the banner on the sign-in page |
+   | `owner-menus` (power) | a repository's **More**, the packages' saved views (two, the first the default) and a view's menu, a CI mapping's row menu |
+   | `admin-lists` (admin) | the drawers of the jobs, the backups and the refused downloads, the owner's person search inside the tokens' drawer, two tokens selected and their question, the issued CI tokens of one issuer and project with **Revoke matching tokens** |
+   | `…-sections` (`admin-user`, `admin-group`, `profile`, `admin-settings-auth`, `admin-settings-general`, `project-settings`, `admin-endpoint`, `admin-ci-new`, `repository-settings-ansible`, `help`) | every closed section and fold of the page opened (the walk `everySection`); a screen's tabs are its own screen's pictures |
+   | `repository-settings-deb-keys` (admin) | a Debian repository's keys with a next and a withheld one answered in the browser, a certificate unfolded, the next key's menu, a promotion that fails with a code the page has no sentence for (the error notice inside the section) |
+   | `finding` (power), `security-finding` (auditor) | a finding's page opened from the report, and its advisory's page |
+   | `admin-ci-issuer`, `admin-ci-issuer-states`, `admin-ci-test`, `admin-ci-mapping`, `admin-ci-mapping-new` (admin); `project-ci-test`, `project-ci-mapping` (power); `policy` (power), `admin-permission` (admin) | the pages of a CI issuer, its claim tester and mappings, a project's, a project's and the installation's policy (the seed's `seedPoliciesAndMappings`); the issuer's sections and a mapping's row menu; a change of a mapping and of a policy refused by the server, its problems under the fields and in the summary |
+   | added to another walk (`withStates`) | the menus of an open request and of a version on the tab Upstream (`repository-npm-remote-upstream`), **Run a pass now**'s menu (`repository-settings-oci-mirror-stored`), a rule's change refused by the server (`admin-endpoint-rule`) |
+
+   A walk that loads another page (`page.goto`) gets the phone's style too: the run adds it by an init script on every load of a width
+   below 600 px, not once after the screen's load.
 
 **Add a screen.** A new route gets a line in `screens.ts` with the kinds that reach it from the navigation and the seed's
-parameters; data the screen needs goes into `seed.ts`, idempotent and through the API; a flow gets a `walk` that yields the name
+parameters (a policy and a CI mapping of the project and of the installation are seeded, `seedPoliciesAndMappings`); data the screen needs goes into `seed.ts`, idempotent and through the API; a flow gets a `walk` that yields the name
 of each state to render (an empty name is the screen as it opens). A walk that changes an answer in the browser uses `page.route`
 and ends with `page.unroute`; in a render the page's `unroute` waits for the handler's calls in flight before it removes it
 ([renders/routes.ts](../../web/e2e/renders/routes.ts)), because a live view's read of itself (R-UI-213) can arrive as the walk ends,
@@ -684,7 +706,7 @@ UI_STATES_PICTURES=1 make ui-states                           # and a picture of
 |---|---|
 | The runner's browser | [vitest.states.config.mts](../../web/vitest.states.config.mts): the provider `@vitest/browser-playwright` of the workspace's Vitest, the Chromium of the locked Playwright (no second browser), `--font-render-hinting=none` as the renders (`CHROMIUM_TEXT` of [paths.ts](../../web/e2e/renders/paths.ts)), the light scheme, English, UTC ([Q-UI-1141](../spec/api-and-ui.md#q-ui-1141--the-runners-browser-is-configured-in-a-runner-file-of-its-own-with-the-one-playwright-and-text-without-hinting)) |
 | The helper | [testing/states.ts](../../web/src/app/testing/states.ts): `expectState(name, open)` opens the state afresh in each window, hides the page behind an open dialog, measures, writes the picture with `UI_STATES_PICTURES=1`; `openDialog` opens through `QuaderDialog` with the options of the dialog's call site; `openInPage` renders a component inside the shell's panel (`quader-root > main.content`); `serverFailure()` and `fieldRefusal()` are the two refusals a state shows, `failNext` and `failAlways` make a fake's method give them ([Q-UI-1142](../spec/api-and-ui.md#q-ui-1142--a-state-is-measured-in-two-windows-in-the-light-scheme-and-fails-on-any-finding), [Q-UI-1143](../spec/api-and-ui.md#q-ui-1143--a-dialogs-failure-is-shown-in-its-longest-shape-and-its-validation-by-the-refusal-a-person-meets)) |
-| The states | one `*.states.spec.ts` per area beside its code: `shared/` (the confirm shapes; conflict, diff and both session dialogs; tooltips; the error notice's seven failures, R-UI-216, with pictures in the dark scheme too when `UI_STATES_PICTURES=1`), `features/projects`, `users` (users, groups, service accounts), `tokens` (Rotate, the secret, Bastions, an issued CI token), `limits`, `upstream`, `settings` (signing), `repositories`, `permissions`, `vulnerabilities` (triage, malware, signatures) |
+| The states | one `*.states.spec.ts` per area beside its code: `shared/` (the confirm shapes; conflict, diff and both session dialogs; tooltips; the error notice's seven failures, R-UI-216, with pictures in the dark scheme too when `UI_STATES_PICTURES=1`), `features/projects`, `users` (users, groups, service accounts), `tokens` (Rotate, the secret, Bastions, an issued CI token), `limits`, `upstream`, `settings` (signing), `repositories`, `permissions`, `vulnerabilities` (triage, malware, signatures), `packages` (a version's npm tags: a tag's tooltip with the longest package name, **+N more**) |
 | The proof | [testing/states.states.spec.ts](../../web/src/app/testing/states.states.spec.ts): a copy of a dialog whose Copy stands 8 px under its name must report `off-line` in this browser, and the same button on its line nothing |
 
 **Add a state.** A new dialog gets its states in its area's file: as it opens, with long realistic data (a long name, a word of
@@ -1687,7 +1709,9 @@ How the pieces fit:
 - **One component for the project's screen and the admin's list.** The repository list, the format chooser and the creation form, and the policy and service account lists, serve both: the screen reads whether the route carries `:project`
   (`ActivatedRoute.snapshot.paramMap`) and, outside a project, keeps the Project column and the project filter. The repository detail and list use
   `canWriteRepositories(repository.project)`; the policy editor takes `/:project/:name` below the project (name unique within the project, `project` in every body
-  including validate and replace, the repositories of the project as bare-key selector buttons, each entry's principal and **Try it** in `<quader-principal-field [project]>` over `GET /projects/{key}/principals`); the service account create dialog
+  including validate and replace, the name in every body but a replace's (the preview of a stored policy validates its name too: without
+  it every stored policy's preview said its name was invalid and refused **Review and save**, 2026-11-25), the repositories of the project
+  as bare-key selector buttons (a long key cut with an ellipsis, Q-UI-1233), each entry's principal and **Try it** in `<quader-principal-field [project]>` over `GET /projects/{key}/principals`); the service account create dialog
   takes `{project}`; the service account detail and `TokenManager` let an Owner of the account's project disable, enable, delete, revoke and issue, and hide the roles section for a project account;
   the token owner filter of a project account is `sa:<project>/<name>`.
 - **Admin lists name the project.** The repository, service account, permission policy and audit lists have a Project column that links to `/projects/<project>`; the repository and policy lists also filter by `project`.

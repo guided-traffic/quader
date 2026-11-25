@@ -1075,6 +1075,15 @@ export const limitProfile = 'partners';
 /** The CI issuer and the CI project of the renders' usage (R-LIM-001: a CI project is charged by issuer and project ID). */
 export const ciIssuer = 'gitlab-internal';
 export const ciProject = { id: '4711', path: 'acme/customer-portal/web-frontend' } as const;
+/**
+ * The policies and the CI mappings whose own pages the renders show (R-AUTHZ-004, R-CI-009): a policy of the main project and one of
+ * the installation, a mapping of the CI issuer's system tier that grants the installation's policy and one of the main project that
+ * grants the project's.
+ */
+export const projectPolicy = 'release-pipeline-readers-of-the-customer-portal';
+export const instancePolicy = 'read-everything-for-the-yearly-audit';
+export const systemMapping = 'protected-release-branches-of-every-project';
+export const projectMapping = 'web-frontend-release-tags';
 /** The anonymous callers of the renders: an IPv6 prefix with a rule of its own, a blocked address, a small one (R-LIM-002). */
 export const anonymousV6 = '2001:db8:1:2::/64';
 export const blockedAddress = '198.51.100.23';
@@ -1291,6 +1300,73 @@ DELETE FROM usage_limit_event WHERE subject_kind = ${lit(u.kind)} AND subject_re
     .filter((u) => u.kind === 'technical_token')
     .map((u) => `UPDATE api_token SET last_used_at = now() - interval '3 minutes' WHERE technical_token_id::text = ${u.ref} AND revoked_at IS NULL;`);
   psql(['BEGIN;', ...forget, ...seeds.map(usageSql), eventsSql(), blocksSql(), ...used, 'COMMIT;'].join('\n'));
+}
+
+/**
+ * The policies and the CI mappings of the renders (`projectPolicy` to `projectMapping`), created through the API after the CI issuer
+ * (`seedLimits`); a second run finds them (409) and leaves them. Each has a long name and a description, conditions of more than one
+ * leaf and several principals, so that their editors have something to lay out.
+ */
+export async function seedPoliciesAndMappings(admin: Api): Promise<void> {
+  await expectStatus(
+    await admin.post(`/api/v1/projects/${mainProject}/policies`, {
+      name: projectPolicy,
+      description: 'Lets the release pipeline and the web team read the internal packages and the released files of the customer portal.',
+      resources: { repositories: ['npm-internal', 'assets', 'npm-*'] },
+      entries: [
+        { principal: `group:${group}`, actions: ['read'] },
+        { principal: `user:${kinds.plain}`, actions: ['read'] },
+        { principal: `sa:${mainProject}/${projectServiceAccount}`, actions: ['write'] },
+      ],
+    }),
+    [201, 409],
+    `policy ${projectPolicy}`,
+  );
+  await expectStatus(
+    await admin.post('/api/v1/permission-policies', {
+      name: instancePolicy,
+      description: 'Read access to every repository of every project for the external auditors, for the four weeks of the yearly audit.',
+      resources: { repositories: ['@any'] },
+      entries: [
+        { principal: `user:${kinds.auditor}`, actions: ['read'] },
+        { principal: `sa:${serviceAccount}`, actions: ['read'] },
+      ],
+    }),
+    [201, 409],
+    `policy ${instancePolicy}`,
+  );
+  // The issuer is public: a condition pins one of its project IDs at the top of its `all` (R-CI-010).
+  const match = {
+    all: [
+      { claim: 'project_id', in: [ciProject.id, '4712', '4713'] },
+      { claim: 'ref_protected', equals: true },
+      { claim: 'ref_type', in: ['branch', 'tag'] },
+      { claim: 'namespace_path', glob: 'acme/customer-portal/*' },
+    ],
+  };
+  await expectStatus(
+    await admin.post(`/api/v1/ci/issuers/${ciIssuer}/mappings`, {
+      name: systemMapping,
+      description: 'Every protected branch and tag of the customer portal reads every repository for its builds.',
+      priority: 10,
+      match,
+      grants: { policies: [instancePolicy], groups: [group] },
+    }),
+    [201, 409],
+    `CI mapping ${systemMapping}`,
+  );
+  await expectStatus(
+    await admin.post(`/api/v1/projects/${mainProject}/ci/mappings`, {
+      issuer: ciIssuer,
+      name: projectMapping,
+      description: 'The tag pipelines of the web frontend publish its packages.',
+      priority: 20,
+      match: { all: [{ claim: 'project_id', equals: ciProject.id }, { claim: 'ref_type', equals: 'tag' }, { claim: 'ref_protected', equals: true }] },
+      grants: { policies: [projectPolicy] },
+    }),
+    [201, 409],
+    `CI mapping ${mainProject}/${projectMapping}`,
+  );
 }
 
 /**

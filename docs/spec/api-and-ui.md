@@ -26419,6 +26419,79 @@ Q-UI-1203. Code: [overview_api.go](../../internal/api/v1/overview_api.go) (`show
 ClamAV repository; milliseconds) and the dashboard's case of R-UI-038 in
 [dashboard.spec.ts](../../web/src/app/features/system/dashboard.spec.ts) (unit, milliseconds).
 
+### Q-UI-1231 · A screen whose every state an overlay alone changes is loaded at the widths its states are taken at
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `states` (Q-UI-1172) leaves a state's picture out at a width, but the run still loads the screen there and walks it: a screen
+whose every state is a menu or a drawer was loaded at 1,024 px, its menus opened and closed, for no picture. The page and shell states of
+2026-11-25 (Q-UI-1232) add eight such screens.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An optional `only` of a screen in [screens.ts](../../web/e2e/renders/screens.ts): the run's widths it is loaded at (chosen) | A filter of the run's widths, two lines of the run | A walk of overlays costs two widths, not three; a run with other widths (`UI_RENDERS_WIDTHS`) still takes the screen at those of its widths that are named | A width left out is not seen at all for that screen |
+| (b) Skip a width when every state the walk yields is left out there | | Nothing to write | The run knows a walk's states only by walking it |
+| (c) Keep the walk at every width | | | About a third of such a screen's time for nothing |
+
+**Choice:** (a). A screen that shows a page state (a section, a page of its own) keeps every width.
+
+**Applied in the spec:** none (test tooling). Code: `Screen.only` of [screens.ts](../../web/e2e/renders/screens.ts), the loop of
+[render.spec.ts](../../web/e2e/renders/render.spec.ts). Docs: [web-ui.md](../developer/web-ui.md#renders-of-every-screen).
+
+### Q-UI-1232 · The page and shell states the render set did not open are taken in the full stack, once each
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the inventory of the render guard's blind spots (2026-11-25) named the menus, drawers, closed sections and pages of their own
+that need the real page and shell behind them, and that no walk opened: the shell's theme, user and language menus, the maintenance
+mode and the banner, a repository's **More**, the saved views of the packages, a CI mapping's row menu, a Debian key's menu, the menu of
+**Run a pass now**, a version's and an open request's menu on the tab Upstream, the drawers of the jobs, the backups and the refused
+downloads, the person search inside the tokens' drawer, the selections of the lists that revoke in bulk, about nineteen closed sections,
+eleven routes without a screen, and a save refused by the server in the editors of a policy, a mapping and a rule.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Walks of their own in [states.ts](../../web/e2e/renders/states.ts), each state once, as the one kind of user that shows it whole; an overlay at 1,440 and 390 px and dark at 1,440 px (Q-UI-1172, Q-UI-1231); a page state at every width; a state that another walk sets up is added after that walk's state (`withStates`), not walked again (chosen) | About 30 screens and 4 states added to existing walks | Every state is seen once; a state the same for every kind or format is not repeated; another builder's walk is not edited | One screen walks several pages (`admin-lists`, `owner-menus`): a failure stops its later states |
+| (b) A screen per state | | Every state's failure alone | About twice the loads |
+| (c) Every state for every kind that reaches it | | | Most states are the same for every kind |
+
+**Choice:** (a). What the inventory named and was left out, with its reason: the command menus of NuGet, Ansible Galaxy and generic files
+(the one panel of `client-command-menu.ts`, taken for OCI, npm and Debian, whose two forms of a command, a field and a code window, it
+shows; H-2005); the question of **Revoke matching tokens** (the plain shape of the confirm dialog, `make ui-states`; the seed's one
+issuance has expired by the time the walk runs, so the count is 0); the "Technical details" folds (the `failure-…` screens of
+[server-texts.ts](../../web/e2e/renders/server-texts.ts) took them before this decision); Add member's person search (a dialog,
+`make ui-states`'s `project-member-search`); the upstream registry's folds (opened by the walk `clamavRegistry`). The npm tags' tooltip
+and **+N more** of 2026-11-25 are a component's state, taken by `make ui-states` (`dist-tags.states.spec.ts`). The policies and the CI
+mappings the routes show are seeded through the API (`seedPoliciesAndMappings` of [seed.ts](../../web/e2e/renders/seed.ts)). A phone's
+scrollbars take no room on every load of a width, a walk's own loads too (an init script of the run instead of a style added after the
+screen's first load). The first runs found sixteen defects in eleven components, each repaired in the screen by a commit of its own; one was not of layout: a stored policy could not be saved, its preview calling its own name invalid.
+
+**Applied in the spec:** R-UI-173, R-UI-175 (no change of their rules). Code: [states.ts](../../web/e2e/renders/states.ts),
+[screens.ts](../../web/e2e/renders/screens.ts), [seed.ts](../../web/e2e/renders/seed.ts),
+[render.spec.ts](../../web/e2e/renders/render.spec.ts). Docs: [web-ui.md](../developer/web-ui.md#renders-of-every-screen),
+[test-cost.md](../developer/test-cost.md).
+
+### Q-UI-1233 · A long name in a chip or in a button of a field is cut with an ellipsis, never broken
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the first pictures of a stored policy and a CI mapping with the seed's long names showed a person-search chip of a CI mapping's
+principal 119 px past the page at 390 px, a policy picker's chip in two lines, and a policy's buttons of the project's repositories with
+a key broken into two lines (they had been built to wrap, so that a long key did not push the page sideways). `broken` holds a chip and
+a button's label to one line.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The chip or the button is at most its field's width; the name in it may shrink and is cut with an ellipsis, the whole in its title and its accessible name (chosen) | `min-inline-size: 0` and an ellipsis on the name, `box-sizing: border-box` on the chip | One line, as every chip and button of the app; the page never scrolls sideways | The end of a very long name is read in the title |
+| (b) Let them wrap and allow the finding | | The whole name in sight | A chip of two lines next to chips of one; a check allowed by place |
+| (c) Wider fields | | | A field is as wide as its expected input (R-UI-085) |
+
+**Choice:** (a). The person search's chips (`principal-field.ts`), the CI name picker's (`name-picker.ts`) and the policy's buttons
+of the project's repositories (`policy-editor.scss`).
+
+**Applied in the spec:** R-UI-171, R-UI-173. Code: [principal-field.ts](../../web/src/app/shared/ui/principal-field.ts),
+[name-picker.ts](../../web/src/app/features/ci/name-picker.ts), [policy-editor.scss](../../web/src/app/features/permissions/policy-editor.scss).
+
 ## What this does not cover
 
 ### H-1964 · A read that fails alone while its page stands is read again only by the person or its next use
@@ -26538,6 +26611,28 @@ tags** of the package's page finds the image by none of the tags past the hundre
 a pipeline that tags one build many times (a tag per branch and per pipeline run on one manifest), which no image of the owner's
 installation does today (his largest has five tags on a manifest, 2026-11-25). The remedy would be a search of the list by a tag on the
 server, which the list by content does not offer (only `sort=-version`, Q-API-432), or every alias in the answer.
+
+### H-2005 · The command menus of NuGet, Ansible Galaxy and generic files are not pictured
+
+Component: the panel of a version's commands (`client-command-menu.ts`, Q-UI-1066). Subject: a reader of a NuGet, Ansible or generic
+repository who opens it. Dormant: the render set opens the panel for an OCI remote's tag, an npm version and a Debian version
+(`…-menu`, the walk `commandMenuOpen`), whose commands are a field and a code window, the two forms the panel has; it is as wide as its
+longest command within 24 to 48 rem and the window. What makes it real: a format whose command is of a third form, or whose clients
+are many enough to make the panel taller than a phone's window; then its screen gets the walk.
+
+### H-2006 · The question of a bulk revoke of issued CI tokens is not pictured with its real count
+
+Component: **Revoke matching tokens** of the issued CI tokens (`issuance-list.ts`). Subject: an administrator. Dormant: the render
+seed's one issuance expires an hour after the seed, so the walk `adminLists` finds nothing to revoke and takes the list with the action
+offered; the question itself is the confirm dialog's plain shape, measured by `make ui-states`. What would close it: an issuance the
+seed keeps valid through the run.
+
+### H-2007 · A submenu at 390 px covers the start of its parent's entry
+
+Component: the user menu's **Language** (`app.html`, the CDK's submenu placement). Subject: a person on a phone. Live: at 390 px the
+submenu has no room beside its parent and opens over its left part, so the entry reads "anguage" under it (`shell-menus-language`,
+2026-11-25). Overlap is left to the eye (Q-UI-1170); it is how a submenu opens where the window is narrow, and the parent closes with it.
+What would change it: a placement below the entry on a narrow window.
 
 ### H-1910 · The dialog states are measured in English only
 

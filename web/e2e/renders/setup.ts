@@ -11,6 +11,7 @@ import {
   seedContent,
   seedGrants,
   seedLimits,
+  seedPoliciesAndMappings,
   seedProjectsAndRepositories,
   seedRegistryPresets,
   seedUpstreamRegistries,
@@ -51,6 +52,8 @@ export default async function setup(): Promise<void> {
     await seedGrants(admin);
     // Before the power user's requests: its rule at the main project makes it a caller at the limit (R-UI-183).
     await seedLimits(admin);
+    // After the CI issuer (seedLimits) and the group and service accounts (seedGrants) their entries and grants name.
+    await seedPoliciesAndMappings(admin);
     await publishAsPowerUser(browser);
     await plainUserToken(browser);
     // After the technical tokens and the sign-ins, whose principals the usage names (R-LIM-001).

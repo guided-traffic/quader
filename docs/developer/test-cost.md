@@ -592,6 +592,24 @@ with an open overlay is no longer grown (Q-UI-1171). Measured on the 20-core dev
 Data: no new picture, no new screen; the fixtures are pages of a few elements. Per format: 0 (the checks measure every picture
 the same; a format adds no fixture).
 
+### 3.5c The page and shell states (Q-UI-1232, measured 2026-11-25 on the development machine)
+
+The menus, drawers, closed sections, notices and pages of their own that need the full stack ([web-ui.md](web-ui.md#renders-of-every-screen),
+`renders/states.ts`). Measured in one full English run on the 20-core development machine at a load of 10 to 20, 3 workers: 559
+screen tests, 7,728 s of summed test time, 43.7 min wall, 7,292 pictures [V].
+
+| Part | Cost |
+|---|---|
+| 27 new screens (one kind each; 8 of them at 1,440 and 390 px only, `only`) | 285.5 s of summed test time, 206 pictures [V]; the longest an Ansible repository's settings with every section and fold opened (32.5 s), the admin area's lists (21.0 s), a Debian repository's keys (20.1 s), a stored policy (19.1 s); a menu-only screen 2 to 8 s |
+| 4 states added to three existing walks (`withStates`: two menus of the tab Upstream for two kinds, **Run a pass now**'s menu, a rule's refused save) | 18 pictures [V]; about 20 s of test time [I: about 1.2 s per state and width, from the walks' own times] |
+| Together | about 305 s of 7,728 s, 3.9 % of the set's test time and 3.1 % of its pictures [I from the above]; about 1.7 min of the local run's wall time, and about **2.2 min of the CI step** "Render every screen and check its layout" [I: 3.9 % of its 55 min in run 45617683641] |
+| `make ui-states` | 2 states more (`dist-tags.states.spec.ts`, a version's npm tags), 1.9 s for the file alone with its build [V]; under 1 s of the target's browser time |
+
+The plan's budget for these states was 5 to 6 min of the CI step; the per-state widths and schemes (Q-UI-1172), the screens loaded at
+two widths (Q-UI-1231) and one kind per state keep it at about 2.2. Data: the walks' answers are a few kilobytes changed in the browser,
+the seed adds two policies and two CI mappings through the API (a few requests, well under a second). Per format: 0 (no state is a
+format's; the command menus of the three formats without a picture are left out on purpose, H-2005 of api-and-ui.md).
+
 ### 3.6 Nightly legs, per test
 
 

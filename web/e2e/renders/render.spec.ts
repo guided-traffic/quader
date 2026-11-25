@@ -65,20 +65,27 @@ for (const screen of locale === 'de' ? screens.filter((s) => s.de) : screens) {
         }
         sessionStorage.removeItem(keep);
       }, KEEP_OPEN);
+      // A phone's scrollbars lie over the content and take no room: so they do in the phone's pictures, on every load of the page, a
+      // walk's own loads too (a style added after the screen's load went with the walk's next one, 2026-11-25). A page that is not the
+      // app (the dev server's own answer) keeps its scrollbars.
+      await page.addInitScript(() => {
+        if (window.innerWidth >= 600) return;
+        document.addEventListener('DOMContentLoaded', () => {
+          if (!document.querySelector('quader-root')) return;
+          const style = document.createElement('style');
+          style.textContent = '* { scrollbar-width: none; }';
+          document.head.append(style);
+        });
+      });
       const shots: Shot[] = [];
       // A walk or a tab that throws stops the screen: what it took so far is recorded with the reason, so failures.txt names it.
       let width = 0;
       try {
-        for (width of [...widths, ...(screen.widths ?? [])]) {
+        for (width of [...widths.filter((w) => !screen.only || screen.only.includes(w)), ...(screen.widths ?? [])]) {
           await page.setViewportSize({ width, height: heightOf(width) });
           await page.emulateMedia({ colorScheme: 'light' });
           const t0 = Date.now();
           await page.goto(screen.path);
-          // A phone's scrollbars lie over the content and take no room: so they do in the phone's pictures. A page that is not
-          // the app (the dev server's own answer) refuses the style and keeps its scrollbars.
-          if (width < 600 && (await page.locator('quader-root').count()) > 0) {
-            await page.addStyleTag({ content: '* { scrollbar-width: none; }' });
-          }
           if (process.env['UI_RENDERS_DEBUG']) console.log(`goto: ${Date.now() - t0} ms`);
           await settle(page);
           // A measurement, not a check (UI_RENDERS_COUNT=1): the calls of the app's API a screen's load sends, the first width's

@@ -61,6 +61,27 @@ import {
 import { downloadsButtonWalk, downloadsExpected, downloadsPanelWalk } from './upstream-downloads';
 import { failureExpected, failureNotices, failureStates } from './failures';
 import {
+  adminLists,
+  debianKeys,
+  editorPaths,
+  everySection,
+  findingAndAdvisory,
+  issuerStates,
+  loginNotice,
+  mappingStates,
+  mirrorRunMenu,
+  openedAndSections,
+  ownerMenus,
+  policyStates,
+  ruleRefused,
+  securityFinding,
+  shellMenus,
+  shellNotices,
+  upstreamRequestMenu,
+  upstreamVersionMenu,
+  withStates,
+} from './states';
+import {
   upstreamDebWalk,
   upstreamExpected,
   upstreamLookupWalk,
@@ -105,6 +126,11 @@ export interface Screen {
    * menu, a drawer, a dialog) shows at 1,024 px nothing that 1,440 and 390 do not. Without an entry: every width, both schemes.
    */
   readonly states?: Readonly<Record<string, { readonly widths?: readonly number[]; readonly dark?: readonly number[] }>>;
+  /**
+   * The run's widths this screen is loaded at, where none of its states differs at the others (Q-UI-1231): a screen whose every state
+   * is an overlay (a menu, a drawer) is not loaded and walked at 1,024 px for no picture. Without it: every width of the run.
+   */
+  readonly only?: readonly number[];
   /**
    * Rendered in the German pass too (UI_RENDERS_LOCALE=de, Q-UI-1048), into `.out/ui-renders-de`: a screen whose German words were
    * not looked at otherwise. Its walk finds its controls by their place (a selector, a test id, an ID), never by an English word.
@@ -2837,6 +2863,16 @@ const admins: readonly Kind[] = ['admin'];
 const auditors: readonly Kind[] = ['admin', 'auditor'];
 const P = `/ui/projects/${mainProject}`;
 const O = `/ui/projects/${otherProject}`;
+/** The widths of a screen whose states an overlay alone changes (`only`, Q-UI-1231). */
+const narrowAndWide: readonly number[] = [1440, 390];
+/** States an overlay alone changes: at 1,440 and 390 px, in dark at 1,440 px (Q-UI-1172). */
+function overlays(...names: readonly string[]): NonNullable<Screen['states']> {
+  return Object.fromEntries(names.map((n) => [n, { widths: narrowAndWide, dark: [1440] }]));
+}
+/** A page's sections opened: at every width, in dark at 1,440 px only; a colour of a section is a colour of the page. */
+const sections: NonNullable<Screen['states']> = { sections: { dark: [1440] } };
+/** An editor's sections opened, and its save refused by the server: the summary above the form at 1,440 and 390 px. */
+const refusedStates: NonNullable<Screen['states']> = { ...sections, ...overlays('refused') };
 
 /** The address of a package page (R-UI-007) and of a version page (R-UI-111, `…/<name>@<version>`). */
 const pkg = (base: string, p: { readonly format: string; readonly name: string }): string => `${base}/packages/${p.format}/${p.name}`;
@@ -2907,7 +2943,17 @@ export const screens: readonly Screen[] = [
   // in mode onlyAllowed with every state (upstream.ts); an OCI remote of ghcr.io that offers only the lookup by name; a Debian remote's
   // suites and its index search; a Docker Hub namespace Docker Hub does not have (Q-CUR-165); and the OCI remote whose upstream is this
   // installation, with the server's own answers. A package's versions keep the form of a table from 1,024 px on (Q-CUR-157).
-  { id: 'repository-npm-remote-upstream', path: `${P}/repositories/npmjs/upstream`, kinds: all, walk: upstreamTabWalk, expected: upstreamExpected, de: true, tables: upstreamVersions },
+  // With the menus of an open request and of a version, for who decides (states.ts).
+  {
+    id: 'repository-npm-remote-upstream',
+    path: `${P}/repositories/npmjs/upstream`,
+    kinds: all,
+    walk: withStates(upstreamTabWalk, { search: upstreamRequestMenu, package: upstreamVersionMenu }),
+    states: overlays('request-menu', 'version-menu'),
+    expected: upstreamExpected,
+    de: true,
+    tables: upstreamVersions,
+  },
   { id: 'repository-oci-upstream-lookup', path: `${O}/repositories/docker-hub-remote/upstream`, kinds: ['power'], walk: upstreamLookupWalk, expected: upstreamExpected, tables: upstreamVersions },
   { id: 'repository-oci-upstream-unknown-level', path: `${O}/repositories/docker-hub-remote/upstream`, kinds: ['power'], walk: upstreamUnknownLevelWalk, de: true },
   { id: 'repository-deb-upstream', path: `${O}/repositories/debian/upstream`, kinds: ['power'], walk: upstreamDebWalk, tables: upstreamVersions },
@@ -3229,7 +3275,14 @@ export const screens: readonly Screen[] = [
   { id: 'repository-settings-oci-mirror', path: `${O}/repositories/docker-hub-remote/settings`, kinds: ['admin'], walk: mirrorMode },
   { id: 'repository-settings-deb-mirror', path: `${O}/repositories/debian/settings`, kinds: ['admin'], walk: mirrorMode },
   // The same remotes stored in the mode mirror, a bounded one and one without its bound (section 12, part C; Q-UI-1061).
-  { id: 'repository-settings-oci-mirror-stored', path: `${O}/repositories/docker-hub-remote/settings`, kinds: ['admin'], walk: storedMirror },
+  // With the menu of Run a pass now (states.ts), once: the Debian remote's is the same.
+  {
+    id: 'repository-settings-oci-mirror-stored',
+    path: `${O}/repositories/docker-hub-remote/settings`,
+    kinds: ['admin'],
+    walk: withStates(storedMirror, { stored: mirrorRunMenu }),
+    states: overlays('run-menu'),
+  },
   { id: 'repository-settings-deb-mirror-stored', path: `${O}/repositories/debian/settings`, kinds: ['admin'], walk: storedMirror },
   { id: 'repository-settings-ansible', path: `${O}/repositories/collections/settings`, kinds: all, walk: allSections },
   { id: 'repository-settings-ansible-remote', path: `${O}/repositories/galaxy/settings`, kinds: admins, walk: remoteSections },
@@ -3321,7 +3374,15 @@ export const screens: readonly Screen[] = [
   { id: 'admin-endpoint', path: '/ui/admin/endpoints/default', kinds: admins },
   { id: 'admin-endpoint-menu', path: '/ui/admin/endpoints/default', kinds: ['admin'], walk: rowMenuOpen },
   { id: 'admin-endpoint-rule-new', path: '/ui/admin/endpoints/default/rules/new', kinds: admins },
-  { id: 'admin-endpoint-rule', path: `/ui/admin/endpoints/default/rules/${exposureRule}`, kinds: admins, walk: advancedOpen },
+  // With a change the server refuses: the summary of its problems above the form (states.ts).
+  {
+    id: 'admin-endpoint-rule',
+    path: `/ui/admin/endpoints/default/rules/${exposureRule}`,
+    kinds: admins,
+    walk: withStates(advancedOpen, { advanced: ruleRefused }),
+    states: { refused: { widths: [1440, 390], dark: [1440] } },
+    expected: [{ match: /^(PUT|PATCH) \/api\/v1\/endpoints\/default\/exposure-rules\/\S+ answered 422$/, why: 'the save the walk refuses with problems' }],
+  },
 
   // The creation form of every format with settings in every class (the owner's rules of 2026-11-12, CLAUDE.md).
   ...createForms,
@@ -3373,4 +3434,73 @@ export const screens: readonly Screen[] = [
   { id: 'failure-advisory-sources', path: '/ui/admin/advisory-sources', kinds: admins, walk: advisorySourceFailures, de: true },
   { id: 'failure-signature-root', path: '/ui/admin/settings/signatures', kinds: admins, walk: signatureRootFailure, de: true },
   { id: 'failure-signature-note', path: `${ver(P, manyVersionsPackage, signedVersions.invalid)}?tab=signatures`, kinds: ['plain'], walk: signatureNote, de: true },
+
+  // The page and shell states no walk above opens (states.ts, R-UI-173, R-UI-175, Q-UI-1231 to Q-UI-1235). An overlay is taken at 1,440 and
+  // 390 px, in dark at 1,440 px; what a person opens on a page (a section, a page of its own) at every width.
+  // The shell's menus and notices, the same for every kind of user: theme, user menu and its language submenu; the maintenance mode and a
+  // critical banner above a list; the banner on the sign-in page.
+  { id: 'shell-menus', path: '/ui/projects', kinds: ['plain'], walk: shellMenus, only: narrowAndWide, states: overlays('theme', 'user', 'language'), de: true },
+  { id: 'shell-notices', path: `${P}/repositories`, kinds: ['plain'], walk: shellNotices, only: narrowAndWide, states: overlays('notices'), de: true },
+  { id: 'login-notices', path: '/ui/login', kinds: ['anonymous'], walk: loginNotice, only: narrowAndWide, states: overlays('banner') },
+  // The page menus of a project's Owner: a repository's More, the saved views of the packages and a view's menu, a CI mapping's row.
+  { id: 'owner-menus', path: `${P}/repositories/npm-vendor`, kinds: ['power'], walk: ownerMenus, only: narrowAndWide, states: overlays('repository-more', 'views', 'view-menu', 'mapping-menu') },
+  // The admin area's drawers no list walk opens, the owner's person search inside the tokens' drawer, two tokens selected with their
+  // question, and the issued CI tokens of one project that a bulk revoke would take.
+  {
+    id: 'admin-lists',
+    path: '/ui/admin/system/jobs',
+    kinds: ['admin'],
+    walk: adminLists,
+    only: narrowAndWide,
+    states: overlays('jobs-filters', 'backups-filters', 'refusals-filters', 'owner-search', 'tokens-selected', 'tokens-revoke', 'issuances-matching'),
+  },
+  // Every closed section and fold of a page opened (R-UI-087's Details on demand): the pages whose sections no other walk opens.
+  { id: 'admin-user-sections', path: '/ui/admin/users/sam', kinds: ['admin'], walk: everySection, states: sections },
+  { id: 'admin-group-sections', path: `/ui/admin/groups/${group}`, kinds: ['admin'], walk: everySection, states: sections },
+  { id: 'profile-sections', path: '/ui/profile', kinds: ['admin'], walk: everySection, states: sections },
+  { id: 'admin-settings-auth-sections', path: '/ui/admin/settings/auth', kinds: ['admin'], walk: everySection, states: sections },
+  { id: 'admin-settings-general-sections', path: '/ui/admin/settings/general', kinds: ['admin'], walk: everySection, states: sections },
+  { id: 'project-settings-sections', path: `${P}/settings`, kinds: ['power'], walk: everySection, states: sections },
+  { id: 'admin-endpoint-sections', path: '/ui/admin/endpoints/default', kinds: ['admin'], walk: everySection, states: sections },
+  { id: 'admin-ci-new-sections', path: '/ui/admin/ci/new', kinds: ['admin'], walk: everySection, states: sections },
+  { id: 'repository-settings-ansible-sections', path: `${O}/repositories/collections/settings`, kinds: ['admin'], walk: everySection, states: sections },
+  { id: 'help-sections', path: '/ui/help', kinds: ['plain'], walk: everySection, states: sections },
+  // A Debian repository's signing keys in the states with actions: the next key's certificate, its menu, a promotion that fails.
+  {
+    id: 'repository-settings-deb-keys',
+    path: `${O}/repositories/${longDebKey}/settings`,
+    kinds: ['admin'],
+    walk: debianKeys,
+    states: overlays('key-menu'),
+    expected: [{ match: /^POST \/api\/v1\/projects\/[^/]+\/repositories\/[^/]+\/deb\/signing-keys\/promote answered 500$/, why: 'the promotion the walk answers as failed' }],
+    notices: [{ match: /./, why: "the promotion's failure, which the walk answers in the browser" }],
+  },
+  // The pages of their own that no screen showed: a finding and its advisory, a finding under Security audit, a CI issuer, its claim
+  // tester and mappings, a project's claim tester and mapping, a policy of a project and of the installation (seedPoliciesAndMappings).
+  { id: 'finding', path: `${P}/vulnerabilities`, kinds: ['power'], walk: findingAndAdvisory },
+  { id: 'security-finding', path: '/ui/security', kinds: ['auditor'], walk: securityFinding, only: narrowAndWide },
+  { id: 'admin-ci-issuer', path: `/ui/admin/ci/${ciIssuer}`, kinds: ['admin'] },
+  { id: 'admin-ci-issuer-states', path: `/ui/admin/ci/${ciIssuer}`, kinds: ['admin'], walk: issuerStates, states: { ...sections, ...overlays('mapping-menu') } },
+  { id: 'admin-ci-test', path: `/ui/admin/ci/${ciIssuer}/test`, kinds: ['admin'] },
+  { id: 'admin-ci-mapping', path: editorPaths.systemMapping, kinds: ['admin'] },
+  { id: 'admin-ci-mapping-new', path: `/ui/admin/ci/${ciIssuer}/mappings/new`, kinds: ['admin'] },
+  { id: 'project-ci-test', path: `${P}/ci/test`, kinds: ['power'] },
+  {
+    id: 'project-ci-mapping',
+    path: editorPaths.projectMapping,
+    kinds: ['power'],
+    walk: mappingStates,
+    states: refusedStates,
+    expected: [{ match: /^(PUT|PATCH) \/api\/v1\/projects\/[^/]+\/ci\/mappings\/\S+ answered 422$/, why: 'the save the walk refuses with problems' }],
+  },
+  {
+    id: 'policy',
+    path: editorPaths.policy,
+    kinds: ['power'],
+    walk: policyStates,
+    states: refusedStates,
+    expected: [{ match: /^PUT \/api\/v1\/projects\/[^/]+\/policies\/\S+ answered 422$/, why: 'the save the walk refuses with problems' }],
+    notices: [{ match: /./, why: 'the refused save, which the walk answers in the browser' }],
+  },
+  { id: 'admin-permission', path: editorPaths.instancePolicy, kinds: ['admin'], walk: openedAndSections, states: sections },
 ];
