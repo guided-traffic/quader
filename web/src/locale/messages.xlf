@@ -31547,7 +31547,7 @@
       <notes>
         <note category="location">src/app/features/service-accounts/service-account-detail.ts:126,128</note>
         <note category="location">src/app/features/tokens/token-manager.ts:138,140</note>
-        <note category="location">src/app/features/users/user-detail.html:264,266</note>
+        <note category="location">src/app/features/users/user-detail.html:255,257</note>
       </notes>
       <segment>
         <source>Every token stops working at once, and the tools that use them are refused. This cannot be undone.</source>
@@ -31557,7 +31557,7 @@
       <notes>
         <note category="location">src/app/features/service-accounts/service-account-detail.ts:128,130</note>
         <note category="location">src/app/features/tokens/token-manager.ts:140,142</note>
-        <note category="location">src/app/features/users/user-detail.html:266,269</note>
+        <note category="location">src/app/features/users/user-detail.html:257,260</note>
       </notes>
       <segment>
         <source>Revoke all tokens</source>
@@ -42582,7 +42582,7 @@
     <unit id="user.display-name">
       <notes>
         <note category="location">src/app/features/users/user-detail.html:20</note>
-        <note category="location">src/app/features/users/user-detail.ts:180</note>
+        <note category="location">src/app/features/users/user-detail.ts:196</note>
       </notes>
       <segment>
         <source>Display name</source>
@@ -42591,7 +42591,7 @@
     <unit id="user.email">
       <notes>
         <note category="location">src/app/features/users/user-detail.html:21</note>
-        <note category="location">src/app/features/users/user-detail.ts:179</note>
+        <note category="location">src/app/features/users/user-detail.ts:195</note>
       </notes>
       <segment>
         <source>Email</source>
@@ -42617,7 +42617,7 @@
     <unit id="user.external">
       <notes>
         <note category="location">src/app/features/users/user-detail.html:41,42</note>
-        <note category="location">src/app/features/users/user-detail.ts:205</note>
+        <note category="location">src/app/features/users/user-detail.ts:221</note>
       </notes>
       <segment>
         <source>External user</source>
@@ -42959,49 +42959,9 @@
         <source>No open session.</source>
       </segment>
     </unit>
-    <unit id="user.sessions-caption">
-      <notes>
-        <note category="location">src/app/features/users/user-detail.html:228,230</note>
-      </notes>
-      <segment>
-        <source>Open sessions of this user</source>
-      </segment>
-    </unit>
-    <unit id="user.session.created">
-      <notes>
-        <note category="location">src/app/features/users/user-detail.html:231,232</note>
-      </notes>
-      <segment>
-        <source>Created</source>
-      </segment>
-    </unit>
-    <unit id="user.session.last-seen">
-      <notes>
-        <note category="location">src/app/features/users/user-detail.html:232,233</note>
-      </notes>
-      <segment>
-        <source>Last seen</source>
-      </segment>
-    </unit>
-    <unit id="user.session.address">
-      <notes>
-        <note category="location">src/app/features/users/user-detail.html:233,234</note>
-      </notes>
-      <segment>
-        <source>Address</source>
-      </segment>
-    </unit>
-    <unit id="user.session.agent">
-      <notes>
-        <note category="location">src/app/features/users/user-detail.html:234,236</note>
-      </notes>
-      <segment>
-        <source>Browser</source>
-      </segment>
-    </unit>
     <unit id="user.end-sessions">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:250,252</note>
+        <note category="location">src/app/features/users/user-detail.html:241,243</note>
       </notes>
       <segment>
         <source>End all sessions</source>
@@ -43009,7 +42969,7 @@
     </unit>
     <unit id="user.advanced">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:260,261</note>
+        <note category="location">src/app/features/users/user-detail.html:251,252</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -43017,7 +42977,7 @@
     </unit>
     <unit id="user.disable-note">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:270,272</note>
+        <note category="location">src/app/features/users/user-detail.html:261,263</note>
       </notes>
       <segment>
         <source>A disabled user can no longer sign in and their sessions end; you can also revoke their tokens.</source>
@@ -43025,7 +42985,7 @@
     </unit>
     <unit id="user.disable">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:273,274</note>
+        <note category="location">src/app/features/users/user-detail.html:264,265</note>
       </notes>
       <segment>
         <source>Disable</source>
@@ -43033,7 +42993,7 @@
     </unit>
     <unit id="user.enable">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:275,277</note>
+        <note category="location">src/app/features/users/user-detail.html:266,268</note>
       </notes>
       <segment>
         <source>Enable</source>
@@ -43041,7 +43001,7 @@
     </unit>
     <unit id="user.unlock-note">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:280,281</note>
+        <note category="location">src/app/features/users/user-detail.html:271,272</note>
       </notes>
       <segment>
         <source>The account is locked after failed sign-ins. Unlocking lets it sign in again at once.</source>
@@ -43049,7 +43009,7 @@
     </unit>
     <unit id="user.unlock">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:281,283</note>
+        <note category="location">src/app/features/users/user-detail.html:272,274</note>
       </notes>
       <segment>
         <source>Unlock</source>
@@ -43057,7 +43017,7 @@
     </unit>
     <unit id="user.delete-note">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:284,285</note>
+        <note category="location">src/app/features/users/user-detail.html:275,276</note>
       </notes>
       <segment>
         <source>Deleting the user removes their tokens and sessions. This cannot be undone.</source>
@@ -43065,7 +43025,7 @@
     </unit>
     <unit id="user.delete">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:285,287</note>
+        <note category="location">src/app/features/users/user-detail.html:276,278</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -43073,7 +43033,7 @@
     </unit>
     <unit id="user.self-guard">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:288,290</note>
+        <note category="location">src/app/features/users/user-detail.html:279,281</note>
       </notes>
       <segment>
         <source>You cannot disable or delete your own account.</source>
@@ -43081,7 +43041,7 @@
     </unit>
     <unit id="user.advanced-hint-tokens">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:76</note>
+        <note category="location">src/app/features/users/user-detail.ts:84</note>
       </notes>
       <segment>
         <source>Revoke all tokens, disable, unlock or delete this account.</source>
@@ -43089,15 +43049,55 @@
     </unit>
     <unit id="user.advanced-hint">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:77</note>
+        <note category="location">src/app/features/users/user-detail.ts:85</note>
       </notes>
       <segment>
         <source>Disable, unlock or delete this account.</source>
       </segment>
     </unit>
+    <unit id="user.sessions-caption">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.ts:96</note>
+      </notes>
+      <segment>
+        <source>Open sessions of this user</source>
+      </segment>
+    </unit>
+    <unit id="user.session.created">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.ts:99</note>
+      </notes>
+      <segment>
+        <source>Created</source>
+      </segment>
+    </unit>
+    <unit id="user.session.last-seen">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.ts:100</note>
+      </notes>
+      <segment>
+        <source>Last seen</source>
+      </segment>
+    </unit>
+    <unit id="user.session.address">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.ts:101</note>
+      </notes>
+      <segment>
+        <source>Address</source>
+      </segment>
+    </unit>
+    <unit id="user.session.agent">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.ts:102</note>
+      </notes>
+      <segment>
+        <source>Browser</source>
+      </segment>
+    </unit>
     <unit id="user.saved">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:189</note>
+        <note category="location">src/app/features/users/user-detail.ts:205</note>
       </notes>
       <segment>
         <source>User saved.</source>
@@ -43105,7 +43105,7 @@
     </unit>
     <unit id="user.external-saved">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:215</note>
+        <note category="location">src/app/features/users/user-detail.ts:231</note>
       </notes>
       <segment>
         <source>External flag saved.</source>
@@ -43113,7 +43113,7 @@
     </unit>
     <unit id="user.disable-title">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:221</note>
+        <note category="location">src/app/features/users/user-detail.ts:237</note>
       </notes>
       <segment>
         <source>Disable this user?</source>
@@ -43121,7 +43121,7 @@
     </unit>
     <unit id="user.disable-text">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:222</note>
+        <note category="location">src/app/features/users/user-detail.ts:238</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="user" disp="this.username()"/> can no longer sign in, and their sessions end.</source>
@@ -43129,7 +43129,7 @@
     </unit>
     <unit id="user.disable-confirm">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:223</note>
+        <note category="location">src/app/features/users/user-detail.ts:239</note>
       </notes>
       <segment>
         <source>Disable</source>
@@ -43137,7 +43137,7 @@
     </unit>
     <unit id="user.disable-revoke">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:224</note>
+        <note category="location">src/app/features/users/user-detail.ts:240</note>
       </notes>
       <segment>
         <source>Also revoke all tokens of this user</source>
@@ -43145,7 +43145,7 @@
     </unit>
     <unit id="user.disabled">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:230</note>
+        <note category="location">src/app/features/users/user-detail.ts:246</note>
       </notes>
       <segment>
         <source>User disabled.</source>
@@ -43153,7 +43153,7 @@
     </unit>
     <unit id="user.enabled">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:235</note>
+        <note category="location">src/app/features/users/user-detail.ts:251</note>
       </notes>
       <segment>
         <source>User enabled.</source>
@@ -43161,7 +43161,7 @@
     </unit>
     <unit id="user.unlocked">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:239</note>
+        <note category="location">src/app/features/users/user-detail.ts:255</note>
       </notes>
       <segment>
         <source>Account unlocked.</source>
@@ -43169,7 +43169,7 @@
     </unit>
     <unit id="user.remove-avatar-title">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:245</note>
+        <note category="location">src/app/features/users/user-detail.ts:261</note>
       </notes>
       <segment>
         <source>Remove the avatar of this user?</source>
@@ -43177,7 +43177,7 @@
     </unit>
     <unit id="user.remove-avatar-text">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:247</note>
+        <note category="location">src/app/features/users/user-detail.ts:263</note>
       </notes>
       <segment>
         <source>The avatar of <ph id="0" equiv="user" disp="this.username()"/> is removed and replaced by the generated one. The user can upload a new one.</source>
@@ -43185,7 +43185,7 @@
     </unit>
     <unit id="user.remove-avatar-confirm">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:249</note>
+        <note category="location">src/app/features/users/user-detail.ts:265</note>
       </notes>
       <segment>
         <source>Remove avatar</source>
@@ -43193,7 +43193,7 @@
     </unit>
     <unit id="user.avatar-removed">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:252</note>
+        <note category="location">src/app/features/users/user-detail.ts:268</note>
       </notes>
       <segment>
         <source>Avatar removed.</source>
@@ -43201,7 +43201,7 @@
     </unit>
     <unit id="user.delete-title">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:257</note>
+        <note category="location">src/app/features/users/user-detail.ts:273</note>
       </notes>
       <segment>
         <source>Delete this user?</source>
@@ -43209,7 +43209,7 @@
     </unit>
     <unit id="user.delete-text">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:258</note>
+        <note category="location">src/app/features/users/user-detail.ts:274</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="user" disp="this.username()"/> and their tokens and sessions are removed. This cannot be undone.</source>
@@ -43217,7 +43217,7 @@
     </unit>
     <unit id="user.delete-confirm">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:259</note>
+        <note category="location">src/app/features/users/user-detail.ts:275</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -43225,7 +43225,7 @@
     </unit>
     <unit id="user.deleted">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:265</note>
+        <note category="location">src/app/features/users/user-detail.ts:281</note>
       </notes>
       <segment>
         <source>User deleted.</source>
@@ -43233,7 +43233,7 @@
     </unit>
     <unit id="user.group-added">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:283</note>
+        <note category="location">src/app/features/users/user-detail.ts:299</note>
       </notes>
       <segment>
         <source>Group membership added.</source>
@@ -43241,7 +43241,7 @@
     </unit>
     <unit id="user.group-removed">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:291</note>
+        <note category="location">src/app/features/users/user-detail.ts:307</note>
       </notes>
       <segment>
         <source>Group membership removed.</source>
@@ -43249,7 +43249,7 @@
     </unit>
     <unit id="user.end-sessions-title">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:297</note>
+        <note category="location">src/app/features/users/user-detail.ts:313</note>
       </notes>
       <segment>
         <source>End all sessions of this user?</source>
@@ -43257,7 +43257,7 @@
     </unit>
     <unit id="user.end-sessions-text">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:298</note>
+        <note category="location">src/app/features/users/user-detail.ts:314</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="user" disp="this.username()"/> is signed out of every browser at once.</source>
@@ -43265,7 +43265,7 @@
     </unit>
     <unit id="user.end-sessions-confirm">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:299</note>
+        <note category="location">src/app/features/users/user-detail.ts:315</note>
       </notes>
       <segment>
         <source>End sessions</source>
@@ -43273,7 +43273,7 @@
     </unit>
     <unit id="user.sessions-ended">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:308</note>
+        <note category="location">src/app/features/users/user-detail.ts:324</note>
       </notes>
       <segment>
         <source>Sessions ended.</source>
@@ -43281,7 +43281,7 @@
     </unit>
     <unit id="user.source.manual">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:318</note>
+        <note category="location">src/app/features/users/user-detail.ts:334</note>
       </notes>
       <segment>
         <source>Manual</source>
@@ -43289,7 +43289,7 @@
     </unit>
     <unit id="user.source.auto">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:319</note>
+        <note category="location">src/app/features/users/user-detail.ts:335</note>
       </notes>
       <segment>
         <source>Auto-join</source>
@@ -43297,7 +43297,7 @@
     </unit>
     <unit id="user.source.provider">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:321</note>
+        <note category="location">src/app/features/users/user-detail.ts:337</note>
       </notes>
       <segment>
         <source>Identity provider</source>
@@ -43305,7 +43305,7 @@
     </unit>
     <unit id="user.claim-reason.wrong-type">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:326</note>
+        <note category="location">src/app/features/users/user-detail.ts:342</note>
       </notes>
       <segment>
         <source>a group claim of the wrong type</source>
@@ -43313,7 +43313,7 @@
     </unit>
     <unit id="user.claim-reason.overage">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:327</note>
+        <note category="location">src/app/features/users/user-detail.ts:343</note>
       </notes>
       <segment>
         <source>too many groups for the token</source>
@@ -43321,7 +43321,7 @@
     </unit>
     <unit id="user.claim-reason.absent">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:328</note>
+        <note category="location">src/app/features/users/user-detail.ts:344</note>
       </notes>
       <segment>
         <source>no group claim</source>
@@ -45568,49 +45568,9 @@
         <source>History</source>
       </segment>
     </unit>
-    <unit id="vuln.history.caption">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.html:110,112</note>
-      </notes>
-      <segment>
-        <source>History of the finding, newest first</source>
-      </segment>
-    </unit>
-    <unit id="vuln.history.when">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.html:113,114</note>
-      </notes>
-      <segment>
-        <source>When</source>
-      </segment>
-    </unit>
-    <unit id="vuln.history.what">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.html:114,115</note>
-      </notes>
-      <segment>
-        <source>What</source>
-      </segment>
-    </unit>
-    <unit id="vuln.history.who">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.html:116</note>
-      </notes>
-      <segment>
-        <source>By</source>
-      </segment>
-    </unit>
-    <unit id="vuln.history.comment">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.html:116,119</note>
-      </notes>
-      <segment>
-        <source>Comment</source>
-      </segment>
-    </unit>
     <unit id="vuln.action.confirm">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:32</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:33</note>
       </notes>
       <segment>
         <source>Confirm</source>
@@ -45618,7 +45578,7 @@
     </unit>
     <unit id="vuln.action.dismiss">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:33</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:34</note>
       </notes>
       <segment>
         <source>Dismiss</source>
@@ -45626,7 +45586,7 @@
     </unit>
     <unit id="vuln.action.reopen">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:34</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:35</note>
       </notes>
       <segment>
         <source>Mark as needs triage</source>
@@ -45634,7 +45594,7 @@
     </unit>
     <unit id="vuln.action.block">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:39</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:40</note>
       </notes>
       <segment>
         <source>Block downloads</source>
@@ -45642,7 +45602,7 @@
     </unit>
     <unit id="vuln.action.lift">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:41</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:42</note>
       </notes>
       <segment>
         <source>Lift block</source>
@@ -45650,15 +45610,55 @@
     </unit>
     <unit id="vuln.finding.heading">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:91</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:92</note>
       </notes>
       <segment>
         <source>Finding</source>
       </segment>
     </unit>
-    <unit id="vuln.history.detected">
+    <unit id="vuln.history.caption">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:99</note>
+      </notes>
+      <segment>
+        <source>History of the finding, newest first</source>
+      </segment>
+    </unit>
+    <unit id="vuln.history.when">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:101</note>
+      </notes>
+      <segment>
+        <source>When</source>
+      </segment>
+    </unit>
+    <unit id="vuln.history.what">
       <notes>
         <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:102</note>
+      </notes>
+      <segment>
+        <source>What</source>
+      </segment>
+    </unit>
+    <unit id="vuln.history.who">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:103</note>
+      </notes>
+      <segment>
+        <source>By</source>
+      </segment>
+    </unit>
+    <unit id="vuln.history.comment">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:104</note>
+      </notes>
+      <segment>
+        <source>Comment</source>
+      </segment>
+    </unit>
+    <unit id="vuln.history.detected">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:110</note>
       </notes>
       <segment>
         <source>Detected</source>
@@ -45666,7 +45666,7 @@
     </unit>
     <unit id="vuln.history.status">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:104</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:112</note>
       </notes>
       <segment>
         <source>Status changed</source>
@@ -45674,7 +45674,7 @@
     </unit>
     <unit id="vuln.history.resolved">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:106</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:114</note>
       </notes>
       <segment>
         <source>Resolved by Quader</source>
@@ -45682,7 +45682,7 @@
     </unit>
     <unit id="vuln.history.redetected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:108</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:116</note>
       </notes>
       <segment>
         <source>Detected again</source>
@@ -45690,7 +45690,7 @@
     </unit>
     <unit id="vuln.history.reopened">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:110</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:118</note>
       </notes>
       <segment>
         <source>Reopened by Quader</source>
@@ -45698,7 +45698,7 @@
     </unit>
     <unit id="vuln.history.advisory">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:112</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:120</note>
       </notes>
       <segment>
         <source>Advisory changed</source>
@@ -45706,7 +45706,7 @@
     </unit>
     <unit id="vuln.triage.saved">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:144</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.ts:152</note>
       </notes>
       <segment>
         <source>The finding was changed.</source>
