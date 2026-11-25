@@ -233,7 +233,9 @@ describe("A well-known repository's page (R-UI-188)", () => {
         a.listedByNames = { galaxy: ['web/roles', 'web/roles-all'] };
       },
     });
-    expect(text(retired.root)).toContain('Quader no longer offers this registry. Its cached content is being removed.');
+    expect(text(retired.root)).toContain(
+      'Quader no longer offers this registry. It serves nothing, its cached content is removed, and a virtual repository that lists it skips it.',
+    );
     expect(text(retired.root)).toContain('2 virtual repositories in 1 project list it.');
     expect([...retired.root.querySelectorAll('.listed-names a')].map((a) => text(a))).toEqual(['web/roles', 'web/roles-all']);
     expect(retired.root.querySelector('form')).toBeNull();

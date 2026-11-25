@@ -11,7 +11,9 @@
       @if (r.visibility; as levels) {
         <span class="badge"><quader-visibility-icon [level]="levels.artifacts" />{{ levelText(levels.artifacts) }}</span>
       }
-      @if (disabled()) {
+      @if (retired()) {
+        <span class="badge warn">{{ retiredBadge }}</span>
+      } @else if (disabled()) {
         <span class="badge warn" i18n="@@repo.badge.disabled">Disabled</span>
       }
     </div>
@@ -42,6 +44,14 @@
       }
     </ng-container>
   </quader-page-header>
+
+  @if (retired()) {
+    <!-- A retired preset of upstream (R-UI-190): what it means, in the words of its page in the admin area (R-UI-188). -->
+    <p class="banner-warning" role="status">
+      <span class="material-icons inline warn" aria-hidden="true">warning</span>
+      <span>{{ retiredText }}</span>
+    </p>
+  }
 
   @if (tabStrip()) {
     <!-- The page's views are tabs, each with its address: the content, Upstream and Downloads of a remote repository (R-CUR-018,

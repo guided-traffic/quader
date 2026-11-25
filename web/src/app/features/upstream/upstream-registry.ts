@@ -53,6 +53,7 @@ import {
   onOffWord,
   privateRowNote,
   levelSetText as levelSetTextOf,
+  retiredSentence,
   rowBadge,
   switchLabel,
   systemUseSentence,
@@ -128,6 +129,7 @@ export class UpstreamRegistry {
   protected readonly noAddress = computed(() => this.item()?.fixed.includes('address') ?? false);
   protected readonly systemUse = systemUseSentence;
   protected readonly retired = computed(() => this.item()?.state === 'retired');
+  protected readonly retiredText = retiredSentence();
   protected readonly projectLink = computed(() => ['/projects', UPSTREAM_PROJECT, 'repositories', this.key()]);
   protected readonly settingsLink = computed(() => [...this.projectLink(), 'settings']);
   protected readonly levelText = levelName;

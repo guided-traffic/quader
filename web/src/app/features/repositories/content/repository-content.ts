@@ -19,8 +19,10 @@ import { Notifier } from '../../../core/notifier';
 import { filesCommands, setupCommands } from '../../../core/project-links';
 import { ServerAddress } from '../../../core/server-address';
 import { SessionStore } from '../../../core/session-store';
-import { isSystemRepository } from '../../../core/upstream-project';
+import { isSystemRepository, isUpstreamProject } from '../../../core/upstream-project';
 import { systemClosed } from '../../../core/system-clients';
+import { UpstreamApi } from '../../../api/upstream-api';
+import { retiredSentence, stateBadge } from '../../upstream/upstream-words';
 import { CLAMAV_FORMAT } from '../../packages/clamav-definitions';
 import { ClamavDatabases } from './clamav-databases';
 import { Confirm } from '../../../shared/confirm-dialog';
@@ -209,6 +211,26 @@ export class RepositoryContent {
   });
   /** The repository is disabled: the full document and the reader's view say so alike (R-REPO-010), so every reader's page knows it. */
   protected readonly disabled = computed(() => this.repository()?.disabled ?? false);
+  private readonly upstreamApi = inject(UpstreamApi);
+  /**
+   * Whether a disabled repository of the project `upstream` is retired (R-UI-190, Q-REPO-376), read for who reads every repository's
+   * configuration as its settings page reads it (R-REPO-073); its badge says **No longer offered** in place of **Disabled**, with the
+   * sentence under the header. Any other caller learns only that it is off (Q-UI-840); a failed read leaves the badge **Disabled**.
+   */
+  private readonly retiredRead = resource({
+    params: () =>
+      this.disabled() && isUpstreamProject(this.project()) && this.session.has('repositories:read-config') ? this.key() : undefined,
+    loader: async ({ params }): Promise<boolean> => {
+      try {
+        return (await this.upstreamApi.get(params)).value.state === 'retired';
+      } catch {
+        return false;
+      }
+    },
+  });
+  protected readonly retired = computed(() => this.disabled() && valueOf(this.retiredRead) === true);
+  protected readonly retiredBadge = stateBadge('retired');
+  protected readonly retiredText = retiredSentence();
 
   // ---- The tabs (R-UI-052; remote-curation.md R-CUR-018, Q-CUR-1, Q-CUR-150; Q-UI-1067) ----
 

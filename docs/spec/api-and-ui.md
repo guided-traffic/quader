@@ -8885,8 +8885,10 @@ Priority: **MVP** · Covers: quader-only
      administrator narrows (a link to the repository's settings page, R-UI-190, for offline and the notes), the
      limits of the repository (a link to the same page, whose section R-UI-180 is), created and last changed (read from the
      repository's document when Details is first opened).
-- A retired repository's page says "Quader no longer offers this registry. Its cached content is being removed." and shows only
-  **Listed by**.
+- A retired repository's page says "Quader no longer offers this registry. It serves nothing, its cached content is removed, and a
+  virtual repository that lists it skips it." (the state `retired` of R-REPO-068: `404 repository_disabled`, the purge of R-REPO-067
+  step 5, a placeholder of R-REPO-072) and shows only **Listed by**. A retired system repository is never shown: the reconcile removes
+  it ([Q-REPO-490](repositories-and-proxy.md#q-repo-490--a-system-repository-the-product-no-longer-declares-is-removed-not-retired)).
 - Read-only for a caller without `repositories:write-config`.
 
 Acceptance criteria (Vitest, `upstream-registry.spec.ts`, about 2 s; rendered under rule 11):
@@ -8942,6 +8944,9 @@ Priority: **MVP** · Covers: quader-only
   policies, service accounts or CI mappings) and no **Settings** entry. Its repository list is the project list of R-UI-020 with the
   state of each repository as a badge (**Off**, **No longer offered**) for a caller with `repositories:read-config`; a caller without
   it sees only what it reads. Its system repositories stand below the list in a closed section of their own (R-UI-192).
+- **A repository's content page** (R-UI-052) of a retired registry says **No longer offered** in place of **Disabled**, and under its
+  header the sentence of R-UI-188's retired page, for a caller with `repositories:read-config` (read with `getUpstreamRepository` while the
+  repository is disabled); any other caller sees **Disabled**, as for every disabled repository (Q-UI-840).
 - **A repository's settings page** (R-UI-087): Key and Description read-only; **Visibility** and **Upstream** read-only, each with the
   line "Managed in Admin area › Upstream registries." linked to R-UI-188 for an administrator; **Visibility** has no fold **Wiki
   visibility**, because the repository's one level covers its packages and its documentation and the repository document refuses a

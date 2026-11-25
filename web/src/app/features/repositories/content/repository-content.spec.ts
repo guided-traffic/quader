@@ -7,6 +7,8 @@ import { FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT, PACKAGE_FORMAT } from 
 import { FakeFilesApi } from '../../../api/testing/fakes-catalog';
 import { FakeVulnerabilitiesApi, sampleGrade } from '../../../api/testing/fakes-vulnerabilities';
 import { FilesApi } from '../../../api/files-api';
+import { UpstreamApi } from '../../../api/upstream-api';
+import { FakeUpstreamApi } from '../../../api/testing/fakes-upstream';
 import { SessionApi } from '../../../api/session-api';
 import { FakeSessionApi } from '../../../api/testing/fakes';
 import { FrequentPlaces } from '../../../core/frequent-places';
@@ -661,6 +663,32 @@ describe('Repository content page', () => {
     expect([...r.root.querySelectorAll('quader-page-header a')].map((a) => text(a))).not.toContain('Set up client');
     expect(text(r.root.querySelector('quader-page-header')!)).toContain('Disabled');
     await expectAccessible(r.root);
+  });
+
+  it('R-UI-190 a retired registry of upstream says No longer offered and what that means to who reads the configuration; any other reader sees Disabled', async () => {
+    const npmjs: RepoDoc = { key: 'npmjs', project: 'upstream', class: 'remote', format: 'npm', description: 'npm public registry', disabled: true };
+    const admin = await renderScreen(RepositoryContent, {
+      inputs: { project: 'upstream', key: 'npmjs' },
+      capabilities: ['repositories:read-config'],
+      setup: (get) => {
+        const catalog = get(RepositoriesApi) as FakeRepositoriesApi;
+        catalog.repositories = [...catalog.repositories, npmjs as never];
+        catalog.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT, OCI_FORMAT];
+        (get(UpstreamApi) as FakeUpstreamApi).set('npmjs', { state: 'retired' });
+      },
+    });
+    await settle(admin.fixture);
+    const header = text(admin.root.querySelector('quader-page-header')!);
+    expect(header).toContain('No longer offered');
+    expect(header).not.toContain('Disabled');
+    expect(text(admin.root.querySelector('.banner-warning > span:not(.material-icons)')!)).toBe(
+      'Quader no longer offers this registry. It serves nothing, its cached content is removed, and a virtual repository that lists it skips it.',
+    );
+    await expectAccessible(admin.root);
+
+    const reader = await open(npmjs);
+    expect(text(reader.root.querySelector('quader-page-header')!)).toContain('Disabled');
+    expect(reader.root.querySelector('.banner-warning')).toBeNull();
   });
 
   it('R-UI-052 the Settings action is offered to who can read the configuration, and leads to the settings route', async () => {

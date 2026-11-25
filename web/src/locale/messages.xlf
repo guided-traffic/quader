@@ -5050,8 +5050,8 @@
         <note category="location">src/app/features/audit/audit-log.html:326,328</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:15,16</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:175,179</note>
-        <note category="location">src/app/features/repositories/content/repository-content.html:90,92</note>
-        <note category="location">src/app/features/repositories/content/repository-content.html:255,258</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:100,102</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:265,268</note>
         <note category="location">src/app/features/repositories/content/repository-file.ts:156,158</note>
         <note category="location">src/app/features/repositories/content/repository-file.ts:202,204</note>
         <note category="location">src/app/features/repositories/repository-create.html:223,225</note>
@@ -11086,7 +11086,7 @@
         <note category="location">src/app/features/packages/install-panel.html:19,23</note>
         <note category="location">src/app/features/packages/install-panel.html:50,55</note>
         <note category="location">src/app/features/packages/package-list.html:2,5</note>
-        <note category="location">src/app/features/repositories/content/repository-content.html:23,25</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:25,27</note>
         <note category="location">src/app/features/repositories/repository-list.html:202,203</note>
       </notes>
       <segment>
@@ -19802,8 +19802,8 @@
     <unit id="switch.on">
       <notes>
         <note category="location">src/app/features/repositories/conflict-fields.ts:99</note>
-        <note category="location">src/app/features/upstream/upstream-words.ts:51</note>
-        <note category="location">src/app/features/upstream/upstream-words.ts:142</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:60</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:151</note>
         <note category="location">src/app/shared/conflict-dialog.ts:109</note>
         <note category="location">src/app/shared/signatures/anchor-table.ts:139</note>
         <note category="location">src/app/shared/ui/switch.ts:127</note>
@@ -19815,8 +19815,8 @@
     <unit id="switch.off">
       <notes>
         <note category="location">src/app/features/repositories/conflict-fields.ts:99</note>
-        <note category="location">src/app/features/upstream/upstream-words.ts:51</note>
-        <note category="location">src/app/features/upstream/upstream-words.ts:142</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:60</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:151</note>
         <note category="location">src/app/shared/conflict-dialog.ts:109</note>
         <note category="location">src/app/shared/signatures/anchor-table.ts:140</note>
         <note category="location">src/app/shared/ui/switch.ts:127</note>
@@ -20259,7 +20259,7 @@
     </unit>
     <unit id="repo.badge.disabled">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:15,18</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:17,20</note>
         <note category="location">src/app/features/repositories/repository-list.html:159,161</note>
       </notes>
       <segment>
@@ -20268,7 +20268,7 @@
     </unit>
     <unit id="repo.content.settings">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:26,28</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:28,30</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -20276,7 +20276,7 @@
     </unit>
     <unit id="repo.content.files-menu">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:35,37</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:37,39</note>
         <note category="location">src/app/features/repositories/repository-list.html:229,230</note>
       </notes>
       <segment>
@@ -20285,7 +20285,7 @@
     </unit>
     <unit id="repo.action.vulnerabilities">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:38,41</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:40,43</note>
         <note category="location">src/app/features/repositories/repository-detail.html:14,18</note>
         <note category="location">src/app/features/repositories/repository-list.html:239,242</note>
       </notes>
@@ -20295,7 +20295,7 @@
     </unit>
     <unit id="repo.content.upstream">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:74,75</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:84,85</note>
       </notes>
       <segment>
         <source>Caches</source>
@@ -20303,7 +20303,7 @@
     </unit>
     <unit id="repo.content.resolves-from">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:80,82</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:90,92</note>
       </notes>
       <segment>
         <source>Resolves from</source>
@@ -20311,7 +20311,7 @@
     </unit>
     <unit id="repo.content.oci-remote-note3">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:114,116</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:124,126</note>
       </notes>
       <segment>
         <source>Only the tags clients have pulled through this repository are listed here, those it downloaded after a client asked about them, and, in mirror mode, those a pass has fetched.</source>
@@ -20319,7 +20319,7 @@
     </unit>
     <unit id="repo.content.remote-note3">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:116,120</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:126,130</note>
       </notes>
       <segment>
         <source>Only what clients have fetched through this repository is listed here, what it downloaded after a client asked about a version, and, in mirror mode, what a pass has fetched.</source>
@@ -20327,7 +20327,7 @@
     </unit>
     <unit id="files.virtual-note">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:147,149</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:157,159</note>
       </notes>
       <segment>
         <source>A virtual repository stores only what it generates itself, such as an index; the files of its members are on their pages.</source>
@@ -20335,7 +20335,7 @@
     </unit>
     <unit id="files.raw-note">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:149,152</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:159,162</note>
       </notes>
       <segment>
         <source>The raw files of the repository, as Quader stores them.</source>
@@ -20343,7 +20343,7 @@
     </unit>
     <unit id="repo.content.folder-path">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:158,160</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:168,170</note>
       </notes>
       <segment>
         <source>Folder path</source>
@@ -20351,8 +20351,8 @@
     </unit>
     <unit id="files.root">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:162,163</note>
-        <note category="location">src/app/features/repositories/content/repository-content.html:164,166</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:172,173</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:174,176</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -20360,7 +20360,7 @@
     </unit>
     <unit id="files.download">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:210,211</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:220,221</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -20368,7 +20368,7 @@
     </unit>
     <unit id="files.delete">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:216,217</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:226,227</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -20376,7 +20376,7 @@
     </unit>
     <unit id="repo.deleting">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:228,229</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:238,239</note>
         <note category="location">src/app/features/repositories/repository-detail.html:581,582</note>
         <note category="location">src/app/features/repositories/repository-list.html:252,253</note>
       </notes>
@@ -20386,7 +20386,7 @@
     </unit>
     <unit id="repo.content.sentence.remote">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:183</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:185</note>
       </notes>
       <segment>
         <source>A cache of another registry. It lists what clients have fetched through it.</source>
@@ -20394,7 +20394,7 @@
     </unit>
     <unit id="repo.content.sentence.virtual">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:185</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:187</note>
       </notes>
       <segment>
         <source>Combines other repositories behind one address. It lists what they resolve to.</source>
@@ -20402,7 +20402,7 @@
     </unit>
     <unit id="repo.content.sentence.local2">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:187</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:189</note>
       </notes>
       <segment>
         <source>Holds what is published to it.</source>
@@ -20410,7 +20410,7 @@
     </unit>
     <unit id="repo.content.files-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:282</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:304</note>
       </notes>
       <segment>
         <source>Address for downloads by path (curl, wget)</source>
@@ -20418,7 +20418,7 @@
     </unit>
     <unit id="repo.content.copy-files-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:283</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:305</note>
       </notes>
       <segment>
         <source>Copy address for downloads by path</source>
@@ -20426,7 +20426,7 @@
     </unit>
     <unit id="repo.content.more">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:296</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:318</note>
       </notes>
       <segment>
         <source>More actions</source>
@@ -20434,7 +20434,7 @@
     </unit>
     <unit id="files.trail.between">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:342</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:364</note>
       </notes>
       <segment>
         <source>Show the folders in between</source>
@@ -20442,7 +20442,7 @@
     </unit>
     <unit id="files.delete.progress">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:399</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:421</note>
       </notes>
       <segment>
         <source>Deleting items</source>
@@ -20450,7 +20450,7 @@
     </unit>
     <unit id="files.copy-path">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:400</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:422</note>
       </notes>
       <segment>
         <source>Copy path</source>
@@ -20458,7 +20458,7 @@
     </unit>
     <unit id="files.delete.folder-many">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:469</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:491</note>
       </notes>
       <segment>
         <source>The folder holds more than <ph id="0" equiv="limit" disp="TYPE_TO_CONFIRM_ABOVE"/> items. They are deleted for good.</source>
@@ -20466,7 +20466,7 @@
     </unit>
     <unit id="files.delete.folder">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:470</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:492</note>
       </notes>
       <segment>
         <source>The folder holds <ph id="0" equiv="count" disp="count"/> items. They are deleted for good.</source>
@@ -20474,7 +20474,7 @@
     </unit>
     <unit id="files.delete.file">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:478</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:500</note>
       </notes>
       <segment>
         <source>The file is deleted for good.</source>
@@ -20482,7 +20482,7 @@
     </unit>
     <unit id="files.delete.title">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:481</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:503</note>
       </notes>
       <segment>
         <source>Delete <ph id="0" equiv="path" disp="path"/>?</source>
@@ -20490,7 +20490,7 @@
     </unit>
     <unit id="files.delete.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:483</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:505</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -20498,8 +20498,8 @@
     </unit>
     <unit id="files.deleted">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:491</note>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:501</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:513</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:523</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="path" disp="path"/> deleted.</source>
@@ -20507,7 +20507,7 @@
     </unit>
     <unit id="files.delete.failed">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:502</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:524</note>
       </notes>
       <segment>
         <source>The deletion failed. Some items may be gone.</source>
@@ -25833,7 +25833,7 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:105,106</note>
         <note category="location">src/app/features/repositories/repository-visibility.ts:43,44</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:201</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:203</note>
       </notes>
       <segment>
         <source>Visibility</source>
@@ -27538,7 +27538,7 @@
     <unit id="upstream.password.stored">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:251,253</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:669</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:671</note>
       </notes>
       <segment>
         <source>A password is stored and is not shown. Leave the field empty to keep it; type one to replace it.</source>
@@ -27691,7 +27691,7 @@
     <unit id="upstream.credential-hosts">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:637</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:314</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:316</note>
       </notes>
       <segment>
         <source>The credential is sent to <ph id="0" equiv="hosts" disp="list"/>.</source>
@@ -40750,14 +40750,6 @@
         <source>Open repository</source>
       </segment>
     </unit>
-    <unit id="wellknown.retired">
-      <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:26,28</note>
-      </notes>
-      <segment>
-        <source>Quader no longer offers this registry. Its cached content is being removed.</source>
-      </segment>
-    </unit>
     <unit id="wellknown.state.label">
       <notes>
         <note category="location">src/app/features/upstream/upstream-registry.html:42,43</note>
@@ -41106,7 +41098,7 @@
     </unit>
     <unit id="clamav.setup.without">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:192</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:194</note>
       </notes>
       <segment>
         <source>Without freshclam</source>
@@ -41114,7 +41106,7 @@
     </unit>
     <unit id="clamav.cert.address">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:193</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:195</note>
       </notes>
       <segment>
         <source>Address of the endpoint for client certificates</source>
@@ -41122,7 +41114,7 @@
     </unit>
     <unit id="clamav.cert.address.copy">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:194</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:196</note>
       </notes>
       <segment>
         <source>Copy the address of the endpoint for client certificates</source>
@@ -41130,7 +41122,7 @@
     </unit>
     <unit id="clamav.setup.copy-script">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:195</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:197</note>
       </notes>
       <segment>
         <source>Copy the script</source>
@@ -41138,7 +41130,7 @@
     </unit>
     <unit id="clamav.setup.copy-certificate">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:196</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:198</note>
       </notes>
       <segment>
         <source>Copy the setup</source>
@@ -41146,7 +41138,7 @@
     </unit>
     <unit id="clamav.address">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:197</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:199</note>
       </notes>
       <segment>
         <source>Address of the endpoint</source>
@@ -41154,7 +41146,7 @@
     </unit>
     <unit id="clamav.address.copy">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:198</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:200</note>
       </notes>
       <segment>
         <source>Copy the address of the endpoint</source>
@@ -41162,7 +41154,7 @@
     </unit>
     <unit id="clamav.setup.copy">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:199</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:201</note>
       </notes>
       <segment>
         <source>Copy the line</source>
@@ -41170,7 +41162,7 @@
     </unit>
     <unit id="clamav.setup.authenticate">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:200</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:202</note>
       </notes>
       <segment>
         <source>Authenticate</source>
@@ -41178,7 +41170,7 @@
     </unit>
     <unit id="clamav.updater.repository">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:244</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:246</note>
       </notes>
       <segment>
         <source>No updater runs: this installation takes its definitions from <ph id="0" equiv="repository" disp="repo"/>.</source>
@@ -41186,7 +41178,7 @@
     </unit>
     <unit id="clamav.updater.off">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:246</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:248</note>
       </notes>
       <segment>
         <source>The malware scan is off, so the definitions are not updated.</source>
@@ -41194,7 +41186,7 @@
     </unit>
     <unit id="clamav.updater.none">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:247</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:249</note>
       </notes>
       <segment>
         <source>No updater reports: the definitions are not updated.</source>
@@ -41202,7 +41194,7 @@
     </unit>
     <unit id="wellknown.address.held">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:512</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:514</note>
       </notes>
       <segment>
         <source>The account of this registry comes from the installation&apos;s configuration, so an address that sends it to other hosts is changed there too.</source>
@@ -41210,7 +41202,7 @@
     </unit>
     <unit id="wellknown.address.saved">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:525</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:527</note>
       </notes>
       <segment>
         <source>Address saved.</source>
@@ -41218,8 +41210,8 @@
     </unit>
     <unit id="wellknown.address.reset-done">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:541</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:559</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:543</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:561</note>
       </notes>
       <segment>
         <source>The address is Quader&apos;s again.</source>
@@ -41227,7 +41219,7 @@
     </unit>
     <unit id="wellknown.reset.title">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:552</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:554</note>
       </notes>
       <segment>
         <source>Reset the address and remove the account?</source>
@@ -41235,7 +41227,7 @@
     </unit>
     <unit id="wellknown.reset.text">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:553</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:555</note>
       </notes>
       <segment>
         <source>The account goes to <ph id="0" equiv="hosts" disp="hosts"/> only, and Quader&apos;s address uses other hosts. The reset removes it; enter it again afterwards if Quader&apos;s address needs one.</source>
@@ -41243,7 +41235,7 @@
     </unit>
     <unit id="wellknown.reset.confirm">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:554</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:556</note>
       </notes>
       <segment>
         <source>Reset and remove the account</source>
@@ -41251,7 +41243,7 @@
     </unit>
     <unit id="wellknown.account.saved">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:610</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:612</note>
       </notes>
       <segment>
         <source>Account saved.</source>
@@ -41259,7 +41251,7 @@
     </unit>
     <unit id="wellknown.account.removed">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:625</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:627</note>
       </notes>
       <segment>
         <source>Account removed.</source>
@@ -41267,7 +41259,7 @@
     </unit>
     <unit id="wellknown.listed.none">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:673</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:675</note>
       </notes>
       <segment>
         <source>No virtual repository lists it.</source>
@@ -41275,7 +41267,7 @@
     </unit>
     <unit id="wellknown.listed.one">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:674</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:676</note>
       </notes>
       <segment>
         <source>1 virtual repository lists it.</source>
@@ -41283,7 +41275,7 @@
     </unit>
     <unit id="wellknown.listed.many-one-project">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:676</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:678</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> virtual repositories in 1 project list it.</source>
@@ -41291,7 +41283,7 @@
     </unit>
     <unit id="wellknown.listed.many">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:677</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:679</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> virtual repositories in <ph id="1" equiv="projects" disp="projects"/> projects list it.</source>
@@ -41299,7 +41291,7 @@
     </unit>
     <unit id="wellknown.listed.other">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:683</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:685</note>
       </notes>
       <segment>
         <source>And 1 more virtual repository.</source>
@@ -41307,7 +41299,7 @@
     </unit>
     <unit id="wellknown.listed.others">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:684</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:686</note>
       </notes>
       <segment>
         <source>And <ph id="0" equiv="count" disp="n"/> more virtual repositories.</source>
@@ -41369,9 +41361,17 @@
         <source>Skipped: Quader no longer offers it. Remove it.</source>
       </segment>
     </unit>
+    <unit id="wellknown.retired">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:45</note>
+      </notes>
+      <segment>
+        <source>Quader no longer offers this registry. It serves nothing, its cached content is removed, and a virtual repository that lists it skips it.</source>
+      </segment>
+    </unit>
     <unit id="wellknown.member.private">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:41</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:50</note>
       </notes>
       <segment>
         <source>Private: the readers of this virtual repository do not read through it unless a global policy names them.</source>
@@ -41379,7 +41379,7 @@
     </unit>
     <unit id="wellknown.row.private">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:46</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:55</note>
       </notes>
       <segment>
         <source>Only administrators and the principals a global policy names read it; teams&apos; virtual repositories skip it.</source>
@@ -41387,7 +41387,7 @@
     </unit>
     <unit id="wellknown.switch.label">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:61</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:70</note>
       </notes>
       <segment>
         <source>Switch on <ph id="0" equiv="name" disp="r.displayName"/></source>
@@ -41395,7 +41395,7 @@
     </unit>
     <unit id="wellknown.switched.on">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:67</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:76</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="r.displayName"/> is on.</source>
@@ -41403,7 +41403,7 @@
     </unit>
     <unit id="wellknown.switched.off">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:68</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:77</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="r.displayName"/> is off.</source>
@@ -41411,7 +41411,7 @@
     </unit>
     <unit id="wellknown.level.set">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:74</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:83</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="r.displayName"/> is <ph id="1" equiv="level" disp="level"/>.</source>
@@ -41419,7 +41419,7 @@
     </unit>
     <unit id="wellknown.note.overridden">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:80</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:89</note>
       </notes>
       <segment>
         <source>Address differs from Quader&apos;s</source>
@@ -41427,7 +41427,7 @@
     </unit>
     <unit id="wellknown.note.account-removed">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:82</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:91</note>
       </notes>
       <segment>
         <source>The account was removed when Quader&apos;s address moved to another host; enter it again.</source>
@@ -41435,7 +41435,7 @@
     </unit>
     <unit id="wellknown.system.not-in-use">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:92</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:101</note>
       </notes>
       <segment>
         <source>Not in use</source>
@@ -41443,7 +41443,7 @@
     </unit>
     <unit id="wellknown.system.in-use-malware">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:94</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:103</note>
       </notes>
       <segment>
         <source>In use by the malware scan</source>
@@ -41451,7 +41451,7 @@
     </unit>
     <unit id="wellknown.system.in-use">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:95</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:104</note>
       </notes>
       <segment>
         <source>In use by the image scanning</source>
@@ -41459,7 +41459,7 @@
     </unit>
     <unit id="wellknown.system.in-use-text-clamav">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:102</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:111</note>
       </notes>
       <segment>
         <source>In use by the malware scan.</source>
@@ -41467,7 +41467,7 @@
     </unit>
     <unit id="wellknown.system.not-in-use-text-clamav">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:103</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:112</note>
       </notes>
       <segment>
         <source>Not in use by the malware scan.</source>
@@ -41475,7 +41475,7 @@
     </unit>
     <unit id="wellknown.system.in-use-text">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:106</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:115</note>
       </notes>
       <segment>
         <source>In use by the image scanning. Its visibility is always Private.</source>
@@ -41483,7 +41483,7 @@
     </unit>
     <unit id="wellknown.system.not-in-use-text">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:107</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:116</note>
       </notes>
       <segment>
         <source>Not in use by the image scanning. Its visibility is always Private.</source>
@@ -41491,7 +41491,7 @@
     </unit>
     <unit id="wellknown.system.level-clamav-on">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:119</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:128</note>
       </notes>
       <segment>
         <source>Its visibility is <ph id="0" equiv="level" disp="name"/> while ClamAV definition updates is on.</source>
@@ -41499,7 +41499,7 @@
     </unit>
     <unit id="wellknown.system.level-clamav">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:121</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:130</note>
       </notes>
       <segment>
         <source>Its visibility is Private while ClamAV definition updates is off.</source>
@@ -41507,7 +41507,7 @@
     </unit>
     <unit id="wellknown.system.level">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:123</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:132</note>
       </notes>
       <segment>
         <source>Its visibility is always Private: only Quader&apos;s image scanning reads it.</source>
@@ -41515,7 +41515,7 @@
     </unit>
     <unit id="setup.system-clamav">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:129</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:138</note>
       </notes>
       <segment>
         <source>Quader&apos;s malware scan keeps its signature database in this repository. An administrator can offer it to your ClamAV installations.</source>
@@ -41523,7 +41523,7 @@
     </unit>
     <unit id="setup.system">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:130</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:139</note>
       </notes>
       <segment>
         <source>Quader&apos;s image scanning reads its database through this repository. Clients cannot use it.</source>
@@ -41531,7 +41531,7 @@
     </unit>
     <unit id="clamav.switch">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:137</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:146</note>
       </notes>
       <segment>
         <source>ClamAV definition updates</source>
@@ -41539,7 +41539,7 @@
     </unit>
     <unit id="clamav.switched.on">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:148</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:157</note>
       </notes>
       <segment>
         <source>ClamAV definition updates is on.</source>
@@ -41547,7 +41547,7 @@
     </unit>
     <unit id="clamav.switched.off">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:149</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:158</note>
       </notes>
       <segment>
         <source>ClamAV definition updates is off.</source>
@@ -41555,7 +41555,7 @@
     </unit>
     <unit id="clamav.section.text">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:154</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:163</note>
       </notes>
       <segment>
         <source>Serves these definitions to the ClamAV installations of your company. Quader&apos;s own malware scan uses them either way.</source>
@@ -41563,7 +41563,7 @@
     </unit>
     <unit id="clamav.level.internal">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:163</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:172</note>
       </notes>
       <segment>
         <source>A ClamAV authenticates with a token in its address, which freshclam writes into its log, or with a client certificate.</source>
@@ -41571,7 +41571,7 @@
     </unit>
     <unit id="clamav.level.public">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:165</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:174</note>
       </notes>
       <segment>
         <source>Every ClamAV that reaches this address updates, without credentials.</source>
@@ -41579,7 +41579,7 @@
     </unit>
     <unit id="clamav.level.internal-no-endpoint">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:168</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:177</note>
       </notes>
       <segment>
         <source>Client certificates need an endpoint your operator sets up.</source>
@@ -41587,7 +41587,7 @@
     </unit>
     <unit id="clamav.level.private">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:169</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:178</note>
       </notes>
       <segment>
         <source>Only tokens of members. Client certificates are not admitted.</source>
@@ -41595,7 +41595,7 @@
     </unit>
     <unit id="clamav.level.lowered">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:178</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:187</note>
       </notes>
       <segment>
         <source>This installation allows no public level, so the definitions are served at Internal: every ClamAV needs a token in its address.</source>
@@ -41603,7 +41603,7 @@
     </unit>
     <unit id="wellknown.account.files.readable">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:188</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:197</note>
       </notes>
       <segment>
         <source>Readable on this server</source>
@@ -41611,7 +41611,7 @@
     </unit>
     <unit id="wellknown.account.files.missing">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:190</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:199</note>
       </notes>
       <segment>
         <source>Missing on this server</source>
@@ -41619,7 +41619,7 @@
     </unit>
     <unit id="wellknown.account.files.empty">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:192</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:201</note>
       </notes>
       <segment>
         <source>Empty on this server</source>
@@ -41627,7 +41627,7 @@
     </unit>
     <unit id="wellknown.account.files.invalid">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:194</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:203</note>
       </notes>
       <segment>
         <source>Not usable on this server</source>
@@ -41635,7 +41635,7 @@
     </unit>
     <unit id="wellknown.account.warn.missing-secret">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:208</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:217</note>
       </notes>
       <segment>
         <source>The Secret&apos;s files are missing on this server, so every request to <ph id="0" equiv="registry" disp="registry"/> fails until the Secret exists with its keys; a Secret reaches the pods within two minutes.</source>
@@ -41643,7 +41643,7 @@
     </unit>
     <unit id="wellknown.account.warn.missing">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:209</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:218</note>
       </notes>
       <segment>
         <source>The account&apos;s files are missing on this server, so every request to <ph id="0" equiv="registry" disp="registry"/> fails until they exist.</source>
@@ -41651,7 +41651,7 @@
     </unit>
     <unit id="wellknown.account.warn.empty">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:211</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:220</note>
       </notes>
       <segment>
         <source>A file of the account is empty on this server, so every request to <ph id="0" equiv="registry" disp="registry"/> fails until it holds a value.</source>
@@ -41659,7 +41659,7 @@
     </unit>
     <unit id="wellknown.account.warn.invalid">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:213</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:222</note>
       </notes>
       <segment>
         <source>A file of the account cannot be used on this server (it cannot be read, is larger than 8 KiB, holds a line break, or the username holds a colon), so every request to <ph id="0" equiv="registry" disp="registry"/> fails until it is corrected.</source>
@@ -41667,7 +41667,7 @@
     </unit>
     <unit id="wellknown.account.raises">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:219</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:228</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="registry" disp="registry"/> allows more requests with an account.</source>
@@ -41675,7 +41675,7 @@
     </unit>
     <unit id="wellknown.public.sentence">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-words.ts:229</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:238</note>
       </notes>
       <segment>
         <source>Public: anyone on the internet can pull through this installation, on its bandwidth and on its upstream allowance (Docker Hub&apos;s pull limit, for example).</source>

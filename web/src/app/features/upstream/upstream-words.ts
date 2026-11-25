@@ -36,6 +36,15 @@ export function placeholderSentence(state: MemberState): string {
   }
 }
 
+/**
+ * What a retired registry is (R-REPO-068, R-REPO-071): it answers every request `404 repository_disabled`, its cached content goes with
+ * the purge of R-REPO-067 step 5, and a virtual repository that lists it keeps it as a placeholder and skips it. Its page in the admin
+ * area and its page in the project say it under their header (R-UI-188, R-UI-190).
+ */
+export function retiredSentence(): string {
+  return $localize`:@@wellknown.retired:Quader no longer offers this registry. It serves nothing, its cached content is removed, and a virtual repository that lists it skips it.`;
+}
+
 /** The sentence under an active member whose level is private (R-UI-189). */
 export function privateMemberSentence(): string {
   return $localize`:@@wellknown.member.private:Private: the readers of this virtual repository do not read through it unless a global policy names them.`;

@@ -38,7 +38,7 @@ function seed(fake: FakeRepositoriesApi, system = true): void {
 }
 
 /** The page Repositories of the project upstream as the router builds it, with its query bound to the list's inputs. */
-async function open(url: string, options: { system?: boolean; capabilities?: string[]; clamavOn?: boolean } = {}) {
+async function open(url: string, options: { system?: boolean; capabilities?: string[]; clamavOn?: boolean; retired?: string } = {}) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -62,6 +62,8 @@ async function open(url: string, options: { system?: boolean; capabilities?: str
   if (options.clamavOn) {
     (TestBed.inject(UpstreamApi) as FakeUpstreamApi).set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT, certificateAddresses: [] }, visibility: 'public' });
   }
+  // A preset the product no longer declares (R-REPO-067 step 5): its row of the list is a disabled repository like any off one.
+  if (options.retired) (TestBed.inject(UpstreamApi) as FakeUpstreamApi).set(options.retired, { state: 'retired' });
   if (options.capabilities) (TestBed.inject(SessionApi) as FakeSessionApi).meResult = { capabilities: options.capabilities };
   await TestBed.inject(SessionStore).load();
   const harness = await RouterTestingHarness.create();
@@ -213,6 +215,21 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     expect(keys(sectionTable(section_.root))).toEqual(['clamav']);
     const localSection = await open('/projects/upstream/repositories?class=local');
     expect(text(sectionTable(localSection.root)!)).toContain('No system repository matches.');
+  });
+
+  it('R-UI-190 a retired registry says No longer offered where one switched off says Off, for who reads the configuration; a reader learns only Off', async () => {
+    const badges = (root: HTMLElement) =>
+      Object.fromEntries(
+        [...mainTable(root)!.querySelectorAll('tbody tr')].map((tr) => [
+          text(tr.querySelector('th[scope="row"] a')!),
+          [...tr.querySelectorAll('th[scope="row"] .badge')].map((b) => text(b)),
+        ]),
+      );
+    const admin = await open('/projects/upstream/repositories', { capabilities: ['repositories:read-config'], retired: 'debian' });
+    expect(badges(admin.root)).toEqual({ debian: ['No longer offered'], 'docker-hub': ['Off'], npmjs: [] });
+    await expectAccessible(admin.root);
+    const reader = await open('/projects/upstream/repositories', { capabilities: [], retired: 'debian' });
+    expect(badges(reader.root)).toEqual({ debian: ['Off'], 'docker-hub': ['Off'], npmjs: [] });
   });
 
   it('R-UI-192 a caller who reads no system repository sees no section', async () => {
