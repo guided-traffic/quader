@@ -24380,7 +24380,7 @@
         <note category="location">src/app/features/repositories/repository-detail.html:151,152</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:68</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:150,152</note>
-        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:60,61</note>
+        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:64,65</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:246,247</note>
       </notes>
       <segment>
@@ -24685,7 +24685,7 @@
         <note category="location">src/app/features/repositories/repository-detail.html:155,157</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:72</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:351,352</note>
-        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:66,67</note>
+        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:70,71</note>
         <note category="location">src/app/features/upstream/registry-presets.ts:210</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:261,262</note>
       </notes>
@@ -24697,7 +24697,7 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:160,162</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:386,388</note>
-        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:96,99</note>
+        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:100,103</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:289,291</note>
       </notes>
       <segment>
@@ -26489,7 +26489,7 @@
     <unit id="upstream.hosts.pattern">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:357,359</note>
-        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:72,74</note>
+        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:76,78</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:265,267</note>
       </notes>
       <segment>
@@ -26499,7 +26499,7 @@
     <unit id="upstream.hosts.send">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:376,378</note>
-        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:86,88</note>
+        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:90,92</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:279,280</note>
       </notes>
       <segment>
@@ -26509,7 +26509,7 @@
     <unit id="upstream.hosts.remove">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:379</note>
-        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:89</note>
+        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:93</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:283,284</note>
       </notes>
       <segment>
@@ -26519,7 +26519,7 @@
     <unit id="upstream.hosts.add">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:390,391</note>
-        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:99,101</note>
+        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:103,105</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:293,295</note>
       </notes>
       <segment>
@@ -38495,7 +38495,7 @@
     <unit id="confirm.cancel">
       <notes>
         <note category="location">src/app/features/upstream/account-again-dialog.ts:58,59</note>
-        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:111,112</note>
+        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:112,113</note>
         <note category="location">src/app/features/upstream/upstream-actions.ts:47,48</note>
         <note category="location">src/app/shared/confirm-dialog.ts:69,70</note>
       </notes>
@@ -38522,7 +38522,7 @@
     </unit>
     <unit id="presets.field.format">
       <notes>
-        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:41,42</note>
+        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:45,46</note>
       </notes>
       <segment>
         <source>Format</source>
@@ -38530,7 +38530,7 @@
     </unit>
     <unit id="presets.field.name">
       <notes>
-        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:51,52</note>
+        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:55,56</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -38538,7 +38538,7 @@
     </unit>
     <unit id="presets.field.name.hint">
       <notes>
-        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:53,54</note>
+        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:57,58</note>
       </notes>
       <segment>
         <source>The label of the button in the form of a new remote repository.</source>
@@ -38546,7 +38546,7 @@
     </unit>
     <unit id="presets.hosts.hint">
       <notes>
-        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:68,70</note>
+        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:72,74</note>
       </notes>
       <segment>
         <source> Name the registry&apos;s token service here and let it receive the credential, so that the credential a project enters reaches it. </source>
@@ -38554,7 +38554,7 @@
     </unit>
     <unit id="presets.save">
       <notes>
-        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:112,115</note>
+        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:113,116</note>
       </notes>
       <segment>
         <source>Save</source>
@@ -38562,7 +38562,7 @@
     </unit>
     <unit id="presets.edit.title">
       <notes>
-        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:154</note>
+        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:155</note>
       </notes>
       <segment>
         <source>Edit <ph id="0" equiv="name" disp="this.data.preset.displayName"/></source>
@@ -38570,7 +38570,7 @@
     </unit>
     <unit id="presets.add.title">
       <notes>
-        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:155</note>
+        <note category="location">src/app/features/upstream/registry-preset-dialog.ts:156</note>
       </notes>
       <segment>
         <source>Add a registry</source>

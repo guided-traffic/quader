@@ -12202,10 +12202,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-564 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+565 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 564 questions</summary>
+<summary>Q-UI: 565 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12773,6 +12773,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1146](spec/api-and-ui.md#q-ui-1146--the-person-searchs-list-stands-in-the-top-layer-under-its-field-not-inside-the-box-that-holds-the-field) | The person search's list stands in the top layer under its field, not inside the box that holds the field | Decided by the development agent | (a) The list is a popover (`popover="manual"`) in the top layer, fixed under its field and as wide as it, at most half the window or 24 rem high, above the field where the window has more room there; placed again on every scroll and resize while it is open | — |
 | [Q-UI-1147](spec/api-and-ui.md#q-ui-1147--a-tokens-secret-shown-once-stands-in-a-field-as-wide-as-a-token) | A token's secret shown once stands in a field as wide as a token | Decided by the development agent | (a) The field grows to 36 rem at most and shrinks with the line; Show and Copy stand beside it, under it where the line is narrower | — |
 | [Q-UI-1148](spec/api-and-ui.md#q-ui-1148--change-maximum-names-the-project-it-changes) | Change maximum names the project it changes | Decided by the development agent | (a) Where Set maximum has its field **Project**, Change maximum shows the project as the field's value, read only | — |
+| [Q-UI-1149](spec/api-and-ui.md#q-ui-1149--an-upstream-registrys-entry-says-a-refusal-once-and-a-refusal-of-the-whole-entry-at-its-top) | An upstream registry's entry says a refusal once, and a refusal of the whole entry at its top | Decided by the development agent | (a) The notice at the top of the dialog's body, as in every other dialog; under **Add host** only a refusal of the list itself (its pointer exactly) | — |
 
 </details>
 

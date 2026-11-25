@@ -34,6 +34,10 @@ interface HostRow {
   template: `
     <h2 quaderDialogTitle>{{ title }}</h2>
     <div class="dialog-body">
+      <!-- At the top, where the eye is after Save: at the form's end it stood out of sight at 390 px (Q-UI-1149). -->
+      @if (other(); as e) {
+        <quader-error-notice [error]="e" />
+      }
       <form id="registry-preset" (submit)="submit($event)" novalidate>
         <quader-select-field
           i18n-label="@@presets.field.format"
@@ -98,14 +102,11 @@ interface HostRow {
           <div>
             <button class="btn btn-default" type="button" (click)="addHost()" i18n="@@upstream.hosts.add">Add host</button>
           </div>
-          @if (error('extraHosts'); as message) {
+          @if (listError(); as message) {
             <p class="field-error">{{ message }}</p>
           }
         </div>
       </form>
-      @if (other(); as e) {
-        <quader-error-notice [error]="e" />
-      }
     </div>
     <div class="dialog-actions">
       <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@confirm.cancel">Cancel</button>
@@ -171,6 +172,15 @@ export class RegistryPresetDialog {
 
   protected error(member: string): string | null {
     const problem = problemsAt(this.failure()?.fieldErrors ?? new Map(), `${this.prefix}/${member}`)[0];
+    return problem ? fieldMessage(problem) : null;
+  }
+
+  /**
+   * A refusal of the list of hosts itself (more hosts than allowed), under **Add host**. A host's own refusal stands under its row
+   * alone: read below the list's pointer as well, it was said twice (Q-UI-1149).
+   */
+  protected listError(): string | null {
+    const problem = this.failure()?.fieldErrors.get(`${this.prefix}/extraHosts`);
     return problem ? fieldMessage(problem) : null;
   }
 

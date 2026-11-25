@@ -24583,6 +24583,24 @@ field.
 
 **Applied in the spec:** R-UI-177. Code: [maximum-dialog.ts](../../web/src/app/features/limits/maximum-dialog.ts).
 
+### Q-UI-1149 · An upstream registry's entry says a refusal once, and a refusal of the whole entry at its top
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the dialog of an entry of **Upstream registries**' well-known registries (R-UI-187) put a refusal that names no field of the
+entry (a conflict, the limit per format) after its form, where at 390 px it stood below the window's end and the person who pressed
+**Save** saw nothing happen; and it said a host's own refusal twice, under the host's row and again under **Add host**, because the
+list's message took every problem below the list's pointer.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The notice at the top of the dialog's body, as in every other dialog; under **Add host** only a refusal of the list itself (its pointer exactly) (chosen) | | Seen after Save; each sentence once, at its field | — |
+| (b) Scroll the notice into view | | The form's order kept | A dialog alone among the dialogs |
+
+**Choice:** (a).
+
+**Applied in the spec:** R-UI-187, R-UI-042. Code: [registry-preset-dialog.ts](../../web/src/app/features/upstream/registry-preset-dialog.ts).
+
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 
 Status: **Decided by the owner, 2026-11-23** (T-25, 19:30, whole: "Ich finde Projects und Repositories haben im Admin-Mneü nichts
