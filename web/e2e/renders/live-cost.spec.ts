@@ -101,6 +101,17 @@ test.describe('live cost', () => {
         calls.push(call);
         void r.sizes().then((s) => (call.bytes = s.responseBodySize));
       });
+      // The app's fetch backend ends a request when its answer is read (Angular's FetchBackend aborts on unsubscribe), which the
+      // browser reports as failed (net::ERR_ABORTED) for an answer it has not marked finished yet: the audit log's page of 100 events
+      // and the findings counted as no call, and H-1871 read as a view that did not read (Q-UI-1216). A call with an answer counts.
+      page.on('requestfailed', (r: Request) => {
+        const path = new URL(r.url()).pathname;
+        if (!/^\/(api|auth)\//.test(path)) return;
+        const at = Date.now();
+        void r.response().then((res) => {
+          if (res) calls.push({ at, method: r.method(), path: shape(r.url()), bytes: 0 });
+        });
+      });
       await page.goto(screen.path);
       if (c.running) await c.running(page);
       await page.waitForTimeout(10_000);

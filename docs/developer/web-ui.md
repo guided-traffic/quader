@@ -315,8 +315,9 @@ from two other builders.
 | The administrators' dashboard (admin): six reads every 15 s | 28, 18 KiB | 0 | about 130 | about 40 ms |
 | System status (admin): six reads every 15 s | 27, 71 KiB | 0 | about 105 | about 35 ms |
 | Storage (admin) | 17, 38 KiB | 0 | about 45 | about 15 ms |
-| Security dashboard (admin) | 11, 11 KiB | 0 | about 30 | about 10 ms |
-| Jobs, Audit log (without its own reads, H-1871), Home (admin) | 8 to 9, 1 to 25 KiB | 0 | 20 to 25 | about 8 ms |
+| Security dashboard (admin): with its findings every 30 s, counted as Q-UI-1216 counts (15, 29 KiB) | 11, 11 KiB before | 0 | about 30 | about 10 ms |
+| Jobs, Home (admin) | 8 to 9, 1 to 25 KiB | 0 | 20 to 25 | about 8 ms |
+| Audit log (admin): its page of 100 events every 30 s (measured again with the count of Q-UI-1216) | 12, 97 KiB | 0 | not measured | not measured |
 | A repository's content, a package's page, the tab Upstream, Vulnerabilities (plain) | 6 to 7, 1 to 36 KiB | 0 | 11 to 26 | 5 to 10 ms |
 | Home (plain): the banner and the mode | 2 to 4, under 1 KiB | 0 | 8 | 2 ms |
 
@@ -344,9 +345,10 @@ What it means:
 - **H-1847 stays a gap**, with these numbers: a "what changed since" answer would save the idle reads (a list's 9 statements every 30 s),
   but no idle view costs more than about 130 statements a minute; the cost that shows is a fast view that stays fast, which is
   [H-1870](../spec/api-and-ui.md#h-1870--a-versions-page-reads-every-3-s-for-as-long-as-its-scan-waits) and H-1848, not a list.
-- **Seen, not explained** ([H-1871](../spec/api-and-ui.md#h-1871--two-live-lists-were-not-read-again-while-seen-in-a-browser)): the
-  audit log (every 30 s) and the security dashboard's findings (every 60 s) sent no read during 75 s of a seen tab, in two runs, while
-  the dashboards beside them did and both lists read at once when the tab was seen again; their unit tests pass.
+- **Answered calls count** ([Q-UI-1216](../spec/api-and-ui.md#q-ui-1216--a-list-others-write-is-read-every-30-s-and-a-measured-call-is-one-that-answered)):
+  the audit log and the security dashboard's findings seemed to send no read while seen (H-1871); they read at their interval, and
+  Angular's fetch backend aborts an answered request when the client unsubscribes, which the browser reports as failed for a large
+  answer it has not marked finished. The measurement counts a call with an answer, finished or not; the findings read every 30 s now.
 
 ### Instances, one per builder
 

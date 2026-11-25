@@ -9404,9 +9404,10 @@ shows state the server changes without the viewer's own act reads it again by it
     keep the rule of the window too: a job's progress (`JobProgress`) and the tab Downloads (R-CUR-018) read nothing while the
     window is hidden and read at once when it is seen again (both read on in a hidden window until 2026-11-25: the tab Downloads
     24 reads a minute with a running queue, a running job 30);
-  - **30 s** (`LIVE_SLOW_MS`) for a list that a client's push or pull, a scan or the queue changes;
+  - **30 s** (`LIVE_SLOW_MS`) for a list that a client's push or pull, a scan, the queue or another person's act changes: a list of
+    events or findings others write never waits longer (the audit log, the security dashboard's findings, Q-UI-1216);
   - **60 s** (`LIVE_IDLE_MS`) for a page or a summary that changes in minutes: a version's page, a package's page, the tab Upstream,
-    the security dashboards, the ClamAV databases;
+    the security dashboards' summary, trend and sources, the ClamAV databases;
   - the pages of System status keep their 15 s with **Pause automatic refresh** (R-UI-164, WCAG 2.2.2), now only while seen.
 - **Back-off.** A read that fails doubles the wait before the next (3 s, 6 s, 12 s …; 30 s, 60 s …), up to 5 minutes
   (`LIVE_MAX_BACKOFF_MS`) or the view's own interval where that is longer; a read that answers restores the interval.
@@ -26354,6 +26355,30 @@ too.
 Test: `R-UI-002 R-UI-080 the creation form of an unknown format is the chooser` of
 [breadcrumbs.spec.ts](../../web/src/app/core/breadcrumbs.spec.ts) (unit, milliseconds).
 
+### Q-UI-1216 · A list others write is read every 30 s, and a measured call is one that answered
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The gap
+H-1871 of 2026-11-25: in the measurement of an open tab ([web-ui.md](../developer/web-ui.md#what-an-open-tab-asks-of-the-server-measured))
+the audit log (every 30 s) and the security dashboard's findings (every 60 s) sent no read during 60 and 75 s of a seen tab. Traced the
+same day with marks in `live` and `PagedResource.refresh`: both lists did read at their interval and the answers arrived and replaced the
+rows; the measurement counted a call by Playwright's `requestfinished` only, and Angular's fetch backend (`withFetch()`) aborts a request
+when the client unsubscribes after its answer, which the browser reports as `net::ERR_ABORTED` for an answer it has not marked finished
+yet. The two answers were the largest of the measured lists (a page of 100 events, 49 KB; 50 findings, 14 KB), so only they fell to the
+race. What did hold: the findings were read every minute, the interval of a summary, though a scan or a sync of another changes them.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The findings at the slow interval (30 s) as the audit log, by the rule that a list of events or findings others write never waits longer; the measurement counts a call that has an answer whether the browser reports it finished or aborted (chosen) | One interval, one count | R-UI-213 for every list alike; the measurement shows what the server answered | Two reads a minute of the findings' first page where it was one |
+| (b) Keep the minute for the findings | — | Half the reads | A new finding stays unseen for up to a minute on the page that exists to show it |
+| (c) Make the client not abort an answered request | A client of its own around `fetch` | The browser's log is clean | Angular's backend is the one of every request; the abort of an answered request costs nothing |
+
+**Choice:** (a). The measurement of 2026-11-25 with the count: the audit log reads `GET /api/v1/audit/events` twice a minute (97 KiB a
+minute seen, nothing hidden, at once when seen again), the security dashboard its findings twice a minute (29 KiB a minute). **Applied in
+the spec:** R-UI-213. Code: [vulnerability-report.ts](../../web/src/app/features/vulnerabilities/vulnerability-report.ts),
+[live-cost.spec.ts](../../web/e2e/renders/live-cost.spec.ts). Tests: `R-UI-213 the findings are read again every 30 s` of
+[vulnerability-report.spec.ts](../../web/src/app/features/vulnerabilities/vulnerability-report.spec.ts) and R-UI-213's case of
+[audit-log.spec.ts](../../web/src/app/features/audit/audit-log.spec.ts) (unit, fake clock, milliseconds).
+
 ## What this does not cover
 
 ### H-1964 · A read that fails alone while its page stands is read again only by the person or its next use
@@ -26470,17 +26495,6 @@ without a change on the server.
 Narrowed on 2026-11-25 by [Q-UI-1122](#q-ui-1122--a-versions-page-reads-fast-only-while-its-scan-passes-on-its-own): the page reads
 fast only while the scan's state passes on its own (an image `queued` or `scanning`, a file's malware scan `queued`); a scan that waits
 for a missing scanner or database reads every minute. What stays live is a long queue.
-
-### H-1871 · Two live lists were not read again while seen in a browser
-
-In the measurement of 2026-11-25 ([web-ui.md](../developer/web-ui.md#what-an-open-tab-asks-of-the-server-measured)) the audit log (every
-30 s, its range moved to now) and the security dashboard's findings (every 60 s) sent no read during 60 s and then 75 s of a seen tab in
-headless Chromium, while the dashboards beside them (the summary, the trend, the sources) and every other list measured did, and both
-lists read at once when the tab was seen again. Their unit tests with fake timers pass (`audit-log.spec.ts`, R-UI-213's case of the
-moving range). Not explained: whether `PagedResource.refresh` returns early for these two lists in a browser (a list still marked as
-loading), or a timer of the view is set again before it fires. Live, as far as measured, for an administrator who keeps the audit log
-or the security dashboard open: a new event or finding shows only when the tab is seen again or the page is opened again, which is
-what R-UI-213 forbids.
 
 ### H-1930 · An image's tags past the hundred its row names are not shown and not found by the filter
 
