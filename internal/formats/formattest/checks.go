@@ -740,7 +740,7 @@ func (r *run) setup() {
 		quote := func(v string) string { return v }
 		tp, err := template.New(t.ID).Option("missingkey=error").Funcs(template.FuncMap{
 			"shell": quote, "powershell": quote, "cmd": quote, "xml": quote, "schemeless": quote, "hostname": quote,
-			"trimslash": func(v string) string { return strings.TrimSuffix(v, "/") },
+			"trimslash": func(v string) string { return strings.TrimSuffix(v, "/") }, "registryhost": quote,
 		}).Parse(t.Template)
 		if err != nil {
 			r.failf("setup template %q does not parse: %v", t.ID, err)

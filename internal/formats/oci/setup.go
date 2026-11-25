@@ -6,6 +6,8 @@ import "github.com/guided-traffic/quader/internal/formats"
 const (
 	ClientDocker = "docker"
 	ClientPodman = "podman"
+	// ClientHelm pulls and installs a Helm chart the registry holds (R-OCI-042); it is offered for a chart, never for an image.
+	ClientHelm = "helm"
 )
 
 // clients are the tested clients of the format: the Docker CLI with Buildx and Podman. Kubernetes pulls with an image pull secret
@@ -14,6 +16,7 @@ func clients() []formats.Client {
 	return []formats.Client{
 		{ID: ClientDocker, DisplayName: "Docker CLI (with Buildx)", Versions: []string{"28"}},
 		{ID: ClientPodman, DisplayName: "Podman", Versions: []string{"5"}},
+		{ID: ClientHelm, DisplayName: "Helm", Versions: []string{"3"}},
 	}
 }
 
@@ -25,6 +28,14 @@ const loginTarget = `{{shell .ImagePrefix}}`
 
 // exampleImage is the image the snippets name where the reader names theirs: a name and a tag (R-API-030).
 const exampleImage = "myapp:1.0"
+
+// The examples of Helm's snippets: the release a reader names, a chart to install and the chart's directory and package to push.
+const (
+	helmRelease      = "my-release"
+	helmChartExample = "mychart"
+	helmChartDir     = "./mychart"
+	helmChartPackage = "mychart-0.1.0.tgz"
+)
 
 // The user name of a login. The token service records it and ignores it (R-OCI-004, INV-8), so the instructions use a fixed one.
 const loginUser = "quader"
@@ -59,7 +70,19 @@ func (f *Format) SetupTemplates() []formats.SetupTemplate {
   kubectl create secret generic quader-registry --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin
 {{else}}# An image pull secret holds a credential: ask for the snippet with one.
 {{end}}`
+	// Helm signs in to the registry's host, not to a path (`helm registry login`), and names a chart by an oci:// reference with its
+	// version as a flag of its own (R-OCI-042). The release name is the reader's.
+	helmLogin := `{{if .RequiresAuth}}printf '%s' "` + formats.SetupTokenRef + `" | helm registry login {{shell (registryhost .ImagePrefix)}} --username ` +
+		loginUser + ` --password-stdin
+{{else}}helm registry login {{shell (registryhost .ImagePrefix)}} --username ` + loginUser + `
+{{end}}`
+	helmInstall := "helm pull oci://" + loginTarget + "/" + formats.SetupPackageRef + "\n" +
+		"helm install " + helmRelease + " oci://" + loginTarget + "/" + formats.SetupPackageRef + "\n"
+	helmPush := "helm package " + helmChartDir + "\nhelm push " + helmChartPackage + " oci://" + loginTarget + "\n"
 	return []formats.SetupTemplate{
+		{ID: "helm.shell.configure", Client: ClientHelm, Section: "configure", Lang: "shell", Template: helmLogin},
+		{ID: "helm.install", Client: ClientHelm, Section: "install", Lang: "shell", Template: helmInstall, VersionSpec: " --version " + formats.SetupVersionRef, PackageExample: helmChartExample, Examples: []string{helmRelease}},
+		{ID: "helm.publish", Client: ClientHelm, Section: "publish", Lang: "shell", Template: helmPush, Examples: []string{helmChartDir, helmChartPackage}},
 		{ID: "docker.shell.configure", Client: ClientDocker, Section: "configure", Lang: "shell", Template: login("docker")},
 		{ID: "docker.kubernetes.configure", Client: ClientDocker, Section: "configure", Lang: "shell", Template: pullSecret},
 		{ID: "podman.shell.configure", Client: ClientPodman, Section: "configure", Lang: "shell", Template: login("podman")},

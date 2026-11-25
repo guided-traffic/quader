@@ -19,10 +19,10 @@ regenerated.
 |---|---|---|
 | **Implemented** | in the evidence record on the branch `coverage` ([this page there](https://github.com/guided-traffic/quader/blob/coverage/docs/coverage/README.md)) | measured by the pipeline from passing tests that name requirements (Q-ROAD-4, Q-ARCH-811) |
 | **MVP features covered by spec requirements** | **100%** (395 of 395) | measured from `Covers:` lines |
-| P1 features covered by spec requirements | 67.9% (349 of 514) | measured from `Covers:` lines |
-| In-scope features covered (MVP, P1, P2, Later) | 37.1% (805 of 2,167) | measured from `Covers:` lines |
+| P1 features covered by spec requirements | 68.1% (350 of 514) | measured from `Covers:` lines |
+| In-scope features covered (MVP, P1, P2, Later) | 37.2% (806 of 2,167) | measured from `Covers:` lines |
 | Catalog features | 2,239 on 60 pages | measured from catalog headings |
-| Spec requirements | 1,294 on 25 pages (721 MVP, 534 P1, 39 P2) | measured from spec headings |
+| Spec requirements | 1,295 on 25 pages (721 MVP, 535 P1, 39 P2) | measured from spec headings |
 | Requirements covering no catalog feature | 501 (`quader-only`) | measured from `Covers:` lines |
 <!-- coverage-gen:end headline -->
 
@@ -52,11 +52,11 @@ see [Honesty notes](#honesty-notes).
 | Priority | Features | Specified | Open | Specified share | Covered by an MVP requirement |
 |---|---:|---:|---:|---:|---:|
 | **MVP** | 395 | 395 | 0 | 100% | 395 |
-| **P1** | 514 | 349 | 165 | 67.9% | 68 |
+| **P1** | 514 | 350 | 164 | 68.1% | 68 |
 | **P2** | 884 | 59 | 825 | 6.7% | 12 |
 | **Later** | 374 | 2 | 372 | 0.5% | 0 |
 | **Out of scope** | 72 | 0 | 72 | 0% | 0 |
-| **Total** | 2,239 | 805 | 1,434 | 36.0% | 475 |
+| **Total** | 2,239 | 806 | 1,433 | 36.0% | 475 |
 <!-- coverage-gen:end priority -->
 
 The column *Covered by an MVP requirement* shows where the spec pulls work forward: 55 P1 features
@@ -97,7 +97,7 @@ Each page name links to that page's section of the checklist.
 | [Package formats: matrix and cross-format behavior](checklist.md#package-formats-matrix-and-cross-format-behavior-fmt) | 14 | 8 | 3 | 1 | 1 | 1 | 9 | 5 |
 | [Beyond the baseline: further formats and capabilities](checklist.md#beyond-the-baseline-further-formats-and-capabilities-beyond) | 34 | 1 | 5 | 25 | 3 | 0 | 7 | 27 |
 
-Per-format pages (38 pages, 782 features, 191 specified):
+Per-format pages (38 pages, 782 features, 192 specified):
 
 <details>
 <summary>38 format pages</summary>
@@ -107,7 +107,7 @@ Per-format pages (38 pages, 782 features, 191 specified):
 | [npm package format](checklist.md#npm-package-format-pkg-npm) | 62 | 37 | 15 | 8 | 1 | 1 | 54 | 8 |
 | [NuGet](checklist.md#nuget-pkg-nuget) | 56 | 35 | 7 | 12 | 2 | 0 | 42 | 14 |
 | [Docker image format](checklist.md#docker-image-format-pkg-docker) | 52 | 0 | 34 | 13 | 3 | 2 | 33 | 19 |
-| [OCI images and artifacts](checklist.md#oci-images-and-artifacts-pkg-oci) | 20 | 0 | 15 | 4 | 1 | 0 | 15 | 5 |
+| [OCI images and artifacts](checklist.md#oci-images-and-artifacts-pkg-oci) | 20 | 0 | 15 | 4 | 1 | 0 | 16 | 4 |
 | [Helm chart format](checklist.md#helm-chart-format-pkg-helm) | 25 | 0 | 18 | 6 | 1 | 0 | 0 | 25 |
 | [Maven package format](checklist.md#maven-package-format-pkg-maven) | 39 | 0 | 23 | 15 | 1 | 0 | 0 | 39 |
 | [PyPI package format](checklist.md#pypi-package-format-pkg-pypi) | 29 | 0 | 23 | 6 | 0 | 0 | 0 | 29 |

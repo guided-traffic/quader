@@ -64,10 +64,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 	// stage 3 (R-SIG-061 to R-SIG-078, the gate per repository) the P2 entry BEYOND-019. Several object-store connections (R-STOR-050 to
 	// R-STOR-063, stage 1 of the stored content) list the P2 entries STOR-011, STOR-012 and STOR-015. The curation of a remote repository
 	// (remote-curation.md, R-CUR-001 to R-CUR-023) lists the P1 entries SEC-007, SEC-032, SEC-035 and SEC-037 and the P2 entries SEC-029,
-	// RMT-027 and ART-044.
+	// RMT-027 and ART-044. The chart view of formats/oci.md (R-OCI-042) lists the P1 entry PKG-OCI-018.
 	want := map[string][2]int{
 		prioMVP:   {395, 395},
-		prioP1:    {514, 349},
+		prioP1:    {514, 350},
 		prioP2:    {884, 59},
 		prioLater: {374, 2},
 		prioOut:   {72, 0},
@@ -90,11 +90,11 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		if got := len(m.Features); got != 2239 {
 			t.Errorf("catalog entries: got %d, want 2239", got)
 		}
-		if got := m.countSpecified(m.Features); got != 805 {
-			t.Errorf("listed entries: got %d, want 805", got)
+		if got := m.countSpecified(m.Features); got != 806 {
+			t.Errorf("listed entries: got %d, want 806", got)
 		}
-		if got := m.countOpen(m.Features); got != 1434 {
-			t.Errorf("not listed entries: got %d, want 1434", got)
+		if got := m.countOpen(m.Features); got != 1433 {
+			t.Errorf("not listed entries: got %d, want 1433", got)
 		}
 	})
 	t.Run("E0.8 requirement counts", func(t *testing.T) {
@@ -125,8 +125,9 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1291 since a Debian package shows its relations, long description, changelog, copyright and file list (R-DEB-038, R-DEB-039,
 		// two P1 requirements of W-30).
 		// 1294 since an image's facts (R-OCI-039 to R-OCI-041, three P1 requirements of W-30, G7).
-		if len(m.Reqs) != 1294 || count[prioMVP] != 721 || count[prioP1] != 534 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1294 (721, 534, 39)",
+		// 1295 since a Helm chart's view (R-OCI-042, one P1 requirement, the owner's d4 of W-30).
+		if len(m.Reqs) != 1295 || count[prioMVP] != 721 || count[prioP1] != 535 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1295 (721, 535, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

@@ -81,11 +81,12 @@ func completeConfig(ctx context.Context, rq *formats.Request, name, digest strin
 		return
 	}
 	repo := rq.RepoRef()
-	unread, err := st.ConfigUnread(ctx, repo.ID, name, sum)
-	if err != nil || !unread {
+	mediaType, err := st.ConfigUnread(ctx, repo.ID, name, sum)
+	kind := manifest.ConfigKind(mediaType)
+	if err != nil || kind == "" {
 		return
 	}
-	raw := readConfigItem(ctx, rq, repo, BlobPath(name, digest), rows.ConfigImage)
+	raw := readConfigItem(ctx, rq, repo, BlobPath(name, digest), kind)
 	if raw == nil {
 		return
 	}

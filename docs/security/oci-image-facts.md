@@ -41,6 +41,16 @@ URL with a password in a label). This page says how that content is read, who se
   to read leaves the row unread without a log line.
 - The answer of the version page carries `Cache-Control: no-store` (R-API-029), so a shared cache does not keep a configuration.
 
+## A Helm chart
+
+A chart's Chart.yaml is its config blob and is read, decided and shown as an image's configuration is (R-OCI-042). Its README and its
+`values.yaml` are read on demand from the chart's package, a gzip-compressed tar a pusher wrote, by the bounded reader of untrusted
+archives ([chart.go](../../internal/formats/oci/chart/chart.go), R-ARCH-028): nothing is unpacked to disk, at most 10,000 entries, 256
+MiB declared and 256 KiB read, each file cut at 64 KiB, a link entry never followed and one that points out of the archive refusing the
+read; a file below the chart's root is never taken for its README. The README is wiki content (R-AUTHZ-034), rendered and sanitized by
+the README renderer as every format's; the values are content of the package's blob, shown as text to a caller who may read that blob.
+The package is read only where the repository holds it.
+
 ## Tests
 
 - `TestR_OCI_040_RefusesWhatTwoReadersCouldReadDifferently`, `…_BoundsWhatItKeeps` (unit, `internal/formats/oci/manifest`): the strict

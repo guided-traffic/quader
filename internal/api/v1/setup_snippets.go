@@ -174,13 +174,14 @@ func runTemplate(t formats.SetupTemplate, d formats.SetupData) (string, error) {
 // parseSetupTemplate parses a template with the quoting functions.
 func parseSetupTemplate(t formats.SetupTemplate) (*template.Template, error) {
 	return template.New(t.ID).Option("missingkey=error").Funcs(template.FuncMap{
-		"shell":      shellQuote,
-		"powershell": powershellQuote,
-		"cmd":        cmdQuote,
-		"xml":        html.EscapeString,
-		"schemeless": schemeless,
-		"hostname":   hostname,
-		"trimslash":  trimSlash,
+		"shell":        shellQuote,
+		"powershell":   powershellQuote,
+		"cmd":          cmdQuote,
+		"xml":          html.EscapeString,
+		"schemeless":   schemeless,
+		"hostname":     hostname,
+		"trimslash":    trimSlash,
+		"registryhost": registryHost,
 	}).Parse(t.Template)
 }
 
@@ -263,6 +264,13 @@ func schemeless(u string) string {
 // trimSlash drops one trailing slash of a URL: the form of a client that joins the base and a file name with a slash of its own
 // (freshclam's PrivateMirror, formats/clamav.md R-CLAMAV-006).
 func trimSlash(u string) string { return strings.TrimSuffix(u, "/") }
+
+// registryHost is the host and port of an image reference's start ("<host>/<project>/<repo>"): what a client that signs in to a
+// registry host and not to a path takes (`helm registry login`, formats/oci.md R-OCI-042).
+func registryHost(prefix string) string {
+	host, _, _ := strings.Cut(prefix, "/")
+	return host
+}
 
 // hostname is the host name of a URL without its port, brackets or path: the key of a client that binds a credential to a host
 // name alone (a ~/.netrc line, R-ANS-025, Q-ANS-48). A value that is not an http or https URL with a host is returned as it is.

@@ -143,7 +143,8 @@ func (viewAdapter) Describe(ctx context.Context, ports formats.DataPorts, vs []f
 			out[formats.VersionID(tv.VersionID)] = formats.ViewData{Metadata: tagMetadata(tv)}
 		}
 	}
-	full := want.Has(formats.ViewDetails | formats.ViewFacts)
+	// The blobs and the configurations: for the version's page, and for the README of a Helm chart, read from its content layer.
+	full := want.Has(formats.ViewDetails|formats.ViewFacts) || want.Has(formats.ViewReadme)
 	if !want.Has(formats.ViewSummary) && !full {
 		return out, nil
 	}
@@ -155,6 +156,7 @@ func (viewAdapter) Describe(ctx context.Context, ports formats.DataPorts, vs []f
 		id := formats.VersionID(tf.VersionID)
 		d, held := out[id]
 		describeFacts(&d, names[tf.VersionID], tf, want)
+		chartDocs(ctx, st, &d, names[tf.VersionID], tf, want)
 		// A summary of an image without a description is no data: the list shows none.
 		if held || d.Description != "" {
 			out[id] = d

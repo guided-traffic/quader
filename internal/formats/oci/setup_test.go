@@ -14,6 +14,7 @@ func renderSetup(t *testing.T, tpl formats.SetupTemplate, d formats.SetupData) s
 	id := func(v string) string { return v }
 	tm, err := template.New(tpl.ID).Option("missingkey=error").Funcs(template.FuncMap{
 		"shell": id, "powershell": id, "cmd": id, "xml": id, "schemeless": id,
+		"registryhost": func(v string) string { h, _, _ := strings.Cut(v, "/"); return h },
 	}).Parse(tpl.Template)
 	if err != nil {
 		t.Fatalf("%s: %v", tpl.ID, err)
@@ -51,7 +52,8 @@ func TestTheSnippetsNameTheImagePrefixAndNoCredential(t *testing.T) {
 		bySection[tpl.Client][tpl.Section]++
 		for _, auth := range []bool{true, false} {
 			out := renderSetup(t, tpl, setupData(auth))
-			if !strings.Contains(out, prefix) && (tpl.ID != "docker.kubernetes.configure" || auth) {
+			// Helm signs in to the host alone (R-OCI-042).
+			if !strings.Contains(out, prefix) && (tpl.ID != "docker.kubernetes.configure" || auth) && tpl.ID != "helm.shell.configure" {
 				t.Errorf("%s: no image prefix in\n%s", tpl.ID, out)
 			}
 			if strings.Contains(out, "/v2") || strings.Contains(out, "https://") || strings.Contains(out, "<no value>") || strings.Contains(out, "{{") {
@@ -128,10 +130,38 @@ func TestTheKubernetesSecretIsKeyedByTheImagePrefixAndKeepsTheTokenOffTheCommand
 	t.Fatal("no Kubernetes template")
 }
 
+// R-OCI-042: Helm signs in to the registry's host and names a chart by an oci:// reference, its version as a flag; the token reaches
+// Helm through standard input only.
+func TestR_OCI_042_HelmSignsInToTheHostAndPullsByAnOCIReference(t *testing.T) {
+	var seen int
+	for _, tpl := range New().SetupTemplates() {
+		if tpl.Client != ClientHelm {
+			continue
+		}
+		seen++
+		out := renderSetup(t, tpl, setupData(true))
+		switch tpl.Section {
+		case "configure":
+			if !strings.Contains(out, "helm registry login quader.example.com --username quader --password-stdin") {
+				t.Errorf("login: %s", out)
+			}
+		case "install":
+			if tpl.VersionSpec != " --version "+formats.SetupVersionRef ||
+				!strings.Contains(out, "helm pull oci://quader.example.com/web/docker-local/"+formats.SetupPackageRef) ||
+				!strings.Contains(out, "helm install my-release oci://quader.example.com/web/docker-local/"+formats.SetupPackageRef) {
+				t.Errorf("install: %q %s", tpl.VersionSpec, out)
+			}
+		}
+	}
+	if seen != 3 {
+		t.Errorf("%d Helm templates, want configure, install and publish", seen)
+	}
+}
+
 // Mechanism of R-OCI-030, not a proof of its criteria: its criterion needs the e2e run of every rendered snippet.
 func TestTheInstallSnippetPlacesTheImageAndItsTag(t *testing.T) {
 	for _, tpl := range New().SetupTemplates() {
-		if tpl.Section != "install" {
+		if tpl.Section != "install" || tpl.Client == ClientHelm {
 			continue
 		}
 		if tpl.VersionSpec != ":"+formats.SetupVersionRef || !strings.Contains(tpl.Template, formats.SetupPackageRef) {

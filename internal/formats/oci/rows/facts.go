@@ -32,6 +32,8 @@ type ImageBlobs struct {
 const (
 	// ConfigImage is an image's configuration (the OCI image configuration and Docker's container image).
 	ConfigImage = "image"
+	// ConfigChart is a Helm chart's configuration: its Chart.yaml as JSON (formats/oci.md R-OCI-042).
+	ConfigChart = "chart"
 )
 
 // The reasons a configuration was not read.
@@ -43,13 +45,62 @@ const (
 	UnreadableInvalid = "invalid"
 )
 
-// ConfigFacts is what the reader read of a manifest's configuration. Kind says which reader; Unreadable why it read nothing. A Helm
-// chart's configuration (Chart.yaml's fields) is a kind of its own beside the image's once charts are shown (formats/oci.md, D4 of
-// the working paper W-30).
+// ConfigFacts is what the reader read of a manifest's configuration. Kind says which reader; Unreadable why it read nothing. Image is
+// set for an image's configuration, Chart for a Helm chart's (formats/oci.md R-OCI-042).
 type ConfigFacts struct {
 	Kind       string       `json:"kind"`
 	Unreadable string       `json:"unreadable,omitempty"`
 	Image      *ImageConfig `json:"image,omitempty"`
+	Chart      *ChartConfig `json:"chart,omitempty"`
+}
+
+// ChartConfig is what a Helm chart's Chart.yaml says, as `helm show chart` shows it. Every string is the chart's text, bounded.
+type ChartConfig struct {
+	APIVersion   string            `json:"apiVersion,omitempty"`
+	Name         string            `json:"name,omitempty"`
+	Version      string            `json:"version,omitempty"`
+	AppVersion   string            `json:"appVersion,omitempty"`
+	Description  string            `json:"description,omitempty"`
+	Type         string            `json:"type,omitempty"`
+	KubeVersion  string            `json:"kubeVersion,omitempty"`
+	Home         string            `json:"home,omitempty"`
+	Icon         string            `json:"icon,omitempty"`
+	Deprecated   bool              `json:"deprecated,omitempty"`
+	Keywords     []string          `json:"keywords,omitempty"`
+	Sources      []string          `json:"sources,omitempty"`
+	Maintainers  []ChartMaintainer `json:"maintainers,omitempty"`
+	Dependencies []ChartDependency `json:"dependencies,omitempty"`
+	// Annotations are sorted by key.
+	Annotations []Var    `json:"annotations,omitempty"`
+	Omitted     *Omitted `json:"omitted,omitempty"`
+}
+
+// ChartMaintainer is a maintainer of a chart.
+type ChartMaintainer struct {
+	Name  string `json:"name,omitempty"`
+	Email string `json:"email,omitempty"`
+	URL   string `json:"url,omitempty"`
+}
+
+// ChartDependency is a chart a chart depends on: its name, its version range and the repository it comes from.
+type ChartDependency struct {
+	Name       string `json:"name,omitempty"`
+	Version    string `json:"version,omitempty"`
+	Repository string `json:"repository,omitempty"`
+	Condition  string `json:"condition,omitempty"`
+	Alias      string `json:"alias,omitempty"`
+}
+
+// ChartFiles are the documentation a chart's content layer carries at its root (formats/oci.md R-OCI-042): its README and its
+// values.yaml, each bounded; Cut says the file was longer than the bound. Unreadable says why the archive was not read.
+type ChartFiles struct {
+	Readme     string
+	ReadmeName string
+	ReadmeCut  bool
+	Values     string
+	ValuesCut  bool
+	HasValues  bool
+	Unreadable string
 }
 
 // ImageConfig is what an image's configuration tells about how it runs and how it was built, as `docker inspect` and `docker history`
@@ -124,6 +175,8 @@ type Omitted struct {
 // order.
 type TagFacts struct {
 	VersionID int64
+	// RepoID is the repository that holds the tag.
+	RepoID int64
 	Image     ManifestFacts
 	Children  []ManifestFacts
 }

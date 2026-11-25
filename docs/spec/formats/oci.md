@@ -1129,7 +1129,8 @@ Acceptance criteria:
 Priority: **P1** · Covers: PKG-DOCKER-011, PKG-DOCKER-013, PKG-DOCKER-015, PKG-DOCKER-046, PKG-OCI-013, PKG-OCI-014, PKG-OCI-019
 
 - Clients registered (`Descriptor.Clients`, FMT-002): `docker` (Docker CLI with Buildx) and `podman`, each with the versions
-  the e2e suite pins (R-OCI-035).
+  the e2e suite pins (R-OCI-035), and `helm` for the charts the format holds (R-OCI-042; no e2e leg runs Helm, its version is the
+  major the snippets are written for).
 - Setup templates (R-API-030; no credential field, the token only by reference): `configure` (`docker login <host> -u <user>
   --password-stdin` reading `$QUADER_TOKEN`; `podman login` the same), `install` (`docker pull <image prefix>/<name>:<tag>`),
   `publish` (`docker tag` and `docker push`; `podman push`; a multi-platform `docker buildx build --push`), and a Kubernetes
@@ -1613,7 +1614,7 @@ T-16; "F4" means it stays in FULL.md F4 for a later phase; "Not offered" means Q
 | PKG-OCI-015 BuildKit and registry caches | F4 | Deferred |
 | PKG-OCI-016 WebAssembly modules | F4 | Deferred |
 | PKG-OCI-017 ORAS | F4 | Deferred |
-| PKG-OCI-018 Helm charts in OCI repositories | F5 | Deferred |
+| PKG-OCI-018 Helm charts in OCI repositories | Built read-only: a chart's facts, README, values and Helm's commands; a Helm repository format (`index.yaml`) is not offered | R-OCI-042 |
 | PKG-OCI-019 Setup instructions | Built for Docker and Podman; the other clients F4 | R-OCI-030 |
 | PKG-OCI-020 Scanning limited to images | [vulnerability-scanning.md](../vulnerability-scanning.md#images) R-VULN-033 | Built |
 
@@ -1796,8 +1797,7 @@ Priority: **P1** · Covers: quader-only
   (`<name>/_tags/<tag>`) is no longer shown there.
 - **The kind of artifact** is a word, with the media type as its title: an image, a Helm chart, a signature, an SBOM, an attestation or
   another artifact (`metadata.kind`: `image`, `helm-chart`, `signature`, `sbom`, `attestation`, `other`), read from the media type and
-  the artifact type (the manifest's own, else its config's). A Helm chart's facts (`Chart.yaml`, its README, `values.yaml`) are not read:
-  the owner's decision D4 of the working paper W-30 is open, and the reader of R-OCI-040 takes a chart's kind beside the image's.
+  the artifact type (the manifest's own, else its config's). A Helm chart's facts, README and values are R-OCI-042.
 
 Acceptance criteria:
 
@@ -1807,6 +1807,55 @@ Acceptance criteria:
   version's `aliases`.
 - Web unit (`version-metadata.spec.ts`, milliseconds): the files, the kind and the facts of an image read from the metadata.
 - Renders (`package-version-oci-*`): the head with the other tags, the panel's digest line, the tab Files and the details per platform.
+
+### R-OCI-042 · A Helm chart's facts, README and values, and Helm's commands
+Priority: **P1** · Covers: PKG-OCI-018
+
+The owner's decision of 2026-11-25 ([Q-OCI-275](#q-oci-275--a-helm-chart-in-an-oci-repository-shows-its-facts-its-readme-and-its-values-read-only)):
+a Helm chart an OCI repository holds is shown as a chart, read-only, with Helm's commands. There is no Helm repository format (no
+`index.yaml`), and a chart is stored, served and removed as every OCI artifact is.
+
+- **What a chart is.** A manifest whose config is of the media type `application/vnd.cncf.helm.config.v1+json` and whose layer is the
+  chart's package (`application/vnd.cncf.helm.chart.content.v1.tar+gzip`), as `helm push` writes it. Its kind is `helm-chart`, the word
+  "Helm chart" (R-OCI-041). A provenance layer (`…provenance.v1.prov`) is listed among its files and not read.
+- **Its facts** are its Chart.yaml, which `helm push` stores as the config blob in JSON, read at the push and at a remote's first fetch
+  of the config by the reader of R-OCI-040 (the same strict reading, the same bounds of a string and of the kept JSON; at most 64
+  keywords, 32 sources, 64 maintainers, 128 dependencies and 128 annotations): the name, the version, the app version, the description,
+  the type, the Kubernetes version, the keywords, the home, the sources, the maintainers, the dependencies (name, version range,
+  repository, condition, alias), the annotations and `deprecated`. They are `metadata.configs[<digest>].chart`, content of the config blob
+  as an image's configuration is (Q-OCI-273). The description, the home, the first source and the licence the annotation
+  `artifacthub.io/license` names fill `labeled` for what the manifest's annotations leave (R-OCI-039: Helm writes the title, the version,
+  the description and the address as annotations already); the version page shows them where every format shows them, the
+  dependencies as a list, and a deprecated chart under the mark every format's deprecated version carries ("Deprecated.").
+- **Its README and its `values.yaml`** are read on demand from the content layer the repository holds, never unpacked to disk, by the
+  bounded reader of untrusted archives (R-ARCH-028, `internal/formats/oci/chart`): at most 10,000 entries, 256 MiB declared and 256 KiB
+  read, the first `README.md` (else `README.markdown`, `README.txt`, `README`) and the first `values.yaml` at the chart's root only (a
+  subchart's or a template folder's are not the chart's), each cut at 64 KiB and marked; a link entry is never followed (one that
+  points out of the archive refuses the read). The README is wiki content (R-AUTHZ-034): `hasReadme` and the README operation
+  (R-API-029), rendered and sanitized by the README renderer as every format's. The values are `metadata.chartFiles` (`values`,
+  `valuesCut`, `hasValues`), content of the layer (Q-OCI-273), shown on a tab Values in the code window of the snippets, which highlights
+  YAML already (`code-syntax.ts`). A layer the repository does not hold (a
+  remote's that no client fetched) gives neither. Each view of a chart's page reads its package once.
+- **The page leads with its documentation** ([Q-OCI-276](#q-oci-276--a-charts-version-page-opens-on-its-readme-an-images-keeps-its-page)):
+  a chart's version page opens on its tab README where it has one; an image's page is unchanged, and the repository's list is unchanged.
+- **Helm's commands.** The format registers the client `helm` (`Descriptor.Clients`, R-OCI-030) with the templates `configure`
+  (`helm registry login <host>` reading `$QUADER_TOKEN` on standard input, `--username quader`; interactive where the repository is open to
+  anonymous readers), `install` (`helm pull oci://<image prefix>/<name> --version <version>` and `helm install my-release oci://<image
+  prefix>/<name> --version <version>`) and `publish` (`helm package ./mychart` and `helm push mychart-0.1.0.tgz oci://<image prefix>`). The
+  host of the login is the image prefix's host and port (the template function `registryhost`): Helm signs in to a host, not to a path.
+  A chart's commands offer Helm alone, an image's never (`clientsOfKind` of the web application); **Set up client** lists Helm beside
+  Docker and Podman.
+
+Acceptance criteria:
+
+- Unit (`internal/formats/oci/manifest`, milliseconds, `TestR_OCI_042_ReadsAChartsConfiguration`): the facts, the bound of the
+  dependencies, a value of a type Helm refuses.
+- Unit (`internal/formats/oci/chart`, milliseconds): the README and the values at the root, a subchart's README and a template folder's
+  not, a link entry not followed, a link out of the archive refusing the read, a file over the bound cut, no archive.
+- Unit (`internal/formats/oci`, milliseconds, `TestR_OCI_042_HelmSignsInToTheHostAndPullsByAnOCIReference`).
+- Integration (area `oci`, `TestR_OCI_042_AChartsPageShowsItsFactsReadmeAndValues`, about 2 s): a chart pushed as Helm's client pushes
+  one (in process, no `helm` binary) is `helm-chart` with its facts, its README rendered and its values.
+- Renders (`package-version-oci-chart*`): the README with a table and code, values of 200 lines, the dependencies, a deprecated chart.
 
 ## Deferred
 
@@ -1823,7 +1872,6 @@ Acceptance criteria:
 | PKG-OCI-006 (extra tags in the query) | P2 | `PUT …/manifests/<digest>?tag=…`; answered 400 `UNSUPPORTED` until then. |
 | PKG-OCI-014 (build caches), PKG-OCI-015 | P1 | BuildKit registry caches as a tested client. |
 | PKG-OCI-016, PKG-OCI-017 | P1 | wasm-to-oci and ORAS as tested clients; the registry side is content-agnostic already. |
-| PKG-OCI-018 | P1 | Helm charts in OCI repositories (F5). |
 | Cosign beyond referrers | P1 | Verification and display of Notation, Sigstore and the older cosign layout are stage 1 of [signatures.md](../signatures.md) (R-SIG-023 to R-SIG-027), built; a policy that refuses is stage 3, built too. |
 | OCI on endpoints with exposure rules | P1 | The format has no exposure adapter yet, so an endpoint with `exposure: rules` does not serve it (R-EP-018, Q-OCI-23). |
 | OCI through the Bastion | — | *Superseded on 2026-11-22:* a Bastion serves the registry root and its token flow ([bastion.md](../bastion.md#r-bas-051--the-registry-root-at-a-bastion) R-BAS-051 to R-BAS-054, MVP; built). |
@@ -4386,6 +4434,39 @@ Status: **Decided by the development agent** on 2026-11-25 — selected from the
 image. The development agent would revisit (c) if the owner finds images of his that carry only the older keys. **Applied in the spec:**
 R-OCI-039. Code: `annotationFacts`, `labelFacts` in [view_facts.go](../../../internal/formats/oci/view_facts.go).
 
+### Q-OCI-275 · A Helm chart in an OCI repository shows its facts, its README and its values, read-only
+
+Status: **Decided by the owner on 2026-11-25** (working paper W-30, d4 = b; his words: "überall Favorit. Genau so umsetzen wie dort im
+Fav beschrieben").
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Not now | Charts stay artifacts of an unknown kind | Nothing to build | A chart's Chart.yaml, README and values are always in it: the owner's rule wants documentation that is regularly present shown |
+| (b) Show a chart's facts, README and values in the OCI repository, read-only, with the `helm` command in the panel; no Helm repository format (chosen) | A chart is a kind of OCI artifact with a page of its own | Content Quader holds is shown as what it is; no new format | A chart pushed to a classic Helm repository is not served; `helm repo add` has nothing to add |
+| (c) A Helm repository format (`index.yaml`) | A new format | Classic Helm clients | A new format, excluded while the existing ones are finished ("quality before quantity", 2026-11-23) |
+
+**Choice:** (b). **Applied in the spec:** R-OCI-042, R-OCI-041, R-OCI-030, [Catalog coverage](#catalog-coverage). Code:
+[chart.go](../../../internal/formats/oci/manifest/chart.go), [chart/](../../../internal/formats/oci/chart/chart.go), `chartDocs` in
+[view_facts.go](../../../internal/formats/oci/view_facts.go), [setup.go](../../../internal/formats/oci/setup.go).
+
+### Q-OCI-276 · A chart's version page opens on its README; an image's keeps its page
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's rule puts a format's regularly present documentation first. A chart is a kind of artifact inside the format OCI,
+whose package list and versions are an image's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The version page of a chart opens on its tab README where it has one, the page of an image as before, the lists unchanged (chosen) | One switch by kind on one page | The documentation first where there is one; nothing an image's reader sees changes | A chart's README is a tab away from the repository's list |
+| (b) Every OCI package leads with documentation | The format's switch | One rule per format | An image has no README: its readers would land on an empty first tab |
+| (c) A chart's README in the repository's list | The list shows documentation | Fewest clicks | A list of mixed kinds; the list is no documentation page |
+
+**Choice:** (a). **Rationale:** the switch belongs to the kind, not the format, and the page is where the kind is known. The
+development agent would revisit it when the version pages of every format share one way to lead (the package that unifies them).
+**Applied in the spec:** R-OCI-042. Code: the order of `announcedTabs` in `package-version.ts`, whose first tab the page opens on: the
+README stands before Files, and a chart is not scanned, so nothing stands before it.
+
 ## What this does not cover
 
 ### H-579 · A holder of the stored-secret key ring can mint registry tokens
@@ -4612,3 +4693,19 @@ pulls them through Quader. Live since R-OCI-040; real for the images of a reposi
 The layers and the configuration are written with a manifest's row (migration 00132); a row stored before has neither, and no job fills
 them (pre-alpha: no data migration). A push of the same manifest again completes a local row, a fetch of an evicted remote entry and of its
 config a remote's. Its annotations' facts show at once. Live on an installation that holds images from before R-OCI-040.
+
+### H-2115 · A chart's README and values are read from its package on every view of its page
+
+R-OCI-042 reads a chart's package from the object store each time its version page or its README is asked for, and keeps nothing. A
+package is a few KiB to a few MiB, bounded by the reader at 256 MiB declared. Live since R-OCI-042; real for a page of a large chart that
+many readers open at once, which reads the package once per view.
+
+### H-2116 · The command menu of a repository's list offers Docker and Podman for a chart
+
+The list of a repository's versions does not carry an artifact's kind, so its command menu offers an image's clients for a chart's
+version; the version page's panel offers Helm alone. Live since R-OCI-042; real for a reader who copies a command from the list.
+
+### H-2117 · A deprecated chart is marked on its page and not in the lists
+
+A chart's `deprecated` stands on its version page with the mark every format's deprecated version carries; no list, search or Upstream
+tab marks it, as no format's does yet (the package that unifies deprecation, W-30 G4). Live since R-OCI-042.

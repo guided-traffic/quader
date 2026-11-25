@@ -1,11 +1,13 @@
 package oci
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"strings"
 
 	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci/chart"
 	"github.com/guided-traffic/quader/internal/formats/oci/manifest"
 	"github.com/guided-traffic/quader/internal/formats/oci/rows"
 )
@@ -48,6 +50,8 @@ const maxFactBytes = 4 << 10
 const (
 	memberConfigs = "configs"
 	memberLabeled = "labeled"
+	// memberChartFiles is a Helm chart's values read from its content layer (R-OCI-042).
+	memberChartFiles = "chartFiles"
 )
 
 // configNotRead is the reason of a configuration whose blob no fetch read yet (a remote's manifest is fetched before its config).
@@ -127,12 +131,20 @@ func labelFacts(tf rows.TagFacts, given map[string]string) map[string]string {
 		src = p
 	}
 	cf := imageConfigOf(src.ConfigFacts)
-	if cf == nil || cf.Image == nil {
+	if cf == nil {
 		return nil
 	}
-	labels := make(map[string]string, len(cf.Image.Labels))
-	for _, l := range cf.Image.Labels {
-		labels[l.Name] = l.Value
+	var labels map[string]string
+	switch {
+	case cf.Image != nil:
+		labels = make(map[string]string, len(cf.Image.Labels))
+		for _, l := range cf.Image.Labels {
+			labels[l.Name] = l.Value
+		}
+	case cf.Chart != nil:
+		labels = chartLabels(cf.Chart)
+	default:
+		return nil
 	}
 	out := map[string]string{}
 	for _, k := range imageKeys() {
@@ -144,6 +156,88 @@ func labelFacts(tf rows.TagFacts, given map[string]string) map[string]string {
 		}
 	}
 	return out
+}
+
+// chartLabels are a Helm chart's facts under the keys of the image specification (R-OCI-042): Chart.yaml's description, home and
+// first source, and the licence its annotation `artifacthub.io/license` names, which Artifact Hub's convention puts there.
+func chartLabels(c *rows.ChartConfig) map[string]string {
+	out := map[string]string{
+		"org.opencontainers.image.description": c.Description,
+		"org.opencontainers.image.url":         c.Home,
+		"org.opencontainers.image.title":       c.Name,
+	}
+	if len(c.Sources) > 0 {
+		out["org.opencontainers.image.source"] = c.Sources[0]
+	}
+	for _, a := range c.Annotations {
+		if a.Name == "artifacthub.io/license" {
+			out["org.opencontainers.image.licenses"] = a.Value
+		}
+	}
+	return out
+}
+
+// chartLayer is the content layer of a Helm chart's manifest: its digest and size; ok false for a manifest that names none.
+func chartLayer(blobs []byte) (rows.BlobDescriptor, bool) {
+	var b rows.ImageBlobs
+	if len(blobs) == 0 || json.Unmarshal(blobs, &b) != nil || b.Config == nil || b.Config.MediaType != manifest.MediaTypeHelmConfig {
+		return rows.BlobDescriptor{}, false
+	}
+	for _, l := range b.Layers {
+		if l.MediaType == manifest.MediaTypeHelmContent {
+			return l, true
+		}
+	}
+	return rows.BlobDescriptor{}, false
+}
+
+// chartDocs adds a Helm chart's README and values (R-OCI-042), read on demand from its content layer when the repository holds it:
+// with facts, whether it has a README (wiki content, as every format's README) and its values (content of the layer, with the layer's
+// path); with the README, its text and its file's name. A layer the repository does not hold (a remote's that no client fetched), or
+// one that cannot be read, gives neither.
+func chartDocs(ctx context.Context, st Store, d *formats.ViewData, name string, tf rows.TagFacts, want formats.ViewFields) {
+	layer, ok := chartLayer(tf.Image.Blobs)
+	if !ok || (!want.Has(formats.ViewFacts) && !want.Has(formats.ViewReadme)) {
+		return
+	}
+	sum, ok := manifest.ParseDigest(layer.Digest)
+	path := BlobPath(name, layer.Digest)
+	if !ok {
+		return
+	}
+	held, err := st.ExistingItems(ctx, nil, tf.RepoID, []string{path})
+	if err != nil || len(held) == 0 {
+		return
+	}
+	body, err := st.OpenBlob(ctx, sum, layer.Size)
+	if err != nil {
+		return
+	}
+	files := chart.ReadFiles(ctx, body)
+	_ = body.Close()
+	d.HasReadme = files.Readme != ""
+	if want.Has(formats.ViewReadme) {
+		d.Readme, d.ReadmeFile = files.Readme, files.ReadmeName
+	}
+	if !want.Has(formats.ViewFacts) {
+		return
+	}
+	if d.Metadata == nil {
+		d.Metadata = map[string]any{}
+	}
+	docs := map[string]any{"hasValues": files.HasValues}
+	if files.HasValues {
+		docs["values"], docs["valuesCut"] = files.Values, files.ValuesCut
+	}
+	if files.ReadmeCut {
+		docs["readmeCut"] = true
+	}
+	if files.Unreadable != "" {
+		docs["unreadable"] = files.Unreadable
+	}
+	d.Metadata[memberChartFiles] = docs
+	d.ContentMetadata = append(d.ContentMetadata, memberChartFiles)
+	d.ContentPaths = append(d.ContentPaths, path)
 }
 
 // artifactKind is the word for what a manifest holds (R-OCI-041): an image, a Helm chart, a signature, an SBOM, an attestation, or

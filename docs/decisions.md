@@ -11371,10 +11371,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OCI
 
-126 questions on [spec/formats/oci.md](spec/formats/oci.md).
+128 questions on [spec/formats/oci.md](spec/formats/oci.md).
 
 <details>
-<summary>Q-OCI: 126 questions</summary>
+<summary>Q-OCI: 128 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11504,6 +11504,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OCI-272](spec/formats/oci.md#q-oci-272--an-images-configuration-is-read-by-the-strict-reader-of-the-manifests-within-bounds-of-its-own) | An image's configuration is read by the strict reader of the manifests, within bounds of its own | Decided by the development agent on 2026-11-25 | (a), with the bounds: the blob at most 1 MiB, 16 levels and 200,000 values; a string at most 4 KiB, cut at a character and marked; 256 environment entries, 256 labels, 512 history lines, 64 arguments of a command, 256 ports or volumes; 160 KiB of kept JSON in the order scalars, commands, ports, labels, environment, history, and what does not fit is counted as left out; a NUL becomes U+FFFD (jsonb holds none). | — |
 | [Q-OCI-273](spec/formats/oci.md#q-oci-273--an-images-configuration-and-labels-go-to-a-caller-who-may-read-its-config-blob) | An image's configuration and labels go to a caller who may read its config blob | Decided by the development agent on 2026-11-25 | (a) The view names the members it read from a file's content and the paths of those files (`ContentMetadata`, `ContentPaths`); the service drops the members for a caller the read scope refuses one of the paths (`authz.PathReader.MayReadPath`, the protocol's decision of that read) | [ADR-284](#adr-284--a-view-adapter-names-what-it-read-from-a-files-content-and-only-the-versions-page-asks-for-what-a-list-cannot-carry) |
 | [Q-OCI-274](spec/formats/oci.md#q-oci-274--an-images-description-licence-and-links-come-from-the-annotations-first-and-the-labels-second) | An image's description, licence and links come from the annotations first and the labels second | Decided by the development agent on 2026-11-25 | (a) The keys `org.opencontainers.image.*` of the tag's manifest, then of the first platform's manifest, then of that platform's labels, key by key; the links are the names every format's Links block reads | — |
+| [Q-OCI-275](spec/formats/oci.md#q-oci-275--a-helm-chart-in-an-oci-repository-shows-its-facts-its-readme-and-its-values-read-only) | A Helm chart in an OCI repository shows its facts, its README and its values, read-only | Decided by the owner on 2026-11-25 | (b) Show a chart's facts, README and values in the OCI repository, read-only, with the `helm` command in the panel; no Helm repository format | — |
+| [Q-OCI-276](spec/formats/oci.md#q-oci-276--a-charts-version-page-opens-on-its-readme-an-images-keeps-its-page) | A chart's version page opens on its README; an image's keeps its page | Decided by the development agent on 2026-11-25 | (a) The version page of a chart opens on its tab README where it has one, the page of an image as before, the lists unchanged | — |
 
 </details>
 

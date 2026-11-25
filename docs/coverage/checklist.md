@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,294 spec requirements:
-793 cover catalog features, 501 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,295 spec requirements:
+794 cover catalog features, 501 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -50,7 +50,7 @@ end](#requirements-that-cover-no-catalog-feature)).
 | [npm package format](#npm-package-format-pkg-npm) | `PKG-NPM` | 62 | 37 of 37 | 54 | 8 |
 | [NuGet](#nuget-pkg-nuget) | `PKG-NUGET` | 56 | 35 of 35 | 42 | 14 |
 | [Docker image format](#docker-image-format-pkg-docker) | `PKG-DOCKER` | 52 | – | 33 | 19 |
-| [OCI images and artifacts](#oci-images-and-artifacts-pkg-oci) | `PKG-OCI` | 20 | – | 15 | 5 |
+| [OCI images and artifacts](#oci-images-and-artifacts-pkg-oci) | `PKG-OCI` | 20 | – | 16 | 4 |
 | [Helm chart format](#helm-chart-format-pkg-helm) | `PKG-HELM` | 25 | – | 0 | 25 |
 | [Maven package format](#maven-package-format-pkg-maven) | `PKG-MAVEN` | 39 | – | 0 | 39 |
 | [PyPI package format](#pypi-package-format-pkg-pypi) | `PKG-PYPI` | 29 | – | 0 | 29 |
@@ -1967,10 +1967,10 @@ Catalog page: [formats/docker.md](../features/formats/docker.md) · specified by
 
 ## OCI images and artifacts (PKG-OCI)
 
-Catalog page: [formats/oci.md](../features/formats/oci.md) · specified by priority: P1 12 of 15 · P2 2 of 4 · Later 1 of 1
+Catalog page: [formats/oci.md](../features/formats/oci.md) · specified by priority: P1 13 of 15 · P2 2 of 4 · Later 1 of 1
 
 <details>
-<summary>20 features: 15 specified, 5 open</summary>
+<summary>20 features: 16 specified, 4 open</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -1991,7 +1991,7 @@ Catalog page: [formats/oci.md](../features/formats/oci.md) · specified by prior
 | PKG-OCI-015 | BuildKit and registry build caches | P2 | open | – |
 | PKG-OCI-016 | WebAssembly modules | P2 | open | – |
 | PKG-OCI-017 | ORAS | P1 | open | – |
-| PKG-OCI-018 | Helm charts in OCI repositories | P1 | open | – |
+| PKG-OCI-018 | Helm charts in OCI repositories | P1 | specified | [R-OCI-042](../spec/formats/oci.md) |
 | PKG-OCI-019 | Client setup instructions | P1 | specified | [R-OCI-030](../spec/formats/oci.md) |
 | PKG-OCI-020 | Scanning limited to container images | Later | specified | [R-MAL-017](../spec/malware-scanning.md), [R-VULN-033](../spec/vulnerability-scanning.md) |
 

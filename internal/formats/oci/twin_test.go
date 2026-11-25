@@ -14,6 +14,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/formattest"
 	"github.com/guided-traffic/quader/internal/formats/oci/rows"
@@ -40,6 +41,8 @@ type twin struct {
 	fetches []string
 	// published are the versions package.published was recorded for (R-REPO-048).
 	published []rows.Published
+	// blobs are what OpenBlob reads, by digest.
+	blobs map[[32]byte][]byte
 }
 
 func (t *twin) RecordPublished(_ context.Context, _ formats.Tx, in rows.Published) error {
@@ -465,17 +468,31 @@ func (t *twin) TagFacts(ctx context.Context, versionIDs []int64, full bool) ([]r
 	return out, nil
 }
 
-// ConfigUnread is the twin of OCIConfigUnread.
-func (t *twin) ConfigUnread(_ context.Context, repo int64, name string, config [32]byte) (bool, error) {
+// ConfigUnread is the twin of OCIConfigUnread: the config's media type from the row's blobs.
+func (t *twin) ConfigUnread(_ context.Context, repo int64, name string, config [32]byte) (string, error) {
 	t.note("ConfigUnread")
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	for k, m := range t.manifests {
 		if k.repo == repo && k.name == name && m.ConfigDigest != nil && *m.ConfigDigest == config && m.ConfigFacts == nil {
-			return true, nil
+			var b rows.ImageBlobs
+			if json.Unmarshal(m.Blobs, &b) == nil && b.Config != nil {
+				return b.Config.MediaType, nil
+			}
 		}
 	}
-	return false, nil
+	return "", nil
+}
+
+// OpenBlob is the twin of the data port's blob reader: the bytes a test put into blobs.
+func (t *twin) OpenBlob(_ context.Context, sum [32]byte, _ int64) (io.ReadCloser, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	b, ok := t.blobs[sum]
+	if !ok {
+		return nil, errs.E(errs.NotFound, errs.CodeNotFound, "no blob")
+	}
+	return io.NopCloser(bytes.NewReader(b)), nil
 }
 
 // PutConfigFacts is the twin of OCIPutConfigFacts.

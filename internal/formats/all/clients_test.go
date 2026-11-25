@@ -17,7 +17,7 @@ func TestR_API_053_EveryFormatNamesItsClients(t *testing.T) {
 		"npm":     {"npm", "pnpm", "yarn", "yarn-classic"},
 		"nuget":   {"dotnet", "nuget", "visual-studio"},
 		"generic": {"curl"},
-		"oci":     {"docker", "podman"},
+		"oci":     {"docker", "podman", "helm"},
 		"deb":     {"apt"},
 		"ansible": {"ansible-galaxy"},
 		"clamav":  {"freshclam"},

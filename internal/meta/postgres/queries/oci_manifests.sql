@@ -28,13 +28,14 @@ ON CONFLICT (repo_id, name, digest) DO UPDATE
     OR (oci_manifests.config_facts IS NULL AND EXCLUDED.config_facts IS NOT NULL);
 
 -- name: OCIConfigUnread :one
--- Whether a manifest of the name names the blob as an image's configuration that is not read yet (R-OCI-040): the question of every
--- fetch of a blob, answered from the partial index of such manifests.
-SELECT EXISTS (
-  SELECT 1 FROM oci_manifests
+-- The media type of the blob when a manifest of the name names it as a configuration that is not read yet (an image's, R-OCI-040, or
+-- a Helm chart's, R-OCI-042), '' otherwise: the question of every fetch of a blob, answered from the partial index of such manifests.
+SELECT COALESCE((
+  SELECT blobs -> 'config' ->> 'mediaType' FROM oci_manifests
    WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND config_digest = sqlc.arg(config_digest)::bytea
      AND config_facts IS NULL
-)::boolean AS unread;
+   LIMIT 1
+), '')::text AS media_type;
 
 -- name: OCIPutConfigFacts :exec
 -- Records what the reader read of a configuration in every manifest of the name that names it and has none yet (R-OCI-040).
@@ -213,14 +214,14 @@ WITH tags AS (
     JOIN packages p ON p.repo_id = e.repo_id AND p.name = e.tag_name
    WHERE e.id = ANY(SELECT -x FROM unnest(sqlc.arg(version_ids)::bigint[]) AS x)
 ), facts AS (
-  SELECT t.id AS version_id, false AS child, ''::text AS platform, m.digest, m.annotations, m.config_digest,
+  SELECT t.id AS version_id, p.repo_id, false AS child, ''::text AS platform, m.digest, m.annotations, m.config_digest,
          CASE WHEN sqlc.arg(with_facts)::boolean THEN m.blobs END AS blobs,
          CASE WHEN sqlc.arg(with_facts)::boolean THEN m.config_facts END AS config_facts
     FROM tags t
     JOIN packages p ON p.id = t.package_id
     JOIN oci_manifests m ON m.repo_id = p.repo_id AND m.name = p.name AND m.digest = t.manifest_sha256
   UNION ALL
-  SELECT t.id, true, COALESCE(r.platform, ''), c.digest, c.annotations, c.config_digest,
+  SELECT t.id, p.repo_id, true, COALESCE(r.platform, ''), c.digest, c.annotations, c.config_digest,
          CASE WHEN sqlc.arg(with_facts)::boolean THEN c.blobs END,
          CASE WHEN sqlc.arg(with_facts)::boolean THEN c.config_facts END
     FROM tags t
@@ -228,7 +229,7 @@ WITH tags AS (
     JOIN oci_references r ON r.repo_id = p.repo_id AND r.name = p.name AND r.manifest = t.manifest_sha256 AND r.kind = 'manifest'
     JOIN oci_manifests c ON c.repo_id = r.repo_id AND c.name = r.name AND c.digest = r.target
 )
-SELECT version_id::bigint AS version_id, child::boolean AS child, platform::text AS platform, digest, annotations, config_digest, blobs::jsonb AS blobs,
+SELECT version_id::bigint AS version_id, repo_id::bigint AS repo_id, child::boolean AS child, platform::text AS platform, digest, annotations, config_digest, blobs::jsonb AS blobs,
        config_facts::jsonb AS config_facts
 FROM facts
 ORDER BY version_id, child, platform = '', platform, digest;

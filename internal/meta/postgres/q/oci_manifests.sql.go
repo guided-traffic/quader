@@ -73,11 +73,12 @@ func (q *Queries) OCIChildPlatforms(ctx context.Context, versionIds []int64) ([]
 }
 
 const oCIConfigUnread = `-- name: OCIConfigUnread :one
-SELECT EXISTS (
-  SELECT 1 FROM oci_manifests
+SELECT COALESCE((
+  SELECT blobs -> 'config' ->> 'mediaType' FROM oci_manifests
    WHERE repo_id = $1::bigint AND name = $2::text AND config_digest = $3::bytea
      AND config_facts IS NULL
-)::boolean AS unread
+   LIMIT 1
+), '')::text AS media_type
 `
 
 type OCIConfigUnreadParams struct {
@@ -86,13 +87,13 @@ type OCIConfigUnreadParams struct {
 	ConfigDigest []byte
 }
 
-// Whether a manifest of the name names the blob as an image's configuration that is not read yet (R-OCI-040): the question of every
-// fetch of a blob, answered from the partial index of such manifests.
-func (q *Queries) OCIConfigUnread(ctx context.Context, arg OCIConfigUnreadParams) (bool, error) {
+// The media type of the blob when a manifest of the name names it as a configuration that is not read yet (an image's, R-OCI-040, or
+// a Helm chart's, R-OCI-042), ” otherwise: the question of every fetch of a blob, answered from the partial index of such manifests.
+func (q *Queries) OCIConfigUnread(ctx context.Context, arg OCIConfigUnreadParams) (string, error) {
 	row := q.db.QueryRow(ctx, oCIConfigUnread, arg.RepoID, arg.Name, arg.ConfigDigest)
-	var unread bool
-	err := row.Scan(&unread)
-	return unread, err
+	var media_type string
+	err := row.Scan(&media_type)
+	return media_type, err
 }
 
 const oCIExistingItems = `-- name: OCIExistingItems :many
@@ -405,14 +406,14 @@ WITH tags AS (
     JOIN packages p ON p.repo_id = e.repo_id AND p.name = e.tag_name
    WHERE e.id = ANY(SELECT -x FROM unnest($1::bigint[]) AS x)
 ), facts AS (
-  SELECT t.id AS version_id, false AS child, ''::text AS platform, m.digest, m.annotations, m.config_digest,
+  SELECT t.id AS version_id, p.repo_id, false AS child, ''::text AS platform, m.digest, m.annotations, m.config_digest,
          CASE WHEN $2::boolean THEN m.blobs END AS blobs,
          CASE WHEN $2::boolean THEN m.config_facts END AS config_facts
     FROM tags t
     JOIN packages p ON p.id = t.package_id
     JOIN oci_manifests m ON m.repo_id = p.repo_id AND m.name = p.name AND m.digest = t.manifest_sha256
   UNION ALL
-  SELECT t.id, true, COALESCE(r.platform, ''), c.digest, c.annotations, c.config_digest,
+  SELECT t.id, p.repo_id, true, COALESCE(r.platform, ''), c.digest, c.annotations, c.config_digest,
          CASE WHEN $2::boolean THEN c.blobs END,
          CASE WHEN $2::boolean THEN c.config_facts END
     FROM tags t
@@ -420,7 +421,7 @@ WITH tags AS (
     JOIN oci_references r ON r.repo_id = p.repo_id AND r.name = p.name AND r.manifest = t.manifest_sha256 AND r.kind = 'manifest'
     JOIN oci_manifests c ON c.repo_id = r.repo_id AND c.name = r.name AND c.digest = r.target
 )
-SELECT version_id::bigint AS version_id, child::boolean AS child, platform::text AS platform, digest, annotations, config_digest, blobs::jsonb AS blobs,
+SELECT version_id::bigint AS version_id, repo_id::bigint AS repo_id, child::boolean AS child, platform::text AS platform, digest, annotations, config_digest, blobs::jsonb AS blobs,
        config_facts::jsonb AS config_facts
 FROM facts
 ORDER BY version_id, child, platform = '', platform, digest
@@ -433,6 +434,7 @@ type OCITagFactsParams struct {
 
 type OCITagFactsRow struct {
 	VersionID    int64
+	RepoID       int64
 	Child        bool
 	Platform     string
 	Digest       []byte
@@ -457,6 +459,7 @@ func (q *Queries) OCITagFacts(ctx context.Context, arg OCITagFactsParams) ([]OCI
 		var i OCITagFactsRow
 		if err := rows.Scan(
 			&i.VersionID,
+			&i.RepoID,
 			&i.Child,
 			&i.Platform,
 			&i.Digest,

@@ -82,6 +82,11 @@ export const RENDERED_SNIPPET_IDS: Readonly<Record<string, readonly string[]>> =
     'docker.publish',
     'docker.publish.buildx',
   ],
+  'oci:helm': [
+    'helm.configure.shell',
+    'helm.install',
+    'helm.publish',
+  ],
   'oci:podman': [
     'podman.configure.shell',
     'podman.install',

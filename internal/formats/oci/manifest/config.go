@@ -54,6 +54,8 @@ func ConfigKind(mediaType string) string {
 	switch mediaType {
 	case MediaTypeImageConfig, MediaTypeDockerConfig:
 		return rows.ConfigImage
+	case MediaTypeHelmConfig:
+		return rows.ConfigChart
 	}
 	return ""
 }
@@ -62,7 +64,7 @@ func ConfigKind(mediaType string) string {
 // why.
 func ReadConfig(kind string, data []byte) rows.ConfigFacts {
 	out := rows.ConfigFacts{Kind: kind}
-	if kind != rows.ConfigImage {
+	if kind != rows.ConfigImage && kind != rows.ConfigChart {
 		out.Unreadable = rows.UnreadableInvalid
 		return out
 	}
@@ -77,6 +79,20 @@ func ReadConfig(kind string, data []byte) rows.ConfigFacts {
 	root, err := readTree(data, configDepth, configValues)
 	if err != nil {
 		out.Unreadable = unreadable(err)
+		return out
+	}
+	if kind == rows.ConfigChart {
+		r := &configReader{left: chartBudget}
+		c, ok := r.chart(root)
+		if !ok {
+			out.Unreadable = rows.UnreadableInvalid
+			return out
+		}
+		if r.omitted != (rows.Omitted{}) {
+			om := r.omitted
+			c.Omitted = &om
+		}
+		out.Chart = c
 		return out
 	}
 	r := &configReader{left: ConfigBudget}

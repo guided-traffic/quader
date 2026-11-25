@@ -14,6 +14,7 @@ package oci
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/audit"
@@ -34,6 +35,22 @@ type Options struct {
 	Actor func(ctx context.Context) audit.Actor
 	// Signatures queues the background fetch of a remote's signatures (signatures.md R-SIG-026); nil queues nothing.
 	Signatures SignatureFetchQueue
+	// Blobs opens a stored blob by its digest, verified as it is read: the content layer of a Helm chart, whose README and values a
+	// chart's page reads on demand (formats/oci.md R-OCI-042). Nil opens none, and a chart then shows neither.
+	Blobs BlobOpener
+}
+
+// BlobOpener opens a stored blob by its SHA-256 and size.
+type BlobOpener interface {
+	Open(ctx context.Context, sha256 [32]byte, size int64) (io.ReadCloser, error)
+}
+
+// OpenBlob opens a stored blob (Options.Blobs); a store without one answers not found.
+func (s *Store) OpenBlob(ctx context.Context, sha256 [32]byte, size int64) (io.ReadCloser, error) {
+	if s.o.Blobs == nil {
+		return nil, errs.E(errs.NotFound, errs.CodeNotFound, "oci: the data port reads no blobs")
+	}
+	return s.o.Blobs.Open(ctx, sha256, size)
 }
 
 // SignatureFetchQueue is the queue of the background fetch of a remote's signatures; *fetch.Queue of internal/signatures/fetch

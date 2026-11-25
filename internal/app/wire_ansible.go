@@ -26,6 +26,8 @@ func ansibleBlobs(s *blob.Store) ansibledata.BlobReader {
 	return ansibleBlobReader{s}
 }
 
+// ansibleBlobReader opens a stored blob whole, verified as it is read; the OCI data port reads a Helm chart's content layer with it too
+// (formats/oci.md R-OCI-042).
 type ansibleBlobReader struct{ s *blob.Store }
 
 func (b ansibleBlobReader) Open(ctx context.Context, sha256 [32]byte, size int64) (io.ReadCloser, error) {

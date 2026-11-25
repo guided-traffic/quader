@@ -280,6 +280,10 @@ func formatPorts(db meta.Runner, rec audit.Recorder, blobs *blob.Store, queue nu
 	if fetches != nil {
 		ociOpts.Signatures = fetches
 	}
+	if blobs != nil {
+		// A Helm chart's page reads its README and values from its content layer (formats/oci.md R-OCI-042).
+		ociOpts.Blobs = ansibleBlobReader{blobs}
+	}
 	oci, err := ocidata.New(ociOpts)
 	if err != nil {
 		return nil, fmt.Errorf("formats: oci data port: %w", err)

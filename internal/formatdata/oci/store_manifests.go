@@ -312,9 +312,9 @@ func nilIfEmpty(raw json.RawMessage) json.RawMessage {
 	return raw
 }
 
-// ConfigUnread reports whether a manifest of the name names the blob as an image's configuration that is not read yet (R-OCI-040).
-func (s *Store) ConfigUnread(ctx context.Context, repoID int64, name string, config [32]byte) (bool, error) {
-	var out bool
+// ConfigUnread is the media type of the blob when a manifest of the name names it as a configuration not read yet, "" otherwise.
+func (s *Store) ConfigUnread(ctx context.Context, repoID int64, name string, config [32]byte) (string, error) {
+	var out string
 	err := s.read(ctx, nil, func(qs *q.Queries) (err error) {
 		out, err = qs.OCIConfigUnread(ctx, q.OCIConfigUnreadParams{RepoID: repoID, Name: name, ConfigDigest: config[:]})
 		return err
@@ -357,7 +357,7 @@ func (s *Store) TagFacts(ctx context.Context, versionIDs []int64, full bool) ([]
 			if !seen {
 				i = len(out)
 				at[r.VersionID] = i
-				out = append(out, rows.TagFacts{VersionID: r.VersionID})
+				out = append(out, rows.TagFacts{VersionID: r.VersionID, RepoID: r.RepoID})
 			}
 			if r.Child {
 				out[i].Children = append(out[i].Children, f)
