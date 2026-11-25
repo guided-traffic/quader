@@ -526,7 +526,8 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    (`repository-oci-mirror-filled`, `repository-deb-mirror-filled`, the walk `mirrorFilled` of [renders/mirror.ts](../../web/e2e/renders/mirror.ts),
    W-24, [Q-UI-1092](../spec/api-and-ui.md#q-ui-1092--the-rows-a-mirror-pass-filled-are-rendered-from-answers-changed-in-the-browser)):
    no pass runs on the render stack, so the list's answers are changed in the browser, each row and version shaped as the server answers
-   one of the format's seeded repository (`image-cache`, the long Debian key) with the values a pass leaves: long tags and names, a count
+   one of the format's seeded repository (`image-cache`, the long Debian key; an image's version as the opened item reads it, by content,
+   in the server's tag order with its other tags as `aliases`) with the values a pass leaves: long tags and names, a count
    of 214, partial sizes and one not known, 0 downloads where no client fetched, the row of the most versions opened. Every list
    with a filter drawer is taken as it opens and with the drawer open (`<screen>-filters-…`, the walk `filtersOpen`), and the
    repositories, the packages, the findings and the users once more with filters set through the drawer (`<screen>-chips-…`:

@@ -25929,6 +25929,12 @@ seconds for both formats.
 [screens.ts](../../web/e2e/renders/screens.ts) (`repository-oci-mirror-filled`, `repository-deb-mirror-filled`, as the plain user).
 Docs: [web-ui.md](../developer/web-ui.md#renders-of-every-screen).
 
+**Kept in step 2026-11-25** with the list by content (Q-API-432, Q-UI-1130): the opened image read its ten tags in an order the server
+never gives (`stable` and `latest` between versions, 1.27.1 before 1.27.2). The walk now reads its template version as the opened item
+does (`group=content`), answers one entry per image with the image's other tags as `aliases` in the tag order of R-OCI-031 (a release,
+then its variants by their names in reverse; the tags that are no versions after the versions), and every tag its own entry where a
+request asks without `group`.
+
 ### Q-UI-1160 · A limit an account would lift offers one to each reader where that reader adds it
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Supersedes

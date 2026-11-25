@@ -8,20 +8,40 @@ import { longDebKey, otherProject, remoteCache } from './seed';
  * one of the same format's seeded repository (`template`), so that a member the server adds stands in these rows too. Nothing is saved.
  */
 
+/**
+ * A version a pass stored. For an image it is the content (the manifest) with its leading tag and, in `aliases`, the image's other tags in
+ * the order of the versions: the tags that are versions by their numbers, then the others newest first (R-OCI-031, Q-API-432).
+ */
+interface PassVersion {
+  readonly version: string;
+  readonly size: number | null;
+  readonly partial?: boolean;
+  readonly aliases?: readonly string[];
+}
+
 /** A row a mirror pass stored, and the first page of the versions it opens to, newest first. */
 interface PassRow {
   readonly name: string;
-  /** How many versions the pass stored; an opened row lists its newest and links to the package's page for all of them. */
+  /** How many versions (an image's tags) the pass stored; an opened row lists its newest and links to the package's page for all. */
   readonly count: number;
-  readonly versions: readonly { readonly version: string; readonly size: number | null; readonly partial?: boolean }[];
+  /** In the server's order: the format's version order, newest first; for an image one entry per manifest (`group=content`). */
+  readonly versions: readonly PassVersion[];
   /** The downloads of clients through the remote since the pass, on its latest version; most rows have none. */
   readonly downloads?: number;
 }
 
-/** The tags of `library/nginx` on the first page of its 214, after the named ones: the upstream's variants of older releases. */
-const olderNginx = ['bookworm', 'alpine', 'alpine-slim', 'alpine3.20-otel', 'bookworm-otel', 'perl'].flatMap((variant) =>
-  ['1.27.2', '1.27.1'].map((release) => ({ version: `${release}-${variant}`, size: variant.startsWith('alpine') ? 49_618_340 : 139_826_118, partial: true })),
-);
+/**
+ * The images of `library/nginx` after those of 1.27.3, newest first by the tag order (R-OCI-031): a release, then its variants by their
+ * names in reverse (`perl`, `bookworm-otel`, `bookworm`, `alpine3.20-otel`, `alpine-slim`, `alpine`), each variant an image of its own.
+ */
+const olderNginx: readonly PassVersion[] = ['1.27.2', '1.27.1'].flatMap((release) => [
+  { version: release, size: 142_951_093, partial: true },
+  ...['perl', 'bookworm-otel', 'bookworm', 'alpine3.20-otel', 'alpine-slim', 'alpine'].map((variant) => ({
+    version: `${release}-${variant}`,
+    size: variant.startsWith('alpine') ? 49_618_340 : 139_826_118,
+    partial: true,
+  })),
+]);
 
 /**
  * What a bounded pass stored in the OCI remote `docker-hub-remote` and in the Debian remote `debian` of the render project, in the
@@ -48,18 +68,20 @@ export const passRows: Record<'oci' | 'deb', { readonly template: string; readon
         name: 'library/nginx',
         count: 214,
         downloads: 1_284,
+        // As the server answers `group=content` (the owner's order of 2026-11-25): 1.27.3 leads its image, whose other tags `latest`
+        // and `mainline` are no versions and follow as its aliases; the variants of 1.27.3 are images of their own, one not reached yet.
         versions: [
-          { version: '1.27.3-alpine3.20-perl', size: 48_734_906, partial: true },
-          { version: '1.27.3-alpine-slim', size: 12_904_771, partial: true },
+          { version: '1.27.3', size: 143_002_614, partial: true, aliases: ['latest', 'mainline'] },
           { version: '1.27.3-bookworm-perl', size: 141_337_288, partial: true },
-          { version: '1.27.3', size: 143_002_614, partial: true },
-          { version: 'stable', size: 140_266_031, partial: true },
-          { version: 'latest', size: 143_002_614, partial: true },
+          { version: '1.27.3-alpine3.20-perl', size: 48_734_906, partial: true },
           { version: '1.27.3-alpine3.20-otel', size: null },
-          ...olderNginx.slice(0, 5),
+          { version: '1.27.3-alpine-slim', size: 12_904_771, partial: true },
+          { version: '1.27.3-alpine', size: 49_906_331, partial: true },
+          ...olderNginx,
         ],
       },
-      { name: 'library/postgres', count: 2, versions: [{ version: '17.2-bookworm', size: 303_915_662, partial: true }, { version: '17.2', size: 303_915_662, partial: true }] },
+      // 17.2 and 17.2-bookworm name one manifest: one image, led by 17.2, which is the higher of the two by the tag order.
+      { name: 'library/postgres', count: 2, versions: [{ version: '17.2', size: 303_915_662, partial: true, aliases: ['17.2-bookworm'] }] },
     ],
   },
   deb: {
@@ -93,10 +115,13 @@ export async function* mirrorFilled(page: Page): AsyncGenerator<string> {
     expect(res.ok(), `${url}: ${res.status()}`).toBe(true);
     return (await res.json()) as Record<string, unknown>;
   };
-  // The server's own row and version of the format, with the grade it answers for them where the installation scans.
+  // The server's own row and version of the format, with the grade it answers for them where the installation scans. An image's version
+  // is read as the opened item reads it, one entry per manifest (`group=content`, Q-API-432), so its entry carries the members of that
+  // form (`aliases`, `aliasesMore`) as the server writes them.
   const sourceRow = ((await read(`/api/v1/packages?repository=${encodeURIComponent(source)}&format=${format}&include=vulnerabilities`))['items'] as Record<string, unknown>[])[0]!;
+  const grouped = format === 'oci' ? '&sort=-version&group=content' : '';
   const sourceVersion = (
-    (await read(`/api/v1/packages/${encodeURIComponent(sourceRow['id'] as string)}/versions?repository=${encodeURIComponent(source)}&include=digest`))[
+    (await read(`/api/v1/packages/${encodeURIComponent(sourceRow['id'] as string)}/versions?repository=${encodeURIComponent(source)}&include=digest${grouped}`))[
       'items'
     ] as Record<string, unknown>[]
   )[0]!;
@@ -107,20 +132,32 @@ export async function* mirrorFilled(page: Page): AsyncGenerator<string> {
   const at = (secondsBefore: number): string => new Date(passEnd - secondsBefore * 1000).toISOString();
   const idOf = (row: PassRow): string => `mirror-${format}-${row.name.replace(/[^a-z0-9]+/g, '-')}`;
   const digestOf = (version: string): string => `sha256:${createHash('sha256').update(`${ref}:${version}`).digest('hex')}`;
-  const { digest: _digest, ...versionShape } = sourceVersion;
-  const versionsOf = (row: PassRow, r: number, limit: number) =>
-    row.versions.slice(0, limit).map((v, i) => ({
+  const { digest: _digest, aliases: _aliases, aliasesMore: _more, ...versionShape } = sourceVersion;
+  /**
+   * The page an opened row asks for: with `group=content` one entry per image with its other tags as `aliases`; without it every tag its
+   * own entry, the tags that are versions first and the others after them, as the plain list answers (R-API-029).
+   */
+  const versionsOf = (row: PassRow, r: number, limit: number, byContent: boolean) => {
+    const entries: (PassVersion & { readonly lead: string })[] = byContent
+      ? row.versions.map((v) => ({ ...v, lead: v.version }))
+      : [
+          ...row.versions.map((v) => ({ ...v, lead: v.version, aliases: [] })),
+          ...row.versions.flatMap((v) => (v.aliases ?? []).map((a) => ({ ...v, version: a, lead: v.version, aliases: [] }))),
+        ];
+    return entries.slice(0, limit).map((v, i) => ({
       ...versionShape,
       version: v.version,
       prerelease: false,
       publishedAt: at(r * 300 + i * 7),
       sizeBytes: v.size,
       sizePartial: v.partial ?? false,
-      ...(format === 'oci' ? { digest: digestOf(v.version) } : {}),
+      ...(format === 'oci' ? { digest: digestOf(v.lead) } : {}),
+      ...(byContent ? { aliases: [...(v.aliases ?? [])], aliasesMore: false } : {}),
       repositories: [ref],
       downloadCount: i === 0 ? (row.downloads ?? 0) : 0,
       lastDownloadedAt: i === 0 && row.downloads ? new Date(Date.now() - 1_800_000).toISOString() : null,
     }));
+  };
   const { vulnerabilityGrade: _grade, ...rowShape } = sourceRow;
   const rowOf = (row: PassRow, r: number, withGrade: boolean): Record<string, unknown> => ({
     ...rowShape,
@@ -149,18 +186,24 @@ export async function* mirrorFilled(page: Page): AsyncGenerator<string> {
     const id = idOf(row);
     // The page the opened row asks for (its `limit`, R-API-010), and a cursor where the pass stored more.
     await page.route((url) => url.pathname === `/api/v1/packages/${id}/versions`, (route) => {
-      const limit = Number(new URL(route.request().url()).searchParams.get('limit') ?? VERSIONS_PAGE);
+      const query = new URL(route.request().url()).searchParams;
+      const limit = Number(query.get('limit') ?? VERSIONS_PAGE);
+      const byContent = query.get('group') === 'content';
+      const shown = byContent ? row.versions.length : row.versions.reduce((n, v) => n + 1 + (v.aliases?.length ?? 0), 0);
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ items: versionsOf(row, r, limit), nextCursor: row.count > limit ? 'next' : null }),
+        body: JSON.stringify({ items: versionsOf(row, r, limit, byContent), nextCursor: row.count > Math.min(limit, shown) ? 'next' : null }),
       });
     });
     await page.route((url) => url.pathname === `/api/v1/packages/${id}/vulnerabilities`, (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ packageId: idOf(row), versions: grade ? row.versions.map((v) => ({ version: v.version, grade })) : [] }),
+        body: JSON.stringify({
+          packageId: idOf(row),
+          versions: grade ? row.versions.flatMap((v) => [v.version, ...(v.aliases ?? [])]).map((version) => ({ version, grade })) : [],
+        }),
       }),
     );
   }
@@ -169,7 +212,7 @@ export async function* mirrorFilled(page: Page): AsyncGenerator<string> {
   await page.waitForLoadState('networkidle');
   yield '';
   // The row of the most versions: its newest tags or versions, a size not known, and the link to all of them.
-  const most = pass.rows.reduce((a, b) => (b.versions.length > a.versions.length ? b : a));
+  const most = pass.rows.reduce((a, b) => (b.count > a.count ? b : a));
   await page.locator(`main .name-cell button[aria-controls="versions-${idOf(most)}"]`).click();
   const opened = page.locator('main .collapse-region.open quader-repository-item-versions');
   await expect(opened.locator('table.data tbody tr').first()).toBeVisible();
