@@ -12516,10 +12516,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-670 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+671 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 670 questions</summary>
+<summary>Q-UI: 671 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13193,6 +13193,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1335](spec/api-and-ui.md#q-ui-1335--a-generic-files-row-has-download-with-its-panel-where-a-packages-row-has-its-verb) | A generic file's row has Download with its panel where a package's row has its verb | Decided by the development agent on 2026-11-26 | (a) A muted note with a terminal mark under the links, on every tab, and a row of npm's Package details | — |
 | [Q-UI-1336](spec/api-and-ui.md#q-ui-1336--a-command-keeps-its-credential-off-the-command-line-where-the-client-can-and-says-so-where-it-cannot) | A command keeps its credential off the command line where the client can, and says so where it cannot | Decided by the development agent on 2026-11-26 | (a) One pattern for every command: curl gets its credential on standard input (`quader_curl` where the line is a request of the management API beside its JSON; `printf … \| curl --config -` or `-H @-` where a command stands alone), another client reads it from its configuration or from a variable of its environment; a client that takes a credential only as an argument keeps it there, and the page says so beside the command | — |
 | [Q-UI-1340](spec/api-and-ui.md#q-ui-1340--an-upstream-packages-readme-shows-its-first-24-rem-and-the-versions-follow) | An upstream package's README shows its first 24 rem, and the versions follow | Decided by the development agent on 2026-11-26 | (a) On the package's own view, after its head: the deprecation, one line of facts, the README under its heading with its version, its first 24 rem and **Show the whole README** (the frame clips and never scrolls; a focus that enters it shows it whole), the dependencies folded, then the versions; in a row of the search the README folded | — |
+| [Q-UI-1370](spec/api-and-ui.md#q-ui-1370--a-link-to-a-screen-whose-script-is-gone-loads-its-address-from-the-server-and-a-failed-navigation-is-said) | A link to a screen whose script is gone loads its address from the server, and a failed navigation is said | Decided by the development agent on 2026-11-26 | (a) The router's handler of a failed navigation: a script that could not be loaded loads the link's address from the server; every other failure is a notice with what was said | — |
 
 </details>
 

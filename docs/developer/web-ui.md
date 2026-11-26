@@ -1553,6 +1553,16 @@ reads are quiet, `load(…, quiet)`), and the strip's label reads the queue's co
 `RepositoryTabs`). Tests use fake timers (`vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })`) and a fake whose
 pages read the data at call time (as `FakePackagesApi.list` and `versions` do), so a read again sees what changed.
 
+
+### A window on an older build (Q-UI-1370)
+
+A screen's script is loaded when the screen is first opened, and its name changes with every build. A window that was loaded from an
+earlier build asks for names the server may no longer hold: the dev server after a rebuild whose reload the window missed, an
+installation whose store of earlier releases' files has no copy. The router's handler of a failed navigation,
+`loadGoneScreen` of [gone-script.ts](../../web/src/app/core/gone-script.ts), loads the link's address from the server then, so the click
+arrives on the build that is served; every other failed navigation (a guard or a screen that throws) is an alert notice with the error's
+text. A lazy route needs nothing for it. A window that was just loaded and misses a script says so and does not load again.
+
 ## Shell, design tokens and the list components
 
 Decision [Q-UI-68](../spec/api-and-ui.md#q-ui-68--layout-of-the-application-shell-and-the-list-screens); requirements

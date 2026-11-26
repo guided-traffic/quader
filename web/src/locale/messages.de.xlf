@@ -564,6 +564,24 @@
         <target>Dunkel</target>
       </segment>
     </unit>
+    <unit id="nav.failed">
+      <notes>
+        <note category="location">src/app/core/gone-script.ts:33</note>
+      </notes>
+      <segment>
+        <source>This screen could not be opened: <ph id="0" equiv="message" disp="said"/></source>
+        <target>Diese Ansicht konnte nicht geöffnet werden: <ph id="0" equiv="message" disp="said"/></target>
+      </segment>
+    </unit>
+    <unit id="nav.script-missing">
+      <notes>
+        <note category="location">src/app/core/gone-script.ts:37</note>
+      </notes>
+      <segment>
+        <source>This screen could not be loaded, its script is missing on the server: <ph id="0" equiv="message" disp="said"/></source>
+        <target>Diese Ansicht konnte nicht geladen werden, ihr Skript fehlt auf dem Server: <ph id="0" equiv="message" disp="said"/></target>
+      </segment>
+    </unit>
     <unit id="problem.invalid_credentials">
       <notes>
         <note category="location">src/app/core/http/problem-messages-access.ts:10</note>

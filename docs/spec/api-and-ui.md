@@ -9626,6 +9626,11 @@ shows state the server changes without the viewer's own act reads it again by it
   pass now**); a live read that runs meanwhile is followed by the act's own.
 - **Forms are not live.** A settings page, an editor or a dialog holds what the person types; a change another person saved meanwhile
   meets the conflict dialog on save (412, R-UI-042).
+- **A build the window was not loaded from**
+  ([Q-UI-1370](#q-ui-1370--a-link-to-a-screen-whose-script-is-gone-loads-its-address-from-the-server-and-a-failed-navigation-is-said)):
+  a link to a screen whose script the server no longer holds loads the link's address from the server, so the reader arrives where the
+  link led, on the build that is served; a navigation that fails for another reason says so with what was said of it. No click does
+  nothing.
 - **What is live** (the audit of 2026-11-24). Every other screen shows what only a person changes through the UI (members, roles,
   policies, groups, users, service accounts, CI issuers and mappings, endpoints and their rules, limits, settings, upstream registries,
   the guides, the manual, the search's results), and shows another person's change at the next navigation.
@@ -27907,7 +27912,49 @@ R-ANS-025's table; code: [setup_verify.go](../../internal/api/v1/setup_verify.go
 [vulnerability-sources.ts](../../web/src/app/features/vulnerabilities/vulnerability-sources.ts), the captions of
 [clients.ts](../../web/src/app/features/setup/clients.ts).
 
+### Q-UI-1370 · A link to a screen whose script is gone loads its address from the server, and a failed navigation is said
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner, 2026-11-26, 08:40, of a remote's list of images in his development profile: "In dieser Übersicht kann man nicht mehr
+auf die Images klicken um zu den Details des Images zu kommen. In z.B. Ansible funktioniert das." The link was there and led to the
+image's page in Chromium, Firefox and WebKit on the same profile, so his click was not reproduced. What was reproduced gives exactly his
+picture: a screen's script is loaded when the screen is first opened, under a name that changes with every build
+([R-UI-001](#r-ui-001--technology-baseline-and-delivery)); a window loaded from an earlier build asks for that build's names, and
+when the server no longer answers them the router's navigation fails, the address stays and nothing is shown. A screen the window had
+opened before (a collection's page) went on working, one it had not (an image's page) did not. The router had no handler for a failed
+navigation at all, so a guard or a screen that threw was as silent. Where it happens: the development profile's dev server after every
+build when the window missed its reload; an installation when the script of the window's release is neither on the replica nor in the
+store of earlier releases' files (R-HA-020), or that store cannot be asked.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The router's handler of a failed navigation: a script that could not be loaded loads the link's address from the server; every other failure is a notice with what was said (chosen) | One place, every link of the application | The reader arrives where the link led; no click does nothing | The screen the reader left is gone from memory (an open row, a typed filter that was not in the address) |
+| (b) A notice "A new version is available. Reload." | — | Nothing is lost without the reader's act | The reload R-UI-213 says nobody is asked for |
+| (c) The window asks the server for its build on a timer and reloads itself | — | Also mends a screen that is open | A reload under a person who types; a poll on every window |
+| (d) Nothing; the store of earlier releases' files covers an installation | — | — | The dev server and a store that cannot be asked stay silent, and so does every other failed navigation |
+
+**Choice:** (a). `loadGoneScreen` ([gone-script.ts](../../web/src/app/core/gone-script.ts)), given to the router with
+`withNavigationErrorHandler`: an error whose text is what Chromium ("Failed to fetch dynamically imported module"), Firefox ("error
+loading dynamically imported module") or WebKit ("Importing a module script failed.") say of a script that did not load makes the window
+load the navigation's address, with its query and fragment, from the server; the history keeps the page the reader left. A window that
+has not ended a navigation yet (the router's `navigated`) was just loaded: there the script is missing on the server, the window does
+not load again and shows "This screen could not be loaded, its script is missing on the server:" with the engine's sentence, which is
+also what stops a loop. Every other failed navigation shows "This screen could not be opened:" with the error's text.
+
+**Rationale:** the reader's act was a click on a link, and the least surprising answer is the page the link names; a full load costs what
+opening the address in a new tab costs. The development agent would revisit it when a screen that is open has to follow a new build too
+(H-2240).
+
 ## What this does not cover
+
+### H-2240 · An open screen keeps the build its window was loaded from
+
+A window follows a new build only when it opens a screen whose script it has not loaded and the server no longer holds
+([Q-UI-1370](#q-ui-1370--a-link-to-a-screen-whose-script-is-gone-loads-its-address-from-the-server-and-a-failed-navigation-is-said)).
+The screens it has loaded go on running the old build against the new server until the window is loaded again: a request the new server
+answers otherwise shows as that screen's error, and a correction of a screen is not seen. Nothing compares the window's build with the
+server's.
 
 ### H-2173 · A version with a mark and a signature badge puts its table into blocks at 1,024 px
 

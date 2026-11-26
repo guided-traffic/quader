@@ -5,7 +5,7 @@ import {
   withInterceptors,
   withXsrfConfiguration,
 } from '@angular/common/http';
-import { provideRouter, TitleStrategy, withComponentInputBinding } from '@angular/router';
+import { provideRouter, TitleStrategy, withComponentInputBinding, withNavigationErrorHandler } from '@angular/router';
 import { routes } from './app.routes';
 import { provideApiServices } from './api/providers';
 import { CSRF_COOKIE, CSRF_HEADER } from './api/csrf';
@@ -15,6 +15,7 @@ import {
   problemInterceptor,
   resilienceInterceptor,
 } from './core/http/interceptors';
+import { loadGoneScreen } from './core/gone-script';
 import { QuaderTitleStrategy } from './core/title-strategy';
 
 // >>> M1 ui-a
@@ -32,7 +33,8 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     ...provideApiServices(),
-    provideRouter(routes, withComponentInputBinding()),
+    // A screen whose script the server no longer holds is loaded from the server (Q-UI-1370).
+    provideRouter(routes, withComponentInputBinding(), withNavigationErrorHandler(loadGoneScreen)),
     { provide: TitleStrategy, useExisting: QuaderTitleStrategy },
     provideHttpClient(
       withFetch(),
