@@ -111,6 +111,28 @@ func TestBastionImportAllowlist(t *testing.T) {
 			}
 		}
 	})
+	t.Run("R-BAS-116 the web interface reaches neither the main installation's client, nor the handover, nor the engine", func(t *testing.T) {
+		vs := CheckBastionGUIImports(mod, []Package{
+			pkg("internal/bastion/gui", "internal/bastion/catalogue", "internal/bastion/engine", "internal/webui"),
+			pkg("internal/bastion/catalogue", "internal/bastion/cache", "internal/bastion/mainclient"),
+			pkg("internal/bastion/gui/sub", "internal/bastion/handover"),
+		})
+		wantEdge(t, vs, "R-BAS-116", "internal/bastion/gui", "internal/bastion/engine")
+		wantEdge(t, vs, "R-BAS-116", "internal/bastion/catalogue", "internal/bastion/mainclient")
+		wantEdge(t, vs, "R-BAS-116", "internal/bastion/gui/sub", "internal/bastion/handover")
+		if len(vs) != 3 {
+			t.Fatalf("want the 3 edges, got %v", Strings(vs))
+		}
+		wantClean(t, CheckBastionGUIImports(mod, []Package{
+			pkg("internal/bastion/gui", "internal/bastion/catalogue", "internal/bastion/guard", "internal/webui", "net/http"),
+			pkg("internal/bastion/server", "internal/bastion/engine", "internal/bastion/gui"),
+		}))
+		wantClean(t, CheckBastionImports(mod, []Package{pkg("internal/bastion/gui", "internal/webui")}))
+		wantEdge(t, CheckBastionImports(mod, []Package{pkg("internal/bastion/gui", "internal/webui/dist")}),
+			"R-BAS-001", "internal/bastion/gui", "internal/webui/dist")
+		wantEdge(t, CheckBastionImports(mod, []Package{pkg("internal/bastion/server", "internal/webui")}),
+			"R-BAS-001", "internal/bastion/server", "internal/webui")
+	})
 	t.Run("R-BAS-001 packages outside the Bastion's tree are not held to the rule", func(t *testing.T) {
 		wantClean(t, CheckBastionImports(mod, []Package{
 			pkg("internal/bastionmain", "internal/authz", "internal/bastion/iface"),

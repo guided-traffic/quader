@@ -21,8 +21,9 @@ func Quiet(ctx context.Context) bool {
 	return b != nil && b.Load()
 }
 
-// markQuiet marks the request; without a slot in the context it does nothing.
-func markQuiet(ctx context.Context) {
+// MarkQuiet marks the request; without a slot in the context it does nothing. The web interface marks its own refusals of a
+// blocked address with it too (R-BAS-117).
+func MarkQuiet(ctx context.Context) {
 	if b, _ := ctx.Value(quietKey{}).(*atomic.Bool); b != nil {
 		b.Store(true)
 	}

@@ -3,9 +3,13 @@
 package bastion
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
+	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -64,6 +68,7 @@ func TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut(t *
 	if st := b.srv.Catalogue().State(); !st.Ready || !st.Kept || v.srv.Catalogue().State().Kept {
 		t.Fatalf("the states: bucket %+v, volume %+v", st, v.srv.Catalogue().State())
 	}
+	walkWebInterface(t, b, entry.ID)
 
 	// The link cut: both serve on with the time of their last confirmation.
 	w.front.SetDown(true)
@@ -101,6 +106,50 @@ func TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut(t *
 	w.mustAPI("PUT", "/api/v1/projects/"+testenv.DefaultProject+"/visibility", 200, map[string]any{"level": "private"}, "If-Match", "*")
 	testenv.WaitFor(t, "plain-lib hidden at both Bastions", 30*time.Second, func() bool { return !listed(t, nb, "plain-lib") && !listed(t, nv, "plain-lib") })
 	t.Logf("the lowered level was hidden at both Bastions after %s", time.Since(start).Round(100*time.Millisecond))
+}
+
+// walkWebInterface reads what a visitor's browser reads of the package plain-lib through the web interface's own addresses
+// (R-BAS-118, W-35's P9): its page, the search, the lookup, its versions, its version and the state, each answered 200, and scans
+// every status line, header and body for the main installation (W-35's B.13): its host, the address the Bastion reaches it at, and
+// a path of its management API. The web interface's own `/ui/` paths are the Bastion's and are not scanned for.
+func walkWebInterface(t *testing.T, r *replica, id string) {
+	t.Helper()
+	var names []string
+	for _, n := range r.mainNames {
+		if !strings.Contains(n, "/ui/") {
+			names = append(names, n)
+		}
+	}
+	for _, p := range []string{
+		"/ui/en/projects/" + testenv.DefaultProject + "/packages/npm/plain-lib",
+		"/ui/data/v1/state", "/ui/data/v1/legal?locale=de",
+		"/ui/data/v1/packages?q=plain-lib", "/ui/data/v1/packages/lookup?format=npm&name=plain-lib",
+		"/ui/data/v1/packages/" + id, "/ui/data/v1/packages/" + id + "/versions", "/ui/data/v1/packages/" + id + "/versions/1.0.0",
+	} {
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, r.client+p, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Host = baseHost
+		res, err := clientHTTP.Do(req)
+		if err != nil {
+			t.Fatalf("GET %s: %v", p, err)
+		}
+		body, _ := io.ReadAll(res.Body)
+		_ = res.Body.Close()
+		if res.StatusCode != http.StatusOK {
+			t.Errorf("GET %s = %d %s", p, res.StatusCode, body)
+		}
+		var head strings.Builder
+		for k, vs := range res.Header {
+			head.WriteString(k + ": " + strings.Join(vs, ", ") + "\n")
+		}
+		for _, n := range names {
+			if strings.Contains(head.String(), n) || bytes.Contains(body, []byte(n)) {
+				t.Errorf("GET %s: the answer of the web interface names the main installation (%q)", p, n)
+			}
+		}
+	}
 }
 
 // mustFind is the catalogue ID of a listed package.

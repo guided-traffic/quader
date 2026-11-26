@@ -467,7 +467,7 @@ func (e *engine) admit(q *rq, v guard.Verdict) bool {
 // wait, so a client of NuGet or Ansible Galaxy that is blocked for an hour comes back within 30 s and its user reads the hour.
 func (e *engine) refuseVerdict(q *rq, v guard.Verdict) {
 	if v.Quiet {
-		markQuiet(q.ctx())
+		MarkQuiet(q.ctx())
 	}
 	// Every refusal of the guard is a 429 (guard.Verdict.Status says so), or the status the format declares for a rate
 	// limit on its family: 503 for a format whose clients take a 429 badly (R-BAS-056, R-BAS-058).

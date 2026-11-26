@@ -3,9 +3,11 @@ package app
 import (
 	"context"
 	"fmt"
+	"io/fs"
 
 	"github.com/guided-traffic/quader/internal/buildinfo"
 	"github.com/guided-traffic/quader/internal/webui"
+	"github.com/guided-traffic/quader/internal/webui/dist"
 	"github.com/guided-traffic/quader/internal/webui/shared"
 )
 
@@ -25,10 +27,7 @@ func (a *App) wireUIAssets(ctx context.Context, in infra) (uiAssetsArea, error) 
 	if err := requireInputs(AreaUIAssets, given("database", in.db), given("blob store", in.blobs)); err != nil {
 		return uiAssetsArea{}, err
 	}
-	tree, err := webui.Tree(a.o.UIAssets)
-	if err != nil {
-		return uiAssetsArea{}, fmt.Errorf("%s: the embedded UI: %w", AreaUIAssets, err)
-	}
+	tree := a.uiTree()
 	files, err := webui.HashedFiles(tree, uiLocales())
 	if err != nil {
 		return uiAssetsArea{}, fmt.Errorf("%s: %w", AreaUIAssets, err)
@@ -48,6 +47,14 @@ func (a *App) wireUIAssets(ctx context.Context, in infra) (uiAssetsArea, error) 
 		return uiAssetsArea{}, err
 	}
 	return uiAssetsArea{store: store}, nil
+}
+
+// uiTree is the build the replica serves and publishes: the one the binary embeds (internal/webui/dist), or the test's.
+func (a *App) uiTree() fs.FS {
+	if a.o.UIAssets != nil {
+		return a.o.UIAssets
+	}
+	return dist.FS()
 }
 
 // uiShared is the shared asset store of the UI handler: nil on a replica without the area (the role packages builds no

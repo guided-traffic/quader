@@ -38,6 +38,10 @@ type index struct {
 	pages   []string
 	entries []*Entry
 	byID    map[string]*Entry
+	// byName and byKey find the packages of a format by their name and their key ("<format>\x00<name>"); a name a format holds
+	// in two projects is two entries.
+	byName map[string][]*Entry
+	byKey  map[string][]*Entry
 }
 
 // indexOf builds the index of a snapshot from its pages, reading only the pages the replica has not parsed before, and reuses the
@@ -58,7 +62,7 @@ func (c *Catalogue) indexOf(ctx context.Context, next, cur *snapshot) (*index, e
 	if cur != nil && cur.index != nil && slices.Equal(cur.index.pages, shas) {
 		return cur.index, nil
 	}
-	idx := &index{pages: shas, byID: map[string]*Entry{}}
+	idx := &index{pages: shas, byID: map[string]*Entry{}, byName: map[string][]*Entry{}, byKey: map[string][]*Entry{}}
 	parsed := map[string][]*Entry{}
 	for _, p := range pages {
 		entries, ok := c.pages[p.sha]
@@ -82,6 +86,10 @@ func (c *Catalogue) indexOf(ctx context.Context, next, cur *snapshot) (*index, e
 			if _, dup := idx.byID[e.ID]; !dup {
 				idx.byID[e.ID] = e
 				idx.entries = append(idx.entries, e)
+				idx.byName[e.Format+"\x00"+e.Name] = append(idx.byName[e.Format+"\x00"+e.Name], e)
+				if e.Key != "" && e.Key != e.Name {
+					idx.byKey[e.Format+"\x00"+e.Key] = append(idx.byKey[e.Format+"\x00"+e.Key], e)
+				}
 			}
 		}
 	}

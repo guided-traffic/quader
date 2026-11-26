@@ -13,6 +13,8 @@ import (
 	"testing"
 	"testing/fstest"
 	"time"
+
+	maindist "github.com/guided-traffic/quader/internal/webui/dist"
 )
 
 // fakeShared is a shared asset store of files by "<locale>/<path>" that counts its reads.
@@ -118,11 +120,7 @@ func TestHashedFiles(t *testing.T) {
 		}
 	})
 	t.Run("R-HA-020 the embedded tree lists, with or without a web build", func(t *testing.T) {
-		tree, err := Tree(nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if _, err := HashedFiles(tree, []string{"en", "de"}); err != nil {
+		if _, err := HashedFiles(maindist.FS(), []string{"en", "de"}); err != nil {
 			t.Fatal(err)
 		}
 	})

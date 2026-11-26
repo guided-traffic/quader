@@ -6,8 +6,8 @@
 // /healthz, /readyz and /metrics.
 //
 // It enables none of the main installation's subsystems: no PostgreSQL pool, no object-store client for the
-// main installation's blobs, no job runner, no format route table, no management API, no UI, no login
-// (R-BAS-001). The archtest rule of R-BAS-001 holds its imports to the platform packages.
+// main installation's blobs, no job runner, no format route table, no management API, no login (R-BAS-001); its
+// web interface is a bundle of its own over the public catalogue (internal/bastion/gui, R-BAS-116). The archtest rule of R-BAS-001 holds its imports to the platform packages.
 //
 // The server runs the loops of the pieces; the engine runs only its own janitor. Start order (R-BAS-043): the
 // token file, the signing key, the CA file of the main installation, the TLS material and the dependencies are
@@ -39,6 +39,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/downloads"
 	"github.com/guided-traffic/quader/internal/bastion/engine"
 	"github.com/guided-traffic/quader/internal/bastion/guard"
+	"github.com/guided-traffic/quader/internal/bastion/gui"
 	"github.com/guided-traffic/quader/internal/bastion/handover"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/legal"
@@ -89,9 +90,11 @@ type Server struct {
 	health   *health.Health
 	engine   engine.Engine
 	deps     engine.Deps
-	// legal are the imprint and the privacy notice of the role's ui.legal, rendered in New (R-BAS-100); the Bastion's web
-	// interface serves them, and until it exists no route does.
+	// legal are the imprint and the privacy notice of the role's ui.legal, rendered in New (R-BAS-100); the web interface serves
+	// them.
 	legal *legal.Pages
+	// gui is the read-only web interface (R-BAS-116 to R-BAS-120), mounted on the client listener before the engine.
+	gui *gui.Handler
 	// catalogue is the public catalogue of the web interface (R-BAS-109 to R-BAS-113): its sync runs beside the link, and its
 	// reader is what the web interface serves from.
 	catalogue *catalogue.Catalogue
@@ -184,11 +187,25 @@ func New(o Options) (*Server, error) {
 		s.closeAll()
 		return nil, err
 	}
+	if s.gui, err = s.newGUI(); err != nil {
+		s.closeAll()
+		return nil, err
+	}
 	if err := s.startTLS(); err != nil {
 		s.closeAll()
 		return nil, err
 	}
 	return s, nil
+}
+
+// newGUI builds the web interface over the catalogue, the legal pages and the guard, whose class gui counts every request of it
+// (Q-LIM-307), with the class's figures of the configuration the request read for the RateLimit fields of a refusal.
+func (s *Server) newGUI() (*gui.Handler, error) {
+	return gui.New(gui.Options{
+		Catalogue: s.catalogue, Legal: s.legal, Guard: s.deps.Guard, Quiet: engine.MarkQuiet,
+		Flood: func(ctx context.Context) settings.Rate { return s.configuration.For(ctx).Flood.GUI },
+		Log:   s.log.With("component", "gui"),
+	})
 }
 
 // instanceName is the pod name for the logs, the metrics and Quader-Bastion-Replica.
@@ -579,15 +596,22 @@ func (s *Server) serve(srv *httpserver.Server) {
 }
 
 // clientHandler is the chain of the client listener: panic recovery, trace context, request log and metrics,
-// the in-flight limit, the client address (R-ARCH-005 steps 1 to 5), then the engine for every path. The
-// engine decides by the path itself (R-BAS-018), so it is the router's fallback and the handler of the paths
-// ServeMux would redirect. There is no authentication stage and no rate-limit stage: the engine's guard owns
+// the in-flight limit, the client address (R-ARCH-005 steps 1 to 5), then the web interface for `/`, `/ui` and
+// everything below `/ui/` (R-BAS-116) and the engine for every other path. The engine decides by the path itself
+// (R-BAS-018), so it is the router's fallback and the handler of the paths ServeMux would redirect. There is no authentication stage and no rate-limit stage: the engine's guard owns
 // both (R-BAS-019, R-BAS-035).
 func (s *Server) clientHandler() (http.Handler, error) {
 	sec := s.cfg.ServerSection()
 	router := httpserver.NewOpsRouter()
-	router.SetFallback(s.engine)
-	router.HandleUncleaned("/", s.engine)
+	front := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if gui.Owns(r.URL.Path) {
+			s.gui.ServeHTTP(w, r)
+			return
+		}
+		s.engine.ServeHTTP(w, r)
+	})
+	router.SetFallback(front)
+	router.HandleUncleaned("/", front)
 	resolver, err := httpserver.NewResolver(sec.TrustedProxies, sec.BaseURL, nil,
 		httpserver.WithForwardedHeader(httpserver.ForwardedHeader(sec.ForwardedHeader)))
 	if err != nil {

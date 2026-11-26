@@ -180,7 +180,7 @@ func (h *Handler) serveShared(w http.ResponseWriter, r *http.Request, locale, pa
 	data, err := h.shared.get(r.Context(), locale, path)
 	switch {
 	case errors.Is(err, ErrNotShared):
-		problem(w, http.StatusNotFound, "Not Found")
+		h.problem(w, r, http.StatusNotFound)
 		return
 	case err != nil:
 		// a client that went away while it waited for another request's read is no failure of the store
@@ -189,7 +189,7 @@ func (h *Handler) serveShared(w http.ResponseWriter, r *http.Request, locale, pa
 		}
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Retry-After", "1")
-		problem(w, http.StatusServiceUnavailable, "Service Unavailable")
+		h.problem(w, r, http.StatusServiceUnavailable)
 		return
 	}
 	serveFile(w, r, path, bytes.NewReader(data))

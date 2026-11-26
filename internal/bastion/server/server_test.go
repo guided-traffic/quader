@@ -19,6 +19,7 @@ import (
 	"github.com/guided-traffic/quader/internal/auth/token"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
@@ -143,9 +144,10 @@ func waitReady(t *testing.T, h *harness) {
 	}
 }
 
-// TestR_BAS_100_TheLegalPagesAreRenderedAtStartAndServedByNoRouteYet: the role renders its own chart's imprint and privacy
-// notice when it starts and holds them for its web interface; until that interface exists no address serves them (Q-BAS-342).
-func TestR_BAS_100_TheLegalPagesAreRenderedAtStartAndServedByNoRouteYet(t *testing.T) {
+// TestR_BAS_100_TheLegalPagesAreRenderedAtStartAndServedByTheWebInterface: the role renders its own chart's imprint and privacy
+// notice when it starts, and its web interface serves them at its own data path, also while the replica has no catalogue to show
+// (R-BAS-118); the main installation's address of them is not served (Q-BAS-342).
+func TestR_BAS_100_TheLegalPagesAreRenderedAtStartAndServedByTheWebInterface(t *testing.T) {
 	h := start(t, minimal(writeTokenFile(t, t.TempDir()), "ui:\n  legal:\n    imprint:\n      de: \"# Impressum\\n\\nBeispiel GmbH\"\n"))
 	waitReady(t, h)
 	de, en := h.srv.Legal().Pages("de"), h.srv.Legal().Pages("en")
@@ -156,10 +158,12 @@ func TestR_BAS_100_TheLegalPagesAreRenderedAtStartAndServedByNoRouteYet(t *testi
 		t.Fatalf("en = %+v, want the German text marked de", en)
 	}
 	client := "http://" + h.srv.ClientAddr().String()
-	for _, path := range []string{"/ui/de/legal/imprint", "/ui/data/v1/legal", "/api/v1/legal?locale=de"} {
-		if code, _, body := get(t, client+path); code != 404 || !strings.Contains(body, iface.CodeNotFound) {
-			t.Errorf("GET %s = %d %s", path, code, body)
-		}
+	if code, _, body := get(t, client+"/ui/data/v1/legal?locale=en"); code != 200 || !strings.Contains(body, "Beispiel GmbH") ||
+		!strings.Contains(body, `"lang":"de"`) {
+		t.Errorf("GET /ui/data/v1/legal = %d %s", code, body)
+	}
+	if code, _, body := get(t, client+"/api/v1/legal?locale=de"); code != 404 || !strings.Contains(body, iface.CodeNotFound) {
+		t.Errorf("GET /api/v1/legal = %d %s", code, body)
 	}
 }
 
@@ -181,8 +185,8 @@ func TestR_BAS_001_TheRoleServesItsTwoListenersAndAnswersWithItsOwnProblems(t *t
 		status int
 		code   string
 	}{
-		"/api/v1/system/ping": {404, iface.CodeNotFound}, "/ui/": {404, iface.CodeNotFound}, "/auth/oidc/corp/start": {404, iface.CodeNotFound},
-		"/": {404, iface.CodeNotFound}, "/.well-known/x": {404, iface.CodeNotFound},
+		"/api/v1/system/ping": {404, iface.CodeNotFound}, "/auth/oidc/corp/start": {404, iface.CodeNotFound},
+		"/.well-known/x": {404, iface.CodeNotFound}, "/ui/data/v1/state": {503, errs.CodeNotReady},
 		"/api/npm/web/npm-all/lodash": {503, "unavailable"}, "/files/web/raw/x": {503, "unavailable"},
 	} {
 		code, header, body := get(t, client+path)

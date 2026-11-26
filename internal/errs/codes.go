@@ -496,6 +496,9 @@ const (
 	CodeGatewayTimeout = iface.CodeGatewayTimeout
 	CodeAuthTimeout    = iface.CodeAuthTimeout
 	CodeAddressBlocked = iface.CodeAddressBlocked
+	// CodeNotReady: an address of a Bastion's web interface while the replica holds no state of the public catalogue to show
+	// (503 with Retry-After 30, bastion.md R-BAS-117); never answered while the web interface is off, which is not_found.
+	CodeNotReady = "not_ready"
 )
 
 // <<< M13 bastion
@@ -1076,6 +1079,7 @@ var registry = []CodeInfo{
 	{CodeGatewayTimeout, UpstreamTimeout, "Gateway timeout", "A Bastion got no answer for the request within its time limit (R-BAS-029)."},
 	{CodeAuthTimeout, RateLimited, "Authentication timeout", "Too many failed authentications came from this address; unverified credentials are refused until the Retry-After has passed."},
 	{CodeAddressBlocked, RateLimited, "Address blocked", "The address was blocked for sending too many refused requests; retry after the Retry-After."},
+	{CodeNotReady, Unavailable, "Not ready", "A Bastion's web interface has nothing to show yet: the replica started without a kept state and has not read one. Retry after the Retry-After (R-BAS-117)."},
 	// <<< M13 bastion
 	//
 	// >>> M1 repository

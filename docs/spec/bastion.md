@@ -199,8 +199,8 @@ Priority: **MVP** · Covers: DIST-024
 - *Revised on 2026-11-26 by the owner's statement on W-35 ([Q-BAS-14](#q-bas-14--no-web-interface-at-the-bastion), R-BAS-101 to
   R-BAS-103):* the role gains a read-only web interface for anonymous visitors, switched on per registration at the main installation
   (`gui`, `docs`), fed by the public catalogue the replica mirrors over the interface; it still has no management API, no login and no
-  session. *Today, until W-35's package P9 lands:* no web interface; the catalogue's wire exists (interface version 8), and since
-  W-35's P7 (2026-11-26) every replica mirrors the catalogue while `gui` is on (R-BAS-109 to R-BAS-113).
+  session. *Built on 2026-11-26 (W-35's P7 and P9):* every replica mirrors the catalogue while `gui` is on (R-BAS-109 to R-BAS-113) and
+  serves the web interface from it (R-BAS-116 to R-BAS-118); its bundle is the Bastion's own, not the main installation's.
 - Horizontal replicas: every Bastion replica is identical and interchangeable (INV-2); a request may reach any replica, and
   nothing a request needs is held only by the replica an earlier request reached (INV-18): answers, document copies and a
   local cache volume are caches whose loss costs performance only. The Bastion has no PostgreSQL; what it must not lose lives
@@ -279,8 +279,9 @@ Priority: **MVP** · Covers: DIST-024
   from the Bastion as well ([Q-BAS-121](#q-bas-121--a-path-is-classified-as-the-main-installations-router-will-read-it-and-a-token-refusal-on-a-forward-is-no-statement-about-the-bastions-token)).
 - *Revised on 2026-11-26 (W-35, R-BAS-101 to R-BAS-103):* while its registration's switch `gui` is on, a Bastion also serves its read-only
   web interface below `/ui/`, `/` as a redirect to it, and `/robots.txt` and `/sitemap.xml` at the host root, from the catalogue it mirrors
-  and never by a request to the main installation (W-35's packages P9 and P10). *Today, until they land:* every such path answers `404`
-  as below.
+  and never by a request to the main installation (W-35's packages P9 and P10). *Built by P9 on 2026-11-26:* `/`, `/ui` and everything
+  below `/ui/` are the web interface's (R-BAS-116, R-BAS-117), whatever the switch says: off, they answer `404 not_found` as below.
+  *Until P10 lands:* `/robots.txt` and `/sitemap.xml` answer `404` as below.
 - There is no login, no session, no cookie and no browser flow. A `Cookie` header is ignored and never forwarded. A session
   token never reaches the Bastion from Quader, because Quader never sets a cookie for the Bastion's host.
 - The ops listener serves `/healthz`, `/readyz` and `/metrics` as on every Quader role ([operations-and-observability.md](operations-and-observability.md)
@@ -1667,7 +1668,8 @@ The Bastion produces only these answers itself; every other body comes from the 
 | `401` | `invalid_token`, `credentials_required` | a malformed or refused credential (R-BAS-019), a kept `invalid` answer, no anonymous reads at the main installation |
 | `404`, `403`, `401` | the code of the kept refusal | a read-shape answer `none` (R-BAS-022) |
 | `404` | `not_found` | a path outside the mirrored families (R-BAS-018) |
-| `405`, `413`, `421` | `method_not_allowed`, `payload_too_large`, `misdirected_request` | R-BAS-014, R-BAS-018 |
+| `405`, `413`, `421` | `method_not_allowed`, `payload_too_large`, `misdirected_request` | R-BAS-014, R-BAS-018; `405` also for every method but `GET` and `HEAD` at an address of the web interface (R-BAS-116) |
+| `503` | `not_ready` | an address of the web interface while the replica holds no catalogue to show, with `Retry-After: 30` (R-BAS-117) |
 | `429` | `rate_limited`, `auth_timeout`, `address_blocked` | R-BAS-035 to R-BAS-037, with `Retry-After` and the `RateLimit-Policy` and `RateLimit` fields of R-API-016 |
 | `502`, `503`, `504` | `bad_gateway`, `unavailable`, `busy`, `gateway_timeout` | R-BAS-021, R-BAS-025, R-BAS-027 |
 
@@ -6157,10 +6159,11 @@ Hauptinstanz" and "Je kleiner der Footprint, desto besser".
   `rel="nofollow noopener noreferrer"`. The pages are held in memory; the rule of the languages is the main installation's
   ([api-and-ui.md](api-and-ui.md) R-UI-225): a locale without its own text shows the other language's, marked with its `lang`; a page
   that no language has a text for is none.
-- **Serving.** Not yet: the Bastion has no web interface, and this requirement adds no listener and no route
-  ([Q-BAS-342](#q-bas-342--the-pages-are-rendered-at-start-and-served-by-no-route-until-the-bastions-web-interface)). `/ui/…` and
-  `/api/v1/…` still answer `404 not_found` (R-BAS-003). The web interface serves the pages from `Pages(locale)` of
-  `internal/bastion/legal`, which the replica holds from its start (`Server.Legal`), and links them in its footer
+- **Serving.** This requirement adds no listener and no route
+  ([Q-BAS-342](#q-bas-342--the-pages-are-rendered-at-start-and-served-by-no-route-until-the-bastions-web-interface)); `/api/v1/…` answers
+  `404 not_found` (R-BAS-003). *Built by W-35's P9 on 2026-11-26:* the web interface serves the pages from `Pages(locale)` of
+  `internal/bastion/legal`, which the replica holds from its start (`Server.Legal`), at `/ui/data/v1/legal` (R-BAS-118), while `gui` is on,
+  also while the replica holds no catalogue yet, and links them in its footer
   ([H-2304](#h-2304--a-bastion-serves-its-imprint-and-privacy-notice-only-with-its-web-interface)).
 - **Imports.** `internal/bastion/legal` imports `internal/packages/readme` and `internal/legaltext` by a scoped allowance of the
   architecture test ([Q-BAS-341](#q-bas-341--the-bastion-renders-with-the-readme-renderer-through-a-scoped-allowance)); neither
@@ -6172,7 +6175,8 @@ Acceptance criteria:
   SVG, a frame, an event handler and a `javascript:` link are dropped; an image of another site is a link, one of the Bastion's origin
   is gone; the address block, the table and the three kinds of link stay; the German locale shows the English text marked `en`.
 - Unit ([server_test.go](../../internal/bastion/server/server_test.go), a second): a replica started with a German imprint holds it
-  for both locales, and `/ui/de/legal/imprint`, `/ui/data/v1/legal` and `/api/v1/legal` answer `404 not_found`.
+  for both locales, `/ui/data/v1/legal` answers them, and `/api/v1/legal` answers `404 not_found`
+  (`TestR_BAS_100_TheLegalPagesAreRenderedAtStartAndServedByTheWebInterface`).
 - Configuration ([ui_test.go](../../internal/config/ui_test.go)): the role takes `ui.legal`, refuses a text above 64 KiB naming the
   key, and refuses `ui.readme` as a key of another section
   ([bastion_role_test.go](../../internal/config/bastion_role_test.go)).
@@ -6651,6 +6655,7 @@ Priority: **P1** · Covers: quader-only
 | `PublicSet()` | the projects and repositories the catalogue shows |
 | `Search(Query)` | the public packages by `q` (a substring of the name, the description or a keyword, without regard to case), `formats`, `project`, `repositories`, `deprecated`, sorted by `name` (the default), `createdAt`, `updatedAt` or `relevance` (a leading `-` descending), in pages of 50, at most 100, with the cursor of the page before ([Q-BAS-383](#q-bas-383--the-search-runs-over-the-index-in-memory-with-a-cursor-of-the-last-entrys-sort-key)) |
 | `Package(id)` | a public package of the index: the summary's members that are the same for every format, and the summary as the main installation answered it |
+| `Lookup(format, name)` | a public package of the format by its name, else by its key, as a page's address names it (R-BAS-118, [Q-BAS-395](#q-bas-395--the-lookup-finds-a-package-by-its-name-then-by-its-key); added by W-35's P9) |
 | `Versions(id, after, limit)` | a page of the package's versions list, as the main installation answered it |
 | `Document(path)` | a document of the grammar (R-BAS-103) that the state shows (R-BAS-112), raw and compressed, verified against its SHA-256 on every read |
 
@@ -6667,6 +6672,135 @@ Acceptance criteria:
   (`TestR_BAS_109_ARoundMirrorsTheCatalogueAndReadsOnlyWhatChanged`); `TestR_BAS_113_AnIntegrityFailureIsFetchedAgain` (a document the
   main installation sent that does not verify fails the round and is fetched by the next; a stored document changed on the volume is not
   served and is fetched again). Milliseconds.
+
+## The Bastion's web interface
+
+W-35's package P9 (the owner's g1 to g13, 2026-11-26): a Bastion whose registration's switch `gui` is on serves a read-only web interface
+to anonymous visitors from the internet, "die sich über die publizierten Inhalte informieren wollen", so that they see the public images,
+packages and their open findings and trust what the company delivers. It is a second, small Angular application of the main
+installation's views ([api-and-ui.md](api-and-ui.md) R-UI-223), served by the Bastion itself from the public catalogue it mirrors
+(R-BAS-109 to R-BAS-113), never by a request to the main installation, and it names nothing of the main installation (W-35's B.13). The
+Go side is [internal/bastion/gui](../../internal/bastion/gui); the application is `web/src/bastion`.
+
+### R-BAS-116 · The web interface is a bundle of the Bastion's own, mounted before the engine, that reaches nothing behind the Bastion
+Priority: **P1** · Covers: quader-only
+
+- **Mounted before the engine** ([Q-BAS-390](#q-bas-390--the-web-interface-owns--ui-and-everything-below-ui-before-the-engine)). The
+  client listener hands `/`, `/ui` and every path below `/ui/` to the web interface and every other path to the engine as before
+  (R-BAS-018). No path of the engine's families is the web interface's, and no address of the web interface is a family of the engine.
+- **Read-only by construction** (W-35's B.7). Every address of the web interface answers `GET` and `HEAD`; every other method is answered
+  `405 method_not_allowed` with `Allow: GET, HEAD` before anything else, its body unread and the catalogue not read. Its data come from the
+  replica's catalogue reader (`Server.Catalogue`) and its legal pages (`Server.Legal`) alone: a document the catalogue does not hold is a
+  `404`, never a fill, a forward or a check.
+- **Never behind the Bastion.** An architecture rule holds the dependency closure of `internal/bastion/gui`: it holds neither the client
+  of the main installation (`internal/bastion/mainclient`), nor the link client of a handover (`internal/bastion/handover`), nor the engine
+  (`internal/bastion/engine`), directly or through another package of the Bastion's tree.
+- **A bundle of its own** ([Q-BAS-391](#q-bas-391--the-main-installations-bundle-is-a-package-of-its-own-the-bastion-embeds-its-own)).
+  The application is built from `web/` as a project of its own (`bastion-gui`) and embedded into the binary in
+  `internal/bastion/gui/dist`, beside the main installation's in `internal/webui/dist`, which is now a package of its own that only the
+  main installation's composition root imports. The Bastion serves its bundle with the handler of `internal/webui` (the locales, the hashed
+  files, the nonce of a page), which a scoped allowance of R-BAS-001 admits for `internal/bastion/gui` alone; the main installation's bundle
+  is not allowed, so its bytes never enter the Bastion's closure (R-BAS-001, R-ARCH-004). A binary built without the web build serves the
+  committed placeholder page of each.
+
+*Built on 2026-11-26 (W-35's P9):* [gui.go](../../internal/bastion/gui/gui.go), the mount in `clientHandler` of
+[server.go](../../internal/bastion/server/server.go), [internal/webui/dist](../../internal/webui/dist/embed.go), the rules
+`CheckBastionGUIImports` and the scoped allowance of [bastion.go](../../internal/archtest/bastion.go).
+
+Acceptance criteria:
+
+- Unit ([gui_test.go](../../internal/bastion/gui/gui_test.go), microseconds per case):
+  `TestR_BAS_116_EveryAddressReadsOnlyAndAnswersAnUnsafeMethod405` (six unsafe methods on thirteen addresses: `405` with `Allow`, no read
+  of the catalogue; `Owns` claims no path of the engine), `TestR_BAS_116_TheBundleIsTheBastionsOwnAndBuildsWithoutTheWebBuild`.
+- The route table over the whole replica ([gui_test.go](../../internal/bastion/server/gui_test.go), 0.3 s, a catalogue of one npm
+  package of bytes): `TestR_BAS_116_TheWebInterfaceIsMountedBeforeTheEngineAndNeverReachesTheMainInstallation` (every address of the web
+  interface answers `405` to `POST`, `PUT`, `PATCH` and `DELETE`; a page, the search, the lookup, the versions and a version answer from
+  the catalogue; the double of the main installation records no forward and no check; the package API beside it still forwards).
+- Architecture ([bastion_test.go](../../internal/archtest/bastion_test.go), milliseconds): the rule names an import of the engine, of the
+  client through the catalogue and of the handover below `internal/bastion/gui`, passes the catalogue, the guard and `internal/webui`, and
+  refuses `internal/webui/dist` and `internal/webui` anywhere else in the Bastion's tree.
+
+### R-BAS-117 · The web interface's state, headers and request class
+Priority: **P1** · Covers: quader-only
+
+- **The state decides first** (W-35's B.2b, B.6a; [Q-BAS-392](#q-bas-392--not-ready-a-page-is-served-with-503-the-data-answer-not_ready)).
+  While the switch `gui` is off (R-BAS-112), every address of the web interface answers `404 not_found` ("Nothing is offered at this
+  address."), its bundle's files and its legal pages included. While the replica holds no state to show, or knows neither its switches nor
+  a state (Q-BAS-379), a data address answers `503 not_ready` ("This page is not available right now. Try again in a few minutes.") with
+  `Retry-After: 30`, and a page is served with that status and that header, so that a person reads the application's sentence and a
+  crawler indexes nothing; the bundle's files and the legal pages are served, since they come from the binary and the chart. Serving, `/`
+  and `/ui` answer `302` to `/ui/`, and `/ui/` and an address without a locale `302` to the locale of `Accept-Language` (English
+  otherwise), with `Vary: Accept-Language` and `Cache-Control: no-store`.
+- **Headers** (W-35's B.7). Every answer carries `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
+  `Cross-Origin-Resource-Policy: same-origin` and `Referrer-Policy: no-referrer`. A page carries the policy
+  `default-src 'none'; script-src 'self'; style-src 'self' 'nonce-…'; img-src 'self' data:; font-src 'self'; connect-src 'self';
+  base-uri 'self'; form-action 'none'; frame-ancestors 'none'; require-trusted-types-for 'script'; trusted-types angular angular#bundler`
+  with a nonce of its own; every other answer `default-src 'none'; frame-ancestors 'none'`. No answer sets a cookie or carries a `Server`
+  header or a header of the product's own (`Quader-…`, the chain's `ReplicaNever`).
+- **Problems** (Q-BAS-321). Every problem of the web interface is problem details of type `about:blank` with `Cache-Control: no-store`,
+  its texts name no party: `not_found`, `not_ready`, `method_not_allowed` ("This address only reads: it answers GET and HEAD."), the
+  guard's refusals below, and `malformed_request` for a parameter the data do not answer (R-BAS-118). The code `not_ready` (503) is
+  registered with the core's codes.
+- **The request class** (W-35's B.14, [usage-and-limits.md](usage-and-limits.md) Q-LIM-307). Every request of the web interface, a page,
+  a file of the bundle and the data alike, asks the guard's block list (R-BAS-037) and then the class `gui` (20 requests a second, a burst
+  of 100, per address by default), never the anonymous class's budget and never a miss. A refusal is `429` (`rate_limited`,
+  `address_blocked`) with `Retry-After` rounded up to whole seconds and the RateLimit fields under the policy name `pages`
+  ([Q-BAS-394](#q-bas-394--a-refusal-of-the-class-gui-names-the-policy-pages)); a refusal of a blocked address is not logged one by one.
+
+*Built on 2026-11-26 (W-35's P9):* [gui.go](../../internal/bastion/gui/gui.go), `webui.Options.CSP`, `ReferrerPolicy`, `OnIndex` and
+`Problem` of [webui.go](../../internal/webui/webui.go), `errs.CodeNotReady`, `engine.MarkQuiet`.
+
+Acceptance criteria:
+
+- Unit ([gui_test.go](../../internal/bastion/gui/gui_test.go)): `TestR_BAS_117_EveryAnswerCarriesTheHeadersAndNoCookie` (thirteen
+  addresses by `GET`, `HEAD` and `POST`: the headers, the page's policy and its nonce in the page, no cookie, no `Server`, no `Quader-`
+  header), `TestR_BAS_117_TheStateDecidesOffNotReadyAndServing` (off, undecided, on without a state, serving; the redirects and the
+  locale), `TestR_BAS_117_EveryRequestCountsInTheClassGui` (a page, a file and the data ask the class once each; the refusal's fields; a
+  blocked address marked quiet; a refused request reads nothing).
+- Unit ([server_test.go](../../internal/bastion/server/server_test.go)): a replica that knows neither its switches nor a state answers
+  `/ui/data/v1/state` `503 not_ready` (`TestR_BAS_001_TheRoleServesItsTwoListenersAndAnswersWithItsOwnProblems`).
+
+### R-BAS-118 · The data a page reads: the main installation's shapes below `/ui/data/v1/`
+Priority: **P1** · Covers: quader-only
+
+The application reads everything below `/ui/data/v1/`, the path the catalogue's builder rewrote the main installation's `/api/v1/` links
+to (R-BAS-107), in the main installation's JSON shapes, so that the shared views read them as they read the management API
+([Q-BAS-393](#q-bas-393--the-data-are-the-catalogues-grammar-below-uidatav1-and-five-addresses-of-their-own)):
+
+| Address | Answers |
+|---|---|
+| `state` | `{confirmedAt, staleAfterSeconds, stale, docs}`: the time of the state served, `bastion.gui.stale_after`, whether the state is older, the switch `docs` (W-35's B.2b) |
+| `legal?locale=en\|de` | the Bastion's own imprint and privacy notice (R-BAS-100) in the shape of `GET /api/v1/legal` (R-UI-225); also while the replica is not ready |
+| `projects` | `{items}`: the keys of the projects the catalogue shows (the reader's `PublicSet`), for the start page that leads a visitor into a project |
+| `packages?q&format&project&repository&deprecated&sort&cursor&limit` | the search of the reader (R-BAS-113, W-35's B.8) in the envelope of R-API-010 (`items`, `nextCursor`), each item the package summary as the main installation answered it; `include` is accepted and changes nothing (the summaries carry the counts of open findings); any other parameter is `400 malformed_request` |
+| `packages/lookup?format&name` | the public package of the format by its name, else by its key ([Q-BAS-395](#q-bas-395--the-lookup-finds-a-package-by-its-name-then-by-its-key)), or `404` |
+| `packages/<id>/versions?cursor&limit` | a page of the package's versions in the main installation's order; the application sorts, searches and groups them in the browser, as the main installation's view does ([Q-BAS-396](#q-bas-396--the-versions-are-paged-in-the-main-installations-order-and-sorted-in-the-browser)) |
+| every other path of the grammar (R-BAS-103) | the document as the builder stored it, by `Reader.Document`: a package, a version, its README, findings, signatures, contents, documentation, a set-up, a generic folder or file, a signature object, `signing/trusted-root.json` and `signing/chain.pem` (the last three as attachments); an index page and the catalogue's own `state` are not answered |
+
+- **One spelling.** A path is read segment by segment and written in the grammar's one spelling before it is looked up, so a browser that
+  escapes less than the grammar (`+` of a version, `encodeURIComponent`'s `!'()*`) reaches the same document; a decoded `/` in a segment
+  stays encoded and is refused.
+- **Caching** ([Q-BAS-397](#q-bas-397--a-document-is-answered-compressed-as-stored-with-its-sha-256-as-its-etag)). Every data answer is
+  `Cache-Control: no-cache` with an `ETag`: a document's the SHA-256 of its raw bytes (with `-gzip` for its compressed form), a computed
+  answer's the SHA-256 of its bytes; `If-None-Match` answers `304`. A document is answered compressed, as the catalogue keeps it, to a
+  client that takes `gzip` (`Content-Encoding: gzip`, `Vary: Accept-Encoding`).
+- While the replica is not ready, every address but `legal` answers `503 not_ready` (R-BAS-117); the reader's off and not ready are
+  answered as `404` and `503`, a query it refuses as `400`.
+
+*Built on 2026-11-26 (W-35's P9):* [data.go](../../internal/bastion/gui/data.go), `Reader.Lookup` of
+[reader.go](../../internal/bastion/catalogue/reader.go).
+
+Acceptance criteria:
+
+- Unit ([gui_test.go](../../internal/bastion/gui/gui_test.go)): `TestR_BAS_118_TheDataAreTheMainInstallationsShapesFromTheCatalogue`
+  (the state and its `304`, the projects, the legal pages, the search with its cursor and the parameters it refuses, the lookup by name and by key and
+  not under another format, a page of versions and the one after it, a version under three spellings of its `+`, gzip and `gzip;q=0`, a
+  document's `304` and `HEAD`, the chain as an attachment, eight addresses that answer `404`); `TestR_BAS_113_TheLookupFindsAPublicPackageByItsFormatAndName`
+  ([catalogue_test.go](../../internal/bastion/catalogue/catalogue_test.go)).
+- Integration (area `bastion`, inside `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut`, no world of its own, about
+  0.1 s): Go's client reads the page of a package, the state, the legal pages, the search, the lookup, the package, its versions and its
+  version through the Bastion's client listener, each `200`, and every status line, header and body is scanned for the main
+  installation's host, the address the Bastion reaches it at and `/api/v1/` (W-35's B.13).
 
 ## A registration the configuration declares
 
@@ -12313,7 +12447,7 @@ Context: R-BAS-100. The Bastion has no web interface yet; the owner: "Je kleiner
 | (a) The replica renders the pages when it starts and holds them (`Server.Legal`); no route (chosen) | | Nothing new is reachable; a text the renderer cannot take shows at start, not with the web interface | A Bastion that serves visitors today shows no imprint (H-2304) |
 | (b) A route of its own now (`/legal/…` as HTML) | | The pages are reachable at once | A listener's family and a page design the web interface would replace |
 
-**Choice:** (a).
+**Choice:** (a). *Followed by W-35's P9 on 2026-11-26:* the web interface serves the pages at `/ui/data/v1/legal` (R-BAS-118).
 
 ### Q-BAS-345 · The catalogue's bounds are figures outside the interface's shape
 
@@ -12981,6 +13115,120 @@ reads to refuse a token that reaches one manifest or blob (Q-BAS-246); the token
 
 **Choice:** (a). **Rationale:** a token issued before an upgrade stays valid for the minutes it lives, at the cost of one branch of the
 verifier; pre-alpha needs no other path of migration. **Applied in the spec:** R-BAS-115, [formats/oci.md](formats/oci.md) R-OCI-005.
+
+### Q-BAS-390 · The web interface owns `/`, `/ui` and everything below `/ui/`, before the engine
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-116. The engine decides every path of the client listener by itself (R-BAS-018) and answered `/` and `/ui/…` `404`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A dispatcher in front of the engine hands `/`, `/ui` and `/ui/…` to `internal/bastion/gui` (chosen) | The engine is unchanged; the web interface is a handler of its own | The archtest can hold the web interface away from the engine and the client of the main installation; neither side can reach a path of the other | Two places decide a path; `Owns` is the one rule |
+| (b) A family `gui` of the engine | One classifier | The engine's steps are the package clients' (credentials, misses, forwards) | The web interface would live in the package that forwards to the main installation |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-116, R-BAS-003.
+
+### Q-BAS-391 · The main installation's bundle is a package of its own; the Bastion embeds its own
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-116, W-35's B.13 ("the main installation's bundle cannot be served by the Bastion"). `internal/webui` embedded the main
+installation's build and served it; the archtest forbade the package in the Bastion's tree.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `internal/webui/dist` embeds the main build as a package of its own; `webui.New` requires its `Assets`; the Bastion embeds `internal/bastion/gui/dist` and serves it with `internal/webui` by a scoped allowance (chosen) | One handler of an Angular build, two bundles | The Bastion's binary holds the main bundle's bytes only through the one image, never in its closure; the handler's rules (hashed files, nonce, locale) are one code | `webui` gains four options |
+| (b) A handler of its own in the Bastion's tree | No allowance | — | A second copy of the locale, nonce and hashed-file rules |
+| (c) One bundle with both applications | One build | — | The Bastion would ship the main installation's screens, the owner's "kleiner Footprint" against it |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-116, [architecture.md](architecture.md) R-ARCH-004.
+
+### Q-BAS-392 · Not ready: a page is served with 503, the data answer `not_ready`
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-117, W-35's B.2b: "A replica without one answers every GUI address with `503 not_ready` and `Retry-After: 30`. The page reads
+'This page is not available right now. Try again in a few minutes.' Crawlers do not index a 503."
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The data `503 not_ready`; a page the application's `index.html` with status `503` and `Retry-After`, the bundle's files and the legal pages served; `/` redirects (chosen) | The application shows the sentence in the product's look, with the imprint in its footer | A person reads a page, a crawler a 503; the imprint is reachable whenever the Bastion answers at all | A page answers its document with an error status |
+| (b) Every address the problem details | One answer | Simplest | A person reads JSON in the browser, and the imprint is gone exactly when the page is down |
+
+**Choice:** (a). While `gui` is off every address answers `404`, the files and the legal pages included (W-35's B.12: "a Bastion without web
+pages has nothing to sign"). **Applied in the spec:** R-BAS-117.
+
+### Q-BAS-393 · The data are the catalogue's grammar below `/ui/data/v1/`, and five addresses of their own
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-118. The builder rewrote the main installation's `/api/v1/` links to `/ui/data/v1/` (R-BAS-107); the documents' paths are
+the grammar of R-BAS-103.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A document by its path of the grammar; `state`, `legal`, `projects`, `packages` and `packages/lookup` computed; `packages/<id>/versions` paged (chosen) | The links the builder wrote resolve as they stand (`signatures/objects/…`, `signing/chain.pem`) | No second address scheme; the application builds a path with the grammar's segments | A browser's spelling differs from the grammar's: the server writes the one spelling |
+| (b) The main installation's API paths mirrored one by one | The views' HTTP classes could be reused | — | Every route of the API the Bastion has no document for would need an answer of its own |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-118.
+
+### Q-BAS-394 · A refusal of the class gui names the policy `pages`
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-117. The engine's refusals name `requests`, `misses`, `failed-auth` and `blocking` (R-BAS-099).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `pages`, with the class's burst and window, and `Retry-After` in whole seconds (chosen) | A browser's refusal says which budget it hit | The class is its own (Q-LIM-307): its figures differ from the anonymous class's | A fifth name |
+| (b) `requests` | One name | — | Its quota would be the anonymous class's, which the page did not use |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-117.
+
+### Q-BAS-395 · The lookup finds a package by its name, then by its key
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-118. A page's address names the format and the package as the main installation's address does
+(`/ui/<locale>/projects/<project>/packages/<format>/<name>`), and an Ansible role's address holds its key (Q-UI-1317). The reader had no way
+to find a package but by its catalogue ID.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `Reader.Lookup(format, name)` over two maps of the index, the name first, then the key (chosen) | The main installation's lookup | One map read per page view | The index keeps two more maps |
+| (b) A search for the name and a filter of its page | No change of the reader | — | A substring search over the whole index for every page view |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-113, R-BAS-118.
+
+### Q-BAS-396 · The versions are paged in the main installation's order and sorted in the browser
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-118. The main installation's versions list takes a sort, a prerelease filter, the repositories and a list by content
+(`group=content`, an image and its tags). The catalogue holds the list once, in the main installation's order, with `digest`, `kind` and
+`state` included (R-BAS-104).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Only `cursor` and `limit`; the application reads every page and sorts, filters and groups in the browser (chosen) | The main installation's view does the same (Q-UI-452) | No format knowledge at the Bastion (version order is a format's) | A package of thousands of versions is read whole by the browser |
+| (b) The Bastion sorts by version | One answer | — | A version order per format in the Bastion |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-118.
+
+### Q-BAS-397 · A document is answered compressed as stored, with its SHA-256 as its ETag
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-118, W-35's B.7 ("data answers carry `Cache-Control: no-cache` with an ETag (the SHA-256)"). The catalogue keeps every document
+gzip-compressed (R-BAS-110), and a documentation tree is up to a megabyte.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The stored gzip to a client that takes it (`"<sha>-gzip"`), the raw bytes otherwise (`"<sha>"`), `Vary: Accept-Encoding` (chosen) | No compression per request | The bytes a crawler or a scraper costs are the compressed ones, and no CPU is spent | Two tags per document |
+| (b) Raw bytes always | One tag | — | Five to ten times the bytes on the wire |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-118.
 
 ### Q-BAS-425 · The headers of a forwarded answer pass an allowlist, and a format's need is a replay header
 

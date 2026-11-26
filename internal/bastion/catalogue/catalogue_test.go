@@ -304,6 +304,31 @@ func TestR_BAS_112_TheFeedHooksHideAndResyncWithoutWaitingForThePoll(t *testing.
 // TestR_BAS_113_AnIntegrityFailureIsFetchedAgain: a document whose bytes the main installation sends do not verify is not kept and
 // fails the round, the next round fetches it; a stored document that fails its verification on a read is deleted, answers not
 // found, and the next round fetches it again.
+// TestR_BAS_113_TheLookupFindsAPublicPackageByItsFormatAndName: the address of a package's page names its format and its name
+// (R-BAS-118); the lookup finds it there, not under another format, and not once its repository left the public set.
+func TestR_BAS_113_TheLookupFindsAPublicPackageByItsFormatAndName(t *testing.T) {
+	r := newRig(t)
+	r.main.SetPublic(public("acme/npm-local", "acme/npm-other"))
+	r.publish(leftPad, rightPd)
+	r.on(true, true)
+	r.tick()
+	if e, ok, err := r.cat.Lookup("npm", "right-pad"); err != nil || !ok || e.ID != "pkg_B2" {
+		t.Fatalf("lookup = %+v %v %v", e, ok, err)
+	}
+	if _, ok, _ := r.cat.Lookup("nuget", "right-pad"); ok {
+		t.Error("found under another format")
+	}
+	r.main.SetPublic(public("acme/npm-local"))
+	r.tick()
+	if _, ok, _ := r.cat.Lookup("npm", "right-pad"); ok {
+		t.Error("found after its repository left the public set")
+	}
+	r.on(false, false)
+	if _, _, err := r.cat.Lookup("npm", "left-pad"); !errors.Is(err, catalogue.ErrOff) {
+		t.Errorf("off: %v", err)
+	}
+}
+
 func TestR_BAS_113_AnIntegrityFailureIsFetchedAgain(t *testing.T) {
 	r := newRig(t)
 	r.publish(leftPad)

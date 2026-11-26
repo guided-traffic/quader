@@ -284,6 +284,8 @@ func layerTable() []layerRule {
 		// The Bastion's request flow and its role: they answer HTTP.
 		{"internal/bastion/engine", layerEdge},
 		{"internal/bastion/server", layerEdge},
+		// The Bastion's read-only web interface (R-BAS-116): its pages and the data they read, from the public catalogue.
+		{"internal/bastion/gui", layerEdge},
 		// The scenario of the whole role in one process (R-BAS-048): it starts the server.
 		{"internal/bastion/roletest", layerEdge},
 

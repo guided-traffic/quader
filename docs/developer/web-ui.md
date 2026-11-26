@@ -1,7 +1,7 @@
 # Web UI: workspace, build and serving
 
 The UI is an Angular 22 workspace in [web/](../../web/) and a small Go package,
-[internal/webui/](../../internal/webui/), that embeds the build and serves it under `/ui/{locale}/`.
+[internal/webui/](../../internal/webui/), that serves the build under `/ui/{locale}/`; [internal/webui/dist](../../internal/webui/dist/embed.go) embeds it.
 Requirements: [R-ARCH-004](../spec/architecture.md), [R-UI-001](../spec/api-and-ui.md),
 [R-UI-045](../spec/api-and-ui.md), [R-UI-046](../spec/api-and-ui.md),
 [R-UI-047](../spec/api-and-ui.md).
@@ -744,7 +744,7 @@ pipeline and never committed. The gaps are H-1910 and H-1911 of
 ```text
 web/ ──npm run build:embed──> web/dist/web/browser/{en,de}/ ──copy──> internal/webui/dist/{en,de}/
                                                                        internal/webui/dist/index.html  (committed placeholder)
-internal/webui:  //go:embed all:dist
+internal/webui/dist (package dist):  //go:embed all:*   (dist.FS(), imported by internal/app only)
 ```
 
 - `internal/webui/dist/index.html` is committed. It is a one-page notice and carries the nonce
@@ -816,8 +816,13 @@ h, err := webui.New(webui.Options{
 mux.Handle("/ui/", h) // do not strip the prefix
 ```
 
-The app sets two more: `Shared` (the shared asset store, `nil` on a replica without the area `ui-assets`) and `OnSharedError`
-(the log line of a `503`); `Assets` replaces the embedded build in tests (`app.Options.UIAssets`, `testenv.ReplicaOptions.UI`).
+`Assets` is required: the app passes the build of [internal/webui/dist](../../internal/webui/dist/embed.go) (`dist.FS()`), or the
+test's (`app.Options.UIAssets`, `testenv.ReplicaOptions.UI`). The app sets two more: `Shared` (the shared asset store, `nil` on a
+replica without the area `ui-assets`) and `OnSharedError` (the log line of a `503`). The Bastion's web interface
+([internal/bastion/gui](../../internal/bastion/gui/gui.go), R-BAS-116, R-BAS-117) serves its own bundle with the same handler and sets
+the other four: `CSP` (its stricter policy with the nonce's slot), `ReferrerPolicy` (`no-referrer`), `OnIndex` (a page answered `503`
+with `Retry-After` while the replica holds no catalogue) and `Problem` (its own problem details for the handler's `404`, `405` and
+`503`).
 
 ## The shared asset store
 
@@ -839,7 +844,8 @@ replica of release N (api, web, all)                         replica of release 
 
 | File | Responsibility |
 |---|---|
-| [internal/webui/hashed.go](../../internal/webui/hashed.go) | `IsHashed` (the pattern of R-UI-001, Q-UI-140), `HashedFiles` (a build's hashed files by locale and path), `Tree` (the embedded build or `Options.Assets`) |
+| [internal/webui/hashed.go](../../internal/webui/hashed.go) | `IsHashed` (the pattern of R-UI-001, Q-UI-140), `HashedFiles` (a build's hashed files by locale and path) |
+| [internal/webui/dist/embed.go](../../internal/webui/dist/embed.go) | `FS`: the main installation's build as the binary embeds it, a package of its own that only `internal/app` and the tests import, so the Bastion's closure never holds it (R-BAS-116) |
 | [internal/webui/shared.go](../../internal/webui/shared.go) | The interface `Shared` and `ErrNotShared`; the replica's memory of the store (files up to 32 MiB, read again after an hour and served on while the store cannot be asked, misses for 10 s, one read per name in flight that ends even when the store panics, 10 s per read); `serveShared`: the file, `404` or `503` (Q-UI-141) |
 | [internal/webui/shared/shared.go](../../internal/webui/shared/shared.go) | `Store`: `Asset` (the row, then `readVerified`: the blob read with verification whatever `storage.download.verify` says and a second check of the length and the SHA-256, Q-UI-143), `Publish` (hash the build's files; renew the rows that hold its bytes; read which files have a row with its bytes and a live, `ok` blob; commit the others in batches of 32 through `blob.CommitAll`, whose link inserts or replaces a row as Q-UI-142 says; a blob whose row stays with other bytes is queued for the collector), `Prune` |
 | [internal/webui/shared/keeper.go](../../internal/webui/shared/keeper.go) | `Keeper`: `PublishAtStart` (attempts and retries within `PublishWait`, a minute, as one deadline), the loop (`RenewEvery` after a cycle that succeeded, a minute after one that failed), the retention (`Retention`, 7 days) |

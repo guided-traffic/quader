@@ -53,9 +53,21 @@ type Options struct {
 	// Preference returns the signed-in user's locale preference (R-API-021) or "". Optional;
 	// a value outside Locales is ignored.
 	Preference func(r *http.Request) string
-	// Assets replaces the embedded UI. It is rooted like dist/: <locale>/index.html per locale,
-	// or a single index.html as placeholder. Tests use it; production leaves it nil.
+	// Assets is the build the handler serves, rooted like a dist/ directory: <locale>/index.html per locale, or a single
+	// index.html as placeholder. Required: the main installation passes its build (internal/webui/dist), the Bastion its own
+	// (internal/bastion/gui, R-BAS-116), and tests a tree of their own.
 	Assets fs.FS
+	// CSP replaces the Content-Security-Policy of the documents (R-UI-001): a policy with one %s slot for the per-response nonce.
+	// ImageOrigins is then not used. Optional; the Bastion's web interface sets its stricter policy (R-BAS-117).
+	CSP string
+	// ReferrerPolicy replaces the Referrer-Policy of the documents, same-origin by default. Optional.
+	ReferrerPolicy string
+	// OnIndex is called before a document (a locale's index.html) is written: it may set headers and returns the status, 0 for
+	// 200. Optional; the Bastion answers a page 503 while it holds no state to show (R-BAS-117).
+	OnIndex func(w http.ResponseWriter, r *http.Request) int
+	// Problem writes an error answer of the handler (a method it does not serve, a file it does not hold, the shared store that
+	// could not be asked) in place of its minimal problem details. Optional; the Bastion renders its own (Q-BAS-321).
+	Problem func(w http.ResponseWriter, r *http.Request, status int)
 	// Shared is the shared asset store (R-HA-020, Q-HA-120): a hashed file the bundle lacks is
 	// looked up there. Optional; nil answers such a file 404, as a replica without the store did.
 	Shared Shared
@@ -74,6 +86,9 @@ type Handler struct {
 	placeholder   bool
 	shared        *sharedCache // nil without Options.Shared
 	onSharedError func(locale, path string, err error)
+	referrer      string
+	onIndex       func(http.ResponseWriter, *http.Request) int
+	problem       func(http.ResponseWriter, *http.Request, int)
 }
 
 // bundle is one locale: the index.html template and, for a real build, the asset tree.
@@ -107,14 +122,18 @@ func New(opts Options) (*Handler, error) {
 	if !seen[opts.DefaultLocale] {
 		return nil, fmt.Errorf("webui: default locale %q is not in the locale list", opts.DefaultLocale)
 	}
-	csp, err := buildCSP(opts.ImageOrigins)
-	if err != nil {
-		return nil, err
+	csp := opts.CSP
+	if csp == "" {
+		var err error
+		if csp, err = buildCSP(opts.ImageOrigins); err != nil {
+			return nil, err
+		}
+	} else if strings.Count(csp, "%s") != 1 || strings.ContainsAny(csp, "\r\n") {
+		return nil, errors.New("webui: the CSP holds exactly one %s slot for the nonce and no line break")
 	}
-
-	root, err := Tree(opts.Assets)
-	if err != nil {
-		return nil, fmt.Errorf("webui: embedded UI: %w", err)
+	root := opts.Assets
+	if root == nil {
+		return nil, errors.New("webui: no build to serve (Options.Assets)")
 	}
 
 	h := &Handler{
@@ -124,6 +143,15 @@ func New(opts Options) (*Handler, error) {
 		cspFormat:     csp,
 		bundles:       make(map[string]*bundle, len(opts.Locales)),
 		onSharedError: opts.OnSharedError,
+		referrer:      opts.ReferrerPolicy,
+		onIndex:       opts.OnIndex,
+		problem:       opts.Problem,
+	}
+	if h.referrer == "" {
+		h.referrer = "same-origin"
+	}
+	if h.problem == nil {
+		h.problem = problem
 	}
 	if opts.Shared != nil {
 		h.shared = newSharedCache(opts.Shared)
@@ -186,12 +214,12 @@ func (h *Handler) Locales() []string { return append([]string(nil), h.locales...
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.Header().Set("Allow", "GET, HEAD")
-		problem(w, http.StatusMethodNotAllowed, "Method Not Allowed")
+		h.problem(w, r, http.StatusMethodNotAllowed)
 		return
 	}
 	rest, ok := strings.CutPrefix(r.URL.Path, MountPath)
 	if !ok {
-		problem(w, http.StatusNotFound, "Not Found")
+		h.problem(w, r, http.StatusNotFound)
 		return
 	}
 
@@ -236,11 +264,11 @@ func (h *Handler) serveLocale(w http.ResponseWriter, r *http.Request, b *bundle,
 	// A path whose last segment has an extension names a file. It never falls back to the
 	// index, so a missing script or stylesheet is a 404 and not an HTML page.
 	if !fs.ValidPath(tail) {
-		problem(w, http.StatusNotFound, "Not Found")
+		h.problem(w, r, http.StatusNotFound)
 		return
 	}
 	if b.assets != nil {
-		if served := serveFrom(w, r, b.assets, tail); served {
+		if served := h.serveFrom(w, r, b.assets, tail); served {
 			return
 		}
 	}
@@ -250,7 +278,7 @@ func (h *Handler) serveLocale(w http.ResponseWriter, r *http.Request, b *bundle,
 		h.serveShared(w, r, b.locale, tail)
 		return
 	}
-	problem(w, http.StatusNotFound, "Not Found")
+	h.problem(w, r, http.StatusNotFound)
 }
 
 // isPackageRoute reports whether tail is a package page of the UI (`projects/<key>/packages/<format>/<name>`): the name of a package can
@@ -274,7 +302,7 @@ func isFilesRoute(tail string) bool {
 
 // serveFrom serves the file at tail of the bundle and reports whether it did: false for a path
 // that is missing or a directory, which the caller answers.
-func serveFrom(w http.ResponseWriter, r *http.Request, assets fs.FS, tail string) bool {
+func (h *Handler) serveFrom(w http.ResponseWriter, r *http.Request, assets fs.FS, tail string) bool {
 	f, err := assets.Open(tail)
 	if err != nil {
 		return false
@@ -288,7 +316,7 @@ func serveFrom(w http.ResponseWriter, r *http.Request, assets fs.FS, tail string
 	if !ok {
 		data, err := io.ReadAll(f)
 		if err != nil {
-			problem(w, http.StatusInternalServerError, "Internal Server Error")
+			h.problem(w, r, http.StatusInternalServerError)
 			return true
 		}
 		rs = bytes.NewReader(data)
@@ -317,14 +345,20 @@ func (h *Handler) serveIndex(w http.ResponseWriter, r *http.Request, b *bundle) 
 	body := bytes.ReplaceAll(b.index, []byte(NoncePlaceholder), []byte(nonce))
 
 	hd := w.Header()
+	status := http.StatusOK
+	if h.onIndex != nil {
+		if s := h.onIndex(w, r); s != 0 {
+			status = s
+		}
+	}
 	hd.Set("Content-Type", "text/html; charset=utf-8")
 	hd.Set("Content-Length", strconv.Itoa(len(body)))
 	hd.Set("Cache-Control", "no-cache")
 	hd.Set("Content-Security-Policy", fmt.Sprintf(h.cspFormat, nonce))
 	hd.Set("X-Content-Type-Options", "nosniff")
-	hd.Set("Referrer-Policy", "same-origin")
+	hd.Set("Referrer-Policy", h.referrer)
 	hd.Set("Cross-Origin-Opener-Policy", "same-origin")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(status)
 	if r.Method != http.MethodHead {
 		_, _ = w.Write(body)
 	}
@@ -355,11 +389,11 @@ func contentType(name string) string {
 	return "application/octet-stream"
 }
 
-// problem writes a minimal problem+json answer. The edge's error model (R-ARCH-023) is not
+// problem writes a minimal problem+json answer whose title is the status's phrase. The edge's error model (R-ARCH-023) is not
 // imported on purpose: webui stays free of other internal packages.
-func problem(w http.ResponseWriter, status int, title string) {
+func problem(w http.ResponseWriter, _ *http.Request, status int) {
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
-	_, _ = fmt.Fprintf(w, `{"type":"about:blank","title":%q,"status":%d}`+"\n", title, status)
+	_, _ = fmt.Fprintf(w, `{"type":"about:blank","title":%q,"status":%d}`+"\n", http.StatusText(status), status)
 }

@@ -33,6 +33,10 @@ const bastionRoot = "internal/bastion"
 //     language, which render the Bastion's own imprint and privacy notice at start (R-BAS-100, Q-BAS-341), for
 //     internal/bastion/legal only (scoped). Neither imports a package of this module (the renderer is goldmark, bluemonday and
 //     x/net/html; legaltext the standard library), so they bring nothing of the main installation into the role.
+//   - internal/webui: the handler of an embedded Angular build (the locales, the hashed files, the nonce of a page's policy), for
+//     internal/bastion/gui only (scoped), which serves the Bastion's own bundle with it (R-BAS-116). It imports the standard
+//     library only; the main installation's bundle is the package internal/webui/dist, which is not allowed, so its bytes never
+//     enter the role's binary through this edge.
 //
 // The match is the exact package, so a package that did not exist when the rule was written is refused by
 // default. A new entry names the requirement that justifies it.
@@ -57,7 +61,61 @@ func bastionScoped() map[string][]string {
 		"internal/blob/blobcrypt":  {"internal/bastion/cache", "internal/bastion/handover"},
 		"internal/packages/readme": {"internal/bastion/legal"},
 		"internal/legaltext":       {"internal/bastion/legal"},
+		"internal/webui":           {"internal/bastion/gui"},
 	}
+}
+
+// guiRoot is the Bastion's web interface, guiForbidden what it must never reach, directly or through another package of the
+// Bastion's tree (R-BAS-116, W-35's B.7): the client of the main installation, the handover's link client and the engine, which
+// forwards and fills. A page view is answered from the catalogue alone, so no request of the web interface can ever become a
+// request to the main installation.
+const guiRoot = "internal/bastion/gui"
+
+func guiForbidden() []string {
+	return []string{"internal/bastion/mainclient", "internal/bastion/handover", "internal/bastion/engine"}
+}
+
+// CheckBastionGUIImports implements the rule of R-BAS-116: the dependency closure of internal/bastion/gui holds none of
+// guiForbidden. A violation names the chain.
+func CheckBastionGUIImports(module string, pkgs []Package) []Violation {
+	byRel := make(map[string]Package, len(pkgs))
+	for _, p := range pkgs {
+		byRel[p.Rel] = p
+	}
+	var out []Violation
+	type step struct{ pkg, via string }
+	seen := map[string]bool{}
+	var queue []step
+	for _, p := range pkgs {
+		if under(p.Rel, guiRoot) && !seen[p.Rel] {
+			seen[p.Rel] = true
+			queue = append(queue, step{p.Rel, p.Rel})
+		}
+	}
+	for len(queue) > 0 {
+		cur := queue[0]
+		queue = queue[1:]
+		for _, imp := range byRel[cur.pkg].Imports {
+			target := rel(module, imp)
+			if target == imp {
+				continue
+			}
+			if underAny(target, guiForbidden()) {
+				out = append(out, Violation{
+					Rule: "R-BAS-116", From: cur.pkg, To: target,
+					Detail: "the Bastion's web interface answers from the public catalogue alone and never reaches the main installation: " +
+						cur.via + " -> " + target,
+				})
+				continue
+			}
+			if !seen[target] {
+				seen[target] = true
+				queue = append(queue, step{target, cur.via + " -> " + target})
+			}
+		}
+	}
+	sortViolations(out)
+	return out
 }
 
 // bastionTransitive are the packages that enter the Bastion's dependency closure only because an allowed

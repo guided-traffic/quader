@@ -28,6 +28,9 @@ type Reader interface {
 	Search(q Query) (Page, error)
 	// Package is a public package of the index by its catalogue ID; ok is false for one the catalogue does not show.
 	Package(id string) (Entry, bool, error)
+	// Lookup is a public package by its format and its name or its key, as the main installation's lookup finds it (R-API-029):
+	// what an address of the web interface names (R-BAS-118); ok is false for one the catalogue does not show.
+	Lookup(format, name string) (Entry, bool, error)
 	// Versions is a page of a public package's versions, in the main installation's order, as the main installation answered them.
 	Versions(ctx context.Context, id, after string, limit int) (VersionPage, error)
 	// Document is a document by its path of the grammar (R-BAS-103), verified; ok is false for a path the catalogue does not hold
@@ -154,6 +157,25 @@ func (c *Catalogue) Package(id string) (Entry, bool, error) {
 		return Entry{}, false, nil
 	}
 	return *e, true, nil
+}
+
+// Lookup implements [Reader]: the name first, then the key (an Ansible role's address holds its key, Q-UI-1317).
+func (c *Catalogue) Lookup(format, name string) (Entry, bool, error) {
+	s, err := c.served()
+	if err != nil {
+		return Entry{}, false, err
+	}
+	if s.index == nil {
+		return Entry{}, false, nil
+	}
+	for _, by := range []map[string][]*Entry{s.index.byName, s.index.byKey} {
+		for _, e := range by[format+"\x00"+name] {
+			if s.visible(e) {
+				return *e, true, nil
+			}
+		}
+	}
+	return Entry{}, false, nil
 }
 
 // entry is a public package of the snapshot's index.

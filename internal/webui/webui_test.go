@@ -2,12 +2,15 @@ package webui
 
 import (
 	"io"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	maindist "github.com/guided-traffic/quader/internal/webui/dist"
 )
 
 const indexHTML = `<!doctype html><html lang="en"><head><base href="/ui/en/">` +
@@ -339,7 +342,7 @@ func TestPlaceholder(t *testing.T) {
 	})
 
 	t.Run("R-ARCH-003 the embedded tree starts, with or without a web build", func(t *testing.T) {
-		h, err := New(Options{Locales: []string{"en", "de"}, DefaultLocale: "en"})
+		h, err := New(Options{Locales: []string{"en", "de"}, DefaultLocale: "en", Assets: maindist.FS()})
 		if err != nil {
 			t.Fatalf("New with the embedded tree: %v", err)
 		}
@@ -354,7 +357,7 @@ func TestPlaceholder(t *testing.T) {
 	})
 
 	t.Run("R-ARCH-003 the committed placeholder carries the nonce placeholder", func(t *testing.T) {
-		data, err := dist.ReadFile("dist/index.html")
+		data, err := fs.ReadFile(maindist.FS(), "index.html")
 		if err != nil {
 			t.Fatal(err)
 		}

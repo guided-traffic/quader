@@ -582,7 +582,7 @@ func (a *App) startClient() error {
 		Locales: uiLocales(), DefaultLocale: uiDefaultLocale, ImageOrigins: cfg.UI.Readme.ExternalImageOrigins,
 		// The saved language of a signed-in user beats Accept-Language (R-UI-001).
 		Preference: a.uiPreference(),
-		Assets:     a.o.UIAssets,
+		Assets:     a.uiTree(),
 		// A hashed file of the other release of a rolling upgrade (R-HA-020, Q-HA-120).
 		Shared: a.uiShared(),
 		OnSharedError: func(locale, path string, err error) {

@@ -235,6 +235,7 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [cache/store.go](../../internal/bastion/cache/store.go), [cache/sweep.go](../../internal/bastion/cache/sweep.go) | `Cache` (what the engine uses; `StoreConfiguration` and `LoadConfiguration`, the object `configuration/current.json` of Q-BAS-327), `New`, `NewVolume`, `NewBucket`, `Options`; `SweepOnce`, `RunSweeper` |
 | [shared/shared.go](../../internal/bastion/shared/shared.go) | `Limiter`, `BlockList`, `FlightLock`, `SweepLease`, `AnswerStore`, `State` (with the catalogue's lease `Catalogue`), `NewLocal` |
 | [catalogue/](../../internal/bastion/catalogue) | the public catalogue of the web interface (W-35's P7): see [its section](#the-public-catalogue-at-the-bastion-package-p7) |
+| [gui/](../../internal/bastion/gui) | the read-only web interface (W-35's P9): see [its section](#the-web-interface-package-p9) |
 | [shared/local.go](../../internal/bastion/shared/local.go) | the local forms: token buckets, sliding-window counters, block list, flights, answers in memory, all bounded |
 | [throughput/throughput.go](../../internal/bastion/throughput/throughput.go) | the throughput of R-BAS-097: `Pacer` over `shared.Bytes` and the applied configuration; the buckets (total, anonymous share, the catalogue's half), the reservation per slice of 100 ms, `Admit` (a miss's first bytes within its queue time, else `mainclient.ThroughputError`), `Running` and `Reader` (paced, never refused), the class's hourly volume, `Export` (the limit's gauge) |
 | [shared/bytes.go](../../internal/bastion/shared/bytes.go) | `Bytes`: the counters per name and window of the throughput (`State.Bytes`) and of the budgets (`State.Budget`, the key family `budget`), the replica's share in memory without Valkey with the expiry it was made with, `cluster.BastionStore`'s `Claim`, `Release` and `Add` with it |
@@ -268,7 +269,7 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [engine/quiet.go](../../internal/bastion/engine/quiet.go) | `WithQuietSlot`, `Quiet`: how a quiet verdict reaches the server's request log |
 | [engine/lru.go](../../internal/bastion/engine/lru.go), [engine/flight.go](../../internal/bastion/engine/flight.go) | the bounded LRU, the single-flight and the `handle` of a flight that a fill takes over |
 | [server/server.go](../../internal/bastion/server/server.go) | `Run`, `New`, `Start`, `Shutdown`; `buildDeps` and `wireLink` build and connect the components (the configuration holder over the cache, the slot budget with the ceiling, resized by the holder's watcher, the edge figure for the handshake), `Start` applies the stored configuration before the client listener binds, `runLink` runs the loops |
-| [legal/legal.go](../../internal/bastion/legal/legal.go) | `New`: the Bastion's imprint and privacy notice of its own `ui.legal`, rendered in `server.New` with the README renderer (no image origins, its `server.base_url` as its own origin) and held for its web interface; `Pages(locale)`, `ETag`; served by no route yet (R-BAS-100) |
+| [legal/legal.go](../../internal/bastion/legal/legal.go) | `New`: the Bastion's imprint and privacy notice of its own `ui.legal`, rendered in `server.New` with the README renderer (no image origins, its `server.base_url` as its own origin) and held for its web interface; `Pages(locale)`, `ETag`; served by the web interface at `/ui/data/v1/legal` (R-BAS-100, R-BAS-118) |
 | [maintest/maintest.go](../../internal/bastion/maintest/maintest.go), [maintest/store.go](../../internal/bastion/maintest/store.go) | `Main`, the in-process main installation; `Faulty`, `MemSpool`; `Store`, the TLS object store of the handover's tests |
 | [roletest/roletest.go](../../internal/bastion/roletest/roletest.go) | `Run`: the scenario of the whole role for one cache backend |
 | [bastionmain/recognition.go](../../internal/bastionmain/recognition.go) | `Recognition`, `WithRecognition`, `RecognitionFrom` |
@@ -348,7 +349,7 @@ figures are no keys of the configuration file but the configuration the main ins
 | Step | Call | A refusal |
 |---|---|---|
 | 2, block list | `Blocked(addr)` | `429 address_blocked`, `Quiet`, `Retry-After` |
-| 4, limits | `Request(addr, credentialed)`; for a page of the web interface `Page(addr)` (no route asks it before W-35's P9, which serves the pages) | `429 rate_limited` |
+| 4, limits | `Request(addr, credentialed)`; for every request of the web interface `Page(addr)`, which `internal/bastion/gui` asks after `Blocked` (R-BAS-117) | `429 rate_limited` |
 | a credential the Bastion refuses itself (R-BAS-019) | `FailedAuth(addr)` | none, the answer is the `401` |
 | before a check or a forward for a credential with no usable answer | `AuthTimeout(addr)` | `429 auth_timeout`; nothing is sent to the main installation |
 | before every request to the main installation (forward, check, conditional) | `Miss(addr, credentialed)` | `429 rate_limited` while hits keep being served |
@@ -1841,7 +1842,7 @@ The integration test adds about 11 s to the area `bastion`, a constant: it is no
 
 W-35's P7, built on 2026-11-26: a Bastion replica mirrors its registration's catalogue and serves the web interface's reads from it alone
 ([spec](../spec/bastion.md#the-public-catalogue-at-the-bastion), R-BAS-109 to R-BAS-113; the security perspective is
-[security/bastion.md](../security/bastion.md#the-public-catalogue-at-the-bastion)). The pages are P9's; this package is what they read.
+[security/bastion.md](../security/bastion.md#the-public-catalogue-at-the-bastion)). The pages are [P9's](#the-web-interface-package-p9); this package is what they read.
 
 | File | Responsibility |
 |---|---|
@@ -1849,7 +1850,7 @@ W-35's P7, built on 2026-11-26: a Bastion replica mirrors its registration's cat
 | [catalogue/sync.go](../../internal/bastion/catalogue/sync.go) | a round: the public set first (hides at once), the change list to its end (a `reset` into a state of its own), the batch reads of the documents the store does not hold, verified; the shards and the state record (`persist`); the start (`Load`), the follower's take, the deletion of the tree with `gui` off, the sweep of unnamed documents |
 | [catalogue/state.go](../../internal/bastion/catalogue/state.go) | the snapshot (256 shards of path → document, copied on write per shard), the state record and the shard documents, the verification (`open`) |
 | [catalogue/index.go](../../internal/bastion/catalogue/index.go) | the index from the pages `index/<n>` (parsed once per page document), what a package shows (`visible`, `wiki`), the match and the relevance of a search |
-| [catalogue/reader.go](../../internal/bastion/catalogue/reader.go) | `Reader`: `State`, `ConfirmedAt`, `PublicSet`, `Search`, `Package`, `Versions`, `Document` (verified on every read, a failure fetched again) |
+| [catalogue/reader.go](../../internal/bastion/catalogue/reader.go) | `Reader`: `State`, `ConfirmedAt`, `PublicSet`, `Search`, `Package`, `Lookup` (by name, then key; P9), `Versions`, `Document` (verified on every read, a failure fetched again) |
 | [mainclient/catalogue.go](../../internal/bastion/mainclient/catalogue.go) | the client's three reads of the routes, every body through `CatalogueReader` of the throughput, no slot; `KindCatalogue` |
 | [cache/catalogue.go](../../internal/bastion/cache/catalogue.go) | the catalogue's tree of the cache backend: documents by address, the signed state record, the sealed names with a cache key, the listing; the share comes off the artifacts' limit in `limits` |
 | [maintest/catalogue.go](../../internal/bastion/maintest/catalogue.go) | the fake main installation's catalogue with the builder's rules (numbers from the clock, `reset` outside the range, deleted paths left out from 0, missing frames, the batch's bound) and a frame that does not verify |
@@ -1879,6 +1880,33 @@ measurement's attack to 256 MiB of 2 GiB.
 The integration test adds about 18 s to the area `bastion`, a constant: it is no format's case. Its waits are the builder's (a publish
 reached both Bastions after 2.1 s with a poll of 2 s; a project lowered to private was gone from both after 7 s, the follow-up round 8 s
 after the feed's entry), and the cut of the link (one failed round per Bastion and 2.5 s more).
+
+## The web interface (package P9)
+
+W-35's P9, built on 2026-11-26: the Bastion serves a read-only web interface to anonymous visitors from the catalogue P7 mirrors
+([spec](../spec/bastion.md#the-bastions-web-interface), R-BAS-116 to R-BAS-118; the security perspective is
+[security/bastion.md](../security/bastion.md#the-web-interface)). The application itself is `web/src/bastion` ([web-ui.md](web-ui.md)).
+
+| File | Responsibility |
+|---|---|
+| [gui/gui.go](../../internal/bastion/gui/gui.go) | `Handler`, `Options`, `New`, `Owns` (`/`, `/ui`, `/ui/…`), `Bundle` (the embedded `dist/`); the order of a request: the headers, the method (`405`), the guard (`Blocked`, then `Page`), the state (off `404`, not ready `503` for the data and for a page through `webui.Options.OnIndex`), the redirects, the data, the bundle through `webui.Handler`; the problems of type `about:blank` |
+| [gui/data.go](../../internal/bastion/gui/data.go) | the data below `/ui/data/v1/`: `state`, `legal`, `projects` (`PublicSet`), `packages` (the reader's `Search`), `packages/lookup` (`Lookup`), `packages/<id>/versions` (`Versions`), every other document by its path in the grammar's one spelling (`canonical`); ETag, `304`, the stored gzip |
+| [gui/dist/](../../internal/bastion/gui/dist) | the committed placeholder `index.html`; `npm run build:embed` adds `en/` and `de/` of the project `bastion-gui` (git ignores them) |
+| [server/server.go](../../internal/bastion/server/server.go) | `newGUI` over the catalogue, the legal pages, the guard and the configuration's class `gui`; `clientHandler`'s dispatcher in front of the engine |
+
+**What runs.** Nothing of its own: every answer is computed in the request from `Server.Catalogue()` and `Server.Legal()`. The archtest rule
+`CheckBastionGUIImports` keeps `mainclient`, `handover` and `engine` out of the package's closure; the engine's `MarkQuiet` reaches it as a
+function of its options.
+
+**Tests** (tier, time, data):
+
+| Test | Tier | Time | Data |
+|---|---|---|---|
+| `TestR_BAS_116_EveryAddressReadsOnlyAndAnswersAnUnsafeMethod405`, `…_TheBundleIsTheBastionsOwnAndBuildsWithoutTheWebBuild`, `TestR_BAS_117_EveryAnswerCarriesTheHeadersAndNoCookie`, `…_TheStateDecidesOffNotReadyAndServing`, `…_EveryRequestCountsInTheClassGui`, `TestR_BAS_118_TheDataAreTheMainInstallationsShapesFromTheCatalogue` ([internal/bastion/gui](../../internal/bastion/gui/gui_test.go)) | unit, a reader in memory and a bundle of three files per locale | 0.3 s for the package | documents of tens of bytes |
+| `TestR_BAS_116_TheWebInterfaceIsMountedBeforeTheEngineAndNeverReachesTheMainInstallation` ([internal/bastion/server](../../internal/bastion/server/gui_test.go)) | unit, the whole replica against `maintest` | 0.3 s | one npm package, four documents |
+| `TestR_BAS_113_TheLookupFindsAPublicPackageByItsFormatAndName` (`internal/bastion/catalogue`) | unit | 0.05 s | two packages |
+| `CheckBastionGUIImports` in `TestBastionImportAllowlist` and `TestRealTree` (`internal/archtest`) | architecture | milliseconds; the real tree with the others | — |
+| `walkWebInterface` in `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut` ([test/integration/bastion](../../test/integration/bastion/catalogue_sync_test.go)) | integration, eight addresses of the web interface through the client listener, scanned for the main installation | about 0.1 s inside the existing world (the case ran 20.6 s, measured 2026-11-26) | the case's npm package of bytes |
 
 ## Tests
 

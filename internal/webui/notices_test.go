@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	maindist "github.com/guided-traffic/quader/internal/webui/dist"
 )
 
 // noticesFile is the file that web/scripts/build-embed.mjs writes into every locale directory (Q-UI-144).
@@ -97,7 +99,7 @@ func TestR_UI_001_ThirdPartyNotices(t *testing.T) {
 	})
 
 	t.Run("the embedded build carries the notices of every locale", func(t *testing.T) {
-		h, err := New(Options{Locales: []string{"en", "de"}, DefaultLocale: "en"})
+		h, err := New(Options{Locales: []string{"en", "de"}, DefaultLocale: "en", Assets: maindist.FS()})
 		if err != nil {
 			t.Fatalf("New: %v", err)
 		}

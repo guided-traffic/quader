@@ -800,7 +800,7 @@ quader/
 │   ├── syncwrite/               # the copy of a large local write, flushed every 32 MiB (leaf layer, vulnerability-scanning.md Q-VULN-225)
 │   ├── errs/
 │   ├── observability/
-│   ├── webui/                   # go:embed all:dist; dist/ is filled by the web build
+│   ├── webui/                   # the handler of an embedded build; webui/dist (package dist) embeds the main build
 │   ├── manual/                  # the manual of the help area: contents, rendering, link check (R-API-054)
 │   ├── legaltext/               # the imprint and the privacy notice: the choice of a locale's text, standard library only (R-UI-225)
 │   ├── tools/coverage/          # requirement coverage generator (docs/coverage, Q-ROAD-4)

@@ -20,7 +20,7 @@ import (
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
-	"github.com/guided-traffic/quader/internal/webui"
+	"github.com/guided-traffic/quader/internal/webui/dist"
 )
 
 // SyncBuffer is a log sink that is safe to read while a replica writes.
@@ -85,11 +85,7 @@ type ReplicaOptions struct {
 // well, and every replica published them into the installation's shared asset store before it turned ready, about 1.7 s per
 // installation that the pipeline, which builds no UI, never paid.
 var placeholderUI = sync.OnceValues(func() (fs.FS, error) {
-	tree, err := webui.Tree(nil)
-	if err != nil {
-		return nil, err
-	}
-	index, err := fs.ReadFile(tree, "index.html")
+	index, err := fs.ReadFile(dist.FS(), "index.html")
 	if err != nil {
 		return nil, fmt.Errorf("the committed placeholder page: %w", err)
 	}

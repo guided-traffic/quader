@@ -3225,6 +3225,42 @@ a page the dropped links could point at.
 [formats/oci.md](spec/formats/oci.md) R-OCI-005.
 
 
+### ADR-305 · A Bastion serves a read-only web interface of its own from the public catalogue, never from the main installation
+
+**Status:** Decided by the owner on 2026-11-26 (W-35, his answers g1 to g13: "über die Hauptinstanz kann ich die GUI vom Bastion aktivieren
+um dem Nutzer zum Beispiel verfügbare Public-Images und die gefundenen Vulnerabilities anzuzeigen … Es gibt im API (und GUI) Interface vom
+Bastion keine Möglichkeit eine schreibende Operation durchzuführen … Je kleiner der Footprint, desto besser!"); the form by the development
+agent ([Q-BAS-390](spec/bastion.md#q-bas-390--the-web-interface-owns--ui-and-everything-below-ui-before-the-engine) to
+[Q-BAS-397](spec/bastion.md#q-bas-397--a-document-is-answered-compressed-as-stored-with-its-sha-256-as-its-etag),
+[R-BAS-116](spec/bastion.md#r-bas-116--the-web-interface-is-a-bundle-of-the-bastions-own-mounted-before-the-engine-that-reaches-nothing-behind-the-bastion)
+to [R-BAS-118](spec/bastion.md#r-bas-118--the-data-a-page-reads-the-main-installations-shapes-below-uidatav1)). It builds W-35's P9.
+
+**Context.** The Bastion served package clients only, and the archtest kept the main installation's web interface out of its tree. W-35's
+P2 split the package screens into views without a session or an act (R-UI-223), P7 mirrors the public catalogue into every replica and reads
+it back (R-BAS-113), and W-34 gave the pages a request class of their own (Q-LIM-307).
+
+**Decision.**
+- The web interface is `internal/bastion/gui`, mounted on the client listener before the engine for `/`, `/ui` and everything below
+  `/ui/`; an architecture rule keeps the client of the main installation, the handover and the engine out of its closure.
+- Its pages are a second Angular application of `web/` (`bastion-gui`), built from the shared views and embedded as the Bastion's own
+  bundle; the main installation's bundle moves to `internal/webui/dist`, which the Bastion may not import, and both are served by the one
+  handler of `internal/webui`.
+- Its data are the main installation's JSON shapes below `/ui/data/v1/`: the catalogue's documents by their grammar, and the state, the
+  legal pages, the projects, the search, the lookup and a page of versions computed from the reader.
+- GET and HEAD alone, no cookie, a strict policy per page, every request in the class `gui`; off is `404`, a replica without a state
+  answers `503 not_ready` and shows the sentence on its page.
+
+**Consequences.** A page view, a crawl and a scrape cost the Bastion and never the main installation. The image carries two bundles
+(the Bastion's is a fraction of the main one). A rolling upgrade of a Bastion has no shared store of hashed files (H-2324); the web
+interface shares its origin with the package API (H-2325). No change of the interface, no migration.
+
+**Alternatives considered.** A family of the engine (the forwarding package would hold the pages); the main installation's bundle served
+by the Bastion (its screens and its bytes in the role); server-side rendering at the main installation (Node.js in the image, W-35's B.11);
+the main installation's API paths mirrored one by one (an answer for every route the catalogue has no document for).
+
+**Revisit condition:** a second base URL per Bastion (a host of its own for the pages, H-2325), or a Bastion whose rollouts need the hashed
+files of the release before (H-2324).
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -10491,10 +10527,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-365 questions on [spec/bastion.md](spec/bastion.md).
+373 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 365 questions</summary>
+<summary>Q-BAS: 373 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10810,6 +10846,14 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-387](spec/bastion.md#q-bas-387--a-refusal-loses-its-link-into-the-installation-and-names-this-repository) | A refusal loses its link into the installation and names this repository | Decided by the development agent on 2026-11-26 | (a) The forward's sentence is the same without the link, the finding's ID and the page, and says "this repository" where the text named the holder | — |
 | [Q-BAS-388](spec/bastion.md#q-bas-388--the-sealed-part-of-a-registry-token-is-encrypted-under-a-key-of-the-ring-not-a-reference) | The sealed part of a registry token is encrypted under a key of the ring, not a reference | Decided by the development agent on 2026-11-26 | (a) AES-256-GCM of the sealed claims under a key derived from the ring's key with the info `quader registry token seal v2`, a random nonce, the readable part as additional data; the key ID an HMAC of the ring key's ID under its MAC key | — |
 | [Q-BAS-389](spec/bastion.md#q-bas-389--a-system-tokens-subject-stays-readable-and-version-1-is-read-until-its-tokens-expire) | A system token's subject stays readable, and version 1 is read until its tokens expire | Decided by the development agent on 2026-11-26 | (a) `s` readable on a system token beside `a`, `exp` and `g`; the verifier reads versions 1 and 2, the token service issues 2 alone | [ADR-304](#adr-304--the-main-installation-renders-a-forwards-problems-for-a-caller-of-a-bastion-and-a-registry-token-seals-what-it-does-not-need-to-show) |
+| [Q-BAS-390](spec/bastion.md#q-bas-390--the-web-interface-owns--ui-and-everything-below-ui-before-the-engine) | The web interface owns `/`, `/ui` and everything below `/ui/`, before the engine | Decided by the development agent on 2026-11-26 | (a) A dispatcher in front of the engine hands `/`, `/ui` and `/ui/…` to `internal/bastion/gui` | [ADR-305](#adr-305--a-bastion-serves-a-read-only-web-interface-of-its-own-from-the-public-catalogue-never-from-the-main-installation) |
+| [Q-BAS-391](spec/bastion.md#q-bas-391--the-main-installations-bundle-is-a-package-of-its-own-the-bastion-embeds-its-own) | The main installation's bundle is a package of its own; the Bastion embeds its own | Decided by the development agent on 2026-11-26 | (a) `internal/webui/dist` embeds the main build as a package of its own; `webui.New` requires its `Assets`; the Bastion embeds `internal/bastion/gui/dist` and serves it with `internal/webui` by a scoped allowance | — |
+| [Q-BAS-392](spec/bastion.md#q-bas-392--not-ready-a-page-is-served-with-503-the-data-answer-not_ready) | Not ready: a page is served with 503, the data answer `not_ready` | Decided by the development agent on 2026-11-26 | (a) The data `503 not_ready`; a page the application's `index.html` with status `503` and `Retry-After`, the bundle's files and the legal pages served; `/` redirects | — |
+| [Q-BAS-393](spec/bastion.md#q-bas-393--the-data-are-the-catalogues-grammar-below-uidatav1-and-five-addresses-of-their-own) | The data are the catalogue's grammar below `/ui/data/v1/`, and five addresses of their own | Decided by the development agent on 2026-11-26 | (a) A document by its path of the grammar; `state`, `legal`, `projects`, `packages` and `packages/lookup` computed; `packages/<id>/versions` paged | — |
+| [Q-BAS-394](spec/bastion.md#q-bas-394--a-refusal-of-the-class-gui-names-the-policy-pages) | A refusal of the class gui names the policy `pages` | Decided by the development agent on 2026-11-26 | (a) `pages`, with the class's burst and window, and `Retry-After` in whole seconds | — |
+| [Q-BAS-395](spec/bastion.md#q-bas-395--the-lookup-finds-a-package-by-its-name-then-by-its-key) | The lookup finds a package by its name, then by its key | Decided by the development agent on 2026-11-26 | (a) `Reader.Lookup(format, name)` over two maps of the index, the name first, then the key | — |
+| [Q-BAS-396](spec/bastion.md#q-bas-396--the-versions-are-paged-in-the-main-installations-order-and-sorted-in-the-browser) | The versions are paged in the main installation's order and sorted in the browser | Decided by the development agent on 2026-11-26 | (a) Only `cursor` and `limit`; the application reads every page and sorts, filters and groups in the browser | — |
+| [Q-BAS-397](spec/bastion.md#q-bas-397--a-document-is-answered-compressed-as-stored-with-its-sha-256-as-its-etag) | A document is answered compressed as stored, with its SHA-256 as its ETag | Decided by the development agent on 2026-11-26 | (a) The stored gzip to a client that takes it (`"<sha>-gzip"`), the raw bytes otherwise (`"<sha>"`), `Vary: Accept-Encoding` | [ADR-305](#adr-305--a-bastion-serves-a-read-only-web-interface-of-its-own-from-the-public-catalogue-never-from-the-main-installation) |
 | [Q-BAS-425](spec/bastion.md#q-bas-425--the-headers-of-a-forwarded-answer-pass-an-allowlist-and-a-formats-need-is-a-replay-header) | The headers of a forwarded answer pass an allowlist, and a format's need is a replay header | Decided by the development agent on 2026-11-26 | (a) An allowlist: the core's representation headers, the format's replay headers of the handshake's table and a fixed list of the framing, the wait, the challenge, the methods, the links, the distribution's version and `Location`; npm declares `Npm-Notice` | [ADR-304](#adr-304--the-main-installation-renders-a-forwards-problems-for-a-caller-of-a-bastion-and-a-registry-token-seals-what-it-does-not-need-to-show) |
 | [Q-BAS-426](spec/bastion.md#q-bas-426--a-forward-reads-a-neutral-detail-for-every-failure-of-the-remote-engine-chosen-by-the-code-when-the-problem-is-rendered) | A forward reads a neutral detail for every failure of the remote engine, chosen by the code when the problem is rendered | Decided by the development agent on 2026-11-26 | (a), with "The package could not be fetched right now." for the failures and "The caller may not bring new content into the cache of this repository." for `populate_not_permitted`. | — |
 | [Q-BAS-427](spec/bastion.md#q-bas-427--a-location-on-another-host-is-answered-502-at-the-bastion-whatever-the-status) | A Location on another host is answered 502 at the Bastion, whatever the status | Decided by the development agent on 2026-11-26 | (a) `502` for any answer whose `Location` is neither relative nor on the Bastion's scheme, host and port; counted by the reason `foreign_location` | — |
@@ -11704,7 +11748,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-LIM-304](spec/usage-and-limits.md#q-lim-304--a-bastion-is-a-place-of-the-rules-beside-the-instance) | A Bastion is a place of the rules, beside the instance | Decided by the development agent on 2026-11-26 | (a) A fourth place kind `bastion`, one per registration, resolved alone | — |
 | [Q-LIM-305](spec/usage-and-limits.md#q-lim-305--a-bastion-protects-per-address-and-budgets-per-subject-on-everything-it-serves) | A Bastion protects per address and budgets per subject, on everything it serves | Decided by the owner on 2026-11-26 | (c), the owner's decision. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
 | [Q-LIM-306](spec/usage-and-limits.md#q-lim-306--two-budgets-one-at-the-bastion-one-at-the-main-installation) | Two budgets: one at the Bastion, one at the main installation | Decided by the owner on 2026-11-26 | (a), the owner's decision. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
-| [Q-LIM-307](spec/usage-and-limits.md#q-lim-307--pages-of-the-web-interface-are-a-request-class-of-their-own-per-address) | Pages of the web interface are a request class of their own per address | Decided by the development agent on 2026-11-26 | (a) A class `gui` of the flood protection per address, beside `anonymous` and `authenticated`, never a miss; its bytes counted as documents of the anonymous subject | — |
+| [Q-LIM-307](spec/usage-and-limits.md#q-lim-307--pages-of-the-web-interface-are-a-request-class-of-their-own-per-address) | Pages of the web interface are a request class of their own per address | Decided by the development agent on 2026-11-26 | (a) A class `gui` of the flood protection per address, beside `anonymous` and `authenticated`, never a miss; its bytes counted as documents of the anonymous subject | [ADR-305](#adr-305--a-bastion-serves-a-read-only-web-interface-of-its-own-from-the-public-catalogue-never-from-the-main-installation) |
 | [Q-LIM-308](spec/usage-and-limits.md#q-lim-308--a-bastions-usage-report-is-bounded-per-batch-and-folds-the-rest-into-an-overflow-row) | A Bastion's usage report is bounded per batch and folds the rest into an overflow row | Decided by the development agent on 2026-11-26 | (a) The same bound in the Bastion's buffer: 100,000 keys per batch window, the rest in an overflow row per repository and subject kind, with the number of subjects it folded | — |
 | [Q-LIM-309](spec/usage-and-limits.md#q-lim-309--in-audit-a-bastion-still-holds-its-flood-protection-ceiling-slots-and-throughput) | In Audit a Bastion still holds its flood protection, ceiling, slots and throughput | Decided by the development agent on 2026-11-26 | (a) Audit at a Bastion concerns the budgets of its place; the flood protection per address, the anonymous ceiling, the slots and the throughput hold in both modes | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
 | [Q-LIM-310](spec/usage-and-limits.md#q-lim-310--the-bastion-profiles-take-the-measurements-proposal-with-room-for-one-anonymous-restore-of-200-packages-at-once) | The Bastion profiles take the measurement's proposal, with room for one anonymous restore of 200 packages at once | Decided by the development agent on 2026-11-26 | (a) The proposal, with the anonymous parallel transfers 270: one anonymous restore of 200 with a third of room | — |

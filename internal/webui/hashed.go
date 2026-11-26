@@ -58,14 +58,6 @@ type File struct {
 // Name is the file's path in the tree, <locale>/<path>.
 func (f File) Name() string { return f.Locale + "/" + f.Path }
 
-// Tree returns root, or the UI embedded in the binary when root is nil: the tree Options.Assets replaces.
-func Tree(root fs.FS) (fs.FS, error) {
-	if root != nil {
-		return root, nil
-	}
-	return embeddedRoot()
-}
-
 // HashedFiles lists the hashed files of the locale directories of a UI tree, ordered by locale and path. A tree without
 // locale directories (the placeholder of a binary built without the web build) has none; a configured locale that is
 // missing from a built tree is New's error, not this one's.

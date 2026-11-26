@@ -123,7 +123,7 @@ func TestR_BAS_114_TheRegistryDocumentsWhatACallerOfABastionReads(t *testing.T) 
 	for _, code := range []string{
 		iface.CodeNotFound, iface.CodeBadGateway, iface.CodeUnavailable, iface.CodeBusy, iface.CodeGatewayTimeout, iface.CodeAuthTimeout,
 		iface.CodeAddressBlocked, iface.CodeInvalidToken, iface.CodeCredentialsNeeded, iface.CodeRateLimited, iface.CodeMethodNotAllowed,
-		iface.CodePayloadTooLarge, iface.CodeMisdirected, iface.CodeReadOnly,
+		iface.CodePayloadTooLarge, iface.CodeMisdirected, iface.CodeReadOnly, CodeNotReady,
 	} {
 		info, ok := Lookup(code)
 		if !ok {

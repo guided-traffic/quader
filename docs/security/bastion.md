@@ -514,6 +514,21 @@ means for trust:
 | Serving on during an outage | The owner's choice (W-35's B.2b): the pages serve their last state whatever its age and say how old it is, so a narrowing made during an outage stays visible until the link returns ([H-2319](#h-2319--a-narrowing-made-during-an-outage-stays-on-the-pages-until-the-link-returns)) | R-BAS-111 |
 | The catalogue's share | The documents count against `bastion.gui.max_bytes`, which comes off the artifacts' room; a catalogue above it is kept and alerted, never evicted ([H-2317](#h-2317--a-catalogue-above-its-share-is-kept-and-the-cache-may-pass-its-size)) | R-BAS-110, Q-BAS-380 |
 
+## The web interface
+
+W-35's package P9, built on 2026-11-26 ([spec/bastion.md](../spec/bastion.md#the-bastions-web-interface), R-BAS-116 to R-BAS-118).
+Anonymous visitors from the internet read the public catalogue in a browser at the Bastion's own host. What it means for trust:
+
+| Mechanism | What it means for trust | Held by |
+|---|---|---|
+| Read-only by construction | Every address of the web interface answers `GET` and `HEAD` alone; any other method is `405` before anything is read. There is no act on any page, no form, no session, no cookie and no state per visitor | R-BAS-116, R-BAS-117 |
+| Nothing behind the Bastion | The web interface reads the replica's catalogue and its legal pages only; an architecture rule keeps the client of the main installation, the handover and the engine out of its dependency closure, and the route test over the whole replica counts no forward and no check for any of its addresses. A visitor, a crawler or a scraper costs the Bastion alone ([H-2326](#h-2326--many-addresses-cost-a-bastions-cpu-and-bandwidth-through-its-pages)) | R-BAS-116 |
+| The Bastion's own bundle | The application is built and embedded apart from the main installation's; the main installation's bundle is a package the Bastion may not import, so none of its screens (sign-in, administration) is in the role's closure | R-BAS-116, Q-BAS-391 |
+| A page runs only its own code | The page's policy admits scripts, styles, images, fonts and requests of the Bastion's own origin alone, no form target, no frame ancestor and Trusted Types; every other answer runs nothing (`default-src 'none'`); frames are refused twice (`frame-ancestors 'none'`, `X-Frame-Options: DENY`), and no referrer leaves the page (W-35's D7) | R-BAS-117 |
+| The request class `gui` | Every request asks the block list and the class `gui` per address, never the anonymous class's budget and never a miss | R-BAS-117, Q-LIM-307 |
+| One origin with the package API | A browser that answered a `401` of the package API holds Basic credentials for the origin ([H-2325](#h-2325--the-web-interface-shares-its-origin-with-the-package-api)) | — |
+| A rolling upgrade | A replica answers a file of another release's bundle `404`; the page loads itself again ([H-2324](#h-2324--a-page-of-one-release-asks-a-replica-of-another-for-a-file-its-bundle-lacks)) | R-BAS-116 |
+
 ## What this does not cover
 
 The gaps of the Bastion's mechanisms are recorded on the spec page, where the mechanisms are, and only linked here. The one gap
@@ -521,7 +536,7 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
 [H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods). The gaps of the owner's decisions of 2026-11-26 (W-34), specified and
 not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285, H-2289 to H-2297,
 H-2348 to H-2351, H-2354, H-2355 (H-2291, H-2348 and H-2349 are E13's, built; H-2281 to H-2283, H-2354 and H-2355 E8's, live); so are the gaps of the public catalogue's wire (W-35, interface version 8),
-H-2305 to H-2307, and of its builder (W-35's P6), H-2308 to H-2314; so are the gaps of the packages built since: H-2356 and H-2357
+H-2305 to H-2307, of its builder (W-35's P6), H-2308 to H-2314, and of the web interface (W-35's P9), H-2324 to H-2326; so are the gaps of the packages built since: H-2356 and H-2357
 (E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11), H-2322 and H-2323 (W-35's P8 with E17), H-2374 and H-2375 (E18;
 H-2375 closed by E19), H-2370 (E19);
 and of a registration the configuration declares (R-BAS-127), H-2366 and H-2367;
@@ -1190,6 +1205,34 @@ reader hides by package: the package stays shown because one of its repositories
 the narrowed repository held until the builder's run renders the package again, which the replica takes at its round 8 s after the feed's
 entry or at its poll. Live for those seconds. What holds: the package's downloads are decided at the main installation per version
 (R-BAS-084).
+
+### H-2324 · A page of one release asks a replica of another for a file its bundle lacks
+
+Stage: the web interface's files (R-BAS-116, W-35's P9). Subject: a visitor whose page was loaded while the Bastion's replicas roll from
+one release to the next. The main installation keeps every release's hashed files in a shared store (R-HA-020); a Bastion has none: a
+replica answers a hashed file its own bundle lacks `404`. Live during every rolling upgrade of a Bastion with more than one replica: a
+screen the page has not loaded yet (a lazy chunk) fails to load from a replica of the other release, and the application loads the page
+again from the server (the main installation's rule of a screen whose script is gone, Q-UI-1370), which then comes from either release.
+What would close it: W-35's plan named a store in the cache backend (`catalogue/assets/<locale>/…`) that every replica publishes its
+bundle to at start, as the main installation's keeper does; it was not built, since the reload already ends in a working page and a
+second store under the catalogue's tree would need its own sweep.
+
+### H-2325 · The web interface shares its origin with the package API
+
+Stage: the client listener (R-BAS-116, W-35's D2). Subject: a visitor whose browser answered the Bastion's `WWW-Authenticate: Basic` for a
+path of the package API that is not public. The browser keeps those credentials for the origin and sends them with every later request to
+it, the web interface's included. Dormant: the web interface reads no credential and sends none on (it reads the catalogue only), and a
+script of the page's own origin cannot read them; it would take author HTML that runs on the page (D1, which the sanitizer, Angular's and
+Trusted Types hold) to make a top-level navigation carry the visitor somewhere with them. What would close it: a host of its own for the
+web interface, which needs several base URLs per Bastion (deferred).
+
+### H-2326 · Many addresses cost a Bastion's CPU and bandwidth through its pages
+
+Stage: the class `gui` (R-BAS-117, Q-LIM-307, W-35's D9). Subject: the availability of a Bastion's web interface and package API. The
+class bounds each address (20 requests a second, a burst of 100); a scraper or a crawler spread over many addresses is bounded only by
+`server.max_in_flight` and the network in front (H-382). Live against the Bastion alone: every answer comes from the replica's memory and
+its cache backend, so the main installation pays nothing (R-BAS-116), and a document is sent compressed as stored (Q-BAS-397). The search is
+a scan of the index in memory per request (Q-BAS-383).
 
 ### H-2356 · The anonymous ceiling is a share per replica without Valkey, and requests in flight pass its hour
 
