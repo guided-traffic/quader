@@ -2,11 +2,9 @@ package ansible
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/guided-traffic/quader/internal/formats/ansible/docgen"
 	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
-	"github.com/guided-traffic/quader/internal/jobs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
@@ -79,32 +77,4 @@ func (s docsStore) RebuildChangelogs(ctx context.Context, repoID int64, reader r
 		}
 	}
 	return next, len(list) < docsReindexBatch, nil
-}
-
-// QueueStaleReindex queues the job ansible-reindex for every local and remote repository that holds a version whose changelog or generated
-// documentation is older than docgen.Version (R-ANS-044, R-ANS-053): a worker calls it when it starts, so an upgrade that raises the
-// generator rebuilds what was published or cached before it without an operator's act. The job coalesces on the repository's reindex key,
-// so a reindex that waits takes it. It returns the number of repositories it queued for.
-func (s docsStore) QueueStaleReindex(ctx context.Context) (int, error) {
-	if s.o.Jobs == nil {
-		return 0, errNotBuilt("the reindex queue")
-	}
-	var ids []int64
-	if err := s.read(ctx, nil, func(qs *q.Queries) (err error) {
-		ids, err = qs.AnsibleDocsStaleRepositories(ctx, docgen.Version)
-		return err
-	}); err != nil {
-		return 0, err
-	}
-	for _, id := range ids {
-		if err := s.o.DB.InTx(ctx, func(tx meta.Tx) error {
-			_, err := s.o.Jobs.Enqueue(ctx, tx, jobs.EnqueueSpec{
-				Kind: ReindexJobKind, DedupKey: ReindexDedupKey(id), TargetKind: "repository", TargetKey: strconv.FormatInt(id, 10),
-			})
-			return err
-		}); err != nil {
-			return 0, err
-		}
-	}
-	return len(ids), nil
 }

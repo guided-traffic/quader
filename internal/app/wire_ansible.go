@@ -91,23 +91,15 @@ func (r ansibleArchives) ReadArchive(ctx context.Context, ref rows.ArchiveRef) (
 }
 
 // startAnsibleReindex builds the handler of the job ansible-reindex on a replica that claims jobs (R-ANS-012). The kind is registered
-// earlier, with a handler that finds this one when a run starts. It then queues the reindex of every repository whose documentation or
-// changelogs an older generator made (R-ANS-044, R-ANS-053): an upgrade that raises docgen.Version rebuilds them without an operator.
-func (a *App) startAnsibleReindex(ctx context.Context, in infra, ports map[formats.ID]any) error {
+// earlier, with a handler that finds this one when a run starts. What an older generator made is queued for the reindex by the task
+// remote-describe (its Ansible Galaxy entry, wire_remote_describe.go, Q-ANS-99).
+func (a *App) startAnsibleReindex(in infra, ports map[formats.ID]any) error {
 	st, ok := ports[ansibleformat.ID].(*ansibledata.Store)
 	if !ok {
 		return fmt.Errorf("formats: the Ansible Galaxy data port is not the PostgreSQL store")
 	}
 	a.ansibleReindex.set(ansibledata.ReindexHandler(st, ansibleArchives{blobs: ansibleBlobs(in.blobs)}))
 	a.ansibleDocsFill.set(ansibledata.DocsFillHandler(st, ansibleBackground{a}))
-	n, err := st.QueueStaleReindex(ctx)
-	if err != nil {
-		return fmt.Errorf("formats: queueing the reindex of Ansible Galaxy documentation: %w", err)
-	}
-	if n > 0 {
-		a.log.Info("queued the reindex of Ansible Galaxy repositories whose documentation an older generator made", "repositories", n,
-			"generator", docgen.Version)
-	}
 	return nil
 }
 

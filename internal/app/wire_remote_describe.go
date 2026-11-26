@@ -6,10 +6,12 @@ import (
 	"io"
 
 	"github.com/guided-traffic/quader/internal/blob"
+	ansibledata "github.com/guided-traffic/quader/internal/formatdata/ansible"
 	debdata "github.com/guided-traffic/quader/internal/formatdata/deb"
 	npmdata "github.com/guided-traffic/quader/internal/formatdata/npm"
 	ocidata "github.com/guided-traffic/quader/internal/formatdata/oci"
 	"github.com/guided-traffic/quader/internal/formats"
+	ansibleformat "github.com/guided-traffic/quader/internal/formats/ansible"
 	debformat "github.com/guided-traffic/quader/internal/formats/deb"
 	npmformat "github.com/guided-traffic/quader/internal/formats/npm"
 	ociformat "github.com/guided-traffic/quader/internal/formats/oci"
@@ -24,8 +26,9 @@ import (
 // startRemoteDescribe builds the handlers of npm-remote-describe, deb-remote-describe, deb-contents and oci-describe over the data
 // ports, and the task remote-describe, which it queues when a remote holds a cached version or file without its row (R-NPM-050,
 // R-DEB-037), a Debian repository a package file whose data archive the current reader has not read (R-DEB-039), or an OCI repository a
-// stored manifest without its blobs or with a stored configuration not read (R-OCI-040): what was stored before the jobs
-// existed is described after the upgrade without a change at the upstream.
+// stored manifest without its blobs or with a stored configuration not read (R-OCI-040), or an Ansible Galaxy repository a version whose
+// documentation or changelog an older generator made or never read (R-ANS-044, R-ANS-053; the job is ansible-reindex): what was stored
+// before the jobs existed is described after the upgrade without a change at the upstream.
 func (a *App) startRemoteDescribe(ctx context.Context, in infra, ports map[formats.ID]any) error {
 	npm, ok := ports[npmformat.ID].(*npmdata.Store)
 	if !ok {
@@ -38,6 +41,10 @@ func (a *App) startRemoteDescribe(ctx context.Context, in infra, ports map[forma
 	oci, ok := ports[ociformat.ID].(*ocidata.Store)
 	if !ok {
 		return fmt.Errorf("formats: the OCI data port is not the PostgreSQL store")
+	}
+	ansible, ok := ports[ansibleformat.ID].(*ansibledata.Store)
+	if !ok {
+		return fmt.Errorf("formats: the Ansible Galaxy data port is not the PostgreSQL store")
 	}
 	a.npmDescribe.set(npmdata.DescribeHandler(npm))
 	a.debDescribe.set(debdata.DescribeHandler(deb))
@@ -53,6 +60,9 @@ func (a *App) startRemoteDescribe(ctx context.Context, in infra, ports map[forma
 			// The manifests of local and remote OCI repositories stored before their blobs were kept or whose stored configuration is not
 			// read (R-OCI-040).
 			{Kind: ocidata.DescribeJobKind, Port: oci},
+			// The local and remote Ansible Galaxy repositories whose documentation or changelogs an older generator made, or whose cached
+			// archives' changelogs were never read: the job is the repository's reindex (R-ANS-044, R-ANS-053, Q-ANS-99).
+			{Kind: ansibledata.ReindexJobKind, Port: ansibledata.ReindexPort{S: ansible}},
 		},
 	})
 	if err != nil {

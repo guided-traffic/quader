@@ -7,6 +7,8 @@
 // them.
 // An OCI entry queues oci-describe (R-OCI-040, Q-OCI-271) for every manifest of a local or a remote OCI repository stored before its
 // blobs were kept or whose stored configuration is not read: it reads the stored manifest and configuration, never an upstream.
+// An Ansible Galaxy entry queues ansible-reindex (R-ANS-044, R-ANS-053, Q-ANS-99) for every local or remote Ansible Galaxy repository
+// with a version whose documentation or changelog an older generator made or never read: the reindex reads the stored archives.
 //
 // A worker that starts queues a run when such a package exists (the start-up rule of R-HA-022's background data migrations); the
 // scheduler runs it once a day, and an operator runs it with POST /api/v1/system/tasks/remote-describe/run (R-OPS-019). A run walks the

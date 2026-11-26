@@ -127,13 +127,13 @@ SELECT v.item_id, v.name, v.version, i.path, i.blob_sha256 AS sha256, COALESCE(i
  LIMIT sqlc.arg(row_limit)::integer;
 
 -- name: AnsibleDocsStaleRepositories :many
--- The local and remote Ansible Galaxy repositories a worker queues the reindex for when it starts (R-ANS-044, R-ANS-053): those that hold a
--- version whose changelog was not read by the given generator, or whose generated documentation is older than it. A version of a local
--- repository without any documentation has no row of ansible_version_docs and is not stale for that alone, so a store whose archives hold
--- none does not queue a reindex at every start.
+-- The local and remote Ansible Galaxy repositories after the cursor that the task remote-describe queues the reindex for (R-ANS-044,
+-- R-ANS-053, Q-ANS-99): those that hold a version whose changelog was not read by the given generator, or whose generated documentation is
+-- older than it. A version of a local repository without any documentation has no row of ansible_version_docs and is not stale for that
+-- alone, so a store whose archives hold none does not queue a reindex at every start.
 SELECT r.id
   FROM repositories r
- WHERE r.format = 'ansible' AND r.class IN ('local', 'remote')
+ WHERE r.format = 'ansible' AND r.class IN ('local', 'remote') AND r.id > sqlc.arg(after)::bigint
    AND EXISTS (
          SELECT 1
            FROM ansible_collection_versions v
@@ -143,7 +143,8 @@ SELECT r.id
           WHERE v.repo_id = r.id
             AND (c.generator IS NULL OR c.generator < sqlc.arg(generator)::integer
                  OR (d.source = 'generated' AND d.generator < sqlc.arg(generator)::integer)))
- ORDER BY r.id;
+ ORDER BY r.id
+ LIMIT sqlc.arg(row_limit)::integer;
 
 -- name: AnsibleReindexRepository :many
 -- The class of the Ansible Galaxy repository a reindex job names; a job about any other repository finds nothing.

@@ -1670,10 +1670,12 @@ The `ansible-reindex` job (R-ANS-012) gains a documentation step: for every stor
 none, whose `generator` is below `docgen.Version`, or whose changelog row (R-ANS-053) is missing or older (the archive is read anyway). For a remote
 repository the job reads the changelog of every cached archive whose row is missing or older, from the archive in the store and without asking the upstream;
 its other documentation is fetched by the job `ansible-docs-fill` (R-ANS-042). `RebuildRemoteDocs` of the port, which would re-derive a remote's rows from the
-stored `docs-blob/` documents, is not called by the job (read on 2026-11-26). The enqueue of a restore (R-BAK-008) covers it, and a worker that starts queues the
+stored `docs-blob/` documents, is not called by the job (read on 2026-11-26). The enqueue of a restore (R-BAK-008) covers it, and the task
+`remote-describe` ([operations-and-observability.md](../operations-and-observability.md) R-OPS-019) has an Ansible Galaxy entry that queues the
 job for every local and remote repository that holds a version whose changelog row is missing or older, or whose generated rows are older, than
-`docgen.Version` ([Q-ANS-99](#q-ans-99--a-worker-that-starts-queues-the-reindex-of-what-an-older-generator-made)): an upgrade that raises the
-generator rebuilds what was published or cached before it without an operator's act. A step never changes stored bytes of an archive, writes rows in one
+`docgen.Version` ([Q-ANS-99](#q-ans-99--the-task-remote-describe-queues-the-reindex-of-what-an-older-generator-made)): a worker that starts queues
+that task while such a repository exists, so an upgrade that raises the generator rebuilds what was published or cached before it without an
+operator's act, under the task's bounds. A step never changes stored bytes of an archive, writes rows in one
 transaction per version, and leaves a version whose archive is unreadable with its old rows and a warning in the job log.
 
 Acceptance criteria:
@@ -2004,7 +2006,7 @@ Acceptance criteria:
   `TestR_ANS_053_TheFillOfARemotesArchiveReadsItsChangelog` (unit, the format); `TestR_ANS_053_AChangelogInReStructuredTextIsTextInAPreElement`
   (unit, the operation).
 - `ansiblelocal` (integration): the tree's changelog, the file rendered with an entry's tag as text, and a changelog an older generator
-  recorded read again by the reindex a starting worker queues. `ansibleremote` (integration): the changelog of a cached archive, the newest
+  recorded read again by the reindex that the task `remote-describe`, queued by a starting worker, queues. `ansibleremote` (integration): the changelog of a cached archive, the newest
   version first, read again from the cached archive after its row was lost.
 - Measured once, 2026-11-26, not a test: of the 108 collections of the community package 8.7.0, 104 have a changelog (99 changelog.yaml,
   2 Markdown, 3 reStructuredText); none is cut, the largest changelog.yaml is 240 KB.
@@ -3562,22 +3564,33 @@ Status: **Decided by the development agent** on 2026-11-26 — selected from the
 **Choice:** (a). **Rationale:** it is the one form that serves both classes and all three sources through the operations that exist.
 **Revisit** if the owner wants the headings in German. **Applied in the spec:** R-ANS-033, R-ANS-044, R-ANS-053.
 
-### Q-ANS-99 · A worker that starts queues the reindex of what an older generator made
+### Q-ANS-99 · The task remote-describe queues the reindex of what an older generator made
 
 Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: `docgen.Version` 3 changes what a local version's documentation holds, and no cached archive has a changelog row before this
-change. Until now a raised generator took effect at the next reindex an operator started (R-REPO-016) or a restore queued.
+change. Until now a raised generator took effect at the next reindex an operator started (R-REPO-016) or a restore queued. The task
+`remote-describe` (Q-NPM-92, R-OPS-019) is the one mechanism that queues describe work by itself: at a worker's start while work is left,
+daily, and at an operator's call, bounded.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A worker that starts queues `ansible-reindex` for every local and remote repository with a version whose changelog row is missing or older, or whose generated documentation is older, than `docgen.Version` (`QueueStaleReindex`); the reindex of a remote reads the changelogs of its cached archives (chosen) | The start-up rule of R-HA-022's background migrations, as the task remote-describe does | No operator act after an upgrade; the job coalesces per repository; a second start finds nothing | One query over the versions at every start |
-| (b) A task of its own with a schedule | — | Visible on the tasks page | A schedule for work that only an upgrade creates |
+| (a) An entry of the task `remote-describe` (`ReindexPort`): a batch selects the local and remote Ansible Galaxy repositories after the cursor (by id) with a version whose changelog row is missing or older, or whose generated rows are older, than `docgen.Version`, and queues `ansible-reindex` for each, at the task's priority (chosen) | One mechanism with the task's bounds | The bounds, the cursor, the daily run and the operator's run are the task's; a second start finds nothing | The unit is a repository, not a version: one job may read many archives |
+| (b) A start-up rule of its own that queues the reindex of every such repository at once | — | Nothing to share | A second mechanism beside the task; no bound on how many jobs one start queues |
 | (c) Leave it to the operator's reindex | — | Nothing to build | A local collection keeps its old documentation, and a remote shows no changelog, until someone acts |
 
-**Choice:** (a). **Rationale:** the brief's rule: a local collection must not keep its old documentation until someone acts, and the
-reindex is the job that already does the work. **Revisit** if the start-up query is slow on a large store (H-890). **Applied in the
-spec:** R-ANS-044, R-ANS-053.
+**Choice:** (a). **Rationale:** a local collection must not keep its old documentation until someone acts, and two mechanisms that queue
+describe work at a start are one too many. The unit is the repository because the reindex is the job that reads its archives and is
+bounded in itself: it coalesces on the repository's key (the key of an operator's reindex, R-REPO-016), walks the versions in batches of
+25 with a checkpoint and writes one transaction per version, and reads each archive once under the bounds of R-ANS-031. **Bounds on an
+installation with thousands of collections:** a batch queues at most 100 repositories (the task's `Batch`), a run at most 1,000, and none
+while 200 describe jobs of every kind wait (`MaxPending`, which counts `ansible-reindex` too); the jobs run at the task's priority 200,
+after a publish's or a fill's work. One job costs a read of every stale archive of its repository (the archive streamed through the
+generator once; a cached archive of a remote only for its changelog), so the cost follows the stored versions, not the number of
+collections in a call. A version without any documentation is selected by the reindex again (it has no row of `ansible_version_docs`) but
+does not make its repository stale for the task, so the task does not requeue a store whose archives hold none. **Revisit** if a
+repository with tens of thousands of stale versions keeps one job busy too long (then a job per batch of versions). **Applied in the
+spec:** R-ANS-044, R-ANS-053; [operations-and-observability.md](../operations-and-observability.md) R-OPS-019.
 
 ### Q-ANS-110 · Roles are readable through a remote and published inside a collection
 

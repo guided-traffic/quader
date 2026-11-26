@@ -845,8 +845,8 @@ an Ansible collection version read from its archive ([formats/ansible.md](../spe
 version whose archive was read for it, local or cached by a remote, with the `generator` that read it (`docgen.Version`), the `format`
 (`markdown`, `text`, or `none` for an archive without one), the member it came from, the body (at most 512 KiB) and `truncated`. The row
 hangs off `ansible_collection_versions` and goes with it. The table is export class `transient` (R-BAK-004): the reindex reads it again,
-and a worker that starts queues that reindex for every repository with a row that is missing or older (`AnsibleDocsStaleRepositories`,
-Q-ANS-99). Expand phase only. The statements are `AnsibleChangelog*` and `AnsibleDocsStaleRepositories` in
+and the task `remote-describe` queues that reindex for every repository with a row that is missing or older (`AnsibleDocsStaleRepositories`,
+by the id after its cursor, Q-ANS-99). Expand phase only. The statements are `AnsibleChangelog*` and `AnsibleDocsStaleRepositories` in
 [ansible_docs.sql](../../internal/meta/postgres/queries/ansible_docs.sql); `AnsibleDocsStaleVersions` also selects a version whose
 changelog row is missing or older.
 

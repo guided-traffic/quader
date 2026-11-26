@@ -32,7 +32,8 @@ func contentSpec(version string) collectiontest.Spec {
 
 // TestR_ANS_051_R_ANS_052_R_ANS_053_TheFragmentsTheEntryPointsAndTheChangelogAreServed: the operations answer the merged option and the
 // fragment that was not merged, the role's entry points with the anchor of an entry point's option, and the changelog in the tree and as
-// a file, rendered with its tag as text; the reindex and a starting worker rebuild a changelog an older generator recorded.
+// a file, rendered with its tag as text; the task remote-describe, which a starting worker queues, has the reindex rebuild a changelog an
+// older generator recorded (Q-ANS-99).
 // Integration, about 3 s (one stack, a second replica started), archives of about 2 KiB.
 func TestR_ANS_051_R_ANS_052_R_ANS_053_TheFragmentsTheEntryPointsAndTheChangelogAreServed(t *testing.T) {
 	e := newEnv(t)
@@ -72,7 +73,7 @@ func TestR_ANS_051_R_ANS_052_R_ANS_053_TheFragmentsTheEntryPointsAndTheChangelog
 		t.Errorf("changelog: %d %s", file.Status, file.Body)
 	}
 
-	// A changelog an older generator recorded is read again: by the reindex, and by the reindex a starting worker queues itself.
+	// A changelog an older generator recorded is read again by the reindex the task remote-describe queues; a starting worker queues the task.
 	id := e.repoID()
 	stale := func() {
 		e.st.Exec(`UPDATE ansible_changelogs SET generator = $2, body = 'old' WHERE repo_id = $1`, id, docgen.Version-1)
@@ -82,5 +83,5 @@ func TestR_ANS_051_R_ANS_052_R_ANS_053_TheFragmentsTheEntryPointsAndTheChangelog
 	}
 	stale()
 	e.st.Start(t, testenv.ReplicaOptions{Name: "web-late", Role: "all"})
-	waitFor(t, "the reindex a starting worker queued", 60*time.Second, current)
+	waitFor(t, "the reindex the task remote-describe queued", 60*time.Second, current)
 }

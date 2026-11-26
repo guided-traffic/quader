@@ -86,7 +86,7 @@ func TestR_ANS_026_ACollectionInstalledThroughARemoteIsListedAndItsDocumentation
 		t.Errorf("changelog: %d %s", cl.Status, cl.Body)
 	}
 	// A changelog an older generator recorded (as every cached archive has none before the upgrade) is read again from the cached archive
-	// by the reindex a starting worker queues; the upstream is not asked.
+	// by the reindex the task remote-describe queues, which a starting worker queues itself (Q-ANS-99); the upstream is not asked.
 	rid := e.repoID(repo)
 	e.st.Exec(`DELETE FROM ansible_changelogs WHERE repo_id = $1`, rid)
 	e.st.Start(t, testenv.ReplicaOptions{Name: "all-late", Role: "all", DialOverride: e.dial})

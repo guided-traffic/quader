@@ -679,7 +679,7 @@ func (q *Queries) AnsibleDocsRemoteWithoutRows(ctx context.Context, arg AnsibleD
 const ansibleDocsStaleRepositories = `-- name: AnsibleDocsStaleRepositories :many
 SELECT r.id
   FROM repositories r
- WHERE r.format = 'ansible' AND r.class IN ('local', 'remote')
+ WHERE r.format = 'ansible' AND r.class IN ('local', 'remote') AND r.id > $1::bigint
    AND EXISTS (
          SELECT 1
            FROM ansible_collection_versions v
@@ -687,17 +687,24 @@ SELECT r.id
            LEFT JOIN ansible_changelogs c ON c.repo_id = v.repo_id AND c.name = v.name AND c.version = v.version
            LEFT JOIN ansible_version_docs d ON d.repo_id = v.repo_id AND d.name = v.name AND d.version = v.version
           WHERE v.repo_id = r.id
-            AND (c.generator IS NULL OR c.generator < $1::integer
-                 OR (d.source = 'generated' AND d.generator < $1::integer)))
+            AND (c.generator IS NULL OR c.generator < $2::integer
+                 OR (d.source = 'generated' AND d.generator < $2::integer)))
  ORDER BY r.id
+ LIMIT $3::integer
 `
 
-// The local and remote Ansible Galaxy repositories a worker queues the reindex for when it starts (R-ANS-044, R-ANS-053): those that hold a
-// version whose changelog was not read by the given generator, or whose generated documentation is older than it. A version of a local
-// repository without any documentation has no row of ansible_version_docs and is not stale for that alone, so a store whose archives hold
-// none does not queue a reindex at every start.
-func (q *Queries) AnsibleDocsStaleRepositories(ctx context.Context, generator int32) ([]int64, error) {
-	rows, err := q.db.Query(ctx, ansibleDocsStaleRepositories, generator)
+type AnsibleDocsStaleRepositoriesParams struct {
+	After     int64
+	Generator int32
+	RowLimit  int32
+}
+
+// The local and remote Ansible Galaxy repositories after the cursor that the task remote-describe queues the reindex for (R-ANS-044,
+// R-ANS-053, Q-ANS-99): those that hold a version whose changelog was not read by the given generator, or whose generated documentation is
+// older than it. A version of a local repository without any documentation has no row of ansible_version_docs and is not stale for that
+// alone, so a store whose archives hold none does not queue a reindex at every start.
+func (q *Queries) AnsibleDocsStaleRepositories(ctx context.Context, arg AnsibleDocsStaleRepositoriesParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, ansibleDocsStaleRepositories, arg.After, arg.Generator, arg.RowLimit)
 	if err != nil {
 		return nil, err
 	}

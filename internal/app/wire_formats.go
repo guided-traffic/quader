@@ -84,7 +84,7 @@ func (a *App) wireFormatPorts(ctx context.Context, in infra) (formatPortsArea, e
 			return formatPortsArea{}, err
 		}
 		a.startDebIndexer(ports)
-		if err := a.startAnsibleReindex(ctx, in, ports); err != nil {
+		if err := a.startAnsibleReindex(in, ports); err != nil {
 			return formatPortsArea{}, err
 		}
 		if err := a.startRemoteDescribe(ctx, in, ports); err != nil {
