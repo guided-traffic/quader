@@ -9150,10 +9150,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 <!-- coverage-gen:begin decisions -->
 ### Q-ANS
 
-106 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
+108 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-ANS: 106 questions</summary>
+<summary>Q-ANS: 108 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9263,6 +9263,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ANS-129](spec/formats/ansible.md#q-ans-129--the-upstreams-tags-downloads-and-signed-state-are-optional-members-of-every-formats-catalogue) | The upstream's tags, downloads and signed state are optional members of every format's catalogue | Decided by the development agent on 2026-11-26 | (a) `discover.Popularity` in `Hit` and `PackageInfo`, each member only where the upstream's answer carries it; the count named "downloads at the upstream" | [ADR-287](#adr-287--the-format-contract-gains-the-ranked-package-search-the-namespaces-of-a-formats-names-and-what-an-upstream-tells-beside-a-package) |
 | [Q-ANS-130](spec/formats/ansible.md#q-ans-130--a-collections-deprecation-carries-a-message-for-quaders-screens-only) | A collection's deprecation carries a message for Quader's screens only | Decided by the development agent on 2026-11-26 | (a) An optional message, kept with the row and shown on Quader's pages; the document carries the flag | — |
 | [Q-ANS-131](spec/formats/ansible.md#q-ans-131--a-remote-takes-its-upstreams-flag-from-the-collection-document-it-fills-a-virtual-its-first-members) | A remote takes its upstream's flag from the collection document it fills, a virtual its first member's | Decided by the development agent on 2026-11-26 | (a) The fill of a collection document records the flag in the same table, without a principal; a virtual repository's merged document takes the flag of the first member that holds the collection, the member whose versions come first (R-ANS-022) | — |
+| [Q-ANS-143](spec/formats/ansible.md#q-ans-143--the-import-warns-of-what-galaxys-importer-checks-without-running-a-program-and-refuses-nothing-for-it) | The import warns of what Galaxy's importer checks without running a program, and refuses nothing for it | — | (a) Warn of the four, refuse nothing | — |
+| [Q-ANS-144](spec/formats/ansible.md#q-ans-144--a-changelog-in-docs-is-a-changelog-and-the-generator-version-is-4) | A changelog in docs/ is a changelog, and the generator version is 4 | — | (a) The finder reads docs/ too, the root's first; `docgen.Version` 4 | — |
 
 </details>
 

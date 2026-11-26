@@ -387,19 +387,52 @@ func TestR_ANS_053_TheChangelogsSourcesAndBounds(t *testing.T) {
 	}
 }
 
+// TestR_ANS_062_AChangelogInDocsIsReadAfterTheRootsAndEveryKindCountsAsOne: CHANGELOG.md and CHANGELOG.rst in docs/ are changelogs, as
+// Galaxy's importer finds them, read after the root's of their kind; the generator tells an archive without any changelog member from one
+// whose changelog could not be read. Unit, microseconds.
+func TestR_ANS_062_AChangelogInDocsIsReadAfterTheRootsAndEveryKindCountsAsOne(t *testing.T) {
+	if c := build(t, docgen.DefaultLimits(), "", map[string]string{"docs/CHANGELOG.md": "# docs\n"}).Changelog; c == nil || c.Source != "docs/CHANGELOG.md" {
+		t.Errorf("docs/CHANGELOG.md alone: %+v", c)
+	}
+	if c := build(t, docgen.DefaultLimits(), "", map[string]string{"docs/CHANGELOG.md": "# docs\n", "CHANGELOG.md": "# root\n"}).Changelog; c == nil || c.Source != "CHANGELOG.md" {
+		t.Errorf("the root's and docs/: %+v", c)
+	}
+	for files, want := range map[string]bool{"": false, "CHANGELOG.rst": true, "docs/changelog.rst": true, "changelogs/changelog.yaml": true} {
+		g := docgen.NewGenerator(docgen.DefaultLimits())
+		if files != "" {
+			if _, ok := g.Wants(files); !ok {
+				t.Fatalf("the generator does not want %s", files)
+			}
+			// A changelog.yaml without releases is read and refused: it still is a changelog member.
+			g.Take(files, []byte("releases: {}\n"))
+		}
+		if got := g.HasChangelog(); got != want {
+			t.Errorf("%q: HasChangelog %v, want %v", files, got, want)
+		}
+	}
+}
+
 // TestR_ANS_053_AChangelogReaderAloneReadsTheChangelogOfAnArchive: the tap a remote's fill uses wants only the changelog members.
 // Unit, microseconds.
 func TestR_ANS_053_AChangelogReaderAloneReadsTheChangelogOfAnArchive(t *testing.T) {
 	r := docgen.NewChangelogReader()
-	for _, p := range []string{"plugins/modules/m.py", "README.md", "docs/changelog.md", "roles/r/CHANGELOG.md"} {
+	for _, p := range []string{"plugins/modules/m.py", "README.md", "docs/sub/changelog.md", "roles/r/CHANGELOG.md", "x/docs/CHANGELOG.md"} {
 		if _, ok := r.Wants(p); ok {
 			t.Errorf("wants %s", p)
 		}
 	}
-	if _, ok := r.Wants("changelogs/changelog.yaml"); !ok {
-		t.Fatal("does not want changelog.yaml")
+	for _, p := range []string{"changelogs/changelog.yaml", "docs/CHANGELOG.md", "docs/changelog.rst"} {
+		if _, ok := r.Wants(p); !ok {
+			t.Fatalf("does not want %s", p)
+		}
+	}
+	if r.Seen() {
+		t.Fatal("seen before a member was taken")
 	}
 	r.Take("changelogs/changelog.yaml", []byte(changelogYAML))
+	if !r.Seen() {
+		t.Fatal("not seen after a member was taken")
+	}
 	if c := r.Changelog("acme.tools"); c == nil || !strings.Contains(c.Body, "acme\\.tools\\.web") {
 		t.Errorf("changelog = %+v", c)
 	}

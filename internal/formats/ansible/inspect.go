@@ -20,6 +20,8 @@ type inspected struct {
 	// changelog is what the fill of a remote's archive read of its changelog (R-ANS-053), nil for none; changelogRead says it was read.
 	changelog     *rows.DocChangelog
 	changelogRead bool
+	// noChangelog says that the archive of a publish has no changelog member: its import task warns (R-ANS-062).
+	noChangelog bool
 }
 
 // Inspect reads an upload that enters the repository (R-ANS-010, FMT-008): a collection archive is untrusted input and is read within
@@ -51,7 +53,7 @@ func (f *Format) Inspect(ctx context.Context, in formats.InspectInput) (*formats
 			"ansible.namespace": a.Namespace, "ansible.name": a.Name, "ansible.requires_ansible": a.RequiresAnsible,
 			"ansible.dependency_count": strconv.Itoa(len(a.Dependencies)),
 		},
-		Payload: &inspected{archive: a, docs: &docs},
+		Payload: &inspected{archive: a, docs: &docs, noChangelog: !gen.HasChangelog()},
 	}, nil
 }
 

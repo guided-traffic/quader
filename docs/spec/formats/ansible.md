@@ -1994,8 +1994,11 @@ the tree's group Documentation ([Q-ANS-98](#q-ans-98--the-changelog-is-read-from
   newest version first, with the release summary, the categories in antsibull-changelog's order and titles (Major Changes, Minor Changes,
   Breaking Changes / Porting Guide, Deprecated Features, Removed Features (previously deprecated), Security Fixes, Bugfixes, Known Issues,
   then a category of the collection's own configuration by its key), and the plugins (by type), modules and other objects (roles,
-  playbooks) a release added, by their full names; `trivial` is left out; else `CHANGELOG.md` at the root, Markdown as it is; else
-  `CHANGELOG.rst`, shown as text and not rendered (R-ANS-039). The root's names are matched without regard to case.
+  playbooks) a release added, by their full names; `trivial` is left out; else `CHANGELOG.md` at the root or in `docs/`, Markdown as it
+  is; else `CHANGELOG.rst` at the root or in `docs/`, shown as text and not rendered (R-ANS-039). These are the places Galaxy's importer
+  looks for a changelog (`_check_collection_changelog` of galaxy-importer, read on 2026-11-26); the names are matched without regard to
+  case, and of two of one kind the root's is read ([Q-ANS-144](#q-ans-144--a-changelog-in-docs-is-a-changelog-and-the-generator-version-is-4)).
+  An archive with none of them is warned of at its publish (R-ANS-062).
 - **Untrusted.** An entry of changelog.yaml is escaped character by character, its reStructuredText literals become code spans and its
   `http`/`https` links links; the Markdown reaches the browser only through the README renderer and its sanitizer, the text in an escaped
   `pre` element.
@@ -2245,6 +2248,43 @@ Acceptance criteria:
 - `TestR_ANS_058_TheDocumentationSearchCostsAFixedNumberOfStatements` (integration `querybudget`, about 2 s): the same statements with 10 and
   10,000 entries.
 - The web unit tests: the tab Documentation, its hit's address with `?doc=`, the group of the suggestions.
+
+## Publishing from the screen
+
+### R-ANS-062 · The import warns of a missing changelog, README, requires_ansible and licence
+Priority: **P1** · Covers: quader-only
+
+The import task of a publish (R-ANS-009), by the client, the scripted raw body or the screens (R-ANS-061), carries a message of level
+`WARNING` for each of the following that the archive lacks, after the reader's own warnings and before the generator's (R-ANS-034). A
+publish is never refused for any of them ([Q-ANS-143](#q-ans-143--the-import-warns-of-what-galaxys-importer-checks-without-running-a-program-and-refuses-nothing-for-it)).
+
+| What is missing | The message | Galaxy's importer (galaxy-importer, read on 2026-11-26) |
+|---|---|---|
+| A changelog in a place of R-ANS-053 (`changelogs/changelog.yaml` or `.yml`, `CHANGELOG.md` or `CHANGELOG.rst` at the root or in `docs/`) | `No changelog found: the collection has none of changelogs/changelog.yaml, CHANGELOG.md or CHANGELOG.rst, at its root or in docs/.` | Warns, `No changelog found. …` (`check_changelog`) |
+| The README `collection_info.readme` names | `No README found: collection_info.readme names no file of the archive.` | Refuses, `No collection readme found`, where it runs ansible-doc |
+| `meta/runtime.yml` | `meta/runtime.yml is missing, so requires_ansible is not set: no client can tell which versions of Ansible the collection supports.` | Refuses: `requires_ansible` is mandatory |
+| `requires_ansible` in a `meta/runtime.yml` that was read | `meta/runtime.yml sets no requires_ansible: no client can tell which versions of Ansible the collection supports.` | Refuses, as above |
+| A licence: no `license` entry that is not blank and no `license_file` | `No licence named: collection_info has neither license nor license_file.` | Refuses: one of the two is required |
+
+- **The changelog is found by the documentation generator's finder** (`docgen.ChangelogReader`, R-ANS-053), which tells an archive without a
+  changelog member from one whose changelog could not be read: the second has the generator's warning of why (`docs_changelog_not_read`,
+  `docs_changelog_too_large`, `docs_yaml_refused`), not this one.
+- **A `meta/runtime.yml` that cannot be read** keeps the reader's warning (`…; requires_ansible is left empty`, R-ANS-010) and gets neither
+  message of `requires_ansible`.
+- **What Quader does not check**, because it would run a program over an untrusted archive (R-ANS-034, Q-ANS-58) or is more than a line:
+  ansible-lint and ansible-doc, whether a `license` entry is an SPDX identifier, the sanity-test ignore files below `tests/sanity/`, the
+  dependency files `meta/execution-environment.yml` names ([H-2183](#h-2183--the-import-does-not-check-a-licence-against-spdx-the-sanity-ignore-files-or-the-execution-environments-files)).
+- A repeat of the identical bytes (R-ANS-008 step 4) is answered by a task of its own with its one message, without these warnings.
+
+Acceptance criteria:
+
+- `TestR_ANS_062_TheImportWarnsOfAMissingChangelogReadmeRequiresAnsibleAndLicence` (unit, the format against its in-memory port, a few
+  milliseconds, five archives under a kilobyte): a complete archive has none of the warnings; one without the four has the four in this
+  order; a changelog in `docs/` and a `license_file` count; a `meta/runtime.yml` without the key has its own message; an unreadable one has
+  the reader's warning alone.
+- `TestR_ANS_062_AChangelogInDocsIsReadAfterTheRootsAndEveryKindCountsAsOne` (unit, the generator, microseconds).
+- `ansiblelocal` (integration): the task the screens' publish answers carries `No changelog found` for an archive without a changelog
+  (in `TestR_ANS_061_…`).
 
 ## Deferred
 
@@ -3970,7 +4010,44 @@ Status: **Decided by the development agent** on 2026-11-26 — selected from the
 
 **Choice:** (a). **Applied in the spec:** R-ANS-047; ADR-287.
 
+### Q-ANS-143 · The import warns of what Galaxy's importer checks without running a program, and refuses nothing for it
+
+Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough. Context: the owner's task of
+2026-11-25 ("die Galaxy vollständig und ebenbürdig zu ersetzen") and the package A5 of W-30, which asked for the changelog's warning and for
+the importer's other checks that are one line each. galaxy-importer (read on 2026-11-26) warns of a missing changelog and refuses an archive
+without a README (where it runs ansible-doc), without `requires_ansible` and without a licence.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Warn of the four, refuse nothing (chosen) | Messages of level `WARNING` in the import task | A collection `ansible-galaxy collection build` made is stored as before; the publisher learns what Galaxy would say; the client prints the messages | A team that wants Galaxy's strictness gets advice, not a gate |
+| (b) Refuse where Galaxy refuses | A failed task for a missing README, `requires_ansible` or licence | The same verdict as the hub | Archives stored today would be refused tomorrow; Quader is the store of what a team built, and the checks say nothing of whether it works |
+| (c) Only the changelog's warning | The plan's one line | Smallest | Leaves the other three unsaid, although each is a line |
+
+**Choice:** (a). The checks that run a program (ansible-lint, ansible-doc) stay out (R-ANS-034, Q-ANS-58); an SPDX check, the sanity ignore
+files and the execution environment's files are more than a line (H-2183). **Revisit** when the owner asks for a gate on these facts: it would
+be a setting of the repository, in the detail view. **Applied in the spec:** R-ANS-062.
+
+### Q-ANS-144 · A changelog in docs/ is a changelog, and the generator version is 4
+
+Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough. Context: galaxy-importer finds a
+changelog also as `docs/CHANGELOG.md` and `docs/CHANGELOG.rst`; the finder of R-ANS-053 looked at the root and `changelogs/` only, so the warning
+of R-ANS-062 would have named a collection whose changelog Galaxy finds.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The finder reads docs/ too, the root's first; `docgen.Version` 4 (chosen) | One finder for the tree and the warning | The page shows the changelog the warning looked for; the reindex reads the changelogs of versions an older generator recorded as none | Every stored version is read again once after the upgrade (the task `remote-describe`, Q-ANS-99) |
+| (b) The warning looks in docs/, the finder does not | Two lists of places | No reindex | A collection is told it has a changelog that its page does not show |
+
+**Choice:** (a). **Applied in the spec:** R-ANS-053, R-ANS-062.
+
 ## What this does not cover
+
+### H-2183 · The import does not check a licence against SPDX, the sanity ignore files or the execution environment's files
+
+Stage: the import of a local publish (R-ANS-062). galaxy-importer refuses a `license` entry that is no SPDX identifier, warns of the files
+`tests/sanity/ignore-*.txt` with the count of their lines, and warns of a dependency file `meta/execution-environment.yml` names that the
+archive lacks. Quader checks none of the three: the first needs the SPDX list in the binary, the other two read members the reader only
+hashes today. Live for every publish. What makes it real: a team that relies on Galaxy's import log to catch a misspelt licence.
 
 ### H-2120 · A role's minimum Ansible version, platforms and licence are not shown
 

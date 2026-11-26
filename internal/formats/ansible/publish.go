@@ -86,7 +86,7 @@ func (f *Format) handlePublish(ctx context.Context, rq *formats.Request, w http.
 	if err := rq.Host.CheckOwnership(ctx, rq, target, formats.OwnershipWrite{Publish: true, FirstVersion: len(live) == 0}); err != nil {
 		return err
 	}
-	pc := &publishCommit{archive: a, docs: ins.docs, audit: au, task: rows.Task{ID: uuid.NewString()}}
+	pc := &publishCommit{archive: a, docs: ins.docs, audit: au, task: rows.Task{ID: uuid.NewString()}, noChangelog: ins.noChangelog}
 	if done, err := f.numberTaken(ctx, rq, w, rep, st, pc, live, sp); done || err != nil {
 		return err
 	}

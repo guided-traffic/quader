@@ -51,16 +51,19 @@ type ChangelogReader struct {
 // NewChangelogReader returns an empty reader.
 func NewChangelogReader() *ChangelogReader { return &ChangelogReader{bodies: map[string][]byte{}} }
 
-// changelogKind is the kind of a changelog member: "yaml", "md", "rst", or "" for any other member.
+// changelogKind is the kind of a changelog member: "yaml", "md", "rst", or "" for any other member. A Markdown or reStructuredText
+// changelog is CHANGELOG.md or CHANGELOG.rst at the root or in docs/, the places Galaxy's importer looks (R-ANS-053, R-ANS-062); the
+// root's sorts before docs/ and is read first.
 func changelogKind(p string) string {
 	switch p {
 	case changelogYAML, changelogYML:
 		return "yaml"
 	}
-	if strings.Contains(p, "/") {
+	name, _ := strings.CutPrefix(p, "docs/")
+	if strings.Contains(name, "/") {
 		return ""
 	}
-	switch strings.ToLower(p) {
+	switch strings.ToLower(name) {
 	case "changelog.md":
 		return "md"
 	case "changelog.rst":
@@ -86,6 +89,10 @@ func (c *ChangelogReader) Take(p string, body []byte) {
 
 // Warnings are what the last Changelog left out.
 func (c *ChangelogReader) Warnings() []rows.DocWarning { return c.warns }
+
+// Seen says that the archive has a changelog member at all, read or not: an archive without one is warned of at its import (R-ANS-062),
+// one whose changelog could not be read has the warning of that.
+func (c *ChangelogReader) Seen() bool { return len(c.bodies) > 0 }
 
 // Changelog builds the changelog of the collection named collection ("<namespace>.<name>"); nil when the archive holds none that can be
 // read.

@@ -101,6 +101,11 @@ The collection's `galaxy.yml` names the namespace, name and version, so the comm
 - A deleted version leaves a tombstone, and its number cannot be published again (`version_tombstoned`) until an administrator clears the tombstone.
 - A first publish of a name that a remote member of a virtual repository already serves is refused unless you may manage the repository.
 
+The import messages include warnings that never stop a publish, as Galaxy's import log has them: *No changelog found* when the collection has
+none of `changelogs/changelog.yaml`, `CHANGELOG.md` or `CHANGELOG.rst` at its root or in `docs/`, and a warning for a missing README, a
+missing `requires_ansible` in `meta/runtime.yml` and a licence that is not named. Quader runs no ansible-lint and no ansible-doc on what you
+publish.
+
 The web interface shows the import tasks of a local repository on its **Import tasks** tab, and the version with the Ansible versions it needs, its dependencies, licenses and tags on the page of the version.
 
 ## Publish a role: put it into a collection

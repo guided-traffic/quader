@@ -132,6 +132,9 @@ type Archive struct {
 	ReadmeName string
 	// Warnings are the findings that did not refuse the archive (a meta/runtime.yml that was ignored).
 	Warnings []string
+	// HasRuntime says that meta/runtime.yml is a member, and RuntimeIgnored that it could not be read (a warning says why): the import
+	// warns of a collection that declares no requires_ansible (R-ANS-062).
+	HasRuntime, RuntimeIgnored bool
 	// Manifest is MANIFEST.json as the archive holds it: what a detached signature of the collection signs (signatures.md R-SIG-031).
 	Manifest []byte
 }
@@ -249,10 +252,12 @@ func ReadArchive(ctx context.Context, r io.Reader, lim untrusted.Limits, opts ..
 		return nil, err
 	}
 	a.Files = len(members) - 1 // FILES.json is one of the members; MANIFEST.json is not hashed
+	a.HasRuntime = haveRuntime
 	if haveRuntime {
 		v, found, err := requiresAnsible(runtime)
 		switch {
 		case err != nil:
+			a.RuntimeIgnored = true
 			a.Warnings = append(a.Warnings, err.Error()+"; requires_ansible is left empty")
 		case found:
 			a.RequiresAnsible = v

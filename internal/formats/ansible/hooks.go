@@ -30,6 +30,8 @@ type publishCommit struct {
 	// taskRecorded is set by the hook once it wrote the task; a commit of identical content runs no hook, and the handler then records the
 	// task itself.
 	taskRecorded bool
+	// noChangelog says that the archive has no changelog member (R-ANS-062).
+	noChangelog bool
 }
 
 func storeOf(data any) (Store, error) {
@@ -176,6 +178,9 @@ func (f *Format) commitVersion(ctx context.Context, tx formats.Tx, c formats.Com
 	t.CreatedAt, t.StartedAt, t.UpdatedAt, t.FinishedAt = at, at, at, at
 	t.Messages = []rows.TaskMessage{{Level: "INFO", Message: "Collection " + name + " " + a.Version + " stored (sha256 " + hexOf(c.Digests.SHA256)[:12] + "…)", Time: at}}
 	for _, w := range a.Warnings {
+		t.Messages = append(t.Messages, rows.TaskMessage{Level: "WARNING", Message: w, Time: at})
+	}
+	for _, w := range importWarnings(a, p.noChangelog) {
 		t.Messages = append(t.Messages, rows.TaskMessage{Level: "WARNING", Message: w, Time: at})
 	}
 	t.Messages = append(t.Messages, docWarnings(p.docs, at)...)

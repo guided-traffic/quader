@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,309 spec requirements:
-797 cover catalog features, 512 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,310 spec requirements:
+797 cover catalog features, 513 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>512 requirements</summary>
+<summary>513 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3231,6 +3231,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-ANS-060 | A collection is deprecated as a whole | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-057 | Collections are found by namespace, tags and description, ranked, filtered by namespace and signature | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-058 | The documentation is searched across collections | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
+| R-ANS-062 | The import warns of a missing changelog, README, requires_ansible and licence | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-CLAMAV-001 | The format `clamav` and its descriptor | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-CLAMAV-002 | Packages, versions and the layout | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-CLAMAV-003 | What a version shows | P1 | [formats/clamav.md](../spec/formats/clamav.md) |

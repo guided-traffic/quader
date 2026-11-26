@@ -139,8 +139,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// (R-GENERIC-017, one P1 requirement of W-30, G9).
 		// 1309 since an upstream's package shows its documentation before a version is stored (R-CUR-028, one P1 requirement of W-30,
 		// G2).
-		if len(m.Reqs) != 1309 || count[prioMVP] != 723 || count[prioP1] != 547 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1309 (723, 547, 39)",
+		// 1310 since the import warns of a missing changelog, README, requires_ansible and licence (R-ANS-062, one P1 requirement of
+		// W-30, A5).
+		if len(m.Reqs) != 1310 || count[prioMVP] != 723 || count[prioP1] != 548 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1310 (723, 548, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

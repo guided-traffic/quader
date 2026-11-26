@@ -149,7 +149,10 @@ raw body, Q-ANS-34); the digest is compared before the inspection; `Inspect` rea
 is a failed task and 202; then `Authorize`, `CheckOwnership`, the immutability and tombstone verdict (`numberTaken`), the shadowing check and
 `Ingest().Commit`. `OnCommit` ([hooks.go](../../internal/formats/ansible/hooks.go)) repeats the verdicts under the package row lock, claims the name, inserts the
 generic version, writes the row through the port (`PutVersion`, with `package.published` and no journal entry) and records the completed task, all in the
-commit transaction. A commit of identical content runs no hook and the handler records the repeat's task itself.
+commit transaction. A commit of identical content runs no hook and the handler records the repeat's task itself. The task's messages are the stored line,
+the reader's warnings, the import's own warnings of a missing changelog, README, `requires_ansible` and licence
+([import_warnings.go](../../internal/formats/ansible/import_warnings.go), R-ANS-062; the changelog is the generator's finder, `Generator.HasChangelog`) and the
+generator's warnings.
 
 **Reads** ([handlers_local.go](../../internal/formats/ansible/handlers_local.go)). Every document is computed from the rows per request with a weak `ETag` of its
 bytes (Q-ANS-35); a caller whose grants hide versions sees a list cut from the versions it may read (`formats.CallerVersions`). The download is the stored item through

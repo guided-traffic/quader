@@ -26,8 +26,8 @@ import (
 // Version is the version of the code that derives the rows, stored as ansible_version_docs.generator: the reindex rebuilds a version whose
 // stored generator is older (R-ANS-044). It is raised with every change of what the generator makes of a source: 2 keeps the configuration
 // of an option, version_added_collection and positional (R-ANS-049, R-ANS-050); 3 merges the collection's fragments, reads a role's
-// argument specs and the changelog (R-ANS-051 to R-ANS-053).
-const Version = 3
+// argument specs and the changelog (R-ANS-051 to R-ANS-053); 4 reads a changelog in docs/ as well (R-ANS-053, R-ANS-062).
+const Version = 4
 
 // Limits are the bounds the generator reads under (R-ANS-031). A bound crossed drops that part, sets Truncated and adds a warning; it
 // never fails a publish (R-ANS-034).
@@ -285,6 +285,10 @@ func (w *warnings) add(p, code, msg string) {
 	}
 	w.list = append(w.list, rows.DocWarning{Path: p, Code: code, Message: msg})
 }
+
+// HasChangelog says that the archive has a changelog member in one of the places R-ANS-053 reads, whether it could be read or not: the
+// import of a publish without one warns (R-ANS-062).
+func (g *Generator) HasChangelog() bool { return g.changelog.Seen() }
 
 // Build derives the documentation. readmeName is the name of the README the manifest declares (collection_info.readme), "" for the default
 // "README.md"; the README is read when it is a Markdown file at the root of the archive or directly in docs/. collection is the full name

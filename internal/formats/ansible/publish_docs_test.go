@@ -77,9 +77,10 @@ func TestR_ANS_034_APublishWhoseDocumentationHitsABoundIsAcceptedWithWarnings(t 
 	var last string
 	for _, m := range task["messages"].([]any) {
 		msg := m.(map[string]any)
-		if msg["level"] == "WARNING" {
+		// The warnings of the generator; the import's own (R-ANS-062) are counted in their own test.
+		if text, _ := msg["message"].(string); msg["level"] == "WARNING" && strings.HasPrefix(text, "documentation: ") {
 			warns++
-			last, _ = msg["message"].(string)
+			last = text
 		}
 	}
 	if warns != 101 || !strings.Contains(last, "more warnings are not listed") {
