@@ -11,6 +11,10 @@
 # main checkout's.
 # UI_RENDERS_LOCALE=de renders the screens marked `de` against the dev server's German build (Q-UI-1048), UI_RENDERS_ENGINE=firefox or
 # webkit renders in that engine (Q-UI-1049); each into a folder of its own (.out/ui-renders-de, -firefox, -webkit-de).
+# UI_RENDERS_SHARD=i/n (make ui-renders SHARD=i/n) renders the i-th of n parts of the screens, as the legs of the job ui-layout do
+# (Q-ARCH-1071): every n-th pair of screen and kind of user (web/e2e/renders/paths.ts). A part leaves the fixtures of the layout checks
+# out, which the job ui-layout-fixtures runs once for all parts (make ui-layout-test), and keeps the pictures of the other parts, so
+# that the parts run one after the other fill one contact sheet.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -24,11 +28,19 @@ web_log="$root/.out/ui-renders.web.log"
 
 # The layout checks first, on their fixtures (seconds, no stack): a check that cannot find the defects it names judges nothing. In
 # Chromium, the engine of the screens' renders; `make ui-layout-test` runs them in Firefox and WebKit too (Q-UI-1045).
-# A run in another engine proves them in that engine.
+# A run in another engine proves them in that engine. A part of the screens leaves them to the run of the whole or to
+# `make ui-layout-test` (in CI the job ui-layout-fixtures).
 engine="${UI_RENDERS_ENGINE:-chromium}"
 locale="${UI_RENDERS_LOCALE:-en}"
 case "$locale" in en | de) ;; *) echo "UI_RENDERS_LOCALE=$locale: en or de" >&2; exit 1 ;; esac
-(cd web && npx playwright test -c e2e/playwright.layout.config.ts --project "$engine")
+shard="${UI_RENDERS_SHARD:-}"
+if [ -n "$shard" ] && ! [[ "$shard" =~ ^[1-9][0-9]*/[1-9][0-9]*$ && "${shard%/*}" -le "${shard#*/}" ]]; then
+  echo "UI_RENDERS_SHARD=$shard: i/n with 1 <= i <= n, such as 2/5" >&2
+  exit 1
+fi
+if [ -z "$shard" ]; then
+  (cd web && npx playwright test -c e2e/playwright.layout.config.ts --project "$engine")
+fi
 
 deploy/ui-dev/up.sh
 
@@ -81,6 +93,6 @@ fi
 # The renders' edge, state and database are the instance's (web/e2e/renders/paths.ts, seed.ts).
 export UI_RENDERS_EDGE="https://localhost:$UI_WEB_PORT" UI_RENDERS_STATE="$UI_STATE" UI_RENDERS_POSTGRES="$UI_PROJECT-postgres"
 cd web
-# Without arguments every screen is rendered into an empty folder; with --grep the other pictures stay.
-if [ "$#" -eq 0 ]; then export UI_RENDERS_CLEAN=1; fi
+# Without arguments every screen is rendered into an empty folder; with --grep, and in a part, the other pictures stay.
+if [ "$#" -eq 0 ] && [ -z "$shard" ]; then export UI_RENDERS_CLEAN=1; fi
 npx playwright test -c e2e/playwright.renders.config.ts "$@"

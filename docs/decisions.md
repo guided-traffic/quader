@@ -9780,10 +9780,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-ARCH
 
-288 questions on [spec/architecture.md](spec/architecture.md).
+289 questions on [spec/architecture.md](spec/architecture.md).
 
 <details>
-<summary>Q-ARCH: 288 questions</summary>
+<summary>Q-ARCH: 289 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10075,6 +10075,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-1068](spec/architecture.md#q-arch-1068--the-kind-nodes-take-docker-hubs-account-from-the-hosts-docker-first-and-from-the-profiles-file-second) | The kind nodes take Docker Hub's account from the host's Docker first and from the profile's file second | Decided by the development agent | (b) The host's Docker first, the profile's file second | — |
 | [Q-ARCH-1069](spec/architecture.md#q-arch-1069--the-kind-profile-names-the-accounts-secret-only-while-it-exists-and-the-kubelet-fills-an-optional-source-that-appears-later) | The kind profile names the account's Secret only while it exists, and the kubelet fills an optional source that appears later | Decided by the development agent | (a) `release_values` layers `values-upstream-accounts.yaml` only while the Secret `quader-upstream-docker-hub` exists | — |
 | [Q-ARCH-1070](spec/architecture.md#q-arch-1070--the-role-api-writes-what-a-format-decides-through-a-host-of-its-own-with-the-virtual-engine-as-its-resolver) | The role `api` writes what a format decides through a Host of its own with the virtual engine as its Resolver | Decided by the development agent on 2026-11-26 | (a) The area `management-host` on the roles of the management API: the format host where the role builds one, else (`api`) the Host of the serve check built after the virtual engine with that engine as its Resolver | — |
+| [Q-ARCH-1071](spec/architecture.md#q-arch-1071--the-layout-checks-render-the-screens-in-parallel-legs-each-every-n-th-pair-of-screen-and-kind-of-user) | The layout checks render the screens in parallel legs, each every n-th pair of screen and kind of user | Decided by the development agent on 2026-11-26 | (a) with five legs on `self-hosted`, `fail-fast: false`, 45 minutes each, and the job `ui-layout-fixtures` ("UI layout checks (fixtures and dialog states)", no stack, no Go, 30 minutes) for what runs once. | — |
 
 </details>
 

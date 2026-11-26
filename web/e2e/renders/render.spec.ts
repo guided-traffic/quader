@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { join } from 'node:path';
 import { Page, Request, expect, test } from '@playwright/test';
 import { LayoutFinding, emptyScroll, findingLine, innerScroll, judge, layoutFindings } from './layout';
-import { locale, manifestDir, outDir } from './paths';
+import { inShard, locale, manifestDir, outDir } from './paths';
 import { awaitAnswersOnUnroute, isHeld } from './routes';
 import { Kind } from './seed';
 import { KEEP_OPEN, Screen, screens } from './screens';
@@ -47,9 +47,12 @@ export interface Shot {
   readonly allowedFindings: readonly (LayoutFinding & { readonly why: string })[];
 }
 
-// The German pass renders the screens marked `de` (Q-UI-1048): their walks find no control by an English word.
+// The German pass renders the screens marked `de` (Q-UI-1048): their walks find no control by an English word. A run of one part
+// (UI_RENDERS_SHARD) declares the pairs of screen and kind of user at its places of this order, and no other.
+let place = 0;
 for (const screen of locale === 'de' ? screens.filter((s) => s.de) : screens) {
   for (const kind of locale === 'de' && Array.isArray(screen.de) ? screen.de : screen.kinds) {
+    if (!inShard(place++)) continue;
     test(`${screen.id} as ${kind}`, { tag: `@${kind}` }, async ({ page }) => {
       forget(kind, screen);
       const failures = watch(page, screen);

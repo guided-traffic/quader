@@ -11860,12 +11860,13 @@ of a long leg. With the first stable release the job joins the `needs` of Semant
 `TestTheUILayoutChecksRunEveryScreenAndHoldNoRelease` ([workflows_test.go](../../internal/tools/ciworkflows/workflows_test.go))
 changes with it.
 
-**Applied:** [release.yml](../../.github/workflows/release.yml) (`ui-layout`); [releasing.md](../developer/releasing.md),
-[web-ui.md](../developer/web-ui.md#renders-of-every-screen).
+**Applied:** [release.yml](../../.github/workflows/release.yml) (`ui-layout-fixtures` and the legs of `ui-layout` since
+[Q-ARCH-1071](#q-arch-1071--the-layout-checks-render-the-screens-in-parallel-legs-each-every-n-th-pair-of-screen-and-kind-of-user)); [releasing.md](../developer/releasing.md), [web-ui.md](../developer/web-ui.md#renders-of-every-screen).
 
 ### Q-ARCH-511 · The layout checks run in one leg on the standard runners
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Superseded by
+[Q-ARCH-1071](#q-arch-1071--the-layout-checks-render-the-screens-in-parallel-legs-each-every-n-th-pair-of-screen-and-kind-of-user): the one leg passed its 75 minutes on 2026-11-26, and the screens render in parallel legs; the class `self-hosted` stays.
 
 Context: a full run renders 331 screens and kinds (3 widths, 2 schemes, every tab and walk) with three browsers at a time against the
 job's own UI development profile: three service containers (PostgreSQL, Valkey, SeaweedFS), one Quader process with the sign-in
@@ -11898,7 +11899,8 @@ Context: the renders are never committed. A red job must say what failed and sho
 | (c) No artifact | | | Every red run is rendered again locally to be seen |
 
 **Choice:** (a). **Rationale:** what a person looks at after a red run is the failed screen; the report holds every measurement of
-every picture. The development agent revisits the retention if a red run is looked at later than a week.
+every picture. The development agent revisits the retention if a red run is looked at later than a week. Since [Q-ARCH-1071](#q-arch-1071--the-layout-checks-render-the-screens-in-parallel-legs-each-every-n-th-pair-of-screen-and-kind-of-user) each leg
+uploads its own, named by its part: `ui-layout-findings-<i>` and `ui-layout-report-<i>`.
 
 **Applied:** [release.yml](../../.github/workflows/release.yml).
 
@@ -13318,6 +13320,54 @@ unchanged). The management API's deprecation operation takes the area's Host. `T
 `api` start without the virtual engine; the integration cases of the deprecation in `nuget`, `npm` and `ansiblelocal` send the operation
 and the screens' reads to a replica of the role `api`. **Revisit** when an operation of the management API needs the remote engine: it
 belongs on `packages` or a `worker`, as Q-ARCH-301 says.
+
+### Q-ARCH-1071 · The layout checks render the screens in parallel legs, each every n-th pair of screen and kind of user
+
+Status: **Decided by the development agent** on 2026-11-26; the owner reviews it at the walkthrough. Supersedes
+[Q-ARCH-511](#q-arch-511--the-layout-checks-run-in-one-leg-on-the-standard-runners).
+
+Context: the one leg of the layout checks (Q-ARCH-511, `self-hosted`, 75 minutes) was stopped by its timeout in every run of Test and
+Release from 2026-11-26 08:00 on. Its step "Render every screen and check its layout" took 31.1 minutes on 2026-11-19 (run 44639156621),
+45.5 on 2026-11-23, 58.8 on 2026-11-25 and 68.0 on 2026-11-26 07:35 (run 45775689673, the last green one) [measured, the steps' times]:
+5.8 minutes a day for a week. Run 45775689673 rendered 662 pairs of screen and kind of user in 64.9 minutes with three browsers, 192.7
+minutes of summed test time [measured, the list reporter's time of each test]: anonymous 10 pairs and 0.8 minutes, plain 208 and 55.8,
+power 170 and 52.1, admin 246 and 75.0, auditor 28 and 9.1; the longest pair took 276 s. Around the rendering the leg spent 7.9 minutes
+that do not depend on the screens: 4.5 of setup (Node.js, Go, the modules, `npm ci`, the browsers), 3.0 of the stack's start and the
+seed, 0.4 of teardown; the fixtures and the dialog states took 1.6 more.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Parts by place: the leg i of n renders every n-th pair of screen and kind of user from the i-th, in the order of `render.spec.ts` (`make ui-renders SHARD=i/n`); the fixtures and the dialog states in a job of their own (chosen) | A matrix of part numbers, n = `strategy.job-total` | The parts differ by one pair at most whatever the screens are, a new screen lands in one without a list, a leg grows by a fifth of what the set grows | Each leg starts a stack and seeds the whole set; a part is no unit a person thinks in, and its failure names the screen, not the part |
+| (b) Parts by kind of user (the Playwright projects) | `--project admin` per leg | A leg's name says whose screens it shows | Unbalanced: admin is 39 % of the time and anonymous with auditor 5 %; the admin area grows fastest, and a kind cannot be cut again without a second rule |
+| (c) Playwright's `--shard=i/n` | Contiguous slices of the list in the projects' order | No code of ours | The 170 measurement cases (slow loads, live cost), skipped outside a measurement, are counted into the slices, most of them the plain user's; a slice boundary moves with every screen added before it |
+| (d) One leg on `large` | 10 CPUs requested | One stack | Six pods, which the kind legs compete for on every push; still one leg that grows by every screen; a run there is not measured |
+| (e) A longer timeout | 120 minutes | Nothing to build | Postpones the next timeout by a week at the rate measured, and every layout finding waits an hour longer |
+
+**Choice:** (a) with five legs on `self-hosted`, `fail-fast: false`, 45 minutes each, and the job `ui-layout-fixtures` ("UI layout checks
+(fixtures and dialog states)", no stack, no Go, 30 minutes) for what runs once. The legs do not wait for it: a red run of it means that
+the legs' verdicts do not count either. The part is computed in [paths.ts](../../web/e2e/renders/paths.ts) (`UI_RENDERS_SHARD`, `inShard`)
+and applied where `render.spec.ts` declares its tests; a part skips the fixtures in `renders.sh` and does not empty the pictures' folder.
+`TestTheUILayoutChecksRunEveryScreenAndHoldNoRelease` ([workflows_test.go](../../internal/tools/ciworkflows/workflows_test.go)) holds that
+the matrix numbers the parts 1 to n and holds nothing else, that the one render step passes `${{ matrix.shard }}/${{ strategy.job-total }}`
+and nothing that narrows it, and that each leg uploads under a name of its own. **Rationale:** every part costs the same and stays so as
+screens are added; the cost of a part is visible in the leg's time, and the remedy is one more number in the matrix.
+
+**Times** [derived: the per-pair times of run 45775689673 replayed on three browsers, the 31 pairs added since at their mean of 17.5 s; the
+same replay of that run's 662 pairs gives 64.7 minutes against its measured 64.9]: 693 pairs today, 138 or 139 per leg, 12.5 to 14.5
+minutes of rendering, 20.4 to 22.4 minutes as a job, half of the 45; four legs would take 15.4 to 18.5, six 9.7 to 14.4 (one leg there
+holds the 276-s pair and two more of over two minutes). The fixtures' job about 6 minutes [derived from the steps of the same run].
+**Growth:** at the week's 5.8 minutes a day a leg grows by about 1.2 minutes a day: it passes the 30 minutes at which a leg is added in
+about 6 days and its 45 in about 19. A year at that rate (about 2,100 minutes more for one leg) would take about 60 legs of 37 minutes'
+rendering, more than the 24 pods of `self-hosted`: the structure holds the time of a leg, not the runner minutes of the set, which grow
+with the screens whatever the shape. **Cost:** one leg as before would take about 77 minutes of one runner for today's set (and pass its
+75); the five legs and the fixtures' job take about 114 runner minutes, about 37 more per push (+48 %): four more stacks of 7.9 minutes and
+the second job's setup. A push holds six `self-hosted` pods for about 22 minutes instead of one for 77. **Revisit** when a leg's render
+step passes 30 minutes (one more leg), and when the screens' own time per pair is the thing to cut.
+
+**Applied:** [release.yml](../../.github/workflows/release.yml) (`ui-layout-fixtures`, `ui-layout`); [Makefile](../../Makefile)
+(`ui-renders` `SHARD=i/n`); [renders.sh](../../deploy/ui-dev/renders.sh); [render.spec.ts](../../web/e2e/renders/render.spec.ts);
+[releasing.md](../developer/releasing.md#ci), [web-ui.md](../developer/web-ui.md#renders-of-every-screen),
+[test-cost.md](../developer/test-cost.md#35d-the-parts-of-the-render-set-q-arch-1071-2026-11-26).
 
 ## What this does not cover
 

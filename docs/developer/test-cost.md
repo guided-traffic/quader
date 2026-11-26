@@ -17,7 +17,7 @@ All figures are runner minutes (the wall clock of each job, summed) unless state
 ## 1. Method (repeatable)
 
 1. Run lists and artifact lists: `gh api repos/guided-traffic/quader/actions/runs/<id>/jobs --paginate`, `.../runs/<id>/artifacts --paginate`, `.../runs/<id>` (files `data/jobs_<id>.json`, `art_<id>.json`, `run_<id>.json`). A job's runner minutes are `completed_at - started_at` of the job; a step's are the same on the step; summed over all non-skipped jobs they reproduce the owner's 384 (run 1: 384.9) and 682 (nightly: 682.9) [V]. Queue time (`created_at` to `started_at`) is not counted in runner minutes and is reported separately.
-2. Reports: `gh run download <id> -R guided-traffic/quader -p 'test-*' -p 'e2e-*report*' -p 'e2e-report-*' -p 'ui-layout-report' -p 'oci-conformance-junit' -D artifacts/<id>` (nightly: `e2e-*report*`, `test-performance`, `vuln-perf`); Playwright `results.json` from `e2e-playwright-access-long` and `e2e-vuln-playwright-vuln` of run 2. Nothing had expired. The Go reports are parsed for the `pass`/`fail`/`skip` event of every test (`Elapsed`), top-level tests and their direct subtests (`gotests.py`, `pkgs.py`).
+2. Reports: `gh run download <id> -R guided-traffic/quader -p 'test-*' -p 'e2e-*report*' -p 'e2e-report-*' -p 'ui-layout-report*' -p 'oci-conformance-junit' -D artifacts/<id>` (nightly: `e2e-*report*`, `test-performance`, `vuln-perf`); Playwright `results.json` from `e2e-playwright-access-long` and `e2e-vuln-playwright-vuln` of run 2. Nothing had expired. The Go reports are parsed for the `pass`/`fail`/`skip` event of every test (`Elapsed`), top-level tests and their direct subtests (`gotests.py`, `pkgs.py`).
 3. Step classes (`split.py`, `cats.py`): **tests** = steps `make e2e SET=...`, `make test*`, `Render every screen...`, `make oci-conformance`, `make s3-conformance`, `make chart-test`, `make web-test`, perf runs; **teardown** = `make dev-down`, `make integration-down`, cluster-state, every `Upload ...`, `Post ...`, `Complete job`; **infra** = every other step plus the seconds between steps (checkout, Go, Buildx, tool pins, disk free, Playwright install, `make dev-up`, `make integration-up`, image loads, client image build/load).
 4. Inside the e2e step: step time minus the sum of the top-level test times is the **`make e2e` outside the tests** (`gap`, [I]: `deploy/dev/e2e.sh` builds the driver, starts client pods and test upstreams; `TestMain` switches the profile). Per top-level test, **seconds outside its subtests** = test time minus the sum of its direct subtests, only where the subtests do not overlap [I]; for format tests I read this as set-up inside the test (seeding, waiting for an index to merge), which I confirmed by reading `TestDebVirtual` (`test/e2e/deb_virtual_test.go`, fixture, uploads, a `waitFor` of up to 5 min on the merged index, then four 1-2 s client subtests); for platform tests the remainder can also be real test work, so it is not used as infra there.
 5. Classes of a test (**[J]**, rule): **client** = the test's pass condition is a behaviour of one format's own client or content, named by that format's requirement ids (`R-NPM-*`, `R-NUGET-*`, `R-OCI-*`, `R-DEB-*`, `R-ANS-*`, `R-LIM-020` "what the client shows at a refusal"); **repeated** = the pass condition is a format-independent requirement (`R-REPO-*`, `R-ARCH-*`, `R-EP-*`, `R-AUTHZ-*`, `R-HA-*`, the mirror, virtual, replica, drain, failover, pod-crash scenarios), driven by a format's client or as load; **infra** = a smoke test of the client pods; **once** = a platform feature with no format's client as subject, and no copy elsewhere (not a format cost). Each test row carries the note on which the call rests; the rules are in `classify.py`. The format-contract kit (`internal/formats/formattest/kit.go`, checks 1 to 16 incl. merge, authz paths, admission) exists for every format at the unit tier; that is the evidence that e2e virtual and authz cases of a format are the same behaviour.
@@ -610,6 +610,34 @@ two widths (Q-UI-1231) and one kind per state keep it at about 2.2. Data: the wa
 the seed adds two policies and two CI mappings through the API (a few requests, well under a second). Per format: 0 (no state is a
 format's; the command menus of the three formats without a picture are left out on purpose, H-2005 of api-and-ui.md).
 
+### 3.5d The parts of the render set (Q-ARCH-1071, 2026-11-26)
+
+The one leg of the layout checks passed its 75 minutes from 2026-11-26 08:00 on. Its step "Render every screen and check its layout" [V,
+the steps' times]: 31.1 min on 2026-11-19 (run 44639156621), 30.3 on 11-20, 39.6 on 11-21, 42.4 on 11-22, 45.5 on 11-23, 51.8 on 11-24,
+58.8 on 11-25 and 68.0 on 11-26 (run 45775689673, the last green one): 5.8 min a day for a week. The list reporter's line of each test
+carries its time, so since that run the time per pair of screen and kind of user is known, not divided out of the step as in 3.5 [V,
+job 139758696223]: 662 pairs, 192.7 min of summed test time in 64.9 min of wall with three browsers; by kind anonymous 10 pairs / 0.8
+min, plain 208 / 55.8, power 170 / 52.1, admin 246 / 75.0, auditor 28 / 9.1; the longest pairs `package-version-signatures-oci` as plain
+276 s, `profile-usage` as power 144 s, `repository-npm-remote-upstream` as admin 126 s. The leg's part that does not depend on the
+screens: 4.5 min of setup, 3.0 of the stack's start and the seed, 0.4 of teardown; the fixtures and the dialog states 1.6 more [V].
+
+The set now renders in five legs of every fifth pair ([releasing.md](releasing.md#ci), [web-ui.md](web-ui.md#renders-of-every-screen)).
+Their times [I: the run's per-pair times replayed on three workers in the order Playwright hands them out, the 31 pairs added since at the
+mean of 17.5 s; the replay of the run's own 662 pairs gives 64.7 min against the 64.9 measured]:
+
+| Legs | Pairs per leg | Rendering per leg (min) | Job per leg (min) | Runner min per push, with the fixtures' job |
+|---:|---|---|---|---:|
+| 1 (before) | 693 | 67.8 | 77.3 (fixtures and states inside) | 77 |
+| 4 | 173 to 174 | 15.4 to 18.5 | 23.3 to 26.4 | 106 |
+| **5 (chosen)** | 138 to 139 | 12.5 to 14.5 | 20.4 to 22.4 | **114** |
+| 6 | 115 to 116 | 9.7 to 14.4 | 17.6 to 22.3 | 123 |
+
+Data: none added; each leg seeds the whole set (the seed is the same for every part) and renders its part's pictures. The cost per push
+is about 37 runner minutes more (+48 %), four more stacks of 7.9 min and the fixtures' job of about 6 min; the layout checks end about 22
+min after they start instead of 77. A leg grows by about 1.2 min a day at the week's rate and passes the 30 min at which a leg is added in
+about 6 days. Per format: a format's screens spread over the five legs; what a format adds to the set (3.5) is divided by five in wall
+time and unchanged in runner minutes.
+
 ### 3.6 Nightly legs, per test
 
 
@@ -985,7 +1013,7 @@ The push mean of five is 12.6 infra + 7.2 client + 8.7 repeated min. Assumptions
 
 * **Push e2e legs run in parallel** and each is 12.3 to 23.8 min, so they do not lengthen the push by themselves, but they need runners: a push already holds 6 large and 4 GitHub-hosted legs at once; at 25 formats it is 25 format legs + 5 shared ones. The large pool is the unknown: it served 5 to 6 concurrent legs in the two pushes, queued `e2e (npm)` 895 s in run 1 while the nightly held it, and in the nightly runs three at a time by design (Q-ARCH-431). Not measured: the pool size.
 * **Integration shard b is the critical path today** (run 2: 41.1 min, then the coverage jobs to 51.7 min). One average format adds 362.6 s (mean of the five; client+repeated of its packages, `oci` incl. conformance) = 6.0 min, shard b has 45 min of job timeout and 40.9 min of run: the first additional format of average size crosses it; 19 more formats make shard b about 156 min and the push about 166 min wall (shard b ends, then 10.6 min of coverage jobs, as in run 2) unless the shards are cut again. (Deb alone is 658 s, Ansible 152 s: the spread is large.)
-* **UI layout** is 32.7 min as a job (run 2; the render step 28.9) with a 75-min job timeout; one format adds 486 shots x 0.378 s = 183 s on average; the job passes 75 min after about 14 more formats and is about 91 min at +19 [I].
+* **UI layout** is 32.7 min as a job (run 2; the render step 28.9) with a 75-min job timeout; one format adds 486 shots x 0.378 s = 183 s on average; the job passes 75 min after about 14 more formats and is about 91 min at +19 [I]. It passed 75 min on 2026-11-26 with screens of the existing formats alone and renders in five legs since ([3.5d](#35d-the-parts-of-the-render-set-q-arch-1071-2026-11-26)): a format's 183 s are about 37 s of each leg's wall time.
 * **Nightly:** the wall clock is lane 1 (243.8 min of legs, 299.2 min observed). If the new formats' nightly legs are spread over the three lanes the lanes grow by (19 x 29.5)/3 = 187 min each in the mean-of-five case, so the wall goes from 299 to about 486 min; if every new format follows OCI's shape it is +87 min.
 
 ## 5. The largest candidates
@@ -1026,7 +1054,7 @@ Ranked by the larger of the push and nightly minutes at stake: the measured minu
 ## 7. Not measured
 
 * **Unit tests per format.** `unit tests` is one job of 12.3 min (run 2); 234 packages overlap, so package times do not add; only the package wall times of section 3.3 are known (upper bounds). The share of the unit job that is a format's was not measured. Measured since, from a later run: [section 14](#14-the-three-measurements-section-7-left-open-from-the-runs-of-2026-11-20-to-2026-11-23-read-on-2026-11-24).
-* **UI layout per screen.** The report has no timings; the per-screen time is step time divided by shots. Admin vs list screens could differ.
+* **UI layout per screen.** The report has no timings; the per-screen time is step time divided by shots. Admin vs list screens could differ. Measured since from the job's log, per pair of screen and kind ([3.5d](#35d-the-parts-of-the-render-set-q-arch-1071-2026-11-26)).
 * **Playwright per spec** for every leg except access-long and vuln (run 2); the Playwright journeys of the ansible-docs, bastion and upgrade legs are inside their Go test times only; run 1 has no Playwright report downloaded.
 * **Integration classes** are by test name for the 14 format packages only (`npm`, `nuget`, `ansible*`, `deb*`, `oci*`, `registry`); I did not read the 1,645 tests. I read two to confirm the e2e duplicates (`documents_test.go:53`, `preempt_test.go:54`). Format tests inside platform packages (`mirror`, `proxy`, `virtual`, `itempublish`, `vuln*`) are counted as platform. The `registry` package is counted as OCI by its name and by the Makefile shard rule (oci%, registry), not by reading it.
 * **Class calls of e2e tests** are by rule and by test name with reading of the code only for `TestDebVirtual`, `TestNPMReplicas` (head), `TestNPMUpstream` (subtest names), `TestNuGetHA` (header), the limits tests (`limits_clients_env_test.go`, `oci_limits_test.go` headers) and `e2e.sh`. Mixed tests (npm replicas: ETag/validator parts are npm-document specific, the replica and Valkey parts are not) are called by their larger part; I did not split a test.

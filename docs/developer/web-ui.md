@@ -389,7 +389,7 @@ never picked and is refused when named, since its owner is not known; `make ui-d
 that started it. Instance 1 has no claim: it is the main checkout's.
 
 Instance 1 is the profile as it was before instances existed: its compose configuration resolves to the same values (the same
-configuration hash), so a running stack is not recreated, and the pipeline's job `ui-layout` runs it unchanged. **Instance 1 is
+configuration hash), so a running stack is not recreated, and every leg of the pipeline's job `ui-layout` runs it unchanged. **Instance 1 is
 refused in a git worktree**: its names and ports belong to the main checkout's stack, and before instances existed a worktree's
 `make ui-renders` recreated that stack's containers with the worktree's certificates under whoever was looking at it (2026-11-20).
 A worktree claims its instance; a new instance is a new database, so `make ui-renders` seeds it from scratch. The number stops at 8:
@@ -407,18 +407,20 @@ can then issue certificates your machine trusts for any host. Remove the trust e
 `make ui-renders` renders every screen of the UI into pictures to look at: a UI change is rendered and the pictures of every
 changed screen are looked at, in both schemes and at 390 px, before it is committed (rule 11 of
 [promt.md](../projektplan/promt.md); the [checklist](ui-style-guide.md#checklist) of the style guide). A unit test or a browser
-journey that checks a value is not a look at the screen. It runs locally, and the job `ui-layout` ("UI layout checks") of Test
-and Release runs it on every push with its layout checks: a finding fails that job, which gates no release until the first stable
-release ([Q-ARCH-510](../spec/architecture.md#q-arch-510--the-layout-checks-of-the-ui-run-on-every-push-in-test-and-release-and-gate-no-release-until-the-first-stable-release),
+journey that checks a value is not a look at the screen. It runs locally, and Test and Release runs it on every push with its
+layout checks, in parts: the job `ui-layout-fixtures` runs the checks' fixtures and the dialog states once, and each leg of the job
+`ui-layout` ("UI layout checks (screens, part i of n)") renders one part of the screens against a stack of its own ([Q-ARCH-1071](../spec/architecture.md#q-arch-1071--the-layout-checks-render-the-screens-in-parallel-legs-each-every-n-th-pair-of-screen-and-kind-of-user));
+a finding fails the job that finds it, and neither gates a release until the first stable release ([Q-ARCH-510](../spec/architecture.md#q-arch-510--the-layout-checks-of-the-ui-run-on-every-push-in-test-and-release-and-gate-no-release-until-the-first-stable-release),
 [releasing.md](releasing.md#ci)); a red run uploads its findings and the pictures of its failed screens. Decision:
 [Q-UI-304](../spec/api-and-ui.md#q-ui-304--make-ui-renders-renders-the-working-tree-through-the-dev-server-signs-the-three-kinds-of-user-in-through-a-provider-of-the-profile-and-seeds-through-the-api).
 
 ```shell
 make web-ci                       # once, and after a change of web/package-lock.json
-make ui-layout-test               # the layout checks on their own fixture pages: seconds, no stack (also the first step of ui-renders)
+make ui-layout-test               # the layout checks on their own fixture pages: seconds, no stack (also the first step of ui-renders without SHARD)
 make ui-states                    # the dialogs' and the overlays' states, measured by the same checks without a stack (Dialog states, below)
 make ui-renders                   # every screen, into an empty .out/ui-renders
 make ui-renders GREP=repositories # the screens whose test title matches; the other pictures stay
+make ui-renders SHARD=2/5         # the second of five parts, as the second leg of CI renders it; the other pictures stay
 UI_RENDERS_LOCALE=de make ui-renders            # the screens marked `de`, in German, into .out/ui-renders-de
 UI_RENDERS_ENGINE=firefox make ui-renders GREP=vulnerabilities  # in Firefox (or webkit), into .out/ui-renders-firefox
 make ui-dev-down                  # when done (keeps the data)
@@ -432,6 +434,13 @@ its controls by their place (a selector, a test ID, an `aria-controls`), never b
 ([Q-UI-1048](../spec/api-and-ui.md#q-ui-1048--a-german-pass-of-the-renders-for-the-screens-marked-for-it)). The flag may name kinds
 (`de: ['plain']`): the German pass renders the screen as those only, where one kind shows what the pass is for (an Ansible
 collection's version, 42 pictures instead of 126, [Q-UI-1090](../spec/api-and-ui.md#q-ui-1090--a-tab-strip-takes-its-tabs-closer-before-it-scrolls)).
+**Parts.** `SHARD=i/n` (`UI_RENDERS_SHARD` of [paths.ts](../../web/e2e/renders/paths.ts)) renders every n-th pair of screen and kind
+of user, from the i-th, in the order of `render.spec.ts` (the screens of `screens.ts`, each with its kinds): the parts of one n hold
+each pair exactly once, differ by one pair at most, and a new screen joins one by its place in `screens.ts`, without a list to edit.
+A part leaves out the checks' fixtures (`make ui-layout-test` runs them, in CI the job `ui-layout-fixtures`) and keeps the pictures of
+the other parts, so parts run one after the other fill one contact sheet. The pipeline renders five parts in five legs ([Q-ARCH-1071](../spec/architecture.md#q-arch-1071--the-layout-checks-render-the-screens-in-parallel-legs-each-every-n-th-pair-of-screen-and-kind-of-user),
+[releasing.md](releasing.md#ci)); the German pass and another engine take the argument too.
+
 `UI_RENDERS_ENGINE=firefox` or `webkit` runs the same walk in that engine, its layout checks first in that engine; it is a look by
 hand for a screen that draws (the severities' trend, a bar), not a job of the pipeline
 ([Q-UI-1049](../spec/api-and-ui.md#q-ui-1049--the-renders-run-in-firefox-or-webkit-on-demand-into-a-folder-of-their-own)). Each such
@@ -671,7 +680,7 @@ the handler fulfilled it. The seed writes some rows by SQL (`psql` of `seed.ts`,
 `seed.ts`, `malware.ts`, `scanners.ts` and `signatures.ts`), which no compiler and no unit test checks against the schema, so a
 migration that renames or removes a column is followed by a search of `web/e2e/renders/` for it and by a render run (on 2026-11-21
 the signatures' seed still wrote `signature_trust.epoch` after migration 00100 had renamed it, and the job `ui-layout` failed in its
-setup). `UI_RENDERS_WIDTHS=1440,1280,1024,390` adds a width, `UI_RENDERS_WORKERS` sets the browsers at a time
+setup; each leg seeds the whole set, whatever its part). `UI_RENDERS_WIDTHS=1440,1280,1024,390` adds a width, `UI_RENDERS_WORKERS` sets the browsers at a time
 (3), `UI_RENDERS_DEBUG=1` prints the time of each step, `UI_RENDERS_COUNT=1` prints the GETs of the API of each screen's cold load
 (its first width, a new browser context; a measurement, not a check), `UI_RENDERS_EDGE` names another dev server and `UI_RENDERS_POSTGRES` another PostgreSQL container for the seed's SQL ([Local UI development](#local-ui-development)). The variables do not start with `QUADER_`: Quader refuses an unknown
 `QUADER_` variable, and the backend that `make ui-renders` starts inherits the environment.
@@ -693,8 +702,8 @@ stack, no backend: the Angular unit-test builder's browser mode (the target `sta
 runs the `*.states.spec.ts` in headless Chromium with the app's global stylesheet and fonts, and each state is opened through the
 real dialog service or the real component against the in-memory fakes of `api/testing`
 ([Q-UI-1140](../spec/api-and-ui.md#q-ui-1140--the-states-of-the-overlays-are-measured-at-the-component-tier-in-the-unit-test-builders-browser-mode),
-R-UI-176). A state fails when the function reports any finding; nothing is allowed by a list. The job `ui-layout` ("UI layout
-checks") runs it on every push after the checks' fixtures and before it starts its stack, bounded at 10 minutes.
+R-UI-176). A state fails when the function reports any finding; nothing is allowed by a list. The job `ui-layout-fixtures` ("UI
+layout checks (fixtures and dialog states)") runs it on every push after the checks' fixtures, without a stack, bounded at 10 minutes.
 
 ```shell
 make web-ci && (cd web && npx playwright install chromium)   # once; the Chromium of the locked Playwright, the renders' own

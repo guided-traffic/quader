@@ -6,7 +6,7 @@
 # reproduce it: docs/developer/releasing.md#ci.
 #
 # What runs per change: every check above, the e2e legs push and access-long, the GitLab CI OIDC leg (e2e-ci, set ci) and the
-# layout checks of every screen of the UI (ui-layout). Of the formats' acceptance legs (e2e-npm, e2e-nuget, e2e-oci, e2e-deb,
+# layout checks of the UI (ui-layout-fixtures, and every screen in the legs of ui-layout). Of the formats' acceptance legs (e2e-npm, e2e-nuget, e2e-oci, e2e-deb,
 # e2e-ansible) a push runs the leg of each format whose own paths it changed, and the reference leg npm when it changed shared code;
 # every other format's set runs in the nightly (owner, 2026-11-20). The Bastion and vulnerability legs run when their paths
 # changed. Job e2e-scope decides once per run, for a push and a pull request alike; a dispatch runs every leg. The long legs failover and npm-ha are
@@ -611,15 +611,75 @@ jobs:
         run: QUADER_UI_BUILT=1 go test -count=1 -run 'TestR_UI_001_ThirdPartyNotices' ./internal/webui/
 
   # The layout checks of the renders (R-UI-170 to R-UI-176; owner, 2026-11-19: "Ja, die Renderprüfung soll auch in der CI
-  # laufen."): first on their own fixture pages, then every screen of the render set as every kind of user, at three widths;
-  # a finding fails the job. The UI development profile is the job's own (deploy/ui-dev: three service containers in the
-  # runner's Docker, Quader with the sign-in provider, the Angular dev server). Not among the needs of Semantic Release until
-  # the first stable release (Q-ARCH-457, Q-ARCH-510): a red run is a finding to fix, not a held release. One leg: a full run
-  # took 22 minutes on the development machine (Q-ARCH-511). Runner, legs and evidence: docs/developer/releasing.md#ci.
-  ui-layout:
-    name: UI layout checks
+  # laufen."): their own fixture pages and the states of the dialogs here, once, without a stack; every screen of the render set as
+  # every kind of user, at three widths, in the legs of ui-layout. A finding fails the job that finds it. Not among the needs of
+  # Semantic Release until the first stable release (Q-ARCH-457, Q-ARCH-510): a red run is a finding to fix, not a held release.
+  # The legs of ui-layout do not wait for this job; a red run of it means that the legs' verdicts do not count either, since a check
+  # that cannot find the defects it names judges nothing. Runner, legs and evidence: docs/developer/releasing.md#ci.
+  ui-layout-fixtures:
+    name: UI layout checks (fixtures and dialog states)
     runs-on: self-hosted
-    timeout-minutes: 75
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install the shared library the pinned Node.js loads
+        timeout-minutes: 9
+        run: |
+          set -euo pipefail
+          # Node.js 26 links libatomic.so.1, which the runner image does not ship (Q-ARCH-218).
+          .github/scripts/apt-install.sh libatomic1
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
+      - name: Set up Node.js
+        timeout-minutes: 5
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install the web workspace and the browsers
+        timeout-minutes: 20
+        working-directory: web
+        run: |
+          set -euo pipefail
+          npm ci
+          # The browser builds are the ones the locked @playwright/test version names (one version per tool), through the
+          # script that installs their system libraries only where they are missing. The fixtures run in all three engines
+          # (Q-UI-1045), the dialog states in Chromium.
+          ../.github/scripts/playwright-install.sh chromium firefox webkit
+
+      - name: Check the layout checks on their fixture pages
+        timeout-minutes: 5
+        run: make ui-layout-test
+
+      # The dialogs, their failures and validations, the confirm shapes, the token's secret and tooltips at the window's edge, in
+      # the installed Chromium against the web workspace's fakes: no stack, about 20 s (Q-UI-1140, docs/developer/web-ui.md#dialog-states).
+      - name: Check the layout of every dialog state without the stack
+        timeout-minutes: 10
+        run: make ui-states
+
+  # Every screen of the render set in parts, one leg each, against the leg's own UI development profile (deploy/ui-dev: three service
+  # containers in the runner's Docker, Quader with the sign-in provider, the Angular dev server). A leg renders every n-th pair of
+  # screen and kind of user (make ui-renders SHARD=i/n, n the number of legs), so a new screen lands in a leg without a list to edit
+  # and the legs differ by one pair at most (Q-ARCH-1071). Five legs take about 14 minutes of rendering and 22 as a job each, derived
+  # from the per-screen times of run 45775689673. A leg whose render step passes 30 minutes gets one more number in the matrix; the
+  # timeout is not raised. The matrix holds the part's number alone: strategy.job-total is the number of parts.
+  ui-layout:
+    name: UI layout checks (screens, part ${{ matrix.shard }} of ${{ strategy.job-total }})
+    runs-on: self-hosted
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -676,27 +736,17 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PAT }}
 
       - name: Install the web workspace and the browser
-        timeout-minutes: 25
+        timeout-minutes: 20
         working-directory: web
         run: |
           set -euo pipefail
           npm ci
           # The browser build is the one the locked @playwright/test version names (one version per tool), through the
-          # script that installs its system libraries only where they are missing.
-          # Firefox and WebKit run the layout checks' fixtures only (Q-UI-1045); the screens are rendered in Chromium.
-          ../.github/scripts/playwright-install.sh chromium firefox webkit
+          # script that installs its system libraries only where they are missing. The screens are rendered in Chromium.
+          ../.github/scripts/playwright-install.sh chromium
 
-      - name: Check the layout checks on their fixture pages
-        run: make ui-layout-test
-
-      # The dialogs, their failures and validations, the confirm shapes, the token's secret and tooltips at the window's edge, in
-      # the installed Chromium against the web workspace's fakes: no stack, about 20 s (Q-UI-1140, docs/developer/web-ui.md#dialog-states).
-      - name: Check the layout of every dialog state without the stack
-        timeout-minutes: 10
-        run: make ui-states
-
-      - name: Render every screen and check its layout
-        run: make ui-renders
+      - name: Render the screens of this part and check their layout
+        run: make ui-renders SHARD=${{ matrix.shard }}/${{ strategy.job-total }}
 
       # The evidence of a red run: the findings, the report and the pictures of the screens that failed, as an artifact of a
       # short life; the renders are never committed. A green run keeps the report alone.
@@ -730,7 +780,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: ui-layout-findings
+          name: ui-layout-findings-${{ matrix.shard }}
           path: .out/ui-layout-evidence
           if-no-files-found: warn
           retention-days: 7
@@ -739,7 +789,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v7
         with:
-          name: ui-layout-report
+          name: ui-layout-report-${{ matrix.shard }}
           path: .out/ui-renders/report.json
           if-no-files-found: warn
           retention-days: 7

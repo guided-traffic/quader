@@ -210,42 +210,113 @@ func TestTheGatingJobsBoundTheirDownloads(t *testing.T) {
 	}
 }
 
-// The layout checks of the UI run in Test and Release on every push (owner, 2026-11-19; R-UI-176, Q-ARCH-510): their fixtures, then
-// every screen of the render set, without a grep or a shard that would leave screens out, and with no condition that skips the job.
-// Until the first stable release they hold no release back: Semantic Release does not need them (Q-ARCH-457). With the first
-// stable release this test changes with the gate.
+// The layout checks of the UI run in Test and Release on every push (owner, 2026-11-19; R-UI-176, Q-ARCH-510): their fixtures and the
+// states of the dialogs once, in the job ui-layout-fixtures, and every screen of the render set in the legs of ui-layout, each the
+// part SHARD=i/n with i the leg's number and n the number of legs (Q-ARCH-1071). A part is every n-th pair of screen and kind of user
+// (web/e2e/renders/paths.ts), so the legs together render each pair once exactly when the matrix numbers them 1 to n and holds nothing
+// else, since strategy.job-total counts every combination. No leg narrows its part further, no leg cancels the others, no job has a
+// condition that skips it. Until the first stable release they hold no release back: Semantic Release needs neither job
+// (Q-ARCH-457). With the first stable release this test changes with the gate. Milliseconds.
 func TestTheUILayoutChecksRunEveryScreenAndHoldNoRelease(t *testing.T) {
+	t.Parallel()
 	w := loadWorkflows(t)["release.yml"]
-	j, ok := w.Jobs["ui-layout"]
+	fixtures, ok := w.Jobs["ui-layout-fixtures"]
+	if !ok {
+		t.Fatal("release.yml has no job ui-layout-fixtures")
+	}
+	legs, ok := w.Jobs["ui-layout"]
 	if !ok {
 		t.Fatal("release.yml has no job ui-layout")
 	}
-	if j.If != "" {
-		t.Errorf("job ui-layout runs only if %q; it runs on every push", j.If)
-	}
-	var fixtures, renders bool
-	for _, s := range j.Steps {
-		if strings.Contains(s.Run, "make ui-layout-test") {
-			fixtures = true
+	for id, j := range map[string]job{"ui-layout-fixtures": fixtures, "ui-layout": legs} {
+		if j.If != "" {
+			t.Errorf("job %s runs only if %q; it runs on every push", id, j.If)
 		}
-		if strings.Contains(s.Run, "make ui-renders") {
-			renders = true
-			for _, narrow := range []string{"GREP", "--grep", "--shard", "UI_RENDERS_WIDTHS"} {
-				if strings.Contains(s.Run, narrow) {
-					t.Errorf("job ui-layout step %q narrows the render set with %s: %s", s.Name, narrow, s.Run)
+	}
+	var checks, states bool
+	for _, s := range fixtures.Steps {
+		checks = checks || strings.Contains(s.Run, "make ui-layout-test")
+		states = states || strings.Contains(s.Run, "make ui-states")
+	}
+	if !checks || !states {
+		t.Errorf("job ui-layout-fixtures runs the fixtures: %v, the dialog states: %v; want both", checks, states)
+	}
+	for _, s := range legs.Steps {
+		if strings.Contains(s.Run, "make ui-layout-test") || strings.Contains(s.Run, "make ui-states") {
+			t.Errorf("job ui-layout step %q runs %q in every leg; the fixtures and the dialog states run once, in ui-layout-fixtures", s.Name, s.Run)
+		}
+	}
+
+	var strategy struct {
+		FailFast *bool                `yaml:"fail-fast"`
+		Matrix   map[string]yaml.Node `yaml:"matrix"`
+	}
+	if err := legs.Strategy.Decode(&strategy); err != nil {
+		t.Fatalf("the strategy of job ui-layout: %v", err)
+	}
+	if strategy.FailFast == nil || *strategy.FailFast {
+		t.Error("job ui-layout does not set fail-fast: false; a red leg would cancel the others and hide their findings")
+	}
+	for key := range strategy.Matrix {
+		if key != "shard" {
+			t.Errorf("the matrix of job ui-layout has %q; it holds the part's number alone, or strategy.job-total is not the number of parts", key)
+		}
+	}
+	var parts []string
+	if n, ok := strategy.Matrix["shard"]; ok && n.Kind == yaml.SequenceNode {
+		for _, v := range n.Content {
+			parts = append(parts, v.Value)
+		}
+	}
+	if len(parts) < 2 {
+		t.Fatalf("job ui-layout runs the parts %v; want a matrix of parts", parts)
+	}
+	for i, v := range parts {
+		if v != strconv.Itoa(i+1) {
+			t.Errorf("job ui-layout runs the parts %v; want 1 to %d in order", parts, len(parts))
+			break
+		}
+	}
+
+	const render = "make ui-renders SHARD=${{ matrix.shard }}/${{ strategy.job-total }}"
+	var renders int
+	for _, s := range legs.Steps {
+		if !strings.Contains(s.Run, "make ui-renders") {
+			continue
+		}
+		renders++
+		if strings.TrimSpace(s.Run) != render {
+			t.Errorf("job ui-layout step %q runs %q; want %q", s.Name, strings.TrimSpace(s.Run), render)
+		}
+		for _, narrow := range []string{"GREP", "UI_RENDERS_"} {
+			for k := range s.Env {
+				if strings.Contains(k, narrow) {
+					t.Errorf("job ui-layout step %q narrows its part with %s", s.Name, k)
 				}
 			}
 		}
 	}
-	if !fixtures || !renders {
-		t.Errorf("job ui-layout runs the fixtures: %v, every screen: %v; want both", fixtures, renders)
+	if renders != 1 {
+		t.Errorf("job ui-layout runs make ui-renders in %d steps; want one", renders)
 	}
+	if _, ok := legs.Env["UI_RENDERS_WIDTHS"]; ok {
+		t.Error("job ui-layout sets UI_RENDERS_WIDTHS; every leg renders the three widths")
+	}
+	// Each leg's evidence under a name of its own: two legs that uploaded under one name would fail the second upload.
+	for _, s := range legs.Steps {
+		if strings.HasPrefix(s.Uses, "actions/upload-artifact@") && !strings.Contains(s.With["name"], "${{ matrix.shard }}") {
+			t.Errorf("job ui-layout step %q uploads %q, a name every leg shares", s.Name, s.With["name"])
+		}
+	}
+
 	release := w.Jobs["semantic-release"]
 	var needs []string
 	if err := release.Needs.Decode(&needs); err != nil {
 		t.Fatalf("the needs of semantic-release: %v", err)
 	}
-	if slices.Contains(needs, "ui-layout") {
-		t.Error("semantic-release needs ui-layout; until the first stable release it gates no release (Q-ARCH-457)")
+	for _, id := range []string{"ui-layout-fixtures", "ui-layout"} {
+		if slices.Contains(needs, id) {
+			t.Errorf("semantic-release needs %s; until the first stable release it gates no release (Q-ARCH-457)", id)
+		}
 	}
 }

@@ -17,6 +17,25 @@ export const locale: 'en' | 'de' = choose('UI_RENDERS_LOCALE', ['en', 'de'] as c
 /** The browser engine of the run (UI_RENDERS_ENGINE): `chromium`, the pipeline's, or `firefox` or `webkit` for a look by hand (Q-UI-1049). */
 export const engine: 'chromium' | 'firefox' | 'webkit' = choose('UI_RENDERS_ENGINE', ['chromium', 'firefox', 'webkit'] as const);
 
+/**
+ * The part of the screens the run renders (UI_RENDERS_SHARD=i/n, `make ui-renders SHARD=i/n`; Q-ARCH-1071): the i-th of n, counted
+ * through the pairs of screen and kind of user in the order of render.spec.ts, every n-th from the i-th. Each pair is in exactly one
+ * part, a new screen lands in one by its place in screens.ts, and the parts differ by one pair at most whatever the screens are. Unset,
+ * the whole set (1/1). The job ui-layout of Test and Release renders one part per leg of its matrix.
+ */
+export const shard: { readonly index: number; readonly total: number } = parseShard(process.env['UI_RENDERS_SHARD'] || '1/1');
+
+/** Whether the pair at this place of render.spec.ts's order is in the run's part. */
+export const inShard = (place: number): boolean => place % shard.total === shard.index - 1;
+
+function parseShard(value: string): { index: number; total: number } {
+  const m = /^([1-9]\d*)\/([1-9]\d*)$/.exec(value);
+  const index = Number(m?.[1]);
+  const total = Number(m?.[2]);
+  if (!m || index > total) throw new Error(`UI_RENDERS_SHARD=${value}: i/n with 1 <= i <= n, such as 2/4`);
+  return { index, total };
+}
+
 function choose<T extends string>(name: string, values: readonly T[]): T {
   const v = process.env[name] || values[0];
   if (!values.includes(v as T)) throw new Error(`${name}=${v}: one of ${values.join(', ')}`);

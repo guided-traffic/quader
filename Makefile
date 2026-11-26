@@ -159,8 +159,9 @@ ui-dev-web: ## Angular dev server with hot reload on https://localhost:4200/ui/,
 ui-dev-down: ## Stop the UI development services; PURGE=1 also removes their data and .dev/ui-dev (deploy/ui-dev/down.sh)
 	deploy/ui-dev/down.sh $(if $(PURGE),--purge)
 
-# Rule 11 of docs/projektplan/promt.md: a UI change is rendered and looked at before it lands. The job ui-layout of Test and
-# Release runs the same two targets on every push (Q-ARCH-510).
+# Rule 11 of docs/projektplan/promt.md: a UI change is rendered and looked at before it lands. Test and Release runs the same
+# targets on every push (Q-ARCH-510): ui-layout-test and ui-states in the job ui-layout-fixtures, ui-renders SHARD=i/n in each leg of
+# the job ui-layout (Q-ARCH-1071).
 .PHONY: ui-layout-test
 ui-layout-test: ## The layout checks of the renders on fixture pages in Chromium, Firefox and WebKit: no stack, seconds (after web-ci and `npx playwright install chromium firefox webkit`; web/e2e/playwright.layout.config.ts)
 	cd web && npx playwright test -c e2e/playwright.layout.config.ts
@@ -170,8 +171,8 @@ ui-states: ## Every dialog, its failure and its validation, the confirm shapes, 
 	cd web && npx ng run web:states --no-watch
 
 .PHONY: ui-renders
-ui-renders: ## Render every screen as the three kinds of user, light and dark, at 1440, 1024 and 390 px into .out/ui-renders (after web-ci; GREP=<regex> limits the screens; deploy/ui-dev/renders.sh)
-	deploy/ui-dev/renders.sh $(if $(GREP),--grep '$(GREP)')
+ui-renders: ## Render every screen as every kind of user, light and dark, at 1440, 1024 and 390 px into .out/ui-renders (after web-ci; GREP=<regex> limits the screens; SHARD=i/n renders the i-th of n parts, as a leg of CI does; deploy/ui-dev/renders.sh)
+	$(if $(SHARD),UI_RENDERS_SHARD='$(SHARD)') deploy/ui-dev/renders.sh $(if $(GREP),--grep '$(GREP)')
 
 # The release image builds the Angular bundle itself (Containerfile, stage web); no Node.js is
 # needed on the host. The build arguments read the same pins as the rest of the repository.
@@ -466,8 +467,11 @@ else ifeq ($(SHARD),b)
 INTEGRATION_PKGS = $(INTEGRATION_SHARD_B)
 else ifeq ($(SHARD),d)
 INTEGRATION_PKGS = $(INTEGRATION_SHARD_D)
+else ifneq ($(findstring /,$(SHARD)),)
+# SHARD=i/n is a part of the screens of make ui-renders: a recipe that reads the packages with it stops there.
+INTEGRATION_PKGS = $(error SHARD=$(SHARD) is a part of the screens of make ui-renders; the integration packages take a, b, c or d)
 else
-$(error SHARD must be a, b, c, d or unset, not $(SHARD))
+$(error SHARD must be a, b, c, d, a part i/n of make ui-renders, or unset, not $(SHARD))
 endif
 
 # The coverage profile of the line is named by the Valkey line it ran against (and the shard), so the
