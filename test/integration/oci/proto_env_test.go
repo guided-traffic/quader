@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -18,6 +17,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
@@ -239,32 +239,18 @@ func (p *proto) tokenAnswer(rep int, who string, scopes ...string) testenv.Answe
 	return p.do(call{rep: rep, method: "GET", path: "/v2/_token?" + q.Encode(), cred: cred{secret: secret}})
 }
 
-// grantOf reads the grant a registry token carries: the token's payload is readable (R-OCI-005), the MAC protects it.
+// grantOf reads the grant a registry token carries through the reader a Bastion uses (R-BAS-052): the grant is one of the claims
+// payload version 2 keeps readable, beside the claims it seals under the installation's key (R-OCI-005, Q-BAS-388). The reader also
+// checks the token's form, so a token outside it fails here instead of reading as an empty grant.
 func grantOf(t *testing.T, token string) map[string]int {
 	t.Helper()
-	raw := strings.TrimPrefix(token, "qdr_rgt_")
-	payload, _, _ := strings.Cut(raw, ".")
-	b, err := base64.RawURLEncoding.DecodeString(payload)
-	if err != nil {
-		t.Fatal(err)
-	}
-	parts := strings.SplitN(string(b), ":", 3)
-	if len(parts) != 3 {
-		t.Fatalf("token payload %q", b)
-	}
-	var w struct {
-		G []struct {
-			R string `json:"r"`
-			N string `json:"n"`
-			A int    `json:"a"`
-		} `json:"g"`
-	}
-	if err := json.Unmarshal([]byte(parts[2]), &w); err != nil {
-		t.Fatal(err)
+	g, ok := iface.RegistryTokenGrant(token)
+	if !ok {
+		t.Fatalf("the grant of the registry token %q does not read", token)
 	}
 	out := map[string]int{}
-	for _, e := range w.G {
-		out[e.R+"/"+e.N] |= e.A
+	for _, e := range g {
+		out[e.Repository+"/"+e.Name] |= e.Actions
 	}
 	return out
 }
