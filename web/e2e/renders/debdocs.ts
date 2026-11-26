@@ -198,7 +198,7 @@ async function until(seconds: number, what: string, ok: () => Promise<boolean>):
   }
 }
 
-/** Uploads the three packages and waits until Quader read (or refused) each one's data archive. */
+/** Uploads the five package files and waits until Quader read (or refused) each one's data archive. */
 export async function seedDebDocs(ctx: APIRequestContext, token: string): Promise<void> {
   const auth = { Authorization: `Bearer ${token}` };
   const uploads: [string, Buffer][] = [
@@ -217,13 +217,27 @@ export async function seedDebDocs(ctx: APIRequestContext, token: string): Promis
     );
     await expectStatus(res, [200, 201, 409], `deb upload ${file}`);
   }
-  for (const p of [docsDeb, manyFilesDeb, brokenDeb]) {
-    await until(120, `the contents of ${p.name}`, async () => {
+  // Every file the screens show, each by its architecture: a contents read without one answers for the first architecture alone, so
+  // the arm64 file of the agent (its architecture switch) and the forwarder (its "Used by") could still be pending at the capture.
+  const files: [{ name: string; version: string }, string][] = [
+    [docsDeb, 'amd64'],
+    [docsDeb, 'arm64'],
+    [manyFilesDeb, 'all'],
+    [brokenDeb, 'amd64'],
+    [forwarderDeb, 'all'],
+  ];
+  for (const [p, arch] of files) {
+    await until(120, `the contents of ${p.name} ${p.version} ${arch}`, async () => {
       const found = await ctx.get(`/api/v1/packages/lookup?format=deb&name=${p.name}`, { headers: auth });
       if (!found.ok()) return false;
       const id = ((await found.json()) as { id: string }).id;
-      const res = await ctx.get(`/api/v1/packages/${id}/versions/${encodeURIComponent(p.version)}/contents?limit=1`, { headers: auth });
-      return res.ok() && ((await res.json()) as { state: string }).state !== 'pending';
+      const res = await ctx.get(
+        `/api/v1/packages/${id}/versions/${encodeURIComponent(p.version)}/contents?architecture=${arch}&limit=1`,
+        { headers: auth },
+      );
+      if (!res.ok()) return false;
+      const contents = (await res.json()) as { state: string; architecture: string };
+      return contents.state !== 'pending' && contents.architecture === arch;
     });
   }
 }
