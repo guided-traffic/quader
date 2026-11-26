@@ -1,4 +1,4 @@
-// The view of one file (repository-file.ts, Q-UI-514): its address, its facts and its Details.
+// The view of one file (file-view.ts, Q-UI-514): its address, its facts and its Details.
 
 // Details of the repository (Q-UI-313, Q-UI-319) and of a file (Q-UI-514): closed, at the end of the main view.
 .details {
@@ -39,12 +39,7 @@
   }
 }
 
+// The headings in Details; the page's own parts projected into it keep the same measure (repository-file.ts).
 h3 {
   margin-block: var(--quader-space-4) var(--quader-space-2);
-}
-
-// The API's view of a file and its curl requests wrap instead of scrolling sideways: a long address is one word.
-.file-view pre.code-block {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
 }

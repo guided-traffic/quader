@@ -10277,11 +10277,12 @@ installation sees changes.
 - **Where.** A view is a file below `web/src/app/views/` ([Q-UI-1400](#q-ui-1400--the-views-are-one-directory-below-which-a-new-formats-view-falls-by-its-place)):
   `packages/` (the page of a version, of a package's versions, the table of a list of packages, the documentation tree and its entries,
   an image's facts and layers, a version's facts, metadata, files, signatures, Debian contents, the ClamAV definitions, the clients'
-  commands, Used by, the README), `vulnerabilities/` (the tab Vulnerabilities and a version's findings) and `signatures/` (the badge,
-  the report, the gate's decision and their words). What is the same in every format is one view; what a format shows differently stays
-  that format's part of it.
-- **Reads.** A view reads through abstract classes of `web/src/app/api/`: `PackageReads`, `VulnerabilityReads`, `SignatureReads` and
-  `ClientSetupReads`. The main installation's `PackagesApi`, `VulnerabilitiesApi` and `SignaturesApi` extend them with their writes and
+  commands, Used by, the README), `vulnerabilities/` (the tab Vulnerabilities and a version's findings), `signatures/` (the badge,
+  the report, the gate's decision and their words) and `files/` (a repository's folder, a file, and the path of either with a file's
+  Download; W-35's P9d). What is the same in every format is one view; what a format shows differently stays that format's part of it.
+- **Reads.** A view reads through abstract classes of `web/src/app/api/`: `PackageReads`, `VulnerabilityReads`, `SignatureReads`,
+  `ClientSetupReads` and `FileReads` (a folder's entries and an item, [Q-UI-1454](#q-ui-1454--the-files-views-read-a-folder-and-an-item-through-filereads-a-files-commands-stay-the-client-set-ups)).
+  The main installation's `PackagesApi`, `VulnerabilitiesApi`, `SignaturesApi` and `FilesApi` extend them with their writes and
   are bound to them; an application without the management API binds its own
   ([Q-UI-1401](#q-ui-1401--a-view-reads-through-abstract-read-classes-which-the-main-installations-services-extend)). "Signed in" is an
   input of a view (Q-UI-1412); the download link asks an optional `SIGNED_IN`, which the main installation binds to its session
@@ -10289,7 +10290,10 @@ installation sees changes.
 - **Acts stay on the main installation's pages.** The deprecation, the import log, a role's Upload collection, the signature gate's
   release and withdrawal, and every check of the session's permissions live in the pages that compose the views: content the page
   projects into the head of a version and above its tabs, or a place of `views/acts.ts` that the page provides
-  ([Q-UI-1402](#q-ui-1402--a-views-acts-are-the-pages-projected-content-or-a-place-the-page-provides)). The page keeps "recently
+  ([Q-UI-1402](#q-ui-1402--a-views-acts-are-the-pages-projected-content-or-a-place-the-page-provides)). A folder's Upload files, New
+  folder and Delete folder, a file's Delete, and what only the management API reads of a file (its download statistics, the file as the
+  API describes it) are the main installation's page's content projected into the files views
+  ([Q-UI-1457](#q-ui-1457--a-folders-and-a-files-acts-and-the-management-apis-reads-are-the-pages-projected-content)). The page keeps "recently
   opened" and the breadcrumb ([Q-UI-1404](#q-ui-1404--the-page-keeps-recently-opened-and-the-breadcrumb-the-view-tells-it-what-it-opened)).
 - **What a view keeps.** The live refresh (R-UI-213), the spinner (R-UI-217), the one scrollbar (R-UI-215) and the error notice with
   everything the answer carried (R-UI-216) are part of what a view shows and work through its reads.
@@ -10302,13 +10306,20 @@ What the views still reach through `core/` and `shared/` (the format catalogue, 
 opened section, the words of a limit's refusal) are injectables an application binds itself; that the second application's bundle holds
 no session and no write is the import-graph check of its build (W-35 P9), not this rule's. *Built by W-35's P9 on 2026-11-26 (R-UI-228):*
 `FormatCatalog` and `SystemClients` are abstract and bound in `provideViewReads`, the memory asks `MEMORY_OWNER`, and the helpers the views
-take from API modules live in `api/refs.ts`; the check is `bastion-bundle-rule.mjs` over the Bastion's metafile.
+take from API modules live in `api/refs.ts`; the check is `bastion-bundle-rule.mjs` over the Bastion's metafile. *Built by W-35's P9d on
+2026-11-26:* the views of a repository's files, [folder-view.ts](../../web/src/app/views/files/folder-view.ts),
+[file-view.ts](../../web/src/app/views/files/file-view.ts) and [files-head.ts](../../web/src/app/views/files/files-head.ts), read through
+[file-reads.ts](../../web/src/app/api/file-reads.ts); the main installation's `repository-files.ts`, `repository-file.ts` and
+`repository-content.html` compose them with their acts.
 
 Acceptance criteria:
 
 - Unit (`web/scripts/lint-rules.test.mjs`, milliseconds): the rule refuses a view that imports the session, the API client, a dialog's
   service or module, an API service class, or an act behind a helper, and passes types, a `…Reads` class, a pure helper and `core/`; it
   holds the files below `src/app/views/` only, not their specs.
+- Unit ([files-views.spec.ts](../../web/src/app/views/files/files-views.spec.ts), about a second): `R-UI-223 the folder's view reads
+  through FileReads, which the main installation binds to its FilesApi, …`, `R-UI-223 the file's view has its facts and its checksums,
+  the section Signatures only where …` and `R-UI-223 the path names each folder, and a file's Download stands at its end …`.
 - The specs of every package screen pass with their expectations unchanged; a spec changed only its imports and providers.
 - Rendered (rule 11): the package, version, list, documentation and vulnerability screens of every format before and after the split,
   both schemes, 1,440 and 390 px, compared picture by picture.
@@ -10634,8 +10645,12 @@ Acceptance criteria:
 Priority: **P1** · Covers: quader-only
 
 - **The reads** (R-UI-223's abstract classes, [bastion.md](bastion.md) R-BAS-118). The application binds `PackageReads`,
-  `ClientSetupReads`, `VulnerabilityReads`, `SignatureReads` and `LegalApi` to implementations that read `/ui/data/v1/` with the
-  catalogue's spelling of a path, GET only (`web/src/bastion/data/reads.ts`). What the catalogue holds no document for (the packages
+  `ClientSetupReads`, `VulnerabilityReads`, `SignatureReads`, `FileReads` and `LegalApi` to implementations that read `/ui/data/v1/` with the
+  catalogue's spelling of a path, GET only (`web/src/bastion/data/reads.ts`). A folder's document holds every entry, which the reads answer
+  in the view's pages; a file's clients' commands are the set-up document of its path
+  ([Q-UI-1454](#q-ui-1454--the-files-views-read-a-folder-and-an-item-through-filereads-a-files-commands-stay-the-client-set-ups)). The
+  application has no page Set up client, and binds `SETUP_PAGES` (`views/setup-pages.ts`) to false, so a panel of commands offers no link
+  to one ([Q-UI-1456](#q-ui-1456--a-panel-of-commands-leads-to-set-up-client-only-where-the-application-has-the-page)). What the catalogue holds no document for (the packages
   that depend on one, a namespace's page, a package's vulnerability report, an advisory, a file's signatures, the gate's releases)
   answers as a read the caller may not make, which the views show as none. A failed read is the `ApiError` every notice shows whole,
   with one retry of a read after no answer, a `429` or a `503` with `Retry-After` but `not_ready` (R-UI-042, R-UI-216). A list's page asks
@@ -10698,16 +10713,26 @@ Priority: **P1** · Covers: quader-only
   `namespace-of`; [Q-UI-1443](#q-ui-1443--a-namespace-is-text-at-the-bastion-by-an-input-of-the-views)), the main installation unchanged.
 - **The legal pages and not found** are the main installation's (`features/legal/legal-page.ts`, `features/not-found/not-found.ts`) in
   the shell.
-- *Not built:* the pages of a generic repository's folders and files (the catalogue's `files/…` documents hold them; the main
-  installation's folder screen, `features/repositories/content`, reads through the API client with its uploads, deletes and dialogs and
-  is no view yet), and the column Vulnerabilities of a package's versions: the catalogue holds a report per version and none per
+- **A public generic repository's folders and files** (W-35's P9d) at the main installation's addresses: the repository's own
+  (`/projects/<project>/repositories/<key>`) is the root of its files, `…/files/<path…>` a folder or a file
+  ([Q-UI-1455](#q-ui-1455--a-generic-repositorys-files-have-the-main-installations-addresses-at-the-bastion)). The page is the views of
+  R-UI-223 without an act: the path with a file's Download through the Bastion's package route (the `contentUrl` the catalogue writes, as a
+  version's file's) and the panel of its address and its clients' commands; a folder's entries with each file's Download; a file's facts
+  with the malware verdict and the signature as the catalogue keeps them, and its checksums. No upload, no new folder, no delete, no
+  download statistics, no description by the management API, and no section Signatures: the catalogue holds no file's report
+  ([Q-UI-1457](#q-ui-1457--a-folders-and-a-files-acts-and-the-management-apis-reads-are-the-pages-projected-content)). A project's
+  packages lead to its repositories with files above the list (`/ui/data/v1/files`,
+  [Q-BAS-400](bastion.md#q-bas-400--the-repositories-with-files-are-an-address-of-their-own-and-they-count-for-the-start)), since no
+  search of packages finds a file.
+- *Not built:* the column Vulnerabilities of a package's versions: the catalogue holds a report per version and none per
   package, and a package's report as a document of its own is a new form of path in the catalogue's grammar, a change of the interface
   between the Bastion and the main installation.
 
 *Built on 2026-11-26 (W-35's P9; the download and the namespace as text by W-35's P9b):* [start-page.ts](../../web/src/bastion/pages/start-page.ts),
 [package-list-page.ts](../../web/src/bastion/pages/package-list-page.ts), [package-pages.ts](../../web/src/bastion/pages/package-pages.ts),
 [namespace-of.ts](../../web/src/app/views/packages/namespace-of.ts), [package-name.ts](../../web/src/app/views/packages/package-name.ts),
-[refs.ts](../../web/src/app/api/refs.ts).
+[refs.ts](../../web/src/app/api/refs.ts); the folders and files by W-35's P9d: [files-page.ts](../../web/src/bastion/pages/files-page.ts),
+`BastionFileReads` of [reads.ts](../../web/src/bastion/data/reads.ts), [files-matchers.ts](../../web/src/app/features/repositories/files-matchers.ts).
 
 Acceptance criteria:
 
@@ -10718,7 +10743,13 @@ Acceptance criteria:
   ([refs.spec.ts](../../web/src/app/api/refs.spec.ts), milliseconds) `R-UI-229 a file's download is the Bastion's package route …` (an
   npm, a NuGet, a generic and an image route name their repository) and `R-UI-229 a content route of the main installation …` (it still
   does, a data path does not).
-- Rendered (rule 11): see R-UI-230.
+- Unit ([files.spec.ts](../../web/src/bastion/files.spec.ts), under a second): `R-UI-229 the file reads ask the repository's documents in
+  the catalogue spelling, a folder in pages of the view's size` (a file, a folder cut into pages, a nested folder, a file's set-up, a
+  folder's upload refused without a request, no page Set up client), `R-UI-229 a file's page shows its path with Download through the
+  Bastion, …`, `R-UI-229 a folder is a folder when the path names no file …` and `R-UI-229 a project's packages lead to its repositories
+  with files, …`.
+- Rendered (rule 11): see R-UI-230; the main installation's folder and file screens before and after the split (`files-*`, 34 screens and
+  kinds, both schemes, three widths) compared picture by picture.
 
 ### R-UI-230 · The Bastion's pages are rendered and their layout checked
 Priority: **P1** · Covers: quader-only
@@ -10733,16 +10764,17 @@ the UI development profile starts a Bastion beside an instance's quader ([bastio
 ui-dev-bastion`), registered as `ui-dev` with `gui` and `docs` on, and `make ui-renders` renders its pages as the anonymous visitor at its
 own origin ([bastion-gui.ts](../../web/e2e/renders/bastion-gui.ts)): the start, a project's packages and a search, a package, an npm
 version with its open findings, a NuGet version with its signatures, a Debian version with its contents and changelog, an image and a tag of it, an Ansible collection with its
-documentation, the imprint, the privacy notice, the band of an old state, not ready and not found; in both schemes, at 1,440, 1,024 and
-390 px, in English and, with `UI_RENDERS_LOCALE=de`, in German. The setup waits until the Bastion has mirrored a run of the builder after
-the seed. The states of `make ui-states` (seven, Q-UI-1442) stay beside them as the check in seconds. *Not built:* the pages of a generic
-folder (R-UI-229's open part).
+documentation, a public generic repository's root, a nested folder of files and a file with the panel of its commands (W-35's P9d; the
+seed's `platform/downloads`, five files of bytes), the imprint, the privacy notice, the band of an old state, not ready and not found; in
+both schemes, at 1,440, 1,024 and 390 px, in English and, with `UI_RENDERS_LOCALE=de`, in German. The setup waits until the Bastion has
+mirrored a run of the builder after the seed, and holds the generic repository's files. The states of `make ui-states` (seven, Q-UI-1442) stay beside them as the
+check in seconds.
 
 Acceptance criteria:
 
 - States ([bastion.states.spec.ts](../../web/src/bastion/bastion.states.spec.ts), 3.4 s, measured 2026-11-26): the render set's
   `layoutFindings` and `innerScroll` find nothing in any of the states at either width.
-- Renders: `make ui-renders GREP=bastion-` renders the fourteen screens `bastion-*` against the profile's Bastion, and the render set's
+- Renders: `make ui-renders GREP=bastion-` renders the seventeen screens `bastion-*` against the profile's Bastion, and the render set's
   layout checks find nothing in any picture; `make ui-renders-parts-check` holds every Bastion screen exactly once in the parts of the job
   ui-layout.
 
@@ -29498,7 +29530,77 @@ held npm, an image and Ansible collections without their documentation (the wiki
 | (b) Repositories of their own for the Bastion | — | No level changes | More seed time in every run and part, and more rows in the project's lists |
 
 **Choice:** (a). Helm charts and generic files stay outside the public set: the seed has no public repository of them, and a generic
-folder has no page at the Bastion yet. **Applied in the spec:** R-UI-230.
+folder has no page at the Bastion yet. **Applied in the spec:** R-UI-230. W-35's P9d added the public generic repository
+`platform/downloads` of five files of bytes, whose folders and files the Bastion shows (R-UI-229).
+
+### Q-UI-1454 · The files views read a folder and an item through FileReads; a file's commands stay the client set-up's
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9d) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-223, R-UI-228. The main installation's folder and file screens read through `FilesApi`, which also uploads, deletes,
+counts a folder and reads the download statistics. The brief named an abstract `FileReads` of a folder's children, an item and the curl
+set-up commands. A file's commands are drawn by the command view (`client-command.ts`), which reads `ClientSetupReads` with the file's
+path for a version's file and a folder's upload already.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `FileReads` holds `children` and `item`, `FilesApi` extends it; a file's commands stay `ClientSetupReads.get` with `path`, which the Bastion answers from `files/<project>/<key>/setup/<client>/<path>` (chosen) | One read per thing; the command view unchanged | The panel of a file's Download is the same component at both doors; the Bastion's binding of the set-up gains one branch | `FileReads` is not the whole of what a file's page reads |
+| (b) `FileReads` also answers the set-up of a path | As the brief worded it | One class names everything about files | The command view would read the set-up from two classes by what it draws, or every file's panel would need a view of its own |
+
+**Choice:** (a). The Bastion's folder document holds every entry (R-BAS-104); its reads cut it into the view's pages of 200, so the list
+keeps **Load more** and its filter's note as at the main installation. **Applied in the spec:** R-UI-223, R-UI-228.
+
+### Q-UI-1455 · A generic repository's files have the main installation's addresses at the Bastion
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9d) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-227 ("its addresses are the main installation's"), R-UI-229. The brief named the Bastion's routes
+`/projects/<p>/files/<repository>/…`. The views link a folder's entries and a signature's file by `filesCommands`, the main
+installation's form `/projects/<p>/repositories/<key>/files/<path>`, whose root for a generic repository is the repository's own address.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The main installation's addresses: `…/repositories/<key>` the root, `…/repositories/<key>/files/<path…>` a folder or a file, by the main installation's matcher (moved to `features/repositories/files-matchers.ts`) (chosen) | Two routes in the Bastion's table | A link copied at one door fits the other's form (R-UI-227); the views' links work unchanged | The address names `repositories`, of which the Bastion has no list |
+| (b) `/projects/<p>/files/<key>/<path…>` | A form of the Bastion's own | A shorter address | Every link of the views would need an application-bound builder; a link of one door leads nowhere at the other |
+
+**Choice:** (a). **Applied in the spec:** R-UI-229.
+
+### Q-UI-1456 · A panel of commands leads to Set up client only where the application has the page
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9d) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-126, R-UI-228. The panel of a version's or a file's commands (`client-command-menu.ts`) ends its row with **Set up client**,
+a link to `…/repositories/<key>/setup`. The Bastion has no such page: the link ended at its page not found, on every version and file.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An injection token `SETUP_PAGES` (`views/setup-pages.ts`, true by default), which the Bastion binds to false; the panel then has no link (chosen) | One token, one line in the Bastion's providers | No link leads where a visitor cannot go; the main installation unchanged | The set-up's other snippets (a registry's configuration) are not shown at the Bastion |
+| (b) A set-up page at the Bastion from the catalogue's `setup/…` documents | A page of the Bastion's own | A visitor reads the whole set-up | A new page and route beyond the brief, beside W-35's P10 and P11 in the same route table |
+
+**Choice:** (a); (b) stays open (the Bastion's catalogue holds the documents). What (a) leaves: a command that needs the client's
+configuration from Set up client is shown without it at the Bastion. A generic file's command calls `quader_curl`, `quader_wget` or
+`$QuaderHeaders` (Q-GENERIC-9), which the set-up's `configure` snippet defines; the renders of 2026-11-26 show the panel of
+`platform/downloads` with that call and no definition. **Applied in the spec:** R-UI-228.
+
+### Q-UI-1457 · A folder's and a file's acts and the management API's reads are the page's projected content
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9d) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-223, Q-UI-1402. A folder's toolbar ends with Upload files (with the chevron of the upload's commands), New folder and the
+menu of Delete folder; a file's path row ends with Download and Delete; a file's Details holds its checksums, its download statistics and
+the file as the management API describes it with its curl requests. The Bastion's catalogue holds no download figure (Q-BAS-358) and no
+file's signature report, and a visitor has no API.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The views project `[folderActs]` at the toolbar's end, `[fileActs]` after a file's Download and `[fileDetails]` after the checksums; the section Signatures is an input of the file's view (chosen) | The main installation's page fills the three; the Bastion's fills none and turns Signatures off | The markup and its order are the screens' as before; the main installation's renders are the same picture by picture | Three slots of content beside the places of `acts.ts` |
+| (b) Places of `acts.ts` (an injection token and a component per act) | As the gate's release | One mechanism for every act | Five small components for buttons and a menu that only one page draws; a dialog's result (a reload) crosses the component outlet |
+
+**Choice:** (a). **Applied in the spec:** R-UI-223, R-UI-229.
 
 ### Q-UI-1460 · The Bastion's titles name the page, in the server's words
 

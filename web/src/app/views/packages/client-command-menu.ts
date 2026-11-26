@@ -7,6 +7,7 @@ import { setupCommands } from '../../core/project-links';
 import { AddressField } from '../../shared/address-field';
 import { TabGroup, TabPage } from '../../shared/ui/tabs';
 import { ClientChoice, clientsOfKind } from '../../features/setup/clients';
+import { SETUP_PAGES } from '../setup-pages';
 import { ClientCommand } from './client-command';
 
 let nextId = 0;
@@ -356,8 +357,12 @@ export class ClientCommandMenu {
   protected readonly chosenClient = computed(() => this.clients()[this.chosenTab()] ?? this.clients()[0] ?? null);
   /** The picked repository; another repository given starts at the one given again. */
   protected readonly chosenRepository = linkedSignal(() => this.repository());
-  /** Set up client of the chosen repository (R-UI-126); none for a system repository of upstream, which answers no client (Q-UI-896). */
-  protected readonly setupLink = computed(() => setupCommands(this.chosenRepository()));
+  private readonly setupPages = inject(SETUP_PAGES);
+  /**
+   * Set up client of the chosen repository (R-UI-126); none for a system repository of upstream, which answers no client (Q-UI-896), and
+   * none in an application without the page (Q-UI-1456).
+   */
+  protected readonly setupLink = computed(() => (this.setupPages ? setupCommands(this.chosenRepository()) : null));
   protected readonly panelLabel = computed(() =>
     this.version() === ''
       ? $localize`:@@pkg.command-menu.label-file:${this.verb()}:verb: ${this.name()}:name:`

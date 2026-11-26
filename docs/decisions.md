@@ -10562,10 +10562,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-385 questions on [spec/bastion.md](spec/bastion.md).
+386 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 385 questions</summary>
+<summary>Q-BAS: 386 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10891,6 +10891,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-397](spec/bastion.md#q-bas-397--a-document-is-answered-compressed-as-stored-with-its-sha-256-as-its-etag) | A document is answered compressed as stored, with its SHA-256 as its ETag | Decided by the development agent on 2026-11-26 | (a) The stored gzip to a client that takes it (`"<sha>-gzip"`), the raw bytes otherwise (`"<sha>"`), `Vary: Accept-Encoding` | [ADR-305](#adr-305--a-bastion-serves-a-read-only-web-interface-of-its-own-from-the-public-catalogue-never-from-the-main-installation) |
 | [Q-BAS-398](spec/bastion.md#q-bas-398--a-versions-file-downloads-through-the-bastions-package-route) | A version's file downloads through the Bastion's package route | Decided by the development agent on 2026-11-26 | (a) The builder writes `contentUrl` as the path of `downloadUrl` when that is on the Bastion's base URL, `null` otherwise; the page's repository of a file reads a package route too | — |
 | [Q-BAS-399](spec/bastion.md#q-bas-399--the-start-page-offers-a-project-only-while-it-shows-a-package) | The start page offers a project only while it shows a package | Decided by the development agent on 2026-11-26 | (a) `projects` lists a project of the public set only when a search of it finds a package | — |
+| [Q-BAS-400](spec/bastion.md#q-bas-400--the-repositories-with-files-are-an-address-of-their-own-and-they-count-for-the-start) | The repositories with files are an address of their own, and they count for the start | Decided by the development agent on 2026-11-26 | (a) `files` answers the public repositories whose root folder the catalogue holds (`Reader.Files`, from the snapshot's paths, no document read); `projects` counts such a project too | — |
 | [Q-BAS-405](spec/bastion.md#q-bas-405--the-bastion-fills-the-pages-head-and-text-from-its-catalogue-into-the-applications-indexhtml) | The Bastion fills the page's head and text from its catalogue into the application's index.html | Decided by the development agent on 2026-11-26 | (a) The Go handler fills two slots of `index.html` from the catalogue's documents | [ADR-306](#adr-306--search-engines-read-a-bastions-pages-through-a-head-and-a-text-the-bastion-fills-from-its-catalogue) |
 | [Q-BAS-406](spec/bastion.md#q-bas-406--the-text-is-hidden-from-a-browser-that-runs-the-application-and-shown-without-script) | The text is hidden from a browser that runs the application, and shown without script | Decided by the development agent on 2026-11-26 | (a) A rule under the page's nonce hides the text; `<noscript>` shows it and hides the spinner | — |
 | [Q-BAS-407](spec/bastion.md#q-bas-407--an-address-the-catalogue-does-not-show-is-404) | An address the catalogue does not show is 404 | Decided by the development agent on 2026-11-26 | (a) `404` with `noindex` for an address the catalogue does not show: no route, a package not public in the address's project, a version it does not hold, a project without a package, a legal page without a text | — |
@@ -13165,10 +13166,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-743 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+747 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 743 questions</summary>
+<summary>Q-UI: 747 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13892,6 +13893,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1451](spec/api-and-ui.md#q-ui-1451--the-bastions-reads-put-a-versions-times-back-into-its-documents) | The Bastion's reads put a version's times back into its documents | Decided by the development agent on 2026-11-26 | (a) The reads of a version's documents read its state once (shared for 5 s by the documents of a page) and set each time back at its JSON pointer | — |
 | [Q-UI-1452](spec/api-and-ui.md#q-ui-1452--an-origin-and-an-anchor-without-a-name-say-what-they-know) | An origin and an anchor without a name say what they know | Decided by the development agent on 2026-11-26 | (a) An upload that names nobody is "Uploaded"; an anchor without a title is its scope alone | — |
 | [Q-UI-1453](spec/api-and-ui.md#q-ui-1453--the-render-seeds-nuget-debian-and-collections-repositories-are-public-with-their-documentation) | The render seed's NuGet, Debian and collections repositories are public with their documentation | Decided by the development agent on 2026-11-26 | (a) `nuget-internal` and the long Debian repository of `platform` public with their wiki, the collections' wiki public; a seed run on an earlier database sets the level | — |
+| [Q-UI-1454](spec/api-and-ui.md#q-ui-1454--the-files-views-read-a-folder-and-an-item-through-filereads-a-files-commands-stay-the-client-set-ups) | The files views read a folder and an item through FileReads; a file's commands stay the client set-up's | Decided by the development agent on 2026-11-26 | (a) `FileReads` holds `children` and `item`, `FilesApi` extends it; a file's commands stay `ClientSetupReads.get` with `path`, which the Bastion answers from `files/<project>/<key>/setup/<client>/<path>` | — |
+| [Q-UI-1455](spec/api-and-ui.md#q-ui-1455--a-generic-repositorys-files-have-the-main-installations-addresses-at-the-bastion) | A generic repository's files have the main installation's addresses at the Bastion | Decided by the development agent on 2026-11-26 | (a) The main installation's addresses: `…/repositories/<key>` the root, `…/repositories/<key>/files/<path…>` a folder or a file, by the main installation's matcher (moved to `features/repositories/files-matchers.ts`) | — |
+| [Q-UI-1456](spec/api-and-ui.md#q-ui-1456--a-panel-of-commands-leads-to-set-up-client-only-where-the-application-has-the-page) | A panel of commands leads to Set up client only where the application has the page | Decided by the development agent on 2026-11-26 | (a); (b) stays open (the Bastion's catalogue holds the documents). | — |
+| [Q-UI-1457](spec/api-and-ui.md#q-ui-1457--a-folders-and-a-files-acts-and-the-management-apis-reads-are-the-pages-projected-content) | A folder's and a file's acts and the management API's reads are the page's projected content | Decided by the development agent on 2026-11-26 | (a) The views project `[folderActs]` at the toolbar's end, `[fileActs]` after a file's Download and `[fileDetails]` after the checksums; the section Signatures is an input of the file's view | — |
 | [Q-UI-1460](spec/api-and-ui.md#q-ui-1460--the-bastions-titles-name-the-page-in-the-servers-words) | The Bastion's titles name the page, in the server's words | Decided by the development agent on 2026-11-26 | (a) Title resolvers of the Bastion's routes from the address's parameters: "Packages in <project>", "<name>", "<name> <version>", "Versions of <name>"; the server's head writes the same | — |
 | [Q-UI-1461](spec/api-and-ui.md#q-ui-1461--the-grade-and-the-findings-are-wrapped-in-a-span-or-div-with-data-nosnippet) | The grade and the findings are wrapped in a span or div with data-nosnippet | Decided by the development agent on 2026-11-26 | (a) A `span` around the grade in the facts and in the versions' table, a `div` around the tab of the findings, in the shared views | — |
 | [Q-UI-1462](spec/api-and-ui.md#q-ui-1462--every-download-link-is-nofollow) | Every download link is nofollow | Decided by the development agent on 2026-11-26 | (a) The directive `quaderDownload` sets `rel="nofollow"` on its host; the signatures' report's downloads carry it | — |

@@ -17,6 +17,7 @@ import { HttpSessionApi, SessionApi } from './session-api';
 // >>> M1 ui-a
 import { AuditApi, HttpAuditApi } from './audit-api';
 import { EndpointsApi, HttpEndpointsApi } from './endpoints-api';
+import { FileReads } from './file-reads';
 import { FilesApi, HttpFilesApi } from './files-api';
 import { HttpJobsApi, JobsApi } from './jobs-api';
 import { HttpRepositoriesApi, RepositoriesApi } from './repositories-api';
@@ -100,6 +101,7 @@ export function provideViewReads(): Provider[] {
     { provide: PackageReads, useExisting: PackagesApi },
     { provide: VulnerabilityReads, useExisting: VulnerabilitiesApi },
     { provide: SignatureReads, useExisting: SignaturesApi },
+    { provide: FileReads, useExisting: FilesApi },
     { provide: FormatCatalog, useClass: HttpFormatCatalog },
     { provide: SystemClients, useClass: HttpSystemClients },
     { provide: SIGNED_IN, useFactory: () => inject(SessionStore).authenticated },

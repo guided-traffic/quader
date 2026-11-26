@@ -21,6 +21,16 @@ export function isFilesAddress(template: string): boolean {
   return template.startsWith('/files/');
 }
 
+/**
+ * The address for downloads by path of a repository on an origin (R-REPO-002, R-API-025): `<origin>/files/<project>/<key>`. The
+ * Bastion's pages of a public generic repository build it on the origin they were loaded from (Q-UI-1455); the main installation's
+ * pages take the server's addresses.
+ */
+export function filesAddress(origin: string, ref: string): string {
+  const { project, key } = splitRef(ref);
+  return `${origin.replace(/\/+$/, '')}/files/${encodeURIComponent(project)}/${encodeURIComponent(key)}`;
+}
+
 /** Percent-encodes every segment of a repository path and keeps the slashes. */
 export function encodePath(path: string): string {
   return path.split('/').map(encodeURIComponent).join('/');

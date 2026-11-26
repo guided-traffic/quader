@@ -321,8 +321,8 @@
       <notes>
         <note category="location">src/app/app.routes.ts:74</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:35</note>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:48</note>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:61</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:34</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:47</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -12510,7 +12510,6 @@
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:112</note>
         <note category="location">src/app/features/guides/guide-format.ts:159</note>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:231</note>
         <note category="location">src/app/features/repositories/content/repository-item-versions.ts:229</note>
         <note category="location">src/app/features/repositories/content/repository-items.ts:231</note>
         <note category="location">src/app/features/repositories/repository-list.ts:411</note>
@@ -12518,6 +12517,7 @@
         <note category="location">src/app/features/system/job-table.ts:151</note>
         <note category="location">src/app/features/system/storage/storage-page.ts:98</note>
         <note category="location">src/app/features/system/tasks-card.ts:123</note>
+        <note category="location">src/app/views/files/folder-view.ts:173</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -14315,8 +14315,8 @@
         <note category="location">src/app/features/packages/package-list.html:2,5</note>
         <note category="location">src/app/features/repositories/content/repository-content.html:25,27</note>
         <note category="location">src/app/features/repositories/repository-list.html:211,212</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:129,130</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:145,146</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:130,131</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:146,147</note>
         <note category="location">src/app/views/packages/package-version-view.html:79,82</note>
       </notes>
       <segment>
@@ -14522,7 +14522,7 @@
     <unit id="route.setup.title">
       <notes>
         <note category="location">src/app/features/guides/guides.routes.ts:46</note>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:115</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:101</note>
       </notes>
       <segment>
         <source>Set up client</source>
@@ -23535,38 +23535,9 @@
         <target>Die Rohdateien des Repositorys, so wie Quader sie speichert.</target>
       </segment>
     </unit>
-    <unit id="repo.content.folder-path">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:171,173</note>
-      </notes>
-      <segment>
-        <source>Folder path</source>
-        <target>Ordnerpfad</target>
-      </segment>
-    </unit>
-    <unit id="files.root">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:175,176</note>
-        <note category="location">src/app/features/repositories/content/repository-content.html:177,179</note>
-      </notes>
-      <segment>
-        <source>Files</source>
-        <target>Dateien</target>
-      </segment>
-    </unit>
-    <unit id="files.download">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:240,241</note>
-        <note category="location">src/app/features/repositories/content/repository-content.html:246,247</note>
-      </notes>
-      <segment>
-        <source>Download</source>
-        <target>Herunterladen</target>
-      </segment>
-    </unit>
     <unit id="files.delete">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:253,254</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:181,182</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -23575,7 +23546,7 @@
     </unit>
     <unit id="repo.deleting">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:265,266</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:191,192</note>
         <note category="location">src/app/features/repositories/repository-detail.html:587,588</note>
         <note category="location">src/app/features/repositories/repository-list.html:261,262</note>
       </notes>
@@ -23586,7 +23557,7 @@
     </unit>
     <unit id="repo.item.loading">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:293,295</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:219,221</note>
       </notes>
       <segment>
         <source>Loading the item.</source>
@@ -23595,7 +23566,7 @@
     </unit>
     <unit id="repo.loading.repository">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:300,302</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:226,228</note>
         <note category="location">src/app/features/repositories/repository-detail.html:46,47</note>
       </notes>
       <segment>
@@ -23605,7 +23576,7 @@
     </unit>
     <unit id="repo.content.sentence.remote">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:194</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:190</note>
       </notes>
       <segment>
         <source>A cache of another registry. It lists what clients have fetched through it.</source>
@@ -23614,7 +23585,7 @@
     </unit>
     <unit id="repo.content.sentence.virtual">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:196</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:192</note>
       </notes>
       <segment>
         <source>Combines other repositories behind one address. It lists what they resolve to.</source>
@@ -23623,7 +23594,7 @@
     </unit>
     <unit id="repo.content.sentence.local2">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:198</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:194</note>
       </notes>
       <segment>
         <source>Holds what is published to it.</source>
@@ -23632,7 +23603,7 @@
     </unit>
     <unit id="repo.content.files-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:313</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:309</note>
       </notes>
       <segment>
         <source>Address for downloads by path (curl, wget)</source>
@@ -23641,7 +23612,7 @@
     </unit>
     <unit id="repo.content.copy-files-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:314</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:310</note>
       </notes>
       <segment>
         <source>Copy address for downloads by path</source>
@@ -23650,25 +23621,16 @@
     </unit>
     <unit id="repo.content.more">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:327</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:323</note>
       </notes>
       <segment>
         <source>More actions</source>
         <target>Weitere Aktionen</target>
       </segment>
     </unit>
-    <unit id="files.trail.between">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:373</note>
-      </notes>
-      <segment>
-        <source>Show the folders in between</source>
-        <target>Die Ordner dazwischen anzeigen</target>
-      </segment>
-    </unit>
     <unit id="repo.content.upload-package">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:436</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:422</note>
       </notes>
       <segment>
         <source>Upload package</source>
@@ -23677,7 +23639,7 @@
     </unit>
     <unit id="repo.content.upload-collection">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:437</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:423</note>
       </notes>
       <segment>
         <source>Upload collection</source>
@@ -23686,25 +23648,16 @@
     </unit>
     <unit id="files.delete.progress">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:458</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:444</note>
       </notes>
       <segment>
         <source>Deleting items</source>
         <target>Elemente werden gelöscht</target>
       </segment>
     </unit>
-    <unit id="files.copy-path">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:459</note>
-      </notes>
-      <segment>
-        <source>Copy path</source>
-        <target>Pfad kopieren</target>
-      </segment>
-    </unit>
     <unit id="files.delete.folder-many">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:528</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:513</note>
       </notes>
       <segment>
         <source>The folder holds more than <ph id="0" equiv="limit" disp="TYPE_TO_CONFIRM_ABOVE"/> items. They are deleted for good.</source>
@@ -23713,7 +23666,7 @@
     </unit>
     <unit id="files.delete.folder">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:529</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:514</note>
       </notes>
       <segment>
         <source>The folder holds <ph id="0" equiv="count" disp="count"/> items. They are deleted for good.</source>
@@ -23722,7 +23675,7 @@
     </unit>
     <unit id="files.delete.file">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:537</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:522</note>
       </notes>
       <segment>
         <source>The file is deleted for good.</source>
@@ -23731,7 +23684,7 @@
     </unit>
     <unit id="files.delete.title">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:540</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:525</note>
       </notes>
       <segment>
         <source>Delete <ph id="0" equiv="path" disp="path"/>?</source>
@@ -23740,7 +23693,7 @@
     </unit>
     <unit id="files.delete.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:542</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:527</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -23749,8 +23702,8 @@
     </unit>
     <unit id="files.deleted">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:550</note>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:560</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:535</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:545</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="path" disp="path"/> deleted.</source>
@@ -23759,194 +23712,16 @@
     </unit>
     <unit id="files.delete.failed">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:561</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:546</note>
       </notes>
       <segment>
         <source>The deletion failed. Some items may be gone.</source>
         <target>Das Löschen ist fehlgeschlagen. Einige Elemente sind möglicherweise schon weg.</target>
       </segment>
     </unit>
-    <unit id="files.disabled-note">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:66,67</note>
-      </notes>
-      <segment>
-        <source>The repository is disabled: nobody can download this file until it is enabled again.</source>
-        <target>Das Repository ist deaktiviert: Niemand kann diese Datei herunterladen, bis es wieder aktiviert ist.</target>
-      </segment>
-    </unit>
-    <unit id="files.download-address">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:72,73</note>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:336</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:121,122</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:370</note>
-      </notes>
-      <segment>
-        <source>Download address</source>
-        <target>Download-Adresse</target>
-      </segment>
-    </unit>
-    <unit id="files.fact.size">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:78,79</note>
-      </notes>
-      <segment>
-        <source>Size</source>
-        <target>Größe</target>
-      </segment>
-    </unit>
-    <unit id="files.fact.media">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:80,81</note>
-      </notes>
-      <segment>
-        <source>Media type</source>
-        <target>Medientyp</target>
-      </segment>
-    </unit>
-    <unit id="files.fact.created">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:88,90</note>
-      </notes>
-      <segment>
-        <source>Created</source>
-        <target>Erstellt</target>
-      </segment>
-    </unit>
-    <unit id="files.by">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:92</note>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:99</note>
-      </notes>
-      <segment>
-        <source>by</source>
-        <target>von</target>
-      </segment>
-    </unit>
-    <unit id="files.fact.modified">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:95,97</note>
-      </notes>
-      <segment>
-        <source>Last changed</source>
-        <target>Zuletzt geändert</target>
-      </segment>
-    </unit>
-    <unit id="files.fact.content">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:103,105</note>
-      </notes>
-      <segment>
-        <source>Content</source>
-        <target>Inhalt</target>
-      </segment>
-    </unit>
-    <unit id="files.content.missing">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:107,108</note>
-      </notes>
-      <segment>
-        <source>The stored content is missing.</source>
-        <target>Der gespeicherte Inhalt fehlt.</target>
-      </segment>
-    </unit>
-    <unit id="files.content.corrupt">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:109,111</note>
-      </notes>
-      <segment>
-        <source>The stored content failed its checksum.</source>
-        <target>Der gespeicherte Inhalt hat seine Prüfsumme nicht bestanden.</target>
-      </segment>
-    </unit>
-    <unit id="files.fact.malware">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:115,116</note>
-      </notes>
-      <segment>
-        <source>Malware scan</source>
-        <target>Malware-Prüfung</target>
-      </segment>
-    </unit>
-    <unit id="files.fact.signature">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:120,121</note>
-      </notes>
-      <segment>
-        <source>Signature</source>
-        <target>Signatur</target>
-      </segment>
-    </unit>
-    <unit id="sig.gate.refused-here">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:128,129</note>
-        <note category="location">src/app/views/packages/package-version-view.html:398,399</note>
-        <note category="location">src/app/views/signatures/signature-gate.ts:75,76</note>
-      </notes>
-      <segment>
-        <source>Refused here</source>
-        <target>Hier verweigert</target>
-      </segment>
-    </unit>
-    <unit id="files.fact.signature-of">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:140,141</note>
-      </notes>
-      <segment>
-        <source>Signature of</source>
-        <target>Signatur von</target>
-      </segment>
-    </unit>
-    <unit id="files.signatures">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:157,158</note>
-      </notes>
-      <segment>
-        <source>Signatures</source>
-        <target>Signaturen</target>
-      </segment>
-    </unit>
-    <unit id="files.signatures.loading">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:175,177</note>
-        <note category="location">src/app/views/packages/version-signatures.ts:50,53</note>
-      </notes>
-      <segment>
-        <source>Loading the signatures.</source>
-        <target>Die Signaturen werden geladen.</target>
-      </segment>
-    </unit>
-    <unit id="files.details">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:185</note>
-      </notes>
-      <segment>
-        <source>Details</source>
-        <target>Details</target>
-      </segment>
-    </unit>
-    <unit id="files.details-hint">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:186,187</note>
-      </notes>
-      <segment>
-        <source>Every checksum, the downloads, and the file as the API describes it.</source>
-        <target>Jede Prüfsumme, die Downloads und die Datei, wie die API sie beschreibt.</target>
-      </segment>
-    </unit>
-    <unit id="files.checksums">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:189,190</note>
-      </notes>
-      <segment>
-        <source>Checksums</source>
-        <target>Prüfsummen</target>
-      </segment>
-    </unit>
     <unit id="files.stats.heading">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:201,202</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:43,44</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -23955,7 +23730,7 @@
     </unit>
     <unit id="files.stats.downloads">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:206,207</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:48,49</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -23964,7 +23739,7 @@
     </unit>
     <unit id="files.stats.last">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:208,210</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:50,52</note>
       </notes>
       <segment>
         <source>Last download</source>
@@ -23973,7 +23748,7 @@
     </unit>
     <unit id="files.stats.by">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:216,217</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:58,59</note>
       </notes>
       <segment>
         <source>Last downloader</source>
@@ -23982,7 +23757,7 @@
     </unit>
     <unit id="files.stats.hint">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:219,220</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:61,62</note>
       </notes>
       <segment>
         <source>Counts reach the database within a minute of a download.</source>
@@ -23991,7 +23766,7 @@
     </unit>
     <unit id="files.details.loading">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:221,223</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:63,65</note>
       </notes>
       <segment>
         <source>Loading the file&apos;s details.</source>
@@ -24000,7 +23775,7 @@
     </unit>
     <unit id="files.api.json">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:223,224</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:65,66</note>
       </notes>
       <segment>
         <source>The file as the API describes it</source>
@@ -24009,7 +23784,7 @@
     </unit>
     <unit id="files.api.curl">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:225,226</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:67,68</note>
       </notes>
       <segment>
         <source>The same request with curl</source>
@@ -24018,7 +23793,7 @@
     </unit>
     <unit id="files.api.download">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:228,229</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:70,71</note>
       </notes>
       <segment>
         <source>Download with curl</source>
@@ -24027,73 +23802,35 @@
     </unit>
     <unit id="files.api.function-hint">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:233,236</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:75,78</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code&gt;" dispEnd="&lt;/code&gt;">quader_curl</pc> is the function of Set up client of a generic repository and of the manual&apos;s Personal access tokens: it hands curl the token from <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code&gt;" dispEnd="&lt;/code&gt;">QUADER_TOKEN</pc> on standard input, so no process list shows it. </source>
         <target><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code&gt;" dispEnd="&lt;/code&gt;">quader_curl</pc> ist die Funktion aus Client einrichten eines generischen Repositorys und aus der Seite Persönliche Zugriffstoken des Handbuchs: sie gibt curl das Token aus <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code&gt;" dispEnd="&lt;/code&gt;">QUADER_TOKEN</pc> über die Standardeingabe, sodass keine Prozessliste es zeigt. </target>
       </segment>
     </unit>
-    <unit id="files.signatures-hint-none">
+    <unit id="files.details-hint">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:279</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:106</note>
       </notes>
       <segment>
-        <source>No signature found, and who uploaded the file or where it was fetched from.</source>
-        <target>Keine Signatur gefunden, und wer die Datei hochgeladen hat oder woher sie geholt wurde.</target>
-      </segment>
-    </unit>
-    <unit id="files.signatures-hint">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:280</note>
-      </notes>
-      <segment>
-        <source>Who signed the file, whether a trust anchor knows the signer, and who uploaded it.</source>
-        <target>Wer die Datei signiert hat, ob ein Vertrauensanker den Signierer kennt, und wer sie hochgeladen hat.</target>
+        <source>Every checksum, the downloads, and the file as the API describes it.</source>
+        <target>Jede Prüfsumme, die Downloads und die Datei, wie die API sie beschreibt.</target>
       </segment>
     </unit>
     <unit id="files.api.copy-json">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:307</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:115</note>
       </notes>
       <segment>
         <source>Copy the description</source>
         <target>Beschreibung kopieren</target>
       </segment>
     </unit>
-    <unit id="files.copy-download-address">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:337</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:371</note>
-      </notes>
-      <segment>
-        <source>Copy download address</source>
-        <target>Download-Adresse kopieren</target>
-      </segment>
-    </unit>
-    <unit id="files.copy-digest">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:339</note>
-      </notes>
-      <segment>
-        <source>Copy <ph id="0" equiv="checksum" disp="name"/></source>
-        <target><ph id="0" equiv="checksum" disp="name"/> kopieren</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.filter-files">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:47,48</note>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:49,51</note>
-      </notes>
-      <segment>
-        <source>Filter files</source>
-        <target>Dateien filtern</target>
-      </segment>
-    </unit>
     <unit id="files.upload">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:73,74</note>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:79,80</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:52,53</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:58,59</note>
       </notes>
       <segment>
         <source>Upload files</source>
@@ -24102,7 +23839,7 @@
     </unit>
     <unit id="files.new-folder">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:85,86</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:64,65</note>
       </notes>
       <segment>
         <source>New folder</source>
@@ -24111,89 +23848,16 @@
     </unit>
     <unit id="files.delete-folder">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:101,103</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:80,82</note>
       </notes>
       <segment>
         <source>Delete folder</source>
         <target>Ordner löschen</target>
       </segment>
     </unit>
-    <unit id="files.filter-partial">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:110,113</note>
-      </notes>
-      <segment>
-        <source> The filter searches the <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> entries loaded so far. Load more to search the rest. </source>
-        <target> Der Filter durchsucht die <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> bisher geladenen Einträge. Laden Sie mehr, um auch den Rest zu durchsuchen. </target>
-      </segment>
-    </unit>
-    <unit id="files.loading">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:118,119</note>
-      </notes>
-      <segment>
-        <source>Loading the files.</source>
-        <target>Die Dateien werden geladen.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.files-empty-filtered">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:215</note>
-      </notes>
-      <segment>
-        <source>No file matches the filter.</source>
-        <target>Keine Datei passt zum Filter.</target>
-      </segment>
-    </unit>
-    <unit id="files.folder-empty">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:216</note>
-      </notes>
-      <segment>
-        <source>This folder is empty.</source>
-        <target>Dieser Ordner ist leer.</target>
-      </segment>
-    </unit>
-    <unit id="files.empty-upload">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:217</note>
-      </notes>
-      <segment>
-        <source>This repository holds no files yet. Upload files here or with your client.</source>
-        <target>Dieses Repository enthält noch keine Dateien. Laden Sie Dateien hier oder mit Ihrem Client hoch.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.col.name">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:226</note>
-      </notes>
-      <segment>
-        <source>Name</source>
-        <target>Name</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.col.size">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:227</note>
-        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:225</note>
-      </notes>
-      <segment>
-        <source>Size</source>
-        <target>Größe</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.col.modified">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:228</note>
-      </notes>
-      <segment>
-        <source>Last change</source>
-        <target>Letzte Änderung</target>
-      </segment>
-    </unit>
     <unit id="files.upload-verb">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:260</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:123</note>
       </notes>
       <segment>
         <source>Upload</source>
@@ -24202,25 +23866,16 @@
     </unit>
     <unit id="files.folder-actions">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:283</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:126</note>
       </notes>
       <segment>
         <source>More actions for this folder</source>
         <target>Weitere Aktionen für diesen Ordner</target>
       </segment>
     </unit>
-    <unit id="files.copy-url-of">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:286</note>
-      </notes>
-      <segment>
-        <source>Copy the download address of <ph id="0" equiv="name" disp="c.path"/></source>
-        <target>Download-Adresse von <ph id="0" equiv="name" disp="c.path"/> kopieren</target>
-      </segment>
-    </unit>
     <unit id="files.folder-created">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:309</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:144</note>
       </notes>
       <segment>
         <source>Folder <ph id="0" equiv="path" disp="created"/> created.</source>
@@ -24261,6 +23916,16 @@
       <segment>
         <source>Digest</source>
         <target>Digest</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.col.size">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:225</note>
+        <note category="location">src/app/views/files/folder-view.ts:169</note>
+      </notes>
+      <segment>
+        <source>Size</source>
+        <target>Größe</target>
       </segment>
     </unit>
     <unit id="repo.content.col.vulnerabilities">
@@ -27767,6 +27432,15 @@
         <target>Höchstens <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> Versionen und <ph id="1" equiv="bytes" disp="bytes"/>, ohne Vorabversionen</target>
       </segment>
     </unit>
+    <unit id="route.repositories.files.title">
+      <notes>
+        <note category="location">src/app/features/repositories/files-matchers.ts:21</note>
+      </notes>
+      <segment>
+        <source>Files</source>
+        <target>Dateien</target>
+      </segment>
+    </unit>
     <unit id="repo.format.automatic">
       <notes>
         <note category="location">src/app/features/repositories/format-settings.ts:115,117</note>
@@ -29154,18 +28828,9 @@
         <target>Job</target>
       </segment>
     </unit>
-    <unit id="route.repositories.files.title">
-      <notes>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:17</note>
-      </notes>
-      <segment>
-        <source>Files</source>
-        <target>Dateien</target>
-      </segment>
-    </unit>
     <unit id="route.repositories.new.title">
       <notes>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:66</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:52</note>
         <note category="location">src/app/features/repositories/repository-create.ts:78</note>
       </notes>
       <segment>
@@ -29175,7 +28840,7 @@
     </unit>
     <unit id="route.repositories.detail.title">
       <notes>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:71</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:57</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -29184,7 +28849,7 @@
     </unit>
     <unit id="route.repositories.downloads.title">
       <notes>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:91</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:77</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -29193,7 +28858,7 @@
     </unit>
     <unit id="route.repositories.upstream.title">
       <notes>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:100</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:86</note>
       </notes>
       <segment>
         <source>Upstream</source>
@@ -29202,7 +28867,7 @@
     </unit>
     <unit id="route.repositories.details.title">
       <notes>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:108</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:94</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -29211,7 +28876,7 @@
     </unit>
     <unit id="route.repositories.settings.title">
       <notes>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:120</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:106</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -29220,7 +28885,7 @@
     </unit>
     <unit id="route.service-accounts.detail.title">
       <notes>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:127</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:113</note>
         <note category="location">src/app/features/service-accounts/service-accounts.routes.ts:12</note>
         <note category="location">src/app/features/service-accounts/service-accounts.routes.ts:29</note>
       </notes>
@@ -58979,6 +58644,350 @@
         <target>Offene Befunde</target>
       </segment>
     </unit>
+    <unit id="files.disabled-note">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:55,56</note>
+      </notes>
+      <segment>
+        <source>The repository is disabled: nobody can download this file until it is enabled again.</source>
+        <target>Das Repository ist deaktiviert: Niemand kann diese Datei herunterladen, bis es wieder aktiviert ist.</target>
+      </segment>
+    </unit>
+    <unit id="files.download-address">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:61,62</note>
+        <note category="location">src/app/views/files/file-view.ts:277</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:122,123</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:375</note>
+      </notes>
+      <segment>
+        <source>Download address</source>
+        <target>Download-Adresse</target>
+      </segment>
+    </unit>
+    <unit id="files.fact.size">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:67,68</note>
+      </notes>
+      <segment>
+        <source>Size</source>
+        <target>Größe</target>
+      </segment>
+    </unit>
+    <unit id="files.fact.media">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:69,70</note>
+      </notes>
+      <segment>
+        <source>Media type</source>
+        <target>Medientyp</target>
+      </segment>
+    </unit>
+    <unit id="files.fact.created">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:77,79</note>
+      </notes>
+      <segment>
+        <source>Created</source>
+        <target>Erstellt</target>
+      </segment>
+    </unit>
+    <unit id="files.by">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:81</note>
+        <note category="location">src/app/views/files/file-view.ts:88</note>
+      </notes>
+      <segment>
+        <source>by</source>
+        <target>von</target>
+      </segment>
+    </unit>
+    <unit id="files.fact.modified">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:84,86</note>
+      </notes>
+      <segment>
+        <source>Last changed</source>
+        <target>Zuletzt geändert</target>
+      </segment>
+    </unit>
+    <unit id="files.fact.content">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:92,94</note>
+      </notes>
+      <segment>
+        <source>Content</source>
+        <target>Inhalt</target>
+      </segment>
+    </unit>
+    <unit id="files.content.missing">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:96,97</note>
+      </notes>
+      <segment>
+        <source>The stored content is missing.</source>
+        <target>Der gespeicherte Inhalt fehlt.</target>
+      </segment>
+    </unit>
+    <unit id="files.content.corrupt">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:98,100</note>
+      </notes>
+      <segment>
+        <source>The stored content failed its checksum.</source>
+        <target>Der gespeicherte Inhalt hat seine Prüfsumme nicht bestanden.</target>
+      </segment>
+    </unit>
+    <unit id="files.fact.malware">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:104,105</note>
+      </notes>
+      <segment>
+        <source>Malware scan</source>
+        <target>Malware-Prüfung</target>
+      </segment>
+    </unit>
+    <unit id="files.fact.signature">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:109,110</note>
+      </notes>
+      <segment>
+        <source>Signature</source>
+        <target>Signatur</target>
+      </segment>
+    </unit>
+    <unit id="sig.gate.refused-here">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:117,118</note>
+        <note category="location">src/app/views/packages/package-version-view.html:398,399</note>
+        <note category="location">src/app/views/signatures/signature-gate.ts:75,76</note>
+      </notes>
+      <segment>
+        <source>Refused here</source>
+        <target>Hier verweigert</target>
+      </segment>
+    </unit>
+    <unit id="files.fact.signature-of">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:129,130</note>
+      </notes>
+      <segment>
+        <source>Signature of</source>
+        <target>Signatur von</target>
+      </segment>
+    </unit>
+    <unit id="files.signatures">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:147,148</note>
+      </notes>
+      <segment>
+        <source>Signatures</source>
+        <target>Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="files.signatures.loading">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:165,167</note>
+        <note category="location">src/app/views/packages/version-signatures.ts:50,53</note>
+      </notes>
+      <segment>
+        <source>Loading the signatures.</source>
+        <target>Die Signaturen werden geladen.</target>
+      </segment>
+    </unit>
+    <unit id="files.details">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:175</note>
+      </notes>
+      <segment>
+        <source>Details</source>
+        <target>Details</target>
+      </segment>
+    </unit>
+    <unit id="files.checksums">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:178,179</note>
+      </notes>
+      <segment>
+        <source>Checksums</source>
+        <target>Prüfsummen</target>
+      </segment>
+    </unit>
+    <unit id="files.details-hint-checksums">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:217</note>
+      </notes>
+      <segment>
+        <source>Every checksum of the file.</source>
+        <target>Jede Prüfsumme der Datei.</target>
+      </segment>
+    </unit>
+    <unit id="files.signatures-hint-none">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:240</note>
+      </notes>
+      <segment>
+        <source>No signature found, and who uploaded the file or where it was fetched from.</source>
+        <target>Keine Signatur gefunden, und wer die Datei hochgeladen hat oder woher sie geholt wurde.</target>
+      </segment>
+    </unit>
+    <unit id="files.signatures-hint">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:241</note>
+      </notes>
+      <segment>
+        <source>Who signed the file, whether a trust anchor knows the signer, and who uploaded it.</source>
+        <target>Wer die Datei signiert hat, ob ein Vertrauensanker den Signierer kennt, und wer sie hochgeladen hat.</target>
+      </segment>
+    </unit>
+    <unit id="files.copy-download-address">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:278</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:376</note>
+      </notes>
+      <segment>
+        <source>Copy download address</source>
+        <target>Download-Adresse kopieren</target>
+      </segment>
+    </unit>
+    <unit id="files.copy-digest">
+      <notes>
+        <note category="location">src/app/views/files/file-view.ts:280</note>
+      </notes>
+      <segment>
+        <source>Copy <ph id="0" equiv="checksum" disp="name"/></source>
+        <target><ph id="0" equiv="checksum" disp="name"/> kopieren</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.folder-path">
+      <notes>
+        <note category="location">src/app/views/files/files-head.ts:22,24</note>
+      </notes>
+      <segment>
+        <source>Folder path</source>
+        <target>Ordnerpfad</target>
+      </segment>
+    </unit>
+    <unit id="files.root">
+      <notes>
+        <note category="location">src/app/views/files/files-head.ts:26,27</note>
+        <note category="location">src/app/views/files/files-head.ts:28,30</note>
+      </notes>
+      <segment>
+        <source>Files</source>
+        <target>Dateien</target>
+      </segment>
+    </unit>
+    <unit id="files.download">
+      <notes>
+        <note category="location">src/app/views/files/files-head.ts:91,92</note>
+        <note category="location">src/app/views/files/files-head.ts:97,98</note>
+      </notes>
+      <segment>
+        <source>Download</source>
+        <target>Herunterladen</target>
+      </segment>
+    </unit>
+    <unit id="files.trail.between">
+      <notes>
+        <note category="location">src/app/views/files/files-head.ts:133</note>
+      </notes>
+      <segment>
+        <source>Show the folders in between</source>
+        <target>Die Ordner dazwischen anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="files.copy-path">
+      <notes>
+        <note category="location">src/app/views/files/files-head.ts:134</note>
+      </notes>
+      <segment>
+        <source>Copy path</source>
+        <target>Pfad kopieren</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.filter-files">
+      <notes>
+        <note category="location">src/app/views/files/folder-view.ts:40,41</note>
+        <note category="location">src/app/views/files/folder-view.ts:42,44</note>
+      </notes>
+      <segment>
+        <source>Filter files</source>
+        <target>Dateien filtern</target>
+      </segment>
+    </unit>
+    <unit id="files.filter-partial">
+      <notes>
+        <note category="location">src/app/views/files/folder-view.ts:52,55</note>
+      </notes>
+      <segment>
+        <source> The filter searches the <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> entries loaded so far. Load more to search the rest. </source>
+        <target> Der Filter durchsucht die <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> bisher geladenen Einträge. Laden Sie mehr, um auch den Rest zu durchsuchen. </target>
+      </segment>
+    </unit>
+    <unit id="files.loading">
+      <notes>
+        <note category="location">src/app/views/files/folder-view.ts:60,61</note>
+      </notes>
+      <segment>
+        <source>Loading the files.</source>
+        <target>Die Dateien werden geladen.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.files-empty-filtered">
+      <notes>
+        <note category="location">src/app/views/files/folder-view.ts:157</note>
+      </notes>
+      <segment>
+        <source>No file matches the filter.</source>
+        <target>Keine Datei passt zum Filter.</target>
+      </segment>
+    </unit>
+    <unit id="files.folder-empty">
+      <notes>
+        <note category="location">src/app/views/files/folder-view.ts:158</note>
+      </notes>
+      <segment>
+        <source>This folder is empty.</source>
+        <target>Dieser Ordner ist leer.</target>
+      </segment>
+    </unit>
+    <unit id="files.empty-upload">
+      <notes>
+        <note category="location">src/app/views/files/folder-view.ts:159</note>
+      </notes>
+      <segment>
+        <source>This repository holds no files yet. Upload files here or with your client.</source>
+        <target>Dieses Repository enthält noch keine Dateien. Laden Sie Dateien hier oder mit Ihrem Client hoch.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.col.name">
+      <notes>
+        <note category="location">src/app/views/files/folder-view.ts:168</note>
+      </notes>
+      <segment>
+        <source>Name</source>
+        <target>Name</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.col.modified">
+      <notes>
+        <note category="location">src/app/views/files/folder-view.ts:170</note>
+      </notes>
+      <segment>
+        <source>Last change</source>
+        <target>Letzte Änderung</target>
+      </segment>
+    </unit>
+    <unit id="files.copy-url-of">
+      <notes>
+        <note category="location">src/app/views/files/folder-view.ts:222</note>
+      </notes>
+      <segment>
+        <source>Copy the download address of <ph id="0" equiv="name" disp="c.path"/></source>
+        <target>Download-Adresse von <ph id="0" equiv="name" disp="c.path"/> kopieren</target>
+      </segment>
+    </unit>
     <unit id="docs.pending">
       <notes>
         <note category="location">src/app/views/packages/ansible-contents.ts:23,24</note>
@@ -59976,7 +59985,7 @@
     </unit>
     <unit id="pkg.install.repository">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:110,111</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:111,112</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -59985,7 +59994,7 @@
     </unit>
     <unit id="pkg.command-menu.by-digest">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:172,174</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:173,175</note>
       </notes>
       <segment>
         <source>By digest</source>
@@ -59994,7 +60003,7 @@
     </unit>
     <unit id="pkg.command-menu.checksum">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:187,189</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:188,190</note>
       </notes>
       <segment>
         <source>Check the download</source>
@@ -60003,7 +60012,7 @@
     </unit>
     <unit id="pkg.command-menu.label-file">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:363</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:368</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="verb" disp="this.verb()"/> <ph id="1" equiv="name" disp="this.name()"/></source>
@@ -60012,7 +60021,7 @@
     </unit>
     <unit id="pkg.command-menu.label">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:364</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:369</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="verb" disp="this.verb()"/> <ph id="1" equiv="name" disp="this.name()"/> <ph id="2" equiv="version" disp="this.version()"/></source>
@@ -60021,7 +60030,7 @@
     </unit>
     <unit id="pkg.command-menu.split">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:369</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:374</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="verb" disp="this.verb()"/> with a client</source>
@@ -60030,7 +60039,7 @@
     </unit>
     <unit id="pkg.command-menu.field">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:383</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:388</note>
       </notes>
       <segment>
         <source>Command for <ph id="0" equiv="client" disp="c.label"/></source>
@@ -60039,7 +60048,7 @@
     </unit>
     <unit id="pkg.command-menu.copy">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:387</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:392</note>
       </notes>
       <segment>
         <source>Copy the command for <ph id="0" equiv="client" disp="c.label"/></source>
@@ -60048,7 +60057,7 @@
     </unit>
     <unit id="pkg.command-menu.digest-field">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:391</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:396</note>
       </notes>
       <segment>
         <source>Command for <ph id="0" equiv="client" disp="c.label"/> by digest</source>
@@ -60057,7 +60066,7 @@
     </unit>
     <unit id="pkg.command-menu.digest-copy">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:395</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:400</note>
       </notes>
       <segment>
         <source>Copy the command for <ph id="0" equiv="client" disp="c.label"/> by digest</source>
@@ -60066,7 +60075,7 @@
     </unit>
     <unit id="pkg.command-menu.check-field">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:399</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:404</note>
       </notes>
       <segment>
         <source>Check of the download for <ph id="0" equiv="client" disp="c.label"/></source>
@@ -60075,7 +60084,7 @@
     </unit>
     <unit id="pkg.command-menu.check-copy">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:403</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:408</note>
       </notes>
       <segment>
         <source>Copy the check of the download for <ph id="0" equiv="client" disp="c.label"/></source>
@@ -65239,7 +65248,7 @@
     </unit>
     <unit id="bastion.title.packages">
       <notes>
-        <note category="location">src/bastion/app.routes.ts:27</note>
+        <note category="location">src/bastion/app.routes.ts:28</note>
       </notes>
       <segment>
         <source>Packages in <ph id="0" equiv="project" disp="route.paramMap.get(&apos;project&apos;) ?? &apos;&apos;"/></source>
@@ -65248,7 +65257,7 @@
     </unit>
     <unit id="bastion.title.versions">
       <notes>
-        <note category="location">src/bastion/app.routes.ts:32</note>
+        <note category="location">src/bastion/app.routes.ts:33</note>
       </notes>
       <segment>
         <source>Versions of <ph id="0" equiv="name" disp="route.paramMap.get(&apos;name&apos;) ?? &apos;&apos;"/></source>
@@ -65257,7 +65266,7 @@
     </unit>
     <unit id="bastion.start.title">
       <notes>
-        <note category="location">src/bastion/app.routes.ts:43</note>
+        <note category="location">src/bastion/app.routes.ts:45</note>
         <note category="location">src/bastion/pages/start-page.ts:17</note>
       </notes>
       <segment>
@@ -65319,9 +65328,28 @@
         <target>Stand:</target>
       </segment>
     </unit>
+    <unit id="bastion.files.sentence">
+      <notes>
+        <note category="location">src/bastion/pages/files-page.ts:65</note>
+      </notes>
+      <segment>
+        <source>The files published in this repository.</source>
+        <target>Die Dateien, die in diesem Repository veröffentlicht sind.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.list.files">
+      <notes>
+        <note category="location">src/bastion/pages/package-list-page.ts:33</note>
+        <note category="location">src/bastion/pages/package-list-page.ts:33,35</note>
+      </notes>
+      <segment>
+        <source>Files</source>
+        <target>Dateien</target>
+      </segment>
+    </unit>
     <unit id="bastion.list.search">
       <notes>
-        <note category="location">src/bastion/pages/package-list-page.ts:61</note>
+        <note category="location">src/bastion/pages/package-list-page.ts:110</note>
       </notes>
       <segment>
         <source>Search packages</source>
@@ -65330,7 +65358,7 @@
     </unit>
     <unit id="bastion.list.empty">
       <notes>
-        <note category="location">src/bastion/pages/package-list-page.ts:62</note>
+        <note category="location">src/bastion/pages/package-list-page.ts:111</note>
       </notes>
       <segment>
         <source>No package is published in this project.</source>
@@ -65339,7 +65367,7 @@
     </unit>
     <unit id="bastion.list.empty-search">
       <notes>
-        <note category="location">src/bastion/pages/package-list-page.ts:63</note>
+        <note category="location">src/bastion/pages/package-list-page.ts:112</note>
       </notes>
       <segment>
         <source>No package matches the search.</source>

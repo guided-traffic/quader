@@ -30,6 +30,10 @@ type Reader interface {
 	Search(q Query) (Page, error)
 	// Package is a public package of the index by its catalogue ID; ok is false for one the catalogue does not show.
 	Package(id string) (Entry, bool, error)
+	// Files is the public repositories whose folders and files the catalogue holds (R-BAS-118, Q-BAS-400): each by its qualified
+	// name (<project>/<key>), in the public set's order, while the document of its root folder (files/<project>/<key>/folder) is
+	// held. It reads no document: the snapshot's paths say it.
+	Files() ([]string, error)
 	// Lookup is a public package by its format and its name or its key, as the main installation's lookup finds it (R-API-029):
 	// what an address of the web interface names (R-BAS-118); ok is false for one the catalogue does not show.
 	Lookup(format, name string) (Entry, bool, error)
@@ -150,6 +154,26 @@ func (c *Catalogue) PublicSet() (iface.CataloguePublic, error) {
 	return iface.CataloguePublic{
 		Projects: append([]string{}, s.public.Projects...), Repositories: append([]iface.CatalogueRepository{}, s.public.Repositories...),
 	}, nil
+}
+
+// Files implements [Reader].
+func (c *Catalogue) Files() ([]string, error) {
+	s, err := c.served()
+	if err != nil {
+		return nil, err
+	}
+	out := []string{}
+	for _, r := range s.public.Repositories {
+		project, key, ok := strings.Cut(r.Name, "/")
+		if !ok {
+			continue
+		}
+		p := iface.CataloguePath{Kind: iface.CatalogueFolder, Project: project, Repository: key}
+		if _, held := s.lookup(p.String()); held && s.shows(p) {
+			out = append(out, r.Name)
+		}
+	}
+	return out, nil
 }
 
 // Package implements [Reader].

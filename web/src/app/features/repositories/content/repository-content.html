@@ -164,98 +164,24 @@
       </p>
     }
     @if (!isGeneric() || path() !== '') {
-      <!-- The one place of the path (Q-UI-510, Q-UI-521): Files, the folders, the folder or file of the page. A separator stays
-           with the segment before it; below 64 rem the folders between Files and the last segment collapse into one menu. On a
-           file's page the last segment is the file with its icon, and its actions stand at the end of the row (Q-UI-514). -->
-      <div class="files-head">
-        <nav class="files-trail" i18n-aria-label="@@repo.content.folder-path" aria-label="Folder path">
-          <ol>
-            <li class="seg">
-              @if (path() === '') {
-                <span aria-current="page" i18n="@@files.root">Files</span>
-              } @else {
-                <a [routerLink]="filesRoot()" i18n="@@files.root">Files</a>
-              }
-            </li>
-            @if (between().length > 0) {
-              <li class="seg collapsed">
-                <button
-                  class="btn btn-tertiary btn-icon trail-more on-line"
-                  type="button"
-                  [attr.aria-label]="betweenLabel"
-                  [cdkMenuTriggerFor]="betweenMenu"
-                >
-                  <span class="material-icons" aria-hidden="true">more_horiz</span>
-                </button>
-                <ng-template #betweenMenu>
-                  <div class="menu" cdkMenu>
-                    @for (c of between(); track $index) {
-                      <a class="menu-item" cdkMenuItem [routerLink]="c.commands" translate="no">{{ c.name }}</a>
-                    }
-                  </div>
-                </ng-template>
-              </li>
-              @for (c of between(); track $index) {
-                <li class="seg between" translate="no"><a [routerLink]="c.commands">{{ c.name }}</a></li>
-              }
-            }
-            @if (here(); as c) {
-              <li class="seg here" translate="no">
-                <span class="here-name" aria-current="page">
-                  @if (view() === 'file') {
-                    <span class="material-icons entry-icon" aria-hidden="true">description</span>
-                  }
-                  <span>{{ c.name }}</span>
-                </span>
-                <quader-copy-button class="on-line" [value]="path()" [label]="copyPathLabel" [quiet]="true" />
-              </li>
-            }
-          </ol>
-        </nav>
-        @if (view() === 'file' && item(); as it) {
-          <div class="file-actions">
-            <!-- A file the malware scan's gate or the repository's signature gate refuses here offers no download: the fact Malware
-                 scan or Signature says why (Q-UI-882, R-SIG-074). Nor does a file of a system repository, whose downloads by path answer
-                 404 to every caller, nor a file of a disabled repository; the file's view says why (Q-UI-898, Q-UI-899, Q-UI-965). -->
-            @if (it.contentUrl && it.malware?.refused !== true && it.signatures?.refused !== true && !system() && !disabled()) {
-              @if (isGeneric()) {
-                <!-- Download in the browser is the main act; the chevron opens the address and the clients' commands, each with the
-                     check of the download as its second line (R-GENERIC-017, Q-UI-1330). A refused file has neither: the commands
-                     would answer 403, and its address stays a fact of the file's view (Q-UI-882). -->
-                <quader-client-command-menu
-                  class="on-line"
-                  size="page"
-                  format="generic"
-                  [name]="here()?.name ?? ''"
-                  version=""
-                  [repository]="ref()"
-                  [path]="it.path"
-                  [sha256]="it.digests?.sha256 ?? null"
-                  [address]="it.downloadUrl ?? null"
-                  [verb]="shape().commandVerb"
-                  [split]="true"
-                >
-                  <a mainAct class="btn btn-default" [href]="it.contentUrl" download quaderDownload>
-                    <span class="material-icons" aria-hidden="true">download</span>
-                    <ng-container i18n="@@files.download">Download</ng-container>
-                  </a>
-                </quader-client-command-menu>
-              } @else {
-                <a class="btn btn-default on-line" [href]="it.contentUrl" download quaderDownload>
-                  <span class="material-icons" aria-hidden="true">download</span>
-                  <ng-container i18n="@@files.download">Download</ng-container>
-                </a>
-              }
-            }
-            @if (permissions().delete) {
-              <button quaderBusy class="btn btn-default on-line" type="button" (click)="remove()">
-                <span class="material-icons" aria-hidden="true">delete</span>
-                <ng-container i18n="@@files.delete">Delete</ng-container>
-              </button>
-            }
-          </div>
+      <!-- The one place of the path (Q-UI-510, Q-UI-521), with a file's Download (views/files/files-head.ts); the file's Delete is this
+           page's act, at the end of the row. -->
+      <quader-files-head
+        [repository]="ref()"
+        [path]="path()"
+        [root]="filesRoot()"
+        [file]="view() === 'file' ? item() : null"
+        [generic]="isGeneric()"
+        [verb]="shape().commandVerb"
+        [closed]="system() || disabled()"
+      >
+        @if (permissions().delete) {
+          <button fileActs quaderBusy class="btn btn-default on-line file-delete" type="button" (click)="remove()">
+            <span class="material-icons" aria-hidden="true">delete</span>
+            <ng-container i18n="@@files.delete">Delete</ng-container>
+          </button>
         }
-      </div>
+      </quader-files-head>
     }
     @if (actionFailure(); as f) {
       <quader-error-notice [error]="f" />

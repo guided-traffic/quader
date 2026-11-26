@@ -460,6 +460,34 @@ func TestR_BAS_111_AStoredStateIsServedAfterARestartWithItsAge(t *testing.T) {
 	}
 }
 
+// TestR_BAS_118_FilesNamesThePublicRepositoriesWithARootFolder: the repositories whose files a page leads to (Q-BAS-400) are those of
+// the public set whose root folder the catalogue holds; one that leaves the public set leaves the list, and the switch off answers
+// off.
+func TestR_BAS_118_FilesNamesThePublicRepositoriesWithARootFolder(t *testing.T) {
+	r := newRig(t)
+	r.main.SetPublic(public("acme/npm-local", "acme/downloads"))
+	r.publish(leftPad)
+	folder := func(repo string) string {
+		return iface.CataloguePath{Kind: iface.CatalogueFolder, Project: "acme", Repository: repo}.String()
+	}
+	r.main.PutDocument(folder("downloads"), []byte(`{"items":[{"path":"a.txt","kind":"file"}]}`))
+	r.main.PutDocument(folder("private"), []byte(`{"items":[]}`))
+	r.on(true, true)
+	r.tick()
+	if got, err := r.cat.Files(); err != nil || strings.Join(got, ",") != "acme/downloads" {
+		t.Fatalf("files = %v %v", got, err)
+	}
+	r.main.SetPublic(public("acme/npm-local"))
+	r.tick()
+	if got, err := r.cat.Files(); err != nil || len(got) != 0 {
+		t.Errorf("files after the repository left the public set = %v %v", got, err)
+	}
+	r.on(false, false)
+	if _, err := r.cat.Files(); !errors.Is(err, catalogue.ErrOff) {
+		t.Errorf("off: %v", err)
+	}
+}
+
 // TestR_BAS_112_DocsOffHidesTheDocumentationAtOnce: the switch docs off hides the README before any round, the rest stays.
 func TestR_BAS_112_DocsOffHidesTheDocumentationAtOnce(t *testing.T) {
 	r := newRig(t)

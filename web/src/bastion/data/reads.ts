@@ -16,7 +16,9 @@ import {
   PackageVersionContents,
   PackageVersionSummary,
 } from '../../app/api/packages-api';
-import { PageFetcher } from '../../app/api/pagination';
+import { Child, FileReads, Item } from '../../app/api/file-reads';
+import { Page, PageFetcher } from '../../app/api/pagination';
+import { splitRef } from '../../app/api/refs';
 import { SignatureReads } from '../../app/api/signature-reads';
 import { SignatureFileReport, SignatureRelease, SignatureVersionReport } from '../../app/api/signatures-api';
 import {
@@ -30,6 +32,7 @@ import { LegalApi, LegalPages } from '../../app/api/legal-api';
 import { FormatDescriptor } from '../../app/api/repositories-api';
 import { FormatCatalog } from '../../app/core/format-names';
 import { SIGNED_IN } from '../../app/core/signed-in';
+import { SETUP_PAGES } from '../../app/views/setup-pages';
 import { SystemClients } from '../../app/core/system-clients';
 import { BastionData, DATA_ROOT, seg } from './http';
 import { BASTION_FORMATS } from './formats';
@@ -42,6 +45,17 @@ function packagePath(id: string): string {
 
 function versionPath(id: string, version: string): string {
   return `${packagePath(id)}/versions/${seg(version)}`;
+}
+
+/** The documents of a repository's files in the catalogue's grammar (R-BAS-103): `files/<project>/<key>/<kind>`. */
+function filesPath(repository: string, kind: 'folder' | 'file' | `setup/${string}`): string {
+  const { project, key } = splitRef(repository);
+  return `files/${seg(project)}/${seg(key)}/${kind}`;
+}
+
+/** A path inside a repository, each of its segments escaped: `a b/c.txt` is `a%20b/c.txt`. */
+function segments(path: string): string {
+  return path.split('/').filter((s) => s !== '').map(seg).join('/');
 }
 
 /** A 404: the catalogue does not hold the document, which the main installation's reads answer as "none" where they do. */
@@ -152,6 +166,12 @@ export class BastionClientSetupReads extends ClientSetupReads {
   override async get(repository: string, query: ClientSetupQuery): Promise<ClientSetup> {
     const [project, repo] = repository.split('/');
     if (!project || !repo) throw notHeld();
+    // A file's commands are the set-up of its path, which the builder rendered with its SHA-256 in the check (Q-UI-1454); a folder's
+    // upload is no read of a visitor.
+    if (query.path !== undefined) {
+      if (query.path === '' || query.path.endsWith('/')) throw notHeld();
+      return this.data.get<ClientSetup>(`${filesPath(repository, `setup/${seg(query.client)}`)}/${segments(query.path)}`);
+    }
     let path = `setup/${seg(project)}/${seg(repo)}/${seg(query.client)}`;
     if (query.package && query.version) {
       const id = await this.idOf(repository, query.package);
@@ -232,6 +252,30 @@ export class BastionSignatureReads extends SignatureReads {
   }
 }
 
+/**
+ * The folders and files of a public generic repository at the Bastion (R-UI-229, Q-UI-1454): the catalogue's document of a folder holds
+ * every entry of it (R-BAS-104), which the reads answer in pages of the view's size, so the list keeps its **Load more**; a file is its
+ * description as the main installation answered the anonymous caller, its download address the Bastion's own (R-BAS-107).
+ */
+@Injectable()
+export class BastionFileReads extends FileReads {
+  private readonly data = inject(BastionData);
+
+  override item(repository: string, path: string): Promise<Item> {
+    return this.data.get<Item>(`${filesPath(repository, 'file')}/${segments(path)}`);
+  }
+
+  override children(repository: string, path: string, limit: number): PageFetcher<Child> {
+    const at = path === '' ? filesPath(repository, 'folder') : `${filesPath(repository, 'folder')}/${segments(path)}`;
+    return async (cursor): Promise<Page<Child>> => {
+      const all = (await this.data.get<{ items: readonly Child[] }>(at)).items;
+      const from = cursor === null ? 0 : Number(cursor);
+      const to = from + limit;
+      return { items: all.slice(from, to), nextCursor: to < all.length ? String(to) : null };
+    };
+  }
+}
+
 /** The Bastion's own imprint and privacy notice (R-BAS-100, R-BAS-118) in the shape of the main installation's. */
 @Injectable()
 export class BastionLegalApi extends LegalApi {
@@ -271,7 +315,7 @@ export class BastionSystemClients extends SystemClients {
 
 /**
  * The reads of the Bastion's application, bound to the catalogue (R-UI-228): the views' abstract reads, the legal pages, the format
- * catalogue, the system repositories' switch, and a reader who is never signed in.
+ * catalogue, the system repositories' switch, a reader who is never signed in, and no page Set up client.
  */
 export function provideBastionReads(): Provider[] {
   return [
@@ -279,9 +323,12 @@ export function provideBastionReads(): Provider[] {
     { provide: ClientSetupReads, useClass: BastionClientSetupReads },
     { provide: VulnerabilityReads, useClass: BastionVulnerabilityReads },
     { provide: SignatureReads, useClass: BastionSignatureReads },
+    { provide: FileReads, useClass: BastionFileReads },
     { provide: LegalApi, useClass: BastionLegalApi },
     { provide: FormatCatalog, useClass: BastionFormatCatalog },
     { provide: SystemClients, useClass: BastionSystemClients },
     { provide: SIGNED_IN, useValue: signal(false).asReadonly() },
+    // The Bastion has no page Set up client: a panel of commands offers no link to one (Q-UI-1456).
+    { provide: SETUP_PAGES, useValue: false },
   ];
 }

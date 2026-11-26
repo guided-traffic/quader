@@ -5,7 +5,7 @@ import { Notifier } from './notifier';
 import { BrowserStorage } from './storage';
 import { QuaderTitleStrategy } from './title-strategy';
 import { diffFields } from '../shared/conflict-dialog';
-import { filesMatcher } from '../features/repositories/repositories.routes';
+import { filesMatcher } from '../features/repositories/files-matchers';
 import { UrlSegment } from '@angular/router';
 
 describe('BrowserStorage', () => {

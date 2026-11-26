@@ -1,13 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClient } from './client';
+import { Child, FileReads, Item } from './file-reads';
 import { PageFetcher } from './pagination';
 import { DeleteOutcome, JobReference } from './repositories-api';
 import { contentPath, repositoryUrl } from './refs';
 import { Schema } from './types';
 import { TransferOptions, UploadTransfer } from './upload-transfer';
 
-export type Item = Schema<'Item'>;
-export type Child = Schema<'Child'>;
+export type { Child, Item } from './file-reads';
 export type ItemStats = Schema<'ItemStats'>;
 
 /** A file larger than this is not hashed in the browser; the server's own digest is used (R-UI-012). */
@@ -70,11 +70,11 @@ function itemsUrl(repository: string, suffix: 'items' | 'children' | 'stats'): s
   return `${repositoryUrl(repository)}/${suffix}`;
 }
 
-/** Files and folders of a repository: the browser (R-UI-010, R-UI-011) and the deploy dialog (R-UI-012). */
-export abstract class FilesApi {
-  abstract item(repository: string, path: string): Promise<Item>;
-  /** The direct children of a folder; `path` '' is the root of the repository. */
-  abstract children(repository: string, path: string, limit: number): PageFetcher<Child>;
+/**
+ * Files and folders of a repository: the browser (R-UI-010, R-UI-011) and the deploy dialog (R-UI-012). The reads the views take are
+ * {@link FileReads} (R-UI-223); this class adds the main installation's writes and its statistics.
+ */
+export abstract class FilesApi extends FileReads {
   abstract stats(repository: string, path: string): Promise<ItemStats>;
   /**
    * Counts the items below a folder, stopping once the count exceeds `cap`; the second member is
@@ -100,12 +100,12 @@ export class HttpFilesApi extends FilesApi {
   private readonly client = inject(ApiClient);
   private readonly transfer = inject(UploadTransfer);
 
-  async item(repository: string, path: string): Promise<Item> {
+  override async item(repository: string, path: string): Promise<Item> {
     return (await this.client.getJson<Item>(itemsUrl(repository, 'items'), { params: { path } }))
       .body;
   }
 
-  children(repository: string, path: string, limit: number): PageFetcher<Child> {
+  override children(repository: string, path: string, limit: number): PageFetcher<Child> {
     const fetcher = this.client.page<Child>(itemsUrl(repository, 'children'), { path });
     return (cursor) => fetcher(cursor, limit);
   }

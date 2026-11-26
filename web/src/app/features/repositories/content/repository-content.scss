@@ -1,6 +1,7 @@
 // The page of a repository and of its folders and files (R-UI-052, R-UI-010): its own parts. The list of the items or of a
-// folder is repository-lists.scss, the view of one file repository-file.scss: one sheet per component, so that no component
-// carries the rules of the others and each stays under the 4 kB budget of a component's styles.
+// folder is repository-lists.scss, the view of one file views/files/file-view.scss, the path of a folder or a file
+// views/files/files-head.scss: one sheet per component, so that no component carries the rules of the others and each stays under
+// the 4 kB budget of a component's styles.
 
 // The tab Details (Q-UI-1067): each fact with its name above it, as a further address has had it (Q-UI-320).
 .repository-details {
@@ -51,93 +52,6 @@
   }
 }
 
-// The path of the page, the one place that names its folders and its file (R-UI-010, Q-UI-510, Q-UI-521): Files, then each
-// folder, the last one the page; a file's actions at the row's end. The row is a container, so the path collapses by its own width.
-.files-head {
-  container: files-head / inline-size;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--quader-space-2) var(--quader-space-4);
-  margin-block-start: var(--quader-space-3);
-}
-
-.files-trail {
-  flex: 1 1 20rem;
-  min-inline-size: 0;
-
-  ol {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    row-gap: var(--quader-space-1);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    font-size: var(--quader-heading-3);
-    font-weight: 600;
-    line-height: 1.4;
-  }
-
-  // A segment wraps at its hyphens, and inside a word only where nothing else fits.
-  .seg {
-    min-inline-size: 0;
-    overflow-wrap: break-word;
-  }
-
-  // The separator belongs to the segment before it, so no line starts with one.
-  .seg:not(:last-child)::after {
-    content: '/';
-    margin-inline: var(--quader-space-2);
-    color: var(--quader-text-muted);
-    font-weight: 400;
-  }
-
-  // The current segment: the folder, or the file with its icon, and the copy button right after the name.
-  .here-name {
-    color: var(--quader-heading);
-  }
-
-  .here-name .entry-icon {
-    margin-inline-end: var(--quader-space-1);
-    color: var(--quader-text-muted);
-    font-size: 1.25rem;
-    vertical-align: -0.2em;
-  }
-
-  // The copy button and the menu of the folders in between stand on the path's line (R-UI-175: `on-line` in the template);
-  // at `vertical-align: middle` they stood 1.5 px under it.
-  .here quader-copy-button {
-    margin-inline-start: var(--quader-space-1);
-    font-size: var(--quader-text-size);
-  }
-
-  // A link of the path is underlined under the pointer and on focus, as the breadcrumb's; it is not running text.
-  a {
-    text-decoration: none;
-
-    &:is(:hover, :focus-visible) {
-      text-decoration: underline;
-    }
-  }
-}
-
-// Wide: every folder. Narrow: the folders between Files and the page's own segment are one menu (Q-UI-521).
-.files-trail .collapsed {
-  display: none;
-}
-
-@container files-head (max-width: 64rem) {
-  .files-trail .collapsed {
-    display: block;
-  }
-
-  .files-trail .between {
-    display: none;
-  }
-}
-
 .deleting {
   display: flex;
   flex-wrap: wrap;
@@ -146,20 +60,8 @@
   margin-block-start: var(--quader-space-3);
 }
 
-// A file's actions at the end of its path's row (Q-UI-514).
-// A file's actions stand on the middle of the path's line (R-UI-175): the box's line is the path's (its size at 1.4), and the
-// buttons are centred on it (`on-line`) without making it taller; at the row's top they stood 1.5 px under it.
-.file-actions {
-  --quader-line: calc(var(--quader-heading-3) * 1.4);
-
-  display: flex;
-  flex: none;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--quader-space-2);
-
-  .btn .material-icons {
-    font-size: 1.125rem;
-    margin-inline-end: var(--quader-space-1);
-  }
+// The page's Delete of a file, at the end of the path's row (views/files/files-head.ts), its icon as the row's Download has it.
+.file-delete .material-icons {
+  font-size: 1.125rem;
+  margin-inline-end: var(--quader-space-1);
 }

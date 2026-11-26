@@ -6784,7 +6784,8 @@ to (R-BAS-107), in the main installation's JSON shapes, so that the shared views
 |---|---|
 | `state` | `{confirmedAt, staleAfterSeconds, stale, docs}`: the time of the state served, `bastion.gui.stale_after`, whether the state is older, the switch `docs` (W-35's B.2b) |
 | `legal?locale=en\|de` | the Bastion's own imprint and privacy notice (R-BAS-100) in the shape of `GET /api/v1/legal` (R-UI-225); also while the replica is not ready |
-| `projects` | `{items}`: the keys of the projects the catalogue shows (the reader's `PublicSet`) that hold a package it lists, for the start page that leads a visitor into a project ([Q-BAS-399](#q-bas-399--the-start-page-offers-a-project-only-while-it-shows-a-package)) |
+| `projects` | `{items}`: the keys of the projects the catalogue shows (the reader's `PublicSet`) that hold a package it lists or a repository with files, for the start page that leads a visitor into a project ([Q-BAS-399](#q-bas-399--the-start-page-offers-a-project-only-while-it-shows-a-package), [Q-BAS-400](#q-bas-400--the-repositories-with-files-are-an-address-of-their-own-and-they-count-for-the-start)) |
+| `files` | `{items}`: the qualified names (`<project>/<key>`) of the public repositories whose root folder the catalogue holds (`Reader.Files`, in the public set's order), for a project's page that leads a visitor to a generic repository's folders and files ([Q-BAS-400](#q-bas-400--the-repositories-with-files-are-an-address-of-their-own-and-they-count-for-the-start)) |
 | `packages?q&format&project&repository&deprecated&sort&cursor&limit` | the search of the reader (R-BAS-113, W-35's B.8) in the envelope of R-API-010 (`items`, `nextCursor`), each item the package summary as the main installation answered it; `include` is accepted and changes nothing (the summaries carry the counts of open findings); any other parameter is `400 malformed_request` |
 | `packages/lookup?format&name` | the public package of the format by its name, else by its key ([Q-BAS-395](#q-bas-395--the-lookup-finds-a-package-by-its-name-then-by-its-key)), or `404` |
 | `packages/<id>/versions?cursor&limit` | a page of the package's versions in the main installation's order; the application sorts, searches and groups them in the browser, as the main installation's view does ([Q-BAS-396](#q-bas-396--the-versions-are-paged-in-the-main-installations-order-and-sorted-in-the-browser)) |
@@ -6800,16 +6801,17 @@ to (R-BAS-107), in the main installation's JSON shapes, so that the shared views
 - While the replica is not ready, every address but `legal` answers `503 not_ready` (R-BAS-117); the reader's off and not ready are
   answered as `404` and `503`, a query it refuses as `400`.
 
-*Built on 2026-11-26 (W-35's P9):* [data.go](../../internal/bastion/gui/data.go), `Reader.Lookup` of
-[reader.go](../../internal/bastion/catalogue/reader.go).
+*Built on 2026-11-26 (W-35's P9; `files` by W-35's P9d):* [data.go](../../internal/bastion/gui/data.go), `Reader.Lookup` and
+`Reader.Files` of [reader.go](../../internal/bastion/catalogue/reader.go).
 
 Acceptance criteria:
 
 - Unit ([gui_test.go](../../internal/bastion/gui/gui_test.go)): `TestR_BAS_118_TheDataAreTheMainInstallationsShapesFromTheCatalogue`
-  (the state and its `304`, the projects, the legal pages, the search with its cursor and the parameters it refuses, the lookup by name and by key and
+  (the state and its `304`, the projects with a package or files, the repositories with files, a folder and a file by their paths, the legal pages, the search with its cursor and the parameters it refuses, the lookup by name and by key and
   not under another format, a page of versions and the one after it, a version under three spellings of its `+`, gzip and `gzip;q=0`, a
   document's `304` and `HEAD`, the chain as an attachment, eight addresses that answer `404`); `TestR_BAS_113_TheLookupFindsAPublicPackageByItsFormatAndName`
-  ([catalogue_test.go](../../internal/bastion/catalogue/catalogue_test.go)).
+  and `TestR_BAS_118_FilesNamesThePublicRepositoriesWithARootFolder` (a repository outside the public set, one that leaves it, the switch
+  off; [catalogue_test.go](../../internal/bastion/catalogue/catalogue_test.go)).
 - Integration (area `bastion`, inside `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut`, no world of its own, about
   0.1 s): Go's client reads the page of a package, the state, the legal pages, the search, the lookup, the package, its versions and its
   version through the Bastion's client listener, each `200`, and every status line, header and body is scanned for the main
@@ -13365,7 +13367,8 @@ the grammar of R-BAS-103.
 | (a) A document by its path of the grammar; `state`, `legal`, `projects`, `packages` and `packages/lookup` computed; `packages/<id>/versions` paged (chosen) | The links the builder wrote resolve as they stand (`signatures/objects/…`, `signing/chain.pem`) | No second address scheme; the application builds a path with the grammar's segments | A browser's spelling differs from the grammar's: the server writes the one spelling |
 | (b) The main installation's API paths mirrored one by one | The views' HTTP classes could be reused | — | Every route of the API the Bastion has no document for would need an answer of its own |
 
-**Choice:** (a). **Applied in the spec:** R-BAS-118.
+**Choice:** (a). **Applied in the spec:** R-BAS-118. A sixth computed address, `files`, joined them with
+[Q-BAS-400](#q-bas-400--the-repositories-with-files-are-an-address-of-their-own-and-they-count-for-the-start).
 
 ### Q-BAS-394 · A refusal of the class gui names the policy `pages`
 
@@ -13611,6 +13614,23 @@ Context: R-BAS-122, R-BAS-113. The sitemap lists every public package; the reade
 | (b) The search, page by page | — | No change of the reader | A sort of the whole index per page: quadratic in the packages |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-113, R-BAS-122.
+
+### Q-BAS-400 · The repositories with files are an address of their own, and they count for the start
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9d) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-118, R-UI-229. The catalogue holds a public generic repository's folders and files (`files/<project>/<key>/folder|file|setup`,
+R-BAS-103), but no page led to them: the search of the data path finds packages, a generic repository's files are none, and the start
+left out a project whose public repositories held files alone (Q-BAS-399). The Bastion has no page of a repository and no list of them.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `files` answers the public repositories whose root folder the catalogue holds (`Reader.Files`, from the snapshot's paths, no document read); `projects` counts such a project too (chosen) | A sixth address of its own; a project's page lists its repositories with files | A visitor reaches the files from the project, as from the main installation's repository list; the reader decides by the documents it holds, not by a format's name | One more address beside the grammar |
+| (b) The public set (`PublicSet`) as an address | Every public repository with its format | — | The page would decide by the format `generic` which repositories have files, format knowledge in the application; a repository whose folder the builder left out would lead to a `404` |
+| (c) No entry; the files pages by their address alone | — | No change of the Bastion | The files are published and nobody finds them; the start hides a project with files only |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-118, R-UI-229.
 
 ### Q-BAS-425 · The headers of a forwarded answer pass an allowlist, and a format's need is a replay header
 

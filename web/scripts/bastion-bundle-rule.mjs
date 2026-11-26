@@ -13,7 +13,7 @@
 // Bastion's build, tested by lint-rules.test.mjs.
 
 /** The modules of src/app/api/ a Bastion's bundle may hold: types, the abstract reads it binds, pure helpers. */
-const API_ALLOWED = /^src\/app\/api\/(problem|pagination|refs|query|types|package-reads|vulnerability-reads|signature-reads|legal-api)\.ts$/;
+const API_ALLOWED = /^src\/app\/api\/(problem|pagination|refs|query|types|package-reads|vulnerability-reads|signature-reads|file-reads|legal-api)\.ts$/;
 /** The folders of features/ the shared views reach. */
 const FEATURES_ALLOWED = /^src\/app\/features\/(packages|repositories|setup|vulnerabilities|legal|not-found)\/|^src\/app\/features\/limits\/figures\.ts$/;
 

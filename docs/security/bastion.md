@@ -529,6 +529,7 @@ Anonymous visitors from the internet read the public catalogue in a browser at t
 | The request class `gui` | Every request asks the block list and the class `gui` per address, never the anonymous class's budget and never a miss | R-BAS-117, Q-LIM-307 |
 | One origin with the package API | A browser that answered a `401` of the package API holds Basic credentials for the origin ([H-2325](#h-2325--the-web-interface-shares-its-origin-with-the-package-api)) | — |
 | A rolling upgrade | A replica answers a file of another release's bundle `404`; the page loads itself again ([H-2324](#h-2324--a-page-of-one-release-asks-a-replica-of-another-for-a-file-its-bundle-lacks)) | R-BAS-116 |
+| A generic repository's files | A public generic repository's folders and files are the main installation's views without an act (W-35's P9d): a file downloads through the Bastion's own package route, its commands are the catalogue's set-up of its path, and no upload, delete or statistic is in the bundle. The file's signatures are a badge without their report ([H-2328](#h-2328--a-generic-files-signatures-are-a-badge-alone-at-the-bastion)), and its malware verdict shows no database date ([H-2329](#h-2329--a-generic-files-malware-verdict-at-the-bastion-shows-no-date-of-its-database)) | R-UI-229, R-BAS-118 |
 
 ## Search engines
 
@@ -552,7 +553,7 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
 [H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods). The gaps of the owner's decisions of 2026-11-26 (W-34), specified and
 not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285, H-2289 to H-2297,
 H-2348 to H-2351, H-2354, H-2355 (H-2291, H-2348 and H-2349 are E13's, built; H-2281 to H-2283, H-2354 and H-2355 E8's, live); so are the gaps of the public catalogue's wire (W-35, interface version 8),
-H-2305 to H-2307, of its builder (W-35's P6), H-2308 to H-2314, and of the web interface (W-35's P9), H-2324 to H-2327; so are the gaps of the packages built since: H-2356 and H-2357
+H-2305 to H-2307, of its builder (W-35's P6), H-2308 to H-2314, and of the web interface (W-35's P9), H-2324 to H-2327, with its generic files (W-35's P9d), H-2328 and H-2329; so are the gaps of the packages built since: H-2356 and H-2357
 (E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11), H-2322 and H-2323 (W-35's P8 with E17), H-2374 and H-2375 (E18;
 H-2375 closed by E19), H-2370 (E19);
 and of a registration the configuration declares (R-BAS-127), H-2366 and H-2367;
@@ -1296,6 +1297,30 @@ revision. A crawler spread over many addresses is bounded by the class per addre
 ignores `robots.txt` and `nofollow` follows a version's download links into the package API, where it is an anonymous client under the miss
 limits and the anonymous ceiling (R-BAS-094): it can make the main installation fill what the Bastion does not hold yet. Live against the
 Bastion's CPU for the first; dormant for the second while the anonymous limits hold.
+
+### H-2328 · A generic file's signatures are a badge alone at the Bastion
+
+Stage: the page of a public generic repository's file (R-UI-229, W-35's P9d, Q-UI-1457). Subject: a visitor who checks who signed a file
+before using it. The catalogue keeps a file's description, whose member `signatures` carries the state the badge shows (verified, by an
+anchor of the installation or a public one, or none), but no report of the file's signatures (the signer, the anchor, the time proof, the
+origin): the builder renders none for a file (R-BAS-104), and the page offers no section Signatures. Live wherever the signatures are on
+and a public generic repository holds signed files. What a visitor can still do: download the signature files beside the file (`.sig`,
+`.asc`, `.sigstore.json`, R-SIG-032), which the folder lists, and verify them offline against the anchors the catalogue serves
+(`signing/trusted-root.json`, `signing/chain.pem`). What would close it: a file's report as a document of the catalogue
+(`files/<project>/<key>/signatures/<path…>`), a new form of path in the grammar of R-BAS-103 and so a change of the interface between the
+Bastion and the main installation.
+
+### H-2329 · A generic file's malware verdict at the Bastion shows no date of its database
+
+Stage: the page of a public generic repository's file (R-UI-229, W-35's P9d). Subject: a visitor who weighs "No malware found" by how
+current the ClamAV database was (W-35's B.9: the verdict "with the ClamAV database version and date"). The builder takes the times of a
+check out of every document (`scannedAt`, `database`, `databaseBuiltAt`, R-BAS-103), so that a rescan that finds the same changes no
+document, and puts them into the state of a package's version, from which the Bastion's reads put them back (Q-UI-1451). A file of a
+generic repository has no version and no state document: its description keeps the verdict and loses the database's date, which the
+main installation's file page shows beside it. Live for every public generic file a scan has judged. What would close it: a state document
+per repository's files that holds the times by path, or keeping the times in a file's description at the cost of a changed document
+after every database update; either is a change of what the catalogue holds, which W-36 (the form of the malware and vulnerability state
+everywhere) is the place for.
 
 ### H-2356 · The anonymous ceiling is a share per replica without Valkey, and requests in flight pass its hour
 

@@ -28,6 +28,7 @@ const (
 	pathPackages = "packages"
 	pathLookup   = "packages/lookup"
 	pathProjects = "projects"
+	pathFiles    = "files"
 )
 
 // projectsBody is the answer of /ui/data/v1/projects: the keys of the projects the catalogue shows, in their order, so that the
@@ -42,10 +43,24 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request) {
 		h.readerError(w, r, err)
 		return
 	}
-	// A project whose public repositories hold no package the catalogue shows (the project upstream with an empty public remote) is
-	// not offered: its list would say only that nothing is published there (R-UI-229, Q-BAS-399).
+	files, err := h.o.Catalogue.Files()
+	if err != nil {
+		h.readerError(w, r, err)
+		return
+	}
+	withFiles := map[string]bool{}
+	for _, name := range files {
+		project, _, _ := strings.Cut(name, "/")
+		withFiles[project] = true
+	}
+	// A project whose public repositories hold no package and no folder the catalogue shows (the project upstream with an empty
+	// public remote) is not offered: its page would say only that nothing is published there (R-UI-229, Q-BAS-399, Q-BAS-400).
 	items := []string{}
 	for _, p := range pub.Projects {
+		if withFiles[p] {
+			items = append(items, p)
+			continue
+		}
 		page, err := h.o.Catalogue.Search(catalogue.Query{Project: p, Limit: 1})
 		if err != nil {
 			h.readerError(w, r, err)
@@ -58,8 +73,19 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request) {
 	h.json(w, r, projectsBody{Items: items})
 }
 
-// data answers an address below /ui/data/v1/ (R-BAS-118): the state, the legal pages, the search, the lookup, a page of a
-// package's versions, and every other document of the catalogue by its path of the grammar (R-BAS-103). Only the legal pages are
+// files answers /ui/data/v1/files: the public repositories whose folders and files the catalogue holds, by their qualified names
+// (Q-BAS-400), so that a project's page leads a visitor to a generic repository's files, which no search of packages finds.
+func (h *Handler) files(w http.ResponseWriter, r *http.Request) {
+	items, err := h.o.Catalogue.Files()
+	if err != nil {
+		h.readerError(w, r, err)
+		return
+	}
+	h.json(w, r, projectsBody{Items: items})
+}
+
+// data answers an address below /ui/data/v1/ (R-BAS-118): the state, the legal pages, the projects, the repositories with files,
+// the search, the lookup, a page of a package's versions, and every other document of the catalogue by its path of the grammar (R-BAS-103). Only the legal pages are
 // served while the replica is not ready.
 func (h *Handler) data(w http.ResponseWriter, r *http.Request, ready bool) {
 	rest := strings.TrimPrefix(r.URL.EscapedPath(), dataRoot)
@@ -80,6 +106,9 @@ func (h *Handler) data(w http.ResponseWriter, r *http.Request, ready bool) {
 		return
 	case pathProjects:
 		h.projects(w, r)
+		return
+	case pathFiles:
+		h.files(w, r)
 		return
 	case pathLookup:
 		h.lookup(w, r)

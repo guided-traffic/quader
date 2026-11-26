@@ -8,7 +8,7 @@ import {
   versionMatcher,
   versionsMatcher,
 } from './features/packages/packages.routes';
-import { filesMatcher } from './features/repositories/repositories.routes';
+import { filesMatcher } from './features/repositories/files-matchers';
 import { advisoryMatcher } from './features/vulnerabilities/vulnerabilities.routes';
 
 /** The route matchers of the router as the table of R-UI-003 writes the segments they capture. */

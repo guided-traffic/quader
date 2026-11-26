@@ -61,7 +61,7 @@ func (r *reader) served() error {
 
 func (r *reader) PublicSet() (iface.CataloguePublic, error) {
 	return iface.CataloguePublic{
-		Projects: []string{"acme", "upstream", "web"},
+		Projects: []string{"acme", "tools", "upstream", "web"},
 		Repositories: []iface.CatalogueRepository{
 			{Name: "acme/npm", Format: "npm", Class: "local", Wiki: true},
 			{Name: "upstream/npmjs", Format: "npm", Class: "remote"},
@@ -77,6 +77,20 @@ func (r *reader) Packages() ([]catalogue.Entry, string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return append([]catalogue.Entry(nil), r.pkgs...), r.revision, nil
+}
+
+// Files is the repositories of the documents of a root folder (files/<project>/<key>/folder).
+func (r *reader) Files() ([]string, error) {
+	if err := r.served(); err != nil {
+		return nil, err
+	}
+	out := []string{}
+	for path := range r.docs {
+		if p, err := iface.ParseCataloguePath(path); err == nil && p.Kind == iface.CatalogueFolder && p.File == "" {
+			out = append(out, p.Project+"/"+p.Repository)
+		}
+	}
+	return out, nil
 }
 
 func (r *reader) Search(q catalogue.Query) (catalogue.Page, error) {
@@ -175,8 +189,11 @@ func newReader() *reader {
 		docs: map[string][]byte{
 			"packages/" + pkgID + "/versions/1.0.0%2Bbuild.1":       []byte(`{"version":"1.0.0+build.1"}`),
 			"packages/" + pkgID + "/versions/1.0.0/vulnerabilities": []byte(`{"repositories":[]}`),
-			"signing/chain.pem": []byte("-----BEGIN CERTIFICATE-----\n"),
-			"index/0":           []byte(`{"items":[]}`),
+			"files/tools/downloads/folder":                          []byte(`{"items":[{"path":"tools","kind":"folder"}]}`),
+			"files/tools/downloads/folder/tools":                    []byte(`{"items":[{"path":"agent.tar.gz","kind":"file"}]}`),
+			"files/tools/downloads/file/tools/agent.tar.gz":         []byte(`{"path":"tools/agent.tar.gz","kind":"file"}`),
+			"signing/chain.pem":                                     []byte("-----BEGIN CERTIFICATE-----\n"),
+			"index/0":                                               []byte(`{"items":[]}`),
 		},
 	}
 }
@@ -424,7 +441,7 @@ func TestR_BAS_117_EveryRequestCountsInTheClassGui(t *testing.T) {
 }
 
 // TestR_BAS_118_TheDataAreTheMainInstallationsShapesFromTheCatalogue: the state, the legal pages, the search with its cursor, the
-// lookup by name and by key, a page of versions, the projects that show a package, a document by a path in any spelling a browser writes, ETag and 304, gzip, and the
+// lookup by name and by key, a page of versions, the projects that show a package or files, the repositories with files, a document by a path in any spelling a browser writes, ETag and 304, gzip, and the
 // refusals: an index page, a path outside the grammar, an unknown parameter, a query the reader refuses.
 func TestR_BAS_118_TheDataAreTheMainInstallationsShapesFromTheCatalogue(t *testing.T) {
 	r := newReader()
@@ -442,9 +459,20 @@ func TestR_BAS_118_TheDataAreTheMainInstallationsShapesFromTheCatalogue(t *testi
 		t.Errorf("state again = %d", again.Code)
 	}
 
-	// The project upstream holds no package the catalogue shows and is not offered (Q-BAS-399).
-	if rec := get("/ui/data/v1/projects"); rec.Code != 200 || rec.Body.String() != `{"items":["acme","web"]}` {
+	// The project upstream holds no package and no folder the catalogue shows and is not offered (Q-BAS-399); the project tools
+	// holds a generic repository's files and no package, and is (Q-BAS-400).
+	if rec := get("/ui/data/v1/projects"); rec.Code != 200 || rec.Body.String() != `{"items":["acme","tools","web"]}` {
 		t.Errorf("projects = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := get("/ui/data/v1/files"); rec.Code != 200 || rec.Body.String() != `{"items":["tools/downloads"]}` {
+		t.Errorf("files = %d %s", rec.Code, rec.Body.String())
+	}
+	// A folder and a file by their paths of the grammar, as the files pages read them (R-UI-229).
+	if rec := get("/ui/data/v1/files/tools/downloads/folder/tools"); rec.Code != 200 || !strings.Contains(rec.Body.String(), `"agent.tar.gz"`) {
+		t.Errorf("folder = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := get("/ui/data/v1/files/tools/downloads/file/tools/agent.tar.gz"); rec.Code != 200 {
+		t.Errorf("file = %d %s", rec.Code, rec.Body.String())
 	}
 
 	rec = get("/ui/data/v1/legal?locale=en")

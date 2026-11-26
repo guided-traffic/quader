@@ -3,6 +3,7 @@ import { ActivatedRouteSnapshot, CanActivateFn, RedirectCommand, ResolveFn, Rout
 import { LegalPageName } from '../app/api/legal-api';
 import { LegalStore } from '../app/core/legal-store';
 import { leadsWithDocs, packageMatcher, versionMatcher, versionsMatcher } from '../app/features/packages/package-matchers';
+import { filesMatcher, filesTitle } from '../app/features/repositories/files-matchers';
 
 /**
  * A legal page exists only while some language has a text for it (R-UI-225): otherwise its address is not found, at the address that
@@ -33,8 +34,9 @@ const versionsTitle: ResolveFn<string> = (route: ActivatedRouteSnapshot) =>
 
 /**
  * The routes of the Bastion's application (R-UI-227, W-35's B.3): the start, a project's packages, a package, a version, the versions'
- * table, the imprint and the privacy notice, and not found; nothing else. The addresses are the main installation's
- * (`/projects/<project>/packages/<format>/<name>`), so a link copied at one fits the other's form.
+ * table, a public generic repository's folders and files (Q-UI-1455), the imprint and the privacy notice, and not found; nothing else.
+ * The addresses are the main installation's (`/projects/<project>/packages/<format>/<name>`,
+ * `/projects/<project>/repositories/<key>/files/<path>`), so a link copied at one fits the other's form.
  */
 export const BASTION_ROUTES: Routes = [
   {
@@ -74,6 +76,19 @@ export const BASTION_ROUTES: Routes = [
         title: packageTitle,
         loadComponent: () => import('./pages/package-pages').then((m) => m.PackagePage),
       },
+    ],
+  },
+  {
+    // A public generic repository's files (R-UI-229): the repository's address is the root of its files, as at the main installation.
+    path: 'projects/:project/repositories/:key',
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        title: (route) => route.paramMap.get('key') ?? '',
+        loadComponent: () => import('./pages/files-page').then((m) => m.FilesPage),
+      },
+      { matcher: filesMatcher, title: filesTitle, loadComponent: () => import('./pages/files-page').then((m) => m.FilesPage) },
     ],
   },
   {

@@ -1,5 +1,3 @@
-import { DownloadLink } from '../../../shared/download-link';
-import { ClientCommandMenu } from '../../../views/packages/client-command-menu';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { VisibilityIcon, levelName } from '../../../shared/ui/visibility-level';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
@@ -27,7 +25,6 @@ import { retiredSentence, stateBadge } from '../../upstream/upstream-words';
 import { CLAMAV_FORMAT } from '../../../views/packages/clamav-definitions';
 import { ClamavDatabases } from './clamav-databases';
 import { Confirm } from '../../../shared/confirm-dialog';
-import { CopyButton } from '../../../shared/copy-button';
 import { ErrorNotice } from '../../../shared/error-notice';
 import { JobProgress } from '../../../shared/job-progress';
 import { asApiError, failureOf, valueOf } from '../../../shared/paged-resource';
@@ -41,6 +38,7 @@ import { contentShapeOf } from './content-shape';
 import { FilePermissions, NO_FILE_PERMISSIONS, nameOf, parentOf } from './file-paths';
 import { RepositoryFile } from './repository-file';
 import { RepositoryFiles } from './repository-files';
+import { FilesHead } from '../../../views/files/files-head';
 import { ItemSort, RepositoryItems } from './repository-items';
 import { FormatIconView } from '../../../shared/format-icon';
 import { RemoteDownloadCounts } from '../../../api/remote-downloads-api';
@@ -80,7 +78,6 @@ export const TYPE_TO_CONFIRM_ABOVE = 100;
     CdkMenuItem,
     CdkMenuTrigger,
     RouterLink,
-    CopyButton,
     ErrorNotice,
     AddressField,
     JobProgress,
@@ -89,8 +86,7 @@ export const TYPE_TO_CONFIRM_ABOVE = 100;
     RepositoryFiles,
     RepositoryItems,
     ClamavDatabases,
-    DownloadLink,
-    ClientCommandMenu,
+    FilesHead,
     RepositoryTabs,
     RemoteDownloads,
     RemoteUpstream,
@@ -361,16 +357,6 @@ export class RepositoryContent {
     if (!item || item.path !== this.path()) return 'loading';
     return item.kind === 'file' ? 'file' : 'folder';
   });
-  /** The folders of the path as links, the last one the page itself (Q-UI-510). */
-  protected readonly trail = computed(() => {
-    const parts = this.path().split('/').filter((s) => s !== '');
-    return parts.map((name, i) => ({ name, commands: filesCommands(this.ref(), parts.slice(0, i + 1)) }));
-  });
-  /** The folders between Files and the page's own segment: they collapse into one menu where the path is narrow (Q-UI-521). */
-  protected readonly between = computed(() => this.trail().slice(0, -1));
-  /** The page's own segment: the folder or the file it shows. */
-  protected readonly here = computed(() => this.trail().at(-1) ?? null);
-  protected readonly betweenLabel = $localize`:@@files.trail.between:Show the folders in between`;
   /** The root of the files: the repository's own address for a generic repository, `files` for a package format. */
   protected readonly filesRoot = computed(() =>
     this.isGeneric() ? ['/projects', this.project(), 'repositories', this.key()] : filesCommands(this.ref()),
@@ -456,7 +442,6 @@ export class RepositoryContent {
   /** Counts the changes the folder list did not make itself (a delete job that ended): the list reloads on each. */
   protected readonly revision = signal(0);
   protected readonly deleteProgress = $localize`:@@files.delete.progress:Deleting items`;
-  protected readonly copyPathLabel = $localize`:@@files.copy-path:Copy path`;
 
   constructor() {
     // The visit counts once the server answered with the repository; one in deletion, and one this page does not find, is no
