@@ -54,6 +54,11 @@ export const allowed = [
     expression: 'dep.message',
     why: "a deprecation's message as its publisher wrote it (R-API-085), the package's own text, marked translate=no as a description is",
   },
+  {
+    file: 'src/app/features/repositories/upstream/upstream-docs.html',
+    expression: 'dep.message',
+    why: "the deprecation message the upstream's publisher wrote for the newest version (R-CUR-028), the package's own text, translate=no",
+  },
 ];
 
 /**
