@@ -494,9 +494,10 @@ installation's ingress or its Service.
   `x-quader-permission: {bastion: true}`, which the shared authorization step admits on the recognition result alone
   ([Q-BAS-52](#q-bas-52--recognition-and-marking-are-one-chain-stage-before-authentication-the-dispatcher-tells-an-observer-about-the-route));
   they are not part of the management API's v1 promise but of the interface version (R-ARCH-025).
-- Main side metrics: `quader_bastion_interface_requests_total{bastion, operation, outcome}` and
-  `quader_bastion_forwarded_requests_total{bastion, class}` (`class` of R-BAS-013); `bastion` is the registration name, bounded
-  by `bastions.max_registrations`.
+- Main side metrics: `quader_bastion_interface_requests_total{bastion, operation, outcome}`,
+  `quader_bastion_forwarded_requests_total{bastion, class}` (`class` of R-BAS-013) and `quader_bastion_forwarded_bytes_total{bastion, class}`
+  (the caller's class, `anonymous` or `authenticated`, R-BAS-090); `bastion` is the registration name, bounded by
+  `bastions.max_registrations`.
 - **Recognition in detail** ([Q-BAS-65](#q-bas-65--the-recognition-admits-an-interface-route-on-its-own-proof-throttles-tokens-it-cannot-place-and-counts-the-bastion-in-the-read-class)).
   The token is the Bearer credential of the first line of the header, and only a value that starts with `qdr_bst_` is looked at; any
   other credential leaves the request ordinary. The stages behind the recognition receive the request without the Bastion token. A
@@ -2000,7 +2001,7 @@ carries an address, a token, a path or a repository's name):
 | `quader_bastion_audit_buffer_events` | gauge | — |
 | `quader_bastion_audit_events_dropped_total` | counter | — |
 | `quader_bastion_handovers_total` | counter | `outcome` (`read`, `fallback`, `continued`, `refused`) |
-| `quader_bastion_fill_bytes_total` | counter | `source` (`main`, `store`) |
+| `quader_bastion_fill_bytes_total` | counter | `source` (`main`, `store`), `class` (`authenticated`, `anonymous`) |
 | `quader_bastion_handover_enabled`, `quader_bastion_handover_cooldown` | gauge | — |
 
 - `quader_bastion_refused_total` counts requests the Bastion refused itself. `reason="read_only"` counts a write refused with `403
@@ -2011,6 +2012,8 @@ carries an address, a token, a path or a repository's name):
   `quader_bastion_bytes_served_total{source="cache"}`; requests to the main installation are
   `quader_bastion_main_requests_total` (the observability item of phase 5b).
 - `quader_valkey_available` and `quader_ratelimit_fallback{limiter}` are the shared ones.
+- `class` of `quader_bastion_fill_bytes_total` is R-BAS-090's (2026-11-26): the budget class of the caller whose request started the fill
+  ([Q-BAS-307](#q-bas-307--the-class-of-a-fills-bytes-is-the-class-of-the-request-that-started-it)).
 - `quader_bastion_cache_sweeps_total` and `quader_bastion_cache_no_room_total` are R-BAS-089's (2026-11-26): the sweeps a replica ran, by
   `interval` (its timer) or `size` (an area passed its high mark between two timed sweeps, or a fill found no room), and the fills it passed
   through unkept for want of room. A rate of `size` sweeps near one a second, or a rising `no_room`, says that fills arrive faster than the
@@ -2031,6 +2034,45 @@ Acceptance criteria:
 
 - The e2e suite reads every metric of the table from both replicas, and `quader_bastion_requests_total{result="hit"}` rises by 20
   on a warm `npm ci` of 20 tarballs.
+
+### R-BAS-090 · The bytes between a Bastion and the main installation are counted
+Priority: **P1** · Covers: quader-only
+
+The owner's task W-34 of 2026-11-26 asks that the main installation be protected from being flooded through a Bastion and that the
+throughput between the two can be bounded; before a figure can bound it, the bytes have to be visible. Until this requirement the main
+installation counted the requests of a Bastion per registration (`quader_bastion_forwarded_requests_total{bastion, class}`, R-BAS-008) and no
+byte, and the Bastion counted the bytes of its fills by their source without the caller's class. Built on 2026-11-26 with the decisions
+[Q-BAS-306](#q-bas-306--the-main-installation-counts-the-body-bytes-the-marking-stage-writes-by-registration-and-the-callers-class) and
+[Q-BAS-307](#q-bas-307--the-class-of-a-fills-bytes-is-the-class-of-the-request-that-started-it) ([ADR-298](../decisions.md#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted)).
+
+- **At the main installation**, `quader_bastion_forwarded_bytes_total{bastion, class}`: the bytes of the response bodies the main installation
+  wrote to the recognized forwarded requests of a registration (R-BAS-013), counted where the marking is written, by the class of the caller:
+  `anonymous` for the anonymous caller (an anonymous registry token included, R-BAS-052) and `authenticated` for a request that carried a
+  credential, accepted or not. Every answer of a forward counts: artifacts, documents, refusals, the empty body of a handover (R-BAS-073) and
+  the answers of write probes. The interface's own routes (handshake, check, feed, downloads) do not; they are
+  `quader_bastion_interface_requests_total`'s. Headers, TLS and chunk framing are not in the count. `bastion` is the registration's name,
+  bounded by `bastions.max_registrations`; `class` has the values of the Bastion's budget (R-BAS-025).
+- **At the Bastion**, `quader_bastion_fill_bytes_total{source, class}`: the bytes written into its fills, by where they came from (`main`, the
+  main installation; `store`, the object store through a handover, R-BAS-074) and by the budget class of the caller whose request started the
+  fill (`authenticated`, `anonymous`). The bytes a Bastion read through a handover are thereby apart from those it read from the main
+  installation. A body the Bastion does not keep (a pass-through, R-BAS-021) and a document kept from memory are read from the main
+  installation without a fill; they are in `quader_bastion_bytes_served_total{source="main"}`, without a class
+  ([H-2274](#h-2274--the-main-installation-counts-no-handover-and-the-bastion-counts-only-its-fills-by-class)).
+- The figures are counted, not bounded: no figure of the main installation or of the Bastion limits the bytes per registration
+  ([H-2273](#h-2273--the-bytes-between-a-bastion-and-the-main-installation-are-counted-and-not-bounded)).
+
+Acceptance criteria (unit, `internal/api/bastionmark` and `internal/bastion/engine`):
+
+- A forward of an artifact of 1,000 bytes with a token, one with a refused credential and one of 300 bytes without a credential: the main
+  installation counts the 1,000 bytes and the refusal's body `authenticated` and the 300 `anonymous` for the registration; an interface route
+  and an ordinary request count nothing.
+- A fill started by a caller with a credential and one started anonymously count their bytes under their classes and the source `main`; the
+  handover's tests count the source `store` apart.
+
+Built: `TestR_BAS_090_TheBytesOfRecognizedForwardsAreCountedByRegistrationAndClass` in
+[mark_test.go](../../internal/api/bastionmark/mark_test.go) and `TestR_BAS_090_FillBytesCarryTheClassOfTheCallerThatStartedTheFill` in
+[engine/room_test.go](../../internal/bastion/engine/room_test.go), each under 0.05 s; the handover's tests read the source over both classes.
+What each leg gains: the unit job under 0.1 s; nothing else, and nothing per format.
 
 ### R-BAS-041 · PrometheusRule
 Priority: **MVP** · Covers: quader-only
@@ -9435,6 +9477,45 @@ volume (the bucket backend, or a key), and is renamed into its area at the commi
 
 **Choice:** (a). **Applied in the spec:** R-BAS-089; the chart's check is Q-BAS-131's, unchanged.
 
+### Q-BAS-306 · The main installation counts the body bytes the marking stage writes, by registration and the caller's class
+
+Status: **Decided by the builder** of W-34's package E5 (2026-11-26), which needs no decision of the owner — selected from the options below;
+the owner sees it when it is built.
+
+Its entry in the decision log: [ADR-298](../decisions.md#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted).
+
+Context: W-34 asks for the bytes the main installation sends to a Bastion, per registration and per class of caller. The request log has
+`response_bytes` per request but no metric; the marking stage (R-BAS-013) is the one place that sees every recognized forward, its
+registration and its caller, and it already counts the requests by the marking's class. That label `class` means the marking's class
+(`artifact`, `shared`, `private`, …); the label list of R-OPS-007 holds `class` and no label for a caller's kind.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A counter of its own, `quader_bastion_forwarded_bytes_total{bastion, class}`, raised by the marking stage's writer with every body byte it passes, `class` the caller's: `anonymous` or `authenticated`, the values of the Bastion's budget (chosen) | Bytes by registration and by who asked | One place, every forward; the two sides' figures use one vocabulary (`quader_bastion_main_in_flight{class}` at the Bastion); no new label | The label `class` means the marking's class on the request counter and the caller's on the byte counter, which the specification and the help texts say |
+| (b) A third label on the request counter and the bytes in a histogram | — | One family | A histogram per registration and class and marking class: more series for a sum nobody reads by bucket |
+| (c) Read the request log's `response_bytes` | — | Nothing to build | Not a metric; per request, not per registration over time |
+
+**Choice:** (a). **Rationale:** the question is how much a Bastion draws and on whose behalf, and the budget's classes are what the Bastion
+divides its slots by. **Applied in the spec:** R-BAS-090, R-BAS-008; code: `markWriter` in
+[mark.go](../../internal/api/bastionmark/mark.go), `ForwardedBytes` in [metrics.go](../../internal/bastionmain/metrics.go).
+
+### Q-BAS-307 · The class of a fill's bytes is the class of the request that started it
+
+Status: **Decided by the builder** of W-34's package E5 (2026-11-26), which needs no decision of the owner — selected from the options below;
+the owner sees it when it is built.
+
+Its entry in the decision log: [ADR-298](../decisions.md#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted).
+
+Context: a fill reads its source once, whoever follows it (R-BAS-054): callers of either class may be served from one fill, and a fill goes on
+after its caller left (H-472). The request that started the fill took the budget slot of its class (R-BAS-025).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The class of the request that started the fill, the class of its slot (chosen) | Each byte read once, under one class | The sum over classes is the bytes read; the anonymous share of the fills is what the anonymous slots let in | A fill an anonymous caller started and signed-in callers follow is counted anonymous |
+| (b) Each follower's class for the bytes it is served | — | Says who was served | Counts the bytes served, not read: `quader_bastion_bytes_served_total`'s job |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-090, R-BAS-040; code: `fillRun.class` in [fill.go](../../internal/bastion/engine/fill.go).
+
 ## What this does not cover
 
 ### H-382 · A volumetric attack on bandwidth is not absorbed by the Bastion
@@ -10333,3 +10414,26 @@ slots), every request of a legitimate caller turns into a miss, and the transfer
 today: the main installation's per-caller budgets, the Bastion's per-address miss limit and its 16 anonymous slots. What would close it, each waiting for
 an answer of the owner in W-34: an eviction that protects what was served twice, a maximum throughput per Bastion, and download budgets per
 caller at the Bastion; none of them is built here.
+
+### H-2273 · The bytes between a Bastion and the main installation are counted and not bounded
+
+Stage: R-BAS-090, the forwards of R-BAS-021 and the direct reads of R-BAS-074. Subject: the network between the main installation and a
+Bastion, and the main installation's egress, the owner's case of W-34 (2026-11-26).
+
+Live on every Bastion. `quader_bastion_forwarded_bytes_total` and `quader_bastion_fill_bytes_total` show what crosses; nothing bounds it per
+Bastion. What bounds it today is per caller and per slot: a forward is the caller's own request at the main installation and charged and
+paced against the caller's budget (with `bastions.trusted_proxies` listing the Bastion's egress), and a Bastion holds at most
+`bastion.main.max_concurrent` requests to the main installation. Many callers within their budgets, from many addresses, together fill the
+network. What would close it: a maximum throughput per Bastion, which waits for the owner's decision in W-34.
+
+### H-2274 · The main installation counts no handover, and the Bastion counts only its fills by class
+
+Stage: R-BAS-090. Subject: an operator's view of the bytes between the two sides, not a confidentiality or integrity property.
+
+Live where a registration's handover is on, and on every Bastion for bodies it does not keep. A handover's bytes go from the object store to
+the Bastion: the main installation writes an empty body and counts the handover in `quader_storage_download_handovers_total`, not its bytes
+in `quader_bastion_forwarded_bytes_total`; the Bastion counts them as `quader_bastion_fill_bytes_total{source="store"}`. A body the Bastion
+passes through unkept and a document kept from memory are read from the main installation without a fill: they are in
+`quader_bastion_bytes_served_total{source="main"}`, by no class, so the Bastion's own figures by class cover its fills only, and the main
+installation's figure is the complete one for what it sent. What makes it real: an operator who adds the Bastion's fill bytes and expects the
+main installation's figure.

@@ -107,6 +107,9 @@ type fillRun struct {
 	// direct is the direct read of a handover that is the fill's source (R-BAS-074), nil for a fill from the main
 	// installation. Everything else of the fill is the same for both sources.
 	direct *directFill
+	// class is the budget class of the caller whose request started the fill, the class of its bytes in
+	// quader_bastion_fill_bytes_total (R-BAS-090, Q-BAS-307).
+	class string
 
 	mu      sync.Mutex
 	written int64
@@ -205,7 +208,7 @@ func (r *fillRun) run(body io.ReadCloser, end, flightDone func()) {
 				fail()
 				return
 			}
-			e.d.Metrics.FillBytes.WithLabelValues(r.fillSourceLabel()).Add(float64(n))
+			e.d.Metrics.FillBytes.WithLabelValues(r.fillSourceLabel(), r.class).Add(float64(n))
 			r.advance(total)
 		}
 		if rerr == io.EOF {
@@ -291,7 +294,7 @@ func (e *engine) newFillRun(q *rq, resp *mainclient.Response, fill *cache.Fill, 
 	r := &fillRun{
 		e: e, fill: fill, kind: kind, sha: sha, size: size, notify: make(chan struct{}), refs: 2,
 		hdr: hdr, etag: resp.Header.Get("Etag"), lastModified: resp.Header.Get("Last-Modified"), counted: resp.Marking.Counted,
-		repo: q.repo, pkg: entryPackage(q, resp.Marking),
+		repo: q.repo, pkg: entryPackage(q, resp.Marking), class: string(e.budgetClass(q)),
 	}
 	if key, keep := e.learnVary(q, resp.Header); keep {
 		r.key, r.ent = key, e.spoolEntry(q, resp, sha, size, sent, kind)

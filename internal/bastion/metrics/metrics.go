@@ -103,7 +103,8 @@ const (
 	OutcomeTimeout = "timeout"
 	OutcomeBusy    = "busy"
 
-	// class of the budget gauges.
+	// class of the budget gauges and of quader_bastion_fill_bytes_total: on whose behalf a request to the main installation is
+	// made (mainclient.Class).
 	BudgetAuthenticated = "authenticated"
 	BudgetAnonymous     = "anonymous"
 
@@ -238,7 +239,8 @@ type Metrics struct {
 	AuditBuffer  prometheus.Gauge
 	AuditDropped prometheus.Counter
 	// Handovers counts the handovers by outcome (read, fallback, continued, refused); FillBytes counts the bytes written into
-	// fills by their source (main, store); HandoverEnabled is the handshake's member handover and HandoverCooldown 1 while the
+	// fills by their source (main, store) and the budget class of the caller whose request started the fill (authenticated,
+	// anonymous; R-BAS-090); HandoverEnabled is the handshake's member handover and HandoverCooldown 1 while the
 	// replica sends no offer after a failure of the store's path (R-BAS-075).
 	Handovers        *prometheus.CounterVec
 	FillBytes        *prometheus.CounterVec
@@ -296,7 +298,7 @@ func New(reg prometheus.Registerer) (*Metrics, error) {
 		AuditBuffer:          prometheus.NewGauge(prometheus.GaugeOpts{Name: AuditBufferEvents, Help: "Download events buffered in memory."}),
 		AuditDropped:         prometheus.NewCounter(prometheus.CounterOpts{Name: AuditEventsDroppedTotal, Help: "Download events lost to a full buffer."}),
 		Handovers:            counter(HandoversTotal, "Handovers by outcome (read, fallback, continued, refused) (R-BAS-075).", "outcome"),
-		FillBytes:            counter(FillBytesTotal, "Bytes written into fills by source (main, store) (R-BAS-075).", "source"),
+		FillBytes:            counter(FillBytesTotal, "Bytes written into fills by source (main, store) and the class of the caller that started the fill (authenticated, anonymous) (R-BAS-075, R-BAS-090).", "source", "class"),
 		HandoverEnabled:      prometheus.NewGauge(prometheus.GaugeOpts{Name: HandoverEnabled, Help: "1 while the last handshake said the registration's handover is on (R-BAS-071)."}),
 		HandoverCooldown:     prometheus.NewGauge(prometheus.GaugeOpts{Name: HandoverCooldown, Help: "1 while this replica sends no offer after a failure of the object store's path (R-BAS-075)."}),
 	}
@@ -377,7 +379,9 @@ func (m *Metrics) seed() {
 		m.Handovers.WithLabelValues(o)
 	}
 	for _, s := range []string{SourceMain, SourceStore} {
-		m.FillBytes.WithLabelValues(s)
+		for _, c := range []string{BudgetAuthenticated, BudgetAnonymous} {
+			m.FillBytes.WithLabelValues(s, c)
+		}
 	}
 }
 

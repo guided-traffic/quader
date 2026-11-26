@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,320 spec requirements:
-799 cover catalog features, 521 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,321 spec requirements:
+799 cover catalog features, 522 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>521 requirements</summary>
+<summary>522 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3161,6 +3161,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAS-037 | Blocking of flooding addresses and the shared block list | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-038 | The coarse per-address limit at HAProxy Ingress | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-040 | Metrics | MVP | [bastion.md](../spec/bastion.md) |
+| R-BAS-090 | The bytes between a Bastion and the main installation are counted | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-041 | PrometheusRule | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-042 | Logs, traces and redaction | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-043 | Startup, readiness and drains | MVP | [bastion.md](../spec/bastion.md) |

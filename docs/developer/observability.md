@@ -112,7 +112,9 @@ counts no other), beside the gauges `quader_http_memory_slots` (`Metrics.MemoryS
 
 The main installation's side of the Bastion adds `quader_bastion_interface_requests_total{bastion,operation,outcome}`, counted by the Recognize
 stage for every request on `/api/v1/bastion/…` (the outcome from the status of the answer: `ok`, `refused`, `error`, `not_implemented`; `invalid_token` and
-`interface_mismatch` from the stage's own refusals), and `quader_bastion_forwarded_requests_total{bastion,class}`, counted by the marking; both are
+`interface_mismatch` from the stage's own refusals), `quader_bastion_forwarded_requests_total{bastion,class}`, counted by the marking, and
+`quader_bastion_forwarded_bytes_total{bastion,class}`, the body bytes the marking stage's writer passes for a recognized forward, its `class` the
+caller's (`anonymous`, `authenticated`, R-BAS-090) and not the marking's; all three are
 defined once in [bastionmain/metrics.go](../../internal/bastionmain/metrics.go) and registered once by `App.bastionMetrics`. The `bastion` label is the registration's
 name, bounded by `bastions.max_registrations`; a token that names no registration counts as `unknown`.
 

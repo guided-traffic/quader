@@ -250,7 +250,7 @@ func (x *hoRig) handovers(outcome string) float64 {
 }
 
 func (x *hoRig) fillBytes(source string) float64 {
-	return readCounter(x.m.FillBytes.WithLabelValues(source))
+	return readCounter(x.m.FillBytes.WithLabelValues(source, metrics.BudgetAuthenticated)) + readCounter(x.m.FillBytes.WithLabelValues(source, metrics.BudgetAnonymous))
 }
 
 func waitClosed(t *testing.T, ch <-chan struct{}, what string) {

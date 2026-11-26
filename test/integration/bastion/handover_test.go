@@ -311,8 +311,8 @@ func TestR_BAS_070_ALargeFileIsReadFromTheObjectStore(t *testing.T) {
 			t.Fatalf("quader_storage_download_handovers_total rose by %v", mainHandovers()-before)
 		}
 		testWait(t, "the main installation's request line", func() bool { return mainLine(handed, `"delivery":"handover"`, `"response_bytes":0`) })
-		if bastionMetric(`quader_bastion_handovers_total{outcome="read"}`) != 1 || bastionMetric(`quader_bastion_fill_bytes_total{source="store"}`) != float64(len(handed.data)) ||
-			bastionMetric(`quader_bastion_fill_bytes_total{source="main"}`) != 0 {
+		if bastionMetric(`quader_bastion_handovers_total{outcome="read"}`) != 1 || bastionMetric(`quader_bastion_fill_bytes_total{class="authenticated",source="store"}`) != float64(len(handed.data)) ||
+			bastionMetric(`quader_bastion_fill_bytes_total{class="authenticated",source="main"}`) != 0 {
 			t.Fatalf("the Bastion's counts:\n%s", grepLines(r.metrics(t), "quader_bastion_handovers_total", "quader_bastion_fill_bytes_total"))
 		}
 		testWait(t, "the Bastion's request line", func() bool { return strings.Contains(r.logs.String(), `"bastion_handover":"read"`) })
@@ -390,7 +390,7 @@ func TestR_BAS_070_ALargeFileIsReadFromTheObjectStore(t *testing.T) {
 		if from != cutAt {
 			t.Logf("the Bastion spooled %d bytes before the cut at %d", from, cutAt)
 		}
-		if bastionMetric(`quader_bastion_handovers_total{outcome="continued"}`) != 1 || bastionMetric(`quader_bastion_fill_bytes_total{source="main"}`) != float64(int64(len(continued.data))-from) {
+		if bastionMetric(`quader_bastion_handovers_total{outcome="continued"}`) != 1 || bastionMetric(`quader_bastion_fill_bytes_total{class="authenticated",source="main"}`) != float64(int64(len(continued.data))-from) {
 			t.Fatalf("the Bastion's counts:\n%s", grepLines(r.metrics(t), "quader_bastion_handovers_total", "quader_bastion_fill_bytes_total"))
 		}
 		testWait(t, "the download counted at the main installation", func() bool { return downloads(continued, direct) >= 1 })
@@ -445,7 +445,7 @@ func TestR_BAS_070_ALargeFileIsReadFromTheObjectStore(t *testing.T) {
 		testWait(t, "the Bastion told the handover is off", func() bool {
 			return metricValue(t, r.metrics(t), "quader_bastion_handover_enabled") == 0
 		})
-		mainBefore := bastionMetric(`quader_bastion_fill_bytes_total{source="main"}`)
+		mainBefore := bastionMetric(`quader_bastion_fill_bytes_total{class="authenticated",source="main"}`)
 		got := r.do(t, "GET", again.path, call)
 		if got.Status != http.StatusOK || !bytes.Equal(got.Body, again.data) {
 			t.Fatalf("%d, %d bytes", got.Status, len(got.Body))
@@ -459,7 +459,7 @@ func TestR_BAS_070_ALargeFileIsReadFromTheObjectStore(t *testing.T) {
 				t.Fatal("the Bastion offered while the handshake said the handover is off")
 			}
 		}
-		if d := bastionMetric(`quader_bastion_fill_bytes_total{source="main"}`) - mainBefore; d != float64(len(again.data)) {
+		if d := bastionMetric(`quader_bastion_fill_bytes_total{class="authenticated",source="main"}`) - mainBefore; d != float64(len(again.data)) {
 			t.Fatalf("the Bastion filled %v bytes from the main installation, want %d", d, len(again.data))
 		}
 	})
@@ -649,7 +649,7 @@ func TestR_BAS_070_AnEncryptedFileIsReadFromTheObjectStoreWithItsDataKey(t *test
 				t.Fatalf("the trace holds the key or the link (%.8s…)", form)
 			}
 		}
-		if bastionMetric(`quader_bastion_handovers_total{outcome="read"}`) != 1 || bastionMetric(`quader_bastion_fill_bytes_total{source="main"}`) != 0 {
+		if bastionMetric(`quader_bastion_handovers_total{outcome="read"}`) != 1 || bastionMetric(`quader_bastion_fill_bytes_total{class="authenticated",source="main"}`) != 0 {
 			t.Fatalf("the Bastion's counts:\n%s", grepLines(r.metrics(t), "quader_bastion_handovers_total", "quader_bastion_fill_bytes_total"))
 		}
 		if links == nil || links.KeysHeld() != 0 {
@@ -688,7 +688,7 @@ func TestR_BAS_070_AnEncryptedFileIsReadFromTheObjectStoreWithItsDataKey(t *test
 		if vs := valuesOf(sealedB.path); len(vs) != 1 {
 			t.Fatalf("%d handover values, want the one before the fallback", len(vs))
 		}
-		if bastionMetric(`quader_bastion_handovers_total{outcome="fallback"}`) != 1 || bastionMetric(`quader_bastion_fill_bytes_total{source="main"}`) != size ||
+		if bastionMetric(`quader_bastion_handovers_total{outcome="fallback"}`) != 1 || bastionMetric(`quader_bastion_fill_bytes_total{class="authenticated",source="main"}`) != size ||
 			bastionMetric("quader_bastion_handover_cooldown") != 0 {
 			t.Fatalf("the Bastion's counts:\n%s", grepLines(r.metrics(t), "quader_bastion_handover", "quader_bastion_fill_bytes_total"))
 		}

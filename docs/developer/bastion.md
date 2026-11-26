@@ -255,7 +255,7 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [api/registry/bastion.go](../../internal/api/registry/bastion.go) | `tellRoute`: the token service and the catalog tell the marking their kind (R-BAS-051) |
 | [bastionmain/route.go](../../internal/bastionmain/route.go) | `RouteObserver`, `RouteMatch`, `RouteDecision`, `WithObserver`, `ObserverFrom`, the kind names |
 | [bastionmain/stages.go](../../internal/bastionmain/stages.go) | `Stages` (Recognize, Mark, Chain), `Stub`, `ErrNotImplemented` |
-| [bastionmain/metrics.go](../../internal/bastionmain/metrics.go) | `quader_bastion_interface_requests_total`, `quader_bastion_forwarded_requests_total` |
+| [bastionmain/metrics.go](../../internal/bastionmain/metrics.go) | `quader_bastion_interface_requests_total`, `quader_bastion_forwarded_requests_total`, `quader_bastion_forwarded_bytes_total` (R-BAS-090: `markWriter.Write` in [bastionmark](../../internal/api/bastionmark/mark.go) adds every body byte of a recognized forward under the caller's class; `fillRun.class` gives the Bastion's `quader_bastion_fill_bytes_total` the class of the request that started the fill) |
 
 </details>
 

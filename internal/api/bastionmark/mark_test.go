@@ -576,6 +576,50 @@ func TestR_BAS_013_ForwardedRequestsAreCountedByClass(t *testing.T) {
 	}
 }
 
+// TestR_BAS_090_TheBytesOfRecognizedForwardsAreCountedByRegistrationAndClass: quader_bastion_forwarded_bytes_total counts the
+// body bytes of every recognized forward by the caller's class, and nothing of an interface route or an ordinary request.
+func TestR_BAS_090_TheBytesOfRecognizedForwardsAreCountedByRegistrationAndClass(t *testing.T) {
+	r := newRig(t)
+	size := 1000
+	r.respond = func(w http.ResponseWriter) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(make([]byte, size))
+	}
+	r.do("GET", "/api/mk/web/mk-local/f/x.bin", hRecognize, "forward", hCred, "token")
+	r.do("GET", "/api/mk/web/mk-local/f/x.bin", hRecognize, "forward", hCred, "bad")
+	size = 300
+	r.do("GET", "/api/mk/web/mk-local/f/x.bin", hRecognize, "forward", hCred, "anon")
+	r.do("GET", "/api/mk/web/mk-local/f/x.bin", hRecognize, "route", hCred, "token")
+	r.do("GET", "/api/mk/web/mk-local/f/x.bin", hCred, "token") // an ordinary caller is not counted
+	read := func(class string) float64 {
+		var out dto.Metric
+		if err := r.metrics.ForwardedBytes.WithLabelValues("edge-1", class).Write(&out); err != nil {
+			t.Fatal(err)
+		}
+		return out.GetCounter().GetValue()
+	}
+	// The refused credential's answer is the format's problem body, whatever its length: it counts under authenticated too.
+	if got := read(bastionmain.CallerAuthenticated); got < 1000 || got >= 2000 {
+		t.Errorf("authenticated: %v bytes, want the 1000 of the token's answer and the refusal's problem body, not the interface route's 1000", got)
+	}
+	if got := read(bastionmain.CallerAnonymous); got != 300 {
+		t.Errorf("anonymous: %v bytes, want 300", got)
+	}
+	r2 := newRig(t)
+	r2.respond = r.respond
+	r2.do("GET", "/api/mk/web/mk-local/f/x.bin", hRecognize, "route", hCred, "token")
+	r2.do("GET", "/api/mk/web/mk-local/f/x.bin", hCred, "token")
+	for _, class := range []string{bastionmain.CallerAuthenticated, bastionmain.CallerAnonymous} {
+		var out dto.Metric
+		if err := r2.metrics.ForwardedBytes.WithLabelValues("edge-1", class).Write(&out); err != nil {
+			t.Fatal(err)
+		}
+		if out.GetCounter().GetValue() != 0 {
+			t.Errorf("an interface route or an ordinary request counted %v bytes as %s", out.GetCounter().GetValue(), class)
+		}
+	}
+}
+
 // TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat: the write probe is answered after routing and before any
 // handler or body read.
 func TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat(t *testing.T) {

@@ -251,10 +251,27 @@ When a Bastion is taken over, switch its direct reads off and revoke its token o
 |---|---|
 | `quader_bastion_handover_enabled` | `1` once the handshake says the direct reads are on for this registration |
 | `quader_bastion_handovers_total{outcome}` | per direct read: `read` (read from the store and kept), `fallback` (failed before its first byte, fetched through the main installation), `continued` (broke off and was finished through the main installation), `refused` (the bytes were not the file) |
-| `quader_bastion_fill_bytes_total{source}` | the bytes of the cache's fills from the store (`store`) and from the main installation (`main`) |
+| `quader_bastion_fill_bytes_total{source, class}` | the bytes of the cache's fills from the store (`store`) and from the main installation (`main`), by whether the client that started the fill was anonymous (`anonymous`) or carried a credential (`authenticated`) |
 | `quader_bastion_handover_cooldown` | `1` while the replica pauses its direct reads |
 
 On the main installation, a file handed over has `delivery` `handover` and `response_bytes` `0` in the request log and counts in `quader_storage_download_handovers_total{bastion, kind}` (`link`, or `link_and_key` for a file of an encrypted connection); `quader_storage_download_handovers_declined_total{reason}` counts the offers it answered with the bytes and why (`size` for a file below the minimum size or above the Bastion's offer, `connection` for a file without a copy on a connection that can be read, `key` for a file of an encrypted connection whose key could not be opened, `trace` for one whose key could not be recorded in the audit log, `switch_off` for the offers a Bastion still sends after a switch-off until its next handshake). The alert `QuaderBastionHandoverFailing` fires when direct reads failed for 15 minutes and none succeeded. Each fallback is a line `a handover is replaced by the forward without the offer` in the Bastion's log, with the reason, such as a refused host, an expired link, a timeout or the store's status. After a failure of the network or the store, or after a link it refuses, a replica pauses its direct reads for a minute and fetches every miss through the main installation meanwhile; it tries again with the next miss after the pause.
+
+## The traffic between the main installation and a Bastion
+
+Both sides count the bytes that cross between them, so that you can see what a Bastion draws from your network before you decide whether
+to limit it:
+
+| Series | Where | What it says |
+|---|---|---|
+| `quader_bastion_forwarded_bytes_total{bastion, class}` | the main installation | the bytes of the answers it sent to the Bastion registered as `bastion`, by whether the Bastion's client was anonymous (`anonymous`) or carried a credential (`authenticated`); every answer counts, refusals included. A direct read from the object store is not in it: the main installation answers it with an empty body |
+| `quader_bastion_forwarded_requests_total{bastion, class}` | the main installation | the requests of that Bastion, by what the answer was (`artifact`, `shared`, `private`, `absent`, `pass`, `handover`, `probe`) |
+| `quader_bastion_fill_bytes_total{source, class}` | the Bastion | the bytes it wrote into its cache's fills, from the main installation (`main`) or the object store (`store`), by the class of the client that started the fill |
+| `quader_bastion_bytes_served_total{source}` | the Bastion | the bytes it sent to its clients, from its cache (`cache`) or as they came from the main installation (`main`) |
+
+For example, `sum by (class) (rate(quader_bastion_forwarded_bytes_total{bastion="partners"}[5m]))` on the main installation is the
+bandwidth the Bastion `partners` takes, split into anonymous and signed-in clients. Nothing limits it per Bastion yet: what bounds it is each
+client's own download limits on the main installation (they apply to a client behind a Bastion when `bastions.trusted_proxies` lists the
+Bastion's egress address) and the Bastion's budget of requests to the main installation (`bastion.main.max_concurrent`).
 
 ## What the alerts mean
 

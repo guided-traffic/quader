@@ -45,3 +45,31 @@ func TestR_BAS_089_AFillWithoutRoomIsServedAndNotKept(t *testing.T) {
 		t.Fatalf("the next request was not a miss: %d, forwards %d -> %d", w.Code, before, s.main.count(mainclient.KindForward))
 	}
 }
+
+// TestR_BAS_090_FillBytesCarryTheClassOfTheCallerThatStartedTheFill: quader_bastion_fill_bytes_total counts a fill started with a
+// credential and one started anonymously under their budget classes, both from the main installation.
+func TestR_BAS_090_FillBytesCarryTheClassOfTheCallerThatStartedTheFill(t *testing.T) {
+	s := newSiteHarness(t, options{})
+	s.site.artifacts[tgz] = payload(10 << 10)
+	s.site.artifacts[other] = payload(3<<10 + 7)
+	if w := s.get(tgz, "Authorization", bearer(s.full)); w.Code != 200 {
+		t.Fatal(w.Code)
+	}
+	if w := s.get(other); w.Code != 200 {
+		t.Fatal(w.Code)
+	}
+	s.e.wg.Wait()
+	for _, c := range []struct {
+		source, class string
+		want          float64
+	}{
+		{metrics.SourceMain, metrics.BudgetAuthenticated, 10 << 10},
+		{metrics.SourceMain, metrics.BudgetAnonymous, 3<<10 + 7},
+		{metrics.SourceStore, metrics.BudgetAuthenticated, 0},
+		{metrics.SourceStore, metrics.BudgetAnonymous, 0},
+	} {
+		if got := readCounter(s.m.FillBytes.WithLabelValues(c.source, c.class)); got != c.want {
+			t.Errorf("quader_bastion_fill_bytes_total{source=%q,class=%q} = %v, want %v", c.source, c.class, got, c.want)
+		}
+	}
+}

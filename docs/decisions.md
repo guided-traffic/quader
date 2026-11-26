@@ -2958,7 +2958,10 @@ stay single rows. A push, a publish and a delete of several files still show the
 **Status:** Decided by the builder of W-34's packages without a decision of the owner, on 2026-11-26 — owner review at the walkthrough
 ([R-BAS-089](spec/bastion.md#r-bas-089--the-cache-stays-below-its-size-between-sweeps),
 [Q-BAS-301](spec/bastion.md#q-bas-301--a-commit-is-admitted-against-a-running-estimate-of-its-area-and-a-fill-without-room-is-passed-through-unkept)
-to [Q-BAS-305](spec/bastion.md#q-bas-305--the-spool-of-fills-does-not-count-in-the-areas)). It amends
+to [Q-BAS-305](spec/bastion.md#q-bas-305--the-spool-of-fills-does-not-count-in-the-areas);
+[R-BAS-090](spec/bastion.md#r-bas-090--the-bytes-between-a-bastion-and-the-main-installation-are-counted),
+[Q-BAS-306](spec/bastion.md#q-bas-306--the-main-installation-counts-the-body-bytes-the-marking-stage-writes-by-registration-and-the-callers-class),
+[Q-BAS-307](spec/bastion.md#q-bas-307--the-class-of-a-fills-bytes-is-the-class-of-the-request-that-started-it)). It amends
 [ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta)'s cache, whose sweep ran on a timer only.
 
 **Context.** The owner's task W-34 of 2026-11-26: a Bastion faces the internet, it alone takes the traffic and the attacks, and the main
@@ -2977,11 +2980,17 @@ showed 960 KiB in an area of 896 KiB after the fifteenth of 32 fills.
   `quader_bastion_cache_sweeps_total{trigger}` (Q-BAS-303, Q-BAS-304).
 - On a bucket that several replicas share a replica counts each commit `bastion.replicas` times and learns the others' writes from its
   listings (Q-BAS-302); the spool keeps its own bound (Q-BAS-305).
+- The main installation counts the body bytes it writes to a registration's recognized forwards by the caller's class,
+  `quader_bastion_forwarded_bytes_total{bastion, class}` with `anonymous` and `authenticated`, in the marking stage's writer (Q-BAS-306); the
+  Bastion's `quader_bastion_fill_bytes_total` gains the class of the request that started the fill beside its source, so the bytes read
+  through a handover stand apart from those from the main installation (Q-BAS-307).
 
 **Consequences.** A cache volume holds at most `max_bytes`, the spool and the entries and markers, so a flood of fills no longer fills it or
 gets the pod evicted; under a flood fills are passed through unkept and the sweep lists once a second (H-2271). On a shared bucket the bound
 is an estimate (H-2270). The order of eviction and what a churn of distinct artifacts costs the network are unchanged (H-2272) and wait for the
-owner's decisions of W-34. No migration, no interface change; unit tests of about 0.4 s and one integration case of about 1 s.
+owner's decisions of W-34. The bytes between the two sides are visible per registration and class and bounded by nothing per Bastion
+(H-2273); a handover's bytes are counted at the Bastion only (H-2274). No migration, no interface change; unit tests of about 0.5 s and one
+integration case of 0.14 s.
 
 **Alternatives considered.** A sweep inside the commit; the file system's free space; a shorter interval; a shared counter in Valkey; marks
 of their own in the chart; the spool counted in the areas.
@@ -2989,7 +2998,7 @@ of their own in the chart; the spool counted in the areas.
 **Revisit condition:** a measurement that shows H-2270 matters (then a counter per area in Valkey), or the owner's decision on protecting
 what was served twice, which changes what a sweep evicts.
 
-**Spec:** [bastion.md](spec/bastion.md) R-BAS-089, R-BAS-031, R-BAS-040, Q-BAS-301 to Q-BAS-305, H-2270 to H-2272.
+**Spec:** [bastion.md](spec/bastion.md) R-BAS-089, R-BAS-090, R-BAS-031, R-BAS-040, R-BAS-008, Q-BAS-301 to Q-BAS-307, H-2270 to H-2274.
 
 ## Design invariants
 
@@ -10256,10 +10265,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-237 questions on [spec/bastion.md](spec/bastion.md).
+239 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 237 questions</summary>
+<summary>Q-BAS: 239 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10500,6 +10509,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-303](spec/bastion.md#q-bas-303--at-once-is-one-sweep-at-a-time-asked-for-by-any-number-of-commits-at-most-one-a-second) | At once is one sweep at a time, asked for by any number of commits, at most one a second | Decided by the builder of W-34's package E1 (2026-11-26), a defect that needs no decision of the owner | (a) The replica's one sweeper loop takes a request from a channel that holds one: a request while a sweep runs or waits is one more sweep after it; a sweep the size asked for starts at least a second after the last one ended | [ADR-298](#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted) |
 | [Q-BAS-304](spec/bastion.md#q-bas-304--the-marks-are-r-bas-031s-a-sweep-at-95--a-refusal-only-at-the-limit) | The marks are R-BAS-031's: a sweep at 95 %, a refusal only at the limit | Decided by the builder of W-34's package E1 (2026-11-26), a defect that needs no decision of the owner | (a) A sweep is asked for above 95 %, the sweep R-BAS-031's own; a commit is refused only when it would pass 100 % | [ADR-298](#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted) |
 | [Q-BAS-305](spec/bastion.md#q-bas-305--the-spool-of-fills-does-not-count-in-the-areas) | The spool of fills does not count in the areas | Decided by the builder of W-34's package E1 (2026-11-26), a defect that needs no decision of the owner | (a) The areas count committed bytes only; the spool keeps its own bound | [ADR-298](#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted) |
+| [Q-BAS-306](spec/bastion.md#q-bas-306--the-main-installation-counts-the-body-bytes-the-marking-stage-writes-by-registration-and-the-callers-class) | The main installation counts the body bytes the marking stage writes, by registration and the caller's class | Decided by the builder of W-34's package E5 (2026-11-26), which needs no decision of the owner | (a) A counter of its own, `quader_bastion_forwarded_bytes_total{bastion, class}`, raised by the marking stage's writer with every body byte it passes, `class` the caller's: `anonymous` or `authenticated`, the values of the Bastion's budget | [ADR-298](#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted) |
+| [Q-BAS-307](spec/bastion.md#q-bas-307--the-class-of-a-fills-bytes-is-the-class-of-the-request-that-started-it) | The class of a fill's bytes is the class of the request that started it | Decided by the builder of W-34's package E5 (2026-11-26), which needs no decision of the owner | (a) The class of the request that started the fill, the class of its slot | [ADR-298](#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted) |
 
 </details>
 

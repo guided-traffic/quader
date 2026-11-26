@@ -19,6 +19,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/guided-traffic/quader/internal/qname"
 
 	"github.com/guided-traffic/quader/internal/auth/registrytoken"
@@ -333,11 +335,13 @@ func insufficientScope(h http.Header) bool {
 	return false
 }
 
-// markWriter adds the marking at the status line.
+// markWriter adds the marking at the status line and counts the body bytes of a recognized forward (R-BAS-090).
 type markWriter struct {
 	http.ResponseWriter
 	st    *state
 	wrote bool
+	// bytes is the series of quader_bastion_forwarded_bytes_total of this request, nil for an interface route or without metrics.
+	bytes prometheus.Counter
 }
 
 func (w *markWriter) mark(code int) {
@@ -375,7 +379,21 @@ func (w *markWriter) mark(code int) {
 			class = ClassProbe
 		}
 		mt.Forwarded.WithLabelValues(w.st.rec.Bastion, class).Inc()
+		if mt.ForwardedBytes != nil {
+			w.bytes = mt.ForwardedBytes.WithLabelValues(w.st.rec.Bastion, w.st.callerClass())
+		}
 	}
+}
+
+// callerClass is the class of quader_bastion_forwarded_bytes_total: anonymous for the anonymous caller, authenticated for a request
+// that carried a credential, whether the authentication stage accepted it or not (R-BAS-090, Q-BAS-306).
+func (s *state) callerClass() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.subject.Kind == iface.SubjectAnonymous {
+		return bastionmain.CallerAnonymous
+	}
+	return bastionmain.CallerAuthenticated
 }
 
 // WriteHeader implements http.ResponseWriter.
@@ -387,7 +405,11 @@ func (w *markWriter) WriteHeader(code int) {
 // Write implements http.ResponseWriter.
 func (w *markWriter) Write(p []byte) (int, error) {
 	w.mark(http.StatusOK)
-	return w.ResponseWriter.Write(p)
+	n, err := w.ResponseWriter.Write(p)
+	if w.bytes != nil && n > 0 {
+		w.bytes.Add(float64(n))
+	}
+	return n, err
 }
 
 // Flush implements http.Flusher.
