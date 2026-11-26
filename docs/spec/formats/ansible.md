@@ -2000,7 +2000,8 @@ the tree's group Documentation ([Q-ANS-98](#q-ans-98--the-changelog-is-read-from
   is; else `CHANGELOG.rst` at the root or in `docs/`, shown as text and not rendered (R-ANS-039). These are the places Galaxy's importer
   looks for a changelog (`_check_collection_changelog` of galaxy-importer, read on 2026-11-26); the names are matched without regard to
   case, and of two of one kind the root's is read ([Q-ANS-144](#q-ans-144--a-changelog-in-docs-is-a-changelog-and-the-generator-version-is-4)).
-  An archive with none of them is warned of at its publish (R-ANS-062).
+  An archive with none of them is warned of at its publish (R-ANS-062). The places of `docs/` came with `docgen.Version` 4: the versions an
+  older generator recorded are read again without an operator's act, by the reindex the task `remote-describe` queues (R-ANS-044).
 - **Untrusted.** An entry of changelog.yaml is escaped character by character, its reStructuredText literals become code spans and its
   `http`/`https` links links; the Markdown reaches the browser only through the README renderer and its sanitizer, the text in an escaped
   `pre` element.
@@ -2324,6 +2325,12 @@ Acceptance criteria:
 - `TestR_ANS_061_TheScreensPublishThroughAVirtualRepositoryIsItsTargetsAndItsRefusalsAreTheClients` (integration `ansiblevirtual`, about 3 s
   with the stub): the version is stored in the deployment target and the answered task is the target's; a first publish of a name a remote
   member serves is refused `shadows_remote_package` without manage; a virtual repository without a target is refused.
+- `TestR_ANS_061_TheScreensPublishWithASessionIsGuardedAsEveryManagementWrite` (integration `ansiblelocal`, about 3 s with the stack's start,
+  archives under a kilobyte and one body of 1 MiB and one byte): a session's upload without the CSRF token, with a wrong one or from a
+  foreign origin is `403 csrf_failed` and stores nothing; with the token it publishes and the event names the session's user with no token
+  and the method `session`; the session cookie on the Galaxy publish route is `401` with the Basic challenge; a body above
+  `ansible.max_archive_bytes` is `413` on both roads; the read-only maintenance mode refuses both with `503` and `Retry-After`
+  ([docs/security/ansible.md](../../security/ansible.md#what-the-management-api-adds)).
 - `TestR_ANS_061_TheHandoffRunsTheRouteWithEveryCheckAndReturnsItsRefusals` (unit, the dispatcher, milliseconds).
 - The dialog's unit tests (`ansible-upload-dialog.spec.ts`), the act on the repository's page (`repository-content.spec.ts`) and on a role's
   page (`ansible-role.spec.ts`); the dialog's states without a stack (`ansible-upload.states.spec.ts`, `make ui-states`).
@@ -4150,10 +4157,13 @@ of R-ANS-062 would have named a collection whose changelog Galaxy finds.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The finder reads docs/ too, the root's first; `docgen.Version` 4 (chosen) | One finder for the tree and the warning | The page shows the changelog the warning looked for; the reindex reads the changelogs of versions an older generator recorded as none | Every stored version is read again once after the upgrade (the task `remote-describe`, Q-ANS-99) |
+| (a) The finder reads docs/ too, the root's first; `docgen.Version` 4 (chosen) | One finder for the tree and the warning | The page shows the changelog the warning looked for; the reindex reads the changelogs of versions an older generator recorded as none | Every stored version is read again once after the upgrade |
 | (b) The warning looks in docs/, the finder does not | Two lists of places | No reindex | A collection is told it has a changelog that its page does not show |
 
-**Choice:** (a). **Applied in the spec:** R-ANS-053, R-ANS-062.
+**Choice:** (a). The rebuild needs no act of an operator: a worker that starts after the upgrade queues the task `remote-describe`, which
+queues the reindex of every local and remote repository whose versions an older generator made (R-ANS-044,
+[Q-ANS-99](#q-ans-99--the-task-remote-describe-queues-the-reindex-of-what-an-older-generator-made)), under that task's bounds. **Applied in the
+spec:** R-ANS-053, R-ANS-062.
 
 ### Q-ANS-145 · The screens' publish takes no signature; a gated repository's version is signed afterwards
 

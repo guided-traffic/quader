@@ -52,6 +52,8 @@ type envOpts struct {
 	valkey   bool
 	// seed adds principals, policies and rows before the replicas start, because their grant index is built from what exists then.
 	seed func(e *env)
+	// env are settings of every replica beside the stack's own (QUADER_…=value).
+	env []string
 }
 
 func newEnv(t *testing.T) *env { return newEnvOpts(t, envOpts{}) }
@@ -64,7 +66,7 @@ func newEnvOpts(t *testing.T, o envOpts) *env {
 	if o.replicas == 0 {
 		o.replicas = 1
 	}
-	st := testenv.NewStack(t, testenv.StackOptions{Name: "ansiblelocal", Valkey: o.valkey, Env: []string{"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off"}})
+	st := testenv.NewStack(t, testenv.StackOptions{Name: "ansiblelocal", Valkey: o.valkey, Env: append([]string{"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off"}, o.env...)})
 	e := &env{t: t, st: st}
 	e.alice, e.bob, e.carol = st.User("alice"), st.User("bob"), st.User("carol")
 	st.Repository(repo, "local", "ansible", o.cfg)

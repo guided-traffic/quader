@@ -78,10 +78,21 @@ administrator clears its tombstone, never data or access. The replay of the clea
 request to the route of `ansible-galaxy collection publish` through the dispatcher (`Dispatcher.Handoff`,
 [handoff.go](../../internal/api/dispatch/handoff.go)), which runs every check of the protocol path with the caller's principal: the coarse `deploy`, the
 read-only maintenance mode, the repository's state and format, a virtual repository's deployment target, and then the handler with the archive's
-identity, ownership, shadowing, immutability and bounds. There is no second road into the commit. A browser's session authenticates it on the management
-API, where an unsafe request needs the session's CSRF token; the session cookie is still not accepted for a write below `/api/<format>/`. The archive
-is the body as it is: the browser reads nothing of it but its name and size, and the file name is not compared with the manifest
+identity, ownership, shadowing, immutability and bounds. There is no second road into the commit. The archive is the body as it is: the browser
+reads nothing of it but its name and size, and the file name is not compared with the manifest
 ([Q-ANS-142](../spec/formats/ansible.md#q-ans-142--the-name-and-the-version-come-from-the-manifest-and-the-file-name-is-not-compared)).
+
+**How the screen's upload is protected.** The browser reaches the publish only through the management API, never through the protocol path:
+
+| What the request carries | Answer | Where it is decided |
+|---|---|---|
+| The session cookie without the CSRF token, with a wrong token, or with an `Origin` that is not the endpoint's | `403 csrf_failed` in the management API's problem shape; nothing stored, no task | The authentication stage ([stage.go](../../internal/auth/stage.go) `bySession`, `CheckCSRF`), before the router, the operation's permission and the handler; no handler runs, so the archive is not read |
+| The session cookie and its token | The publish; the event `package.published` names the session's user, with no token and the method `session` | The operation, then the client's publish route through `Dispatcher.Handoff` |
+| The session cookie, with or without its token, on the Galaxy route `POST …/v3/artifacts/collections/` | `401` with the Basic challenge, as before the screen's upload existed: the cookie is no credential for a write below `/api/<format>/` (`sessionAllowed`), so the caller is anonymous and the coarse `deploy` refuses it | The authentication stage and the dispatcher's coarse check |
+| A body above `ansible.max_archive_bytes` | `413 payload_too_large`, as on the client's route; a declared length is refused before the body is read | The handler's spool, reached by both roads |
+| Any write while the installation is in read-only maintenance | `503` with `Retry-After`, as on the client's route | The management API's write gate and the dispatcher's (`Writes`), both on the screen's road |
+
+Proven by `TestR_ANS_061_TheScreensPublishWithASessionIsGuardedAsEveryManagementWrite` (integration `ansiblelocal`).
 
 The import tasks are read with `read` on the repository, the tombstones are listed and cleared with `manage`. A task names the collection and the version and
 nothing else of the archive; its id is a random UUID. A virtual repository shows its deployment target's tasks only to a caller who may read the virtual
