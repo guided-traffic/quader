@@ -260,7 +260,7 @@ func TestR_BAS_051_R_BAS_053_ADockerAndAContainerdPullThroughABastion(t *testing
 	}
 
 	wr := r.do(t, "POST", "/v2/"+ociLocal+"/app/blobs/uploads/", callOpts{header: []string{"Authorization", "Bearer " + w.full.token}})
-	if wr.Status != http.StatusForbidden || !strings.Contains(string(wr.Body), `"DENIED"`) || !strings.Contains(string(wr.Body), mainHost+"/"+ociLocal) {
+	if wr.Status != http.StatusForbidden || !strings.Contains(string(wr.Body), `"DENIED"`) || !strings.Contains(string(wr.Body), readOnlyText) {
 		t.Errorf("a push through the Bastion: %d %s", wr.Status, wr.Body)
 	}
 }

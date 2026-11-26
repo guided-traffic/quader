@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -129,6 +130,42 @@ type replica struct {
 	client string
 	ops    string
 	cfg    string
+	// mainNames are the strings that would name the main installation in an answer of this replica ([mainNames]).
+	mainNames []string
+}
+
+// mainNames are the strings that name the main installation in an answer of a Bastion whose base URL is base and which reaches
+// the main installation at mainURL (R-BAS-099 row 10): the main installation's host (its server.base_url), the address the
+// Bastion reaches it at, the address of its replica behind the front, and a path of its management API or of its web interface,
+// as a JSON string, as a header value or on the Bastion's host. The suite's main installation is quader.test, a name no
+// content of the fixtures carries.
+func mainNames(base, mainURL, replicaAddr string) []string {
+	names := []string{mainHost, replicaAddr, `"/api/v1/`, `"/ui/`, base + "/api/v1/", base + "/ui/"}
+	if u, err := url.Parse(mainURL); err == nil && u.Host != "" {
+		names = append(names, u.Host)
+	}
+	return names
+}
+
+// nameOfMain returns what of the main installation an answer of the replica names, "" for nothing: the status line, every
+// header and the whole body are scanned, so every format's replay through do holds the rule of R-BAS-099 for nothing.
+func (r *replica) nameOfMain(res *http.Response, body []byte) string {
+	var head strings.Builder
+	head.WriteString(res.Status + "\n")
+	for k, vs := range res.Header {
+		for _, v := range vs {
+			head.WriteString(k + ": " + v + "\n")
+			if strings.HasPrefix(v, "/api/v1/") || strings.HasPrefix(v, "/ui/") {
+				return k + ": " + v
+			}
+		}
+	}
+	for _, n := range r.mainNames {
+		if n != "" && (strings.Contains(head.String(), n) || bytes.Contains(body, []byte(n))) {
+			return n
+		}
+	}
+	return ""
 }
 
 type syncBuf struct {
@@ -239,7 +276,10 @@ func (b *bastion) start(t *testing.T, dir string, o bastionOptions, i int) *repl
 	if err := srv.Start(context.Background()); err != nil {
 		t.Fatalf("start: %v\n%s", err, logs)
 	}
-	r := &replica{srv: srv, name: name, logs: logs, client: "http://" + srv.ClientAddr().String(), ops: "http://" + srv.OpsAddr().String(), cfg: y.String()}
+	r := &replica{
+		srv: srv, name: name, logs: logs, client: "http://" + srv.ClientAddr().String(), ops: "http://" + srv.OpsAddr().String(), cfg: y.String(),
+		mainNames: mainNames(base, mainURL, b.w.main.Addr("default")),
+	}
 	t.Cleanup(func() {
 		if err := srv.Shutdown(context.Background()); err != nil {
 			t.Errorf("shutdown %s: %v", name, err)
@@ -453,6 +493,9 @@ func (r *replica) do(t testing.TB, method, path string, o callOpts) reply {
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		t.Fatalf("%s %s: reading the body: %v", method, path, err)
+	}
+	if n := r.nameOfMain(res, b); n != "" {
+		t.Errorf("%s %s: the answer %d of the Bastion names the main installation (%q, R-BAS-099)", method, path, res.StatusCode, n)
 	}
 	return reply{Status: res.StatusCode, Header: res.Header, Body: b}
 }

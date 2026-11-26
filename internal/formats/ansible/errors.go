@@ -40,7 +40,7 @@ const (
 // chain's refusals on this format's paths are rendered here too (Q-ARCH-214), which is why it must not call back into the chain's
 // problem writer.
 func (f *Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
-	p, e := errs.ProblemOf(err, "", "")
+	p, e := errs.ProblemFor(r, err, "")
 	v1 := belowV1(r)
 	status, code, detail := p.Status, galaxyCode(p.Code, e.Kind), p.Detail
 	if detail == "" {

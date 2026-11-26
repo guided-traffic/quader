@@ -289,7 +289,7 @@ func (e *engine) fillSpool(q *rq, resp *mainclient.Response, pre []byte, sha str
 // installation and for one from a direct read alike (R-BAS-074).
 func (e *engine) newFillRun(q *rq, resp *mainclient.Response, fill *cache.Fill, sha string, size int64, sent time.Time, kind cache.EntryKind) *fillRun {
 	fill.Keep() // the committed bytes still answer the clients, and a refused commit does not fail the request
-	hdr := replayHeader(resp.Header)
+	hdr := replayHeader(resp.Header, q.facts.ReplayHeaders)
 	hdr.Del("Content-Length")
 	r := &fillRun{
 		e: e, fill: fill, kind: kind, sha: sha, size: size, notify: make(chan struct{}), refs: 2,

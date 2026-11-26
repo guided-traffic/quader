@@ -25,12 +25,12 @@ func (e *engine) stepTokenForm(q *rq) bool {
 	}
 	limit := min(int64(maxTokenForm), int64(e.cfg.Main.MaxForwardedBody))
 	if q.r.ContentLength > limit {
-		e.refuse(q, errs.E(errs.TooLarge, errs.CodeTooLarge, "The token request form is larger than a token service reads."), metrics.RefusedReadOnly)
+		e.refuse(q, errs.E(errs.TooLarge, errs.CodeTooLarge, "The body is too large."), metrics.RefusedReadOnly)
 		return false
 	}
 	body, err := io.ReadAll(io.LimitReader(q.r.Body, limit+1))
 	if err != nil || int64(len(body)) > limit {
-		e.refuse(q, errs.E(errs.TooLarge, errs.CodeTooLarge, "The token request form is larger than a token service reads."), metrics.RefusedReadOnly)
+		e.refuse(q, errs.E(errs.TooLarge, errs.CodeTooLarge, "The body is too large."), metrics.RefusedReadOnly)
 		return false
 	}
 	q.form = body

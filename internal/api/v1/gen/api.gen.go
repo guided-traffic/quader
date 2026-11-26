@@ -14894,7 +14894,8 @@ type Problem struct {
 	Status    int     `json:"status"`
 	Title     string  `json:"title"`
 
-	// Type The relative URI `/api/v1/problems/<code>`.
+	// Type The relative URI `/api/v1/problems/<code>`; `about:blank` on a problem a Bastion answers or one rendered for a forward
+	// of a Bastion (bastion.md R-BAS-099).
 	Type string `json:"type"`
 }
 

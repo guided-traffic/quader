@@ -59,6 +59,7 @@ func (r *run) bastion() {
 		return
 	}
 	r.rateLimitStatus()
+	r.forwardError()
 	allowed := map[string]bool{}
 	for _, h := range slices.Concat(catalog.RepresentationHeaders(), catalog.PerRequestHeaders(), r.d.Bastion.ReplayHeaders) {
 		allowed[http.CanonicalHeaderKey(h)] = true
@@ -216,6 +217,38 @@ func revalidates(h *Host, c ContentCase, resp *Response) []string {
 		return []string{fmt.Sprintf("the document answered %d to If-None-Match %s, its own ETag, want 304: a Bastion revalidates the documents it keeps with conditional requests, and each one costs a whole transfer", again.Code, etag)}
 	}
 	return nil
+}
+
+// hiddenMember is the member repository a failure of the remote engine names in its own detail: a forward of a Bastion reads
+// none of it (bastion.md R-BAS-099 row 15).
+const hiddenMember = "kit/hidden-remote"
+
+// forwardError is the duty of WriteError towards a forward of a Bastion (R-BAS-099 rows 3, 7 and 15): the format renders its
+// error through errs.ProblemFor, so that the answer to a recognized forward (errs.WithBastionForward) names no member repository
+// the caller did not address, carries no request ID of the main installation, and, where its shape is problem details, has the
+// type about:blank.
+func (r *run) forwardError() {
+	rec := httptest.NewRecorder()
+	ctx := errs.WithBastionForward(context.Background())
+	req := httptest.NewRequestWithContext(ctx, http.MethodGet, DefaultBaseURL+"/", nil)
+	req.Header.Set("X-Request-Id", "kit-request-1")
+	rec.Header().Set("X-Request-Id", "kit-request-1")
+	r.f.WriteError(rec, req, errs.E(errs.UpstreamFailed, errs.CodeUpstreamError, "The upstream of "+hiddenMember+" answered 503."))
+	var all strings.Builder
+	for k, vs := range rec.Header() {
+		if k != "X-Request-Id" { // the chain's own header, which a Bastion does not pass on
+			all.WriteString(k + ": " + strings.Join(vs, ", ") + "\n")
+		}
+	}
+	all.Write(rec.Body.Bytes())
+	switch {
+	case strings.Contains(all.String(), hiddenMember):
+		r.failf("WriteError names the member repository of a remote's failure in the answer to a forward of a Bastion (%q): render the error through errs.ProblemFor, which gives a forward the neutral detail (R-BAS-099)", all.String())
+	case strings.Contains(all.String(), "kit-request-1"):
+		r.failf("WriteError names the main installation's request ID in the answer to a forward of a Bastion: render the error through errs.ProblemFor (R-BAS-099)")
+	case strings.Contains(all.String(), errs.ProblemTypePrefix):
+		r.failf("WriteError gives the answer to a forward of a Bastion the problem type %s…, a path of the management API: render the error through errs.ProblemFor, which gives it about:blank (R-BAS-099)", errs.ProblemTypePrefix)
+	}
 }
 
 // longestBastionWait is the longest wait a Bastion's own refusal names: a block at its default max_duration (R-BAS-037).

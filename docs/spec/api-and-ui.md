@@ -443,13 +443,13 @@ device token endpoint `POST /api/v1/auth/device/token` (P1, R-AUTH-036 in
 
 | Member | Content |
 |---|---|
-| `type` | The relative URI `/api/v1/problems/<code>` (R-ARCH-023). Quader serves a human-readable description of every code there from the embedded code registry, so the URI resolves on every installation and is identical across installations. |
-| `title` | Fixed English summary per `code` |
+| `type` | The relative URI `/api/v1/problems/<code>` (R-ARCH-023). Quader serves a human-readable description of every code there from the embedded code registry, so the URI resolves on every installation and is identical across installations. Every problem a Bastion answers and every problem the main installation renders for a forward of a Bastion has `about:blank` instead, since a Bastion serves no management API and names nothing of the installation behind it ([bastion.md](bastion.md) R-BAS-099, Q-BAS-321). |
+| `title` | Fixed English summary per `code`; the HTTP status phrase where `type` is `about:blank` (RFC 9457 section 4.2.1) |
 | `status` | The HTTP status |
 | `detail` | Instance-specific English explanation |
 | `instance` | The request path |
 | `code` | Extension: stable lowercase `snake_case` identifier from the code registry; clients match on it |
-| `requestId` | Extension: equals the `X-Request-Id` response header (R-API-019) |
+| `requestId` | Extension: equals the `X-Request-Id` response header (R-API-019); absent from a problem the main installation renders for a forward of a Bastion (R-BAS-099) |
 | `errors` | Extension, optional: `[{"pointer": "/key", "code": "pattern", "detail": "…"}]` with [RFC 6901](https://www.rfc-editor.org/rfc/rfc6901) JSON pointers into the request body, for field-level problems |
 
 `detail` MUST NOT contain stack traces, SQL, internal host names, file-system paths, object keys,

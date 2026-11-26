@@ -1017,7 +1017,9 @@ codes:
   plain words that names the figure, the limit and the wait ("The download limit of 300 GB per hour is used up. Try again in 14
   minutes."), and the extension members `figure` (the API name), `limit` (the value), `windowSeconds`, `place` (`instance`,
   `project`, `repository`) and `retryAfterSeconds`. For a signed-in caller `detail` ends with "Your limits: <base URL>/ui/profile/usage".
-  A ceiling's refusal names the class ("all anonymous callers of this repository").
+  A ceiling's refusal names the class ("all anonymous callers of this repository"). A refusal that answers a recognized forward of a
+  Bastion has no `place`, no "Your limits" sentence and no `requestId`: its reader is a caller of the Bastion, which serves no web
+  interface, and the place is the main installation's structure ([bastion.md](bastion.md) R-BAS-099 row 7; built).
 - **Every protocol** renders the same error through its format's `WriteError` (R-ARCH-023, Q-ARCH-214): npm the JSON `error` and
   the status; NuGet one text line `<code>: <detail>` and its `Retry-After` capped at 30 s (R-NUGET-002); OCI `TOOMANYREQUESTS` with
   the `detail` as `message` ([formats/oci.md](formats/oci.md) R-OCI-008); Debian and Ansible Galaxy their problem shapes. A refusal

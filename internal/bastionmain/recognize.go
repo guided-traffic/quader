@@ -128,6 +128,11 @@ func Recognize(o RecognizeOptions) func(http.Handler) http.Handler {
 				return
 			}
 			w.Header().Set(iface.HeaderInterface, strconv.Itoa(iface.InterfaceVersion))
+			if !route {
+				// Every answer to a forward reaches a caller of the Bastion: its problems name nothing of this installation
+				// (R-BAS-099, Q-BAS-321).
+				r = r.WithContext(errs.WithBastionForward(r.Context()))
+			}
 			if !route && !forwardablePath(segs) {
 				// The route-family backstop: whatever the Bastion sent, a forward reaches no route of the management
 				// API, the login tree or the UI. The answer is the one every path without a route gets.

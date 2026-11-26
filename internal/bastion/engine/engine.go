@@ -114,7 +114,10 @@ type engine struct {
 	log     *slog.Logger
 	nowFunc func() time.Time
 
-	baseHost  string
+	baseHost string
+	// base is server.base_url: a Location the main installation answers is passed on only on its scheme, host and port
+	// (R-BAS-099 row 6).
+	base      *url.URL
 	trusted   []netip.Prefix
 	forwarded bool // server.forwarded_header is "forwarded"
 	// realm and service are the registry root's challenge on the Bastion's own base URL (R-BAS-051).
@@ -189,7 +192,7 @@ func newFlow(d Deps) (*engine, error) {
 		return nil, errors.New("engine: server.base_url has no host")
 	}
 	e := &engine{
-		d: d, cfg: &d.Config.Bastion, log: d.Log, nowFunc: d.Now, baseHost: strings.ToLower(u.Hostname()),
+		d: d, cfg: &d.Config.Bastion, log: d.Log, nowFunc: d.Now, baseHost: strings.ToLower(u.Hostname()), base: u,
 		forwarded: d.Config.Server.ForwardedHeader == "forwarded",
 		checks:    newGroup(), probeFlights: newGroup(), fetches: newGroup(),
 		collapseWait: collapseWaitMax, fillStall: fillStallMax, paceGrace: paceGraceMax, paceMinRate: paceMinRate, paceChunk: paceChunkMax,

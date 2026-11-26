@@ -12,11 +12,14 @@ import (
 	"time"
 )
 
+// readOnlyText is the detail of the refusal of a write through a Bastion (R-BAS-099 row 1, Q-BAS-321).
+const readOnlyText = "This address is read-only: it serves downloads and accepts no uploads."
+
 // relaxed raises the Bastion's request limits so that a loop of requests in a test is not the limit's subject.
 const relaxed = "  limits:\n    authenticated:\n      requests_per_second: 100000\n      burst: 100000\n    anonymous:\n      requests_per_second: 100000\n      burst: 100000\n    misses:\n      authenticated_per_minute: 100000\n      anonymous_per_minute: 100000\n"
 
 // TestR_BAS_014_WritesAreRefusedInTheFormatsShape: an `npm publish`-shaped PUT and a `nuget push`-shaped PUT are
-// refused 403 bastion_read_only in the client's own error shape, naming the main installation; the Bastion reads
+// refused 403 bastion_read_only in the client's own error shape, naming no address (R-BAS-099 row 1); the Bastion reads
 // none of the upload body; 1,000 PUTs to one path cause one probe; and the main installation records no
 // package.published. A read route that takes a body (npm's bulk advisories) is served by the main installation.
 func TestR_BAS_014_WritesAreRefusedInTheFormatsShape(t *testing.T) {
@@ -46,8 +49,8 @@ func TestR_BAS_014_WritesAreRefusedInTheFormatsShape(t *testing.T) {
 						t.Fatalf("not npm's error shape (%s missing): %s", k, got.Body)
 					}
 				}
-				if !bytes.Contains(got.Body, []byte("http://"+mainHost)) {
-					t.Fatalf("the refusal does not name the main installation: %s", got.Body)
+				if !bytes.Contains(got.Body, []byte(readOnlyText)) {
+					t.Fatalf("the refusal does not say that the address is read-only: %s", got.Body)
 				}
 				probes := 0
 				for _, x := range w.front.Since(m) {
@@ -71,7 +74,7 @@ func TestR_BAS_014_WritesAreRefusedInTheFormatsShape(t *testing.T) {
 				if got.Status != http.StatusForbidden || !ok || code != "bastion_read_only" || strings.ContainsAny(string(got.Body), "\r\n") {
 					t.Fatalf("nuget push: %d %q", got.Status, got.Body)
 				}
-				if !strings.Contains(msg, "http://"+mainHost) || !strings.HasPrefix(got.Header.Get("Content-Type"), "text/plain") {
+				if msg != readOnlyText || !strings.HasPrefix(got.Header.Get("Content-Type"), "text/plain") {
 					t.Fatalf("nuget push: %q, Content-Type %q", got.Body, got.Header.Get("Content-Type"))
 				}
 			})

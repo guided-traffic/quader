@@ -228,7 +228,7 @@ type quaderProblem struct {
 // (R-BAS-029, R-BAS-051, Q-BAS-169): the status of the error, the API version header, the challenge, Retry-After and the
 // other headers the error carries, and {"errors":[{"code":…,"message":…,"detail":{"code":"<Quader code>"}}]}.
 func writeRegistryError(w http.ResponseWriter, r *http.Request, err *errs.Error) {
-	p, e := errs.ProblemOf(err, "", "")
+	p, e := errs.ProblemFor(r, err, "")
 	h := w.Header()
 	switch e.Kind {
 	case errs.Unauthenticated:

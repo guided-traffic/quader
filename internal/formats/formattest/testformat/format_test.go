@@ -210,6 +210,7 @@ func TestR_BAS_058_KitCheck19(t *testing.T) {
 		{"a format whose rate limit is not the status it declares", testformat.RateLimitedStatusDiffers, "WriteError answers a rate limit 429 and catalog.Facts.Bastion says 503"},
 		{"a format whose WriteError caps the wait it does not declare", testformat.CapsRetryAfterUndeclared, `wait Retry-After "30" and catalog.Facts.Bastion says 86400`},
 		{"a format that declares a cap its WriteError does not apply", testformat.DeclaresRetryAfterCap, `wait Retry-After "86400" and catalog.Facts.Bastion says 30`},
+		{"a format whose WriteError renders without the request (R-BAS-099)", testformat.IgnoresTheForward, "names the member repository of a remote's failure in the answer to a forward of a Bastion"},
 	} {
 		t.Run("R-BAS-058 "+c.name+" fails check 19 and no other check", func(t *testing.T) {
 			rep := formattest.EvaluateChecks(testformat.With(c.defect), base, notInspect...)

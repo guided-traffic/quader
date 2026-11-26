@@ -286,7 +286,7 @@ func TestBastion_R_BAS_049_RoutingByPath(t *testing.T) {
 var e403 = regexp.MustCompile(`(?i)E403|403`)
 
 // TestBastion_R_BAS_049_ReadOnly (R-BAS-014): `npm publish` and `dotnet nuget push` pointing at a Bastion are refused in the
-// client's shape and name the main installation; the upload body is not read.
+// client's shape and name nothing of the main installation (R-BAS-099); the upload body is not read.
 func TestBastion_R_BAS_049_ReadOnly(t *testing.T) {
 	env := basFx(t)
 	for _, site := range env.sites() {
@@ -308,8 +308,9 @@ func TestBastion_R_BAS_049_ReadOnly(t *testing.T) {
 			if r.Code == 0 || !e403.MatchString(r.Out) {
 				t.Fatalf("npm publish against the Bastion exited %d, want a failure with E403:\n%s", r.Code, tailLines(r.Out, 20))
 			}
-			if !strings.Contains(r.Out, cfg.edgeURL) {
-				t.Errorf("the refusal does not name the main installation %s:\n%s", cfg.edgeURL, tailLines(r.Out, 20))
+			// The refusal says that the address is read-only and names nothing of the main installation (R-BAS-099 row 1).
+			if !strings.Contains(r.Out, "read-only") || strings.Contains(r.Out, cfg.edgeURL) {
+				t.Errorf("the refusal does not say read-only, or names the main installation %s:\n%s", cfg.edgeURL, tailLines(r.Out, 20))
 			}
 			var after float64
 			for _, p := range basReadyPods(t, site) {

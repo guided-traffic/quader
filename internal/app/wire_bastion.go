@@ -62,8 +62,7 @@ func (a *App) bastionStages(rt *endpointRuntime) (bastionmain.Stages, error) {
 	// >>> package 3
 	if shapes := a.bastionShapes(); shapes != nil {
 		st.Mark = bastionmark.New(bastionmark.Options{
-			Shapes: shapes, MainURL: a.cfg.Server.BaseURL, RegistryRoot: bastionRegistryRoot(formats.List()),
-			Metrics: a.bastionMetrics(), Log: a.log.With("component", "bastion"),
+			Shapes: shapes, Metrics: a.bastionMetrics(), Log: a.log.With("component", "bastion"),
 		}).Stage()
 	}
 	// <<< package 3
@@ -107,17 +106,6 @@ func (a *App) bastionShapes() bastionmain.ShapeResolver {
 		return nil
 	}
 	return bastionmain.NewShapeResolver(eng)
-}
-
-// bastionRegistryRoot is the ID of the format with routes that declares the registry root, "" when none is registered:
-// a refused write of it names the image prefix of its repository (R-BAS-051).
-func bastionRegistryRoot(fs []formats.Format) string {
-	for _, f := range fs {
-		if d := f.Descriptor(); d.RegistryRoot && len(f.Routes()) > 0 {
-			return string(d.ID)
-		}
-	}
-	return ""
 }
 
 // bastionMetrics returns the metrics of the main installation's side, registered once: the Mark stage counts

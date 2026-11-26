@@ -1,6 +1,7 @@
 package errs
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -15,6 +16,72 @@ const ProblemContentType = "application/problem+json"
 // ProblemTypePrefix prefixes the code in the "type" member. The reference is
 // relative to the origin, so it holds for every base URL.
 const ProblemTypePrefix = "/api/v1/problems/"
+
+// AboutBlank is the type of a problem that says no more than its status (RFC 9457 section 4.2.1). Every problem a Bastion answers
+// and every problem the main installation renders for a forward of a Bastion has it: the relative type of [ProblemTypePrefix] is a
+// path of the management API, which a Bastion does not serve and which names the installation behind it (bastion.md R-BAS-099,
+// Q-BAS-321).
+const AboutBlank = "about:blank"
+
+// reader is who reads the problems of a request, when that is not a caller of this installation itself.
+type reader uint8
+
+const (
+	// readerBastion: the request is answered by a Bastion.
+	readerBastion reader = iota + 1
+	// readerForward: the request is a forward of a Bastion that the main installation recognized; its answer reaches a caller of
+	// the Bastion, who learns nothing of the installation behind it.
+	readerForward
+)
+
+type readerKey struct{}
+
+// WithBastionAnswer marks the context of a request a Bastion answers: [ProblemFor] gives every problem of it the type
+// [AboutBlank] and the status phrase as its title (bastion.md R-BAS-029, Q-BAS-321).
+func WithBastionAnswer(ctx context.Context) context.Context {
+	return context.WithValue(ctx, readerKey{}, readerBastion)
+}
+
+// WithBastionForward marks the context of a forward of a Bastion that the main installation recognized (bastion.md R-BAS-099):
+// [ProblemFor] gives every problem of it the type [AboutBlank] and the status phrase as its title, leaves out the main
+// installation's requestId, and gives a failure of the remote engine a detail that names no repository and no host
+// ([neutralDetail]).
+func WithBastionForward(ctx context.Context) context.Context {
+	return context.WithValue(ctx, readerKey{}, readerForward)
+}
+
+// BastionForward reports whether ctx is the context of a recognized forward of a Bastion ([WithBastionForward]). A component that
+// writes a member or a sentence about this installation into a problem leaves it out then: the place and the link to the usage
+// overview of a limit's refusal (usage-and-limits.md R-LIM-020, bastion.md R-BAS-099 row 7).
+func BastionForward(ctx context.Context) bool {
+	return readerOf(ctx) == readerForward
+}
+
+func readerOf(ctx context.Context) reader {
+	if ctx == nil {
+		return 0
+	}
+	r, _ := ctx.Value(readerKey{}).(reader)
+	return r
+}
+
+// neutralDetail is the detail a forward of a Bastion reads for a failure of the remote engine and its upstream clients
+// (R-REPO-029; bastion.md R-BAS-099 row 15, Q-BAS-426). Their own details name the remote repository that failed, which for a
+// caller of a virtual repository is a member it did not address, and some name an upstream's host. The code stays, and so does
+// every other member and header of the answer.
+func neutralDetail(code string) (string, bool) {
+	switch code {
+	case CodeUpstreamFailed, CodeUpstreamTimeout, CodeEgressDenied, CodeUpstreamSecretUnavailable, CodeSourceNetworkUnavailable,
+		CodeForeignHostDenied, CodeNotCachedOffline, CodeUpstreamAssumedOffline, CodeUpstreamRateLimited, CodeUpstreamAuthFailed,
+		CodeUpstreamError, CodeUpstreamUnreachable, CodeUpstreamUnexpectedStatus, CodeUpstreamItemTooLarge,
+		CodeUpstreamIntegrityMismatch, CodeUpstreamDigestMissing, CodeUpstreamContentTypeBlocked, CodeTLSUntrusted,
+		CodeTooManyRedirects, CodeInsecureRedirect, CodeContentUnavailable:
+		return "The package could not be fetched right now.", true
+	case CodePopulateNotPermitted:
+		return "The caller may not bring new content into the cache of this repository.", true
+	}
+	return "", false
+}
 
 // Problem is the wire form: the RFC 9457 members plus the quader extensions
 // code, requestId and errors.
@@ -92,6 +159,32 @@ func ProblemOf(err error, requestID, instance string) (Problem, *Error) {
 	}, e
 }
 
+// ProblemFor is [ProblemOf] for the answer to r: the instance is the request's path, and the reader the request's context names
+// applies ([WithBastionAnswer], [WithBastionForward]). Every writer of an error answer to a request renders through it, a format's
+// own error shape included (kit check 19).
+func ProblemFor(r *http.Request, err error, requestID string) (Problem, *Error) {
+	instance := ""
+	var ctx context.Context
+	if r != nil {
+		ctx = r.Context()
+		if r.URL != nil {
+			instance = r.URL.Path
+		}
+	}
+	p, e := ProblemOf(err, requestID, instance)
+	switch readerOf(ctx) {
+	case readerForward:
+		p.RequestID = ""
+		if d, ok := neutralDetail(e.Code); ok && e.Kind != Internal {
+			p.Detail = d
+		}
+		p.Type, p.Title = AboutBlank, http.StatusText(p.Status)
+	case readerBastion:
+		p.Type, p.Title = AboutBlank, http.StatusText(p.Status)
+	}
+	return p, e
+}
+
 // retryAfterSeconds rounds a duration up to whole seconds, at least one.
 func retryAfterSeconds(d time.Duration) string {
 	s := int64((d + time.Second - 1) / time.Second)
@@ -101,15 +194,11 @@ func retryAfterSeconds(d time.Duration) string {
 	return strconv.FormatInt(s, 10)
 }
 
-// Write renders err as problem+json. It sets WWW-Authenticate, Allow and
+// Write renders err as problem+json ([ProblemFor]). It sets WWW-Authenticate, Allow and
 // Retry-After where the kind requires them, and logs a 5xx at error level with
 // the cause and a 4xx at debug level (R-ARCH-023). instance is the request path.
 func Write(w http.ResponseWriter, r *http.Request, err error, requestID string, log *slog.Logger) {
-	instance := ""
-	if r != nil && r.URL != nil {
-		instance = r.URL.Path
-	}
-	p, e := ProblemOf(err, requestID, instance)
+	p, e := ProblemFor(r, err, requestID)
 	h := w.Header()
 	h.Set("Content-Type", ProblemContentType)
 	// A problem body echoes request data (the path in instance, field names);

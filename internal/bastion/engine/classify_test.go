@@ -244,7 +244,7 @@ func TestR_BAS_018_TheLimitsComeBeforeTheCredentials(t *testing.T) {
 	if w.Code != http.StatusTooManyRequests || problemCode(w) != "rate_limited" || w.Header().Get("Retry-After") != "3" {
 		t.Fatalf("%d %s", w.Code, w.Body)
 	}
-	if !strings.Contains(w.Header().Get("RateLimit-Policy"), "bastion:requests") || !strings.Contains(w.Header().Get("RateLimit"), "r=0") {
+	if !strings.Contains(w.Header().Get("RateLimit-Policy"), `"requests"`) || !strings.Contains(w.Header().Get("RateLimit"), "r=0") {
 		t.Fatalf("the RateLimit fields are missing: %v", w.Header())
 	}
 	if g.failedCount() != 0 {

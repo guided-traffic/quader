@@ -40,7 +40,7 @@ func markedChain(t *testing.T, tok *Token, cat *Catalog) http.Handler {
 	router := httpserver.NewClientRouter()
 	router.Handle("/v2/_token", tok)
 	router.Handle("/v2/_catalog", cat)
-	marker := bastionmark.New(bastionmark.Options{MainURL: "https://quader.example.com", RegistryRoot: "oci"})
+	marker := bastionmark.New(bastionmark.Options{})
 	return httpserver.Chain{
 		Router:       router,
 		Authenticate: func(*http.Request) (httpserver.Principal, error) { return httpserver.AnonymousPrincipal(), nil },

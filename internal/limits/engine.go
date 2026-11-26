@@ -464,7 +464,7 @@ func (e *Engine) checkBlock(ctx context.Context, c *Charge, mk string, st *Stage
 		c.mu.Unlock()
 		st.Err = e.refuse(c, refusal{
 			code: CodeCallerBlocked, figure: RefusedPerHour.String(), limit: f[RefusedPerHour], window: hour,
-			place: c.Resolution.Place, retry: retry, signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx),
+			place: c.Resolution.Place, retry: retry, signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx), forward: errs.BastionForward(ctx),
 		}, f[RefusedPerHour])
 	}
 }
@@ -495,7 +495,7 @@ func (e *Engine) checkWindow(ctx context.Context, c *Charge, at time.Time, w win
 	if enforce && st.Err == nil {
 		st.Err = refusal{
 			code: errs.CodeRateLimited, figure: w.fig.String(), limit: w.limit, window: w.w, place: c.Resolution.Place,
-			retry: cluster.RoomAfter(s.Cur, s.Prev, el, w.w, lim, 1), signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx),
+			retry: cluster.RoomAfter(s.Cur, s.Prev, el, w.w, lim, 1), signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx), forward: errs.BastionForward(ctx),
 		}.err()
 	}
 }
@@ -590,7 +590,7 @@ func (e *Engine) Admit(ctx context.Context, c *Charge) error {
 			return e.refuse(c, refusal{
 				code: CodeDownloadLimitReached, figure: chk.fig.String(), limit: f[chk.fig], window: chk.w,
 				place: c.Resolution.Place, retry: cluster.RoomAfter(r.Cur, r.Prev, el, chk.w, lim, 1),
-				signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx),
+				signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx), forward: errs.BastionForward(ctx),
 			}, lim)
 		}
 	}
@@ -673,7 +673,7 @@ func (e *Engine) refuseParallel(ctx context.Context, c *Charge) error {
 	e.decided(c, ParallelTransfers.String(), true)
 	return e.refuse(c, refusal{
 		code: CodeTooManyParallelTransfers, figure: ParallelTransfers.String(), limit: f[ParallelTransfers],
-		place: c.Resolution.Place, retry: time.Second, signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx),
+		place: c.Resolution.Place, retry: time.Second, signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx), forward: errs.BastionForward(ctx),
 	}, e.scaledUp(f[ParallelTransfers], false))
 }
 
@@ -886,7 +886,7 @@ func (e *Engine) decideFetch(ctx context.Context, c *Charge, r cluster.LimitResu
 			lim := e.scaled(k.limit, local)
 			rf := refusal{
 				code: CodeUpstreamLimitReached, figure: k.fig.String(), limit: k.limit, window: hour, place: c.Resolution.Place,
-				retry: cluster.RoomAfter(s.Cur, s.Prev, el, hour, lim, 1), signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx),
+				retry: cluster.RoomAfter(s.Cur, s.Prev, el, hour, lim, 1), signed: c.Subject.Kind != KindAnonymous, baseURL: e.baseURL(ctx), forward: errs.BastionForward(ctx),
 			}
 			if k.ceiling {
 				rf.ceiling = class

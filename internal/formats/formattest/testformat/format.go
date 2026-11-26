@@ -174,6 +174,10 @@ const (
 	// CapsRetryAfterUndeclared tells a rate limit's client at most 30 s in WriteError without declaring the cap in
 	// catalog.Facts.Bastion.RetryAfterMax, so a Bastion's own refusals would tell its clients the whole wait: check 19.
 	CapsRetryAfterUndeclared Defect = "caps-retry-after-undeclared"
+	// IgnoresTheForward renders its errors for a request without the context the request came with, so the answer to a forward of
+	// a Bastion names the member repository of a remote's failure and has the management API's problem type (bastion.md
+	// R-BAS-099): check 19.
+	IgnoresTheForward Defect = "ignores-the-forward"
 	// DeclaresRetryAfterCap declares a cap of 30 s that WriteError does not apply: check 19.
 	DeclaresRetryAfterCap Defect = "declares-retry-after-cap"
 	// DeclaresUnservedBody declares on the tarball route that the format's client checks a digest (Route.ClientDigest) while a
@@ -259,6 +263,11 @@ func (f Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
 		if e, ok := errs.As(err); ok && e.Kind == errs.RateLimited {
 			err = errs.E(e.Kind, e.Code, e.Detail, errs.WithRetryAfter(min(e.RetryAfter, 30*time.Second)))
 		}
+	}
+	if f.has(string(IgnoresTheForward)) {
+		// The request's context, which names the forward, is not the one the problem is rendered for.
+		f.Base.WriteError(w, r.WithContext(context.Background()), err)
+		return
 	}
 	if !f.has(string(RendersBareErrors)) {
 		f.Base.WriteError(w, r, err)

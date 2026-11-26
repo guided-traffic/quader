@@ -23,7 +23,7 @@ R-BAS-023, R-BAS-034, R-BAS-040, R-BAS-052, R-BAS-054, R-BAS-058, R-BAS-073, R-B
 H-1242, and takes the interface's version 5, so that the handover takes 6. The owner's decisions of 2026-11-26 on a Bastion's limits, its
 configuration from the main installation, the throughput between the two and a Bastion that names nothing of the main installation (W-34)
 are specified in [Limits, configuration and throughput from the main installation](#limits-configuration-and-throughput-from-the-main-installation) (R-BAS-093 to R-BAS-099,
-Q-BAS-320 to Q-BAS-339) and **not built**; they revise in place R-BAS-002, R-BAS-009, R-BAS-010, R-BAS-014 to R-BAS-017, R-BAS-023,
+Q-BAS-320 to Q-BAS-339) and **not built**, except the rows of R-BAS-099 that package E16 built (Q-BAS-425 to Q-BAS-428); they revise in place R-BAS-002, R-BAS-009, R-BAS-010, R-BAS-014 to R-BAS-017, R-BAS-023,
 R-BAS-025, R-BAS-029, R-BAS-031, R-BAS-035 to R-BAS-038, R-BAS-046, R-BAS-051, R-BAS-052, R-BAS-054, R-BAS-058, R-BAS-059, R-BAS-071,
 R-BAS-074, Q-BAS-15, Q-BAS-21, Q-BAS-38, Q-BAS-43, Q-BAS-74, Q-BAS-88, Q-BAS-116, Q-BAS-118, Q-BAS-123, Q-BAS-315, H-388, H-1244, H-2272,
 H-2273 and H-2277, each with a marked sentence of what the code does until its package lands.
@@ -800,8 +800,8 @@ body and without a request to the main installation, with `403 read_only` and a 
 ([R-BAS-095](#r-bas-095--writes-are-refused-by-the-bastion-itself), R-BAS-099). The probe below, the main installation's admission of a
 probe as the anonymous caller for routing (Q-BAS-118), the headers `Quader-Bastion-Probe` and `Quader-Bastion-Route` and the detail that
 names the main installation's URL go; the main installation's refusal of a forwarded write stays as R-BAS-095's backstop with the neutral
-detail, and the forward of a path outside the package families keeps answering `404`. *Today, until E15 and E16 land:* the probe below is
-what runs, and its refusal names the main installation's URL.
+detail, and the forward of a path outside the package families keeps answering `404`. *Today, until E15 lands:* the probe below is what
+runs; its refusal has the neutral detail since E16 (R-BAS-099 row 1).
 
 The Bastion is read-only for package content (owner, [Q-BAS-2](#q-bas-2--the-bastion-is-read-only-for-package-content)). It
 answers a write in the client's protocol shape and points at the main installation, without format knowledge of its own
@@ -816,9 +816,9 @@ answers a write in the client's protocol shape and points at the main installati
   answers `GET` and `HEAD` only and decides nothing), and the probe goes no further (H-469).
 - The main installation's middleware answers a Bastion probe after routing and before any handler or body read:
   - a route whose `RouteKind` is `Upload`, `Delete` or `Admin`, or whose coarse action is not `read`: `403` with the problem
-    code `bastion_read_only` in the format's error shape (R-ARCH-023), whose detail names the main installation's URL of the
-    addressed repository: `This is a read-only Bastion of https://quader.example.com; publish to
-    https://quader.example.com/api/npm/web/npm-all/`;
+    code `bastion_read_only` in the format's error shape (R-ARCH-023), whose detail names no address: `This address is read-only: it
+    serves downloads and accepts no uploads.` (R-BAS-099 row 1; until E16 it named the main installation's URL of the addressed
+    repository);
   - a read route that takes a body (npm's `POST …/-/npm/v1/security/advisories/bulk`): `204` with `Quader-Bastion-Route:
     read-with-body`;
   - no route: the format's or the core's `404`.
@@ -841,12 +841,12 @@ answers a write in the client's protocol shape and points at the main installati
 
 Acceptance criteria:
 
-- `npm publish` against the Bastion prints `E403` with the main installation's URL in the message, and `dotnet nuget push` exits
-  non-zero with `403`; the main installation records no `package.published`, and the Bastion's byte counter shows that less than
+- `npm publish` against the Bastion prints `E403` with the read-only sentence and without the main installation's URL in the message,
+  and `dotnet nuget push` exits non-zero with `403`; the main installation records no `package.published`, and the Bastion's byte counter shows that less than
   64 KiB of the upload body were read.
 - `npm audit` through the Bastion returns the main installation's answer.
 - 1,000 `PUT` requests to one path within a minute cause one probe to the main installation.
-- With nothing `public`, the probe of `npm publish` answers `403 bastion_read_only` with the main installation's URL through the
+- With nothing `public`, the probe of `npm publish` answers `403 bastion_read_only` with the read-only sentence through the
   real authentication stage, the probe of `npm audit` `204`, and no handler runs
   (`TestR_BAS_014_AProbeIsAnsweredThroughTheRealAuthenticationStage`).
 
@@ -1013,9 +1013,9 @@ Priority: **MVP** · Covers: quader-only
 *Revised on 2026-11-26 by the owner's [Q-BAS-334](#q-bas-334--a-bastions-egress-addresses-belong-to-its-registration):* the egress addresses belong to each registration
 (`egress`, R-BAS-093, [api-and-ui.md](api-and-ui.md) R-UI-243): a recognized forward's client address and host count only when the request
 comes from an address of its own registration's list, and the configuration key `bastions.trusted_proxies` goes; the second acceptance
-criterion loses its exception, since a refusal of a write names nothing of the main installation (R-BAS-099). *Today, until E13 and E16
-land:* one list `bastions.trusted_proxies` in the main installation's configuration file serves every registration, as below, and the
-exception holds.
+criterion loses its exception, since a refusal of a write names nothing of the main installation (R-BAS-099). *Built by E16:* the
+exception is gone. *Today, until E13 lands:* one list `bastions.trusted_proxies` in the main installation's configuration file serves
+every registration, as below.
 
 The main installation counts the real client and renders documents for the Bastion's host (owner,
 [Q-BAS-17](#q-bas-17--the-bastion-mirrors-the-main-installations-url-space), [Q-BAS-21](#q-bas-21--internet-exposure-limits-blocking-failed-sign-in-timeouts-and-a-configurable-cache)):
@@ -1049,7 +1049,8 @@ Acceptance criteria:
 - A caller at `203.0.113.7` sending `X-Forwarded-For: 192.0.2.1` through the Bastion appears in the main installation's request
   log and audit as `203.0.113.7`, with either value of the main installation's `server.forwarded_header`.
 - `npm view @acme/sdk dist.tarball` through the Bastion prints a URL on `packages.example.com`, and no body or header the e2e run
-  captures at the Bastion contains `quader.example.com`, except the `bastion_read_only` detail of R-BAS-014.
+  captures at the Bastion contains `quader.example.com`; every answer of the integration replays is scanned the same way (R-BAS-099
+  row 10).
 - A request from the Bastion's egress address without a Bastion token that sends `X-Forwarded-For: 203.0.113.7` and
   `X-Forwarded-Host: packages.example.com` is served with the egress address as its client and on the main installation's base URL
   (`TestR_BAS_017_AnUnrecognizedRequestFromTheBastionsEgressForwardsNothing`,
@@ -1517,8 +1518,10 @@ Priority: **MVP** · Covers: quader-only
 `bastion_not_served`, and `unavailable`, `bad_gateway`, `gateway_timeout` and `busy` for `main_unreachable`, `main_failed`, `main_timeout`
 and `bastion_busy`; `403 read_only` joins the table for a write; the texts are Q-BAS-321's and name no party; every answer of the
 Bastion's own takes the error shape the format declares (`errorShape`), and where that is `problem`, problem details whose `type` is
-`about:blank`; the package families answer a write `403`, and `405` stays for a path that serves `GET` and `HEAD` only. *Today, until E7,
-E15 and E16 land:* the codes and texts below, problem details on every family but `/v2/`, and the type `/api/v1/problems/<code>`.
+`about:blank`; the package families answer a write `403`, and `405` stays for a path that serves `GET` and `HEAD` only. *Built by E16:*
+the texts of Q-BAS-321 and the type `about:blank` with the status phrase as the title, on every problem of the client listener, the
+chain's own refusals included (`errs.WithBastionAnswer`); the RateLimit policy names `requests`, `misses`, `failed-auth` and `blocking`
+(R-BAS-099 rows 2 to 4). *Today, until E7 and E15 land:* the codes of the table below, and problem details on every family but `/v2/`.
 
 The Bastion produces only these answers itself; every other body comes from the main installation
 ([Q-BAS-39](#q-bas-39--the-bastions-own-refusals-are-problem-details)). They are problem details (RFC 9457,
@@ -2167,7 +2170,7 @@ carries an address, a token, a path or a repository's name):
 | `quader_bastion_cache_corrupt_total`, `quader_bastion_cache_errors_total` | counter | `op` for errors |
 | `quader_bastion_cache_sweeps_total` | counter | `trigger` (`interval`, `size`) |
 | `quader_bastion_cache_no_room_total` | counter | `area` (`artifacts`, `documents`) |
-| `quader_bastion_refused_total` | counter | `reason` (`blocked`, `rate_limited`, `miss_limited`, `auth_timeout`, `invalid_token`, `busy`, `unreachable`, `not_served`, `read_only`) |
+| `quader_bastion_refused_total` | counter | `reason` (`blocked`, `rate_limited`, `miss_limited`, `auth_timeout`, `invalid_token`, `busy`, `unreachable`, `not_served`, `read_only`, `foreign_location`) |
 | `quader_bastion_blocks_total` | counter | `reason` (`refusals`) |
 | `quader_bastion_blocked_addresses` | gauge | — |
 | `quader_bastion_audit_events_total` | counter | `outcome` (`sent`, `spooled`, `dropped`) |
@@ -2181,6 +2184,10 @@ carries an address, a token, a path or a repository's name):
   bastion_read_only` (R-BAS-014), whether the probe answered it or the kept answer replayed it, and a body above
   `bastion.main.max_forwarded_body`; a `404` that the main installation answers to a probe (a path with no route) is its own answer,
   relayed, and raises no counter either fresh or replayed ([Q-BAS-147](#q-bas-147--only-a-403-bastion_read_only-counts-as-a-read_only-refusal-fresh-or-replayed)).
+  `reason="foreign_location"` counts an answer of the main installation the Bastion did not pass on because its `Location` named another
+  scheme, host or port than the Bastion's, answered `502` instead (R-BAS-099 row 6,
+  [Q-BAS-427](#q-bas-427--a-location-on-another-host-is-answered-502-at-the-bastion-whatever-the-status)); it stays at 0 while the main
+  installation renders a forward's URLs on the Bastion's base URL.
 - The cache hit rate is `quader_bastion_requests_total{result="hit"}` over all; bytes served from the cache are
   `quader_bastion_bytes_served_total{source="cache"}`; requests to the main installation are
   `quader_bastion_main_requests_total` (the observability item of phase 5b).
@@ -3049,14 +3056,14 @@ repository ([Q-BAS-165](#q-bas-165--the-registry-root-is-a-path-family-of-the-ba
   and the protocol base path for every other format. *Revised on 2026-11-26 (R-BAS-094, R-BAS-095, R-BAS-099):* an anonymous `GET` or
   `POST /v2/_token` is answered by the Bastion itself ([Q-BAS-335](#q-bas-335--the-bastion-answers-an-anonymous-token-request-itself)); a
   `POST` with a credential is a read route with a body of the format table's `readWithBody` and is forwarded without a probe; a write
-  below `/v2/` is the Bastion's own `403 read_only` in the distribution's shape and names no image prefix. *Today, until E14a, E15 and E16
-  land:* every token request is forwarded, a `POST` is probed first, and the refusal names the image prefix as this bullet says. *Built on 2026-11-22 (package B):* `forwardablePath` admits `/v2` and `/v2/…`
+  below `/v2/` is the Bastion's own `403 read_only` in the distribution's shape and names no image prefix. *Built by E16:* the refusal
+  names no image prefix and no protocol base path, for every format (R-BAS-099 row 1); `bastionmark.Options.RegistryRoot` and `MainURL`
+  are gone. *Today, until E14a and E15 land:* every token request is forwarded and a `POST` is probed first. *Built on 2026-11-22 (package B):* `forwardablePath` admits `/v2` and `/v2/…`
   ([recognize.go](../../internal/bastionmain/recognize.go)); the token service and the catalog call the marking's observer through
   `tellRoute` ([bastion.go](../../internal/api/registry/bastion.go)) only for the methods they answer, so a probe of any other method gets the
   route's own `405` ([Q-BAS-189](#q-bas-189--the-core-routes-below-v2-tell-the-marking-their-kind-only-for-the-methods-they-answer)); the
   version check answers `GET` and `HEAD` only and decides nothing, so it tells nothing; a token answer names the caller the token service
-  accepted, which the chain's stage never sees ([Q-BAS-187](#q-bas-187--a-token-answer-names-the-caller-the-token-service-accepted)); the
-  image prefix is the host of `server.base_url` and the qualified name (`bastionmark.Options.RegistryRoot`).
+  accepted, which the chain's stage never sees ([Q-BAS-187](#q-bas-187--a-token-answer-names-the-caller-the-token-service-accepted)).
 - **Answers of the Bastion's own** below `/v2/` carry `Docker-Distribution-API-Version: registry/2.0` and the distribution's error body
   (R-BAS-029, Q-BAS-169).
 
@@ -3069,11 +3076,11 @@ Acceptance criteria:
   (`TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion`).
 - Unit (`internal/bastionmain`): `forwardablePath` admits `/v2/web/docker/app/manifests/1`, `/v2/_token` and `/v2/` and still refuses
   `/api/%76%31/tokens`; the probe of `POST /v2/_token` answers `204` read-with-body and the probe of `POST /v2/web/docker-local/app/blobs/uploads/`
-  answers `403` `DENIED` in the distribution's shape whose message names `quader.example.com/web/docker-local`
+  answers `403` `DENIED` in the distribution's shape whose message is the read-only sentence of R-BAS-099 row 1
   (`TestR_BAS_051_TheMainInstallationForwardsTheRegistryRoot`). *As built, in three packages, since the domain package of the backstop
   imports neither the token service nor a format's error shape:* the backstop in `internal/bastionmain` (`TestR_BAS_051_TheMainInstallationForwardsTheRegistryRoot`), the refusal of
   three writes below `/v2/` through the dispatcher's registry handler and OCI's error shape in `internal/api/bastionmark`
-  (`TestR_BAS_051_AWriteBelowTheRegistryRootNamesTheImagePrefix`), and the token service's and the catalog's probes, the token answer's
+  (`TestR_BAS_051_AWriteBelowTheRegistryRootNamesNoAddress`), and the token service's and the catalog's probes, the token answer's
   subject and the service check of a forward in `internal/api/registry` (`TestR_BAS_051_TheTokenServiceAndTheCatalogTellTheMarkingTheirKind`,
   `TestR_BAS_051_ABastionsHostReachesTheTokenServicesServiceCheck`).
 - Integration (area `bastion`, R-BAS-060): the sequence of a `docker login` and a `docker pull` replayed by Go's client through an
@@ -3199,7 +3206,7 @@ What a Bastion keeps of the registry follows from the kinds of the format's rout
 - **A scan token** (R-OCI-037) is never accepted by a Bastion: it is valid on the scan listener only (R-EP-010), and the Bastion's
   forward reaches the default endpoint.
 - **Writes.** `docker push` through a Bastion: its `HEAD` requests for blobs are reads; the `POST` that starts an upload is probed and
-  refused `403` `DENIED` with the main installation's image prefix (R-BAS-014, R-BAS-051).
+  refused `403` `DENIED` with the read-only sentence, which names no image prefix (R-BAS-014, R-BAS-051, R-BAS-099 row 1).
 
 Acceptance criteria:
 
@@ -3347,7 +3354,7 @@ Priority: **MVP** · Covers: quader-only
 ```json
 {
   "formats": [
-    {"id": "npm", "registryRoot": false, "replayHeaders": [], "rateLimitedStatus": 429, "retryAfterMaxSeconds": 0, "boundPrefixes": []},
+    {"id": "npm", "registryRoot": false, "replayHeaders": ["Npm-Notice"], "rateLimitedStatus": 429, "retryAfterMaxSeconds": 0, "boundPrefixes": []},
     {"id": "nuget", "registryRoot": false, "replayHeaders": [], "rateLimitedStatus": 429, "retryAfterMaxSeconds": 30, "boundPrefixes": []},
     {"id": "oci", "registryRoot": true,
      "replayHeaders": ["Docker-Content-Digest", "Docker-Distribution-Api-Version", "Oci-Filters-Applied", "Link"],
@@ -3423,6 +3430,8 @@ The contract a format keeps so that every Bastion serves it without a decision o
 | A `Metadata` or `Computed` document is the same for every reader of the whole repository, or the route is `Volatile` | a shared document is served to every `full` reader | kit check 12 (built) |
 | A document route answers a conditional request with its own validator `304` | the Bastion revalidates documents with conditional requests; a route that ignores them costs a whole transfer per revalidation | kit check 19 |
 | Every response header of a content route is a representation header of the core, a header of the core's own (a request ID, a rate-limit field), or one of `catalog.Facts.Bastion.ReplayHeaders` | a cached answer replays the representation headers and the declared ones, and drops every other | kit check 19 |
+| A header a client of the format needs on any answer the Bastion passes on (a refusal, a `Volatile` answer) is a representation header of the core, one of the fixed list of R-BAS-099 row 5, or one of `catalog.Facts.Bastion.ReplayHeaders` (npm declares `Npm-Notice`, the notice of an audit that left names out) | a forwarded answer passes an allowlist: the representation headers, the declared ones and the fixed list (R-BAS-099 row 5, [Q-BAS-425](#q-bas-425--the-headers-of-a-forwarded-answer-pass-an-allowlist-and-a-formats-need-is-a-replay-header)) | the format's author; kit check 19 holds the content routes |
+| `WriteError` renders its error through `errs.ProblemFor` with the request, so that the answer to a recognized forward of a Bastion names no member repository of a remote's failure, carries no request ID of the main installation and, in problem details, has the type `about:blank` | a forward's answer reaches a caller of the Bastion, who learns nothing of the main installation (R-BAS-099 rows 3, 7 and 15, [Q-BAS-428](#q-bas-428--a-forward-is-marked-on-the-requests-context-and-every-writer-of-an-error-renders-through-one-function)) | kit check 19 (through `WriteError`) |
 | A rate limit of the format answers the status `catalog.Facts.Bastion.RateLimitedStatus` (429 unless declared) | the Bastion's own rate-limit refusals of the format's family take that status | kit check 19 (through `WriteError`) |
 | A rate limit of the format tells the client the wait capped by `catalog.Facts.Bastion.RetryAfterMax` (the whole wait unless declared): a wait of a second as one second, a wait of a day as the cap or as a day | the Bastion's own refusals of the format's family tell the declared wait (R-BAS-091); a cap `WriteError` applies and the facts do not declare would reach the format's clients from a Bastion uncapped | kit check 19 (through `WriteError`) |
 | A write has a writing kind or an action other than `read`; a read route that takes a body is `Volatile` with `read` | the probe of R-BAS-014 | built (R-BAS-014) |
@@ -3436,10 +3445,11 @@ The contract a format keeps so that every Bastion serves it without a decision o
   the four headers of R-BAS-053, the ClamAV definitions `503`. A second addition
   ([ADR-299](../decisions.md#adr-299--the-longest-wait-a-formats-client-is-told-is-a-fact-of-the-format)): `RetryAfterMax time.Duration`
   (0 or whole seconds) with `BastionFacts.CapRetryAfter`, the longest wait the format's clients are told (R-BAS-091). NuGet and Ansible
-  Galaxy declare 30 s, the `maxRetryAfter` of their `WriteError`; npm, OCI, Debian and the ClamAV definitions declare none.
+  Galaxy declare 30 s, the `maxRetryAfter` of their `WriteError`; npm, OCI, Debian and the ClamAV definitions declare none. npm declares
+  the replay header `Npm-Notice` (2026-11-26, R-BAS-099 row 5).
 - **Kit check 19** (`checks_bastion.go` of the conformance kit): over every content case, the duties above marked "kit check 19"; a
   `testformat` defect each (`DownloadWithoutContentAddress`, `UndeclaredReplayHeader`, `DocumentIgnoresConditional`,
-  `RateLimitedStatusDiffers`, `CapsRetryAfterUndeclared`, `DeclaresRetryAfterCap`). A route whose answers cannot meet a duty by design is listed in the fixture with its reason, as for the
+  `RateLimitedStatusDiffers`, `CapsRetryAfterUndeclared`, `DeclaresRetryAfterCap`, `IgnoresTheForward`). A route whose answers cannot meet a duty by design is listed in the fixture with its reason, as for the
   other checks. Runs in every format's `TestR_ARCH_010_Conformance`, without PostgreSQL.
 - **As built** ([Q-BAS-181](#q-bas-181--the-cores-representation-and-per-request-headers-are-two-lists-of-the-catalog-and-the-content-headers-of-r-arch-007-are-representation-headers)
   to [Q-BAS-184](#q-bas-184--kit-check-19-judges-what-a-bastion-keeps-and-a-route-is-exempt-from-two-duties-only-with-a-reason)): the core's
@@ -5167,17 +5177,71 @@ The places, read in the code on 2026-11-26, and what each shows once its package
 Where the code differs from what the planner read: `Quader-Error-Code` is not a header of a package route (only the image scanning's pull
 sets it, `internal/vuln/scanner/pull.go`), so row 5 does not list it; the allowlist covers it either way.
 
-*Not built* (packages E7, E14a, E15, E16, E17, and W-35's catalogue, as the table says). Today rows 1 to 8 and 15 name the main installation as
-the table's third column says, and R-BAS-017's end-to-end criterion holds an exception for the refusal of a write.
+*Built on 2026-11-26 by E16* (rows 1 to 7, 9, 10 and 15 as the table says, with the decisions
+[Q-BAS-425](#q-bas-425--the-headers-of-a-forwarded-answer-pass-an-allowlist-and-a-formats-need-is-a-replay-header) to
+[Q-BAS-428](#q-bas-428--a-forward-is-marked-on-the-requests-context-and-every-writer-of-an-error-renders-through-one-function)):
+
+- **Row 1, the text.** `Marker.readOnly` ([mark.go](../../internal/api/bastionmark/mark.go)) answers `bastion_read_only` with
+  `bastionmark.ReadOnlyDetail`, for every format; the options `MainURL` and `RegistryRoot` of the Mark stage are gone. The code is E7's,
+  the refusal at the Bastion E15's.
+- **Row 2, the texts.** The Bastion's own answers have Q-BAS-321's texts ([respond.go](../../internal/bastion/engine/respond.go),
+  [request.go](../../internal/bastion/engine/request.go), `probe.go`, `registry.go`); the detail of the failed-authentication timeout
+  says "a credential that cannot be checked now" instead of naming the Bastion. Every code is a member of the interface
+  (`iface/problems.go`) or a code of the core; none is a string of the engine alone, so E16 renames none and E7 renames them all.
+- **Row 3.** `errs.ProblemFor` renders every problem of a request whose context is marked: `errs.WithBastionAnswer` (the client
+  listener's chain and the engine mark every request of a Bastion) gives the type `about:blank` and the status phrase as the title, as
+  RFC 9457 asks for that type; `errs.WithBastionForward` (the Recognize stage marks every recognized forward, not an interface route)
+  gives the same and more (row 7). `errs.Write` and every format's `WriteError` render through it; kit check 19 holds the formats to it
+  (`testformat.IgnoresTheForward`).
+- **Row 4.** `requests`, `misses`, `failed-auth`, `blocking` (`policyOf`).
+- **Row 5.** `replayHeader(src, declared)` is an allowlist: the core's representation headers, the replay headers of the request's
+  format (the handshake's format table) and `Content-Length`, `Content-Range`, `Accept-Ranges`, `Retry-After`, `WWW-Authenticate`,
+  `Allow`, `Link`, `Docker-Distribution-Api-Version` and `Location` (`passedHeaders`). npm declares `Npm-Notice`, the one header a
+  format's client reads on an answer the Bastion only passes on (npm prints it after `npm audit`, R-NPM-038); every other format's
+  clients read the representation headers and the fixed list. Read in the code for the decision: OCI's upload headers
+  (`Docker-Upload-Uuid`, `Range`, `Oci-Chunk-Min-Length`) and NuGet's `Quader-Package` and `Quader-Version` answer writes only, and the
+  OCI headers a pull reads are OCI's declared four.
+- **Row 6.** A `Location` that is neither a relative reference nor on the scheme, host and port of `server.base_url` answers `502` with
+  the text of every `502` of the Bastion, whatever the status, and counts `quader_bastion_refused_total{reason="foreign_location"}`;
+  the location's host goes to the Bastion's log. Read in the code: no route answers a forward with an absolute URL on the main
+  installation's host. The one `3xx` of a package family is the raw files' `301` to a folder's own path with a slash, which is
+  relative; the `201` and `202` of uploads are writes; the root's redirect to `/ui/` is not forwarded. A signed link to an object store
+  (R-STOR-072) names the bucket's host, not the main installation's, and is never the answer to a forward (storage.md R-STOR-070 step
+  2): a Bastion gets a handover instead, which it reads itself and never passes on (R-BAS-073). Should either rule change, the Bastion
+  refuses the answer instead of handing its caller the bucket's address.
+- **Row 7.** For a recognized forward the problem has no `requestId` (`errs.ProblemFor`), and a refusal of the download limits has no
+  `place` and no "Your limits" sentence (`refusal.forward`, read from the context by the limits engine).
+- **Row 9.** Held by `TestR_BAS_099_TheBastionsOwnChallengesNameItsHost` and, for the main installation's challenge of a forwarded
+  `401`, by the replays' scan.
+- **Row 10.** Every answer of a replay through `replica.do` of `test/integration/bastion` is scanned (`nameOfMain`): its status line,
+  every header and the whole body, for the main installation's host `quader.test`, the address the Bastion reaches it at, its replica's
+  own address, a JSON string or a header value that starts with `/api/v1/` or `/ui/`, and the Bastion's base URL followed by either. A
+  bare `/api/v1/` is not looked for: Ansible Galaxy's role API lies below `/api/ansible/<project>/<key>/api/v1/`.
+- **Row 15.** For a recognized forward, a problem whose code is one of the remote engine's or its upstream clients' failures
+  (R-REPO-029: `upstream_error`, `upstream_unreachable`, `upstream_timeout`, `tls_untrusted`, `egress_denied`, `not_cached_offline`,
+  `content_unavailable` and the others of `errs.neutralDetail`) has the detail "The package could not be fetched right now.", and
+  `populate_not_permitted` "The caller may not bring new content into the cache of this repository."; the code, the status, the headers
+  and the members stay. A miss of every member of a virtual repository is the virtual engine's own `404`, which names no member. What
+  the formats' handlers write of their own is not inventoried text by text (H-2295).
+
+*Not built* (packages E7, E14a, E15, E17, and W-35's catalogue, as the table says): rows 1 (the refusal at the Bastion and the code), 2
+(the codes), 8 and 14.
 
 Acceptance criteria:
 
 - Unit (`internal/bastion/engine`, `internal/api/bastionmark`, `internal/limits`, about 1 s): every code and text of Q-BAS-321; the
   allowlist drops `Quader-Resolved-From` and the main installation's RateLimit fields; a `Location` on another host answers `502`; a limits
-  refusal of a recognized forward carries no `requestId`, no `place` and no "Your limits".
+  refusal of a recognized forward carries no `requestId`, no `place` and no "Your limits". *As built:*
+  `TestR_BAS_099_TheBastionsOwnAnswersNameNoParty`, `TestR_BAS_099_AForwardedAnswerCarriesOnlyTheAllowedHeaders`,
+  `TestR_BAS_099_ALocationOnAnotherHostIsAnsweredBadGateway` and `TestR_BAS_099_TheBastionsOwnChallengesNameItsHost`
+  (`internal/bastion/engine`); `TestR_BAS_099_AProblemForABastionsCallerNamesNothingOfTheInstallation` (`internal/errs`);
+  `TestR_BAS_099_AForwardIsMarkedSoThatItsProblemsNameNothing` (`internal/bastionmain`);
+  `TestR_BAS_099_ALimitsRefusalOfABastionForwardNamesNoPlaceAndNoPage` (`internal/limits`); the refusal's text in
+  `TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat` and `TestR_BAS_051_AWriteBelowTheRegistryRootNamesNoAddress`
+  (`internal/api/bastionmark`); kit check 19's case `IgnoresTheForward`.
 - Integration (every format's replay in `test/integration/bastion`, about 0 s more): the recorder scans every body and header the Bastion
   answers for the main installation's base URL and host, every `server.additional_base_urls` entry but the Bastion's, and `/api/v1/`;
-  none is found.
+  none is found. *As built:* the scan of row 10 in `replica.do`, which every replay of the area passes through.
 
 ## The interface version 8: the shared wire
 
@@ -10880,6 +10944,84 @@ Context: R-BAS-100. The Bastion has no web interface yet; the owner: "Je kleiner
 | (b) A route of its own now (`/legal/…` as HTML) | | The pages are reachable at once | A listener's family and a page design the web interface would replace |
 
 **Choice:** (a).
+
+### Q-BAS-425 · The headers of a forwarded answer pass an allowlist, and a format's need is a replay header
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-099 row 5. The Bastion passed every header of the main installation's answer on but a deny-list (the interface's, the
+replica, the cache state, cookies, the request ID), so `Quader-Resolved-From`, OCI's `Quader-Annotations-Cut` and the main installation's
+RateLimit fields reached the caller, and every header a component adds later would too. Read in the code: the one header a format's
+client reads on an answer the Bastion only passes on is npm's `npm-notice` of an audit that left names out (R-NPM-038); every other is a
+representation header of the core, OCI's four declared replay headers or a header of the fixed list below.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An allowlist: the core's representation headers, the format's replay headers of the handshake's table and a fixed list of the framing, the wait, the challenge, the methods, the links, the distribution's version and `Location`; npm declares `Npm-Notice` (chosen) | One rule for a cached and a forwarded answer; a format's need is its declaration | A header nobody listed never reaches a caller; no change of the interface (the table already carries the replay headers); a format to come declares what its client needs where it declares the rest | A header a client needs on a refusal and that is no replay header must be declared as one |
+| (b) A deny-list extended by `Quader-*` and `RateLimit*` | Today's mechanism with two more prefixes | Nothing a client reads can go missing | Every header added later at the main installation reaches the internet until someone lists it |
+| (c) A second list per format of the headers of passed-on answers | A new fact `PassHeaders` | Exact | A change of the interface and of the contract for one header of one format |
+
+**Choice:** (a). **Rationale:** the owner's rule is about what a caller may learn, and an allowlist fails closed; a declared replay
+header is a header every reader of the format's answers may receive, which is the same promise for an answer passed on. The development
+agent would revisit it if a format needs a header on a refusal that must not be replayed from the cache. **Applied in the spec:** R-BAS-058,
+R-BAS-099 row 5.
+
+### Q-BAS-426 · A forward reads a neutral detail for every failure of the remote engine, chosen by the code when the problem is rendered
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-099 row 15 and H-2295. The remote engine's failures name the remote repository that failed ("The upstream of
+web/npm-remote answered 503.") and some name an upstream's host ("The certificate of registry.internal is not trusted."); through a
+virtual repository the remote is a member the caller did not address. The same error can answer a forward and an ordinary caller at once
+(a fetch is collapsed for every caller of a replica), so the error itself cannot be reworded where it is made.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) At rendering, for a recognized forward, every code of the remote engine and its upstream clients takes one neutral detail (chosen) | `errs.ProblemFor` reads the forward from the request's context and the code from the error | One place; every text of those codes is covered, those of the formats' wrappers too as long as they keep the code; the code, the status, `Retry-After` and the headers stay, so a client acts as before | A detail written for an operator of the main installation is lost to a caller who reaches it through a Bastion |
+| (b) A neutral detail written beside each text where it is made (`errs.WithNeutralDetail`) | Twenty sites in `internal/proxy` | Each text says exactly what failed | A new text that forgets the option names the member again |
+| (c) The virtual engine's `asAddressed` of R-EP-018, applied to a forward as to an endpoint with exposure rules | The failure is the virtual repository's | Reuses a mechanism | It also turns every `404` into the engine's one `404` and drops the absence the Bastion's negative cache reads (R-BAS-024); a direct remote keeps its texts |
+
+**Choice:** (a), with "The package could not be fetched right now." for the failures and "The caller may not bring new content into the
+cache of this repository." for `populate_not_permitted`. **Rationale:** a caller of a Bastion needs the status and the code to act; the
+member and the upstream are the main installation's structure. The development agent would revisit it if a format's client is found that
+prints a detail it must show unchanged. **Applied in the spec:** R-BAS-099 row 15, H-2295.
+
+### Q-BAS-427 · A Location on another host is answered 502 at the Bastion, whatever the status
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-099 row 6. The main installation renders a forward's URLs on the Bastion's base URL (R-BAS-017), and no route answers a
+forward with an absolute URL on its own host (read in the code); the one place a URL on another host is made for a download, a signed link
+to an object store, is never the answer to a forward (storage.md R-STOR-070 step 2). A proxy in front of the main installation or a
+change of either rule could still put another host into `Location`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `502` for any answer whose `Location` is neither relative nor on the Bastion's scheme, host and port; counted by the reason `foreign_location` (chosen) | The answer is not passed on | Fails closed; a caller never learns a bucket's or the main installation's host; the counter tells an operator at once | A `201` of a write with such a `Location` is a `502` too (writes are refused before, R-BAS-014) |
+| (b) Drop the header and pass the rest | The caller gets a `3xx` without a target | No `502` | A redirect without a target is a broken answer that a client retries |
+| (c) Rewrite the URL onto the Bastion's host | The path stays | A redirect keeps working | The Bastion would guess what another host's path means, against R-BAS-017's "the Bastion never rewrites" |
+
+**Choice:** (a). **Rationale:** an answer the main installation should not give is a defect, and a `502` is the honest status for it.
+The development agent would revisit it if a route is built that answers a forward with a redirect to another host by design.
+**Applied in the spec:** R-BAS-040, R-BAS-099 row 6.
+
+### Q-BAS-428 · A forward is marked on the request's context, and every writer of an error renders through one function
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-099 rows 3 and 7. Problems are rendered by `errs.Write` and by every format's own error shape (npm, NuGet, OCI, Ansible
+Galaxy read `errs.ProblemOf`); none of them knew whether the request was a forward of a Bastion.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The Recognize stage marks a forward's context (`errs.WithBastionForward`), a Bastion marks its own (`errs.WithBastionAnswer`), and `errs.ProblemFor(r, err, requestID)` applies the mark; every writer of an error to a request calls it; kit check 19 holds a format to it (chosen) | One function decides the type, the title, the request ID and the neutral detail | The leaf `errs` needs no knowledge of the Bastion's packages; a format to come is held by the kit; the limits engine reads the same mark | A writer outside the formats that calls `ProblemOf` with a request would bypass it; none exists today |
+| (b) The Mark stage rewrites the body of every answer to a forward | One place on the main installation | No change of the writers | A body rewritten after it was rendered: four error shapes to parse, and streamed bodies |
+| (c) The Bastion rewrites the bodies it passes on | The main installation unchanged | — | Against R-BAS-017's "the Bastion never rewrites a body"; the Bastion would need every format's error shape |
+
+**Choice:** (a). The title of a problem with the type `about:blank` is the status phrase, as RFC 9457 section 4.2.1 asks. **Rationale:** the
+mark costs one context value per request and makes the rule a property of rendering, where it cannot be forgotten by a handler. The
+development agent would revisit it if a writer of errors is found that cannot reach the request. **Applied in the spec:** R-BAS-029,
+R-BAS-058, R-BAS-099 rows 3 and 7; [api-and-ui.md](api-and-ui.md) R-API-009 (the member `type`).
 
 ## What this does not cover
 

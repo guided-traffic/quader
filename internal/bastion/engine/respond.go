@@ -5,12 +5,12 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -32,11 +32,11 @@ func (e *engine) errCredentialsRequired(q *rq) *errs.Error {
 }
 
 func errUnreachable() *errs.Error {
-	return errs.E(errs.Unavailable, errs.CodeMainUnreachable, "The main installation is not reachable; retry later.", errs.WithRetryAfter(retryUnreachable))
+	return errs.E(errs.Unavailable, errs.CodeMainUnreachable, "This service is not available right now; try again later.", errs.WithRetryAfter(retryUnreachable))
 }
 
 func errBusy() *errs.Error {
-	return errs.E(errs.Unavailable, errs.CodeBastionBusy, "The Bastion is at its limit of requests to the main installation; retry.", errs.WithRetryAfter(retryBusy))
+	return errs.E(errs.Unavailable, errs.CodeBastionBusy, "Too many requests are waiting; try again in a moment.", errs.WithRetryAfter(retryBusy))
 }
 
 // errShapeNone is the refusal of a read-shape answer none: the status the main installation said the caller
@@ -88,10 +88,15 @@ func (e *engine) fail(q *rq, err error) {
 	var timeout net.Error
 	switch {
 	case errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &timeout) && timeout.Timeout()):
-		e.problem(q, errs.E(errs.UpstreamTimeout, errs.CodeMainTimeout, "The main installation did not answer in time."))
+		e.problem(q, errs.E(errs.UpstreamTimeout, errs.CodeMainTimeout, "This service did not answer in time; try again later."))
 	default:
-		e.problem(q, errs.E(errs.UpstreamFailed, errs.CodeMainFailed, "The main installation did not answer."))
+		e.problem(q, errBadGateway())
 	}
+}
+
+// errBadGateway is the 502 of an answer the Bastion could not get or does not pass on (R-BAS-021, R-BAS-099 row 6).
+func errBadGateway() *errs.Error {
+	return errs.E(errs.UpstreamFailed, errs.CodeMainFailed, "This service could not answer; try again later.")
 }
 
 // mainError maps the error of a request to the main installation to the Bastion's answer (R-BAS-021,
@@ -106,6 +111,8 @@ func (e *engine) mainError(q *rq, err error) {
 	case errors.Is(err, mainclient.ErrTokenRefused), errors.Is(err, mainclient.ErrInterfaceMismatch):
 		// The client Deps.Main is wrapped by Link.Guard, which has made the replica unreachable already.
 		e.refuse(q, errUnreachable(), metrics.RefusedUnreachable)
+	case errors.Is(err, errForeignLocation):
+		e.refuse(q, errBadGateway(), metrics.RefusedForeignLocation)
 	default:
 		e.fail(q, err)
 	}
@@ -141,8 +148,23 @@ func neverReplayed(name string) bool {
 	return false
 }
 
-// replayHeader copies the headers of the main installation's response that the caller receives.
-func replayHeader(src http.Header) http.Header {
+// passedHeaders are the headers of an answer of the main installation that a caller receives besides the core's representation
+// headers and the replay headers of the request's format (R-BAS-099 row 5, Q-BAS-425): the framing of the one answer passed on, the
+// wait of a refusal, the challenge of a 401, the methods of a 405, the links of a page and the version of the distribution's API
+// that the registry root's core routes answer with, and a Location the Bastion checked (row 6). Every other header stays at the
+// Bastion: the member repository of a virtual repository that served the answer (Quader-Resolved-From), every other Quader-
+// header, the main installation's RateLimit fields, its request ID and replica, its cache state and its cookies.
+func passedHeaders() []string {
+	return []string{
+		"Content-Length", "Content-Range", "Accept-Ranges", "Retry-After", "Www-Authenticate", "Allow", "Link",
+		"Docker-Distribution-Api-Version", "Location",
+	}
+}
+
+// replayHeader copies the headers of the main installation's response that the caller receives: an allowlist of the core's
+// representation headers, the headers the format of the request declares (iface.HandshakeFormat.ReplayHeaders) and
+// [passedHeaders] (R-BAS-099 row 5). A header the answer's Connection names is hop-by-hop for that answer and is dropped.
+func replayHeader(src http.Header, declared []string) http.Header {
 	drop := map[string]bool{}
 	for _, v := range src.Values("Connection") {
 		for _, tok := range strings.Split(v, ",") {
@@ -150,14 +172,62 @@ func replayHeader(src http.Header) http.Header {
 		}
 	}
 	out := http.Header{}
-	for k, vs := range src {
-		ck := http.CanonicalHeaderKey(k)
-		if hopByHop(ck) || neverReplayed(ck) || drop[ck] || strings.HasPrefix(ck, iface.HeaderPrefix) {
-			continue
+	for _, list := range [][]string{representationHeaders(), declared, passedHeaders()} {
+		for _, k := range list {
+			ck := http.CanonicalHeaderKey(k)
+			if hopByHop(ck) || neverReplayed(ck) || drop[ck] || strings.HasPrefix(ck, "Quader-") {
+				continue
+			}
+			if vs := src.Values(ck); len(vs) > 0 {
+				out[ck] = append([]string(nil), vs...)
+			}
 		}
-		out[ck] = append([]string(nil), vs...)
 	}
 	return out
+}
+
+// errForeignLocation is the answer of the main installation whose Location names another host than the Bastion's (R-BAS-099
+// row 6): it is not passed on.
+var errForeignLocation = errors.New("the answer of the main installation names a location on another host than the Bastion's")
+
+// locationError returns errForeignLocation when an answer of the main installation carries a Location that is neither a
+// relative reference nor a URL on the Bastion's own scheme, host and port (R-BAS-099 row 6, Q-BAS-427), and logs the location's
+// host for the operator. Such an answer would send the caller to the main installation, an upstream or any other address the
+// main installation renders. The main installation renders the URLs of a forward on the Bastion's base URL (R-BAS-017), and a
+// signed link to an object store is never the answer to a forward (storage.md R-STOR-070 step 2), so the check holds what both
+// promise instead of trusting them; mainError answers it 502.
+func (e *engine) locationError(h http.Header) error {
+	for _, v := range h.Values("Location") {
+		u, err := url.Parse(strings.TrimSpace(v))
+		switch {
+		case strings.ContainsRune(v, '\\'):
+			// A client that resolves the reference as a browser does reads "/\host/x" as a URL on host: no Location of the main
+			// installation has a backslash, so one with it is not passed on.
+		case err == nil && u.Scheme == "" && u.Host == "" && u.Opaque == "":
+			continue // a relative reference: on the host the caller asked
+		case err == nil && strings.EqualFold(u.Scheme, e.base.Scheme) && strings.EqualFold(u.Hostname(), e.base.Hostname()) &&
+			effectivePort(u) == effectivePort(e.base):
+			continue
+		}
+		host := ""
+		if err == nil {
+			host = u.Host
+		}
+		e.log.Warn("an answer of the main installation names a location on another host and is not passed on", "location_host", host)
+		return errForeignLocation
+	}
+	return nil
+}
+
+// effectivePort is the port of an http or https URL, the scheme's default when it names none.
+func effectivePort(u *url.URL) string {
+	if p := u.Port(); p != "" {
+		return p
+	}
+	if strings.EqualFold(u.Scheme, "http") {
+		return "80"
+	}
+	return "443"
 }
 
 // representationHeaders are the core's representation headers (catalog.RepresentationHeaders, Q-BAS-181): the

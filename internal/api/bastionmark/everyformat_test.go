@@ -15,7 +15,6 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/oci"
 	"github.com/guided-traffic/quader/internal/httpserver"
-	"github.com/guided-traffic/quader/internal/qname"
 	"github.com/guided-traffic/quader/internal/repository"
 )
 
@@ -151,11 +150,11 @@ func TestR_BAS_059_ADownloadTheCoreCountedIsMarkedCounted(t *testing.T) {
 	})
 }
 
-// TestR_BAS_051_AWriteBelowTheRegistryRootNamesTheImagePrefix is the main installation's side of R-BAS-051's write
-// refusal: the probe of a push through a Bastion reaches the dispatcher's handler of the registry root, which tells the
-// marking its route, and is refused 403 DENIED in the distribution's shape before any decision, naming the image prefix
-// a client pushes to on the main installation. No handler runs and no body is read.
-func TestR_BAS_051_AWriteBelowTheRegistryRootNamesTheImagePrefix(t *testing.T) {
+// TestR_BAS_051_AWriteBelowTheRegistryRootNamesNoAddress is the main installation's side of R-BAS-051's write refusal: the
+// probe of a push through a Bastion reaches the dispatcher's handler of the registry root, which tells the marking its route,
+// and is refused 403 DENIED in the distribution's shape before any decision, with the text that names no address to push to
+// (R-BAS-099 row 1). No handler runs and no body is read.
+func TestR_BAS_051_AWriteBelowTheRegistryRootNamesNoAddress(t *testing.T) {
 	r := newRig(t)
 	d, err := dispatch.New(dispatch.Options{
 		Host: fakeHost{}, Decider: r.decider, Formats: func() []formats.Format { return []formats.Format{oci.New()} },
@@ -176,7 +175,7 @@ func TestR_BAS_051_AWriteBelowTheRegistryRootNamesTheImagePrefix(t *testing.T) {
 	}
 	router := httpserver.NewClientRouter()
 	router.Handle("/v2/{rest...}", h)
-	marker := New(Options{Shapes: r.shapes, MainURL: mainURL, RegistryRoot: "oci", Metrics: r.metrics})
+	marker := New(Options{Shapes: r.shapes, Metrics: r.metrics})
 	chain := httpserver.Chain{
 		Router:       router,
 		Authenticate: func(*http.Request) (httpserver.Principal, error) { return httpserver.AnonymousPrincipal(), nil },
@@ -197,7 +196,7 @@ func TestR_BAS_051_AWriteBelowTheRegistryRootNamesTheImagePrefix(t *testing.T) {
 		rec := r.doBody(c.method, c.path, failingReader{t})
 		body := rec.Body.String()
 		if rec.Code != http.StatusForbidden || !strings.Contains(body, `"code":"DENIED"`) ||
-			!strings.Contains(body, "This is a read-only Bastion of "+mainURL+"; publish to quader.example.com/web/docker-local") ||
+			!strings.Contains(body, ReadOnlyDetail) || strings.Contains(body, "quader.example.com") ||
 			rec.Header().Get("Docker-Distribution-Api-Version") != "registry/2.0" {
 			t.Errorf("%s %s: %d %v\n%s", c.method, c.path, rec.Code, rec.Header(), body)
 		}
@@ -208,10 +207,4 @@ func TestR_BAS_051_AWriteBelowTheRegistryRootNamesTheImagePrefix(t *testing.T) {
 	if len(r.shapes.asked) != 0 {
 		t.Fatalf("a decision was observed for a probe: %v", r.shapes.asked)
 	}
-	t.Run("another format names its protocol base path", func(t *testing.T) {
-		err := marker.readOnly(bastionmain.RouteMatch{Format: "npm", Repo: qname.Repo{Project: "web", Key: "npm-all"}})
-		if !strings.Contains(err.Error(), "publish to "+mainURL+"/api/npm/web/npm-all/") {
-			t.Fatalf("%v", err)
-		}
-	})
 }

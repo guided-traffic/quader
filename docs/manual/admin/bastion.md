@@ -211,6 +211,18 @@ The figures count per client address, not per person: many people or build jobs 
 
 A request the Bastion refuses itself, because its address sent too many requests or misses, is blocked, or is in the timeout after failed sign-ins, is answered `429` (`503` on the ClamAV definitions) with `Retry-After` and a text that names the whole wait, for example "Requests from this address are refused for a while after too many refused requests. Try again in 15 minutes." `Retry-After` carries that wait, except for NuGet and Ansible Galaxy clients: they count a wait against the timeout of the whole command, so they are told at most 30 seconds, as the main installation tells them, and come back every 30 seconds until the wait is over.
 
+### What a Bastion's answers name
+
+Nothing a client receives from a Bastion names your main installation: not its address, not a repository the client did not ask for, not a request ID or a rule of the main installation. A client that lands on the Bastion is meant to know only the Bastion.
+
+- A write (`npm publish`, `docker push`, `dotnet nuget push`) is refused `403` with "This address is read-only: it serves downloads and accepts no uploads." It does not say where to publish: tell your publishers the main installation's address yourself.
+- When the Bastion cannot get an answer it says "This service is not available right now; try again later." (`503`), "This service could not answer; try again later." (`502`) or "This service did not answer in time; try again later." (`504`), and "Too many requests are waiting; try again in a moment." when its requests to the main installation are at their limit. A path the Bastion does not serve answers "Nothing is served at this address."
+- A failure of a remote repository's upstream reaches the client as "The package could not be fetched right now.", with the code the main installation gave it (for example `upstream_unreachable`), but without the name of the remote repository or the upstream's address. A refusal of the download limits names the figure, the limit and the wait, but no place and no link to the usage overview.
+- Problem details have the type `about:blank`. The headers `Quader-Resolved-From` (the member of a virtual repository that answered) and the main installation's `RateLimit` and `RateLimit-Policy` are not passed on.
+- An answer of the main installation that redirects to another host than the Bastion's is answered `502` and counted in `quader_bastion_refused_total{reason="foreign_location"}`. The main installation gives no such answer to a Bastion; a count above `0` means that something in front of it does.
+
+What stays: the address of the repository the client asked for, the package it asked for, and whatever the package's authors and your administrators wrote into its content (a homepage, a README, the `Origin` of an APT repository).
+
 ## Verify
 
 1. Open **Admin area › Bastions**. Within `bastion.main.handshake_interval` (default `1m`) of the start, every replica appears in the table **Last contact** with, under its name, the client address the main installation saw, its release and its interface version, then the time of its contact (hold the pointer on it for the date and time) and the base URL it reported, which must equal the `server.base_url` you set. A replica that is missing has not completed a handshake: look at its log and at the metrics below. The token's **Last used** column shows the same moment.

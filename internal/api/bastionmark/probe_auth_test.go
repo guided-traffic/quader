@@ -62,7 +62,7 @@ func realStageChain(t *testing.T) (http.Handler, *rig) {
 		}
 		return httpserver.Principal{Kind: httpserver.PrincipalKind(res.Principal.Kind), ID: res.Principal.ID, Name: res.Principal.Name}, nil
 	}
-	marker := New(Options{Shapes: r.shapes, MainURL: mainURL})
+	marker := New(Options{Shapes: r.shapes})
 	recognize := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			rec := bastionmain.Recognition{Bastion: "edge-1", Interface: iface.InterfaceVersion}
@@ -78,7 +78,7 @@ func realStageChain(t *testing.T) (http.Handler, *rig) {
 
 // TestR_BAS_014_AProbeIsAnsweredThroughTheRealAuthenticationStage: with anonymous access off, a write probe -
 // recognized, Quader-Bastion-Probe: 1, no credential of a caller - reaches the route match and is answered there
-// (403 bastion_read_only in the format's shape with the main installation's URL, or 204 for a read route that
+// (403 bastion_read_only in the format's shape without an address, or 204 for a read route that
 // takes a body), not refused 401 credentials_required by the authentication stage. The probe is admitted for
 // routing only: no handler runs and no decision is asked, and a forwarded request without a credential that is no
 // probe is still refused as anonymous (Q-BAS-118).
@@ -95,7 +95,7 @@ func TestR_BAS_014_AProbeIsAnsweredThroughTheRealAuthenticationStage(t *testing.
 	}
 	rec := do(http.MethodPut, "/api/npm/web/npm-all/lodash", true)
 	if rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), `"code":"bastion_read_only"`) ||
-		!strings.Contains(rec.Body.String(), "publish to "+mainURL+"/api/npm/web/npm-all/") {
+		!strings.Contains(rec.Body.String(), ReadOnlyDetail) || strings.Contains(rec.Body.String(), mainURL) {
 		t.Fatalf("npm publish as a probe: %d %s", rec.Code, rec.Body.String())
 	}
 	if rec := do(http.MethodPut, "/api/nuget/web/nuget-v3/v3/package", true); rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), "bastion_read_only") {

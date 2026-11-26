@@ -10411,10 +10411,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-268 questions on [spec/bastion.md](spec/bastion.md).
+272 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 268 questions</summary>
+<summary>Q-BAS: 272 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10686,6 +10686,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-340](spec/bastion.md#q-bas-340--the-bastions-ui-section-holds-the-legal-texts-alone) | The Bastion's ui section holds the legal texts alone | Decided by the development agent on 2026-11-26 | (a) A section `ui` with `legal` alone, the same keys as the main installation's `ui.legal` | [ADR-302](#adr-302--imprint-and-privacy-notice-are-the-installations-own-pages-from-the-charts-markdown) |
 | [Q-BAS-341](spec/bastion.md#q-bas-341--the-bastion-renders-with-the-readme-renderer-through-a-scoped-allowance) | The Bastion renders with the README renderer through a scoped allowance | Decided by the development agent on 2026-11-26 | (a) `internal/bastion/legal` imports the renderer and `internal/legaltext` (the rule of the languages, standard library only), both allowed for that package alone | — |
 | [Q-BAS-342](spec/bastion.md#q-bas-342--the-pages-are-rendered-at-start-and-served-by-no-route-until-the-bastions-web-interface) | The pages are rendered at start and served by no route until the Bastion's web interface | Decided by the development agent on 2026-11-26 | (a) The replica renders the pages when it starts and holds them (`Server.Legal`); no route | [ADR-302](#adr-302--imprint-and-privacy-notice-are-the-installations-own-pages-from-the-charts-markdown) |
+| [Q-BAS-425](spec/bastion.md#q-bas-425--the-headers-of-a-forwarded-answer-pass-an-allowlist-and-a-formats-need-is-a-replay-header) | The headers of a forwarded answer pass an allowlist, and a format's need is a replay header | Decided by the development agent on 2026-11-26 | (a) An allowlist: the core's representation headers, the format's replay headers of the handshake's table and a fixed list of the framing, the wait, the challenge, the methods, the links, the distribution's version and `Location`; npm declares `Npm-Notice` | — |
+| [Q-BAS-426](spec/bastion.md#q-bas-426--a-forward-reads-a-neutral-detail-for-every-failure-of-the-remote-engine-chosen-by-the-code-when-the-problem-is-rendered) | A forward reads a neutral detail for every failure of the remote engine, chosen by the code when the problem is rendered | Decided by the development agent on 2026-11-26 | (a), with "The package could not be fetched right now." for the failures and "The caller may not bring new content into the cache of this repository." for `populate_not_permitted`. | — |
+| [Q-BAS-427](spec/bastion.md#q-bas-427--a-location-on-another-host-is-answered-502-at-the-bastion-whatever-the-status) | A Location on another host is answered 502 at the Bastion, whatever the status | Decided by the development agent on 2026-11-26 | (a) `502` for any answer whose `Location` is neither relative nor on the Bastion's scheme, host and port; counted by the reason `foreign_location` | — |
+| [Q-BAS-428](spec/bastion.md#q-bas-428--a-forward-is-marked-on-the-requests-context-and-every-writer-of-an-error-renders-through-one-function) | A forward is marked on the request's context, and every writer of an error renders through one function | Decided by the development agent on 2026-11-26 | (a) The Recognize stage marks a forward's context (`errs.WithBastionForward`), a Bastion marks its own (`errs.WithBastionAnswer`), and `errs.ProblemFor(r, err, requestID)` applies the mark; every writer of an error to a request calls it; kit check 19 holds a format to it | — |
 
 </details>
 

@@ -99,7 +99,7 @@ func TestR_BAS_057_TheHandshakeCarriesTheFormatTable(t *testing.T) {
 		}
 	}
 	raw, _ := iface.Marshal(table)
-	if !strings.Contains(string(raw), `{"id":"npm","registryRoot":false,"replayHeaders":[],"rateLimitedStatus":429,"retryAfterMaxSeconds":0,"boundPrefixes":[]}`) {
+	if !strings.Contains(string(raw), `{"id":"npm","registryRoot":false,"replayHeaders":["Npm-Notice"],"rateLimitedStatus":429,"retryAfterMaxSeconds":0,"boundPrefixes":[]}`) {
 		t.Errorf("npm on the wire: %s", raw)
 	}
 	// The Bastion's tests read the table of maintest: it is the table of the registered formats.

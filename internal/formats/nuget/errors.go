@@ -95,7 +95,7 @@ func headerText(s string) string {
 // chain's problem writer.
 func (f *Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	recordClientFacts(r)
-	p, e := errs.ProblemOf(err, "", "")
+	p, e := errs.ProblemFor(r, err, "")
 	text := p.Detail
 	if text == "" {
 		text = p.Title

@@ -527,7 +527,7 @@ func TestR_BAS_035_AMissLimitedAddressKeepsGettingItsHits(t *testing.T) {
 		t.Fatalf("a hit was refused: %d", w.Code)
 	}
 	w := s.get("/api/npm/web/npm-all/cold.tgz", "Authorization", bearer(s.full))
-	if w.Code != 429 || problemCode(w) != "rate_limited" || !strings.Contains(w.Header().Get("RateLimit-Policy"), "bastion:misses") {
+	if w.Code != 429 || problemCode(w) != "rate_limited" || !strings.Contains(w.Header().Get("RateLimit-Policy"), `"misses"`) {
 		t.Fatalf("%d %s %v", w.Code, w.Body, w.Header())
 	}
 	if counterValue(t, s.harness, "refused", metrics.RefusedMissLimited) != 1 {

@@ -787,7 +787,9 @@ paths:
       summary: Describe a problem code
       description: |
         The `type` member of every problem is `/api/v1/problems/<code>`; this endpoint resolves it
-        to a description. The registry is embedded, so the URI resolves on every installation.
+        to a description. The registry is embedded, so the URI resolves on every installation. A problem a
+        Bastion answers, or one rendered for a forward of a Bastion, has the type `about:blank` instead
+        (bastion.md R-BAS-099).
       security:
         - {}
       x-quader-permission:
@@ -22927,7 +22929,9 @@ components:
       properties:
         type:
           type: string
-          description: The relative URI `/api/v1/problems/<code>`.
+          description: |
+            The relative URI `/api/v1/problems/<code>`; `about:blank` on a problem a Bastion answers or one rendered for a forward
+            of a Bastion (bastion.md R-BAS-099).
           example: /api/v1/problems/not_found
         title:
           type: string

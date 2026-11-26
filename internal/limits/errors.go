@@ -28,6 +28,10 @@ type refusal struct {
 	ceiling CeilingClass
 	signed  bool
 	baseURL string
+	// forward is set for a recognized forward of a Bastion (errs.BastionForward): the refusal reaches a caller of the Bastion, so
+	// it names neither the place of the main installation that refused nor a page of the main installation (bastion.md R-BAS-099
+	// row 7). The figure, the limit, the window and the wait stay: they are the caller's own.
+	forward bool
 }
 
 func (r refusal) err() *errs.Error {
@@ -40,8 +44,10 @@ func (r refusal) err() *errs.Error {
 	opts := []errs.Option{
 		errs.WithRetryAfter(retry),
 		errs.WithExtension("figure", r.figure),
-		errs.WithExtension("place", r.place.Kind.String()),
 		errs.WithExtension("retryAfterSeconds", int64(retry/time.Second)),
+	}
+	if !r.forward {
+		opts = append(opts, errs.WithExtension("place", r.place.Kind.String()))
 	}
 	if r.limit > 0 {
 		opts = append(opts, errs.WithExtension("limit", r.limit))
@@ -50,7 +56,7 @@ func (r refusal) err() *errs.Error {
 		opts = append(opts, errs.WithExtension("windowSeconds", int64(r.window/time.Second)))
 	}
 	detail := r.detail(retry)
-	if r.signed && r.baseURL != "" {
+	if r.signed && r.baseURL != "" && !r.forward {
 		detail += " Your limits: " + r.baseURL + "/ui/profile/usage"
 	}
 	return errs.E(errs.RateLimited, r.code, detail, opts...)

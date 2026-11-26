@@ -73,7 +73,11 @@ func (f *Format) Descriptor() formats.Descriptor {
 			UpstreamPresets: []catalog.UpstreamPreset{
 				{ID: "npmjs", DisplayName: "npm public registry", URL: "https://registry.npmjs.org/", Default: true},
 			},
-			ProbePath:                 "-/ping",
+			ProbePath: "-/ping",
+			// The notice of an audit that left names out (R-NPM-005, R-NPM-038), which npm prints as "npm notice": a Bastion passes
+			// an answer of the main installation on with the headers of an allowlist, the format's replay headers among them
+			// (bastion.md R-BAS-099 row 5).
+			Bastion:                   catalog.BastionFacts{ReplayHeaders: []string{"Npm-Notice"}},
 			DefaultMetadataTTLSeconds: &metadataTTL,
 			DefaultNotFoundTTLSeconds: &notFoundTTL,
 			PatternSubject:            formats.SubjectName,

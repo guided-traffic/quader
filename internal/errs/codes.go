@@ -1066,7 +1066,7 @@ var registry = []CodeInfo{
 	// >>> M13 bastion
 	{CodeBastionTokenInvalid, Unauthenticated, "Bastion token invalid", "The Bastion token of the request is invalid, revoked, expired or its registration is disabled. It concerns the Bastion, not the caller."},
 	{CodeBastionInterfaceMismatch, Invalid, "Bastion interface mismatch", "The request names another version of the Bastion interface than this installation speaks, or none; the member interfaceVersion is this installation's. Upgrade the Bastion or the installation so that they speak the same version."},
-	{CodeBastionReadOnly, Forbidden, "Bastion is read-only", "A Bastion serves reads only; the detail names the URL of the repository on the main installation, where to publish."},
+	{CodeBastionReadOnly, Forbidden, "Bastion is read-only", "A Bastion serves reads only and accepts no uploads; the detail names no other address (R-BAS-099)."},
 	{CodeBastionNotServed, NotFound, "Not served by a Bastion", "A Bastion serves the package clients' read paths (/api/<format>/… and /files/…) and nothing else."},
 	{CodeBastionBaseURLUnknown, Conflict, "Bastion base URL unknown", "The base URL the Bastion reported at its last handshake is not an entry of server.additional_base_urls; add it, and the snippets are rendered on it."},
 	{CodeBastionNotImplemented, NotImplemented, "Bastion operation not implemented", "The operation is part of the Bastion work and is not built in this release yet."},

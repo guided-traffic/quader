@@ -202,7 +202,7 @@ func newEndpoint(t *testing.T) *endpoint {
 		Tokens: tokens{pat: pat, info: token.Info{ID: "t1", Type: token.TypePAT, Scope: token.Scope{Inherit: true}, Owner: alice}}, Principals: principals{}, Registry: signer,
 	})
 	rules := auth.EndpointRules{Name: "default", Anonymous: true, TokenTypes: []token.Type{token.TypePAT}}
-	marker := bastionmark.New(bastionmark.Options{Shapes: fullShapes{}, RegistryRoot: "oci"})
+	marker := bastionmark.New(bastionmark.Options{Shapes: fullShapes{}})
 	h := httpserver.Chain{
 		Router: router,
 		Authenticate: func(r *http.Request) (httpserver.Principal, error) {

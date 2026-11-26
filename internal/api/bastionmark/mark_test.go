@@ -221,7 +221,7 @@ func newRig(t *testing.T, fs ...formats.Format) *rig {
 	if err != nil {
 		t.Fatal(err)
 	}
-	marker := New(Options{Shapes: r.shapes, MainURL: mainURL + "/", Metrics: r.metrics})
+	marker := New(Options{Shapes: r.shapes, Metrics: r.metrics})
 	recognize := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			switch req.Header.Get(hRecognize) {
@@ -623,16 +623,16 @@ func TestR_BAS_090_TheBytesOfRecognizedForwardsAreCountedByRegistrationAndClass(
 // TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat: the write probe is answered after routing and before any
 // handler or body read.
 func TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat(t *testing.T) {
-	t.Run("every write route of the fake format is refused with bastion_read_only and the URL of the repository", func(t *testing.T) {
+	t.Run("every write route of the fake format is refused with bastion_read_only and no address", func(t *testing.T) {
 		r := newRig(t)
-		for _, tc := range []struct{ method, path, target string }{
-			{"PUT", "/api/mk/web/mk-local/f/x.bin", mainURL + "/api/mk/web/mk-local/"},
-			{"PUT", "/api/mk/web/mk-local/t/left-pad", mainURL + "/api/mk/web/mk-local/"},
-			{"DELETE", "/api/mk/web/mk-local/d/left-pad", mainURL + "/api/mk/web/mk-local/"},
-			{"PUT", "/api/mk/web/mk-local/a/left-pad", mainURL + "/api/mk/web/mk-local/"}, // an Admin route, whatever its action
+		for _, tc := range []struct{ method, path string }{
+			{"PUT", "/api/mk/web/mk-local/f/x.bin"},
+			{"PUT", "/api/mk/web/mk-local/t/left-pad"},
+			{"DELETE", "/api/mk/web/mk-local/d/left-pad"},
+			{"PUT", "/api/mk/web/mk-local/a/left-pad"}, // an Admin route, whatever its action
 		} {
 			rec := r.do(tc.method, tc.path, hRecognize, "probe")
-			want := "This is a read-only Bastion of " + mainURL + "; publish to " + tc.target
+			want := ReadOnlyDetail
 			if rec.Code != 403 || rec.Header().Get("X-Mk-Error") != iface.CodeReadOnly || rec.Header().Get("X-Mk-Detail") != want {
 				t.Errorf("%s %s: %d %v", tc.method, tc.path, rec.Code, rec.Header())
 			}
@@ -700,10 +700,11 @@ func TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat(t *testing.T) {
 			t.Fatalf("%d", rec.Code)
 		}
 	})
-	t.Run("without a main URL the detail still says where to publish", func(t *testing.T) {
+	t.Run("the detail names no party and no address (R-BAS-099 row 1)", func(t *testing.T) {
 		m := New(Options{})
 		err := m.readOnly(bastionmain.RouteMatch{Format: "npm", Repo: qr("npm-all")})
-		if e, ok := errs.As(err); !ok || e.Code != iface.CodeReadOnly || e.Status() != 403 || !strings.Contains(e.Detail, "main installation") {
+		if e, ok := errs.As(err); !ok || e.Code != iface.CodeReadOnly || e.Status() != 403 || e.Detail != ReadOnlyDetail ||
+			strings.Contains(e.Detail, "main installation") || strings.Contains(e.Detail, "Bastion") || strings.Contains(e.Detail, "npm-all") {
 			t.Fatalf("%v", err)
 		}
 	})
@@ -721,12 +722,12 @@ func (f failingReader) Read([]byte) (int, error) {
 func TestR_BAS_014_RealFormats(t *testing.T) {
 	fs := []formats.Format{npm.New(), nuget.New()}
 	keys := map[string]string{"npm": "npm-all", "nuget": "nuget-v3"}
-	t.Run("npm publish prints the error in npm's shape with the URL to publish to", func(t *testing.T) {
+	t.Run("npm publish prints the error in npm's shape without an address", func(t *testing.T) {
 		r := newRig(t, fs...)
 		rec := r.do("PUT", "/api/npm/web/npm-all/lodash", hRecognize, "probe")
 		body := rec.Body.String()
 		if rec.Code != 403 || rec.Header().Get("Content-Type") != "application/json" ||
-			!strings.Contains(body, `"code":"bastion_read_only"`) || !strings.Contains(body, "publish to "+mainURL+"/api/npm/web/npm-all/") {
+			!strings.Contains(body, `"code":"bastion_read_only"`) || !strings.Contains(body, ReadOnlyDetail) || strings.Contains(body, mainURL) {
 			t.Fatalf("%d %v\n%s", rec.Code, rec.Header(), body)
 		}
 	})

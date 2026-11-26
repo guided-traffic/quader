@@ -134,13 +134,16 @@ func (e *engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		e.read(q)
 	case http.MethodOptions:
-		e.refuse(q, errs.E(errs.MethodNotAllowed, errs.CodeMethodNotAllowed, "A Bastion serves GET and HEAD.", errs.WithAllow(http.MethodGet, http.MethodHead)), metrics.RefusedNotServed)
+		e.refuse(q, errs.E(errs.MethodNotAllowed, errs.CodeMethodNotAllowed, "This address serves GET and HEAD.", errs.WithAllow(http.MethodGet, http.MethodHead)), metrics.RefusedNotServed)
 	default:
 		e.write(q)
 	}
 }
 
 func (e *engine) newRq(w http.ResponseWriter, r *http.Request) *rq {
+	// Every problem the Bastion answers has the type about:blank and names no party (R-BAS-029, R-BAS-099, Q-BAS-321); the
+	// client listener's chain marks its requests so too, and the engine marks them for a handler that runs without it.
+	r = r.WithContext(errs.WithBastionAnswer(r.Context()))
 	q := &rq{w: w, r: r, e: e, start: e.now(), span: trace.SpanFromContext(r.Context())}
 	q.out = &countingWriter{ResponseWriter: w, q: q, source: metrics.SourceMain}
 	q.peer, q.client = e.addresses(r)
@@ -222,7 +225,7 @@ func (e *engine) stepHost(q *rq) bool {
 	if e.effectiveHost(q) == e.baseHost {
 		return true
 	}
-	e.refuse(q, errs.E(errs.Misdirected, errs.CodeMisdirectedRequest, "This Bastion does not answer for the host of the request."), metrics.RefusedNotServed)
+	e.refuse(q, errs.E(errs.Misdirected, errs.CodeMisdirectedRequest, "This address does not answer for the host of the request."), metrics.RefusedNotServed)
 	return false
 }
 
@@ -298,7 +301,7 @@ func (e *engine) stepPath(q *rq) bool {
 	c, ok := e.classifyRq(q)
 	if !ok {
 		q.fam = c.fam
-		e.refuse(q, errs.E(errs.NotFound, errs.CodeBastionNotServed, "This path is not served by a Bastion."), metrics.RefusedNotServed)
+		e.refuse(q, errs.E(errs.NotFound, errs.CodeBastionNotServed, "Nothing is served at this address."), metrics.RefusedNotServed)
 		return false
 	}
 	q.cred, q.credOK = parseCredential(q.r.Header, q.fam)
@@ -451,7 +454,7 @@ func refusalDetail(code string, wait time.Duration) string {
 	case iface.CodeAddressBlocked:
 		return "Requests from this address are refused for a while after too many refused requests. " + again
 	case iface.CodeAuthTimeout:
-		return "Too many failed authentications from this address: a credential the Bastion cannot check now is refused. " + again
+		return "Too many failed authentications from this address: a credential that cannot be checked now is refused. " + again
 	}
 	return "Too many requests from this address. " + again
 }
@@ -486,15 +489,15 @@ func (e *engine) policyOf(reason string, anonymous bool) (name string, quota, wi
 		if anonymous {
 			quota = c.Limits.Misses.AnonymousPerMinute
 		}
-		return "bastion:misses", quota, 60
+		return "misses", quota, 60
 	case metrics.RefusedAuthTimeout:
-		return "bastion:failed_auth", c.FailedAuth.MaxFailures, int(c.FailedAuth.Window / time.Second)
+		return "failed-auth", c.FailedAuth.MaxFailures, int(c.FailedAuth.Window / time.Second)
 	case metrics.RefusedBlocked:
-		return "bastion:blocking", c.Blocking.Threshold, int(c.Blocking.Window / time.Second)
+		return "blocking", c.Blocking.Threshold, int(c.Blocking.Window / time.Second)
 	}
 	burst, rps := c.Limits.Authenticated.Burst, c.Limits.Authenticated.RequestsPerSecond
 	if anonymous {
 		burst, rps = c.Limits.Anonymous.Burst, c.Limits.Anonymous.RequestsPerSecond
 	}
-	return "bastion:requests", burst, max(1, (burst+rps-1)/rps)
+	return "requests", burst, max(1, (burst+rps-1)/rps)
 }

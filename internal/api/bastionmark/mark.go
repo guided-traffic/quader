@@ -14,7 +14,6 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -40,14 +39,6 @@ type Options struct {
 	// Shapes computes the caller's read shape on the addressed repository (R-BAS-012). Required for a shape in
 	// the marking; without it no response is `shared` or `private`.
 	Shapes bastionmain.ShapeResolver
-	// MainURL is the main installation's own base URL (server.base_url), which a refused write names so that
-	// the client knows where to publish (R-BAS-014). Empty leaves the URLs out of the detail.
-	MainURL string
-	// RegistryRoot is the ID of the format that declares the registry root ("oci", catalog.Facts.RegistryRoot): a refused
-	// write of it names the main installation's image prefix of the repository, "<host>/<projectKey>/<repoKey>", which is
-	// what a client pushes to, instead of a protocol base path (R-BAS-051). Empty names a protocol base path for every
-	// format.
-	RegistryRoot string
 	// Metrics counts the forwarded requests by registration and class; nil counts nothing.
 	Metrics *bastionmain.Metrics
 	// Log receives what the stage cannot say on the wire; nil discards it.
@@ -190,25 +181,14 @@ func readRoute(mt bastionmain.RouteMatch) bool {
 	return false
 }
 
-// readOnly is the refusal of a write in the shape of the format: 403 bastion_read_only, whose detail names
-// the main installation's URL of the addressed repository (R-BAS-014).
-func (m *Marker) readOnly(mt bastionmain.RouteMatch) error {
-	detail := "This is a read-only Bastion; publish to the main installation."
-	if base := strings.TrimRight(m.o.MainURL, "/"); base != "" && !mt.Repo.IsZero() {
-		target := base + qname.ProtocolBase("/api/"+mt.Format+"/{project}/{key}/", mt.Repo)
-		switch {
-		case mt.Format == bastionmain.FormatFiles:
-			target = base + qname.FilesBase(mt.Repo)
-		case mt.Format != "" && mt.Format == m.o.RegistryRoot:
-			// An image is pushed to a name below the host, not to a URL (R-OCI-001): quader.example.com/web/docker-local.
-			if u, err := url.Parse(base); err == nil && u.Host != "" {
-				target = u.Host + "/" + mt.Repo.String()
-			}
-		}
-		detail = "This is a read-only Bastion of " + base + "; publish to " + target
-	}
-	return errs.E(errs.Forbidden, errs.CodeBastionReadOnly, detail)
+// readOnly is the refusal of a write in the shape of the format: 403 bastion_read_only. Its detail names no address
+// to publish to: a caller of a Bastion learns nothing of the installation behind it (R-BAS-099 row 1, Q-BAS-338).
+func (m *Marker) readOnly(bastionmain.RouteMatch) error {
+	return errs.E(errs.Forbidden, errs.CodeBastionReadOnly, ReadOnlyDetail)
 }
+
+// ReadOnlyDetail is the detail of the refusal of a write through a Bastion (Q-BAS-321).
+const ReadOnlyDetail = "This address is read-only: it serves downloads and accepts no uploads."
 
 // Decided computes the caller's read shape on the addressed repository (R-BAS-012). The subject and the
 // index are the ones the decision just used, so the shape agrees with the decision of this request; both are

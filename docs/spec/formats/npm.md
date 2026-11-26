@@ -305,7 +305,9 @@ Priority: **MVP** · Covers: PKG-NPM-060
   [npm-registry-fetch](https://github.com/npm/npm-registry-fetch/blob/main/lib/check-response.js);
   Yarn 2+ prints it only on error responses) is set only where this page says so (R-NPM-007,
   R-NPM-016, R-NPM-038) and, from M4b, where
-  [vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-017 says so.
+  [vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-017 says so. npm declares it as a replay header of its
+  Bastion facts (`Npm-Notice`), so that a Bastion, which passes an answer on with an allowlist of headers, passes the notice of
+  an audit on ([bastion.md](../bastion.md) R-BAS-099 row 5).
 - Request headers `npm-command`, `npm-session`, `npm-scope`, `npm-in-ci` and `npm-auth-type` are
   logged (R-NPM-044) and never used for decisions.
 

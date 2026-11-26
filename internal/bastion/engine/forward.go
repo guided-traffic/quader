@@ -142,6 +142,10 @@ func (e *engine) forwardRequest(q *rq) *http.Request {
 // process handles the main installation's response by its marking (R-BAS-021).
 func (e *engine) process(q *rq, resp *mainclient.Response, sent time.Time, bl *baseline) {
 	q.mainRequestID = resp.Header.Get("X-Request-Id")
+	if err := e.locationError(resp.Header); err != nil {
+		e.mainError(q, err)
+		return
+	}
 	if !resp.Marked {
 		// The answer of a proxy in front of the main installation.
 		if resp.Status >= 500 {
@@ -239,7 +243,7 @@ func (e *engine) putURL(q *rq, sent time.Time, allowed bool, ref *refusal) {
 // the headers of the interface (R-BAS-021). pre holds bytes already read from the body.
 func (e *engine) passThrough(q *rq, resp *mainclient.Response, pre []byte, class, result string) {
 	q.finish(class, result)
-	copyHeader(q.w.Header(), replayHeader(resp.Header))
+	copyHeader(q.w.Header(), replayHeader(resp.Header, q.facts.ReplayHeaders))
 	q.out.source = metrics.SourceMain
 	q.w.WriteHeader(resp.Status)
 	if q.r.Method == http.MethodHead || resp.Status == http.StatusNoContent || resp.Status == http.StatusNotModified {
@@ -300,7 +304,7 @@ func (e *engine) onPass(q *rq, resp *mainclient.Response, sent time.Time) {
 	if q.r.Method == http.MethodGet && keepable {
 		body, rest, whole := readBounded(resp.Body, maxRefusalBody)
 		if whole {
-			h := replayHeader(resp.Header)
+			h := replayHeader(resp.Header, q.facts.ReplayHeaders)
 			h.Del("Content-Length")
 			e.putURL(q, sent, false, &refusal{Status: resp.Status, Header: h, Body: body})
 		}
@@ -357,7 +361,7 @@ func (e *engine) onAbsent(q *rq, resp *mainclient.Response, bl *baseline) {
 	}
 	body, rest, whole := readBounded(resp.Body, maxRefusalBody)
 	if whole {
-		h := replayHeader(resp.Header)
+		h := replayHeader(resp.Header, q.facts.ReplayHeaders)
 		h.Del("Content-Length")
 		e.negPut(q.ctx(), q.cacheKey, &negEntry{Repository: resp.Marking.Repository, StoredAt: e.now(), Refusal: refusal{Status: resp.Status, Header: h, Body: body}})
 	} else {
@@ -401,7 +405,7 @@ func (e *engine) onPrivate(q *rq, resp *mainclient.Response, sent time.Time, bl 
 		return
 	}
 	if etag := resp.Header.Get("Etag"); etag != "" {
-		d := &privDoc{Answer: answerBase(answers.URL, sent, sub, q.repo), Status: resp.Status, Header: replayHeader(resp.Header), Body: body, ETag: etag}
+		d := &privDoc{Answer: answerBase(answers.URL, sent, sub, q.repo), Status: resp.Status, Header: replayHeader(resp.Header, q.facts.ReplayHeaders), Body: body, ETag: etag}
 		e.privPut(q.cred.key, q.cacheKey, d)
 	}
 	e.serveBuffered(q, resp, body, metrics.ClassPrivate)
@@ -410,7 +414,7 @@ func (e *engine) onPrivate(q *rq, resp *mainclient.Response, sent time.Time, bl 
 // serveBuffered answers from a document held in memory, with the conditionals of the caller: the document came
 // from the main installation, so its bytes count as served from there.
 func (e *engine) serveBuffered(q *rq, resp *mainclient.Response, body []byte, class string) {
-	h := replayHeader(resp.Header)
+	h := replayHeader(resp.Header, q.facts.ReplayHeaders)
 	h.Del("Content-Length")
 	src := bytesSource(h, body)
 	src.label = metrics.SourceMain

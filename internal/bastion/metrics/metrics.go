@@ -154,6 +154,9 @@ const (
 	RefusedUnreachable = "unreachable"
 	RefusedNotServed   = "not_served"
 	RefusedReadOnly    = "read_only"
+	// RefusedForeignLocation: an answer of the main installation whose Location names another host than the Bastion's,
+	// answered 502 instead (R-BAS-099 row 6).
+	RefusedForeignLocation = "foreign_location"
 
 	// reason of quader_bastion_blocks_total.
 	BlockRefusals = "refusals"
@@ -368,7 +371,7 @@ func (m *Metrics) seed() {
 	for _, o := range []string{OpGet, OpPut, OpDelete, OpList, OpSpool} {
 		m.CacheErrors.WithLabelValues(o)
 	}
-	for _, r := range []string{RefusedBlocked, RefusedRateLimited, RefusedMissLimited, RefusedAuthTimeout, RefusedInvalid, RefusedBusy, RefusedUnreachable, RefusedNotServed, RefusedReadOnly} {
+	for _, r := range []string{RefusedBlocked, RefusedRateLimited, RefusedMissLimited, RefusedAuthTimeout, RefusedInvalid, RefusedBusy, RefusedUnreachable, RefusedNotServed, RefusedReadOnly, RefusedForeignLocation} {
 		m.Refused.WithLabelValues(r)
 	}
 	m.Blocks.WithLabelValues(BlockRefusals)

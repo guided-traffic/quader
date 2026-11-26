@@ -385,8 +385,10 @@ request per manifest and blob; measured on 2026-11-23, a warm pull of ten layers
 
 The owner's decisions of 2026-11-26 (W-34; [spec/bastion.md](../spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation)
 R-BAS-093 to R-BAS-099, [ADR-300](../decisions.md#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it)),
-**specified and not built**; the build plan is [developer/bastion-limits.md](../developer/bastion-limits.md). What they change in the trust
-boundary once their packages have landed:
+**specified and not built**, except the rows of R-BAS-099 that package E16 built on 2026-11-26 (the texts, the problem type, the
+policy names, the header allowlist, the check of `Location`, the forward's problems at the main installation and the replays' scan); the
+build plan is [developer/bastion-limits.md](../developer/bastion-limits.md). What they change in the trust boundary once their packages
+have landed:
 
 | Change | What it means for trust | Held by |
 |---|---|---|
@@ -694,15 +696,21 @@ nothing either way.
 Stage: R-BAS-099 (package E16). Subject: what an internet caller learns of the main installation's existence, not of its identity. Live,
 inherent: a miss takes longer than a hit, a `503 unavailable` follows an outage of the link, the address of a repository carries its
 project's key (INV-5), and the registry token's grant names the repositories a caller asked for. The owner's rule hides the main
-installation's name, address and structure; that a Bastion is a cache in front of something is its purpose.
+installation's name, address and structure; that a Bastion is a cache in front of something is its purpose. Since E16 the texts say "this
+service" and "this address" and the problem type is `about:blank`; until E7 renames them, the codes themselves (`main_unreachable`,
+`main_failed`, `main_timeout`, `bastion_busy`, `bastion_not_served`, `bastion_read_only`) still tell a caller that a Bastion answers
+and that a main installation stands behind it.
 
 ### H-2295 · Problem texts the main installation relays are inventoried only in part
 
-Stage: R-BAS-099 rows 7 and 15 (package E16, W-35's P8). Subject: the texts of the main installation's problems a forward relays. Live today:
-a remote's fill names the member repository behind a virtual repository ("The upstream of web/npm-remote answered 503.",
-[classify.go](../../internal/proxy/classify.go)), read on 2026-11-26 and added to the table; whether other texts of the formats' handlers name
-an upstream's address or another internal repository is not verified text by text. What closes it: P8's inventory, and the integration scan
-of R-BAS-099 for the texts its replays meet.
+Stage: R-BAS-099 rows 7 and 15 (package E16, W-35's P8). Subject: the texts of the main installation's problems a forward relays. Closed
+by E16 for the remote engine: a forward reads "The package could not be fetched right now." for every code of the remote engine and its
+upstream clients, whatever text made it ([Q-BAS-426](../spec/bastion.md#q-bas-426--a-forward-reads-a-neutral-detail-for-every-failure-of-the-remote-engine-chosen-by-the-code-when-the-problem-is-rendered)),
+and kit check 19 holds every format's error shape to the rendering that applies it. Live: a text a format's handler writes under another
+code, or a handler that copies a remote's detail into an error of its own code, is passed on as written; whether one names an upstream's
+address or another internal repository is not verified text by text. A writer of errors that renders a request's problem with
+`errs.ProblemOf` instead of `errs.ProblemFor` would bypass the rule; none outside the formats exists today, and the formats are held by
+the kit. What closes it: P8's inventory, and the integration scan of R-BAS-099 for the texts its replays meet.
 
 ### H-2296 · An administrator's or an author's words in content are passed on
 

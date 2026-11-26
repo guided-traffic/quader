@@ -114,7 +114,7 @@ func registryError(e *errs.Error) (status int, code string) {
 // {"errors":[{"code":…,"message":…,"detail":null}]}. The chain's refusals on this format's paths are rendered here too
 // (Q-ARCH-214), which is why it does not call back into the chain's problem writer.
 func (f *Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
-	p, e := errs.ProblemOf(err, "", "")
+	p, e := errs.ProblemFor(r, err, "")
 	status, code := registryError(e)
 	text := p.Detail
 	if text == "" {

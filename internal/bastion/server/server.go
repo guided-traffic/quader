@@ -44,6 +44,7 @@ import (
 	bmetrics "github.com/guided-traffic/quader/internal/bastion/metrics"
 	"github.com/guided-traffic/quader/internal/buildinfo"
 	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/observability"
 	"github.com/guided-traffic/quader/internal/observability/health"
@@ -508,6 +509,9 @@ func (s *Server) clientHandler() (http.Handler, error) {
 		OnRequest:   func(r *http.Request) { observability.RequestInfoFrom(r.Context()).SetHandler("bastion") },
 		MaxInFlight: sec.MaxInFlight, Resolver: resolver, Annotate: annotate,
 		Replica: s.instance, ReplicaHeader: httpserver.ReplicaNever, Draining: s.health.Draining,
+		// Every problem of the client listener, the chain's own refusals included, has the type about:blank (R-BAS-099,
+		// Q-BAS-321).
+		RequestContext: errs.WithBastionAnswer,
 	}.Handler(), nil
 }
 

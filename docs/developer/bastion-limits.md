@@ -44,7 +44,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 | 1 | E4 | the measurement, run once, not a test | — | not built |
 | 1 | E6 | this specification | — | written |
 | 2 | E7 | the shared wire, interface version 8, with W-35's P5 | E6, E2, W-35's wire | not built |
-| 2 | E16 | nothing of the main installation in a Bastion's answers | E2 + E3 | not built |
+| 2 | E16 | nothing of the main installation in a Bastion's answers | E2 + E3 | built |
 | 2 | E14a | anonymous requests answered without the main installation | E6 | not built |
 | 2 | E13 | egress addresses on the registration | E6 | not built |
 | 3 | E8 | the main installation's side | E7, W32, W36, E4 | not built |
@@ -186,6 +186,12 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   `internal/api/bastionmark/mark.go`; `internal/limits/errors.go`.
 - **Tests**: unit about 1 s; the assertion "no main host in any byte" in the existing replays of `test/integration/bastion`, about 0 s.
 - **Identifiers**: Q-BAS-338, H-2294 to H-2296.
+- *Built on 2026-11-26.* As planned, and beyond the list of files: the reader of a request's problems is a mark on its context
+  (`errs.WithBastionAnswer`, `errs.WithBastionForward`, read by `errs.ProblemFor`), set by the Bastion's client chain and engine and by
+  the Recognize stage ([recognize.go](../../internal/bastionmain/recognize.go)); the format error shapes of npm, NuGet, OCI and Ansible
+  Galaxy render through `errs.ProblemFor`, and kit check 19 holds every format to it; npm declares the replay header `Npm-Notice`; row 15
+  is closed at rendering by the code of the remote engine's failures, not in `classify.go` (Q-BAS-426); the metric reason
+  `foreign_location`. Decisions Q-BAS-425 to Q-BAS-428 of [spec/bastion.md](../spec/bastion.md#q-bas-425--the-headers-of-a-forwarded-answer-pass-an-allowlist-and-a-formats-need-is-a-replay-header).
 
 ### E17 · The registry token's payload version 2
 

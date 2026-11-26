@@ -64,7 +64,7 @@ const defaultChallenge = `Basic realm="quader"`
 // ask for a one-time password or report an IP restriction (R-NPM-004).
 func (f *Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	recordClientFacts(r)
-	p, e := errs.ProblemOf(err, "", "")
+	p, e := errs.ProblemFor(r, err, "")
 	text := p.Detail
 	if text == "" {
 		text = p.Title

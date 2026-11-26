@@ -324,3 +324,28 @@ func TestR_BAS_008_InterfaceRequestsAreCountedByRegistrationOperationAndOutcome(
 		}
 	}
 }
+
+// TestR_BAS_099_AForwardIsMarkedSoThatItsProblemsNameNothing: the stage marks the context of every forward it recognized, so that
+// every problem the main installation renders for it has the type about:blank and no requestId (bastion.md R-BAS-099 rows 3 and
+// 7), its own refusal of a path no Bastion forwards included. An interface route concerns the Bastion and keeps the management
+// API's problems.
+func TestR_BAS_099_AForwardIsMarkedSoThatItsProblemsNameNothing(t *testing.T) {
+	_, seen := run(t, RecognizeOptions{Tokens: &fakeTokens{}}, forwarded("/api/npm/web/npm-all/lodash",
+		iface.HeaderAuthorization, "Bearer "+tokValid, iface.HeaderInterface, version()))
+	if seen == nil || !errs.BastionForward(seen.Context()) {
+		t.Fatal("a recognized forward is not marked")
+	}
+	_, seen = run(t, RecognizeOptions{Tokens: &fakeTokens{}}, forwarded(iface.PathHandshake, "Authorization", "Bearer "+tokValid, iface.HeaderInterface, version()))
+	if seen == nil || errs.BastionForward(seen.Context()) {
+		t.Fatal("an interface route is marked as a forward")
+	}
+	_, seen = run(t, RecognizeOptions{Tokens: &fakeTokens{}}, forwarded("/api/npm/web/npm-all/lodash"))
+	if seen == nil || errs.BastionForward(seen.Context()) {
+		t.Fatal("an ordinary request is marked as a forward")
+	}
+	w, _ := run(t, RecognizeOptions{Tokens: &fakeTokens{}}, forwarded("/api/v1/tokens",
+		iface.HeaderAuthorization, "Bearer "+tokValid, iface.HeaderInterface, version()))
+	if p := problem(t, w); w.Code != http.StatusNotFound || p["type"] != errs.AboutBlank || p["requestId"] != nil {
+		t.Fatalf("the backstop of a forward: %d %v", w.Code, p)
+	}
+}

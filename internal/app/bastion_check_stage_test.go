@@ -9,8 +9,6 @@ import (
 	"github.com/guided-traffic/quader/internal/auth"
 	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/config"
-	"github.com/guided-traffic/quader/internal/formats"
-	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
@@ -51,43 +49,3 @@ func TestR_BAS_052_TheCheckDecidesItsPathsAsAReplicaThatServesThePackageFamilies
 		t.Fatal("the chain's stage of a replica that serves no package family serves /v2/")
 	}
 }
-
-// TestR_BAS_051_TheMarkingNamesTheFormatOfTheRegistryRoot: the Mark stage learns which format's write refusal names an image
-// prefix from the formats themselves.
-func TestR_BAS_051_TheMarkingNamesTheFormatOfTheRegistryRoot(t *testing.T) {
-	if got := bastionRegistryRoot(nil); got != "" {
-		t.Fatalf("no format: %q", got)
-	}
-	fs := []formats.Format{rootFormat{id: "plain"}, rootFormat{id: "img", root: true, routes: true}, rootFormat{id: "dry", root: true}}
-	if got := bastionRegistryRoot(fs); got != "img" {
-		t.Fatalf("got %q", got)
-	}
-}
-
-// rootFormat is a format with or without the registry root and routes.
-type rootFormat struct {
-	formats.Base
-	id           formats.ID
-	root, routes bool
-}
-
-func (f rootFormat) Descriptor() formats.Descriptor {
-	return formats.Descriptor{Facts: catalog.Facts{ID: f.id, RegistryRoot: f.root}, ContractVersion: formats.ContractVersion}
-}
-
-func (f rootFormat) Routes() []formats.Route {
-	if !f.routes {
-		return nil
-	}
-	return []formats.Route{{Name: string(f.id) + ".get", Method: http.MethodGet, Template: "/x"}}
-}
-
-func (f rootFormat) Match(m, p string) (*formats.Route, formats.Params, error) {
-	return formats.MatchRoutes(f.Routes(), m, p)
-}
-
-func (rootFormat) Classify(formats.Path) formats.PathInfo {
-	return formats.PathInfo{Kind: formats.Content}
-}
-
-func (rootFormat) PackageDocumentPath(string) (formats.Path, bool) { return formats.Path{}, false }

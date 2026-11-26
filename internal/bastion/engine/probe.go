@@ -36,7 +36,7 @@ type probeResult struct {
 // body while it waits.
 func (e *engine) write(q *rq) {
 	if max := int64(e.cfg.Main.MaxForwardedBody); q.r.ContentLength > max {
-		e.refuse(q, errs.E(errs.TooLarge, errs.CodeTooLarge, "The body is larger than this Bastion forwards."), metrics.RefusedReadOnly)
+		e.refuse(q, errs.E(errs.TooLarge, errs.CodeTooLarge, "The body is too large."), metrics.RefusedReadOnly)
 		return
 	}
 	key := q.r.Method + " " + q.target
@@ -136,8 +136,11 @@ func (e *engine) probe(ctx context.Context, q *rq, key string) probeResult {
 	if resp.Status == http.StatusNoContent && resp.Route == iface.RouteReadWithBody {
 		return probeResult{withBody: true}
 	}
+	if err := e.locationError(resp.Header); err != nil {
+		return probeResult{err: err}
+	}
 	body, _, whole := readBounded(resp.Body, maxRefusalBody)
-	h := replayHeader(resp.Header)
+	h := replayHeader(resp.Header, q.facts.ReplayHeaders)
 	h.Del("Content-Length")
 	ref := &refusal{Status: resp.Status, Header: h, Body: body}
 	if !whole {
@@ -172,7 +175,7 @@ func (e *engine) forwardWithBody(q *rq) {
 	fr.Method = q.r.Method
 	body, length, ok := e.requestBody(q, limit)
 	if !ok {
-		e.refuse(q, errs.E(errs.TooLarge, errs.CodeTooLarge, "The body is larger than this Bastion forwards."), metrics.RefusedReadOnly)
+		e.refuse(q, errs.E(errs.TooLarge, errs.CodeTooLarge, "The body is too large."), metrics.RefusedReadOnly)
 		return
 	}
 	fr.ContentLength = length
@@ -191,6 +194,10 @@ func (e *engine) forwardWithBody(q *rq) {
 	q.mainRequestID = resp.Header.Get("X-Request-Id")
 	if !resp.Marked && resp.Status >= 500 {
 		e.fail(q, mainclient.ErrUnreachable)
+		return
+	}
+	if err := e.locationError(resp.Header); err != nil {
+		e.mainError(q, err)
 		return
 	}
 	e.passThrough(q, resp, nil, metrics.ClassPass, metrics.ResultMiss)
