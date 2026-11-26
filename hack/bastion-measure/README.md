@@ -9,7 +9,8 @@ defaults or of a client's version. Nothing here enters the product.
 
 - **The main installation**: the working tree's `quader serve --role all`, on the stores of the worktree's own instance of the UI
   development profile (`make ui-dev-up`: PostgreSQL, Valkey and SeaweedFS in containers), with TLS, no scanner, the Bastion's base
-  URL in `server.additional_base_urls` and this machine in `bastions.trusted_proxies`.
+  URL in `server.additional_base_urls`, and this machine's loopback address in the registration's `egress`, which `run.sh main` sets
+  once the main installation is ready.
 - **The Bastion**: the working tree's `quader serve --role bastion`, one replica, the volume backend, no Valkey, every figure at its
   default unless a run names one. Before each cold run it is restarted with an empty cache.
 - **The clients**: the format journeys' client images (`quader-e2e-clients`, `-nugetclients`, `-ociclients-docker`, `-ociclients-podman`,

@@ -55,7 +55,19 @@ start_main() {
   "$E4/quader" serve --role all --config "$E4/main.yaml" >> "$E4/logs/main.log" 2>&1 &
   echo $! > "$(pidfile main)"
   wait_ready "$E4_MAIN_OPS_PORT"
+  egress
   echo "main: https://localhost:$E4_MAIN_PORT (pid $(cat "$(pidfile main)"))"
+}
+
+# egress lists this machine's loopback address as the network the Bastion connects from (R-BAS-017, the registration's egress), so
+# that the main installation believes the client addresses the Bastion forwards. The registration's ETag is its If-Match.
+egress() {
+  local api="https://localhost:$E4_MAIN_PORT/api/v1/bastions/$E4_REG" auth etag
+  [ -s "$E4/admin-token" ] || return 0
+  auth="Authorization: Bearer $(cat "$E4/admin-token")"
+  etag="$(curl -fsS --cacert "$E4/certs/ca.crt" -H "$auth" -o /dev/null -D - "$api" | tr -d '\r' | awk 'tolower($1)=="etag:" {print $2}')"
+  curl -fsS --cacert "$E4/certs/ca.crt" -H "$auth" -H "If-Match: $etag" -H 'Content-Type: application/merge-patch+json' \
+    -X PATCH -d '{"egress":["127.0.0.1/32"]}' -o /dev/null "$api"
 }
 
 # start_bastion <name> <max_bytes> <port> <ops port> <server lines> <bastion lines>: one replica with an empty cache.

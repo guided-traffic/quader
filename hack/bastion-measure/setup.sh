@@ -79,9 +79,6 @@ secrets:
 auth:
   break_glass:
     password_file: "$s/break-glass-password"
-bastions:
-  # The Bastion connects from this machine's loopback address.
-  trusted_proxies: ["127.0.0.1/32"]
 api:
   rate_limits:
     # The seed writes thousands of packages as one administrator; the measured commands go through the Bastion.
