@@ -186,6 +186,7 @@ func (fakeAdapter) Withheld(context.Context, []string) ([]int64, error) {
 	return nil, nil
 }
 func (fakeAdapter) Deprecated(context.Context, []string, int) ([]int64, error) { return nil, nil }
+
 func (fakeAdapter) Fetch() FetchRule { return FetchLeadFile }
 
 // digestAdapter is a format whose version metadata has a `digest` member (an OCI tag), for all versions but the one named none.

@@ -226,8 +226,8 @@ type VersionDetail struct {
 	Metadata         map[string]any
 	// Aliases are the other versions that name the version's content (an image's other tags), in the order of the versions, at most
 	// 100, for a format whose version is fetched as its document; AliasesMore says the content has more. Nil for any other format.
-	Aliases      []string
-	AliasesMore  bool
+	Aliases     []string
+	AliasesMore bool
 	// Deprecation and Unlisted are the version's in the repository the metadata was read from (R-API-085).
 	Deprecation  *Deprecation
 	Unlisted     bool
