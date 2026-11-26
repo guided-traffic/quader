@@ -5334,7 +5334,7 @@ prints for a refusal"), and why each format declares its shape:
 | npm | `npm` | the status and the detail (`npm error 403 403 Forbidden - PUT … - <detail>`); retries a `503` after 10 s and 60 s of its own | npm reads the member `error` |
 | NuGet | `text` | the status and reason phrase only, never a body; retries five times about 1 s apart | the body changes nothing dotnet shows; the line serves curl and logs, and is what `WriteError` writes |
 | OCI (docker, podman) | `distribution` | podman and docker print the message (`denied: <detail>`); a refusal of a `HEAD` reaches docker without a body | the registries' own shape (R-OCI-008) |
-| Ansible Galaxy | `galaxy` | with problem details `Message: <status phrase> Code: Unknown`; with the `galaxy` list `ERROR! Error when getting available collection versions for e4.app … (HTTP Code: 503, Message: <detail> Code: <code>)`, exit 1 (E15's run, below). A `429` on a document it caches (the version list) made ansible-galaxy 2.17.14 exit 250 ("Unexpected Exception … 'results'") whatever the body: it retries 429, 502 and 520 and reads the empty entry its first attempt left in its response cache; so the format answers a rate limit `503` ([Q-BAS-451](#q-bas-451--ansible-galaxy-answers-a-rate-limit-503-because-ansible-galaxy-does-not-survive-the-retry-of-a-429)) | none of the other four is a list ansible-galaxy reads |
+| Ansible Galaxy | `galaxy` | with problem details `Message: <status phrase> Code: Unknown`; with the `galaxy` list `ERROR! Error when getting available collection versions for e4.app … (HTTP Code: 503, Message: <detail> Code: <code>)`, exit 1 (E15's run, below). A `429` on a document it caches (the version list) made ansible-galaxy 2.17.14 exit 250 ("Unexpected Exception … 'results'") whatever the body: it retries 429, 502 and 520 and reads the empty entry its first attempt left in its response cache; so the format answers a rate limit `503` ([Q-BAS-451](#q-bas-451--ansible-galaxy-answers-a-rate-limit-503-because-ansible-galaxy-does-not-survive-the-retry-of-a-429)), and a gateway failure `503` too (a `502` measured the same way, below) | none of the other four is a list ansible-galaxy reads |
 | Debian | `problem` | APT prints the reason phrase only; `apt-get update` exits 0 when refused | the body changes nothing APT shows; problem details serve curl |
 | ClamAV definitions | `problem` | freshclam acts on the status alone | as Debian |
 | generic (`/files/`) | `problem` | curl prints the body as it is | the core's shape of `/files/` |
@@ -5374,8 +5374,17 @@ What ansible-galaxy 2.17.14 prints for the `galaxy` shape, run once on 2026-11-2
 | `503 rate_limited` | 3 | `ERROR! Error when getting available collection versions for e4.app from cmd_arg (…) (HTTP Code: 503, Message: Too many requests from this address. Try again in 14 minutes. Code: rate_limited)` | 1, after 1 s |
 | `503 busy` | 3 | `… (HTTP Code: 503, Message: Too many requests are waiting; try again in a moment. Code: busy)` | 1 |
 | `429 rate_limited` on the collection document too | 8 (the collection document seven times over 53 s) | `ERROR! Error when getting the collection info for e4.app … (HTTP Code: 429, Message: … Code: rate_limited)` | 1 |
+| `502 bad_gateway`, no `Retry-After` (run on 2026-11-26 after E15) | 3 | `ERROR! Unexpected Exception, this is probably a bug: 'results'` | 250, after about 1 s |
+| `503 bad_gateway`, no `Retry-After` (the same run) | 3 | `ERROR! Error when getting available collection versions for e4.app from cmd_arg (…) (HTTP Code: 503, Message: This service could not answer; try again later. Code: bad_gateway)` | 1, at once |
 
-The shape is read in every row; the `250` is the client's response cache, not the body (Q-BAS-451).
+The shape is read in every row; the `250` is the client's response cache, not the body (Q-BAS-451). So the `galaxy` shape answers a
+gateway failure, the Bastion's `502 bad_gateway` and `504 gateway_timeout`, `503` with its code and detail (`galaxyStatus` of
+[shape.go](../../internal/bastion/engine/shape.go)), and Ansible's `WriteError` answers an upstream's failure at the main installation the
+same ([formats/ansible.md](formats/ansible.md) R-ANS-007); a `504` is not retried by ansible-galaxy (`RETRY_HTTP_ERROR_CODES` is 429, 502
+and 520 in 2.17.14 and 2.21.6) and answers `503` all the same, so that one status stands for every gateway failure. This closed H-2358
+of [security/bastion.md](../security/bastion.md#h-2358--a-502-on-a-document-ansible-galaxy-caches-ends-the-client-with-exit-250).
+*As built:* `TestR_BAS_095_TheGalaxyShapeAnswersAGatewayFailure503` (the five shapes, `502` and `504`, the `503`'s bytes the client
+was run against; under 0.01 s) and `TestR_ANS_007_ErrorsHaveTheGalaxyShapeOfTheirRoute`'s rows of an upstream's failure and timeout.
 
 Acceptance criteria:
 
@@ -13180,7 +13189,7 @@ ansible-galaxy cache" (usage-and-limits.md, measured 2026-11-20).
 | (b) Keep 429, the `galaxy` shape alone | | No change | Exit 250 at a Bastion, measured |
 | (c) Users pass `--no-cache` | | The client retries a 429 six times | A switch nobody knows; the default crashes |
 
-**Choice:** (a). A `502` on a cached document crashes the client the same way (H-2358). **Applied in the spec:** R-BAS-056, R-BAS-095,
+**Choice:** (a). A `502` on a cached document crashed the client the same way (H-2358, run on 2026-11-26: exit 250); since the same day a Galaxy route answers a gateway failure `503` as well (R-BAS-095). **Applied in the spec:** R-BAS-056, R-BAS-095,
 [formats/ansible.md](formats/ansible.md) R-ANS-007, [usage-and-limits.md](usage-and-limits.md) gap 1; code:
 [format.go](../../internal/formats/ansible/format.go), [errors.go](../../internal/formats/ansible/errors.go).
 

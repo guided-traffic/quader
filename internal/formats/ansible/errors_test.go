@@ -48,7 +48,9 @@ func TestR_ANS_007_ErrorsHaveTheGalaxyShapeOfTheirRoute(t *testing.T) {
 		{"invalid archive", "POST", v3, errs.E(errs.Unprocessable, errs.CodeAnsibleInvalidArchive, "A link member."), 422, "invalid_archive", "A link member."},
 		{"too large", "POST", v3, errs.E(errs.TooLarge, errs.CodeTooLarge, "Over the limit."), 413, "payload_too_large", "Over the limit."},
 		{"no deploy target", "POST", v3, errs.E(errs.MethodNotAllowed, errs.CodeNoDeployTarget, "No target."), 405, "no_deploy_target", "No target."},
-		{"upstream failed", "GET", v3, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream answered 500."), 502, "upstream_unavailable", "The upstream answered 500."},
+		// A gateway failure answers 503, never 502 or 504: ansible-galaxy retries a 502 into its response cache's empty entry (H-2358).
+		{"upstream failed", "GET", v3, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream answered 500."), 503, "upstream_unavailable", "The upstream answered 500."},
+		{"upstream timeout", "GET", v3, errs.E(errs.UpstreamTimeout, errs.CodeUpstreamTimeout, "The upstream did not answer."), 503, "upstream_unavailable", "The upstream did not answer."},
 		{"unavailable", "GET", v3, errs.E(errs.Unavailable, errs.CodeUnavailable, "Try later."), 503, "upstream_unavailable", "Try later."},
 		{"not implemented", "GET", v3, errs.E(errs.NotImplemented, errs.CodeAnsibleNotImplemented, "Not yet."), 501, "not_implemented", "Not yet."},
 		{"an error that is none of ours", "GET", v3, errs.E(errs.Internal, errs.CodeInternal, "secret detail"), 500, "internal", "The server failed to process the request."},

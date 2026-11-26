@@ -1076,7 +1076,19 @@ reads its `results`, which the failed attempt never wrote. The collection docume
 six times and ended readably. Hence [Q-BAS-451](../spec/bastion.md#q-bas-451--ansible-galaxy-answers-a-rate-limit-503-because-ansible-galaxy-does-not-survive-the-retry-of-a-429):
 Ansible Galaxy answers a rate limit 503, which the client does not retry. ansible-core 2.21.6 (`quader-e2e-ansibleclients-core221`) has
 the same retry set and cache code (read, not run). A `502` meets the same cache (H-2358 of
-[security/bastion.md](../security/bastion.md#h-2358--a-502-on-a-document-ansible-galaxy-caches-ends-the-client-with-exit-250)).
+[security/bastion.md](../security/bastion.md#h-2358--a-502-on-a-document-ansible-galaxy-caches-ends-the-client-with-exit-250)),
+run once more on 2026-11-26 with the same stub, command and image (`galaxy-stub.py 502 bad_gateway`, then `503 bad_gateway`), the body
+the Bastion renders for a gateway failure in the `galaxy` shape (`TestR_BAS_095_TheGalaxyShapeAnswersAGatewayFailure503` holds the
+`503`'s bytes) and no `Retry-After`:
+
+| Stub | Requests | What ansible-galaxy printed | Exit |
+|---|---|---|---|
+| `502 bad_gateway` | the same three | `Got an unexpected error when getting available versions of collection e4.app: 'results'` and `ERROR! Unexpected Exception, this is probably a bug: 'results'` | 250, after about 1 s |
+| `503 bad_gateway` | the same three | `ERROR! Error when getting available collection versions for e4.app from cmd_arg (http://127.0.0.1:8080/api/ansible/e4/galaxy/) (HTTP Code: 503, Message: This service could not answer; try again later. Code: bad_gateway)` | 1, at once |
+
+Hence a Galaxy route answers a gateway failure `503`, at the Bastion (`galaxyStatus` of [shape.go](../../internal/bastion/engine/shape.go))
+and at the main installation (Ansible's `WriteError`), a `504` as well although the client does not retry it (2.17.14's and 2.21.6's
+`RETRY_HTTP_ERROR_CODES` are 429, 502 and 520, read in the images).
 
 ### The proposal for the figures (derived; not a change of code or specification)
 

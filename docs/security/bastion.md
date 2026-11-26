@@ -872,6 +872,12 @@ format does not have reaches nothing either way.
 
 ### H-2358 · A 502 on a document ansible-galaxy caches ends the client with exit 250
 
+*Closed on 2026-11-26 (the day's findings, batch B):* the `galaxy` shape of the Bastion (`galaxyStatus` of
+[shape.go](../../internal/bastion/engine/shape.go)) and Ansible's `WriteError` at the main installation
+([errors.go](../../internal/formats/ansible/errors.go)) answer a gateway failure (`502`, `504`) `503` with its code and detail, which
+ansible-galaxy 2.17.14 printed and ended with exit 1, where the `502` had ended it with exit 250 (both run once, [spec/bastion.md](../spec/bastion.md)
+R-BAS-095's table). What it was:
+
 Stage: the Bastion's `502 bad_gateway` (R-BAS-021, R-BAS-099 row 6) and the main installation's `502 upstream_unavailable` of a remote
 Galaxy (formats/ansible.md R-ANS-007). Subject: Ansible Galaxy's clients, availability and the readability of a failure only. Live:
 ansible-galaxy 2.17 and 2.21 retry a `502` as they retry a `429`, and the retry of a version list (the one document of an install it caches) reads the

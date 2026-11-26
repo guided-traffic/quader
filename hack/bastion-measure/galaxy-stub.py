@@ -6,7 +6,7 @@ other request (the version list first) with the status and code given on the com
 body, byte for byte what TestR_BAS_095_EachShapeRenders holds for a 429. Logs every request to stderr. Run inside the client's
 container, which has python3:
 
-    galaxy-stub.py 429 rate_limited     # or: 503 rate_limited, 503 busy
+    galaxy-stub.py 429 rate_limited     # or: 503 rate_limited, 503 busy, 502 bad_gateway, 503 bad_gateway
 """
 import json
 import sys
@@ -14,11 +14,12 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 STATUS = int(sys.argv[1])
 CODE = sys.argv[2]
-PHRASE = {429: "Too Many Requests", 503: "Service Unavailable", 403: "Forbidden"}[STATUS]
+PHRASE = {429: "Too Many Requests", 502: "Bad Gateway", 503: "Service Unavailable", 403: "Forbidden"}[STATUS]
 DETAIL = {
     "rate_limited": "Too many requests from this address. Try again in 14 minutes.",
     "busy": "Too many requests are waiting; try again in a moment.",
     "read_only": "This address is read-only: it serves downloads and accepts no uploads.",
+    "bad_gateway": "This service could not answer; try again later.",
 }[CODE]
 ROOT = "/api/ansible/e4/galaxy/"
 
@@ -48,7 +49,7 @@ class H(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
-            if STATUS in (429, 503):
+            if CODE in ("rate_limited", "busy"):
                 self.send_header("Retry-After", "1" if CODE == "busy" else "30")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()

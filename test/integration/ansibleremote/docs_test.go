@@ -118,7 +118,7 @@ func TestR_ANS_042_TheVersionDocumentQueuesTheFetchAndTheJobFillsTheRows(t *test
 	}
 }
 
-// TestR_ANS_035_AFailureOfTheUpstreamIsTheStateUnavailableAndAnAbsentDocumentIsNone: docs_500 is a 502 and unavailable upstream_error, a
+// TestR_ANS_035_AFailureOfTheUpstreamIsTheStateUnavailableAndAnAbsentDocumentIsNone: docs_500 is a 503 (a gateway failure on a Galaxy route, H-2358) and unavailable upstream_error, a
 // document above the bound too_large, one with an item without a name invalid_document, and a 404 the state none.
 func TestR_ANS_035_AFailureOfTheUpstreamIsTheStateUnavailableAndAnAbsentDocumentIsNone(t *testing.T) {
 	e := newEnv(t, options{})
@@ -127,9 +127,9 @@ func TestR_ANS_035_AFailureOfTheUpstreamIsTheStateUnavailableAndAnAbsentDocument
 		status int
 		state  string
 	}{
-		ansiblestub.DocsError:    {http.StatusBadGateway, "unavailable:upstream_error"},
-		ansiblestub.DocsHuge:     {http.StatusBadGateway, "unavailable:too_large"},
-		ansiblestub.DocsInvalid:  {http.StatusBadGateway, "unavailable:invalid_document"},
+		ansiblestub.DocsError:    {http.StatusServiceUnavailable, "unavailable:upstream_error"},
+		ansiblestub.DocsHuge:     {http.StatusServiceUnavailable, "unavailable:too_large"},
+		ansiblestub.DocsInvalid:  {http.StatusServiceUnavailable, "unavailable:invalid_document"},
 		ansiblestub.DocsNotFound: {http.StatusNotFound, "none:"},
 	} {
 		if err := e.stub.SetMode(ansiblestub.Mode{Docs: mode}); err != nil {

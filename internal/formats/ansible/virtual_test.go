@@ -502,8 +502,8 @@ func TestR_ANS_022_ARemoteMemberWithMoreThanAPageIsReadWholeThroughTheMemberAndT
 
 	// A page missing upstream ends the merge with an error, never with a short list.
 	delete(w.rem.docs, rkey("rem", "collections/acme/tools/versions.json", "offset=200"))
-	if r := w.get(versionsPath); r.Code != http.StatusBadGateway {
-		t.Errorf("a missing page: %d, want 502", r.Code)
+	if r := w.get(versionsPath); r.Code != http.StatusServiceUnavailable {
+		t.Errorf("a missing page: %d, want 503 (a gateway failure on a Galaxy route, H-2358)", r.Code)
 	}
 
 	// The budget of one merge is shared by its members.
@@ -944,7 +944,7 @@ func TestR_ANS_022_ARoleLookupNobodyAnswersIsEmptyAndOneAMemberCouldNotAnswerIsA
 	withHandler(t, formats.Remote, routeRolesFind, func(context.Context, *formats.Request, http.ResponseWriter) error {
 		return errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "down")
 	})
-	if r := w.get("v1/roles/"); r.Code != http.StatusBadGateway {
+	if r := w.get("v1/roles/"); r.Code != http.StatusServiceUnavailable {
 		t.Errorf("%d %s", r.Code, r.Body.String())
 	}
 	w = newWorld(t, local("loc", 1, 0))

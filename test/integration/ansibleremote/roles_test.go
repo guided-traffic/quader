@@ -147,7 +147,7 @@ func TestR_ANS_020_ARoleArchiveAnnouncesNoDigestAndARequiringRepositoryRefusesIt
 	e.get(r, rRequire, "v1/roles/?owner__username=geerlingguy&name=pip")
 	e.get(r, rRequire, "v1/roles/16/versions/")
 	a := e.get(r, rRequire, "v1/roles/archives/16/2.0.0.tar.gz")
-	if a.Status != http.StatusBadGateway || !strings.Contains(string(a.Body), "digest") {
+	if a.Status != http.StatusServiceUnavailable || !strings.Contains(string(a.Body), "digest") {
 		t.Errorf("checksumPolicy require: %d %s", a.Status, a.Body)
 	}
 }

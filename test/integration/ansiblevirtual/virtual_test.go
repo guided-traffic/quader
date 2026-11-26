@@ -212,7 +212,7 @@ func TestR_ANS_023_AMergeThatCannotAskTheRemoteMemberIsRefusedAsPartialAndComple
 		t.Errorf("Cache-Status = %q", cs)
 	}
 	// A collection only the remote member could hold: no member answered, and the failure is the engine's own.
-	if _, a := e.versions(rVirtual, "other", "stuff", e.reader); a.Status != http.StatusBadGateway || errorCode(a) != "upstream_unavailable" {
+	if _, a := e.versions(rVirtual, "other", "stuff", e.reader); a.Status != http.StatusServiceUnavailable || errorCode(a) != "upstream_unavailable" {
 		t.Errorf("no member answered: %d %s", a.Status, a.Body)
 	}
 	if err := e.stub.SetMode(ansiblestub.Mode{}); err != nil {

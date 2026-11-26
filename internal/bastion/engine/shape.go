@@ -34,6 +34,7 @@ func writeShaped(w http.ResponseWriter, r *http.Request, shape iface.ErrorShape,
 	if text == "" {
 		text = p.Title
 	}
+	status := p.Status
 	var body []byte
 	switch shape {
 	case iface.ErrorShapeNPM:
@@ -48,18 +49,30 @@ func writeShaped(w http.ResponseWriter, r *http.Request, shape iface.ErrorShape,
 		body = []byte(oneLine(p.Code + ": " + text))
 		h.Set("Content-Type", "text/plain; charset=utf-8")
 	case iface.ErrorShapeGalaxy:
-		// ansible-galaxy prints the detail and the code of the list's entries, never problem details (measured 2026-11-26).
+		// ansible-galaxy prints the detail and the code of the list's entries, never problem details (measured 2026-11-26). A
+		// gateway failure answers 503: the client retries a 502 of the version list into the empty entry of its own response cache
+		// and ends with exit 250 (H-2358, measured 2026-11-26), as Ansible's WriteError answers at the main installation.
+		status = galaxyStatus(status)
 		body, _ = json.Marshal(struct {
 			Errors []galaxyError `json:"errors"`
-		}{[]galaxyError{{Status: strconv.Itoa(p.Status), Code: p.Code, Title: http.StatusText(p.Status) + ".", Detail: text}}})
+		}{[]galaxyError{{Status: strconv.Itoa(status), Code: p.Code, Title: http.StatusText(status) + ".", Detail: text}}})
 		h.Set("Content-Type", "application/json")
 	}
 	h.Set("X-Content-Type-Options", "nosniff")
 	h.Set("Content-Length", strconv.Itoa(len(body)))
-	w.WriteHeader(p.Status)
+	w.WriteHeader(status)
 	if r.Method != http.MethodHead {
 		_, _ = w.Write(body)
 	}
+}
+
+// galaxyStatus is the status of the galaxy shape: a gateway failure (502, 504) is 503, which ansible-galaxy prints and does not
+// retry (R-BAS-095); every other status is the error's.
+func galaxyStatus(status int) int {
+	if status == http.StatusBadGateway || status == http.StatusGatewayTimeout {
+		return http.StatusServiceUnavailable
+	}
+	return status
 }
 
 // galaxyError is one entry of the error list of a Galaxy's API (the shape galaxy).

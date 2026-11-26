@@ -126,6 +126,37 @@ func TestR_BAS_095_ARouteThatTakesABodyIsForwardedWithTheCallersCredential(t *te
 // shape's reader takes the code and the detail from it, with the challenge of a 401, the methods of a 405, the wait of a 429 and
 // a 503, and no body for a HEAD. The galaxy shape's 429 is byte for byte the answer ansible-galaxy 2.17.14 was run against
 // (bastion.md R-BAS-095's table, measured 2026-11-26).
+// TestR_BAS_095_TheGalaxyShapeAnswersAGatewayFailure503: a 502 bad_gateway or 504 gateway_timeout of the Bastion answers 503 with its
+// code in the galaxy shape, which ansible-galaxy prints and does not retry into its response cache's empty entry (H-2358); every other
+// shape keeps the status.
+func TestR_BAS_095_TheGalaxyShapeAnswersAGatewayFailure503(t *testing.T) {
+	for _, e := range []*errs.Error{errBadGateway(), errs.E(errs.UpstreamTimeout, errs.CodeGatewayTimeout, errs.DetailGatewayTimeout)} {
+		for _, shape := range []iface.ErrorShape{iface.ErrorShapeProblem, iface.ErrorShapeNPM, iface.ErrorShapeText, iface.ErrorShapeDistribution, iface.ErrorShapeGalaxy} {
+			r := httptest.NewRequestWithContext(errs.WithBastionAnswer(context.Background()), http.MethodGet, "https://packages.example.com/api/ansible/web/r/v3/collections/e4/app/versions/", nil)
+			w := httptest.NewRecorder()
+			writeShaped(w, r, shape, e)
+			want := e.Status()
+			if shape == iface.ErrorShapeGalaxy {
+				want = http.StatusServiceUnavailable
+			}
+			if w.Code != want {
+				t.Errorf("%s %s: status %d, want %d", shape, e.Code, w.Code, want)
+			}
+			got, err := errs.ReadShape(shape, w.Header().Get("Content-Type"), w.Body.Bytes())
+			if err != nil || got.Code != e.Code || got.Detail != e.Detail {
+				t.Errorf("%s %s: %+v %v", shape, e.Code, got, err)
+			}
+			if shape == iface.ErrorShapeGalaxy && e.Code == errs.CodeBadGateway {
+				// The bytes ansible-galaxy 2.17.14 was run against (R-BAS-095's table): exit 1 with the detail and the code.
+				const measured = `{"errors":[{"status":"503","code":"bad_gateway","title":"Service Unavailable.","detail":"This service could not answer; try again later."}]}`
+				if w.Body.String() != measured {
+					t.Errorf("the galaxy shape's gateway failure is not the answer ansible-galaxy was run against:\n%s\n%s", w.Body, measured)
+				}
+			}
+		}
+	}
+}
+
 func TestR_BAS_095_EachShapeRenders(t *testing.T) {
 	answers := []*errs.Error{
 		errReadOnly(),

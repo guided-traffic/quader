@@ -82,7 +82,7 @@ func TestR_ANS_019_AWrongRefreshTokenFailsTheRequestAndTheUpstreamSeesNothing(t 
 		t.Fatal(err)
 	}
 	a := e.get(r, rHub3, "v3/collections/acme/base/")
-	if a.Status != http.StatusBadGateway || !strings.Contains(string(a.Body), "refused") {
+	if a.Status != http.StatusServiceUnavailable || !strings.Contains(string(a.Body), "refused") {
 		t.Fatalf("a refused credential: %d %s", a.Status, a.Body)
 	}
 	st := e.stub.RealmState()
@@ -103,7 +103,7 @@ func TestR_ANS_019_TheCredentialGoesOnlyToAHostThatMayHaveIt(t *testing.T) {
 	if err := e.stub.SetRealm(ansiblestub.Realm{Require: true, RefreshTokens: []string{offlineToken}}); err != nil {
 		t.Fatal(err)
 	}
-	if a := e.get(r, rHubNoHost, "v3/collections/acme/base/"); a.Status != http.StatusBadGateway {
+	if a := e.get(r, rHubNoHost, "v3/collections/acme/base/"); a.Status != http.StatusServiceUnavailable {
 		t.Errorf("a realm that is no credential host: %d %s", a.Status, a.Body)
 	}
 	if n := e.stub.Counts().OnHost(ansiblestub.DefaultRealmHost); n != 0 {

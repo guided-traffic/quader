@@ -36,16 +36,20 @@ const (
 //
 // code is the registry code of the error without the format's prefix (ansible_version_exists is version_exists), and the codes of the
 // kinds a Galaxy names its own way: not_authenticated, permission_denied, invalid_request and upstream_unavailable. The status is the
-// error's: 401, 403 and 404 by R-AUTHZ-016, 405 with Allow, 409 for version_exists and version_tombstoned, 413, 422, 502 and 503;
-// a rate limit answers 503 with its Retry-After and its code, never 429, which ansible-galaxy retries into its own response cache's
-// empty entry and does not survive (Q-BAS-451). The
+// error's: 401, 403 and 404 by R-AUTHZ-016, 405 with Allow, 409 for version_exists and version_tombstoned, 413, 422 and 503;
+// a rate limit answers 503 with its Retry-After and its code, never 429, and a failure of an upstream (502, 504) answers 503 with
+// its code, never 502: ansible-galaxy retries both into its own response cache's empty entry and does not survive (Q-BAS-451,
+// H-2358). The
 // chain's refusals on this format's paths are rendered here too (Q-ARCH-214), which is why it must not call back into the chain's
 // problem writer.
 func (f *Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	p, e := errs.ProblemFor(r, err, "")
 	v1 := belowV1(r)
 	status, code, detail := p.Status, galaxyCode(p.Code, e.Kind), p.Detail
-	if e.Kind == errs.RateLimited {
+	if e.Kind == errs.RateLimited || status == http.StatusBadGateway || status == http.StatusGatewayTimeout {
+		// ansible-galaxy retries a 429 and a 502 of the version list into the empty entry of its own response cache and ends with
+		// exit 250; a 503 it prints and exits 1 (Q-BAS-451, H-2358, both measured 2026-11-26). A 504 answers 503 as well: one
+		// status for every gateway failure, whichever of them the client retries.
 		status = http.StatusServiceUnavailable
 	}
 	if detail == "" {

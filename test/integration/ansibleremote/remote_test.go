@@ -66,7 +66,7 @@ func TestR_ANS_016_TheRootDocumentFollowsTheApiRootOfTheUpstream(t *testing.T) {
 
 	// An upstream URL that answers something else than an API root is reported as an unusable upstream.
 	bad := e.get(r, rNotGalaxy, "")
-	if bad.Status != http.StatusBadGateway {
+	if bad.Status != http.StatusServiceUnavailable {
 		t.Fatalf("a URL that is no API root: %d %s", bad.Status, bad.Body)
 	}
 	if code := obj(list(bad.JSON(t)["errors"])[0])["code"]; code != "upstream_unavailable" {
@@ -287,7 +287,7 @@ func TestR_ANS_018_AnArchiveThatDoesNotMatchItsDocumentOrItsPathIsRefusedAndStor
 		t.Fatal(err)
 	}
 	a := e.get(r, wrong, file)
-	if a.Status != http.StatusBadGateway || !strings.Contains(string(a.Body), "integrity") {
+	if a.Status != http.StatusServiceUnavailable || !strings.Contains(string(a.Body), "integrity") {
 		t.Errorf("wrong digest: %d %s", a.Status, a.Body)
 	}
 	if n := stored(wrong); n != 0 {
@@ -300,7 +300,7 @@ func TestR_ANS_018_AnArchiveThatDoesNotMatchItsDocumentOrItsPathIsRefusedAndStor
 		t.Fatal(err)
 	}
 	a = e.get(r, swapped, file)
-	if a.Status != http.StatusBadGateway || !strings.Contains(string(a.Body), "identity_mismatch") {
+	if a.Status != http.StatusServiceUnavailable || !strings.Contains(string(a.Body), "identity_mismatch") {
 		t.Errorf("wrong identity: %d %s", a.Status, a.Body)
 	}
 	if n := stored(swapped); n != 0 {
