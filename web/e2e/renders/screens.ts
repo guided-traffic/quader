@@ -51,6 +51,18 @@ import { brokenDeb, debRelationLookups, docsDeb, manyFilesDeb } from './debdocs'
 import { bareRole, blockedRole, pipRole } from './roles';
 import { accountOfferWalk, registryAccountWalk } from './upstream-accounts';
 import {
+  ansibleFind,
+  deepImagePath,
+  documentationHits,
+  galaxyUpstream,
+  longScope,
+  namespaceDeepPath,
+  namespaceList,
+  namespaceOnePackage,
+  namespaceReaderOfConfiguration,
+  namespaceReaderOfPackages,
+} from './namespaces';
+import {
   advisorySourceFailures,
   claimTesterFailure,
   issuerKeysFailure,
@@ -2969,6 +2981,8 @@ export const screens: readonly Screen[] = [
   { id: 'search-results', path: '/ui/search?q=web', kinds: all, de: true },
   { id: 'search-results-none', path: '/ui/search?q=zzqx', kinds: ['plain'] },
   { id: 'search-results-kind-package', path: '/ui/search?q=acme&kind=package', kinds: all },
+  // The documentation searched across collections (R-ANS-058): the tab's entries, answered in the browser (namespaces.ts).
+  { id: 'search-results-documentation', path: '/ui/search?q=firewall&kind=documentation', kinds: all, walk: documentationHits, de: true },
   { id: 'repositories', path: `${P}/repositories`, kinds: all, walk: filtersOpen(repositoryChips), widths: [1100] },
   // A list's error states (G5-20): the shared notice with Retry on its line (R-UI-175), with a request ID and Copy, and a refusal.
   { id: 'repositories-unavailable', path: `${P}/repositories`, kinds: ['plain'], walk: listUnavailable, expected: unavailable, notices: unavailableNotice },
@@ -3017,6 +3031,9 @@ export const screens: readonly Screen[] = [
   { id: 'repository-oci-upstream-lookup', path: `${O}/repositories/docker-hub-remote/upstream`, kinds: ['power'], walk: upstreamLookupWalk, expected: upstreamExpected, tables: upstreamVersions },
   { id: 'repository-oci-upstream-unknown-level', path: `${O}/repositories/docker-hub-remote/upstream`, kinds: ['power'], walk: upstreamUnknownLevelWalk, de: true },
   { id: 'repository-deb-upstream', path: `${O}/repositories/debian/upstream`, kinds: ['power'], walk: upstreamDebWalk, tables: upstreamVersions },
+  // An Ansible Galaxy remote's catalogue (R-ANS-047): the hits' tags and signed state, a namespace's downloads at the upstream, an opened
+  // collection with its count, tags and signed state (namespaces.ts).
+  { id: 'repository-ansible-upstream', path: `${O}/repositories/galaxy/upstream`, kinds: ['power'], walk: galaxyUpstream, expected: upstreamExpected, de: true, tables: upstreamVersions },
   { id: 'repository-oci-upstream-own', path: `${O}/repositories/${remoteCache.key}/upstream`, kinds: ['power', 'admin'], walk: upstreamOwnWalk, tables: upstreamVersions },
   { id: 'repository-npm-virtual', path: `${P}/repositories/npm`, kinds: all, de: true },
   { id: 'repository-long-key', path: `${P}/repositories/${longNpmKey}`, kinds: all },
@@ -3059,6 +3076,15 @@ export const screens: readonly Screen[] = [
   { id: 'repository-ansible', path: `${O}/repositories/collections`, kinds: all },
   { id: 'packages', path: `${P}/packages`, kinds: all, walk: filtersOpen(packageChips) },
   { id: 'packages-other-project', path: `${O}/packages`, kinds: all, walk: filtersOpen() },
+  // Finding collections as on Galaxy (R-ANS-057) and the page of a name (R-UI-220), answered in the browser (namespaces.ts): the list
+  // filtered by a namespace with its hits' tags and badges; a namespace of forty collections for a reader of the configuration and for a
+  // reader of the packages; an npm scope of one package with a long name; an image path several levels deep across every project.
+  { id: 'packages-namespace', path: `${O}/packages?format=ansible&namespace=acme`, kinds: all, walk: namespaceList, de: true },
+  { id: 'packages-ansible-find', path: `${O}/packages?format=ansible&q=pip`, kinds: ['plain'], walk: ansibleFind, de: true },
+  { id: 'namespace-ansible', path: `${O}/packages/-/namespaces/ansible/acme`, kinds: ['admin'], walk: namespaceReaderOfConfiguration, de: true },
+  { id: 'namespace-ansible-reader', path: `${O}/packages/-/namespaces/ansible/acme`, kinds: ['plain'], walk: namespaceReaderOfPackages },
+  { id: 'namespace-npm-one', path: `${P}/packages/-/namespaces/npm/${longScope}`, kinds: ['power'], walk: namespaceOnePackage },
+  { id: 'namespace-oci-deep', path: `/ui/namespaces/oci/${deepImagePath}`, kinds: ['plain'], walk: namespaceDeepPath, de: true },
   // A package of a format that leads with its documentation (R-UI-218: npm, NuGet, Ansible Galaxy) opens its newest version on its
   // documentation, with the switch between the versions and the verb's button in the head; its table of versions is …/-/versions
   // (R-UI-110). An image's, a Debian package's page is its table (R-UI-110). A version's page has its findings, files and details, its

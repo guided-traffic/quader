@@ -28,9 +28,9 @@ function problem(route: Route, status: number, code: string, detail: string, ret
 }
 
 const apiOf = (suffix: string) => (url: URL): boolean => new RegExp(`^/api/v1/projects/[^/]+/repositories/[^/]+/${suffix}$`).test(url.pathname);
-const capsUrl = apiOf('upstream');
+export const capsUrl = apiOf('upstream');
 export const searchUrl = apiOf('upstream/search');
-const levelsUrl = apiOf('upstream/levels');
+export const levelsUrl = apiOf('upstream/levels');
 export const packageUrl = apiOf('upstream/package');
 const verdictsUrl = apiOf('upstream/vulnerabilities');
 const requestsUrl = apiOf('delivery-requests');
