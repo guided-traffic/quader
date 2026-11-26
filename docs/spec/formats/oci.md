@@ -1816,7 +1816,8 @@ Acceptance criteria:
 - Unit (`internal/signatures/gate`, milliseconds, `TestR_OCI_040_AScreenIsHeldByTheDecisionOfTheDownload`): the hold answers the code a
   download answers for every refusal, and a pending check's code, at once and without recording; (`internal/packages/view`,
   `TestR_OCI_040_ContentGoesOnlyWhereItsDownloadWouldBeServed`) a held config drops `configs` and `labeled` and names the code.
-- Integration (area `ociremote`, `TestR_OCI_040_ARemotesConfigurationIsReadOnceItIsStored`, about 5 s with a worker): `not-stored` after
+- Integration (area `ociremote`, `TestR_OCI_040_ARemotesConfigurationIsReadOnceItIsStored`, about 5 s with a worker, on a remote with
+  `downloadOnProbe` off so that no background download of the tag's probe stores the configuration first): `not-stored` after
   the tag's fetch, the stub's labels and history once the fetch of the config stored it, and the configuration held with
   `not_allowed_in_repository` once the remote's rules block the image.
 

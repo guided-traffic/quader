@@ -14,25 +14,31 @@ import (
 // the configuration is read once the image is pulled through the repository (not-stored); the commit of the config the client then
 // fetches queues the job oci-describe, which reads the stored blob and completes the row (R-OCI-040, Q-OCI-271), and the page then
 // shows it. The stub's configuration carries the labels title and revision, which become the image's facts of the labels
-// (R-OCI-039). One web replica and one worker, one image of the stub (a manifest and three blobs of a few KiB); about 3 s.
+// (R-OCI-039). The remote starts no download on a probe: the client's GET of the tag is a probe, whose background download would
+// store the configuration at a moment of its own (R-REPO-065) and race the page's first answer. One web replica and one worker, one
+// image of the stub (a manifest and three blobs of a few KiB); about 3 s.
 func TestR_OCI_040_ARemotesConfigurationIsReadOnceItIsStored(t *testing.T) {
 	e := newEnv(t, options{})
+	const rFacts = "oci-facts"
+	e.probeRepo(rFacts, map[string]any{"downloadOnProbe": false})
+	reader := testenv.Person{ID: e.st.Text(`SELECT id::text FROM principal WHERE kind = 'user' AND name = 'reader'`), Name: "reader", Kind: "user"}
+	e.st.Policy("facts-readers", []string{"read"}, []string{rFacts}, reader)
 	rep := e.start(1)[0]
 	e.st.Start(t, testenv.ReplicaOptions{Name: "worker", Role: "worker"})
 	img, err := e.stub.Image("acme/a", "1.0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	a := e.get(rep, rAnon, "acme/a/manifests/1.0")
+	a := e.get(rep, rFacts, "acme/a/manifests/1.0")
 	if a.Status != 200 {
 		t.Fatalf("GET of the tag: %d", a.Status)
 	}
 	digest := a.Header.Get("Docker-Content-Digest")
-	e.fetched(rAnon, digest)
-	id := e.listing(rep, e.reader, rAnon)["acme/a"]["id"].(string)
+	e.fetched(rFacts, digest)
+	id := e.listing(rep, e.reader, rFacts)["acme/a"]["id"].(string)
 	config := func() map[string]any {
 		t.Helper()
-		d := e.st.Do(rep, "GET", "/api/v1/packages/"+id+"/versions/1.0?repository="+url.QueryEscape(testenv.DefaultProject+"/"+rAnon), e.reader, nil)
+		d := e.st.Do(rep, "GET", "/api/v1/packages/"+id+"/versions/1.0?repository="+url.QueryEscape(testenv.DefaultProject+"/"+rFacts), e.reader, nil)
 		if d.Status != 200 {
 			t.Fatalf("the tag's page: %d %s", d.Status, d.Body)
 		}
@@ -47,7 +53,7 @@ func TestR_OCI_040_ARemotesConfigurationIsReadOnceItIsStored(t *testing.T) {
 	if c := config(); c["unreadable"] != "not-stored" {
 		t.Fatalf("before the config is fetched: %v, want not-stored", c)
 	}
-	e.blob(rep, rAnon, "acme/a", img.Config.Digest)
+	e.blob(rep, rFacts, "acme/a", img.Config.Digest)
 	var c map[string]any
 	testenv.WaitFor(t, "the read of the stored configuration", 30*time.Second, func() bool {
 		c = config()
@@ -64,15 +70,15 @@ func TestR_OCI_040_ARemotesConfigurationIsReadOnceItIsStored(t *testing.T) {
 
 	// A configuration whose download the serve point would not serve the caller is held, with the code of that refusal (R-OCI-040):
 	// the remote's delivery rules block the image, as they block a pull of its config.
-	e.st.MustPutDeliveryRule(rep, e.admin, rAnon, testenv.PackageRule("acme/a", "block"))
-	e.st.WaitDelivered(t, rep, e.admin, rAnon, "acme/a", "", false)
-	d := e.st.Do(rep, "GET", "/api/v1/packages/"+id+"/versions/1.0?repository="+url.QueryEscape(testenv.DefaultProject+"/"+rAnon), e.reader, nil)
+	e.st.MustPutDeliveryRule(rep, e.admin, rFacts, testenv.PackageRule("acme/a", "block"))
+	e.st.WaitDelivered(t, rep, e.admin, rFacts, "acme/a", "", false)
+	d := e.st.Do(rep, "GET", "/api/v1/packages/"+id+"/versions/1.0?repository="+url.QueryEscape(testenv.DefaultProject+"/"+rFacts), e.reader, nil)
 	md, _ := d.JSON(t)["metadata"].(map[string]any)
 	held, _ := md["contentHeld"].(map[string]any)
 	if d.Status != 200 || md["configs"] != nil || md["labeled"] != nil || held["code"] != "not_allowed_in_repository" {
 		t.Errorf("a blocked image's page: %d, configs %v, contentHeld %v", d.Status, md["configs"] != nil, md["contentHeld"])
 	}
-	if b := e.get(rep, rAnon, "acme/a/blobs/"+img.Config.Digest); b.Status != 403 {
+	if b := e.get(rep, rFacts, "acme/a/blobs/"+img.Config.Digest); b.Status != 403 {
 		t.Errorf("the pull of the config the page holds: %d, want the refusal", b.Status)
 	}
 }
