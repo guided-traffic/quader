@@ -139,6 +139,17 @@ func (s *Store) TagSizes(ctx context.Context, versionIDs []int64) (map[int64]row
 	return out, err
 }
 
+// ViewDeprecated lists the tags of the repositories, stored ones and a remote's, whose Helm chart's Chart.yaml says it is deprecated
+// (R-API-085).
+func (s *Store) ViewDeprecated(ctx context.Context, repos []string, limit int) ([]int64, error) {
+	var out []int64
+	err := s.read(ctx, nil, func(qs *q.Queries) (err error) {
+		out, err = qs.OCIViewDeprecated(ctx, q.OCIViewDeprecatedParams{Repos: repos, MaxRows: int32(min(limit, 1<<20))}) //nolint:gosec // bounded above
+		return err
+	})
+	return out, err
+}
+
 func manifestRow(m q.OCIGetManifestRow) rows.Manifest {
 	out := rows.Manifest{
 		RepoID: m.RepoID, Name: m.Name, MediaType: m.MediaType, ArtifactType: m.ArtifactType.String, Size: m.Size,
@@ -366,7 +377,7 @@ func (s *Store) TagFacts(ctx context.Context, versionIDs []int64, full bool) ([]
 		for _, r := range rs {
 			f := rows.ManifestFacts{
 				Platform: r.Platform, MediaType: r.MediaType, ArtifactType: r.ArtifactType, Annotations: r.Annotations, Blobs: r.Blobs,
-				ConfigFacts: r.ConfigFacts, ConfigStored: r.ConfigStored,
+				ConfigFacts: r.ConfigFacts, ConfigStored: r.ConfigStored, ChartDeprecated: r.ChartDeprecated,
 			}
 			copy(f.Digest[:], r.Digest)
 			if d, ok := digestOf(r.ConfigDigest); ok {

@@ -514,6 +514,7 @@ WITH tags AS (
          m.annotations, m.config_digest,
          CASE WHEN $2::boolean THEN m.blobs END AS blobs,
          CASE WHEN $2::boolean THEN m.config_facts END AS config_facts,
+         COALESCE(m.config_facts->'chart'->>'deprecated' = 'true', false) AS chart_deprecated,
          ($2::boolean AND m.config_facts IS NULL AND m.config_digest IS NOT NULL
           AND EXISTS (SELECT 1 FROM items ci
                        WHERE ci.repo_id = m.repo_id AND ci.path = m.name || '/_blobs/sha256:' || encode(m.config_digest, 'hex')
@@ -525,6 +526,7 @@ WITH tags AS (
   SELECT t.id, p.repo_id, true, COALESCE(r.platform, ''), c.digest, c.media_type, COALESCE(c.artifact_type, ''), c.annotations, c.config_digest,
          CASE WHEN $2::boolean THEN c.blobs END,
          CASE WHEN $2::boolean THEN c.config_facts END,
+         false,
          ($2::boolean AND c.config_facts IS NULL AND c.config_digest IS NOT NULL
           AND EXISTS (SELECT 1 FROM items ci
                        WHERE ci.repo_id = c.repo_id AND ci.path = c.name || '/_blobs/sha256:' || encode(c.config_digest, 'hex')
@@ -536,7 +538,7 @@ WITH tags AS (
 )
 SELECT version_id::bigint AS version_id, repo_id::bigint AS repo_id, child::boolean AS child, platform::text AS platform, digest,
        media_type::text AS media_type, artifact_type::text AS artifact_type, annotations, config_digest, blobs::jsonb AS blobs,
-       config_facts::jsonb AS config_facts, config_stored::boolean AS config_stored
+       config_facts::jsonb AS config_facts, config_stored::boolean AS config_stored, chart_deprecated::boolean AS chart_deprecated
 FROM facts
 ORDER BY version_id, child, platform = '', platform, digest
 `
@@ -547,24 +549,26 @@ type OCITagFactsParams struct {
 }
 
 type OCITagFactsRow struct {
-	VersionID    int64
-	RepoID       int64
-	Child        bool
-	Platform     string
-	Digest       []byte
-	MediaType    string
-	ArtifactType string
-	Annotations  json.RawMessage
-	ConfigDigest []byte
-	Blobs        json.RawMessage
-	ConfigFacts  json.RawMessage
-	ConfigStored bool
+	VersionID       int64
+	RepoID          int64
+	Child           bool
+	Platform        string
+	Digest          []byte
+	MediaType       string
+	ArtifactType    string
+	Annotations     json.RawMessage
+	ConfigDigest    []byte
+	Blobs           json.RawMessage
+	ConfigFacts     json.RawMessage
+	ConfigStored    bool
+	ChartDeprecated bool
 }
 
 // The facts of the manifests the tags with the given version ids point at, for the package screens (R-OCI-039, R-OCI-040): the tag's own
 // manifest (child false) and, for an index, every child the repository holds, in platform order. The media types and the annotations are
-// read always (the kind and the description of a package list, R-OCI-041); the blobs and the configuration only with with_facts, which the version page asks for: a configuration can
-// hold what only a caller who may read its blob may see.
+// read always (the kind and the description of a package list, R-OCI-041), and the flag `deprecated` of a Helm chart's Chart.yaml, one bit
+// of the configuration that marks the version in every list (R-API-085); the blobs and the configuration only with with_facts, which the
+// version page asks for: a configuration can hold what only a caller who may read its blob may see.
 func (q *Queries) OCITagFacts(ctx context.Context, arg OCITagFactsParams) ([]OCITagFactsRow, error) {
 	rows, err := q.db.Query(ctx, oCITagFacts, arg.VersionIds, arg.WithFacts)
 	if err != nil {
@@ -587,6 +591,7 @@ func (q *Queries) OCITagFacts(ctx context.Context, arg OCITagFactsParams) ([]OCI
 			&i.Blobs,
 			&i.ConfigFacts,
 			&i.ConfigStored,
+			&i.ChartDeprecated,
 		); err != nil {
 			return nil, err
 		}
@@ -784,6 +789,50 @@ func (q *Queries) OCIUndescribedManifests(ctx context.Context, arg OCIUndescribe
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const oCIViewDeprecated = `-- name: OCIViewDeprecated :many
+SELECT t.id::bigint AS version_id
+  FROM (SELECT pv.id, pv.package_id, i.blob_sha256 AS manifest_sha256
+          FROM package_versions pv JOIN items i ON i.id = pv.lead_item_id
+         WHERE pv.trashed_at IS NULL AND i.trashed_at IS NULL
+        UNION ALL
+        SELECT rt.id, rt.package_id, rt.manifest_sha256 FROM oci_remote_tags rt) t
+  JOIN packages p ON p.id = t.package_id
+  JOIN repositories r ON r.id = p.repo_id
+  JOIN project rp ON rp.id = r.project_id
+  JOIN oci_manifests m ON m.repo_id = p.repo_id AND m.name = p.name AND m.digest = t.manifest_sha256
+ WHERE (rp.key || '/' || r.key) = ANY($1::text[])
+   AND m.config_facts->'chart'->>'deprecated' = 'true'
+ ORDER BY 1
+ LIMIT $2::int
+`
+
+type OCIViewDeprecatedParams struct {
+	Repos   []string
+	MaxRows int32
+}
+
+// The tags of the given repositories (qualified names), stored ones and a remote's, whose manifest is a Helm chart's whose Chart.yaml says
+// `deprecated: true` (R-API-085), at most max_rows; the caller intersects them with what the subject may read.
+func (q *Queries) OCIViewDeprecated(ctx context.Context, arg OCIViewDeprecatedParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, oCIViewDeprecated, arg.Repos, arg.MaxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var version_id int64
+		if err := rows.Scan(&version_id); err != nil {
+			return nil, err
+		}
+		items = append(items, version_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

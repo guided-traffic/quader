@@ -891,7 +891,7 @@ their blobs were kept. The task `remote-describe` walks both, and the job `oci-d
 ([describe.go](../../internal/formatdata/oci/describe.go)), so the second is empty after one walk. The rows are derived from the manifest's
 and the config's bytes; the table keeps its export class `data` ([tables.go](../../internal/formatdata/oci/tables.go)). Expand phase only.
 The statements are `OCIPutManifest`, `OCIConfigWaiting`, `OCIDescribeTarget`, `OCIPutBlobs`, `OCIPutConfigFacts`,
-`OCIUndescribedManifests` and `OCITagFacts` in [oci_manifests.sql](../../internal/meta/postgres/queries/oci_manifests.sql).
+`OCIUndescribedManifests`, `OCITagFacts` and `OCIViewDeprecated` (the tags of a Helm chart its `Chart.yaml` marks deprecated, R-API-085) in [oci_manifests.sql](../../internal/meta/postgres/queries/oci_manifests.sql).
 
 ## What the reader of a Debian data archive kept (00132)
 

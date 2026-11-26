@@ -1848,7 +1848,9 @@ a Helm chart an OCI repository holds is shown as a chart, read-only, with Helm's
   as an image's configuration is (Q-OCI-273). The description, the home, the first source and the licence the annotation
   `artifacthub.io/license` names fill `labeled` for what the manifest's annotations leave (R-OCI-039: Helm writes the title, the version,
   the description and the address as annotations already); the version page shows them where every format shows them, the
-  dependencies as a list, and a deprecated chart under the mark every format's deprecated version carries ("Deprecated.").
+  dependencies as a list. `deprecated` alone is read with every summary, outside the gated configuration: a deprecated chart carries the
+  mark and the banner every format's deprecated version carries ("Deprecated.") in every list, the switch, the search suggestions and on
+  its page, and the filter `deprecated` finds it ([api-and-ui.md](../api-and-ui.md) R-API-085, Q-API-444).
 - **Its README and its `values.yaml`** are read on demand from the content layer the repository holds, never unpacked to disk, by the
   bounded reader of untrusted archives (R-ARCH-028, `internal/formats/oci/chart`): at most 10,000 entries, 256 MiB declared and 256 KiB
   read, the first `README.md` (else `README.markdown`, `README.txt`, `README`) and the first `values.yaml` at the chart's root only (a
@@ -4723,7 +4725,9 @@ R-OCI-042 reads a chart's package from the object store each time its version pa
 package is a few KiB to a few MiB, bounded by the reader at 256 MiB declared. Live since R-OCI-042; real for a page of a large chart that
 many readers open at once, which reads the package once per view.
 
-### H-2117 · A deprecated chart is marked on its page and not in the lists
+### H-2117 · A deprecated chart is not marked in the tab Upstream before it is cached
 
-A chart's `deprecated` stands on its version page with the mark every format's deprecated version carries; no list, search or Upstream
-tab marks it, as no format's does yet (the package that unifies deprecation, W-30 G4). Live since R-OCI-042.
+A chart's `deprecated` marks its version page, the table of versions, the switch, the package lists and the search suggestions, and the
+filter `deprecated` finds it ([api-and-ui.md](../api-and-ui.md) R-API-085, Q-API-444); the tab Upstream lists a tag a remote has not cached
+without the mark, since the upstream's catalogue does not carry a chart's configuration ([api-and-ui.md](../api-and-ui.md) H-2165). Live
+for every deprecated chart a remote has not pulled.

@@ -9207,10 +9207,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-API
 
-165 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
+166 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-API: 165 questions</summary>
+<summary>Q-API: 166 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9379,6 +9379,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-API-441](spec/api-and-ui.md#q-api-441--a-package-is-shown-deprecated-when-its-latest-version-is-and-the-filter-asks-the-same) | A package is shown deprecated when its latest version is, and the filter asks the same | Decided by the development agent on 2026-11-26 | (a) The row carries its latest version's deprecation, and `deprecated=true` keeps the packages whose latest visible version is deprecated | — |
 | [Q-API-442](spec/api-and-ui.md#q-api-442--one-operation-on-a-repositorys-package-the-format-decides-the-subject) | One operation on a repository's package; the format decides the subject | Decided by the development agent on 2026-11-26 | (a) `PUT`/`DELETE …/repositories/{repoKey}/packages/{packageName}/deprecation`, the version in the body or the query; the format refuses a version it cannot carry, or its absence | — |
 | [Q-API-443](spec/api-and-ui.md#q-api-443--a-suggestion-is-marked-for-a-repository-the-caller-reads-whole) | A suggestion is marked for a repository the caller reads whole | Decided by the development agent on 2026-11-26 | (a) For the suggestions placed in a repository the caller reads whole, the latest version's candidates (`PackageViewLatest`) and the formats' summaries, one statement and one read per format | — |
+| [Q-API-444](spec/api-and-ui.md#q-api-444--a-helm-charts-deprecation-is-one-bit-of-its-configuration-every-reader-of-the-version-sees) | A Helm chart's deprecation is one bit of its configuration every reader of the version sees | Decided by the development agent on 2026-11-26 | (a) The flag is read with every summary, as a column of the statement `OCITagFacts` outside the gated configuration, and the filter reads it with `OCIViewDeprecated` | — |
 
 </details>
 

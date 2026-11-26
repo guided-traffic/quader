@@ -196,4 +196,7 @@ type ManifestFacts struct {
 	// ConfigStored is whether the repository holds the configuration's blob, asked only while the configuration is not read: a stored
 	// one waits for the job that reads it, one that is not stored is read once a client pulls the image through the repository.
 	ConfigStored bool
+	// ChartDeprecated is whether the manifest is a Helm chart's whose Chart.yaml says `deprecated: true`, read with every summary: one bit
+	// of the configuration that marks the version in every list (R-API-085). Always false for an index's child.
+	ChartDeprecated bool
 }

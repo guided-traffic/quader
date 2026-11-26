@@ -165,6 +165,24 @@ func (viewAdapter) Describe(ctx context.Context, ports formats.DataPorts, vs []f
 	return out, nil
 }
 
+var _ formats.DeprecationFinder = (*Format)(nil)
+
+// DeprecatedVersions implements [formats.DeprecationFinder]: the tags of the repositories whose Helm chart's Chart.yaml says it is
+// deprecated (R-API-085), which the filter `deprecated` of the package list reads. An image has no deprecation; a chart's is set by the
+// chart that is pushed, never through the management operation, so the format has no [formats.Deprecator].
+func (*Format) DeprecatedVersions(ctx context.Context, ports formats.DataPorts, repos []string, limit int) ([]formats.VersionID, error) {
+	st, err := viewPort(ports)
+	if err != nil {
+		return nil, err
+	}
+	ids, err := st.ViewDeprecated(ctx, repos, limit+1)
+	out := make([]formats.VersionID, len(ids))
+	for i, id := range ids {
+		out[i] = formats.VersionID(id)
+	}
+	return out, err
+}
+
 var _ formats.ViewSizer = (*Format)(nil)
 
 // ViewSizes implements [formats.ViewSizer]: the size of a tag, as the package screens show it for the version, is the size of its

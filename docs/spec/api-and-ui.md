@@ -2572,7 +2572,7 @@ page (W-30, G4). One state, one look, one operation
 | npm | one version, with a message (at most 1,024 characters) | `npm_versions.deprecated`: a local publisher's, a remote's upstream's from the stored package document (R-NPM-050) | the operation below; `npm deprecate` itself is not built ([H-2160](formats/npm.md#h-2160--npm-deprecate-is-not-built-the-management-operation-sets-an-npm-deprecation)) | `versions[v].deprecated` of the package document | `npm install` prints `npm warn deprecated <name>@<version>: <message>`; a range picks a version that is not deprecated where one satisfies it; `npm view` shows `DEPRECATED` |
 | NuGet | one version, with reasons (`Legacy`, `CriticalBugs`, `Other`), an optional message and an optional alternate package | the member `deprecation` of `nuget_version.metadata`: a local version's set below, a remote's cached version's from its upstream's registration ([R-NUGET-036](formats/nuget.md#r-nuget-036--a-version-is-deprecated-with-reasons-a-message-and-an-alternate-package)) | the operation below | `deprecation` of the registration's catalog entry and of a search result | `dotnet list package --deprecated` lists it with its reasons and alternative; Visual Studio marks it and links the alternate; a restore warns of nothing; the message is shown by no client |
 | Ansible Galaxy | the whole collection, every version of it | `ansible_collection_deprecations`: a local collection's set below, a remote's from its upstream's collection document ([R-ANS-060](formats/ansible.md#r-ans-060--a-collection-is-deprecated-as-a-whole)) | the operation below | `deprecated: true` of the collection document | no release of `ansible-galaxy` reads it: a deprecated collection installs as any other, without a warning |
-| OCI | an image: none in the format. A Helm chart says `deprecated: true` in its `Chart.yaml`, set by pushing it | — | — | — | `helm install` and `helm upgrade` warn; not marked in Quader's lists yet ([H-2165](#h-2165--a-helm-charts-deprecation-is-not-marked-in-the-lists)) |
+| OCI | an image: none in the format. A Helm chart: that version, without a message, when its `Chart.yaml` says `deprecated: true` | the chart's facts of `oci_manifests.config_facts` (formats/oci.md R-OCI-042), a stored tag's and a remote's cached tag's ([Q-API-444](#q-api-444--a-helm-charts-deprecation-is-one-bit-of-its-configuration-every-reader-of-the-version-sees)) | pushing the chart; the operation below refuses it | `deprecated: true` of the `Chart.yaml` in the chart's config blob | `helm install` and `helm upgrade` print `WARNING: This chart is deprecated`; `helm lint`, `helm search` and `helm pull` say nothing |
 | Debian | none: a transitional package says it in its description, a convention | — | — | — | — |
 | generic files, ClamAV definitions | none | — | — | — | — |
 
@@ -26184,6 +26184,21 @@ caller reads in part is decided on the package alone.
 
 **Choice:** (a). **Applied in the spec:** R-API-085, `view.Service.Suggest`.
 
+### Q-API-444 · A Helm chart's deprecation is one bit of its configuration every reader of the version sees
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a Helm chart says it is deprecated in its `Chart.yaml`, which the chart's config blob holds. The facts of a configuration are
+content and are left out for a caller who may not read the blob (formats/oci.md Q-OCI-273); the lists, the switch, the search suggestions
+and the filter `deprecated` read the summary, which carries no content.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The flag is read with every summary, as a column of the statement `OCITagFacts` outside the gated configuration, and the filter reads it with `OCIViewDeprecated` (chosen) | Every reader of the version sees the mark | One bit, which `helm install` prints to everyone who pulls the chart; the same rule as npm's and NuGet's deprecation, which their documents carry for every reader | A reader who may not download the chart learns one fact of its configuration |
+| (b) Only for a caller who may read the config blob | The rule of the configuration's facts | Nothing of a blob leaks | A list would ask the rules of every listed version's blob, a read per row; the mark would differ between readers of the same list |
+
+**Choice:** (a). **Applied in the spec:** R-API-085; formats/oci.md R-OCI-042.
+
 ### Q-UI-1300 · One mark: Deprecated is a warning badge, Unlisted a plain one
 
 Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
@@ -27669,12 +27684,12 @@ owner whether it is regularly present.
 A version older than the ten newest is reached through the table of every version (`…/-/versions`), not through the switch; the switch
 has no search (Q-UI-1243).
 
-### H-2165 · A Helm chart's deprecation is not marked in the lists
+### H-2165 · The tab Upstream does not mark a deprecated Helm chart
 
-Stage: R-API-085. A Helm chart pushed to an OCI repository says `deprecated: true` in its `Chart.yaml`; the package that reads a chart's
-facts marks it on the chart's page (its gap H-2117) and was not on `main` when the deprecation was built, so the lists, the switch and the
-tab Upstream do not mark a deprecated chart. Live for every deprecated chart; what closes it is a `DeprecationFinder` and the summary member
-of OCI's view for a chart, read from where that package stores the chart's facts.
+Stage: R-API-085, the tab Upstream of an OCI remote. A chart's deprecation is in its config blob, which the catalogue of Docker Hub, Quay,
+GitHub or GitLab does not carry: a tag the remote has not cached is listed there without the mark, though `helm install` of it will warn.
+A cached tag is marked in every other list. Live for every deprecated chart a remote has not pulled yet; what makes it real is a reader who
+chooses a chart version from the tab Upstream alone.
 
 ### H-2166 · Which copy of a latest version the list reads is not defined
 

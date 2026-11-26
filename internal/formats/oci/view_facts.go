@@ -286,6 +286,10 @@ func describeFacts(d *formats.ViewData, name string, tf rows.TagFacts, want form
 			}
 			d.Metadata["kind"] = artifactKind(tf.Image.MediaType, tf.Image.ArtifactType)
 		}
+		// A Helm chart its Chart.yaml marks deprecated is deprecated, that version only and without a message (R-API-085).
+		if tf.Image.ChartDeprecated {
+			d.Deprecation = &formats.Deprecation{}
+		}
 	}
 	if !want.Has(formats.ViewDetails | formats.ViewFacts) {
 		return

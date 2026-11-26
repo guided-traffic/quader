@@ -36,7 +36,7 @@ how many filters are set.
    | **Package type** | Packages of the ticked formats |
    | **Repository** | Packages with a version in one of the ticked repositories; a virtual repository stands for its members |
    | **Keyword** | Packages with a version that lists exactly this keyword |
-   | **State** | **Deprecated only**: packages whose latest version is deprecated (npm, NuGet, Ansible Galaxy) |
+   | **State** | **Deprecated only**: packages whose latest version is deprecated (npm, NuGet, Ansible Galaxy, Helm charts) |
    | **Created** | Packages whose first version falls into **Last 7 days**, **Last 30 days**, **Last 90 days** or a **Custom period** from **From** to **To (included)** |
 
 3. Select **Apply filters**. The panel closes.
@@ -141,10 +141,11 @@ Links in **Details** open in a new tab and only for `http` and `https` addresses
 
 ## Deprecated and unlisted versions
 
-npm and NuGet deprecate single versions, Ansible Galaxy a whole collection. A deprecated version is still downloaded and installed;
-the publisher says it should no longer be used, and why. Quader marks it **Deprecated** wherever it is listed: in the table of versions,
+npm and NuGet deprecate single versions, Ansible Galaxy a whole collection; a Helm chart is deprecated when its `Chart.yaml` says
+`deprecated: true`. A deprecated version is still downloaded and installed; the publisher says it should no longer be used, and why. Quader marks it **Deprecated** wherever it is listed: in the table of versions,
 in the switch of a version's head, in a repository's package list and in **Packages** (for a package, by its latest version), in the
-search's results and suggestions, and on the tab **Upstream** of a remote repository. Point at the mark to read the message.
+search's results and suggestions, and on the tab **Upstream** of a remote repository (a Helm chart only once the remote has cached it:
+the upstream's catalogue does not say it). Point at the mark to read the message.
 
 A NuGet version can also be **Unlisted**: it is hidden from search and still downloaded when a project asks for exactly this version. It
 is not deprecated, and the two marks can stand together.
@@ -160,7 +161,9 @@ NuGet) or **Deprecate collection** (Ansible Galaxy). The dialog asks what the fo
 
 On a deprecated version the menu has **Change deprecation** and **Undo deprecation**. You need the deploy permission on the package and,
 where the package has owners, ownership of it. A remote repository shows the deprecation of its upstream and a virtual repository that of
-its members; neither can be changed there. `npm deprecate` itself is not available yet: deprecate an npm version on its page.
+its members; neither can be changed there. `npm deprecate` itself is not available yet: deprecate an npm version on its page. A Helm
+chart has no such menu: set `deprecated: true` in its `Chart.yaml` and push the chart as a new version; `helm install` and `helm upgrade`
+then print a warning.
 
 ## Distribution tags
 

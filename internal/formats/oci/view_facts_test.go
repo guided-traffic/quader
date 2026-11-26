@@ -105,3 +105,20 @@ func TestR_OCI_041_KindOfArtifact(t *testing.T) {
 		}
 	}
 }
+
+// TestR_API_085_AChartItsChartYamlMarksDeprecatedIsDeprecated: a Helm chart whose Chart.yaml says `deprecated: true` is deprecated, that
+// version alone and without a message, in the summary every list reads; a chart that does not say it, and an image, is not.
+func TestR_API_085_AChartItsChartYamlMarksDeprecatedIsDeprecated(t *testing.T) {
+	tf := rows.TagFacts{Image: rows.ManifestFacts{MediaType: manifest.MediaTypeImageManifest, ArtifactType: manifest.MediaTypeHelmConfig, ChartDeprecated: true}}
+	var d formats.ViewData
+	describeFacts(&d, "acme/chart", tf, formats.ViewSummary)
+	if d.Deprecation == nil || d.Deprecation.Package || d.Deprecation.Message != "" {
+		t.Errorf("a deprecated chart's summary: %+v", d.Deprecation)
+	}
+	tf.Image.ChartDeprecated = false
+	var plain formats.ViewData
+	describeFacts(&plain, "acme/chart", tf, formats.ViewSummary)
+	if plain.Deprecation != nil {
+		t.Errorf("a chart that is not deprecated: %+v", plain.Deprecation)
+	}
+}

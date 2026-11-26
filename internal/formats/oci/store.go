@@ -67,6 +67,9 @@ type Store interface {
 	// the repository holds, in platform order: the annotations always, the blobs and the configuration with full (R-OCI-039, R-OCI-040).
 	// A version that is not a stored tag of a recorded manifest is absent.
 	TagFacts(ctx context.Context, versionIDs []int64, full bool) ([]rows.TagFacts, error)
+	// ViewDeprecated lists, of the repositories (qualified names), the tags whose Helm chart's Chart.yaml says it is deprecated, stored
+	// ones and a remote's (a remote's by its negative id, as the listing names it), at most limit (R-API-085).
+	ViewDeprecated(ctx context.Context, repos []string, limit int) ([]int64, error)
 	// QueueConfigRead queues, in the transaction that commits a blob, the read of the configuration of every manifest of the name that
 	// names the blob as an image's or a chart's configuration not read yet (R-OCI-040, R-OCI-042, Q-OCI-271); a blob no such manifest
 	// waits for queues nothing.

@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -450,6 +451,10 @@ func (t *twin) TagFacts(ctx context.Context, versionIDs []int64, full bool) ([]r
 			if full {
 				f.Blobs, f.ConfigFacts = m.Blobs, m.ConfigFacts
 			}
+			var cf rows.ConfigFacts
+			if platform == "" && json.Unmarshal(m.ConfigFacts, &cf) == nil && cf.Chart != nil {
+				f.ChartDeprecated = cf.Chart.Deprecated
+			}
 			return f
 		}
 		var repo int64
@@ -468,6 +473,9 @@ func (t *twin) TagFacts(ctx context.Context, versionIDs []int64, full bool) ([]r
 	}
 	return out, nil
 }
+
+// ViewDeprecated finds nothing: the twin has no generic version ids of a repository's tags (see TagFacts).
+func (t *twin) ViewDeprecated(context.Context, []string, int) ([]int64, error) { return nil, nil }
 
 // QueueConfigRead is the twin of the data port's queueing of oci-describe: it records the manifests that wait for the blob as their
 // configuration, as the job's queue would hold them.
