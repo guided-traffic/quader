@@ -37,11 +37,16 @@ func catalogueFixture() *formattest.CatalogueFixture {
 			api + "namespaces/guidedtraffic/":                             {Status: http.StatusNotFound, Body: read("gal-namespace-guidedtraffic.json")},
 		},
 		Documents: map[string][]byte{
-			RootDocument + "\x00" + documentVariant:                             read("gal-root.json"),
-			VersionsDocumentPath("osism", "sonic") + "\x00" + offsetVariant(0):  read("gal-versions.json"),
-			CollectionDocumentPath("osism", "sonic") + "\x00" + documentVariant: read("gal-collection.json"),
+			RootDocument + "\x00" + documentVariant:                                   read("gal-root.json"),
+			VersionsDocumentPath("osism", "sonic") + "\x00" + offsetVariant(0):        read("gal-versions.json"),
+			CollectionDocumentPath("osism", "sonic") + "\x00" + documentVariant:       read("gal-collection.json"),
+			VersionDocumentPath("osism", "sonic", "2.0.1") + "\x00" + documentVariant: read("gal-version.json"),
+			DocsDocumentPath("osism", "sonic", "2.0.1") + "\x00" + documentVariant:    read("gal-docs-blob.json"),
 		},
 		Search: "keycloak_realm", Level: []string{"osism"}, Package: "osism.sonic", Absent: "osism.absent",
+		// The highest version's facts from its version document (its licence list is empty) and the README of its docs-blob, the HTML
+		// the Galaxy rendered (R-CUR-028).
+		Readme: "Ansible collection osism.sonic",
 		// The collection index answers a namespace the Galaxy does not have with an empty page; its document answers 404 (Q-CUR-165).
 		UnknownLevel: []string{"guidedtraffic"},
 	}, {
@@ -57,5 +62,7 @@ func catalogueFixture() *formattest.CatalogueFixture {
 			"https://galaxy.example/api/v3/collections/?limit=2&namespace=osism&offset=4": {Body: read("gal-ns-4.json")},
 		},
 		Search: "keycloak_realm", ExpectSearchUnavailable: true, Level: []string{"osism"}, Package: "osism.sonic", Absent: "osism.absent",
+		// Without the collection document no version is named the highest: no facts and no README (R-CUR-028).
+		NoReadme: true,
 	}}}
 }

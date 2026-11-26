@@ -55,10 +55,11 @@ func (remoteAdapter) CatalogueCaps(_ context.Context, u discover.Upstream) (disc
 type searchAnswer struct {
 	Objects []struct {
 		Package struct {
-			Name        string `json:"name"`
-			Version     string `json:"version"`
-			Description string `json:"description"`
-			Date        string `json:"date"`
+			Name        string   `json:"name"`
+			Version     string   `json:"version"`
+			Description string   `json:"description"`
+			Date        string   `json:"date"`
+			Keywords    []string `json:"keywords"`
 		} `json:"package"`
 		Updated string `json:"updated"`
 		Flags   struct {
@@ -108,6 +109,7 @@ func (remoteAdapter) Search(ctx context.Context, u discover.Upstream, q discover
 			continue
 		}
 		h := discover.Hit{Name: n.String(), Description: o.Package.Description, Latest: o.Package.Version, Updated: remote.ParseTime(o.Package.Date)}
+		h.Keywords = o.Package.Keywords // the search answer's keywords (R-CUR-028); it carries no download count
 		if v, err := o.Flags.Insecure.Int64(); err == nil && v > 0 {
 			h.Flags = append(h.Flags, "insecure")
 		}
@@ -281,6 +283,7 @@ func (remoteAdapter) Package(ctx context.Context, u discover.Upstream, pkg strin
 	// The latest version's facts and the document's README, from the document just read (R-CUR-028): no further request.
 	latest := latestOf(info.Tags, all, parsed.Versions)
 	info.About = aboutOf(parsed, latest)
+	info.Keywords = keywordsOf(parsed, latest)
 	readme := readmeOf(parsed, latest)
 	info.Readme = &readme
 	return info, nil

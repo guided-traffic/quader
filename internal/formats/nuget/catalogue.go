@@ -80,11 +80,13 @@ func (remoteAdapter) Search(ctx context.Context, u discover.Upstream, q discover
 	var res struct {
 		TotalHits int `json:"totalHits"`
 		Data      []struct {
-			ID          string `json:"id"`
-			Version     string `json:"version"`
-			Description string `json:"description"`
-			Verified    bool   `json:"verified"`
-			Deprecation *struct {
+			ID             string          `json:"id"`
+			Version        string          `json:"version"`
+			Description    string          `json:"description"`
+			Verified       bool            `json:"verified"`
+			Tags           json.RawMessage `json:"tags"`
+			TotalDownloads *int64          `json:"totalDownloads"`
+			Deprecation    *struct {
 				Reasons []string `json:"reasons"`
 			} `json:"deprecation"`
 		} `json:"data"`
@@ -99,6 +101,12 @@ func (remoteAdapter) Search(ctx context.Context, u discover.Upstream, q discover
 			continue
 		}
 		h := discover.Hit{Name: id, Description: row.Description}
+		// The search answer's tags and the downloads the upstream counts (R-CUR-028; the popularity of R-ANS-047 for NuGet).
+		h.Keywords = tagList(row.Tags)
+		if row.TotalDownloads != nil && *row.TotalDownloads >= 0 {
+			n := *row.TotalDownloads
+			h.Downloads = &n
+		}
 		if v, err := version.Parse(row.Version); err == nil {
 			h.Latest = v.URLForm()
 		}
@@ -195,6 +203,7 @@ func (remoteAdapter) Package(ctx context.Context, u discover.Upstream, name stri
 	}
 	// The newest leaf's description and facts (R-CUR-028): the registration was read for the versions anyway.
 	info := discover.PackageInfo{Found: true, Name: lower, Description: newest.description, About: newest.about()}
+	info.Keywords = newest.keywords()
 	info.Versions, info.Total, info.Cursor, info.Done = discover.PageVersions(all, rq)
 	return info, nil
 }

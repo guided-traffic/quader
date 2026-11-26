@@ -74,29 +74,15 @@ func (l newestLeaf) about() discover.About {
 	return a
 }
 
-// keywords are the newest leaf's tags: a list, or one string of words as older feeds write them.
+// keywords are the newest leaf's tags.
 func (l newestLeaf) keywords() []string {
 	var e struct {
 		Tags json.RawMessage `json:"tags"`
 	}
-	if json.Unmarshal(l.entry, &e) != nil || len(e.Tags) == 0 {
+	if json.Unmarshal(l.entry, &e) != nil {
 		return nil
 	}
-	var list []string
-	if json.Unmarshal(e.Tags, &list) != nil {
-		var one string
-		if json.Unmarshal(e.Tags, &one) != nil {
-			return nil
-		}
-		list = strings.Fields(one)
-	}
-	var out []string
-	for _, t := range list {
-		if t = strings.TrimSpace(t); t != "" {
-			out = append(out, t)
-		}
-	}
-	return out
+	return tagList(e.Tags) // the list a registration writes, or the string of words an older feed's leaf has (view.go)
 }
 
 // Readme implements [discover.Documented]: the README the service index's template names for the version, one request. An upstream

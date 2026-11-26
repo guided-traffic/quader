@@ -311,6 +311,7 @@ func (remoteAdapter) Package(ctx context.Context, u discover.Upstream, name stri
 	}
 	deprecated := false
 	var pop discover.Popularity
+	var about discover.About
 	if doc, ok, err := u.Document(ctx, CollectionDocumentPath(ns, n), documentVariant); err != nil {
 		return discover.PackageInfo{}, err
 	} else if ok {
@@ -324,7 +325,7 @@ func (remoteAdapter) Package(ctx context.Context, u discover.Upstream, name stri
 		_ = json.Unmarshal(doc, &c) //nolint:errcheck // a collection document that does not read marks nothing
 		deprecated, pop.Downloads = c.Deprecated, nonNegative(c.Downloads)
 		if c.Highest != nil {
-			if pop.Keywords, pop.Signed, err = highestFacts(ctx, u, ns, n, c.Highest.Version); err != nil {
+			if pop.Keywords, pop.Signed, about, err = highestFacts(ctx, u, ns, n, c.Highest.Version); err != nil {
 				return discover.PackageInfo{}, err
 			}
 		}
@@ -356,7 +357,11 @@ func (remoteAdapter) Package(ctx context.Context, u discover.Upstream, name stri
 	for _, p := range vs {
 		all = append(all, p.f)
 	}
-	info := discover.PackageInfo{Found: true, Name: ns + "." + n, Popularity: pop}
+	if deprecated && about.Version != "" {
+		// The Galaxy deprecates a whole collection and gives no message: the facts say it of the highest version (R-CUR-028).
+		about.Deprecation = &discover.Deprecation{}
+	}
+	info := discover.PackageInfo{Found: true, Name: ns + "." + n, Popularity: pop, About: about}
 	info.Versions, info.Total, info.Cursor, info.Done = discover.PageVersions(all, rq)
 	return info, nil
 }
@@ -403,17 +408,18 @@ func nonNegative(n *int64) *int64 {
 	return n
 }
 
-// highestFacts reads the tags and the signed state of a collection's highest version from its version document (R-ANS-047, Q-ANS-129):
+// highestFacts reads the tags, the signed state and the facts (licence, links, dependencies; R-CUR-028) of a collection's highest version
+// from its version document (R-ANS-047, Q-ANS-129):
 // one request through the upstream the catalogue lends, from the repository's stored copy when it holds one. The tags are the
 // document's metadata.tags, the signed state whether its signatures list holds one; a version the upstream does not have, or a document
 // that does not read, tells nothing.
-func highestFacts(ctx context.Context, u discover.Upstream, ns, name, ver string) ([]string, *bool, error) {
+func highestFacts(ctx context.Context, u discover.Upstream, ns, name, ver string) ([]string, *bool, discover.About, error) {
 	if !isVersion(ver) {
-		return nil, nil, nil
+		return nil, nil, discover.About{}, nil
 	}
 	doc, ok, err := u.Document(ctx, VersionDocumentPath(ns, name, ver), documentVariant)
 	if err != nil || !ok {
-		return nil, nil, err
+		return nil, nil, discover.About{}, err
 	}
 	var d struct {
 		Metadata struct {
@@ -422,14 +428,14 @@ func highestFacts(ctx context.Context, u discover.Upstream, ns, name, ver string
 		Signatures *[]json.RawMessage `json:"signatures"`
 	}
 	if !readsAs(doc, &d) {
-		return nil, nil, nil
+		return nil, nil, discover.About{}, nil
 	}
 	var signed *bool
 	if d.Signatures != nil {
 		v := len(*d.Signatures) > 0
 		signed = &v
 	}
-	return d.Metadata.Tags, signed, nil
+	return d.Metadata.Tags, signed, aboutOfVersion(doc, ver), nil
 }
 
 // isVersion reports whether the text is a version of the format: a highest version the Galaxy names that is none is not asked for.

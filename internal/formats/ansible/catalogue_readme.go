@@ -10,7 +10,6 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/ansible/collection"
 	"github.com/guided-traffic/quader/internal/formats/ansible/galaxydoc"
-	"github.com/guided-traffic/quader/internal/formats/ansible/version"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
@@ -37,7 +36,7 @@ func aboutOfVersion(doc []byte, ver string) discover.About {
 			Dependencies  map[string]string `json:"dependencies"`
 		} `json:"metadata"`
 	}
-	if json.Unmarshal(doc, &d) != nil {
+	if !readsAs(doc, &d) {
 		return discover.About{}
 	}
 	m := d.Metadata
@@ -84,12 +83,12 @@ func (remoteAdapter) Readme(ctx context.Context, u discover.Upstream, name, ver 
 				Version string `json:"version"`
 			} `json:"highest_version"`
 		}
-		if json.Unmarshal(doc, &c) != nil || c.Highest == nil {
+		if !readsAs(doc, &c) || c.Highest == nil {
 			return discover.Readme{}, nil
 		}
 		ver = c.Highest.Version
 	}
-	if _, err := version.Parse(ver); err != nil {
+	if !isVersion(ver) {
 		return discover.Readme{}, nil
 	}
 	r := discover.Readme{Version: ver, HTML: true}
