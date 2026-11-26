@@ -27779,35 +27779,6 @@ count. The deprecation's banner has the words and the order of a stored version'
 say in one line what comes with a stored version. **Applied in the spec:** R-CUR-028. Code:
 [upstream-docs.ts](../../web/src/app/features/repositories/upstream/upstream-docs.ts).
 
-## What this does not cover
-
-### H-2173 · A version with a mark and a signature badge puts its table into blocks at 1,024 px
-
-Stage: the version's cell of the table of versions (R-UI-110), which keeps the version, its marks (**Pre-release**, **Deprecated**,
-**Unlisted**, R-API-085) and its signature badge on one line. Subject: a package one of whose versions carries a mark and a badge (the
-seed's NuGet package: "2.0.0-preview.1 Pre-release Invalid signature"). The cell's least width puts the table into blocks at 1,024 px
-beside the side bar, against Q-UI-969; measured on 2026-11-26 with the downloads' line under **Last download** and without it, the same.
-Live wherever signatures are checked and a version is marked. What closes it: the cell wraps between its badges, as an image's row wraps
-between its tags.
-
-### H-2172 · An image's date word follows the version's holders, not each row
-
-Stage: `arrivedLabel` (Q-UI-1314). Subject: an image a local and a remote repository both hold, and a table whose rows are held by
-different classes. The word is one per screen: Pushed where any holder is local, Fetched where all are remote, read from the version (its
-page) or from the package's newest version (its table). A row of an image only a remote holds, in a table whose newest version a local
-repository holds, reads Pushed. Dormant: no installation holds one image name in a local and a remote repository of one project today.
-
-| (a) The row's act is the small button **Download** with the panel (address, clients, check), in place of the copy button of the address (chosen) | Every format's row has its verb | One look for every format's rows; the address is one click further | Copying the address takes two clicks |
-| (b) The copy button stays, the panel beside it | Two controls per row | Nothing lost | A row of a file has two acts where a package's has one |
-| (c) A split button per row | As the file's page | Saves the file from the list | A row of two joined buttons; the row has no content route to save from today |
-
-**Choice:** (a). A package format's raw files keep the copy button of the address: their clients fetch packages, not paths, and an
-address is no command. A row carries no
-verdict of the malware scan or the signature gate (`Child`), so a refused file's row offers its panel as it offered its address, and a
-client's command gets the refusal with its reason (Q-UI-882); the file's page offers no **Download** and no panel for it, and keeps its
-address as a fact. **Applied in the
-spec:** R-UI-010. Code: the row of [repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts).
-
 ### Q-UI-1336 · A command keeps its credential off the command line where the client can, and says so where it cannot
 
 Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
@@ -27854,6 +27825,33 @@ R-ANS-025's table; code: [setup_verify.go](../../internal/api/v1/setup_verify.go
 [clients.ts](../../web/src/app/features/setup/clients.ts).
 
 ## What this does not cover
+
+### H-2173 · A version with a mark and a signature badge puts its table into blocks at 1,024 px
+
+Stage: the version's cell of the table of versions (R-UI-110), which keeps the version, its marks (**Pre-release**, **Deprecated**,
+**Unlisted**, R-API-085) and its signature badge on one line. Subject: a package one of whose versions carries a mark and a badge (the
+seed's NuGet package: "2.0.0-preview.1 Pre-release Invalid signature"). The cell's least width puts the table into blocks at 1,024 px
+beside the side bar, against Q-UI-969; measured on 2026-11-26 with the downloads' line under **Last download** and without it, the same.
+Live wherever signatures are checked and a version is marked. What closes it: the cell wraps between its badges, as an image's row wraps
+between its tags.
+
+### H-2172 · An image's date word follows the version's holders, not each row
+
+Stage: `arrivedLabel` (Q-UI-1314). Subject: an image a local and a remote repository both hold, and a table whose rows are held by
+different classes. The word is one per screen: Pushed where any holder is local, Fetched where all are remote, read from the version (its
+page) or from the package's newest version (its table). A row of an image only a remote holds, in a table whose newest version a local
+repository holds, reads Pushed. Dormant: no installation holds one image name in a local and a remote repository of one project today.
+
+| (a) The row's act is the small button **Download** with the panel (address, clients, check), in place of the copy button of the address (chosen) | Every format's row has its verb | One look for every format's rows; the address is one click further | Copying the address takes two clicks |
+| (b) The copy button stays, the panel beside it | Two controls per row | Nothing lost | A row of a file has two acts where a package's has one |
+| (c) A split button per row | As the file's page | Saves the file from the list | A row of two joined buttons; the row has no content route to save from today |
+
+**Choice:** (a). A package format's raw files keep the copy button of the address: their clients fetch packages, not paths, and an
+address is no command. A row carries no
+verdict of the malware scan or the signature gate (`Child`), so a refused file's row offers its panel as it offered its address, and a
+client's command gets the refusal with its reason (Q-UI-882); the file's page offers no **Download** and no panel for it, and keeps its
+address as a fact. **Applied in the
+spec:** R-UI-010. Code: the row of [repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts).
 
 ### H-2191 · The ClamAV endpoint's addresses stand in fields of their own
 
