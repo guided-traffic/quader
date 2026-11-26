@@ -33,6 +33,7 @@ import { SIGNED_IN } from '../../app/core/signed-in';
 import { SystemClients } from '../../app/core/system-clients';
 import { BastionData, DATA_ROOT, seg } from './http';
 import { BASTION_FORMATS } from './formats';
+import { VersionTimes } from './times';
 
 /** The path of a package's documents in the catalogue's grammar (R-BAS-103). */
 function packagePath(id: string): string {
@@ -55,12 +56,14 @@ function notHeld(): ApiError {
 
 /**
  * The package reads of the Bastion's application (R-UI-228): the catalogue's documents below `/ui/data/v1/`, in the main installation's
- * shapes, so the shared views read them unchanged. What the catalogue does not hold (the packages that depend on one, a namespace's
- * page, a NuGet package's embedded icon and licence) answers as the main installation answers a caller who may not read it.
+ * shapes with the times of their version's state put back (times.ts, Q-UI-1451), so the shared views read them unchanged. What the
+ * catalogue does not hold (the packages that depend on one, a namespace's page, a NuGet package's embedded icon and licence) answers as
+ * the main installation answers a caller who may not read it.
  */
 @Injectable()
 export class BastionPackageReads extends PackageReads {
   private readonly data = inject(BastionData);
+  private readonly times = inject(VersionTimes);
 
   override list(filters: PackageFilters): PageFetcher<PackageSummary> {
     return this.data.page<PackageSummary>('packages', {
@@ -83,12 +86,12 @@ export class BastionPackageReads extends PackageReads {
   }
 
   override version(packageId: string, version: string): Promise<PackageVersion> {
-    return this.data.get<PackageVersion>(versionPath(packageId, version));
+    return this.times.with(packageId, version, 'version', this.data.get<PackageVersion>(versionPath(packageId, version)));
   }
 
   override async readme(packageId: string, version: string): Promise<PackageReadme | null> {
     try {
-      return await this.data.get<PackageReadme>(`${versionPath(packageId, version)}/readme`);
+      return await this.times.with(packageId, version, 'readme', this.data.get<PackageReadme>(`${versionPath(packageId, version)}/readme`));
     } catch (e) {
       if (missing(e)) return null;
       throw e;
@@ -97,7 +100,7 @@ export class BastionPackageReads extends PackageReads {
 
   override async docs(packageId: string, version: string): Promise<PackageDocTree | null> {
     try {
-      return await this.data.get<PackageDocTree>(`${versionPath(packageId, version)}/docs`);
+      return await this.times.with(packageId, version, 'docs', this.data.get<PackageDocTree>(`${versionPath(packageId, version)}/docs`));
     } catch (e) {
       if (missing(e)) return null;
       throw e;
@@ -105,12 +108,13 @@ export class BastionPackageReads extends PackageReads {
   }
 
   override docEntry(packageId: string, version: string, type: string, name: string): Promise<PackageDocEntry> {
-    return this.data.get<PackageDocEntry>(`${versionPath(packageId, version)}/docs/entries/${seg(type)}/${seg(name)}`);
+    const entry = this.data.get<PackageDocEntry>(`${versionPath(packageId, version)}/docs/entries/${seg(type)}/${seg(name)}`);
+    return this.times.with(packageId, version, 'docEntry', entry);
   }
 
   override docFile(packageId: string, version: string, file: string): Promise<PackageDocFile> {
     const path = file.split('/').map(seg).join('/');
-    return this.data.get<PackageDocFile>(`${versionPath(packageId, version)}/docs/files/${path}`);
+    return this.times.with(packageId, version, 'docFile', this.data.get<PackageDocFile>(`${versionPath(packageId, version)}/docs/files/${path}`));
   }
 
   override async namespace(): Promise<PackageNamespace> {
@@ -118,7 +122,7 @@ export class BastionPackageReads extends PackageReads {
   }
 
   override contents(packageId: string, version: string): Promise<PackageVersionContents> {
-    return this.data.get<PackageVersionContents>(`${versionPath(packageId, version)}/contents`);
+    return this.times.with(packageId, version, 'contents', this.data.get<PackageVersionContents>(`${versionPath(packageId, version)}/contents`));
   }
 
   override async dependents(): Promise<PackageDependents> {
@@ -179,9 +183,11 @@ export class BastionClientSetupReads extends ClientSetupReads {
 @Injectable()
 export class BastionVulnerabilityReads extends VulnerabilityReads {
   private readonly data = inject(BastionData);
+  private readonly times = inject(VersionTimes);
 
   override versionReport(packageId: string, version: string): Promise<VulnerabilityVersionReport> {
-    return this.data.get<VulnerabilityVersionReport>(`${versionPath(packageId, version)}/vulnerabilities`);
+    const report = this.data.get<VulnerabilityVersionReport>(`${versionPath(packageId, version)}/vulnerabilities`);
+    return this.times.with(packageId, version, 'vulnerabilities', report);
   }
 
   override async packageReport(): Promise<VulnerabilityPackageReport> {
@@ -207,9 +213,10 @@ export class BastionVulnerabilityReads extends VulnerabilityReads {
 @Injectable()
 export class BastionSignatureReads extends SignatureReads {
   private readonly data = inject(BastionData);
+  private readonly times = inject(VersionTimes);
 
   override version(packageId: string, version: string): Promise<SignatureVersionReport> {
-    return this.data.get<SignatureVersionReport>(`${versionPath(packageId, version)}/signatures`);
+    return this.times.with(packageId, version, 'signatures', this.data.get<SignatureVersionReport>(`${versionPath(packageId, version)}/signatures`));
   }
 
   override async file(): Promise<SignatureFileReport> {

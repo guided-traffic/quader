@@ -52,12 +52,18 @@ export class BastionData {
     return res.body as T;
   }
 
-  /** A page fetcher of a list in the envelope of R-API-010. */
+  /**
+   * A page fetcher of a list in the envelope of R-API-010. A page asks at most {@link BASTION_PAGE_LIMIT}: a view that walks every page
+   * with the main installation's 500 (the versions of a package) gets the same rows in pages of the Bastion's size (Q-UI-1445).
+   */
   page<T>(path: string, params: DataParams = {}): PageFetcher<T> {
     return async (cursor, limit) =>
-      this.get<Page<T>>(path, { ...params, limit, ...(cursor !== null ? { cursor } : {}) });
+      this.get<Page<T>>(path, { ...params, limit: Math.min(limit, BASTION_PAGE_LIMIT), ...(cursor !== null ? { cursor } : {}) });
   }
 }
+
+/** The largest page the Bastion's data path answers (`catalogue.MaxLimit`, W-35's B.8: pages of 50, at most 100). */
+export const BASTION_PAGE_LIMIT = 100;
 
 /** The longest Retry-After the application waits for its one automatic retry of a read. */
 const MAX_RETRY_WAIT_S = 30;
@@ -65,7 +71,9 @@ const MAX_RETRY_WAIT_S = 30;
 /**
  * The failures of the data (R-UI-216 at the Bastion): a failed answer becomes the `ApiError` every view's notice shows whole, with the
  * call, the time and the answer; a read that met no answer, a `429` or a `503` with Retry-After is read once more after the wait, as
- * the main installation's interceptor does (R-UI-042). No session consequence: the Bastion has none.
+ * the main installation's interceptor does (R-UI-042), except a `503 not_ready`: the shell says at once that the Bastion has nothing to
+ * show yet and reads its state again by itself (R-UI-227), where a retry after its Retry-After of 30 s kept the spinner that long
+ * (Q-UI-1445). No session consequence: the Bastion has none.
  */
 export const bastionDataInterceptor: HttpInterceptorFn = (req, next) => {
   if (!req.url.startsWith(DATA_ROOT)) return next(req);
@@ -77,7 +85,9 @@ export const bastionDataInterceptor: HttpInterceptorFn = (req, next) => {
       catchError((err: unknown) => {
         if (!(err instanceof HttpErrorResponse) || retried) return throwError(() => err);
         const wait = retryAfterSeconds(err.headers);
-        const again = err.status === 0 || err.status === 429 || (err.status === 503 && wait !== null && wait <= MAX_RETRY_WAIT_S);
+        const notReady = (err.error as { code?: unknown } | null)?.code === 'not_ready';
+        const again =
+          err.status === 0 || err.status === 429 || (err.status === 503 && !notReady && wait !== null && wait <= MAX_RETRY_WAIT_S);
         if (!again) return throwError(() => err);
         retried = true;
         return timer(Math.min(wait ?? 1, MAX_RETRY_WAIT_S) * 1000).pipe(switchMap(() => run()));

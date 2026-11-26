@@ -139,7 +139,10 @@
           <dd>
             @for (a of t.anchors; track a.id) {
               <span class="sig-line"
-                ><span translate="no">{{ a.title }}</span>&ngsp;<span class="muted">· {{ scopeWords(a.scope) }}</span></span
+                >@if (a.title) {<span translate="no">{{ a.title }}</span>&ngsp;<span class="muted">· {{ scopeWords(a.scope) }}</span>} @else {<span
+                    class="muted"
+                    >{{ scopeWords(a.scope) }}</span
+                  >}</span
               >
             } @empty {
               <span class="muted" i18n="@@sig.fact.no-anchor">None knows this signer</span>

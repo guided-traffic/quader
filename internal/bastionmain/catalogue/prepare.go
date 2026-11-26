@@ -205,7 +205,23 @@ func stripObject(o map[string]any, at string, times map[string]any, rw Rewrite) 
 		}
 		o[k] = strip(val, at+"/"+escapePointer(k), times, rw)
 	}
+	rw.fileDownload(o)
 	return o
+}
+
+// fileDownload gives a version's file (PackageFile: downloadUrl and contentUrl) the Bastion's package route as its contentUrl, the
+// address a page's download link takes (B.13 row 2, Q-BAS-398): the path of its downloadUrl, which the renderer wrote on the Bastion's
+// base URL, so a visitor downloads through the Bastion's package routes and never from a content route only the main installation
+// serves. A downloadUrl on another origin leaves the member null, as the link rewrite left it.
+func (rw Rewrite) fileDownload(o map[string]any) {
+	if _, ok := o["contentUrl"]; !ok {
+		return
+	}
+	d, ok := o["downloadUrl"].(string)
+	if !ok || rw.Base == "" || !strings.HasPrefix(d, rw.Base+"/") {
+		return
+	}
+	o["contentUrl"] = strings.TrimPrefix(d, rw.Base)
 }
 
 // stripOrigin keeps of a signature's origin what it was and when, never who uploaded it or the CI job's claims, and the upstream

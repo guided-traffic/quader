@@ -75,7 +75,11 @@ export function componentsText(f: Pick<VulnerabilityFinding, 'components'>): str
         <tr>
           <td><quader-severity [severity]="f.severity" [score]="f.cvss?.score ?? null" /></td>
           <th scope="row">
-            <a [routerLink]="link(f)" translate="no">{{ f.advisory }}</a>
+            @if (advisoryLinks()) {
+              <a [routerLink]="link(f)" translate="no">{{ f.advisory }}</a>
+            } @else {
+              <span class="advisory" translate="no">{{ f.advisory }}</span>
+            }
             @if (given()) {
               @if (f.kind === 'malicious') {
                 <span class="vuln-marker"><span class="material-icons" aria-hidden="true">bug_report</span><ng-container i18n="@@vuln.marker.malicious">Malicious</ng-container></span>
@@ -118,6 +122,8 @@ export class VersionFindings {
    * which needs a session. Null for a reader with one.
    */
   readonly rows = input<readonly VulnerabilityFinding[] | null>(null);
+  /** Whether the identifier links to its advisory's page; false where the application has none (the Bastion's, Q-UI-1450). */
+  readonly advisoryLinks = input(true);
 
   protected readonly list = new PagedResource<VulnerabilityFinding>(VERSION_FINDINGS_PAGE);
   /** The rows were handed over: a visitor without a session. */

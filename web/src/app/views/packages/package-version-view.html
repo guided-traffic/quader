@@ -10,7 +10,7 @@
       <span translate="no">{{ formatName() }}</span>
     </span>
     <!-- The name's namespace, a link to its page (R-UI-220). -->
-    <quader-namespace-of [format]="format()" [name]="name()" [project]="project()" />
+    <quader-namespace-of [format]="format()" [name]="name()" [project]="project()" [links]="namespaceLinks()" />
     <quader-dist-tags [tags]="tags()" [package]="name()" [limit]="null" />
     <!-- The other tags of the image's digest (R-OCI-041), each the page of its tag; a tag the reader may not read is not named. -->
     @if (otherTags().length > 0) {
@@ -100,14 +100,16 @@
         <!-- An image's date is Pushed, or Fetched where only remotes hold it; every other format's Published (Q-UI-1314). -->
         <span>{{ arrived() }}&ngsp;<quader-time-ago [at]="d.publishedAt" /></span>
         <quader-version-size [bytes]="d.sizeBytes ?? null" [partial]="d.sizePartial" [spelled]="true" />
-        <span
-          ><ng-container i18n="@@pkg.fact.last-download">Last download</ng-container>&ngsp;@if (d.lastDownloadedAt; as at) {
-            <quader-time-ago [at]="at" />
-          } @else {
-            <span [attr.title]="neverTitle" i18n="@@pkg.fact.never">never</span>
-          }</span
-        >
-        <span i18n="@@pkg.fact.download-count">{d.downloadCount, plural, =1 {1 download} other {{{ d.downloadCount | number }} downloads}}</span>
+        @if (downloads()) {
+          <span
+            ><ng-container i18n="@@pkg.fact.last-download">Last download</ng-container>&ngsp;@if (d.lastDownloadedAt; as at) {
+              <quader-time-ago [at]="at" />
+            } @else {
+              <span [attr.title]="neverTitle" i18n="@@pkg.fact.never">never</span>
+            }</span
+          >
+          <span i18n="@@pkg.fact.download-count">{d.downloadCount, plural, =1 {1 download} other {{{ d.downloadCount | number }} downloads}}</span>
+        }
         <!-- The licence is a fact of every format; its address, where the version declares one, is the licence's link (R-UI-221). -->
         @if (licenseHref(); as href) {
           <span
@@ -164,8 +166,7 @@
       <p class="banner-warning" role="note">
         <span class="material-icons inline warn" aria-hidden="true">visibility_off</span>
         <span
-          ><strong i18n="@@pkg.unlisted">Unlisted.</strong>
-          <span i18n="@@pkg.unlisted-detail"
+          ><strong i18n="@@pkg.unlisted">Unlisted.</strong>&ngsp;<span i18n="@@pkg.unlisted-detail"
             >This version is hidden from search. It is still downloaded when a project asks for exactly this version.</span
           ></span
         >
@@ -286,7 +287,7 @@
           @switch (t.id) {
             @case ('vulnerabilities') {
               @if (activeTab() === 'vulnerabilities') {
-                <quader-package-vulnerabilities [report]="vulnerabilityReport()" [packageName]="d.name" [image]="format() === 'oci'" [format]="format()" [severity]="severityFilter()" [signedIn]="signedIn()" />
+                <quader-package-vulnerabilities [report]="vulnerabilityReport()" [packageName]="d.name" [image]="format() === 'oci'" [format]="format()" [severity]="severityFilter()" [signedIn]="signedIn()" [advisoryLinks]="advisoryLinks()" />
               }
             }
             @case ('documentation') {

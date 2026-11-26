@@ -10613,7 +10613,8 @@ main installation", for anonymous visitors from the internet who want to know wh
   time>. Newer information is not available right now." Not ready (`503 not_ready`), the page is replaced by "Not available right now"
   and "This page is not available right now. Try again in a few minutes."; the shell reads again by itself
   ([Q-UI-1440](#q-ui-1440--a-bastion-without-a-catalogue-to-show-says-so-in-place-of-the-page)). Off (`404`), the answer is shown whole
-  (R-UI-216).
+  (R-UI-216). A `503 not_ready` is said at once, never held for its Retry-After by the retry of a read
+  ([Q-UI-1445](#q-ui-1445--the-bastions-reads-keep-to-its-bounds-pages-of-at-most-100-and-no-retry-of-not_ready)).
 - **The footer** ends the panel's column: "Imprint" and "Privacy notice" while they have a text (R-UI-226's rule), and "As of <relative
   time>" ("Stand: …") with the date and time as its title.
 
@@ -10635,7 +10636,9 @@ Priority: **P1** · Covers: quader-only
   catalogue's spelling of a path, GET only (`web/src/bastion/data/reads.ts`). What the catalogue holds no document for (the packages
   that depend on one, a namespace's page, a package's vulnerability report, an advisory, a file's signatures, the gate's releases)
   answers as a read the caller may not make, which the views show as none. A failed read is the `ApiError` every notice shows whole,
-  with one retry of a read after no answer, a `429` or a `503` with `Retry-After` (R-UI-042, R-UI-216).
+  with one retry of a read after no answer, a `429` or a `503` with `Retry-After` but `not_ready` (R-UI-042, R-UI-216). A list's page asks
+  at most 100, the bound of the Bastion's data path, whatever the view asks
+  ([Q-UI-1445](#q-ui-1445--the-bastions-reads-keep-to-its-bounds-pages-of-at-most-100-and-no-retry-of-not_ready)).
 - **What a view reaches is bound per application** ([Q-UI-1434](#q-ui-1434--what-a-view-reaches-beyond-its-reads-is-abstract-and-each-application-binds-it)).
   `FormatCatalog` and `SystemClients` are abstract; the main installation binds the reads of its API (`provideViewReads`), the Bastion its
   format table ([Q-UI-1436](#q-ui-1436--the-bastion-names-the-formats-from-a-table-of-its-own)) and "a system repository it shows serves
@@ -10664,7 +10667,8 @@ Acceptance criteria:
 ### R-UI-229 · The Bastion's pages are the main installation's views
 Priority: **P1** · Covers: quader-only
 
-- **The start** lists the projects whose packages the catalogue shows (`/ui/data/v1/projects`); with one, it leads into it
+- **The start** lists the projects whose packages the catalogue shows (`/ui/data/v1/projects`, a project of the public set without a package
+  left out, [Q-BAS-399](bastion.md#q-bas-399--the-start-page-offers-a-project-only-while-it-shows-a-package)); with one, it leads into it
   ([Q-UI-1438](#q-ui-1438--the-bastions-start-lists-its-projects-and-one-project-leads-into-it)); with none, "No package is published here
   yet."
 - **A project's packages** (W-35's B.8): the search by name, description and keyword in the list's head, the table of R-UI-223
@@ -10673,20 +10677,45 @@ Priority: **P1** · Covers: quader-only
   signed in: the tab Vulnerabilities lists the version report's open findings (R-UI-224, W-35's B.4a), signatures and their trust state
   (W-35's B.9), the format's own parts (an image's platforms and layers, an Ansible collection's documentation while `docs` is on, a
   Debian package's contents), and the commands of the set-up documents; no place of `views/acts.ts` is provided, so no act is drawn.
+- **A file's download** is the Bastion's package route the catalogue writes as the file's `contentUrl`
+  ([bastion.md](bastion.md) R-BAS-107, Q-BAS-398); the repository that holds a file is read from that route as from a content route.
+- **A tag's link** (`?format=…&keyword=…`) is the list's search for the tag in that format, the tag in the search field
+  ([Q-UI-1448](#q-ui-1448--a-tags-link-at-the-bastion-is-the-search-for-the-tag)).
+- **No download figures**: the catalogue carries none (Q-BAS-358), so the views show no column Last download, no count and no "never"
+  (`downloads` of the two views, [Q-UI-1449](#q-ui-1449--the-bastions-pages-show-no-download-figures)).
+- **A finding's identifier is text**: the Bastion has no advisory page (`advisoryLinks`,
+  [Q-UI-1450](#q-ui-1450--a-findings-identifier-is-text-at-the-bastion)).
+- **The times of a version's documents** (built, checked, scanned, synced), which the builder keeps in the version's state (R-BAS-103),
+  are put back into the documents as the reads answer them ([times.ts](../../web/src/bastion/data/times.ts),
+  [Q-UI-1451](#q-ui-1451--the-bastions-reads-put-a-versions-times-back-into-its-documents)); a signature's origin and an anchor without the
+  name the catalogue strips read "Uploaded" and the anchor's scope ([Q-UI-1452](#q-ui-1452--an-origin-and-an-anchor-without-a-name-say-what-they-know)).
+- **No section Used by**: the catalogue holds no package's dependents (`dependents` of the version's view,
+  [Q-UI-1446](#q-ui-1446--a-versions-page-at-the-bastion-offers-no-section-used-by)).
+- **A namespace is text** (`@team-a` of an npm scope, `team` of an image's path, `acme` of an Ansible namespace): the Bastion has no
+  namespace page, so the views draw it without a link (`namespaceLinks` of the package table and the two views, `links` of
+  `namespace-of`; [Q-UI-1443](#q-ui-1443--a-namespace-is-text-at-the-bastion-by-an-input-of-the-views)), the main installation unchanged.
 - **The legal pages and not found** are the main installation's (`features/legal/legal-page.ts`, `features/not-found/not-found.ts`) in
   the shell.
-- *Not built:* the pages of a generic repository's folders and files (the catalogue's `files/…` documents; the main installation's
-  folder screen is no view yet), and the download of a version's file: the builder rewrites a file's content route to the Bastion's data
-  path, which serves no content, so a file's link at the Bastion answers `404` until the builder writes the package API's address
-  (W-35's B.13 row 2; the plan's P6).
+- *Not built:* the pages of a generic repository's folders and files (the catalogue's `files/…` documents hold them; the main
+  installation's folder screen, `features/repositories/content`, reads through the API client with its uploads, deletes and dialogs and
+  is no view yet), and the column Vulnerabilities of a package's versions: the catalogue holds a report per version and none per
+  package, and a package's report as a document of its own is a new form of path in the catalogue's grammar, a change of the interface
+  between the Bastion and the main installation.
 
-*Built on 2026-11-26 (W-35's P9):* [start-page.ts](../../web/src/bastion/pages/start-page.ts),
-[package-list-page.ts](../../web/src/bastion/pages/package-list-page.ts), [package-pages.ts](../../web/src/bastion/pages/package-pages.ts).
+*Built on 2026-11-26 (W-35's P9; the download and the namespace as text by W-35's P9b):* [start-page.ts](../../web/src/bastion/pages/start-page.ts),
+[package-list-page.ts](../../web/src/bastion/pages/package-list-page.ts), [package-pages.ts](../../web/src/bastion/pages/package-pages.ts),
+[namespace-of.ts](../../web/src/app/views/packages/namespace-of.ts), [package-name.ts](../../web/src/app/views/packages/package-name.ts),
+[refs.ts](../../web/src/app/api/refs.ts).
 
 Acceptance criteria:
 
 - Unit: the reads of R-UI-228 the pages read; the route table's matchers are the main installation's (`package-matchers.ts`, held by
   [app.route-table.spec.ts](../../web/src/app/app.route-table.spec.ts)).
+- Unit ([bastion.spec.ts](../../web/src/bastion/bastion.spec.ts), milliseconds): `R-UI-229 a namespace is text at the Bastion …` (the
+  head's namespace and a row's namespace without a link, the package's link kept, the main installation's namespace a link);
+  ([refs.spec.ts](../../web/src/app/api/refs.spec.ts), milliseconds) `R-UI-229 a file's download is the Bastion's package route …` (an
+  npm, a NuGet, a generic and an image route name their repository) and `R-UI-229 a content route of the main installation …` (it still
+  does, a data path does not).
 - Rendered (rule 11): see R-UI-230.
 
 ### R-UI-230 · The Bastion's pages are rendered and their layout checked
@@ -10697,21 +10726,23 @@ documentation, a generic folder, the legal pages, the band of an old state, not 
 the UI development profile's instance, light and dark, at 1,440, 1,024 and 390 px, in English and German, and the layout checks of the
 render suite (R-UI-170 to R-UI-176) hold four of them in both schemes at two widths in the parts of `make ui-renders SHARD=i/n`.
 
-*Built in part on 2026-11-26 (W-35's P9,
-[Q-UI-1442](#q-ui-1442--the-bastions-pages-are-measured-in-the-states-suite-against-the-fakes-until-the-profile-starts-a-bastion)):* the
-layout checks hold seven states of the Bastion's pages at 390 and 1,440 px, light, in English, in `make ui-states` (the CI job
-ui-layout-fixtures): the shell with an old state and not ready, a project's packages, an image's tags, an npm version with its
-README, an image, an Ansible collection's documentation, against the main installation's fakes and the Bastion's own
-bindings; their pictures (`UI_STATES_PICTURES=1`) were looked at. *Not built:* a version's open findings and signatures in a picture (the fakes' npm version holds no report), the renders against a running Bastion in front of the
-profile's instance, dark, 1,024 px and German, the legal pages, the search's result and a generic folder (R-UI-229's open part): the UI
-development profile starts no Bastion.
+*Built on 2026-11-26 (W-35's P9 and P9b, [Q-UI-1444](#q-ui-1444--the-bastions-pages-are-rendered-against-the-profiles-bastion-in-every-part-of-the-renders)):*
+the UI development profile starts a Bastion beside an instance's quader ([bastion.sh](../../deploy/ui-dev/bastion.sh), `make
+ui-dev-bastion`), registered as `ui-dev` with `gui` and `docs` on, and `make ui-renders` renders its pages as the anonymous visitor at its
+own origin ([bastion-gui.ts](../../web/e2e/renders/bastion-gui.ts)): the start, a project's packages and a search, a package, an npm
+version with its open findings, a NuGet version with its signatures, a Debian version with its contents and changelog, an image and a tag of it, an Ansible collection with its
+documentation, the imprint, the privacy notice, the band of an old state, not ready and not found; in both schemes, at 1,440, 1,024 and
+390 px, in English and, with `UI_RENDERS_LOCALE=de`, in German. The setup waits until the Bastion has mirrored a run of the builder after
+the seed. The states of `make ui-states` (seven, Q-UI-1442) stay beside them as the check in seconds. *Not built:* the pages of a generic
+folder (R-UI-229's open part).
 
 Acceptance criteria:
 
 - States ([bastion.states.spec.ts](../../web/src/bastion/bastion.states.spec.ts), 3.4 s, measured 2026-11-26): the render set's
   `layoutFindings` and `innerScroll` find nothing in any of the states at either width.
-- To build: `make ui-renders GREP=bastion` renders the pages above against a Bastion of the profile; `make ui-renders-parts-check` holds
-  every Bastion page exactly once.
+- Renders: `make ui-renders GREP=bastion-` renders the fourteen screens `bastion-*` against the profile's Bastion, and the render set's
+  layout checks find nothing in any picture; `make ui-renders-parts-check` holds every Bastion screen exactly once in the parts of the job
+  ui-layout.
 
 ## Deferred
 
@@ -29259,7 +29290,185 @@ needs a registration, its token, a base URL the main installation lists, TLS and
 | (a) The pages' states in `make ui-states` (`web/src/bastion/bastion.states.spec.ts`): the Bastion's shell and pages against the main installation's fakes, at 390 and 1,440 px, measured by the render set's checks; the renders against a running Bastion later (chosen for now) | Seconds, no stack; runs in CI's ui-layout-fixtures | The checks hold the pages today; the views read the same shapes the catalogue holds | Light and English only; the Bastion's reads of `/ui/data/v1/` are not part of the picture (R-UI-228's spec holds them) |
 | (b) A Bastion in the profile and the pages in the render set | The brief's form | The whole path, every scheme, width and language | A profile change of its own: a Bastion's start, registration and catalogue build, not done in this package |
 
-**Choice:** (a), and (b) stays open in R-UI-230.
+**Choice:** (a), and (b) stays open in R-UI-230. *Superseded by [Q-UI-1444](#q-ui-1444--the-bastions-pages-are-rendered-against-the-profiles-bastion-in-every-part-of-the-renders)
+(W-35's P9b, the same day): the profile starts a Bastion, and the states stay as the cheap check beside the renders.*
+
+### Q-UI-1443 · A namespace is text at the Bastion, by an input of the views
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9b) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-229, R-UI-220. The views link each level of a name's namespace to its page (`/projects/<p>/packages/<format>/-/namespaces/…`),
+which the Bastion's application does not have: "Scope @team-a", "Path team" and "Namespace acme" led to "Page not found".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An input of the views (`namespaceLinks` of `package-table`, `package-detail-view` and `package-version-view`, `links` of `namespace-of`), true by default, false in the Bastion's pages (chosen) | The level is text in the same colour; the package keeps its link | The main installation unchanged; a reader sees the namespace as the main installation shows it | Three inputs passed through |
+| (b) A namespace page at the Bastion | The main installation's page | The link leads somewhere | A page and a catalogue document the brief does not ask for; the catalogue holds no namespace listing |
+| (c) An injection token the Bastion binds | No inputs | Fewer lines | A view's behaviour decided out of sight of its template; the brief names an input |
+
+**Choice:** (a). **Applied in the spec:** R-UI-229.
+
+### Q-UI-1444 · The Bastion's pages are rendered against the profile's Bastion in every part of the renders
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9b) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-230, Q-UI-1442's open option (b). The profile now starts a Bastion (`deploy/ui-dev/bastion.sh`); the job ui-layout renders the
+screens in five parts (`make ui-renders SHARD=i/n`), each with a profile of its own.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `renders.sh` starts the Bastion in every run, its setup waits for the catalogue, and the Bastion's pages are screens of `screens.ts` like any other (chosen) | Each part holds the Bastion's screens its place gives it; `make ui-renders-parts-check` holds them once | The whole path in the pictures: the Bastion's own bundle, its data path, the catalogue the builder built from the seed, both schemes, three widths, both languages | Every part builds the Bastion's application and its binary and waits for the builder (measured below) |
+| (b) Only a part that holds a Bastion screen starts the Bastion | Less work in four of five parts | Seconds saved | `renders.sh` reads Playwright's selection before the profile starts; a part's content moves with every new screen |
+| (c) The Bastion's pages in a leg of their own | — | — | A new leg, against CLAUDE.md's "no new leg" |
+
+**Choice:** (a). **Applied in the spec:** R-UI-230.
+
+### Q-UI-1445 · The Bastion's reads keep to its bounds: pages of at most 100, and no retry of not_ready
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9b) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-228, R-UI-227; the first renders against the profile's Bastion. An image's page walks every version with the main
+installation's page of 500 (`collectAll`), which the Bastion's data path answers `400` (its pages are 50, at most 100, W-35's B.8); and a
+Bastion without a catalogue answers `503 not_ready` with `Retry-After: 30`, which the interceptor's one retry of a read waited for, so the
+page showed the spinner for 30 s before it said "Not available right now".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The Bastion's page fetcher asks at most 100 whatever the view asks, and its interceptor does not retry a `503` of the code `not_ready` (chosen) | The views unchanged; the walk of every page reads on by the cursor | The sentence at once, and the shell's own reading every 30 s while not ready (R-UI-213) does the retry | Two rules of the Bastion's data layer the main installation's lacks |
+| (b) The Bastion's data path admits 500 | One bound everywhere | — | Five times the answer per request on the internet-facing side, against B.8's bound |
+| (c) A shorter Retry-After of `not_ready` | — | — | A crawler and a client read the Retry-After too; the sentence still waits |
+
+**Choice:** (a). **Applied in the spec:** R-UI-227, R-UI-228.
+
+### Q-UI-1446 · A version's page at the Bastion offers no section Used by
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9b) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-229, R-API-086. The section Used by reads a package's dependents, which the catalogue holds no document for; the Bastion's
+read answers `404`, and the section stood as the failure "This does not exist, or you may not see it." on every version's tab Details.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An input of the version's view (`dependents`), true by default, false at the Bastion: no heading and no section (chosen) | The tab shows what it can | No failure that is none; the main installation unchanged | A visitor of a Bastion does not learn who uses a package |
+| (b) An empty answer | The section says nobody depends on it | — | A statement that may be false |
+| (c) A document of the dependents in the catalogue | The section filled | Complete | A document per version that changes with every other package's publish, and a change of the grammar (an interface change) |
+
+**Choice:** (a). **Applied in the spec:** R-UI-229.
+
+### Q-UI-1447 · The styles of the render checks carry the page's nonce
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9b) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-230, R-UI-170 to R-UI-176. The layout checks (`layout.ts`) and the phone's scrollbars of `render.spec.ts` put a `<style>`
+into the page for their measurement. Behind the dev server no content security policy applies; the Bastion serves its pages with its own
+(`style-src 'self' 'nonce-…'`, R-BAS-117), which refused those styles: every Bastion picture had console errors of the policy, and the
+checks measured the page without their styles (a `separator-start` on every dot of a facts line).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each style takes the nonce of the page's root element (`ngCspNonce`) (chosen) | The policy stays as the server sends it | A style the application itself puts in without its nonce is still a console error and fails the screen | Reads an attribute of the application's root |
+| (b) Playwright's `bypassCSP` for the Bastion's screens | — | No reading of the page | Hides the policy's refusals of the application itself |
+
+**Choice:** (a). **Applied in the spec:** R-UI-230.
+
+### Q-UI-1448 · A tag's link at the Bastion is the search for the tag
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9b) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-229, R-ANS-057. A tag of a package links to the project's list filtered by it (`?format=npm&keyword=react`); the Bastion's list
+read only `q` and `sort`, so a tag showed every package. The Bastion's search reads a word in the name, the description and the keywords
+(B.8); it has no filter of one keyword.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The list takes `keyword` as the search's text, shown in its field, and `format` as the filter (chosen) | The views unchanged | The visitor sees what was searched, and a typed text replaces the tag | A tag that is a word of a name also finds that name |
+| (b) Tags as text at the Bastion | — | Exact | A visitor loses the way to related packages |
+| (c) A keyword filter in the Bastion's search | Exact | — | A parameter of the data path beyond B.8 for one link |
+
+**Choice:** (a). **Applied in the spec:** R-UI-229.
+
+### Q-UI-1449 · The Bastion's pages show no download figures
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9b) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-229, R-API-079, bastion.md Q-BAS-358 (the catalogue carries no download count and no time of a last download). The views
+showed "Last download never", a bare "downloads" and a column of "Never · 0 downloads": statements that were false.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An input `downloads` of the package's and the version's view, false at the Bastion: no column, no fact, no count, and the Details' hint without "its downloads" (chosen) | Nothing is said that is not known | The main installation unchanged | One more input |
+| (b) The views hide a figure the answer lacks | — | No input | The schema calls the members required; a missing member is a defect at the main installation, which must not pass silently |
+
+**Choice:** (a). **Applied in the spec:** R-UI-229.
+
+### Q-UI-1450 · A finding's identifier is text at the Bastion
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9b) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-229, R-UI-224 (a visitor's finding links to its advisory's page). The Bastion has no advisory page and the catalogue no
+advisory document: the link led to "Page not found".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An input `advisoryLinks` of the version's view, its vulnerabilities and the findings' table, false at the Bastion: the identifier as text (chosen) | Severity, identifier, summary and fixed version stay | No dead link | The advisory's own references are not offered |
+| (b) The identifier links to the advisory's first reference | An external page | Leads somewhere | The finding carries no reference in its row; a document of advisories is an interface change |
+
+**Choice:** (a). **Applied in the spec:** R-UI-229.
+
+### Q-UI-1451 · The Bastion's reads put a version's times back into its documents
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9b) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-228, bastion.md R-BAS-103 (the builder takes the times of building, checking and scanning out of a document and keeps them in
+the version's state, so a document changes only with its content). The views then read "Generated by Quader from the archive," with no
+time, a grade card without "Checked …" and a malware verdict without its scan's time.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The reads of a version's documents read its state once (shared for 5 s by the documents of a page) and set each time back at its JSON pointer (chosen) | The views unchanged | The main installation's words at the Bastion | One more request per version a page reads |
+| (b) The Bastion's data path merges the times into each answer | No request more | — | The ETag of a document would no longer be its SHA-256 (Q-BAS-397) |
+
+**Choice:** (a). **Applied in the spec:** R-UI-228, R-UI-229.
+
+### Q-UI-1452 · An origin and an anchor without a name say what they know
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9b) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-SIG-035, bastion.md R-BAS-106 (the catalogue strips who uploaded an artifact and an internal anchor's title). The signatures
+read "Uploaded by · 35 minutes ago" and "Trust anchor · Added by an administrator".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An upload that names nobody is "Uploaded"; an anchor without a title is its scope alone (chosen) | In the shared words, for every application | No dangling word | — |
+| (b) An input per view | — | — | The words are right wherever a name is missing |
+
+**Choice:** (a). **Applied in the spec:** R-UI-229.
+
+### Q-UI-1453 · The render seed's NuGet, Debian and collections repositories are public with their documentation
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9b) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-230 ("realistic data: npm, NuGet, OCI images, Helm, Debian, Ansible with documentation, generic files"). The seed's public set
+held npm, an image and Ansible collections without their documentation (the wiki internal).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `nuget-internal` and the long Debian repository of `platform` public with their wiki, the collections' wiki public; a seed run on an earlier database sets the level (chosen) | Three levels | NuGet with signatures, Debian with its contents and changelog, and a collection with its documentation at the Bastion | The main installation's pages of those repositories show them public to a visitor without a session |
+| (b) Repositories of their own for the Bastion | — | No level changes | More seed time in every run and part, and more rows in the project's lists |
+
+**Choice:** (a). Helm charts and generic files stay outside the public set: the seed has no public repository of them, and a generic
+folder has no page at the Bastion yet. **Applied in the spec:** R-UI-230.
 
 ### Q-UI-1490 · The audit log holds its German actions by the act's word and a shorter word where it reads right
 

@@ -205,6 +205,20 @@ export class PackageVersionView {
   /** Route parameters: the project, then the matcher's format, name and version. */
   readonly project = input.required<string>();
   readonly format = input.required<string>();
+  /** Whether the name's namespace links to its page; false where the application has none (the Bastion's, Q-UI-1443). */
+  readonly namespaceLinks = input(true);
+  /**
+   * Whether the section Used by is offered; false where the application reads no package's dependents (the Bastion's catalogue holds
+   * no such document, Q-UI-1446), which would stand as a failure in place of the section.
+   */
+  readonly dependents = input(true);
+  /**
+   * Whether the application has download figures; false where it has none (the Bastion's catalogue carries no download count and no
+   * time of a last download, Q-BAS-358): no column Last download, no count, no "never" (Q-UI-1449).
+   */
+  readonly downloads = input(true);
+  /** Whether a finding's identifier links to its advisory's page; false where the application has none (the Bastion's, Q-UI-1450). */
+  readonly advisoryLinks = input(true);
   /** The format's name in the header, never its key (R-UI-006): **OCI (Docker)**, not `oci`. */
   protected readonly formatName = formatName(() => this.format());
   readonly name = input.required<string>();
@@ -471,7 +485,9 @@ export class PackageVersionView {
    * remote's tab Upstream has none (an upstream's dependents are not this installation's to know), and an Ansible role none (a collection
    * depends on collections).
    */
-  protected readonly usedBy = computed(() => LINKED_DEPENDENCIES.has(this.detail()?.format ?? '') && this.role() === null);
+  protected readonly usedBy = computed(
+    () => this.dependents() && LINKED_DEPENDENCIES.has(this.detail()?.format ?? '') && this.role() === null,
+  );
   /** The package's normalized name, which the filter of the package list takes; the address's name until the package has answered. */
   protected readonly packageKey = computed(() => this.pkg()?.key ?? this.name());
   /** The keywords or tags the version declares (R-UI-221): chips to the packages that share one. */

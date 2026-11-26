@@ -4,13 +4,22 @@ import { PackageVersionView } from '../../app/views/packages/package-version-vie
 
 /**
  * A package's page at the Bastion (R-UI-229): the main installation's view of its versions (views/packages/package-detail-view.ts,
- * R-UI-223) without an act, read from the catalogue. Nothing is recorded: the Bastion keeps no "recently opened" and no trail.
+ * R-UI-223) without an act, read from the catalogue. Nothing is recorded: the Bastion keeps no "recently opened" and no trail. Its
+ * namespace is text: the Bastion has no namespace page (Q-UI-1443).
  */
 @Component({
   selector: 'quader-bastion-package',
   imports: [PackageDetailView],
   template: `
-    <quader-package-detail-view [project]="project()" [format]="format()" [name]="name()" [q]="q()" [sort]="sort()" />
+    <quader-package-detail-view
+      [project]="project()"
+      [format]="format()"
+      [name]="name()"
+      [q]="q()"
+      [sort]="sort()"
+      [namespaceLinks]="false"
+      [downloads]="false"
+    />
   `,
 })
 export class PackagePage {
@@ -24,7 +33,8 @@ export class PackagePage {
 /**
  * A version's page at the Bastion (R-UI-229): the main installation's view of a version (views/packages/package-version-view.ts) for a
  * reader who is never signed in, so its tab Vulnerabilities lists the report's own open findings (R-UI-224, W-35's B.4a) and no place
- * of `views/acts.ts` is provided: no deprecation, no gate's release, no import log.
+ * of `views/acts.ts` is provided: no deprecation, no gate's release, no import log. Its namespace is text (Q-UI-1443), and it offers no
+ * section Used by: the catalogue holds no package's dependents (Q-UI-1446).
  */
 @Component({
   selector: 'quader-bastion-version',
@@ -40,6 +50,10 @@ export class PackagePage {
       [q]="q()"
       [severity]="severity()"
       [signedIn]="false"
+      [namespaceLinks]="false"
+      [dependents]="false"
+      [downloads]="false"
+      [advisoryLinks]="false"
     />
   `,
 })

@@ -5,7 +5,7 @@
       <span translate="no">{{ formatName() }}</span>
     </span>
     <!-- The name's namespace, a link to its page (R-UI-220). -->
-    <quader-namespace-of [format]="format()" [name]="name()" [project]="project()" />
+    <quader-namespace-of [format]="format()" [name]="name()" [project]="project()" [links]="namespaceLinks()" />
     @if (pkg(); as p) {
       <span class="dot-separated muted">
         <!-- An image's count is its tags, while its table lists its images (R-UI-007, Q-UI-1130). -->
@@ -125,17 +125,19 @@
           <td class="time">
             <quader-time-ago [at]="v.publishedAt" absolute="title" />
           </td>
-          <td class="time">
-            @if (v.lastDownloadedAt; as at) {
-              <quader-time-ago [at]="at" absolute="title" />
-            } @else {
-              <span class="muted" [attr.title]="neverTitle" i18n="@@pkg.ver.never">Never</span>
-            }
-            <!-- How often clients downloaded it, under when they last did (R-UI-222, Q-UI-1318). -->
-            <span class="secondary block" data-testid="version-downloads" i18n="@@pkg.ver.download-count"
-              >{v.downloadCount, plural, =1 {1 download} other {{{ v.downloadCount | number }} downloads}}</span
-            >
-          </td>
+          @if (downloads()) {
+            <td class="time">
+              @if (v.lastDownloadedAt; as at) {
+                <quader-time-ago [at]="at" absolute="title" />
+              } @else {
+                <span class="muted" [attr.title]="neverTitle" i18n="@@pkg.ver.never">Never</span>
+              }
+              <!-- How often clients downloaded it, under when they last did (R-UI-222, Q-UI-1318). -->
+              <span class="secondary block" data-testid="version-downloads" i18n="@@pkg.ver.download-count"
+                >{v.downloadCount, plural, =1 {1 download} other {{{ v.downloadCount | number }} downloads}}</span
+              >
+            </td>
+          }
           @if (showRepositories()) {
             <td class="wrap" translate="no">
               @for (r of v.repositories; track r; let last = $last) {
@@ -169,7 +171,7 @@
     </section>
   }
 
-  <quader-disclosure class="pkg-details" remember="package.details" [heading]="detailsHeading" [hint]="detailsText">
+  <quader-disclosure class="pkg-details" remember="package.details" [heading]="detailsHeading" [hint]="detailsText()">
     <dl class="facts">
       <dt i18n="@@pkg.fact.repositories">Repositories</dt>
       <dd translate="no">
@@ -184,8 +186,10 @@
         <dt i18n="@@pkg.meta.keywords">Keywords</dt>
         <dd><quader-package-tags [tags]="p.keywords" [project]="project()" [format]="p.format" [limit]="null" /></dd>
       }
-      <dt i18n="@@pkg.fact.downloads">Downloads</dt>
-      <dd>{{ p.downloadCount | number }}</dd>
+      @if (downloads()) {
+        <dt i18n="@@pkg.fact.downloads">Downloads</dt>
+        <dd>{{ p.downloadCount | number }}</dd>
+      }
       <dt i18n="@@pkg.fact.first-published">First published</dt>
       <dd><quader-time-ago [at]="p.createdAt" /></dd>
     </dl>

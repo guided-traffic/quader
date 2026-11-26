@@ -11,7 +11,8 @@ import (
 
 // TestR_BAS_107_LinksAreTheBastionsAndItsDataPath: a link of the main installation becomes the Bastion's; a link of the management
 // API becomes the Bastion's data path where the catalogue holds what it names (a signature object, the anchors) and no value where
-// it does not (a file's content address); a link of another host stays; text keeps its words with its links rewritten; a public
+// it does not; a version's file downloads through the Bastion's package route, the path of its downloadUrl (Q-BAS-398), and has no
+// address where that is on another origin; a link of another host stays; text keeps its words with its links rewritten; a public
 // registry's upstream stays and any other upstream goes; bytes that are no text are kept as they are.
 func TestR_BAS_107_LinksAreTheBastionsAndItsDataPath(t *testing.T) {
 	rw := catalogue.Rewrite{
@@ -22,7 +23,10 @@ func TestR_BAS_107_LinksAreTheBastionsAndItsDataPath(t *testing.T) {
 		"c":"https://packages.example.com/api/v1/signing/chain.pem","d":"/api/v1/projects/acme/repositories/r/content/x.tgz",
 		"e":"https://mirror.example.com/api/v1/packages","f":"https://github.com/acme/sdk",
 		"g":"<a href=\"/api/v1/packages\">all</a> see https://quader.example.com/x","upstreamUrl":"https://registry.npmjs.org/x",
-		"items":[{"upstreamUrl":"https://npm.corp.example/x"}]}`
+		"items":[{"upstreamUrl":"https://npm.corp.example/x"}],
+		"files":[{"path":"x/-/x-1.tgz","downloadUrl":"https://packages.example.com/api/npm/acme/r/x/-/x-1.tgz",
+			"contentUrl":"/api/v1/projects/acme/repositories/r/content/x/-/x-1.tgz"},
+			{"path":"y","downloadUrl":"https://elsewhere.example.org/files/acme/r/y","contentUrl":"/api/v1/projects/acme/repositories/r/content/y"}]}`
 	p, err := catalogue.Prepare([]byte(in), "application/json", rw)
 	if err != nil {
 		t.Fatal(err)
@@ -32,6 +36,7 @@ func TestR_BAS_107_LinksAreTheBastionsAndItsDataPath(t *testing.T) {
 		`"c":"https://packages.example.com/ui/data/v1/signing/chain.pem"`, `"d":null`, `"e":null`, `"f":"https://github.com/acme/sdk"`,
 		`/ui/data/v1/packages`, `see https://packages.example.com/x`, `"upstreamUrl":"https://registry.npmjs.org/x"`,
 		`"items":[{"upstreamUrl":null}]`,
+		`"contentUrl":"/api/npm/acme/r/x/-/x-1.tgz"`, `"contentUrl":null,"downloadUrl":"https://elsewhere.example.org/files/acme/r/y"`,
 	} {
 		if !strings.Contains(string(p.Body), want) {
 			t.Errorf("no %s in %s", want, p.Body)

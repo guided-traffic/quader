@@ -86,7 +86,7 @@ func (f *fakeAPI) body(base string, u *url.URL) (string, bool) {
 	case v:
 		return `{"version":"1.0.0","repositories":[{"key":"acme/npm-local","class":"local"}],
 			"metadata":{"publisher":"sa:release-bot"},
-			"files":[{"name":"left-pad-1.0.0.tgz","url":"` + base + `/api/npm/acme/npm-local/left-pad/-/left-pad-1.0.0.tgz",
+			"files":[{"path":"left-pad/-/left-pad-1.0.0.tgz","downloadUrl":"` + base + `/api/npm/acme/npm-local/left-pad/-/left-pad-1.0.0.tgz",
 			"contentUrl":"/api/v1/projects/acme/repositories/npm-local/content/left-pad/-/left-pad-1.0.0.tgz",
 			"upstreamUrl":"https://npm.internal.corp/left-pad.tgz",
 			"malware":{"state":"clean","scannedAt":"` + f.now + `","database":"27001","databaseBuiltAt":"` + f.now + `","releasedBy":"user:alice"}}],
@@ -195,7 +195,7 @@ func TestR_BAS_106_NoDocumentNamesAnInternalIdentityOrTheMainInstallation(t *tes
 		t.Errorf("the signatures lost what they show: %s", sig)
 	}
 	if v := string(docs["packages/"+pkgID+"/versions/1.0.0"]); !strings.Contains(v, bastionURL+"/ui/en/projects/acme") || !strings.Contains(v, `"releasedBy":null`) ||
-		!strings.Contains(v, `"contentUrl":null`) || !strings.Contains(v, `"publisher":null`) {
+		!strings.Contains(v, `"contentUrl":"/api/npm/acme/npm-local/left-pad/-/left-pad-1.0.0.tgz"`) || !strings.Contains(v, `"publisher":null`) {
 		t.Errorf("the version: %s", v)
 	}
 }

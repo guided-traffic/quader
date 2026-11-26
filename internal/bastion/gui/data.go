@@ -42,9 +42,18 @@ func (h *Handler) projects(w http.ResponseWriter, r *http.Request) {
 		h.readerError(w, r, err)
 		return
 	}
-	items := pub.Projects
-	if items == nil {
-		items = []string{}
+	// A project whose public repositories hold no package the catalogue shows (the project upstream with an empty public remote) is
+	// not offered: its list would say only that nothing is published there (R-UI-229, Q-BAS-399).
+	items := []string{}
+	for _, p := range pub.Projects {
+		page, err := h.o.Catalogue.Search(catalogue.Query{Project: p, Limit: 1})
+		if err != nil {
+			h.readerError(w, r, err)
+			return
+		}
+		if len(page.Items) > 0 {
+			items = append(items, p)
+		}
 	}
 	h.json(w, r, projectsBody{Items: items})
 }

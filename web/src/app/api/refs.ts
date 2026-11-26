@@ -36,11 +36,14 @@ export function contentPath(repository: string, path: string): string {
 }
 
 /**
- * The repository `<project>/<key>` of a content route (`/api/v1/projects/{project}/repositories/{key}/content/…`), the one place a
- * version's file names the repository that holds it (R-API-025); null for another address. A Bastion's catalogue carries the route
- * below its data path (`/ui/data/v1/…`, bastion.md R-BAS-107), which names the repository alike.
+ * The repository `<project>/<key>` of a version's file address, the one place a file names the repository that holds it: the content
+ * route the main installation sends (`/api/v1/projects/{project}/repositories/{key}/content/…`, R-API-025), or the package route a
+ * Bastion's catalogue carries in its place (`/api/<format>/{project}/{key}/…`, `/files/…`, `/v2/…`; bastion.md R-BAS-107, Q-BAS-398);
+ * null for another address.
  */
 export function repositoryOfContent(url: string): string | null {
-  const m = /^(?:\/api\/v1|\/ui\/data\/v1)\/projects\/([^/]+)\/repositories\/([^/]+)\/content\//.exec(url);
+  const m =
+    /^\/api\/v1\/projects\/([^/]+)\/repositories\/([^/]+)\/content\//.exec(url) ??
+    /^\/(?:api\/(?!v1\/)[^/]+|files|v2)\/([^/]+)\/([^/]+)\//.exec(url);
   return m ? `${decodeURIComponent(m[1] ?? '')}/${decodeURIComponent(m[2] ?? '')}` : null;
 }

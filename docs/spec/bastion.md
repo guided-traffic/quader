@@ -6444,19 +6444,27 @@ The rule of B.13 for what the builder writes:
   (`server.base_url`, every entry of `server.additional_base_urls`, every further endpoint's base URL) becomes the registration's base URL,
   in author content too ([Q-BAS-365](#q-bas-365--an-origin-of-the-main-installation-in-any-text-becomes-the-bastions-base-url)).
 - A value that is a link of the management API (`/api/v1/…`, relative or on one of those origins) becomes the Bastion's data path
-  `/ui/data/v1/…` where the catalogue holds what it names (a signature object, the signing anchors), and `null` where it does not (a file's
-  `contentUrl`, which only the main installation serves) ([Q-BAS-363](#q-bas-363--a-link-of-the-management-api-is-the-bastions-data-path-only-where-the-catalogue-holds-it)).
+  `/ui/data/v1/…` where the catalogue holds what it names (a signature object, the signing anchors), and `null` where it does not
+  ([Q-BAS-363](#q-bas-363--a-link-of-the-management-api-is-the-bastions-data-path-only-where-the-catalogue-holds-it)).
   Inside text (a README's HTML) `/api/v1/` becomes `/ui/data/v1/`.
+- A version's file (`PackageFile`) downloads through the Bastion's package routes: its `contentUrl`, the content route only the main
+  installation serves, becomes the path of its `downloadUrl` on the Bastion's base URL (`/api/npm/<project>/<repo>/…`, `/files/…`,
+  `/v2/…`), which a page's download link takes; a `downloadUrl` on another origin leaves it `null`
+  ([Q-BAS-398](#q-bas-398--a-versions-file-downloads-through-the-bastions-package-route)).
 - A link of another host (a package's homepage, its repository) stays: public content, readable by pulling the artifact.
 - Text answers (a PEM chain) have their links rewritten the same way; bytes that are no text (a signature object) are kept as they are.
 
-*Built on 2026-11-26 (W-35's P6):* [prepare.go](../../internal/bastionmain/catalogue/prepare.go).
+*Built on 2026-11-26 (W-35's P6; a file's download through the package route by W-35's P9b):*
+[prepare.go](../../internal/bastionmain/catalogue/prepare.go).
 
 Acceptance criteria:
 
-- Unit: `TestR_BAS_107_LinksAreTheBastionsAndItsDataPath`, milliseconds.
+- Unit: `TestR_BAS_107_LinksAreTheBastionsAndItsDataPath`, milliseconds (a file's `contentUrl` the package route's path, and `null` for a
+  `downloadUrl` on another origin).
 - Integration: every document of `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch` is scanned for the main installation's
-  base URL, the other entry of `server.additional_base_urls` and `/api/v1/`.
+  base URL, the other entry of `server.additional_base_urls` and `/api/v1/`; `walkWebInterface` of
+  `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut` follows the version page's `contentUrl` through the Bastion's
+  client listener without a credential and receives the file of its SHA-256.
 
 ### R-BAS-108 · The catalogue's tables: derived, deduplicated, and a reset after a restore
 Priority: **P1** · Covers: quader-only
@@ -6771,7 +6779,7 @@ to (R-BAS-107), in the main installation's JSON shapes, so that the shared views
 |---|---|
 | `state` | `{confirmedAt, staleAfterSeconds, stale, docs}`: the time of the state served, `bastion.gui.stale_after`, whether the state is older, the switch `docs` (W-35's B.2b) |
 | `legal?locale=en\|de` | the Bastion's own imprint and privacy notice (R-BAS-100) in the shape of `GET /api/v1/legal` (R-UI-225); also while the replica is not ready |
-| `projects` | `{items}`: the keys of the projects the catalogue shows (the reader's `PublicSet`), for the start page that leads a visitor into a project |
+| `projects` | `{items}`: the keys of the projects the catalogue shows (the reader's `PublicSet`) that hold a package it lists, for the start page that leads a visitor into a project ([Q-BAS-399](#q-bas-399--the-start-page-offers-a-project-only-while-it-shows-a-package)) |
 | `packages?q&format&project&repository&deprecated&sort&cursor&limit` | the search of the reader (R-BAS-113, W-35's B.8) in the envelope of R-API-010 (`items`, `nextCursor`), each item the package summary as the main installation answered it; `include` is accepted and changes nothing (the summaries carry the counts of open findings); any other parameter is `400 malformed_request` |
 | `packages/lookup?format&name` | the public package of the format by its name, else by its key ([Q-BAS-395](#q-bas-395--the-lookup-finds-a-package-by-its-name-then-by-its-key)), or `404` |
 | `packages/<id>/versions?cursor&limit` | a page of the package's versions in the main installation's order; the application sorts, searches and groups them in the browser, as the main installation's view does ([Q-BAS-396](#q-bas-396--the-versions-are-paged-in-the-main-installations-order-and-sorted-in-the-browser)) |
@@ -12787,7 +12795,8 @@ no catalogue path serves.
 | (a) A value that is such a link becomes `/ui/data/v1/…` for a signature object and the signing anchors, and `null` for any other (chosen) | No dead link, no path of the main installation | The page offers the download link on the Bastion's package path instead | The content view of a file is not offered at a Bastion |
 | (b) Every one rewritten | Uniform | — | Links that answer 404 at the Bastion |
 
-**Choice:** (a). **Applied in the spec:** R-BAS-107.
+**Choice:** (a); a version's file is the exception of [Q-BAS-398](#q-bas-398--a-versions-file-downloads-through-the-bastions-package-route).
+**Applied in the spec:** R-BAS-107.
 
 ### Q-BAS-364 · A principal's reference is no value
 
@@ -13283,6 +13292,42 @@ gzip-compressed (R-BAS-110), and a documentation tree is up to a megabyte.
 | (b) Raw bytes always | One tag | — | Five to ten times the bytes on the wire |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-118.
+
+### Q-BAS-398 · A version's file downloads through the Bastion's package route
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9b) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-107, W-35's B.13 row 2 ("rewrites every `/api/v1/…` link to `/ui/data/v1/…` or to the Bastion's package paths"). A version's
+page downloads a file from its `contentUrl`, the content route the session authenticates at the main installation (Q-UI-106); the builder
+wrote it `null` (Q-BAS-363), so a visitor of a Bastion had no download, and the page derived the holding repository of a file from that
+route alone (the signature gate's files, a disabled holder). The same file's `downloadUrl` is the format's package route, which the
+renderer writes on the Bastion's base URL and the Bastion serves to an anonymous client of a public repository.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The builder writes `contentUrl` as the path of `downloadUrl` when that is on the Bastion's base URL, `null` otherwise; the page's repository of a file reads a package route too (chosen) | One rule in the builder; the views unchanged but for the helper `repositoryOfContent` | The download runs the Bastion's own read path (its cache, its limits, the class of an anonymous client), and a page names the holding repository as at the main installation | `contentUrl` names two kinds of address, the main installation's content route and a Bastion's package route |
+| (b) The Bastion's application binds the download to `downloadUrl` | The catalogue unchanged | No change of a document | An absolute address on the base URL the builder rendered with, which a Bastion of several base URLs does not serve on each; the repository of a file still unknown at the Bastion |
+| (c) A content route at the Bastion's data path | A link of the shape the plan first wrote | — | A second path that serves bytes besides the package routes, beside the GUI's rule that its data path reads only the catalogue (R-BAS-118) |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-107, R-UI-229.
+
+### Q-BAS-399 · The start page offers a project only while it shows a package
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P9b) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-118, R-UI-229 ("the projects whose packages the catalogue shows"). The renders against the profile's Bastion listed the
+project `upstream`, which is in the public set by a public remote that holds nothing yet: a visitor who chose it read only "No package is
+published in this project."
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `projects` lists a project of the public set only when a search of it finds a package (chosen) | One search of one row per project, in memory | The start leads only where something is | A project that empties drops from the start at the next round |
+| (b) The public set as it stands | — | No search | A dead end on the start page |
+| (c) The builder leaves such a project out of the public set | — | — | The public set also hides what fell out (R-BAS-112); a project without packages is still public |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-118, R-UI-229.
 
 ### Q-BAS-425 · The headers of a forwarded answer pass an allowlist, and a format's need is a replay header
 

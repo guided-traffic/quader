@@ -5,6 +5,9 @@ package bastion
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -109,7 +112,8 @@ func TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut(t *
 }
 
 // walkWebInterface reads what a visitor's browser reads of the package plain-lib through the web interface's own addresses
-// (R-BAS-118, W-35's P9): its page, the search, the lookup, its versions, its version and the state, each answered 200, and scans
+// (R-BAS-118, W-35's P9): its page, the search, the lookup, its versions, its version and the state, each answered 200, then the
+// version's file through the download link its page carries (R-BAS-107), and scans
 // every status line, header and body for the main installation (W-35's B.13): its host, the address the Bastion reaches it at, and
 // a path of its management API. The web interface's own `/ui/` paths are the Bastion's and are not scanned for.
 func walkWebInterface(t *testing.T, r *replica, id string) {
@@ -120,11 +124,13 @@ func walkWebInterface(t *testing.T, r *replica, id string) {
 			names = append(names, n)
 		}
 	}
+	version := "/ui/data/v1/packages/" + id + "/versions/1.0.0"
+	var versionBody []byte
 	for _, p := range []string{
 		"/ui/en/projects/" + testenv.DefaultProject + "/packages/npm/plain-lib",
 		"/ui/data/v1/state", "/ui/data/v1/legal?locale=de",
 		"/ui/data/v1/packages?q=plain-lib", "/ui/data/v1/packages/lookup?format=npm&name=plain-lib",
-		"/ui/data/v1/packages/" + id, "/ui/data/v1/packages/" + id + "/versions", "/ui/data/v1/packages/" + id + "/versions/1.0.0",
+		"/ui/data/v1/packages/" + id, "/ui/data/v1/packages/" + id + "/versions", version,
 	} {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, r.client+p, nil)
 		if err != nil {
@@ -140,6 +146,9 @@ func walkWebInterface(t *testing.T, r *replica, id string) {
 		if res.StatusCode != http.StatusOK {
 			t.Errorf("GET %s = %d %s", p, res.StatusCode, body)
 		}
+		if p == version {
+			versionBody = body
+		}
 		var head strings.Builder
 		for k, vs := range res.Header {
 			head.WriteString(k + ": " + strings.Join(vs, ", ") + "\n")
@@ -149,6 +158,40 @@ func walkWebInterface(t *testing.T, r *replica, id string) {
 				t.Errorf("GET %s: the answer of the web interface names the main installation (%q)", p, n)
 			}
 		}
+	}
+	downloadFromVersionPage(t, r, versionBody)
+}
+
+// downloadFromVersionPage follows a version page's download link as a visitor's browser does (R-BAS-107, Q-BAS-398): the file's
+// contentUrl is the Bastion's package route, never a path of the management API, and it answers the tarball without a credential.
+func downloadFromVersionPage(t *testing.T, r *replica, versionDoc []byte) {
+	t.Helper()
+	var v struct {
+		Files []struct {
+			ContentURL *string `json:"contentUrl"`
+			SHA256     string  `json:"sha256"`
+		} `json:"files"`
+	}
+	if err := json.Unmarshal(versionDoc, &v); err != nil || len(v.Files) == 0 || v.Files[0].ContentURL == nil {
+		t.Fatalf("the version page's files: %v %s", err, versionDoc)
+	}
+	link := *v.Files[0].ContentURL
+	if !strings.HasPrefix(link, "/api/npm/"+testenv.DefaultProject+"/") {
+		t.Fatalf("the version page's download link is %q, not the Bastion's npm route", link)
+	}
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, r.client+link, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Host = baseHost
+	res, err := clientHTTP.Do(req)
+	if err != nil {
+		t.Fatalf("GET %s: %v", link, err)
+	}
+	body, _ := io.ReadAll(res.Body)
+	_ = res.Body.Close()
+	if sum := sha256.Sum256(body); res.StatusCode != http.StatusOK || hex.EncodeToString(sum[:]) != v.Files[0].SHA256 {
+		t.Fatalf("GET %s = %d, %d bytes of SHA-256 %x, want the file of SHA-256 %s", link, res.StatusCode, len(body), sum, v.Files[0].SHA256)
 	}
 }
 

@@ -58,7 +58,7 @@ func (r *reader) served() error {
 }
 
 func (r *reader) PublicSet() (iface.CataloguePublic, error) {
-	return iface.CataloguePublic{Projects: []string{"acme", "web"}}, r.served()
+	return iface.CataloguePublic{Projects: []string{"acme", "upstream", "web"}}, r.served()
 }
 
 func (r *reader) Search(q catalogue.Query) (catalogue.Page, error) {
@@ -70,7 +70,11 @@ func (r *reader) Search(q catalogue.Query) (catalogue.Page, error) {
 	}
 	var out []catalogue.Entry
 	for _, e := range r.pkgs {
-		if q.Q == "" || strings.Contains(e.Name, q.Q) {
+		inProject := q.Project == ""
+		for _, repo := range e.Repositories {
+			inProject = inProject || strings.HasPrefix(repo, q.Project+"/")
+		}
+		if inProject && (q.Q == "" || strings.Contains(e.Name, q.Q)) {
 			out = append(out, e)
 		}
 	}
@@ -147,8 +151,8 @@ func newReader() *reader {
 	return &reader{
 		state: onState(),
 		pkgs: []catalogue.Entry{
-			{ID: pkgID, Format: "npm", Name: "@acme/ui", Key: "@acme/ui", Summary: json.RawMessage(`{"id":"` + pkgID + `","name":"@acme/ui"}`)},
-			{ID: "r1", Format: "ansible", Name: "acme.web", Key: "web", Summary: json.RawMessage(`{"id":"r1","name":"acme.web"}`)},
+			{ID: pkgID, Format: "npm", Name: "@acme/ui", Key: "@acme/ui", Repositories: []string{"acme/npm"}, Summary: json.RawMessage(`{"id":"` + pkgID + `","name":"@acme/ui"}`)},
+			{ID: "r1", Format: "ansible", Name: "acme.web", Key: "web", Repositories: []string{"web/galaxy"}, Summary: json.RawMessage(`{"id":"r1","name":"acme.web"}`)},
 		},
 		docs: map[string][]byte{
 			"packages/" + pkgID + "/versions/1.0.0%2Bbuild.1":       []byte(`{"version":"1.0.0+build.1"}`),
@@ -402,7 +406,7 @@ func TestR_BAS_117_EveryRequestCountsInTheClassGui(t *testing.T) {
 }
 
 // TestR_BAS_118_TheDataAreTheMainInstallationsShapesFromTheCatalogue: the state, the legal pages, the search with its cursor, the
-// lookup by name and by key, a page of versions, a document by a path in any spelling a browser writes, ETag and 304, gzip, and the
+// lookup by name and by key, a page of versions, the projects that show a package, a document by a path in any spelling a browser writes, ETag and 304, gzip, and the
 // refusals: an index page, a path outside the grammar, an unknown parameter, a query the reader refuses.
 func TestR_BAS_118_TheDataAreTheMainInstallationsShapesFromTheCatalogue(t *testing.T) {
 	r := newReader()
@@ -420,6 +424,7 @@ func TestR_BAS_118_TheDataAreTheMainInstallationsShapesFromTheCatalogue(t *testi
 		t.Errorf("state again = %d", again.Code)
 	}
 
+	// The project upstream holds no package the catalogue shows and is not offered (Q-BAS-399).
 	if rec := get("/ui/data/v1/projects"); rec.Code != 200 || rec.Body.String() != `{"items":["acme","web"]}` {
 		t.Errorf("projects = %d %s", rec.Code, rec.Body.String())
 	}

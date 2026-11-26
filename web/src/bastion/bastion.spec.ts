@@ -1,5 +1,6 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { ClientSetupReads, PackageReads } from '../app/api/package-reads';
@@ -15,6 +16,8 @@ import {
   OCI_FORMAT,
   PACKAGE_FORMAT,
 } from '../app/api/testing/fakes-catalog';
+import { NamespaceOf } from '../app/views/packages/namespace-of';
+import { PackageName } from '../app/views/packages/package-name';
 import { BastionApp } from './app';
 import { BASTION_FORMATS } from './data/formats';
 import { bastionDataInterceptor, seg } from './data/http';
@@ -52,14 +55,34 @@ describe('The Bastion application (R-UI-228)', () => {
     const http = setup();
     const reads = TestBed.inject(PackageReads);
 
+    // The times the builder took out of the version's documents come back from its state, by pointer (R-BAS-103, Q-UI-1451): one read of
+    // the state serves the version's documents read with it.
+    // The pointer of the first file's scan, a JSON pointer and no address (built so, as R-ARCH-007's search reads every literal).
+    const scanned = ['', 'files', '0', 'malware', 'scannedAt'].join('/');
     const version = reads.version(ID, '1.0.0+build.1');
-    http.expectOne(`/ui/data/v1/packages/${ID}/versions/1.0.0%2Bbuild.1`).flush({ version: '1.0.0+build.1' });
-    expect((await version).version).toBe('1.0.0+build.1');
+    http.expectOne(`/ui/data/v1/packages/${ID}/versions/1.0.0%2Bbuild.1`).flush({ version: '1.0.0+build.1', files: [{ malware: { state: 'clean' } }] });
+    await turn();
+    http.expectOne(`/ui/data/v1/packages/${ID}/versions/1.0.0%2Bbuild.1/state`).flush({
+      times: { version: { [scanned]: '2026-11-26T10:00:00Z', '/gone/at': 'x' }, docs: { '/builtAt': '2026-11-26T09:00:00Z' } },
+    });
+    const v = await version;
+    expect(v.version).toBe('1.0.0+build.1');
+    expect(v.files[0]?.malware).toEqual({ state: 'clean', scannedAt: '2026-11-26T10:00:00Z' });
+    const tree = reads.docs(ID, '1.0.0+build.1');
+    http.expectOne(`/ui/data/v1/packages/${ID}/versions/1.0.0%2Bbuild.1/docs`).flush({ groups: [] });
+    expect(await tree).toEqual({ groups: [], builtAt: '2026-11-26T09:00:00Z' });
 
-    // A file of the documentation is one segment per part of its path, as the grammar writes it.
+    // A file of the documentation is one segment per part of its path, as the grammar writes it; a version without a state keeps its
+    // documents as they are.
     const file = reads.docFile(ID, '2.0.0', "docs/it's(1).md");
     http.expectOne(`/ui/data/v1/packages/${ID}/versions/2.0.0/docs/files/docs/it%27s%281%29.md`).flush({ html: '<p>x</p>' });
-    await file;
+    await turn();
+    http.expectOne(`/ui/data/v1/packages/${ID}/versions/2.0.0/state`).flush({ type: 'about:blank', status: 404, code: 'not_found' }, {
+      status: 404,
+      statusText: 'Not Found',
+      headers: { 'Content-Type': 'application/problem+json' },
+    });
+    expect(await file).toEqual({ html: '<p>x</p>' });
 
     const lookup = reads.lookup('npm', '@acme/ui');
     const req = http.expectOne((r) => r.url === '/ui/data/v1/packages/lookup');
@@ -74,6 +97,13 @@ describe('The Bastion application (R-UI-228)', () => {
     expect(vreq.request.params.keys().sort()).toEqual(['limit']);
     vreq.flush({ items: [{ version: '1.0.0' }], nextCursor: null });
     expect((await page).items).toHaveLength(1);
+
+    // A walk of every page with the main installation's 500 asks the Bastion's largest page (Q-UI-1445): its 400 stood in the renders.
+    const all = reads.versions(ID)(null, 500);
+    const allReq = http.expectOne((r) => r.url === `/ui/data/v1/packages/${ID}/versions`);
+    expect(allReq.request.params.get('limit')).toBe('100');
+    allReq.flush({ items: [], nextCursor: null });
+    await all;
 
     // A README the catalogue does not hold is none, as the main installation's 404.
     const readme = reads.readme(ID, '1.0.0');
@@ -130,6 +160,44 @@ describe('The Bastion application (R-UI-228)', () => {
   });
 });
 
+describe("The Bastion's pages (R-UI-229)", () => {
+  afterEach(() => {
+    backend?.verify();
+    backend = null;
+  });
+
+  /** A view's namespace as the Bastion's pages draw it, once the format table is read. */
+  async function drawn<T>(component: Type<T>, inputs: Record<string, unknown>): Promise<HTMLElement> {
+    const fixture = TestBed.createComponent(component);
+    for (const [k, v] of Object.entries(inputs)) fixture.componentRef.setInput(k, v);
+    fixture.detectChanges();
+    await turn();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('R-UI-229 a namespace is text at the Bastion, which has no namespace page, and the package keeps its link', async () => {
+    setup();
+    const head = await drawn(NamespaceOf, { format: 'npm', name: '@team-a/widgets', project: 'platform', links: false });
+    expect(head.textContent).toContain('Scope');
+    expect(head.textContent).toContain('@team-a');
+    expect(head.querySelector('a')).toBeNull();
+    const row = await drawn(PackageName, {
+      format: 'npm',
+      name: '@team-a/widgets',
+      project: 'platform',
+      link: ['/projects', 'platform', 'packages', 'npm', '@team-a/widgets'],
+      namespaceLinks: false,
+    });
+    expect(row.querySelector('.ns-text')?.textContent).toBe('@team-a');
+    expect(row.querySelector('[data-testid=namespace-link]')).toBeNull();
+    expect(row.querySelectorAll('a')).toHaveLength(1);
+    const main = await drawn(NamespaceOf, { format: 'npm', name: '@team-a/widgets', project: 'platform' });
+    expect(main.querySelector('a')?.textContent).toBe('@team-a');
+  });
+});
+
 describe('The Bastion shell (R-UI-227)', () => {
   afterEach(() => {
     backend?.verify();
@@ -170,6 +238,17 @@ describe('The Bastion shell (R-UI-227)', () => {
     );
     expect(notReady.querySelector('.not-ready')?.textContent).toContain('This page is not available right now. Try again in a few minutes.');
     expect(notReady.querySelector('router-outlet')).toBeNull();
+  });
+
+  it('R-UI-227 a not_ready with its Retry-After is said at once, without the retry of a read that would hold the spinner 30 s', async () => {
+    const root = await shell((req) =>
+      req.flush(
+        { type: 'about:blank', status: 503, code: 'not_ready', detail: 'This page is not available right now. Try again in a few minutes.' },
+        { status: 503, statusText: 'Service Unavailable', headers: { 'Content-Type': 'application/problem+json', 'Retry-After': '30' } },
+      ),
+    );
+    expect(root.querySelector('.not-ready')).not.toBeNull();
+    backend?.expectNone('/ui/data/v1/state');
   });
 
   it('R-UI-227 a fresh state shows the page and no band', async () => {

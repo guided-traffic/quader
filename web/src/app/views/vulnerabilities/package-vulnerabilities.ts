@@ -75,7 +75,11 @@ export function blockedRepositories(report: VulnerabilityVersionReport | null): 
                   {{ next }}
                 }
                 @for (f of blocking(repo.findings); track f.id) {
-                  <a [routerLink]="findingLink(f)" translate="no">{{ f.advisory }}</a>
+                  @if (advisoryLinks()) {
+                    <a [routerLink]="findingLink(f)" translate="no">{{ f.advisory }}</a>
+                  } @else {
+                    <span translate="no">{{ f.advisory }}</span>
+                  }
                 }
               </span>
             </p>
@@ -88,6 +92,7 @@ export function blockedRepositories(report: VulnerabilityVersionReport | null): 
               [counts]="repo.grade.open"
               [severity]="severity()"
               [rows]="signedIn() ? null : repo.findings"
+              [advisoryLinks]="advisoryLinks()"
             />
           }
         </section>
@@ -116,6 +121,8 @@ export class PackageVulnerabilities {
    * page, and is offered no link into a screen that needs a session: the project's report and a finding's detail.
    */
   readonly signedIn = input(true);
+  /** Whether a finding's identifier links to its advisory's page; false where the application has none (the Bastion's, Q-UI-1450). */
+  readonly advisoryLinks = input(true);
 
   /** Where a finding leads: its detail for a reader with a session, its advisory's page for a visitor without one (R-UI-224). */
   protected findingLink(f: VulnerabilityFinding): string[] {

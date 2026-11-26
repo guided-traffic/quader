@@ -436,13 +436,17 @@ export function blockKindWords(kind: SignatureBlockKind): string {
   }
 }
 
-/** The line of who uploaded or where it came from (R-SIG-010, R-SIG-035), without the time, which the screen adds. */
+/**
+ * The line of who uploaded or where it came from (R-SIG-010, R-SIG-035), without the time, which the screen adds. An upload that names no
+ * one (a Bastion's catalogue strips who uploaded, bastion.md R-BAS-106) is "Uploaded" alone (Q-UI-1452).
+ */
 export function originWords(o: SignatureOrigin): string {
   if (o.kind === 'fetched') {
     const from = o.upstreamUrl ?? '';
     return from ? $localize`:@@sig.origin.fetched:Fetched from ${from}:upstream:` : $localize`:@@sig.origin.fetched-remote:Fetched from the remote's upstream`;
   }
   const name = o.principalName ?? '';
+  if (!o.ci && !o.principalKind && !name) return $localize`:@@sig.origin.uploaded:Uploaded`;
   if (o.ci) {
     const parts = [o.ci.projectPath, o.ci.ref, o.ci.pipelineId ? $localize`:@@sig.origin.pipeline:pipeline ${o.ci.pipelineId}:id:` : undefined]
       .filter((p): p is string => !!p)

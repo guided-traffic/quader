@@ -24,16 +24,17 @@ const KNOWN_SORTS: readonly string[] = ['name', '-name', 'createdAt', '-createdA
     <quader-page-header heading="Packages" i18n-heading="@@pkg.list.heading" />
     <quader-list-head
       [searchLabel]="searchLabel"
-      [search]="q() ?? ''"
-      (searchChange)="navigate({ q: $event || null })"
+      [search]="text() ?? ''"
+      (searchChange)="navigate({ q: $event || null, keyword: null })"
       [filters]="false"
     />
     <quader-package-table
       [list]="list"
       [project]="project()"
       [sort]="tableSort()"
-      [emptyText]="q() ? emptyFilteredText : emptyText"
+      [emptyText]="text() || format() ? emptyFilteredText : emptyText"
       [formatLabel]="formatLabelOf"
+      [namespaceLinks]="false"
       (sortChange)="sortBy($event)"
       (retry)="retry()"
     />
@@ -48,6 +49,14 @@ export class PackageListPage {
   readonly project = input.required<string>();
   readonly q = input<string | undefined>();
   readonly sort = input<string | undefined>();
+  /**
+   * A tag's link of the views (`?format=npm&keyword=react`, R-ANS-057): the Bastion's search reads a keyword with the name and the
+   * description, so the tag is the search's text, shown in its field, and the format its filter (Q-UI-1448).
+   */
+  readonly keyword = input<string | undefined>();
+  readonly format = input<string | undefined>();
+  /** The search's text: the typed one, else the tag's. */
+  protected readonly text = computed(() => this.q()?.trim() || this.keyword()?.trim() || undefined);
 
   protected readonly searchLabel = $localize`:@@bastion.list.search:Search packages`;
   protected readonly emptyText = $localize`:@@bastion.list.empty:No package is published in this project.`;
@@ -59,7 +68,7 @@ export class PackageListPage {
   private readonly apiSort = computed<PackageSort>(() => {
     const s = this.sort();
     if (s !== undefined && KNOWN_SORTS.includes(s)) return s as PackageSort;
-    return this.q()?.trim() ? 'relevance' : 'name';
+    return this.text() ? 'relevance' : 'name';
   });
   protected readonly tableSort = computed<TableSort | null>(() => {
     const s = this.apiSort();
@@ -71,7 +80,8 @@ export class PackageListPage {
 
   constructor() {
     effect(() => {
-      const filters = { project: this.project(), q: this.q()?.trim() || undefined, sort: this.apiSort() };
+      const format = this.format();
+      const filters = { project: this.project(), q: this.text(), format: format ? [format] : undefined, sort: this.apiSort() };
       untracked(() => void this.list.start(this.reads.list(filters)));
     });
     live({ reload: () => this.list.refresh(), every: () => LIVE_IDLE_MS });

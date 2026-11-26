@@ -49,6 +49,7 @@ import { PackageTags } from './package-tags';
                 [key]="row.key"
                 [link]="commands(row.format, row.key ?? row.name)"
                 [project]="project()"
+                [namespaceLinks]="namespaceLinks()"
               />
               <quader-deprecation-mark [deprecation]="row.deprecation" />
               <quader-signature-badge [state]="row.signature" />
@@ -82,6 +83,8 @@ export class PackageTable {
   readonly emptyText = input.required<string>();
   /** A format's name, never its key (R-UI-006). */
   readonly formatLabel = input.required<(format: string) => string>();
+  /** Whether a name's namespace links to its page; false where the application has none (Q-UI-1443). */
+  readonly namespaceLinks = input(true);
   readonly sortChange = output<TableSort>();
   /** The list's Retry: the page reads the failed page again, and what failed with it. */
   readonly retry = output<void>();

@@ -90,6 +90,13 @@ export class PackageDetailView {
   /** Route parameters: the project of `/projects/:project/packages`, then the matcher's, bound by component input binding. */
   readonly project = input.required<string>();
   readonly format = input.required<string>();
+  /** Whether the name's namespace links to its page; false where the application has none (the Bastion's, Q-UI-1443). */
+  readonly namespaceLinks = input(true);
+  /**
+   * Whether the application has download figures; false where it has none (the Bastion's catalogue carries no download count and no
+   * time of a last download, Q-BAS-358): no column Last download, no count, no "never" (Q-UI-1449).
+   */
+  readonly downloads = input(true);
   /** The format's name in the header, never its key (R-UI-006): **OCI (Docker)**, not `oci`. */
   protected readonly formatName = formatName(() => this.format());
   readonly name = input.required<string>();
@@ -217,12 +224,16 @@ export class PackageDetailView {
       ? [{ id: 'vulnerabilities', label: $localize`:@@pkg.ver.vulnerabilities:Vulnerabilities`, sortable: true }]
       : []),
     { id: 'published', label: this.arrived(), sortable: true },
-    {
-      id: 'fetched',
-      label: $localize`:@@pkg.ver.last-download:Last download`,
-      help: $localize`:@@pkg.help.last-download:When a client last downloaded this version through Quader. Never for a version nobody downloaded yet, such as one a mirror pass fetched.`,
-      sortable: true,
-    },
+    ...(this.downloads()
+      ? [
+          {
+            id: 'fetched',
+            label: $localize`:@@pkg.ver.last-download:Last download`,
+            help: $localize`:@@pkg.help.last-download:When a client last downloaded this version through Quader. Never for a version nobody downloaded yet, such as one a mirror pass fetched.`,
+            sortable: true,
+          },
+        ]
+      : []),
     ...(this.showRepositories() ? [{ id: 'repositories', label: $localize`:@@pkg.ver.repositories:Repositories` }] : []),
   ]);
   /**
@@ -242,7 +253,11 @@ export class PackageDetailView {
     this.images() ? $localize`:@@pkg.ver.filter-tags:Filter tags` : $localize`:@@pkg.ver.filter:Filter versions`,
   );
   protected readonly detailsHeading = $localize`:@@pkg.details:Details`;
-  protected readonly detailsText = $localize`:@@pkg.details-hint:The repositories that hold the package, its keywords and its downloads.`;
+  protected readonly detailsText = computed(() =>
+    this.downloads()
+      ? $localize`:@@pkg.details-hint:The repositories that hold the package, its keywords and its downloads.`
+      : $localize`:@@pkg.details-hint-no-downloads:The repositories that hold the package and its keywords.`,
+  );
   protected readonly emptyText = computed(() =>
     this.images()
       ? $localize`:@@pkg.ver.none-matching-tags:No image has a tag that matches “${this.draft().trim()}:text:”.`
