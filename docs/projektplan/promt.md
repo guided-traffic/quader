@@ -308,9 +308,9 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | S19 · The command behind its button on a version's page, clients as tabs, a collection opens in its documentation (W-30) | the owner's task of 20:39 (section 8, Product): every format's version page, the panel of the command, the target of a collection's name, the sentence why a format is not checked for vulnerabilities | landed and pushed on 2026-11-26 at 00:45 |
 | W30-A1 · A collection's documentation reads like the documentation site (W-30) | R-ANS-048 to R-ANS-050 of the plan `.dev/w30-plan.md`: anchors and links, a plugin's configuration, the page's contents, highlighted examples | landed and pushed at 23:55 |
 | W30-G7 · An image's facts: annotations and labels, the config, the layers, the history (W-30) | R-OCI-039 to R-OCI-041 of the plan `.dev/w30-plan.md`; with a Helm chart's facts since the owner's d4 = b; Q-UI-1250 to Q-UI-1259, R-UI-219, migration 00133 | landed and pushed on 2026-11-26 at 02:15, with the migration 00133 |
-| W30-A4 · A role read through a remote reads like a role (W-30, the owner's d1 = b) | R-ANS-056 of the plan `.dev/w30-plan.md`: owner and name, description, README, `role search`; no local publish of a role; Q-ANS-110 to Q-ANS-119, Q-UI-1260 to Q-UI-1269, H-2120 to H-2129, migration 00134 | built on 2026-11-26 at about 01:45 (seven commits, the migration 00134); lands after W30-G7, with its decision record renumbered |
+| W30-A4 · A role read through a remote reads like a role (W-30, the owner's d1 = b) | R-ANS-056 of the plan `.dev/w30-plan.md`: owner and name, description, README, `role search`; no local publish of a role; Q-ANS-110 to Q-ANS-119, Q-UI-1260 to Q-UI-1269, H-2120 to H-2129, migration 00134 | landed and pushed on 2026-11-26 at 03:14, with the migrations 00134 and 00135 |
 | W30-G8 · A Debian package shows its relations, long description, changelog, copyright and file list (W-30) | R-DEB-038, R-DEB-039 of the plan `.dev/w30-plan.md`; the data archive read under bounds, which revises R-DEB-007; Q-DEB-140 to Q-DEB-149, Q-UI-1270 to Q-UI-1279, H-2130 to H-2139, migration 00134 | landed and pushed on 2026-11-26 at 01:25, with the migration 00132 (the OCI package takes 00133, the roles 00134) |
-| W30-A2 · The documentation generator reads fragments, a role's argument specs and the changelog (W-30) | R-ANS-051 to R-ANS-053 of the plan `.dev/w30-plan.md`; Q-ANS-96 to Q-ANS-105, Q-UI-1280 to Q-UI-1289, H-2140 to H-2149, migration 00135 | in work since 2026-11-26, about 00:29 |
+| W30-A2 · The documentation generator reads fragments, a role's argument specs and the changelog (W-30) | R-ANS-051 to R-ANS-053 of the plan `.dev/w30-plan.md`; Q-ANS-96 to Q-ANS-105, Q-UI-1280 to Q-UI-1289, H-2140 to H-2149, migration 00136 | built on 2026-11-26 at about 02:40 (three commits); lands after W30-A4 with the migration 00136 |
 | W30-A3 · Finding collections, the page of a name in every format, the documentation searched across collections (W-30, the owner's d2 = b and d3 = b) | the plan's package A3 with R-ANS-057, R-ANS-058 and R-UI-220; Q-ANS-120 to Q-ANS-129, Q-UI-1290 to Q-UI-1299, H-2150 to H-2159 | in work since 2026-11-26, about 01:05 |
 | W30-G4 · "Deprecated" is a property of every format that has it (W-30) | R-API-085, R-NUGET-036, R-ANS-060 of the plan `.dev/w30-plan.md`; Q-API-440 to Q-API-449, Q-NUGET-140 to Q-NUGET-149, Q-ANS-130 to Q-ANS-139, Q-NPM-95 to Q-NPM-99, Q-UI-1300 to Q-UI-1309, ADR-286, H-2160 to H-2169 | in work since 2026-11-26, about 01:50 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
@@ -1067,6 +1067,21 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **Closed on 2026-11-26, 03:14: two pipelines of the night were red by landings of mine, read at 02:43; no release was held
+  (Q-ARCH-457).** (1) `e2e (vuln)` on the push of S19 (00:45): the journey
+  `web/e2e/vuln/15-vulnerabilities.spec.ts` opened an npm package's own address and expected the table of its versions
+  there; S19 moved that table to `…/-/versions`. Its builder corrected the journeys under `tests/` and `ansible-docs/`
+  and missed this directory, and my rule named `web/e2e/tests` only. The journey opens the new address; not run
+  locally (a kind leg). The rule covers all of `web/e2e` now. (2) `UI layout checks` on the push of the Debian
+  package (01:25), not caused by it: the screen `admin-user-sections` (G3's, of 21:59) broke the word "Safari/537.36"
+  of a session's user agent inside itself at 1,024 px, in a column 119 px wide; the column's width depends on the
+  widths of the times beside it and on the runner's longer user agent, so four runs before it had passed. The column
+  of the browser has a least width of 10 rem in the table's budget, on the administrator's page and on the profile's
+  own sessions; below the budget the rows stack. In the same run `web (Angular)` failed at "Set up Node.js", which
+  timed out after 5 minutes: the runner, not the change; not re-run, the next push runs it. Open, a finding of three
+  builders: `TestR_REPO_051_NpmPublicRegistryFeed` compares a job's database time with the test host's clock
+  (`rig_test.go:425`) and misses a pass a few milliseconds apart.
+
 - **Open since 2026-11-26, 01:25, two findings of the night's builders, for the next batch of tools.** (1) Builders share one
   temporary directory: a builder's helper scripts there were overwritten by another builder's of the same names; it
   noticed and ran none of the changed ones. Briefs now say that a helper script belongs under the builder's own
@@ -1265,6 +1280,28 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 03:14, by W30-A4 (W-30, the owner's d1 = b; R-ANS-056; Q-ANS-110 to Q-ANS-115; Q-UI-1260, Q-UI-1261;
+  ADR-285; gaps H-2120 to H-2124; migrations 00134 and 00135): a role installed through an Ansible Galaxy remote reads
+  like a role.** It is listed by its owner and name (`geerlingguy.pip`) with its description, tags, repository (a link
+  only for https) and the upstream's download count, apart from Quader's own; its page opens on its README (the
+  upstream's HTML through the sanitizer), the panel shows `ansible-galaxy role install <owner>.<name>,<version>`, the
+  switch lists the role's versions; `ansible-galaxy role search` passes through to the upstream under bounds, with
+  hits the rules do not deliver dropped and `download_url` removed; `role info` is served through the lookup. No local
+  publish of a role: the screen and the manual say that a role is published inside a collection. A rule sees
+  `role/<id>`, and the Details name that with a link to the tab Upstream; a role the rules do not deliver shows the
+  note and the reason, has no command, is left out of the search, and its install answers 403. With it, for every
+  format: a version a remote holds and does not deliver names the repository and the reason on its page (it was
+  missing everywhere); delivery rules decide by the package's name, not its display name; lists, search results,
+  suggestions, the version switch and recent packages address a package by its key. The search finds a role by its
+  owner through an index over the words of a display name that differs from the name (`packages_display_words`,
+  00135, built concurrently, no row written): the builder's first step rebuilt a stored column and rewrote every
+  package row of every format, which I sent back before the landing. A role cached before this change has no package
+  row and is listed once its archive is filled again (Q-ANS-113). The landing: the 13 gates (the translation files extracted again after my correction moved lines), the dialog states, the renders on a fresh instance (134 in English, 7 in German, no layout finding) and the whole areas `ansibleremote`, `ansiblevirtual`, `packages`, `search`, `conventions`, `repository` and `postgres` green, the count of requirements 1,296; looked at: a role's page in light at 1,440 px (owner and name in the title, the README first with its table and code, the version switch and Install in the head; the breadcrumb shows `role/16`, H-2124) and a user's sessions at 1,024 px (the rows stacked, the user agent's words whole). Open: the minimum Ansible
+  version, the platforms and the licence are not in Galaxy's answers for a role (H-2120); the search's count is
+  approximate (H-2121); the version list sorts by the package's name (H-2122); the catalogue lists versions on unlisted
+  hosts (H-2123); the breadcrumb shows `role/16` (H-2124). Not verified: the journey's role search case, a real
+  `ansible-galaxy` client against the role's pages.
 
 - **Closed on 2026-11-26, 02:15, by W30-G7 (W-30; R-OCI-039 to R-OCI-042; Q-OCI-271 to Q-OCI-276; Q-UI-1250; ADR-284; gaps
   H-2110, H-2115, H-2117 to H-2119; migration 00133): an image shows what `docker inspect`, `docker history` and a
