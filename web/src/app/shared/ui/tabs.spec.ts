@@ -37,10 +37,28 @@ describe('Quader tabs', () => {
     expect(root.querySelector('[role="tablist"]')).toBeTruthy();
     expect(tabs().map((t) => t.textContent?.trim())).toEqual(['General', 'Access', 'Extra']);
     expect(tabs().map((t) => t.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false']);
-    const panel = root.querySelector('[role="tabpanel"]')!;
+    const panel = root.querySelector('[role="tabpanel"]:not([inert])')!;
     expect(panel.textContent).toContain('general body');
     expect(panel.getAttribute('aria-labelledby')).toBe(tabs()[0]!.id);
+    // Every tab names its panel; the panels of the others are inert and empty.
+    const panels = [...root.querySelectorAll('[role="tabpanel"]')];
+    expect(tabs().map((t) => t.getAttribute('aria-controls'))).toEqual(panels.map((p) => p.id));
+    expect(panels.map((p) => [p.hasAttribute('inert'), p.textContent?.trim()])).toEqual([[false, 'general body'], [true, ''], [true, '']]);
     expect(await seriousViolations(root)).toEqual([]);
+  });
+
+  it('R-UI-044 the tabs directive finds nothing to warn about: a panel for every tab, each with its content directive', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    try {
+      const { fixture, tabs, host } = await render();
+      tabs()[1]!.click();
+      await settle(fixture);
+      host.extra.set(false);
+      await settle(fixture);
+      expect(warn.mock.calls.map((c) => String(c[0]))).toEqual([]);
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('a click selects a tab and only its content is in the page; the lazy content appears with it', async () => {

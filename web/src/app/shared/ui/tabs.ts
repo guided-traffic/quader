@@ -10,7 +10,7 @@ import {
   model,
   viewChild,
 } from '@angular/core';
-import { Tab as AriaTab, TabList, TabPanel, Tabs } from '@angular/aria/tabs';
+import { Tab as AriaTab, TabContent as AriaTabContent, TabList, TabPanel, Tabs } from '@angular/aria/tabs';
 import { TabStrip } from './tab-strip';
 
 /** Marks the lazy content of a tab: `<ng-template quaderTabContent>` is created when the tab is selected and gone when it is left. */
@@ -49,7 +49,7 @@ export class TabPage {
  */
 @Component({
   selector: 'quader-tab-group',
-  imports: [NgTemplateOutlet, Tabs, TabList, AriaTab, TabPanel, TabStrip],
+  imports: [NgTemplateOutlet, Tabs, TabList, AriaTab, TabPanel, AriaTabContent, TabStrip],
   template: `
     <div ngTabs>
       <div class="tab-row">
@@ -72,18 +72,28 @@ export class TabPage {
       </div>
       <ng-content select="[tabsEnd]" />
       </div>
+      <!--
+        Every tab has its panel, so each tab names the panel it controls; a panel holds its tab's content itself, the selected one's
+        (every one's with keepAll). The empty ngTabContent is what the directive asks of a panel, and creates nothing.
+      -->
       @if (keepAll()) {
         <div class="tab-panels">
           @for (t of tabs(); track t; let i = $index) {
             <div ngTabPanel [value]="i.toString()">
+              <ng-template ngTabContent />
               <ng-container [ngTemplateOutlet]="t.lazy() ?? t.eager()" />
             </div>
           }
         </div>
-      } @else if (current(); as t) {
-        <div ngTabPanel [value]="active().toString()">
-          <ng-container [ngTemplateOutlet]="t.lazy() ?? t.eager()" />
-        </div>
+      } @else {
+        @for (t of tabs(); track t; let i = $index) {
+          <div ngTabPanel [value]="i.toString()">
+            <ng-template ngTabContent />
+            @if (i === active()) {
+              <ng-container [ngTemplateOutlet]="t.lazy() ?? t.eager()" />
+            }
+          </div>
+        }
       }
     </div>
   `,
@@ -133,7 +143,6 @@ export class TabGroup {
   protected readonly active = computed(() =>
     Math.max(0, Math.min(this.selectedIndex(), this.tabs().length - 1)),
   );
-  protected readonly current = computed(() => this.tabs()[this.active()] ?? null);
 
   protected select(value: string | undefined): void {
     if (value !== undefined) this.selectedIndex.set(Number(value));
