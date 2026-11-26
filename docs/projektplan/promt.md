@@ -326,15 +326,17 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W34-E2 · A Bastion's own refusals fit the clients: the format's cap of the time to wait, and request figures that let one normal command through (W-34, the plan's E2 and E3; the Bastion interface's version rises by one) | R-BAS-091, R-BAS-092, Q-BAS-310 to Q-BAS-319, H-2275 to H-2279, ADR-299 | landed and pushed on 2026-11-26 at 13:17 |
 | W36 · The built-in limit profiles' byte and upstream figures fit a large company (the owner's rule of generous defaults, applied to the figures W32 listed, H-2262) | R-LIM-010 rewritten; R-LIM-042, Q-LIM-296 to Q-LIM-299, Q-UI-1390 to Q-UI-1394, H-2263, H-2264, ADR-296, migration 00143 | landed and pushed on 2026-11-26 at 13:17 |
 | W35-P3 · An anonymous visitor of a public repository sees its vulnerabilities, the open ones (W-35, the owner's g4, g5, g6; the plan's P3) | R-VULN-019, R-VULN-020, Q-VULN-158 and R-UI-057 rewritten; R-UI-224, Q-UI-1410 to Q-UI-1419, H-2300 to H-2302, ADR-301 | landed and pushed on 2026-11-26 at 14:00 |
-| W35-P4 · Imprint and privacy notice, served by the installation itself from the chart's values, in both charts (W-35, the owner's f2; the plan's P4) | R-UI-225, R-UI-226, Q-UI-1420 to Q-UI-1429, R-BAS-100, Q-BAS-340 to Q-BAS-344, H-2303, H-2304, ADR-302 | built at 13:27, stacked above main, in its gate run |
-| W33b · The audit log shows a push and a delete as one row too, and its German columns hold their words (my decision on the owner's rule; W33's H-2269) | R-OPS-056, Q-OPS-446 to Q-OPS-452, Q-UI-1490 to Q-UI-1496, H-2341 to H-2345, migration 00144 | built at 13:38, stacked above W35-P4, waits for its gate run |
+| W35-P4 · Imprint and privacy notice, served by the installation itself from the chart's values, in both charts (W-35, the owner's f2; the plan's P4) | R-UI-225, R-UI-226, Q-UI-1420 to Q-UI-1429, R-BAS-100, Q-BAS-340 to Q-BAS-344, H-2303, H-2304, ADR-302 | landed and pushed on 2026-11-26 at 15:06 |
+| W33b · The audit log shows a push and a delete as one row too, and its German columns hold their words (my decision on the owner's rule; W33's H-2269) | R-OPS-056, Q-OPS-446 to Q-OPS-452, Q-UI-1490 to Q-UI-1496, H-2341 to H-2345, migration 00144 | landed and pushed on 2026-11-26 at 15:06 |
 | W34-E6 · The specification of a Bastion's limits, its configuration from the main installation, the throughput and a Bastion that names nothing of the main installation (W-34, the owner's k1 to k12 and his rule; documents only) | R-BAS-093 to R-BAS-099, R-LIM-043 to R-LIM-046, R-UI-240 to R-UI-243, Q-BAS-320 to Q-BAS-339, Q-LIM-300 to Q-LIM-309, Q-UI-1480 to Q-UI-1489, H-2280 to H-2299, ADR-300 | landed and pushed on 2026-11-26 at 13:17 |
-| F-vulnimage · The area `vulnimage` is red on main: after a client's pull of an image through a remote the version report answers "The version does not exist." (found by W35-P3 at 120d07ace) | `TestR_VULN_050_R_MAL_035_ADownloadAheadAndAClientsFillAreScannedAtOnceWithoutASchedule`: the first red commit by bisect, then the product or the test repaired, whichever is wrong; the areas `vulnimage`, `ociremote` and `proxy` whole; Q-OPS-453 to Q-OPS-455, H-2346, H-2347 if needed | in work since 2026-11-26, 13:07 |
-| W34-E16 · Nothing of the main installation in a Bastion's answers (W-34, the owner's rule; the plan's E16; no change of the interface) | R-BAS-099's rows 1 to 7, 9, 10 and 15: the write refusal's text, the Bastion's own texts, the problem type `about:blank`, the policy names, an allow-list of a forward's headers, a `Location` only when relative or on the Bastion's host, the main installation's refusals without its request ID, link and place, the challenges, "no main host in any byte" in every format's replay, the relayed upstream text; Q-BAS-425 to Q-BAS-429, H-2294 to H-2296; brief `.dev/briefs/e16.md` | in work since 2026-11-26, 13:20 |
+| F-vulnimage · The area `vulnimage` is red on main: after a client's pull of an image through a remote the version report answers "The version does not exist." (found by W35-P3 at 120d07ace) | `TestR_VULN_050_R_MAL_035_ADownloadAheadAndAClientsFillAreScannedAtOnceWithoutASchedule`: the first red commit by bisect, then the product or the test repaired, whichever is wrong; the areas `vulnimage`, `ociremote` and `proxy` whole; Q-OPS-453 to Q-OPS-455, H-2346, H-2347 if needed | built at 14:23 (tests only), stacked, lands with the gate run of the three |
+| W34-E16 · Nothing of the main installation in a Bastion's answers (W-34, the owner's rule; the plan's E16; no change of the interface) | R-BAS-099's rows 1 to 7, 9, 10 and 15: the write refusal's text, the Bastion's own texts, the problem type `about:blank`, the policy names, an allow-list of a forward's headers, a `Location` only when relative or on the Bastion's host, the main installation's refusals without its request ID, link and place, the challenges, "no main host in any byte" in every format's replay, the relayed upstream text; Q-BAS-425 to Q-BAS-429, H-2294 to H-2296; brief `.dev/briefs/e16.md` | landed and pushed on 2026-11-26 at 15:06 |
 | W34-E4 · Measurement: what one normal command of each format's client costs through a cold and a warm Bastion, the overflow attack on a cache of 2 GiB, the main installation's latency per check, what each client prints for a refusal (W-34, the plan's E4; a measurement, no product code) | numbers on `docs/developer/bastion.md`, scripts under `hack/bastion-measure/`; feeds E8's profile figures and E9a's ceiling; brief `.dev/briefs/e4.md` | in work since 2026-11-26, 13:20 |
 | W35-P1 · Measurement: the size of a Bastion's public catalogue and what its sync costs (W-35, the plan's P1; a measurement, no product code) | counts and bytes per document kind and format, the dedupe ratio, the builder's time, the sync's bytes; sets the defaults of the catalogue's share and the reconciliation interval; scripts under `hack/bastion-catalogue-measure/`; brief `.dev/briefs/p1.md` | in work since 2026-11-26, 13:20 |
-| W35-P2 · The package screens split into read-only views and acts (W-35, the owner's g3; the plan's P2; web only, no visible change) | R-UI-223: the reading parts of the package, version, list, documentation and vulnerability screens of every format take what they show through inputs and abstract reads and import no session, no API client, no dialog and no act, held by a lint rule; renders before and after compared; Q-UI-1400 to Q-UI-1409; base 0cc459377 (above W35-P3 and W35-P4); brief `.dev/briefs/p2.md` | in work since 2026-11-26, 13:30 |
-| W34-E13 · The addresses a Bastion connects from belong to its registration (W-34, the owner's k12 = a; the plan's E13, with the card's field of R-UI-243 so that the removed configuration key has its place on a screen) | migration 00145; recognition of a forward per registration; `bastions.trusted_proxies` removed; the API member; the card's field with the warning of Q-UI-1482; Q-BAS-430 to Q-BAS-434, Q-UI-1483 to Q-UI-1485, H-2291, H-2348, H-2349; brief `.dev/briefs/e13.md` | in work since 2026-11-26, 13:51 |
+| W35-P2 · The package screens split into read-only views and acts (W-35, the owner's g3; the plan's P2; web only, no visible change) | R-UI-223: the reading parts of the package, version, list, documentation and vulnerability screens of every format take what they show through inputs and abstract reads and import no session, no API client, no dialog and no act, held by a lint rule; renders before and after compared; Q-UI-1400 to Q-UI-1409; base 0cc459377 (above W35-P3 and W35-P4); brief `.dev/briefs/p2.md` | built at 14:44, stacked above W34-E4, waits for its gate run (1,024 px and German renders are the gate run's) |
+| W34-E13 · The addresses a Bastion connects from belong to its registration (W-34, the owner's k12 = a; the plan's E13, with the card's field of R-UI-243 so that the removed configuration key has its place on a screen) | migration 00145; recognition of a forward per registration; `bastions.trusted_proxies` removed; the API member; the card's field with the warning of Q-UI-1482; Q-BAS-430 to Q-BAS-434, Q-UI-1483 to Q-UI-1485, H-2291, H-2348, H-2349; brief `.dev/briefs/e13.md` | built at 14:50, stacked above W35-P2, waits for its gate run; the owner's Flux values set the removed key (the change is prepared in his checkout, to push when the release is out) |
+| W34-E14a · Anonymous requests a Bastion answers without the main installation (W-34, the owner's k2 = c, items 2 and 3; the plan's E14a; no change of the interface) | R-BAS-094's rows of the anonymous registry token (answered by the Bastion itself, Q-BAS-335) and of anonymous copies (kept for the metadata period without a conditional request per use); Q-BAS-435 to Q-BAS-439, H-2292, H-2350, H-2351; base 7a70f0cd4 (above W34-E16); brief `.dev/briefs/e14a.md` | built at 14:29, stacked above the repair of the vulnimage tests, waits for its gate run |
+| W34-E7 with W35-P5 · The shared wire between Bastion and main installation, interface version 8 (W-34's E7 and W-35's P5 in one raise; started before W35-P1's numbers, whose bounds are constants and no shape of the wire) | the handshake's `configuration`, `subject.limits` in the check's answer, `usage` and `status` on the downloads intake, the format facts `errorShape` and `readWithBody`, the Bastion's own codes renamed (Q-BAS-321), the probe headers removed, the contact's two headers, the readers of registry-token payload 2, the catalogue's routes, types and path grammar, `gui` and `docs`; R-BAS-101 to R-BAS-103, Q-BAS-345 to Q-BAS-354, H-2280, H-2281, H-2305 to H-2307, ADR-303; base 4e8b4265b; brief `.dev/briefs/e7p5.md` | in work since 2026-11-26, 14:31 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1325,6 +1327,95 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 15:06, by W34-E16 (W-34, the owner's rule "Der Bastion verrät keine internen Informationen über die
+  Hauptinstanz."; R-BAS-099's rows 1 to 7, 9, 10 and 15 built; Q-BAS-425 to Q-BAS-428; gaps H-2294 and H-2295 updated,
+  H-2296 unchanged; no change of the interface, no migration): nothing a Bastion answers names the main
+  installation, a repository the caller did not ask for or a request of the main installation.** The refused write
+  says only "This address is read-only: it serves downloads and accepts no uploads." (the main installation's URL
+  and registry root are gone from the marking stage). The Bastion's own answers carry the neutral texts of
+  Q-BAS-321. Every problem is rendered by one function that reads a mark on the request's context (Q-BAS-428): an
+  answer of the Bastion and a forward recognized as a Bastion's have the type `about:blank` and the status phrase as
+  title, a forward also no `requestId`; npm, NuGet, OCI and Ansible error shapes go through it, and the format
+  contract's kit holds every format to it. The RateLimit policy names lose the prefix (`requests`, `misses`,
+  `failed-auth`, `blocking`). A forwarded answer's headers pass an allow-list (Q-BAS-425: the representation
+  headers, the format's replay headers, framing, `Retry-After`, `WWW-Authenticate`, `Allow`, `Link`,
+  `Docker-Distribution-Api-Version`, `Location`; npm declares `Npm-Notice`), so `Quader-Resolved-From` and every
+  other internal header stay behind. A `Location` that is not relative and not on the Bastion's scheme, host and
+  port is answered 502 and counted (Q-BAS-427; read in code: no route answers a forward with an absolute URL on the
+  main installation's host, and a signed link to the object store is never the answer to a forward). A limits
+  refusal of a forward has no `place` and no link to the usage page. For a forward, every failure of the remote
+  engine reads "The package could not be fetched right now." (Q-BAS-426; closed at rendering, not where the text is
+  made, because one fetch can serve a forward and an ordinary caller at once). Every reply of the integration
+  area's replays is searched for the main installation's host, the replicas' addresses and paths of the management
+  API and the web interface. The landing: one commit picked above W33b; the same run as W35-P4's (two entries below). Tests added: eight unit tests (under
+  0.1 s together), one case of the kit; the scan in the area `bastion` (a byte search per reply, its cost not
+  measured). Open: until the shared wire (the plan's E7) renames them, the codes still tell the structure
+  (`main_unreachable`, `bastion_busy`, `bastion_read_only`; H-2294); texts a format's handler writes under other
+  codes are not inventoried (H-2295, for W-35's P8). Not verified: the journey `TestBastion_R_BAS_049_ReadOnly`
+  (corrected by reading, not run); what the clients print (derived from each format's error shape: docker
+  "denied: This address is read-only: …", npm "403 Forbidden - PUT … - This address is read-only: …", dotnet, APT
+  and freshclam the status only).
+
+- **Closed on 2026-11-26, 15:06, by W33b (my decision on the owner's rule that an act is shown as the unit a person asked
+  for, told to him at about 12:03; R-OPS-056; Q-OPS-446 to Q-OPS-452, Q-UI-1490 to Q-UI-1494; ADR-297 extended; gaps
+  H-2341 to H-2345, H-2269 narrowed; migration 00144): the audit log shows a push, a publish and a delete as one
+  row, and keeps one event per file and per version.** A row's key holds the act, not the action: download; data
+  keys handed; push, publish or upload (`artifact.deployed`, `package.published`, `npm.publish`: "Pushed" for OCI and
+  NuGet, "Published" for npm, Ansible and Debian, "Uploaded" where no version was published); delete (the six delete
+  actions; the unit is the package, so a package of three versions deleted is one row "3 versions"; a generic
+  file's unit is its folder). The allowed writes of an act are a row of their own beside it ("Writes allowed",
+  Q-OPS-448: joined, a push row would mix 13 files with 13 permission checks and a filter by category would split
+  it). A filter applies to every event of a row; the caller's name is part of the key. Still single rows: refusals,
+  events written before, allowed reads (H-2269, open). Measured in the area `audit` through the real protocols, per
+  format: an image of n layers pushed is n+3 file events, n+3 writes and one publish, shown as "Pushed (n+4 items)"
+  and "Writes allowed"; npm publish 2 items, NuGet push 3, Debian and Ansible 2, three generic files into a folder
+  3; each delete one row. Read in code, not measured: an image index and a chart (the same manifest path). The
+  key is the SQL function `audit_row_key`; an index expression may call only what the system schemas hold, which
+  the first draft of the migration met. German: no column width holds every German action name in as few lines as
+  English (all 237 labels measured), so the act words are short where the target says the rest ("Heruntergeladen",
+  "Bereitgestellt", "Datenschlüssel", items "Einträge"), the rows' screen is back in the German render pass with 0
+  layout findings, and a day's volume reads "GB/Tag". At 3.0 million events on a shared machine (medians, the order
+  of magnitude only): the first page of rows 43 ms; a filter by an actor's name 20 ms with the new index (2.1 s
+  before), an unknown name 6 ms (3.9 s); the index costs 143 MB and about 7 µs per event written (H-2344). The
+  landing: one commit picked above W35-P4, the count of requirements 1,344 (MVP 742, P1 563); the same run as W35-P4's (the entry below). Tests added:
+  two integration cases in `audit` (about 4 s with two replica starts, and 1 s), unit in milliseconds, two Vitest
+  describes; about 10 s more on the audit area, no new leg. Open: two changes of one unit by one caller within a
+  minute are one row, a push and its immediate delete among them (H-2341); a tree of folders uploaded is a row per
+  folder (H-2342); a retention run is a row per package (H-2343); a NuGet symbol package is a row of its own
+  (H-2345); at 1,024 px the target column holds about ten characters a line in both languages (W33's five columns).
+  Not verified: the real clients (the tests send the protocols' requests); the screen `admin-audit` stays out of
+  the German pass because its filter walk clicks English labels.
+
+- **Closed on 2026-11-26, 15:06, by W35-P4 (W-35, the owner's f2 = a with his note "Wird von der Instanz selbst ausgeliefert.
+  Der Text beider Links kann über ein Markdown frei bestimmt werden. Eingestellt wird es bei der Installation über
+  Helm, der Administrator des Bastion ist verantwortlich für die Einhaltung dieser Werte. Auch die Hauptinstanz
+  braucht diese Felder im Helm Chart falls jemand die Hauptinstanz öffentlich betreiben möchte."; R-UI-225, R-UI-226,
+  R-BAS-100; Q-UI-1420 to Q-UI-1425, Q-BAS-340 to Q-BAS-342; ADR-302; gaps H-2303, H-2304; no migration): an
+  installation serves its own imprint and privacy notice, written as Markdown in the chart's values, and every
+  screen ends with their line.** Both charts take `config.ui.legal.imprint.en`, `.de`, `config.ui.legal.privacy.en`,
+  `.de`, empty by default; a text over 64 KiB is refused at start with the key's name and by both values schemas; a
+  change is a rollout (the configuration's checksum). Rendered once at start by the README's renderer without
+  external image origins: an image becomes a link, script, style, SVG, frames, handlers and `javascript:` links are
+  dropped, `http`, `https` and `mailto` links stay with `rel="nofollow noopener noreferrer"`. The main installation:
+  `GET /api/v1/legal?locale=en|de` always open (it ignores the session cookie, like the login options), with an
+  ETag; the routes `/legal/imprint` and `/legal/privacy` outside the guard; the line is the last child of every
+  screen's column, sign-in and signed-out included, and absent while neither text exists; a language without its
+  text shows the other one's with a sentence and the `lang` attribute; the texts are read with the banner, without a
+  timer of their own. The Bastion renders at start and serves nothing until its web interface exists (H-2304, the
+  plan's P9): `/ui/…/legal/…` and `/api/v1/legal` answer 404 there, tested. Against the plan: the language rule is
+  a package of its own (`internal/legaltext`) with a second scoped allowance of the architecture test; a visitor of
+  public content reads the page inside the shell, alone only who has no shell to return to (Q-UI-1421); a missing
+  page is `null` in the answer and "Page not found" at its route; the page has its own heading (Q-UI-1425). The
+  three requirements are P1. The landing: two commits picked above W35-P3, the count of requirements 1,343 (MVP
+  742, P1 562); one run of the gates for the three packages stacked (W35-P4, W33b, W34-E16): the 13 gates, the chart's lint and tests, the architecture tests, the UI states, the renders of the legal pages, sign-in, the audit log and the Bastion screens in English (55 render tests, 0 failed, 0 layout findings) and of the legal pages and the audit rows in German (6), pictures looked at wide and narrow, and 22 integration areas green (roles, conventions, authz, audit, limits, querybudget, endpoints, apikey, files, npm, nuget, ocilocal, ansiblelocal, ociremote, the six Bastion areas, postgres, backup); in the area bastion one test failed once under the machine's load (a warm read answered 401 right after the settings' change in TestR_BAS_015_R_BAS_026_RevocationByEveryFeedKind), passed three of three alone and the area whole in a second run: noted for the batch as a test that depends on timing. Tests added: Go unit (milliseconds, one replica start of about 1 s), Vitest about 1 s, four
+  chart renders, one integration case in `roles` (about 2 s, one more replica); three render screens; no e2e leg.
+  The render profile carries sample texts (`deploy/ui-dev/config.sh`), so the owner's instance shows the line and
+  two sample pages; a chart's default has none. Open: nothing checks what an operator's text says or where its
+  links lead (H-2303, his statement: the administrator answers for it); the label "External image" of a dropped
+  image is English on a German page, as in a README. Not verified: an endpoint that admits no anonymous caller
+  (the operation answers 401 there like the login options, untested); that an open window shows a rollout's new
+  text within 30 s; the journeys on the cluster.
 
 - **Closed on 2026-11-26, 14:00, by W35-P3 (W-35, the owner's g4 = a, g5 = b and g6 = a with his note "Natürlich soll die
   Hauptinstanz Vulnerabilities an öffentlich sichtbaren Repos anzeigen. Ja, dann ändert sich das Verhalten der
