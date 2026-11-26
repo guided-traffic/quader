@@ -313,7 +313,7 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W30-A2 · The documentation generator reads fragments, a role's argument specs and the changelog (W-30) | R-ANS-051 to R-ANS-053 of the plan `.dev/w30-plan.md`; Q-ANS-96 to Q-ANS-105, Q-UI-1280 to Q-UI-1289, H-2140 to H-2149, migration 00136 | landed and pushed on 2026-11-26 at 03:54, with the migration 00136 |
 | W30-A3 · Finding collections, the page of a name in every format, the documentation searched across collections (W-30, the owner's d2 = b and d3 = b) | the plan's package A3 with R-ANS-057, R-ANS-058 and R-UI-220; Q-ANS-120 to Q-ANS-129, Q-UI-1290 to Q-UI-1299, H-2150 to H-2159 | landed and pushed on 2026-11-26 at 05:49, with the migration 00138 |
 | W30-G4 · "Deprecated" is a property of every format that has it (W-30) | R-API-085, R-NUGET-036, R-ANS-060 of the plan `.dev/w30-plan.md`; Q-API-440 to Q-API-449, Q-NUGET-140 to Q-NUGET-149, Q-ANS-130 to Q-ANS-139, Q-NPM-95 to Q-NPM-99, Q-UI-1300 to Q-UI-1309, ADR-286, H-2160 to H-2169 | landed and pushed on 2026-11-26 at 04:59, with the migration 00137 (W30-A3 takes 00138) |
-| W30-G3 · One way to show a version's facts in every format (W-30) | the plan's package G3 with R-UI-221 and R-UI-222: an inventory of the six formats' Details and tables as they are now, then the differences closed; Q-UI-1310 to Q-UI-1319, ADR-288, H-2170 to H-2179 | built on 2026-11-26 at about 04:40 (two commits); lands after W30-G4 and W30-A3, rebased by its builder |
+| W30-G3 · One way to show a version's facts in every format (W-30) | the plan's package G3 with R-UI-221 and R-UI-222: an inventory of the six formats' Details and tables as they are now, then the differences closed; Q-UI-1310 to Q-UI-1319, ADR-288, H-2170 to H-2179 | landed and pushed on 2026-11-26 at 07:08 |
 | W30-A5 · A collection is published from the screen, with its import's log (W-30; the owner's d5 = a, no approval) | the plan's package A5 with R-ANS-061 and R-ANS-062: the upload's operation and dialog, the import's warning for a missing changelog, a per-format table of publishing from the screen; Q-ANS-140 to Q-ANS-149, Q-UI-1320 to Q-UI-1329, ADR-289, H-2180 to H-2189 | built on 2026-11-26 at about 04:45 (two commits); sent back to prove the session's path (cookie and CSRF token) through the hand-off; lands after W30-G4, W30-A3 and W30-G3 |
 | W30-G9 · A generic file's commands behind the button, and a content type that says what it is (W-30) | R-GENERIC-017 of the plan `.dev/w30-plan.md`: curl, wget and PowerShell in the panel at every place a file has an act, the upload's commands, a closed list of guessed text types; Q-UI-1330 to Q-UI-1339, ADR-290, H-2190 to H-2199 | in work since 2026-11-26, 04:43 |
 | W30-G2 · An upstream's package shows its documentation before a version of it is stored (W-30) | R-CUR-028 of the plan `.dev/w30-plan.md`: read through, not stored, per format; the facts the same answers carry; Q-CUR-260 to Q-CUR-269, Q-UI-1340 to Q-UI-1349, ADR-291, H-2200 to H-2209 | in work since 2026-11-26, about 05:25 |
@@ -1301,6 +1301,33 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 07:08, by W30-G3 (W-30; R-UI-221, R-UI-222; Q-UI-1310 to Q-UI-1318; gaps H-2170 to H-2173, H-2124
+  closed; no migration): a general property of a version has one block, one set of words and one place in every
+  format.** The owner: "Du musst dir solche Angaben von mir echt selbstständig merken und auch auf andere Registries
+  anwenden." The builder first rendered the Details and the table of versions of the six formats as they stood and
+  closed what differed: the links are one row under the facts in every format, and a licence links to its address;
+  keywords and tags are the same chip everywhere (a version's Details, a list's hits, the page of a name), opening
+  the package list filtered by format and keyword, and they are the version's own; the dependencies are one block
+  in every format, in the format's own words (npm's five kinds, NuGet's groups per framework, Debian's relations,
+  Ansible's), with a link where the installation holds the package (at most 60 lookups a page); one section Package
+  details per format with facts that were stored and not shown (npm: runtimes, file count, unpacked size, install
+  script, types, publisher, bundled dependencies; NuGet: title, licence acceptance, development dependency); an
+  install script of an npm version is said under the links on every tab; a size reads in the unit a person reads
+  ("18.0 MiB", not "18432 KiB"); an image's date is "Pushed" or "Fetched", not "Published"; the download count stands
+  under "Last download" in every table of versions; an image's row shows its digest's first twelve digits under its
+  tags; the tab Upstream says an npm version's unpacked size and Debian's architectures as its index names them; a
+  role's breadcrumb shows its name; the API's description names every format's members. Departed from the plan, by
+  the pictures: Downloads and Digest are no columns of the table of versions (as columns they turned the npm and OCI
+  tables into blocks at 1,024 px), so the table cannot be sorted by downloads, and the digest has no copy button
+  there. The render harness allows one answer on every screen, anchored: a dependency's lookup of a name the
+  installation does not hold, answering 404; any other 404 still fails a screen. The landing: the landing's tree is the builder's rebased tip, then rebased onto the blocker's fix; the 13 gates, the dialog states, the renders on a fresh instance (184 in English, 57 in German, no layout finding) and the whole areas `packages`, `npm`, `nuget` and `search` green, the count of requirements 1,307; looked at: an npm version's Details in light at 1,440 px (the scope as a link, the links' row, the note of the install script, the keyword chips, the dependencies in five groups with links, the package's details). Open: a
+  version's cell with a mark and a signature badge ("2.0.0-preview.1 Pre-release Invalid signature") turns the table
+  of versions into blocks at 1,024 px, in English for NuGet with the deprecation's marks and in German for npm
+  (H-2173; the cell should wrap between its badges); a Debian package's maintainer scripts and NuGet's build files
+  and `tools/install.ps1` are not read, so the page cannot say that an install runs code (H-2170, H-2171); an
+  image's date word is one per screen (H-2172). Not verified: the journey of the collection's documentation on the
+  cluster; whether the lookup finds a NuGet ID written in another case.
 
 - **Opened on 2026-11-26, 06:18, a blocker (the pipeline red, and live on every installation with split roles, the
   owner's included): the deprecation operation of W30-G4 answers 500 on a replica of the role `api`.** Read at 06:13:
