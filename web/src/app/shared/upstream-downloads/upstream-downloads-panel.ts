@@ -17,7 +17,7 @@ import { FormatIconView } from '../format-icon';
 import { valueOf } from '../paged-resource';
 import { QuaderDrawer } from '../ui/drawer';
 import { TimeAgo } from '../ui/time-ago';
-import { finishedFigures, originText, outcomeBadge, runningFigures, subjectOf } from './download-words';
+import { finishedFigures, originText, outcomeBadge, runningFigures, subjectOf, subjectTitle } from './download-words';
 import { limitQueueText } from './limit-words';
 import { Loading } from '../ui/loading';
 
@@ -28,7 +28,8 @@ const DEFAULT_POLL_SECONDS = 2;
 
 /**
  * The downloads from upstreams (api-and-ui.md R-UI-211, R-UI-212; operations-and-observability.md R-OPS-049 to R-OPS-052) in Quader's
- * drawer from the right: a filter for both sections, the download queues an upstream's rate limit holds (remote-curation.md R-CUR-011,
+ * drawer from the right, one row per download, the unit a person asked for (an image, a version's package, a queue row's run), never
+ * its files: a filter for both sections, the download queues an upstream's rate limit holds (remote-curation.md R-CUR-011,
  * Q-UI-1101), the running downloads with their progress, speed and time, the last 100 finished with their duration and average,
  * **Hide all** for this device, and a link to the manual. While it is open and the window
  * is seen it reads the whole list every `pollSeconds`; closing it stops the refresh. It announces nothing (the button's name carries
@@ -152,7 +153,7 @@ export class UpstreamDownloadsPanel {
       : `${word} (${total})`;
   }
 
-  /** Case-insensitive, part of the text: the name, the version, the path and the repository. */
+  /** Case-insensitive, part of the text: the name, the version, the first file's path and the repository. */
   private matches(d: UpstreamDownload): boolean {
     const q = this.query();
     if (q === '') return true;
@@ -189,6 +190,7 @@ export class UpstreamDownloadsPanel {
   }
 
   protected readonly subjectOf = subjectOf;
+  protected readonly subjectTitle = subjectTitle;
   protected readonly originText = originText;
   protected readonly runningFigures = runningFigures;
   protected readonly finishedFigures = finishedFigures;

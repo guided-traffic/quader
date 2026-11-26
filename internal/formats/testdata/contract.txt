@@ -1,4 +1,4 @@
-contract version 14
+contract version 15
 formats.Action: alias authz.Action
 formats.AttestationItem: field Blob [32]byte
 formats.AttestationItem: field Path string
@@ -124,6 +124,7 @@ formats.Descriptor: field Catalogue CatalogueDeclaration
 formats.Descriptor: field Clients []Client
 formats.Descriptor: field ContractVersion int
 formats.Descriptor: field DataPort reflect.Type
+formats.Descriptor: field DownloadUnit DownloadUnit
 formats.Descriptor: field Limits Limits
 formats.Descriptor: field MaxDocumentBytes int64
 formats.Descriptor: field Names catalog.Names
@@ -140,6 +141,7 @@ formats.Digests: field SHA256 []byte
 formats.Digests: field SHA512 []byte
 formats.Discoverer: method DiscoveryDocument() (Path, string, bool)
 formats.Discoverer: method ParseDiscovery(context.Context, RemoteContext, []byte) (any, error)
+formats.DownloadUnit: type uint8
 formats.EndpointFacts: field Bound bool
 formats.EndpointFacts: field BoundRepo qname.Repo
 formats.EndpointFacts: field CacheFill bool
@@ -765,12 +767,16 @@ formats.ActionRead: value = authz.Read
 formats.Admin: value = (repeated, place 5 of its group)
 formats.Computed: value = (repeated, place 2 of its group)
 formats.Content: value PathKind = iota + 1 (place 0 of its group)
-formats.ContractVersion: value = 14
+formats.ContractVersion: value = 15
 formats.Current: value Currency = iota + 1 (place 0 of its group)
 formats.Delete: value = (repeated, place 4 of its group)
 formats.DeprecatePackage: value DeprecationSubject = "package"
 formats.DeprecateVersion: value DeprecationSubject = "version"
 formats.Download: value RouteKind = iota + 1 (place 0 of its group)
+formats.DownloadUnitFile: value = (repeated, place 1 of its group)
+formats.DownloadUnitImage: value = (repeated, place 3 of its group)
+formats.DownloadUnitUndeclared: value DownloadUnit = iota (place 0 of its group)
+formats.DownloadUnitVersion: value = (repeated, place 2 of its group)
 formats.EmbeddedIcon: value = "icon"
 formats.EmbeddedLicense: value = "license"
 formats.ErrOffline: value = errors.New("formats: the remote repository may not contact its upstream")

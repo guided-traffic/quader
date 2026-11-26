@@ -204,7 +204,8 @@ func (m *MirrorHost) newPassUpstream(repo repository.Repository, rem proxy.Remot
 
 // Fill implements [mirror.Host]: the artifact goes through the format's gate and the remote engine as a background request.
 func (m *MirrorHost) Fill(ctx context.Context, repo repository.Repository, pass mirror.Pass, item discover.Item) (mirror.FillResult, error) {
-	f, err := m.fillPath(ctx, repo, pass, formats.Path{Path: item.Path})
+	// The item's version names the unit its download belongs to (R-OPS-049): an image's blobs name no tag of their own.
+	f, err := m.fillPath(discover.ForVersion(ctx, item.Version), repo, pass, formats.Path{Path: item.Path})
 	return f.res, err
 }
 
@@ -378,10 +379,10 @@ func backgroundFrom(ctx context.Context) (*backgroundFacts, bool) {
 // apply makes preq a background request of the pass: the priority and the pass's facts, the system as caller (the upstream log
 // record has no on_behalf_of) and the populate check that is the mirror's: it asks nobody, and the event of the fill names the
 // system as actor and mirror as reason (R-REPO-057, Q-REPO-145).
-func (b *backgroundFacts) apply(preq *proxy.Request, rq *formats.Request, info formats.PathInfo, p formats.Path) {
+func (b *backgroundFacts) apply(ctx context.Context, preq *proxy.Request, rq *formats.Request, info formats.PathInfo, p formats.Path) {
 	preq.Priority, preq.Ceiling, preq.JobID, preq.Mode = proxy.PriorityBackground, b.ceiling, b.jobID, proxy.Normal
 	preq.Charge = b.charge
-	preq.Cause = b.cause()
+	preq.Cause = b.cause(discover.VersionOf(ctx))
 	actor, subject, reason := b.fill.who()
 	preq.Caller = proxy.CallerFacts{Actor: actor}
 	preq.Populate = &mirrorPopulate{h: b.h, subject: subject, reason: reason, coord: authz.Coordinate{
@@ -391,14 +392,20 @@ func (b *backgroundFacts) apply(preq *proxy.Request, rq *formats.Request, info f
 	}}
 }
 
-// cause is what caused the downloads of the work's fills (R-OPS-049): the filler's origin, and for a queue row's run the row's facts.
-func (b *backgroundFacts) cause() *proxy.DownloadCause {
-	if o := b.fill.origin(); o != proxy.DownloadOriginQueue {
-		return &proxy.DownloadCause{Origin: o}
+// cause is what caused the downloads of the work's fills (R-OPS-049) and the unit they belong to: for a queue row's run the row's facts
+// and the run's unit; for a mirror pass its job, which the engine completes with the file's name and version (version: the plan item's or
+// the version the format reads for, discover.ForVersion); for the database task its run.
+func (b *backgroundFacts) cause(version string) *proxy.DownloadCause {
+	switch o := b.fill.origin(); o {
+	case proxy.DownloadOriginQueue:
+		c := b.queue
+		c.Origin = proxy.DownloadOriginQueue
+		return &c
+	case proxy.DownloadOriginScannerDatabase:
+		return &proxy.DownloadCause{Origin: o, Unit: "s|" + b.jobID}
+	default:
+		return &proxy.DownloadCause{Origin: o, Unit: b.jobID, Version: version}
 	}
-	c := b.queue
-	c.Origin = proxy.DownloadOriginQueue
-	return &c
 }
 
 // mirrorPopulate is the populate check of a pass's request: the system fills the cache, whatever the repository's cacheFillAction

@@ -397,6 +397,7 @@ func (f Format) Descriptor() formats.Descriptor {
 			NoLevels: "the kit's test format has no levels",
 		},
 		VersionCanon:     versionCanon{},
+		DownloadUnit:     formats.DownloadUnitVersion,
 		Names:            names{caseSensitive: f.has(string(NamesCaseSensitive))},
 		Clients:          []formats.Client{{ID: "tf", DisplayName: "tf", Versions: []string{"1"}}},
 		PropertyPrefix:   "tf.",

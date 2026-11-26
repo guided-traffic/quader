@@ -18140,18 +18140,21 @@ type UpstreamCatalogueSearchHint string
 // UpstreamCatalogueSizes defines model for UpstreamCatalogue.Sizes.
 type UpstreamCatalogueSizes string
 
-// UpstreamDownloadFailure Why a download failed, in the classes and codes of the download queue (remote-curation.md R-CUR-011).
+// UpstreamDownloadFailure Why a download failed, in the classes and codes of the download queue (remote-curation.md R-CUR-011), and the file it failed at.
 type UpstreamDownloadFailure struct {
 	// Class The class of a failure (remote-curation.md R-CUR-011, Q-CUR-20).
 	Class RemoteDownloadFailureClass `json:"class"`
 	Code  string                     `json:"code"`
+
+	// Path The repository path of the file whose failure failed the download; null when the failure named none.
+	Path *string `json:"path"`
 }
 
-// UpstreamDownloadFinished A download from an upstream that ended (R-OPS-049, R-OPS-051).
+// UpstreamDownloadFinished A download from an upstream that ended, one unit (R-OPS-049, R-OPS-051).
 type UpstreamDownloadFinished struct {
 	By *UpstreamDownloadPrincipal `json:"by"`
 
-	// Bytes The bytes read from the upstream's body, also those of a download that failed.
+	// Bytes The bytes read from the upstream's bodies of the unit's files, also those of a file that failed.
 	Bytes int64 `json:"bytes"`
 
 	// BytesPerSecond The average, the bytes over the duration; null for a duration of 0.
@@ -18167,13 +18170,19 @@ type UpstreamDownloadFinished struct {
 	// Origin What caused a download - a client's miss, a row of the download queue, a mirror's pass, the vulnerability scanning's database.
 	Origin UpstreamDownloadOrigin `json:"origin"`
 
-	// Outcome `completed`: stored, or a duplicate fetch found it stored. `failed`: see `failure`. `cancelled`: a client's fetch pre-empted a
-	// background fill, the job was cancelled, or the request ended. `interrupted`: the replica stopped publishing while it ran.
-	Outcome     UpstreamDownloadFinishedOutcome `json:"outcome"`
-	Path        string                          `json:"path"`
-	QueueOrigin *UpstreamDownloadQueueOrigin    `json:"queueOrigin"`
-	QueueRow    *openapi_types.UUID             `json:"queueRow"`
-	Replica     string                          `json:"replica"`
+	// Outcome `completed`: every file was stored, or a duplicate fetch found it stored. `failed`: a file failed, or the queue row's run did;
+	// see `failure`. `cancelled`: a file's fetch was cancelled (a client's fetch pre-empted a background fill, the job was
+	// cancelled, the request ended). `interrupted`: a replica stopped publishing while it ran.
+	Outcome UpstreamDownloadFinishedOutcome `json:"outcome"`
+
+	// Parts The number of the unit's files.
+	Parts int `json:"parts"`
+
+	// Path The repository path of the unit's first file.
+	Path        string                       `json:"path"`
+	QueueOrigin *UpstreamDownloadQueueOrigin `json:"queueOrigin"`
+	QueueRow    *openapi_types.UUID          `json:"queueRow"`
+	Replica     string                       `json:"replica"`
 
 	// Repository The remote repository a download fills, resolved by its id at the read.
 	Repository UpstreamDownloadRepository `json:"repository"`
@@ -18182,8 +18191,9 @@ type UpstreamDownloadFinished struct {
 	Version    string                     `json:"version"`
 }
 
-// UpstreamDownloadFinishedOutcome `completed`: stored, or a duplicate fetch found it stored. `failed`: see `failure`. `cancelled`: a client's fetch pre-empted a
-// background fill, the job was cancelled, or the request ended. `interrupted`: the replica stopped publishing while it ran.
+// UpstreamDownloadFinishedOutcome `completed`: every file was stored, or a duplicate fetch found it stored. `failed`: a file failed, or the queue row's run did;
+// see `failure`. `cancelled`: a file's fetch was cancelled (a client's fetch pre-empted a background fill, the job was
+// cancelled, the request ended). `interrupted`: a replica stopped publishing while it ran.
 type UpstreamDownloadFinishedOutcome string
 
 // UpstreamDownloadList The running and the last finished downloads from the upstreams of remote repositories (R-OPS-052), and the download queues an
@@ -18228,12 +18238,12 @@ type UpstreamDownloadRepository struct {
 	Project string `json:"project"`
 }
 
-// UpstreamDownloadRunning A download from an upstream that runs now (R-OPS-049, R-OPS-050).
+// UpstreamDownloadRunning A download from an upstream that runs now, one unit (R-OPS-049, R-OPS-050).
 type UpstreamDownloadRunning struct {
 	// By The client's caller, or the person who started the queue row, its bulk or its request; null for system work, an anonymous caller and a removed principal.
 	By *UpstreamDownloadPrincipal `json:"by"`
 
-	// Bytes The bytes read from the upstream's body so far, as of the replica's last publication.
+	// Bytes The bytes read from the upstream's bodies of the unit's files so far, as of the replicas' last publications.
 	Bytes int64 `json:"bytes"`
 
 	// BytesPerSecond The bytes of the last 10 s over those 10 s; in the first 10 s the bytes over the time since the begin; null in the first second.
@@ -18243,13 +18253,16 @@ type UpstreamDownloadRunning struct {
 	ElapsedSeconds float64            `json:"elapsedSeconds"`
 	Id             openapi_types.UUID `json:"id"`
 
-	// Name The package as the format classified the path; empty for a path of no package.
+	// Name The package as the format classified the path of the unit's first file; empty for a path of no package.
 	Name string `json:"name"`
 
 	// Origin What caused a download - a client's miss, a row of the download queue, a mirror's pass, the vulnerability scanning's database.
 	Origin UpstreamDownloadOrigin `json:"origin"`
 
-	// Path The repository path of the artifact.
+	// Parts The number of the unit's files read so far.
+	Parts int `json:"parts"`
+
+	// Path The repository path of the unit's first file.
 	Path string `json:"path"`
 
 	// QueueOrigin For origin `queue` the row's origin; null otherwise.
@@ -18258,17 +18271,19 @@ type UpstreamDownloadRunning struct {
 	// QueueRow For origin `queue` the row's id; null otherwise.
 	QueueRow *openapi_types.UUID `json:"queueRow"`
 
-	// Replica The pod name of the replica that reads the body.
+	// Replica The pod name of the replica that reads the unit's files; of the one that began first when several do.
 	Replica string `json:"replica"`
 
 	// Repository The remote repository a download fills, resolved by its id at the read.
 	Repository UpstreamDownloadRepository `json:"repository"`
 	StartedAt  time.Time                  `json:"startedAt"`
 
-	// Total The length the upstream announced; null when it announced none.
+	// Total The unit's size where it is known: the sizes a queue row's run named for its files, or the length of a unit's one file; null
+	// for a client's pull of an image and a mirror pass's image, whose files nobody names in advance.
 	Total *int64 `json:"total"`
 
-	// Version The version; for a queue row's file of no version (an OCI blob) the row's version; empty when neither has one.
+	// Version The version: the files' own, a queue row's or a mirror pass's; for a client's pull of an image the tag whose manifest names
+	// its files, else the image's digest when it was asked for by digest; empty while none is known.
 	Version string `json:"version"`
 }
 

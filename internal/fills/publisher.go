@@ -13,6 +13,19 @@ type Sink interface {
 	Sweep(ctx context.Context, olderThan time.Duration) (int, error)
 }
 
+// Resolver names the version of a unit whose files name none (R-OPS-049 "A client's pull of an image"): a blob names no tag. The
+// composition root binds the OCI format's data port; nil resolves nothing and such a unit keeps its version empty.
+type Resolver interface {
+	// ResolveVersions answers each query with a version, "" where it finds none. It runs on the publisher's loop, never on a fetch.
+	ResolveVersions(ctx context.Context, qs []VersionQuery) ([]string, error)
+}
+
+// VersionQuery asks the version of a unit by its repository, its name and the path of its first file.
+type VersionQuery struct {
+	RepoID     int64
+	Name, Path string
+}
+
 // PublisherOptions configure [NewPublisher].
 type PublisherOptions struct {
 	Tracker *Tracker
@@ -21,6 +34,8 @@ type PublisherOptions struct {
 	InstanceUID, Replica string
 	// Interval is proxy.upstream_downloads.publish_interval; zero is two seconds.
 	Interval time.Duration
+	// Resolver names the version of a unit whose files name none; nil resolves nothing.
+	Resolver Resolver
 	// Log is the component's logger; nil logs nothing.
 	Log *slog.Logger
 	// Now replaces the clock, for tests.
@@ -90,6 +105,7 @@ func (p *Publisher) Flush(ctx context.Context) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	s := p.o.Tracker.snapshot()
+	p.resolve(ctx, &s)
 	pub := Publication{InstanceUID: p.o.InstanceUID, Replica: p.o.Replica, DeleteLive: true, Ended: s.Ended}
 	if err := p.o.Sink.Publish(ctx, pub); err != nil {
 		p.o.Tracker.requeue(s.Ended)
@@ -115,6 +131,7 @@ func (p *Publisher) Tick(ctx context.Context) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	s := p.o.Tracker.snapshot()
+	p.resolve(ctx, &s)
 	pub := Publication{InstanceUID: p.o.InstanceUID, Replica: p.o.Replica, Running: s.Running, Omitted: s.Omitted, Ended: s.Ended}
 	if len(s.Running) == 0 {
 		pub.DeleteLive = p.hasRow
@@ -128,6 +145,42 @@ func (p *Publisher) Tick(ctx context.Context) {
 		}
 	}
 	p.sweep(ctx)
+}
+
+// resolve asks the resolver the versions of the units of a snapshot whose files name none, at most maxResolved of them, and writes them
+// into the snapshot and into the running units, so that a unit is asked until its version is found and never after. A failure of the
+// resolver leaves the versions empty and the publication goes on.
+func (p *Publisher) resolve(ctx context.Context, s *Snapshot) {
+	if p.o.Resolver == nil {
+		return
+	}
+	var qs []VersionQuery
+	var set []func(string)
+	for i := range s.Running {
+		if e := &s.Running[i]; e.resolve && e.Version == "" && len(qs) < maxResolved {
+			qs = append(qs, VersionQuery{RepoID: e.RepoID, Name: e.Name, Path: e.Path})
+			set = append(set, func(v string) { e.Version = v; p.o.Tracker.resolved(e.ID, v) })
+		}
+	}
+	for i := range s.Ended {
+		if f := &s.Ended[i]; f.resolve && f.Version == "" && len(qs) < maxResolved {
+			qs = append(qs, VersionQuery{RepoID: f.RepoID, Name: f.Name, Path: f.Path})
+			set = append(set, func(v string) { f.Version = v })
+		}
+	}
+	if len(qs) == 0 {
+		return
+	}
+	vs, err := p.o.Resolver.ResolveVersions(ctx, qs)
+	if err != nil || len(vs) != len(qs) {
+		p.o.Log.Debug("the versions of downloads from upstreams could not be resolved", "error", err)
+		return
+	}
+	for i, v := range vs {
+		if v != "" {
+			set[i](v)
+		}
+	}
 }
 
 // sweep ends the downloads of replicas whose live row is older than SweepIntervals intervals, at least MinSweepAge, at most once every

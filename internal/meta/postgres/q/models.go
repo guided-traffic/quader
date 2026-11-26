@@ -1969,6 +1969,9 @@ type UpstreamDownloadFinished struct {
 	QueueRow     pgtype.UUID
 	ByPrincipal  pgtype.UUID
 	ReplicaName  string
+	Unit         string
+	Parts        int32
+	FailurePath  pgtype.Text
 }
 
 type UpstreamDownloadLive struct {

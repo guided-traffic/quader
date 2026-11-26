@@ -5,6 +5,8 @@ import (
 
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
 	"github.com/guided-traffic/quader/internal/fills"
+	ocidata "github.com/guided-traffic/quader/internal/formatdata/oci"
+	ociformat "github.com/guided-traffic/quader/internal/formats/oci"
 	"github.com/guided-traffic/quader/internal/proxy"
 )
 
@@ -38,7 +40,8 @@ func (u upstreamDownloadsArea) reader() v1.UpstreamDownloadReader {
 
 // wireUpstreamDownloads builds the tracker and the store and starts the publisher on every serving role. A role whose engines fill
 // nothing (api: its engine lends the upstream catalogue its upstream) writes no live row and only sweeps the rows of replicas that
-// stopped (R-OPS-051). The publisher is a component: its Flush in the close step writes the last ends and removes the live row.
+// stopped (R-OPS-051). The publisher is a component: its Flush in the close step writes the last ends and removes the live row. The OCI
+// data port names the version of a client's pull of an image, whose blobs name no tag (R-OPS-049).
 func (a *App) wireUpstreamDownloads(ctx context.Context, in infra) (upstreamDownloadsArea, error) {
 	if err := requireInputs(AreaUpstreamDownloads, given("database", in.db)); err != nil {
 		return upstreamDownloadsArea{}, err
@@ -48,12 +51,30 @@ func (a *App) wireUpstreamDownloads(ctx context.Context, in infra) (upstreamDown
 	})
 	a.tele.metrics.Repos().OnForget(tracker.Forget)
 	store := fills.NewStore(in.db)
+	var resolver fills.Resolver
+	if ports := part[formatPortsArea](a.parts); ports.bindings != nil {
+		if st, ok := ports.bindings.Get(ociformat.ID).(*ocidata.Store); ok {
+			resolver = imageVersions{st}
+		}
+	}
 	pub := fills.NewPublisher(fills.PublisherOptions{
-		Tracker: tracker, Sink: store, InstanceUID: a.id.UID, Replica: a.id.Instance,
+		Tracker: tracker, Sink: store, InstanceUID: a.id.UID, Replica: a.id.Instance, Resolver: resolver,
 		Interval: a.cfg.Proxy.UpstreamDownloads.PublishInterval, Log: a.log.With("component", "upstream-downloads"),
 	})
 	if err := a.startComponent(ctx, pub); err != nil {
 		return upstreamDownloadsArea{}, err
 	}
 	return upstreamDownloadsArea{tracker: tracker, store: store}, nil
+}
+
+// imageVersions is the OCI data port as the publisher's resolver of a client's pull of an image (R-OPS-049).
+type imageVersions struct{ st *ocidata.Store }
+
+// ResolveVersions implements [fills.Resolver].
+func (r imageVersions) ResolveVersions(ctx context.Context, qs []fills.VersionQuery) ([]string, error) {
+	in := make([]ocidata.DownloadQuery, len(qs))
+	for i, q := range qs {
+		in[i] = ocidata.DownloadQuery{RepoID: q.RepoID, Name: q.Name, Path: q.Path}
+	}
+	return r.st.DownloadVersions(ctx, in)
 }

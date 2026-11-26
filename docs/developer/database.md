@@ -900,6 +900,17 @@ which the read walks for the repositories the caller may read alone (Q-API-458).
 R-ANS-057, Q-ANS-120). One statement, `CREATE INDEX CONCURRENTLY` in a step run outside a transaction; no row is written. `AnsibleViewFind`
 repeats the expression word for word; a change of the one changes the other. Expand phase only.
 
+## A download from an upstream is a unit (00140)
+
+[00140_upstream_download_units](../../internal/meta/postgres/migrations/00140_upstream_download_units.sql) makes a row of
+`upstream_download_finished` one download of one replica, the unit a person asked for, not one file
+([operations-and-observability.md](../spec/operations-and-observability.md) R-OPS-049, R-OPS-051, ADR-295): the columns `unit` (the
+unit's key, the rows of one key are merged at the read), `parts` (its files) and `failure_path` (the file that failed it), and the index
+`upstream_download_finished_unit` (`unit`, `finished_at DESC`) that the trim and the read by unit use. The table is transient (R-BAK-004)
+and its rows were files: the step removes them first, so that every row the columns describe is a unit, and adds `unit` and `parts`
+`NOT NULL` without a default. The statements are `UpstreamDownloadFinishedInsert`, `UpstreamDownloadInterruptedInsert`,
+`UpstreamDownloadFinishedTrim` (the rows of the newest 100 units stay) and `UpstreamDownloadFinishedList`. Expand phase only.
+
 ## An image's facts (00133)
 
 [00133_oci_image_facts](../../internal/meta/postgres/migrations/00133_oci_image_facts.sql) adds three columns to `oci_manifests`

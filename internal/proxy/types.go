@@ -193,6 +193,9 @@ type Request struct {
 	// Cause is what caused the request's download from the upstream, if it makes one (operations-and-observability.md R-OPS-049): a
 	// mirror's pass, a queue row's run or the image database task. Nil is a client's: origin client, Caller.Principal.
 	Cause *DownloadCause
+	// Unit is how the format's files group into the unit a person asked for (R-OPS-049): the format's declaration
+	// (formats.Descriptor.DownloadUnit), which the host sets.
+	Unit DownloadUnit
 	// slot is the background slot the request holds before it enters the flights (holdBackground): a background request
 	// never holds a flight while it may not run.
 	slot *bgSlot

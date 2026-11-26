@@ -102,6 +102,7 @@ func (f *Format) Descriptor() formats.Descriptor {
 		// public registry through its replication host, the full package document (catalogue.go).
 		Catalogue:        formats.CatalogueDeclaration{Lookup: true, Search: true, Levels: []string{"scope"}},
 		VersionCanon:     versionCanon{},
+		DownloadUnit:     formats.DownloadUnitVersion, // a version's files one caller fetches at once (R-OPS-049)
 		Names:            names{},
 		Clients:          clients(),
 		PropertyPrefix:   "npm.",

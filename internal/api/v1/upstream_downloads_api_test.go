@@ -144,6 +144,39 @@ func TestR_OPS_052_TheDownloadsFromUpstreams(t *testing.T) {
 		}
 	})
 
+	// A client's pull that two replicas served is one download, counted once; a failed unit names the file it failed at (R-OPS-049).
+	t.Run("R-OPS-049 the records of one unit across replicas are one download, and a failure names its file", func(t *testing.T) {
+		v := upstreamDownloadView()
+		t0 := v.Now
+		key := "c|1|library/ubuntu|" + udPriya
+		v.Live = []fills.Live{
+			{Replica: "quader-packages-1", Age: time.Second, Downloads: []fills.Entry{{
+				ID: "01937d4e-0000-7000-8000-00000000000a", Unit: key, RepoID: 1,
+				Name: "library/ubuntu", Version: "26.10", Parts: 3, Bytes: 300, StartedAt: t0.Add(-8 * time.Second), ElapsedMs: 7000, Origin: "client", By: udPriya,
+			}}},
+			{Replica: "quader-packages-2", Age: time.Second, Downloads: []fills.Entry{{
+				ID: "01937d4e-0000-7000-8000-00000000000b", Unit: key, RepoID: 1,
+				Name: "library/ubuntu", Parts: 2, Bytes: 200, StartedAt: t0.Add(-6 * time.Second), ElapsedMs: 5000, Origin: "client", By: udPriya,
+			}}},
+		}
+		v.Finished[1].Unit, v.Finished[1].Parts, v.Finished[1].FailurePath = "q|"+udRow+"|job-1", 31, "library/alpine/_blobs/sha256:2b"
+		s := upstreamDownloadSetup(t, callers["admin"], v)
+		h := newValidator(t).Handler(t, s.handler)
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/system/upstream-downloads", nil))
+		var got gen.UpstreamDownloadList
+		if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
+			t.Fatal(err)
+		}
+		if got.RunningCount != 1 || len(got.Running) != 1 || got.Running[0].Bytes != 500 || got.Running[0].Parts != 5 || got.Running[0].Version != "26.10" {
+			t.Fatalf("one pull: %d %+v", got.RunningCount, got.Running)
+		}
+		failed := got.Finished[1]
+		if failed.Parts != 31 || failed.Failure == nil || failed.Failure.Path == nil || *failed.Failure.Path != "library/alpine/_blobs/sha256:2b" {
+			t.Errorf("the failed run: %+v", failed)
+		}
+	})
+
 	t.Run("R-OPS-052 the summary counts what the list counts", func(t *testing.T) {
 		s := upstreamDownloadSetup(t, callers["admin"], view)
 		w := s.get("/api/v1/system/upstream-downloads/summary")

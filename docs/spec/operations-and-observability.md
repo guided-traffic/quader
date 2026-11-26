@@ -940,101 +940,183 @@ The owner, 2026-11-24, 08:20 (task T-26, whole): "Ich will als Admin oben Rechts
 Screenshot. Dort werden alle laufenden Downloads, ihr Forschritt, Download-Geschwindigkeit abgebildet. Es werden nur Downloads
 von Upstream Repos angezeigt. Zusätzlich zu den laufenden Downloads werden auch die letzten 100 abgeschlossenen Downloads
 abgebildet zu sammen mit ihrer Download-Dauer und der durchschnittlichen Geschwindigkeit". Record:
-[ADR-279](../decisions.md#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished). The security view
-is [security/upstream-downloads.md](../security/upstream-downloads.md); the code is described in
+[ADR-279](../decisions.md#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished).
+
+The owner, 2026-11-26, about 09:05 (W31), with a picture of the drawer's Finished (100) holding seven rows of one image, one per layer:
+"Ich habe gestern ein Image herunter geladen und festgestellt, dass der Download-Drawer mir einzelne Layer anzuzeigen scheint. Das ist
+nicht gewünscht. Alle Downloads sind überall in Quader zu logischen Einheiten zusammen zu fassen. Bei OCI-images ist es das Image selbst
+mit allem was dazu gehört. Einen Download in vielen kleinen Dateien anzuzeigen, macht den gesamten prozess unübersichtlich. Bitte beachte
+das." Record: [ADR-295](../decisions.md#adr-295--a-download-is-the-unit-a-person-asked-for-not-one-of-its-files).
+
+The security view is [security/upstream-downloads.md](../security/upstream-downloads.md); the code is described in
 [developer/upstream-downloads.md](../developer/upstream-downloads.md). Status: specified on 2026-11-24; the tracker, the publication,
 the tables and the API are built (T-26 package A); the top bar's button and its panel are built (T-26 package B), with their
-requirements in [api-and-ui.md](api-and-ui.md) R-UI-210 to R-UI-212.
+requirements in [api-and-ui.md](api-and-ui.md) R-UI-210 to R-UI-212; since 2026-11-26 every list and count of this section is one of
+units (W31).
 
 ### R-OPS-049 · What a download from an upstream is
 Priority: **P1** · Covers: quader-only
 
-- **One download is one transfer of an artifact's body from the upstream of a remote repository into Quader**: the fetch of
+- **A download is the unit a person asked for** ([Q-OPS-419](#q-ops-419--a-download-is-the-unit-a-person-asked-for-whatever-caused-it-and-its-files-are-the-artifact-bodies-it-read)):
+  an image with everything that belongs to it, a version's package, a queue row's run. It is never one of its files; a screen that
+  shows downloads shows units.
+- **Its files** are the transfers of an artifact's body from the upstream of a remote repository into Quader: the fetch of
   [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-025 step 10 that got a success answer (2xx) and passed the checks before
-  the first byte (`fetcher.artifact` in `internal/proxy/artifact.go`, after `admitBody`). It begins there and ends when the fetch's
-  result is known ([Q-OPS-419](#q-ops-419--a-download-is-the-body-of-an-artifact-from-a-remote-repositorys-upstream-whatever-caused-it)).
+  the first byte (`fetcher.artifact` in `internal/proxy/artifact.go`, after `admitBody`). A file begins there and ends when the fetch's
+  result is known; the engine reports each to the tracker, which joins it to its unit.
 - **What counts, whatever caused it and in every format:** a client's miss; a row of the download queue
   ([remote-curation.md](remote-curation.md) R-CUR-011: a person's download ahead, a bulk's row, a probe's background download, the
-  examination of a request or an allow); a mirror's pass (R-REPO-057); the vulnerability scanning's database fetched through its
-  repository (`upstream/scanner-trivy`, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044). The repositories of the
+  examination of a request or an allow, a sync's run); a mirror's pass (R-REPO-057); the vulnerability scanning's database fetched through
+  its repository (`upstream/scanner-trivy`, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044). The repositories of the
   project `upstream` (R-REPO-066) count like every remote repository.
-- **What does not count:**
+- **What is no file of a download:**
   - a metadata document (a package document, an index, a tag);
   - a `HEAD`, a `304`, an answer without success;
   - the upstream catalogue's calls (R-CUR-008: they store nothing), a shadowing probe (R-REPO-048);
   - an artifact answered from the cache;
-  - a request that waited for another request's fetch (R-REPO-026: the fetch is one download whoever waits for it);
+  - a request that waited for another request's fetch (R-REPO-026: the fetch is one file whoever waits for it);
   - the fetches of a Quader Bastion from this installation ([bastion.md](bastion.md): no remote repository of this installation; a
     Bastion's request that makes this installation fill a remote counts here as a client's miss);
   - the ClamAV updater's fetches ([malware-scanning.md](malware-scanning.md) R-MAL-032: its pod fetches by itself, Quader stores the set
     it hands over);
   - the advisory sources' sync ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-004), webhooks, and every other outbound
     call of R-OPS-011.
-- Two fetches of one item on two replicas (the flight lock bypassed, [architecture.md](architecture.md) R-ARCH-033) are two downloads.
-  A client that waits for a background fill of the same item sees that fill under the fill's origin: only the request that leads the
+- **A download that fetched nothing is none.** A unit is shown from its first file on: an image whose every file is cached, or a queue
+  row's run that found everything stored, shows nowhere. A unit whose files partly came from the cache is still the whole unit: its row
+  names the image or the version, and its bytes are the bytes it fetched
+  ([Q-OPS-432](#q-ops-432--the-outcome-of-a-download-is-its-files-the-runs-failure-decides-before-them-and-cached-files-are-no-files)).
+- Two fetches of one file on two replicas (the flight lock bypassed, [architecture.md](architecture.md) R-ARCH-033) are two files. A
+  client that waits for a background fill of the same file sees that fill under the fill's origin: only the request that leads the
   flight reaches the upstream.
-- **The facts of a download:**
 
-  | Fact | Value |
-  |---|---|
-  | `id` | UUIDv7 at its begin |
-  | repository | the repository's id; its format |
-  | `name`, `version` | the request's package and version as the format classified the path; for a queue row whose request has no version (an OCI blob), the row's version; `""` when neither has one |
-  | `path` | the repository path |
-  | `bytes` | the bytes read from the upstream's body so far, counted before the spool, also those of a download that failed |
-  | `total` | the length the upstream announced (`Content-Length`); none when it announced none |
-  | `startedAt`, elapsed | the begin on the replica's wall clock; the time since then on its monotonic clock |
-  | `origin` | `client`, `queue`, `mirror`, `scanner_database` |
-  | `queueOrigin`, `queueRow` | for `queue`: the row's origin (`person`, `request`, `allow`, `bulk`, `sync`, `probe`) and its id |
-  | `by` | the principal who caused it: a client's caller; the person who started the queue row, its bulk or its request; none for system work. An anonymous caller and a removed principal read as none |
-  | `replica` | the pod name of the replica that reads the body |
+**The unit per format** ([Q-OPS-427](#q-ops-427--the-unit-of-a-download-is-the-works-for-background-work-and-the-formats-for-a-clients)).
+What caused the download decides first: a queue row's run, a mirror pass's version and the database task's run are one unit each in every
+format; for a client's fetches the format's declaration decides (`formats.Descriptor.DownloadUnit`, R-OPS-053). A new format answers
+this table before it lands:
 
-- **The outcome of a finished download:** `completed` (the item was stored, or a duplicate flight found it stored, R-REPO-026);
-  `failed`, with the failure's `class` and `code` of R-CUR-011 (`proxy.Describe`): the body broke off, the size limit, the integrity
-  check, the format's inspection, the store, or the object store was unavailable and the body went to its client unstored (R-REPO-025;
-  class `storage`, code `object_store_unavailable`); `cancelled` (the fetch's context ended before its result: a client's fetch
-  pre-empted a background fill, R-REPO-055; the job was cancelled; the replica shut down); `interrupted` (the replica stopped publishing
-  while it ran, R-OPS-051).
+| Format | Declared unit | A client's download | A queue row (R-CUR-011) | A mirror pass (R-REPO-057) |
+|---|---|---|---|---|
+| OCI | `DownloadUnitImage` | the image one caller pulls by its name: its platform and attestation manifests by digest, their configs and layers, a signature it fetches; named by the tag whose manifest names its first file (a blob names no tag), else the image's digest when it was pulled by digest | the row's run: the tag's index, platform manifests, configs, layers and attestations, its signatures | the tag the pass fetches: the child manifests it reads for the tag while it plans, and the tag's configs and layers |
+| npm | `DownloadUnitVersion` | a version's tarball | the row's run (the version's tarball) | the version's tarball |
+| NuGet | `DownloadUnitVersion` | a version's `.nupkg`, with its symbols package where one caller fetches both at once | the row's run | the version's package |
+| Ansible Galaxy | `DownloadUnitVersion` | a collection version's archive; a role's archive | the row's run | the version's archive |
+| Debian | `DownloadUnitVersion` | one binary package's file (an `apt install` of ten packages is ten downloads); a source package's `.dsc` with its tarballs, which classify as the source's name and version | the row's run | the version's file |
+| generic | none (no class remote, R-GENERIC-001) | one file, if it ever gains the class | — | — |
+| the vulnerability database | (OCI) | — | — | the database task's run (origin `scanner_database`), one unit named as its image and tag |
+
+**The key of a unit.** At its begin the engine gives every file the key of its unit (`proxy.DownloadStart.Unit`), and the tracker of the
+replica joins the files of one key into one unit:
+
+| Cause | Key | The unit stays running between its files |
+|---|---|---|
+| a queue row's run | `q\|<row>\|<job>`: the run; a second attempt is a second download | while the run holds it (`DownloadTracker.Hold`) |
+| the database task | `s\|<job>` | while a file runs |
+| a mirror pass | `m\|<job>\|<repository>\|<name>\|<version>`, the version of the plan item or of what the format reads for a tag (`discover.ForVersion`); none for a file of no version of a format whose unit is a version | an image: `proxy.UnitLinger` (5 s) after its last file; otherwise while a file runs |
+| a client, image | `c\|<repository>\|<name>\|<caller>` | `proxy.UnitLinger` after its last file |
+| a client, version | `c\|<repository>\|<name>\|<version>\|<caller>`; none for a file of no version | while a file runs |
+| anything else | the file alone (`p\|<id>`) | — |
+
+A unit never falls out of Running between two of its files: a queue row's run holds it while it runs
+([Q-OPS-428](#q-ops-428--a-runs-unit-runs-while-the-run-holds-it-a-pull-lingers-five-seconds-after-its-last-file)).
+
+**A client's pull of an image.** A blob names no tag. The unit takes the version of the first file that names one; where none does, the
+publication asks the OCI data port once per interval, off the path of any fetch
+([Q-OPS-430](#q-ops-430--a-pulls-version-is-the-newest-tag-whose-manifest-names-its-first-file-resolved-by-the-publication)): the tag of
+the remote whose manifest is the unit's first file, names it, or names a manifest that names it, the most recently validated first; a tag
+of the referrers tag schema and an attachment's tag are none; without such a tag the digest of the topmost stored manifest the file
+belongs to. A unit is asked until its version is found and never after. Two pulls of one name by one caller within the linger are one
+download (H-2251).
+
+**Across replicas** ([Q-OPS-429](#q-ops-429--the-tracker-groups-a-replicas-files-into-units-the-read-merges-a-units-records-across-replicas)).
+A pull whose layers several `packages` replicas serve is one unit on each of them; the read merges the records of one key into one
+download: the records of a key of work (`q|`, `m|`, `s|`) whatever lies between them, those of a client's key (`c|`, which repeats when the
+same caller fetches the same thing again) where the next begins at most `fills.MergeGap` (10 s) after the end of the ones before. A unit
+with a running record runs.
+
+**The facts of a download** (one unit):
+
+| Fact | Value |
+|---|---|
+| `id` | UUIDv7 at the unit's begin on its replica; of a merged unit, the record that began first |
+| repository | the repository's id; its format |
+| `name`, `version` | the first file's package as the format classified its path; the version of the first file that names one, the cause's (a queue row's, a mirror item's) for a file of no version, or the resolved one (above); `""` while none is known |
+| `path` | the repository path of the unit's first file; the row's name for a download of no package |
+| `parts` | the number of the unit's files (each path once, the newest attempt of a path its outcome) |
+| `bytes` | the sum of the bytes read from the upstream's bodies of its files, counted before the spool, also those of a file that failed and of an earlier attempt of a path |
+| `total` | where it is known ([Q-OPS-431](#q-ops-431--a-downloads-total-is-what-its-run-named-or-its-one-files-length-a-pull-of-an-image-has-none)): for a run that names its files (a queue row's), the sizes it named, a file that began counting with its announced length and one found stored or refused leaving it; for a unit of files nobody names in advance (a client's pull of an image, a mirror pass's image), none; otherwise the sum of its files' announced lengths, none when one announced none |
+| `startedAt`, elapsed | its first file's begin on the replica's wall clock; the time since then on its monotonic clock |
+| `finishedAt`, duration | its last file's end; the time from the first file's begin |
+| `origin` | `client`, `queue`, `mirror`, `scanner_database` |
+| `queueOrigin`, `queueRow` | for `queue`: the row's origin (`person`, `request`, `allow`, `bulk`, `sync`, `probe`) and its id |
+| `by` | the principal who caused it: a client's caller; the person who started the queue row, its bulk or its request; none for system work. An anonymous caller and a removed principal read as none |
+| `replica` | the pod name of the replica that reads its files; of the one whose record began first among those that run, and of the one that ended last for a finished download |
+
+- **The outcome of a finished download** ([Q-OPS-432](#q-ops-432--the-outcome-of-a-download-is-its-files-the-runs-failure-decides-before-them-and-cached-files-are-no-files)),
+  from the newest attempt of each of its files: `completed` when every file was stored (or a duplicate flight found it stored,
+  R-REPO-026); `failed` when the queue row's run failed (`DownloadHold.Fail`, its failure's class, code and file) or a file failed, with
+  that file's class and code of R-CUR-011 (`proxy.Describe`: the body broke off, the size limit, the integrity check, the format's
+  inspection, the store, or the object store was unavailable and the body went to its client unstored, class `storage`, code
+  `object_store_unavailable`) and its path (`failure.path`); `cancelled` when a file's fetch was cancelled and none failed (its context
+  ended before its result: a client's fetch pre-empted a background fill, R-REPO-055; the job was cancelled; the replica shut down);
+  `interrupted` (the replica stopped publishing while it ran, R-OPS-051). The read of merged records takes failed before interrupted
+  before cancelled before completed.
 
 Acceptance criteria:
 
-- Unit (`internal/proxy`, `TestR_OPS_049_TheEngineReportsEachArtifactBody`, a body of 64 KiB): the begin carries the facts and the
-  cause (a client's by default, a queue row's version for a request without one, no total without a length); every byte read is
-  counted; each result of a fetch maps to its outcome: stored `completed`, a pre-empted or cancelled fetch `cancelled`, a digest
-  mismatch `failed` with class `integrity`, the size limit class `bound`, a refused spool class `storage`, a body passed to its client
-  unstored class `storage` and code `object_store_unavailable`.
-- Integration (area `proxy`, in `TestR_OPS_050_TwoReplicasShowOneRunningDownload`, the real engine, bodies of 1 to 64 KiB): three
-  concurrent misses of one item with `Content-Length` record one download with that total and `completed`; a hit, a `HEAD`, a `404` and
-  a metadata document record none; a body without a length records no total; a digest mismatch records `failed` with class `integrity`.
-  The engine's path is tested here because the unit tier of `internal/proxy` has no item store.
+- Unit (`internal/proxy`, `TestR_OPS_049_TheEngineReportsEachArtifactBody`, a body of 64 KiB): the begin carries the facts, the cause
+  and the unit's key (a client's by default, the cause's version for a request without one, no total without a length; the key of every
+  cause and format); every byte read is counted; each result of a fetch maps to its outcome: stored `completed`, a pre-empted or cancelled
+  fetch `cancelled`, a digest mismatch `failed` with class `integrity`, the size limit class `bound`, a refused spool class `storage`, a
+  body passed to its client unstored class `storage` and code `object_store_unavailable`.
+- Unit (`internal/fills`, `TestR_OPS_049_TheFilesOfOneKeyAreOneDownload`, `TestR_OPS_049_AQueueRowsRunIsOneDownload`,
+  `TestR_OPS_049_APullsVersionIsResolvedByThePublication`, `TestR_OPS_049_TheReadMergesTheRecordsOfOneUnit`, a fake clock, milliseconds,
+  31 parts of 10 bytes): a client's pull is one running unit between its layers and for the linger after the last, without a total, with
+  the sum of its bytes and the count of its files, and fails with the file that failed; a version's two files at once are one unit that
+  ends with the last; a queue row's run runs between its files, its total is what it named less what was found stored, the run's failure
+  decides its outcome and its release ends it; a run that fetched nothing shows nowhere; the publication asks a pull's version until it
+  is found; the read merges the records of one key across replicas, splits a client's key by `MergeGap`, ranks the outcomes and keeps
+  the newest 100 units.
 - Unit (`internal/formathost`, `TestR_OPS_049_TheCauseOfABackgroundFill`, milliseconds): a queue row of origin `person` started by a
-  principal makes each of its fills carry `queue`, `person`, the row's id, its version and the principal; a mirror's pass `mirror`; the
-  image database task `scanner_database`; a probe's row `queue`/`probe` without a principal.
+  principal makes each of its fills carry `queue`, `person`, the row's id, its version, the principal and the run's key; a mirror's pass
+  `mirror` with its job and the version of what it reads for; the image database task `scanner_database` with its run; a probe's row
+  `queue`/`probe` without a principal.
+- Integration (area `proxy`, in `TestR_OPS_050_TwoReplicasShowOneRunningDownload`, the real engine, bodies of 1 to 64 KiB): three
+  concurrent misses of one item with `Content-Length` record one file with that total and `completed`; a hit, a `HEAD`, a `404` and a
+  metadata document record none; a body without a length records no total; a digest mismatch records `failed` with class `integrity`.
+  The engine's path is tested here because the unit tier of `internal/proxy` has no item store.
+- Integration (area `ociremote`, `TestR_OPS_049_AnImageIsOneDownload`, the stub's image `acme/b:1.0`, an index of two platforms with an attestation manifest each, a few kilobytes, about 10 s):
+  a client's pull of the image (its index's platform and attestation manifests, their configs and layers) is one finished download named
+  `1.0`, origin `client`, with every file counted and no total; a download ahead of the tag on a remote of one platform is one download
+  whose total is reached; both read through `GET /api/v1/system/upstream-downloads` on a replica of the role `api` while a replica of the
+  role `all` serves the pull and runs the row.
 
 ### R-OPS-050 · The running downloads, across replicas
 Priority: **P1** · Covers: quader-only
 
 - **A tracker per replica.** Every serving replica (`api`, `packages`, `worker`, `web`, `all`) keeps one tracker for every remote engine
-  it builds: the begin, the count of bytes (one atomic addition per read of the body), the end. No call to PostgreSQL or Valkey lies on
-  the path of a fetch. The engine of `api` lends the upstream catalogue its upstream and fills nothing, so its tracker stays empty; it
-  publishes nothing and only sweeps (R-OPS-051).
+  it builds: the begin of each file, its unit, the count of bytes (one atomic addition per read of the body), the end, the holds of the
+  queue's runs. No call to PostgreSQL or Valkey lies on the path of a fetch. The engine of `api` lends the upstream catalogue its upstream
+  and fills nothing, so its tracker stays empty; it publishes nothing and only sweeps (R-OPS-051).
 - **Publication** ([Q-OPS-420](#q-ops-420--a-replica-publishes-its-running-downloads-as-one-row-of-postgresql-every-two-seconds)):
   - Every `proxy.upstream_downloads.publish_interval` (2 s), a replica that has running downloads, or whose set changed since its last
-    write, upserts its one row of `upstream_download_live`, keyed by its instance UID.
-  - The row holds the replica's pod name, the time of the write (PostgreSQL's `now()`), and its running downloads as JSON: at most 200,
-    the longest-running first, each with the facts of R-OPS-049, the bytes so far, the speed and the elapsed milliseconds at the write.
-    It also holds the number of running downloads it left out.
+    write, upserts its one row of `upstream_download_live`, keyed by its instance UID. A publication first ends the units whose linger
+    passed, and asks the versions of the pulls it has not resolved (R-OPS-049).
+  - The row holds the replica's pod name, the time of the write (PostgreSQL's `now()`), and its running downloads (units) as JSON: at
+    most 200, the longest-running first, each with the facts of R-OPS-049, its key, its files so far, its bytes so far, its speed and the
+    elapsed milliseconds at the write. It also holds the number of running downloads it left out.
   - A replica with nothing running and nothing changed writes nothing. When its last running download ends, that interval's write
     deletes its row.
   - The close step of a clean shutdown ([architecture.md](architecture.md) R-ARCH-024) writes the finished downloads (R-OPS-051) and
     deletes the row.
-  - **Cost bound:** at most one upsert of at most about 100 KiB per replica and interval, whatever the number of downloads. Measured on
-    2026-11-25: a row of 200 downloads is about 49 KB of JSON, 10.6 KB stored, and its upsert about 22.5 KB of WAL; with the insert and
-    trim of 100 ended downloads a publication writes at most about 78 KB of WAL
-    ([upstream-downloads.md](../developer/upstream-downloads.md#the-write-load-measured)).
+  - **Cost bound:** at most one upsert of at most about 100 KiB per replica and interval, whatever the number of downloads and their
+    files. Measured on 2026-11-25 with a download per file: a row of 200 downloads is about 49 KB of JSON, 10.6 KB stored, and its upsert
+    about 22.5 KB of WAL; with the insert and trim of 100 ended downloads a publication writes at most about 78 KB of WAL
+    ([upstream-downloads.md](../developer/upstream-downloads.md#the-write-load-measured)). A unit adds its key and the count of its files
+    to an entry; a pull of 30 layers writes one entry where it wrote 30.
 - **Speed** ([Q-OPS-421](#q-ops-421--the-speed-is-the-last-ten-seconds-the-average-is-bytes-over-duration)):
-  - The bytes of the last 10 s over those 10 s, from the samples taken at each publication by the replica that reads the body.
-  - In the first 10 s: the bytes over the time since the begin. None in the first second.
+  - The unit's bytes of the last 10 s over those 10 s, from the samples taken at each publication by the replica that reads its files.
+  - In the first 10 s: the bytes over the time since the begin. None in the first second. A merged unit's speed is the sum of its
+    running records' speeds.
 - **No total.** A download without a total has no share. It shows its bytes and its speed.
 - **Freshness.** A reader takes a row whose write is at most 3 × `publish_interval` old and leaves out every older row: a replica that
   stalled, was killed or lost its database connection disappears from the list within three intervals.
@@ -1047,7 +1129,7 @@ Priority: **P1** · Covers: quader-only
     instance_uid uuid        PRIMARY KEY,   -- the replica (replica.instance_uid); no reference: the registry's prune is its own
     replica_name text        NOT NULL,
     written_at   timestamptz NOT NULL DEFAULT now(),
-    downloads    jsonb       NOT NULL,      -- at most 200 entries, the longest running first
+    downloads    jsonb       NOT NULL,      -- at most 200 units, the longest running first
     omitted      integer     NOT NULL DEFAULT 0
   );
   ```
@@ -1067,15 +1149,18 @@ Acceptance criteria:
 ### R-OPS-051 · The last 100 finished downloads
 Priority: **P1** · Covers: quader-only
 
-- **The table** ([Q-OPS-422](#q-ops-422--the-last-100-are-a-table-trimmed-to-100-not-backed-up-a-stopped-replicas-downloads-end-interrupted)):
+- **The table** ([Q-OPS-422](#q-ops-422--the-last-100-are-a-table-trimmed-to-100-not-backed-up-a-stopped-replicas-downloads-end-interrupted)),
+  one row per unit and replica (migrations `00118_upstream_downloads.sql` and `00140_upstream_download_units.sql`):
 
   ```sql
   CREATE TABLE upstream_download_finished (
-    id            uuid        PRIMARY KEY,          -- the download's id (R-OPS-049)
+    id            uuid        PRIMARY KEY,          -- the unit's id on its replica (R-OPS-049)
+    unit          text        NOT NULL,             -- the unit's key; the rows of one key are merged at the read
     repo_id       bigint      NOT NULL REFERENCES repositories (id) ON DELETE CASCADE,
     name          text        NOT NULL CHECK (char_length(name) <= 1024),
     version       text        NOT NULL CHECK (char_length(version) <= 256),
-    path          text        NOT NULL CHECK (char_length(path) <= 4096),
+    path          text        NOT NULL CHECK (char_length(path) <= 4096),   -- the unit's first file
+    parts         integer     NOT NULL CHECK (parts >= 1),
     bytes         bigint      NOT NULL,
     total         bigint      NULL,
     started_at    timestamptz NOT NULL,
@@ -1084,22 +1169,25 @@ Priority: **P1** · Covers: quader-only
     outcome       text        NOT NULL CHECK (outcome IN ('completed', 'failed', 'cancelled', 'interrupted')),
     failure_class text        NULL,
     failure_code  text        NULL,
+    failure_path  text        NULL,                 -- the file whose failure failed the unit
     origin        text        NOT NULL CHECK (origin IN ('client', 'queue', 'mirror', 'scanner_database')),
-    queue_origin  text        NULL CHECK (queue_origin IN ('person', 'request', 'allow', 'bulk', 'probe')),
+    queue_origin  text        NULL CHECK (queue_origin IN ('person', 'request', 'allow', 'bulk', 'sync', 'probe')),
     queue_row     uuid        NULL,                 -- no reference: the queue's retention is its own
     by_principal  uuid        NULL REFERENCES principal (id) ON DELETE SET NULL,
     replica_name  text        NOT NULL
   );
   CREATE INDEX upstream_download_finished_order ON upstream_download_finished (finished_at DESC, id DESC);
+  CREATE INDEX upstream_download_finished_unit ON upstream_download_finished (unit, finished_at DESC);
   ```
 
   Export class `transient`: a backup holds neither table, and a restored installation starts with both empty. A name or a version
   longer than the bounds is cut to them; a download of a repository that was removed before its end is not written, and a principal
-  that was removed before it reads as nobody.
-- **Writing and trimming.** A replica keeps each ended download in a buffer. Its next publication inserts them (at most 100, the
-  newest; `ON CONFLICT (id) DO UPDATE`), then removes every row older than the 100th by `(finished_at, id)`. The table holds at most 100
-  rows, plus one batch per replica between an insert and its trim; the read takes the newest 100. A publication that fails keeps the
-  buffer for the next one.
+  that was removed before it reads as nobody. Migration 00140 removed the rows of single files that 00118's table held.
+- **Writing and trimming.** A replica keeps each ended unit in a buffer. Its next publication inserts them (at most 100, the newest;
+  `ON CONFLICT (id) DO UPDATE`), then removes the rows of every unit older than the 100th newest unit by the newest end of its rows
+  ([Q-OPS-429](#q-ops-429--the-tracker-groups-a-replicas-files-into-units-the-read-merges-a-units-records-across-replicas)). The bound
+  holds per unit across replicas: a pull three replicas served keeps its three rows while it is among the newest 100. The read takes the
+  rows of the newest 100 units (at most 1,000 rows), merges them (R-OPS-049) and answers the newest 100.
 - **The number is fixed.** 100 is the owner's number and is not configurable.
 - **What is not kept:** the upstream's address (a query or user information can hold a credential), headers, the client's address.
 - **Retention.** Nothing but the count: a quiet installation keeps its last 100 until newer downloads push them out
@@ -1120,6 +1208,8 @@ Acceptance criteria:
   - The 64 KiB download ends `completed` with its duration and an average of bytes over duration.
   - 101 ended downloads published leave 100, the oldest gone.
   - A swept stale row becomes `interrupted`, and its later end makes it `completed`.
+  - 99 downloads and one written by three replicas are 100 units in 102 rows; a newer one removes the oldest unit and keeps the three
+    rows, which the read merges into one download with the sum of their bytes and files.
   - A deleted repository's rows are gone.
 
 ### R-OPS-052 · The API, who reads it, metrics and configuration
@@ -1132,23 +1222,24 @@ Priority: **P1** · Covers: quader-only
 
 ```json
 {
-  "asOf": "2026-11-24T08:40:12Z",
+  "asOf": "2026-11-26T08:40:12Z",
   "pollSeconds": 2,
   "runningCount": 214,
   "running": [
     {
       "id": "01937d4e-…", "repository": {"project": "upstream", "key": "docker-hub", "format": "oci"},
-      "name": "library/ubuntu", "version": "26.10", "path": "v2/library/ubuntu/blobs/sha256:1a2b…",
+      "name": "guidedtraffic/stackit-s3-provisioner", "version": "1.20.14",
+      "path": "guidedtraffic/stackit-s3-provisioner/_manifests/sha256:1a2b…", "parts": 31,
       "bytes": 134217728, "total": 300847104, "bytesPerSecond": 12897484,
-      "startedAt": "2026-11-24T08:39:30Z", "elapsedSeconds": 42.3,
+      "startedAt": "2026-11-26T08:39:30Z", "elapsedSeconds": 42.3,
       "origin": "queue", "queueOrigin": "person", "queueRow": "01937d4d-…",
-      "by": {"id": "…", "name": "priya"}, "replica": "quader-worker-6f9c7-2xk4p"
+      "by": {"id": "…", "name": "ada"}, "replica": "quader-worker-6f9c7-2xk4p"
     }
   ],
   "finished": [
     {
       "id": "…", "repository": {"project": "web", "key": "npm-remote", "format": "npm"},
-      "name": "@angular/core", "version": "22.0.1", "path": "@angular/core/-/core-22.0.1.tgz",
+      "name": "@angular/core", "version": "22.0.1", "path": "@angular/core/-/core-22.0.1.tgz", "parts": 1,
       "bytes": 2345678, "total": 2345678, "bytesPerSecond": 1563785,
       "startedAt": "…", "finishedAt": "…", "durationSeconds": 1.5,
       "outcome": "completed", "failure": null,
@@ -1167,8 +1258,9 @@ Priority: **P1** · Covers: quader-only
 
 - **The schemas** of the API document: `UpstreamDownloadList`, `UpstreamDownloadSummary`, `UpstreamDownloadRunning`,
   `UpstreamDownloadFinished`, `UpstreamDownloadRepository`, `UpstreamDownloadPrincipal`, `UpstreamDownloadFailure` (its `class` is the
-  queue's `RemoteDownloadFailureClass`), `UpstreamDownloadOrigin` and `UpstreamDownloadWaiting`. A finished download's `bytesPerSecond`
-  is its average, null for a duration of 0.
+  queue's `RemoteDownloadFailureClass`, its `path` the file it failed at or null), `UpstreamDownloadOrigin` and `UpstreamDownloadWaiting`.
+  Every entry is one download (R-OPS-049), with `parts`, the number of its files; no operation lists the files. A finished download's
+  `bytesPerSecond` is its average, null for a duration of 0.
 - **`waiting`** ([remote-curation.md](remote-curation.md) R-CUR-011,
   [Q-CUR-176](remote-curation.md#q-cur-176--the-top-bars-panel-lists-the-queues-a-limit-holds-from-the-limits-rows)): the download queues
   an upstream's rate limit holds at the read, the longest held first, at most 100: the repository, its waiting rows, the upstream's name
@@ -1179,15 +1271,17 @@ Priority: **P1** · Covers: quader-only
   holders of `content:metadata-read`, which are the administrator and the auditor ([authorization.md](authorization.md) R-AUTHZ-010).
   A project's Owner or Maintainer, a `security-admin`, a `repository-admin` and a plain user get `403`; a caller without a session or
   token gets `401`. A token's scope is a ceiling (R-AUTHZ-013).
-- **Bounds.** `running` holds at most 200 per live replica; `runningCount` counts all of them, the left-out ones included. `finished`
-  holds at most 100, newest first. `running` is in the order of the begin, the oldest first. No paging and no filter on the server.
+- **Bounds.** `running` holds at most 200 per live replica; `runningCount` counts the running downloads after the merge (R-OPS-049), the
+  left-out ones included. `finished` holds at most 100, newest first. `running` is in the order of the begin, the oldest first. No paging
+  and no filter on the server.
 - **Resolved at the read.** The repository's current project, key and format are resolved by its id at the read, and an entry whose
   repository no longer exists is left out. `by.name` is the principal's current name.
 - **Any replica answers alike.** Every replica of `api`, `web` and `all` reads PostgreSQL only. `elapsedSeconds` is the elapsed time at
-  the write plus the age of the write, on PostgreSQL's clock.
+  the write plus the age of the write, on PostgreSQL's clock; of a download merged from several records, at least the time since its
+  first record's begin.
 - **The answer** is `Cache-Control: no-store`. `pollSeconds` is `publish_interval`.
 - **No audit event** for a read (R-OPS-015 records changes and refusals).
-- **Metrics** (R-OPS-008; `repo` capped by R-OPS-007):
+- **Metrics** (R-OPS-008; `repo` capped by R-OPS-007); the first two count downloads (units) per replica, the third counts bytes:
 
   | Name | Type | Labels | Meaning |
   |---|---|---|---|
@@ -1209,7 +1303,25 @@ Acceptance criteria:
 - Unit (`internal/api/v1`, `TestR_OPS_052_TheDownloadsFromUpstreams`, an in-memory store): the administrator gets `200` with the shape
   above, and so does the auditor; a `security-admin`, the Owner of a project and a plain user get `403`, an anonymous caller `401`; a
   stale live row is left out; `elapsedSeconds` adds the age of the write; a removed repository's entries are left out; the summary
-  counts the listed and the left-out downloads.
+  counts the listed and the left-out downloads; a pull two replicas served is one running download with the sum of their bytes and
+  files, counted once; a failed download names the file it failed at.
+
+### R-OPS-053 · A format declares what one download is
+Priority: **P1** · Covers: quader-only
+
+- Every format with the class `remote` declares its download unit in its descriptor (`formats.Descriptor.DownloadUnit`,
+  [architecture.md](architecture.md) R-ARCH-008, contract version 15): `DownloadUnitFile` (each file a client fetches), `DownloadUnitVersion`
+  (the files of one version one caller fetches at once) or `DownloadUnitImage` (an image one caller fetches by its name, OCI).
+  `formats.Register` refuses a format with the class `remote` that declares none, a format without the class that declares one, and a
+  value outside the list.
+- The declarations are the table of R-OPS-049 "The unit per format"; a new format adds its row there and in the test below.
+
+Acceptance criteria:
+
+- Unit (`internal/formats`, `TestR_OPS_053_RegisterRefusesARemoteFormatThatDoesNotSayWhatADownloadIs`, milliseconds): the three refusals,
+  and a remote format with a declaration registers.
+- Unit (`internal/formats/all`, `TestR_OPS_053_EveryRemoteFormatDeclaresWhatOneDownloadIs`, milliseconds): every registered format's
+  declaration is its row of the table.
 
 ## Metrics
 
@@ -1561,8 +1673,8 @@ HTTP duration histograms use the buckets 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.
 | `quader_remote_downloads_total` | counter | `repo`, `origin`, `outcome` (the ends of the queue's runs `completed`, `bounded`, `refused`, `skipped`, `failed`, `cancelled`; the decisions on probes, origin `probe`: `started`, `off`, `stored`, `local`, `not_admitted`, `active`, `queue_full`, `limited`, `busy`, `failed`) | The ends of the download queue's rows and the decisions on probes ([remote-curation.md](remote-curation.md) R-CUR-013, R-CUR-019) |
 | `quader_remote_downloads` | gauge | `repo`, `state` | Rows of the download queues by state, set by the task `remote-downloads-dispatch` every minute on the worker that runs it (R-CUR-019) |
 | `quader_remote_download_failures_total` | counter | `repo`, `class` | Failed attempts of the download queue's rows by failure class (R-CUR-011, R-CUR-019) |
-| `quader_remote_upstream_downloads_running` | gauge | — | Downloads from upstreams that run on the replica now (R-OPS-049, R-OPS-050) |
-| `quader_remote_upstream_downloads_total` | counter | `repo`, `outcome` (`completed`, `failed`, `cancelled`) | Downloads from upstreams the replica ended (R-OPS-049); `interrupted` is recorded by the sweep of another replica and not counted |
+| `quader_remote_upstream_downloads_running` | gauge | — | Downloads from upstreams that run on the replica now, each the unit a person asked for (an image, a version's package, a queue row's run; R-OPS-049, R-OPS-050) |
+| `quader_remote_upstream_downloads_total` | counter | `repo`, `outcome` (`completed`, `failed`, `cancelled`) | Downloads from upstreams the replica ended, units as above (R-OPS-049); `interrupted` is recorded by the sweep of another replica and not counted |
 | `quader_remote_upstream_download_bytes_total` | counter | `repo` | Bytes read from the upstreams' artifact bodies, also those of downloads that failed (R-OPS-049) |
 | `quader_upstream_downloads_publish_failures_total` | counter | — | Publications of the running and finished downloads that failed (R-OPS-050, R-OPS-051) |
 
@@ -7053,26 +7165,32 @@ the configuration's default where that has one.
 criterion). Code: [wire_jobs.go](../../internal/app/wire_jobs.go), [maintenance.go](../../internal/config/maintenance.go). Tests:
 `TestR_OPS_019_TheTaskTableIsTheRegistry` and `TestR_OPS_019_AKeyOfNoTaskStopsTheStart` (unit, `internal/app`).
 
-### Q-OPS-419 · A download is the body of an artifact from a remote repository's upstream, whatever caused it
+### Q-OPS-419 · A download is the unit a person asked for, whatever caused it, and its files are the artifact bodies it read
 
-Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the owner on 2026-11-26** (W31: a download is the logical unit, for OCI the image with everything that belongs to
+it), which revises the choice of the development agent of 2026-11-24 (a download was one artifact's body); what counts as a file of a
+download stays that choice.
 
-Context: the owner asked for "nur Downloads von Upstream Repos". Fills happen at one point of the engine (`fetcher.artifact`) for a
-client's miss, a queue row, a mirror's pass and the scanner's database. Metadata documents go through the same fetch, and a Bastion, the
-ClamAV updater and the advisory sync fetch from elsewhere.
+Context: the owner asked on 2026-11-24 for "nur Downloads von Upstream Repos". Fills happen at one point of the engine
+(`fetcher.artifact`) for a client's miss, a queue row, a mirror's pass and the scanner's database. Metadata documents go through the
+same fetch, and a Bastion, the ClamAV updater and the advisory sync fetch from elsewhere. On 2026-11-26 he found one image's layers as
+rows of their own: "Alle Downloads sind überall in Quader zu logischen Einheiten zusammen zu fassen. Bei OCI-images ist es das Image
+selbst mit allem was dazu gehört. Einen Download in vielen kleinen Dateien anzuzeigen, macht den gesamten prozess unübersichtlich."
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Artifact bodies after a 2xx, whatever caused them; no documents, no catalogue or probe, no Bastion, no ClamAV updater, no advisory sync (chosen) | One hook in `fetcher.artifact` | Exactly what fills a remote repository's cache; the same for every format; nothing a remote does not store | An `apt update` through Quader (index documents) shows nothing |
-| (b) As (a), and metadata documents | Packuments, indexes and tags too | Large Debian indexes show | An `npm install` doubles the rows with documents of milliseconds; the last 100 hold mostly documents |
-| (c) As (a), and the ClamAV updater's fetches | The updater reports its transfers | One place for all inbound traffic | The updater is no remote repository and has no tracker; a report path only for this |
+| (a) A download is the unit a person asked for (an image, a version's package, a queue row's run); its files are artifact bodies after a 2xx, whatever caused them; no documents, no catalogue or probe, no Bastion, no ClamAV updater, no advisory sync (chosen) | One hook in `fetcher.artifact`, the files joined into units by their key (Q-OPS-427) | What the owner asked: one row per image, the last 100 are 100 things asked for; the same for every format | A unit of a client's files is formed by timing (H-2251, H-2253) |
+| (b) One artifact's body is a download (the choice of 2026-11-24) | One row per file | Exact per transfer | One image's 30 layers fill the list and push every other download out of the last 100; the owner's rule forbids it |
+| (c) As (a), and metadata documents as files | Packuments, indexes and tags too | Large Debian indexes show | An `npm install` doubles the files with documents of milliseconds |
+| (d) As (a), and the ClamAV updater's fetches | The updater reports its transfers | One place for all inbound traffic | The updater is no remote repository and has no tracker; a report path only for this |
 
-**Choice:** (a). The scanner's database counts: it is a remote repository's fill. **Rationale:** the panel answers "what is Quader
-loading from upstream into its repositories now". A document belongs to serving metadata, and a fetch by another party belongs to that
-party. The development agent would revisit (b) if the owner asks for index downloads.
+**Choice:** (a), the owner's. The scanner's database counts: it is a remote repository's fill. **Rationale:** the panel answers "what
+is Quader loading from upstream into its repositories now" in the words of what was asked for; a document belongs to serving metadata,
+and a fetch by another party belongs to that party. The development agent would revisit (c) if the owner asks for index downloads.
 
-**Applied in the spec:** R-OPS-049. Code: [artifact.go](../../internal/proxy/artifact.go),
-[downloads.go](../../internal/proxy/downloads.go).
+**Applied in the spec:** R-OPS-049, R-OPS-053; [ADR-295](../decisions.md#adr-295--a-download-is-the-unit-a-person-asked-for-not-one-of-its-files).
+Code: [artifact.go](../../internal/proxy/artifact.go), [downloads.go](../../internal/proxy/downloads.go),
+[tracker.go](../../internal/fills/tracker.go).
 
 ### Q-OPS-420 · A replica publishes its running downloads as one row of PostgreSQL every two seconds
 
@@ -7243,6 +7361,132 @@ revisit it if an upstream used one of Quader's parameter names for a credential.
 `TestR_OPS_013_TheDefaultListIsTheConfigurationsDefault`, `TestR_OPS_013_ARedirectToASignedAddressReachesNoRecordWithItsSignature`,
 `TestR_OPS_013_AFailureAndAnItemKeepNoSignature`, `TestR_OPS_013_ALoggedURLIsBuiltByTheOneFunction`.
 
+### Q-OPS-427 · The unit of a download is the work's for background work, and the format's for a client's
+
+Status: **Decided by the development agent on 2026-11-26** on the owner's rule of that day (W31) — selected from the options below; the
+owner reviews it at the walkthrough.
+
+Context: the owner's rule makes a download "the logical unit" in every format, for OCI the image with everything that belongs to it. The
+engine sees files one at a time: a blob names its image but no tag, a client's pull of one image is 10 to 40 requests, a queue row's run
+names its version and fetches every file of it, a mirror pass plans a tag and fills its files, the database task fetches its one layer.
+In his development database one download ahead of one tag wrote more than 30 rows.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The cause names the unit of background work (a queue row's run, a mirror pass's tag or version, the database task's run); a client's unit is the format's declaration: the image by its name and caller, a version's files by name, version and caller, else the file (chosen) | A key per file at its begin, from what is known there | Every background download is exactly what was asked for; a client's pull of an image is one row; no format code on the fetch's path | A client's unit is a guess from timing: two tags of one image pulled at once are one row (H-2251) |
+| (b) Every download is a version: name and version of the format's classification | One rule | Simple | A blob has no version: an image's layers stay apart or join every pull of the name |
+| (c) The format names the unit of each file on the fetch's path (a lookup of the manifest that names a blob) | Exact for a pull | The right tag at once | A statement on the path of every fetch, which R-OPS-050 keeps free of PostgreSQL; the manifest may not be stored when the blob is asked for in parallel |
+
+**Choice:** (a). The keys are R-OPS-049's table; a format declares its client's unit (R-OPS-053). **Rationale:** what caused a background
+download knows what was asked for; for a client's fetches the format knows which of its files belong together, and the caller and the
+time are what tell two pulls apart. The development agent would revisit (c) if a measurement shows a lookup costs nothing on a fetch's
+path, or the tag of a pull must be the one the client asked for (H-2254).
+
+**Applied in the spec:** R-OPS-049, R-OPS-053; [architecture.md](architecture.md) R-ARCH-008. Code:
+[downloads.go](../../internal/proxy/downloads.go) (`unitOf`), [mirror_host.go](../../internal/formathost/mirror_host.go) (`cause`),
+[background_download.go](../../internal/formathost/background_download.go) (`queueUnit`).
+
+### Q-OPS-428 · A run's unit runs while the run holds it; a pull lingers five seconds after its last file
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a unit must not fall out of Running between two of its files and come back. A queue row's run fetches its files one after the
+other and between them revalidates documents and asks the gate; a client asks for the next layer when one ended; a replica learns of
+no end of a client's pull.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The queue's run holds its unit (`DownloadTracker.Hold`) from before its plan to its end and names the files it will fetch; a unit whose files nobody names (a client's image, a mirror pass's image) runs `proxy.UnitLinger`, 5 s, after its last file (chosen) | The run's own state where there is one, a short linger where there is none | No row leaves and returns; a run's total is known (Q-OPS-431); a version's single file ends at once | A finished pull reaches Finished 5 s late; a client that waits longer than 5 s between two layers starts a second record, which the read merges (Q-OPS-429) |
+| (b) A linger for every unit | One rule | No hold | A run that stalls longer than the linger leaves Running; every tarball ends 5 s late |
+| (c) The queue row's state in PostgreSQL decides | The row's own state | Exact | A read of the queue in every publication of every replica |
+
+**Choice:** (a). **Rationale:** the run knows when it ends and what it will fetch; a client's pull does not, and 5 s covers the gap
+between two layers a client asks for at once, while the read's merge (10 s) covers the rest. The development agent would revisit the 5 s
+if the owner sees a pull leave Running between its layers.
+
+**Applied in the spec:** R-OPS-049, R-OPS-050. Code: [tracker.go](../../internal/fills/tracker.go),
+[background_download.go](../../internal/formathost/background_download.go) (`holdUnit`).
+
+### Q-OPS-429 · The tracker groups a replica's files into units; the read merges a unit's records across replicas
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the layers of one pull reach several `packages` replicas behind one Service; a queue row's run, a mirror pass and the database
+task run on one replica each. The list must hold 100 units, not 100 files (R-OPS-051), and nothing may lie on a fetch's path.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each replica's tracker joins the files of one key into a unit, publishes units and writes one finished row per unit; the read merges the records of one key across replicas, and the trim keeps the rows of the newest 100 keys (chosen) | Grouping where the files are, merging where the replicas meet | A pull of 30 layers is one live entry and one row per replica that served it; the bound holds per unit; the hot path is unchanged | A key that repeats (a client's) needs a time rule to tell two pulls apart (`MergeGap`, 10 s) |
+| (b) Every file a row, grouped at the read | No unit in memory | Simple writes | 30 rows for one image: the trim to 100 units scans thousands of rows, and the live row's 200 entries fill with one pull's layers |
+| (c) One stored row per unit that every replica's parts update | One row | No merge at the read | An additive update from several replicas cannot replace an interrupted end and cannot tell two pulls of one key apart |
+
+**Choice:** (a). The trim removes the rows of every unit older than the 100th newest by the newest end of its rows; the read takes the
+rows of the newest 100 units (at most 1,000) and merges them. **Rationale:** the units are formed where the files are known and written
+as few as before; only the case the replicas share is merged, at the one place that sees every replica. The development agent would
+revisit the time rule if two pulls of one image by one caller less than 10 s apart must be two rows.
+
+**Applied in the spec:** R-OPS-049, R-OPS-050, R-OPS-051, R-OPS-052; migration 00140. Code: [tracker.go](../../internal/fills/tracker.go),
+[merge.go](../../internal/fills/merge.go), [upstream_downloads.sql](../../internal/meta/postgres/queries/upstream_downloads.sql).
+
+### Q-OPS-430 · A pull's version is the newest tag whose manifest names its first file, resolved by the publication
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a client's pull asks for the tag first (a metadata document, no file of a download), then the platform manifests by digest and
+the blobs, which name no tag; the tag's request may reach another replica than the blobs. The owner's rows were "… 1.20.14": the tag is
+what names the image to a person.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The publication asks the OCI data port, once per interval for the units it has not resolved: the tag of the remote whose manifest is the unit's first file, names it, or names a manifest that names it (two levels: index, platform manifest, blob), the most recently validated first; else the digest of the topmost stored manifest (chosen) | One statement per interval, off the fetch's path | Deterministic on every replica; works when the tag was asked on another replica or answered from the cache; a pull by digest is named by its digest | Two tags of one manifest name it by the one validated last, not necessarily the one asked (H-2254) |
+| (b) The replica remembers the tag a caller asked for and gives it to the blobs that follow | Memory per replica | The tag the client asked | Lost when the tag's request reached another replica |
+| (c) A lookup on the fetch's path | Exact at the begin | — | A statement on every miss (Q-OPS-427 (c)) |
+
+**Choice:** (a). The statement is `OCIDownloadVersions` of the OCI data port; a tag of the referrers tag schema and an attachment's
+tag (`sha256-…`) are none. **Rationale:** the stored manifests and tags already say which tag an image's file belongs to, and the
+publication runs every two seconds anyway. The development agent would revisit (b) if the owner needs the exact tag of a pull of a
+manifest two tags share.
+
+**Applied in the spec:** R-OPS-049. Code: [publisher.go](../../internal/fills/publisher.go) (`resolve`),
+[store_downloads.go](../../internal/formatdata/oci/store_downloads.go), [oci_manifests.sql](../../internal/meta/postgres/queries/oci_manifests.sql).
+
+### Q-OPS-431 · A download's total is what its run named, or its one file's length; a pull of an image has none
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: one bar per download, not one per layer. A queue row's run names its files with their sizes before it fetches them (the
+content of a version, an OCI image's manifests name every layer's size); a client asks for the layers it lacks locally, one request at
+a time, and Quader cannot know which.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A run that names its files: the named sizes, a file that began with its announced length, one found stored or refused leaving the total; a unit whose files nobody names (a client's pull of an image, a mirror pass's image): none; otherwise the sum of its files' lengths (chosen) | A total only where it is known | The bar of a download ahead reaches its end; no bar that runs back | A client's pull and a mirror's image show their bytes and speed without a bar (H-2252) |
+| (b) The sum of the lengths of the files that began | Always a number | A bar for every download | The bar jumps back with every layer that begins |
+| (c) The size of the platform manifest's layers | The image's size | A bar for a pull | Layers the client has or the cache holds are not fetched: the bar stops short |
+
+**Choice:** (a). **Rationale:** a bar that moves backwards or stops short says something false; the bytes and the speed are true without
+one. The development agent would revisit (c) if a pull's manifest and the cache's items could tell which layers will be fetched.
+
+**Applied in the spec:** R-OPS-049. Code: [tracker.go](../../internal/fills/tracker.go) (`total`).
+
+### Q-OPS-432 · The outcome of a download is its files'; the run's failure decides before them, and cached files are no files
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a unit has many files: some stored, one retried after a failure, some answered from the cache; a queue row's run can fail where
+no file broke (a manifest the upstream does not have, a plan that failed after the index was fetched).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) From the newest attempt of each file: failed when one failed (its class, code and path on the row), else cancelled when one was cancelled, else completed; the run's own failure decides before its files; a file answered from the cache is no file of it, and its bytes are the fetched ones; a unit that fetched nothing is no download (chosen) | One outcome per unit | A retried layer that then arrived does not fail the image; "which layer failed" is on the row; a run that failed says so | A run that failed after it fetched nothing shows only on the repository's tab Downloads |
+| (b) The worst outcome of every attempt | Strict | Simple | A layer that failed once and arrived on its retry marks the image failed |
+| (c) A download that read part of its files from the cache counts their bytes | The image's size | — | Bytes Quader did not fetch; the average speed is false |
+
+**Choice:** (a). **Rationale:** the row says what happened to what was asked for; the file that failed stays readable (the badge's title,
+R-UI-212). The development agent would revisit it if the owner wants a run that fetched nothing in the list.
+
+**Applied in the spec:** R-OPS-049. Code: [tracker.go](../../internal/fills/tracker.go) (`outcome`), [merge.go](../../internal/fills/merge.go).
+
 ## What this does not cover
 
 ### H-1995 · A scanner that ends in order while no scan listener can take its sign-off is listed as lost for a day
@@ -7307,3 +7551,41 @@ for example by hashing it or embedding it in a JWT, puts a derived value into th
 that masking does not recognise. That derived value is readable by holders of `webhooks.read`. The
 gap is live for templated handlers with such templates. Review templates, and grant `webhooks.read`
 narrowly.
+
+### H-2250 · A mirror pass's image stands among the finished with its manifests until its layers begin
+
+Component: the mirror pass of an OCI remote (R-REPO-057) and the read's merge (Q-OPS-429). Subject: the administrator who reads the
+drawer during a pass. Live on every pass of an OCI mirror with several tags. The plan reads every kept tag's child manifests when it
+plans the name and fills the tags' configs and layers after it, the newest tag first; a tag's manifests end as a download of a few
+kilobytes and stand among the finished until its layers begin, then the read takes them into the running download of the same key. The
+count of the last 100 is not touched (one key), only the row moves. What would close it: the pass holding a tag's unit from its plan to
+its last file, which needs the mirror engine to say when a tag's items are done.
+
+### H-2251 · One caller's pulls of two tags of one image at once are one download
+
+Component: the key of a client's unit of an image (Q-OPS-427, Q-OPS-429). Subject: the administrator who reads the drawer. Live when one
+caller pulls two tags of one image name within 10 s of each other (`docker compose pull` of two services of one image), and when several
+anonymous callers pull one image name at once: the key holds the name and the caller, not the tag, because a blob names no tag. The row
+is named by the tag found first and carries the files and bytes of both. The count of the last 100 holds one download for two. What would
+close it: the tag on the request of every file of a pull, which the protocol does not carry.
+
+### H-2252 · A client's pull of an image shows no progress bar
+
+Component: the total of a download (Q-OPS-431). Subject: the administrator who reads the drawer. Live for every client's pull of an
+image and every mirror pass's image: they show their bytes, speed and time without a bar, because the files that will be fetched are the
+client's choice and the cache's, not known in advance. A download ahead of the same image has its bar.
+
+### H-2253 · A version's files fetched one after the other by a client are two downloads
+
+Component: the unit of the formats that declare `DownloadUnitVersion` (Q-OPS-427, Q-OPS-428). Subject: the administrator who reads the
+drawer. Live when a client fetches a NuGet package and its symbols package, or a Debian source package's `.dsc` and its tarballs, one
+after the other rather than at once: such a unit ends with its last file and has no linger, so the next file of the version begins a
+second download, which the read merges only when it begins within 10 s of the first's end. A request through a virtual repository carries
+no version to the member's engine, so each of its files is a download of its own. The count of the last 100 holds two where one was asked.
+
+### H-2254 · A pull of a manifest two tags share is named by the tag validated last
+
+Component: the version of a client's pull (Q-OPS-430). Subject: the administrator who reads the drawer. Live when two tags of a remote
+point at one manifest (`latest` and `1.20.14`): the row names the one whose cache entry was validated more recently, which is the one the
+client asked for when it asked by tag, and may be the other when the tag was answered from the cache without a revalidation. What would
+close it: the tag of the client's request carried to the publication (Q-OPS-430 (b)).

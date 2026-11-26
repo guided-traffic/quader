@@ -32,6 +32,7 @@ func TestR_ARCH_008_RegisterReadsTheOptionalInterfacesOfARemoteAdapter(t *testin
 	remote := func(id string) Descriptor {
 		d := valid(id)
 		d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
+		d.DownloadUnit = DownloadUnitFile
 		return d
 	}
 	Register(fake{d: remote("probe-caps"), remote: discoveringRemote{}})
@@ -81,6 +82,7 @@ func TestRegisterRecordsTheMirrorLister(t *testing.T) {
 	remote := func(id string) Descriptor {
 		d := valid(id)
 		d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
+		d.DownloadUnit = DownloadUnitFile
 		return d
 	}
 	with := fake{d: remote("probe-mirror"), remote: listingRemote{}}

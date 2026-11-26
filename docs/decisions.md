@@ -2628,8 +2628,9 @@ API's default.
 ### ADR-279 · Administrators see the downloads from upstreams live, and the last 100 finished
 
 **Status:** Decided by the owner on 2026-11-24 (task T-26: the wish, the place at the top right, the running downloads with their progress
-and speed, the last 100 with their duration and average speed); the design decided by the development agent
-([Q-OPS-419](spec/operations-and-observability.md#q-ops-419--a-download-is-the-body-of-an-artifact-from-a-remote-repositorys-upstream-whatever-caused-it)
+and speed, the last 100 with their duration and average speed); its first decision, a download as one artifact's body, is superseded by
+[ADR-295](#adr-295--a-download-is-the-unit-a-person-asked-for-not-one-of-its-files) (the owner, 2026-11-26); the design decided by the development agent
+([Q-OPS-419](spec/operations-and-observability.md#q-ops-419--a-download-is-the-unit-a-person-asked-for-whatever-caused-it-and-its-files-are-the-artifact-bodies-it-read)
 to [Q-OPS-424](spec/operations-and-observability.md#q-ops-424--one-key-the-publication-interval-the-list-holds-100),
 [Q-UI-1070](spec/api-and-ui.md#q-ui-1070--the-downloads-button-stands-between-documentation-and-the-theme-and-counts-what-runs) to
 [Q-UI-1073](spec/api-and-ui.md#q-ui-1073--the-panel-refreshes-by-polling-while-it-is-seen-and-announces-nothing)). The backend and the
@@ -2885,6 +2886,39 @@ stored package holds. The server owns every snippet (R-API-030), and the core re
 **Consequences.** Both are additions: a template without a kind and a format without the interface behave as before. The kit's check 8
 refuses a kind on a template that is not an install template and a template that places the version twice.
 
+### ADR-295 · A download is the unit a person asked for, not one of its files
+
+**Status:** Decided by the owner on 2026-11-26 (W31: the rule); the design decided by the development agent
+([Q-OPS-419](spec/operations-and-observability.md#q-ops-419--a-download-is-the-unit-a-person-asked-for-whatever-caused-it-and-its-files-are-the-artifact-bodies-it-read),
+revised, and [Q-OPS-427](spec/operations-and-observability.md#q-ops-427--the-unit-of-a-download-is-the-works-for-background-work-and-the-formats-for-a-clients)
+to [Q-OPS-432](spec/operations-and-observability.md#q-ops-432--the-outcome-of-a-download-is-its-files-the-runs-failure-decides-before-them-and-cached-files-are-no-files),
+[Q-UI-1380](spec/api-and-ui.md#q-ui-1380--a-row-is-one-download-and-never-lists-its-files-the-file-that-failed-stands-in-the-badges-title),
+[Q-CUR-19](spec/remote-curation.md#q-cur-19--a-clients-failed-fetch-is-a-row-of-the-queue-aggregated-and-bounded), revised). It
+supersedes the first decision of [ADR-279](#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished)
+and raises the format contract to version 15.
+
+**Context.** The owner, 2026-11-26, about 09:05, with a picture of the top bar's drawer whose Finished (100) held seven rows of one image,
+one per layer: "Ich habe gestern ein Image herunter geladen und festgestellt, dass der Download-Drawer mir einzelne Layer anzuzeigen
+scheint. Das ist nicht gewünscht. Alle Downloads sind überall in Quader zu logischen Einheiten zusammen zu fassen. Bei OCI-images ist es
+das Image selbst mit allem was dazu gehört. Einen Download in vielen kleinen Dateien anzuzeigen, macht den gesamten prozess
+unübersichtlich. Bitte beachte das." In his development database the last 100 were 13 images: one download ahead of one tag had written
+more than 30 rows and pushed everything else out.
+
+**Decision.**
+- A download is the unit a person asked for: an image with its manifests, configs, layers and attestations; a version's package; a queue
+  row's run; a mirror pass's version; the database task's run. Its files are the artifact bodies of R-OPS-049 as before. What caused it
+  names the unit of background work; a format declares its client's unit (`formats.Descriptor.DownloadUnit`, R-OPS-053, contract
+  version 15).
+- Each replica's tracker joins the files of one key into a unit, a queue row's run holds its unit and names its files with their sizes,
+  a pull lingers 5 s after its last file; the read merges a unit's records across replicas, and the last 100 are 100 units.
+- A client's pull of an image is named by the tag whose manifest names its first file, resolved by the publication from the OCI data
+  port; it has no total. A row never lists its files; the file that failed stands in the badge's title.
+- A client's failed fetches are one row of the repository's queue per download, not per file.
+
+**Consequences.** Migration 00140 adds the unit's key, its files and the failed file to `upstream_download_finished`; the API's entries
+gain `parts` and `failure.path`; `runningCount`, the badge and the metrics count downloads. What a limit, a usage record or an audit event
+counts is unchanged and stays per request or per file: those are the owner's decisions to take one by one (W31 report). The developer
+view is [developer/upstream-downloads.md](developer/upstream-downloads.md).
 
 ## Design invariants
 
@@ -10517,7 +10551,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-16](spec/remote-curation.md#q-cur-16--debian-quader-searches-the-indexes-it-read-by-words-as-apt-search-does) | Debian: Quader searches the indexes it read, by words, as `apt search` does | Decided by the development agent | (a) Words AND-ed, each a case-insensitive substring of the name, `Provides`, the short description and the long description of `Translation-en` where read; `Names only` | — |
 | [Q-CUR-17](spec/remote-curation.md#q-cur-17--one-version-is-charged-to-the-person-a-bulk-is-bounded-system-work-by-a-projects-decider) | One version is charged to the person; a bulk is bounded system work by a project's decider | Decided by the development agent | (a) One version and a request's examination charged to the person (R-LIM-037's shape); a bulk and an allow's download system work, previewed and bounded, by `manage` | — |
 | [Q-CUR-18](spec/remote-curation.md#q-cur-18--the-queue-is-a-table-whose-rows-run-as-one-attempt-jobs-and-nothing-is-refused-because-others-run) | The queue is a table whose rows run as one-attempt jobs, and nothing is refused because others run | Decided by the development agent | (a) `remote_download` rows own their state and retries; each attempt is a job `remote-download` with one attempt; a bounded number runs per repository, the rest waits | — |
-| [Q-CUR-19](spec/remote-curation.md#q-cur-19--a-clients-failed-fetch-is-a-row-of-the-queue-aggregated-and-bounded) | A client's failed fetch is a row of the queue, aggregated and bounded | Decided by the development agent | (a) A row of origin `client` per repository and file, updated at most once a minute per replica, 1,000 per repository | — |
+| [Q-CUR-19](spec/remote-curation.md#q-cur-19--a-clients-failed-fetch-is-a-row-of-the-queue-aggregated-and-bounded) | A client's failed fetch is a row of the queue, aggregated and bounded | Decided by the development agent; revised on 2026-11-26 by the owner's rule of that day (W31) | (a), revised on 2026-11-26 from a row per file by the owner's rule of that day: "Alle Downloads sind überall in Quader zu logischen Einheiten zusammen zu fassen. | [ADR-295](#adr-295--a-download-is-the-unit-a-person-asked-for-not-one-of-its-files) |
 | [Q-CUR-20](spec/remote-curation.md#q-cur-20--a-failure-is-a-class-a-step-a-code-the-address-without-its-query-the-status-and-an-excerpt) | A failure is a class, a step, a code, the address without its query, the status and an excerpt | Decided by the development agent | (a) The members of R-CUR-011, closed lists for `class` and `step`, the step from Go's transport errors | — |
 | [Q-CUR-21](spec/remote-curation.md#q-cur-21--an-examination-stores-whatever-the-rules-say-the-vulnerability-miss-gate-still-refuses-what-it-knows) | An examination stores whatever the rules say; the vulnerability miss gate still refuses what it knows | Decided by the development agent | (a) A download ahead ignores the rules; the miss gate refuses known-malicious and triage-blocked versions as for any fill; npm and NuGet show the vulnerability verdict before a fetch | — |
 | [Q-CUR-22](spec/remote-curation.md#q-cur-22--a-fill-without-a-client-refused-by-the-miss-gate-is-no-refused-download) | A fill without a client refused by the miss gate is no refused download | Decided by the development agent | (a) Neither the count nor the event for a fill without a client; the fill's own record holds the refusal | — |
@@ -11704,10 +11738,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OPS
 
-105 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
+111 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
 
 <details>
-<summary>Q-OPS: 105 questions</summary>
+<summary>Q-OPS: 111 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11808,7 +11842,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OPS-226](spec/operations-and-observability.md#q-ops-226--the-updaters-report-carries-its-dailys-build-time-in-a-column-of-its-own-and-no-slots) | The updater's report carries its daily's build time in a column of its own, and no slots | Decided by the development agent | (a) The report's member `databaseBuiltAt`, from the kind `freshclam` only, kept in a column `db_built_at`; the list shows it before the join; the updater reports the slots `{0, 0}`, which the table admits for its kind only (migration 00095) | — |
 | [Q-OPS-237](spec/operations-and-observability.md#q-ops-237--the-image-scanners-spool-exports-the-two-spool-gauges-and-quaderspoolnearlyfull-fires-per-unit) | The image scanner's spool exports the two spool gauges, and `QuaderSpoolNearlyFull` fires per unit | Decided by the development agent | (a) The scanner's spool exports the same two gauges on the scanner's registry; the unit is the scrape's label `role`, which the chart's ServiceMonitor sets from the pod's component (`vuln-scanner-trivy`); the alert groups by it | — |
 | [Q-OPS-418](spec/operations-and-observability.md#q-ops-418--a-maintenance-task-the-version-does-not-have-stops-the-start-and-the-task-table-is-held-to-the-registry) | A maintenance task the version does not have stops the start, and the task table is held to the registry | Decided by the development agent | (a) A key that names no registered task stops the start, naming the key and listing the tasks; the default names only registered tasks; a unit test holds the table to the registry both ways | — |
-| [Q-OPS-419](spec/operations-and-observability.md#q-ops-419--a-download-is-the-body-of-an-artifact-from-a-remote-repositorys-upstream-whatever-caused-it) | A download is the body of an artifact from a remote repository's upstream, whatever caused it | Decided by the development agent on 2026-11-24 | (a) Artifact bodies after a 2xx, whatever caused them; no documents, no catalogue or probe, no Bastion, no ClamAV updater, no advisory sync | [ADR-279](#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished) |
+| [Q-OPS-419](spec/operations-and-observability.md#q-ops-419--a-download-is-the-unit-a-person-asked-for-whatever-caused-it-and-its-files-are-the-artifact-bodies-it-read) | A download is the unit a person asked for, whatever caused it, and its files are the artifact bodies it read | Decided by the owner on 2026-11-26 | (a), the owner's. | [ADR-279](#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished), [ADR-295](#adr-295--a-download-is-the-unit-a-person-asked-for-not-one-of-its-files) |
 | [Q-OPS-420](spec/operations-and-observability.md#q-ops-420--a-replica-publishes-its-running-downloads-as-one-row-of-postgresql-every-two-seconds) | A replica publishes its running downloads as one row of PostgreSQL every two seconds | Decided by the development agent on 2026-11-24 | (a) The tracker in memory; per replica one row of `upstream_download_live` with its running downloads as JSON, every 2 s while something runs | — |
 | [Q-OPS-421](spec/operations-and-observability.md#q-ops-421--the-speed-is-the-last-ten-seconds-the-average-is-bytes-over-duration) | The speed is the last ten seconds; the average is bytes over duration | Decided by the development agent on 2026-11-24 | (a) A running download's speed over a sliding window of 10 s, sampled at each publication on the replica that reads; the finished one's average is bytes over duration | — |
 | [Q-OPS-422](spec/operations-and-observability.md#q-ops-422--the-last-100-are-a-table-trimmed-to-100-not-backed-up-a-stopped-replicas-downloads-end-interrupted) | The last 100 are a table trimmed to 100, not backed up; a stopped replica's downloads end interrupted | Decided by the development agent on 2026-11-24 | (a) A table trimmed to 100 at each publication's insert; export class `transient`; the repository a reference that cascades, the principal one that nulls; a stale live row swept into `interrupted` | — |
@@ -11816,6 +11850,12 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OPS-424](spec/operations-and-observability.md#q-ops-424--one-key-the-publication-interval-the-list-holds-100) | One key, the publication interval; the list holds 100 | Decided by the development agent on 2026-11-24 | (a) `proxy.upstream_downloads.publish_interval` (2 s, 1 s to 30 s); 100 fixed | [ADR-279](#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished) |
 | [Q-OPS-425](spec/operations-and-observability.md#q-ops-425--quadercontrolconnectionwaits-fires-on-waits-that-go-on-for-five-minutes-for-10m-on-the-five-minute-window) | QuaderControlConnectionWaits fires on waits that go on for five minutes: `for: 10m` on the five-minute window | Decided by the development agent on 2026-11-24 | (a) `for: 10m` on the five-minute window | — |
 | [Q-OPS-426](spec/operations-and-observability.md#q-ops-426--an-address-of-another-system-keeps-its-path-and-the-names-of-its-query-a-value-only-where-quader-wrote-it) | An address of another system keeps its path and the names of its query; a value only where Quader wrote it | Decided by the development agent on 2026-11-25 | (a), and the redaction list gains the parameter that carries the secret of each well-known scheme as well, for a relative address or a fragment of one in free text, where no form can be applied: `X-Goog-Signature`, `X-Goog-Credential`, `validate_token`, `verify` (Docker Hub's blob redirect), `jwt` (GitHub's release and package redirects), `hmac`, `cf_sign` (Quay's CDN), beside the `sig`, `signature` and `X-Amz-*` it held. | — |
+| [Q-OPS-427](spec/operations-and-observability.md#q-ops-427--the-unit-of-a-download-is-the-works-for-background-work-and-the-formats-for-a-clients) | The unit of a download is the work's for background work, and the format's for a client's | Decided by the development agent on 2026-11-26 on the owner's rule of that day (W31) | (a) The cause names the unit of background work (a queue row's run, a mirror pass's tag or version, the database task's run); a client's unit is the format's declaration: the image by its name and caller, a version's files by name, version and caller, else the file | [ADR-295](#adr-295--a-download-is-the-unit-a-person-asked-for-not-one-of-its-files) |
+| [Q-OPS-428](spec/operations-and-observability.md#q-ops-428--a-runs-unit-runs-while-the-run-holds-it-a-pull-lingers-five-seconds-after-its-last-file) | A run's unit runs while the run holds it; a pull lingers five seconds after its last file | Decided by the development agent on 2026-11-26 | (a) The queue's run holds its unit (`DownloadTracker.Hold`) from before its plan to its end and names the files it will fetch; a unit whose files nobody names (a client's image, a mirror pass's image) runs `proxy.UnitLinger`, 5 s, after its last file | — |
+| [Q-OPS-429](spec/operations-and-observability.md#q-ops-429--the-tracker-groups-a-replicas-files-into-units-the-read-merges-a-units-records-across-replicas) | The tracker groups a replica's files into units; the read merges a unit's records across replicas | Decided by the development agent on 2026-11-26 | (a) Each replica's tracker joins the files of one key into a unit, publishes units and writes one finished row per unit; the read merges the records of one key across replicas, and the trim keeps the rows of the newest 100 keys | — |
+| [Q-OPS-430](spec/operations-and-observability.md#q-ops-430--a-pulls-version-is-the-newest-tag-whose-manifest-names-its-first-file-resolved-by-the-publication) | A pull's version is the newest tag whose manifest names its first file, resolved by the publication | Decided by the development agent on 2026-11-26 | (a) The publication asks the OCI data port, once per interval for the units it has not resolved: the tag of the remote whose manifest is the unit's first file, names it, or names a manifest that names it (two levels: index, platform manifest, blob), the most recently validated first; else the digest of the topmost stored manifest | — |
+| [Q-OPS-431](spec/operations-and-observability.md#q-ops-431--a-downloads-total-is-what-its-run-named-or-its-one-files-length-a-pull-of-an-image-has-none) | A download's total is what its run named, or its one file's length; a pull of an image has none | Decided by the development agent on 2026-11-26 | (a) A run that names its files: the named sizes, a file that began with its announced length, one found stored or refused leaving the total; a unit whose files nobody names (a client's pull of an image, a mirror pass's image): none; otherwise the sum of its files' lengths | — |
+| [Q-OPS-432](spec/operations-and-observability.md#q-ops-432--the-outcome-of-a-download-is-its-files-the-runs-failure-decides-before-them-and-cached-files-are-no-files) | The outcome of a download is its files'; the run's failure decides before them, and cached files are no files | Decided by the development agent on 2026-11-26 | (a) From the newest attempt of each file: failed when one failed (its class, code and path on the row), else cancelled when one was cancelled, else completed; the run's own failure decides before its files; a file answered from the cache is no file of it, and its bytes are the fetched ones; a unit that fetched nothing is no download | [ADR-295](#adr-295--a-download-is-the-unit-a-person-asked-for-not-one-of-its-files) |
 
 </details>
 
@@ -12557,10 +12597,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-678 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+679 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 678 questions</summary>
+<summary>Q-UI: 679 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13242,6 +13282,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1363](spec/api-and-ui.md#q-ui-1363--what-a-build-a-compile-or-an-install-runs-is-said-in-the-note-of-an-install-script) | What a build, a compile or an install runs is said in the note of an install script | Decided by the development agent on 2026-11-26 | (a) The same note in the same place, one per kind (build logic, analyzers, PowerShell scripts) with the format's sentence and the files in the code font | — |
 | [Q-UI-1364](spec/api-and-ui.md#q-ui-1364--upload-package-is-the-collection-uploads-frame-with-nugets-two-files-and-its-pushs-answer) | Upload package is the collection upload's frame with NuGet's two files and its push's answer | Decided by the development agent on 2026-11-26 | (a) **Upload package** where **Upload collection** stands; the same field, drop area, bar and acts; one choice of up to two files, the `.snupkg` known by its name; the bar runs again for the symbols ("The package is stored. Its symbol package follows."); the result is the version with **Open version**, and the symbols stored or refused with the error notice | — |
 | [Q-UI-1370](spec/api-and-ui.md#q-ui-1370--a-link-to-a-screen-whose-script-is-gone-loads-its-address-from-the-server-and-a-failed-navigation-is-said) | A link to a screen whose script is gone loads its address from the server, and a failed navigation is said | Decided by the development agent on 2026-11-26 | (a) The router's handler of a failed navigation: a script that could not be loaded loads the link's address from the server; every other failure is a notice with what was said | — |
+| [Q-UI-1380](spec/api-and-ui.md#q-ui-1380--a-row-is-one-download-and-never-lists-its-files-the-file-that-failed-stands-in-the-badges-title) | A row is one download and never lists its files; the file that failed stands in the badge's title | Decided by the development agent on 2026-11-26 on the owner's rule of that day (W31) | (a) The row as before, one per download; no list and no count of its files; the file a failure names in the badge's title beside the code | [ADR-295](#adr-295--a-download-is-the-unit-a-person-asked-for-not-one-of-its-files) |
 
 </details>
 

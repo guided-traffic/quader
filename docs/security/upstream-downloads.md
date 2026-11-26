@@ -1,8 +1,9 @@
 # The downloads from upstreams
 
-Status: specified on 2026-11-24 ([operations-and-observability.md](../spec/operations-and-observability.md) R-OPS-049 to R-OPS-052,
+Status: specified on 2026-11-24 ([operations-and-observability.md](../spec/operations-and-observability.md) R-OPS-049 to R-OPS-053,
 [api-and-ui.md](../spec/api-and-ui.md) R-UI-210 to R-UI-212); the tracker, the publication, the two tables and the API are built (T-26
-package A), and the top bar's button and its panel (T-26 package B). The perspective of this page is what the overview shows and keeps, and to whom. The code is described in
+package A), and the top bar's button and its panel (T-26 package B). Since 2026-11-26 a download is the unit a person asked for (an image,
+a version's package, a queue row's run), not one of its files (W31). The perspective of this page is what the overview shows and keeps, and to whom. The code is described in
 [developer/upstream-downloads.md](../developer/upstream-downloads.md).
 
 ## What it shows and to whom
@@ -16,7 +17,10 @@ package A), and the top bar's button and its panel (T-26 package B). The perspec
 - A project's Owner, a `security-admin`, a `repository-admin` and a plain user get `403`; a caller without a session or token `401`. A
   Maintainer does not see the fills of their own repository here; the repository's tab Downloads shows its queue.
 - No upstream address is shown or kept: a signed address of a content network carries a credential in its query. A client's network
-  address and the headers of either side are not kept. What is kept of a download is listed in R-OPS-049's table of facts. A download
+  address and the headers of either side are not kept. What is kept of a download is listed in R-OPS-049's table of facts: of its files
+  the first one's path, their number and the path of the one that failed, which are repository paths as the package screens show them.
+  A client's pull of an image is named by the tag its files belong to, read from the remote's stored manifests and tags, which the same
+  readers see on the package screens; the read runs on the publisher's loop with the replica's database role, not as the caller. A download
   queue an upstream's rate limit holds is listed with the upstream's name: its preset's ("Docker Hub"), else the host of the remote's
   upstream address, never a path or a query, read from the repository's configuration that both roles read already
   ([remote-curation.md](../spec/remote-curation.md) Q-CUR-176).
@@ -26,7 +30,8 @@ package A), and the top bar's button and its panel (T-26 package B). The perspec
 ## Where it lives
 
 - In PostgreSQL only: `upstream_download_live` (one row per replica, rewritten every `proxy.upstream_downloads.publish_interval`) and
-  `upstream_download_finished` (at most 100 rows plus one batch per replica), both of export class `transient`: not in a backup, empty
+  `upstream_download_finished` (the rows of at most 100 downloads, one per replica that served a part of each, plus one batch per
+  replica), both of export class `transient`: not in a backup, empty
   after a restore. Nothing of it is in Valkey, so a write to Valkey cannot put a name on an administrator's screen.
 - The repository of a finished download is a reference that cascades: removing a repository removes its rows. The principal is a
   reference that nulls: removing a principal leaves its downloads as nobody's.

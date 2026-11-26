@@ -168,6 +168,74 @@ func (q *Queries) OCIDescribeTarget(ctx context.Context, arg OCIDescribeTargetPa
 	return items, nil
 }
 
+const oCIDownloadVersions = `-- name: OCIDownloadVersions :many
+SELECT t.ord::bigint AS ord,
+       COALESCE(
+         (SELECT substr(e.path, char_length(t.name) + 8)
+            FROM (SELECT decode(t.digest, 'hex') AS m
+                  UNION ALL
+                  SELECT r1.manifest FROM oci_references r1
+                   WHERE r1.repo_id = t.repo_id AND r1.name = t.name AND r1.target = decode(t.digest, 'hex')
+                  UNION ALL
+                  SELECT r2.manifest FROM oci_references r1
+                    JOIN oci_references r2 ON r2.repo_id = r1.repo_id AND r2.name = r1.name AND r2.target = r1.manifest
+                   WHERE r1.repo_id = t.repo_id AND r1.name = t.name AND r1.target = decode(t.digest, 'hex')) c
+            JOIN remote_cache_entries e ON e.repo_id = t.repo_id AND e.blob_sha256 = c.m
+           WHERE e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+             AND left(e.path, char_length(t.name) + 7) = t.name || '/_tags/'
+             AND position('/' IN substr(e.path, char_length(t.name) + 8)) = 0
+             AND substr(e.path, char_length(t.name) + 8) NOT LIKE 'sha256-%'
+           ORDER BY e.validated_at DESC, e.path
+           LIMIT 1),
+         (SELECT 'sha256:' || encode(c.m, 'hex')
+            FROM (SELECT decode(t.digest, 'hex') AS m, 0 AS lvl
+                  UNION ALL
+                  SELECT r1.manifest, 1 FROM oci_references r1
+                   WHERE r1.repo_id = t.repo_id AND r1.name = t.name AND r1.target = decode(t.digest, 'hex')
+                  UNION ALL
+                  SELECT r2.manifest, 2 FROM oci_references r1
+                    JOIN oci_references r2 ON r2.repo_id = r1.repo_id AND r2.name = r1.name AND r2.target = r1.manifest
+                   WHERE r1.repo_id = t.repo_id AND r1.name = t.name AND r1.target = decode(t.digest, 'hex')) c
+            JOIN oci_manifests om ON om.repo_id = t.repo_id AND om.name = t.name AND om.digest = c.m
+           ORDER BY c.lvl DESC, c.m
+           LIMIT 1),
+         '')::text AS version
+  FROM jsonb_to_recordset($1::text::jsonb) AS t(ord bigint, repo_id bigint, name text, digest text)
+ ORDER BY t.ord
+`
+
+type OCIDownloadVersionsRow struct {
+	Ord     int64
+	Version string
+}
+
+// The version of a client's download of an image (operations-and-observability.md R-OPS-049 "A client's pull of an image"): for each
+// (repository, name, digest of the download's first file), the tag of the remote whose manifest is that digest, names it or names a
+// manifest that names it (an index, its platform manifest, its config and layers), the most recently validated first; a tag of the
+// referrers tag schema (`sha256-<hex>`) and an attachment tag are none. Without such a tag, the digest of the topmost manifest the file
+// belongs to (a pull by digest); "" when the file belongs to no stored manifest. The queries are a JSON array of {ord, repo_id, name,
+// digest (hex)}; the answer has one row per query, in the order of ord. Both tag spellings of the referrers tag schema and of an
+// attachment (`sha256-<hex>`, `sha256-<hex>.sig`) begin with sha256-.
+func (q *Queries) OCIDownloadVersions(ctx context.Context, queries string) ([]OCIDownloadVersionsRow, error) {
+	rows, err := q.db.Query(ctx, oCIDownloadVersions, queries)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []OCIDownloadVersionsRow{}
+	for rows.Next() {
+		var i OCIDownloadVersionsRow
+		if err := rows.Scan(&i.Ord, &i.Version); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const oCIExistingItems = `-- name: OCIExistingItems :many
 SELECT path::text AS path
 FROM items

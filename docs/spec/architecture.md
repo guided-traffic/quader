@@ -1422,8 +1422,10 @@ package formats
 // catalogue's (ADR-277, remote-curation.md R-CUR-006, R-CUR-007, Q-CUR-12): a format with the class remote declares its catalogue
 // (Descriptor.Catalogue, the lookup by exact name at least) and its version canon (Descriptor.VersionCanon). Version 12 is the stored
 // sort key's (ADR-278, api-and-ui.md R-API-029, Q-API-429): ViewAdapter.SortKey gives the key of the format's order of versions, which
-// the host stores with every version row. A format declares the literal it was written against.
-const ContractVersion = 12
+// the host stores with every version row. Versions 13 and 14 are the pre-release's and the range of an allow's (ADR-283). Version 15
+// is the download unit's (ADR-295, operations-and-observability.md R-OPS-049, R-OPS-053): a format with the class remote declares what
+// one download from an upstream is for it (Descriptor.DownloadUnit). A format declares the literal it was written against.
+const ContractVersion = 15
 
 // The types of other packages under the names a format spells them: one type each, no mirrors
 // (Q-ARCH-188, Q-ARCH-189). A format imports this package and nothing else of the core.
@@ -1527,7 +1529,22 @@ type Descriptor struct {
 	// Both are required of a format with the class remote and refused of any other.
 	Catalogue    CatalogueDeclaration
 	VersionCanon catalog.VersionCanon
+	// DownloadUnit is what one download from an upstream is for the format: how the files a client fetches from a remote's upstream
+	// group into the unit a person asked for, which the top bar's drawer and the last 100 show (operations-and-observability.md
+	// R-OPS-049, R-OPS-053). Required of a format with the class remote and refused of any other.
+	DownloadUnit DownloadUnit
 }
+
+// DownloadUnit is what a format declares one download from an upstream to be (R-OPS-049, R-OPS-053, ADR-295). A queue row's run, a
+// mirror pass's version and the database task's run are one download whatever the format; the declaration says what a client's are.
+type DownloadUnit uint8
+
+const (
+	DownloadUnitUndeclared DownloadUnit = iota // no declaration: Register refuses it for a format with the class remote
+	DownloadUnitFile                           // every file a client fetches is one download
+	DownloadUnitVersion                        // the files of one version one caller fetches at once: npm's tarball, NuGet's package, a Debian file
+	DownloadUnitImage                          // the manifests, configs, layers and attestations of an image one caller fetches by its name (OCI)
+)
 
 // ProbeRoute names one probe (R-REPO-065): a route of Routes() that serves the class remote, the method of the request (GET or
 // HEAD; a HEAD reaches the GET route of its path), and what it names in words ("the manifest of a tag").

@@ -123,6 +123,31 @@ func TestR_REPO_065_AProbeIsAProbeThroughAVirtualRepositoryToo(t *testing.T) {
 	}
 }
 
+// TestR_OPS_053_EveryRemoteFormatDeclaresWhatOneDownloadIs holds the table of R-OPS-049 "The unit per format" (the owner's rule of
+// 2026-11-26, ADR-295): every format with the class remote declares what one download from an upstream is for it, and the declaration
+// is the table's. A format added later fails here until its row says what a person asks for when its client downloads.
+func TestR_OPS_053_EveryRemoteFormatDeclaresWhatOneDownloadIs(t *testing.T) {
+	want := map[formats.ID]formats.DownloadUnit{
+		"npm":     formats.DownloadUnitVersion, // a version's tarball
+		"nuget":   formats.DownloadUnitVersion, // a version's package, with its symbols package fetched at once
+		"ansible": formats.DownloadUnitVersion, // a collection version's archive; a role's archive
+		"deb":     formats.DownloadUnitVersion, // a binary package's file; a source package's .dsc with its tarballs
+		"oci":     formats.DownloadUnitImage,   // the image with its manifests, configs, layers and attestations
+		"generic": formats.DownloadUnitUndeclared,
+		"clamav":  formats.DownloadUnitUndeclared,
+	}
+	for _, f := range formats.List() {
+		d := f.Descriptor()
+		rule, ok := want[d.ID]
+		switch {
+		case !ok:
+			t.Errorf("%s is not in this list: write its row into R-OPS-049 and here (R-OPS-053)", d.ID)
+		case d.DownloadUnit != rule:
+			t.Errorf("%s declares the download unit %d, want %d", d.ID, d.DownloadUnit, rule)
+		}
+	}
+}
+
 // TestR_STOR_071_EveryFormatDeclaresWhetherItsClientsCheck lists every registered format with the routes that declare that every client
 // of the format checks a digest (Route.ClientDigest.Checks, ADR-243), the only routes that may hand a download to a signed link of the
 // object store (R-STOR-070). A format added later, or a declaration changed, fails here until its row says so: a declaration is a

@@ -55550,7 +55550,7 @@
     </unit>
     <unit id="upstream-downloads.of">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/download-words.ts:37</note>
+        <note category="location">src/app/shared/upstream-downloads/download-words.ts:51</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="bytes" disp="formatSize(d.bytes)"/> of <ph id="1" equiv="total" disp="formatSize(d.total)"/></source>
@@ -55558,7 +55558,7 @@
     </unit>
     <unit id="upstream-downloads.origin.mirror">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/download-words.ts:62</note>
+        <note category="location">src/app/shared/upstream-downloads/download-words.ts:76</note>
       </notes>
       <segment>
         <source>Mirror pass</source>
@@ -55566,15 +55566,23 @@
     </unit>
     <unit id="upstream-downloads.origin.scanner-database">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/download-words.ts:64</note>
+        <note category="location">src/app/shared/upstream-downloads/download-words.ts:78</note>
       </notes>
       <segment>
         <source>Vulnerability database</source>
       </segment>
     </unit>
+    <unit id="upstream-downloads.failed-file">
+      <notes>
+        <note category="location">src/app/shared/upstream-downloads/download-words.ts:93</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="code" disp="code"/> at the file <ph id="1" equiv="path" disp="path"/></source>
+      </segment>
+    </unit>
     <unit id="upstream-downloads.outcome.failed">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/download-words.ts:82</note>
+        <note category="location">src/app/shared/upstream-downloads/download-words.ts:102</note>
       </notes>
       <segment>
         <source>Failed</source>
@@ -55582,7 +55590,7 @@
     </unit>
     <unit id="upstream-downloads.outcome.cancelled">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/download-words.ts:91</note>
+        <note category="location">src/app/shared/upstream-downloads/download-words.ts:111</note>
       </notes>
       <segment>
         <source>Cancelled</source>
@@ -55590,7 +55598,7 @@
     </unit>
     <unit id="upstream-downloads.outcome.interrupted">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/download-words.ts:96</note>
+        <note category="location">src/app/shared/upstream-downloads/download-words.ts:116</note>
       </notes>
       <segment>
         <source>Interrupted</source>
@@ -55598,10 +55606,10 @@
     </unit>
     <unit id="upstream-downloads.outcome.interrupted-title">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/download-words.ts:97</note>
+        <note category="location">src/app/shared/upstream-downloads/download-words.ts:117</note>
       </notes>
       <segment>
-        <source>The replica stopped while this download ran.</source>
+        <source>A replica stopped while this download ran.</source>
       </segment>
     </unit>
     <unit id="downloads.limit.sentence-hinted">
@@ -55808,7 +55816,7 @@
     </unit>
     <unit id="upstream-downloads.title">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:57</note>
+        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:58</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -55816,7 +55824,7 @@
     </unit>
     <unit id="upstream-downloads.close">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:58</note>
+        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:59</note>
       </notes>
       <segment>
         <source>Close downloads</source>
@@ -55824,7 +55832,7 @@
     </unit>
     <unit id="upstream-downloads.waiting">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:80</note>
+        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:81</note>
       </notes>
       <segment>
         <source>Waiting for an upstream</source>
@@ -55832,7 +55840,7 @@
     </unit>
     <unit id="upstream-downloads.running">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:103</note>
+        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:104</note>
       </notes>
       <segment>
         <source>Running</source>
@@ -55840,7 +55848,7 @@
     </unit>
     <unit id="upstream-downloads.finished">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:106</note>
+        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:107</note>
       </notes>
       <segment>
         <source>Finished</source>
@@ -55848,7 +55856,7 @@
     </unit>
     <unit id="upstream-downloads.section-filtered">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:151</note>
+        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:152</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="section" disp="word"/> (<ph id="1" equiv="shown" disp="shown"/> of <ph id="2" equiv="total" disp="total"/>)</source>
@@ -55856,7 +55864,7 @@
     </unit>
     <unit id="upstream-downloads.progress">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:200</note>
+        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:202</note>
       </notes>
       <segment>
         <source>Progress of <ph id="0" equiv="subject" disp="subject"/></source>
@@ -55864,7 +55872,7 @@
     </unit>
     <unit id="upstream-downloads.more">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:204</note>
+        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:206</note>
       </notes>
       <segment>
         <source>and <ph id="0" equiv="count" disp="n"/> more running</source>
@@ -55872,7 +55880,7 @@
     </unit>
     <unit id="upstream-downloads.hidden">
       <notes>
-        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:208</note>
+        <note category="location">src/app/shared/upstream-downloads/upstream-downloads-panel.ts:210</note>
       </notes>
       <segment>
         <source>Hidden on this device: <ph id="0" equiv="count" disp="n"/>.</source>

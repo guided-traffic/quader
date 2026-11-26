@@ -29,6 +29,8 @@ func (r *recordingTracker) Begin(s DownloadStart) Download {
 	return &recordedDownload{r: r}
 }
 
+func (r *recordingTracker) Hold(string) DownloadHold { return nil }
+
 type recordedDownload struct{ r *recordingTracker }
 
 func (d *recordedDownload) Reader(src io.Reader) io.Reader { return countReader{src, d.r} }
@@ -65,6 +67,7 @@ func TestR_OPS_049_TheEngineReportsEachArtifactBody(t *testing.T) {
 		tr := &recordingTracker{}
 		f := &fetcher{e: &Engine{o: Options{Downloads: tr}}, rq: Request{
 			Remote: rem, Package: "left-pad", Version: "1.0.0", Path: "left-pad/-/left-pad-1.0.0.tgz", Caller: CallerFacts{Principal: "p-1"},
+			Unit: UnitVersion,
 		}}
 		resp := &http.Response{ContentLength: int64(len(body)), Body: io.NopCloser(strings.NewReader(body))}
 		d := f.beginDownload(resp)
@@ -76,18 +79,21 @@ func TestR_OPS_049_TheEngineReportsEachArtifactBody(t *testing.T) {
 		want := DownloadStart{
 			RepoID: 7, Repo: "web/npm-remote", Format: "npm", Name: "left-pad", Version: "1.0.0",
 			Path: "left-pad/-/left-pad-1.0.0.tgz", Total: 64 << 10, Cause: DownloadCause{Origin: DownloadOriginClient, Principal: "p-1"},
+			Unit: "c|7|left-pad|1.0.0|p-1",
 		}
 		if len(tr.starts) != 1 || tr.starts[0] != want || tr.bytes != 64<<10 || len(tr.ends) != 1 || tr.ends[0] != DownloadCompleted {
 			t.Fatalf("starts %+v bytes %d ends %v", tr.starts, tr.bytes, tr.ends)
 		}
 	})
 
-	t.Run("R-OPS-049 a queued blob without a length takes the row's version and names the row", func(t *testing.T) {
+	t.Run("R-OPS-049 a queued blob without a length takes the row's version, names the row and joins the run's unit", func(t *testing.T) {
 		tr := &recordingTracker{}
-		cause := DownloadCause{Origin: DownloadOriginQueue, QueueOrigin: remotecuration.OriginPerson, QueueRow: "row-1", QueueVersion: "26.10", Principal: "p-2"}
-		f := &fetcher{e: &Engine{o: Options{Downloads: tr}}, rq: Request{Remote: rem, Package: "library/ubuntu", Path: "v2/blobs/sha256:00", Cause: &cause}}
+		cause := DownloadCause{
+			Origin: DownloadOriginQueue, QueueOrigin: remotecuration.OriginPerson, QueueRow: "row-1", Version: "26.10", Unit: "q|row-1|job-1", Principal: "p-2",
+		}
+		f := &fetcher{e: &Engine{o: Options{Downloads: tr}}, rq: Request{Remote: rem, Package: "library/ubuntu", Path: "v2/blobs/sha256:00", Cause: &cause, Unit: UnitImage}}
 		f.beginDownload(&http.Response{ContentLength: -1, Body: io.NopCloser(strings.NewReader("abc"))})
-		if s := tr.starts[0]; s.Version != "26.10" || s.Total != -1 || s.Cause != cause {
+		if s := tr.starts[0]; s.Version != "26.10" || s.Total != -1 || s.Cause != cause || s.Unit != "q|row-1|job-1" || s.Open || s.Resolve {
 			t.Fatalf("%+v", s)
 		}
 	})
@@ -99,6 +105,31 @@ func TestR_OPS_049_TheEngineReportsEachArtifactBody(t *testing.T) {
 			t.Fatal("a download without a tracker")
 		}
 		endDownload(context.Background(), nil, flightResult{stored: true})
+	})
+
+	t.Run("R-OPS-049 the unit of each cause and format", func(t *testing.T) {
+		client := DownloadCause{Origin: DownloadOriginClient, Principal: "p-1"}
+		for _, c := range []struct {
+			name          string
+			unit          DownloadUnit
+			start         DownloadStart
+			key           string
+			open, resolve bool
+		}{
+			{"a client's tarball: the version's files of the caller", UnitVersion, DownloadStart{Name: "left-pad", Version: "1.0.0", Cause: client}, "c|7|left-pad|1.0.0|p-1", false, false},
+			{"a client's file of no version: the file alone", UnitVersion, DownloadStart{Name: "", Cause: client}, "", false, false},
+			{"a client's file of a format of files", UnitFile, DownloadStart{Name: "a", Version: "1", Cause: client}, "", false, false},
+			{"a client's blob: the image of the caller, open, its version resolved", UnitImage, DownloadStart{Name: "library/ubuntu", Cause: client}, "c|7|library/ubuntu|p-1", true, true},
+			{"a mirror pass's blob of a tag: the pass's image, open", UnitImage, DownloadStart{Name: "library/ubuntu", Version: "26.10", Cause: DownloadCause{Origin: DownloadOriginMirror, Unit: "job-9", Version: "26.10"}}, "m|job-9|7|library/ubuntu|26.10", true, false},
+			{"a mirror pass's tarball", UnitVersion, DownloadStart{Name: "left-pad", Version: "1.0.0", Cause: DownloadCause{Origin: DownloadOriginMirror, Unit: "job-9"}}, "m|job-9|7|left-pad|1.0.0", false, false},
+			{"a mirror pass's file of no version", UnitVersion, DownloadStart{Name: "x", Cause: DownloadCause{Origin: DownloadOriginMirror, Unit: "job-9"}}, "", false, false},
+			{"the database task's run", UnitImage, DownloadStart{Name: "aquasecurity/trivy-db", Cause: DownloadCause{Origin: DownloadOriginScannerDatabase, Unit: "s|job-3"}}, "s|job-3", false, false},
+		} {
+			key, open, resolve := unitOf(7, c.unit, c.start)
+			if key != c.key || open != c.open || resolve != c.resolve {
+				t.Errorf("%s: %q open %v resolve %v", c.name, key, open, resolve)
+			}
+		}
 	})
 
 	t.Run("R-OPS-049 the outcome of each result of a fetch", func(t *testing.T) {

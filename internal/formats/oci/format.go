@@ -123,6 +123,7 @@ func (f *Format) Descriptor() formats.Descriptor {
 		// namespace (Docker Hub, Quay) or a project (GitLab), whichever the repository's preset has.
 		Catalogue:        formats.CatalogueDeclaration{Lookup: true, Search: true, Levels: []string{"namespace"}},
 		VersionCanon:     versionCanon{},
+		DownloadUnit:     formats.DownloadUnitImage, // an image with everything that belongs to it (R-OPS-049)
 		Names:            names{},
 		PropertyPrefix:   "oci.",
 		Clients:          clients(),

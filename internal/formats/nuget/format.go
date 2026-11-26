@@ -123,6 +123,7 @@ func (f *Format) Descriptor() formats.Descriptor {
 			NoLevels: "NuGet IDs have no levels; search for a prefix with id:.",
 		},
 		VersionCanon:     versionCanon{},
+		DownloadUnit:     formats.DownloadUnitVersion, // a version's files one caller fetches at once (R-OPS-049)
 		Names:            names{},
 		Clients:          clients(),
 		PropertyPrefix:   "nuget.",

@@ -46,9 +46,11 @@ import (
 // beside its order, and the [ExposureAdapter] no longer does; the catalog's Versioning takes the answer from the view adapter. Version 14
 // is the range of a package's allow (remote-curation.md R-CUR-026, Q-CUR-221, Q-CUR-226, ADR-283): ModeReason leaves (an emptied
 // document's reason is the rule set's EmptyReason, outsideRange under a range), the catalog's entry carries the view adapter's order
-// (catalog.Entry.VersionOrder) and the mirror's upstream says what the rules deliver (discover.Delivering); no format's code changes. A
-// format declares the literal it was written against in [Descriptor.ContractVersion], and Register panics on a mismatch.
-const ContractVersion = 14
+// (catalog.Entry.VersionOrder) and the mirror's upstream says what the rules deliver (discover.Delivering); no format's code changes.
+// Version 15 is the download unit's (operations-and-observability.md R-OPS-049, R-OPS-053, ADR-295): a format with the class remote
+// declares what one download from an upstream is for it ([Descriptor.DownloadUnit]), and Register refuses one that does not. A format
+// declares the literal it was written against in [Descriptor.ContractVersion], and Register panics on a mismatch.
+const ContractVersion = 15
 
 // The types of other packages under the names a format spells them: one type
 // each, no mirrors (Q-ARCH-188, Q-ARCH-189). A format imports this package and
@@ -235,7 +237,28 @@ type Descriptor struct {
 	// VersionCanon is the format's canonical form of a version (R-CUR-006): a delivery rule stores it and the decision folds what it is
 	// asked with it. Required of a format with the class remote.
 	VersionCanon catalog.VersionCanon
+	// DownloadUnit is what one download from an upstream is for the format: how the files a client fetches from a remote's upstream
+	// group into the unit a person asked for, which the top bar's drawer and the last 100 show (operations-and-observability.md
+	// R-OPS-049, R-OPS-053). Required of a format with the class remote; Register refuses one without it.
+	DownloadUnit DownloadUnit
 }
+
+// DownloadUnit is what a format declares one download from an upstream to be (R-OPS-049, R-OPS-053). A queue row's run, a mirror pass's
+// version and the database task's run are one unit whatever the format; the declaration says what a client's fetches are.
+type DownloadUnit uint8
+
+const (
+	// DownloadUnitUndeclared is the zero value: no declaration.
+	DownloadUnitUndeclared DownloadUnit = iota
+	// DownloadUnitFile: every file a client fetches is one download (a format whose files are not versions of a package).
+	DownloadUnitFile
+	// DownloadUnitVersion: the files of one version that one caller fetches at once are one download (npm's tarball, NuGet's package
+	// with its symbols package, an Ansible archive, a Debian package's file, a Debian source package's .dsc with its tarballs).
+	DownloadUnitVersion
+	// DownloadUnitImage: the manifests, configs, layers and attestations of an image that one caller fetches by its name are one
+	// download (OCI); its blobs name no tag, so the version is resolved after the begin.
+	DownloadUnitImage
+)
 
 // ProbeRoute names one probe of a format (R-REPO-065): a route of [Format.Routes] that serves the class remote and the method of
 // the request, GET or HEAD (a HEAD reaches the GET route of its path), with what the request names in words.
@@ -536,7 +559,7 @@ func Validate(f Format) error {
 			return fmt.Errorf("%q narrows exposure by version and has no view adapter that says which version is a pre-release", id)
 		}
 	}
-	for _, check := range []func(Format, Descriptor) error{checkSystemOnly, checkView, checkProbes, checkCatalogue, checkSignatures} {
+	for _, check := range []func(Format, Descriptor) error{checkSystemOnly, checkView, checkProbes, checkCatalogue, checkSignatures, checkDownloadUnit} {
 		if err := check(f, d); err != nil {
 			return err
 		}
@@ -574,6 +597,20 @@ func checkView(f Format, d Descriptor) error {
 	}
 	if d.VersionFetch == FetchUndeclared || d.VersionFetch > FetchDocument {
 		return fmt.Errorf("%q has a package view and declares no VersionFetch", d.ID)
+	}
+	return nil
+}
+
+// checkDownloadUnit holds a format with the class remote to a declaration of its download unit (R-OPS-053), and a format without the
+// class to none.
+func checkDownloadUnit(_ Format, d Descriptor) error {
+	switch {
+	case d.DownloadUnit > DownloadUnitImage:
+		return fmt.Errorf("%q declares an unknown DownloadUnit %d", d.ID, d.DownloadUnit)
+	case d.Supports(Remote) && d.DownloadUnit == DownloadUnitUndeclared:
+		return fmt.Errorf("%q has the class remote and declares no DownloadUnit", d.ID)
+	case !d.Supports(Remote) && d.DownloadUnit != DownloadUnitUndeclared:
+		return fmt.Errorf("%q declares a DownloadUnit and has no class remote", d.ID)
 	}
 	return nil
 }

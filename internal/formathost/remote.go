@@ -283,6 +283,17 @@ func currency(c proxy.Currency) formats.Currency {
 	return formats.Unknown
 }
 
+// downloadUnitOf is the engine's form of a format's download unit (operations-and-observability.md R-OPS-049, R-OPS-053).
+func downloadUnitOf(u formats.DownloadUnit) proxy.DownloadUnit {
+	switch u {
+	case formats.DownloadUnitVersion:
+		return proxy.UnitVersion
+	case formats.DownloadUnitImage:
+		return proxy.UnitImage
+	}
+	return proxy.UnitFile
+}
+
 // request builds the engine's request for a path of the addressed repository.
 func (r *remote) request(ctx context.Context, rq *formats.Request, p formats.Path, variant string, kind proxy.Kind) (proxy.Request, error) {
 	rem, err := proxy.NewRemote(*rq.Repo)
@@ -301,6 +312,7 @@ func (r *remote) request(ctx context.Context, rq *formats.Request, p formats.Pat
 		Adapter:      newAdapter(f, rq.Repo, rq.RepoRef(), r.h.o.Deps),
 		AlwaysVerify: f.Descriptor().VerifyAnnouncedDigests,
 		MaxBytes:     f.Descriptor().MaxDocumentBytes,
+		Unit:         downloadUnitOf(f.Descriptor().DownloadUnit),
 		Populate:     &populate{h: r.h, rq: rq, coord: populateCoordinate(rq, info, p)},
 		Caller: proxy.CallerFacts{
 			Principal: pr.ID, Actor: edge.ActorFrom(pr), Source: httpserver.SourceFrom(ctx), Endpoint: rq.Subject.Endpoint,
@@ -310,7 +322,7 @@ func (r *remote) request(ctx context.Context, rq *formats.Request, p formats.Pat
 		// A pass's request, or a request a format makes through Host.Remote() while it works for the pass (its gate
 		// revalidating a package document): a background request of the pass (mirror_host.go). A download ahead is never refused
 		// by the rules, and a pass asks only for what they deliver (R-CUR-014, R-CUR-017).
-		bg.apply(&preq, rq, info, p)
+		bg.apply(ctx, &preq, rq, info, p)
 		return preq, nil
 	}
 	if ctx.Value(catalogueFlow{}) != nil {

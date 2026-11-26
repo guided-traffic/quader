@@ -91,7 +91,7 @@ func TestR_OPS_050_TheSpeedOfARunningDownload(t *testing.T) {
 	if got := tr.snapshot().Running[0]; got.Bytes != 24000 || got.ElapsedMs != 24000 || got.Total == nil || *got.Total != 1000 {
 		t.Errorf("entry %+v", got)
 	}
-	if w := len(tr.running[tr.snapshot().Running[0].ID].win.samples); w > 8 {
+	if w := len(tr.units["p|"+tr.snapshot().Running[0].ID].win.samples); w > 8 {
 		t.Errorf("the window keeps %d samples", w)
 	}
 }

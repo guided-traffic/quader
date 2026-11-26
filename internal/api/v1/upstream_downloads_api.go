@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"net/http"
-	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -53,10 +52,11 @@ func (s *Server) readUpstreamDownloads(w http.ResponseWriter, r *http.Request) (
 	return v, true
 }
 
-// upstreamDownloadList builds the answer from a read (R-OPS-050 to R-OPS-052): a live row older than three publish intervals is left
-// out (its replica stalled or stopped); the elapsed time is the one at the write plus the age of the write; an entry whose repository is
-// gone is left out; running entries in the order of their begin, finished ones as read (newest first); the queues an upstream's rate
-// limit holds as read, the longest held first, with the upstream's name (remote-curation.md Q-CUR-176).
+// upstreamDownloadList builds the answer from a read (R-OPS-049 to R-OPS-052): the records are merged into units (fills.Merge: a live row
+// older than three publish intervals is left out, the records of one unit's key across replicas are one download, the elapsed time is
+// the one at the write plus the age of the write); a unit whose repository is gone is left out and still counts in runningCount; running
+// units in the order of their begin, finished ones newest first; the queues an upstream's rate limit holds as read, the longest held
+// first, with the upstream's name (remote-curation.md Q-CUR-176).
 func upstreamDownloadList(v fills.View, interval time.Duration) gen.UpstreamDownloadList {
 	if interval <= 0 {
 		interval = 2 * time.Second
@@ -76,23 +76,16 @@ func upstreamDownloadList(v fills.View, interval time.Duration) gen.UpstreamDown
 		}
 		out.Waiting = append(out.Waiting, w)
 	}
-	fresh := fills.FreshIntervals * interval
-	for _, l := range v.Live {
-		if l.Age > fresh {
+	units := fills.Merge(v, interval)
+	out.RunningCount = int64(units.RunningCount)
+	for _, u := range units.Running {
+		repo, ok := v.Repos[u.RepoID]
+		if !ok {
 			continue
 		}
-		out.RunningCount += int64(l.Omitted)
-		for _, e := range l.Downloads {
-			out.RunningCount++
-			repo, ok := v.Repos[e.RepoID]
-			if !ok {
-				continue
-			}
-			out.Running = append(out.Running, runningDownload(e, l, repo, v.Principals))
-		}
+		out.Running = append(out.Running, runningDownload(u, repo, v.Principals))
 	}
-	sort.SliceStable(out.Running, func(i, j int) bool { return out.Running[i].StartedAt.Before(out.Running[j].StartedAt) })
-	for _, f := range v.Finished {
+	for _, f := range units.Finished {
 		repo, ok := v.Repos[f.RepoID]
 		if !ok {
 			continue
@@ -102,15 +95,15 @@ func upstreamDownloadList(v fills.View, interval time.Duration) gen.UpstreamDown
 	return out
 }
 
-func runningDownload(e fills.Entry, l fills.Live, repo fills.RepoName, names map[string]string) gen.UpstreamDownloadRunning {
+func runningDownload(u fills.RunningUnit, repo fills.RepoName, names map[string]string) gen.UpstreamDownloadRunning {
 	d := gen.UpstreamDownloadRunning{
-		Id: uuidOf(e.ID), Repository: gen.UpstreamDownloadRepository{Project: repo.Project, Key: repo.Key, Format: repo.Format},
-		Name: e.Name, Version: e.Version, Path: e.Path, Bytes: e.Bytes, Total: e.Total, BytesPerSecond: e.Speed,
-		StartedAt: e.StartedAt.UTC(), ElapsedSeconds: (time.Duration(e.ElapsedMs)*time.Millisecond + l.Age).Seconds(),
-		Origin: gen.UpstreamDownloadOrigin(e.Origin), QueueRow: uuidPtr(e.QueueRow), By: principalOf(e.By, names), Replica: l.Replica,
+		Id: uuidOf(u.ID), Repository: gen.UpstreamDownloadRepository{Project: repo.Project, Key: repo.Key, Format: repo.Format},
+		Name: u.Name, Version: u.Version, Path: u.Path, Parts: max(u.Parts, 1), Bytes: u.Bytes, Total: u.Total, BytesPerSecond: u.Speed,
+		StartedAt: u.StartedAt.UTC(), ElapsedSeconds: u.Elapsed.Seconds(),
+		Origin: gen.UpstreamDownloadOrigin(u.Origin), QueueRow: uuidPtr(u.QueueRow), By: principalOf(u.By, names), Replica: u.Replica,
 	}
-	if e.QueueOrigin != "" {
-		qo := gen.UpstreamDownloadQueueOrigin(e.QueueOrigin)
+	if u.QueueOrigin != "" {
+		qo := gen.UpstreamDownloadQueueOrigin(u.QueueOrigin)
 		d.QueueOrigin = &qo
 	}
 	return d
@@ -119,7 +112,7 @@ func runningDownload(e fills.Entry, l fills.Live, repo fills.RepoName, names map
 func finishedDownload(f fills.Finished, repo fills.RepoName, names map[string]string) gen.UpstreamDownloadFinished {
 	d := gen.UpstreamDownloadFinished{
 		Id: uuidOf(f.ID), Repository: gen.UpstreamDownloadRepository{Project: repo.Project, Key: repo.Key, Format: repo.Format},
-		Name: f.Name, Version: f.Version, Path: f.Path, Bytes: f.Bytes, Total: f.Total,
+		Name: f.Name, Version: f.Version, Path: f.Path, Parts: max(f.Parts, 1), Bytes: f.Bytes, Total: f.Total,
 		StartedAt: f.StartedAt.UTC(), FinishedAt: f.FinishedAt.UTC(), DurationSeconds: float64(f.DurationMs) / 1000,
 		Outcome: gen.UpstreamDownloadFinishedOutcome(f.Outcome), Origin: gen.UpstreamDownloadOrigin(f.Origin), Replica: f.Replica,
 	}
@@ -129,6 +122,10 @@ func finishedDownload(f fills.Finished, repo fills.RepoName, names map[string]st
 	}
 	if f.Outcome == fills.OutcomeFailed {
 		d.Failure = &gen.UpstreamDownloadFailure{Class: gen.RemoteDownloadFailureClass(f.FailureClass), Code: f.FailureCode}
+		if f.FailurePath != "" {
+			path := f.FailurePath
+			d.Failure.Path = &path
+		}
 	}
 	if f.QueueOrigin != "" {
 		qo := gen.UpstreamDownloadQueueOrigin(f.QueueOrigin)

@@ -4,8 +4,10 @@ import { formatSize } from '../../features/packages/format-size';
 import { elapsedText } from '../duration-text';
 
 /*
- * The words of the downloads panel of the top bar (api-and-ui.md R-UI-210 to R-UI-212). The queue's origins and failure classes are
- * the queue's own words (R-CUR-018), so a row reads the same here and on a repository's tab Downloads.
+ * The words of the downloads panel of the top bar (api-and-ui.md R-UI-210 to R-UI-212). A row is one download: the unit a person asked
+ * for, an image with every file that belongs to it, a version's package, a queue row's run (operations-and-observability.md R-OPS-049);
+ * its files are never listed. The queue's origins and failure classes are the queue's own words (R-CUR-018), so a row reads the same
+ * here and on a repository's tab Downloads.
  */
 
 /** The last segment of a path; a digest in it cut to its algorithm and 12 hex digits (`sha256:1a2b3c4d5e6f`). */
@@ -15,13 +17,25 @@ export function fileOf(path: string): string {
   return digest ? `${digest[1]}:${digest[2]}` : last;
 }
 
+/** A version that is an image's digest (an image asked for by its digest) cut as a file's digest is; any other version as it is. */
+export function versionText(version: string): string {
+  const digest = /^([a-z0-9]+):([0-9a-f]{12})[0-9a-f]+$/.exec(version);
+  return digest ? `${digest[1]}:${digest[2]}` : version;
+}
+
 /**
- * What a row names (R-UI-211): the name and the version, else the name and the file, else the file alone. `name` is what stands as
- * the row's name, `detail` what stands muted beside it.
+ * What a row names (R-UI-211): the name and the version, else the name alone (an image whose tag is not known yet), else the first
+ * file of a download of no package. `name` is what stands as the row's name, `detail` what stands muted beside it.
  */
 export function subjectOf(d: Pick<UpstreamDownload, 'name' | 'version' | 'path'>): { readonly name: string; readonly detail: string } {
   if (d.name === '') return { name: fileOf(d.path), detail: '' };
-  return { name: d.name, detail: d.version !== '' ? d.version : fileOf(d.path) };
+  return { name: d.name, detail: versionText(d.version) };
+}
+
+/** The title of a row's subject: the name with the whole version (a digest uncut), or the first file's path of a download of no package. */
+export function subjectTitle(d: Pick<UpstreamDownload, 'name' | 'version' | 'path'>): string {
+  if (d.name === '') return d.path;
+  return d.version === '' ? d.name : `${d.name} ${d.version}`;
 }
 
 /** The speed in the unit of the sizes per second (`12.3 MiB/s`); the en dash while the API has none yet (the first second). */
@@ -73,6 +87,12 @@ export interface OutcomeBadge {
   readonly title: string | null;
 }
 
+/** The title of a failed download's badge: the failure's code and the file it failed at (R-UI-212), the code alone without one. */
+function failureTitle(code: string, path: string | null | undefined): string {
+  if (!path) return code;
+  return $localize`:@@upstream-downloads.failed-file:${code}:code: at the file ${path}:path:`;
+}
+
 export function outcomeBadge(d: Pick<UpstreamDownloadFinished, 'outcome' | 'failure'>): OutcomeBadge | null {
   const outcome: UpstreamDownloadOutcome = d.outcome;
   switch (outcome) {
@@ -84,7 +104,7 @@ export function outcomeBadge(d: Pick<UpstreamDownloadFinished, 'outcome' | 'fail
         tone: 'bad',
         icon: 'error',
         text: d.failure ? `${failed}: ${failureClassText(d.failure.class)}` : failed,
-        title: d.failure ? d.failure.code : null,
+        title: d.failure ? failureTitle(d.failure.code, d.failure.path) : null,
       };
     }
     case 'cancelled':
@@ -94,7 +114,7 @@ export function outcomeBadge(d: Pick<UpstreamDownloadFinished, 'outcome' | 'fail
         tone: 'warn',
         icon: 'warning',
         text: $localize`:@@upstream-downloads.outcome.interrupted:Interrupted`,
-        title: $localize`:@@upstream-downloads.outcome.interrupted-title:The replica stopped while this download ran.`,
+        title: $localize`:@@upstream-downloads.outcome.interrupted-title:A replica stopped while this download ran.`,
       };
   }
 }

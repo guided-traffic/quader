@@ -239,11 +239,14 @@ export interface paths {
         };
         /**
          * The running downloads from the upstreams of remote repositories and the last 100 finished
-         * @description Every download of an artifact's body from the upstream of a remote repository that runs now on any replica, and the last 100
-         *     that ended (R-OPS-049 to R-OPS-052). Whatever caused it counts: a client's miss, a row of the download queue, a mirror's pass,
-         *     the vulnerability scanning's database; a metadata document, a hit and a request that waited for another one's fetch do not.
-         *     `running` holds at most 200 entries per replica, the oldest first, and `runningCount` counts all of them, those left out
-         *     included; `finished` holds at most 100, the newest first. A replica publishes its running downloads every `pollSeconds`
+         * @description Every download from the upstream of a remote repository that runs now on any replica, and the last 100 that ended (R-OPS-049 to
+         *     R-OPS-052). A download is the unit a person asked for, not one file of it: an image with its manifests, configs, layers and
+         *     attestations; a version's package; a queue row's run (R-OPS-049 "The unit per format"). Its files are the bodies of artifacts
+         *     read from the upstream; whatever caused them counts: a client's miss, a row of the download queue, a mirror's pass, the
+         *     vulnerability scanning's database; a metadata document, a hit and a request that waited for another one's fetch do not. The
+         *     records of one unit that several replicas wrote are merged at the read. `running` holds at most 200 units per replica, the
+         *     oldest first, and `runningCount` counts all of them, those left out included; `finished` holds at most 100, the newest first.
+         *     A replica publishes its running downloads every `pollSeconds`
          *     (`proxy.upstream_downloads.publish_interval`), and a reader leaves out a replica whose last write is older than three of
          *     them. Every replica answers alike from PostgreSQL; the repository and the person are resolved by id at the read, and an
          *     entry whose repository no longer exists is left out. No upstream address, header or client address is kept. `waiting` lists
@@ -17912,30 +17915,38 @@ export interface components {
             id: string;
             name: string;
         };
-        /** @description Why a download failed, in the classes and codes of the download queue (remote-curation.md R-CUR-011). */
+        /** @description Why a download failed, in the classes and codes of the download queue (remote-curation.md R-CUR-011), and the file it failed at. */
         UpstreamDownloadFailure: {
             class: components["schemas"]["RemoteDownloadFailureClass"];
             code: string;
+            /** @description The repository path of the file whose failure failed the download; null when the failure named none. */
+            path: string | null;
         };
-        /** @description A download from an upstream that runs now (R-OPS-049, R-OPS-050). */
+        /** @description A download from an upstream that runs now, one unit (R-OPS-049, R-OPS-050). */
         UpstreamDownloadRunning: {
             /** Format: uuid */
             id: string;
             repository: components["schemas"]["UpstreamDownloadRepository"];
-            /** @description The package as the format classified the path; empty for a path of no package. */
+            /** @description The package as the format classified the path of the unit's first file; empty for a path of no package. */
             name: string;
-            /** @description The version; for a queue row's file of no version (an OCI blob) the row's version; empty when neither has one. */
+            /**
+             * @description The version: the files' own, a queue row's or a mirror pass's; for a client's pull of an image the tag whose manifest names
+             *     its files, else the image's digest when it was asked for by digest; empty while none is known.
+             */
             version: string;
-            /** @description The repository path of the artifact. */
+            /** @description The repository path of the unit's first file. */
             path: string;
+            /** @description The number of the unit's files read so far. */
+            parts: number;
             /**
              * Format: int64
-             * @description The bytes read from the upstream's body so far, as of the replica's last publication.
+             * @description The bytes read from the upstream's bodies of the unit's files so far, as of the replicas' last publications.
              */
             bytes: number;
             /**
              * Format: int64
-             * @description The length the upstream announced; null when it announced none.
+             * @description The unit's size where it is known: the sizes a queue row's run named for its files, or the length of a unit's one file; null
+             *     for a client's pull of an image and a mirror pass's image, whose files nobody names in advance.
              */
             total: number | null;
             /**
@@ -17960,20 +17971,23 @@ export interface components {
             queueRow: string | null;
             /** @description The client's caller, or the person who started the queue row, its bulk or its request; null for system work, an anonymous caller and a removed principal. */
             by: components["schemas"]["UpstreamDownloadPrincipal"] | null;
-            /** @description The pod name of the replica that reads the body. */
+            /** @description The pod name of the replica that reads the unit's files; of the one that began first when several do. */
             replica: string;
         };
-        /** @description A download from an upstream that ended (R-OPS-049, R-OPS-051). */
+        /** @description A download from an upstream that ended, one unit (R-OPS-049, R-OPS-051). */
         UpstreamDownloadFinished: {
             /** Format: uuid */
             id: string;
             repository: components["schemas"]["UpstreamDownloadRepository"];
             name: string;
             version: string;
+            /** @description The repository path of the unit's first file. */
             path: string;
+            /** @description The number of the unit's files. */
+            parts: number;
             /**
              * Format: int64
-             * @description The bytes read from the upstream's body, also those of a download that failed.
+             * @description The bytes read from the upstream's bodies of the unit's files, also those of a file that failed.
              */
             bytes: number;
             /** Format: int64 */
@@ -17990,8 +18004,9 @@ export interface components {
             /** Format: double */
             durationSeconds: number;
             /**
-             * @description `completed`: stored, or a duplicate fetch found it stored. `failed`: see `failure`. `cancelled`: a client's fetch pre-empted a
-             *     background fill, the job was cancelled, or the request ended. `interrupted`: the replica stopped publishing while it ran.
+             * @description `completed`: every file was stored, or a duplicate fetch found it stored. `failed`: a file failed, or the queue row's run did;
+             *     see `failure`. `cancelled`: a file's fetch was cancelled (a client's fetch pre-empted a background fill, the job was
+             *     cancelled, the request ended). `interrupted`: a replica stopped publishing while it ran.
              * @enum {string}
              */
             outcome: "completed" | "failed" | "cancelled" | "interrupted";
@@ -19236,7 +19251,8 @@ export interface operations {
                      *           },
                      *           "name": "library/ubuntu",
                      *           "version": "26.10",
-                     *           "path": "v2/library/ubuntu/blobs/sha256:1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
+                     *           "path": "library/ubuntu/_manifests/sha256:1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
+                     *           "parts": 14,
                      *           "bytes": 134217728,
                      *           "total": 300847104,
                      *           "bytesPerSecond": 12897484,
@@ -19263,6 +19279,7 @@ export interface operations {
                      *           "name": "@angular/core",
                      *           "version": "22.0.1",
                      *           "path": "@angular/core/-/core-22.0.1.tgz",
+                     *           "parts": 1,
                      *           "bytes": 2345678,
                      *           "total": 2345678,
                      *           "bytesPerSecond": 1563785,

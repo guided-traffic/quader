@@ -213,6 +213,24 @@ type Delivering interface {
 	Delivers(name, version string) bool
 }
 
+type versionKey struct{}
+
+// ForVersion marks ctx as the work for one version of the package a plan is for: the files a format reads through
+// [Upstream.Artifact] under it (an OCI index's child manifests of one tag) belong to that version's download, which the top bar's drawer
+// shows as one (operations-and-observability.md R-OPS-049). An empty version leaves ctx as it is.
+func ForVersion(ctx context.Context, version string) context.Context {
+	if version == "" {
+		return ctx
+	}
+	return context.WithValue(ctx, versionKey{}, version)
+}
+
+// VersionOf is the version ForVersion set, "" for none.
+func VersionOf(ctx context.Context) string {
+	v, _ := ctx.Value(versionKey{}).(string)
+	return v
+}
+
 // DeliveredBy returns what u delivers: every version when u does not say.
 func DeliveredBy(u Upstream) func(name, version string) bool {
 	if d, ok := u.(Delivering); ok {

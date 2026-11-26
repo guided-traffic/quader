@@ -46,6 +46,7 @@ func TestR_CUR_007_RegisterRefusesARemoteFormatWithoutACatalogue(t *testing.T) {
 	remote := func(id string, c CatalogueDeclaration, canon catalog.VersionCanon) fake {
 		d := valid(id)
 		d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, c, canon
+		d.DownloadUnit = DownloadUnitFile
 		return fake{d: d, remote: stubRemote{}}
 	}
 	for name, c := range map[string]struct {

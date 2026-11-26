@@ -673,6 +673,13 @@ the item store, [oci.md](oci.md#upload-sessions-r-stor-011); the in-memory host 
    implements `discover.Documented.Readme` (one request at most, an address the lent upstream refuses answered with
    `formats.UnreachedHost`; a README the lookup read anyway handed over on `PackageInfo.Readme`), and its kit case names `License` and
    `Readme` or `NoReadme` ([R-CUR-028](../spec/remote-curation.md#r-cur-028--an-opened-package-of-the-tab-upstream-shows-its-documentation-and-the-facts-of-its-newest-version-read-through-and-not-stored), ADR-291).
+   A format with the class `remote` declares what one download from an upstream is for its clients (`Descriptor.DownloadUnit`:
+   `DownloadUnitFile`, `DownloadUnitVersion`, or `DownloadUnitImage` where a version's files name no version, as an image's blobs do;
+   `Register` refuses a remote format without it), writes its row into the table "The unit per format" of
+   [operations-and-observability.md](../spec/operations-and-observability.md) R-OPS-049 (the owner's rule of 2026-11-26: a download is
+   the unit a person asked for, never one of its files) and into `TestR_OPS_053_EveryRemoteFormatDeclaresWhatOneDownloadIs` in
+   [all_test.go](../../internal/formats/all/all_test.go) ([upstream-downloads.md](upstream-downloads.md)). A format whose files name no
+   version also needs the version of a client's unit resolved, as the OCI data port's `DownloadVersions` does.
    Give every route at least one example; a name that two routes could both match needs a `Route.Match` that tells them apart.
    A `Download` route whose clients all check a digest declares it in `Route.ClientDigest`, with its evidence, and gets its row in
    `TestR_STOR_071_EveryFormatDeclaresWhetherItsClientsCheck` ([What a signed link needs of a format](#what-a-signed-link-needs-of-a-format));

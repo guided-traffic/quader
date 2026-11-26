@@ -8,7 +8,7 @@ import { HIDDEN_BEFORE_KEY } from './upstream-downloads-panel';
 
 const DIGEST = 'sha256:1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b';
 
-/** Five running downloads, one of each kind a row words differently. */
+/** Five running downloads, one of each kind a row words differently; each is a unit, an image with all its files one row. */
 function running(fake: FakeUpstreamDownloadsApi): void {
   fake.running = [
     runningDownload({ id: 'r-npm', bytes: 150_000_000, total: 300_000_000, bytesPerSecond: 12_897_484, elapsedSeconds: 42.3 }),
@@ -28,8 +28,10 @@ function running(fake: FakeUpstreamDownloadsApi): void {
       id: 'r-blob',
       repository: { project: 'upstream', key: 'docker-hub', format: 'oci' },
       name: 'library/ubuntu',
-      version: '',
-      path: `v2/library/ubuntu/blobs/${DIGEST}`,
+      version: DIGEST,
+      path: `library/ubuntu/_manifests/${DIGEST}`,
+      parts: 31,
+      total: null,
       origin: 'queue',
       queueOrigin: 'person',
       queueRow: '01937d4d-0000-7000-8000-000000000001',
@@ -77,7 +79,7 @@ const buttonIn = (root: ParentNode, label: string): HTMLButtonElement | undefine
   [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => text(b) === label);
 
 describe('The Downloads panel: what runs', () => {
-  it('R-UI-211 a running download with a total shows its bar and "of", one without a total its bytes alone, a blob its digest', async () => {
+  it('R-UI-211 a running download with a total shows its bar and "of", one without a total its bytes alone, an image by digest its digest cut', async () => {
     const { root } = await open();
     expect(root.querySelector('button.downloads-button')!.getAttribute('aria-expanded')).toBe('true');
     expect(drawer()!.getAttribute('role') ?? drawer()!.querySelector('[role="dialog"]')?.getAttribute('role')).toBeTruthy();
@@ -90,7 +92,9 @@ describe('The Downloads panel: what runs', () => {
     expect(deb.querySelector('progress')).toBeNull();
     expect(figures(deb)).toEqual(['4.0 MiB', '–', '2 s']);
     expect(text(blob.querySelector('.dl-subject')!)).toBe('library/ubuntu sha256:1a2b3c4d5e6f');
-    expect(blob.querySelector('.dl-subject')!.getAttribute('title')).toBe(`v2/library/ubuntu/blobs/${DIGEST}`);
+    expect(blob.querySelector('.dl-subject')!.getAttribute('title')).toBe(`library/ubuntu ${DIGEST}`);
+    expect(blob.querySelector('progress')).toBeNull();
+    expect(drawer()!.textContent).not.toContain('_blobs');
     await expectAccessible(drawer()!);
   });
 
@@ -202,8 +206,13 @@ describe('The Downloads panel: what finished, and Hide all', () => {
   const finished = (f: FakeUpstreamDownloadsApi): void => {
     f.finished = [
       finishedDownload({ id: 'f-ok', finishedAt: '2026-11-24T08:38:05Z', durationSeconds: 72, bytes: 300_000_000, bytesPerSecond: 4_194_304 }),
-      finishedDownload({ id: 'f-net', finishedAt: '2026-11-24T08:38:04Z', outcome: 'failed', failure: { class: 'network', code: 'connection_reset' } }),
-      finishedDownload({ id: 'f-int', finishedAt: '2026-11-24T08:38:03Z', outcome: 'failed', failure: { class: 'integrity', code: 'digest_mismatch' } }),
+      finishedDownload({
+        id: 'f-net',
+        finishedAt: '2026-11-24T08:38:04Z',
+        outcome: 'failed',
+        failure: { class: 'network', code: 'connection_reset', path: `library/ubuntu/_blobs/${DIGEST}` },
+      }),
+      finishedDownload({ id: 'f-int', finishedAt: '2026-11-24T08:38:03Z', outcome: 'failed', failure: { class: 'integrity', code: 'digest_mismatch', path: null } }),
       finishedDownload({ id: 'f-can', finishedAt: '2026-11-24T08:38:02Z', outcome: 'cancelled' }),
       finishedDownload({ id: 'f-irr', finishedAt: '2026-11-24T08:38:01Z', outcome: 'interrupted', durationSeconds: 0.4, bytesPerSecond: 7_864_320 }),
     ];
@@ -216,12 +225,13 @@ describe('The Downloads panel: what finished, and Hide all', () => {
     expect(ok.querySelector('.badge')).toBeNull();
     expect(figures(ok)).toEqual(['286.1 MiB', '1 min 12 s', '4.0 MiB/s']);
     expect(text(net.querySelector('.badge.bad')!)).toBe('errorFailed: Network');
-    expect(net.querySelector('.badge')!.getAttribute('title')).toBe('connection_reset');
+    expect(net.querySelector('.badge')!.getAttribute('title')).toBe(`connection_reset at the file library/ubuntu/_blobs/${DIGEST}`);
+    expect(int.querySelector('.badge')!.getAttribute('title')).toBe('digest_mismatch');
     expect(text(int.querySelector('.badge.bad')!)).toContain('Failed: Integrity check failed');
     expect(text(can.querySelector('.badge')!)).toBe('Cancelled');
     const interrupted = irr.querySelector('.badge.warn')!;
     expect(text(interrupted)).toContain('Interrupted');
-    expect(interrupted.getAttribute('title')).toBe('The replica stopped while this download ran.');
+    expect(interrupted.getAttribute('title')).toBe('A replica stopped while this download ran.');
     expect(figures(irr)).toEqual(['3.0 MiB', '< 1 s']);
     expect(irr.querySelector('time')).not.toBeNull();
     await expectAccessible(drawer()!);

@@ -49,7 +49,8 @@ func (a remoteAdapter) MirrorPlan(ctx context.Context, u discover.Upstream, name
 			}
 			kept++
 		}
-		items, err := a.tagItems(ctx, u, upName, ct, ms)
+		// What the tag's items read (its child manifests, its signatures) is the tag's download (R-OPS-049).
+		items, err := a.tagItems(discover.ForVersion(ctx, ct.Tag), u, upName, ct, ms)
 		if err != nil {
 			return discover.Plan{}, err
 		}

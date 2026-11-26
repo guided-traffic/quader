@@ -167,6 +167,7 @@ func (f *Format) Descriptor() formats.Descriptor {
 		// levels are their suites, components and architectures (catalogue.go).
 		Catalogue:        formats.CatalogueDeclaration{Lookup: true, Search: true, Levels: []string{"suite", "component", "architecture"}},
 		VersionCanon:     versionCanon{},
+		DownloadUnit:     formats.DownloadUnitVersion, // a version's files one caller fetches at once (R-OPS-049)
 		Names:            names{},
 		Clients:          clients(),
 		PropertyPrefix:   "deb.",

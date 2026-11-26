@@ -2,14 +2,19 @@
 
 The overview of what Quader loads from the upstreams of its remote repositories: the running downloads with their progress and speed,
 and the last 100 finished with their duration and average speed ([operations-and-observability.md](../spec/operations-and-observability.md)
-R-OPS-049 to R-OPS-052, [ADR-279](../decisions.md#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished)).
+R-OPS-049 to R-OPS-053, [ADR-279](../decisions.md#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished)).
+A download is the unit a person asked for, an image, a version's package, a queue row's run, never one of its files
+([ADR-295](../decisions.md#adr-295--a-download-is-the-unit-a-person-asked-for-not-one-of-its-files), the owner's rule of 2026-11-26).
 The security view is [security/upstream-downloads.md](../security/upstream-downloads.md). Status: the backend and the API are built (T-26
 package A), and so are the top bar's button and its panel (T-26 package B, [api-and-ui.md](../spec/api-and-ui.md) R-UI-210 to
 R-UI-212), which read the schemas named below through `web/src/app/api/upstream-downloads-api.ts`.
 
 ## What has to be in your head first
 
-- **One hook.** A download is the body of an artifact after a success answer: `fetcher.artifact` in
+- **Units, not files.** The engine reports files; the tracker joins the files of one key into a unit, and every list, count, metric and
+  row of this page is one of units. The key is set once, at a file's begin, by `proxy.unitOf` from the cause (a queue row's run, a mirror
+  pass's job and version, the database task's run) and, for a client's file, the format's `Descriptor.DownloadUnit` (R-OPS-049's tables).
+- **One hook.** A file of a download is the body of an artifact after a success answer: `fetcher.artifact` in
   [artifact.go](../../internal/proxy/artifact.go) begins it after `admitBody` and ends it with the fetch's result. A metadata document goes
   through `fetcher.metadata`, a hit never reaches the fetch, a request that waits for another one's flight reaches no fetch of its own, a
   `HEAD` goes through `Engine.head`: none of them is a download, and none of them needs a check of its own.
@@ -23,43 +28,61 @@ R-UI-212), which read the schemas named below through `web/src/app/api/upstream-
 
 | File | Responsibility |
 |---|---|
-| [internal/proxy/downloads.go](../../internal/proxy/downloads.go) | The port (`DownloadTracker`, `DownloadStart`, `DownloadCause`, `Download`), the origins, `beginDownload` (facts, the counted body), `downloadOutcome` (a fetch's result to `completed`, `cancelled`, `failed` with the class and code of `proxy.Describe`) |
+| [internal/proxy/downloads.go](../../internal/proxy/downloads.go) | The port (`DownloadTracker` with `Hold`, `DownloadHold`, `DownloadStart`, `DownloadCause`, `Download`), the origins, `DownloadUnit` and `UnitLinger`, `beginDownload` (facts, the unit's key, the counted body), `unitOf` (the key of R-OPS-049's table), `Engine.Downloads`, `downloadOutcome` (a fetch's result to `completed`, `cancelled`, `failed` with the class and code of `proxy.Describe`) |
 | [internal/proxy/artifact.go](../../internal/proxy/artifact.go) | `fetcher.artifact`: begin after `admitBody`, `artifactBody`, end with its result |
-| [internal/proxy/types.go](../../internal/proxy/types.go), [engine.go](../../internal/proxy/engine.go) | `Request.Cause` (nil is a client's), `Options.Downloads` (nil sees none) |
-| [internal/formathost/mirror_host.go](../../internal/formathost/mirror_host.go) | `filler.origin`, `backgroundFacts.cause` (set by `apply` on every background request), `passUpstream.queue` |
-| [internal/formathost/background_download.go](../../internal/formathost/background_download.go) | `queueCause`: a row's run hands its origin, id, version and starter to `downloadUpstream` |
-| [internal/fills/types.go](../../internal/fills/types.go) | The bounds (200 per replica, 100 finished, 3 and 10 intervals, 30 s), the outcomes, `Entry` (a member of the live row's JSON), `Finished` (a row of the finished table), `View` (what the API reads), `Interrupted` |
-| [internal/fills/tracker.go](../../internal/fills/tracker.go) | `Tracker`: the running set, the counting reader, the buffer of ended downloads (the newest 100), `snapshot` and `requeue` |
+| [internal/proxy/types.go](../../internal/proxy/types.go), [engine.go](../../internal/proxy/engine.go) | `Request.Cause` (nil is a client's), `Request.Unit` (the format's declaration, set by the host), `Options.Downloads` (nil sees none) |
+| [internal/formathost/remote.go](../../internal/formathost/remote.go), [virtual_remotes.go](../../internal/formathost/virtual_remotes.go) | `downloadUnitOf`: the format's `Descriptor.DownloadUnit` on every engine request |
+| [internal/formathost/mirror_host.go](../../internal/formathost/mirror_host.go) | `filler.origin`, `backgroundFacts.cause` (set by `apply` on every background request: a queue row's facts and key, a pass's job and the version of `discover.ForVersion`, the database task's run), `passUpstream.queue`; `Fill` marks the item's version |
+| [internal/formathost/background_download.go](../../internal/formathost/background_download.go) | `queueCause` and `queueUnit`: a row's run hands its origin, id, version, starter and key to `downloadUpstream`; `RunDownload` holds the run's unit (`holdUnit`), names its files with their sizes (`Expect`), settles the stored and refused ones and fails the unit with the run's failure |
+| [internal/mirror/discover/discover.go](../../internal/mirror/discover/discover.go), [internal/formats/oci/mirror_plan.go](../../internal/formats/oci/mirror_plan.go) | `ForVersion`, `VersionOf`: what a format reads for one version of its plan (an OCI tag's child manifests) belongs to that version's download |
+| [internal/fills/types.go](../../internal/fills/types.go) | The bounds (200 per replica, 100 finished, 3 and 10 intervals, 30 s, `MergeGap` 10 s), the outcomes, `Entry` (a unit in the live row's JSON), `Finished` (a row of the finished table: a unit of one replica), `View` (what the API reads), `Interrupted` |
+| [internal/fills/tracker.go](../../internal/fills/tracker.go) | `Tracker`: the running units by key with their files (`part`), the counting reader, the holds (`Hold`, `Expect`, `Settle`, `Fail`, `Release`), the linger, a unit's total and outcome, the buffer of ended units (the newest 100), `snapshot` and `requeue` |
+| [internal/fills/merge.go](../../internal/fills/merge.go) | `Merge`: the read's records joined into units (a key of work whatever the time between them, a client's key by `MergeGap`), the sums, the outcome's rank, the newest 100 |
 | [internal/fills/window.go](../../internal/fills/window.go) | The speed over 10 s from the samples of the publications (Q-OPS-421) |
-| [internal/fills/publisher.go](../../internal/fills/publisher.go) | `Publisher`, a component: the loop of `Tick`, the sweep at most every 30 s, `Flush` in the close step, the failure count and its warning once a minute |
+| [internal/fills/publisher.go](../../internal/fills/publisher.go) | `Publisher`, a component: the loop of `Tick`, the versions of the pulls it has not resolved (`Resolver`, at most 50 a publication), the sweep at most every 30 s, `Flush` in the close step, the failure count and its warning once a minute |
+| [internal/formatdata/oci/store_downloads.go](../../internal/formatdata/oci/store_downloads.go) | `DownloadVersions` (statement `OCIDownloadVersions`): the tag or digest of an image a file belongs to, the publisher's `Resolver` (`imageVersions` in the wiring) |
 | [internal/fills/store_pg.go](../../internal/fills/store_pg.go) | `Store`: `Publish` (upsert or delete of the live row, insert and trim of the finished rows, one transaction), `Sweep`, `ReadUpstreamDownloads` (the live rows with their age, the newest 100, the names by id, and `Limited`: the download queues an upstream's rate limit holds, from `remote_download_limits`, remote-curation.md Q-CUR-176) |
 | [internal/fills/metrics.go](../../internal/fills/metrics.go) | The four families of R-OPS-052, the label `repo` capped by R-OPS-007, `Tracker.Forget` |
-| [internal/meta/postgres/migrations/00118_upstream_downloads.sql](../../internal/meta/postgres/migrations/00118_upstream_downloads.sql), [queries/upstream_downloads.sql](../../internal/meta/postgres/queries/upstream_downloads.sql), [tables_upstream_downloads.go](../../internal/meta/postgres/tables_upstream_downloads.go) | The two tables, their statements (rows cross as JSON text, so the package needs no driver types) and their export class |
+| [internal/meta/postgres/migrations/00118_upstream_downloads.sql](../../internal/meta/postgres/migrations/00118_upstream_downloads.sql), [00140_upstream_download_units.sql](../../internal/meta/postgres/migrations/00140_upstream_download_units.sql), [queries/upstream_downloads.sql](../../internal/meta/postgres/queries/upstream_downloads.sql), [tables_upstream_downloads.go](../../internal/meta/postgres/tables_upstream_downloads.go) | The two tables (00140: the unit's key, its files and the failed file), their statements (rows cross as JSON text, so the package needs no driver types; the trim and the read by unit) and their export class |
 | [internal/app/wire_upstream_downloads.go](../../internal/app/wire_upstream_downloads.go) | The area `upstream_downloads`: one tracker and one publisher per process, the store |
-| [internal/api/v1/upstream_downloads_api.go](../../internal/api/v1/upstream_downloads_api.go) | The two handlers over the port `UpstreamDownloadReader`: freshness, elapsed time, names, the order of the running list |
+| [internal/api/v1/upstream_downloads_api.go](../../internal/api/v1/upstream_downloads_api.go) | The two handlers over the port `UpstreamDownloadReader`: `fills.Merge`, then the names, `parts` and `failure.path` |
 
 ## The life of one download
 
-1. **Begin.** `fetcher.artifact` admits the body, then `beginDownload` hands the tracker the facts: the repository's id, name and format,
-   the request's package and version (a queue row's version when the request has none, an OCI blob), the path, the announced length or
-   -1, and the cause: `Request.Cause`, or a client's with `Caller.Principal`. The tracker gives the download a UUIDv7 and wraps the body.
-2. **Reads.** Every read of the body adds its bytes to the download's atomic counter and to `quader_remote_upstream_download_bytes_total`;
+1. **A file begins.** `fetcher.artifact` admits the body, then `beginDownload` hands the tracker the facts: the repository's id, name and
+   format, the request's package and version (the cause's version when the request has none: a queue row's, a mirror item's), the path,
+   the announced length or -1, the cause (`Request.Cause`, or a client's with `Caller.Principal`) and, from `unitOf`, the unit's key,
+   whether it is open (a client's or a mirror pass's image: it lingers and has no total) and whether its version is to be resolved.
+2. **It joins its unit.** The tracker finds the running unit of the key or begins one (a UUIDv7; a file without a key is a unit of its
+   own, `p|<id>`); the unit takes the first version a file names and the hold of its key, if a queue row's run took one. The file's body
+   is wrapped.
+3. **Reads.** Every read of the body adds its bytes to the file's atomic counter and to `quader_remote_upstream_download_bytes_total`;
    the counted reader sits under the size limit and the charge of the download limits, so the bytes are those read before the spool.
-3. **End.** `endDownload` maps the fetch's result: `stored` is `completed` (a duplicate flight that found it stored too); a fetch whose
-   context ended (a pre-emption, a cancelled job, the shutdown) or that reports `ErrPreempted` is `cancelled`; every other result is
+4. **A file ends.** `endDownload` maps the fetch's result: `stored` is `completed` (a duplicate flight that found it stored too); a fetch
+   whose context ended (a pre-emption, a cancelled job, the shutdown) or that reports `ErrPreempted` is `cancelled`; every other result is
    `failed` with `Describe`'s class and code; an empty result (the body went to its client unstored) is `failed` with the class `storage`
-   and the code `object_store_unavailable`. The download leaves the running set and joins the buffer of ended ones.
-4. **Publication.** `Publisher.Tick` takes a snapshot: every running download is sampled, the 200 that run longest go into the live row
-   as JSON with their bytes, speed and elapsed milliseconds, the rest are counted in `omitted`. With something running the row is
-   upserted; when the last download ended it is deleted; with nothing running and no row nothing is written. The ended downloads are
-   inserted (`ON CONFLICT (id) DO UPDATE`) and the table is trimmed to the newest 100 by `(finished_at, id)`, in the same transaction. A
-   publication that fails hands its ended downloads back to the buffer.
-5. **The read.** `Store.ReadUpstreamDownloads` reads PostgreSQL's clock, every live row with its age on that clock, the newest 100
-   finished rows, the queues an upstream's rate limit holds (`UpstreamDownloadLimited`: at most 100 rows of `remote_download_limits` whose
-   time lies ahead, each with an index count of its waiting rows, the repository's name and its upstream URL, which the handler turns
-   into the preset's name or the host, `waiting` of the answer) and the names of the repositories (project, key, format) and principals
-   (not `anonymous`, not `authenticated`) they name. The handler leaves out a row older than three intervals, adds the age to the elapsed time, leaves out an entry whose repository
-   is gone (it still counts in `runningCount`), and orders the running entries by their begin.
+   and the code `object_store_unavailable`. The file leaves the unit's running set; its bytes stay the unit's.
+5. **The unit ends** when no file of it runs, no hold holds it and, for an open unit, `proxy.UnitLinger` (5 s) passed since its last
+   file (the publication's snapshot ends those). Its outcome is the run's failure if the run failed it, else failed by the newest attempt
+   of a file that failed (with that file's path), else cancelled, else completed; its total is what the hold named, else none for an open
+   unit, else the sum of its files' lengths. It joins the buffer of ended units.
+6. **A queue row's run** (`RunDownload`) takes `Hold("q|<row>|<job>")` before it plans, names the files of the content with their sizes
+   (`Expect`) after it, settles each file it finds stored or refused (`Settle`), fails the unit with the run's failure (`Fail`) and
+   releases it at its end: the unit runs between its files, its bar has the named total, and a run that fetched nothing shows nowhere.
+7. **Publication.** `Publisher.Tick` takes a snapshot: the lingers that passed end, every running unit is sampled, the 200 that run longest
+   go into the live row as JSON with their key, files, bytes, speed and elapsed milliseconds, the rest are counted in `omitted`. The
+   versions of the pulls not yet resolved are asked of the `Resolver` in one statement. With something running the row is upserted; when
+   the last unit ended it is deleted; with nothing running and no row nothing is written. The ended units are inserted
+   (`ON CONFLICT (id) DO UPDATE`) and the table is trimmed to the rows of the newest 100 units, in the same transaction. A publication that
+   fails hands its ended units back to the buffer.
+8. **The read.** `Store.ReadUpstreamDownloads` reads PostgreSQL's clock, every live row with its age on that clock, the rows of the newest
+   100 units (at most 1,000), the queues an upstream's rate limit holds (`UpstreamDownloadLimited`: at most 100 rows of
+   `remote_download_limits` whose time lies ahead, each with an index count of its waiting rows, the repository's name and its upstream URL,
+   which the handler turns into the preset's name or the host, `waiting` of the answer) and the names of the repositories (project, key,
+   format) and principals (not `anonymous`, not `authenticated`) they name. `fills.Merge` leaves out a row older than three intervals,
+   adds the age to the elapsed time, joins the records of one key (a client's key while the next begins within `MergeGap` of the end of
+   the ones before), sums bytes, files, totals and speeds, ranks the outcomes, orders the running units by their begin and keeps the newest
+   100 finished; the handler leaves out a unit whose repository is gone (it still counts in `runningCount`).
 
 ## Speed and the samples
 
@@ -100,13 +123,18 @@ of its 200 get no end.
 | Tier | Test | Data | Time |
 |---|---|---|---|
 | Unit | `internal/fills` `TestR_OPS_050_TheSpeedOfARunningDownload`, `TestR_OPS_050_APublicationWritesWhatRunsAndWhatEnded`, `TestR_OPS_051_AStaleLiveRowEndsInterrupted`, `TestR_OPS_049_AFinishedDownloadKeepsOnlyWhatItCanStore` (a fake clock and sink) | none | ~0.1 s |
-| Unit | `internal/proxy` `TestR_OPS_049_TheEngineReportsEachArtifactBody` (the begin, the counted body, every outcome) | 64 KiB | ms |
-| Unit | `internal/formathost` `TestR_OPS_049_TheCauseOfABackgroundFill` | none | ms |
-| Unit | `internal/api/v1` `TestR_OPS_052_TheDownloadsFromUpstreams` (seven callers on both operations, the shape, freshness, elapsed, gone repository and principal, the queues a limit holds with the upstream's name) | in-memory view | ~0.3 s |
-| Integration | area `proxy` `TestR_OPS_050_TwoReplicasShowOneRunningDownload`: the engine's path of R-OPS-049 (three concurrent misses are one download, a hit, a `HEAD`, a `404` and a document none, no length, a digest mismatch), a held 64 KiB artifact read by another replica, the trim of 101, the sweep and its replacement, the cascade | one 64 KiB artifact, ~105 tiny rows | ~3 s |
+| Unit | `internal/fills` `TestR_OPS_049_TheFilesOfOneKeyAreOneDownload` (a pull of 31 layers, the linger, a failed layer, a version's two files), `TestR_OPS_049_AQueueRowsRunIsOneDownload` (the hold, the named total, the run's failure, a run that fetched nothing), `TestR_OPS_049_APullsVersionIsResolvedByThePublication`, `TestR_OPS_049_TheReadMergesTheRecordsOfOneUnit` (two replicas, `MergeGap`, the outcome's rank, the newest 100) | a few hundred bytes | ~5 ms |
+| Unit | `internal/proxy` `TestR_OPS_049_TheEngineReportsEachArtifactBody` (the begin, the unit's key of every cause and format, the counted body, every outcome) | 64 KiB | ms |
+| Unit | `internal/formathost` `TestR_OPS_049_TheCauseOfABackgroundFill` (with the keys) | none | ms |
+| Unit | `internal/formats` `TestR_OPS_053_RegisterRefusesARemoteFormatThatDoesNotSayWhatADownloadIs`, `internal/formats/all` `TestR_OPS_053_EveryRemoteFormatDeclaresWhatOneDownloadIs` | none | ms |
+| Unit | `internal/api/v1` `TestR_OPS_052_TheDownloadsFromUpstreams` (seven callers on both operations, the shape, freshness, elapsed, gone repository and principal, the queues a limit holds with the upstream's name, a pull two replicas served as one download, the failed file) | in-memory view | ~0.3 s |
+| Integration | area `proxy` `TestR_OPS_050_TwoReplicasShowOneRunningDownload`: the engine's path of R-OPS-049 (three concurrent misses are one file, a hit, a `HEAD`, a `404` and a document none, no length, a digest mismatch), a held 64 KiB artifact read by another replica, the trim of 101, the sweep and its replacement, the trim per unit (a unit of three replicas' rows among 100) and its merge, the cascade | one 64 KiB artifact, ~210 tiny rows | ~3 s |
+| Integration | area `ociremote` `TestR_OPS_049_AnImageIsOneDownload`: a client's pull of the stub's `acme/b:1.0` (an index of two platforms, each with an attestation manifest) is one download named `1.0` with every file and no total, a download ahead of the tag one whose total is reached, both read on a replica of the role `api` | the stub's image, a few KiB | ~10 s (the 5 s linger, an interval of 1 s) |
 
 The engine's path is tested in the integration area because the unit tier of `internal/proxy` has no item store; the mapping of every
-result is a unit test. No format's client and no e2e set: the hook sits in the engine every format shares, so a format adds nothing.
+result and the key of every cause are unit tests. No format's client and no e2e set: the hook sits in the engine every format shares, and
+a format adds one row to `TestR_OPS_053_EveryRemoteFormatDeclaresWhatOneDownloadIs`. The OCI case is the one whose unit is resolved after
+the begin (an image's blobs name no tag), so it is the one integration case of a format.
 
 ## The write load, measured
 

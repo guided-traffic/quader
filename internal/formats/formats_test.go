@@ -202,6 +202,32 @@ func TestR_SIG_022_RegisterRefusesAFormatThatDoesNotDeclareItsSignatures(t *test
 	}
 }
 
+// TestR_OPS_053_RegisterRefusesARemoteFormatThatDoesNotSayWhatADownloadIs: a format with the class remote declares its download unit
+// (operations-and-observability.md R-OPS-049, R-OPS-053), a format without the class declares none, and a value outside the enumeration
+// is refused.
+func TestR_OPS_053_RegisterRefusesARemoteFormatThatDoesNotSayWhatADownloadIs(t *testing.T) {
+	d := valid("unit-remote")
+	d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
+	t.Run("R-OPS-053 a remote format without the declaration", func(t *testing.T) {
+		mustPanic(t, fake{d: d, remote: stubRemote{}}, "declares no DownloadUnit")
+	})
+	t.Run("R-OPS-053 an unknown value", func(t *testing.T) {
+		d := d
+		d.DownloadUnit = DownloadUnitImage + 1
+		mustPanic(t, fake{d: d, remote: stubRemote{}}, "unknown DownloadUnit")
+	})
+	t.Run("R-OPS-053 a local format with one", func(t *testing.T) {
+		l := valid("unit-local")
+		l.DownloadUnit = DownloadUnitFile
+		mustPanic(t, fake{d: l}, "has no class remote")
+	})
+	t.Run("R-OPS-053 a remote format with one registers", func(t *testing.T) {
+		d := d
+		d.DownloadUnit = DownloadUnitImage
+		Register(fake{d: d, remote: stubRemote{}})
+	})
+}
+
 // TestR_ARCH_010_RegisterChecksTheProbeChallengeFact: ProbeChallengeReachable needs the class remote, a probe path and a remote adapter with
 // the token handshake (Q-REPO-280).
 func TestR_ARCH_010_RegisterChecksTheProbeChallengeFact(t *testing.T) {
@@ -209,6 +235,7 @@ func TestR_ARCH_010_RegisterChecksTheProbeChallengeFact(t *testing.T) {
 	d.ProbeChallengeReachable = true
 	t.Run("without the class", func(t *testing.T) { mustPanic(t, fake{d: d}, "ProbeChallengeReachable") })
 	d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
+	d.DownloadUnit = DownloadUnitFile
 	t.Run("without a probe path", func(t *testing.T) {
 		mustPanic(t, fake{d: d, remote: stubRemote{}}, "ProbeChallengeReachable")
 	})
@@ -230,6 +257,7 @@ func TestR_REPO_062_RegisterRefusesAPresetURLThatIsNotNormalized(t *testing.T) {
 	withPresets := func(id string, presets ...catalog.UpstreamPreset) fake {
 		d := valid(id)
 		d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
+		d.DownloadUnit = DownloadUnitFile
 		d.UpstreamPresets = presets
 		return fake{d: d, remote: stubRemote{}}
 	}
@@ -273,6 +301,7 @@ func TestR_ARCH_010_RegisterChecksTheClassMatrix(t *testing.T) {
 	t.Run("Remote listed and Remote() nil", func(t *testing.T) {
 		d := valid("probe-rem")
 		d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
+		d.DownloadUnit = DownloadUnitFile
 		mustPanic(t, fake{d: d}, "Remote() returns nil")
 	})
 	t.Run("Virtual listed and Virtual() nil", func(t *testing.T) {
@@ -286,6 +315,7 @@ func TestR_ARCH_010_RegisterChecksTheClassMatrix(t *testing.T) {
 	t.Run("both present registers", func(t *testing.T) {
 		d := valid("probe-both")
 		d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote, Virtual}, testCatalogue, anyCanon{}
+		d.DownloadUnit = DownloadUnitFile
 		Register(fake{d: d, remote: stubRemote{}, virt: stubVirtual{}})
 		e, ok := catalog.Default().Lookup("probe-both")
 		if !ok || !e.Supports(Remote) || !e.Supports(Virtual) {
@@ -723,9 +753,11 @@ func (stoodAuthRemote) StoodMissing(Path, http.Header) bool { return true }
 func TestR_ARCH_008_RegisterReadsTheStoodChallengeAndRefusesItWithoutAHandshake(t *testing.T) {
 	d := valid("probe-stood")
 	d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
+	d.DownloadUnit = DownloadUnitFile
 	mustPanic(t, fake{d: d, remote: stoodRemote{}}, "without an Authenticator")
 	d2 := valid("probe-stood2")
 	d2.Classes, d2.Catalogue, d2.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
+	d2.DownloadUnit = DownloadUnitFile
 	Register(fake{d: d2, remote: stoodAuthRemote{}})
 	got := RemoteCapabilities("probe-stood2")
 	if got.Stood == nil || got.Auth == nil || !got.Stood.StoodMissing(Path{}, nil) {
@@ -733,6 +765,7 @@ func TestR_ARCH_008_RegisterReadsTheStoodChallengeAndRefusesItWithoutAHandshake(
 	}
 	d3 := valid("probe-nostood")
 	d3.Classes, d3.Catalogue, d3.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
+	d3.DownloadUnit = DownloadUnitFile
 	Register(fake{d: d3, remote: authRemote{}})
 	if c := RemoteCapabilities("probe-nostood"); c.Stood != nil {
 		t.Errorf("capabilities = %+v, want no stood reader", c)
@@ -744,9 +777,11 @@ func TestR_ARCH_008_RegisterReadsTheStoodChallengeAndRefusesItWithoutAHandshake(
 func TestR_ARCH_008_RegisterReadsTheHandshakeAndTheRevalidation(t *testing.T) {
 	d := valid("probe-auth")
 	d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
+	d.DownloadUnit = DownloadUnitFile
 	Register(fake{d: d, remote: authRemote{}})
 	d2 := valid("probe-noauth")
 	d2.Classes, d2.Catalogue, d2.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
+	d2.DownloadUnit = DownloadUnitFile
 	Register(fake{d: d2, remote: stubRemote{}})
 	got := RemoteCapabilities("probe-auth")
 	if got.Auth == nil || got.Revalidate == nil {

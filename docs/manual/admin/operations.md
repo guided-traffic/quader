@@ -176,22 +176,27 @@ Quader shows what it loads from the upstreams of its remote repositories now, an
 of the capability `content:metadata-read` see it: the roles `admin` and `auditor`. A project's Owner, a `security-admin` and every other
 user do not; a repository's own queue of downloads is its tab **Downloads**.
 
-- **What counts as a download:** the file of a package (a tarball, a `.nupkg`, a `.deb`, a layer of an image) that Quader fetches from an
-  upstream and stores, whatever caused it: a client that asked for something the cache does not hold, a row of a repository's download
-  queue (a person's download ahead, a bulk, a probe, a request or an allow), a mirror's pass, or the vulnerability scanning's database.
-  Ten clients that ask for the same file at once cause one download.
+- **What a download is:** what a person asked for, never one of its files: an image with its manifests, configs, layers and attestations
+  (for every platform it fetched), a version's package (a tarball, a `.nupkg`, a `.deb`, a collection's archive), a row of a repository's
+  download queue (a person's download ahead, a bulk's version, a probe, a request or an allow), a mirror pass's version, or the vulnerability
+  scanning's database. Its files are what Quader fetches from an upstream and stores, whatever caused it; ten clients that ask for the same
+  file at once cause one fetch. A client's pull of an image is one download, named by the tag (or the digest it was pulled by), however
+  many replicas served its layers; a client that pulls two tags of one image within seconds makes one download of both.
 - **What does not count:** the documents that list packages and versions (an npm package document, an APT index, a tag list), a file
-  answered from the cache, a `HEAD`, an upstream's error answer, a search of the upstream, what a Bastion or the ClamAV updater fetches by
-  itself, and the sync of the advisory sources.
-- **A running download** shows its repository, the package and version, the bytes so far, the size the upstream announced (and so the
-  progress; an upstream that announces no size shows only the bytes), the speed over the last 10 seconds, how long it has run, what caused
+  answered from the cache (an image whose layers were all cached is no download; one whose layers partly were counts the bytes fetched),
+  a `HEAD`, an upstream's error answer, a search of the upstream, what a Bastion or the ClamAV updater fetches by itself, and the sync of
+  the advisory sources.
+- **A running download** shows its repository, the package and version, the bytes so far, its size where it is known (and so the
+  progress: a download ahead knows the sizes of its files before it fetches them, a single file has the size the upstream announced; a
+  client's pull of an image shows only its bytes, because which layers the client lacks is the client's to know), the speed over the last 10 seconds, how long it has run, what caused
   it and who: the client's user, or the person who started the queue row.
 - **A finished download** shows its size, its duration, its average speed (size over duration) and how it ended: **completed**;
   **failed** with the reason in the classes of the download queue (the network, the upstream's answer, the integrity check, a size limit,
-  the store); **cancelled** (a client's request took the slot of a background download, or the job was cancelled, or the replica shut
+  the store) and the file it failed at; **cancelled** (a client's request took the slot of a background download, or the job was cancelled, or the replica shut
   down); **interrupted** (the replica that ran it stopped without saying so; a replica that was only slow writes the real end later).
 - **How fresh:** every replica writes its running downloads every 2 seconds; a replica that has not written for three of those intervals
-  is left out. The last 100 are kept until 100 newer downloads push them out, whatever their age. Neither list is in a backup.
+  is left out. A pull of an image stays under **Running** for 5 seconds after its last layer, in case the client asks for one more. The
+  last 100 are kept until 100 newer downloads push them out, whatever their age. Neither list is in a backup.
 - **What is never kept:** the upstream's address (a signed address can hold a credential), headers, the client's address. A queue
   that waits for an upstream's limit names the upstream by its preset's name or its host only.
 - **No one clears the finished list** for everybody: no operation removes its rows.
@@ -218,16 +223,16 @@ The button opens a panel from the right:
   holds, with how many downloads wait, who limits ("Docker Hub limits requests"), and until when, or when Quader asks again where the
   upstream named no time; **Show in queue** opens the repository's tab **Downloads**. Its downloads run nowhere while they wait, which is
   why **Running** can be empty although a queue is not done.
-- **Running**, the oldest first: the package and its version (an image layer without a version shows its digest's first 12 digits), a
-  bar where the upstream announced the size, the bytes so far of the size, the speed (a dash in the first second), the time since it
+- **Running**, the oldest first, one row per download however many files it takes: the package and its version (an image pulled by its
+  digest shows the digest's first 12 digits; an image whose tag is not known yet its name alone), a bar where the size is known, the bytes so far of the size, the speed (a dash in the first second), the time since it
   began, the format, the repository, and what caused it: **Client** with the person who asked, the person who started a queue row (or
   **Bulk**, **Probe**, **Request**, **Allow**), **Mirror pass**, **Vulnerability database**. A queued download links **Show in queue**:
   the repository's tab **Downloads** with that package's rows. With more running than the replicas list (200 each), a line says how
   many more.
 - **Finished**, the newest first: the size, the duration, the average speed (none below one second, which reads **< 1 s**) and when it
   ended. A download that did not complete carries **Failed** with the failure's class (**Failed: Network**; pointing at it shows the
-  code), **Cancelled** or **Interrupted**.
-- **Filter downloads** narrows both lists by name, version, path or repository, in the browser.
+  code and the file that failed), **Cancelled** or **Interrupted**.
+- **Filter downloads** narrows both lists by name, version, the first file's path or repository, in the browser.
 - **Hide all** hides the finished downloads listed now **on this device only** (the browser keeps the time of the newest one); a
   download that ends later shows again, and **Show again** brings the hidden ones back. Nothing is removed for other administrators.
 - The open panel refreshes every `publish_interval` while the window is in view; closing it stops that. A refresh that fails keeps the

@@ -6,7 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// The bounds of R-OPS-050 and R-OPS-051: the running downloads one replica publishes, the finished downloads the list keeps.
+// The bounds of R-OPS-050 and R-OPS-051: the running downloads one replica publishes, the finished downloads the list keeps. A download is
+// a unit: what a person asked for (R-OPS-049), whatever number of files it took.
 const (
 	// MaxPublished is the most running downloads one replica writes into its live row, the longest running first; the rest are counted.
 	MaxPublished = 200
@@ -19,6 +20,12 @@ const (
 	SweepIntervals = 10
 	// MinSweepAge is the least age of a swept row, and the least time between two sweeps of a replica.
 	MinSweepAge = 30 * time.Second
+	// MergeGap is the most time between two records of one client's unit key (on two replicas, or one after the other on one) that
+	// are still one download (R-OPS-049, Q-OPS-429): a pull whose layers several replicas served is one row, the same image pulled
+	// again an hour later is a second.
+	MergeGap = 10 * time.Second
+	// maxResolved is the most units a publication asks the version of (Resolver).
+	maxResolved = 50
 )
 
 // The outcomes of a finished download (R-OPS-049).
@@ -29,17 +36,22 @@ const (
 	OutcomeInterrupted = "interrupted"
 )
 
-// Entry is one running download as a replica publishes it: a member of upstream_download_live.downloads. The JSON names are short and
-// read by replicas of other releases; a field is added, never renamed.
+// Entry is one running download as a replica publishes it: a member of upstream_download_live.downloads. The JSON names are short.
 type Entry struct {
-	ID      string `json:"id"`
+	ID string `json:"id"`
+	// Unit is the unit's key (proxy.DownloadStart.Unit, "p|<id>" for a unit of one file): the read merges the entries and rows of one
+	// key across replicas.
+	Unit    string `json:"unit"`
 	RepoID  int64  `json:"repo"`
 	Name    string `json:"name"`
 	Version string `json:"version"`
-	Path    string `json:"path"`
-	// Bytes are the bytes read from the upstream's body at the publication.
+	// Path is the path of the unit's first file.
+	Path string `json:"path"`
+	// Parts is the number of the unit's files so far.
+	Parts int `json:"parts"`
+	// Bytes are the bytes read from the upstream's bodies of the unit's files at the publication.
 	Bytes int64 `json:"bytes"`
-	// Total is the announced length, nil when the upstream announced none.
+	// Total is the unit's size where it is known (R-OPS-049 "The facts of a unit"), nil otherwise.
 	Total *int64 `json:"total,omitempty"`
 	// Speed is the bytes per second of the window (Q-OPS-421), nil in the first second.
 	Speed     *int64    `json:"speed,omitempty"`
@@ -51,6 +63,8 @@ type Entry struct {
 	QueueRow    string `json:"queueRow,omitempty"`
 	// By is the principal's id, "" for none.
 	By string `json:"by,omitempty"`
+	// resolve says the unit's version is still to be resolved (Resolver); not published.
+	resolve bool
 }
 
 // Live is one replica's live row.
@@ -64,14 +78,16 @@ type Live struct {
 	Downloads []Entry
 }
 
-// Finished is an ended download: a row of upstream_download_finished. The JSON names are the row's columns, so a row read as to_jsonb
-// and a row written through jsonb_to_recordset have one shape.
+// Finished is an ended download: a row of upstream_download_finished, one unit of one replica. The JSON names are the row's columns, so
+// a row read as to_jsonb and a row written through jsonb_to_recordset have one shape.
 type Finished struct {
 	ID           string    `json:"id"`
+	Unit         string    `json:"unit"`
 	RepoID       int64     `json:"repo_id"`
 	Name         string    `json:"name"`
 	Version      string    `json:"version"`
 	Path         string    `json:"path"`
+	Parts        int       `json:"parts"`
 	Bytes        int64     `json:"bytes"`
 	Total        *int64    `json:"total"`
 	StartedAt    time.Time `json:"started_at"`
@@ -80,11 +96,15 @@ type Finished struct {
 	Outcome      string    `json:"outcome"`
 	FailureClass string    `json:"failure_class,omitempty"`
 	FailureCode  string    `json:"failure_code,omitempty"`
-	Origin       string    `json:"origin"`
-	QueueOrigin  string    `json:"queue_origin,omitempty"`
-	QueueRow     *string   `json:"queue_row"`
-	By           *string   `json:"by_principal"`
-	Replica      string    `json:"replica_name"`
+	// FailurePath is the path of the file whose failure failed the unit.
+	FailurePath string  `json:"failure_path,omitempty"`
+	Origin      string  `json:"origin"`
+	QueueOrigin string  `json:"queue_origin,omitempty"`
+	QueueRow    *string `json:"queue_row"`
+	By          *string `json:"by_principal"`
+	Replica     string  `json:"replica_name"`
+	// resolve says the unit's version is still to be resolved (Resolver); not stored.
+	resolve bool
 }
 
 // RepoName is a repository as a read resolves it by id.
@@ -92,8 +112,8 @@ type RepoName struct {
 	Project, Key, Format string
 }
 
-// View is what a read of the API gets: every live row with its age, the newest finished downloads, and the names of the repositories and
-// principals they name, resolved at the read. A repository or principal that is gone is absent from its map.
+// View is what a read of the API gets: every live row with its age, the finished rows of the newest units, and the names of the
+// repositories and principals they name, resolved at the read. A repository or principal that is gone is absent from its map.
 type View struct {
 	// Now is PostgreSQL's clock at the read.
 	Now        time.Time
@@ -126,9 +146,9 @@ func Interrupted(replica string, writtenAt time.Time, entries []Entry) []Finishe
 	out := make([]Finished, 0, len(entries))
 	for _, e := range entries {
 		f := Finished{
-			ID: e.ID, RepoID: e.RepoID, Name: e.Name, Version: e.Version, Path: e.Path, Bytes: e.Bytes, Total: e.Total,
-			StartedAt: e.StartedAt, FinishedAt: writtenAt, DurationMs: max(e.ElapsedMs, 0), Outcome: OutcomeInterrupted,
-			Origin: e.Origin, QueueOrigin: e.QueueOrigin, Replica: replica,
+			ID: e.ID, Unit: unitKey(e.Unit, e.ID), RepoID: e.RepoID, Name: e.Name, Version: e.Version, Path: e.Path, Parts: max(e.Parts, 1),
+			Bytes: e.Bytes, Total: e.Total, StartedAt: e.StartedAt, FinishedAt: writtenAt, DurationMs: max(e.ElapsedMs, 0),
+			Outcome: OutcomeInterrupted, Origin: e.Origin, QueueOrigin: e.QueueOrigin, Replica: replica,
 		}
 		if e.QueueRow != "" {
 			row := e.QueueRow
@@ -141,6 +161,14 @@ func Interrupted(replica string, writtenAt time.Time, entries []Entry) []Finishe
 		out = append(out, f)
 	}
 	return out
+}
+
+// unitKey is a unit's key; a unit of one file without a key of its own is keyed by its id.
+func unitKey(key, id string) string {
+	if key == "" {
+		return "p|" + id
+	}
+	return key
 }
 
 // validUUID reports whether s is a UUID: a principal or a queue row that is not one is not recorded, so that a row of the insert never

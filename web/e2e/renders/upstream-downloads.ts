@@ -2,8 +2,10 @@ import { Page, Route, expect } from '@playwright/test';
 
 /**
  * The top bar's button **Downloads** and its panel (api-and-ui.md R-UI-210 to R-UI-212), answered in the browser: the render profile
- * fetches nothing from the internet, so the downloads from upstreams that the panel lists are the walk's. The walk finds every control
- * by its place, so the German pass walks it too. Nothing is changed on the server.
+ * fetches nothing from the internet, so the downloads from upstreams that the panel lists are the walk's. Every row is one download, the
+ * unit a person asked for (operations-and-observability.md R-OPS-049): an image with its platforms' manifests, configs and layers is
+ * one row with the number of its files in `parts`. The walk finds every control by its place, so the German pass walks it too. Nothing
+ * is changed on the server.
  */
 
 type Json = Record<string, unknown>;
@@ -13,6 +15,8 @@ const ago = (seconds: number): string => new Date(Date.now() - seconds * 1000).t
 
 const MiB = 1_048_576;
 const DIGEST = 'sha256:7a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9';
+/** The owner's image of 2026-11-26: its tag downloaded ahead fetched 31 files of every platform, 67 bytes to 12 MiB each. */
+const OWNERS_IMAGE = 'guidedtraffic/stackit-s3-provisioner';
 /** A scoped npm name of 120 characters: the longest a row must wrap inside itself. */
 const LONG_NAME = '@acme-platform-engineering/shared-frontend-infrastructure-design-system-tokens-and-theming-utilities-for-web-apps-nextv2';
 
@@ -23,6 +27,7 @@ function running(over: Json): Json {
     name: '',
     version: '',
     path: '',
+    parts: 1,
     bytes: 0,
     total: null,
     bytesPerSecond: null,
@@ -44,6 +49,7 @@ function finished(over: Json): Json {
     name: '',
     version: '',
     path: '',
+    parts: 1,
     bytes: 0,
     total: null,
     bytesPerSecond: null,
@@ -62,11 +68,12 @@ function finished(over: Json): Json {
 }
 
 /**
- * Five running downloads: an npm tarball with its total, halfway; a Debian package of a mirror's pass without a total; a version-less
- * OCI blob a person queued; a 120-character scoped npm name of a bulk; the vulnerability database in its first second. 140 more run
- * than the replicas listed.
+ * Six running downloads: an npm tarball with its total, halfway; a Debian package of a mirror's pass without a total; the owner's image
+ * that a person downloads ahead, every platform's 31 files as one row with the total its run named; a client's pull of an image, whose
+ * files nobody names in advance, without a total; a 120-character scoped npm name of a bulk; the vulnerability database in its first
+ * second. 140 more run than the replicas listed.
  */
-function fiveRunning(): Json[] {
+function sixRunning(): Json[] {
   return [
     running({
       id: '0193d1a0-0000-7000-8000-000000000001',
@@ -94,8 +101,10 @@ function fiveRunning(): Json[] {
     running({
       id: '0193d1a0-0000-7000-8000-000000000003',
       repository: { project: 'upstream', key: 'docker-hub', format: 'oci' },
-      name: 'library/ubuntu',
-      path: `v2/library/ubuntu/blobs/${DIGEST}`,
+      name: OWNERS_IMAGE,
+      version: '1.20.14',
+      path: `${OWNERS_IMAGE}/_manifests/${DIGEST}`,
+      parts: 19,
       bytes: 22_020_096,
       total: 30_408_704,
       bytesPerSecond: 5_452_595,
@@ -103,8 +112,21 @@ function fiveRunning(): Json[] {
       origin: 'queue',
       queueOrigin: 'person',
       queueRow: '0193d19f-0000-7000-8000-000000000001',
-      by: { id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a10', name: 'priya' },
+      by: { id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a10', name: 'ada' },
       replica: 'quader-worker-6f9c7d4b5-2xk4p',
+    }),
+    running({
+      id: '0193d1a0-0000-7000-8000-000000000006',
+      repository: { project: 'upstream', key: 'docker-hub', format: 'oci' },
+      name: 'library/ubuntu',
+      version: '26.10',
+      path: `library/ubuntu/_manifests/${DIGEST.replace('7a1b', '5d6e')}`,
+      parts: 3,
+      bytes: 13_212_058,
+      total: null,
+      bytesPerSecond: 8_912_896,
+      elapsedSeconds: 2.2,
+      by: { id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a11', name: 'sam' },
     }),
     running({
       id: '0193d1a0-0000-7000-8000-000000000004',
@@ -125,7 +147,7 @@ function fiveRunning(): Json[] {
       repository: { project: 'upstream', key: 'scanner-trivy', format: 'oci' },
       name: 'aquasecurity/trivy-db',
       version: '2',
-      path: `v2/aquasecurity/trivy-db/blobs/${DIGEST.replace('7a1b', '9c8d')}`,
+      path: `aquasecurity/trivy-db/_blobs/${DIGEST.replace('7a1b', '9c8d')}`,
       bytes: 262_144,
       total: 83_886_080,
       bytesPerSecond: null,
@@ -140,14 +162,15 @@ const NAMES: readonly (readonly [format: string, project: string, key: string, n
   ['npm', 'web-frontend', 'npmjs', 'react', '19.2.0', 'react/-/react-19.2.0.tgz'],
   ['npm', 'web-frontend', 'npmjs', '@angular/core', '22.0.1', '@angular/core/-/core-22.0.1.tgz'],
   ['nuget', 'dotnet', 'nuget-org', 'Newtonsoft.Json', '13.0.3', 'v3-flatcontainer/newtonsoft.json/13.0.3/newtonsoft.json.13.0.3.nupkg'],
-  ['oci', 'upstream', 'docker-hub', 'library/postgres', '18.1', `v2/library/postgres/manifests/18.1`],
+  ['oci', 'upstream', 'docker-hub', 'library/postgres', '18.1', `library/postgres/_manifests/${DIGEST.replace('7a1b', '1f2e')}`],
   ['deb', 'platform', 'debian', 'openssl', '3.5.4-1', 'pool/main/o/openssl/openssl_3.5.4-1_amd64.deb'],
   ['ansible', 'automation', 'galaxy', 'community.general', '11.4.0', 'download/community-general-11.4.0.tar.gz'],
 ];
 
 /**
- * The last 100 finished downloads: each outcome (completed, failed with the class network and with integrity, cancelled,
- * interrupted), durations of 72 s, 0.4 s and 1 h 5 min, then completed downloads of every format, older and older.
+ * The last 100 finished downloads: each outcome (completed; the owner's image downloaded ahead, failed with the class network at one of
+ * its 23 files; a NuGet package failed with integrity; cancelled; interrupted), durations of 72 s, 0.4 s and 1 h 5 min, a client's pull
+ * of an image, then completed downloads of every format, older and older.
  */
 function hundredFinished(): Json[] {
   const first: Json[] = [
@@ -166,19 +189,34 @@ function hundredFinished(): Json[] {
     finished({
       id: '0193d1b0-0000-7000-8000-000000000002',
       repository: { project: 'upstream', key: 'docker-hub', format: 'oci' },
-      name: 'library/nginx',
-      path: `v2/library/nginx/blobs/${DIGEST.replace('7a1b', '3e4f')}`,
+      name: OWNERS_IMAGE,
+      version: '1.20.13',
+      path: `${OWNERS_IMAGE}/_manifests/${DIGEST.replace('7a1b', '3e4f')}`,
+      parts: 23,
       bytes: 9_437_184,
       total: 31_457_280,
       durationSeconds: 18.2,
       bytesPerSecond: 518_532,
       finishedAt: ago(95),
       outcome: 'failed',
-      failure: { class: 'network', code: 'connection_reset' },
+      failure: { class: 'network', code: 'connection_reset', path: `${OWNERS_IMAGE}/_blobs/${DIGEST.replace('7a1b', '4a5b')}` },
       origin: 'queue',
       queueOrigin: 'person',
       queueRow: '0193d19f-0000-7000-8000-000000000003',
-      by: { id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a10', name: 'priya' },
+      by: { id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a10', name: 'ada' },
+    }),
+    finished({
+      id: '0193d1b0-0000-7000-8000-000000000006',
+      repository: { project: 'upstream', key: 'docker-hub', format: 'oci' },
+      name: 'library/nginx',
+      version: '1.29.3',
+      path: `library/nginx/_manifests/${DIGEST.replace('7a1b', '6c7d')}`,
+      parts: 9,
+      bytes: 72_351_744,
+      durationSeconds: 11.6,
+      bytesPerSecond: 6_237_219,
+      finishedAt: ago(110),
+      by: { id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a11', name: 'sam' },
     }),
     finished({
       id: '0193d1b0-0000-7000-8000-000000000003',
@@ -192,7 +230,7 @@ function hundredFinished(): Json[] {
       bytesPerSecond: 262_142,
       finishedAt: ago(140),
       outcome: 'failed',
-      failure: { class: 'integrity', code: 'digest_mismatch' },
+      failure: { class: 'integrity', code: 'digest_mismatch', path: 'v3-flatcontainer/microsoft.extensions.dependencyinjection/10.0.0/microsoft.extensions.dependencyinjection.10.0.0.nupkg' },
     }),
     finished({
       id: '0193d1b0-0000-7000-8000-000000000004',
@@ -224,7 +262,7 @@ function hundredFinished(): Json[] {
       origin: 'mirror',
     }),
   ];
-  const rest = Array.from({ length: 95 }, (_, i): Json => {
+  const rest = Array.from({ length: 94 }, (_, i): Json => {
     const [format, project, key, name, version, path] = NAMES[i % NAMES.length]!;
     const bytes = 40_960 + ((i * 7_919_113) % 48_000_000);
     const duration = 0.6 + (i % 9) * 3.7;
@@ -234,8 +272,9 @@ function hundredFinished(): Json[] {
       name,
       version,
       path,
+      parts: format === 'oci' ? 6 + (i % 11) : 1,
       bytes,
-      total: bytes,
+      total: format === 'oci' && i % 4 !== 0 ? null : bytes,
       durationSeconds: duration,
       bytesPerSecond: Math.round(bytes / duration),
       finishedAt: ago(400 + i * 97),
@@ -342,12 +381,12 @@ export async function* downloadsButtonWalk(page: Page): AsyncGenerator<string> {
   await reload(page);
   await expect(button(page).locator('.downloads-count')).toHaveCount(0);
   yield 'none';
-  a.running = fiveRunning().slice(0, 3);
+  a.running = sixRunning().slice(0, 3);
   a.runningCount = 3;
   await reload(page);
   await expect(button(page).locator('.downloads-count')).toHaveText('3');
   yield 'three';
-  a.running = fiveRunning();
+  a.running = sixRunning();
   a.runningCount = 140;
   await reload(page);
   await expect(button(page).locator('.downloads-count')).toHaveText('99+');
@@ -365,13 +404,13 @@ async function wholeDrawer(page: Page): Promise<void> {
 }
 
 /**
- * The panel: five running downloads and 140 more with the last 100 finished, as it opens and then whole; the filter set; everything
+ * The panel: six running downloads and 140 more with the last 100 finished, as it opens and then whole; the filter set; everything
  * finished hidden on this device; a refresh that failed over the last rows; and both sections empty.
  */
 export async function* downloadsPanelWalk(page: Page): AsyncGenerator<string> {
   await expect(button(page)).toBeVisible();
   await page.evaluate((key) => localStorage.removeItem(key), HIDDEN_KEY);
-  const a: Answers = { running: fiveRunning(), runningCount: 145, finished: hundredFinished(), listStatus: 200 };
+  const a: Answers = { running: sixRunning(), runningCount: 146, finished: hundredFinished(), listStatus: 200 };
   await answer(page, a);
   await reload(page);
   await openPanel(page);
@@ -385,6 +424,8 @@ export async function* downloadsPanelWalk(page: Page): AsyncGenerator<string> {
   const field = drawer(page).locator('#upstream-downloads-filter');
   await field.fill('nginx');
   await expect(drawer(page).locator('[data-testid="upstream-downloads-finished"] li.dl-row')).toHaveCount(1);
+  await field.fill('stackit');
+  await expect(drawer(page).locator('[data-testid="upstream-downloads-running"] li.dl-row')).toHaveCount(1);
   await field.fill('ubuntu');
   await expect(drawer(page).locator('[data-testid="upstream-downloads-running"] li.dl-row')).toHaveCount(1);
   yield 'filtered';

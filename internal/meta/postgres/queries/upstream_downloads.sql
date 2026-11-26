@@ -1,4 +1,5 @@
--- Statements of the downloads from upstreams (internal/fills, operations-and-observability.md R-OPS-049 to R-OPS-052, migration 00118).
+-- Statements of the downloads from upstreams (internal/fills, operations-and-observability.md R-OPS-049 to R-OPS-052, migrations 00118 and
+-- 00140).
 -- Plain Go types only: the rows cross the boundary as JSON text (a replica's running downloads are JSON already, a finished row is
 -- to_jsonb of its row), so that the package needs no driver types.
 
@@ -15,45 +16,51 @@ ON CONFLICT (instance_uid) DO UPDATE
 DELETE FROM upstream_download_live WHERE instance_uid = sqlc.arg(instance_uid)::text::uuid;
 
 -- name: UpstreamDownloadFinishedInsert :exec
--- Ended downloads of a publication (R-OPS-051), given as a JSON array of rows: the end a replica records replaces an earlier one of the
--- same id (an interrupted row the sweep wrote while the replica stalled). A download whose repository is gone is not written; a principal
--- that is gone reads as nobody. Names longer than the columns' bounds are cut.
-INSERT INTO upstream_download_finished (id, repo_id, name, version, path, bytes, total, started_at, finished_at, duration_ms, outcome,
-                                        failure_class, failure_code, origin, queue_origin, queue_row, by_principal, replica_name)
-SELECT r.id, r.repo_id, left(r.name, 1024), left(r.version, 256), left(r.path, 4096), greatest(r.bytes, 0),
-       CASE WHEN r.total >= 0 THEN r.total END, r.started_at, r.finished_at, greatest(r.duration_ms, 0), r.outcome,
-       NULLIF(left(r.failure_class, 64), ''), NULLIF(left(r.failure_code, 128), ''), r.origin, NULLIF(r.queue_origin, ''),
-       r.queue_row, p.id, left(r.replica_name, 253)
-  FROM jsonb_to_recordset(sqlc.arg(rows)::text::jsonb) AS r(id uuid, repo_id bigint, name text, version text, path text, bytes bigint,
-       total bigint, started_at timestamptz, finished_at timestamptz, duration_ms bigint, outcome text, failure_class text,
-       failure_code text, origin text, queue_origin text, queue_row uuid, by_principal uuid, replica_name text)
+-- Ended downloads of a publication (R-OPS-051), given as a JSON array of rows, one per unit of the replica (R-OPS-049): the end a replica
+-- records replaces an earlier one of the same id (an interrupted row the sweep wrote while the replica stalled). A download whose
+-- repository is gone is not written; a principal that is gone reads as nobody. Names longer than the columns' bounds are cut.
+INSERT INTO upstream_download_finished (id, unit, repo_id, name, version, path, parts, bytes, total, started_at, finished_at, duration_ms,
+                                        outcome, failure_class, failure_code, failure_path, origin, queue_origin, queue_row, by_principal,
+                                        replica_name)
+SELECT r.id, left(r.unit, 2048), r.repo_id, left(r.name, 1024), left(r.version, 256), left(r.path, 4096), greatest(r.parts, 1),
+       greatest(r.bytes, 0), CASE WHEN r.total >= 0 THEN r.total END, r.started_at, r.finished_at, greatest(r.duration_ms, 0), r.outcome,
+       NULLIF(left(r.failure_class, 64), ''), NULLIF(left(r.failure_code, 128), ''), NULLIF(left(r.failure_path, 4096), ''), r.origin,
+       NULLIF(r.queue_origin, ''), r.queue_row, p.id, left(r.replica_name, 253)
+  FROM jsonb_to_recordset(sqlc.arg(rows)::text::jsonb) AS r(id uuid, unit text, repo_id bigint, name text, version text, path text,
+       parts integer, bytes bigint, total bigint, started_at timestamptz, finished_at timestamptz, duration_ms bigint, outcome text,
+       failure_class text, failure_code text, failure_path text, origin text, queue_origin text, queue_row uuid, by_principal uuid,
+       replica_name text)
   JOIN repositories rp ON rp.id = r.repo_id
   LEFT JOIN principal p ON p.id = r.by_principal
 ON CONFLICT (id) DO UPDATE
-   SET bytes = EXCLUDED.bytes, total = EXCLUDED.total, finished_at = EXCLUDED.finished_at, duration_ms = EXCLUDED.duration_ms,
-       outcome = EXCLUDED.outcome, failure_class = EXCLUDED.failure_class, failure_code = EXCLUDED.failure_code,
+   SET version = EXCLUDED.version, parts = EXCLUDED.parts, bytes = EXCLUDED.bytes, total = EXCLUDED.total,
+       finished_at = EXCLUDED.finished_at, duration_ms = EXCLUDED.duration_ms, outcome = EXCLUDED.outcome,
+       failure_class = EXCLUDED.failure_class, failure_code = EXCLUDED.failure_code, failure_path = EXCLUDED.failure_path,
        replica_name = EXCLUDED.replica_name;
 
 -- name: UpstreamDownloadInterruptedInsert :exec
 -- The downloads of a swept live row, ended interrupted (R-OPS-051): a recorded end of the same id is never overwritten.
-INSERT INTO upstream_download_finished (id, repo_id, name, version, path, bytes, total, started_at, finished_at, duration_ms, outcome,
-                                        failure_class, failure_code, origin, queue_origin, queue_row, by_principal, replica_name)
-SELECT r.id, r.repo_id, left(r.name, 1024), left(r.version, 256), left(r.path, 4096), greatest(r.bytes, 0),
-       CASE WHEN r.total >= 0 THEN r.total END, r.started_at, r.finished_at, greatest(r.duration_ms, 0), 'interrupted',
-       NULL, NULL, r.origin, NULLIF(r.queue_origin, ''), r.queue_row, p.id, left(r.replica_name, 253)
-  FROM jsonb_to_recordset(sqlc.arg(rows)::text::jsonb) AS r(id uuid, repo_id bigint, name text, version text, path text, bytes bigint,
-       total bigint, started_at timestamptz, finished_at timestamptz, duration_ms bigint, origin text, queue_origin text,
-       queue_row uuid, by_principal uuid, replica_name text)
+INSERT INTO upstream_download_finished (id, unit, repo_id, name, version, path, parts, bytes, total, started_at, finished_at, duration_ms,
+                                        outcome, failure_class, failure_code, failure_path, origin, queue_origin, queue_row, by_principal,
+                                        replica_name)
+SELECT r.id, left(r.unit, 2048), r.repo_id, left(r.name, 1024), left(r.version, 256), left(r.path, 4096), greatest(r.parts, 1),
+       greatest(r.bytes, 0), CASE WHEN r.total >= 0 THEN r.total END, r.started_at, r.finished_at, greatest(r.duration_ms, 0),
+       'interrupted', NULL, NULL, NULL, r.origin, NULLIF(r.queue_origin, ''), r.queue_row, p.id, left(r.replica_name, 253)
+  FROM jsonb_to_recordset(sqlc.arg(rows)::text::jsonb) AS r(id uuid, unit text, repo_id bigint, name text, version text, path text,
+       parts integer, bytes bigint, total bigint, started_at timestamptz, finished_at timestamptz, duration_ms bigint, origin text,
+       queue_origin text, queue_row uuid, by_principal uuid, replica_name text)
   JOIN repositories rp ON rp.id = r.repo_id
   LEFT JOIN principal p ON p.id = r.by_principal
 ON CONFLICT (id) DO NOTHING;
 
 -- name: UpstreamDownloadFinishedTrim :exec
--- Keeps the newest 100 by (finished_at, id) (R-OPS-051): every row older than the 100th goes. With fewer rows the subquery is empty and
--- the comparison removes nothing.
-DELETE FROM upstream_download_finished
- WHERE (finished_at, id) < (SELECT f.finished_at, f.id FROM upstream_download_finished f
-                             ORDER BY f.finished_at DESC, f.id DESC OFFSET 99 LIMIT 1);
+-- Keeps the rows of the newest 100 units by the newest end of each unit's rows (R-OPS-051, Q-OPS-429): a unit is the rows of one key,
+-- written by every replica that served a part of it, so the bound holds per unit across replicas. Every row of an older unit goes.
+DELETE FROM upstream_download_finished f
+ WHERE f.unit NOT IN (SELECT k.unit FROM upstream_download_finished k
+                       GROUP BY k.unit
+                       ORDER BY max(k.finished_at) DESC, k.unit DESC
+                       LIMIT 100);
 
 -- name: UpstreamDownloadSweep :many
 -- The live rows of replicas that stopped publishing (R-OPS-051): removed, and returned with the time of their last write as Unix
@@ -71,11 +78,16 @@ SELECT instance_uid::text AS instance_uid, replica_name, (extract(epoch FROM wri
  ORDER BY instance_uid;
 
 -- name: UpstreamDownloadFinishedList :many
--- The newest 100 ended downloads (R-OPS-051), as JSON text of their rows.
+-- The rows of the newest 100 units (R-OPS-051), as JSON text of their rows; the reader merges the rows of one unit (fills.Merge). At most
+-- 1,000 rows, the newest first: a unit's rows of more replicas than that are cut, which no installation reaches.
 SELECT to_jsonb(f.*)::text AS doc
   FROM upstream_download_finished f
+ WHERE f.unit IN (SELECT k.unit FROM upstream_download_finished k
+                   GROUP BY k.unit
+                   ORDER BY max(k.finished_at) DESC, k.unit DESC
+                   LIMIT 100)
  ORDER BY f.finished_at DESC, f.id DESC
- LIMIT 100;
+ LIMIT 1000;
 
 -- name: UpstreamDownloadNow :one
 -- PostgreSQL's clock in Unix microseconds: the asOf of a read (R-OPS-052).

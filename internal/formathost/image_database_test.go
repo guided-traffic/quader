@@ -1,6 +1,7 @@
 package formathost
 
 import (
+	"context"
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/authz"
@@ -26,7 +27,7 @@ func TestR_VULN_044_TheDatabaseTasksFillsAreRecordedForSystemImageDatabase(t *te
 		{fillDownloadAhead, "background-download", authz.ReasonDownloadAhead}, // R-CUR-010
 	} {
 		var preq proxy.Request
-		(&backgroundFacts{fill: c.fill, ceiling: 2, jobID: "job-1"}).apply(&preq, rq, formats.PathInfo{Package: "aquasec/trivy-db"}, formats.Path{Path: "aquasec/trivy-db/_blobs/sha256:00"})
+		(&backgroundFacts{fill: c.fill, ceiling: 2, jobID: "job-1"}).apply(context.Background(), &preq, rq, formats.PathInfo{Package: "aquasec/trivy-db"}, formats.Path{Path: "aquasec/trivy-db/_blobs/sha256:00"})
 		pop, ok := preq.Populate.(*mirrorPopulate)
 		if !ok || preq.Caller.Actor.Kind != "system" || preq.Caller.Actor.Name != c.actor || pop.subject.Name != c.actor || pop.reason != c.reason {
 			t.Errorf("%s: actor %+v, populate %+v", c.actor, preq.Caller.Actor, preq.Populate)

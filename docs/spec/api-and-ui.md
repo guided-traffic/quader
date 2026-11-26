@@ -9550,7 +9550,8 @@ visibility [page-visibility.ts](../../web/src/app/core/page-visibility.ts).
 - **Where** ([Q-UI-1070](#q-ui-1070--the-downloads-button-stands-between-documentation-and-the-theme-and-counts-what-runs)): in the
   top bar's actions, between **Documentation** and the theme button; an icon button (`btn btn-icon topbar-icon`), the icon `download`.
 - **The indicator.** While downloads run, a small badge on the icon's upper end corner carries their number (`running`; "99+" above
-  99), in the information colour of the badges (`--quader-badge-info-bg`, `-fg`), readable in both schemes. No motion. With nothing
+  99): downloads, each the unit a person asked for (an image with all its files, a version's package, a queue row's run;
+  [operations-and-observability.md](operations-and-observability.md) R-OPS-049), never their files, in the information colour of the badges (`--quader-badge-info-bg`, `-fg`), readable in both schemes. No motion. With nothing
   running, there is no badge.
 - **Its name.** "Downloads" when nothing runs, "Downloads, 3 running" while some run (German "Downloads" and "Downloads, 3 laufen"), as
   its accessible name and its title; `aria-haspopup="dialog"`, `aria-expanded` while the panel is open, `aria-controls` the panel's id.
@@ -9580,7 +9581,7 @@ template, its words in [download-words.ts](../../web/src/app/shared/upstream-dow
   close button and a click beside it close it; the focus returns to the button. A link inside it (a repository, **Show in queue**,
   **About this list**) closes it as it leads away.
 - **The filter.** A field **Filter downloads** (as wide as a name, R-UI-085) filters both sections at once, in the browser, by name,
-  version, path and repository `project/key` (case-insensitive, part of the text). A section's heading says "Running (1 of 145)" while
+  version, the first file's path and repository `project/key` (case-insensitive, part of the text). A section's heading says "Running (1 of 145)" while
   the filter is set, and a section with rows of which none matches says "No download matches the filter."
 - **The section Waiting for an upstream (n)**, first while the list's `waiting` holds a queue
   ([Q-UI-1101](#q-ui-1101--the-top-bars-panel-says-the-queues-a-limit-holds-above-running), [remote-curation.md](remote-curation.md)
@@ -9590,13 +9591,17 @@ template, its words in [download-words.ts](../../web/src/app/shared/upstream-dow
   repository's tab Downloads. The filter narrows it by the repository and the upstream's name. German: "Warten auf einen Upstream",
   "206 Downloads von upstream/docker-hub warten: Docker Hub begrenzt die Anfragen; Quader fragt um 06:47 erneut an.".
 - **The section Running (n)** (`runningCount`), first without a held queue. One row per running download, the oldest first, as the API orders them; the
-  rows keep their place across refreshes (tracked by `id`):
+  rows keep their place across refreshes (tracked by `id`). A download is the unit a person asked for: an image with its manifests,
+  configs, layers and attestations, a version's package, a queue row's run (R-OPS-049); its files are never listed, counted on the row
+  or shown one by one ([Q-UI-1380](#q-ui-1380--a-row-is-one-download-and-never-lists-its-files-the-file-that-failed-stands-in-the-badges-title)):
   - Line 1: the format's icon (`<quader-format-icon>`) on the middle of the name's first line (R-UI-175), the **name** (wrapping inside
-    itself, R-UI-145) and the version muted beside it. Without a version, the file in the version's place: the last path segment, a
-    digest cut to its algorithm and 12 hex digits (`sha256:1a2b3c4d5e6f`); without a name, the file as the name. The whole path is the
-    line's title.
-  - Line 2, with a total: a progress bar across the row (`<progress>` named "Progress of <name> <version>", value and max in bytes).
-    Without a total: no bar.
+    itself, R-UI-145) and the version muted beside it. A version that is an image's digest (an image pulled by its digest) is cut to its
+    algorithm and 12 hex digits (`sha256:1a2b3c4d5e6f`); an image whose tag is not known yet shows its name alone; a download of no
+    package shows its first file as the name (the last path segment, a digest cut likewise). The name with the whole version is the
+    line's title (the first file's path for a download of no package).
+  - Line 2, with a total: one progress bar across the row for the whole download (`<progress>` named "Progress of <name> <version>",
+    value and max in bytes): a queue row's run has the sizes it named, a download of one file its length. Without a total (a client's
+    pull of an image, R-OPS-049): no bar.
   - Line 3, muted and small: "128.4 MiB of 286.9 MiB · 12.3 MiB/s · 42 s" (`formatSize`; the speed in the same unit per second; the
     time as `elapsedText`: "< 1 s", "42 s", "1 min 12 s", "1 h 5 min"). Without a total: "128.4 MiB · 12.3 MiB/s · 42 s". Without a speed
     yet (the first second): the en dash in its place.
@@ -9619,7 +9624,7 @@ template, its words in [download-words.ts](../../web/src/app/shared/upstream-dow
 
 Acceptance criteria (Vitest, [upstream-downloads-panel.spec.ts](../../web/src/app/shared/upstream-downloads/upstream-downloads-panel.spec.ts),
 about 0.5 s with R-UI-212's cases): a running download with a total shows the bar and "of"; one without a total shows no bar and its
-bytes; a version-less OCI blob shows `sha256:` and 12 digits; each origin shows its words; a queued row links its queue with `?name=`;
+bytes; an image pulled by its digest shows `sha256:` and 12 digits, its whole digest in the title, and no file of it; each origin shows its words; a queued row links its queue with `?name=`;
 the filter narrows both sections and says "1 of 5"; `runningCount` above the listed rows shows "and n more running"; the poll is 2 s while
 open, keeps the rows when it fails, and stops when the panel closes. The tab Downloads' spec: `?name=` filters the queue and **Show every
 download** clears it.
@@ -9632,8 +9637,9 @@ Priority: **P1** · Covers: quader-only
 
 - **The section Finished (n)**, under Running, newest first, at most 100. Each row:
   - Line 1: as a running row; with an outcome other than `completed`, a badge after the name: **Failed** (error, with its icon) with
-    the failure's class in the queue's words (R-CUR-011; "Failed: Network") and the failure's code as its title, **Cancelled** (neutral),
-    **Interrupted** (warning, with its icon; its title says "The replica stopped while this download ran.").
+    the failure's class in the queue's words (R-CUR-011; "Failed: Network") and as its title the failure's code and the file it failed
+    at ("connection_reset at the file library/ubuntu/_blobs/sha256:…"; the code alone where the failure names no file), **Cancelled**
+    (neutral), **Interrupted** (warning, with its icon; its title says "A replica stopped while this download ran.").
   - Line 2, muted and small: "286.9 MiB · 1 min 12 s · 4.0 MiB/s": the size, the duration and the average. A duration below one second
     reads "< 1 s", and the average is left out then.
   - Line 3, muted and small: the format's name, the repository link, the origin as in R-UI-211, and the end as
@@ -9649,18 +9655,20 @@ Priority: **P1** · Covers: quader-only
 - **The foot of the panel:** a link **About this list** to the manual's page (`/help/admin/operations#downloads-from-upstreams`).
 - **Words** (German build, formal): Laufend, Abgeschlossen, Downloads filtern, Alle ausblenden, "Auf diesem Gerät ausgeblendet: 100.",
   Wieder anzeigen, In der Warteschlange ansehen, Fehlgeschlagen, Abgebrochen, Unterbrochen, Mirror-Durchlauf, Schwachstellendatenbank,
-  Über diese Liste, "und 140 weitere laufen", "Kein Download aus einem Upstream läuft.", "Noch kein Download ist abgeschlossen.",
+  Über diese Liste, "connection_reset bei der Datei …", "Ein Replikat hat angehalten, während dieser Download lief.", "und 140 weitere laufen", "Kein Download aus einem Upstream läuft.", "Noch kein Download ist abgeschlossen.",
   "Kein Download passt zum Filter.", "Die Liste konnte nicht aktualisiert werden; Quader versucht es erneut.". The queue's existing words
   are reused.
 - **Rendered** under rule 11 of promt.md (`topbar-downloads`, `topbar-downloads-admin-area`, `topbar-downloads-panel` in English and
   German, `topbar-downloads-none`; [upstream-downloads.ts](../../web/e2e/renders/upstream-downloads.ts) answers both endpoints in the
-  browser): light and dark, 1,440, 1,024 and 390 px; the button with no download, with 3 and with 140; the panel with five running rows
-  (one with a total, one without, one version-less OCI blob, a 120-character npm scope name, a person's queue row, a mirror's pass and the
-  scanner database) and "and 140 more running", a finished list of 100 with every outcome, the filter set, everything hidden, the refresh
-  error, both sections empty.
+  browser): light and dark, 1,440, 1,024 and 390 px; the button with no download, with 3 and with 140; the panel with six running rows
+  (an npm tarball with a total, a mirror's Debian package without one, the owner's image downloaded ahead by a person as one row with
+  the total its run named, a client's pull of an image without a total, a 120-character npm scope name of a bulk, the scanner database)
+  and "and 140 more running", a finished list of 100 with every outcome (the owner's image failed at one of its 23 files, a client's pull
+  of an image of 9 files), the filter set, everything hidden, the refresh error, both sections empty.
 
 Acceptance criteria (Vitest, in [upstream-downloads-panel.spec.ts](../../web/src/app/shared/upstream-downloads/upstream-downloads-panel.spec.ts)):
-each outcome shows its badge and words; a duration of 0.4 s reads "< 1 s" without an average; **Hide all** stores the newest end and
+each outcome shows its badge and words, a failure the file it failed at in the badge's title; a duration of 0.4 s reads "< 1 s" without an
+average; **Hide all** stores the newest end and
 hides those rows, a later download shows, **Show again** brings them back; without storage there is no **Hide all**; the empty states
 read as above and the foot links the manual.
 
@@ -28217,6 +28225,27 @@ made one; the push answers at once and has no import log.
 Code: [nuget-upload-dialog.ts](../../web/src/app/features/repositories/content/nuget-upload-dialog.ts), `uploadCollection` of
 [repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts). Tests: `nuget-upload-dialog.spec.ts`, the states
 `nuget-upload-*` (`make ui-states`).
+
+### Q-UI-1380 · A row is one download and never lists its files; the file that failed stands in the badge's title
+
+Status: **Decided by the development agent on 2026-11-26** on the owner's rule of that day (W31) — selected from the options below; the
+owner reviews it at the walkthrough.
+
+Context: the owner: "Einen Download in vielen kleinen Dateien anzuzeigen, macht den gesamten prozess unübersichtlich." A download is now
+the unit a person asked for ([operations-and-observability.md](operations-and-observability.md) R-OPS-049); the API still says how many
+files it took (`parts`) and which one failed (`failure.path`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The row as before, one per download; no list and no count of its files; the file a failure names in the badge's title beside the code (chosen) | The words and layout the drawer has | Nothing of the parts on the screen, as asked; "which layer failed" one pointer away | The number of files is not read on the screen |
+| (b) "31 files" in the figures line | One more figure | Shows the size of the work | Brings the parts back into the row the owner wanted free of them |
+| (c) A disclosure that lists the files under the row | Details on demand | Every layer readable | The list the owner called unreadable, one click away |
+
+**Choice:** (a). **Rationale:** the owner's point is that the parts make the process unreadable; what a reader needs of a part is the one
+that failed, and the title carries it without a word on the row. The development agent would revisit (c) if the owner asks to see an
+image's layers in the drawer.
+
+**Applied in the spec:** R-UI-211, R-UI-212. Code: [download-words.ts](../../web/src/app/shared/upstream-downloads/download-words.ts).
 
 ## What this does not cover
 

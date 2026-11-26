@@ -53,6 +53,7 @@ func (m *MirrorHost) RunDownload(ctx context.Context, row queue.Row, jobID strin
 		now = time.Now
 	}
 	res := queue.Result{Outcome: remotecuration.OutcomeSkipped}
+	var hold proxy.DownloadHold = noHold{}
 	fail := func(err error, file string) (queue.Result, error) {
 		if ctx.Err() != nil {
 			return res, ctx.Err()
@@ -60,6 +61,7 @@ func (m *MirrorHost) RunDownload(ctx context.Context, row queue.Row, jobID strin
 		f := proxy.Describe(err)
 		f.File, f.Attempt, f.At = file, row.Attempts, now()
 		res.Failed, res.Failure = true, &f
+		hold.Fail(f) // the run's download failed with it, whatever its files did (R-OPS-049)
 		return res, nil
 	}
 	repo, st, f, ok, err := m.downloadable(ctx, row)
@@ -85,6 +87,10 @@ func (m *MirrorHost) RunDownload(ctx context.Context, row queue.Row, jobID strin
 	if err != nil {
 		return fail(err, "")
 	}
+	// The run is one download in the top bar's drawer (R-OPS-049): its unit runs between its files while the run lasts, and the sizes
+	// the content names are its total.
+	hold = m.holdUnit(queueUnit(row.ID, jobID))
+	defer hold.Release()
 	// A manifest the format reads to find the content is stored as it is read (an OCI index's platforms): counted as stored here,
 	// and as present when the loop below reaches it.
 	read := mirror.WithStoredTally(ctx, func(fr mirror.FillResult) { res.Bytes += fr.Bytes })
@@ -99,6 +105,9 @@ func (m *MirrorHost) RunDownload(ctx context.Context, row queue.Row, jobID strin
 	bound := o.MaxBytes
 	if st.Limits.MaxArtifactBytes != nil {
 		bound = *st.Limits.MaxArtifactBytes
+	}
+	for _, it := range items {
+		hold.Expect(it.Path, it.Size)
 	}
 	res.Outcome = remotecuration.OutcomeCompleted
 	seen := map[string]bool{}
@@ -132,10 +141,12 @@ func (m *MirrorHost) RunDownload(ctx context.Context, row queue.Row, jobID strin
 			d := proxy.Describe(err)
 			d.File, d.Attempt, d.At = it.Path, row.Attempts, now()
 			res.Failure = &d
+			hold.Settle(it.Path)
 			continue
 		case err != nil:
 			return fail(err, it.Path)
 		case fr.res.Present:
+			hold.Settle(it.Path)
 			res.Present++
 			kept = append(kept, it.Path)
 		default:
@@ -158,6 +169,24 @@ func (m *MirrorHost) RunDownload(ctx context.Context, row queue.Row, jobID strin
 	}
 	return res, nil
 }
+
+// holdUnit holds the unit of a run in the engine's tracker (proxy.DownloadTracker.Hold); an engine without one holds nothing.
+func (m *MirrorHost) holdUnit(key string) proxy.DownloadHold {
+	if e, ok := m.e.(interface{ Downloads() proxy.DownloadTracker }); ok {
+		if t := e.Downloads(); t != nil {
+			return t.Hold(key)
+		}
+	}
+	return noHold{}
+}
+
+// noHold is the hold of an engine without a tracker.
+type noHold struct{}
+
+func (noHold) Expect(string, int64)        {}
+func (noHold) Settle(string)               {}
+func (noHold) Fail(remotecuration.Failure) {}
+func (noHold) Release()                    {}
 
 // examinationOf is the examination of a run (R-CUR-014, R-CUR-016 "What is examination"): a run that stored a file of a version the
 // rules do not deliver at that moment holds the version for examination, named in the format's canonical forms, with the files the
@@ -271,20 +300,26 @@ func (m *MirrorHost) downloadUpstream(repo repository.Repository, jobID string, 
 	if err != nil {
 		return nil, err
 	}
-	pu.charge, pu.fill, pu.queue = charge, fill, queueCause(row)
+	pu.charge, pu.fill, pu.queue = charge, fill, queueCause(row, jobID)
 	// A rate limit longer than a few seconds ends the run instead of holding a worker's place through it: the queue holds the
 	// repository's rows until the upstream's time (R-CUR-011, Q-CUR-170, Q-CUR-171).
 	return &backgroundUpstream{passUpstream: pu, win: mirror.NewWindow(nil, nil, share).EndAfter(queue.RunLimitWait)}, nil
 }
 
-// queueCause is what a row's run hands the engine for the downloads of its fills (R-OPS-049): the row's origin, id and version and the
-// principal who started it, its bulk or its request; zero for no row.
-func queueCause(row *queue.Row) proxy.DownloadCause {
+// queueCause is what a row's run hands the engine for the downloads of its fills (R-OPS-049): the row's origin, id and version, the
+// principal who started it, its bulk or its request, and the run's unit (queueUnit); zero for no row.
+func queueCause(row *queue.Row, jobID string) proxy.DownloadCause {
 	if row == nil {
 		return proxy.DownloadCause{}
 	}
-	return proxy.DownloadCause{QueueOrigin: row.Origin, QueueRow: row.ID, QueueVersion: row.Version, Principal: row.StartedBy}
+	return proxy.DownloadCause{
+		QueueOrigin: row.Origin, QueueRow: row.ID, Version: row.Version, Unit: queueUnit(row.ID, jobID), Principal: row.StartedBy,
+	}
 }
+
+// queueUnit is the key of the unit of one run of a queue row (R-OPS-049): every file the run fetches, the documents it reads to find
+// them among them, is one download; a second attempt is a second.
+func queueUnit(rowID, jobID string) string { return "q|" + rowID + "|" + jobID }
 
 // The expansion of a bulk (R-CUR-010): the format's upstream catalogue names a package's versions (Package) and a sub-section's packages
 // (Children) through the worker's upstream, never through a second lister (R-CUR-007); the bulk's range, pre-releases and maxVersions

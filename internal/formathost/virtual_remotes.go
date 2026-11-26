@@ -108,6 +108,7 @@ func (v *vremotes) request(ctx context.Context, rc virtual.RemoteCall) (proxy.Re
 		Remote: rem, Path: rc.Path, Variant: rc.Variant, Kind: kind, Package: pkg,
 		Adapter:      newAdapter(f, &repo, ref, v.o.Deps),
 		AlwaysVerify: f.Descriptor().VerifyAnnouncedDigests, MaxBytes: f.Descriptor().MaxDocumentBytes,
+		Unit:        downloadUnitOf(f.Descriptor().DownloadUnit),
 		Populate:    &callPopulate{d: v.o.Decider, rc: rc, info: info},
 		Caller:      proxy.CallerFacts{Principal: rc.Subject.ID, Endpoint: rc.Endpoint},
 		Undelivered: memberUndelivered(ctx, rc, pkg, info, kind),

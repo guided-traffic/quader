@@ -23,7 +23,7 @@ export function waitingQueue(over: Partial<UpstreamDownloadWaiting> = {}): Upstr
   };
 }
 
-/** A running download: an npm tarball a client's miss fetches, halfway; `over` sets what a case needs. */
+/** A running download: an npm tarball a client's miss fetches, halfway, one file; `over` sets what a case needs. */
 export function runningDownload(over: Partial<UpstreamDownloadRunning> = {}): UpstreamDownloadRunning {
   return {
     id: '01937d4e-0000-7000-8000-000000000001',
@@ -31,6 +31,7 @@ export function runningDownload(over: Partial<UpstreamDownloadRunning> = {}): Up
     name: 'left-pad',
     version: '1.3.0',
     path: 'left-pad/-/left-pad-1.3.0.tgz',
+    parts: 1,
     bytes: 512,
     total: 1024,
     bytesPerSecond: 256,
@@ -53,6 +54,7 @@ export function finishedDownload(over: Partial<UpstreamDownloadFinished> = {}): 
     name: 'left-pad',
     version: '1.3.0',
     path: 'left-pad/-/left-pad-1.3.0.tgz',
+    parts: 1,
     bytes: 3_145_728,
     total: 3_145_728,
     bytesPerSecond: 2_097_152,

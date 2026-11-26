@@ -229,6 +229,53 @@ func TestR_OPS_050_TwoReplicasShowOneRunningDownload(t *testing.T) {
 			t.Fatalf("the later end: %q", o)
 		}
 
+		// The bound is 100 units, not 100 rows: a unit three replicas wrote (a client's pull whose layers they served) keeps its three
+		// rows while it is among the newest 100 units, and the read merges them into one download (R-OPS-049, Q-OPS-429).
+		e.exec("DELETE FROM upstream_download_finished")
+		t1 := time.Now().UTC().Add(-3 * time.Hour) // older than the removed repository's row below, which must stay among the newest 100
+		var units []fills.Finished
+		for i := range 99 {
+			units = append(units, fills.Finished{
+				ID: uuid.NewString(), RepoID: repoID, Name: fmt.Sprintf("u%03d", i), StartedAt: t1,
+				FinishedAt: t1.Add(time.Duration(i) * time.Millisecond), Outcome: fills.OutcomeCompleted, Origin: "client", Replica: "r",
+			})
+		}
+		pull := "c|" + strconv.FormatInt(repoID, 10) + "|library/ubuntu|"
+		for i, replica := range []string{"quader-packages-a", "quader-packages-b", "quader-packages-c"} {
+			units = append(units, fills.Finished{
+				ID: uuid.NewString(), Unit: pull, RepoID: repoID, Name: "library/ubuntu", Version: "26.10", Parts: 10, Bytes: 1000,
+				StartedAt: t1.Add(time.Second), FinishedAt: t1.Add(time.Second + time.Duration(i)*time.Millisecond), Outcome: fills.OutcomeCompleted,
+				Origin: "client", Replica: replica,
+			})
+		}
+		if err := storeA.Publish(ctx, fills.Publication{InstanceUID: uuid.NewString(), Replica: "r", Ended: units}); err != nil {
+			t.Fatal(err)
+		}
+		if n := e.number("SELECT count(*) FROM upstream_download_finished"); n != 102 {
+			t.Fatalf("100 units in %d rows, want 102", n)
+		}
+		newer := fills.Finished{
+			ID: uuid.NewString(), RepoID: repoID, Name: "newer", StartedAt: t1.Add(time.Minute), FinishedAt: t1.Add(time.Minute),
+			Outcome: fills.OutcomeCompleted, Origin: "client", Replica: "r",
+		}
+		if err := storeA.Publish(ctx, fills.Publication{InstanceUID: uuid.NewString(), Replica: "r", Ended: []fills.Finished{newer}}); err != nil {
+			t.Fatal(err)
+		}
+		if n := e.number("SELECT count(*) FROM upstream_download_finished WHERE unit = $1", pull); n != 3 {
+			t.Fatalf("the pull keeps %d of its 3 rows", n)
+		}
+		if n := e.number("SELECT count(*) FROM upstream_download_finished WHERE name = 'u000'"); n != 0 {
+			t.Fatal("the oldest unit stays")
+		}
+		v, err = storeB.ReadUpstreamDownloads(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		merged := fills.Merge(v, time.Second)
+		if len(merged.Finished) != fills.MaxFinished || merged.Finished[0].Name != "newer" || merged.Finished[1].Bytes != 3000 || merged.Finished[1].Parts != 30 {
+			t.Fatalf("the read: %d units, %+v", len(merged.Finished), merged.Finished[:2])
+		}
+
 		// A removed repository takes its rows with it.
 		e.remote("gone", up)
 		gone := e.number("SELECT id FROM repositories WHERE key = 'gone'")

@@ -64,7 +64,7 @@
             @for (d of runningShown(); track d.id) {
               @let s = subjectOf(d);
               <li class="dl-row">
-                <div class="dl-subject" [attr.title]="d.path">
+                <div class="dl-subject" [attr.title]="subjectTitle(d)">
                   <span class="dl-icon"><quader-format-icon [format]="d.repository.format" /></span>
                   <span class="dl-subject-text"
                     ><span class="dl-name" translate="no">{{ s.name }}</span>
@@ -118,7 +118,7 @@
               @let s = subjectOf(d);
               @let badge = outcomeBadge(d);
               <li class="dl-row">
-                <div class="dl-subject" [attr.title]="d.path">
+                <div class="dl-subject" [attr.title]="subjectTitle(d)">
                   <span class="dl-icon"><quader-format-icon [format]="d.repository.format" /></span>
                   <span class="dl-subject-text"
                     ><span class="dl-name" translate="no">{{ s.name }}</span>

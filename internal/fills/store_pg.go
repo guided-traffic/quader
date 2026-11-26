@@ -49,6 +49,9 @@ func (s *Store) Publish(ctx context.Context, p Publication) error {
 		}
 	}
 	if len(p.Ended) > 0 {
+		for i := range p.Ended { // every row is a unit: one of a single file is keyed by its id
+			p.Ended[i].Unit, p.Ended[i].Parts = unitKey(p.Ended[i].Unit, p.Ended[i].ID), max(p.Ended[i].Parts, 1)
+		}
 		if ended, err = json.Marshal(p.Ended); err != nil {
 			return err
 		}
