@@ -105,6 +105,11 @@ func TestR_BAS_015_R_BAS_026_RevocationByEveryFeedKind(t *testing.T) {
 	t.Run("settings", func(t *testing.T) {
 		w.setAnonymous(true)
 		c := callOpts{addr: "198.51.100.34"}
+		// setAnonymous waits for the main installation only; each replica learns the raise from the feed's settings entry and the
+		// handshake after it, a poll later.
+		for _, r := range b.reps {
+			testWait(t, r.name+" admits an anonymous read", func() bool { return r.do(t, "GET", doc, c).Status == http.StatusOK })
+		}
 		warm(t, b, c, tgz, doc)
 		made := time.Now()
 		w.setAnonymous(false)
