@@ -338,16 +338,20 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W34-E14a · Anonymous requests a Bastion answers without the main installation (W-34, the owner's k2 = c, items 2 and 3; the plan's E14a; no change of the interface) | R-BAS-094's rows of the anonymous registry token (answered by the Bastion itself, Q-BAS-335) and of anonymous copies (kept for the metadata period without a conditional request per use); Q-BAS-435 to Q-BAS-439, H-2292, H-2350, H-2351; base 7a70f0cd4 (above W34-E16); brief `.dev/briefs/e14a.md` | landed and pushed on 2026-11-26 at 16:43 |
 | W34-E7 with W35-P5 · The shared wire between Bastion and main installation, interface version 8 (W-34's E7 and W-35's P5 in one raise; started before W35-P1's numbers, whose bounds are constants and no shape of the wire) | the handshake's `configuration`, `subject.limits` in the check's answer, `usage` and `status` on the downloads intake, the format facts `errorShape` and `readWithBody`, the Bastion's own codes renamed (Q-BAS-321), the probe headers removed, the contact's two headers, the readers of registry-token payload 2, the catalogue's routes, types and path grammar, `gui` and `docs`; R-BAS-101 to R-BAS-103, Q-BAS-345 to Q-BAS-354, H-2280, H-2281, H-2305 to H-2307, ADR-303; base 4e8b4265b; brief `.dev/briefs/e7p5.md` | landed and pushed on 2026-11-26 at 17:47 |
 | B-1126 · Five small findings of 2026-11-26, one commit each (the batch, started while every other package waits for the shared wire) | a Debian package of more than 10,000 files gets no contents (the job fails on `deb_contents_files_check`), with the same bound read in every format; a Bastion's cache whose documents' share leaves no room for an artifact is refused at start (H-2352); an image is scanned after its layers are there, not a delay after its manifest (Q-VULN-282, Q-VULN-283); a replica no longer rebuilds its grant index every 50 ms while ahead of its poll (R-AUTHZ-028); the Bastion's revocation test waits for its state; base b54399183; brief `.dev/briefs/batch-a.md` | landed and pushed on 2026-11-26 at 17:47 |
-| W34-E8 · A Bastion's limits and configuration at the main installation (W-34, the owner's k1 to k12; the plan's E8) | the configuration on the registration and its revision, the place `bastion` and its rules, the two built-in Bastion profiles from W34-E4's measurement, presets, `bastion_status`, the API split by permission, the handshake's configuration from a snapshot (the interim configuration removed), the subject's limits in the check, usage and status taken in; Q-BAS-323 to Q-BAS-325, Q-BAS-440 to Q-BAS-444, Q-LIM-300 to Q-LIM-304, Q-LIM-310 to Q-LIM-314, H-2282 to H-2284, H-2354, H-2355; migration 00146; base b270b49e2; brief `.dev/briefs/e8.md` | built and joined by its builder with W34-E9a, W35-P6 and W34-E10 (one set of defaults held by a drift guard; migration 00147), stacked above W34-E10 at 18:05, waits for its gate run |
-| W34-E9a · A Bastion applies its configuration, protects itself from floods and bounds what all anonymous callers together cause at the main installation (W-34, the owner's k1 and k2 = c; the plan's E9a) | the configuration applied whole, a stored and a built-in one that fails closed, the slots resized, the anonymous ceiling counting the background refresh, the flood class `gui`, the edge's own keys in the chart; defaults from W34-E4's measurement; Q-BAS-326, Q-BAS-327, Q-BAS-445 to Q-BAS-449, Q-LIM-307, H-2285, H-2356, H-2357; base b270b49e2; brief `.dev/briefs/e9a.md` | built, stacked, in the gate run of six commits since shortly after 17:48 |
-| W35-P6 · The public catalogue's builder at the main installation (W-35, the owner's g1 to g13; the plan's P6, with W35-P1's findings) | the documents per registration whose GUI is on, stripped of internal identities, naming nothing of the main installation, without times of building or checking (state documents instead), compressed, reconciled by fingerprints; the worker job, the routes served; R-BAS-104 to R-BAS-108, Q-BAS-355 to Q-BAS-369, H-2308 to H-2314; migration 00147 (00148 if needed); base b270b49e2; brief `.dev/briefs/p6.md` | built, stacked, in the gate run of six commits since shortly after 17:48 (its migration 00146) |
+| W34-E8 · A Bastion's limits and configuration at the main installation (W-34, the owner's k1 to k12; the plan's E8) | the configuration on the registration and its revision, the place `bastion` and its rules, the two built-in Bastion profiles from W34-E4's measurement, presets, `bastion_status`, the API split by permission, the handshake's configuration from a snapshot (the interim configuration removed), the subject's limits in the check, usage and status taken in; Q-BAS-323 to Q-BAS-325, Q-BAS-440 to Q-BAS-444, Q-LIM-300 to Q-LIM-304, Q-LIM-310 to Q-LIM-314, H-2282 to H-2284, H-2354, H-2355; migration 00146; base b270b49e2; brief `.dev/briefs/e8.md` | landed and pushed on 2026-11-26 at 19:36 |
+| W34-E9a · A Bastion applies its configuration, protects itself from floods and bounds what all anonymous callers together cause at the main installation (W-34, the owner's k1 and k2 = c; the plan's E9a) | the configuration applied whole, a stored and a built-in one that fails closed, the slots resized, the anonymous ceiling counting the background refresh, the flood class `gui`, the edge's own keys in the chart; defaults from W34-E4's measurement; Q-BAS-326, Q-BAS-327, Q-BAS-445 to Q-BAS-449, Q-LIM-307, H-2285, H-2356, H-2357; base b270b49e2; brief `.dev/briefs/e9a.md` | landed and pushed on 2026-11-26 at 18:32 |
+| W35-P6 · The public catalogue's builder at the main installation (W-35, the owner's g1 to g13; the plan's P6, with W35-P1's findings) | the documents per registration whose GUI is on, stripped of internal identities, naming nothing of the main installation, without times of building or checking (state documents instead), compressed, reconciled by fingerprints; the worker job, the routes served; R-BAS-104 to R-BAS-108, Q-BAS-355 to Q-BAS-369, H-2308 to H-2314; migration 00147 (00148 if needed); base b270b49e2; brief `.dev/briefs/p6.md` | landed and pushed on 2026-11-26 at 18:32 |
 | W34-E15 · A Bastion refuses every write itself, in the error shape each format's client reads (W-34, the owner's k3 and his rule that a Bastion has no writing API; the plan's E15) | the probe and its admission deleted; `read_only` in the five shapes of Q-BAS-337 without asking the main installation; the kit's duty that a format renders its shape; Galaxy's refusals in its own `errors` list and one run of ansible-galaxy 2.17 against a 429 in that shape (exit 1, not 250); Q-BAS-336, Q-BAS-337, Q-BAS-450 to Q-BAS-454, H-2293, H-2358, H-2359; base 40146348e; brief `.dev/briefs/e15.md` | landed and pushed on 2026-11-26 at 17:47 |
-| W34-E10 · The throughput between the main installation and a Bastion is capped (W-34, the owner's wish of 2026-11-26 and his k8; the plan's E10) | one pacing reader on every body the Bastion reads, two buckets (the total and the anonymous share), shared through Valkey, the catalogue below client misses; default decided by me against R-BAS-097's "unlimited": 200 MB/s with an anonymous share of 25 % (Q-BAS-455, from W34-E4's measurement); Q-BAS-331, Q-BAS-332, Q-BAS-455 to Q-BAS-459, H-2289, H-2360, H-2361; base 56f565e9a; brief `.dev/briefs/e10.md` | built, stacked, in the gate run of six commits since shortly after 17:48 |
-| W34-E11 · A Bastion's cache protects what was served twice from a flood of distinct artifacts (W-34, the owner's case and his k9; the plan's E11) | the protected marker and the sweep's order for the volume, the bucket and the encrypted layout, the protected share bounded; the flood of W34-E4 run again with a warm `npm ci` beside it, before and after; Q-BAS-333, Q-BAS-460 to Q-BAS-464, H-2290, H-2362, H-2363; base 56f565e9a; brief `.dev/briefs/e11.md` | built, stacked, in the gate run of six commits since shortly after 17:48 |
-| CI-layout · The job UI layout checks fits its time again, by rendering the screens in parallel shards (found at 17:00: cancelled by its timeout of 75 minutes in every run since 08:00) | a matrix of shards balanced by measured time, a new screen in a shard without a list, the fixtures' and dialog states' checks once, `make ui-renders` with a shard argument, the docs' times and cost; brief `.dev/briefs/ci-layout.md` | in work since 2026-11-26, 17:06 |
-| W35-P7 · The public catalogue at the Bastion: sync, store, age and reader (W-35, the owner's g1, g2 = b, g6; the plan's P7) | the sync through the change list and the batch read, verified and compressed, under the throughput's class `catalogue`; the store's reserved share; survival across restarts; serve on with the age while the main installation is unreachable; the reader for the GUI; B.2b's alerts; R-BAS-109 to R-BAS-113, Q-BAS-370 to Q-BAS-384, H-2315 to H-2321; base 1e4c4b293; brief `.dev/briefs/p7.md` | in work since 2026-11-26, 17:50 |
-| W35-P8 with W34-E17 · The package API at a Bastion names nothing of the main installation, the registry token included (W-35's P8 and W-34's E17; the owner's rule) | the inventory of every format handler's texts under codes of its own and their neutral form for a Bastion's forward (H-2295), R-BAS-029's table, R-BAS-017's criterion without its exception; the registry token's payload version 2 written (readable only anonymity, expiry and grant; the rest sealed); R-BAS-114, R-BAS-115, Q-BAS-385 to Q-BAS-389, Q-BAS-339, H-2297, H-2322, H-2323, ADR-304; base 1e4c4b293; brief `.dev/briefs/p8e17.md` | in work since 2026-11-26, 17:50 |
-| W34-E12 · The screens of a Bastion's limits, throughput, switches and state (W-34, the owner's wish of 2026-11-26 and his k1 to k12; W-35's switches `gui` and `docs`; the plan's E12) | R-UI-240 to R-UI-242: the card's section with preset, mode and throughput in plain view and the rest behind Details, the preset's dialog, the Bastion place's rules with the limits' own components, Blocks, the usage overview's place, the switches with their sentences, the live state honest about what is reported; renders EN and DE in three widths; Q-UI-1485 to Q-UI-1489; base 94c97a87d; brief `.dev/briefs/e12.md` | in work since 2026-11-26, 18:05 |
+| W34-E10 · The throughput between the main installation and a Bastion is capped (W-34, the owner's wish of 2026-11-26 and his k8; the plan's E10) | one pacing reader on every body the Bastion reads, two buckets (the total and the anonymous share), shared through Valkey, the catalogue below client misses; default decided by me against R-BAS-097's "unlimited": 200 MB/s with an anonymous share of 25 % (Q-BAS-455, from W34-E4's measurement); Q-BAS-331, Q-BAS-332, Q-BAS-455 to Q-BAS-459, H-2289, H-2360, H-2361; base 56f565e9a; brief `.dev/briefs/e10.md` | landed and pushed on 2026-11-26 at 18:32 |
+| W34-E11 · A Bastion's cache protects what was served twice from a flood of distinct artifacts (W-34, the owner's case and his k9; the plan's E11) | the protected marker and the sweep's order for the volume, the bucket and the encrypted layout, the protected share bounded; the flood of W34-E4 run again with a warm `npm ci` beside it, before and after; Q-BAS-333, Q-BAS-460 to Q-BAS-464, H-2290, H-2362, H-2363; base 56f565e9a; brief `.dev/briefs/e11.md` | landed and pushed on 2026-11-26 at 18:32 |
+| CI-layout · The job UI layout checks fits its time again, by rendering the screens in parallel shards (found at 17:00: cancelled by its timeout of 75 minutes in every run since 08:00) | a matrix of shards balanced by measured time, a new screen in a shard without a list, the fixtures' and dialog states' checks once, `make ui-renders` with a shard argument, the docs' times and cost; brief `.dev/briefs/ci-layout.md` | landed and pushed on 2026-11-26 at 19:36 |
+| W35-P7 · The public catalogue at the Bastion: sync, store, age and reader (W-35, the owner's g1, g2 = b, g6; the plan's P7) | the sync through the change list and the batch read, verified and compressed, under the throughput's class `catalogue`; the store's reserved share; survival across restarts; serve on with the age while the main installation is unreachable; the reader for the GUI; B.2b's alerts; R-BAS-109 to R-BAS-113, Q-BAS-370 to Q-BAS-384, H-2315 to H-2321; base 1e4c4b293; brief `.dev/briefs/p7.md` | built, stacked above W35-P8 at 18:53, waits for its gate run |
+| W35-P8 with W34-E17 · The package API at a Bastion names nothing of the main installation, the registry token included (W-35's P8 and W-34's E17; the owner's rule) | the inventory of every format handler's texts under codes of its own and their neutral form for a Bastion's forward (H-2295), R-BAS-029's table, R-BAS-017's criterion without its exception; the registry token's payload version 2 written (readable only anonymity, expiry and grant; the rest sealed); R-BAS-114, R-BAS-115, Q-BAS-385 to Q-BAS-389, Q-BAS-339, H-2297, H-2322, H-2323, ADR-304; base 1e4c4b293; brief `.dev/briefs/p8e17.md` | landed and pushed on 2026-11-26 at 19:36 |
+| W34-E12 · The screens of a Bastion's limits, throughput, switches and state (W-34, the owner's wish of 2026-11-26 and his k1 to k12; W-35's switches `gui` and `docs`; the plan's E12) | R-UI-240 to R-UI-242: the card's section with preset, mode and throughput in plain view and the rest behind Details, the preset's dialog, the Bastion place's rules with the limits' own components, Blocks, the usage overview's place, the switches with their sentences, the live state honest about what is reported; renders EN and DE in three widths; Q-UI-1485 to Q-UI-1489; base 94c97a87d; brief `.dev/briefs/e12.md` | built, stacked above W35-P7, waits for its gate run |
+| DB-1 · A Bastion's registration declared in the main installation's configuration survives a fresh database (the owner's request of 18:33) | `bastions.declared` with name, description, egress and the token's Secret; applied at every `migrate`; the card marks what is declared; the owner's values block in the report; R-BAS-127, Q-BAS-465 to Q-BAS-469, Q-UI-1497 to Q-UI-1499, H-2366, H-2367; base bd0687137; brief `.dev/briefs/declared-bastion.md` | in work since 2026-11-26, 18:33 |
+| W35-P9 · The Bastion's read-only web interface: serving and the application (W-35, the owner's wish and g1 to g13; the plan's P9) | `internal/bastion/gui` (GET and HEAD only, CSP, no cookie, the class `gui`, never a miss, nothing of the main installation), a second Angular application from P2's views with `/ui/data/v1` reads, the shell with search, theme, language, legal line and the stale band, the import-graph lint, renders; R-BAS-116 to R-BAS-120, Q-BAS-390 to Q-BAS-404, R-UI-227 to R-UI-230, Q-UI-1433 to Q-UI-1459, H-2324 to H-2333, ADR-305; base c15938e61; brief `.dev/briefs/p9.md` | in work since 2026-11-26, 18:53 |
+| W34-E9b · A Bastion's budgets on what it serves, per subject, and its reports (W-34, the owner's wish and k4 to k7; the plan's E9b) | the eleven figures per subject in Audit or Enforce, the parallel transfers' lease, hits paced with a floor, refusals in the format's shape, the usage and status reports with the throughput's live state; the check whether a warm anonymous docker pull still forwards the tag's HEAD; Q-BAS-328 to Q-BAS-330, Q-BAS-470 to Q-BAS-474, Q-LIM-305 to Q-LIM-309, H-2286 to H-2288, H-2368, H-2369; base c15938e61; brief `.dev/briefs/e9b.md` | in work since 2026-11-26, 18:53 |
+| B-1126b · Eight small findings of the day's second half (the batch) | a 502 on a cached Galaxy read answered 503 like the rate limit (H-2358) with one run of ansible-galaxy 2.17; the last format table kept for a Bastion's start (H-2359); `GET /api/v1/bastions/presets` and the card's copy dropped (Q-UI-1485); `limits:read` reads a Bastion's limits and status; `X-NuGet-Warning` relayed; the OCI facts test and the NuGet lock-order test independent of load; a recurrence read of the nightly's two tail-latency findings; base 966f9e5cb; brief `.dev/briefs/batch-b.md` | in work since 2026-11-26, 19:08 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1380,6 +1384,166 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 19:36, by W35-P8 with W34-E17 (W-35's P8 and W-34's E17, the owner's rule that a Bastion discloses
+  nothing of the main installation; R-BAS-114 and R-BAS-115 new, R-BAS-029's table "What a forward relays", R-BAS-099
+  rows 8 and 15, R-OCI-005 and Q-BAS-339 built; Q-BAS-385 to Q-BAS-389; ADR-304; gaps H-2295 and H-2297 rewritten,
+  H-2322, H-2323; no migration, the interface stays at 8): a caller of a Bastion no longer reads, in an error or a
+  registry token, which repository behind it refused, a link into the installation behind it or its internal
+  identifiers.** An inventory first (a sweep of every non-literal error text, extension and header, and a read of
+  every format's read paths) found six texts that named something internal through a forward: the delivery rule's
+  refusal named the remote holding the rules and a page of the web interface; the vulnerability block linked the
+  finding's page on the main installation's address and carried the finding's ID; the signature refusal linked a
+  project's page; `malware_found` pointed at the auditor's page; a virtual repository's 404 named a project-upstream
+  member not switched on; npm's audit named the member remote. Each now carries a sentence for a forward, chosen at
+  rendering so that one error stays right for a forward and an ordinary caller at once; and every 5xx of a forward
+  that is no rate limit reads its status's neutral text without field errors (Q-BAS-386: fail-closed instead of a
+  list per text; the malware and signature "check pending" answers and ClamAV's 503 keep theirs). The registry
+  token's payload version 2 (Q-BAS-388): readable only anonymity, expiry and grant (and the subject on scan and blob
+  tokens); the rest sealed with AES-256-GCM under a key derived from the ring, the readable part as additional data;
+  its key ID names no ring key; the token service issues only version 2, the verifier reads 1 until those expire. The
+  old payload named no host, but the endpoint, the principal, the Quader token's ID, type and hash, the issue time and
+  the ring key's ID. The area `bastion`'s scan decodes every relayed registry token. Gates in the landing worktree with the three commits stacked above main (W34-E8, CI-layout, W35-P8 with W34-E17): build, vet, generate-check, coverage, unit, lint, the web gates, the layout test, chart-lint, chart-test, archtest, ui-states, the render parts check (693 screen tests in five parts of 138 to 139), the Bastion screens' renders (0 failed, 0 layout findings; the first attempt found every UI instance claimed by finished builders, which were released) and nineteen integration areas (the six Bastion areas, conventions, authz, limits, api, ocilocal, ociremote, vulnblock, signatures, malware, npm, querybudget, postgres, backup) green. Tests: unit tests per
+  table row (each under 0.01 s), the token's (under 0.01 s), the scan in the replays (about 0 s). Open: Galaxy role
+  IDs through a virtual repository are `<memberKey>-<id>` in 200 bodies (H-2322); a 4xx text added later passes as
+  written until it gets a forward text, only the scan catches it (H-2323); `X-NuGet-Warning`, which `dotnet` prints
+  for a refused download, is no declared replay header of NuGet, so a Bastion's caller never sees it. Not verified:
+  the six texts through real clients.
+
+- **Closed on 2026-11-26, 19:36, by CI-layout (found at 17:00; Q-ARCH-1071, superseding Q-ARCH-511): the layout checks of every
+  screen render in five parallel parts and finish within their time again.** The job `UI layout checks` was
+  cancelled by its 75 minutes in every run since 08:00 (the render step grew from 31 minutes on 2026-11-19 to 68 on
+  2026-11-26, about 6 a day). Now `UI layout checks (fixtures and dialog states)` runs once without a stack, and five
+  legs `UI layout checks (screens, part i of 5)` each render every fifth pair of screen and kind of user (a cut by
+  kind of user was unbalanced: the administrator alone is 39 %); a new screen lands in a part without a list; a leg's
+  timeout is 45 minutes, and a leg whose render step passes 30 minutes gets one more part, not a larger timeout.
+  `make ui-renders SHARD=i/n` runs one part locally as CI does; `make ui-renders-parts-check` proves in about 5 s with
+  Playwright's `--list` that the parts hold every screen exactly once (693 screen tests: 139, 139, 139, 138, 138), and
+  runs in CI. Derived from the last green run's times per screen (the replay matched it within 0.2 min): 12.5 to 14.5
+  minutes of rendering, 20 to 22 minutes a leg; measured locally on a loaded machine 11.4 to 14.8 minutes a part.
+  Runner cost about 114 minutes a push against 77 (+48 %; six pods for 22 minutes instead of one for 77). Growth said
+  plainly: at last week's rate a leg reaches 30 minutes in about 6 days; adding parts keeps a leg's time flat but
+  runner minutes still grow with the screens; the lever is a screen's own render time, a brief of its own. Gates in the landing worktree with the three commits stacked above main (W34-E8, CI-layout, W35-P8 with W34-E17): build, vet, generate-check, coverage, unit, lint, the web gates, the layout test, chart-lint, chart-test, archtest, ui-states, the render parts check (693 screen tests in five parts of 138 to 139), the Bastion screens' renders (0 failed, 0 layout findings; the first attempt found every UI instance claimed by finished builders, which were released) and nineteen integration areas (the six Bastion areas, conventions, authz, limits, api, ocilocal, ociremote, vulnblock, signatures, malware, npm, querybudget, postgres, backup) green.
+  Not verified: the workflow on GitHub (runs on main after this landing).
+
+- **Closed on 2026-11-26, 19:36, by W34-E8 (W-34, the owner's wish and k1 to k12; R-BAS-093, R-BAS-096's subject limits,
+  R-LIM-043 to R-LIM-046 built; Q-BAS-323 to Q-BAS-325, Q-BAS-440 to Q-BAS-444, Q-LIM-300 to Q-LIM-304, Q-LIM-310 to
+  Q-LIM-314; gaps H-2282 to H-2284, H-2354, H-2355, H-2357 closed; migration 00147): an administrator configures each
+  Bastion's limits, presets and switches at the main installation, which sends them to the Bastion and stores the
+  usage and state the Bastion reports.** The registration holds `gui`, `docs`, the mode, the preset and the flood,
+  slot, throughput and ceiling figures; triggers raise its revision on a change of the registration, of a rule of its
+  place and of a profile such a rule names; one `bastion.configuration.changed` per change. The handshake answers from
+  the registrations' snapshot (the interim configuration is gone); the check's answer names the subject's limits
+  without a database read. A Bastion is a fourth place kind (`/api/v1/bastions/{name}/limits/assignments`); the mode
+  per Bastion needs `limits:write` and recent authentication; `PATCH /api/v1/bastions/{name}` splits `limits` from
+  the rest by permission (Q-BAS-325). Two built-in profiles and three presets, the figures from W34-E4's measurement
+  except the anonymous parallel transfers, 270 instead of 80, since one anonymous `dotnet restore` holds 200 at once
+  (Q-LIM-310); every figure with what it lets through in R-LIM-046; none unlimited. Usage rows land at the place
+  `bastion:<id>` and each replica's state in `bastion_status`, both only after a batch's refusals are decided, so a
+  batch sent again is not counted twice; a replica's state goes an hour after its last report (Q-BAS-443, H-2283).
+  Joined by its builder with W34-E9a, W35-P6 and W34-E10 on the stack: one set of defaults (`DefaultLimits`, the
+  Internet preset, the Bastion's `settings.Builtin` and the test double), held by two drift guards; the catalogue
+  reads the stored switches. Gates in the landing worktree with the three commits stacked above main (W34-E8, CI-layout, W35-P8 with W34-E17): build, vet, generate-check, coverage, unit, lint, the web gates, the layout test, chart-lint, chart-test, archtest, ui-states, the render parts check (693 screen tests in five parts of 138 to 139), the Bastion screens' renders (0 failed, 0 layout findings; the first attempt found every UI instance claimed by finished builders, which were released) and nineteen integration areas (the six Bastion areas, conventions, authz, limits, api, ocilocal, ociremote, vulnblock, signatures, malware, npm, querybudget, postgres, backup) green. Tests: unit (milliseconds), integration `bastionreg` (about 4 s) and `limits`
+  (about 4 s), the drift guards. Open: a batch of up to 71 MiB is decoded in memory (H-2354); usage rows of a deleted
+  registration (H-2355); no Bastion sends its state yet (E9b).
+
+- **Open since 2026-11-26, 18:33, the owner's request: a Bastion stays connected to its main installation, also after a fresh
+  database.** His words: "Auf der Instanz quader.k8s-main.wds18.net habe ich mal ein bastion konfiguriert. dieser wurde bei einem Update
+  wohl wieder gelöscht. Kannst du bitte dafür sorgen, dass der bastion immer mit der Instanz verbunden wird, auch wenn du die DB
+  resetest". What happened: the installation was started on a fresh database on 2026-11-24 (a migration of the pre-alpha refused the
+  old one); a registration and its token lived only in the database. Decided by me: a registration the main installation's
+  configuration declares (name, description, egress, and its token read from the same Secret the Bastion's chart reads), applied at
+  every start of `migrate`, after the pattern of the upstream accounts the configuration declares (R-REPO-077); what is not declared
+  stays the administrator's on the card. His existing Secret `quader-bastion-token` keeps working without a new token if its value is
+  a valid Bastion token. Builder since 18:33; his values follow when the release is out (I push them, they are values under
+  `apps/quader`).
+
+- **Closed on 2026-11-26, 18:32, by W34-E10 (W-34, the owner's wish and his k8; R-BAS-097 built; Q-BAS-455 to Q-BAS-459; gaps
+  H-2289 updated, H-2273 closed, H-2360, H-2361; no migration): a Bastion reads from the main installation and the
+  object store at most 200 MB/s by default, a quarter of it for anonymous downloads, slowing running downloads
+  instead of cutting them.** One pacer per replica (`internal/bastion/throughput`) with two buckets in slices of
+  100 ms; reservations queue in order, so transfers at the cap share it; a running transfer is slowed, never cut. Every
+  body is paced: fills, pass-through and forwarded documents in the client of the main installation, a fill's
+  continuation, the handover's direct read from the object store, and W-35's catalogue pull (`CatalogueReader`,
+  reading only from a slice less than half used, Q-BAS-458). With Valkey one counter per slice for the whole Bastion
+  (commands its ACL allows, no script); without, each replica takes its share. A miss that finds no room within its
+  queue time is refused at once with the true wait (`503 busy`, Q-BAS-457); an hour's volume used up answers `429
+  upstream_limit_reached` with its figures; hits are always served; waiting for the cap does not trip a fill's stall
+  bound. The default is my decision (its entry of 16:48 above), with no measured use it slows (the fastest single
+  transfer measured was 51 MB/s). Landed in W34-E9a's run of the gates (its entry below). Tests: seven unit cases with the test's clock (0.3 s), the client's and the
+  engine's (0.05 s), one integration case in `bastionshared` (2.3 s: with Valkey one replica alone read 1,000,000
+  bytes in a second at 1 MB/s, two replicas 500,000 each); the race tests in the Linux image. Not verified: real
+  rates (200 MB/s means about 200 Valkey round trips a second per full-speed read), the refusals against real
+  clients. Open: running transfers can pass an hour's volume when it fills (H-2361); a taken-over Bastion ignores
+  its own cap (H-2289, the owner's option a).
+
+- **Closed on 2026-11-26, 18:32, by W34-E11 (W-34, the owner's case and his k9; R-BAS-098 built; Q-BAS-460 to Q-BAS-464; gaps
+  H-2290 live, H-2272 narrowed, H-2362; no migration): a Bastion's cache keeps what was read twice when a flood of
+  distinct files passes through it.** The access marker a serve from the cache writes is the protection (Q-BAS-460:
+  a fill writes none, so a marked object was served twice; no new object, marker family or listing on any layout);
+  each sweep ranks the marked objects newest first, protects those that fit in 80 % of the area's limit, and evicts
+  the unprotected first (Q-BAS-461; 80 % lies below the sweep's target of 85 %, so a sweep never evicts a protected
+  object). On a shared bucket "served twice" means filled by any replica and served from the bucket by any. Measured
+  once with W34-E4's flood (2 GiB cache, 256 addresses, load 16 to 19), before and after: a warm `npm ci` of 475
+  packages went from 475 hits to 475 misses forwarded to the main installation during the flood and stayed cold
+  before; after, it kept 475 hits and forwarded nothing, during and after the flood (protected bytes afterwards:
+  the 475 tarballs). An attacker who reads each file twice still displaces a working set read longer ago than its
+  own reads, at twice the requests (H-2290). The measurement scripts list the Bastion's address on its registration
+  now (E13). Landed in W34-E9a's run of the gates (its entry below). Tests: five unit tests (about 0.9 s on the loaded machine, the encrypted layout half of it).
+  Not verified: a bucket against S3, two replicas. Open: a refill by another replica of a shared bucket can stay
+  unprotected up to `access_resolution` (H-2362).
+
+- **Closed on 2026-11-26, 18:32, by W35-P6 (W-35, the owner's g1 to g13; R-BAS-104 to R-BAS-108; Q-BAS-355 to Q-BAS-369; gaps
+  H-2308 to H-2314; migration 00146): the main installation builds the public catalogue a Bastion's web interface
+  shows, from what an anonymous visitor reads and without its internal names.** The worker's job `bastion-catalogue`
+  reads the management API in process as the anonymous caller of the default endpoint, through its own router outside
+  the edge chain, for each registration whose `gui` is on, rendered on the base URL the Bastion reported only if
+  `server.additional_base_urls` lists it (otherwise it stops for that registration and records why). Every format's
+  documents of the plan's section C; documentation only with `docs` on. It starts 5 s after a change of metadata,
+  verdicts, repository configuration, grants or vulnerability data, and reconciles hourly by fingerprints that hold no
+  time. The strip (R-BAS-106): the times of building or checking go into the version's state document; download
+  counts, who uploaded, released or triaged, CI claims, internal anchor titles, state codes, upstreams that are no
+  public registry and every principal's reference (`user:`, `sa:`, `ci:`) leave every document. Links (R-BAS-107):
+  every origin of the main installation becomes the Bastion's base URL, an `/api/v1/` link becomes the Bastion's data
+  path where the catalogue holds the target, else nothing. Documents are stored compressed once per content
+  (Q-BAS-356: stored, not rendered on request, or every replica's sync would be a full render at the main
+  installation); a cursor of a dropped or restored catalogue gets `reset`. Measured on the render seed (load 30 to
+  45): 111 documents, 37.5 KiB gzip, a full build 1.36 s, a run with nothing changed 0.16 to 0.23 s, no document
+  with the main installation's origin or `/api/v1/`. Against the plan: no feed entry of kind `catalogue` (Q-BAS-369,
+  H-2314: a Bastion learns of a change at its poll). Landed in W34-E9a's run of the gates (its entry below), its migration 00146. Tests: unit with a fake API and an in-memory store (0.4
+  s), the routes (milliseconds), one integration case in `bastion` (about 11 s: a publish in the change list within
+  0.9 to 1.7 s, every document free of the main installation's origin, the other base URL, `/api/v1/` and the
+  publisher, a lowered level deletes, GUI off answers 404 and drops the catalogue, `reset` after a rebuild). Open:
+  a state document keeps the time of its package's last render (H-2310); the fingerprint misses a signature gate's
+  release and a re-built documentation (H-2312).
+
+- **Closed on 2026-11-26, 18:32, by W34-E9a (W-34, the owner's k1 and k2 = c; R-BAS-093's application at the Bastion,
+  R-BAS-094 item 1 and R-BAS-096's flood figures built; Q-BAS-326, Q-BAS-327, Q-BAS-445 to Q-BAS-449, Q-LIM-307;
+  gaps H-2285, H-2356, H-2357; no migration): a Bastion applies the limits its registration sends as a whole without
+  a restart, keeps them for a restart during an outage, and bounds what all anonymous callers together cause at the
+  main installation.** One unchangeable configuration swapped in atomically; a request reads it once and carries it
+  (Q-BAS-446); an invalid one fails the handshake and leaves the old in place; the slots resize; the applied one is
+  stored signed in the cache backend and loaded before the listener binds, else the built-in one fails closed
+  (Q-BAS-327). The anonymous ceiling is taken in the slot budget after the slot by every anonymous request to the
+  main installation, the background refresh included; a refused request takes nothing and gets `503 busy` with the
+  ceiling's wait (Q-BAS-445). Defaults (Q-BAS-448): 100 requests a second, a burst of 2,000 and 36,000 an hour for
+  all anonymous callers of one Bastion together; 64 slots with an anonymous share of a quarter and a wait of 5 s
+  (W34-E4 measured that one anonymous restore of 200 packages got 31 to 40 refusals after 2 s). Derived from the
+  measured commands: an hour holds 75 cold anonymous `npm ci` of 475 packages, 89 restores of 200, 837 cold docker
+  pulls of 40 layers, 36,000 warm docker pulls (each still sends the tag's `HEAD`), at one Bastion. Its price,
+  said plainly and the owner's shield chosen: a popular public image gets at most 36,000 anonymous pulls an hour per
+  Bastion before 503, if every warm pull still forwards the tag's `HEAD` (to be checked against W34-E14a's kept
+  anonymous documents, measured before it). The chart lost `config.bastion.limits`, `failed_auth`, `blocking` and
+  `main.max_concurrent`, `anonymous_share`, `queue_timeout` (no alias; startup and the chart's schema refuse them);
+  the edge figure is the chart's `bastion.edge_limit`, sent in every handshake; `edgeLimit.exemptCIDRs` is its own
+  key. Found and repaired beside it (Q-BAS-449): with Valkey, a limiter whose figures changed returned an error the
+  guard read as "admit everything"; it is replaced under its name now (`internal/cluster`, shared with the main
+  installation). The landing: one commit picked above W34-E15; one run of the gates for the six commits stacked (W34-E9a, W35-P6, the repair of the upstream area, W34-E11 with its scripts, W34-E10): the 13 gates, the chart's lint and tests, the architecture tests, the UI states, and 15 integration areas green (the six Bastion areas, conventions, authz, upstream, vulnapi, limits, api, querybudget, postgres, backup); the area upstream is green again. Tests: unit about 1 s, two integration cases
+  in `bastion` (6.9 s and 1.7 s), two in `bastionshared` (0.2 s), the chart's; about 9 s more on the area. Open:
+  until W34-E8 the main installation's interim configuration has no ceiling (H-2357; E8 told); the replica's status
+  is sent by nobody yet (E9b); the measurement's `shapes.sh` sets the removed keys (to rework after E8); the class
+  `gui` has no caller until W-35's pages. Not verified: the journeys (corrected), a real HAProxy edge, two replicas
+  under real load.
 
 - **Closed on 2026-11-26, 17:47, by W34-E15 (W-34, the owner's k3 and his rule that a Bastion has no writing API; R-BAS-095
   built, R-BAS-014 and Q-BAS-351 superseded; Q-BAS-450 to Q-BAS-453; gaps H-2293 live, H-2358, H-2359; no
