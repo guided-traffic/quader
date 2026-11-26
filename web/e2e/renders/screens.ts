@@ -48,6 +48,7 @@ import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBas
 import { downloadsWalk } from './downloads';
 import { cachedDeb, cachedNpm } from './cached';
 import { brokenDeb, debRelationLookups, docsDeb, manyFilesDeb } from './debdocs';
+import { factsCollection, factsImage, factsNpm, factsNuget } from './facts';
 import { bareRole, blockedRole, pipRole } from './roles';
 import { accountOfferWalk, registryAccountWalk } from './upstream-accounts';
 import {
@@ -3179,6 +3180,19 @@ export const screens: readonly Screen[] = [
   // The tag a background download stored (W-25): its platforms, two stored and one not fetched.
   { id: 'package-version-oci-probed', path: `${ver(O, { format: 'oci', name: remoteImage.name }, probedCache.tag)}?tab=details`, kinds: all },
   { id: 'package-version-nuget', path: ver(O, nugetPackage, nugetPackage.versions[1]), kinds: all },
+  // The facts of a version as every format shows them (W-30 G3, R-UI-221, facts.ts): the tab Details of a package of each format whose
+  // metadata fills every block, and the table of its versions, so the formats can be put side by side.
+  { id: 'package-version-npm-details', path: `${ver(P, factsNpm, factsNpm.version)}?tab=details`, kinds: ['plain'], de: true },
+  { id: 'package-version-nuget-details', path: `${ver(O, factsNuget, factsNuget.version)}?tab=details`, kinds: ['plain'], de: true },
+  { id: 'package-version-oci-details', path: `${ver(P, factsImage, factsImage.tags[0])}?tab=details`, kinds: ['plain'], de: true },
+  { id: 'package-version-deb-details', path: `${ver(O, docsDeb, docsDeb.version)}?tab=details`, kinds: ['plain'], de: true, expected: debRelationLookups },
+  { id: 'package-version-ansible-details', path: `${ver(O, factsCollection, factsCollection.version)}?tab=details`, kinds: ['plain'], de: true },
+  { id: 'package-version-npm-cached-details', path: `${ver(P, cachedNpm, cachedNpm.version)}?tab=details`, kinds: ['plain'] },
+  { id: 'package-npm-facts-versions', path: table(P, factsNpm), kinds: ['plain'], de: true },
+  { id: 'package-nuget-facts-versions', path: table(O, factsNuget), kinds: ['plain'], de: true },
+  { id: 'package-ansible-facts-versions', path: table(O, factsCollection), kinds: ['plain'], de: true },
+  { id: 'package-oci-facts', path: pkg(P, factsImage), kinds: ['plain'], de: true },
+  { id: 'package-deb-facts', path: pkg(O, docsDeb), kinds: ['plain'], de: true },
   { id: 'package-version-deb', path: ver(O, debPackage, debPackage.versions[1]), kinds: all, de: true, expected: debRelationLookups },
   // A version a remote cached, described as a published one (R-NPM-050, R-NPM-051, R-DEB-037): the remote alone holds it
   // (cached.ts). npm: the description, the dependencies and links, and the README of its tarball with headings, a table and

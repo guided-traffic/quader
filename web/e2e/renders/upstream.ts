@@ -109,7 +109,7 @@ function npmVersions(name: string, level: Record<string, unknown> = notAllowed):
       version,
       published: at(-60 * 24 * (i * 4 + 1)),
       size: i % 4 === 0 ? 2_412_448 + i * 1024 : null,
-      unpackedSize: null,
+      unpackedSize: i % 4 === 0 ? null : 182_331 + i * 512,
       flags,
       platforms: [],
       digest: null,

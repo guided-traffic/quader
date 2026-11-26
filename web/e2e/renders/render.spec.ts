@@ -381,6 +381,12 @@ function slug(text: string): string {
     .replace(/^-|-$/g, '');
 }
 
+/**
+ * Answers of 4xx that are a screen's normal state on every screen: a version's page looks every dependency's name up, and a name no
+ * repository of the installation holds answers 404, which leaves it text (R-UI-221, Q-UI-1311).
+ */
+const NORMAL_ANSWERS: readonly RegExp[] = [/^GET \/api\/v1\/packages\/lookup\?format=(npm|nuget|ansible|deb)&name=\S+ answered 404$/];
+
 /** The failures of a screen: the console's errors, uncaught errors, and the app's API calls answered 4xx or 5xx. */
 function watch(page: Page, screen: Screen): { notices: string[]; list(): string[] } {
   const seen: string[] = [];
@@ -396,7 +402,7 @@ function watch(page: Page, screen: Screen): { notices: string[]; list(): string[
     const url = new URL(r.url());
     if (!/^\/(api|auth)\//.test(url.pathname) || r.status() < 400) return;
     const line = `${r.request().method()} ${url.pathname}${url.search} answered ${r.status()}`;
-    if (screen.expected?.some((e) => e.match.test(line))) return;
+    if (screen.expected?.some((e) => e.match.test(line)) || NORMAL_ANSWERS.some((e) => e.test(line))) return;
     seen.push(line);
   });
   return { notices, list: () => [...new Set([...seen, ...notices])] };

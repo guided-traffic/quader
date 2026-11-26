@@ -1622,15 +1622,18 @@ remain as their owners define them.)
 - A virtual repository in the `repository` filter expands to its members. Remote repositories
   contribute only cached versions; this endpoint never queries an upstream.
 - Version details contain `packageId`, `format`, `name`, `version`, `prerelease`, `publishedAt`, `licenses`
-  (declared SPDX identifiers or expression, `[]` when none), `sizeBytes` and `sizePartial` (R-API-080), `downloadCount` and `lastDownloadedAt` (R-API-065, R-API-079), `hasReadme` (whether
+  (declared SPDX identifiers or expression, `[]` when none), `keywords` (the version's keywords or tags: npm's `keywords`, NuGet's
+  `tags`, an Ansible collection's `tags`; `[]` when none, R-UI-221), `sizeBytes` and `sizePartial` (R-API-080), `downloadCount` and `lastDownloadedAt` (R-API-065, R-API-079), `hasReadme` (whether
   the `readme` answer is 200 for this caller, so the UI chooses its default tab without a probing request; `false` for a caller
   who may read the version but not the wiki of the repository that holds it, [authorization.md](authorization.md) R-AUTHZ-034),
   `metadata` (a
   format-specific object whose schema the format page owns), `repositories`
   (`[{"project", "key", "class", "publishedAt"}]`) and `files` (`[{"path", "sizeBytes", "sha256", "downloadUrl"}]`).
   The members of npm's `metadata` that the UI reads are `distTags`, `dependencies`, `devDependencies`,
-  `peerDependencies`, `optionalDependencies`, `engines` (name to string), `authors`, `homepage`,
-  `repositoryUrl`, `bugsUrl` and `deprecated`; a member that does not apply is absent (Q-API-159).
+  `peerDependencies`, `optionalDependencies`, `engines` (name to string), `bundleDependencies` and `optionalPeers` (names),
+  `authors`, `homepage`, `repositoryUrl`, `bugsUrl`, `deprecated`, `types`, `publisher` (`_npmUser`), and what Quader read of the
+  tarball, `fileCount`, `unpackedSize` and `hasInstallScript` (R-NPM-007, R-UI-221); a member that does not apply is absent
+  (Q-API-159). The OpenAPI document names every format's members.
   NuGet's `metadata` has `id` (the casing of this version's `.nuspec`), `listed`, `title`, `summary`, `releaseNotes`,
   `copyright`, `language`, `minClientVersion`, `licenseUrl`, `homepage`, `repositoryUrl`, `authors`, `tags`, `packageTypes`,
   `dependencyGroups` (per target framework) and, when true, `requireLicenseAcceptance` and `developmentDependency`; its
@@ -7443,11 +7446,12 @@ owner's reference screen's; its look is Quader's own.
   **Version** (a link to the version's page, R-UI-111; after it its npm tags as badges, `latest` first and the others by name, at most
   three and "+N more", each saying in its tooltip what it is, the badge and the words of the tab Upstream
   ([Q-UI-1190](#q-ui-1190--an-npm-tag-is-a-badge-on-the-row-of-the-version-it-names-with-a-tooltip-that-says-what-it-is),
-  [Q-UI-1191](#q-ui-1191--a-version-shows-three-tags-and-n-more-whose-tooltip-names-the-others)), and the mark **Pre-release**), **Size** (R-API-080: a size that is not known is the shared no-value with a title that says why, a partial size has **≥** before it and a title that says what it counts), **Vulnerabilities** (R-UI-112; only when the answer carries a grade other than N/A: a format that is not scanned and a package of internal names are N/A in every row, Q-UI-377), **Published**,
-  **Last download** (R-API-065, R-API-079; "Never" for a version no client downloaded, with a help text and a title, Q-API-342), and
-  **Repositories** only when the versions differ in the
+  [Q-UI-1191](#q-ui-1191--a-version-shows-three-tags-and-n-more-whose-tooltip-names-the-others)), and the mark **Pre-release**), **Size** (R-API-080: a size that is not known is the shared no-value with a title that says why, a partial size has **≥** before it and a title that says what it counts), **Vulnerabilities** (R-UI-112; only when the answer carries a grade other than N/A: a format that is not scanned and a package of internal names are N/A in every row, Q-UI-377), **Published** (an image's
+  **Pushed**, or **Fetched** where only remote repositories hold its newest version, [Q-UI-1314](#q-ui-1314--an-images-date-is-pushed-or-fetched-on-every-screen)),
+  **Last download** (R-API-065, R-API-079; "Never" for a version no client downloaded, with a help text and a title, Q-API-342), under
+  it the version's downloads ("410 downloads", [R-UI-222](#r-ui-222--every-table-of-versions-says-each-versions-downloads-and-an-images-digest)), and **Repositories** only when the versions differ in the
   repositories that hold them ([Q-UI-457](#q-ui-457--the-column-repositories-appears-only-when-the-versions-are-held-by-different-repositories)).
-  No digest: an image's row is led by its tag (Q-UI-453, Q-UI-1130).
+  An image's digest stands under its tags (R-UI-222).
 - **Sort**: the highest version first by the format's precedence (the server's order); every column but Repositories sorts both
   ways in the browser over the whole list; equal keys keep the highest version first. The sort is the address's `sort`
   (`-published`, `vulnerabilities`, …), the default left out ([Q-UI-452](#q-ui-452--the-versions-are-searched-sorted-and-paged-in-the-browser-over-the-whole-list)).
@@ -7494,8 +7498,10 @@ page's width. Not chosen by the owner: a row that opens inside the table, and a 
   repositories, Q-UI-965, or only by system repositories, Q-UI-898, Q-UI-899) the head has no button, and the sentence why stands under
   the facts.
 - **Facts**, one line with the style guide's separator: the grade with the total and the fixable findings (R-UI-112), a link to
-  the tab Vulnerabilities; when it was published; its size (R-API-080); when a client last downloaded it (R-API-065, "never"); its downloads; its
-  licences. Below them the banners **Unlisted.**, **Blocked in <repository>** and **Deprecated.**
+  the tab Vulnerabilities; when it was published (an image's **Pushed** or **Fetched**, Q-UI-1314); its size (R-API-080); when a client
+  last downloaded it (R-API-065, "never"); its downloads; its licences, a link to the licence's address where the version declares one.
+  Under them the version's links in one row, and the note that it runs an install script ([R-UI-221](#r-ui-221--a-versions-general-properties-read-the-same-in-every-format)). Below them the
+  banners **Unlisted.**, **Blocked in <repository>** and **Deprecated.**
 - No box of a command before the tabs (the owner, 2026-11-25, [Q-UI-1241](#q-ui-1241--a-versions-page-has-its-command-behind-the-verbs-button-in-its-head-the-box-is-gone)): the command is the head's button.
 - **Tabs** (`tab`): for a format that leads with its documentation its documentation first, the tab the page opens on where the version
   carries it ([R-UI-218](#r-ui-218--a-package-leads-with-the-documentation-its-format-carries), [Q-UI-1245](#q-ui-1245--a-version-without-documentation-opens-on-its-first-tab-with-content-and-its-readme-tab-says-so)); **Vulnerabilities** (R-VULN-023), the first tab of a version whose grade is
@@ -7504,13 +7510,13 @@ page's width. Not chosen by the owner: a row that opens inside the table, and a 
   its SHA-256's first twelve characters and copy button under it, the path the file's download where it offers one; the malware
   scan, the signature;
   [Q-UI-1002](#q-ui-1002--a-versions-files-keep-their-table-the-size-and-the-hash-stand-under-the-path),
-  [Q-UI-1051](#q-ui-1051--a-versions-file-path-is-its-download)); **Details** (the format's metadata of R-API-029: an image's digest, media type, artifact
-  type, size and platforms, each platform with its size or "Not fetched" while the repository does not hold it (Q-OCI-221), the links, the authors, the dependency kinds, NuGet's target frameworks and facts, Debian's long
-  description, relations and control fields with the source package as a link to its binaries and the copyright file in a closed fold
-  ([formats/debian.md](formats/debian.md) R-DEB-038, R-DEB-039, [Q-UI-1270](#q-ui-1270--a-debian-packages-relations-are-the-dependency-block-one-line-per-group-its-alternatives-side-by-side),
-  [Q-UI-1272](#q-ui-1272--a-debian-packages-changelog-is-a-tab-its-copyright-a-fold-its-files-a-section-of-files)),
-  an Ansible collection's Ansible versions and tags, the required runtimes; then the repositories that hold the version,
-  each a link to its page, with its class and when it was published there); **Changelog** of a Debian version after Details, and its
+  [Q-UI-1051](#q-ui-1051--a-versions-file-path-is-its-download)); **Details** (the format's metadata of R-API-029 in the order and the
+  blocks of [R-UI-221](#r-ui-221--a-versions-general-properties-read-the-same-in-every-format): Debian's long description, the keywords, the dependencies, an image's digest, media type,
+  artifact type, size and platforms, each platform with its size or "Not fetched" while the repository does not hold it (Q-OCI-221), a
+  chart's facts, **Package details** with the facts only the format has (Debian's with the source package as a link to its binaries and
+  the copyright file in a closed fold, [formats/debian.md](formats/debian.md) R-DEB-038, R-DEB-039,
+  [Q-UI-1272](#q-ui-1272--a-debian-packages-changelog-is-a-tab-its-copyright-a-fold-its-files-a-section-of-files)), the authors; then the
+  repositories that hold the version, each a link to its page, with its class and when it was published there); **Changelog** of a Debian version after Details, and its
   installed files under the package files of **Files**; **Vulnerabilities** after Details for a version that
   is N/A; **Import log** of an Ansible collection in a local repository (R-UI-063)
   ([Q-UI-456](#q-ui-456--the-version-page-opens-on-its-vulnerabilities-when-it-is-graded)).
@@ -10006,6 +10012,85 @@ Acceptance criteria:
 - Rendered (rule 11): the npm, NuGet and Ansible Galaxy packages as their names open them, with the switch open and the command panel
   open, a package of thirty versions, one of pre-releases only, a version in three repositories, a long README, the tables at
   `…/-/versions`, in English and German, light and dark, at 390, 1,024 and 1,440 px.
+
+### R-UI-221 · A version's general properties read the same in every format
+Priority: **MVP** · Covers: quader-only
+
+The owner, 2026-11-25, walking the product with Docker and Ansible: "Du musst dir solche Angaben von mir echt selbstständig merken und
+auch auf andere Registries anwenden. Ich habe nicht die Zeit dir das 30mal zu erklären." And: "Ich finde es wichtig, dass du
+selbstständig generalle Eigenschaften unser Registry identifizierst und auch spezifische Eigenschaften identifizierst." And: "wenn die
+dafür notwendigen Metainformationen vorhanden sind, soll sie von uns verwendet und dargestellt werden." A general property is shown by
+one block, with the same words, at the same place, in every format that has it; a property only one format has stands in that format's
+section **Package details**.
+
+*Built*: [version-facts.ts](../../web/src/app/features/packages/version-facts.ts) (the blocks),
+[version-metadata.ts](../../web/src/app/features/packages/version-metadata.ts) (what each format feeds them),
+[package-version.html](../../web/src/app/features/packages/package-version.html); the server's members of R-API-029 (`keywords`, npm's
+`fileCount`, `unpackedSize`, `hasInstallScript`, `types`, `publisher`, `bundleDependencies`, `optionalPeers`).
+
+| Property | Where it stands | npm | NuGet | OCI | Debian | Ansible Galaxy |
+|---|---|---|---|---|---|---|
+| Description | the head, under the name; Debian's long description first in Details | yes | yes | annotations, labels | short and long | yes |
+| Licence | the facts line; its address the licence's link | yes | expression; `licenseUrl` the link | annotation, label | the copyright file's | yes |
+| Links | one row under the facts line ([Q-UI-1313](#q-ui-1313--a-versions-links-are-one-row-under-its-facts-in-every-format)) | homepage, source, issues | homepage, source | url, documentation, source | homepage | homepage, docs site, source, issues |
+| Install script | a note under the links, where a person decides to install | `hasInstallScript` | not read ([formats/nuget.md](formats/nuget.md) H-2171) | none | not read ([formats/debian.md](formats/debian.md) H-2170) | none: an install runs nothing |
+| Keywords | Details, first: chips to the packages of the format with the keyword ([Q-UI-1312](#q-ui-1312--keywords-and-tags-are-one-block-of-chips-that-open-the-package-list)) | `keywords` | `tags` | none | none (the source package groups) | `tags` |
+| Dependencies | Details, after the keywords: one block ([Q-UI-1311](#q-ui-1311--every-formats-dependencies-are-one-block-a-group-per-kind-in-the-formats-words)) | five fields | per target framework | a chart's | nine relation fields | one list |
+| Package details | Details, after the dependencies and an image's facts | runtimes, types, unpacked size, files, install script, publisher | title, minimum client, package types, language, copyright, release notes, licence acceptance, development dependency | annotations and labels | control fields, source package, copyright file | Ansible versions |
+| Authors | Details, after Package details | yes | yes | annotation, label | (Maintainer in Package details) | yes |
+| Size | the facts line, in the unit a person reads ([Q-UI-1316](#q-ui-1316--a-size-is-said-in-the-unit-a-person-reads-wherever-it-stands)) | yes | yes | yes | yes, Installed size in Package details | yes |
+| Dates, downloads | the facts line; the table of versions ([R-UI-222](#r-ui-222--every-table-of-versions-says-each-versions-downloads-and-an-images-digest)) | yes | yes | Pushed or Fetched | yes | yes |
+
+- **The dependencies** are one block in every format ([Q-UI-1311](#q-ui-1311--every-formats-dependencies-are-one-block-a-group-per-kind-in-the-formats-words)):
+  under the heading **Dependencies** a group per kind named by the format's own word (npm's `dependencies`, `peerDependencies`,
+  `optionalDependencies`, `bundleDependencies`, `devDependencies`; NuGet's target framework, **All frameworks** for a group without one,
+  "No dependencies." for an empty group; Debian's relation fields as `apt show` names them), no group heading where the format has one
+  list (an Ansible collection, a Helm chart); a dependency on a line of its own, its alternatives side by side with "or" between them,
+  the name a link to its page where this installation holds the package and the reader may read it (one lookup per name, at most 60 per
+  version, in npm, NuGet, Debian and Ansible Galaxy), else text; its range or constraint muted after it; npm's optional peer marked
+  **optional**.
+- **The keywords** (`keywords` of the version, R-API-029: npm's `keywords`, NuGet's `tags`, a collection's `tags`) are chips under
+  **Keywords**, each the package list of the project filtered by the format and the keyword; the package's table keeps them, as chips,
+  in its closed **Details**.
+- **The links** stand in one row under the facts line in every format (homepage, documentation or the docs site, source repository, issue
+  tracker), each opening the other site; an address that is not http or https is its label and the text. A licence's address is no
+  link of the row: the licence on the facts line is its link.
+- **An install script** (npm's `hasInstallScript`, what Quader read of the tarball, R-NPM-007) is said under the links: "Runs a script
+  of the package when it is installed", and in npm's Package details. NuGet, Debian and Ansible Galaxy: see the table.
+- Every value of a package's metadata is text; an address becomes a link only when it is http or https (R-UI-007).
+
+Acceptance criteria:
+
+- Unit ([package-version.spec.ts](../../web/src/app/features/packages/package-version.spec.ts), milliseconds): an npm version shows its
+  keywords as chips to `…/packages?format=npm&keyword=…`, its dependencies in the groups of its fields with an optional peer marked, a
+  held dependency as a link, its links in the row under the facts, the install script's note and its Package details; a NuGet version
+  its groups per framework and an empty one's "No dependencies.", its licence linked to its address; a Debian version its Installed size
+  in MiB; [version-metadata.spec.ts](../../web/src/app/features/packages/version-metadata.spec.ts): each format's feeding.
+- Unit (Go, `TestR_UI_221_NPMPackageDetailsFacts`, milliseconds): npm's members of the section; integration
+  (`TestR_API_029_VersionDetails`, a changed assertion): `keywords` and the tarball's facts of a published version.
+- Rendered (rule 11): the tab Details of a package of every format whose metadata fills every block (`package-version-*-details`), in
+  English and German, light and dark, at 390, 1,024 and 1,440 px.
+
+### R-UI-222 · Every table of versions says each version's downloads, and an image's digest
+Priority: **MVP** · Covers: quader-only
+
+The same owner's rule, for the table of a package's versions (R-UI-110). The table keeps its form at 1,024 px (Q-UI-969): what it gains
+stands under a cell it has ([Q-UI-1318](#q-ui-1318--a-versions-downloads-and-an-images-digest-stand-under-a-cell-the-table-has)).
+
+- **Downloads**: in every format's table, under **Last download**, "410 downloads": `downloadCount` of each version (R-API-079), which
+  the list carries already.
+- **Digest**: an image's row names its manifest under its tags: the first twelve hex digits, the whole as its title, as a file's hash
+  stands under its path (Q-UI-1002); its copy button is on the tag's page (Details).
+- The date's column is the format's word ([Q-UI-1314](#q-ui-1314--an-images-date-is-pushed-or-fetched-on-every-screen)).
+- Room is left for a mark beside a version's name as **Pre-release** has it: the marks of a deprecated or an unlisted version are the
+  deprecation package's (R-API-085) and not built here.
+
+Acceptance criteria:
+
+- Unit ([package-detail.spec.ts](../../web/src/app/features/packages/package-detail.spec.ts),
+  [package-versions-model.spec.ts](../../web/src/app/features/packages/package-versions-model.spec.ts), milliseconds): each version's
+  downloads under its last download; an image's digest under its tags, and Pushed.
+- Rendered (rule 11): the tables of an npm, a NuGet and an Ansible package, an image and a Debian package (`package-*-facts*`).
 
 ## Deferred
 
@@ -27458,7 +27543,151 @@ Status: **Decided by the development agent** on 2026-11-26 — selected from the
 
 **Choice:** (a). **Revisit** if the owner wants NuGet's prefix reservations shown as such. **Applied in the spec:** R-UI-220.
 
+### Q-UI-1310 · The inventory of 2026-11-26: what still differed between the formats, and what G3 closed
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+W-30 G3. The plan was written before six packages landed; the builder rendered the tab Details and the table of versions of every
+format on the main of 2026-11-26 (`package-version-*-details`, `package-*-facts*`, a package of each format with every block filled)
+and put them side by side. What differed then, and what holds now:
+
+| Property | Before | Now |
+|---|---|---|
+| Links | a block **Links** in Details, at another place per format (after the image's facts for OCI, after the description for Debian); NuGet's licence address a row "License" | one row under the facts line in every format; the licence's address is the licence's link |
+| Keywords and tags | npm's and NuGet's not on the version page (only "Keywords" as text in the package table's closed Details); Ansible's "Tags" as text in Package details, the package's newest version's, not the version's | chips under **Keywords** in npm, NuGet and Ansible Galaxy, the version's own (`keywords` of R-API-029) |
+| Dependencies | npm four two-column lists with bold names, never linked, no bundled, no optional peer; NuGet a heading and a sub-heading per framework, two columns, never linked; Ansible two columns, unheld names small and muted; Debian a heading per field, one line per group, linked; a chart two columns with the repository under the range | one block ([Q-UI-1311](#q-ui-1311--every-formats-dependencies-are-one-block-a-group-per-kind-in-the-formats-words)) in every format |
+| npm's facts | "Required runtimes" under a heading of its own; the tarball's file count, unpacked size and install script, the types and the publisher not sent | one **Package details**, with all six |
+| NuGet's facts | title, licence acceptance and development dependency sent and not shown | shown |
+| Debian's Installed size | "18432 KiB" | "18.0 MiB" ([Q-UI-1316](#q-ui-1316--a-size-is-said-in-the-unit-a-person-reads-wherever-it-stands)) |
+| An image's date | "Published" on the version page and its package's table, "Pushed" or "Fetched" in the repository's content | "Pushed" or "Fetched" everywhere ([Q-UI-1314](#q-ui-1314--an-images-date-is-pushed-or-fetched-on-every-screen)) |
+| Downloads | in no table of versions | under the last download in every one (R-UI-222) |
+| An image's table | no digest | the digest under the tags |
+| Install script | not shown | a note under the links |
+| Upstream tab | npm "Size not told" beside an `unpackedSize`; Debian and Ansible "not analysed for vulnerabilities"; Debian's architectures as `linux/amd64` | "1.9 KiB unpacked"; the format's reason of Q-UI-1244; `amd64` |
+| A role's breadcrumb | `role/16` | the role's name ([Q-UI-1317](#q-ui-1317--the-breadcrumb-names-a-package-by-its-name-where-its-address-holds-its-key)) |
+| OpenAPI `metadata` | npm's members only | each format's members |
+
+**Choice:** close every row (R-UI-221, R-UI-222). **Left, and whose:** the marks Deprecated and Unlisted in tables and the switch (the
+deprecation package, R-API-085); NuGet's release notes with their line breaks, icon, licence file and symbols (W-30 G6); an image's
+"Created" as its annotation writes it (W-30 G7's facts); the documentation of a package not stored yet (W-30 G2). **Applied in the
+spec:** R-UI-110, R-UI-111, R-UI-221, R-UI-222, R-API-029.
+
+### Q-UI-1311 · Every format's dependencies are one block, a group per kind in the format's words
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Debian's block for every format: one heading **Dependencies**, a sub-heading per kind in the format's own word, one line per dependency with its alternatives side by side and the range muted after the name, a link where the installation holds the package (chosen) | | One block; a group of alternatives stays one line; the format's words are the words its users read in its tools (`npm view`, `apt show`, nuget.org's frameworks) | npm's field names are code words, not sentences |
+| (b) npm's two columns (name, range) for every format | | Ranges aligned | Debian's "a or b" becomes two rows that read as "a and b" (Q-UI-1270) |
+| (c) A heading per kind, translated ("Development dependencies") | As npm had | Plain words | Debian's and NuGet's kinds have no plain words of their own; three styles stay |
+
+**Choice:** (a). npm's groups are its manifest's fields in the order an install uses them, `devDependencies` last (an install of the
+package does not fetch them); `bundleDependencies` (or `true` for all) and `peerDependenciesMeta`'s optional peers are read by the server.
+The lookups that make a name a link were Ansible's and Debian's; they are every format's whose dependencies name its own packages, at
+most 60 per version. **Applied in the spec:** R-UI-221. Code: `DependencyList` of
+[version-facts.ts](../../web/src/app/features/packages/version-facts.ts).
+
+### Q-UI-1312 · Keywords and tags are one block of chips that open the package list
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Keywords** first in Details, chips that open the package list filtered by the format and the keyword (chosen) | | One word for npm's keywords, NuGet's and Galaxy's tags; the list's filter is `keyword` already; twenty chips do not push the README down | Not in the head, where Galaxy shows a collection's tags |
+| (b) Chips in the head under the description | | Seen at once | Twenty keywords push the documentation a package leads with (R-UI-218) below the first screen |
+| (c) Text, as before | | | No way to the packages that share one |
+
+**Choice:** (a). The word is the package list's filter's, **Keywords**, in every format. The keywords are the version's own
+(`keywords` of R-API-029), not the newest version's. A Helm chart's keywords stay among its facts: the package list cannot filter images
+by them. **Applied in the spec:** R-UI-221, R-API-029.
+
+### Q-UI-1313 · A version's links are one row under its facts in every format
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One row under the facts line, each link by its label, opening the other site (chosen) | | The same place on every tab and in every format; a plain user finds the homepage and the source without a tab | The address is a title, not shown |
+| (b) A block **Links** first in Details | | The addresses are shown | Behind a tab; it stood at three places |
+
+**Choice:** (a). A licence's address is the licence's link on the facts line, not a link of the row. **Applied in the spec:** R-UI-111,
+R-UI-221. Code: `VersionLinks` of [version-facts.ts](../../web/src/app/features/packages/version-facts.ts).
+
+### Q-UI-1314 · An image's date is Pushed or Fetched on every screen
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The content's words wherever an image's date stands: **Pushed**, or **Fetched** where only remote repositories hold the version (a version's page) or the package's newest version (its table) (chosen) | | One word per screen for one date | A version both a local and a remote repository hold reads Pushed |
+| (b) Published everywhere | | One word | An image is not published, and the content says Pushed |
+
+**Choice:** (a). A virtual repository holds nothing of its own and does not count. The Repositories table of a version's page takes the
+same word. Gap: [H-2172](#h-2172--an-images-date-word-follows-the-versions-holders-not-each-row). **Applied in the spec:** R-UI-110,
+R-UI-111, R-UI-222. Code: `arrivedLabel` of [content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts).
+
+### Q-UI-1315 · An install script is said under the facts, where a person decides
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A muted note with a terminal mark under the links, on every tab, and a row of npm's Package details (chosen) | | Seen before the command is copied; not a warning colour for what most native packages do | Not in the command's panel |
+| (b) A warning banner | | Loud | Many packages build native code on install; a banner on each teaches people to ignore banners |
+| (c) In Package details only | | Quiet | Behind a tab, where nobody decides |
+
+**Choice:** (a). The server's fact is Quader's own read of the tarball (R-NPM-007), not the publisher's claim. **Applied in the spec:**
+R-UI-221.
+
+### Q-UI-1316 · A size is said in the unit a person reads, wherever it stands
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The product's size form (binary units, one decimal) for Debian's Installed-Size and npm's unpacked size (chosen) | | "18.0 MiB" as every other size | The control field's number is not shown |
+| (b) The field as written ("18432 KiB") | | As `dpkg` writes it | A number a person converts |
+
+**Choice:** (a). **Applied in the spec:** R-UI-221. Code: `debFacts`, `npmFacts` of
+[version-metadata.ts](../../web/src/app/features/packages/version-metadata.ts).
+
+### Q-UI-1317 · The breadcrumb names a package by its name where its address holds its key
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+A role read through a remote is addressed by its key `role/16` and named `geerlingguy.pip` (Q-UI-1261); its breadcrumb read the key
+(H-2124 of [formats/ansible.md](formats/ansible.md), which this decision closes and removes).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The page tells the trail the name of the value of its address once the package has answered (chosen) | | The trail reads as the title | The step shows the key for the moment before the answer |
+| (b) A resolver that reads the package before the page | | No moment of the key | A second read of the package before every package page |
+
+**Choice:** (a). Only a value whose name differs from it is named (a role today). **Applied in the spec:** R-UI-111. Code: `name` of
+[breadcrumbs.ts](../../web/src/app/core/breadcrumbs.ts).
+
+### Q-UI-1318 · A version's downloads and an image's digest stand under a cell the table has
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+W-30 G3 planned a column **Downloads** in every table and a column **Digest** in an image's. Rendered, either column put the table of npm
+and of an image into blocks at 1,024 px beside the side bar, which it was not before (Q-UI-969: one form at 1,440 and 1,024 px).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The count under **Last download** ("410 downloads"), the digest under the image's tags, its whole as its title (chosen) | As a file's size and hash stand under its path (Q-UI-1002) | The table keeps its form at 1,024 px; both facts in every row | No sort by the count; the digest's copy button is on the tag's page (a button beside it put the table into blocks again) |
+| (b) Two columns, sortable | As planned | A sort by downloads | Blocks at 1,024 px for every package, the owner's walk's width |
+| (c) The count in its own column, the digest only on the tag's page | | | Still blocks at 1,024 px |
+
+**Choice:** (a). A sort by downloads comes back as a column the day the table has room for it. **Applied in the spec:** R-UI-110,
+R-UI-222.
+
 ## What this does not cover
+
+### H-2172 · An image's date word follows the version's holders, not each row
+
+Stage: `arrivedLabel` (Q-UI-1314). Subject: an image a local and a remote repository both hold, and a table whose rows are held by
+different classes. The word is one per screen: Pushed where any holder is local, Fetched where all are remote, read from the version (its
+page) or from the package's newest version (its table). A row of an image only a remote holds, in a table whose newest version a local
+repository holds, reads Pushed. Dormant: no installation holds one image name in a local and a remote repository of one project today.
 
 ### H-2143 · A remote whose documentation is not available shows no changelog on its tab
 

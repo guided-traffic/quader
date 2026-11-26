@@ -104,6 +104,14 @@ describe('The versions table of a package (R-UI-110)', () => {
     expect(order(sortVersions(rows, { column: 'fetched', direction: 'desc' }))).toEqual(['2.1.0', '2.0.0', '3.0.0-rc.1', '1.0.0']);
   });
 
+  it('R-UI-222 a row keeps its version\'s downloads and, of an image, its digest', () => {
+    const counted = versionRows([summary('2.0.0', { downloadCount: 3 }), summary('1.0.0', { downloadCount: 40, digest: 'sha256:ab' })], new Map(), []);
+    expect(counted.map((r) => [r.downloadCount, r.digest])).toEqual([
+      [3, null],
+      [40, 'sha256:ab'],
+    ]);
+  });
+
   it('R-API-080 a size that is not known stays null and sorts below every known one; a partial size keeps its mark', () => {
     const sized = versionRows(
       [summary('1.0.0', { sizeBytes: null }), summary('2.0.0', { sizeBytes: 0 }), summary('3.0.0', { sizeBytes: 9, sizePartial: true })],

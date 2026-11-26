@@ -1,4 +1,5 @@
 import { PackageVersion } from '../../api/packages-api';
+import { formatSize } from './format-size';
 import { safeHttpUrl } from './package-links';
 
 /*
@@ -13,15 +14,31 @@ export interface MetadataLink {
   readonly href: string | null;
 }
 
-export interface DependencyGroup {
-  readonly label: string;
-  readonly entries: readonly (readonly [string, string])[];
+/**
+ * One alternative of a dependency (R-UI-221): the package it names, the name as written (Debian's `python3:any`), and what follows the
+ * name as text (a range, a constraint, an architecture restriction).
+ */
+export interface DependencyAlternative {
+  readonly name: string;
+  readonly written: string;
+  readonly qualifiers: string;
 }
 
-/** The dependencies of a NuGet package for one target framework (`null`: declared for all). */
-export interface FrameworkGroup {
-  readonly framework: string | null;
-  readonly entries: readonly (readonly [string, string])[];
+/** One dependency: its alternatives (Debian's `a | b`; one for every other format), and a word after it (npm's optional peer). */
+export interface DependencyEntry {
+  readonly alternatives: readonly DependencyAlternative[];
+  readonly mark: string | null;
+}
+
+/**
+ * One group of a version's dependencies, the same block in every format (R-UI-221, Q-UI-1311): named by the format's own word (npm's
+ * field, NuGet's target framework, Debian's relation field), or null for a format whose dependencies are one list (an Ansible
+ * collection, a Helm chart); its entries, or its text where the server could not parse it (Debian).
+ */
+export interface DependencyGroup {
+  readonly label: string | null;
+  readonly entries: readonly DependencyEntry[];
+  readonly text: string | null;
 }
 
 /** One platform of an OCI image index (R-OCI-031): the child manifest it names, with its digest, media type and size. */
@@ -117,64 +134,124 @@ export function imageFacts(m: Record<string, unknown>): ImageFacts | null {
   };
 }
 
+const single = (name: string, qualifiers: string, mark: string | null = null): DependencyEntry => ({
+  alternatives: [{ name, written: name, qualifiers }],
+  mark,
+});
+
 /**
- * The `dependencyGroups` member of NuGet metadata (formats/nuget.md R-NUGET-007): a list of groups with an optional
- * `targetFramework` and `dependencies` of `id` and `range`. Anything else is skipped.
+ * The `dependencyGroups` member of NuGet metadata (formats/nuget.md R-NUGET-007): a group per target framework with `dependencies` of
+ * `id` and `range`, a group without a framework named for all of them. A group without dependencies stays, and says so. Anything else is
+ * skipped.
  */
-export function frameworkGroups(value: unknown): FrameworkGroup[] {
+export function nugetDependencies(value: unknown): DependencyGroup[] {
   if (!Array.isArray(value)) return [];
-  return value.flatMap((g): FrameworkGroup[] => {
+  return value.flatMap((g): DependencyGroup[] => {
     if (typeof g !== 'object' || g === null) return [];
     const group = g as Record<string, unknown>;
     const deps = Array.isArray(group['dependencies']) ? group['dependencies'] : [];
-    const entries = deps.flatMap((d): [string, string][] => {
+    const entries = deps.flatMap((d): DependencyEntry[] => {
       if (typeof d !== 'object' || d === null) return [];
       const dep = d as Record<string, unknown>;
       const id = dep['id'];
       const range = dep['range'] ?? dep['version'];
-      return typeof id === 'string' ? [[id, typeof range === 'string' && range !== '' ? range : '*']] : [];
+      return typeof id === 'string' && id !== '' ? [single(id, typeof range === 'string' && range !== '' ? range : '*')] : [];
     });
     const fw = group['targetFramework'];
-    return [{ framework: typeof fw === 'string' && fw !== '' ? fw : null, entries }];
+    return [{ label: typeof fw === 'string' && fw !== '' ? fw : $localize`:@@pkg.meta.all-frameworks:All frameworks`, entries, text: null }];
   });
 }
 
-/** The npm dependency kinds that are present, each with its entries. */
-export function dependencyGroups(m: Record<string, unknown>): DependencyGroup[] {
+/**
+ * The dependencies of an npm version, a group per field of its manifest in the order npm installs them: `dependencies`,
+ * `peerDependencies` (a peer `peerDependenciesMeta` marks optional says so), `optionalDependencies`, `bundleDependencies` (with the
+ * range `dependencies` gives the name) and `devDependencies`, which an install of the package does not fetch. A field is named as the
+ * manifest names it (Q-UI-1311).
+ */
+export function npmDependencies(m: Record<string, unknown>): DependencyGroup[] {
+  const optionalPeers = new Set(strings(m['optionalPeers']));
+  const optional = $localize`:@@pkg.meta.optional-peer:optional`;
+  const required = stringRecord(m['dependencies']);
+  const ranges = new Map(required);
+  const group = (label: string, entries: DependencyEntry[]): DependencyGroup => ({ label, entries, text: null });
   return [
-    { label: $localize`:@@pkg.meta.dependencies:Dependencies`, entries: stringRecord(m['dependencies']) },
-    { label: $localize`:@@pkg.meta.dev-dependencies:Development dependencies`, entries: stringRecord(m['devDependencies']) },
-    { label: $localize`:@@pkg.meta.peer-dependencies:Peer dependencies`, entries: stringRecord(m['peerDependencies']) },
-    { label: $localize`:@@pkg.meta.optional-dependencies:Optional dependencies`, entries: stringRecord(m['optionalDependencies']) },
+    group('dependencies', required.map(([n, r]) => single(n, r))),
+    group('peerDependencies', stringRecord(m['peerDependencies']).map(([n, r]) => single(n, r, optionalPeers.has(n) ? optional : null))),
+    group('optionalDependencies', stringRecord(m['optionalDependencies']).map(([n, r]) => single(n, r))),
+    group('bundleDependencies', strings(m['bundleDependencies']).map((n) => single(n, ranges.get(n) ?? ''))),
+    group('devDependencies', stringRecord(m['devDependencies']).map(([n, r]) => single(n, r))),
   ].filter((g) => g.entries.length > 0);
+}
+
+/** The dependencies of an Ansible collection version (R-ANS-026): one list of collections and their ranges. */
+export function ansibleDependencies(m: Record<string, unknown>): DependencyGroup[] {
+  const entries = stringRecord(m['dependencies']).map(([n, r]) => single(n, r));
+  return entries.length > 0 ? [{ label: null, entries, text: null }] : [];
 }
 
 /** The plain members of a NuGet version (Q-NUGET-48): text, a name list or a version, shown as given. */
 export function nugetFacts(m: Record<string, unknown>): [string, string][] {
   const entries: [string, string][] = [
+    [$localize`:@@pkg.meta.title:Title`, text(m['title'])],
     [$localize`:@@pkg.meta.min-client:Minimum client version`, text(m['minClientVersion'])],
     [$localize`:@@pkg.meta.package-types:Package types`, strings(m['packageTypes']).join(', ')],
     [$localize`:@@pkg.meta.language:Language`, text(m['language'])],
     [$localize`:@@pkg.meta.copyright:Copyright`, text(m['copyright'])],
     [$localize`:@@pkg.meta.release-notes:Release notes`, text(m['releaseNotes'])],
+    [
+      $localize`:@@pkg.meta.license-acceptance:Licence acceptance`,
+      m['requireLicenseAcceptance'] === true ? $localize`:@@pkg.meta.license-acceptance-yes:required before it is installed` : '',
+    ],
+    [
+      $localize`:@@pkg.meta.development-dependency:Development dependency`,
+      m['developmentDependency'] === true ? $localize`:@@pkg.meta.development-dependency-yes:yes, a project that uses it does not pass it on` : '',
+    ],
   ];
   return entries.filter((e) => e[1] !== '');
 }
 
 /**
+ * The facts of an npm version (R-UI-221): the runtimes it requires, the types it declares, what Quader read of its tarball (the unpacked
+ * size, the file count, whether it runs an install script, R-NPM-007) and who published it.
+ */
+export function npmFacts(m: Record<string, unknown>): [string, string][] {
+  const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null);
+  const unpacked = num(m['unpackedSize']);
+  const files = num(m['fileCount']);
+  const entries: [string, string][] = [
+    [$localize`:@@pkg.meta.engines:Required runtimes`, stringRecord(m['engines']).map(([k, v]) => `${k} ${v}`).join(', ')],
+    [$localize`:@@pkg.meta.types:Types`, text(m['types'])],
+    [$localize`:@@pkg.meta.unpacked-size:Unpacked size`, unpacked === null ? '' : formatSize(unpacked)],
+    [$localize`:@@pkg.meta.file-count:Files`, files === null ? '' : new Intl.NumberFormat($localize.locale || 'en-US').format(files)],
+    [$localize`:@@pkg.meta.install-script:Install script`, m['hasInstallScript'] === true ? installScriptText() : ''],
+    [$localize`:@@pkg.meta.publisher:Publisher`, text(m['publisher'])],
+  ];
+  return entries.filter((e) => e[1] !== '');
+}
+
+/** What an npm version's install script does, said where a person decides to install it (R-UI-221): it runs code of the package. */
+export function installScriptText(): string {
+  return $localize`:@@pkg.meta.install-script-yes:Runs a script of the package when it is installed`;
+}
+
+/**
  * The facts of a Debian version (R-DEB-030, R-DEB-038): the architectures of its files, its coordinates (suite and component, shown as
- * `stable/main`) and the control fields the view adapter sends. Installed-Size is in KiB, as the control field says. The relations
+ * `stable/main`) and the control fields the view adapter sends; Installed-Size, which the field gives in KiB, in the unit a person reads. The relations
  * are lists of their own ({@link debRelations}); the source package is a link of its own (Q-UI-1271).
  */
 export function debFacts(m: Record<string, unknown>): [string, string][] {
-  const size = text(m['installedSize']);
+  const kib = Number(text(m['installedSize']));
   const entries: [string, string][] = [
     [$localize`:@@pkg.meta.deb-architectures:Architectures`, strings(m['architectures']).join(', ')],
     [$localize`:@@pkg.meta.deb-coordinates:Suites and components`, strings(m['coordinates']).join(', ')],
     [$localize`:@@pkg.meta.deb-maintainer:Maintainer`, text(m['maintainer'])],
     [$localize`:@@pkg.meta.deb-section:Section`, text(m['section'])],
     [$localize`:@@pkg.meta.deb-priority:Priority`, text(m['priority'])],
-    [$localize`:@@pkg.meta.deb-installed-size:Installed size`, size === '' ? '' : $localize`:@@pkg.meta.deb-kib:${size}:size: KiB`],
+    // Installed-Size is in KiB (Debian policy 5.6.20); the screen says it in the unit a person reads, as every size (Q-UI-1316).
+    [
+      $localize`:@@pkg.meta.deb-installed-size:Installed size`,
+      text(m['installedSize']) !== '' && Number.isFinite(kib) && kib >= 0 ? formatSize(kib * 1024) : '',
+    ],
     [$localize`:@@pkg.meta.deb-multi-arch:Multi-Arch`, text(m['multiArch'])],
     [$localize`:@@pkg.meta.deb-essential:Essential`, m['essential'] === true ? $localize`:@@pkg.meta.deb-essential-yes:yes, APT refuses to remove it` : ''],
   ];
@@ -186,22 +263,6 @@ export function debSource(m: Record<string, unknown>): { readonly name: string; 
   const source = text(m['source']);
   if (source === '') return null;
   return { name: source.split(/\s/)[0] ?? source, text: source };
-}
-
-/** One alternative of a Debian relation (R-DEB-038): the package name, and what is written after it. */
-export interface DebAlternative {
-  readonly name: string;
-  /** The name as written, with its architecture qualifier (`python3:any`). */
-  readonly written: string;
-  /** The constraint (`>= 2.34`), the architecture restriction and the build profiles, as text. */
-  readonly qualifiers: string;
-}
-
-/** One relation field of a Debian version: its label and its groups of alternatives, or its text when the server could not parse it. */
-export interface DebRelationGroup {
-  readonly label: string;
-  readonly groups: readonly (readonly DebAlternative[])[];
-  readonly text: string | null;
 }
 
 /** The relation fields in the order `apt show` lists them, with their labels. */
@@ -219,7 +280,7 @@ function relationLabels(): readonly (readonly [string, string])[] {
   ];
 }
 
-function alternative(v: unknown): DebAlternative | null {
+function alternative(v: unknown): DependencyAlternative | null {
   if (typeof v !== 'object' || v === null) return null;
   const r = v as Record<string, unknown>;
   const name = text(r['name']);
@@ -236,24 +297,24 @@ function alternative(v: unknown): DebAlternative | null {
   return { name, written: arch === '' ? name : `${name}:${arch}`, qualifiers: parts.join(' ') };
 }
 
-/** The relations of a Debian version that are present, each a list of groups of alternatives (R-DEB-038). */
-export function debRelations(m: Record<string, unknown>): DebRelationGroup[] {
+/** The relations of a Debian version that are present, each a list of groups of alternatives (R-DEB-038), in the block of R-UI-221. */
+export function debRelations(m: Record<string, unknown>): DependencyGroup[] {
   const parsed = typeof m['relations'] === 'object' && m['relations'] !== null ? (m['relations'] as Record<string, unknown>) : {};
   const raw = typeof m['relationsText'] === 'object' && m['relationsText'] !== null ? (m['relationsText'] as Record<string, unknown>) : {};
-  return relationLabels().flatMap(([key, label]): DebRelationGroup[] => {
+  return relationLabels().flatMap(([key, label]): DependencyGroup[] => {
     const t = text(raw[key]);
-    if (t !== '') return [{ label, groups: [], text: t }];
-    const groups = (Array.isArray(parsed[key]) ? (parsed[key] as unknown[]) : []).flatMap((g): DebAlternative[][] => {
-      const alts = (Array.isArray(g) ? g : []).flatMap((a) => alternative(a) ?? []);
-      return alts.length > 0 ? [alts] : [];
+    if (t !== '') return [{ label, entries: [], text: t }];
+    const entries = (Array.isArray(parsed[key]) ? (parsed[key] as unknown[]) : []).flatMap((g): DependencyEntry[] => {
+      const alternatives = (Array.isArray(g) ? g : []).flatMap((a) => alternative(a) ?? []);
+      return alternatives.length > 0 ? [{ alternatives, mark: null }] : [];
     });
-    return groups.length > 0 ? [{ label, groups, text: null }] : [];
+    return entries.length > 0 ? [{ label, entries, text: null }] : [];
   });
 }
 
-/** The names a Debian version's relations name, for the links to the packages the installation holds. */
-export function debRelationNames(m: Record<string, unknown>): string[] {
-  return [...new Set(debRelations(m).flatMap((r) => r.groups.flatMap((g) => g.map((a) => a.name))))];
+/** The names the dependencies of a version name, each once: the lookups of the packages the installation holds (R-UI-221). */
+export function dependencyNames(groups: readonly DependencyGroup[]): string[] {
+  return [...new Set(groups.flatMap((g) => g.entries.flatMap((e) => e.alternatives.map((a) => a.name))))];
 }
 
 /** A paragraph of the extended description of a Debian version (R-DEB-038): text the screen wraps, or lines shown as written. */
@@ -272,24 +333,23 @@ export function debLongDescription(m: Record<string, unknown>): DescriptionBlock
 }
 
 /**
- * The facts of an Ansible collection version (R-ANS-026): the Ansible versions it needs and its tags. The licences are the version's
- * facts, the tags the generic keywords of the package; its dependencies, authors and links are shown as for the other formats.
+ * The facts of an Ansible collection version (R-ANS-026): the Ansible versions it needs. Its tags are the version's keywords, its
+ * dependencies, authors and links are shown as for the other formats (R-UI-221).
  */
-export function ansibleFacts(d: PackageVersion, keywords: readonly string[]): [string, string][] {
+export function ansibleFacts(d: PackageVersion): [string, string][] {
   if (d.format !== 'ansible') return [];
-  const entries: [string, string][] = [
-    [$localize`:@@pkg.meta.ansible-requires:Requires Ansible`, text(d.metadata['requiresAnsible'])],
-    [$localize`:@@pkg.meta.ansible-tags:Tags`, keywords.join(', ')],
-  ];
-  return entries.filter((e) => e[1] !== '');
+  const requires = text(d.metadata['requiresAnsible']);
+  return requires === '' ? [] : [[$localize`:@@pkg.meta.ansible-requires:Requires Ansible`, requires]];
 }
 
-/** The links of a version: homepage, licence, documentation, source and issue tracker, those it declares. */
+/**
+ * The links of a version: homepage, documentation, source and issue tracker, those it declares; one row under the facts line (R-UI-221).
+ * The address of the licence stands beside the licence ({@link licenseLink}).
+ */
 export function metadataLinks(d: PackageVersion): MetadataLink[] {
   const m = d.metadata;
   const entries: [string, unknown][] = [
     [$localize`:@@pkg.meta.homepage:Homepage`, m['homepage']],
-    [$localize`:@@pkg.meta.license-url:License`, m['licenseUrl']],
     // The Documentation tab of an Ansible collection holds its documentation; the link out is the collection's own site (Q-UI-245).
     [d.format === 'ansible' ? $localize`:@@pkg.meta.docs-site:Docs site` : $localize`:@@pkg.meta.documentation:Documentation`, m['documentationUrl']],
     [$localize`:@@pkg.meta.source:Source repository`, m['repositoryUrl']],
@@ -298,6 +358,12 @@ export function metadataLinks(d: PackageVersion): MetadataLink[] {
   return entries.flatMap(([label, value]): MetadataLink[] =>
     typeof value === 'string' && value.trim() !== '' ? [{ label, text: value, href: safeHttpUrl(value) }] : [],
   );
+}
+
+/** The address of a version's licence (NuGet's `licenseUrl`), when it is http or https; the licence on the facts line links to it. */
+export function licenseLink(m: Record<string, unknown>): string | null {
+  const u = m['licenseUrl'];
+  return typeof u === 'string' ? safeHttpUrl(u) : null;
 }
 
 /** A deprecation message of the version, or null. */

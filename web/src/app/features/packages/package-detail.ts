@@ -3,6 +3,7 @@ import { NamespaceOf } from './namespace-of';
 import { LIVE_IDLE_MS, live, refreshResource } from '../../core/live-refresh';
 import { Component, computed, effect, inject, input, linkedSignal, resource, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { Breadcrumbs } from '../../core/breadcrumbs';
 import { PackagesApi, VersionFilters } from '../../api/packages-api';
 import { collectAll } from '../../api/pagination';
 import { VulnerabilitiesApi, VulnerabilityGrade, VulnerabilityPackageReport } from '../../api/vulnerabilities-api';
@@ -34,6 +35,8 @@ import { VersionSize } from './version-size';
 import { DistTags } from './dist-tags';
 import { SignatureBadge } from '../../shared/signatures/signature-badge';
 import { CLAMAV_FORMAT, clamavState, stateRank, stateText } from './clamav-definitions';
+import { arrivedLabel } from '../repositories/content/content-shape';
+import { KeywordChips } from './version-facts';
 import { ImageTags, listsByContent } from './image-tags';
 import { DeprecationMark } from '../../shared/ui/deprecation-mark';
 import { Loading } from '../../shared/ui/loading';
@@ -71,6 +74,7 @@ function sameVersion(a: { id: string; version: string } | undefined, b: { id: st
     VersionSize,
     ImageTags,
     DistTags,
+    KeywordChips,
   ],
   templateUrl: './package-detail.html',
   styleUrl: './package-detail.scss',
@@ -80,6 +84,7 @@ export class PackageDetail {
   private readonly vulnerabilityApi = inject(VulnerabilitiesApi);
   private readonly router = inject(Router);
   private readonly memory = inject(PackageMemory);
+  private readonly breadcrumbs = inject(Breadcrumbs);
 
   /** Route parameters: the project of `/projects/:project/packages`, then the matcher's, bound by component input binding. */
   readonly project = input.required<string>();
@@ -208,7 +213,7 @@ export class PackageDetail {
     ...(this.graded()
       ? [{ id: 'vulnerabilities', label: $localize`:@@pkg.ver.vulnerabilities:Vulnerabilities`, sortable: true }]
       : []),
-    { id: 'published', label: $localize`:@@pkg.ver.published:Published`, sortable: true },
+    { id: 'published', label: this.arrived(), sortable: true },
     {
       id: 'fetched',
       label: $localize`:@@pkg.ver.last-download:Last download`,
@@ -217,6 +222,17 @@ export class PackageDetail {
     },
     ...(this.showRepositories() ? [{ id: 'repositories', label: $localize`:@@pkg.ver.repositories:Repositories` }] : []),
   ]);
+  /**
+   * The word of the date the versions arrived (Q-UI-1314): an image's Pushed, or Fetched where only remote repositories hold its newest
+   * version; every other format's Published.
+   */
+  protected readonly arrived = computed(() =>
+    arrivedLabel(this.format(), (valueOf(this.latest)?.repositories ?? []).map((r) => r.class)),
+  );
+  /** A digest's first twelve hex digits, the form a list shows a hash in (the style guide); its title and its copy have the whole. */
+  protected shortDigest(digest: string): string {
+    return digest.slice(digest.indexOf(':') + 1, digest.indexOf(':') + 13);
+  }
   protected readonly imagesText = $localize`:@@pkg.ver.images:Images`;
   protected readonly caption = computed(() => (this.images() ? this.imagesText : $localize`:@@pkg.ver.caption:Versions`));
   protected readonly filterLabel = computed(() =>
@@ -278,7 +294,13 @@ export class PackageDetail {
     // Opening the page records it in "recently opened" (R-UI-007).
     effect(() => {
       const s = valueOf(this.summary);
-      if (s) untracked(() => this.memory.addRecent({ format: s.format, name: s.name, ...(s.key && s.key !== s.name ? { key: s.key } : {}) }));
+      if (s) {
+        untracked(() => {
+          this.memory.addRecent({ format: s.format, name: s.name, ...(s.key && s.key !== s.name ? { key: s.key } : {}) });
+          // The trail names the package by its name where the address holds its key (a role, Q-UI-1317).
+          this.breadcrumbs.name(this.name(), s.name);
+        });
+      }
     });
   }
 

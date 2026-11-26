@@ -203,14 +203,37 @@ describe('The page of a version (R-UI-111)', () => {
     expect(older.getAttribute('href')).toBe('/projects/web/packages/npm/@team-a/ui@1.3.0?tab=details');
   });
 
-  it('R-UI-111 the Details tab lists the dependency kinds, the authors, the links and the repositories that hold the version', async () => {
+  it('R-UI-111 R-UI-221 the Details tab lists the keywords, the dependency kinds, the Package details, the authors and the repositories', async () => {
     const r = await open({ tab: 'details' });
-    expect(pairs(r)).toEqual(expect.arrayContaining(['lit ^3.1.0', 'vitest ^3.0.0', 'node >=22']));
+    // The keywords are chips to the packages of the format that share one (Q-UI-1312).
+    const chips = [...r.root.querySelectorAll<HTMLAnchorElement>('quader-keyword-chips a')];
+    expect(chips.map((a) => text(a))).toEqual(['ui', 'web-components']);
+    expect(chips[0]?.getAttribute('href')).toBe('/projects/web/packages?format=npm&keyword=ui');
+    // The dependencies: a group per field of the manifest, an optional peer marked (Q-UI-1311).
+    expect([...r.root.querySelectorAll('quader-dependency-list h3')].map((h) => text(h))).toEqual([
+      'dependencies',
+      'peerDependencies',
+      'devDependencies',
+    ]);
+    expect([...r.root.querySelectorAll('quader-dependency-list li')].map((li) => text(li))).toEqual([
+      'lit ^3.1.0',
+      'react >=18 optional',
+      'vitest ^3.0.0',
+    ]);
+    expect(pairs(r)).toEqual([
+      'Required runtimes node >=22',
+      'Unpacked size 200.0 KiB',
+      'Files 12',
+      'Install script Runs a script of the package when it is installed',
+      'Publisher ada',
+    ]);
     const t = text(r.root.querySelector('.version-tabs')!);
-    expect(t).toContain('Development dependencies');
     expect(t).toContain('Team A <team-a@example.com>');
-    const home = [...r.root.querySelectorAll('a')].find((a) => a.textContent === 'https://example.com/team-a/ui')!;
+    // The links are one row under the facts, on every tab (Q-UI-1313); the install script is said there too (Q-UI-1315).
+    const home = [...r.root.querySelectorAll<HTMLAnchorElement>('quader-version-links a')].find((a) => a.href === 'https://example.com/team-a/ui')!;
+    expect(text(home)).toContain('Homepage');
     expect(home.getAttribute('rel')).toBe('nofollow noopener noreferrer');
+    expect(text(r.root.querySelector('[data-testid="install-script"]')!)).toContain('Runs a script of the package when it is installed');
     const repos = [...r.root.querySelectorAll('.version-tabs quader-data-table tbody tr')];
     expect(repos.map((tr) => text(tr))).toEqual([expect.stringContaining('web/npm-localLocal'), expect.stringContaining('web/npm-allVirtual')]);
     expect(repos[0]?.querySelector('a')?.getAttribute('href')).toBe('/projects/web/repositories/npm-local');
@@ -444,15 +467,18 @@ describe('The page of a version (R-UI-111)', () => {
 
     it('R-NUGET-007 Details lists the dependencies by target framework, verbatim, the plain members, and says so for a framework without any', async () => {
       const r = await nuget({ tab: 'details' });
-      expect([...r.root.querySelectorAll('.version-tabs h3')].map((h) => text(h))).toEqual(['net8.0', '.NETStandard2.0', 'net462']);
+      expect([...r.root.querySelectorAll('quader-dependency-list h3')].map((h) => text(h))).toEqual(['net8.0', '.NETStandard2.0', 'net462']);
+      expect([...r.root.querySelectorAll('quader-dependency-list li')].map((li) => text(li))).toEqual([
+        'Microsoft.Extensions.Logging.Abstractions [8.0.0, )',
+        'System.Text.Json [8.0.4, )',
+        'System.Text.Json [6.0.0, )',
+      ]);
       expect(pairs(r)).toEqual(
-        expect.arrayContaining([
-          'Microsoft.Extensions.Logging.Abstractions [8.0.0, )',
-          'System.Text.Json [6.0.0, )',
-          'Minimum client version 4.3.0',
-          'Package types Dependency',
-        ]),
+        expect.arrayContaining(['Title Contoso Logging', 'Minimum client version 4.3.0', 'Package types Dependency']),
       );
+      // The tags are the keywords; the licence's address is the licence's link on the facts line (R-UI-221).
+      expect([...r.root.querySelectorAll('quader-keyword-chips a')].map((a) => text(a))).toEqual(['logging', 'diagnostics']);
+      expect(r.root.querySelector('.facts-line a[href="https://licenses.nuget.org/MIT"]')?.textContent).toContain('MIT');
       expect(pairs(r).join('|')).not.toContain('Copyright');
       expect(text(r.root)).toContain('No dependencies.');
       expect(text(r.root)).toContain('Ada Lovelace');
@@ -610,14 +636,14 @@ describe('The page of a version (R-UI-111)', () => {
         Maintainer: 'Jane Maintainer <jane@example.com>',
         Section: 'devel',
         Priority: 'optional',
-        'Installed size': '280 KiB',
+        'Installed size': '280.0 KiB',
         'Multi-Arch': 'foreign',
         'Source package': 'hello (2.10-3)',
       });
       // The source package lists its binaries: the package list filtered by it (Q-DEB-142).
       const source = r.root.querySelector<HTMLAnchorElement>('[data-testid="deb-facts"] dd a');
       expect(source?.getAttribute('href')).toContain('keyword=hello');
-      expect([...r.root.querySelectorAll<HTMLAnchorElement>('.version-tabs a[target="_blank"]')].map((a) => a.href)).toContain(
+      expect([...r.root.querySelectorAll<HTMLAnchorElement>('quader-version-links a[target="_blank"]')].map((a) => a.href)).toContain(
         'https://www.gnu.org/software/hello/',
       );
       await expectAccessible(r.root);
@@ -635,11 +661,11 @@ describe('The page of a version (R-UI-111)', () => {
       const details = r.root.querySelector('.version-tabs')!;
       expect(text(details.querySelector('.deb-description')!)).toContain('friendly greeting');
       expect(details.querySelector('.deb-verbatim')?.textContent).toBe(' * a greeting\n * a farewell');
-      const lines = [...details.querySelectorAll('.deb-relations li')].map((li) => text(li));
+      const lines = [...details.querySelectorAll('quader-dependency-list li')].map((li) => text(li));
       expect(lines).toEqual(['libc6 >= 2.34', 'python3:any or python3-minimal', 'hello-doc', 'greeter = 2.10']);
-      expect([...details.querySelectorAll<HTMLAnchorElement>('.deb-relations a')].map((a) => text(a))).toEqual(['libc6']);
+      expect([...details.querySelectorAll<HTMLAnchorElement>('quader-dependency-list a')].map((a) => text(a))).toEqual(['libc6']);
       // A field the server could not parse is its text.
-      expect(text(details.querySelector('.deb-relation-text')!)).toBe('hello-old [amd64');
+      expect(text(details.querySelector('.dependency-text')!)).toBe('hello-old [amd64');
       await expectAccessible(r.root);
     });
 
@@ -723,9 +749,10 @@ describe('The page of a version (R-UI-111)', () => {
       expect(r.root.querySelector('quader-error-notice')).toBeNull();
     });
 
-    it('R-ANS-026 Details lists the Ansible versions it needs and the tags; the licences are the facts of the header', async () => {
+    it('R-ANS-026 Details lists the Ansible versions it needs and the tags as keywords; the licences are the facts of the header', async () => {
       const r = await collection({ tab: 'details' });
-      expect(facts(r)).toEqual({ 'Requires Ansible': '>=2.15.0', Tags: 'tools, linux' });
+      expect(facts(r)).toEqual({ 'Requires Ansible': '>=2.15.0' });
+      expect([...r.root.querySelectorAll('quader-keyword-chips a')].map((a) => text(a))).toEqual(['tools', 'linux']);
       expect(text(r.root.querySelector('.facts-line')!)).toContain('Apache-2.0, MIT');
       expect(text(r.root)).toContain('community.general');
       expect(r.root.querySelector<HTMLAnchorElement>('a[href="https://example.com/acme/tools/issues"]')).not.toBeNull();

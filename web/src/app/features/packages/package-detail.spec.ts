@@ -84,14 +84,16 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect(described).toMatch(/^npm tag “latest”: npm install \S+@latest installs this version\.$/);
   });
 
-  it('R-UI-110 R-API-065 a row says how large the version is, when it was published and when a client last downloaded it, or that none did', async () => {
+  it('R-UI-110 R-API-065 R-UI-222 a row says how large the version is, when it was published, when a client last downloaded it, or that none did, and how often', async () => {
     const r = await open();
     const cells = (v: string) => [...rows(r).find((tr) => text(tr.querySelector('th a')!) === v)!.querySelectorAll('td')];
     const [size, published, fetched] = cells('1.4.0');
     expect(text(size!)).toBe('47.1 KiB');
+    // The downloads of every format's table, under the last download (R-UI-222).
+    expect(text(fetched!.querySelector('[data-testid="version-downloads"]')!)).toBe('410 downloads');
     expect(published!.querySelector('time')?.getAttribute('datetime')).toBe('2026-10-20T09:12:44.512Z');
     expect(fetched!.querySelector('time')?.getAttribute('datetime')).toBe('2026-11-17T16:40:02.118Z');
-    expect(text(cells('1.3.0')[2]!)).toBe('Never');
+    expect(text(cells('1.3.0')[2]!.querySelector('.muted')!)).toBe('Never');
   });
 
   it('R-UI-111 a version links to its own page, the version after an @ in the last segment of the address', async () => {
@@ -214,11 +216,12 @@ describe('The package page: its versions (R-UI-110)', () => {
     const r = await open();
     const details = r.root.querySelector('quader-disclosure.pkg-details')!;
     expect(text(details)).toContain('Details');
-    expect([...details.querySelectorAll('dd a')].map((a) => a.getAttribute('href'))).toEqual([
+    expect([...details.querySelectorAll('dd .plain-list a')].map((a) => a.getAttribute('href'))).toEqual([
       '/projects/web/repositories/npm-local',
       '/projects/web/repositories/npm-all',
     ]);
-    expect(text(details)).toContain('ui, components');
+    // The keywords are the chips of a version's page (R-UI-221).
+    expect([...details.querySelectorAll('quader-keyword-chips a')].map((a) => text(a))).toEqual(['ui', 'components']);
     expect(text(details)).toContain('1,832');
   });
 
@@ -253,9 +256,13 @@ describe('The package page: its versions (R-UI-110)', () => {
     }, 'team/app');
     expect(r.fake.versionFilters.at(-1)).toEqual({ sort: '-version', group: 'content' });
     expect(text(r.root.querySelector('.pkg-meta .dot-separated')!)).toMatch(/^10 tags\s*Latest 5\.4\.7$/);
-    expect(headers(r)).toEqual(['Tag', 'Size', 'Published', 'Last download']);
+    // The image's digest as the repository's content lists it, and its date is Pushed (R-UI-222, Q-UI-1314).
+    expect(headers(r)).toEqual(['Tag', 'Size', 'Pushed', 'Last download']);
     expect(versions(r)).toEqual(['5.4.7', '5.4.6', '5.4.5']);
-    // Every tag of the image, none counted away; no digest (Q-UI-453).
+    const digest = rows(r)[0]!.querySelector('th .digest-line code')!;
+    expect(text(digest)).toMatch(/^[0-9a-f]{12}$/);
+    expect(digest.getAttribute('title')).toMatch(/^sha256:[0-9a-f]{64}$/);
+    // Every tag of the image, none counted away.
     const others = (tr: Element) => [...tr.querySelectorAll('.other [translate="no"]')].map((t) => text(t));
     expect(others(rows(r)[0]!)).toEqual(['5.4', '5', 'latest', 'sha-f00cf6c', 'stable']);
     expect(rows(r)[1]!.querySelector('[data-testid="signature-badge"]')?.getAttribute('data-state')).toBe('verified_internal');

@@ -4220,6 +4220,15 @@ Status: **Decided by the development agent** — selected from the options below
 
 ## What this does not cover
 
+### H-2170 · A package's maintainer scripts are not read, so its page cannot say that it runs code on install
+
+A `.deb` runs the `preinst`, `postinst`, `prerm` and `postrm` of its control archive as root when APT installs or removes it.
+Quader reads the control file of that archive and the data archive (R-DEB-007, R-DEB-039), not the scripts: the version's page cannot say,
+where an npm version says it runs an install script ([api-and-ui.md](../api-and-ui.md) R-UI-221), that this package runs code of its
+own. Live for every Debian version, local and cached; nearly every real package carries a `postinst`, so the useful fact is which scripts
+and what they hold, not that there are some. A later package reads the control archive's member names under the bounds of R-ARCH-028
+and shows them in Package details.
+
 ### H-1971 · A pre-release spelled with a tilde is a package's latest version on the screens
 
 A Debian version is never a pre-release (R-DEB-002, [api-and-ui.md](../api-and-ui.md) Q-API-434), so a package whose highest version is an

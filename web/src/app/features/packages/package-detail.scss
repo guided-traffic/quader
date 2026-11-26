@@ -105,3 +105,17 @@
 .muted {
   color: var(--quader-text-muted);
 }
+
+// An image's digest under its tags, as a file's hash under its path (R-UI-222): twelve characters on one line.
+th .secondary.digest-line {
+  white-space: nowrap;
+}
+
+.block {
+  display: block;
+}
+
+// The keywords in the facts of the package keep the line of their value (R-UI-221).
+quader-keyword-chips {
+  margin-block-end: 0;
+}

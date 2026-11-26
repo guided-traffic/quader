@@ -116,9 +116,8 @@
             <quader-grade [grade]="g" [image]="format() === 'oci'" [format]="format()" />
           </a>
         }
-        <span
-          ><ng-container i18n="@@pkg.fact.published">Published</ng-container>&ngsp;<quader-time-ago [at]="d.publishedAt" /></span
-        >
+        <!-- An image's date is Pushed, or Fetched where only remotes hold it; every other format's Published (Q-UI-1314). -->
+        <span>{{ arrived() }}&ngsp;<quader-time-ago [at]="d.publishedAt" /></span>
         <quader-version-size [bytes]="d.sizeBytes ?? null" [partial]="d.sizePartial" [spelled]="true" />
         <span
           ><ng-container i18n="@@pkg.fact.last-download">Last download</ng-container>&ngsp;@if (d.lastDownloadedAt; as at) {
@@ -128,11 +127,32 @@
           }</span
         >
         <span i18n="@@pkg.fact.download-count">{d.downloadCount, plural, =1 {1 download} other {{{ d.downloadCount | number }} downloads}}</span>
-        @if (licenses().length > 0) {
+        <!-- The licence is a fact of every format; its address, where the version declares one, is the licence's link (R-UI-221). -->
+        @if (licenseHref(); as href) {
+          <span
+            ><a class="external-link" [href]="href" [attr.rel]="externalRel" target="_blank"
+              >@if (licenses().length > 0) {<span translate="no">{{ licenses().join(', ') }}</span>} @else {<span i18n="@@pkg.meta.license-url">License</span>}<span
+                class="material-icons"
+                aria-hidden="true"
+                >open_in_new</span
+              ><span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span></a
+            ></span
+          >
+        } @else if (licenses().length > 0) {
           <span translate="no">{{ licenses().join(', ') }}</span>
         }
       </span>
     </p>
+    <!-- The version's links in one row under its facts, in every format (R-UI-221, Q-UI-1313). -->
+    @if (links().length > 0) {
+      <quader-version-links [links]="links()" />
+    }
+    <!-- A version that runs a script of its own when it is installed says so where a person decides to install it (R-UI-221). -->
+    @if (installScript(); as note) {
+      <p class="version-note install-script" data-testid="install-script">
+        <span class="material-icons inline" aria-hidden="true">terminal</span>{{ note }}
+      </p>
+    }
     <!-- Why no client can install the version, where the head has no button (Q-UI-1260, Q-UI-965, Q-UI-898, Q-UI-899), and why a version of the
          ClamAV definitions has no command (R-UI-194): muted, under the facts. -->
     @if (command(); as c) {
@@ -511,6 +531,15 @@
                   }
                 </div>
               }
+              <!-- The general properties first, the same block in every format (R-UI-221): the keywords, then the dependencies. -->
+              @if (keywords().length > 0) {
+                <h2 i18n="@@pkg.meta.keywords">Keywords</h2>
+                <quader-keyword-chips [keywords]="keywords()" [project]="project()" [format]="d.format" />
+              }
+              @if (dependencies().length > 0) {
+                <h2 i18n="@@pkg.meta.dependencies">Dependencies</h2>
+                <quader-dependency-list [groups]="dependencies()" [held]="held()" [project]="project()" [format]="d.format" />
+              }
               <!-- Every field of a definition container's header (R-UI-194, R-CLAMAV-003), as text, never as markup. -->
               @if (clamav(); as c) {
                 <h2 i18n="@@clamav.details.heading">Definitions</h2>
@@ -560,7 +589,7 @@
                   </quader-disclosure>
                 }
               }
-              <!-- A Helm chart's facts from its Chart.yaml (R-OCI-042): the facts, its maintainers and its dependencies as every format's. -->
+              <!-- A Helm chart's facts from its Chart.yaml (R-OCI-042) and its maintainers; its dependencies are the block above. -->
               @if (chartHeld(); as held) {
                 <h2 i18n="@@pkg.chart.heading">Chart</h2>
                 <p class="hint" data-testid="chart-held"><ng-container i18n="@@pkg.chart.held">The chart's facts and values are not shown: a download of its files would not be served to you now.</ng-container>&ngsp;{{ held }}</p>
@@ -580,20 +609,6 @@
                       <li>{{ m }}</li>
                     }
                   </ul>
-                }
-                @if (c.dependencies.length > 0) {
-                  <h2 i18n="@@pkg.meta.dependencies">Dependencies</h2>
-                  <dl class="facts" translate="no">
-                    @for (dep of c.dependencies; track $index) {
-                      <dt>{{ dep.name }}</dt>
-                      <dd>
-                        {{ dep.range }}
-                        @if (dep.repository) {
-                          <span class="dep-repository">{{ dep.repository }}</span>
-                        }
-                      </dd>
-                    }
-                  </dl>
                 }
               }
               @if (image(); as img) {
@@ -686,128 +701,17 @@
                     <quader-image-details [part]="part" />
                   </quader-disclosure>
                 }
-                @if (imageFacts().length > 0) {
-                  <h2 i18n="@@pkg.meta.facts">Package details</h2>
-                  <dl class="facts" data-testid="image-facts">
-                    @for (f of imageFacts(); track f[0]) {
-                      <dt>{{ f[0] }}</dt>
-                      <dd translate="no">{{ f[1] }}</dd>
-                    }
-                  </dl>
-                }
               }
               @if (role(); as r) {
                 <quader-ansible-role-facts [facts]="r" [remote]="roleRemote()" />
               }
-              @if (links().length > 0) {
-                <h2 i18n="@@pkg.meta.links">Links</h2>
-                <dl class="facts">
-                  @for (l of links(); track l.label) {
-                    <dt>{{ l.label }}</dt>
-                    <dd translate="no">
-                      @if (l.href; as href) {
-                        <span class="external-link">
-                          <a [href]="href" [attr.rel]="externalRel" target="_blank">{{ l.text }}</a>
-                          <span class="material-icons" aria-hidden="true">open_in_new</span>
-                          <span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span>
-                        </span>
-                      } @else {
-                        {{ l.text }}
-                      }
-                    </dd>
-                  }
-                </dl>
-              }
-              @if (authorList().length > 0) {
-                <h2 i18n="@@pkg.meta.authors">Authors</h2>
-                <ul class="plain" translate="no">
-                  @for (a of authorList(); track a) {
-                    <li>{{ a }}</li>
-                  }
-                </ul>
-              }
-              @for (g of dependencyGroups(); track g.label) {
-                <h2>{{ g.label }}</h2>
-                <dl class="facts" translate="no">
-                  @for (e of g.entries; track e[0]) {
-                    <dt>
-                      @if (dependencyLink(e[0]); as link) {
-                        <a [routerLink]="link">{{ e[0] }}</a>
-                      } @else if (d.format === 'ansible') {
-                        <span class="secondary-inline">{{ e[0] }}</span>
-                      } @else {
-                        {{ e[0] }}
-                      }
-                    </dt>
-                    <dd>{{ e[1] }}</dd>
-                  }
-                </dl>
-              }
-              <!-- The relations of a Debian package (R-DEB-038, Q-UI-1270): the block of the other formats' dependencies, one row per group,
-                   its alternatives side by side; a name the installation holds links to its page. -->
-              @for (g of debRelations(); track g.label) {
-                <h2>{{ g.label }}</h2>
-                @if (g.text; as t) {
-                  <p class="deb-relation-text" translate="no">{{ t }}</p>
-                } @else {
-                  <ul class="deb-relations" translate="no">
-                    @for (alts of g.groups; track $index) {
-                      <li>
-                        @for (a of alts; track $index; let last = $last) {
-                          <span class="deb-alternative">
-                            @if (dependencyLink(a.name); as link) {
-                              <a [routerLink]="link">{{ a.written }}</a>
-                            } @else {
-                              <span>{{ a.written }}</span>
-                            }
-                            @if (a.qualifiers !== '') {
-                              <span class="secondary-inline">&ngsp;{{ a.qualifiers }}</span>
-                            }
-                          </span>
-                          @if (!last) {
-                            &ngsp;<span class="deb-or secondary-inline" i18n="@@pkg.meta.deb-or">or</span>&ngsp;
-                          }
-                        }
-                      </li>
-                    }
-                  </ul>
-                }
-              }
-              @if (frameworkGroups().length > 0) {
-                <h2 i18n="@@pkg.meta.frameworks">Dependencies by target framework</h2>
-                @for (g of frameworkGroups(); track $index) {
-                  <h3>
-                    @if (g.framework; as fw) {
-                      <span translate="no">{{ fw }}</span>
-                    } @else {
-                      <span i18n="@@pkg.meta.all-frameworks">All frameworks</span>
-                    }
-                  </h3>
-                  @if (g.entries.length === 0) {
-                    <p class="empty" i18n="@@pkg.meta.no-dependencies">No dependencies.</p>
-                  } @else {
-                    <dl class="facts" translate="no">
-                      @for (e of g.entries; track e[0]) {
-                        <dt>{{ e[0] }}</dt>
-                        <dd>{{ e[1] }}</dd>
-                      }
-                    </dl>
-                  }
-                }
-              }
-              @if (nugetFacts().length > 0) {
+              <!-- The facts only the format has, in one section of every format (R-UI-221): npm's runtimes, types, tarball and publisher,
+                   NuGet's, Debian's control fields with its source package and copyright file, an Ansible collection's Ansible versions, an
+                   image's annotations and labels. -->
+              @if (packageFacts().length > 0 || debSource()) {
                 <h2 i18n="@@pkg.meta.facts">Package details</h2>
-                <dl class="facts">
-                  @for (f of nugetFacts(); track f[0]) {
-                    <dt>{{ f[0] }}</dt>
-                    <dd translate="no">{{ f[1] }}</dd>
-                  }
-                </dl>
-              }
-              @if (debFacts().length > 0) {
-                <h2 i18n="@@pkg.meta.facts">Package details</h2>
-                <dl class="facts" data-testid="deb-facts">
-                  @for (f of debFacts(); track f[0]) {
+                <dl class="facts" [attr.data-testid]="packageFactsId()">
+                  @for (f of packageFacts(); track f[0]) {
                     <dt>{{ f[0] }}</dt>
                     <dd translate="no">{{ f[1] }}</dd>
                   }
@@ -819,31 +723,23 @@
                     </dd>
                   }
                 </dl>
+              }
+              @if (d.format === 'deb') {
                 <!-- The copyright file is a detail on demand (Q-UI-1272): closed, the licence stands on the facts line. -->
                 <quader-disclosure class="deb-copyright-fold" [inline]="true" [heading]="copyrightHeading">
                   <quader-deb-copyright [contents]="debContentsValue()" />
                 </quader-disclosure>
               }
-              @if (ansibleFacts().length > 0) {
-                <h2 i18n="@@pkg.meta.facts">Package details</h2>
-                <dl class="facts" data-testid="ansible-facts">
-                  @for (f of ansibleFacts(); track f[0]) {
-                    <dt>{{ f[0] }}</dt>
-                    <dd translate="no">{{ f[1] }}</dd>
+              @if (authorList().length > 0) {
+                <h2 i18n="@@pkg.meta.authors">Authors</h2>
+                <ul class="plain" translate="no">
+                  @for (a of authorList(); track a) {
+                    <li>{{ a }}</li>
                   }
-                </dl>
-              }
-              @if (engines().length > 0) {
-                <h2 i18n="@@pkg.meta.engines">Required runtimes</h2>
-                <dl class="facts" translate="no">
-                  @for (e of engines(); track e[0]) {
-                    <dt>{{ e[0] }}</dt>
-                    <dd>{{ e[1] }}</dd>
-                  }
-                </dl>
+                </ul>
               }
               <h2 i18n="@@pkg.repo.heading">Repositories</h2>
-              <quader-data-table [caption]="tableCaptionRepositories" [columns]="repositoryColumns" [empty]="d.repositories.length === 0">
+              <quader-data-table [caption]="tableCaptionRepositories" [columns]="repositoryColumns()" [empty]="d.repositories.length === 0">
                 @for (r of d.repositories; track r.key) {
                   <tr>
                     <th scope="row" translate="no"><a [routerLink]="repositoryLink(r.key)">{{ r.key }}</a></th>

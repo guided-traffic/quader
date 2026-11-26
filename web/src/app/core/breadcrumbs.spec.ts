@@ -134,6 +134,16 @@ describe('Breadcrumbs', () => {
     expect(trail[4]).toEqual({ label: '1.4.0', link: '//projects/web/packages/npm/@team-a/ui@1.4.0', literal: true });
   });
 
+  it('R-UI-111 a package whose address holds its key is named by its name once its page has it, the link kept', async () => {
+    await trailAt('/projects/web/packages/ansible/role/16@1.2.0');
+    const crumbs = TestBed.inject(Breadcrumbs);
+    crumbs.name('role/16', 'geerlingguy.pip');
+    crumbs.name('@team-a/ui', '@team-a/ui');
+    const trail = crumbs.trail().map((c) => ({ label: c.label, link: c.commands?.join('/') ?? null }));
+    expect(trail.map((c) => c.label)).toEqual(['Projects', 'web', 'Packages', 'geerlingguy.pip', '1.2.0']);
+    expect(trail[3]?.link).toBe('//projects/web/packages/ansible/role/16');
+  });
+
   it('R-UI-002 a nested system screen reads area, screen group, screen', async () => {
     expect((await trailAt('/admin/system/jobs')).map((c) => c.label)).toEqual(['Admin area', 'System status', 'Jobs']);
   });

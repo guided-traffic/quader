@@ -1770,7 +1770,7 @@ export async function seedRemoteImages(ctx: APIRequestContext, edge: string, pat
 }
 
 /** The handshake of a registry client: the challenge of `/v2/`, then the token service with the PAT as the password. */
-async function registryToken(ctx: APIRequestContext, edge: string, pat: string, repo: string, actions = 'pull,push'): Promise<string> {
+export async function registryToken(ctx: APIRequestContext, edge: string, pat: string, repo: string, actions = 'pull,push'): Promise<string> {
   const challenge = (await ctx.get('/v2/')).headers()['www-authenticate'] ?? '';
   const realm = /realm="([^"]+)"/.exec(challenge)?.[1];
   const service = /service="([^"]+)"/.exec(challenge)?.[1];

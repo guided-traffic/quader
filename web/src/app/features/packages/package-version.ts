@@ -11,6 +11,7 @@ import { asApiError } from '../../shared/paged-resource';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { DeprecationDialog, DeprecationDialogData, reasonText } from './deprecation-dialog';
+import { Breadcrumbs } from '../../core/breadcrumbs';
 import { VulnerabilitiesApi, VulnerabilityVersionReport } from '../../api/vulnerabilities-api';
 import { CopyButton } from '../../shared/copy-button';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -35,7 +36,7 @@ import { TimeAgo } from '../../shared/ui/time-ago';
 import { ClientCommandMenu } from './client-command-menu';
 import { VersionSwitch } from './version-switch';
 import { clamavInstallNote, versionCommand } from './version-command';
-import { contentShapeOf, leadsWithDocumentation } from '../repositories/content/content-shape';
+import { arrivedLabel, contentShapeOf, leadsWithDocumentation } from '../repositories/content/content-shape';
 import { EXTERNAL_REL, packageCommands, versionCommands } from './package-links';
 import { ImageDetails } from './image-details';
 import { ImagePart, chartOf, chartValues, cutDigest, heldReason, imageFact, imageFactList, imageLinks, imageParts, kindWord } from './image-facts';
@@ -46,20 +47,25 @@ import { distTagsOf } from './package-versions-model';
 import { DistTags } from './dist-tags';
 import { GradeLabel } from '../../shared/vulnerability/grade';
 import {
+  DependencyGroup,
+  ansibleDependencies,
   ansibleFacts,
   debFacts,
   debLongDescription,
-  debRelationNames,
   debRelations,
   debSource,
-  dependencyGroups,
-  frameworkGroups,
+  dependencyNames,
   imageFacts,
+  installScriptText,
+  licenseLink,
   metadataLinks,
+  npmDependencies,
+  npmFacts,
+  nugetDependencies,
   nugetFacts,
-  stringRecord,
   strings,
 } from './version-metadata';
+import { DependencyList, KeywordChips, VersionLinks } from './version-facts';
 import { VersionSize } from './version-size';
 import { NoValue } from '../../shared/ui/no-value';
 import { MalwareStatusView } from '../../shared/malware/malware-status';
@@ -109,6 +115,10 @@ export type VersionTab =
 
 /** The content routes of the system repositories, `/api/v1/projects/upstream/repositories/<key>/content/` (R-API-025, Q-UI-898). */
 const SYSTEM_CONTENT = systemRepositoryNames().map((name) => contentPath(name, ''));
+/** The formats whose dependencies name packages of the same format, which the block links where this installation holds them. */
+const LINKED_DEPENDENCIES: ReadonlySet<string> = new Set(['npm', 'nuget', 'ansible', 'deb']);
+/** How many dependencies of a version are looked up; a name past the bound stays text. */
+const MAX_DEPENDENCY_LOOKUPS = 60;
 /** How many of the newest versions the switch in the head lists before its link to all of them (Q-UI-1243). */
 export const SWITCH_VERSIONS = 10;
 /** The content route of `upstream/clamav`, whose files are downloaded while ClamAV definition updates is on (R-UI-194). */
@@ -178,6 +188,9 @@ interface TabEntry {
     CdkMenu,
     CdkMenuItem,
     CdkMenuTrigger,
+    DependencyList,
+    KeywordChips,
+    VersionLinks,
   ],
   templateUrl: './package-version.html',
   styleUrl: './package-version.scss',
@@ -187,6 +200,7 @@ export class PackageVersionPage {
   private readonly vulnerabilityApi = inject(VulnerabilitiesApi);
   private readonly router = inject(Router);
   private readonly memory = inject(PackageMemory);
+  private readonly breadcrumbs = inject(Breadcrumbs);
 
   /** Route parameters: the project, then the matcher's format, name and version. */
   readonly project = input.required<string>();
@@ -414,24 +428,77 @@ export class PackageVersionPage {
       .map(([t]) => t),
   );
   protected readonly metadata = computed(() => this.detail()?.metadata ?? {});
-  protected readonly dependencyGroups = computed(() => dependencyGroups(this.metadata()));
-  protected readonly frameworkGroups = computed(() => frameworkGroups(this.metadata()['dependencyGroups']));
+  /**
+   * The version's dependencies in the one block of every format (R-UI-221): npm's fields, NuGet's target frameworks, an Ansible
+   * collection's list, Debian's relations, a Helm chart's dependencies.
+   */
+  protected readonly dependencies = computed<readonly DependencyGroup[]>(() => {
+    const m = this.metadata();
+    switch (this.detail()?.format) {
+      case 'npm':
+        return npmDependencies(m);
+      case 'nuget':
+        return nugetDependencies(m['dependencyGroups']);
+      case 'ansible':
+        return ansibleDependencies(m);
+      case 'deb':
+        return debRelations(m);
+      case 'oci': {
+        const deps = this.chart()?.dependencies ?? [];
+        const entries = deps.map((d) => ({
+          alternatives: [{ name: d.name, written: d.name, qualifiers: d.repository === '' ? d.range : `${d.range} · ${d.repository}` }],
+          mark: null,
+        }));
+        return entries.length > 0 ? [{ label: null, entries, text: null }] : [];
+      }
+      default:
+        return [];
+    }
+  });
+  /** The keywords or tags the version declares (R-UI-221): chips to the packages that share one. */
+  protected readonly keywords = computed(() => this.detail()?.keywords ?? []);
   /** A NuGet version the publisher unlisted (R-NUGET-006): it restores when pinned and is hidden from search. */
   protected readonly unlisted = computed(() => this.detail()?.unlisted === true);
-  protected readonly engines = computed(() => stringRecord(this.metadata()['engines']));
   protected readonly authors = computed(() => strings(this.metadata()['authors']));
-  protected readonly nugetFacts = computed(() => nugetFacts(this.metadata()));
-  protected readonly debFacts = computed(() => debFacts(this.metadata()));
-  protected readonly debRelations = computed(() => debRelations(this.metadata()));
+  /**
+   * The facts of the format that only it has, in its section **Package details** (R-UI-221): npm's runtimes, types, the tarball's facts and
+   * its publisher; NuGet's; Debian's control fields; an Ansible collection's Ansible versions; an image's annotations and labels.
+   */
+  protected readonly packageFacts = computed<readonly [string, string][]>(() => {
+    const d = this.detail();
+    switch (d?.format) {
+      case 'npm':
+        return npmFacts(d.metadata);
+      case 'nuget':
+        return nugetFacts(d.metadata);
+      case 'deb':
+        return debFacts(d.metadata);
+      case 'ansible':
+        return ansibleFacts(d);
+      case 'oci':
+        return imageFactList(d.metadata);
+      default:
+        return [];
+    }
+  });
+  /** The test id of the section, by the format (an image's facts are its annotations' and labels'). */
+  protected readonly packageFactsId = computed(() => (this.format() === 'oci' ? 'image-facts' : `${this.format()}-facts`));
+  /** The version runs a script of its own when it is installed (npm, R-NPM-007): said under the facts, where a person decides. */
+  protected readonly installScript = computed(() => (this.metadata()['hasInstallScript'] === true ? installScriptText() : null));
+  /** The address of the licence, beside the licence on the facts line (R-UI-221). */
+  protected readonly licenseHref = computed(() => licenseLink(this.metadata()));
+  /**
+   * The word of the date the version arrived (Q-UI-1314): an image's is Pushed, or Fetched where only remote repositories hold it, as in
+   * the repository's content; every other format's is Published.
+   */
+  protected readonly arrived = computed(() =>
+    arrivedLabel(this.format(), (this.detail()?.repositories ?? []).map((r) => r.class)),
+  );
   protected readonly debLongDescription = computed(() => debLongDescription(this.metadata()));
   protected readonly debSource = computed(() => debSource(this.metadata()));
   /** The package list filtered by the source package: the binaries of one source (R-DEB-038, Q-DEB-142). */
   protected readonly sourceLink = computed(() => ['/projects', this.project(), 'packages']);
   protected readonly copyrightHeading = $localize`:@@pkg.meta.deb-copyright-file:Copyright file`;
-  protected readonly ansibleFacts = computed(() => {
-    const d = this.detail();
-    return d ? ansibleFacts(d, valueOf(this.summary)?.keywords ?? []) : [];
-  });
   /** A Helm chart's facts (R-OCI-042); null for anything else. */
   protected readonly chart = computed(() => (this.format() === 'oci' ? chartOf(this.metadata()) : null));
   /** Why a chart's facts and values are held (R-OCI-040): a download of its files would not be served to this reader now. */
@@ -580,8 +647,6 @@ export class PackageVersionPage {
     return versionCommands(this.project(), this.format(), this.name(), tag);
   }
   protected readonly otherTagsLabel = $localize`:@@pkg.image.other-tags:Other tags of this image`;
-  /** The facts of the image's annotations and labels: title, version, revision, created, vendor, base image. */
-  protected readonly imageFacts = computed(() => (this.format() === 'oci' ? imageFactList(this.metadata()) : []));
   /** The authors of an image, from its annotations or else its labels; every other format's list. */
   protected readonly authorList = computed(() => {
     if (this.format() !== 'oci') return this.authors();
@@ -668,16 +733,15 @@ export class PackageVersionPage {
   }
 
   /**
-   * The collections a collection version depends on that this installation holds (Q-UI-245): each of them is a link to its page, the
-   * others stay muted text. One lookup per dependency, which rejects for a package that no visible repository holds.
+   * The packages a version depends on that this installation holds (Q-UI-245, R-UI-221): each of them is a link to its page, the others
+   * stay text, in every format whose dependencies name its own packages (a Helm chart's name a chart repository's). One lookup per
+   * dependency, which rejects for a package that no visible repository holds; the lookups are bounded, a name past the bound stays text.
    */
   private readonly dependencyNames = computed(
     () => {
       const d = this.detail();
-      if (d?.format !== 'ansible' && d?.format !== 'deb') return undefined;
-      // A Debian version names its relations (R-DEB-038); the lookups are bounded, a name past the bound stays text.
-      const names =
-        d.format === 'deb' ? debRelationNames(d.metadata).slice(0, 60) : stringRecord(d.metadata['dependencies']).map(([name]) => name);
+      if (!d || !LINKED_DEPENDENCIES.has(d.format)) return undefined;
+      const names = dependencyNames(this.dependencies()).slice(0, MAX_DEPENDENCY_LOOKUPS);
       return names.length > 0 ? { format: d.format, names } : undefined;
     },
     {
@@ -715,13 +779,8 @@ export class PackageVersionPage {
   protected readonly readmeFailure = failureOf(this.readme);
   /** The scanning report's failure that may pass: without it, the tab Vulnerabilities, the grade and "Blocked in" were gone. */
   protected readonly vulnerabilitiesFailure = failureOf(this.vulnerabilities);
-  /** The router commands of a dependency's page, or null when the installation does not hold it. */
-  protected dependencyLink(name: string): string[] | null {
-    const format = this.detail()?.format;
-    return (format === 'ansible' || format === 'deb') && valueOf(this.heldDependencies)?.has(name)
-      ? packageCommands(this.project(), format, name)
-      : null;
-  }
+  /** The names of the dependencies this installation holds: the block links them to their pages. */
+  protected readonly held = computed<ReadonlySet<string>>(() => valueOf(this.heldDependencies) ?? new Set());
 
   protected readonly externalRel = EXTERNAL_REL;
   protected readonly size = formatSize;
@@ -837,11 +896,11 @@ export class PackageVersionPage {
     return !(f.malware?.refused === true || f.signatures?.refused === true || this.inSystemRepository(f) || this.inDisabledRepository(f));
   }
   protected readonly downloadTitle = $localize`:@@pkg.file.download-link:Download`;
-  protected readonly repositoryColumns: readonly TableColumn[] = [
+  protected readonly repositoryColumns = computed<readonly TableColumn[]>(() => [
     { id: 'repository', label: $localize`:@@pkg.repo.repository:Repository` },
     { id: 'class', label: $localize`:@@pkg.repo.class:Class` },
-    { id: 'published', label: $localize`:@@pkg.repo.published:Published` },
-  ];
+    { id: 'published', label: this.arrived() },
+  ]);
   protected readonly platformColumns: readonly TableColumn[] = [
     { id: 'platform', label: $localize`:@@pkg.image.platform:Platform` },
     { id: 'digest', label: $localize`:@@pkg.image.digest:Digest` },
@@ -927,7 +986,13 @@ export class PackageVersionPage {
     // Opening the page records the package in "recently opened" (R-UI-007).
     effect(() => {
       const s = valueOf(this.summary);
-      if (s) untracked(() => this.memory.addRecent({ format: s.format, name: s.name, ...(s.key && s.key !== s.name ? { key: s.key } : {}) }));
+      if (s) {
+        untracked(() => {
+          this.memory.addRecent({ format: s.format, name: s.name, ...(s.key && s.key !== s.name ? { key: s.key } : {}) });
+          // The trail names the package by its name where the address holds its key (a role, Q-UI-1317).
+          this.breadcrumbs.name(this.name(), s.name);
+        });
+      }
     });
     // The tree is asked for when a tab that shows it is open, and then once for the version (R-UI-060).
     effect(() => {

@@ -86,6 +86,11 @@
                 [more]="v.aliasesMore"
                 [signatures]="v.signatures"
               />
+              <!-- The image's digest under its tags, as a file's hash stands under its path (R-UI-222, Q-UI-1318): the first twelve hex
+                   digits, the whole as its title; its copy button is the tag's page's, a button here put the table into blocks at 1,024 px. -->
+              @if (v.digest; as dg) {
+                <span class="secondary digest-line"><code translate="no" [attr.title]="dg">{{ shortDigest(dg) }}</code></span>
+              }
             } @else {
               <span class="version-cell">
                 <a [routerLink]="versionLink(v.version)" translate="no">{{ v.version }}</a>
@@ -126,6 +131,10 @@
             } @else {
               <span class="muted" [attr.title]="neverTitle" i18n="@@pkg.ver.never">Never</span>
             }
+            <!-- How often clients downloaded it, under when they last did (R-UI-222, Q-UI-1318). -->
+            <span class="secondary block" data-testid="version-downloads" i18n="@@pkg.ver.download-count"
+              >{v.downloadCount, plural, =1 {1 download} other {{{ v.downloadCount | number }} downloads}}</span
+            >
           </td>
           @if (showRepositories()) {
             <td class="wrap" translate="no">
@@ -170,9 +179,10 @@
           }
         </ul>
       </dd>
+      <!-- The keywords as on a version's page: chips to the packages that share one (R-UI-221). -->
       @if (p.keywords.length > 0) {
-        <dt i18n="@@pkg.fact.keywords">Keywords</dt>
-        <dd translate="no">{{ p.keywords.join(', ') }}</dd>
+        <dt i18n="@@pkg.meta.keywords">Keywords</dt>
+        <dd><quader-keyword-chips [keywords]="p.keywords" [project]="project()" [format]="p.format" /></dd>
       }
       <dt i18n="@@pkg.fact.downloads">Downloads</dt>
       <dd>{{ p.downloadCount | number }}</dd>

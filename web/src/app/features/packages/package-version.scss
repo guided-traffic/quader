@@ -185,27 +185,6 @@ dl.digests {
   overflow-wrap: anywhere;
 }
 
-// The relations of a Debian package: one line per group, its alternatives side by side with "or" between them (Q-UI-1270).
-.deb-relations {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-
-  li {
-    padding-block: var(--quader-space-1);
-    overflow-wrap: anywhere;
-  }
-}
-
-.deb-or {
-  margin-inline: var(--quader-space-2);
-}
-
-.deb-relation-text {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
 .deb-copyright-fold {
   display: block;
   margin-block-start: var(--quader-space-3);
@@ -245,13 +224,6 @@ tr.expansion td {
 
 .image-files .digest-cell {
   white-space: nowrap;
-}
-
-// A chart's dependency: its version range, and the repository it comes from on a line of its own, muted (R-OCI-042).
-.dep-repository {
-  display: block;
-  color: var(--quader-text-muted);
-  overflow-wrap: anywhere;
 }
 
 /* A deprecation's message is the publisher's text: its line breaks stay, and a long word or address breaks rather than widening the page (R-API-085). */

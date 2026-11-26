@@ -150,6 +150,9 @@
             }
             @if (v.size !== null && v.size > 0) {
               {{ size(v.size) }}
+            } @else if (v.unpackedSize !== null && v.unpackedSize > 0) {
+              <!-- npm's registry tells the unpacked size, not the tarball's (R-NPM-049): said as what it is (R-UI-221). -->
+              <ng-container i18n="@@upstream.size.unpacked">{{ size(v.unpackedSize) }} unpacked</ng-container>
             } @else {
               <ng-container i18n="@@upstream.size.not-told-line">Size not told</ng-container>
             }

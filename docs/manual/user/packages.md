@@ -89,8 +89,8 @@ every version you may see, the highest version first:
 | **Version** | The version, which opens its page. An npm tag that points at it, such as `latest` or `next`, stands beside it as a badge, at most three and then "+N more" (see [npm tags](remote-curation.md#npm-tags)), and so does **Pre-release** for a pre-release. For a container image the column is **Tag**, and a row is an image (see below) |
 | **Size** | The size of the version's files; for an image, the size of the image. **≥** before the size of an image of several platforms counts only the platforms clients have fetched so far through a remote repository; a dash means the size is not known yet, because no platform was fetched. Point at the size for what it counts |
 | **Vulnerabilities** | The grade of the version, the number of its open findings and how many of them have a fix, for example the shield **E** and **1,145 findings · 112 fixable** (see [Vulnerabilities](vulnerabilities.md#grades)). Only where the versions are checked for vulnerabilities and you are signed in |
-| **Published** | When the version was published, as a relative time; hover for the exact time |
-| **Last download** | When a client last downloaded the version through Quader, or **Never**. What counts as a download of a version is the file a client fetches to install it: the npm tarball, the NuGet package, the Debian package file of any architecture, the Ansible collection archive, the image manifest of a tag (pulled by the tag or by its digest). Reading metadata, such as a package document or an index, and checking a tag with a HEAD request are not downloads. A version a mirror pass fetched and no client downloaded yet says **Never** |
+| **Published** | When the version was published, as a relative time; hover for the exact time. For a container image the column is **Pushed**, or **Fetched** where only remote repositories hold it |
+| **Last download** | When a client last downloaded the version through Quader, or **Never**, and under it how often clients downloaded it. What counts as a download of a version is the file a client fetches to install it: the npm tarball, the NuGet package, the Debian package file of any architecture, the Ansible collection archive, the image manifest of a tag (pulled by the tag or by its digest). Reading metadata, such as a package document or an index, and checking a tag with a HEAD request are not downloads. A version a mirror pass fetched and no client downloaded yet says **Never** |
 | **Repositories** | Which repositories hold the version. Only when the versions are not all in the same repositories |
 
 - Type into **Filter versions** to keep the versions that contain the text, or whose tag does: `4.0` finds every 4.0.x, `rc` the
@@ -104,11 +104,12 @@ every version you may see, the highest version first:
 commit tag a pipeline pushes beside it) are one row, led by its highest version, with every other tag after it in grey and the image's
 signature badge. The header counts the tags ("204 tags · Latest 5.4.7"). **Filter tags** keeps the images one of whose tags holds the
 text, so `sha-5ccf` finds the image of that commit, and "12 of 97 images" says how many match. Size, grade and **Last download** are the
-image's; a row's link and its page are the leading tag's. The digest is on the tag's page under **Details**.
+image's; a row's link and its page are the leading tag's. Under the tags stand the first twelve characters of the image's digest (point at
+them for the whole); the whole digest, with **Copy digest**, is on the tag's page under **Details**.
 
 Below the table follows the README of the latest version, when it has one you may read. A collection of Ansible content links to
 the documentation of its latest version instead. **Details**, at the end of the page and closed until you open it, lists the
-repositories that hold the package, its keywords, its downloads and when it was first published.
+repositories that hold the package, its keywords (each opens the packages that share it), its downloads and when it was first published.
 
 ## A version's page
 
@@ -121,7 +122,13 @@ disabled repository or a system repository holds it) there is no button, and a s
 ClamAV definitions has **Set up client** there instead, since a ClamAV installation always takes the version in use.
 
 Under the name and the version, one line holds the facts of the version: its grade with the number of findings and how many have a
-fix (select it to open the findings), when it was published, its size, when a client last downloaded it, its downloads and its licences. A
+fix (select it to open the findings), when it was published (for a container image: pushed, or fetched by a remote repository), its
+size, when a client last downloaded it, its downloads and its licences; where the version names the address of its licence, the licence
+opens it. Under the facts stand the version's links in one row (**Homepage**, **Documentation** or **Docs site**, **Source repository**,
+**Issue tracker**, as far as it declares them), each opening the other site in a new tab, and only for `http` and `https` addresses; any
+other address is shown as text. An npm package that runs a script of its own when it is installed (a `preinstall`, `install` or
+`postinstall` script, or native code built with `binding.gyp`) says **Runs a script of the package when it is installed** there: Quader
+reads this from the package itself, before you copy its command. A
 version that its publisher marked as deprecated shows **Deprecated.** with the publisher's message, for NuGet with its reasons and the
 package to use instead, for an Ansible collection with "Every version of this collection is deprecated."; a version whose download a
 repository refuses shows **Blocked in** and the repository. A file of the version that the malware scan refuses shows **Malware found in**
@@ -135,9 +142,7 @@ ends with **Downloads are refused.** (see [the malware scan's states](files.md#t
 | **README** | The README of this version. The first tab of an npm or a NuGet package, also where the version has none: it then says so. For a container image and a Debian package shown only when the version has one |
 | **Vulnerabilities** | For each repository that holds the version, its grade card and its open findings, the worst first (see [Vulnerabilities](vulnerabilities.md#on-the-page-of-a-version)). The first tab of a checked container image; after the README of an npm or a NuGet package; after **Details** for a version that is not checked |
 | **Files** | The files of this version, each path with its size and the first twelve characters of its SHA-256 under it (point at the hash for the whole), and the columns **Malware scan** (while the installation scans for malware: **No malware found**, **Queued**, **No scanner**, **No signatures**, **Malware found**, **Could not be checked** or **Released**, see [the malware scan's states](files.md#the-malware-scans-states)) and a **Download** link, which a file the malware scan refuses does not have. **Copy SHA-256** copies the checksum; compare it with the output of `sha256sum` on the downloaded file |
-| **Details** | **Links** (**Homepage**, **Source repository**, **Issue tracker**), **Authors**, **Dependencies**, **Development dependencies**, **Peer dependencies**, **Optional dependencies** and **Required runtimes**, as far as the version declares them; for an image its digest, media type, size and platforms, each platform with its own size or, in a remote repository, **Not fetched** until a client pulls it; then **Repositories**: each repository that holds the version, its **Class** and when it was **Published** there |
-
-Links in **Details** open in a new tab and only for `http` and `https` addresses; any other link is shown as text.
+| **Details** | The same blocks, in the same order, for every package type, as far as the version declares them: a Debian package's long **Description**; **Keywords** (npm's keywords, the tags of a NuGet package or an Ansible collection), each opening the packages of that type with the keyword; **Dependencies**, grouped as the package type groups them (npm's `dependencies`, `peerDependencies`, `optionalDependencies`, `bundleDependencies` and `devDependencies`; NuGet's target frameworks; Debian's Depends, Recommends and the other relations; a list for an Ansible collection or a Helm chart), a name the installation holds opening its page; for an image its digest, media type, size and platforms, each platform with its own size or, in a remote repository, **Not fetched** until a client pulls it; **Package details**, the facts only the package type has (npm: the required runtimes, the types, the unpacked size, the number of files, the install script and the publisher; NuGet: title, minimum client version, package types, copyright, release notes, whether its licence must be accepted; Debian: architectures, suites, maintainer, section, priority, installed size, the source package; Ansible: the Ansible versions it needs; an image: the facts of its labels); **Authors**; then **Repositories**: each repository that holds the version, its **Class** and when it was **Published** (an image: **Pushed** or **Fetched**) there |
 
 ## Deprecated and unlisted versions
 

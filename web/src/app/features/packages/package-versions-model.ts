@@ -21,6 +21,10 @@ export interface VersionRow {
   readonly sizePartial: boolean;
   /** When a client last fetched it (R-API-065, R-API-079); null when none did. */
   readonly lastDownloadedAt: string | null;
+  /** How often clients fetched it through the repositories the reader may read (R-API-079): under its last download (R-UI-222). */
+  readonly downloadCount: number;
+  /** The content's digest of a row of a list by content (an image's manifest, Q-API-432): under its tags (R-UI-222); null else. */
+  readonly digest: string | null;
   /** The qualified names of the repositories that hold it and that the reader may read. */
   readonly repositories: readonly string[];
   /** The distribution tags that point at it (npm `latest`, `next`), in the order of the package's tags (Q-UI-453). */
@@ -72,6 +76,8 @@ export function versionRows(
     sizeBytes: v.sizeBytes ?? null,
     sizePartial: v.sizePartial ?? false,
     lastDownloadedAt: v.lastDownloadedAt ?? null,
+    downloadCount: v.downloadCount ?? 0,
+    digest: v.digest ?? null,
     repositories: v.repositories,
     tags: distTags.filter(([, target]) => target === v.version).map(([tag]) => tag),
     grade: grades.get(v.version) ?? null,

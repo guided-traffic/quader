@@ -82,6 +82,16 @@ export function notScannedText(format: string | null | undefined): string {
   }
 }
 
+/**
+ * The word of the date a version arrived where it is shown beside the repositories that hold it (a version's page, a package's table,
+ * Q-UI-1314): an image's is Pushed, or Fetched where only remote repositories hold it, the words of the repository's content; every other
+ * format's is Published. A virtual repository holds nothing of its own and does not count.
+ */
+export function arrivedLabel(format: string, classes: readonly string[]): string {
+  const holders = classes.filter((c) => c !== 'virtual');
+  return contentShapeOf(format, holders.length > 0 && holders.every((c) => c === 'remote') ? 'remote' : 'local').publishedLabel;
+}
+
 export function contentShapeOf(format: string, repositoryClass = ''): ContentShape {
   const remote = repositoryClass === 'remote';
   if (format === 'oci') {

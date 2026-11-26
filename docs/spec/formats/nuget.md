@@ -5807,6 +5807,15 @@ flat container only, so a version that only restores fetched carries no deprecat
 package`, `dotnet add package` or a mirror pass reads its registration through the remote. Live for every remote that only restores use;
 the clients themselves see the upstream's deprecation in the registration the remote serves.
 
+### H-2171 · A package's build files and install script are not read, so its page cannot say that it runs code in a build
+
+A `.nupkg` can carry MSBuild files (`build/` and `buildTransitive/` `.props` and `.targets`), which run in every build of a project
+that references it, and the legacy `tools/install.ps1`, which Visual Studio runs for a `packages.config` project. Quader reads the
+nuspec, the README and the licence file (Q-NUGET-48), not the archive's file list: the version's page cannot say, where an npm version
+says it runs an install script ([api-and-ui.md](../api-and-ui.md) R-UI-221), that this package runs code of its own. Live for every NuGet
+version, local and cached; real for an analyzer or a build tool package, where it is the point of the package. A later package (W-30 G6,
+the target frameworks from the folders) reads the file list once and names the build files in Package details.
+
 ### H-1680 · A remote shows no README and no license of a package it has not cached
 
 A remote repository reads the embedded files out of the `.nupkg` its cache holds (Q-NUGET-137): the README template and the license link

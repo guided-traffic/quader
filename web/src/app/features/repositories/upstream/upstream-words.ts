@@ -1,4 +1,5 @@
 import { ApiError } from '../../../api/problem';
+import { notScannedText } from '../content/content-shape';
 import { DeliveryDecision, UpstreamCatalogue, UpstreamVerdict } from '../../../api/upstream-catalogue-api';
 
 /** The delivery mode of a remote repository (R-CUR-001). */
@@ -256,15 +257,15 @@ export function verdictText(v: UpstreamVerdict): string | null {
 }
 
 /**
- * The sentence of a verdict that cannot exist for a format (R-CUR-014): Debian and Ansible Galaxy are not analysed for
- * vulnerabilities; an OCI image only once its platforms are stored.
+ * The sentence of a verdict that cannot exist for a format (R-CUR-014): why Debian and Ansible Galaxy are not checked for vulnerabilities,
+ * in the words of every other screen (Q-UI-1244); an OCI image is analysed only once its platforms are stored.
  */
 export function notCoveredText(format: string): string {
   switch (format) {
+    // The format's reason, the sentence of the version's page and the repository's content (Q-UI-1244, R-UI-221).
     case 'deb':
-      return $localize`:@@upstream.verdict.not-covered.deb:Debian packages are not analysed for vulnerabilities.`;
     case 'ansible':
-      return $localize`:@@upstream.verdict.not-covered.ansible:Ansible collections are not analysed for vulnerabilities.`;
+      return notScannedText(format);
     case 'oci':
       return $localize`:@@upstream.verdict.not-covered.oci:An image is analysed for vulnerabilities once its platforms are stored.`;
     default:

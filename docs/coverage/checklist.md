@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,305 spec requirements:
-796 cover catalog features, 509 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,307 spec requirements:
+796 cover catalog features, 511 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>509 requirements</summary>
+<summary>511 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3101,6 +3101,8 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-216 | A failure shows every fact of its answer | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-217 | Every load shows the spinner the owner picked | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-218 | A package leads with the documentation its format carries | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-221 | A version's general properties read the same in every format | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-222 | Every table of versions says each version's downloads, and an image's digest | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-220 | The page of a name: a namespace, a scope or a path prefix, in every format that has one | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-037 | The scan listener of `packages` | P1 | [architecture.md](../spec/architecture.md) |
 | R-ARCH-003 | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |

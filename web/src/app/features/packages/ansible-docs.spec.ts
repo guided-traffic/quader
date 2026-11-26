@@ -563,7 +563,7 @@ describe('The Documentation tab of an Ansible collection', () => {
   });
 
   describe('the Details tab', () => {
-    it('R-UI-063 lists the dependencies with a link for a collection the installation holds and muted text for another', async () => {
+    it('R-UI-063 R-UI-221 lists the dependencies with a link for a collection the installation holds and text for another', async () => {
       const r = await open({ tab: 'details' }, (fake) => {
         fake.packages.push({ ...fake.packages[0]!, id: 'pkg_01JBQ9GENERAL', format: 'ansible', name: 'community.general' });
         for (const v of fake.versionList) {
@@ -572,20 +572,19 @@ describe('The Documentation tab of an Ansible collection', () => {
           }
         }
       });
-      const dts = [...r.root.querySelectorAll('.version-tabs dl.facts dt')];
-      const held = dts.find((dt) => text(dt) === 'community.general')!;
-      expect(held.querySelector('a')?.getAttribute('href')).toBe('/projects/web/packages/ansible/community.general');
-      const missing = dts.find((dt) => text(dt) === 'other.missing')!;
-      expect(missing.querySelector('a')).toBeNull();
-      expect(missing.querySelector('.secondary-inline')).not.toBeNull();
-      expect(text(held.nextElementSibling!)).toBe('>=8.0.0');
+      // One block in every format (Q-UI-1311): a line per dependency, the range muted after the name.
+      const lines = [...r.root.querySelectorAll('quader-dependency-list li')];
+      expect(lines.map((li) => text(li))).toEqual(['community.general >=8.0.0', 'other.missing *']);
+      expect(lines[0]?.querySelector('a')?.getAttribute('href')).toBe('/projects/web/packages/ansible/community.general');
+      expect(lines[1]?.querySelector('a')).toBeNull();
     });
 
     it('R-UI-063 the documentation link is labelled Docs site, and a link with another scheme than http or https is text', async () => {
       const r = await open({ tab: 'details' });
-      const links = [...r.root.querySelectorAll('.version-tabs dl.facts')].find((dl) => text(dl).includes('Docs site'))!;
-      expect([...links.querySelectorAll('dt')].map((dt) => text(dt))).toContain('Docs site');
-      expect(text(r.root)).not.toMatch(/\bDocumentation\s+https/);
+      // The links are the row under the facts (Q-UI-1313).
+      const links = [...r.root.querySelectorAll('quader-version-links li')].map((li) => text(li));
+      expect(links.some((l) => l.startsWith('Docs site'))).toBe(true);
+      expect(links.some((l) => l.startsWith('Documentation'))).toBe(false);
       const bad = await open({ tab: 'details' }, (fake) => {
         for (const v of fake.versionList) {
           if (v.format === 'ansible') v.metadata = { ...v.metadata, documentationUrl: 'javascript:alert(1)' };

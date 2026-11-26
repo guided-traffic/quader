@@ -80,13 +80,13 @@ test('R-UI-060 R-UI-061 R-UI-064 R-ANS-046 a collection a remote repository took
     // The licences are a fact of the version, on the line under its name (R-UI-111).
     await expect(page.locator('.facts-line')).toContainText('GPL-3.0-or-later');
     await expect(page.locator('.version-tabs')).toContainText('quader test');
-    await expect(page.getByRole('link', { name: `https://example.invalid/acme/tools/docs` })).toBeVisible();
-    await expect(page.locator('.version-tabs dt', { hasText: 'Docs site' })).toBeVisible();
-    // the dependency is a collection this installation holds (the install pulled it), so it links to its page
-    const dependency = page.locator('.version-tabs dl.facts dt', { hasText: /^\s*acme\.base\s*$/ });
+    // The links are one row under the facts (R-UI-221): the docs site by its label, its address the link.
+    await expect(page.locator('quader-version-links a[href="https://example.invalid/acme/tools/docs"]')).toContainText('Docs site');
+    // the dependency is a collection this installation holds (the install pulled it), so it links to its page; the range after it
+    const dependency = page.locator('quader-dependency-list li', { hasText: /^\s*acme\.base\b/ });
     await expect(dependency).toBeVisible();
     await expect(dependency.locator('a')).toHaveAttribute('href', /\/packages\/ansible\/acme\.base$/);
-    await expect(dependency.locator('xpath=following-sibling::dd[1]')).toHaveText('>=1.0.0');
+    await expect(dependency).toContainText('>=1.0.0');
     await bothSchemes(page, 'remote collection, metadata');
   });
 

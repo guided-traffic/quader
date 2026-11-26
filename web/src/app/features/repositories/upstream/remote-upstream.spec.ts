@@ -146,7 +146,7 @@ describe('The tab Upstream of a remote repository', () => {
           inherited: NOT_ALLOWED,
           versionRules: { allow: 1, block: 0 },
           versions: [
-            upstreamVersion({ version: '1.4.0', delivery: NOT_ALLOWED }),
+            upstreamVersion({ version: '1.4.0', delivery: NOT_ALLOWED, unpackedSize: 186_368 }),
             upstreamVersion({ version: '1.3.9', delivery: NOT_ALLOWED, stored: 'whole' }),
             upstreamVersion({ version: '1.3.8', delivery: allowedHere, size: 2_412_448 }),
             upstreamVersion({ version: '1.3.7', delivery: NOT_ALLOWED, queued: { id: 'q-1', state: 'waiting', origin: 'person', attempts: 0, maxAttempts: 5, nextAttemptAt: null } }),
@@ -194,6 +194,9 @@ describe('The tab Upstream of a remote repository', () => {
     expect(text(versionRow(root, '1.4.0').querySelector('td.cache-cell .verdict-line')!)).toBe('No known vulnerability');
     expect(versionRow(root, '1.3.9').querySelector('td.cache-cell a')?.getAttribute('href')).toBe('/projects/web/packages/npm/gitlab-ai-provider@1.3.9');
     expect(text(versionRow(root, '1.3.8').querySelector('th .secondary')!)).toContain('2.3 MiB');
+    // npm's registry tells the unpacked size of a version (R-NPM-049): said as what it is, not as a size not told (R-UI-221).
+    expect(text(versionRow(root, '1.4.0').querySelector('th .secondary')!)).toContain('182.0 KiB unpacked');
+    expect(text(versionRow(root, '1.3.9').querySelector('th .secondary')!)).toContain('Size not told');
     expect(requests.calls).toEqual([]);
     versionRow(root, '1.4.0').querySelector<HTMLButtonElement>('td.cache-cell button')!.click();
     await settle(fixture);

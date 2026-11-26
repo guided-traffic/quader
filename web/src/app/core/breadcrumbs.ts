@@ -1,4 +1,4 @@
-import { Injectable, computed, inject } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRouteSnapshot, NavigationEnd, Router } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
@@ -53,9 +53,23 @@ export class Breadcrumbs {
     { requireSync: true },
   );
 
+  /** The display names a page gave to the values of its address (Q-UI-1317): the step shows the name, not the key. */
+  private readonly names = signal<ReadonlyMap<string, string>>(new Map());
+
+  /**
+   * A page names what its address holds by its display name, where the address holds a key (a role read through a remote is `role/16`
+   * in its address and `geerlingguy.pip` by its name, Q-UI-1261): the trail's step of that value shows the name (Q-UI-1317). A value
+   * that is its own name changes nothing.
+   */
+  name(value: string, display: string): void {
+    if (value === display || display === '' || this.names().get(value) === display) return;
+    this.names.update((m) => new Map(m).set(value, display));
+  }
+
   /** The trail; empty when it would only repeat the page title. */
   readonly trail = computed<readonly Crumb[]>(() => {
-    const crumbs = collect(this.snapshot().root);
+    const names = this.names();
+    const crumbs = collect(this.snapshot().root).map((c) => (c.literal && names.has(c.label) ? { ...c, label: names.get(c.label)! } : c));
     return crumbs.length > 1 ? crumbs : [];
   });
 

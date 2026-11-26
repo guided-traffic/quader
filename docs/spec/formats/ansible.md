@@ -3994,12 +3994,6 @@ Stage: the catalogue's lookup of `role/<id>` (Q-ANS-115). The catalogue does not
 archive is on an unlisted host is listed, while a client is never offered it (R-ANS-020). Live where an upstream names such a host. What
 makes it real: a person who allows such a version and wonders why no client gets it.
 
-### H-2124 · The breadcrumb of a role's page names it by its package
-
-Stage: the trail above a package's and a version's page (R-UI-002), which takes the address's name: for a role it reads `role/16` while the
-title reads `geerlingguy.pip` ([api-and-ui.md](../api-and-ui.md) Q-UI-1261). The trail is built from the route alone and reads no package.
-Live for every role a remote cached. What makes it real: a person who reads the trail rather than the title.
-
 ### H-2153 · The filter signed picks the latest version by the stored key
 
 The filter `signed` decides on the latest version in SQL by the stored sort key (release, else pre-release, else the newest unranked

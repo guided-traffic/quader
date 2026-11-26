@@ -12475,10 +12475,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-648 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+657 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 648 questions</summary>
+<summary>Q-UI: 657 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13130,6 +13130,15 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1300](spec/api-and-ui.md#q-ui-1300--one-mark-deprecated-is-a-warning-badge-unlisted-a-plain-one) | One mark: Deprecated is a warning badge, Unlisted a plain one | Decided by the development agent on 2026-11-26 | (a) One component, `quader-deprecation-mark`: **Deprecated** as the warning badge with the icon `warning` and the message as its title, **Unlisted** as a plain badge with the icon `visibility_off` | — |
 | [Q-UI-1301](spec/api-and-ui.md#q-ui-1301--deprecating-is-an-act-in-the-menu-of-the-versions-head-with-a-small-dialog) | Deprecating is an act in the menu of the version's head, with a small dialog | Decided by the development agent on 2026-11-26 | (a) A menu (`more_vert`) at the end of the head for a reader who may deploy in a local repository that holds the version: **Deprecate version**, or **Deprecate collection**; a dialog of what the format carries (npm a message, NuGet reasons, a message and an alternate, Ansible a message for Quader's pages) with a sentence of what the clients do; **Change deprecation** and **Undo deprecation** on a deprecated version, the undo without a dialog | — |
 | [Q-UI-1302](spec/api-and-ui.md#q-ui-1302--the-filter-deprecated-stands-in-the-drawer-of-the-list-packages) | The filter "deprecated" stands in the drawer of the list Packages | Decided by the development agent on 2026-11-26 | (a) A category **State** with **Deprecated only** in the drawer of **Packages**, a chip **State: Deprecated** while it is set, kept in a saved view | — |
+| [Q-UI-1310](spec/api-and-ui.md#q-ui-1310--the-inventory-of-2026-11-26-what-still-differed-between-the-formats-and-what-g3-closed) | The inventory of 2026-11-26: what still differed between the formats, and what G3 closed | Decided by the development agent on 2026-11-26 | close every row (R-UI-221, R-UI-222). | — |
+| [Q-UI-1311](spec/api-and-ui.md#q-ui-1311--every-formats-dependencies-are-one-block-a-group-per-kind-in-the-formats-words) | Every format's dependencies are one block, a group per kind in the format's words | Decided by the development agent on 2026-11-26 | (a). npm's groups are its manifest's fields in the order an install uses them, `devDependencies` last (an install of the package does not fetch them); `bundleDependencies` (or `true` for all) and `peerDependenciesMeta`'s optional peers are read by the server. | — |
+| [Q-UI-1312](spec/api-and-ui.md#q-ui-1312--keywords-and-tags-are-one-block-of-chips-that-open-the-package-list) | Keywords and tags are one block of chips that open the package list | Decided by the development agent on 2026-11-26 | (a) **Keywords** first in Details, chips that open the package list filtered by the format and the keyword | — |
+| [Q-UI-1313](spec/api-and-ui.md#q-ui-1313--a-versions-links-are-one-row-under-its-facts-in-every-format) | A version's links are one row under its facts in every format | Decided by the development agent on 2026-11-26 | (a) One row under the facts line, each link by its label, opening the other site | — |
+| [Q-UI-1314](spec/api-and-ui.md#q-ui-1314--an-images-date-is-pushed-or-fetched-on-every-screen) | An image's date is Pushed or Fetched on every screen | Decided by the development agent on 2026-11-26 | (a) The content's words wherever an image's date stands: **Pushed**, or **Fetched** where only remote repositories hold the version (a version's page) or the package's newest version (its table) | — |
+| [Q-UI-1315](spec/api-and-ui.md#q-ui-1315--an-install-script-is-said-under-the-facts-where-a-person-decides) | An install script is said under the facts, where a person decides | Decided by the development agent on 2026-11-26 | (a) A muted note with a terminal mark under the links, on every tab, and a row of npm's Package details | — |
+| [Q-UI-1316](spec/api-and-ui.md#q-ui-1316--a-size-is-said-in-the-unit-a-person-reads-wherever-it-stands) | A size is said in the unit a person reads, wherever it stands | Decided by the development agent on 2026-11-26 | (a) The product's size form (binary units, one decimal) for Debian's Installed-Size and npm's unpacked size | — |
+| [Q-UI-1317](spec/api-and-ui.md#q-ui-1317--the-breadcrumb-names-a-package-by-its-name-where-its-address-holds-its-key) | The breadcrumb names a package by its name where its address holds its key | Decided by the development agent on 2026-11-26 | (a) The page tells the trail the name of the value of its address once the package has answered | — |
+| [Q-UI-1318](spec/api-and-ui.md#q-ui-1318--a-versions-downloads-and-an-images-digest-stand-under-a-cell-the-table-has) | A version's downloads and an image's digest stand under a cell the table has | Decided by the development agent on 2026-11-26 | (a) The count under **Last download** ("410 downloads"), the digest under the image's tags, its whole as its title | — |
 
 </details>
 

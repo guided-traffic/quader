@@ -98,7 +98,8 @@ describe('The page of a role a remote read (R-ANS-056)', () => {
     expect(rules).toContain('role/16');
     const link = facts.querySelector('a')!;
     expect(link.getAttribute('href')).toBe('/projects/web/repositories/galaxy/upstream?name=role%2F16');
-    expect(text(r.root.querySelector('.version-tabs')!)).toContain('https://github.com/geerlingguy/ansible-role-pip');
+    // The source repository is a link of the row under the facts (Q-UI-1313).
+    expect(r.root.querySelector('quader-version-links a[href="https://github.com/geerlingguy/ansible-role-pip"]')).not.toBeNull();
     await expectAccessible(r.root);
   });
 
