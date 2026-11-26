@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,311 spec requirements:
-798 cover catalog features, 513 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,312 spec requirements:
+798 cover catalog features, 514 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>513 requirements</summary>
+<summary>514 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -2999,6 +2999,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-API-078 | The admin area's principal search: service accounts and avatars in the suggestions | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-083 | The operations of the well-known repositories | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-084 | The operations of the installation's registry presets | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-API-086 | A version's page lists the packages that depend on its package | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-058 | Operations that serve wiki content | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-060 | One operation answers the suggestions of the search field | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-061 | A suggestion names only what the caller may read | MVP | [api-and-ui.md](../spec/api-and-ui.md) |

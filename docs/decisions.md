@@ -9274,10 +9274,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-API
 
-166 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
+171 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-API: 166 questions</summary>
+<summary>Q-API: 171 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9447,6 +9447,11 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-API-442](spec/api-and-ui.md#q-api-442--one-operation-on-a-repositorys-package-the-format-decides-the-subject) | One operation on a repository's package; the format decides the subject | Decided by the development agent on 2026-11-26 | (a) `PUT`/`DELETE …/repositories/{repoKey}/packages/{packageName}/deprecation`, the version in the body or the query; the format refuses a version it cannot carry, or its absence | — |
 | [Q-API-443](spec/api-and-ui.md#q-api-443--a-suggestion-is-marked-for-a-repository-the-caller-reads-whole) | A suggestion is marked for a repository the caller reads whole | Decided by the development agent on 2026-11-26 | (a) For the suggestions placed in a repository the caller reads whole, the latest version's candidates (`PackageViewLatest`) and the formats' summaries, one statement and one read per format | — |
 | [Q-API-444](spec/api-and-ui.md#q-api-444--a-helm-charts-deprecation-is-one-bit-of-its-configuration-every-reader-of-the-version-sees) | A Helm chart's deprecation is one bit of its configuration every reader of the version sees | Decided by the development agent on 2026-11-26 | (a) The flag is read with every summary, as a column of the statement `OCITagFacts` outside the gated configuration, and the filter reads it with `OCIViewDeprecated` | — |
+| [Q-API-455](spec/api-and-ui.md#q-api-455--who-depends-on-what-is-one-side-table-written-where-a-versions-facts-are-written) | Who depends on what is one side table, written where a version's facts are written | Decided by the development agent on 2026-11-26 | (a) One table `package_dependencies (version_id, repo_id, name, kind, range, provides)`, written by a Go extractor per format in the transaction that writes the format's row, and by an entry of the task `remote-describe` for what was stored before | — |
+| [Q-API-456](spec/api-and-ui.md#q-api-456--used-by-lists-each-dependent-once-by-its-newest-version-that-depends-across-the-projects-the-reader-may-read) | Used by lists each dependent once, by its newest version that depends, across the projects the reader may read | Decided by the development agent on 2026-11-26 | (a), and a dependent's newest visible version is a release before a pre-release, the highest key first. | — |
+| [Q-API-457](spec/api-and-ui.md#q-api-457--a-debian-package-is-used-under-the-names-it-provides-and-every-alternative-counts) | A Debian package is used under the names it provides, and every alternative counts | Decided by the development agent on 2026-11-26 | (a) Every alternative is a row; the architecture qualifier is dropped; a package is used under its own name and under the names its visible versions provide, one step | — |
+| [Q-API-458](spec/api-and-ui.md#q-api-458--a-dependent-the-reader-may-not-read-is-not-read) | A dependent the reader may not read is not read | Decided by the development agent on 2026-11-26 | (a) The repositories the reader may read are decided first (the package list's scope); the statement walks the index `(repo_id, name)` for those alone and then applies the list's row visibility | — |
+| [Q-API-459](spec/api-and-ui.md#q-api-459--the-list-filters-by-dependson-as-by-keyword-planned-for-its-values) | The list filters by dependsOn as by keyword, planned for its values | Decided by the development agent on 2026-11-26 | (a): `packages()` sets `plan_cache_mode = force_custom_plan` for the transaction of the list statement when the request carries a search's, a keyword's, the deprecated filter's or dependsOn's ids, as the suggestions do (R-API-064). | — |
 
 </details>
 
@@ -12516,10 +12521,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-671 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+673 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 671 questions</summary>
+<summary>Q-UI: 673 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13193,6 +13198,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1335](spec/api-and-ui.md#q-ui-1335--a-generic-files-row-has-download-with-its-panel-where-a-packages-row-has-its-verb) | A generic file's row has Download with its panel where a package's row has its verb | Decided by the development agent on 2026-11-26 | (a) A muted note with a terminal mark under the links, on every tab, and a row of npm's Package details | — |
 | [Q-UI-1336](spec/api-and-ui.md#q-ui-1336--a-command-keeps-its-credential-off-the-command-line-where-the-client-can-and-says-so-where-it-cannot) | A command keeps its credential off the command line where the client can, and says so where it cannot | Decided by the development agent on 2026-11-26 | (a) One pattern for every command: curl gets its credential on standard input (`quader_curl` where the line is a request of the management API beside its JSON; `printf … \| curl --config -` or `-H @-` where a command stands alone), another client reads it from its configuration or from a variable of its environment; a client that takes a credential only as an argument keeps it there, and the page says so beside the command | — |
 | [Q-UI-1340](spec/api-and-ui.md#q-ui-1340--an-upstream-packages-readme-shows-its-first-24-rem-and-the-versions-follow) | An upstream package's README shows its first 24 rem, and the versions follow | Decided by the development agent on 2026-11-26 | (a) On the package's own view, after its head: the deprecation, one line of facts, the README under its heading with its version, its first 24 rem and **Show the whole README** (the frame clips and never scrolls; a focus that enters it shows it whole), the dependencies folded, then the versions; in a row of the search the README folded | — |
+| [Q-UI-1350](spec/api-and-ui.md#q-ui-1350--used-by-stands-under-the-dependencies-in-their-block) | Used by stands under the dependencies, in their block | Decided by the development agent on 2026-11-26 | (a) A section **Used by** on the tab Details right after **Dependencies**, one line per dependent in the dependency block's look: the name a link to its version, the version, the kinds in the format's words, the range muted | — |
+| [Q-UI-1351](spec/api-and-ui.md#q-ui-1351--past-50-the-section-says-how-many-more-and-leads-to-the-projects-package-list) | Past 50, the section says how many more and leads to the project's package list | Decided by the development agent on 2026-11-26 | (a) "and N more." as text, then the link **Packages of this project that use it** to the project's list with `format` and `dependsOn` | — |
 | [Q-UI-1370](spec/api-and-ui.md#q-ui-1370--a-link-to-a-screen-whose-script-is-gone-loads-its-address-from-the-server-and-a-failed-navigation-is-said) | A link to a screen whose script is gone loads its address from the server, and a failed navigation is said | Decided by the development agent on 2026-11-26 | (a) The router's handler of a failed navigation: a script that could not be loaded loads the link's address from the server; every other failure is a notice with what was said | — |
 
 </details>

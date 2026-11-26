@@ -37,6 +37,7 @@ import (
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/packages/dependents"
 )
 
 var errForeignTx = errors.New("nuget: the transaction is not one of internal/meta/postgres")
@@ -184,6 +185,10 @@ func (s *Store) InsertVersion(ctx context.Context, tx meta.Tx, in rows.VersionIn
 		IDTokens: cut(in.IDTokens), Title: cut(in.Title), Tags: cut(in.Tags), Authors: cut(in.Authors), Summary: cut(in.Summary),
 		Description: cut(in.Description), Origin: in.Origin,
 	}); err != nil {
+		return err
+	}
+	// Who depends on what (R-API-086): the IDs of the metadata's groups, in the push's or the fill's commit.
+	if err := dependents.Put(ctx, qs, in.VersionID, Dependencies(in.Metadata)); err != nil {
 		return err
 	}
 	if in.Origin == rows.OriginCache {

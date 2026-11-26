@@ -55,6 +55,23 @@ what the browser keeps.
 - The package statements are planned for their text (`SET LOCAL plan_cache_mode = force_custom_plan` in their transaction): a
   generic plan of a prepared statement walked every package for a rare word.
 
+## Who depends on a package
+
+"Used by" of a version's page (`GET /api/v1/packages/{packageId}/dependents`) and the package list's filter `dependsOn` read across
+every project too ([api-and-ui.md](../spec/api-and-ui.md) R-API-086, Q-API-458). Subject: which packages depend on a name, with the range
+and the kind each asks for, all of it a publisher's text in a version the caller may read.
+
+- The repositories are decided before a row is read: the package list's scope (the endpoint's exposure included) names the
+  repositories of the format the caller reads whole or row by row, and the statement walks the index `package_dependencies_by_name
+  (repo_id, name)` for those alone. A dependent in a repository the caller may not read is not listed, not counted (`total`) and not
+  read, so it adds nothing to the time either (measured: 5,000 hidden dependents beside 5,000 readable ones, 23 ms against 31 ms for a
+  reader of both).
+- The answer depends on nothing the caller may not read: the package's own versions are not asked, so a name no visible repository holds
+  is answered as one that is held. The names a Debian package provides are read from its visible versions only.
+- `whole` says whether the caller reads every repository of the format whole. It is the same for every package and says nothing of a
+  dependent; what it tells is that a repository of the format exists that the caller reads only in part or not at all.
+- The texts (names, ranges, kinds) are shown as text, never as markup; a name is a link only to the dependent's page in Quader.
+
 ## The admin area
 
 The owner's rule (R-UI-099) is a rule of navigation: the field opens a route under `/admin` only for a suggestion marked **Admin
@@ -106,3 +123,11 @@ Subject: a user on a shared operating-system account or browser profile. Sign-ou
 profile's storage reads the qualified names of the repositories and the keys of the projects the user opened, and how often. Live
 once the UI keeps the store; today's `quader.recent-repositories` holds the same kind of names under one key for every user of a
 browser. What makes it real: a shared workstation.
+
+### H-2220 · In a repository read row by row, the rows the reader may not read are walked
+
+Stage: "Used by" and the filter `dependsOn` (R-API-086), for a repository the caller may read only in part (a grant narrowed to package
+patterns, or include or exclude patterns of the repository). The index walk reads every row of that repository on the name, and the
+list's visibility then drops those the caller may not read: they are neither listed nor counted, but their number adds a row's time each.
+Live wherever such a grant exists; what makes it real is a caller who times the read of a name against a repository he reads in part,
+which tells him roughly how many packages there depend on it.

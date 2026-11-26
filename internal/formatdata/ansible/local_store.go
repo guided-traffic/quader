@@ -145,6 +145,10 @@ func (s localStore) PutVersion(ctx context.Context, tx meta.Tx, v rows.VersionRo
 	}); err != nil {
 		return err
 	}
+	// Who depends on what (R-API-086), in the publish's commit.
+	if err := putDependencies(ctx, qs, v.ItemID, Dependencies(deps)); err != nil {
+		return err
+	}
 	ns, name, _ := collection.SplitName(v.Name)
 	details := map[string]any{
 		"package": v.Name, "version": v.Version,

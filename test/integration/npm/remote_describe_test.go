@@ -118,6 +118,16 @@ func TestR_NPM_050_ACachedVersionIsDescribedByItsEntryInTheStoredDocument(t *tes
 		t.Errorf("dist-tags %v, the document has %v", tags, p.DistTags)
 	}
 
+	// The job read who the cached version depends on (api-and-ui.md R-API-086) from the manifest it wrote: the version is marked read and
+	// its rows are the manifest's.
+	if n := r.st.Number(`SELECT count(*) FROM package_dependency_reads d JOIN package_versions pv ON pv.id = d.version_id
+		JOIN packages pk ON pk.id = pv.package_id WHERE pk.repo_id = $1`, repoID); n != 1 {
+		t.Errorf("%d cached versions are marked read, want 1", n)
+	}
+	if got, want := r.st.Number(`SELECT count(*) FROM package_dependencies d JOIN package_versions pv ON pv.id = d.version_id
+		JOIN packages pk ON pk.id = pv.package_id WHERE pk.repo_id = $1`, repoID), int64(len(v.Dependencies)); got != want {
+		t.Errorf("%d rows of the cached version's dependencies, the version answers %d", got, want)
+	}
 	// A version cached before the job existed has no row: the task remote-describe, which an operator runs (and a worker queues when it
 	// starts), describes it without a request to the upstream; a second run finds nothing left and queues nothing.
 	r.st.Exec(`DELETE FROM npm_versions WHERE version_id IN (SELECT pv.id FROM package_versions pv JOIN packages pk ON pk.id = pv.package_id

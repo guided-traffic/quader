@@ -2644,6 +2644,79 @@ Acceptance criteria:
   dialog per format, the banner, the act and its refusal, the filter.
 - The renders `deprecation-*` and `ui-states` of the dialog and its refusal (light and dark, 390, 1,024 and 1,440 px, English and German).
 
+### R-API-086 · A version's page lists the packages that depend on its package
+Priority: **P1** · Covers: quader-only
+
+The owner's rules (2026-11-25): metadata that is there is used and shown, and what holds for one format holds for every format that has
+the same thing. Galaxy ("Used by" and the search filter `dependency`), nuget.org ("Used By") and npmjs.com ("Dependents") show who depends on
+a package; Quader stores every version's dependencies and showed them one way only (W-30, G5).
+
+**What is kept** ([Q-API-455](#q-api-455--who-depends-on-what-is-one-side-table-written-where-a-versions-facts-are-written)): one row of
+`package_dependencies` (migration 00139) per name a stored version depends on, with the range it asks for as written and the kind its format
+names it by, and per name a Debian version provides. Each format has one extractor (`Dependencies` of `internal/formatdata/<format>`), which
+reads the format's own stored row where that row is written, in the same transaction:
+
+| Format | Kinds | A name is matched | Written for a local version | Written for a remote's cached version |
+|---|---|---|---|---|
+| npm | `dependencies`, `peerDependencies`, `optionalDependencies`, `devDependencies` (`bundleDependencies` names what `dependencies` holds) | as written (the name rule, case kept); an alias `npm:<name>@<range>` depends on `<name>` | the publish's commit (`npm_versions`) | the job `npm-remote-describe` (R-NPM-050) |
+| NuGet | one list (kind `""`), every target framework's group; a range per distinct range | the ID in lower case (`packages.name`) | the push's commit (`nuget_version.metadata`) | the fill's commit (origin `cache`) |
+| Debian | `Pre-Depends`, `Depends`, `Recommends`, `Suggests`, `Enhances`; `Provides` kept as provided names | as written, the architecture qualifier dropped (`python3:any` is `python3`); every alternative of `a \| b` | the upload's commit, from every file of the version (`deb_binaries`) | the job `deb-remote-describe` (R-DEB-037) |
+| Ansible Galaxy | one list (kind `""`) | `<namespace>.<name>` in lower case | the publish's commit and the reindex (`ansible_collection_versions`) | the fill's commit |
+| OCI | none: an image's base image is no dependency the format states; a Helm chart's dependencies name a chart and a repository address, which no stored package matches by its name alone ([H-2221](#h-2221--a-helm-charts-dependencies-are-not-matched-to-the-charts-quader-holds)) | — | — | — |
+| generic files, ClamAV definitions | none | — | — | — |
+
+What was stored before, what a restore left without rows (the table is derived and not exported, R-BAK-004) and what an older extractor read
+are read by an entry of the task `remote-describe` from the same stored rows, without reading an archive: a worker that starts queues it
+while a version is left, a batch of 100 versions per transaction, the cursor saved after each. Until it has run, a version stored before
+has no dependents and is in no list filtered by `dependsOn`; its own Dependencies block is unchanged (it reads the version's metadata).
+
+**The read** ([Q-API-456](#q-api-456--used-by-lists-each-dependent-once-by-its-newest-version-that-depends-across-the-projects-the-reader-may-read),
+[Q-API-458](#q-api-458--a-dependent-the-reader-may-not-read-is-not-read)):
+- `GET /api/v1/packages/{packageId}/dependents` answers the packages of the format that depend on the package's name, or on a name its
+  visible versions provide (Debian, [Q-API-457](#q-api-457--a-debian-package-is-used-under-the-names-it-provides-and-every-alternative-counts)),
+  in the repositories the caller may read: each once, by its newest visible version that depends (a release before a pre-release), with
+  that version's relations (`kind`, `range`, `via`: the name asked for), at most 50 by name, and `total`, the count of them all. The scope
+  is the package list's (the endpoint's exposure included); `project` narrows it to a project's repositories as the list does.
+- A dependent in a repository the caller may not read is neither listed nor counted, and is not read: the repositories are decided first,
+  and the statement walks the index `package_dependencies_by_name (repo_id, name)` for those alone. The answer depends on nothing the
+  caller may not read: a name no visible repository holds has its dependents answered all the same. `whole` says whether the caller reads
+  every repository of the format whole, the same for every package of the format.
+- "Used by" lists the packages that depend on the package, with the range each asks for; whether that range holds the version on the
+  page is not decided ([H-2223](#h-2223--used-by-does-not-say-whether-a-dependents-range-holds-the-version-on-the-page)).
+- `GET /api/v1/packages?format=<one format with dependencies>&dependsOn=<name>` keeps the packages with a visible version that depends on
+  it, the same packages; a format without dependencies, or none or several, answers `400`
+  ([Q-API-459](#q-api-459--the-list-filters-by-dependson-as-by-keyword-planned-for-its-values)).
+- A remote's tab **Upstream** shows none: who depends on a package at an upstream is the upstream's to know, and Quader asks it nothing.
+
+**The screen** ([Q-UI-1350](#q-ui-1350--used-by-stands-under-the-dependencies-in-their-block),
+[Q-UI-1351](#q-ui-1351--past-50-the-section-says-how-many-more-and-leads-to-the-projects-package-list)): the tab **Details** of a version's
+page shows **Used by** right after **Dependencies**, in npm, NuGet, Debian and Ansible Galaxy (an Ansible role has none): one line per
+dependent, its name a link to its version that depends, the version, then each relation as the format names it (the kind, the name it
+asks for where it is a name the package provides, the range muted). Past 50: "and N more." and **Packages of this project that use it**,
+the project's package list filtered by `dependsOn`, where the filter is a chip **Depends on**. None: "No package the installation holds
+depends on it." for a caller who reads every repository of the format whole, else "No package you may read depends on it." It reads again
+while it is seen (R-UI-213).
+
+Measured (2026-11-26, `TestMeasureUsedBy`, [packages.md](../developer/packages.md#who-depends-on-a-package)): with 50,000 npm packages of which
+5,000 depend on one name, the read answers in 31 ms for a caller who reads 10,000 dependents and in 23 ms for a reader of the repository
+of 5,000 beside a second one she may not read with 5,000 more; the list filtered by `dependsOn` in 150 to 160 ms, the list without the
+filter in 270 to 290 ms on the same data.
+
+Acceptance criteria:
+
+- Unit (`internal/formatdata/npm`, `nuget`, `deb`, `ansible`: `TestR_API_086_…`, microseconds each): what each format's extractor reads of
+  its stored row; `internal/packages/dependents`: a row is kept once within the bounds of the table.
+- Integration (`packages`, `TestR_API_086_UsedByListsThePackagesTheCallerMayReadThatDependOnAPackage`, about 9 s with a replica of the role
+  api and one of the role worker): the npm commit writes the rows; the read on the role api, each dependent once by its newest version with
+  its kinds; a dependent the caller may not read neither listed nor counted; the project; the filter `dependsOn` and its refusals; the task
+  writes the rows of versions stored without them.
+- Integration, one assertion in the area of each writer: `deblocal` (`TestR_DEB_038_039_…`: a name a package provides, a qualifier dropped,
+  the filter), `debremote` (`TestR_DEB_037_…`: the describe job), `ansiblelocal` (`TestR_ANS_060_…`), `nuget` (the push of `semver2Push`),
+  `npm` (`TestR_NPM_050_…`: the describe job), each read on the role api where the area reads.
+- Integration (`search`, `TestR_API_086_TheReadOfDependentsWalksTheIndexOfTheRepositoriesTheCallerMayRead`, about a second): both
+  statements walk `package_dependencies_by_name` by the repositories they are given.
+- Web unit (`package-version.spec.ts`, `package-list.spec.ts`): the section, its links and its sentences; the chip and the filter.
+
 ### R-API-058 · Operations that serve wiki content
 Priority: **MVP** · Covers: quader-only
 
@@ -2864,7 +2937,6 @@ Acceptance criteria:
 - With `SET enable_seqscan = off`, `EXPLAIN` of statement A shows `packages_name_lower` and of statement B `packages_name_words`.
 - A request with the five kinds costs the same number of statements with 10 and with 10,000 matching packages (integration area
   `querybudget`).
-
 
 ### R-API-031 · Users, groups and service accounts
 Priority: **MVP** · Covers: ADMAPI-004, ADMAPI-005, ADMAPI-006, ADMAPI-007, ADMAPI-008, ADMAPI-009, ADMAPI-012, ADMAPI-013, ADMAPI-014, ADMAPI-015, ADMAPI-016, ADMAPI-017, ADMAPI-018
@@ -5936,7 +6008,6 @@ Acceptance criteria:
 - A signed-in internal user sees the README tab on the same page.
 
 Built as Q-UI-234: [package-detail.ts](../../web/src/app/features/packages/package-detail.ts) (the README tab and its request follow `hasReadme`), [auth-guard.ts](../../web/src/app/core/auth-guard.ts), [project-context.ts](../../web/src/app/core/project-context.ts) and [login.ts](../../web/src/app/features/login/login.ts) (`publicContent`); tests in [login.spec.ts](../../web/src/app/features/login/login.spec.ts) and [package-detail.spec.ts](../../web/src/app/features/packages/package-detail.spec.ts).
-
 
 ### R-UI-040 · Builds
 Priority: **P1** · Covers: UI-028, UI-029
@@ -14752,7 +14823,6 @@ Context: the review of Q-UI-173 found two things that the number of scans (`MaxS
 **Rationale:** the cost of a progressive JPEG is the area times the scans times the work of a scan, and only the header says the first two, so the budget is what the header can prove; the deadline stays as the bound for what the header cannot (H-640). The development agent revisits the constant when ordinary progressive photos are refused (the allowance is five times a typical photo's), when the floor of the file that spends it exceeds 1 s, or when the standard decoder gets a cheaper scan.
 **Applied:** R-API-055 (the size and cost bullet, Bounded cost); [user-avatars.md](../security/user-avatars.md) (steps 6 and 8, the cost section, H-640); `internal/avatar/process.go` (`MaxBlockVisits`, `walkJPEG`, `scanVisits`, `readChunk`, `ctxReader`); `internal/avatar/budget_test.go`, `bounds_test.go`.
 
-
 ### Q-UI-177 · The facts of an OCI tag and the platforms of an index sit in the Metadata tab of the package page
 
 **Revisited on 2026-11-18** (the owner's walk of 2026-11-18, W-7): the Image block and the Platforms table are in the tab **Details** of the version's page ([Q-UI-458](#q-ui-458--the-tabs-metadata-files-and-repositories-become-the-version-pages-details-and-files)); the row of the versions table leads with the tag and shows no digest (Q-UI-453).
@@ -18064,7 +18134,6 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** `GET /api/v1/usage` and its export take `project=<key>`, which narrows the rows to the project's repositories, as the project's
 operation does; it costs the same statement with a list of repositories. The project's own operation stays for an Owner, who holds no
 `usage:read`. **Applied in the spec:** R-API-082, [usage-and-limits.md](usage-and-limits.md) R-LIM-034.
-
 
 ### Q-API-354 · A PUT that creates takes no If-Match, and requires it when it replaces
 
@@ -22543,7 +22612,6 @@ source's health reads one more source the same way. The development agent would 
 **Applied in the spec:** [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022, R-VULN-045. Code:
 [vulnerability-sources.ts](../../web/src/app/features/vulnerabilities/vulnerability-sources.ts).
 
-
 ### Q-API-370 · The malware scan's operations, and the member `malware` of a file
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -23064,7 +23132,6 @@ new permission. **Applied in the spec:** R-UI-038; [operations-and-observability
 [scanners_api.go](../../internal/api/v1/scanners_api.go), [wire_scanner_report.go](../../internal/app/wire_scanner_report.go), the schemas
 `ScannerList`, `ScannerKind`, `ScannerReplica` of [openapi.yaml](../../api/openapi.yaml), whose `ReplicaState` both lists share.
 
-
 ### Q-API-382 · The clients of the ClamAV definitions are an operation and a member of the item
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -23116,7 +23183,6 @@ running"). **Applied in the spec:** R-UI-038; [malware-scanning.md](malware-scan
 [scanner-model.ts](../../web/src/app/shared/scanner/scanner-model.ts), [system-status.html](../../web/src/app/features/system/system-status.html),
 [malware-settings.html](../../web/src/app/features/settings/malware-settings.html),
 [vulnerability-sources.ts](../../web/src/app/features/vulnerabilities/vulnerability-sources.ts).
-
 
 ### Q-UI-903 · ClamAV definition updates is a switch in the row and a section of the registry's page
 
@@ -23276,7 +23342,6 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) The snippet of `freshclam.conf` in the panel | The line on the page | One click less | The same line on every version's page, which reads as if it were that version's |
 
 **Choice:** (a). **Applied in the spec:** R-UI-194. Code: [version-command.ts](../../web/src/app/features/packages/version-command.ts).
-
 
 ### Q-UI-912 · Only `daily` is outdated by its age, as ClamAV warns only about `daily`
 
@@ -23925,7 +23990,6 @@ from answers that carry both; an item's answer carries the reference alone (`Sta
 **Applied in the spec:** R-UI-010. Code: `person` of
 [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts).
 
-
 ### Q-UI-1005 · Malware and Signatures are entries of their own under Security audit
 
 Status: **Decided by the owner on 2026-11-23.** Supersedes [Q-UI-871](#q-ui-871--the-security-dashboard-has-two-views-vulnerabilities-and-malware)
@@ -24028,7 +24092,6 @@ configuration hashes of instance 1 equal those of the former file.
 **Applied in the spec:** none (development tooling). Code: [deploy/ui-dev/](../../deploy/ui-dev/), the `ui-*` targets of the
 [Makefile](../../Makefile). Elsewhere: [web-ui.md](../developer/web-ui.md#instances-one-per-builder),
 [build-and-test.md](../developer/build-and-test.md#instances-and-their-ports).
-
 
 ### Q-UI-1044 · An instance of the UI development profile is claimed, not chosen
 
@@ -27912,6 +27975,122 @@ R-ANS-025's table; code: [setup_verify.go](../../internal/api/v1/setup_verify.go
 [vulnerability-sources.ts](../../web/src/app/features/vulnerabilities/vulnerability-sources.ts), the captions of
 [clients.ts](../../web/src/app/features/setup/clients.ts).
 
+### Q-API-455 · Who depends on what is one side table, written where a version's facts are written
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-API-086 asks which packages depend on a package. The dependencies are in each format's own rows (an npm manifest, NuGet's
+metadata, Debian's control paragraph, an Ansible collection's map), in four shapes; a read across them by name would parse every row.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One table `package_dependencies (version_id, repo_id, name, kind, range, provides)`, written by a Go extractor per format in the transaction that writes the format's row, and by an entry of the task `remote-describe` for what was stored before (chosen) | A lookup by name; one extractor and one unit case per format | The read is one index walk; the name is matched by the format's rule once, at write time; a format adds a function | Every writer of a format's row calls it (seven places in four formats) |
+| (b) The view adapters' metadata read at the read | No table | Nothing to write | Every version of a format read and parsed at every read; no index, no privacy by repository |
+| (c) A trigger per format table that extracts in SQL | One mechanism in the database | No writer forgets it | Debian's relation grammar and NuGet's ID rule in PL/pgSQL; no unit case per format |
+
+**Choice:** (a). A version whose dependencies were read is marked in `package_dependency_reads` with the extractor's version (`dependents.Reader`),
+so that a version without dependencies is not read again and a changed extractor reads every version again. Both tables are derived: a
+backup does not export them and the task fills them after a restore (R-BAK-004). A Helm chart's dependencies are not kept: they name a
+chart and a repository address, and a chart of the same name in an OCI repository of this installation is another chart unless the
+address is this installation's ([H-2221](#h-2221--a-helm-charts-dependencies-are-not-matched-to-the-charts-quader-holds)). Revisit when a
+format is added whose dependencies name packages of another format. **Applied in the spec:** R-API-086. Code:
+`internal/packages/dependents`, `Dependencies` of `internal/formatdata/{npm,nuget,deb,ansible}`.
+
+### Q-API-456 · Used by lists each dependent once, by its newest version that depends, across the projects the reader may read
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The packages that depend on the package's name, each by its newest visible version that does, with that version's kinds and ranges (chosen) | Galaxy's, nuget.org's and npmjs.com's list | One read for every version of the page; the range is shown, so the reader judges it | A dependent whose range excludes the version on the page is listed |
+| (b) Only those whose range holds the version on the page | "Who would install this version" | Exact for npm and NuGet | Each format's range grammar at the read (npm's, NuGet's intervals, Debian's constraints, Ansible's), per row; a different answer per version of one package |
+| (c) Every version of every dependent | Complete | — | A package with 300 versions fills the list |
+
+**Choice:** (a), and a dependent's newest visible version is a release before a pre-release, the highest key first. The read runs across
+every project the reader may read, as the public registries' lists and as the rest of a version's page (its repositories are read across
+projects); the operation takes `project` for a caller that wants one project's, as the package list does. A package does not use itself.
+Revisit if the owner wants (b) for a format ([H-2223](#h-2223--used-by-does-not-say-whether-a-dependents-range-holds-the-version-on-the-page)).
+**Applied in the spec:** R-API-086.
+
+### Q-API-457 · A Debian package is used under the names it provides, and every alternative counts
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a Debian package depends on a virtual name (`mail-transport-agent`) that other packages provide, on `a | b`, and on `python3:any`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every alternative is a row; the architecture qualifier is dropped; a package is used under its own name and under the names its visible versions provide, one step (chosen) | APT's resolution, as far as names go | `exim4` shows who needs a mail transport agent; `python3` who asks for `python3:any` | A dependent of `a \| b` is listed under both, though it needs only one |
+| (b) Only the first alternative, only the own name | — | Fewer rows | The users of a provider are missed: most of Debian's virtual packages |
+| (c) (a) and the version of a versioned Provides held against the constraint | Exact | — | dpkg's version comparison per row at the read |
+
+**Choice:** (a). Pre-Depends, Depends, Recommends, Suggests and Enhances are uses, each its own kind; Breaks, Conflicts and Replaces are not.
+A version's rows are those of every file of it, each architecture's. **Applied in the spec:** R-API-086.
+
+### Q-API-458 · A dependent the reader may not read is not read
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: W-30 C.4: "Used by" is not counted across repositories the reader cannot read; the brief adds that a hidden dependent must not
+change the answer's time in a way a caller could measure cheaply.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The repositories the reader may read are decided first (the package list's scope); the statement walks the index `(repo_id, name)` for those alone and then applies the list's row visibility (chosen) | A hidden repository's rows are never touched | Neither the list, the count nor the time depends on them | A repository the reader may read only in part is walked whole ([H-2220](../security/search.md#h-2220--in-a-repository-read-row-by-row-the-rows-the-reader-may-not-read-are-walked)) |
+| (b) An index on the name, filtered by visibility | One walk | Simple | The walk reads every dependent of the installation: the time grows with what the reader may not see |
+
+**Choice:** (a). Measured: 5,000 dependents in a repository the reader may not read leave her read at 23 ms beside the 31 ms of a reader of
+both. `whole` (the reader reads every repository of the format whole) chooses the sentence of an empty list; it says only that, and is the
+same for every package. **Applied in the spec:** R-API-086. Code: `view.Service.Dependents`, `PackageViewDependents`.
+
+### Q-API-459 · The list filters by dependsOn as by keyword, planned for its values
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the package list reads every visible version (132 ms for 50,000 packages without a text); the filter must add nothing to it per
+row while it is not asked.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The ids of the versions that depend (one index walk, bounded as a search), kept by `bool_or(v.vid = ANY(ids))` as `keyword` is, and the statement planned for its values whenever a list of ids is given (chosen) | One clause; planned away while the filter is not asked | The ids are a constant of the plan, hashed | A plan per request with a list of ids (3 to 4 ms) |
+| (b) The same with the statement's cached generic plan | — | No planning | Measured: with 5,000 ids the generic plan compared every row with every id, 1.5 s per page from the sixth request on |
+| (c) A join with the ids | A hashed join in either plan | — | Measured: the generic plan put the ids outside and read the versions once per id, past the statement timeout |
+
+**Choice:** (a): `packages()` sets `plan_cache_mode = force_custom_plan` for the transaction of the list statement when the request
+carries a search's, a keyword's, the deprecated filter's or dependsOn's ids, as the suggestions do (R-API-064). Measured with 50,000
+packages and 5,000 dependents: 150 to 160 ms, the slowest of twelve 172 ms. **Applied in the spec:** R-API-086. Code:
+`internal/packages/view/service.go`.
+
+### Q-UI-1350 · Used by stands under the dependencies, in their block
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A section **Used by** on the tab Details right after **Dependencies**, one line per dependent in the dependency block's look: the name a link to its version, the version, the kinds in the format's words, the range muted (chosen) | What the version needs and who needs it together | One block, one set of words (Q-UI-1311); a development dependency says `devDependencies` | Details grows by up to 50 lines |
+| (b) A tab of its own, as Galaxy's "Dependencies" tab | Galaxy's place | A tab only when asked | One more tab for every version; the dependencies stay on Details |
+
+**Choice:** (a). The section is read when Details is drawn (the tab strip draws every tab), and read again while the page is seen
+(R-UI-213). A name a Debian dependent asks for is written beside its kind where it is a name the package provides. An Ansible role has no
+section: collections depend on collections. The empty list claims no more than the reader may know: "No package the installation holds
+depends on it." only for a reader of every repository of the format, else "No package you may read depends on it." **Applied in the spec:**
+R-API-086. Code: `UsedBy` of [used-by.ts](../../web/src/app/features/packages/used-by.ts).
+
+### Q-UI-1351 · Past 50, the section says how many more and leads to the project's package list
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the plan's "and N more" leads to the package list filtered by the dependency; the screen's package list is a project's (Q-UI-129),
+the section reads every project the reader may read (Q-API-456).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) "and N more." as text, then the link **Packages of this project that use it** to the project's list with `format` and `dependsOn` (chosen) | The count is the read's, the link says what it shows | No link promises more than its list holds | Two steps where the plan had one |
+| (b) "and N more" as the link | The plan's words | One step | The list of one project shows fewer than N where dependents live in other projects |
+| (c) The section narrowed to the project | Counts and list agree | — | A library's page in its own project would show none of the applications of other projects that use it |
+
+**Choice:** (a). The list shows the filter as the chip **Depends on**, which goes with the package type. **Applied in the spec:** R-API-086.
+
 ### Q-UI-1370 · A link to a screen whose script is gone loads its address from the server, and a failed navigation is said
 
 Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
@@ -27947,6 +28126,31 @@ opening the address in a new tab costs. The development agent would revisit it w
 (H-2240).
 
 ## What this does not cover
+
+### H-2221 · A Helm chart's dependencies are not matched to the charts Quader holds
+
+Stage: R-API-086, Q-API-455, OCI. A chart's `Chart.yaml` names each dependency by a chart name and a repository address (`oci://…`,
+`https://…`); the chart a dependency means is the chart at that address. Only an address of this installation names a package Quader
+holds, and resolving it needs the installation's base URLs at the write. Until it is built, a chart's page has no "Used by", and its
+Dependencies block lists its dependencies as text. Dormant: no chart repository format exists, charts are OCI artifacts.
+
+### H-2222 · A Debian architecture's file that goes leaves its relations with the version
+
+Stage: R-API-086, Debian. A version's rows are those of all its files, written when a file's row is written; the removal of one
+architecture's file while another stays writes nothing, so the relations of the removed file stay until the version gets a file again or
+goes. Live for a version whose architectures depend on different names (rare: `Depends` differs by architecture only for a few packages).
+
+### H-2223 · Used by does not say whether a dependent's range holds the version on the page
+
+Stage: R-API-086, Q-API-456. Each dependent shows the range it asks for; a reader of version 1.x of a library sees an application that asks
+for `^2.0.0` beside one that asks for `^1.4.0`. Deciding it needs each format's range grammar at the read. Live on every page of a package
+with several majors.
+
+### H-2224 · The worker's start asks every version of the formats whether it was read
+
+Stage: R-API-086, the task `remote-describe`'s entry. When every version was read, the check at a worker's start walks the versions of npm,
+NuGet, Debian and Ansible Galaxy by their ids to find none left: one index probe each, about 50 ms for 50,000 versions, a second for a
+million. Live at every start of a worker; what makes it real is an installation with millions of versions.
 
 ### H-2240 · An open screen keeps the build its window was loaded from
 
@@ -28089,7 +28293,6 @@ unranked visible version of the package, one cheap row each from the partial ind
 order of publication. Live today; real only for an image that two physical repositories of one scope hold with thousands of tags that are
 no version (a CI's commit tags); npm, NuGet, Debian and Ansible store no such version, and a virtual repository over one member is one
 holder. Not measured. The remedy would be the same as H-1683's: a time per version kept across its holders.
-
 
 ### H-1900 · The end of a list by content whose versions lead no image costs a request per 1,024 of them
 
@@ -28311,7 +28514,6 @@ document, Docker and the Linux Foundation reserve changes without notice, and no
 makes it real: an owner that narrows its terms (Debian, NuGet, the Linux Foundation) while Quader still shows its logo, or one
 that opens them (npm, Red Hat, Docker) while Quader still shows the glyph. Hardening: read the pages of the table in Q-UI-225
 again when a format is added and before the first stable release, and record the day in the notice.
-
 
 ### H-980 · Sorting by grade covers the first 1,000 entries of a list
 

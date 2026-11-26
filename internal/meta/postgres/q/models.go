@@ -1188,6 +1188,20 @@ type Package struct {
 	NameWords   interface{}
 }
 
+type PackageDependency struct {
+	VersionID int64
+	RepoID    int64
+	Name      string
+	Kind      string
+	Range     string
+	Provides  bool
+}
+
+type PackageDependencyRead struct {
+	VersionID int64
+	Reader    int32
+}
+
 type PackageOwner struct {
 	ID          pgtype.UUID
 	Domain      string

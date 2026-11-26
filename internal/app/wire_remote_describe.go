@@ -9,13 +9,16 @@ import (
 	ansibledata "github.com/guided-traffic/quader/internal/formatdata/ansible"
 	debdata "github.com/guided-traffic/quader/internal/formatdata/deb"
 	npmdata "github.com/guided-traffic/quader/internal/formatdata/npm"
+	nugetdata "github.com/guided-traffic/quader/internal/formatdata/nuget"
 	ocidata "github.com/guided-traffic/quader/internal/formatdata/oci"
 	"github.com/guided-traffic/quader/internal/formats"
 	ansibleformat "github.com/guided-traffic/quader/internal/formats/ansible"
 	debformat "github.com/guided-traffic/quader/internal/formats/deb"
 	npmformat "github.com/guided-traffic/quader/internal/formats/npm"
+	nugetformat "github.com/guided-traffic/quader/internal/formats/nuget"
 	ociformat "github.com/guided-traffic/quader/internal/formats/oci"
 	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/packages/dependents"
 	"github.com/guided-traffic/quader/internal/packages/remotedescribe"
 )
 
@@ -63,6 +66,13 @@ func (a *App) startRemoteDescribe(ctx context.Context, in infra, ports map[forma
 			// The local and remote Ansible Galaxy repositories whose documentation or changelogs an older generator made, or whose cached
 			// archives' changelogs were never read: the job is the repository's reindex (R-ANS-044, R-ANS-053, Q-ANS-99).
 			{Kind: ansibledata.ReindexJobKind, Port: ansibledata.ReindexPort{S: ansible}},
+			// Who depends on what (R-API-086): the rows of package_dependencies of every version stored before the table existed, after a
+			// restore (the table is derived and not exported) or read by an older extractor, from the formats' stored rows. It queues no
+			// job and has no kind: it writes in the run, a batch per transaction.
+			{Port: dependents.Fill{DB: in.db, Sources: map[string]dependents.Source{
+				string(npmformat.ID): npmdata.DependencySource, string(nugetformat.ID): nugetdata.DependencySource,
+				string(debformat.ID): debdata.DependencySource, string(ansibleformat.ID): ansibledata.DependencySource,
+			}}},
 		},
 	})
 	if err != nil {

@@ -300,6 +300,9 @@ type Filter struct {
 	Deprecated bool
 	// Signed keeps a package whose latest visible version carries a verified signature (R-ANS-057, Q-ANS-122).
 	Signed bool
+	// DependsOn keeps a package with a visible version that depends on the package of this normalized name, or on a name it provides
+	// (R-API-086); the filter takes one format, the name's.
+	DependsOn string
 }
 
 // Order is the sort of the list: name, createdAt, updatedAt or relevance (the best match first, R-ANS-057).
@@ -411,6 +414,12 @@ func (s *Service) List(ctx context.Context, sc Scope, f Filter, o Order, after *
 			return nil, err
 		}
 	}
+	var dependIDs []int64
+	if f.DependsOn != "" {
+		if dependIDs, err = s.dependentVersions(ctx, sc, f.DependsOn, sc.ofFormats(universe, formats)); err != nil {
+			return nil, err
+		}
+	}
 	withheld, err := s.withheld(ctx, sc, formats, universe)
 	if err != nil {
 		return nil, err
@@ -420,7 +429,7 @@ func (s *Service) List(ctx context.Context, sc Scope, f Filter, o Order, after *
 		Withheld: ids(withheld), Formats: keys(formats), HasRepos: f.HasRepositories, Repos: ids(repos),
 		NamePrefix: f.NamePrefix, Whole: ids(sc.whole), Rows: keys(sc.rows),
 		Q: f.Q, QIds: ids(qIDs), QRanks: ranks(qRanks), Keyword: f.Keyword, KeywordIds: ids(kwIDs), Signed: f.Signed,
-		Deprecated: f.Deprecated, DeprecatedIds: ids(depIDs),
+		Deprecated: f.Deprecated, DeprecatedIds: ids(depIDs), Depends: f.DependsOn != "", DependsIds: ids(dependIDs),
 		HasFrom: f.CreatedFrom != nil, CreatedFrom: stamp(f.CreatedFrom),
 		HasTo: f.CreatedTo != nil, CreatedTo: stamp(f.CreatedTo),
 	}
@@ -444,7 +453,7 @@ func (s *Service) Package(ctx context.Context, sc Scope, format, name string) (P
 	p := q.PackageViewListParams{
 		Sort: "name", MaxRows: 1, Withheld: ids(withheld), Formats: []string{format},
 		ExactFormat: format, ExactName: name, Whole: ids(sc.whole), Rows: keys(sc.rows),
-		Repos: []int64{}, QIds: []int64{}, QRanks: []int32{}, KeywordIds: []int64{}, DeprecatedIds: []int64{},
+		Repos: []int64{}, QIds: []int64{}, QRanks: []int32{}, KeywordIds: []int64{}, DeprecatedIds: []int64{}, DependsIds: []int64{},
 	}
 	ps, err := s.packages(ctx, sc, p, withheld, false, nil)
 	if err != nil || len(ps) == 0 {
@@ -571,7 +580,16 @@ func (s *Service) withheld(ctx context.Context, sc Scope, formats []string, repo
 func (s *Service) packages(ctx context.Context, sc Scope, p q.PackageViewListParams, withheld []int64, hasRepos bool, repos []int64) ([]Package, error) {
 	var rows []q.PackageViewListRow
 	p.AnyFile, p.Document = s.fetchRules()
+	// A list of ids (a search's matches, a keyword's, the deprecated versions, the dependents of dependsOn) is planned for its values: a
+	// generic plan, which a prepared statement takes after its fifth run, knows neither its length nor the clause it makes void, and the
+	// list filtered by 5,000 dependents ran 1.5 s with it and 0.15 s planned for its values (Q-API-459, docs/developer/packages.md).
+	custom := len(p.QIds) > 0 || len(p.KeywordIds) > 0 || len(p.DeprecatedIds) > 0 || len(p.DependsIds) > 0
 	if err := s.read(ctx, func(qs *q.Queries) (err error) {
+		if custom {
+			if err := qs.SearchCustomPlans(ctx); err != nil {
+				return err
+			}
+		}
 		rows, err = qs.PackageViewList(ctx, p)
 		return err
 	}); err != nil || len(rows) == 0 {

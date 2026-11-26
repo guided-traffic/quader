@@ -33,6 +33,9 @@
 -- one latest (latest_vid) by the rule of latestOf: a release before a pre-release before a version the format does not rank, the
 -- highest key first and among unranked ones the newest; a row whose key is not filled yet counts as unranked. The aggregate that picks
 -- it reads nothing while neither filter is asked (FILTER).
+-- depends keeps the packages with a visible version among depends_ids, the versions that depend on the name the filter dependsOn asks
+-- (R-API-086, PackageViewDependentVersions). A list of ids is a constant only in a custom plan, where "= ANY" is hashed and the clause of
+-- a filter not asked is planned away; the caller plans the statement for its values whenever a list of ids is given (Q-API-459).
 -- exact_name, when set, restricts the rows to one package. Names are ordered bytewise
 -- (collation C), so the order does not depend on the database's locale and the keyset
 -- comparison of a cursor means the same on every replica.
@@ -85,6 +88,7 @@ WITH vis AS (
   HAVING (sqlc.arg(q)::text = '' OR position(lower(sqlc.arg(q)::text) in lower(v.name)) > 0
           OR position(lower(sqlc.arg(q)::text) in lower(min(v.display_name))) > 0 OR bool_or(qr.id IS NOT NULL))
      AND (sqlc.arg(keyword)::text = '' OR bool_or(v.vid = ANY(sqlc.arg(keyword_ids)::bigint[])))
+     AND (NOT sqlc.arg(depends)::boolean OR bool_or(v.vid = ANY(sqlc.arg(depends_ids)::bigint[])))
      AND (NOT sqlc.arg(has_from)::boolean OR min(v.created_at) >= NULLIF(sqlc.arg(created_from)::text, '')::timestamptz)
      AND (NOT sqlc.arg(has_to)::boolean OR min(v.created_at) < NULLIF(sqlc.arg(created_to)::text, '')::timestamptz)
 ), page AS (
@@ -927,3 +931,68 @@ SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_
  WHERE p.repo_id = ANY(sqlc.arg(scope)::bigint[])
  ORDER BY p.repo_id, p.name, l.version;
 
+
+-- name: PackageViewProvided :many
+-- The names the visible versions of a package provide (Debian's Provides, R-API-086, Q-API-457): a package that depends on one of them
+-- uses this package as well. repos are the repositories of the package's format the caller may read (the scope's, never more), so that
+-- the walk touches no package of another repository.
+SELECT DISTINCT d.name::text AS name
+  FROM packages p
+  JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
+  JOIN package_dependencies d ON d.version_id = pv.id AND d.provides
+ WHERE p.repo_id = ANY(sqlc.arg(repos)::bigint[]) AND p.name = sqlc.arg(name)::text
+   AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+   AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+        OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
+ ORDER BY 1
+ LIMIT 64;
+
+-- name: PackageViewDependents :many
+-- The packages that depend on one of names (the package's own name and the names it provides), each by its newest visible version that
+-- does (R-API-086, Q-API-456): a release before a pre-release, the highest key first, then the newest. repos are the repositories of the
+-- format the caller may read: the index package_dependencies_by_name is walked for each of them alone, so a dependent in a repository
+-- the caller may not read is neither read nor counted, and its existence costs the walk nothing (Q-API-458). The visibility of each row
+-- is then the list's (whole, rows, withheld). self is the package's own name, which is no dependent of itself. total counts the
+-- dependent packages, each once, whatever max_rows returns; each answered package carries its version's relations side by side (the
+-- kind as the format names it, the range as written, and the name matched: the package's or a name it provides).
+WITH vis AS (
+  SELECT d.version_id, d.name AS via, d.kind, d.range, pv.version, pv.sort_key, pv.created_at, COALESCE(pv.prerelease, false) AS prerelease,
+         (p.name COLLATE "C")::text AS name, p.display_name
+    FROM package_dependencies d
+    JOIN package_versions pv ON pv.id = d.version_id AND pv.trashed_at IS NULL
+    JOIN packages p ON p.id = pv.package_id
+   WHERE d.repo_id = ANY(sqlc.arg(repos)::bigint[]) AND d.name = ANY(sqlc.arg(names)::text[]) AND NOT d.provides
+     AND p.name <> sqlc.arg(self)::text
+     AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+     AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+          OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
+), newest AS (
+  SELECT DISTINCT ON (v.name) v.name, v.display_name, v.version, v.version_id
+    FROM vis v
+   ORDER BY v.name, v.prerelease, v.sort_key DESC NULLS LAST, v.created_at DESC, v.version_id DESC
+), page AS (
+  SELECT n.name, n.display_name, n.version, n.version_id, count(*) OVER ()::bigint AS total
+    FROM newest n
+   ORDER BY n.name
+   LIMIT sqlc.arg(max_rows)::int
+)
+SELECT pg.name, pg.display_name, pg.version::text AS version, pg.total,
+       array_agg(v.kind::text ORDER BY v.kind, v.via, v.range)::text[] AS kinds,
+       array_agg(v.range::text ORDER BY v.kind, v.via, v.range)::text[] AS ranges,
+       array_agg(v.via::text ORDER BY v.kind, v.via, v.range)::text[] AS vias
+  FROM page pg
+  JOIN vis v ON v.version_id = pg.version_id
+ GROUP BY pg.name, pg.display_name, pg.version, pg.total
+ ORDER BY pg.name;
+
+-- name: PackageViewDependentVersions :many
+-- The versions in the repositories repos that depend on one of names, a package's own version excepted: the filter dependsOn of the
+-- package list (R-API-086) keeps a package with a visible version among them, as the filter keyword does. The same walk as
+-- PackageViewDependents, at most max_rows ids; the caller asks for one more than it accepts.
+SELECT DISTINCT d.version_id
+  FROM package_dependencies d
+  JOIN package_versions pv ON pv.id = d.version_id AND pv.trashed_at IS NULL
+  JOIN packages p ON p.id = pv.package_id
+ WHERE d.repo_id = ANY(sqlc.arg(repos)::bigint[]) AND d.name = ANY(sqlc.arg(names)::text[]) AND NOT d.provides
+   AND p.name <> sqlc.arg(self)::text
+ LIMIT sqlc.arg(max_rows)::int;

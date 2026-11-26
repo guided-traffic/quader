@@ -240,6 +240,13 @@ func packageFilter(lq ListQuery) (view.Filter, error) {
 		}
 		f.NamePrefix = prefix
 	}
+	if raw := lq.First("dependsOn"); raw != "" {
+		name, err := dependsOnFilter(f.Formats, raw)
+		if err != nil {
+			return f, err
+		}
+		f.DependsOn = name
+	}
 	switch raw := lq.First("signed"); raw {
 	case "", "false":
 	case "true":
@@ -292,7 +299,7 @@ func (s *Server) ListPackages(w http.ResponseWriter, r *http.Request, _ gen.List
 		return
 	}
 	lq, err := ParseList(r, ListSpec{
-		Filters:     []string{"format", "project", "repository", "q", "namePrefix", "namespace", "signed", "keyword", "createdFrom", "createdTo", "include", "deprecated"},
+		Filters:     []string{"format", "project", "repository", "q", "namePrefix", "namespace", "signed", "keyword", "createdFrom", "createdTo", "include", "deprecated", "dependsOn"},
 		Sorts:       []string{"name", "createdAt", "updatedAt", "relevance"},
 		DefaultSort: "name",
 	}, s.o.API.Config)

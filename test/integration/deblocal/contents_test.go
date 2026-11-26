@@ -64,6 +64,22 @@ func TestR_DEB_038_039_AnUploadedPackageShowsWhatItTellsAboutItself(t *testing.T
 	if long := jsonOf(t, md["longDescription"]); !strings.Contains(long, `"verbatim":true`) || !strings.Contains(long, "The first paragraph.") {
 		t.Errorf("longDescription %s", long)
 	}
+	// Who uses what (api-and-ui.md R-API-086, Q-API-457): a package that depends on a name quader-docs provides uses quader-docs, and the
+	// upload of quader-docs uses python3 (its qualifier ":any" dropped) or python3-minimal.
+	viewer := build(t, "quader-viewer", "1.0", func(s *debgen.Spec) { s.Depends = "quader-doc-reader" })
+	e.mustUpload(e.tokA, "quader-viewer_1.0_amd64.deb", viewer, http.StatusCreated, []string{"stable"}, "main")
+	for _, c := range []struct{ of, want string }{
+		{"quader-docs", `"key":"quader-viewer","name":"quader-viewer","packageId":"` + view.ID("deb", "quader-viewer") + `","relations":[{"kind":"Depends","range":"","via":"quader-doc-reader"}],"version":"1.0"}`},
+		{"python3", `"key":"quader-docs","name":"quader-docs","packageId":"` + view.ID("deb", "quader-docs") + `","relations":[{"kind":"Depends","range":"","via":"python3"}],"version":"1.2.0-1"}`},
+	} {
+		if a := e.st.Do(apiRep, "GET", "/api/v1/packages/"+view.ID("deb", c.of)+"/dependents", e.tokA, nil); a.Status != http.StatusOK || !strings.Contains(string(a.Body), c.want) {
+			t.Errorf("the users of %s: %d %s", c.of, a.Status, a.Body)
+		}
+	}
+	if a := e.st.Do(apiRep, "GET", "/api/v1/packages?format=deb&dependsOn=quader-docs", e.tokA, nil); a.Status != http.StatusOK ||
+		!strings.Contains(string(a.Body), `"name":"quader-viewer"`) || strings.Contains(string(a.Body), `"name":"quader-docs"`) {
+		t.Errorf("the list filtered by dependsOn=quader-docs: %d %s", a.Status, a.Body)
+	}
 
 	path := "/api/v1/packages/" + url.PathEscape(id) + "/versions/1.2.0-1/contents"
 	var c map[string]any
@@ -129,7 +145,8 @@ func TestR_DEB_038_039_AnUploadedPackageShowsWhatItTellsAboutItself(t *testing.T
 		a.Status != http.StatusConflict {
 		t.Fatalf("run remote-describe: %d %s", a.Status, a.Body)
 	}
-	eventually(t, 60*time.Second, "the files read again", func() bool { return e.st.Number(`SELECT count(*) FROM deb_contents`) == 2 })
+	// Three files: quader-docs, quader-broken and quader-viewer.
+	eventually(t, 60*time.Second, "the files read again", func() bool { return e.st.Number(`SELECT count(*) FROM deb_contents`) == 3 })
 }
 
 // brokenData is a package file whose data archive is gzip but no tar.

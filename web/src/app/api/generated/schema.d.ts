@@ -3855,6 +3855,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/packages/{packageId}/dependents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The server-generated package identifier (R-API-029). */
+                packageId: components["parameters"]["PackageId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * List the packages that depend on a package
+         * @description Who uses a package (R-API-086): the packages of the format whose versions depend on its name, or on a name its visible versions
+         *     provide (Debian's `Provides`), in the repositories the caller may read, each once, by its newest visible version that does
+         *     (a release before a pre-release), with that version's relations: the kind as the format names it (npm's manifest field,
+         *     Debian's relation field; `""` for NuGet and Ansible Galaxy, whose dependencies are one list), the range as written, and the name
+         *     it asks for (`via`). At most 50, by name; `total` counts them all, and the list `GET /api/v1/packages?format=&dependsOn=` shows
+         *     the rest. A dependent in a repository the caller may not read is neither listed nor counted, and is not read (Q-API-458). The
+         *     answer depends on nothing the caller may not read: a name no visible repository holds has its dependents answered all the same,
+         *     and a format whose versions name no dependencies (OCI, generic files) answers none. `whole` is true when the caller reads every
+         *     repository of the format (of `project`, when it is given) whole, which says nothing of the package. A remote repository's
+         *     upstream is not asked: what depends on a package there is the upstream's to know.
+         */
+        get: operations["listPackageDependents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/packages/{packageId}/versions": {
         parameters: {
             query?: never;
@@ -12532,6 +12564,36 @@ export interface components {
             exposureFingerprint: string;
             /** @description `endpoint_not_in_rules_mode`, `stored_versions_not_listed` or `stored_versions_truncated`. */
             warnings: string[];
+        };
+        /** @description The packages that depend on a package (R-API-086), at most 50, and how many there are. */
+        PackageDependents: {
+            items: components["schemas"]["PackageDependent"][];
+            /**
+             * Format: int64
+             * @description The dependent packages the caller may read, each once, also those past the bound.
+             */
+            total: number;
+            /** @description The caller reads every repository of the format (of the project asked) whole. */
+            whole: boolean;
+        };
+        /** @description A package that depends on another (R-API-086), by its newest visible version that does. Its texts are a publisher's. */
+        PackageDependent: {
+            packageId: string;
+            format: string;
+            /** @description The name the screens show. */
+            name: string;
+            /** @description The normalized name, which the package's address holds. */
+            key: string;
+            version: string;
+            relations: components["schemas"]["PackageDependentRelation"][];
+        };
+        PackageDependentRelation: {
+            /** @description The kind as the format names it (`dependencies`, `devDependencies`, `Depends`, `Recommends`); empty for a format with one list. */
+            kind: string;
+            /** @description The range or constraint as written; empty for none. */
+            range: string;
+            /** @description The name the version asks for, the package's own or a name the package provides. */
+            via: string;
         };
         /**
          * @description A package as the caller sees it (R-API-029): every member is computed from the versions the
@@ -27227,6 +27289,13 @@ export interface operations {
                 signed?: boolean;
                 keyword?: string;
                 /**
+                 * @description A package name of the one `format` asked (R-API-086): only the packages with a visible version that depends on it, or on a
+                 *     name it provides (Debian's `Provides`), in any kind (a development dependency too). The name is read by the format's name
+                 *     rule (NuGet's ID without case). It needs exactly one `format` whose versions name dependencies (`npm`, `nuget`, `deb`,
+                 *     `ansible`); otherwise `400 malformed_request`. What `GET /api/v1/packages/{packageId}/dependents` lists past its bound.
+                 */
+                dependsOn?: string;
+                /**
                  * @description `true` keeps the packages whose latest visible version is deprecated (R-API-085): its own deprecation or its package's
                  *     (an Ansible Galaxy collection). `false` is no filter.
                  */
@@ -27409,6 +27478,59 @@ export interface operations {
                 };
             };
             304: components["responses"]["NotModified"];
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listPackageDependents: {
+        parameters: {
+            query?: {
+                /** @description A project key; only the packages of the physical repositories of that project count, as in the package list. */
+                project?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The server-generated package identifier (R-API-029). */
+                packageId: components["parameters"]["PackageId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The dependents. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "packageId": "pkg_mfrgg3dpnzxgk4tfnvxw24q",
+                     *           "format": "npm",
+                     *           "name": "@team-a/app",
+                     *           "key": "@team-a/app",
+                     *           "version": "2.1.0",
+                     *           "relations": [
+                     *             {
+                     *               "kind": "dependencies",
+                     *               "range": "^1.4.0",
+                     *               "via": "@team-a/ui"
+                     *             }
+                     *           ]
+                     *         }
+                     *       ],
+                     *       "total": 1,
+                     *       "whole": false
+                     *     }
+                     */
+                    "application/json": components["schemas"]["PackageDependents"];
+                };
+            };
             401: components["responses"]["Unauthenticated"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];

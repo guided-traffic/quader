@@ -13593,6 +13593,43 @@ type PackageCopyright struct {
 	Truncated bool   `json:"truncated"`
 }
 
+// PackageDependent A package that depends on another (R-API-086), by its newest visible version that does. Its texts are a publisher's.
+type PackageDependent struct {
+	Format string `json:"format"`
+
+	// Key The normalized name, which the package's address holds.
+	Key string `json:"key"`
+
+	// Name The name the screens show.
+	Name      string                     `json:"name"`
+	PackageId string                     `json:"packageId"`
+	Relations []PackageDependentRelation `json:"relations"`
+	Version   string                     `json:"version"`
+}
+
+// PackageDependentRelation defines model for PackageDependentRelation.
+type PackageDependentRelation struct {
+	// Kind The kind as the format names it (`dependencies`, `devDependencies`, `Depends`, `Recommends`); empty for a format with one list.
+	Kind string `json:"kind"`
+
+	// Range The range or constraint as written; empty for none.
+	Range string `json:"range"`
+
+	// Via The name the version asks for, the package's own or a name the package provides.
+	Via string `json:"via"`
+}
+
+// PackageDependents The packages that depend on a package (R-API-086), at most 50, and how many there are.
+type PackageDependents struct {
+	Items []PackageDependent `json:"items"`
+
+	// Total The dependent packages the caller may read, each once, also those past the bound.
+	Total int64 `json:"total"`
+
+	// Whole The caller reads every repository of the format (of the project asked) whole.
+	Whole bool `json:"whole"`
+}
+
 // PackageDeprecation A deprecation as the package's format records it (R-API-085): what the publisher, or the upstream of a remote repository, said
 // is no longer to be used. A member the format does not carry is absent.
 type PackageDeprecation struct {
@@ -20648,6 +20685,12 @@ type ListPackagesParams struct {
 	Signed  *bool   `form:"signed,omitempty" json:"signed,omitempty"`
 	Keyword *string `form:"keyword,omitempty" json:"keyword,omitempty"`
 
+	// DependsOn A package name of the one `format` asked (R-API-086): only the packages with a visible version that depends on it, or on a
+	// name it provides (Debian's `Provides`), in any kind (a development dependency too). The name is read by the format's name
+	// rule (NuGet's ID without case). It needs exactly one `format` whose versions name dependencies (`npm`, `nuget`, `deb`,
+	// `ansible`); otherwise `400 malformed_request`. What `GET /api/v1/packages/{packageId}/dependents` lists past its bound.
+	DependsOn *string `form:"dependsOn,omitempty" json:"dependsOn,omitempty"`
+
 	// Deprecated `true` keeps the packages whose latest visible version is deprecated (R-API-085): its own deprecation or its package's
 	// (an Ansible Galaxy collection). `false` is no filter.
 	Deprecated *bool `form:"deprecated,omitempty" json:"deprecated,omitempty"`
@@ -20699,6 +20742,12 @@ type GetPackageNamespaceParams struct {
 type GetPackageParams struct {
 	// IfNoneMatch An ETag the client holds; a match answers `304` (R-API-012).
 	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
+}
+
+// ListPackageDependentsParams defines parameters for ListPackageDependents.
+type ListPackageDependentsParams struct {
+	// Project A project key; only the packages of the physical repositories of that project count, as in the package list.
+	Project *string `form:"project,omitempty" json:"project,omitempty"`
 }
 
 // ListPackageVersionsParams defines parameters for ListPackageVersions.
@@ -24015,6 +24064,9 @@ type ServerInterface interface {
 	// GetPackage Read a package
 	// (GET /api/v1/packages/{packageId})
 	GetPackage(w http.ResponseWriter, r *http.Request, packageId PackageId, params GetPackageParams)
+	// ListPackageDependents List the packages that depend on a package
+	// (GET /api/v1/packages/{packageId}/dependents)
+	ListPackageDependents(w http.ResponseWriter, r *http.Request, packageId PackageId, params ListPackageDependentsParams)
 	// ListPackageVersions List the versions of a package
 	// (GET /api/v1/packages/{packageId}/versions)
 	ListPackageVersions(w http.ResponseWriter, r *http.Request, packageId PackageId, params ListPackageVersionsParams)
@@ -28812,6 +28864,19 @@ func (siw *ServerInterfaceWrapper) ListPackages(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// ------------- Optional query parameter "dependsOn" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "dependsOn", r.URL.Query(), &params.DependsOn, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "dependsOn"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "dependsOn", Err: err})
+		}
+		return
+	}
+
 	// ------------- Optional query parameter "deprecated" -------------
 
 	err = runtime.BindQueryParameterWithOptions("form", true, false, "deprecated", r.URL.Query(), &params.Deprecated, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
@@ -29081,6 +29146,48 @@ func (siw *ServerInterfaceWrapper) GetPackage(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetPackage(w, r, packageId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPackageDependents operation middleware
+func (siw *ServerInterfaceWrapper) ListPackageDependents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "packageId" -------------
+	var packageId PackageId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "packageId", r.PathValue("packageId"), &packageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "packageId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPackageDependentsParams
+
+	// ------------- Optional query parameter "project" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "project", r.URL.Query(), &params.Project, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "project"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPackageDependents(w, r, packageId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -45144,6 +45251,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/namespace", wrapper.GetPackageNamespace)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/lookup", wrapper.LookupPackage)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}", wrapper.GetPackage)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/dependents", wrapper.ListPackageDependents)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions", wrapper.ListPackageVersions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}", wrapper.GetPackageVersion)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/readme", wrapper.GetPackageVersionReadme)

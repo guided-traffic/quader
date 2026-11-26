@@ -138,6 +138,43 @@ oldest copy as the primary one, ask the adapter for summary and details, and rea
 may ask about (npm's dist-tags) is read only when it asks. `ReadmeOf` asks for details and README. The repositories of a version are the physical
 repositories that hold it plus the virtual repositories that contain one of them and that the caller may read, local first.
 
+## Who depends on a package
+
+R-API-086, Q-API-455 to Q-API-459. The rows are kept in `package_dependencies` (migration 00139, [database.md](database.md#who-depends-on-what-00139));
+the read and the filter are the view's.
+
+| Path | Responsibility |
+|---|---|
+| [internal/packages/dependents/](../../internal/packages/dependents) | `Dependency`, `Put` (replaces a version's rows and marks it read by the extractor's version `Reader`), `VersionOfItem`, `Has` and `Formats` (the formats whose versions name dependencies), and `Fill`, the entry of the task `remote-describe` over each format's `Source` |
+| `Dependencies` and `DependencySource` of [npm](../../internal/formatdata/npm/dependencies.go), [nuget](../../internal/formatdata/nuget/dependencies.go), [deb](../../internal/formatdata/deb/dependencies.go), [ansible](../../internal/formatdata/ansible/dependencies.go) | Each format's extractor over its own stored row, with the format's name rule, and the read of its rows for the task |
+| [internal/packages/view/dependents.go](../../internal/packages/view/dependents.go) | `Service.Dependents` (the repositories of the format the scope reads, the names the package provides, `PackageViewDependents`) and the filter `dependsOn` of `List` (`PackageViewDependentVersions`) |
+| [internal/api/v1/dependents_api.go](../../internal/api/v1/dependents_api.go) | `GET /api/v1/packages/{packageId}/dependents`, and the reading of `dependsOn` for the list |
+| [web/src/app/features/packages/used-by.ts](../../web/src/app/features/packages/used-by.ts) | The section **Used by** of a version's page |
+
+**Where the rows are written.** In the transaction that writes the format's own row: npm's `Store.Publish` and `DescribeCached`, NuGet's
+`Store.InsertVersion` (a push and a fill), Debian's `RecordUpload` and `DescribeCached` (from the control paragraphs of every file of the
+version, by the item's version), Ansible Galaxy's `PutVersion`, `PutCachedVersion` and the reindex's `rebuildOne`. A new writer of one of
+those rows calls the format's `Dependencies` and `dependents.Put` beside it; a format that gains dependencies adds an extractor, a
+`Source`, its name to `dependents.formats`, a line in `startRemoteDescribe` and a unit case.
+
+**Privacy and time.** The read takes the repositories of the format the scope reads, whole or row by row, and walks
+`package_dependencies_by_name (repo_id, name)` for those alone; the list's visibility (`whole`, `rows`, `withheld`) applies to each row
+read. A repository the caller may not read is never walked.
+
+**Measured** (2026-11-26, `TestMeasureUsedBy` of [test/integration/querybudget](../../test/integration/querybudget/dependents_measure_test.go),
+`QUADER_TEST_MEASURE_DEPENDENTS=1`; 50,000 npm packages of one version each, 5,000 of them depending on `lib`, and a second repository of
+5,000 more that depend on it; median and slowest of twelve requests through a replica, after a first):
+
+| Caller | Used by | List `dependsOn=lib` | List without the filter |
+|---|---|---|---|
+| reads both repositories (10,000 dependents) | 31.4 ms, 34.5 ms | 160.6 ms, 171.9 ms | 288.1 ms, 295.3 ms |
+| reads the first only (5,000 dependents, 5,000 hidden) | 23.3 ms, 27.8 ms | 149.9 ms, 162.0 ms | 269.2 ms, 278.2 ms |
+
+The statements alone (`EXPLAIN ANALYZE`, the reader): `PackageViewDependents` 25 ms, `PackageViewDependentVersions` 20 ms,
+`PackageViewList` with the 5,000 ids 114 ms. Before the list was planned for its values when it carries ids (Q-API-459), the same list took
+1.5 s from the sixth request on (the cached generic plan compared every row with every id), and a hashed join tried in its place ran into
+the statement timeout under the generic plan.
+
 ## The list by content (Q-API-432)
 
 `GET …/versions?group=content` (`Service.Images` in [images.go](../../internal/packages/view/images.go), the handler's `versionListQuery` in

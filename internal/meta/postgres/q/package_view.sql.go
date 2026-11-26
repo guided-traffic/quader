@@ -68,6 +68,146 @@ func (q *Queries) PackageViewCandidates(ctx context.Context, arg PackageViewCand
 	return items, nil
 }
 
+const packageViewDependentVersions = `-- name: PackageViewDependentVersions :many
+SELECT DISTINCT d.version_id
+  FROM package_dependencies d
+  JOIN package_versions pv ON pv.id = d.version_id AND pv.trashed_at IS NULL
+  JOIN packages p ON p.id = pv.package_id
+ WHERE d.repo_id = ANY($1::bigint[]) AND d.name = ANY($2::text[]) AND NOT d.provides
+   AND p.name <> $3::text
+ LIMIT $4::int
+`
+
+type PackageViewDependentVersionsParams struct {
+	Repos   []int64
+	Names   []string
+	Self    string
+	MaxRows int32
+}
+
+// The versions in the repositories repos that depend on one of names, a package's own version excepted: the filter dependsOn of the
+// package list (R-API-086) keeps a package with a visible version among them, as the filter keyword does. The same walk as
+// PackageViewDependents, at most max_rows ids; the caller asks for one more than it accepts.
+func (q *Queries) PackageViewDependentVersions(ctx context.Context, arg PackageViewDependentVersionsParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, packageViewDependentVersions,
+		arg.Repos,
+		arg.Names,
+		arg.Self,
+		arg.MaxRows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var version_id int64
+		if err := rows.Scan(&version_id); err != nil {
+			return nil, err
+		}
+		items = append(items, version_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const packageViewDependents = `-- name: PackageViewDependents :many
+WITH vis AS (
+  SELECT d.version_id, d.name AS via, d.kind, d.range, pv.version, pv.sort_key, pv.created_at, COALESCE(pv.prerelease, false) AS prerelease,
+         (p.name COLLATE "C")::text AS name, p.display_name
+    FROM package_dependencies d
+    JOIN package_versions pv ON pv.id = d.version_id AND pv.trashed_at IS NULL
+    JOIN packages p ON p.id = pv.package_id
+   WHERE d.repo_id = ANY($1::bigint[]) AND d.name = ANY($2::text[]) AND NOT d.provides
+     AND p.name <> $3::text
+     AND NOT (pv.id = ANY($4::bigint[]))
+     AND (p.repo_id = ANY($5::bigint[])
+          OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($6::text[]))
+), newest AS (
+  SELECT DISTINCT ON (v.name) v.name, v.display_name, v.version, v.version_id
+    FROM vis v
+   ORDER BY v.name, v.prerelease, v.sort_key DESC NULLS LAST, v.created_at DESC, v.version_id DESC
+), page AS (
+  SELECT n.name, n.display_name, n.version, n.version_id, count(*) OVER ()::bigint AS total
+    FROM newest n
+   ORDER BY n.name
+   LIMIT $7::int
+)
+SELECT pg.name, pg.display_name, pg.version::text AS version, pg.total,
+       array_agg(v.kind::text ORDER BY v.kind, v.via, v.range)::text[] AS kinds,
+       array_agg(v.range::text ORDER BY v.kind, v.via, v.range)::text[] AS ranges,
+       array_agg(v.via::text ORDER BY v.kind, v.via, v.range)::text[] AS vias
+  FROM page pg
+  JOIN vis v ON v.version_id = pg.version_id
+ GROUP BY pg.name, pg.display_name, pg.version, pg.total
+ ORDER BY pg.name
+`
+
+type PackageViewDependentsParams struct {
+	Repos    []int64
+	Names    []string
+	Self     string
+	Withheld []int64
+	Whole    []int64
+	Rows     []string
+	MaxRows  int32
+}
+
+type PackageViewDependentsRow struct {
+	Name        string
+	DisplayName string
+	Version     string
+	Total       int64
+	Kinds       []string
+	Ranges      []string
+	Vias        []string
+}
+
+// The packages that depend on one of names (the package's own name and the names it provides), each by its newest visible version that
+// does (R-API-086, Q-API-456): a release before a pre-release, the highest key first, then the newest. repos are the repositories of the
+// format the caller may read: the index package_dependencies_by_name is walked for each of them alone, so a dependent in a repository
+// the caller may not read is neither read nor counted, and its existence costs the walk nothing (Q-API-458). The visibility of each row
+// is then the list's (whole, rows, withheld). self is the package's own name, which is no dependent of itself. total counts the
+// dependent packages, each once, whatever max_rows returns; each answered package carries its version's relations side by side (the
+// kind as the format names it, the range as written, and the name matched: the package's or a name it provides).
+func (q *Queries) PackageViewDependents(ctx context.Context, arg PackageViewDependentsParams) ([]PackageViewDependentsRow, error) {
+	rows, err := q.db.Query(ctx, packageViewDependents,
+		arg.Repos,
+		arg.Names,
+		arg.Self,
+		arg.Withheld,
+		arg.Whole,
+		arg.Rows,
+		arg.MaxRows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PackageViewDependentsRow{}
+	for rows.Next() {
+		var i PackageViewDependentsRow
+		if err := rows.Scan(
+			&i.Name,
+			&i.DisplayName,
+			&i.Version,
+			&i.Total,
+			&i.Kinds,
+			&i.Ranges,
+			&i.Vias,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const packageViewFiles = `-- name: PackageViewFiles :many
 SELECT i.path, i.size, encode(i.blob_sha256, 'hex')::text AS sha256
   FROM items i
@@ -826,12 +966,13 @@ WITH vis AS (
   HAVING ($14::text = '' OR position(lower($14::text) in lower(v.name)) > 0
           OR position(lower($14::text) in lower(min(v.display_name))) > 0 OR bool_or(qr.id IS NOT NULL))
      AND ($17::text = '' OR bool_or(v.vid = ANY($18::bigint[])))
-     AND (NOT $19::boolean OR min(v.created_at) >= NULLIF($20::text, '')::timestamptz)
-     AND (NOT $21::boolean OR min(v.created_at) < NULLIF($22::text, '')::timestamptz)
+     AND (NOT $19::boolean OR bool_or(v.vid = ANY($20::bigint[])))
+     AND (NOT $21::boolean OR min(v.created_at) >= NULLIF($22::text, '')::timestamptz)
+     AND (NOT $23::boolean OR min(v.created_at) < NULLIF($24::text, '')::timestamptz)
 ), page AS (
   SELECT g.format, g.name, g.display_name, g.created_at, g.updated_at, g.version_count, g.relevance
     FROM grouped g
-   WHERE (NOT $16::boolean OR g.latest_vid = ANY($23::bigint[]))
+   WHERE (NOT $16::boolean OR g.latest_vid = ANY($25::bigint[]))
      AND (NOT $15::boolean OR EXISTS (
            SELECT 1
              FROM package_version_listing lv
@@ -845,20 +986,20 @@ WITH vis AS (
               AND (SELECT t.state FROM signature_trust t
                     WHERE t.signature_id = s.id AND (t.project_id IS NULL OR t.project_id = lr.project_id)
                     ORDER BY t.project_id NULLS LAST LIMIT 1) IN ('internal', 'public')))
-     AND (NOT $24::boolean
+     AND (NOT $26::boolean
       OR CASE $1::text
            WHEN 'createdAt' THEN CASE WHEN $2::boolean
-                THEN (g.created_at, g.name, g.format) < (NULLIF($25::text, '')::timestamptz, $26::text, $27::text)
-                ELSE (g.created_at, g.name, g.format) > (NULLIF($25::text, '')::timestamptz, $26::text, $27::text) END
+                THEN (g.created_at, g.name, g.format) < (NULLIF($27::text, '')::timestamptz, $28::text, $29::text)
+                ELSE (g.created_at, g.name, g.format) > (NULLIF($27::text, '')::timestamptz, $28::text, $29::text) END
            WHEN 'updatedAt' THEN CASE WHEN $2::boolean
-                THEN (g.updated_at, g.name, g.format) < (NULLIF($25::text, '')::timestamptz, $26::text, $27::text)
-                ELSE (g.updated_at, g.name, g.format) > (NULLIF($25::text, '')::timestamptz, $26::text, $27::text) END
+                THEN (g.updated_at, g.name, g.format) < (NULLIF($27::text, '')::timestamptz, $28::text, $29::text)
+                ELSE (g.updated_at, g.name, g.format) > (NULLIF($27::text, '')::timestamptz, $28::text, $29::text) END
            WHEN 'relevance' THEN CASE WHEN $2::boolean
-                THEN (-g.relevance, g.name, g.format) < (-$28::bigint, $26::text, $27::text)
-                ELSE (-g.relevance, g.name, g.format) > (-$28::bigint, $26::text, $27::text) END
+                THEN (-g.relevance, g.name, g.format) < (-$30::bigint, $28::text, $29::text)
+                ELSE (-g.relevance, g.name, g.format) > (-$30::bigint, $28::text, $29::text) END
            ELSE CASE WHEN $2::boolean
-                THEN (g.name, g.format) < ($26::text, $27::text)
-                ELSE (g.name, g.format) > ($26::text, $27::text) END
+                THEN (g.name, g.format) < ($28::text, $29::text)
+                ELSE (g.name, g.format) > ($28::text, $29::text) END
          END)
    ORDER BY
    (CASE WHEN $1::text = 'createdAt' AND NOT $2::boolean THEN g.created_at END) ASC NULLS LAST,
@@ -871,7 +1012,7 @@ WITH vis AS (
    (CASE WHEN $2::boolean THEN g.name END) DESC NULLS LAST,
    (CASE WHEN NOT $2::boolean THEN g.format END) ASC NULLS LAST,
    (CASE WHEN $2::boolean THEN g.format END) DESC NULLS LAST
-   LIMIT $29::int
+   LIMIT $31::int
 ), holders AS (
   -- The package rows of the page's packages in the scope.
   SELECT g.format, g.name, p.id AS package_id, p.repo_id, p.name AS pname
@@ -887,7 +1028,7 @@ WITH vis AS (
             FROM holders h
             JOIN package_versions pv ON pv.package_id = h.package_id AND pv.trashed_at IS NULL
             JOIN item_download_stats s ON s.item_id = pv.lead_item_id
-           WHERE NOT (h.format = ANY($30::text[]) OR h.format = ANY($31::text[]))
+           WHERE NOT (h.format = ANY($32::text[]) OR h.format = ANY($33::text[]))
              AND NOT (pv.id = ANY($3::bigint[]))
              AND (h.repo_id = ANY($10::bigint[])
                   OR concat_ws(chr(31), h.repo_id::text, h.pname, pv.version) = ANY($11::text[]))
@@ -898,7 +1039,7 @@ WITH vis AS (
             JOIN package_versions pv ON pv.package_id = h.package_id AND pv.trashed_at IS NULL
             JOIN items i ON i.version_id = pv.id AND i.kind = 'file'
             JOIN item_download_stats s ON s.item_id = i.id
-           WHERE h.format = ANY($30::text[])
+           WHERE h.format = ANY($32::text[])
              AND NOT (pv.id = ANY($3::bigint[]))
              AND (h.repo_id = ANY($10::bigint[])
                   OR concat_ws(chr(31), h.repo_id::text, h.pname, pv.version) = ANY($11::text[]))
@@ -922,7 +1063,7 @@ WITH vis AS (
             JOIN items i ON i.repo_id = h.repo_id AND i.kind = 'file'
                         AND i.path >= h.pname || '/' AND i.path < h.pname || '0' AND starts_with(i.path, h.pname || '/')
             JOIN item_download_stats s ON s.item_id = i.id
-           WHERE h.format = ANY($31::text[])) f
+           WHERE h.format = ANY($33::text[])) f
    GROUP BY f.format, f.name
 )
 SELECT g.format, g.name, g.display_name, g.created_at, g.updated_at, g.version_count, COALESCE(d.downloads, 0)::bigint AS downloads,
@@ -961,6 +1102,8 @@ type PackageViewListParams struct {
 	Deprecated     bool
 	Keyword        string
 	KeywordIds     []int64
+	Depends        bool
+	DependsIds     []int64
 	HasFrom        bool
 	CreatedFrom    string
 	HasTo          bool
@@ -1022,6 +1165,9 @@ type PackageViewListRow struct {
 // one latest (latest_vid) by the rule of latestOf: a release before a pre-release before a version the format does not rank, the
 // highest key first and among unranked ones the newest; a row whose key is not filled yet counts as unranked. The aggregate that picks
 // it reads nothing while neither filter is asked (FILTER).
+// depends keeps the packages with a visible version among depends_ids, the versions that depend on the name the filter dependsOn asks
+// (R-API-086, PackageViewDependentVersions). A list of ids is a constant only in a custom plan, where "= ANY" is hashed and the clause of
+// a filter not asked is planned away; the caller plans the statement for its values whenever a list of ids is given (Q-API-459).
 // exact_name, when set, restricts the rows to one package. Names are ordered bytewise
 // (collation C), so the order does not depend on the database's locale and the keyset
 // comparison of a cursor means the same on every replica.
@@ -1053,6 +1199,8 @@ func (q *Queries) PackageViewList(ctx context.Context, arg PackageViewListParams
 		arg.Deprecated,
 		arg.Keyword,
 		arg.KeywordIds,
+		arg.Depends,
+		arg.DependsIds,
 		arg.HasFrom,
 		arg.CreatedFrom,
 		arg.HasTo,
@@ -1087,6 +1235,56 @@ func (q *Queries) PackageViewList(ctx context.Context, arg PackageViewListParams
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const packageViewProvided = `-- name: PackageViewProvided :many
+SELECT DISTINCT d.name::text AS name
+  FROM packages p
+  JOIN package_versions pv ON pv.package_id = p.id AND pv.trashed_at IS NULL
+  JOIN package_dependencies d ON d.version_id = pv.id AND d.provides
+ WHERE p.repo_id = ANY($1::bigint[]) AND p.name = $2::text
+   AND NOT (pv.id = ANY($3::bigint[]))
+   AND (p.repo_id = ANY($4::bigint[])
+        OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($5::text[]))
+ ORDER BY 1
+ LIMIT 64
+`
+
+type PackageViewProvidedParams struct {
+	Repos    []int64
+	Name     string
+	Withheld []int64
+	Whole    []int64
+	Rows     []string
+}
+
+// The names the visible versions of a package provide (Debian's Provides, R-API-086, Q-API-457): a package that depends on one of them
+// uses this package as well. repos are the repositories of the package's format the caller may read (the scope's, never more), so that
+// the walk touches no package of another repository.
+func (q *Queries) PackageViewProvided(ctx context.Context, arg PackageViewProvidedParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, packageViewProvided,
+		arg.Repos,
+		arg.Name,
+		arg.Withheld,
+		arg.Whole,
+		arg.Rows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		items = append(items, name)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

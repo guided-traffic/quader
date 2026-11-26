@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/packages/view"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
@@ -58,6 +59,11 @@ func TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph(t *testing
 	// The relations are sent parsed (R-DEB-038).
 	if rel, _ := md["relations"].(map[string]any); !strings.Contains(jsonText(t, rel["depends"]), `{"name":"libquader1","op":">=","version":"1.2"}`) {
 		t.Errorf("metadata.relations %v", md["relations"])
+	}
+	// The job wrote who depends on what (api-and-ui.md R-API-086): the cached package uses libquader1, on the replica of the role api.
+	if a := e.st.Do(apiRep, "GET", "/api/v1/packages/"+view.ID("deb", "libquader1")+"/dependents", e.admin, nil); a.Status != http.StatusOK ||
+		!strings.Contains(string(a.Body), `"name":"quader-hello"`) || !strings.Contains(string(a.Body), `{"kind":"Depends","range":"\u003e= 1.2","via":"libquader1"}`) {
+		t.Errorf("the users of libquader1: %d %s", a.Status, a.Body)
 	}
 	// The job that wrote the row queued the reading of the cached file's data archive (R-DEB-039): the file list answers.
 	eventually(t, 30*time.Second, "the data archive read", func() bool {

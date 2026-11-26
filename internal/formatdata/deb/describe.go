@@ -132,8 +132,11 @@ func (s *Store) DescribeCached(ctx context.Context, repoID int64, pkg string) er
 				return err
 			}
 			row.ItemID, row.RepoID = f.ItemID, repoID
-			_, err := qs.DebPutCachedRow(ctx, row)
-			return err
+			if _, err := qs.DebPutCachedRow(ctx, row); err != nil {
+				return err
+			}
+			// Who depends on what (R-API-086): the version's relations with this file's.
+			return putDependencies(ctx, qs, f.ItemID)
 		}); err != nil {
 			return err
 		}

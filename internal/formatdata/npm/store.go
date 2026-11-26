@@ -26,6 +26,7 @@ import (
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/packages/dependents"
 )
 
 var errForeignTx = errors.New("npm: the transaction is not one of internal/meta/postgres")
@@ -196,6 +197,10 @@ func (s *Store) Publish(ctx context.Context, tx meta.Tx, in rows.PublishInput) e
 		Readme: clean(in.Readme, maxReadme), ReadmeFilename: clean(in.ReadmeFilename, 255),
 		PublishTag: in.Tag, PublishedAt: stamp(in.At),
 	}); err != nil {
+		return err
+	}
+	// Who depends on what (R-API-086): the names of the manifest, in the commit.
+	if err := dependents.Put(ctx, qs, in.VersionID, Dependencies(in.Manifest)); err != nil {
 		return err
 	}
 	if err := setTags(ctx, qs, in.PackageID, in.Tags, in.At); err != nil {

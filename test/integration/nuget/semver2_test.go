@@ -31,6 +31,11 @@ func semver2Push(t *testing.T, e *wenv, r *testenv.Replica) {
 	if got := e.semver2("acme.widgets", "1.1.0"); got != "true" {
 		t.Fatalf("this build stored is_semver2 = %s for a SemVer 2 dependency bound", got)
 	}
+	// The push wrote who depends on what (api-and-ui.md R-API-086): the dependency's ID in lower case, with its range, in one list.
+	if got := e.st.Text(`SELECT COALESCE(string_agg(d.name || ' ' || d.range || ' "' || d.kind || '"', ', ' ORDER BY d.name), '') FROM package_dependencies d
+		JOIN package_versions pv ON pv.id = d.version_id JOIN packages p ON p.id = pv.package_id WHERE p.name = 'acme.plain'`); got != `contoso.util [1.0.0, 2.0.0) ""` {
+		t.Errorf("the dependencies of Acme.Plain 1.0.0: %q", got)
+	}
 	e.st.Exec(`UPDATE nuget_version SET is_semver2 = false WHERE lower_id = 'acme.widgets' AND original_version = '1.1.0'`)
 }
 

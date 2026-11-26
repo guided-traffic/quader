@@ -880,6 +880,18 @@ lower(name)`, built `CONCURRENTLY`, so the search field's suggestions find a rol
 the rows whose display name is more than the name's casing (Ansible roles today) and writes no row; `name_words` stays the name's, since
 a stored generated column that took the display name would rewrite every package.
 
+## Who depends on what (00139)
+
+[00139_package_dependencies](../../internal/meta/postgres/migrations/00139_package_dependencies.sql) adds `package_dependencies`, one row
+per name a stored version depends on (or provides: `provides`), with its kind as the format names it and its range as written
+([api-and-ui.md](../spec/api-and-ui.md) R-API-086, Q-API-455), and `package_dependency_reads`, the mark of a version whose dependencies
+the extractor of version `reader` read. Both reference `package_versions` with a cascade and have no key to `repositories`: the rows go
+with their version, so they are in neither list of the purge's convention test and `upstream_repository_purge` is unchanged.
+`repo_id` repeats the version's repository for the index `package_dependencies_by_name (repo_id, name) INCLUDE (version_id, provides)`,
+which the read walks for the repositories the caller may read alone (Q-API-458). Both tables are derived and registered `transient`
+([tables_dependencies.go](../../internal/meta/postgres/tables_dependencies.go)): a backup does not export them, and the task
+`remote-describe` reads the formats' stored rows again after a restore. Expand phase only.
+
 ## The search of Ansible Galaxy collections (00138)
 
 [00138_ansible_collection_search](../../internal/meta/postgres/migrations/00138_ansible_collection_search.sql) adds the GIN index

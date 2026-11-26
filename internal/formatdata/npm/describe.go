@@ -16,6 +16,7 @@ import (
 	"github.com/guided-traffic/quader/internal/jobs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/packages/dependents"
 )
 
 // The description of the versions a remote repository cached (R-NPM-050): the job npm-remote-describe writes the row of npm_versions of
@@ -164,8 +165,11 @@ func (s *Store) DescribeCached(ctx context.Context, repoID int64, name string) e
 			if err != nil {
 				return err
 			}
-			_, err = qs.NPMPutCachedVersion(ctx, row)
-			return err
+			if _, err = qs.NPMPutCachedVersion(ctx, row); err != nil {
+				return err
+			}
+			// Who depends on what, from the manifest the row holds now (R-API-086).
+			return dependents.Put(ctx, qs, row.VersionID, Dependencies([]byte(row.Manifest)))
 		}); err != nil {
 			return err
 		}

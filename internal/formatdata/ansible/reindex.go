@@ -151,6 +151,10 @@ func (s localStore) rebuildOne(ctx context.Context, repoID int64, a q.AnsibleArc
 			}
 			created = true
 		}
+		// Who depends on what (R-API-086): the archive's manifest, as the reindex read it again.
+		if err := putDependencies(ctx, qs, a.ItemID, Dependencies(facts.Dependencies)); err != nil {
+			return err
+		}
 		_, err = qs.AnsibleBumpPackage(ctx, q.AnsibleBumpPackageParams{RepoID: repoID, Name: name})
 		return err
 	})

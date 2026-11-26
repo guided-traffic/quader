@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/guided-traffic/quader/internal/packages/view"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
@@ -20,6 +21,12 @@ func TestR_ANS_060_ACollectionIsDeprecatedThroughTheManagementAPIAndServed(t *te
 	e.mustPublish("1.1.0")
 	// The management operation and the screens' reads go to a replica of the role api, which serves no package protocol (R-ARCH-001).
 	m := e.st.Start(t, testenv.ReplicaOptions{Name: "api-a", Role: "api"})
+	// The publishes wrote who depends on what (api-and-ui.md R-API-086): acme.tools uses community.general, by its newest version, read
+	// on the replica of the role api.
+	if ans := e.st.Do(m, "GET", "/api/v1/packages/"+view.ID("ansible", "community.general")+"/dependents", e.tokC, nil); ans.Status != 200 ||
+		!strings.Contains(string(ans.Body), `"relations":[{"kind":"","range":"\u003e=1.0.0","via":"community.general"}],"version":"1.1.0"`) {
+		t.Errorf("the users of community.general: %d %s", ans.Status, ans.Body)
+	}
 	const op = "/api/v1/projects/" + project + "/repositories/" + repo + "/packages/acme.tools/deprecation"
 	if ans := e.st.Do(m, "PUT", op, e.tokC, map[string]any{"message": "x"}); ans.Status != 403 {
 		t.Errorf("a reader: %d %s", ans.Status, ans.Body)

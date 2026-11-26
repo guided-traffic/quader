@@ -9,6 +9,9 @@
 // blobs were kept or whose stored configuration is not read: it reads the stored manifest and configuration, never an upstream.
 // An Ansible Galaxy entry queues ansible-reindex (R-ANS-044, R-ANS-053, Q-ANS-99) for every local or remote Ansible Galaxy repository
 // with a version whose documentation or changelog an older generator made or never read: the reindex reads the stored archives.
+// An entry of internal/packages/dependents (dependents.Fill, api-and-ui.md R-API-086) writes the rows of who depends on what for every
+// version of npm, NuGet, Debian and Ansible Galaxy whose dependencies the current extractor has not read, from the formats' stored rows;
+// it queues no job and reports none queued, so the run's bounds are its batches.
 //
 // A worker that starts queues a run when such a package exists (the start-up rule of R-HA-022's background data migrations); the
 // scheduler runs it once a day, and an operator runs it with POST /api/v1/system/tasks/remote-describe/run (R-OPS-019). A run walks the

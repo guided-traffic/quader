@@ -109,6 +109,10 @@ func (s localStore) RecordUpload(ctx context.Context, tx meta.Tx, in rows.Upload
 	}
 	res.Created = n == 1
 	if res.Created {
+		// Who depends on what (R-API-086): the version's relations with this file's.
+		if err := putDependencies(ctx, qs, in.ItemID); err != nil {
+			return res, err
+		}
 		// The data archive is read after the upload, by a job (R-DEB-039): its changelog, copyright and file list.
 		if _, err := s.queueContents(ctx, tx, in.RepoID, in.Package, 0); err != nil {
 			return res, err

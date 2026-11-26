@@ -35,11 +35,15 @@ func (s remoteStore) PutCachedVersion(ctx context.Context, tx meta.Tx, v rows.Ve
 	if len(v.CollectionInfo) == 0 {
 		v.CollectionInfo = json.RawMessage(`{}`)
 	}
-	return qs.AnsibleUpsertVersion(ctx, q.AnsibleUpsertVersionParams{
+	if err := qs.AnsibleUpsertVersion(ctx, q.AnsibleUpsertVersionParams{
 		RepoID: v.RepoID, Name: v.Name, Version: v.Version, SortKey: v.SortKey, ItemID: v.ItemID, Sha256: v.SHA256[:], Size: v.Size,
 		RequiresAnsible: v.RequiresAnsible, Dependencies: depsJSON, CollectionInfo: v.CollectionInfo, PublishedBy: noActor,
 		PublishedAt: stamp(v.PublishedAt),
-	})
+	}); err != nil {
+		return err
+	}
+	// Who depends on what (R-API-086), in the fill's commit.
+	return putDependencies(ctx, qs, v.ItemID, Dependencies(deps))
 }
 
 // RecordAnnounced records the digests of the version documents a fill stores, in the fill's transaction (the cache entry of each
