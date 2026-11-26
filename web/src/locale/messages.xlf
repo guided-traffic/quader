@@ -15393,9 +15393,41 @@
         <source>Other</source>
       </segment>
     </unit>
+    <unit id="pkg.deprecate.title-change-collection">
+      <notes>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:52,53</note>
+      </notes>
+      <segment>
+        <source>Change the deprecation of the collection <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ data.name }}"/></pc></source>
+      </segment>
+    </unit>
+    <unit id="pkg.deprecate.title-change">
+      <notes>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:56,57</note>
+      </notes>
+      <segment>
+        <source>Change the deprecation of <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ data.name }}"/> <ph id="2" equiv="INTERPOLATION_1" disp="{{ data.version }}"/></pc></source>
+      </segment>
+    </unit>
+    <unit id="pkg.deprecate.title-collection">
+      <notes>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:60,61</note>
+      </notes>
+      <segment>
+        <source>Deprecate the collection <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ data.name }}"/></pc></source>
+      </segment>
+    </unit>
+    <unit id="pkg.deprecate.title">
+      <notes>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:62,63</note>
+      </notes>
+      <segment>
+        <source>Deprecate <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ data.name }}"/> <ph id="2" equiv="INTERPOLATION_1" disp="{{ data.version }}"/></pc></source>
+      </segment>
+    </unit>
     <unit id="pkg.deprecate.repository">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:52,54</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:69,71</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -15403,7 +15435,7 @@
     </unit>
     <unit id="pkg.deprecate.reasons">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:67,68</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:84,85</note>
       </notes>
       <segment>
         <source>Reason</source>
@@ -15411,7 +15443,7 @@
     </unit>
     <unit id="pkg.deprecate.alternate">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:90,91</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:107,108</note>
       </notes>
       <segment>
         <source>Use instead (optional)</source>
@@ -15419,7 +15451,7 @@
     </unit>
     <unit id="pkg.deprecate.alternate-hint">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:92,94</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:109,111</note>
       </notes>
       <segment>
         <source>The ID of the package to use in its place.</source>
@@ -15427,7 +15459,7 @@
     </unit>
     <unit id="pkg.deprecate.range">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:99,100</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:116,117</note>
       </notes>
       <segment>
         <source>Its versions</source>
@@ -15435,7 +15467,7 @@
     </unit>
     <unit id="pkg.deprecate.range-hint">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:101,103</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:118,120</note>
       </notes>
       <segment>
         <source>A NuGet range such as [3.0.0, ); empty for any.</source>
@@ -15443,47 +15475,15 @@
     </unit>
     <unit id="pkg.deprecate.cancel">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:110,111</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:127,128</note>
       </notes>
       <segment>
         <source>Cancel</source>
       </segment>
     </unit>
-    <unit id="pkg.deprecate.title-change-collection">
-      <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:168</note>
-      </notes>
-      <segment>
-        <source>Change the deprecation of the collection <ph id="0" equiv="name" disp="this.data.name"/></source>
-      </segment>
-    </unit>
-    <unit id="pkg.deprecate.title-change">
-      <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:169</note>
-      </notes>
-      <segment>
-        <source>Change the deprecation of <ph id="0" equiv="name" disp="this.data.name"/> <ph id="1" equiv="version" disp="this.data.version"/></source>
-      </segment>
-    </unit>
-    <unit id="pkg.deprecate.title-collection">
-      <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:171</note>
-      </notes>
-      <segment>
-        <source>Deprecate the collection <ph id="0" equiv="name" disp="this.data.name"/></source>
-      </segment>
-    </unit>
-    <unit id="pkg.deprecate.title">
-      <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:172</note>
-      </notes>
-      <segment>
-        <source>Deprecate <ph id="0" equiv="name" disp="this.data.name"/> <ph id="1" equiv="version" disp="this.data.version"/></source>
-      </segment>
-    </unit>
     <unit id="pkg.deprecate.save">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:174</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:184</note>
       </notes>
       <segment>
         <source>Save the deprecation</source>
@@ -15491,7 +15491,7 @@
     </unit>
     <unit id="pkg.deprecate.confirm">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:175</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:185</note>
       </notes>
       <segment>
         <source>Deprecate</source>
@@ -15499,7 +15499,7 @@
     </unit>
     <unit id="pkg.deprecate.effect-npm">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:178</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:188</note>
       </notes>
       <segment>
         <source>npm install prints the message as a warning, and a range installs another version where one is not deprecated.</source>
@@ -15507,7 +15507,7 @@
     </unit>
     <unit id="pkg.deprecate.effect-nuget">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:180</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:190</note>
       </notes>
       <segment>
         <source>Visual Studio and dotnet list package --deprecated show the reasons and the package to use instead. Restores go on as before.</source>
@@ -15515,7 +15515,7 @@
     </unit>
     <unit id="pkg.deprecate.effect-ansible">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:181</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:191</note>
       </notes>
       <segment>
         <source>Every version of the collection is marked deprecated. ansible-galaxy installs it as before and shows nothing.</source>
@@ -15523,7 +15523,7 @@
     </unit>
     <unit id="pkg.deprecate.message">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:183</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:193</note>
       </notes>
       <segment>
         <source>Message</source>
@@ -15531,7 +15531,7 @@
     </unit>
     <unit id="pkg.deprecate.message-optional">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:184</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:194</note>
       </notes>
       <segment>
         <source>Message (optional)</source>
@@ -15539,7 +15539,7 @@
     </unit>
     <unit id="pkg.deprecate.message-hint-npm">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:186</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:196</note>
       </notes>
       <segment>
         <source>Plain text, at most 1,024 characters.</source>
@@ -15547,7 +15547,7 @@
     </unit>
     <unit id="pkg.deprecate.message-hint-quader">
       <notes>
-        <note category="location">src/app/features/packages/deprecation-dialog.ts:187</note>
+        <note category="location">src/app/features/packages/deprecation-dialog.ts:197</note>
       </notes>
       <segment>
         <source>Plain text, shown on Quader&apos;s pages.</source>

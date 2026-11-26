@@ -44,7 +44,24 @@ export function reasonText(reason: string): string {
   selector: 'quader-deprecation-dialog',
   imports: [Busy, DialogTitle, DialogClose, ErrorNotice, TextField],
   template: `
-    <h2 quaderDialogTitle>{{ title }}</h2>
+    <!-- The package's name is the publisher's word: a token that breaks where it must, never translated (R-UI-171). -->
+    <h2 quaderDialogTitle>
+      @if (data.current) {
+        @if (collection) {
+          <ng-container i18n="@@pkg.deprecate.title-change-collection"
+            >Change the deprecation of the collection <span translate="no">{{ data.name }}</span></ng-container
+          >
+        } @else {
+          <ng-container i18n="@@pkg.deprecate.title-change"
+            >Change the deprecation of <span translate="no">{{ data.name }} {{ data.version }}</span></ng-container
+          >
+        }
+      } @else if (collection) {
+        <ng-container i18n="@@pkg.deprecate.title-collection">Deprecate the collection <span translate="no">{{ data.name }}</span></ng-container>
+      } @else {
+        <ng-container i18n="@@pkg.deprecate.title">Deprecate <span translate="no">{{ data.name }} {{ data.version }}</span></ng-container>
+      }
+    </h2>
     <div class="dialog-body">
       <p class="lead">{{ effect }}</p>
       @if (data.repositories.length > 1) {
@@ -144,7 +161,7 @@ export class DeprecationDialog {
 
   protected readonly npm = this.data.format === 'npm';
   protected readonly nuget = this.data.format === 'nuget';
-  private readonly collection = this.data.format === 'ansible';
+  protected readonly collection = this.data.format === 'ansible';
   protected readonly reasons = NUGET_REASONS;
   protected readonly reasonText = reasonText;
 
@@ -163,13 +180,6 @@ export class DeprecationDialog {
     () => (!this.npm || this.message().trim() !== '') && (!this.nuget || this.chosen().length > 0) && this.repository() !== '',
   );
 
-  protected readonly title = this.data.current
-    ? this.collection
-      ? $localize`:@@pkg.deprecate.title-change-collection:Change the deprecation of the collection ${this.data.name}:name:`
-      : $localize`:@@pkg.deprecate.title-change:Change the deprecation of ${this.data.name}:name: ${this.data.version}:version:`
-    : this.collection
-      ? $localize`:@@pkg.deprecate.title-collection:Deprecate the collection ${this.data.name}:name:`
-      : $localize`:@@pkg.deprecate.title:Deprecate ${this.data.name}:name: ${this.data.version}:version:`;
   protected readonly confirmText = this.data.current
     ? $localize`:@@pkg.deprecate.save:Save the deprecation`
     : $localize`:@@pkg.deprecate.confirm:Deprecate`;
