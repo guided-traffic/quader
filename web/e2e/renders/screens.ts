@@ -3034,7 +3034,7 @@ export const screens: readonly Screen[] = [
   { id: 'package-ansible-thirty', path: pkg(O, { format: 'ansible', name: collectionName }), kinds: ['plain'], walk: manyVersionsHead(), de: true },
   // The head of a version's page per format: the verb's button and its panel (Q-UI-1241).
   { id: 'package-version-oci-head', path: ver(P, ociPackage, '1.4.0'), kinds: ['plain'], walk: versionHead, de: true },
-  { id: 'package-version-deb-head', path: ver(O, debPackage, debPackage.versions[1]), kinds: ['plain'], walk: versionHead, de: true },
+  { id: 'package-version-deb-head', path: ver(O, debPackage, debPackage.versions[1]), kinds: ['plain'], walk: versionHead, de: true, expected: debRelationLookups },
   { id: 'package-version-nuget-head', path: ver(O, nugetPackage, nugetPackage.versions[1]), kinds: ['plain'], walk: versionHead, de: true },
   { id: 'package-version-npm', path: ver(P, npmPackage, '1.1.0'), kinds: all, de: true },
   { id: 'package-version-npm-graded', path: ver(P, gradedPackage, gradedPackage.version), kinds: all },
