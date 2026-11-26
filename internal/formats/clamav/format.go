@@ -66,7 +66,8 @@ func (Format) Descriptor() formats.Descriptor {
 			PackageNames:     true,
 			// A rate limit answers 503 (R-CLAMAV-005, Rendered below), and so do a Bastion's own refusals of its limits on the
 			// format's family (bastion.md R-BAS-056).
-			Bastion: catalog.BastionFacts{RateLimitedStatus: http.StatusServiceUnavailable},
+			// freshclam reads the status alone, so the body is problem details, for a person who asks with curl.
+			Bastion: catalog.BastionFacts{RateLimitedStatus: http.StatusServiceUnavailable, ErrorShape: catalog.ShapeProblem},
 		},
 		ContractVersion: formats.ContractVersion,
 		Names:           dbNames{},

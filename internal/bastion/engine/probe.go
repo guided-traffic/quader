@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/guard"
-	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -21,22 +20,35 @@ type probeRec struct {
 	until time.Time
 }
 
-// probeResult is what the probe leader hands to its waiters: the answer, or the route that takes a body.
+// probeResult is what the probe leader hands to its waiters: the answer, or the error.
 type probeResult struct {
-	ref      *refusal
-	withBody bool
-	err      error
+	ref *refusal
+	err error
 	// cached is set when the leader found the answer already kept: a request that passed the cache check
 	// while another flight of the key was still running, and led its own flight only after that one ended.
 	cached bool
 }
 
-// write is the write flow of R-BAS-014 (Q-BAS-38): a method other than GET and HEAD is first sent to the main
-// installation as a bodiless probe, without the caller's credential. The Bastion reads none of the caller's
-// body while it waits.
+// write is the flow of a method other than GET and HEAD (R-BAS-014, R-BAS-095). A read route that takes a body, as the
+// format table's readWithBody lists it, is forwarded with its body and the caller's credential. Every other request is a
+// write: it is sent to the main installation as a bodiless probe without the caller's credential (Q-BAS-38), whose refusal
+// the Bastion keeps and replays; the Bastion reads none of the caller's body while it waits. The probe goes with package E15,
+// which refuses a write at the Bastion itself.
 func (e *engine) write(q *rq) {
 	if max := int64(e.cfg.Main.MaxForwardedBody); q.r.ContentLength > max {
 		e.refuse(q, errs.E(errs.TooLarge, errs.CodeTooLarge, "The body is too large."), metrics.RefusedReadOnly)
+		return
+	}
+	if q.facts.ReadsWithBody(q.r.Method, q.r.URL.EscapedPath()) {
+		if q.form != nil && !e.stepCredentials(q) {
+			// The token service's form: its password is refused before anything is sent when it is malformed (R-BAS-051).
+			return
+		}
+		if !e.d.Link.Reachable() {
+			e.unreachable(q)
+			return
+		}
+		e.forwardWithBody(q)
 		return
 	}
 	key := q.r.Method + " " + q.target
@@ -78,8 +90,6 @@ func (e *engine) write(q *rq) {
 		e.countReadOnly(q, pr.ref)
 		q.finish(metrics.ClassPass, metrics.ResultMiss)
 		e.writeRefusal(q, pr.ref, metrics.SourceMain)
-	case pr.withBody:
-		e.forwardWithBody(q)
 	}
 }
 
@@ -108,7 +118,7 @@ func (e *engine) replayRefusal(q *rq, ref refusal) {
 }
 
 // countReadOnly counts a probe answer, fresh or replayed, in quader_bastion_refused_total{reason="read_only"} and sets
-// the deny reason of the request log when it is the main installation's 403 bastion_read_only. Any other kept
+// the deny reason of the request log when it is the main installation's 403 read_only. Any other kept
 // answer (the 404 of a path with no route) is the main installation's own and no refusal of the Bastion
 // (R-BAS-040, Q-BAS-147).
 func (e *engine) countReadOnly(q *rq, ref *refusal) {
@@ -132,9 +142,6 @@ func (e *engine) probe(ctx context.Context, q *rq, key string) probeResult {
 	q.mainRequestID = resp.Header.Get("X-Request-Id")
 	if !resp.Marked && resp.Status >= 500 {
 		return probeResult{err: mainclient.ErrUnreachable}
-	}
-	if resp.Status == http.StatusNoContent && resp.Route == iface.RouteReadWithBody {
-		return probeResult{withBody: true}
 	}
 	if err := e.locationError(resp.Header); err != nil {
 		return probeResult{err: err}
@@ -164,7 +171,7 @@ func (e *engine) probeClass(q *rq) mainclient.Class {
 	return mainclient.Anonymous
 }
 
-// forwardWithBody forwards the real request of a read route that takes a body, after a 204 probe (R-BAS-014):
+// forwardWithBody forwards a read route that takes a body (R-BAS-095):
 // the caller's credential and the body, at most max_forwarded_body. The answer is pass: nothing is kept.
 func (e *engine) forwardWithBody(q *rq) {
 	if q.form == nil && !e.stepCredentials(q) {

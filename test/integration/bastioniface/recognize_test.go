@@ -58,7 +58,7 @@ func TestR_BAS_008_AForwardedRequestIsRecognizedOnlyByAValidBastionToken(t *test
 
 	// $PAT in Quader-Bastion-Authorization: ordinary request, no marking header, the headers are ignored.
 	rp = s.do(packageRequest("/api/npm/it/npm-all/lodash", "Authorization", "Bearer "+caller, iface.HeaderAuthorization, "Bearer "+caller,
-		iface.HeaderInterface, v, iface.HeaderReplica, "pod", iface.HeaderProbe, "1"))
+		iface.HeaderInterface, v, iface.HeaderReplica, "pod"))
 	var got echo
 	rp.decode(t, &got)
 	if rp.Status != http.StatusOK || got.Principal != "acme-full" {

@@ -15,7 +15,7 @@ import (
 // The contract tests of the Bastion operations (R-BAS-004, R-BAS-008, R-BAS-009): the document, the
 // declaration form of the interface routes and the stubs that answer until their work packages fill them (the registration operations are built).
 
-// TestR_BAS_008_TheInterfaceOperationsAreTaggedAndVersioned: exactly the four interface routes carry the
+// TestR_BAS_008_TheInterfaceOperationsAreTaggedAndVersioned: exactly the eight interface routes carry the
 // permission form {bastion: true} and x-quader-bastion-interface equal to the interface version of this build.
 func TestR_BAS_008_TheInterfaceOperationsAreTaggedAndVersioned(t *testing.T) {
 	doc := testDocument(t)
@@ -24,6 +24,11 @@ func TestR_BAS_008_TheInterfaceOperationsAreTaggedAndVersioned(t *testing.T) {
 		"POST " + iface.PathCheck:     "bastionCheck",
 		"GET " + iface.PathFeed:       "bastionFeed",
 		"POST " + iface.PathDownloads: "bastionDownloads",
+		// W-35's catalogue (R-BAS-101).
+		"GET " + iface.PathCatalogue:           "bastionCatalogue",
+		"GET " + iface.PathCatalogueDocument:   "bastionCatalogueDocument",
+		"POST " + iface.PathCatalogueDocuments: "bastionCatalogueDocuments",
+		"GET " + iface.PathCataloguePublic:     "bastionCataloguePublic",
 	}
 	got := map[string]string{}
 	for pattern, op := range doc.Operations() {

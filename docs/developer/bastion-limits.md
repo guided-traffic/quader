@@ -2,10 +2,10 @@
 
 Status: specified on 2026-11-26 (W-34; the owner's answers to the working paper of W-34 and W-35, stored at 11:51). Packages E1, E2, E3
 and E5 are **built** (the cache bounded at every commit and the bytes counted, R-BAS-089, R-BAS-090; the format's cap of the wait and the
-figures that let one normal command through, R-BAS-091, R-BAS-092, interface version 7), and so are E16 and E14a (the anonymous token and
-the anonymous documents of R-BAS-094); E4 is measured
-([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this page and the specification. Every
-other package is **not built**. The requirements are [bastion.md](../spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation)
+figures that let one normal command through, R-BAS-091, R-BAS-092, interface version 7), and so are E16, E14a (the anonymous token and
+the anonymous documents of R-BAS-094), E13 (the addresses a Bastion connects from) and E7 (the shared wire, interface version 8, with
+W-35's P5); E4 is measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this
+page and the specification. Every other package is **not built**. The requirements are [bastion.md](../spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation)
 R-BAS-093 to R-BAS-099 and [its wire](../spec/bastion.md#the-interface-version-8-the-shared-wire),
 [usage-and-limits.md](../spec/usage-and-limits.md#a-bastion-as-a-place) R-LIM-043 to R-LIM-046 and
 [api-and-ui.md](../spec/api-and-ui.md#r-ui-240--a-bastions-card-its-limits-its-throughput-and-its-state) R-UI-240 to R-UI-243; the record is
@@ -29,7 +29,7 @@ must follow, the identifiers it takes, and what its tests cost.
   header or page. Every package that touches an answer of the Bastion keeps the integration scan of R-BAS-099 green.
 - **One raise of the interface version, 7 to 8, by E7 together with W-35's P5** (Q-BAS-322). No other package changes the wire; a member a
   package needs and the wire lacks is a change of E7's work and of the specification first.
-- **Today's code** is at interface version 7: the handshake has a top-level `handover`; the Bastion's figures are chart values
+- **Today's code** is at interface version 8 (E7): the handshake carries `configuration`, until E8 an interim one; the Bastion's figures are chart values
   (`config.bastion.limits`, `failed_auth`, `blocking`, `main.max_concurrent`, `anonymous_share`, `queue_timeout`); a write is probed at the
   main installation (`internal/bastion/engine/probe.go`, `BastionRouteAuth` in `internal/api/v1/bastion_services.go`); the main
   installation's egress list was `bastions.trusted_proxies` (`internal/config/bastions.go`) until E13 made it each registration's `egress`;
@@ -46,7 +46,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 | 1 | E2 + E3 | the format's cap of the wait, interface version 7; the figures of one normal command (R-BAS-091, R-BAS-092) | — | built |
 | 1 | E4 | the measurement, run once, not a test | — | measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)) |
 | 1 | E6 | this specification | — | written |
-| 2 | E7 | the shared wire, interface version 8, with W-35's P5 | E6, E2, W-35's wire | not built |
+| 2 | E7 | the shared wire, interface version 8, with W-35's P5 | E6, E2, W-35's wire | built |
 | 2 | E16 | nothing of the main installation in a Bastion's answers | E2 + E3 | built |
 | 2 | E14a | anonymous requests answered without the main installation | E6 | built |
 | 2 | E13 | egress addresses on the registration | E6 | built |
@@ -84,6 +84,23 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   `internal/formats/catalog/bastion.go` (`ErrorShape`, `ReadWithBody` as facts, without the kit's duties, which are E15's).
 - **Tests**: unit tests and the interface guard file, under 0.5 s.
 - **Identifiers**: Q-BAS-320 to Q-BAS-322, H-2280, H-2281.
+- *Built on 2026-11-26, with W-35's P5.* Interface version 8 in [internal/bastion/iface](../../internal/bastion/iface): `configuration.go`
+  (`Configuration`, `Validate`), `usage.go` (`UsageReport`, `ReplicaStatus`), `contact.go` (the two contact headers), `catalogue.go`
+  (W-35's catalogue), the format table's `ErrorShape` (five shapes, `galaxy` from the measurement, Q-BAS-337) and `ReadWithBody`, the
+  codes of Q-BAS-321, `SubjectLimits` and `HeaderLimits`, the readers of payload version 2. Each side's minimum: the main installation
+  sends `bastionmain.InterimConfiguration` (Q-BAS-352, the registration's revision and handover, today's figures), reads the contact headers
+  into `bastion.contact` (Q-BAS-354), refuses a batch whose usage or status breaks a bound, answers the catalogue routes by the switches
+  (`bastion_catalogue_api.go`) and recognizes a probe by its form (`bastionmain.IsProbe`, Q-BAS-351); the Bastion's link validates the
+  configuration and applies `switches.handover`, and its engine forwards a declared read route with a body at once. The formats declare
+  `ErrorShape` and `ReadWithBody` (`catalog.Facts.Bastion`), and kit check 19 holds the declaration to the routes (Q-BAS-353). Read nowhere
+  yet: `limits`, `switches.gui` and `switches.docs` at the Bastion, `subject.limits`, `usage`, `status`, `errorShape`. Tests: the
+  interface guard and the wire's unit tests (`internal/bastion/iface`, 0.13 s), the routes (`internal/api/v1`, 0.2 s), the kit's two
+  defects (`testformat`). Decisions Q-BAS-345 to Q-BAS-354, gaps H-2305 to H-2307, [ADR-303](../decisions.md#adr-303--the-public-catalogue-travels-on-the-bastion-interface-as-compressed-documents-under-a-change-list).
+  *What E15 does with what E7 left:* remove `probe.go`, `bastionmain.IsProbe` and the admission of probes in `BastionRouteAuth`, refuse a
+  write at the Bastion in the format's `errorShape`, and add kit check 19's duty that `WriteError` renders the declared shape. For Ansible
+  Galaxy that is the `galaxy` list, also for a `429` on a collection's version list, which made ansible-galaxy 2.17.14 exit 250 against
+  the Bastion of 2026-11-26: E15 renders it with `Retry-After` and the list's `code` and `detail`, and runs that client against the
+  rendered `429` once to see it exit 1 and not 250.
 
 ### E8 · The main installation's side
 
@@ -195,7 +212,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 
 ### E15 · Writes refused at the Bastion
 
-- **Builds** the refusal of R-BAS-095 in the four shapes; removes `internal/bastion/engine/probe.go` and the main installation's admission of
+- **Builds** the refusal of R-BAS-095 in the five shapes; removes `internal/bastion/engine/probe.go` and the main installation's admission of
   probes (`BastionRouteAuth` in [bastion_services.go](../../internal/api/v1/bastion_services.go)); the kit's two duties in
   [checks_bastion.go](../../internal/formats/formattest/checks_bastion.go) with a `testformat` defect each.
 - **Follows** E7.

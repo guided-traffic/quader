@@ -137,6 +137,8 @@ func (f *Format) Descriptor() formats.Descriptor {
 	metadataTTL, notFoundTTL := 600, 300
 	return formats.Descriptor{
 		Facts: catalog.Facts{
+			// APT prints the reason phrase of a refusal and no body (measured 2026-11-26): problem details, for curl (R-BAS-095).
+			Bastion:          catalog.BastionFacts{ErrorShape: catalog.ShapeProblem},
 			ID:               ID,
 			DisplayName:      "Debian (APT)",
 			Classes:          f.Classes(),

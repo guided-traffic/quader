@@ -178,6 +178,12 @@ const (
 	// a Bastion names the member repository of a remote's failure and has the management API's problem type (bastion.md
 	// R-BAS-099): check 19.
 	IgnoresTheForward Defect = "ignores-the-forward"
+	// UndeclaredReadWithBody answers a search by POST, a read route that takes a body, without declaring it in
+	// catalog.Facts.Bastion.ReadWithBody, so a Bastion would refuse it as a write: check 19 (bastion.md R-BAS-095).
+	UndeclaredReadWithBody Defect = "undeclared-read-with-body"
+	// StaleReadWithBody declares a read route that takes a body which no route of the format serves, so a Bastion would
+	// forward a write's body: check 19.
+	StaleReadWithBody Defect = "stale-read-with-body"
 	// DeclaresRetryAfterCap declares a cap of 30 s that WriteError does not apply: check 19.
 	DeclaresRetryAfterCap Defect = "declares-retry-after-cap"
 	// DeclaresUnservedBody declares on the tarball route that the format's client checks a digest (Route.ClientDigest) while a
@@ -396,7 +402,10 @@ func (versionCanon) Canonical(v string) (string, bool) { return v, versionRule.M
 // Descriptor implements formats.Format.
 func (f Format) Descriptor() formats.Descriptor {
 	ttl := 300
-	var bastion catalog.BastionFacts
+	bastion := catalog.BastionFacts{ErrorShape: catalog.ShapeProblem}
+	if f.has(string(StaleReadWithBody)) {
+		bastion.ReadWithBody = []catalog.BodyRoute{{Method: http.MethodPost, Template: "/-/search"}}
+	}
 	if f.has(string(RateLimitedStatusDiffers)) {
 		bastion.RateLimitedStatus = http.StatusServiceUnavailable
 	}
@@ -542,6 +551,12 @@ func (f Format) Routes() []formats.Route {
 			Name: "tf.all.get", Method: http.MethodGet, Template: "/-/all", Examples: []string{"-/all"},
 			Action: formats.ActionRead, Kind: formats.Computed, Match: exact("-", "all"), Handler: f.all,
 		},
+	}
+	if f.has(string(UndeclaredReadWithBody)) {
+		rs = append(rs, formats.Route{
+			Name: "tf.search.post", Method: http.MethodPost, Template: "/-/search", Examples: []string{"-/search"},
+			Action: formats.ActionRead, Kind: formats.Volatile, Match: exact("-", "search"), Handler: f.search,
+		})
 	}
 	if f.has(string(AmbiguousRoutes)) {
 		rs = append(rs, formats.Route{

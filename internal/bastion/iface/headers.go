@@ -1,6 +1,6 @@
 package iface
 
-// The headers of the interface (R-BAS-008, R-BAS-013, R-BAS-014, R-BAS-017). Names
+// The headers of the interface (R-BAS-008, R-BAS-010, R-BAS-013, R-BAS-017, R-BAS-096). Names
 // are canonical MIME header keys; compare them through net/http's Header, which
 // canonicalizes.
 
@@ -16,9 +16,17 @@ const (
 	HeaderAuthorization = "Quader-Bastion-Authorization"
 	// HeaderReplica carries the pod name of the sending replica (R-BAS-008).
 	HeaderReplica = "Quader-Bastion-Replica"
-	// HeaderProbe is [ProbeValue] on the bodiless probe of a request that is not a
-	// GET or HEAD (R-BAS-014).
-	HeaderProbe = "Quader-Bastion-Probe"
+)
+
+// Headers a Bastion sends on the handshake only: what the main installation records with the replica's contact
+// (R-BAS-010). Each is optional: a Bastion that does not know the value sends nothing, and the contact then holds none.
+const (
+	// HeaderEdgeLimit is the edge figure of the ingress in front of the replica (R-BAS-093), in the form of
+	// [EdgeLimit.Header]: the card warns where a per-address figure of the configuration lies above it.
+	HeaderEdgeLimit = "Quader-Bastion-Edge-Limit"
+	// HeaderCatalogueKept says whether the replica's copy of the public catalogue survives a restart (W-35, R-BAS-101):
+	// "true" or "false".
+	HeaderCatalogueKept = "Quader-Bastion-Catalogue-Kept"
 )
 
 // Headers the main installation adds to the response of a recognized Bastion
@@ -32,9 +40,10 @@ const (
 	HeaderRead = "Quader-Bastion-Read"
 	// HeaderSubject is the caller's subject in the format of [Subject.Header].
 	HeaderSubject = "Quader-Bastion-Subject"
-	// HeaderRoute is [RouteReadWithBody] on the 204 answer to a probe of a read
-	// route that takes a body (R-BAS-014).
-	HeaderRoute = "Quader-Bastion-Route"
+	// HeaderLimits is the caller's subject key and rule at the Bastion's place, in the form of [SubjectLimits.Header],
+	// on an answer whose [HeaderSubject] is a token and for which the main installation resolved a rule (R-BAS-096). It is
+	// a member of the [Marking] ([Subject.Limits]).
+	HeaderLimits = "Quader-Bastion-Limits"
 	// HeaderCounted is [CountedDownload] on the response whose serving counted a
 	// download at the main installation (R-BAS-059, Q-BAS-177): the Bastion records
 	// it on the entry and reports every serve of that entry from its cache. It is
@@ -64,12 +73,6 @@ const HeaderPrefix = "Quader-Bastion-"
 
 // The values of the headers above.
 const (
-	// ProbeValue is the value of [HeaderProbe].
-	ProbeValue = "1"
-	// RouteReadWithBody is the value of [HeaderRoute] on a 204 probe answer: the
-	// route is a read route that takes a body, so the Bastion forwards the real
-	// request (R-BAS-014).
-	RouteReadWithBody = "read-with-body"
 	// CountedDownload is the value of [HeaderCounted]: serving the response
 	// counted a download (R-BAS-059).
 	CountedDownload = "download"

@@ -19,4 +19,11 @@ package iface
 //
 // Version 7 (R-BAS-091): the format table's retryAfterMaxSeconds, the longest wait
 // the Bastion's own refusals tell a client of the format ([HandshakeFormat]).
-const InterfaceVersion = 7
+//
+// Version 8 (R-BAS-093 to R-BAS-099, R-BAS-101 to R-BAS-103, Q-BAS-322): one raise for the limits at a Bastion and its
+// web interface. The handshake's [Configuration] (the top-level handover moved into its switches); the subject's
+// [SubjectLimits] in the check answer and [HeaderLimits] in the marking; the [UsageReport] and [ReplicaStatus] of the
+// download batch; the format table's [ErrorShape] and readWithBody; the Bastion's own codes named by their status
+// (Q-BAS-321); the probe's headers gone; the contact's [HeaderEdgeLimit] and [HeaderCatalogueKept]; the registry token's
+// payload version 2 read; the public catalogue's routes, types, path grammar and the feed kind [FeedCatalogue].
+const InterfaceVersion = 8

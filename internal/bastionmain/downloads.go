@@ -104,6 +104,16 @@ type Outcome struct {
 // dropped and counted. A batch that reports lost events, or loses events here, writes one
 // bastion.downloads.dropped with the total, so the loss is in the audit trail itself.
 func (in *Intake) Accept(ctx context.Context, rec Recognition, req iface.DownloadsRequest) (Outcome, error) {
+	// The batch's usage and status (R-LIM-045) are held to their bounds whether or not downloads are recorded; nothing of
+	// them is stored until package E8 gives them their tables.
+	if err := req.Usage.Validate(); err != nil {
+		return Outcome{}, errs.E(errs.Invalid, errs.CodeInvalid, "The batch's usage breaks a rule of the interface.",
+			errs.WithFields(errs.FieldError{Pointer: "/usage", Code: "invalid", Detail: err.Error()}))
+	}
+	if err := req.Status.Validate(); err != nil {
+		return Outcome{}, errs.E(errs.Invalid, errs.CodeInvalid, "The batch's status breaks a rule of the interface.",
+			errs.WithFields(errs.FieldError{Pointer: "/status", Code: "invalid", Detail: err.Error()}))
+	}
 	if !in.o.Record {
 		return Outcome{Disabled: true}, nil
 	}

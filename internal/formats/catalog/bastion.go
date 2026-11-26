@@ -13,7 +13,8 @@ import (
 // (bastion.md R-BAS-057, R-BAS-058, ADR-238, ADR-299): the headers a cached answer of the format replays besides the core's,
 // the status the format answers a rate limit with, and the longest wait its clients are told. They reach every Bastion in the
 // handshake's format table, so the Bastion's code holds no knowledge of a format. The zero value is a format with no protocol
-// header of its own that answers a rate limit 429 and tells its clients the true wait.
+// header of its own that answers a rate limit 429, tells its clients the true wait, has no read route that takes a body and
+// whose Bastion refusals are problem details; kit check 19 holds every format to a declared ErrorShape.
 type BastionFacts struct {
 	// ReplayHeaders are the response headers of the format's content routes that a cached answer replays besides the core's
 	// [RepresentationHeaders]: the protocol headers every reader of the answer may receive (OCI's Docker-Content-Digest and the
@@ -34,6 +35,103 @@ type BastionFacts struct {
 	// clients count a wait against the timeout of the whole command (formats/nuget.md R-NUGET-002). The true wait stays in the
 	// detail of the answer. Kit check 19 holds WriteError to it.
 	RetryAfterMax time.Duration
+	// ErrorShape is the shape a Bastion renders its own answers in on the format's family (bastion.md R-BAS-095, Q-BAS-337):
+	// its refusal of a write, its limits and the table of R-BAS-029. It is the shape of the body the format's clients print a
+	// reason from. "" stands for problem; kit check 19 requires a format to declare it.
+	ErrorShape ErrorShape
+	// ReadWithBody are the format's routes of a method other than GET and HEAD that read (bastion.md R-BAS-095): a Bastion
+	// forwards a request that matches one with its body and refuses every other such request as a write. Each is the
+	// method and a pattern below the repository whose segments are literal or "{name}", one segment; a route with an
+	// optional part is listed once per spelling. Kit check 19 holds the list equal to the format's routes of a writing
+	// method whose kind is a read.
+	ReadWithBody []BodyRoute
+}
+
+// ErrorShape is one of the shapes of a Bastion's own answers (bastion.md R-BAS-095, Q-BAS-337); the values are the
+// interface's (iface.ErrorShape).
+type ErrorShape string
+
+// The error shapes.
+const (
+	// ShapeProblem is problem details (RFC 9457).
+	ShapeProblem ErrorShape = "problem"
+	// ShapeNPM is {"error": "<detail>"}, which npm prints.
+	ShapeNPM ErrorShape = "npm"
+	// ShapeText is one line "<code>: <detail>" of text/plain.
+	ShapeText ErrorShape = "text"
+	// ShapeDistribution is the error list of the OCI distribution specification.
+	ShapeDistribution ErrorShape = "distribution"
+	// ShapeGalaxy is the error list of a Galaxy's API, which ansible-galaxy reads.
+	ShapeGalaxy ErrorShape = "galaxy"
+)
+
+// Shape returns the declared error shape, or problem when none is declared.
+func (b BastionFacts) Shape() ErrorShape {
+	if b.ErrorShape == "" {
+		return ShapeProblem
+	}
+	return b.ErrorShape
+}
+
+// ErrorShapes are the five shapes.
+func ErrorShapes() []ErrorShape {
+	return []ErrorShape{ShapeProblem, ShapeNPM, ShapeText, ShapeDistribution, ShapeGalaxy}
+}
+
+// BodyRoute is a read route that takes a body: the method and the path pattern below the repository,
+// "/-/npm/v1/security/advisories/bulk".
+type BodyRoute struct {
+	Method   string
+	Template string
+}
+
+// Matches reports whether a repository-relative escaped path is matched by the pattern: as many segments, a literal one
+// byte for byte, "{name}" any non-empty one.
+func (b BodyRoute) Matches(escapedPath string) bool {
+	if !strings.HasPrefix(escapedPath, "/") || !strings.HasPrefix(b.Template, "/") {
+		return false
+	}
+	pat, got := strings.Split(b.Template[1:], "/"), strings.Split(escapedPath[1:], "/")
+	if len(pat) != len(got) {
+		return false
+	}
+	for i, seg := range pat {
+		if strings.HasPrefix(seg, "{") {
+			if got[i] == "" {
+				return false
+			}
+			continue
+		}
+		if seg != got[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// validBodyRoute reports whether a read route with a body has a writing method and a pattern of whole segments.
+func validBodyRoute(b BodyRoute) bool {
+	switch b.Method {
+	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+	default:
+		return false
+	}
+	if !strings.HasPrefix(b.Template, "/") {
+		return false
+	}
+	for _, seg := range strings.Split(b.Template[1:], "/") {
+		if inner, ok := strings.CutPrefix(seg, "{"); ok {
+			name, closed := strings.CutSuffix(inner, "}")
+			if !closed || name == "" || strings.ContainsAny(name, "{}.[]") {
+				return false
+			}
+			continue
+		}
+		if seg == "" || seg == "." || seg == ".." || strings.ContainsAny(seg, "{}[]") {
+			return false
+		}
+	}
+	return true
 }
 
 // CapRetryAfter returns the wait a client of the format is told for a wait of d: d, or RetryAfterMax when that is set and
@@ -106,6 +204,16 @@ func (f Facts) BoundPrefixes() []string {
 
 // checkBastion applies the rules of [BastionFacts] to a format's facts.
 func checkBastion(f Facts) error {
+	if f.Bastion.ErrorShape != "" && !slices.Contains(ErrorShapes(), f.Bastion.ErrorShape) {
+		return fmt.Errorf("%q declares the error shape %q; declare one of problem, npm, text, distribution and galaxy, the shape its clients print a reason from (R-BAS-095)", f.ID, f.Bastion.ErrorShape)
+	}
+	seenRoutes := map[BodyRoute]bool{}
+	for _, b := range f.Bastion.ReadWithBody {
+		if !validBodyRoute(b) || seenRoutes[b] {
+			return fmt.Errorf("%q declares the read route with a body %s %q; a writing method and a pattern of literal and {name} segments, once (R-BAS-095)", f.ID, b.Method, b.Template)
+		}
+		seenRoutes[b] = true
+	}
 	switch f.Bastion.RateLimitedStatus {
 	case 0, http.StatusTooManyRequests, http.StatusServiceUnavailable:
 	default:

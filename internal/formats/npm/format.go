@@ -76,8 +76,18 @@ func (f *Format) Descriptor() formats.Descriptor {
 			ProbePath: "-/ping",
 			// The notice of an audit that left names out (R-NPM-005, R-NPM-038), which npm prints as "npm notice": a Bastion passes
 			// an answer of the main installation on with the headers of an allowlist, the format's replay headers among them
-			// (bastion.md R-BAS-099 row 5).
-			Bastion:                   catalog.BastionFacts{ReplayHeaders: []string{"Npm-Notice"}},
+			// (bastion.md R-BAS-099 row 5). npm prints the member error of a refusal's body (measured 2026-11-26, Q-BAS-337), and
+			// its audits are read routes that take a body (R-NPM-038): the bulk advisories of npm 7 on, and the legacy audit,
+			// quick and full, that npm falls back to (bastion.md R-BAS-095).
+			Bastion: catalog.BastionFacts{
+				ReplayHeaders: []string{"Npm-Notice"},
+				ErrorShape:    catalog.ShapeNPM,
+				ReadWithBody: []catalog.BodyRoute{
+					{Method: http.MethodPost, Template: "/-/npm/v1/security/advisories/bulk"},
+					{Method: http.MethodPost, Template: "/-/npm/v1/security/audits"},
+					{Method: http.MethodPost, Template: "/-/npm/v1/security/audits/quick"},
+				},
+			},
 			DefaultMetadataTTLSeconds: &metadataTTL,
 			DefaultNotFoundTTLSeconds: &notFoundTTL,
 			PatternSubject:            formats.SubjectName,

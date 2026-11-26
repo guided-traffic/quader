@@ -73,7 +73,7 @@ type TokenSource interface {
 // answers of R-BAS-029; a request that got a response of the main installation is not an error of this list
 // unless the response says that the Bastion itself is refused.
 var (
-	// ErrBusy: no slot of the budget within the queue timeout; 503 bastion_busy.
+	// ErrBusy: no slot of the budget within the queue timeout; 503 busy.
 	ErrBusy = errors.New("mainclient: no slot of the concurrency budget")
 	// ErrTokenRefused: 401 bastion_token_invalid in the answer to a call of the interface's own (handshake,
 	// feed, check, downloads). The link treats the main installation as unreachable and the client sets
@@ -83,12 +83,12 @@ var (
 	// ErrInterfaceMismatch: 400 bastion_interface_mismatch, or an answer whose Quader-Bastion-Interface differs
 	// (R-BAS-009, R-BAS-028). The wrapping error is *MismatchError.
 	ErrInterfaceMismatch = errors.New("mainclient: the interface versions differ")
-	// ErrUnreachable: a connect or TLS error, a timeout or an unmarked 5xx; 502 main_failed or 504 main_timeout
+	// ErrUnreachable: a connect or TLS error, a timeout or an unmarked 5xx; 502 bad_gateway or 504 gateway_timeout
 	// for the caller, and no answer is kept (R-BAS-021). The wrapping error is *UnreachableError.
 	ErrUnreachable = errors.New("mainclient: the main installation did not answer")
 	// ErrBadAnswer: the main installation answered, but not with what the interface says: an unexpected
 	// status on an interface route, a body that does not decode strictly, a malformed marking. The wrapping
-	// error is *AnswerError. For the caller it is 502 main_failed.
+	// error is *AnswerError. For the caller it is 502 bad_gateway.
 	ErrBadAnswer = errors.New("mainclient: the main installation's answer is not what the interface defines")
 )
 
@@ -103,7 +103,7 @@ func (e *MismatchError) Error() string { return ErrInterfaceMismatch.Error() }
 func (e *MismatchError) Is(target error) bool { return target == ErrInterfaceMismatch }
 
 // UnreachableError is the error of a request that got no usable answer. Timeout is true for a deadline, a
-// connect or TLS-handshake timeout and a response-header timeout (504 main_timeout); Status is the status of an
+// connect or TLS-handshake timeout and a response-header timeout (504 gateway_timeout); Status is the status of an
 // unmarked 5xx, 0 for a transport failure.
 type UnreachableError struct {
 	Err     error
@@ -165,8 +165,8 @@ type Forward struct {
 	// IfNoneMatch is the validator of a conditional request (R-BAS-022, R-BAS-023): the Bastion's own
 	// If-None-Match, never the caller's.
 	IfNoneMatch string
-	// Probe makes the request the bodiless probe of R-BAS-014: Content-Length 0, no credential,
-	// iface.HeaderProbe.
+	// Probe makes the request the bodiless probe of R-BAS-014: the write's method, Content-Length 0 and no
+	// credential of the caller, which is the form the main installation reads as a probe.
 	Probe bool
 	// Body is the body of a forwarded read route that takes one, at most bastion.main.max_forwarded_body.
 	Body io.Reader
@@ -192,9 +192,6 @@ type Response struct {
 	// [ErrUnreachable]. The Quader-Bastion-* headers are removed from Header, so that nothing replays them.
 	Marking iface.Marking
 	Marked  bool
-	// Route is the value of Quader-Bastion-Route, read before the marking headers are removed: the answer of a
-	// probe to a read route that takes a body is a 204 with iface.RouteReadWithBody (R-BAS-014).
-	Route string
 	// Handover is the value of an answer of the class handover to a forward that offered (R-BAS-073), read before the
 	// marking headers were removed; nil for every other answer. HandoverErr is set in its place when such an answer carries
 	// no value, a value the interface refuses, or another status than 200: the engine replaces it by the forward without the

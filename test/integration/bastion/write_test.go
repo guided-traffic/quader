@@ -19,9 +19,10 @@ const readOnlyText = "This address is read-only: it serves downloads and accepts
 const relaxed = "  limits:\n    authenticated:\n      requests_per_second: 100000\n      burst: 100000\n    anonymous:\n      requests_per_second: 100000\n      burst: 100000\n    misses:\n      authenticated_per_minute: 100000\n      anonymous_per_minute: 100000\n"
 
 // TestR_BAS_014_WritesAreRefusedInTheFormatsShape: an `npm publish`-shaped PUT and a `nuget push`-shaped PUT are
-// refused 403 bastion_read_only in the client's own error shape, naming no address (R-BAS-099 row 1); the Bastion reads
+// refused 403 read_only in the client's own error shape, naming no address (R-BAS-099 row 1); the Bastion reads
 // none of the upload body; 1,000 PUTs to one path cause one probe; and the main installation records no
-// package.published. A read route that takes a body (npm's bulk advisories) is served by the main installation.
+// package.published. A read route that takes a body (npm's bulk advisories) is forwarded without a probe and served by the main
+// installation.
 func TestR_BAS_014_WritesAreRefusedInTheFormatsShape(t *testing.T) {
 	w := newWorld(t, worldOptions{})
 	w.content()
@@ -41,7 +42,7 @@ func TestR_BAS_014_WritesAreRefusedInTheFormatsShape(t *testing.T) {
 			t.Run("npm publish", func(t *testing.T) {
 				m := w.front.Mark()
 				got := r.do(t, "PUT", "/api/npm/"+npmAll+"/"+escapeNPM("@acme/sdk"), callOpts{token: tok, addr: "198.51.100.91", body: npmPublishBody(t, "@acme/sdk", "9.0.0"), header: []string{"Content-Type", "application/json"}})
-				if got.Status != http.StatusForbidden || got.Code() != "bastion_read_only" {
+				if got.Status != http.StatusForbidden || got.Code() != "read_only" {
 					t.Fatalf("npm publish: %d %s", got.Status, got.Body)
 				}
 				for _, k := range []string{`"error"`, `"message"`} {
@@ -71,7 +72,7 @@ func TestR_BAS_014_WritesAreRefusedInTheFormatsShape(t *testing.T) {
 				body, ct := nugetForm(t, nupkg(t, "Acme.Sdk", "9.0.0"))
 				got := r.do(t, "PUT", "/api/nuget/"+ngAll+"/v3/package", callOpts{token: tok, addr: "198.51.100.92", body: body, header: []string{"Content-Type", ct}})
 				code, msg, ok := strings.Cut(string(got.Body), ": ")
-				if got.Status != http.StatusForbidden || !ok || code != "bastion_read_only" || strings.ContainsAny(string(got.Body), "\r\n") {
+				if got.Status != http.StatusForbidden || !ok || code != "read_only" || strings.ContainsAny(string(got.Body), "\r\n") {
 					t.Fatalf("nuget push: %d %q", got.Status, got.Body)
 				}
 				if msg != readOnlyText || !strings.HasPrefix(got.Header.Get("Content-Type"), "text/plain") {
@@ -131,17 +132,19 @@ func TestR_BAS_014_WritesAreRefusedInTheFormatsShape(t *testing.T) {
 				if got.Status != want.Status || want.Status != http.StatusOK || !bytes.Equal(bytes.TrimSpace(got.Body), bytes.TrimSpace(want.Body)) {
 					t.Fatalf("bulk advisories: Bastion %d %.200s, main installation %d %.200s", got.Status, got.Body, want.Status, want.Body)
 				}
-				var probe, real bool
+				// The format table names the route a read route with a body (interface version 8, R-BAS-095): it is forwarded
+				// with its body at once, never probed.
+				var probes, real int
 				for _, x := range w.front.Since(m) {
-					if x.Probe && x.Status == http.StatusNoContent {
-						probe = true
+					if x.Probe {
+						probes++
 					}
 					if !x.Probe && x.Method == "POST" && x.Kind == "forward" {
-						real = true
+						real++
 					}
 				}
-				if !probe || !real {
-					t.Fatalf("a 204 probe (%v) and the real request (%v) were expected", probe, real)
+				if probes != 0 || real != 1 {
+					t.Fatalf("%d probes and %d forwards with the body, want none and one", probes, real)
 				}
 			})
 		})

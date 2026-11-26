@@ -324,6 +324,10 @@ func (l *Link) handshake(ctx context.Context) {
 		// not decode (R-BAS-057).
 		if verr := hs.Formats.Validate(); verr != nil {
 			err = fmt.Errorf("%w: %w", mainclient.ErrBadAnswer, verr)
+		} else if verr := hs.Configuration.Validate(); verr != nil {
+			// A configuration the Bastion's rules refuse fails the handshake as a format table does (R-BAS-093). Of its
+			// members the replica reads the switch handover; the others are read by the packages that apply them.
+			err = fmt.Errorf("%w: %w", mainclient.ErrBadAnswer, verr)
 		}
 	}
 	if err != nil {
@@ -344,7 +348,7 @@ func (l *Link) handshake(ctx context.Context) {
 	l.st.Registration, l.st.TokenID, l.st.TokenExpiresAt = hs.Bastion.Name, hs.Bastion.TokenID, hs.Bastion.TokenExpiresAt
 	l.st.Installation = hs.Installation
 	l.st.Formats, l.st.BoundRepository = hs.Formats, hs.BoundRepository
-	l.st.Handover = hs.Handover
+	l.st.Handover = hs.Configuration.Switches.Handover
 	l.st.InterfaceMismatch = false
 	l.nextHandshake = now.Add(l.cfg.HandshakeInterval)
 	mismatch := !sameOrigin(hs.ResponseBaseURL, l.cfg.BaseURL)
@@ -356,7 +360,7 @@ func (l *Link) handshake(ctx context.Context) {
 	m := l.o.Metrics
 	m.InterfaceMismatch.Set(0)
 	m.InterfaceVersion.WithLabelValues(metrics.SideMain).Set(float64(hs.InterfaceVersion))
-	if hs.Handover {
+	if hs.Configuration.Switches.Handover {
 		m.HandoverEnabled.Set(1)
 	} else {
 		m.HandoverEnabled.Set(0)

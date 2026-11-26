@@ -320,7 +320,7 @@ func (e *engine) stepPath(q *rq) bool {
 	c, ok := e.classifyRq(q)
 	if !ok {
 		q.fam = c.fam
-		e.refuse(q, errs.E(errs.NotFound, errs.CodeBastionNotServed, "Nothing is served at this address."), metrics.RefusedNotServed)
+		e.refuse(q, errs.E(errs.NotFound, errs.CodeNotFound, "Nothing is served at this address."), metrics.RefusedNotServed)
 		return false
 	}
 	q.cred, q.credOK = parseCredential(q.r.Header, q.fam)

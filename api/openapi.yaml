@@ -14435,13 +14435,27 @@ paths:
         token as `Authorization: Bearer` at start, every `bastion.main.handshake_interval`, after a reconnect and after a feed
         entry of the kind `settings` (R-BAS-010). The answer carries the main installation's interface version, the registration
         and the token in use, the response base URL this request resolved to, whether anonymous requests read anything (`anonymousReads`), the download
-        switch and the feed position. Records the replica's last contact at most once a minute. Not part of the management
-        API's v1 promise but of the interface version (R-ARCH-025, R-BAS-009).
-      x-quader-bastion-interface: 7
+        switch, the feed position, the format table and the registration's `configuration` (R-BAS-093). Records the replica's
+        last contact at most once a minute, with the edge figure (`Quader-Bastion-Edge-Limit`) and whether its catalogue is kept
+        (`Quader-Bastion-Catalogue-Kept`) when the replica reports them; a malformed value of either answers `400
+        malformed_request`. Not part of the management API's v1 promise but of the interface version (R-ARCH-025, R-BAS-009).
+      x-quader-bastion-interface: 8
       x-quader-permission:
         bastion: true
       parameters:
         - $ref: "#/components/parameters/BastionInterface"
+        - name: Quader-Bastion-Edge-Limit
+          in: header
+          description: 'The edge figure of the ingress in front of the replica (R-BAS-093): `rps=<n>; connections=<n>`, either member alone, or `off`.'
+          schema:
+            type: string
+          example: rps=100; connections=50
+        - name: Quader-Bastion-Catalogue-Kept
+          in: header
+          description: Whether the replica's copy of the public catalogue survives a restart (R-BAS-101).
+          schema:
+            type: string
+            enum: ["true", "false"]
       responses:
         "200":
           description: The handshake.
@@ -14479,7 +14493,7 @@ paths:
         (`npm-all` instead of `web/npm-all`) answers `400 malformed_request`, like a body that does not read; a pair that
         breaks a rule of R-BAS-083 answers `422` with a field error at `/packages/<i>`; another interface version answers
         `400 bastion_interface_mismatch`.
-      x-quader-bastion-interface: 7
+      x-quader-bastion-interface: 8
       x-quader-permission:
         bastion: true
       parameters:
@@ -14525,11 +14539,11 @@ paths:
       summary: The revocation feed
       description: |
         The Bastion interface (R-BAS-015, Q-BAS-29, Q-BAS-30). The journaled audit events that remove or narrow access and the
-        content events, as entries of the kinds `token`, `principal`, `grants`, `settings` and `content`. `after` is the
+        content events, as entries of the kinds `token`, `principal`, `grants`, `settings`, `content` and `catalogue`. `after` is the
         `cursor` of an earlier answer or a synthetic `t:<RFC 3339>`; the answer holds every entry newer than the cursor and the
         entries within `bastions.feed.lookback` behind it, which the Bastion skips by ID. `reset: true` tells the Bastion to
         drop every answer.
-      x-quader-bastion-interface: 7
+      x-quader-bastion-interface: 8
       x-quader-permission:
         bastion: true
       parameters:
@@ -14578,8 +14592,10 @@ paths:
         The Bastion interface (R-BAS-016). A batch of at most `bastions.downloads.max_batch` events, each recorded as an
         asynchronous `artifact.downloaded` with `details.origin: bastion`; an event older than `bastions.downloads.max_age` is
         not recorded and counts as dropped, one in the future is recorded at the time of receipt. A non-zero `dropped` records
-        `bastion.downloads.dropped`. With `audit.record_downloads: false` the answer is `204` and nothing is recorded.
-      x-quader-bastion-interface: 7
+        `bastion.downloads.dropped`. With `audit.record_downloads: false` the answer is `204` and nothing is recorded. The batch
+        also carries the replica's `usage` and `status` (R-LIM-045), valid without an event; their bounds are checked (`422`
+        beyond them) and, until the main installation stores them (package E8), nothing of them is recorded.
+      x-quader-bastion-interface: 8
       x-quader-permission:
         bastion: true
       parameters:
@@ -14606,6 +14622,213 @@ paths:
           $ref: "#/components/responses/UnsupportedMediaType"
         "422":
           $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/bastion/catalogue:
+    get:
+      operationId: bastionCatalogue
+      tags: [bastion]
+      summary: The change list of a Bastion's public catalogue
+      description: |
+        The Bastion interface (R-BAS-101). The changes of the public catalogue of the calling registration after the cursor
+        `after` (a `seq`, 0 for the start), at most `limit` (the main installation's page when absent, clamped to its largest).
+        `reset: true` tells the Bastion to read the list again from 0. While the registration's switch `gui` is off the answer is
+        `404 not_found`. Until the catalogue is built (W-35's package P6) the list is empty.
+      x-quader-bastion-interface: 8
+      x-quader-permission:
+        bastion: true
+      parameters:
+        - $ref: "#/components/parameters/BastionInterface"
+        - name: after
+          in: query
+          required: true
+          description: The `seq` of the last change the Bastion applied, 0 for the start.
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+        - name: limit
+          in: query
+          description: Changes at most; clamped to the main installation's largest page.
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: The changes after the cursor.
+          headers:
+            Quader-Bastion-Interface:
+              $ref: "#/components/headers/BastionInterface"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BastionCatalogueChanges"
+        "400":
+          $ref: "#/components/responses/BastionInterfaceMismatch"
+        "401":
+          $ref: "#/components/responses/BastionTokenInvalid"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/bastion/catalogue/document:
+    get:
+      operationId: bastionCatalogueDocument
+      tags: [bastion]
+      summary: One document of a Bastion's public catalogue
+      description: |
+        The Bastion interface (R-BAS-101, R-BAS-103). The document `path` of the calling registration's catalogue, gzip-compressed
+        (`application/gzip`), with the SHA-256 of its raw bytes as the `ETag`. A path outside the grammar of R-BAS-103 answers
+        `400 malformed_request`; while the
+        registration's switch `gui` is off, and for a documentation path while `docs` is off, the answer is `404 not_found`. Until
+        the catalogue is built (W-35's package P6) every document answers `404 not_found`.
+      x-quader-bastion-interface: 8
+      x-quader-permission:
+        bastion: true
+      parameters:
+        - $ref: "#/components/parameters/BastionInterface"
+        - name: path
+          in: query
+          required: true
+          description: A document path of the grammar of R-BAS-103.
+          schema:
+            type: string
+            maxLength: 4096
+          example: packages/0193a0c4-77/versions/1.0.0/readme
+      responses:
+        "200":
+          description: The document, gzip-compressed.
+          headers:
+            Quader-Bastion-Interface:
+              $ref: "#/components/headers/BastionInterface"
+            ETag:
+              description: The SHA-256 of the raw document, quoted.
+              schema:
+                type: string
+          content:
+            application/gzip:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/BastionTokenInvalid"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/bastion/catalogue/documents:
+    post:
+      operationId: bastionCatalogueDocuments
+      tags: [bastion]
+      summary: Several documents of a Bastion's public catalogue
+      description: |
+        The Bastion interface (R-BAS-101, R-BAS-103). The batch read: the documents `paths` of the calling registration's
+        catalogue in one answer of frames (`application/vnd.quader.catalogue-batch`), one per path in the request's order: a line
+        of JSON (`path`, `sha256` and `size` of the raw document, `gzipSize`, `missing`) and the document's `gzipSize`
+        compressed bytes. The answer stops before the frame that would take its compressed bytes above the main installation's
+        bound and holds at least one frame; a path it does not reach is asked for again. A path outside the grammar, a path
+        twice or more paths than the bound answer `400 malformed_request`; while the registration's switch `gui` is off the
+        answer is `404 not_found`; a document the catalogue does not hold, and a documentation path while `docs` is off, is a
+        frame with `missing: true`. Until the catalogue is built (W-35's package P6) every frame is missing.
+      x-quader-bastion-interface: 8
+      x-quader-permission:
+        bastion: true
+      parameters:
+        - $ref: "#/components/parameters/BastionInterface"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [paths]
+              properties:
+                paths:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: string
+                    maxLength: 4096
+      responses:
+        "200":
+          description: The frames.
+          headers:
+            Quader-Bastion-Interface:
+              $ref: "#/components/headers/BastionInterface"
+          content:
+            application/vnd.quader.catalogue-batch:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/BastionTokenInvalid"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/bastion/catalogue/public:
+    get:
+      operationId: bastionCataloguePublic
+      tags: [bastion]
+      summary: The public set of a Bastion's catalogue
+      description: |
+        The Bastion interface (R-BAS-101). The projects and repositories the calling registration's catalogue shows, each
+        repository with its format, class and whether its wiki is public. While the registration's switch `gui` is off the
+        answer is `404 not_found`. Until the catalogue is built (W-35's package P6) the set is empty.
+      x-quader-bastion-interface: 8
+      x-quader-permission:
+        bastion: true
+      parameters:
+        - $ref: "#/components/parameters/BastionInterface"
+      responses:
+        "200":
+          description: The public set.
+          headers:
+            Quader-Bastion-Interface:
+              $ref: "#/components/headers/BastionInterface"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BastionCataloguePublic"
+        "400":
+          $ref: "#/components/responses/BastionInterfaceMismatch"
+        "401":
+          $ref: "#/components/responses/BastionTokenInvalid"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "429":
           $ref: "#/components/responses/TooManyRequests"
         "500":
@@ -30953,7 +31176,7 @@ components:
       type: object
       additionalProperties: false
       description: The answer of the handshake (R-BAS-010).
-      required: [interfaceVersion, bastion, installation, responseBaseUrl, anonymousReads, recordDownloads, feed, serverTime, formats, handover]
+      required: [interfaceVersion, bastion, installation, responseBaseUrl, anonymousReads, recordDownloads, feed, serverTime, formats, configuration]
       properties:
         interfaceVersion:
           type: integer
@@ -31013,16 +31236,182 @@ components:
             (R-EP-006, R-BAS-057), named as the registry root reads the binding: only a repository that exists and is of the format that
             declares the registry root (Q-BAS-188); absent otherwise.
           example: web/docker-hub
-        handover:
-          type: boolean
-          description: |
-            The registration's switch of the handover per blob (R-BAS-071, R-BAS-073): while it is true the Bastion offers to take a
-            handover on a miss (`Quader-Bastion-Handover: accept; max-size=<n>`, R-BAS-072). Off for a new registration.
+        configuration:
+          $ref: "#/components/schemas/BastionConfiguration"
+    BastionConfiguration:
+      type: object
+      additionalProperties: false
+      description: |
+        The registration's configuration (R-BAS-093, Q-BAS-320): applied whole by every replica; a figure is a positive integer
+        or `null` for unlimited. Until a registration holds one (package E8) the main installation sends an interim configuration
+        that equals a Bastion's behaviour of today.
+      required: [revision, switches, limits]
+      properties:
+        revision:
+          type: integer
+          format: int64
+          minimum: 0
+          description: The registration's revision, raised also by a change of a rule of the Bastion's place or of a profile such a rule names.
+        switches:
+          type: object
+          additionalProperties: false
+          required: [handover, gui, docs]
+          properties:
+            handover:
+              type: boolean
+              description: The handover per blob (R-BAS-071, R-BAS-072). Off for a new registration.
+            gui:
+              type: boolean
+              description: The read-only web interface (R-BAS-102). Off for a new registration.
+            docs:
+              type: boolean
+              description: Its documentation, effective only with `gui` (R-BAS-102). Off for a new registration.
+        limits:
+          $ref: "#/components/schemas/BastionConfigurationLimits"
+    BastionConfigurationLimits:
+      type: object
+      additionalProperties: false
+      description: A Bastion's limits (R-BAS-093 to R-BAS-097).
+      required: [mode, preset, place, flood, slots, throughput, anonymousCeiling]
+      properties:
+        mode:
+          type: string
+          enum: [audit, enforce]
+        preset:
+          type: string
+          enum: [internet, partnerNetwork, internal, custom]
+        place:
+          type: object
+          additionalProperties: false
+          required: [rules, addressRules, kindRules]
+          properties:
+            rules:
+              type: object
+              description: Each rule of the Bastion's place by its ID, with its effective figures.
+              additionalProperties:
+                $ref: "#/components/schemas/BastionFigures"
+            addressRules:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [prefix, rule]
+                properties:
+                  prefix:
+                    type: string
+                    description: A canonical prefix; an address is a /32 or /128.
+                    example: 198.51.100.0/24
+                  rule:
+                    type: string
+            kindRules:
+              type: object
+              additionalProperties: false
+              required: [anonymous, user, technicalToken, ci, administrator]
+              properties:
+                anonymous: {type: string}
+                user: {type: string}
+                technicalToken: {type: string}
+                ci: {type: string}
+                administrator: {type: string}
+        flood:
+          type: object
+          additionalProperties: false
+          description: The flood protection per address (R-BAS-035 to R-BAS-037); never unlimited.
+          required: [anonymous, authenticated, gui, failedAuth, blocking, exemptNetworks]
+          properties:
+            anonymous:
+              $ref: "#/components/schemas/BastionFloodClass"
+            authenticated:
+              $ref: "#/components/schemas/BastionFloodClass"
+            gui:
+              type: object
+              additionalProperties: false
+              required: [requestsPerSecond, burst]
+              properties:
+                requestsPerSecond: {type: integer, minimum: 1}
+                burst: {type: integer, minimum: 1}
+            failedAuth:
+              type: object
+              additionalProperties: false
+              required: [maxFailures, windowSeconds, timeoutSeconds]
+              properties:
+                maxFailures: {type: integer, minimum: 1}
+                windowSeconds: {type: integer, minimum: 1}
+                timeoutSeconds: {type: integer, minimum: 1}
+            blocking:
+              type: object
+              additionalProperties: false
+              required: [threshold, windowSeconds, durationSeconds, maxDurationSeconds]
+              properties:
+                threshold: {type: integer, minimum: 1}
+                windowSeconds: {type: integer, minimum: 1}
+                durationSeconds: {type: integer, minimum: 1}
+                maxDurationSeconds: {type: integer, minimum: 1}
+            exemptNetworks:
+              type: array
+              items:
+                type: string
+        slots:
+          type: object
+          additionalProperties: false
+          required: [maxConcurrent, anonymousShare, queueTimeoutMillis]
+          properties:
+            maxConcurrent: {type: integer, minimum: 1}
+            anonymousShare: {type: number, minimum: 0, maximum: 1}
+            queueTimeoutMillis: {type: integer, minimum: 0}
+        throughput:
+          type: object
+          additionalProperties: false
+          required: [bytesPerSecond, anonymousShare, bytesPerHour]
+          properties:
+            bytesPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
+            anonymousShare: {type: number, minimum: 0, maximum: 1}
+            bytesPerHour:
+              type: object
+              additionalProperties: false
+              required: [anonymous, signedIn, catalogue]
+              properties:
+                anonymous: {type: [integer, "null"], format: int64, minimum: 1}
+                signedIn: {type: [integer, "null"], format: int64, minimum: 1}
+                catalogue: {type: [integer, "null"], format: int64, minimum: 1}
+        anonymousCeiling:
+          type: object
+          additionalProperties: false
+          required: [requestsPerSecond, burst, requestsPerHour]
+          properties:
+            requestsPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
+            burst: {type: [integer, "null"], format: int64, minimum: 1}
+            requestsPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+    BastionFloodClass:
+      type: object
+      additionalProperties: false
+      required: [requestsPerSecond, burst, missesPerMinute]
+      properties:
+        requestsPerSecond: {type: integer, minimum: 1}
+        burst: {type: integer, minimum: 1}
+        missesPerMinute: {type: integer, minimum: 1}
+    BastionFigures:
+      type: object
+      additionalProperties: false
+      description: The eleven figures of a rule (R-LIM-004) as read at a Bastion's place (R-BAS-096); `null` is unlimited.
+      required: [requestsPerSecond, requestsBurst, requestsPerHour, cachedBytesPerSecond, cachedBytesPerHour, uncachedBytesPerSecond, uncachedBytesPerHour, upstreamRequestsPerHour, parallelTransfers, bytesPerDay, refusedPerHour]
+      properties:
+        requestsPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
+        requestsBurst: {type: [integer, "null"], format: int64, minimum: 1}
+        requestsPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+        cachedBytesPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
+        cachedBytesPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+        uncachedBytesPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
+        uncachedBytesPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+        upstreamRequestsPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+        parallelTransfers: {type: [integer, "null"], format: int64, minimum: 1}
+        bytesPerDay: {type: [integer, "null"], format: int64, minimum: 1}
+        refusedPerHour: {type: [integer, "null"], format: int64, minimum: 1}
     BastionHandshakeFormat:
       type: object
       additionalProperties: false
       description: A format's facts in the handshake's format table (R-BAS-057, R-BAS-058).
-      required: [id, registryRoot, replayHeaders, rateLimitedStatus, retryAfterMaxSeconds, boundPrefixes]
+      required: [id, registryRoot, replayHeaders, rateLimitedStatus, retryAfterMaxSeconds, boundPrefixes, errorShape, readWithBody]
       properties:
         id:
           type: string
@@ -31055,6 +31444,26 @@ components:
           items:
             type: string
           example: ["/v2/"]
+        errorShape:
+          type: string
+          pattern: "^(problem|npm|text|distribution|galaxy)$"
+          description: The shape of a Bastion's own answers on the format's family (R-BAS-095, Q-BAS-337).
+        readWithBody:
+          type: array
+          description: >-
+            The format's read routes that take a body (R-BAS-095): a method other than GET and HEAD and a path pattern from the
+            host root whose `{name}` segments stand for one segment each. Every other request of such a method is a write.
+          items:
+            type: object
+            additionalProperties: false
+            required: [method, path]
+            properties:
+              method:
+                type: string
+                example: POST
+              path:
+                type: string
+                example: /api/npm/{project}/{repo}/-/npm/v1/security/advisories/bulk
     BastionCheckRequest:
       type: object
       additionalProperties: false
@@ -31140,6 +31549,19 @@ components:
         retryAfterSeconds:
           type: integer
           minimum: 1
+        limits:
+          type: object
+          additionalProperties: false
+          description: >-
+            Set with `token` only, once the main installation resolves a rule at the Bastion's place (R-BAS-096): the subject key of
+            the download limits and the rule's ID.
+          required: [key, rule]
+          properties:
+            key:
+              type: string
+              example: user:0191a0c4-1c2a-7c3e-8a51-6f7d2b9c4e41
+            rule:
+              type: string
     BastionRepositoryRead:
       type: object
       additionalProperties: false
@@ -31179,7 +31601,7 @@ components:
           format: date-time
         kind:
           type: string
-          enum: [token, principal, grants, settings, content]
+          enum: [token, principal, grants, settings, content, catalogue]
         tokens:
           type: array
           items:
@@ -31195,7 +31617,7 @@ components:
     BastionDownloadsRequest:
       type: object
       additionalProperties: false
-      required: [events, dropped]
+      required: [events, dropped, usage, status]
       properties:
         events:
           type: array
@@ -31207,6 +31629,95 @@ components:
         droppedSince:
           type: string
           format: date-time
+        usage:
+          type: object
+          additionalProperties: false
+          description: What the Bastion counted per subject, credential and repository in buckets (R-LIM-045); at most 100,000 rows.
+          required: [bucketSeconds, rows, overflow]
+          properties:
+            bucketSeconds: {type: integer, minimum: 0}
+            rows:
+              type: array
+              maxItems: 100000
+              items:
+                type: object
+                additionalProperties: false
+                required: [bucketStart, subject, credential, repository, rule, requests, refused, cachedBytes, uncachedBytes, upstreamRequests, limited, wouldLimit]
+                properties:
+                  bucketStart: {type: string, format: date-time}
+                  subject: {type: string}
+                  credential: {type: string}
+                  repository: {type: string}
+                  rule: {type: string}
+                  requests: {type: integer, format: int64, minimum: 0}
+                  refused: {type: integer, format: int64, minimum: 0}
+                  cachedBytes: {type: integer, format: int64, minimum: 0}
+                  uncachedBytes: {type: integer, format: int64, minimum: 0}
+                  upstreamRequests: {type: integer, format: int64, minimum: 0}
+                  limited: {type: object, additionalProperties: {type: integer, format: int64, minimum: 0}}
+                  wouldLimit: {type: object, additionalProperties: {type: integer, format: int64, minimum: 0}}
+            overflow:
+              type: array
+              items:
+                type: object
+                additionalProperties: false
+                required: [bucketStart, subjectKind, repository, subjects, requests, refused, cachedBytes, uncachedBytes, upstreamRequests]
+                properties:
+                  bucketStart: {type: string, format: date-time}
+                  subjectKind: {type: string}
+                  repository: {type: string}
+                  subjects: {type: integer, format: int64, minimum: 0}
+                  requests: {type: integer, format: int64, minimum: 0}
+                  refused: {type: integer, format: int64, minimum: 0}
+                  cachedBytes: {type: integer, format: int64, minimum: 0}
+                  uncachedBytes: {type: integer, format: int64, minimum: 0}
+                  upstreamRequests: {type: integer, format: int64, minimum: 0}
+        status:
+          type: object
+          additionalProperties: false
+          description: The sending replica's state (R-UI-240); at most 100 blocks, the newest.
+          required: [replica, at, cache, throughput, limited, blocked, blocks]
+          properties:
+            replica: {type: string}
+            at: {type: string, format: date-time}
+            cache:
+              type: object
+              additionalProperties: false
+              required: [bytes, capacityBytes, hits, misses, evictions, protectedBytes]
+              properties:
+                bytes: {type: integer, format: int64, minimum: 0}
+                capacityBytes: {type: integer, format: int64, minimum: 0}
+                hits: {type: integer, format: int64, minimum: 0}
+                misses: {type: integer, format: int64, minimum: 0}
+                evictions: {type: integer, format: int64, minimum: 0}
+                protectedBytes: {type: integer, format: int64, minimum: 0}
+            throughput:
+              type: object
+              additionalProperties: false
+              required: [limited, bytesPerSecondByClass]
+              properties:
+                limited: {type: boolean}
+                bytesPerSecondByClass:
+                  type: object
+                  additionalProperties: false
+                  required: [anonymous, signedIn, catalogue]
+                  properties:
+                    anonymous: {type: integer, format: int64, minimum: 0}
+                    signedIn: {type: integer, format: int64, minimum: 0}
+                    catalogue: {type: integer, format: int64, minimum: 0}
+            limited: {type: integer, format: int64, minimum: 0}
+            blocked: {type: integer, format: int64, minimum: 0}
+            blocks:
+              type: array
+              maxItems: 100
+              items:
+                type: object
+                additionalProperties: false
+                required: [address, until, reason]
+                properties:
+                  address: {type: string, example: 203.0.113.0/24}
+                  until: {type: string, format: date-time}
+                  reason: {type: string}
     BastionDownloadEvent:
       type: object
       additionalProperties: false
@@ -31234,6 +31745,74 @@ components:
           type: string
         replica:
           type: string
+    BastionCatalogueChanges:
+      type: object
+      additionalProperties: false
+      description: The changes of a registration's public catalogue after a cursor (R-BAS-101).
+      required: [entries, cursor, more, reset]
+      properties:
+        entries:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [path, sha256, size, deleted, seq]
+            properties:
+              path:
+                type: string
+                description: A document path of the grammar of R-BAS-103.
+                example: packages/0193a0c4-77/versions/1.0.0
+              sha256:
+                type: string
+                description: The SHA-256 of the raw document, empty for a deleted document.
+                pattern: "^([0-9a-f]{64})?$"
+              size:
+                type: integer
+                format: int64
+                minimum: 0
+                description: The size of the raw document in bytes; it travels gzip-compressed.
+              deleted:
+                type: boolean
+              seq:
+                type: integer
+                format: int64
+                minimum: 1
+        cursor:
+          type: integer
+          format: int64
+          minimum: 0
+        more:
+          type: boolean
+        reset:
+          type: boolean
+    BastionCataloguePublic:
+      type: object
+      additionalProperties: false
+      description: The projects and repositories a registration's catalogue shows (R-BAS-101).
+      required: [projects, repositories]
+      properties:
+        projects:
+          type: array
+          items:
+            type: string
+        repositories:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [name, format, class, wiki]
+            properties:
+              name:
+                type: string
+                example: web/npm-all
+              format:
+                type: string
+                example: npm
+              class:
+                type: string
+                enum: [local, remote, virtual]
+              wiki:
+                type: boolean
     # <<< M13 bastion
     #
     # >>> M4b vulnerabilities

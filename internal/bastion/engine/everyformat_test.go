@@ -109,9 +109,8 @@ func registryMain(s *siteHarness) {
 		}
 		switch p := f.Request.URL.Path; {
 		case f.Probe && p == "/v2/_token":
-			r := resp(http.StatusNoContent, iface.Marking{Class: iface.ClassPass, Subject: iface.Subject{Kind: iface.SubjectAnonymous}, Interface: iface.InterfaceVersion}, nil, "")
-			r.Route = iface.RouteReadWithBody
-			return r, nil
+			s.t.Error("the token service's POST was probed: it is a read route with a body of the format table")
+			return nil, mainclient.ErrUnreachable
 		case p == "/v2/_token":
 			// Even a marking that would let the answer be kept must not: the token service's answer is never kept.
 			return resp(http.StatusOK, marking(iface.ClassShared, iface.ReadFull, "", sub), http.Header{"Content-Type": {"application/json"}, "Etag": {`"t1"`}},
@@ -183,7 +182,7 @@ func TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion(t *testing.T) {
 			return true
 		})
 	})
-	t.Run("POST of the token service is probed, then forwarded with its form", func(t *testing.T) {
+	t.Run("POST of the token service is forwarded with its form, without a probe", func(t *testing.T) {
 		before := len(s.main.requests())
 		form := "grant_type=password&username=alice&password=" + s.full + "&service=packages.example.com&scope=repository%3Alibrary%2Fnginx%3Apull"
 		w := s.do(http.MethodPost, "/v2/_token", strings.NewReader(form), "Content-Type", "application/x-www-form-urlencoded")
@@ -191,11 +190,8 @@ func TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion(t *testing.T) {
 			t.Fatalf("%d %s", w.Code, w.Body)
 		}
 		reqs := s.main.requests()[before:]
-		if len(reqs) != 2 || !reqs[0].Probe || reqs[0].Header.Get("Authorization") != "" || len(reqs[0].Body) != 0 {
-			t.Fatalf("the probe: %+v", reqs)
-		}
-		if reqs[1].Probe || string(reqs[1].Body) != form || reqs[1].Class != mainclient.Authenticated {
-			t.Fatalf("the real request: probe %v, class %s, body %q", reqs[1].Probe, reqs[1].Class, reqs[1].Body)
+		if len(reqs) != 1 || reqs[0].Probe || string(reqs[0].Body) != form || reqs[0].Class != mainclient.Authenticated {
+			t.Fatalf("the forward: %+v", reqs)
 		}
 	})
 	t.Run("a malformed token in the form is refused without a request and counted", func(t *testing.T) {
@@ -230,7 +226,7 @@ func TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion(t *testing.T) {
 		before := s.main.count()
 		for _, p := range []string{"/v2/web/docker", "/v2/%77eb/docker/app/manifests/1"} {
 			w := s.get(p, "Authorization", bearer(s.full))
-			if code, detail := registryError(t, w); w.Code != http.StatusNotFound || code != "NAME_UNKNOWN" || detail != "bastion_not_served" {
+			if code, detail := registryError(t, w); w.Code != http.StatusNotFound || code != "NAME_UNKNOWN" || detail != "not_found" {
 				t.Fatalf("%s: %d %s %s", p, w.Code, code, detail)
 			}
 		}
@@ -253,13 +249,13 @@ func TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion(t *testing.T) {
 	})
 	t.Run("no registry root in the table: nothing below /v2/ is served", func(t *testing.T) {
 		s.main.mu.Lock()
-		s.main.hs.Formats = iface.HandshakeFormats{{ID: "npm", RateLimitedStatus: 429}}
+		s.main.hs.Formats = iface.HandshakeFormats{{ID: "npm", RateLimitedStatus: 429, ErrorShape: iface.ErrorShapeNPM}}
 		s.main.mu.Unlock()
 		s.link.RequestHandshake()
 		s.tick()
 		before := s.main.count()
 		w := s.get("/v2/web/docker-local/app/manifests/1", "Authorization", bearer(s.full))
-		if w.Code != http.StatusNotFound || registryDetail(t, w) != "bastion_not_served" || s.main.count() != before {
+		if w.Code != http.StatusNotFound || registryDetail(t, w) != "not_found" || s.main.count() != before {
 			t.Fatalf("%d %s", w.Code, w.Body)
 		}
 	})

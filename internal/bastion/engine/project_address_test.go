@@ -41,8 +41,9 @@ func TestR_BAS_018_ARepositoryOfAnotherProjectIsAnotherRepository(t *testing.T) 
 			t.Fatalf("the repository of the site: %d %s", w.Code, w.Body)
 		}
 	}
+	asked := s.main.count()
 	w := s.get("/api/npm/data/npm-all/lodash/-/lodash-1.0.0.tgz", "Authorization", bearer(s.full))
-	if w.Code != http.StatusNotFound || problemCode(w) == "bastion_not_served" {
+	if w.Code != http.StatusNotFound || s.main.count() == asked {
 		t.Fatalf("the same key in another project: %d %s", w.Code, w.Body)
 	}
 }

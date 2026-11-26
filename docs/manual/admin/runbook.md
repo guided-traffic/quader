@@ -149,7 +149,7 @@ Every answer of Quader on a client listener carries `X-Request-Id`. A `503` with
 | `provider_unavailable` | The identity provider's discovery document has not loaded | Browser sign-in only; tokens keep working. Check the provider |
 | `too_many_pending_logins` | More login flows are pending than `auth.rate_limit.max_pending_flows` allows | Retry; look for a client that starts flows without finishing them |
 | `break_glass_rotating` | The break-glass password was rotated a moment ago | Retry after `Retry-After` |
-| `main_unreachable`, `bastion_busy` | A Bastion cannot reach the main installation, or its budget of requests to it is used up | [The Quader Bastion](bastion.md) |
+| `unavailable`, `busy` | A Bastion cannot reach the main installation, or its budget of requests to it is used up | [The Quader Bastion](bastion.md) |
 | `temporarily_unavailable` | The CI token exchange could not finish | The body's `reason` names the cause: `signing_keys_unavailable`, `database_unavailable` or `configuration_changed` ([Troubleshoot refused exchanges](gitlab-ci.md#troubleshoot-refused-exchanges)) |
 
 `unavailable` by its sentence:

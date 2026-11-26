@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,345 spec requirements:
-806 cover catalog features, 539 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,348 spec requirements:
+806 cover catalog features, 542 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>539 requirements</summary>
+<summary>542 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3209,6 +3209,9 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAS-098 | The cache protects what was served twice | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-099 | A Bastion names nothing of the main installation | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-100 | A Bastion's own imprint and privacy notice from its chart | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-101 | The catalogue's routes: a change list, documents and the public set | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-102 | The switches gui and docs | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-103 | The grammar of a document's path | P1 | [bastion.md](../spec/bastion.md) |
 | R-EP-002 | Endpoint identity comes from the listener | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-004 | TLS on endpoint listeners: certificates by SNI, wildcard certificates, reload | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-006 | Host-root binding: the reserved mechanism | MVP | [endpoints.md](../spec/endpoints.md) |

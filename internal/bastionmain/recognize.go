@@ -148,7 +148,7 @@ func Recognize(o RecognizeOptions) func(http.Handler) http.Handler {
 			rec := Recognition{
 				Bastion: tok.Name, BastionID: tok.BastionID, TokenID: tok.TokenID, TokenExpiresAt: tok.ExpiresAt,
 				Interface: iface.InterfaceVersion, Replica: clip(r.Header.Get(iface.HeaderReplica), maxReplicaName), Route: route,
-				Probe:      !route && r.Header.Get(iface.HeaderProbe) == iface.ProbeValue && r.Method != http.MethodGet && r.Method != http.MethodHead,
+				Probe:      !route && IsProbe(r),
 				FromEgress: o.fromEgress(tok.BastionID, req.ClientAddr),
 			}
 			if !route && r.Method == http.MethodGet {
@@ -382,3 +382,12 @@ func (w *statusWriter) Write(b []byte) (int, error) {
 
 // Unwrap lets http.ResponseController reach the underlying writer.
 func (w *statusWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+
+// IsProbe reports whether a forward is the probe of a write (R-BAS-014): a method other than GET and HEAD, no body and no
+// credential of a caller. Since interface version 8 no header names the probe: the Bastion forwards a read route that takes a
+// body itself, with its body (the format table's readWithBody, R-BAS-095), so a forwarded write without a body and without a
+// credential is a probe, which the marking stage refuses at the route match before any handler (Q-BAS-118).
+func IsProbe(r *http.Request) bool {
+	return r.Method != http.MethodGet && r.Method != http.MethodHead && r.ContentLength == 0 && len(r.TransferEncoding) == 0 &&
+		strings.TrimSpace(r.Header.Get("Authorization")) == ""
+}

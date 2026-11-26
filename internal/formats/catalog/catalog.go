@@ -433,6 +433,7 @@ func (r *Registry) Register(e Entry) {
 	e.Classes = append([]Class(nil), e.Classes...)
 	e.UpstreamPresets = clonePresets(e.UpstreamPresets)
 	e.Bastion.ReplayHeaders = slices.Clone(e.Bastion.ReplayHeaders)
+	e.Bastion.ReadWithBody = slices.Clone(e.Bastion.ReadWithBody)
 	e.settings = compiled
 	r.by[e.ID] = e
 }

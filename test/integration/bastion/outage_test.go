@@ -25,7 +25,7 @@ func waitGauge(t *testing.T, r *replica, name string, want float64) {
 
 // TestR_BAS_027_TheMainInstallationUnreachable: the link is cut. Inside the period an answer lives on; inside the
 // grace period a caller the replica knows is served from the cache; a token it has not seen and a package it has
-// not cached get 503 main_unreachable with Retry-After; past the period and the grace period nothing is served;
+// not cached get 503 unavailable with Retry-After; past the period and the grace period nothing is served;
 // no request is sent to the main installation while it is down; when it is back, service resumes.
 func TestR_BAS_027_TheMainInstallationUnreachable(t *testing.T) {
 	w := newWorld(t, worldOptions{})
@@ -53,7 +53,7 @@ func TestR_BAS_027_TheMainInstallationUnreachable(t *testing.T) {
 		o    callOpts
 	}{"unseen token": {tgz, callOpts{token: unseen.token, addr: "198.51.100.52"}}, "cold package": {cold, known}} {
 		got := r.do(t, "GET", c.path, c.o)
-		if got.Status != http.StatusServiceUnavailable || got.Code() != "main_unreachable" || got.Header.Get("Retry-After") != "30" {
+		if got.Status != http.StatusServiceUnavailable || got.Code() != "unavailable" || got.Header.Get("Retry-After") != "30" {
 			t.Fatalf("%s: %d %s, Retry-After %q", name, got.Status, got.Code(), got.Header.Get("Retry-After"))
 		}
 	}
@@ -141,7 +141,7 @@ func TestR_BAS_010_R_BAS_017_BaseURLMismatch(t *testing.T) {
 	r := b.reps[0]
 	waitGauge(t, r, "quader_bastion_base_url_mismatch", 1)
 	got := r.do(t, "GET", "/api/npm/"+npmAll+"/"+escapeNPM("@acme/sdk"), callOpts{token: w.full.token, addr: "198.51.100.71", host: "other.example.com"})
-	if got.Status != http.StatusServiceUnavailable || got.Code() != "main_unreachable" {
+	if got.Status != http.StatusServiceUnavailable || got.Code() != "unavailable" {
 		t.Fatalf("a cold document: %d %s", got.Status, got.Body)
 	}
 	if strings.Contains(string(got.Body), mainHost) {
@@ -172,7 +172,7 @@ func TestR_BAS_005_R_BAS_006_ARevokedBastionToken(t *testing.T) {
 	waitGauge(t, r, "quader_bastion_main_token_refused", 1)
 	waitGauge(t, r, "quader_bastion_main_reachable", 0)
 	got := r.do(t, "GET", tarballPath(npmAll, "@acme/sdk", "2.0.0"), known)
-	if got.Status != http.StatusServiceUnavailable || got.Code() != "main_unreachable" {
+	if got.Status != http.StatusServiceUnavailable || got.Code() != "unavailable" {
 		t.Fatalf("a cold package with the Bastion's token revoked: %d %s (the caller must never see the Bastion's 401)", got.Status, got.Body)
 	}
 	b.clk.Advance(45 * time.Second)

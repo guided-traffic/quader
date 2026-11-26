@@ -106,7 +106,7 @@ func TestR_BAS_021_R_BAS_025_TheFillOutlivesTheClientThatStartedIt(t *testing.T)
 }
 
 // TestR_BAS_025_AWaiterThatWaitsTooLongForTheLeaderAnswers503WithRetryAfter: a request that joined a fetch does
-// not wait for ever behind it. After collapseWait it answers 503 bastion_busy with Retry-After: 1 and makes no
+// not wait for ever behind it. After collapseWait it answers 503 busy with Retry-After: 1 and makes no
 // request of its own; the leader is not affected (Q-BAS-123, security finding P3).
 func TestR_BAS_025_AWaiterThatWaitsTooLongForTheLeaderAnswers503WithRetryAfter(t *testing.T) {
 	s := newSiteHarness(t, options{})
@@ -123,7 +123,7 @@ func TestR_BAS_025_AWaiterThatWaitsTooLongForTheLeaderAnswers503WithRetryAfter(t
 	go func() { leader <- s.get(tgz, "Authorization", bearer(s.full)) }()
 	eventuallyTrue(t, 5*time.Second, "the leader's request", func() bool { return s.main.count() == 1 })
 	w := s.get(tgz, "Authorization", bearer(s.full))
-	if w.Code != http.StatusServiceUnavailable || problemCode(w) != "bastion_busy" || w.Header().Get("Retry-After") != "1" {
+	if w.Code != http.StatusServiceUnavailable || problemCode(w) != "busy" || w.Header().Get("Retry-After") != "1" {
 		t.Fatalf("the waiter: %d %s %v", w.Code, w.Body, w.Header())
 	}
 	if counterValue(t, s.harness, "refused", "busy") != 1 {

@@ -475,10 +475,8 @@ const (
 	// CodeBastionInterfaceMismatch: the interface version of the request differs (400); the problem carries
 	// interfaceVersion.
 	CodeBastionInterfaceMismatch = iface.CodeInterfaceMismatch
-	// CodeBastionReadOnly: a write through a Bastion (403).
-	CodeBastionReadOnly = iface.CodeReadOnly
-	// CodeBastionNotServed: a path the Bastion does not serve (404).
-	CodeBastionNotServed = iface.CodeNotServed
+	// CodeReadOnly: a write through a Bastion (403), refused by the Bastion or by the main installation's backstop.
+	CodeReadOnly = iface.CodeReadOnly
 	// CodeBastionBaseURLUnknown: client-setup for a Bastion whose reported base URL is not an additional base
 	// URL of the installation (409).
 	CodeBastionBaseURLUnknown = iface.CodeBaseURLUnknown
@@ -488,13 +486,13 @@ const (
 	// CodePrincipalNotAllowed: a policy entry, a role binding, an owner record or a membership names a Bastion
 	// registration (422, R-BAS-004), or anonymous or authenticated (422, Q-AUTHZ-279).
 	CodePrincipalNotAllowed = "principal_not_allowed"
-	// The Bastion's own refusals (R-BAS-029): the Bastion produces them, the registry documents them.
-	CodeMainFailed      = iface.CodeMainFailed
-	CodeMainUnreachable = iface.CodeMainUnreachable
-	CodeBastionBusy     = iface.CodeBusy
-	CodeMainTimeout     = iface.CodeMainTimeout
-	CodeAuthTimeout     = iface.CodeAuthTimeout
-	CodeAddressBlocked  = iface.CodeAddressBlocked
+	// The Bastion's own refusals (R-BAS-029, Q-BAS-321): the Bastion produces them, the registry documents them. Its
+	// not_found and unavailable are the core's CodeNotFound and CodeUnavailable.
+	CodeBadGateway     = iface.CodeBadGateway
+	CodeBusy           = iface.CodeBusy
+	CodeGatewayTimeout = iface.CodeGatewayTimeout
+	CodeAuthTimeout    = iface.CodeAuthTimeout
+	CodeAddressBlocked = iface.CodeAddressBlocked
 )
 
 // <<< M13 bastion
@@ -1066,15 +1064,13 @@ var registry = []CodeInfo{
 	// >>> M13 bastion
 	{CodeBastionTokenInvalid, Unauthenticated, "Bastion token invalid", "The Bastion token of the request is invalid, revoked, expired or its registration is disabled. It concerns the Bastion, not the caller."},
 	{CodeBastionInterfaceMismatch, Invalid, "Bastion interface mismatch", "The request names another version of the Bastion interface than this installation speaks, or none; the member interfaceVersion is this installation's. Upgrade the Bastion or the installation so that they speak the same version."},
-	{CodeBastionReadOnly, Forbidden, "Bastion is read-only", "A Bastion serves reads only and accepts no uploads; the detail names no other address (R-BAS-099)."},
-	{CodeBastionNotServed, NotFound, "Not served by a Bastion", "A Bastion serves the package clients' read paths (/api/<format>/… and /files/…) and nothing else."},
+	{CodeReadOnly, Forbidden, "Read-only", "The address serves downloads and accepts no uploads: a Bastion refuses every write, and the detail names no other address (R-BAS-095, R-BAS-099)."},
 	{CodeBastionBaseURLUnknown, Conflict, "Bastion base URL unknown", "The base URL the Bastion reported at its last handshake is not an entry of server.additional_base_urls; add it, and the snippets are rendered on it."},
 	{CodeBastionNotImplemented, NotImplemented, "Bastion operation not implemented", "The operation is part of the Bastion work and is not built in this release yet."},
 	{CodePrincipalNotAllowed, Unprocessable, "Principal not allowed", "A Bastion registration holds no grant, role, ownership or group membership: it owns Bastion tokens only. Nor can anonymous or authenticated be named in a policy, a role binding, a membership or an owner record: a visibility level opens content to everyone or to every internal user."},
-	{CodeMainFailed, UpstreamFailed, "Main installation failed", "The Bastion could not get an answer from the main installation (connect or TLS error, or an unmarked 5xx of a proxy in front of it)."},
-	{CodeMainUnreachable, Unavailable, "Main installation unreachable", "The Bastion cannot reach the main installation and holds no usable answer for this request; retry later."},
-	{CodeBastionBusy, Unavailable, "Bastion busy", "The Bastion's budget of concurrent requests to the main installation is used up; retry after the Retry-After."},
-	{CodeMainTimeout, UpstreamTimeout, "Main installation timed out", "The main installation did not answer within the Bastion's time limit."},
+	{CodeBadGateway, UpstreamFailed, "Bad gateway", "A Bastion could not get an answer for the request (a connect or TLS error, or an unmarked 5xx of a proxy before the installation it serves); its answer names no party (R-BAS-029, Q-BAS-321)."},
+	{CodeBusy, Unavailable, "Busy", "A Bastion's budget of concurrent requests behind it is used up; retry after the Retry-After (R-BAS-025)."},
+	{CodeGatewayTimeout, UpstreamTimeout, "Gateway timeout", "A Bastion got no answer for the request within its time limit (R-BAS-029)."},
 	{CodeAuthTimeout, RateLimited, "Authentication timeout", "Too many failed authentications came from this address; unverified credentials are refused until the Retry-After has passed."},
 	{CodeAddressBlocked, RateLimited, "Address blocked", "The address was blocked for sending too many refused requests; retry after the Retry-After."},
 	// <<< M13 bastion

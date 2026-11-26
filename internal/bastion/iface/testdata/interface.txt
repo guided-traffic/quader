@@ -1,7 +1,29 @@
-interface version 7
+interface version 8
 const APIPrefix = "/api/"
 const APIv1Prefix = "/api/v1/"
 const BearerScheme = "Bearer"
+const CatalogueBatchMediaType = "application/vnd.quader.catalogue-batch"
+const CatalogueChain CatalogueKind = "chain"
+const CatalogueContents CatalogueKind = "contents"
+const CatalogueDocEntry CatalogueKind = "docEntry"
+const CatalogueDocFile CatalogueKind = "docFile"
+const CatalogueDocs CatalogueKind = "docs"
+const CatalogueDocumentMediaType = "application/gzip"
+const CatalogueFile CatalogueKind = "file"
+const CatalogueFileSetup CatalogueKind = "fileSetup"
+const CatalogueFolder CatalogueKind = "folder"
+const CatalogueIndex CatalogueKind = "index"
+const CataloguePackage CatalogueKind = "package"
+const CatalogueReadme CatalogueKind = "readme"
+const CatalogueSetup CatalogueKind = "setup"
+const CatalogueSignatureObject CatalogueKind = "signatureObject"
+const CatalogueSignatures CatalogueKind = "signatures"
+const CatalogueState CatalogueKind = "state"
+const CatalogueTrustedRoot CatalogueKind = "trustedRoot"
+const CatalogueVersion CatalogueKind = "version"
+const CatalogueVersionState CatalogueKind = "versionState"
+const CatalogueVersions CatalogueKind = "versions"
+const CatalogueVulnerabilities CatalogueKind = "vulnerabilities"
 const ClassAbsent Class = "absent"
 const ClassArtifact Class = "artifact"
 const ClassHandover Class = "handover"
@@ -10,23 +32,29 @@ const ClassPrivate Class = "private"
 const ClassShared Class = "shared"
 const CodeAddressBlocked = "address_blocked"
 const CodeAuthTimeout = "auth_timeout"
+const CodeBadGateway = "bad_gateway"
 const CodeBaseURLUnknown = "bastion_base_url_unknown"
-const CodeBusy = "bastion_busy"
+const CodeBusy = "busy"
 const CodeCredentialsNeeded = "credentials_required"
+const CodeGatewayTimeout = "gateway_timeout"
 const CodeInterfaceMismatch = "bastion_interface_mismatch"
 const CodeInvalidToken = "invalid_token"
-const CodeMainFailed = "main_failed"
-const CodeMainTimeout = "main_timeout"
-const CodeMainUnreachable = "main_unreachable"
 const CodeMethodNotAllowed = "method_not_allowed"
 const CodeMisdirected = "misdirected_request"
+const CodeNotFound = "not_found"
 const CodeNotImplemented = "bastion_not_implemented"
-const CodeNotServed = "bastion_not_served"
 const CodePayloadTooLarge = "payload_too_large"
 const CodeRateLimited = "rate_limited"
-const CodeReadOnly = "bastion_read_only"
+const CodeReadOnly = "read_only"
 const CodeTokenInvalid = "bastion_token_invalid"
+const CodeUnavailable = "unavailable"
 const CountedDownload = "download"
+const ErrorShapeDistribution ErrorShape = "distribution"
+const ErrorShapeGalaxy ErrorShape = "galaxy"
+const ErrorShapeNPM ErrorShape = "npm"
+const ErrorShapeProblem ErrorShape = "problem"
+const ErrorShapeText ErrorShape = "text"
+const FeedCatalogue FeedKind = "catalogue"
 const FeedContent FeedKind = "content"
 const FeedGrants FeedKind = "grants"
 const FeedPrincipal FeedKind = "principal"
@@ -35,8 +63,10 @@ const FeedToken FeedKind = "token"
 const FilesPrefix = "/files/"
 const HandoverKeyBytes = 32
 const HeaderAuthorization = "Quader-Bastion-Authorization"
+const HeaderCatalogueKept = "Quader-Bastion-Catalogue-Kept"
 const HeaderClass = "Quader-Bastion-Class"
 const HeaderCounted = "Quader-Bastion-Counted"
+const HeaderEdgeLimit = "Quader-Bastion-Edge-Limit"
 const HeaderForwarded = "Forwarded"
 const HeaderForwardedFor = "X-Forwarded-For"
 const HeaderForwardedHost = "X-Forwarded-Host"
@@ -44,39 +74,54 @@ const HeaderForwardedPort = "X-Forwarded-Port"
 const HeaderForwardedProto = "X-Forwarded-Proto"
 const HeaderHandover = "Quader-Bastion-Handover"
 const HeaderInterface = "Quader-Bastion-Interface"
+const HeaderLimits = "Quader-Bastion-Limits"
 const HeaderPackage = "Quader-Bastion-Package"
 const HeaderPackageRead = "Quader-Bastion-Package-Read"
 const HeaderPrefix = "Quader-Bastion-"
-const HeaderProbe = "Quader-Bastion-Probe"
 const HeaderRead = "Quader-Bastion-Read"
 const HeaderReplica = "Quader-Bastion-Replica"
 const HeaderRepository = "Quader-Bastion-Repository"
-const HeaderRoute = "Quader-Bastion-Route"
 const HeaderSubject = "Quader-Bastion-Subject"
+const MaxCatalogueFrameHeaderBytes = 8 << 10
+const MaxCataloguePathBytes = 4096
+const MaxCatalogueSegmentBytes = 512
 const MaxHandoverBytes = 8 << 10
 const MaxPackageBytes = 512
 const MaxRegistryTokenBytes = 4096
+const MaxRuleIDBytes = 64
+const MaxStatusBlocks = 100
+const MaxUsageRows = 100_000
 const MediaType = "application/json"
+const ModeAudit LimitsMode = "audit"
+const ModeEnforce LimitsMode = "enforce"
+const OperationCatalogue = "catalogue"
 const OperationCheck = "check"
 const OperationDownloads = "downloads"
 const OperationFeed = "feed"
 const OperationHandshake = "handshake"
+const PathCatalogue = "/api/v1/bastion/catalogue"
+const PathCatalogueDocument = "/api/v1/bastion/catalogue/document"
+const PathCatalogueDocuments = "/api/v1/bastion/catalogue/documents"
+const PathCataloguePublic = "/api/v1/bastion/catalogue/public"
 const PathCheck = "/api/v1/bastion/check"
 const PathDownloads = "/api/v1/bastion/downloads"
 const PathFeed = "/api/v1/bastion/feed"
 const PathHandshake = "/api/v1/bastion/handshake"
 const PathPrefix = "/api/v1/bastion/"
-const ProbeValue = "1"
+const PresetCustom LimitsPreset = "custom"
+const PresetInternal LimitsPreset = "internal"
+const PresetInternet LimitsPreset = "internet"
+const PresetPartnerNetwork LimitsPreset = "partnerNetwork"
 const ProblemMediaType = "application/problem+json"
 const ProblemMemberInterfaceVersion = "interfaceVersion"
 const QueryAfter = "after"
 const QueryLimit = "limit"
+const QueryPath = "path"
 const ReadFull Read = "full"
 const ReadNone Read = "none"
 const ReadPartial Read = "partial"
 const RegistryGrantPull = 1
 const RegistryTokenPrefix = "qdr_rgt_"
-const RouteReadWithBody = "read-with-body"
 const SubjectAnonymous SubjectKind = "anonymous"
 const SubjectAnonymousRefused SubjectKind = "anonymous_refused"
 const SubjectInvalid SubjectKind = "invalid"
@@ -86,11 +131,21 @@ const SyntheticCursorPrefix = "t:"
 const TokenPrefix = "qdr_bst_"
 const TokenTypeBST = "bst"
 const UserAgentPrefix = "quader-bastion/"
+func (CatalogueBatch) Validate(maxPaths int) error
+func (CatalogueChanges) MarshalJSON() ([]byte, error)
+func (CatalogueChanges) Validate(after int64) error
+func (CataloguePath) Documentation() bool
+func (CataloguePath) String() string
+func (CataloguePublic) MarshalJSON() ([]byte, error)
 func (CheckPackages) MarshalJSON() ([]byte, error)
 func (CheckRequest) PackagesProblem(maxPairs int) *PackageProblem
 func (Class) Valid() bool
+func (Configuration) Validate() error
 func (Cursor) String() string
 func (Cursor) Synthetic() bool
+func (EdgeLimit) Header() string
+func (EdgeLimit) Off() bool
+func (ErrorShape) Valid() bool
 func (FeedKind) Valid() bool
 func (Handover) Check(c HandoverCheck) error
 func (Handover) Format(f fmt.State, _ rune)
@@ -110,6 +165,7 @@ func (HandoverKey) String() string
 func (HandoverOffer) Set(h http.Header)
 func (HandoverOffer) String() string
 func (HandshakeFormat) CapRetryAfter(d time.Duration) time.Duration
+func (HandshakeFormat) ReadsWithBody(method, escapedPath string) bool
 func (HandshakeFormats) Lookup(id string) HandshakeFormat
 func (HandshakeFormats) RegistryRoot() (HandshakeFormat, bool)
 func (HandshakeFormats) Validate() error
@@ -117,25 +173,103 @@ func (Marking) Set(h http.Header)
 func (PackageReads) MarshalJSON() ([]byte, error)
 func (Read) Valid() bool
 func (RegistryGrant) Pulls(repository, pkg string) bool
+func (ReplicaStatus) MarshalJSON() ([]byte, error)
+func (ReplicaStatus) Validate() error
 func (Subject) Header() string
+func (SubjectLimits) Header() string
+func (SubjectLimits) Valid() bool
+func (UsageReport) MarshalJSON() ([]byte, error)
+func (UsageReport) Validate() error
 func DecodeHandover(v string) (Handover, error)
 func DecodeStrict(r io.Reader, v any) error
 func ETagContentAddress(etag string) (string, bool)
 func EncodeHandover(h Handover) (string, error)
+func FigureNames() []string
 func HandoverFrom(hdr http.Header) (h Handover, ok bool, err error)
 func HandoverOfferFrom(h http.Header) (offer HandoverOffer, ok bool, err error)
 func Marshal(v any) ([]byte, error)
 func NewHandoverKey(b []byte) (HandoverKey, error)
+func ParseCatalogueKept(v string) (bool, error)
+func ParseCataloguePath(s string) (CataloguePath, error)
 func ParseCursor(s string) (Cursor, error)
+func ParseEdgeLimit(v string) (EdgeLimit, error)
 func ParseHandoverOffer(v string) (HandoverOffer, error)
 func ParseMarking(h http.Header) (m Marking, ok bool, err error)
 func ParseSubjectHeader(v string) (Subject, error)
+func ParseSubjectLimits(v string) (SubjectLimits, error)
+func ReadCatalogueFrame(r *bufio.Reader, maxGzip int64) (CatalogueFrame, []byte, error)
 func RegistryTokenAnonymous(s string) bool
 func RegistryTokenExpiry(s string) (time.Time, bool)
 func RegistryTokenGrant(s string) (RegistryGrant, bool)
 func RegistryTokenWellFormed(s string) bool
 func StripMarking(h http.Header)
 func ValidPackage(name string) bool
+func ValidRuleID(s string) bool
+func WriteCatalogueFrame(w io.Writer, f CatalogueFrame, gz []byte) error
+type AddressRule struct
+type AddressRule: field Prefix string `json:"prefix"`
+type AddressRule: field Rule string `json:"rule"`
+type Blocking struct
+type Blocking: field DurationSeconds int `json:"durationSeconds"`
+type Blocking: field MaxDurationSeconds int `json:"maxDurationSeconds"`
+type Blocking: field Threshold int `json:"threshold"`
+type Blocking: field WindowSeconds int `json:"windowSeconds"`
+type BodyRoute struct
+type BodyRoute: field Method string `json:"method"`
+type BodyRoute: field Path string `json:"path"`
+type CacheStatus struct
+type CacheStatus: field Bytes int64 `json:"bytes"`
+type CacheStatus: field CapacityBytes int64 `json:"capacityBytes"`
+type CacheStatus: field Evictions int64 `json:"evictions"`
+type CacheStatus: field Hits int64 `json:"hits"`
+type CacheStatus: field Misses int64 `json:"misses"`
+type CacheStatus: field ProtectedBytes int64 `json:"protectedBytes"`
+type CatalogueBatch struct
+type CatalogueBatch: field Paths []string `json:"paths"`
+type CatalogueChange struct
+type CatalogueChange: field Deleted bool `json:"deleted"`
+type CatalogueChange: field Path string `json:"path"`
+type CatalogueChange: field SHA256 string `json:"sha256"`
+type CatalogueChange: field Seq int64 `json:"seq"`
+type CatalogueChange: field Size int64 `json:"size"`
+type CatalogueChanges struct
+type CatalogueChanges: field Cursor int64 `json:"cursor"`
+type CatalogueChanges: field Entries []CatalogueChange `json:"entries"`
+type CatalogueChanges: field More bool `json:"more"`
+type CatalogueChanges: field Reset bool `json:"reset"`
+type CatalogueFrame struct
+type CatalogueFrame: field GzipSize int64 `json:"gzipSize"`
+type CatalogueFrame: field Missing bool `json:"missing"`
+type CatalogueFrame: field Path string `json:"path"`
+type CatalogueFrame: field SHA256 string `json:"sha256"`
+type CatalogueFrame: field Size int64 `json:"size"`
+type CatalogueKind string
+type CataloguePath struct
+type CataloguePath: field Client string
+type CataloguePath: field EntryName string
+type CataloguePath: field EntryType string
+type CataloguePath: field File string
+type CataloguePath: field Index int
+type CataloguePath: field Kind CatalogueKind
+type CataloguePath: field Package string
+type CataloguePath: field Project string
+type CataloguePath: field Repository string
+type CataloguePath: field SHA256 string
+type CataloguePath: field SetupPackage string
+type CataloguePath: field SetupVersion string
+type CataloguePath: field Version string
+type CataloguePublic struct
+type CataloguePublic: field Projects []string `json:"projects"`
+type CataloguePublic: field Repositories []CatalogueRepository `json:"repositories"`
+type CatalogueRepository struct
+type CatalogueRepository: field Class string `json:"class"`
+type CatalogueRepository: field Format string `json:"format"`
+type CatalogueRepository: field Name string `json:"name"`
+type CatalogueRepository: field Wiki bool `json:"wiki"`
+type Ceiling struct
+type Ceiling: field Burst *int64 `json:"burst"`
+type Ceiling: field RequestsPerHour *int64 `json:"requestsPerHour"`
+type Ceiling: field RequestsPerSecond *int64 `json:"requestsPerSecond"`
 type CheckAnswer struct
 type CheckAnswer: field Packages PackageReads `json:"packages"`
 type CheckAnswer: field Repositories map[string]RepositoryRead `json:"repositories"`
@@ -150,6 +284,10 @@ type CheckRequest: field Credential *string `json:"credential"`
 type CheckRequest: field Packages CheckPackages `json:"packages"`
 type CheckRequest: field Repositories []string `json:"repositories"`
 type Class string
+type Configuration struct
+type Configuration: field Limits Limits `json:"limits"`
+type Configuration: field Revision int64 `json:"revision"`
+type Configuration: field Switches Switches `json:"switches"`
 type Cursor struct
 type Cursor: field At time.Time
 type Cursor: field ID string
@@ -167,6 +305,16 @@ type DownloadsRequest struct
 type DownloadsRequest: field Dropped int `json:"dropped"`
 type DownloadsRequest: field DroppedSince *time.Time `json:"droppedSince,omitempty"`
 type DownloadsRequest: field Events []DownloadEvent `json:"events"`
+type DownloadsRequest: field Status ReplicaStatus `json:"status"`
+type DownloadsRequest: field Usage UsageReport `json:"usage"`
+type EdgeLimit struct
+type EdgeLimit: field Connections int
+type EdgeLimit: field RequestsPerSecond int
+type ErrorShape string
+type FailedAuth struct
+type FailedAuth: field MaxFailures int `json:"maxFailures"`
+type FailedAuth: field TimeoutSeconds int `json:"timeoutSeconds"`
+type FailedAuth: field WindowSeconds int `json:"windowSeconds"`
 type FeedAnswer struct
 type FeedAnswer: field Cursor string `json:"cursor"`
 type FeedAnswer: field Entries []FeedEntry `json:"entries"`
@@ -180,6 +328,32 @@ type FeedEntry: field Principals []string `json:"principals,omitempty"`
 type FeedEntry: field Repositories []string `json:"repositories,omitempty"`
 type FeedEntry: field Tokens []string `json:"tokens,omitempty"`
 type FeedKind string
+type Figures struct
+type Figures: field BytesPerDay *int64 `json:"bytesPerDay"`
+type Figures: field CachedBytesPerHour *int64 `json:"cachedBytesPerHour"`
+type Figures: field CachedBytesPerSecond *int64 `json:"cachedBytesPerSecond"`
+type Figures: field ParallelTransfers *int64 `json:"parallelTransfers"`
+type Figures: field RefusedPerHour *int64 `json:"refusedPerHour"`
+type Figures: field RequestsBurst *int64 `json:"requestsBurst"`
+type Figures: field RequestsPerHour *int64 `json:"requestsPerHour"`
+type Figures: field RequestsPerSecond *int64 `json:"requestsPerSecond"`
+type Figures: field UncachedBytesPerHour *int64 `json:"uncachedBytesPerHour"`
+type Figures: field UncachedBytesPerSecond *int64 `json:"uncachedBytesPerSecond"`
+type Figures: field UpstreamRequestsPerHour *int64 `json:"upstreamRequestsPerHour"`
+type Flood struct
+type Flood: field Anonymous FloodClass `json:"anonymous"`
+type Flood: field Authenticated FloodClass `json:"authenticated"`
+type Flood: field Blocking Blocking `json:"blocking"`
+type Flood: field ExemptNetworks []string `json:"exemptNetworks"`
+type Flood: field FailedAuth FailedAuth `json:"failedAuth"`
+type Flood: field GUI FloodRate `json:"gui"`
+type FloodClass struct
+type FloodClass: field Burst int `json:"burst"`
+type FloodClass: field MissesPerMinute int `json:"missesPerMinute"`
+type FloodClass: field RequestsPerSecond int `json:"requestsPerSecond"`
+type FloodRate struct
+type FloodRate: field Burst int `json:"burst"`
+type FloodRate: field RequestsPerSecond int `json:"requestsPerSecond"`
 type Handover struct
 type Handover: field Connection string `json:"connection"`
 type Handover: field DataKey HandoverKey `json:"dataKey,omitzero"`
@@ -201,9 +375,9 @@ type Handshake struct
 type Handshake: field AnonymousReads bool `json:"anonymousReads"`
 type Handshake: field Bastion HandshakeBastion `json:"bastion"`
 type Handshake: field BoundRepository string `json:"boundRepository,omitempty"`
+type Handshake: field Configuration Configuration `json:"configuration"`
 type Handshake: field Feed HandshakeFeed `json:"feed"`
 type Handshake: field Formats HandshakeFormats `json:"formats"`
-type Handshake: field Handover bool `json:"handover"`
 type Handshake: field Installation HandshakeInstallation `json:"installation"`
 type Handshake: field InterfaceVersion int `json:"interfaceVersion"`
 type Handshake: field RecordDownloads bool `json:"recordDownloads"`
@@ -217,8 +391,10 @@ type HandshakeFeed struct
 type HandshakeFeed: field Cursor string `json:"cursor"`
 type HandshakeFormat struct
 type HandshakeFormat: field BoundPrefixes []string `json:"boundPrefixes"`
+type HandshakeFormat: field ErrorShape ErrorShape `json:"errorShape"`
 type HandshakeFormat: field ID string `json:"id"`
 type HandshakeFormat: field RateLimitedStatus int `json:"rateLimitedStatus"`
+type HandshakeFormat: field ReadWithBody []BodyRoute `json:"readWithBody"`
 type HandshakeFormat: field RegistryRoot bool `json:"registryRoot"`
 type HandshakeFormat: field ReplayHeaders []string `json:"replayHeaders"`
 type HandshakeFormat: field RetryAfterMaxSeconds int `json:"retryAfterMaxSeconds"`
@@ -226,6 +402,22 @@ type HandshakeFormats []HandshakeFormat
 type HandshakeInstallation struct
 type HandshakeInstallation: field BaseURL string `json:"baseUrl"`
 type HandshakeInstallation: field Release string `json:"release"`
+type KindRules struct
+type KindRules: field Administrator string `json:"administrator"`
+type KindRules: field Anonymous string `json:"anonymous"`
+type KindRules: field CI string `json:"ci"`
+type KindRules: field TechnicalToken string `json:"technicalToken"`
+type KindRules: field User string `json:"user"`
+type Limits struct
+type Limits: field AnonymousCeiling Ceiling `json:"anonymousCeiling"`
+type Limits: field Flood Flood `json:"flood"`
+type Limits: field Mode LimitsMode `json:"mode"`
+type Limits: field Place PlaceTable `json:"place"`
+type Limits: field Preset LimitsPreset `json:"preset"`
+type Limits: field Slots Slots `json:"slots"`
+type Limits: field Throughput Throughput `json:"throughput"`
+type LimitsMode string
+type LimitsPreset string
 type Marking struct
 type Marking: field Class Class
 type Marking: field Counted bool
@@ -244,22 +436,92 @@ type PackageRead: field Package string `json:"package"`
 type PackageRead: field Read Read `json:"read"`
 type PackageRead: field Repository string `json:"repository"`
 type PackageReads []PackageRead
+type PlaceTable struct
+type PlaceTable: field AddressRules []AddressRule `json:"addressRules"`
+type PlaceTable: field KindRules KindRules `json:"kindRules"`
+type PlaceTable: field Rules map[string]Figures `json:"rules"`
 type Read string
 type RegistryGrant []RegistryGrantEntry
 type RegistryGrantEntry struct
 type RegistryGrantEntry: field Actions int `json:"a"`
 type RegistryGrantEntry: field Name string `json:"n"`
 type RegistryGrantEntry: field Repository string `json:"r"`
+type ReplicaStatus struct
+type ReplicaStatus: field At time.Time `json:"at"`
+type ReplicaStatus: field Blocked int64 `json:"blocked"`
+type ReplicaStatus: field Blocks []StatusBlock `json:"blocks"`
+type ReplicaStatus: field Cache CacheStatus `json:"cache"`
+type ReplicaStatus: field Limited int64 `json:"limited"`
+type ReplicaStatus: field Replica string `json:"replica"`
+type ReplicaStatus: field Throughput ThroughputStatus `json:"throughput"`
 type RepositoryRead struct
 type RepositoryRead: field Read Read `json:"read"`
 type RepositoryRead: field Status int `json:"status,omitempty"`
+type Slots struct
+type Slots: field AnonymousShare float64 `json:"anonymousShare"`
+type Slots: field MaxConcurrent int `json:"maxConcurrent"`
+type Slots: field QueueTimeoutMillis int `json:"queueTimeoutMillis"`
+type StatusBlock struct
+type StatusBlock: field Address string `json:"address"`
+type StatusBlock: field Reason string `json:"reason"`
+type StatusBlock: field Until time.Time `json:"until"`
 type Subject struct
 type Subject: field ExpiresAt *time.Time `json:"expiresAt,omitempty"`
 type Subject: field Kind SubjectKind `json:"kind"`
+type Subject: field Limits *SubjectLimits `json:"limits,omitempty"`
 type Subject: field PrincipalID string `json:"principalId,omitempty"`
 type Subject: field RetryAfterSeconds *int `json:"retryAfterSeconds,omitempty"`
 type Subject: field TokenID string `json:"tokenId,omitempty"`
 type SubjectKind string
+type SubjectLimits struct
+type SubjectLimits: field Key string `json:"key"`
+type SubjectLimits: field Rule string `json:"rule"`
+type Switches struct
+type Switches: field Docs bool `json:"docs"`
+type Switches: field GUI bool `json:"gui"`
+type Switches: field Handover bool `json:"handover"`
+type Throughput struct
+type Throughput: field AnonymousShare float64 `json:"anonymousShare"`
+type Throughput: field BytesPerHour ThroughputHours `json:"bytesPerHour"`
+type Throughput: field BytesPerSecond *int64 `json:"bytesPerSecond"`
+type ThroughputClasses struct
+type ThroughputClasses: field Anonymous int64 `json:"anonymous"`
+type ThroughputClasses: field Catalogue int64 `json:"catalogue"`
+type ThroughputClasses: field SignedIn int64 `json:"signedIn"`
+type ThroughputHours struct
+type ThroughputHours: field Anonymous *int64 `json:"anonymous"`
+type ThroughputHours: field Catalogue *int64 `json:"catalogue"`
+type ThroughputHours: field SignedIn *int64 `json:"signedIn"`
+type ThroughputStatus struct
+type ThroughputStatus: field BytesPerSecondByClass ThroughputClasses `json:"bytesPerSecondByClass"`
+type ThroughputStatus: field Limited bool `json:"limited"`
+type UsageOverflow struct
+type UsageOverflow: field BucketStart time.Time `json:"bucketStart"`
+type UsageOverflow: field CachedBytes int64 `json:"cachedBytes"`
+type UsageOverflow: field Refused int64 `json:"refused"`
+type UsageOverflow: field Repository string `json:"repository"`
+type UsageOverflow: field Requests int64 `json:"requests"`
+type UsageOverflow: field SubjectKind string `json:"subjectKind"`
+type UsageOverflow: field Subjects int64 `json:"subjects"`
+type UsageOverflow: field UncachedBytes int64 `json:"uncachedBytes"`
+type UsageOverflow: field UpstreamRequests int64 `json:"upstreamRequests"`
+type UsageReport struct
+type UsageReport: field BucketSeconds int `json:"bucketSeconds"`
+type UsageReport: field Overflow []UsageOverflow `json:"overflow"`
+type UsageReport: field Rows []UsageRow `json:"rows"`
+type UsageRow struct
+type UsageRow: field BucketStart time.Time `json:"bucketStart"`
+type UsageRow: field CachedBytes int64 `json:"cachedBytes"`
+type UsageRow: field Credential string `json:"credential"`
+type UsageRow: field Limited map[string]int64 `json:"limited"`
+type UsageRow: field Refused int64 `json:"refused"`
+type UsageRow: field Repository string `json:"repository"`
+type UsageRow: field Requests int64 `json:"requests"`
+type UsageRow: field Rule string `json:"rule"`
+type UsageRow: field Subject string `json:"subject"`
+type UsageRow: field UncachedBytes int64 `json:"uncachedBytes"`
+type UsageRow: field UpstreamRequests int64 `json:"upstreamRequests"`
+type UsageRow: field WouldLimit map[string]int64 `json:"wouldLimit"`
 var ErrCursor = errors.New("bastion feed cursor: malformed")
 var ErrHandover = errors.New("bastion handover: refused")
 var ErrMarking = errors.New("bastion marking: malformed")

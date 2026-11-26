@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
@@ -122,7 +123,7 @@ func newFront(t *testing.T, dir, target string) *front {
 			f.mu.Lock()
 			f.recs = append(f.recs, rec{
 				Method: r.Method, Path: r.URL.Path, Query: r.URL.RawQuery, Header: r.Header.Clone(), Status: rw.status,
-				Kind: kindOf(r), Probe: r.Header.Get(iface.HeaderProbe) != "", At: time.Now(),
+				Kind: kindOf(r), Probe: bastionmain.IsProbe(r), At: time.Now(),
 			})
 			rw.idx = len(f.recs) - 1
 			f.mu.Unlock()

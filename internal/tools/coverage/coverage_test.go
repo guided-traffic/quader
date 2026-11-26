@@ -166,8 +166,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1344 since the audit log shows a push, a publish and a delete as one row (R-OPS-056, one P1 requirement of W33b).
 		// 1345 since the reading parts of the package screens are views without a session and without acts (R-UI-223, one P1
 		// requirement of W-35, P2).
-		if len(m.Reqs) != 1345 || count[prioMVP] != 742 || count[prioP1] != 564 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1345 (742, 564, 39)",
+		// 1348 since the catalogue's wire, the meaning of gui and docs and the grammar of its document paths are built
+		// (R-BAS-101 to R-BAS-103, three P1 requirements of W-35, P5, with W-34's E7).
+		if len(m.Reqs) != 1348 || count[prioMVP] != 742 || count[prioP1] != 567 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1348 (742, 567, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

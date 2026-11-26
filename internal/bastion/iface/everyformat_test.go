@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -108,7 +109,9 @@ func TestR_BAS_052_AnAnonymousRegistryTokenReadsAsTheAnonymousCaller(t *testing.
 	}
 	for name, tok := range map[string]string{
 		"a user's token":                  user,
-		"a payload of another version":    forged(`2:k1:{"a":true}`),
+		"a payload of another version":    forged(`3:k1:{"a":true}`),
+		"version 2 without a sealed part": forged(`2:k1:{"a":true}`),
+		"version 2 without a key ID":      forged(`2::{"a":true}:c2VhbGVk`),
 		"claims that are no JSON":         forged(`1:k1:a=true`),
 		"no key ID and claims":            forged(`1:{"a":true}`),
 		"claims that say false":           forged(`1:k1:{"a":false,"e":"default"}`),
@@ -129,15 +132,21 @@ func TestR_BAS_052_AnAnonymousRegistryTokenReadsAsTheAnonymousCaller(t *testing.
 // a format the table does not name gets the defaults, and the Bastion refuses a table it cannot rely on (R-BAS-057).
 func TestR_BAS_057_TheHandshakeCarriesTheFormatTable(t *testing.T) {
 	table := iface.HandshakeFormats{
-		{ID: "npm", ReplayHeaders: []string{}, RateLimitedStatus: http.StatusTooManyRequests, BoundPrefixes: []string{}},
-		{ID: "oci", RegistryRoot: true, ReplayHeaders: []string{"Docker-Content-Digest", "Link"}, RateLimitedStatus: http.StatusTooManyRequests, BoundPrefixes: []string{"/v2/"}},
-		{ID: "clamav", ReplayHeaders: []string{}, RateLimitedStatus: http.StatusServiceUnavailable, BoundPrefixes: []string{}},
+		{
+			ID: "npm", ReplayHeaders: []string{}, RateLimitedStatus: http.StatusTooManyRequests, BoundPrefixes: []string{},
+			ErrorShape: iface.ErrorShapeNPM, ReadWithBody: []iface.BodyRoute{{Method: http.MethodPost, Path: "/api/npm/{project}/{repo}/-/npm/v1/security/advisories/bulk"}},
+		},
+		{
+			ID: "oci", RegistryRoot: true, ReplayHeaders: []string{"Docker-Content-Digest", "Link"}, RateLimitedStatus: http.StatusTooManyRequests, BoundPrefixes: []string{"/v2/"},
+			ErrorShape: iface.ErrorShapeDistribution, ReadWithBody: []iface.BodyRoute{{Method: http.MethodPost, Path: "/v2/_token"}},
+		},
+		{ID: "clamav", ReplayHeaders: []string{}, RateLimitedStatus: http.StatusServiceUnavailable, BoundPrefixes: []string{}, ErrorShape: iface.ErrorShapeProblem, ReadWithBody: []iface.BodyRoute{}},
 	}
 	b, err := iface.Marshal(iface.Handshake{InterfaceVersion: iface.InterfaceVersion, Formats: table, BoundRepository: "web/docker-hub"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`"formats":[{"id":"npm","registryRoot":false,"replayHeaders":[],"rateLimitedStatus":429,"retryAfterMaxSeconds":0,"boundPrefixes":[]}`, `"boundRepository":"web/docker-hub"`} {
+	for _, want := range []string{`"formats":[{"id":"npm","registryRoot":false,"replayHeaders":[],"rateLimitedStatus":429,"retryAfterMaxSeconds":0,"boundPrefixes":[],"errorShape":"npm","readWithBody":[{"method":"POST","path":"/api/npm/{project}/{repo}/-/npm/v1/security/advisories/bulk"}]}`, `"boundRepository":"web/docker-hub"`} {
 		if !strings.Contains(string(b), want) {
 			t.Errorf("the handshake %s lacks %s", b, want)
 		}
@@ -159,7 +168,8 @@ func TestR_BAS_057_TheHandshakeCarriesTheFormatTable(t *testing.T) {
 	if got := back.Formats.Lookup("clamav"); got.RateLimitedStatus != http.StatusServiceUnavailable {
 		t.Errorf("Lookup(clamav) = %+v", got)
 	}
-	if got := back.Formats.Lookup("terraform"); got.ID != "terraform" || got.RateLimitedStatus != http.StatusTooManyRequests || len(got.ReplayHeaders) != 0 || got.RegistryRoot {
+	if got := back.Formats.Lookup("terraform"); got.ID != "terraform" || got.RateLimitedStatus != http.StatusTooManyRequests || len(got.ReplayHeaders) != 0 || got.RegistryRoot ||
+		got.ErrorShape != iface.ErrorShapeProblem || len(got.ReadWithBody) != 0 {
 		t.Errorf("a format the table does not name = %+v, want the defaults", got)
 	}
 	// The longest wait a format's clients are told (R-BAS-058): the format's cap, the true wait without one.
@@ -172,15 +182,21 @@ func TestR_BAS_057_TheHandshakeCarriesTheFormatTable(t *testing.T) {
 		t.Error("a table without the registry root names one")
 	}
 	for name, bad := range map[string]iface.HandshakeFormats{
-		"an entry without an ID":           {{RateLimitedStatus: 429}},
+		"an entry without an ID":           {{RateLimitedStatus: 429, ErrorShape: "problem"}},
 		"a format twice":                   {table[0], table[0]},
-		"two registry roots":               {table[1], {ID: "other", RegistryRoot: true, RateLimitedStatus: 429}},
-		"a rate-limit status of 418":       {{ID: "x", RateLimitedStatus: http.StatusTeapot}},
-		"no rate-limit status":             {{ID: "x"}},
-		"a negative longest wait":          {{ID: "x", RateLimitedStatus: 429, RetryAfterMaxSeconds: -1}},
-		"a header that is not canonical":   {{ID: "x", RateLimitedStatus: 429, ReplayHeaders: []string{"docker-content-digest"}}},
-		"a header of Quader's":             {{ID: "x", RateLimitedStatus: 429, ReplayHeaders: []string{"Quader-Bastion-Class"}}},
-		"a bound prefix without the slash": {{ID: "x", RateLimitedStatus: 429, BoundPrefixes: []string{"v2/"}}},
+		"two registry roots":               {table[1], {ID: "other", RegistryRoot: true, RateLimitedStatus: 429, ErrorShape: "problem"}},
+		"a rate-limit status of 418":       {{ID: "x", RateLimitedStatus: http.StatusTeapot, ErrorShape: "problem"}},
+		"no rate-limit status":             {{ID: "x", ErrorShape: "problem"}},
+		"a negative longest wait":          {{ID: "x", RateLimitedStatus: 429, RetryAfterMaxSeconds: -1, ErrorShape: "problem"}},
+		"a header that is not canonical":   {{ID: "x", RateLimitedStatus: 429, ReplayHeaders: []string{"docker-content-digest"}, ErrorShape: "problem"}},
+		"a header of Quader's":             {{ID: "x", RateLimitedStatus: 429, ReplayHeaders: []string{"Quader-Bastion-Class"}, ErrorShape: "problem"}},
+		"a bound prefix without the slash": {{ID: "x", RateLimitedStatus: 429, BoundPrefixes: []string{"v2/"}, ErrorShape: "problem"}},
+		"no error shape":                   {{ID: "x", RateLimitedStatus: 429}},
+		"a sixth error shape":              {{ID: "x", RateLimitedStatus: 429, ErrorShape: "html"}},
+		"a read route with a body by GET":  {{ID: "x", RateLimitedStatus: 429, ErrorShape: "problem", ReadWithBody: []iface.BodyRoute{{Method: "GET", Path: "/a"}}}},
+		"a body route with a dot segment":  {{ID: "x", RateLimitedStatus: 429, ErrorShape: "problem", ReadWithBody: []iface.BodyRoute{{Method: "POST", Path: "/a/../b"}}}},
+		"a body route with a tail":         {{ID: "x", RateLimitedStatus: 429, ErrorShape: "problem", ReadWithBody: []iface.BodyRoute{{Method: "POST", Path: "/a/{rest...}"}}}},
+		"a body route from no root":        {{ID: "x", RateLimitedStatus: 429, ErrorShape: "problem", ReadWithBody: []iface.BodyRoute{{Method: "POST", Path: "a"}}}},
 	} {
 		if err := bad.Validate(); err == nil {
 			t.Errorf("a table with %s is accepted", name)
@@ -221,5 +237,45 @@ func TestR_BAS_059_TheMarkingSaysWhenItCountedADownload(t *testing.T) {
 	iface.StripMarking(h)
 	if h.Get(iface.HeaderCounted) != "" {
 		t.Fatal("the strip leaves the counted marking")
+	}
+}
+
+// TestR_BAS_095_AReadRouteWithABodyIsMatchedAsTheRouterMatchesIt: a request matches a declared read route that takes a body by
+// its method and its escaped path, a placeholder standing for one non-empty segment and a literal for itself, so a spelling the
+// table does not name is a write (R-BAS-095).
+func TestR_BAS_095_AReadRouteWithABodyIsMatchedAsTheRouterMatchesIt(t *testing.T) {
+	npm := iface.HandshakeFormat{ReadWithBody: []iface.BodyRoute{{Method: http.MethodPost, Path: "/api/npm/{project}/{repo}/-/npm/v1/security/advisories/bulk"}}}
+	for path, want := range map[string]bool{
+		"/api/npm/web/npm-all/-/npm/v1/security/advisories/bulk":   true,
+		"/api/npm/web/npm-all/%2D/npm/v1/security/advisories/bulk": false,
+		"/api/npm/web//-/npm/v1/security/advisories/bulk":          false,
+		"/api/npm/web/npm-all/-/npm/v1/security/advisories/bulk/x": false,
+		"/api/npm/web/npm-all/lodash":                              false,
+	} {
+		if got := npm.ReadsWithBody(http.MethodPost, path); got != want {
+			t.Errorf("POST %s: %v, want %v", path, got, want)
+		}
+	}
+	if npm.ReadsWithBody(http.MethodPut, "/api/npm/web/npm-all/-/npm/v1/security/advisories/bulk") {
+		t.Error("a PUT on the path of a POST reads with a body")
+	}
+}
+
+// TestR_BAS_052_AVersion2RegistryTokenReadsOnlyItsReadableClaims: payload version 2 (Q-BAS-339) is read for a, exp and g from its
+// readable part; the sealed part is never read, whatever it holds.
+func TestR_BAS_052_AVersion2RegistryTokenReadsOnlyItsReadableClaims(t *testing.T) {
+	exp := time.Date(2026, 11, 26, 12, 0, 0, 0, time.UTC)
+	v2 := forged(`2:9f3a:{"a":true,"exp":` + strconv.FormatInt(exp.Unix(), 10) + `,"g":[{"r":"web/docker","n":"nginx","a":1}]}:` + "\x00:{\"p\":\"x\"}")
+	if !iface.RegistryTokenAnonymous(v2) {
+		t.Error("a version 2 anonymous token does not read as anonymous")
+	}
+	if got, ok := iface.RegistryTokenExpiry(v2); !ok || !got.Equal(exp) {
+		t.Errorf("expiry = %v %v", got, ok)
+	}
+	if g, ok := iface.RegistryTokenGrant(v2); !ok || !g.Pulls("web/docker", "nginx") {
+		t.Errorf("grant = %+v %v", g, ok)
+	}
+	if iface.RegistryTokenAnonymous(forged(`2:9f3a:{"x":1}:{"a":true}`)) {
+		t.Error("a claim of the sealed part is read")
 	}
 }

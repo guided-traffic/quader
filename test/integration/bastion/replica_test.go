@@ -89,7 +89,7 @@ type bastionOptions struct {
 	// CutsLink gives the link to the main installation the short bounds of a test that cuts it and waits for the Bastion to
 	// notice (unreachable_after 3 s, connect_timeout 1 s, response_header_timeout 10 s). Every other Bastion keeps the product's
 	// defaults (10 s, 5 s, 30 s): with the short ones a host at a load of 30 to 130 made a Bastion that nobody cut answer
-	// 503 main_unreachable and 504 main_timeout in tests that compare answers (2026-11-23).
+	// 503 unavailable and 504 gateway_timeout in tests that compare answers (2026-11-23).
 	CutsLink bool
 }
 

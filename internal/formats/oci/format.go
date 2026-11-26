@@ -108,8 +108,12 @@ func (f *Format) Descriptor() formats.Descriptor {
 			// A Bastion's cached answer replays the registry's own headers (bastion.md R-BAS-053): the digest a HEAD of a tag
 			// resolves, the API version every answer below /v2/ names (R-OCI-003), the filter a referrers list applied and the
 			// Link of the next page of a tags list. Canonical names, as net/http writes them (Q-BAS-182).
+			// The refusals are the distribution's error list, which docker and podman print the message of (R-OCI-008). The token
+			// service's POST is the registry root's read route with a body, which the handshake's table adds for the format that
+			// declares the registry root; no route of the format itself reads with a body.
 			Bastion: catalog.BastionFacts{
 				ReplayHeaders: []string{"Docker-Content-Digest", "Docker-Distribution-Api-Version", "Oci-Filters-Applied", "Link"},
+				ErrorShape:    catalog.ShapeDistribution,
 			},
 		},
 		ContractVersion: formats.ContractVersion,

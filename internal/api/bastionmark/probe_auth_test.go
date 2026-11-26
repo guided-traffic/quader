@@ -66,7 +66,7 @@ func realStageChain(t *testing.T) (http.Handler, *rig) {
 	recognize := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			rec := bastionmain.Recognition{Bastion: "edge-1", Interface: iface.InterfaceVersion}
-			rec.Probe = req.Header.Get(iface.HeaderProbe) == iface.ProbeValue && req.Method != http.MethodGet && req.Method != http.MethodHead
+			rec.Probe = bastionmain.IsProbe(req)
 			next.ServeHTTP(w, req.WithContext(bastionmain.WithRecognition(req.Context(), rec)))
 		})
 	}
@@ -77,34 +77,35 @@ func realStageChain(t *testing.T) (http.Handler, *rig) {
 }
 
 // TestR_BAS_014_AProbeIsAnsweredThroughTheRealAuthenticationStage: with anonymous access off, a write probe -
-// recognized, Quader-Bastion-Probe: 1, no credential of a caller - reaches the route match and is answered there
-// (403 bastion_read_only in the format's shape without an address, or 204 for a read route that
-// takes a body), not refused 401 credentials_required by the authentication stage. The probe is admitted for
+// recognized, a method other than GET and HEAD without a body and without a credential of a caller - reaches the route
+// match and is answered there (403 read_only in the format's shape without an address, a read route that takes a body
+// as well, H-2293), not refused 401 credentials_required by the authentication stage. The probe is admitted for
 // routing only: no handler runs and no decision is asked, and a forwarded request without a credential that is no
-// probe is still refused as anonymous (Q-BAS-118).
+// probe (a body) is still refused as anonymous (Q-BAS-118).
 func TestR_BAS_014_AProbeIsAnsweredThroughTheRealAuthenticationStage(t *testing.T) {
 	h, r := realStageChain(t)
 	do := func(method, path string, probe bool) *httptest.ResponseRecorder {
-		req := httptest.NewRequest(method, path, strings.NewReader(""))
+		body := "{}"
 		if probe {
-			req.Header.Set(iface.HeaderProbe, iface.ProbeValue)
+			body = ""
 		}
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, req)
 		return rec
 	}
 	rec := do(http.MethodPut, "/api/npm/web/npm-all/lodash", true)
-	if rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), `"code":"bastion_read_only"`) ||
+	if rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), `"code":"read_only"`) ||
 		!strings.Contains(rec.Body.String(), ReadOnlyDetail) || strings.Contains(rec.Body.String(), mainURL) {
 		t.Fatalf("npm publish as a probe: %d %s", rec.Code, rec.Body.String())
 	}
-	if rec := do(http.MethodPut, "/api/nuget/web/nuget-v3/v3/package", true); rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), "bastion_read_only") {
+	if rec := do(http.MethodPut, "/api/nuget/web/nuget-v3/v3/package", true); rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), "read_only") {
 		t.Fatalf("dotnet nuget push as a probe: %d %s", rec.Code, rec.Body.String())
 	}
-	if rec := do(http.MethodPost, "/api/npm/web/npm-all/-/npm/v1/security/advisories/bulk", true); rec.Code != http.StatusNoContent || rec.Header().Get(iface.HeaderRoute) != iface.RouteReadWithBody {
+	if rec := do(http.MethodPost, "/api/npm/web/npm-all/-/npm/v1/security/advisories/bulk", true); rec.Code != http.StatusForbidden {
 		t.Fatalf("npm audit as a probe: %d %v", rec.Code, rec.Header())
 	}
-	if rec := do(http.MethodPut, "/files/web/files-local/a/b.zip", true); rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), "bastion_read_only") {
+	if rec := do(http.MethodPut, "/files/web/files-local/a/b.zip", true); rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), "read_only") {
 		t.Fatalf("a raw file upload as a probe: %d %s", rec.Code, rec.Body.String())
 	}
 	if rec := do(http.MethodGet, "/api/npm/web/npm-all/lodash", false); rec.Code != http.StatusUnauthorized {

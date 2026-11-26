@@ -203,7 +203,7 @@ tests:
           - exp_labels: {severity: warning}
             exp_annotations:
               summary: The concurrency budget towards the main installation is exhausted.
-              description: Requests are answered 503 bastion_busy. Raise config.bastion.main.max_concurrent or find the traffic (R-BAS-025).
+              description: Requests are answered 503 busy. Raise config.bastion.main.max_concurrent or find the traffic (R-BAS-025).
 
   # --- QuaderBastionAuditEventsDropped -------------------------------------------------------------------
   - name: QuaderBastionAuditEventsDropped fires when events were dropped

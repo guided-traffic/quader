@@ -143,32 +143,24 @@ func (s *state) setRoute(mt bastionmain.RouteMatch) {
 // observer is the bastionmain.RouteObserver of one recognized request.
 type observer struct{ st *state }
 
-// Matched refuses the writes of a Bastion and answers the probe of a read route that takes a body (R-BAS-014).
-// A write is refused whether it came as a probe or, by a defect of the Bastion, as the real request: the
-// Bastion token makes every write bastion_read_only.
-func (o *observer) Matched(w http.ResponseWriter, _ *http.Request, mt bastionmain.RouteMatch) (bool, error) {
+// Matched refuses the writes of a Bastion (R-BAS-014, R-BAS-095). A write is refused whether it came as a probe or, by a
+// defect of the Bastion, as the real request: the Bastion token makes every write read_only. The one forward of a method
+// other than GET and HEAD that passes is a read route that takes a body, sent with its body as the format table's
+// readWithBody lists it (interface version 8); a probe of such a route means a format that did not declare it, and is refused
+// as well, so that the failure is closed (H-2293).
+func (o *observer) Matched(_ http.ResponseWriter, _ *http.Request, mt bastionmain.RouteMatch) (bool, error) {
 	st := o.st
 	st.setRoute(mt)
 	if mt.Method == http.MethodGet || mt.Method == http.MethodHead {
 		return false, nil
 	}
-	if !readRoute(mt) {
+	if !readRoute(mt) || st.rec.Probe {
 		st.mu.Lock()
 		st.probe = st.rec.Probe
 		st.mu.Unlock()
 		return false, st.m.readOnly(mt)
 	}
-	if !st.rec.Probe {
-		// The real request of a read route that takes a body, forwarded after a probe answered 204.
-		return false, nil
-	}
-	st.mu.Lock()
-	st.probe = true
-	st.mu.Unlock()
-	w.Header().Set(iface.HeaderRoute, iface.RouteReadWithBody)
-	w.Header().Set("Cache-Control", "no-store")
-	w.WriteHeader(http.StatusNoContent)
-	return true, nil
+	return false, nil
 }
 
 // readRoute reports whether the route reads: a kind that serves content or documents and the coarse action
@@ -181,10 +173,10 @@ func readRoute(mt bastionmain.RouteMatch) bool {
 	return false
 }
 
-// readOnly is the refusal of a write in the shape of the format: 403 bastion_read_only. Its detail names no address
+// readOnly is the refusal of a write in the shape of the format: 403 read_only. Its detail names no address
 // to publish to: a caller of a Bastion learns nothing of the installation behind it (R-BAS-099 row 1, Q-BAS-338).
 func (m *Marker) readOnly(bastionmain.RouteMatch) error {
-	return errs.E(errs.Forbidden, errs.CodeBastionReadOnly, ReadOnlyDetail)
+	return errs.E(errs.Forbidden, errs.CodeReadOnly, ReadOnlyDetail)
 }
 
 // ReadOnlyDetail is the detail of the refusal of a write through a Bastion (Q-BAS-321).
@@ -334,12 +326,8 @@ func (w *markWriter) mark(code int) {
 	}
 	w.wrote = true
 	h := w.Header()
-	// Nothing below this stage states a marking but the observer's probe answer.
-	probeRoute := h.Get(iface.HeaderRoute)
+	// Nothing below this stage states a marking.
 	iface.StripMarking(h)
-	if w.st.probe && probeRoute != "" {
-		h.Set(iface.HeaderRoute, probeRoute)
-	}
 	if w.st.rec.Route {
 		// An interface route has no addressed repository and no caller but the Bastion.
 		h.Set(iface.HeaderClass, string(iface.ClassPass))

@@ -12,7 +12,8 @@ import (
 // checks a registry token by its form only and hands it to the main installation, which verifies the MAC, the expiry, the
 // endpoint and the token behind it (Q-BAS-167). Its form is
 //
-//	qdr_rgt_ + base64url(payload) + "." + base64url(MAC)    payload = "1:<key id>:<claims as JSON>"
+//	qdr_rgt_ + base64url(payload) + "." + base64url(MAC)
+//	payload = "1:<key id>:<claims as JSON>" or "2:<opaque key id>:<readable claims as JSON>:<sealed claims>"
 //
 // at most [MaxRegistryTokenBytes], base64url as RFC 4648 section 5 without padding.
 const (
@@ -33,8 +34,8 @@ func RegistryTokenWellFormed(s string) bool {
 }
 
 // RegistryTokenAnonymous reads the claims of a well-formed registry token without verifying them and reports whether they name
-// the anonymous principal (R-BAS-052, Q-BAS-168): payload version 1 whose claims hold the member "a" true, which the main
-// installation's token service writes into the token it issues to a request without a credential. The Bastion then drops the
+// the anonymous principal (R-BAS-052, Q-BAS-168): payload version 1 or 2 whose readable claims hold the member "a" true, which the main
+// installation's token service and the Bastion itself (R-BAS-094) write into the token issued to a request without a credential. The Bastion then drops the
 // token and serves the request as the anonymous caller. Trusting the unverified claim can only lower what is read, because a
 // client can always send no credential. A payload that does not decode, another version and claims that are no JSON object
 // read as not anonymous: the token is then a credential like any other.
@@ -79,9 +80,9 @@ func (g RegistryGrant) Pulls(repository, pkg string) bool {
 }
 
 // RegistryTokenGrant reads the grant of a well-formed registry token without verifying it (R-BAS-052, Q-BAS-246): the entries
-// of the claim "g" of payload version 1. The Bastion compares a package answer the main installation marks full with it, so a
+// of the claim "g" of payload version 1 or 2. The Bastion compares a package answer the main installation marks full with it, so a
 // defect at the main installation cannot open another image to the token; trusting the unverified grant can only lower what is
-// read. ok is false, and the grant empty, for a value outside the form, another payload version, claims that do not decode, and
+// read. ok is false, and the grant empty, for a value outside the form, a payload version other than 1 and 2, claims that do not decode, and
 // claims that name a system subject (the member "s" of a scan or blob token, which reaches one manifest or blob, never a whole
 // image). A member the interface does not know is ignored.
 func RegistryTokenGrant(s string) (RegistryGrant, bool) {
@@ -96,7 +97,7 @@ func RegistryTokenGrant(s string) (RegistryGrant, bool) {
 }
 
 // RegistryTokenExpiry reads the expiry of a well-formed registry token without verifying it (Q-BAS-252, Q-BAS-202 option (b)):
-// the member "exp" of payload version 1, in Unix seconds. A Bastion refuses a registry token past this expiry without a request
+// the member "exp" of payload version 1 or 2, in Unix seconds. A Bastion refuses a registry token past this expiry without a request
 // and without counting a failed authentication; trusting the unverified expiry can only refuse, because a token whose claims
 // were changed fails the main installation's MAC anyway. ok is false for a value outside the form, another payload version,
 // claims that do not decode and an expiry that is missing or not positive.
@@ -110,20 +111,45 @@ func RegistryTokenExpiry(s string) (time.Time, bool) {
 	return time.Unix(c.ExpiresAt, 0).UTC(), true
 }
 
-// registryTokenClaims decodes the claims of a well-formed registry token of payload version 1 ("1:<key id>:<claims>") into c
-// without verifying them; it reports false when any step fails. Each reader decodes only the members it reads, so a member it
-// does not read never changes its answer. The member names are the token service's, held equal to its encoder by the tests.
+// registryTokenClaims decodes the readable claims of a well-formed registry token into c without verifying them; it reports
+// false when any step fails. Two payload versions are read (Q-BAS-339):
+//
+//	1:<key id>:<claims as JSON>
+//	2:<opaque key id>:<readable claims as JSON>:<sealed claims>
+//
+// Version 2 keeps a, exp and g readable and seals every other claim under a key of the main installation, which the Bastion
+// never holds and never reads; its readable claims are one JSON object, followed by ":" and at least one byte of the sealed
+// part. Each reader decodes only the members it reads, so a member it does not read never changes its answer. The member names
+// are the token service's, held equal to its encoder by the tests.
 func registryTokenClaims(s string, c any) bool {
 	payload, ok := registryTokenPayload(s)
 	if !ok {
 		return false
 	}
 	version, rest, ok := bytes.Cut(payload, []byte(":"))
-	if !ok || string(version) != "1" {
+	if !ok {
 		return false
 	}
-	_, raw, ok := bytes.Cut(rest, []byte(":"))
-	return ok && json.Unmarshal(raw, c) == nil
+	kid, raw, ok := bytes.Cut(rest, []byte(":"))
+	if !ok {
+		return false
+	}
+	switch string(version) {
+	case "1":
+		return json.Unmarshal(raw, c) == nil
+	case "2":
+		if len(kid) == 0 {
+			return false
+		}
+		dec := json.NewDecoder(bytes.NewReader(raw))
+		var claims json.RawMessage
+		if err := dec.Decode(&claims); err != nil || len(claims) == 0 || claims[0] != '{' {
+			return false
+		}
+		sealed := raw[dec.InputOffset():]
+		return len(sealed) > 1 && sealed[0] == ':' && json.Unmarshal(claims, c) == nil
+	}
+	return false
 }
 
 // registryTokenPayload checks the form of a registry token and returns its decoded payload.

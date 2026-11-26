@@ -81,10 +81,10 @@ type BastionMain struct {
 	TokenFile             string        `yaml:"token_file" default:"" secret:"file" chart:"managed" doc:"File with the qdr_bst_ token, read again every token_reload_interval (R-BAS-006); required to serve."`
 	CAFile                string        `yaml:"ca_file" default:"" chart:"managed" doc:"CA bundle that verifies the main installation, added to the system roots (trustedCA of the chart)."`
 	ConnectTimeout        time.Duration `yaml:"connect_timeout" default:"5s" validate:"min=100ms,max=2m"`
-	ResponseHeaderTimeout time.Duration `yaml:"response_header_timeout" default:"30s" validate:"min=1s,max=10m" doc:"How long the main installation may take to answer a request before the Bastion answers 504 main_timeout (R-BAS-021)."`
+	ResponseHeaderTimeout time.Duration `yaml:"response_header_timeout" default:"30s" validate:"min=1s,max=10m" doc:"How long the main installation may take to answer a request before the Bastion answers 504 gateway_timeout (R-BAS-021)."`
 	MaxConcurrent         int           `yaml:"max_concurrent" default:"64" validate:"min=1" doc:"Concurrent requests to the main installation across all replicas (R-BAS-025)."`
 	AnonymousShare        float64       `yaml:"anonymous_share" default:"0.25" validate:"min=0,max=1" doc:"The share of the budget that requests on behalf of anonymous callers may hold (R-BAS-025)."`
-	QueueTimeout          time.Duration `yaml:"queue_timeout" default:"2s" validate:"min=0s,max=1m" doc:"How long a request waits for a slot before 503 bastion_busy (R-BAS-025)."`
+	QueueTimeout          time.Duration `yaml:"queue_timeout" default:"2s" validate:"min=0s,max=1m" doc:"How long a request waits for a slot before 503 busy (R-BAS-025)."`
 	MaxForwardedBody      ByteSize      `yaml:"max_forwarded_body" default:"8MiB" validate:"min=0" doc:"Largest body the Bastion forwards on a read route that takes one, npm's bulk audit (R-BAS-014)."`
 	HandshakeInterval     time.Duration `yaml:"handshake_interval" default:"1m" validate:"min=5s,max=1h" doc:"How often the handshake is repeated (R-BAS-010)."`
 	UnreachableAfter      time.Duration `yaml:"unreachable_after" default:"10s" validate:"min=3s" doc:"No successful feed poll for this long makes the replica treat the main installation as unreachable; at least 3 x bastion.feed.poll_interval (R-BAS-027)."`

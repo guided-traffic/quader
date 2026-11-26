@@ -142,12 +142,12 @@ func TestBastion_R_BAS_049_MainUnreachable(t *testing.T) {
 	})
 	t.Run("a cold package and an unseen token get 503", func(t *testing.T) {
 		r := site.get(t, env.full.Token, npmDocPath(cold))
-		if r.Status != 503 || r.Code() != "main_unreachable" || r.Header.Get("Retry-After") != "30" {
-			t.Errorf("a cold package: %s (Retry-After %q), want 503 main_unreachable with Retry-After 30", r, r.Header.Get("Retry-After"))
+		if r.Status != 503 || r.Code() != "unavailable" || r.Header.Get("Retry-After") != "30" {
+			t.Errorf("a cold package: %s (Retry-After %q), want 503 unavailable with Retry-After 30", r, r.Header.Get("Retry-After"))
 		}
 		r = site.get(t, unseen, npmDocPath(env.open))
-		if r.Status != 503 || r.Code() != "main_unreachable" {
-			t.Errorf("an unseen token: %s, want 503 main_unreachable", r)
+		if r.Status != 503 || r.Code() != "unavailable" {
+			t.Errorf("an unseen token: %s, want 503 unavailable", r)
 		}
 	})
 

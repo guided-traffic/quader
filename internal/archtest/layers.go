@@ -167,6 +167,9 @@ func layerTable() []layerRule {
 		// The quader Bastion (R-BAS-001, Q-BAS-51): the wire contract, the answers' validity rules and the metrics are
 		// leaves that the main installation's side and the Bastion's share or read; they import nothing of the module.
 		{"internal/bastion/iface", layerLeaf},
+		// The bounds of the public catalogue's transfer (R-BAS-101, Q-BAS-345): figures both sides read, outside the interface's
+		// shape so that a measurement moves them without a raise.
+		{"internal/bastion/cataloguebounds", layerLeaf},
 		{"internal/bastion/answers", layerLeaf},
 		{"internal/bastion/metrics", layerLeaf},
 		// The imprint and the privacy notice of an installation (R-UI-225, R-BAS-100): the choice of the text a locale shows, over a

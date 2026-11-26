@@ -167,7 +167,7 @@ func TestR_BAS_094_TheBastionAnswersAnAnonymousTokenRequestItself(t *testing.T) 
 	})
 	t.Run("before the first handshake it is 503", func(t *testing.T) {
 		down := newSiteHarness(t, options{down: true})
-		if w := down.get("/v2/_token?service=packages.example.com"); w.Code != http.StatusServiceUnavailable || registryDetail(t, w) != "main_unreachable" {
+		if w := down.get("/v2/_token?service=packages.example.com"); w.Code != http.StatusServiceUnavailable || registryDetail(t, w) != "unavailable" {
 			t.Fatalf("%d %s", w.Code, w.Body)
 		}
 	})

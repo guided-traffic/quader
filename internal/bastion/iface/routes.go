@@ -20,12 +20,24 @@ const (
 	// PathDownloads is POST: download events served from the Bastion's cache
 	// (R-BAS-016).
 	PathDownloads = "/api/v1/bastion/downloads"
+	// PathCatalogue is GET with [QueryAfter] (a [CatalogueChange.Seq], 0 for the start) and [QueryLimit]: the change
+	// list of the registration's public catalogue, a [CatalogueChanges] (R-BAS-101).
+	PathCatalogue = "/api/v1/bastion/catalogue"
+	// PathCatalogueDocument is GET with [QueryPath], a [CataloguePath] in its text form: one document of the catalogue,
+	// gzip-compressed, as [CatalogueDocumentMediaType], with the raw bytes' SHA-256 as its ETag (R-BAS-101).
+	PathCatalogueDocument = "/api/v1/bastion/catalogue/document"
+	// PathCatalogueDocuments is POST with a [CatalogueBatch]: several documents in one answer of frames
+	// ([CatalogueBatchMediaType], [ReadCatalogueFrame]), the round trip the sync of a whole catalogue saves (R-BAS-101).
+	PathCatalogueDocuments = "/api/v1/bastion/catalogue/documents"
+	// PathCataloguePublic is GET: the public set of the registration's catalogue, a [CataloguePublic] (R-BAS-101).
+	PathCataloguePublic = "/api/v1/bastion/catalogue/public"
 )
 
-// The query parameters of [PathFeed].
+// The query parameters of [PathFeed], [PathCatalogue] and [PathCatalogueDocument].
 const (
 	QueryAfter = "after"
 	QueryLimit = "limit"
+	QueryPath  = "path"
 )
 
 // The operation names of the interface: the operation label of
@@ -37,6 +49,8 @@ const (
 	OperationCheck     = "check"
 	OperationFeed      = "feed"
 	OperationDownloads = "downloads"
+	// OperationCatalogue names the three catalogue routes together: one kind of request of the web interface's sync.
+	OperationCatalogue = "catalogue"
 )
 
 // The families of the mirrored URL space (R-BAS-003, R-BAS-018). The Bastion

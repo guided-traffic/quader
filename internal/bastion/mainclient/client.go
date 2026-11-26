@@ -385,7 +385,7 @@ func readProblem(body io.Reader) (problem, []byte) {
 // Bastion's token is refused only when the answer to a call it made itself says so. A forward carries a path the
 // caller chose, which can name a route of the interface or of the management API, so a 401 bastion_token_invalid
 // on it is no statement about the Bastion's token: it is an [AnswerError] that answers the caller 502
-// main_failed (R-BAS-006, R-BAS-021, Q-BAS-121).
+// bad_gateway (R-BAS-006, R-BAS-021, Q-BAS-121).
 func (c *HTTPClient) classify(status int, p problem, own bool) error {
 	switch {
 	case status == http.StatusBadRequest && p.Code == iface.CodeInterfaceMismatch:
@@ -494,10 +494,9 @@ func (c *HTTPClient) accept(resp *http.Response, release func(), offered bool) (
 	if marked {
 		c.o.Metrics.MainTokenRefused.Set(0)
 	}
-	route := resp.Header.Get(iface.HeaderRoute)
 	iface.StripMarking(resp.Header)
 	return &Response{
-		Status: resp.StatusCode, Header: resp.Header, Body: &slotBody{ReadCloser: body, release: release}, Marking: m, Marked: marked, Route: route,
+		Status: resp.StatusCode, Header: resp.Header, Body: &slotBody{ReadCloser: body, release: release}, Marking: m, Marked: marked,
 		Handover: h, HandoverErr: herr,
 	}, nil
 }
@@ -618,8 +617,9 @@ func (c *HTTPClient) forwardRequest(ctx context.Context, f Forward) (*http.Reque
 		}
 	}
 	if f.Probe {
+		// The probe is a write without its body and without the caller's credential; no header names it (interface version
+		// 8): the main installation reads a forwarded write of that form as a probe (R-BAS-014).
 		req.Header.Del("Authorization")
-		req.Header.Set(iface.HeaderProbe, iface.ProbeValue)
 		req.Body, req.GetBody, req.ContentLength = http.NoBody, nil, 0
 	}
 	c.origin.apply(req.Header, f.ClientAddress)

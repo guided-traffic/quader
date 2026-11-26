@@ -282,19 +282,19 @@ func TestR_BAS_021_ErrorsOfTheMainInstallationAnswer502And504ButAMarkedAnswerIsP
 	}{
 		{"an unmarked 5xx", func(mainclient.Forward) (*mainclient.Response, error) {
 			return respUnmarked(503, http.Header{"Retry-After": {"5"}}, "ingress"), nil
-		}, 502, "main_failed"},
+		}, 502, "bad_gateway"},
 		{"an unmarked 502", func(mainclient.Forward) (*mainclient.Response, error) {
 			return respUnmarked(502, nil, "bad gateway"), nil
-		}, 502, "main_failed"},
+		}, 502, "bad_gateway"},
 		{"a connect error", func(mainclient.Forward) (*mainclient.Response, error) {
 			return nil, fmt.Errorf("%w: dial", mainclient.ErrUnreachable)
-		}, 502, "main_failed"},
+		}, 502, "bad_gateway"},
 		{"a timeout", func(mainclient.Forward) (*mainclient.Response, error) {
 			return nil, fmt.Errorf("%w: %w", mainclient.ErrUnreachable, context.DeadlineExceeded)
-		}, 504, "main_timeout"},
+		}, 504, "gateway_timeout"},
 		{"a net timeout", func(mainclient.Forward) (*mainclient.Response, error) {
 			return nil, fmt.Errorf("%w: %w", mainclient.ErrUnreachable, &net.DNSError{IsTimeout: true})
-		}, 504, "main_timeout"},
+		}, 504, "gateway_timeout"},
 		{"a marked 500", func(mainclient.Forward) (*mainclient.Response, error) {
 			return resp(500, marking(iface.ClassPass, "", "", iface.Subject{Kind: iface.SubjectAnonymous}), nil, `{"code":"internal"}`), nil
 		}, 500, "internal"},
@@ -322,7 +322,7 @@ func TestR_BAS_021_ABusyBudgetAnswers503WithRetryAfter1(t *testing.T) {
 	s := newSiteHarness(t, options{})
 	s.main.doFn = func(mainclient.Forward) (*mainclient.Response, error) { return nil, mainclient.ErrBusy }
 	w := s.get(tgz, "Authorization", bearer(s.full))
-	if w.Code != 503 || problemCode(w) != "bastion_busy" || w.Header().Get("Retry-After") != "1" {
+	if w.Code != 503 || problemCode(w) != "busy" || w.Header().Get("Retry-After") != "1" {
 		t.Fatalf("%d %s %v", w.Code, w.Body, w.Header())
 	}
 	if counterValue(t, s.harness, "refused", metrics.RefusedBusy) != 1 {

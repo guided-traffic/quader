@@ -261,7 +261,7 @@ type Options struct {
 	// with 503.
 	Bastions *bastionmain.Registrations
 	// >>> package 2
-	// Bastion holds the services of the four operations of the Bastion interface (bastion_services.go); a
+	// Bastion holds the services of the operations of the Bastion interface (bastion_services.go); a
 	// member that is nil answers them with 503.
 	Bastion BastionServices
 	// <<< package 2

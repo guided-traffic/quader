@@ -10,7 +10,7 @@ import (
 
 // TestR_BAS_003_R_BAS_006_AnEncodedSpellingOfTheInterfaceRoutesCannotTurnTheReplicaUnreachable: the main
 // installation's router decodes the segments of a path, so /api/%761/bastion/handshake is the handshake there.
-// Sent through the client listener it is answered 404 bastion_not_served by the Bastion, reaches the main
+// Sent through the client listener it is answered 404 not_found by the Bastion, reaches the main
 // installation never, and the replica stays reachable however often it is repeated (Q-BAS-121, security finding
 // P1: the answer 401 bastion_token_invalid to it was read as a refusal of the Bastion's own token).
 func TestR_BAS_003_R_BAS_006_AnEncodedSpellingOfTheInterfaceRoutesCannotTurnTheReplicaUnreachable(t *testing.T) {
@@ -25,7 +25,7 @@ func TestR_BAS_003_R_BAS_006_AnEncodedSpellingOfTheInterfaceRoutesCannotTurnTheR
 	for i := 0; i < 5; i++ {
 		for _, p := range []string{"/api/%761/users", "/api/%76%31/bastion/handshake", "/api/%761/bastion/feed"} {
 			code, _, body := get(t, base+p)
-			if code != 404 || !strings.Contains(body, "bastion_not_served") {
+			if code != 404 || !strings.Contains(body, "not_found") {
 				t.Fatalf("%s: %d %s", p, code, body)
 			}
 		}

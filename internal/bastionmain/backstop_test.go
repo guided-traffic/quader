@@ -27,9 +27,6 @@ func TestR_BAS_014_AForwardReachesOnlyThePackageFamilies(t *testing.T) {
 			r.Header.Set(iface.HeaderAuthorization, "Bearer "+tokValid)
 			r.Header.Set(iface.HeaderInterface, version())
 			r.Header.Set("Authorization", "Bearer "+pat)
-			if method != http.MethodGet {
-				r.Header.Set(iface.HeaderProbe, iface.ProbeValue)
-			}
 			w, seen := run(t, RecognizeOptions{Tokens: &fakeTokens{}}, r)
 			if seen != nil {
 				t.Errorf("%s %s: a forward reached the stages behind the recognition", method, path)
@@ -83,8 +80,7 @@ func TestR_BAS_051_TheMainInstallationForwardsTheRegistryRoot(t *testing.T) {
 		}
 	}
 	t.Run("the probe of a registry write is recognized as a probe", func(t *testing.T) {
-		r := forwarded("/v2/web/docker-local/app/blobs/uploads/", iface.HeaderAuthorization, "Bearer "+tokValid, iface.HeaderInterface, version(),
-			iface.HeaderProbe, iface.ProbeValue)
+		r := forwarded("/v2/web/docker-local/app/blobs/uploads/", iface.HeaderAuthorization, "Bearer "+tokValid, iface.HeaderInterface, version())
 		r.Method = http.MethodPost
 		_, seen := run(t, RecognizeOptions{Tokens: &fakeTokens{}}, r)
 		if seen == nil {
@@ -92,6 +88,21 @@ func TestR_BAS_051_TheMainInstallationForwardsTheRegistryRoot(t *testing.T) {
 		}
 		if rec, _ := RecognitionFrom(seen.Context()); !rec.Probe {
 			t.Fatalf("recognition %+v", rec)
+		}
+		// No header names a probe (interface version 8): a write with a body or with a caller's credential is none.
+		for name, edit := range map[string]func(*http.Request){
+			"a body":         func(r *http.Request) { r.ContentLength = 2 },
+			"a chunked body": func(r *http.Request) { r.TransferEncoding = []string{"chunked"} },
+			"a credential":   func(r *http.Request) { r.Header.Set("Authorization", "Bearer "+pat) },
+		} {
+			w := forwarded("/v2/web/docker-local/app/blobs/uploads/", iface.HeaderAuthorization, "Bearer "+tokValid, iface.HeaderInterface, version())
+			w.Method = http.MethodPost
+			edit(w)
+			if _, seen := run(t, RecognizeOptions{Tokens: &fakeTokens{}}, w); seen == nil {
+				t.Fatalf("a write with %s was refused", name)
+			} else if rec, _ := RecognitionFrom(seen.Context()); rec.Probe {
+				t.Errorf("a write with %s is taken for a probe", name)
+			}
 		}
 	})
 }

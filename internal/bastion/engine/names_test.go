@@ -65,7 +65,7 @@ func TestR_BAS_099_TheBastionsOwnAnswersNameNoParty(t *testing.T) {
 	}{
 		{
 			name: "unreachable", o: options{down: true}, method: http.MethodGet, path: "/api/npm/web/npm-all/lodash", status: 503,
-			code: iface.CodeMainUnreachable, detail: "This service is not available right now; try again later.",
+			code: iface.CodeUnavailable, detail: "This service is not available right now; try again later.",
 		},
 		{
 			name: "busy", doErr: mainclient.ErrBusy, method: http.MethodGet, path: "/api/npm/web/npm-all/lodash", status: 503,
@@ -73,13 +73,13 @@ func TestR_BAS_099_TheBastionsOwnAnswersNameNoParty(t *testing.T) {
 		},
 		{
 			name: "bad gateway", doErr: errors.New("connection reset"), method: http.MethodGet, path: "/api/npm/web/npm-all/lodash", status: 502,
-			code: iface.CodeMainFailed, detail: "This service could not answer; try again later.",
+			code: iface.CodeBadGateway, detail: "This service could not answer; try again later.",
 		},
 		{
 			name: "gateway timeout", doErr: context.DeadlineExceeded, method: http.MethodGet, path: "/api/npm/web/npm-all/lodash", status: 504,
-			code: iface.CodeMainTimeout, detail: "This service did not answer in time; try again later.",
+			code: iface.CodeGatewayTimeout, detail: "This service did not answer in time; try again later.",
 		},
-		{name: "not served", method: http.MethodGet, path: "/login", status: 404, code: iface.CodeNotServed, detail: "Nothing is served at this address."},
+		{name: "not served", method: http.MethodGet, path: "/login", status: 404, code: iface.CodeNotFound, detail: "Nothing is served at this address."},
 		{
 			name: "method", method: http.MethodOptions, path: "/api/npm/web/npm-all/lodash", status: 405, code: iface.CodeMethodNotAllowed,
 			detail: "This address serves GET and HEAD.",

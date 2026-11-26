@@ -2876,6 +2876,11 @@ type UploadSession struct {
 // Set-Cookie, of a name with the prefix "Quader-" or outside net/http's canonical form, and a status other than 429 or 503 (Q-BAS-181,
 // Q-BAS-182); Facts.BoundPrefixes() is "/v2/" for the format that declares RegistryRoot (Q-BAS-183). Kit check 19 holds a format to
 // them. It is an addition: ContractVersion stays 10.
+// BastionFacts also gains ErrorShape and ReadWithBody (ADR-303, bastion.md R-BAS-095, Q-BAS-353): the type ErrorShape with the values
+// ShapeProblem, ShapeNPM, ShapeText, ShapeDistribution and ShapeGalaxy, ErrorShapes() and the method Shape() (problem for ""), and
+// BodyRoute{Method, Template} with Matches, the format's read routes of a writing method as patterns below the repository. The catalog
+// refuses an unknown shape and a body route that is no writing method or no pattern of whole segments; kit check 19 requires the shape's
+// declaration and holds ReadWithBody to the format's routes. It is an addition: ContractVersion stays 15.
 
 type PackageStore interface {
 	Package(ctx context.Context, repo RepoRef, name string) (PackageRow, bool, error)

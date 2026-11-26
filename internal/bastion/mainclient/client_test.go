@@ -235,7 +235,7 @@ func TestR_BAS_017_AForwardCarriesOneClientAddressInBothFamilies(t *testing.T) {
 					t.Errorf("%s = %q", k, v)
 				}
 			}
-			for _, k := range []string{"Cookie", "Range", "If-Modified-Since", "X-Hop", iface.HeaderClass, iface.HeaderProbe} {
+			for _, k := range []string{"Cookie", "Range", "If-Modified-Since", "X-Hop", iface.HeaderClass, "Quader-Bastion-Probe"} {
 				if h.Get(k) != "" {
 					t.Errorf("%s reached the main installation: %q", k, h.Get(k))
 				}
@@ -276,7 +276,8 @@ func TestR_BAS_014_AProbeIsBodilessAndCarriesNoCredential(t *testing.T) {
 	if got.Method != http.MethodPut || len(got.Body) != 0 {
 		t.Errorf("method %s, body %q", got.Method, got.Body)
 	}
-	if got.Header.Get("Authorization") != "" || got.Header.Get(iface.HeaderProbe) != iface.ProbeValue || got.Header.Get(iface.HeaderAuthorization) == "" {
+	// No header names the probe (interface version 8): its form does, a write without a body and without the caller's credential.
+	if got.Header.Get("Authorization") != "" || got.Header.Get("Quader-Bastion-Probe") != "" || got.Header.Get(iface.HeaderAuthorization) == "" {
 		t.Errorf("probe headers: %v", got.Header)
 	}
 	if n := maintest.Value(r.m.MainRequests.WithLabelValues("probe", "2xx")); n != 1 {
@@ -316,31 +317,6 @@ func TestR_BAS_021_AForwardedBodyIsStreamedAndTheMarkingIsStripped(t *testing.T)
 	}
 	if string(r.main.Forwards()[0].Body) != `{"a":1}` {
 		t.Errorf("body = %q", r.main.Forwards()[0].Body)
-	}
-}
-
-// TestR_BAS_014_TheRouteOfAProbeAnswerSurvivesTheStrippedMarking: the 204 of a probe to a read route that takes a
-// body names Quader-Bastion-Route; the client removes every Quader-Bastion header from the response and hands the
-// route over in Response.Route, because the engine decides on it.
-func TestR_BAS_014_TheRouteOfAProbeAnswerSurvivesTheStrippedMarking(t *testing.T) {
-	r := newRig(t, nil)
-	r.main.SetForward(func(w http.ResponseWriter, _ *http.Request) {
-		r.main.Mark(w, iface.Marking{Class: iface.ClassPass, Repository: "web/npm-all", Subject: iface.Subject{Kind: iface.SubjectAnonymous}})
-		w.Header().Set(iface.HeaderRoute, iface.RouteReadWithBody)
-		w.WriteHeader(http.StatusNoContent)
-	})
-	f := forward(http.MethodPost, "/api/npm/web/npm-all/-/npm/v1/security/advisories/bulk")
-	f.Probe = true
-	resp, err := r.c.Do(context.Background(), f)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
-	if resp.Status != http.StatusNoContent || resp.Route != iface.RouteReadWithBody {
-		t.Errorf("status %d, route %q", resp.Status, resp.Route)
-	}
-	if resp.Header.Get(iface.HeaderRoute) != "" {
-		t.Error("the route header was not stripped")
 	}
 }
 

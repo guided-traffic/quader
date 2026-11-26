@@ -106,7 +106,7 @@ func fetchAll(addr, path string, limit time.Duration) (int, string, time.Duratio
 // main installation's speed and frees its slot when the body ends; the client is served from the spool at its
 // own speed. Two connections that take their artifact one socket buffer at a time hold no slot, so an unrelated
 // anonymous request, which finds exactly one anonymous slot, is served at once and not answered 503
-// bastion_busy (Q-BAS-123, security finding P3).
+// busy (Q-BAS-123, security finding P3).
 func TestR_BAS_025_ClientsThatReadSlowlyDoNotHoldTheBudgetSlots(t *testing.T) {
 	main, big, sha := bigArtifactMain(t)
 	dir := t.TempDir()

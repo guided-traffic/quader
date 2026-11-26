@@ -202,8 +202,72 @@ func (e BannerInputSeverity) Valid() bool {
 	}
 }
 
+// Defines values for BastionCataloguePublicRepositoriesClass.
+const (
+	BastionCataloguePublicRepositoriesClassLocal   BastionCataloguePublicRepositoriesClass = "local"
+	BastionCataloguePublicRepositoriesClassRemote  BastionCataloguePublicRepositoriesClass = "remote"
+	BastionCataloguePublicRepositoriesClassVirtual BastionCataloguePublicRepositoriesClass = "virtual"
+)
+
+// Valid indicates whether the value is a known member of the BastionCataloguePublicRepositoriesClass enum.
+func (e BastionCataloguePublicRepositoriesClass) Valid() bool {
+	switch e {
+	case BastionCataloguePublicRepositoriesClassLocal:
+		return true
+	case BastionCataloguePublicRepositoriesClassRemote:
+		return true
+	case BastionCataloguePublicRepositoriesClassVirtual:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BastionConfigurationLimitsMode.
+const (
+	BastionConfigurationLimitsModeAudit   BastionConfigurationLimitsMode = "audit"
+	BastionConfigurationLimitsModeEnforce BastionConfigurationLimitsMode = "enforce"
+)
+
+// Valid indicates whether the value is a known member of the BastionConfigurationLimitsMode enum.
+func (e BastionConfigurationLimitsMode) Valid() bool {
+	switch e {
+	case BastionConfigurationLimitsModeAudit:
+		return true
+	case BastionConfigurationLimitsModeEnforce:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BastionConfigurationLimitsPreset.
+const (
+	BastionConfigurationLimitsPresetCustom         BastionConfigurationLimitsPreset = "custom"
+	BastionConfigurationLimitsPresetInternal       BastionConfigurationLimitsPreset = "internal"
+	BastionConfigurationLimitsPresetInternet       BastionConfigurationLimitsPreset = "internet"
+	BastionConfigurationLimitsPresetPartnerNetwork BastionConfigurationLimitsPreset = "partnerNetwork"
+)
+
+// Valid indicates whether the value is a known member of the BastionConfigurationLimitsPreset enum.
+func (e BastionConfigurationLimitsPreset) Valid() bool {
+	switch e {
+	case BastionConfigurationLimitsPresetCustom:
+		return true
+	case BastionConfigurationLimitsPresetInternal:
+		return true
+	case BastionConfigurationLimitsPresetInternet:
+		return true
+	case BastionConfigurationLimitsPresetPartnerNetwork:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BastionFeedEntryKind.
 const (
+	BastionFeedEntryKindCatalogue BastionFeedEntryKind = "catalogue"
 	BastionFeedEntryKindContent   BastionFeedEntryKind = "content"
 	BastionFeedEntryKindGrants    BastionFeedEntryKind = "grants"
 	BastionFeedEntryKindPrincipal BastionFeedEntryKind = "principal"
@@ -214,6 +278,8 @@ const (
 // Valid indicates whether the value is a known member of the BastionFeedEntryKind enum.
 func (e BastionFeedEntryKind) Valid() bool {
 	switch e {
+	case BastionFeedEntryKindCatalogue:
+		return true
 	case BastionFeedEntryKindContent:
 		return true
 	case BastionFeedEntryKindGrants:
@@ -7552,6 +7618,24 @@ func (e ExportAuditEventsParamsFormat) Valid() bool {
 	}
 }
 
+// Defines values for BastionHandshakeParamsQuaderBastionCatalogueKept.
+const (
+	BastionHandshakeParamsQuaderBastionCatalogueKeptFalse BastionHandshakeParamsQuaderBastionCatalogueKept = "false"
+	BastionHandshakeParamsQuaderBastionCatalogueKeptTrue  BastionHandshakeParamsQuaderBastionCatalogueKept = "true"
+)
+
+// Valid indicates whether the value is a known member of the BastionHandshakeParamsQuaderBastionCatalogueKept enum.
+func (e BastionHandshakeParamsQuaderBastionCatalogueKept) Valid() bool {
+	switch e {
+	case BastionHandshakeParamsQuaderBastionCatalogueKeptFalse:
+		return true
+	case BastionHandshakeParamsQuaderBastionCatalogueKeptTrue:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GetCiSnippetParamsFormat.
 const (
 	GetCiSnippetParamsFormatNpm   GetCiSnippetParamsFormat = "npm"
@@ -9745,6 +9829,40 @@ type Bastion struct {
 	Tokens []BastionTokenSummary `json:"tokens"`
 }
 
+// BastionCatalogueChanges The changes of a registration's public catalogue after a cursor (R-BAS-101).
+type BastionCatalogueChanges struct {
+	Cursor  int64 `json:"cursor"`
+	Entries []struct {
+		Deleted bool `json:"deleted"`
+
+		// Path A document path of the grammar of R-BAS-103.
+		Path string `json:"path"`
+		Seq  int64  `json:"seq"`
+
+		// Sha256 The SHA-256 of the raw document, empty for a deleted document.
+		Sha256 string `json:"sha256"`
+
+		// Size The size of the raw document in bytes; it travels gzip-compressed.
+		Size int64 `json:"size"`
+	} `json:"entries"`
+	More  bool `json:"more"`
+	Reset bool `json:"reset"`
+}
+
+// BastionCataloguePublic The projects and repositories a registration's catalogue shows (R-BAS-101).
+type BastionCataloguePublic struct {
+	Projects     []string `json:"projects"`
+	Repositories []struct {
+		Class  BastionCataloguePublicRepositoriesClass `json:"class"`
+		Format string                                  `json:"format"`
+		Name   string                                  `json:"name"`
+		Wiki   bool                                    `json:"wiki"`
+	} `json:"repositories"`
+}
+
+// BastionCataloguePublicRepositoriesClass defines model for BastionCataloguePublic.Repositories.Class.
+type BastionCataloguePublicRepositoriesClass string
+
 // BastionCheckAnswer defines model for BastionCheckAnswer.
 type BastionCheckAnswer struct {
 	// Packages One element per requested pair, in request order; empty for a subject that is not usable (R-BAS-083).
@@ -9771,6 +9889,97 @@ type BastionCheckRequest struct {
 	Packages     []BastionCheckPackage `json:"packages"`
 	Repositories []string              `json:"repositories"`
 }
+
+// BastionConfiguration The registration's configuration (R-BAS-093, Q-BAS-320): applied whole by every replica; a figure is a positive integer
+// or `null` for unlimited. Until a registration holds one (package E8) the main installation sends an interim configuration
+// that equals a Bastion's behaviour of today.
+type BastionConfiguration struct {
+	// Limits A Bastion's limits (R-BAS-093 to R-BAS-097).
+	Limits BastionConfigurationLimits `json:"limits"`
+
+	// Revision The registration's revision, raised also by a change of a rule of the Bastion's place or of a profile such a rule names.
+	Revision int64 `json:"revision"`
+	Switches struct {
+		// Docs Its documentation, effective only with `gui` (R-BAS-102). Off for a new registration.
+		Docs bool `json:"docs"`
+
+		// Gui The read-only web interface (R-BAS-102). Off for a new registration.
+		Gui bool `json:"gui"`
+
+		// Handover The handover per blob (R-BAS-071, R-BAS-072). Off for a new registration.
+		Handover bool `json:"handover"`
+	} `json:"switches"`
+}
+
+// BastionConfigurationLimits A Bastion's limits (R-BAS-093 to R-BAS-097).
+type BastionConfigurationLimits struct {
+	AnonymousCeiling struct {
+		Burst             *int64 `json:"burst"`
+		RequestsPerHour   *int64 `json:"requestsPerHour"`
+		RequestsPerSecond *int64 `json:"requestsPerSecond"`
+	} `json:"anonymousCeiling"`
+
+	// Flood The flood protection per address (R-BAS-035 to R-BAS-037); never unlimited.
+	Flood struct {
+		Anonymous     BastionFloodClass `json:"anonymous"`
+		Authenticated BastionFloodClass `json:"authenticated"`
+		Blocking      struct {
+			DurationSeconds    int `json:"durationSeconds"`
+			MaxDurationSeconds int `json:"maxDurationSeconds"`
+			Threshold          int `json:"threshold"`
+			WindowSeconds      int `json:"windowSeconds"`
+		} `json:"blocking"`
+		ExemptNetworks []string `json:"exemptNetworks"`
+		FailedAuth     struct {
+			MaxFailures    int `json:"maxFailures"`
+			TimeoutSeconds int `json:"timeoutSeconds"`
+			WindowSeconds  int `json:"windowSeconds"`
+		} `json:"failedAuth"`
+		Gui struct {
+			Burst             int `json:"burst"`
+			RequestsPerSecond int `json:"requestsPerSecond"`
+		} `json:"gui"`
+	} `json:"flood"`
+	Mode  BastionConfigurationLimitsMode `json:"mode"`
+	Place struct {
+		AddressRules []struct {
+			// Prefix A canonical prefix; an address is a /32 or /128.
+			Prefix string `json:"prefix"`
+			Rule   string `json:"rule"`
+		} `json:"addressRules"`
+		KindRules struct {
+			Administrator  string `json:"administrator"`
+			Anonymous      string `json:"anonymous"`
+			Ci             string `json:"ci"`
+			TechnicalToken string `json:"technicalToken"`
+			User           string `json:"user"`
+		} `json:"kindRules"`
+
+		// Rules Each rule of the Bastion's place by its ID, with its effective figures.
+		Rules map[string]BastionFigures `json:"rules"`
+	} `json:"place"`
+	Preset BastionConfigurationLimitsPreset `json:"preset"`
+	Slots  struct {
+		AnonymousShare     float32 `json:"anonymousShare"`
+		MaxConcurrent      int     `json:"maxConcurrent"`
+		QueueTimeoutMillis int     `json:"queueTimeoutMillis"`
+	} `json:"slots"`
+	Throughput struct {
+		AnonymousShare float32 `json:"anonymousShare"`
+		BytesPerHour   struct {
+			Anonymous *int64 `json:"anonymous"`
+			Catalogue *int64 `json:"catalogue"`
+			SignedIn  *int64 `json:"signedIn"`
+		} `json:"bytesPerHour"`
+		BytesPerSecond *int64 `json:"bytesPerSecond"`
+	} `json:"throughput"`
+}
+
+// BastionConfigurationLimitsMode defines model for BastionConfigurationLimits.Mode.
+type BastionConfigurationLimitsMode string
+
+// BastionConfigurationLimitsPreset defines model for BastionConfigurationLimits.Preset.
+type BastionConfigurationLimitsPreset string
 
 // BastionContact defines model for BastionContact.
 type BastionContact struct {
@@ -9801,6 +10010,65 @@ type BastionDownloadsRequest struct {
 	Dropped      int                    `json:"dropped"`
 	DroppedSince *time.Time             `json:"droppedSince,omitempty"`
 	Events       []BastionDownloadEvent `json:"events"`
+
+	// Status The sending replica's state (R-UI-240); at most 100 blocks, the newest.
+	Status struct {
+		At      time.Time `json:"at"`
+		Blocked int64     `json:"blocked"`
+		Blocks  []struct {
+			Address string    `json:"address"`
+			Reason  string    `json:"reason"`
+			Until   time.Time `json:"until"`
+		} `json:"blocks"`
+		Cache struct {
+			Bytes          int64 `json:"bytes"`
+			CapacityBytes  int64 `json:"capacityBytes"`
+			Evictions      int64 `json:"evictions"`
+			Hits           int64 `json:"hits"`
+			Misses         int64 `json:"misses"`
+			ProtectedBytes int64 `json:"protectedBytes"`
+		} `json:"cache"`
+		Limited    int64  `json:"limited"`
+		Replica    string `json:"replica"`
+		Throughput struct {
+			BytesPerSecondByClass struct {
+				Anonymous int64 `json:"anonymous"`
+				Catalogue int64 `json:"catalogue"`
+				SignedIn  int64 `json:"signedIn"`
+			} `json:"bytesPerSecondByClass"`
+			Limited bool `json:"limited"`
+		} `json:"throughput"`
+	} `json:"status"`
+
+	// Usage What the Bastion counted per subject, credential and repository in buckets (R-LIM-045); at most 100,000 rows.
+	Usage struct {
+		BucketSeconds int `json:"bucketSeconds"`
+		Overflow      []struct {
+			BucketStart      time.Time `json:"bucketStart"`
+			CachedBytes      int64     `json:"cachedBytes"`
+			Refused          int64     `json:"refused"`
+			Repository       string    `json:"repository"`
+			Requests         int64     `json:"requests"`
+			SubjectKind      string    `json:"subjectKind"`
+			Subjects         int64     `json:"subjects"`
+			UncachedBytes    int64     `json:"uncachedBytes"`
+			UpstreamRequests int64     `json:"upstreamRequests"`
+		} `json:"overflow"`
+		Rows []struct {
+			BucketStart      time.Time        `json:"bucketStart"`
+			CachedBytes      int64            `json:"cachedBytes"`
+			Credential       string           `json:"credential"`
+			Limited          map[string]int64 `json:"limited"`
+			Refused          int64            `json:"refused"`
+			Repository       string           `json:"repository"`
+			Requests         int64            `json:"requests"`
+			Rule             string           `json:"rule"`
+			Subject          string           `json:"subject"`
+			UncachedBytes    int64            `json:"uncachedBytes"`
+			UpstreamRequests int64            `json:"upstreamRequests"`
+			WouldLimit       map[string]int64 `json:"wouldLimit"`
+		} `json:"rows"`
+	} `json:"usage"`
 }
 
 // BastionEgress The networks the Bastion connects from (R-BAS-017, R-UI-243): the main installation believes the caller's address and the
@@ -9832,6 +10100,28 @@ type BastionFeedEntry struct {
 // BastionFeedEntryKind defines model for BastionFeedEntry.Kind.
 type BastionFeedEntryKind string
 
+// BastionFigures The eleven figures of a rule (R-LIM-004) as read at a Bastion's place (R-BAS-096); `null` is unlimited.
+type BastionFigures struct {
+	BytesPerDay             *int64 `json:"bytesPerDay"`
+	CachedBytesPerHour      *int64 `json:"cachedBytesPerHour"`
+	CachedBytesPerSecond    *int64 `json:"cachedBytesPerSecond"`
+	ParallelTransfers       *int64 `json:"parallelTransfers"`
+	RefusedPerHour          *int64 `json:"refusedPerHour"`
+	RequestsBurst           *int64 `json:"requestsBurst"`
+	RequestsPerHour         *int64 `json:"requestsPerHour"`
+	RequestsPerSecond       *int64 `json:"requestsPerSecond"`
+	UncachedBytesPerHour    *int64 `json:"uncachedBytesPerHour"`
+	UncachedBytesPerSecond  *int64 `json:"uncachedBytesPerSecond"`
+	UpstreamRequestsPerHour *int64 `json:"upstreamRequestsPerHour"`
+}
+
+// BastionFloodClass defines model for BastionFloodClass.
+type BastionFloodClass struct {
+	Burst             int `json:"burst"`
+	MissesPerMinute   int `json:"missesPerMinute"`
+	RequestsPerSecond int `json:"requestsPerSecond"`
+}
+
 // BastionHandshake The answer of the handshake (R-BAS-010).
 type BastionHandshake struct {
 	// AnonymousReads Some repository's artifacts are `public` and the default endpoint admits requests without a credential, so a Bastion
@@ -9847,17 +10137,18 @@ type BastionHandshake struct {
 	// (R-EP-006, R-BAS-057), named as the registry root reads the binding: only a repository that exists and is of the format that
 	// declares the registry root (Q-BAS-188); absent otherwise.
 	BoundRepository *string `json:"boundRepository,omitempty"`
-	Feed            struct {
+
+	// Configuration The registration's configuration (R-BAS-093, Q-BAS-320): applied whole by every replica; a figure is a positive integer
+	// or `null` for unlimited. Until a registration holds one (package E8) the main installation sends an interim configuration
+	// that equals a Bastion's behaviour of today.
+	Configuration BastionConfiguration `json:"configuration"`
+	Feed          struct {
 		Cursor string `json:"cursor"`
 	} `json:"feed"`
 
 	// Formats One entry per registered format with routes: the facts of the format a Bastion needs before or without a response of
 	// the main installation (R-BAS-057). A format the table does not name gets no replay headers and the rate-limit status 429.
-	Formats []BastionHandshakeFormat `json:"formats"`
-
-	// Handover The registration's switch of the handover per blob (R-BAS-071, R-BAS-073): while it is true the Bastion offers to take a
-	// handover on a miss (`Quader-Bastion-Handover: accept; max-size=<n>`, R-BAS-072). Off for a new registration.
-	Handover     bool `json:"handover"`
+	Formats      []BastionHandshakeFormat `json:"formats"`
 	Installation struct {
 		BaseUrl string `json:"baseUrl"`
 		Release string `json:"release"`
@@ -9873,11 +10164,20 @@ type BastionHandshakeFormat struct {
 	// BoundPrefixes The literal bound-host patterns of the format (R-EP-006), paths from the host root.
 	BoundPrefixes []string `json:"boundPrefixes"`
 
+	// ErrorShape The shape of a Bastion's own answers on the format's family (R-BAS-095, Q-BAS-337).
+	ErrorShape string `json:"errorShape"`
+
 	// Id The format's name, the format segment of `/api/<format>/`.
 	Id string `json:"id"`
 
 	// RateLimitedStatus The status of a Bastion's own rate-limit refusals on the format's family.
 	RateLimitedStatus BastionHandshakeFormatRateLimitedStatus `json:"rateLimitedStatus"`
+
+	// ReadWithBody The format's read routes that take a body (R-BAS-095): a method other than GET and HEAD and a path pattern from the host root whose `{name}` segments stand for one segment each. Every other request of such a method is a write.
+	ReadWithBody []struct {
+		Method string `json:"method"`
+		Path   string `json:"path"`
+	} `json:"readWithBody"`
 
 	// RegistryRoot The one format whose routes the registry root `/v2/` serves (R-BAS-051).
 	RegistryRoot bool `json:"registryRoot"`
@@ -9937,8 +10237,14 @@ type BastionRepositoryReadStatus int
 
 // BastionSubject defines model for BastionSubject.
 type BastionSubject struct {
-	ExpiresAt         *time.Time          `json:"expiresAt,omitempty"`
-	Kind              BastionSubjectKind  `json:"kind"`
+	ExpiresAt *time.Time         `json:"expiresAt,omitempty"`
+	Kind      BastionSubjectKind `json:"kind"`
+
+	// Limits Set with `token` only, once the main installation resolves a rule at the Bastion's place (R-BAS-096): the subject key of the download limits and the rule's ID.
+	Limits *struct {
+		Key  string `json:"key"`
+		Rule string `json:"rule"`
+	} `json:"limits,omitempty"`
 	PrincipalId       *openapi_types.UUID `json:"principalId,omitempty"`
 	RetryAfterSeconds *int                `json:"retryAfterSeconds,omitempty"`
 	TokenId           *openapi_types.UUID `json:"tokenId,omitempty"`
@@ -20552,6 +20858,52 @@ type GetAvatarParams struct {
 	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
 }
 
+// BastionCatalogueParams defines parameters for BastionCatalogue.
+type BastionCatalogueParams struct {
+	// After The `seq` of the last change the Bastion applied, 0 for the start.
+	After int64 `form:"after" json:"after"`
+
+	// Limit Changes at most; clamped to the main installation's largest page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// QuaderBastionInterface The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
+	// another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
+	// here so that the answer is the interface's, not the binder's.
+	QuaderBastionInterface *BastionInterface `json:"Quader-Bastion-Interface,omitempty"`
+}
+
+// BastionCatalogueDocumentParams defines parameters for BastionCatalogueDocument.
+type BastionCatalogueDocumentParams struct {
+	// Path A document path of the grammar of R-BAS-103.
+	Path string `form:"path" json:"path"`
+
+	// QuaderBastionInterface The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
+	// another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
+	// here so that the answer is the interface's, not the binder's.
+	QuaderBastionInterface *BastionInterface `json:"Quader-Bastion-Interface,omitempty"`
+}
+
+// BastionCatalogueDocumentsJSONBody defines parameters for BastionCatalogueDocuments.
+type BastionCatalogueDocumentsJSONBody struct {
+	Paths []string `json:"paths"`
+}
+
+// BastionCatalogueDocumentsParams defines parameters for BastionCatalogueDocuments.
+type BastionCatalogueDocumentsParams struct {
+	// QuaderBastionInterface The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
+	// another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
+	// here so that the answer is the interface's, not the binder's.
+	QuaderBastionInterface *BastionInterface `json:"Quader-Bastion-Interface,omitempty"`
+}
+
+// BastionCataloguePublicParams defines parameters for BastionCataloguePublic.
+type BastionCataloguePublicParams struct {
+	// QuaderBastionInterface The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
+	// another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
+	// here so that the answer is the interface's, not the binder's.
+	QuaderBastionInterface *BastionInterface `json:"Quader-Bastion-Interface,omitempty"`
+}
+
 // BastionCheckParams defines parameters for BastionCheck.
 type BastionCheckParams struct {
 	// QuaderBastionInterface The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
@@ -20588,7 +20940,16 @@ type BastionHandshakeParams struct {
 	// another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
 	// here so that the answer is the interface's, not the binder's.
 	QuaderBastionInterface *BastionInterface `json:"Quader-Bastion-Interface,omitempty"`
+
+	// QuaderBastionEdgeLimit The edge figure of the ingress in front of the replica (R-BAS-093): `rps=<n>; connections=<n>`, either member alone, or `off`.
+	QuaderBastionEdgeLimit *string `json:"Quader-Bastion-Edge-Limit,omitempty"`
+
+	// QuaderBastionCatalogueKept Whether the replica's copy of the public catalogue survives a restart (R-BAS-101).
+	QuaderBastionCatalogueKept *BastionHandshakeParamsQuaderBastionCatalogueKept `json:"Quader-Bastion-Catalogue-Kept,omitempty"`
 }
+
+// BastionHandshakeParamsQuaderBastionCatalogueKept defines parameters for BastionHandshake.
+type BastionHandshakeParamsQuaderBastionCatalogueKept string
 
 // GetBastionParams defines parameters for GetBastion.
 type GetBastionParams struct {
@@ -22956,6 +23317,9 @@ type CheckPermissionsJSONRequestBody = PermissionCheckRequest
 // ValidatePermissionPolicyJSONRequestBody defines body for ValidatePermissionPolicy for application/json ContentType.
 type ValidatePermissionPolicyJSONRequestBody = PermissionPolicyInput
 
+// BastionCatalogueDocumentsJSONRequestBody defines body for BastionCatalogueDocuments for application/json ContentType.
+type BastionCatalogueDocumentsJSONRequestBody BastionCatalogueDocumentsJSONBody
+
 // BastionCheckJSONRequestBody defines body for BastionCheck for application/json ContentType.
 type BastionCheckJSONRequestBody = BastionCheckRequest
 
@@ -24128,6 +24492,18 @@ type ServerInterface interface {
 	// GetAvatar Read an avatar image
 	// (GET /api/v1/avatars/{digest})
 	GetAvatar(w http.ResponseWriter, r *http.Request, digest string, params GetAvatarParams)
+	// BastionCatalogue The change list of a Bastion's public catalogue
+	// (GET /api/v1/bastion/catalogue)
+	BastionCatalogue(w http.ResponseWriter, r *http.Request, params BastionCatalogueParams)
+	// BastionCatalogueDocument One document of a Bastion's public catalogue
+	// (GET /api/v1/bastion/catalogue/document)
+	BastionCatalogueDocument(w http.ResponseWriter, r *http.Request, params BastionCatalogueDocumentParams)
+	// BastionCatalogueDocuments Several documents of a Bastion's public catalogue
+	// (POST /api/v1/bastion/catalogue/documents)
+	BastionCatalogueDocuments(w http.ResponseWriter, r *http.Request, params BastionCatalogueDocumentsParams)
+	// BastionCataloguePublic The public set of a Bastion's catalogue
+	// (GET /api/v1/bastion/catalogue/public)
+	BastionCataloguePublic(w http.ResponseWriter, r *http.Request, params BastionCataloguePublicParams)
 	// BastionCheck Check a caller's credential and read shape
 	// (POST /api/v1/bastion/check)
 	BastionCheck(w http.ResponseWriter, r *http.Request, params BastionCheckParams)
@@ -26072,6 +26448,209 @@ func (siw *ServerInterfaceWrapper) GetAvatar(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// BastionCatalogue operation middleware
+func (siw *ServerInterfaceWrapper) BastionCatalogue(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BastionCatalogueParams
+
+	// ------------- Required query parameter "after" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "after", r.URL.Query(), &params.After, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "after"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "after", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Quader-Bastion-Interface" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Quader-Bastion-Interface")]; found {
+		var QuaderBastionInterface BastionInterface
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Quader-Bastion-Interface", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Quader-Bastion-Interface", valueList[0], &QuaderBastionInterface, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Quader-Bastion-Interface", Err: err})
+			return
+		}
+
+		params.QuaderBastionInterface = &QuaderBastionInterface
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BastionCatalogue(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BastionCatalogueDocument operation middleware
+func (siw *ServerInterfaceWrapper) BastionCatalogueDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BastionCatalogueDocumentParams
+
+	// ------------- Required query parameter "path" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "path", r.URL.Query(), &params.Path, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "path"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "path", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Quader-Bastion-Interface" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Quader-Bastion-Interface")]; found {
+		var QuaderBastionInterface BastionInterface
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Quader-Bastion-Interface", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Quader-Bastion-Interface", valueList[0], &QuaderBastionInterface, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Quader-Bastion-Interface", Err: err})
+			return
+		}
+
+		params.QuaderBastionInterface = &QuaderBastionInterface
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BastionCatalogueDocument(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BastionCatalogueDocuments operation middleware
+func (siw *ServerInterfaceWrapper) BastionCatalogueDocuments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BastionCatalogueDocumentsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Quader-Bastion-Interface" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Quader-Bastion-Interface")]; found {
+		var QuaderBastionInterface BastionInterface
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Quader-Bastion-Interface", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Quader-Bastion-Interface", valueList[0], &QuaderBastionInterface, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Quader-Bastion-Interface", Err: err})
+			return
+		}
+
+		params.QuaderBastionInterface = &QuaderBastionInterface
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BastionCatalogueDocuments(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BastionCataloguePublic operation middleware
+func (siw *ServerInterfaceWrapper) BastionCataloguePublic(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BastionCataloguePublicParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Quader-Bastion-Interface" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Quader-Bastion-Interface")]; found {
+		var QuaderBastionInterface BastionInterface
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Quader-Bastion-Interface", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Quader-Bastion-Interface", valueList[0], &QuaderBastionInterface, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Quader-Bastion-Interface", Err: err})
+			return
+		}
+
+		params.QuaderBastionInterface = &QuaderBastionInterface
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BastionCataloguePublic(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // BastionCheck operation middleware
 func (siw *ServerInterfaceWrapper) BastionCheck(w http.ResponseWriter, r *http.Request) {
 
@@ -26248,6 +26827,44 @@ func (siw *ServerInterfaceWrapper) BastionHandshake(w http.ResponseWriter, r *ht
 		}
 
 		params.QuaderBastionInterface = &QuaderBastionInterface
+
+	}
+
+	// ------------- Optional header parameter "Quader-Bastion-Edge-Limit" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Quader-Bastion-Edge-Limit")]; found {
+		var QuaderBastionEdgeLimit string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Quader-Bastion-Edge-Limit", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Quader-Bastion-Edge-Limit", valueList[0], &QuaderBastionEdgeLimit, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Quader-Bastion-Edge-Limit", Err: err})
+			return
+		}
+
+		params.QuaderBastionEdgeLimit = &QuaderBastionEdgeLimit
+
+	}
+
+	// ------------- Optional header parameter "Quader-Bastion-Catalogue-Kept" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Quader-Bastion-Catalogue-Kept")]; found {
+		var QuaderBastionCatalogueKept BastionHandshakeParamsQuaderBastionCatalogueKept
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Quader-Bastion-Catalogue-Kept", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Quader-Bastion-Catalogue-Kept", valueList[0], &QuaderBastionCatalogueKept, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Quader-Bastion-Catalogue-Kept", Err: err})
+			return
+		}
+
+		params.QuaderBastionCatalogueKept = &QuaderBastionCatalogueKept
 
 	}
 
@@ -46055,6 +46672,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/bastion/check", wrapper.BastionCheck)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/bastion/feed", wrapper.BastionFeed)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/bastion/downloads", wrapper.BastionDownloads)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/bastion/catalogue", wrapper.BastionCatalogue)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/bastion/catalogue/document", wrapper.BastionCatalogueDocument)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/bastion/catalogue/documents", wrapper.BastionCatalogueDocuments)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/bastion/catalogue/public", wrapper.BastionCataloguePublic)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/vulnerabilities/findings", wrapper.ListVulnerabilityFindings)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/vulnerabilities/findings/export", wrapper.ExportVulnerabilityFindings)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/vulnerabilities/findings/set-status", wrapper.SetVulnerabilityFindingsStatus)

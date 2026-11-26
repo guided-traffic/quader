@@ -42,6 +42,11 @@ type Report struct {
 	UserAgent string
 	// ResponseBaseURL is the response base URL the main installation derived for the request.
 	ResponseBaseURL string
+	// EdgeLimit is the edge figure the replica reports (Quader-Bastion-Edge-Limit, R-BAS-093) and CatalogueKept whether its
+	// catalogue survives a restart (Quader-Bastion-Catalogue-Kept, R-BAS-101); nil when the replica reports none. They go into
+	// the event bastion.contact; the contact's row keeps them once package E8 gives it the columns.
+	EdgeLimit     *iface.EdgeLimit
+	CatalogueKept *bool
 }
 
 // ContactOptions configure [NewContacts].
@@ -101,7 +106,14 @@ func (c *Contacts) Record(ctx context.Context, rec Recognition, rep Report) erro
 	}
 	release := Release(rep.UserAgent)
 	baseURL := clip(rep.ResponseBaseURL, maxBaseURLLen)
-	fp := strings.Join([]string{addr, release, strconv.Itoa(rec.Interface), baseURL, rec.TokenID}, "\x00")
+	edge, kept := "", ""
+	if rep.EdgeLimit != nil {
+		edge = rep.EdgeLimit.Header()
+	}
+	if rep.CatalogueKept != nil {
+		kept = strconv.FormatBool(*rep.CatalogueKept)
+	}
+	fp := strings.Join([]string{addr, release, strconv.Itoa(rec.Interface), baseURL, rec.TokenID, edge, kept}, "\x00")
 	key := rec.BastionID + "\x00" + replica
 	now := c.o.Now()
 	c.mu.Lock()
@@ -163,9 +175,7 @@ func (c *Contacts) Record(ctx context.Context, rec Recognition, rep Report) erro
 			Actor:   BastionActor(rec),
 			Source:  audit.Source{ClientAddr: addr, UserAgent: rep.UserAgent},
 			Subject: audit.Subject{Kind: "bastion", ID: rec.BastionID, Name: rec.Bastion},
-			Details: mustJSON(map[string]any{
-				"replica": replica, "release": release, "interfaceVersion": rec.Interface, "responseBaseUrl": baseURL, "clientAddress": addr,
-			}),
+			Details: mustJSON(contactDetails(replica, release, rec.Interface, baseURL, addr, edge, kept)),
 		})
 	}
 	return nil
@@ -174,4 +184,17 @@ func (c *Contacts) Record(ctx context.Context, rec Recognition, rep Report) erro
 // BastionActor is the actor of an event a Bastion's call caused.
 func BastionActor(rec Recognition) audit.Actor {
 	return audit.Actor{Kind: "bastion", ID: rec.BastionID, Name: rec.Bastion, TokenID: rec.TokenID, AuthMethod: "bearer"}
+}
+
+// contactDetails are the details of bastion.contact: the replica's report, the edge figure and the catalogue's keeping only
+// when the replica reported them.
+func contactDetails(replica, release string, version int, baseURL, addr, edge, kept string) map[string]any {
+	d := map[string]any{"replica": replica, "release": release, "interfaceVersion": version, "responseBaseUrl": baseURL, "clientAddress": addr}
+	if edge != "" {
+		d["edgeLimit"] = edge
+	}
+	if kept != "" {
+		d["catalogueKept"] = kept == "true"
+	}
+	return d
 }

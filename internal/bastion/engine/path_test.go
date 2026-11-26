@@ -85,12 +85,12 @@ func TestR_BAS_003_R_BAS_018_APathIsClassifiedAsTheMainInstallationsRouterWillRo
 }
 
 // TestR_BAS_003_AnEncodedSpellingOfTheManagementAPIIsNeverForwarded: the request flow answers 404
-// bastion_not_served and sends nothing to the main installation, for the spellings of the proof of concept.
+// not_found and sends nothing to the main installation, for the spellings of the proof of concept.
 func TestR_BAS_003_AnEncodedSpellingOfTheManagementAPIIsNeverForwarded(t *testing.T) {
 	s := newSiteHarness(t, options{})
 	for _, p := range []string{"/api/%761/users", "/api/%76%31/users", "/api/%761/bastion/handshake", "/api/%761/bastion/feed"} {
 		w := s.get(p, "Authorization", bearer(s.full))
-		if w.Code != http.StatusNotFound || problemCode(w) != "bastion_not_served" {
+		if w.Code != http.StatusNotFound || problemCode(w) != "not_found" {
 			t.Fatalf("%s: %d %s", p, w.Code, w.Body)
 		}
 	}

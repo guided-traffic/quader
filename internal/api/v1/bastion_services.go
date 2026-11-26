@@ -14,7 +14,7 @@ import (
 	"github.com/guided-traffic/quader/internal/qname"
 )
 
-// BastionServices are what the four operations of the Bastion interface need (R-BAS-010, R-BAS-011, R-BAS-015,
+// BastionServices are what the operations of the Bastion interface need (R-BAS-010, R-BAS-011, R-BAS-015,
 // R-BAS-016). The composition root fills it; a member that is nil answers the operations that need it with
 // 503 unavailable instead of a panic.
 type BastionServices struct {
@@ -48,6 +48,11 @@ type BastionServices struct {
 	// Handover is the replica's snapshot of the registrations whose handover per blob is on (R-BAS-071,
 	// *bastionmain.RegistrationSnapshot); nil answers false in every handshake.
 	Handover interface{ On(bastionID string) bool }
+	// Configuration answers the configuration of the recognized registration (R-BAS-093); nil answers the interim
+	// configuration (bastionmain.InterimConfiguration) with revision 0 and the switch of Handover. Until a registration
+	// holds a configuration of its own (E8), the composition root answers the interim one with the registration's
+	// revision and switch.
+	Configuration func(ctx context.Context, rec bastionmain.Recognition) (iface.Configuration, error)
 }
 
 // BastionFeedSource is what the handshake and the feed operation read of the revocation feed (R-BAS-010, R-BAS-015):
@@ -95,7 +100,8 @@ func BastionPrincipal(rec bastionmain.Recognition) httpserver.Principal {
 //
 // A recognized write probe (R-BAS-014) is admitted as the anonymous caller for routing only, whatever the
 // anonymous switches say: it carries no credential of a caller by design, and the marking stage answers it at
-// the route match - 403 bastion_read_only or 204 - before any decision, handler or body read (Q-BAS-118). The
+// the route match - 403 read_only, a read route that takes a body as well - before any decision, handler or body read
+// (Q-BAS-118); the recognition stage reads a probe from its form, a write without a body and without a credential. The
 // recognition stage admits a forward only below /api/<format>/, /files/ and the registry root /v2/, whose routes all
 // tell the marking stage their kind first (the registry's version check answers GET and HEAD only and decides
 // nothing), so a probe reaches no handler. Every other request is the stage's. admitted, when

@@ -211,6 +211,7 @@ func TestR_BAS_058_KitCheck19(t *testing.T) {
 		{"a format whose WriteError caps the wait it does not declare", testformat.CapsRetryAfterUndeclared, `wait Retry-After "30" and catalog.Facts.Bastion says 86400`},
 		{"a format that declares a cap its WriteError does not apply", testformat.DeclaresRetryAfterCap, `wait Retry-After "86400" and catalog.Facts.Bastion says 30`},
 		{"a format whose WriteError renders without the request (R-BAS-099)", testformat.IgnoresTheForward, "names the member repository of a remote's failure in the answer to a forward of a Bastion"},
+		{"a declared read route with a body no route serves (R-BAS-095)", testformat.StaleReadWithBody, `lists POST "/-/search", which matches the example of no route`},
 	} {
 		t.Run("R-BAS-058 "+c.name+" fails check 19 and no other check", func(t *testing.T) {
 			rep := formattest.EvaluateChecks(testformat.With(c.defect), base, notInspect...)
@@ -230,6 +231,13 @@ func TestR_BAS_058_KitCheck19(t *testing.T) {
 		}
 		return formattest.EvaluateChecks(f, fx, formattest.CheckBastion).Result(formattest.CheckBastion)
 	}
+	t.Run("R-BAS-095 a read route with a body the format does not declare fails check 19", func(t *testing.T) {
+		// The route of the defect has no content case, which check 7 asks for: check 19 alone is run.
+		res := check19(testformat.With(testformat.UndeclaredReadWithBody), nil, nil)
+		if res.Passed() || !strings.Contains(strings.Join(res.Failures, "\n"), "route tf.search.post (POST /-/search) reads with a body") {
+			t.Fatalf("check 19: %v", res)
+		}
+	})
 	t.Run("R-BAS-058 a route listed with its reason is exempt from the conditional duty", func(t *testing.T) {
 		if res := check19(testformat.With(testformat.DocumentIgnoresConditional), map[string]string{"tf.doc.get": "not built yet", "tf.all.get": "not built yet"}, nil); !res.Passed() {
 			t.Fatalf("check 19: %v", res)

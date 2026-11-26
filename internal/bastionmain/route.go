@@ -59,9 +59,9 @@ type RouteDecision struct {
 // (internal/api/rawfiles) does the same for /files/, which work package 3 adds. A nil observer costs nothing.
 type RouteObserver interface {
 	// Matched is called right after the format matched the route. A non-nil error ends the request and is
-	// rendered by the format in its own error shape: the write refusal of a probe is bastion_read_only
-	// (R-BAS-014). handled reports that the observer answered the request itself (the 204 with
-	// Quader-Bastion-Route: read-with-body), so the dispatcher writes nothing.
+	// rendered by the format in its own error shape: the write refusal of a probe is read_only
+	// (R-BAS-014). handled reports that the observer answered the request itself, so the dispatcher writes
+	// nothing; the marking stage answers none itself since interface version 8 and reports false.
 	Matched(w http.ResponseWriter, r *http.Request, m RouteMatch) (handled bool, err error)
 	// Decided is called when the decision allowed the request and the repository resolved. The raw file
 	// handler calls it as soon as the caller exists, before its service decides the path, with no Class:

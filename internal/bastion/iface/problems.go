@@ -1,7 +1,7 @@
 package iface
 
 // The problem codes the two sides exchange or produce for the interface
-// (R-BAS-008, R-BAS-009, R-BAS-014, R-BAS-029). The main installation answers the
+// (R-BAS-008, R-BAS-009, R-BAS-029, R-BAS-095). The main installation answers the
 // first four as problem details of the management API, also on a package route;
 // the Bastion produces the rest itself. internal/errs registers every one of them
 // with its kind, which gives the HTTP status.
@@ -14,12 +14,6 @@ const (
 	// the main installation's, or is missing. The problem carries
 	// [ProblemMemberInterfaceVersion] (R-BAS-009).
 	CodeInterfaceMismatch = "bastion_interface_mismatch"
-	// CodeReadOnly (403): a write through a Bastion; the detail names the main
-	// installation's URL of the addressed repository (R-BAS-014).
-	CodeReadOnly = "bastion_read_only"
-	// CodeNotServed (404): a path outside the mirrored families, answered by the
-	// Bastion itself (R-BAS-003, R-BAS-018).
-	CodeNotServed = "bastion_not_served"
 	// CodeBaseURLUnknown (409): client-setup for a Bastion whose reported base URL
 	// is not an entry of server.additional_base_urls (R-BAS-007).
 	CodeBaseURLUnknown = "bastion_base_url_unknown"
@@ -28,14 +22,22 @@ const (
 	CodeNotImplemented = "bastion_not_implemented"
 )
 
-// The codes of the Bastion's own answers (R-BAS-029). The statuses are in the
-// table of R-BAS-029; a 401 carries the challenge of R-AUTH-002 for the path
-// family and every answer carries Cache-Control: no-store.
+// The codes of the Bastion's own answers (R-BAS-029, Q-BAS-321). Each is named by
+// its status and nothing behind it, so that a caller learns no more than the status
+// line tells (R-BAS-099): not_found and unavailable are the core's codes as well.
+// The statuses are in the table of R-BAS-029; a 401 carries the challenge of
+// R-AUTH-002 for the path family and every answer carries Cache-Control: no-store.
 const (
-	CodeMainFailed        = "main_failed"          // 502
-	CodeMainUnreachable   = "main_unreachable"     // 503, Retry-After: 30
-	CodeBusy              = "bastion_busy"         // 503, Retry-After: 1
-	CodeMainTimeout       = "main_timeout"         // 504
+	// CodeReadOnly (403): a write through a Bastion (R-BAS-095); the main
+	// installation's backstop refuses a forwarded write with it too.
+	CodeReadOnly = "read_only"
+	// CodeNotFound (404): a path outside the mirrored families, answered by the
+	// Bastion itself (R-BAS-003, R-BAS-018).
+	CodeNotFound          = "not_found"
+	CodeBadGateway        = "bad_gateway"          // 502
+	CodeUnavailable       = "unavailable"          // 503, Retry-After: 30
+	CodeBusy              = "busy"                 // 503, Retry-After: 1
+	CodeGatewayTimeout    = "gateway_timeout"      // 504
 	CodeAuthTimeout       = "auth_timeout"         // 429
 	CodeAddressBlocked    = "address_blocked"      // 429
 	CodeInvalidToken      = "invalid_token"        // 401, shared with the main installation's registry

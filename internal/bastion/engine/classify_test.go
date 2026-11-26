@@ -19,7 +19,7 @@ import (
 
 // TestR_BAS_003_OnlyThePackagePathFamiliesReachTheReadFlow sends every row of INV-6's path table: only
 // /api/<format>/…, /files/… and the registry root /v2/… (R-BAS-050, R-BAS-051) reach the read flow or the forward, the
-// others answer 404 bastion_not_served from the Bastion (below /v2/ in the distribution's shape, the code in detail)
+// others answer 404 not_found from the Bastion (below /v2/ in the distribution's shape, the code in detail)
 // and the counting double of the main installation records no request.
 func TestR_BAS_003_OnlyThePackagePathFamiliesReachTheReadFlow(t *testing.T) {
 	rows := []struct {
@@ -60,7 +60,9 @@ func TestR_BAS_003_OnlyThePackagePathFamiliesReachTheReadFlow(t *testing.T) {
 			s := newSiteHarness(t, options{})
 			w := s.get(row.path, "Authorization", bearer(s.full))
 			if row.served {
-				if problemCode(w) == "bastion_not_served" || s.main.count() == 0 {
+				// The Bastion's own 404 and the main installation's share the code not_found (Q-BAS-321): the request reached the
+				// read flow when it reached the main installation.
+				if s.main.count() == 0 {
 					t.Fatalf("%s did not reach the read flow: %d %s, %d requests", row.path, w.Code, w.Body, s.main.count())
 				}
 				return
@@ -69,7 +71,7 @@ func TestR_BAS_003_OnlyThePackagePathFamiliesReachTheReadFlow(t *testing.T) {
 			if strings.HasPrefix(row.path, "/v2/") {
 				code = registryDetail(t, w)
 			}
-			if w.Code != http.StatusNotFound || code != "bastion_not_served" {
+			if w.Code != http.StatusNotFound || code != "not_found" {
 				t.Fatalf("%s: %d %s", row.path, w.Code, w.Body)
 			}
 			if n := s.main.count(); n != 0 {
@@ -187,7 +189,7 @@ func TestR_BAS_018_TheKeyRuleIsTheOneOfINV5(t *testing.T) {
 		"/api/npm/web", "/api/npm/web/", "/files/web", "/files/raw-all/x",
 	} {
 		w := s.get(p, "Authorization", bearer(s.full))
-		if w.Code != http.StatusNotFound || problemCode(w) != "bastion_not_served" {
+		if w.Code != http.StatusNotFound || problemCode(w) != "not_found" {
 			t.Errorf("%s: %d %s", p, w.Code, w.Body)
 		}
 	}

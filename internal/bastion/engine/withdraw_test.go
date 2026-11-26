@@ -46,7 +46,7 @@ func TestR_BAS_022_R_BAS_027_AWithdrawnArtifactIsNotServedWhileTheMainInstallati
 			before := s.main.count()
 			for _, p := range []string{tgz, doc} {
 				w := s.get(p, "Authorization", bearer(s.full))
-				if w.Code != 503 || problemCode(w) != "main_unreachable" {
+				if w.Code != 503 || problemCode(w) != "unavailable" {
 					t.Fatalf("%s: a withdrawn entry was served while unreachable: %d %s", p, w.Code, w.Body)
 				}
 			}

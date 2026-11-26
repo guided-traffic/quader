@@ -253,24 +253,62 @@ func (m *Main) SetBoundRepository(repo string) { m.lock(func() { m.bound = repo 
 // whether [Main.HandOver] hands anything over. Off by default, as for a new registration.
 func (m *Main) SetHandover(on bool) { m.lock(func() { m.handover = on }) }
 
+// Configuration is a configuration a main installation of today sends (R-BAS-093): the switch handover as given, the web
+// interface and its documentation off, one rule without a figure for every kind of caller, and the flood figures and slots
+// of the Bastion chart's defaults. It is the main installation's interim configuration in substance; this package keeps its
+// own, since a package of the Bastion imports none of the main installation's.
+func Configuration(handover bool) iface.Configuration {
+	const rule = "interim-unlimited"
+	return iface.Configuration{
+		Switches: iface.Switches{Handover: handover},
+		Limits: iface.Limits{
+			Mode: iface.ModeEnforce, Preset: iface.PresetCustom,
+			Place: iface.PlaceTable{
+				Rules: map[string]iface.Figures{rule: {}}, AddressRules: []iface.AddressRule{},
+				KindRules: iface.KindRules{Anonymous: rule, User: rule, TechnicalToken: rule, CI: rule, Administrator: rule},
+			},
+			Flood: iface.Flood{
+				Anonymous:      iface.FloodClass{RequestsPerSecond: 50, Burst: 1000, MissesPerMinute: 1000},
+				Authenticated:  iface.FloodClass{RequestsPerSecond: 200, Burst: 4000, MissesPerMinute: 4000},
+				GUI:            iface.FloodRate{RequestsPerSecond: 20, Burst: 100},
+				FailedAuth:     iface.FailedAuth{MaxFailures: 20, WindowSeconds: 600, TimeoutSeconds: 900},
+				Blocking:       iface.Blocking{Threshold: 3000, WindowSeconds: 60, DurationSeconds: 900, MaxDurationSeconds: 86400},
+				ExemptNetworks: []string{},
+			},
+			Slots:      iface.Slots{MaxConcurrent: 64, AnonymousShare: 0.25, QueueTimeoutMillis: 2000},
+			Throughput: iface.Throughput{AnonymousShare: 0.25},
+		},
+	}
+}
+
 // Formats is the format table a main installation of today sends, filled from the formats' catalog.Facts in the order of
 // the IDs (R-BAS-057):
 // OCI with the registry root, its four replay headers and the bound prefix /v2/; the ClamAV definitions with 503 for a
 // rate limit; NuGet and Ansible Galaxy with the longest wait of 30 s their clients are told (R-BAS-058); npm with its audit
-// notice as a replay header (R-BAS-099 row 5); Debian with the defaults. Generic has no routes and no entry.
+// notice as a replay header (R-BAS-099 row 5); Debian with the defaults. The error shapes and the read routes that take a body
+// are the formats' declarations (R-BAS-095): npm's npm with its three audit routes, NuGet's text, OCI's distribution with the
+// token service's POST, Ansible Galaxy's galaxy, problem for the rest. Generic has no routes and no entry.
 func Formats() iface.HandshakeFormats {
 	plain := func(id string) iface.HandshakeFormat {
-		return iface.HandshakeFormat{ID: id, ReplayHeaders: []string{}, RateLimitedStatus: http.StatusTooManyRequests, BoundPrefixes: []string{}}
+		return iface.HandshakeFormat{
+			ID: id, ReplayHeaders: []string{}, RateLimitedStatus: http.StatusTooManyRequests, BoundPrefixes: []string{},
+			ErrorShape: iface.ErrorShapeProblem, ReadWithBody: []iface.BodyRoute{},
+		}
 	}
 	oci := plain("oci")
 	oci.RegistryRoot, oci.BoundPrefixes = true, []string{"/v2/"}
 	oci.ReplayHeaders = []string{"Docker-Content-Digest", "Docker-Distribution-Api-Version", "Oci-Filters-Applied", "Link"}
+	oci.ErrorShape, oci.ReadWithBody = iface.ErrorShapeDistribution, []iface.BodyRoute{{Method: http.MethodPost, Path: "/v2/_token"}}
 	clamav := plain("clamav")
 	clamav.RateLimitedStatus = http.StatusServiceUnavailable
 	ansible, nuget := plain("ansible"), plain("nuget")
 	ansible.RetryAfterMaxSeconds, nuget.RetryAfterMaxSeconds = 30, 30
+	ansible.ErrorShape, nuget.ErrorShape = iface.ErrorShapeGalaxy, iface.ErrorShapeText
 	npm := plain("npm")
-	npm.ReplayHeaders = []string{"Npm-Notice"}
+	npm.ReplayHeaders, npm.ErrorShape = []string{"Npm-Notice"}, iface.ErrorShapeNPM
+	for _, p := range []string{"/-/npm/v1/security/advisories/bulk", "/-/npm/v1/security/audits", "/-/npm/v1/security/audits/quick"} {
+		npm.ReadWithBody = append(npm.ReadWithBody, iface.BodyRoute{Method: http.MethodPost, Path: "/api/npm/{project}/{repo}" + p})
+	}
 	return iface.HandshakeFormats{ansible, clamav, plain("deb"), npm, nuget, oci}
 }
 
@@ -512,7 +550,7 @@ func (m *Main) handshake(w http.ResponseWriter, r *http.Request, rt *regToken) {
 		ServerTime:       m.now().UTC(),
 		Formats:          m.formats,
 		BoundRepository:  m.bound,
-		Handover:         m.handover,
+		Configuration:    Configuration(m.handover),
 	}
 	m.mu.Unlock()
 	m.writeJSON(w, hs)

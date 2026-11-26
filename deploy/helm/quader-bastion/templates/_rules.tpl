@@ -91,7 +91,7 @@ spec page used min() for "every replica", which fires on one replica.
     severity: warning
   annotations:
     summary: The concurrency budget towards the main installation is exhausted.
-    description: Requests are answered 503 bastion_busy. Raise config.bastion.main.max_concurrent or find the traffic (R-BAS-025).
+    description: Requests are answered 503 busy. Raise config.bastion.main.max_concurrent or find the traffic (R-BAS-025).
 - alert: QuaderBastionAuditEventsDropped
   expr: increase(quader_bastion_audit_events_dropped_total{ {{ $s }} }[15m]) > 0
   labels:

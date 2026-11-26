@@ -76,7 +76,7 @@ func TestR_BAS_016_R_BAS_039_DownloadsServedFromTheCacheAreAuditedAtTheMainInsta
 }
 
 // TestR_BAS_025_TheBudgetAndCollapsedMisses: a flood of distinct cold names reaches the main installation with at
-// most max_concurrent requests in flight and the rest is told 503 bastion_busy; many requests for one cold
+// most max_concurrent requests in flight and the rest is told 503 busy; many requests for one cold
 // artifact cost one request per replica, and one in total with Valkey and the bucket backend.
 func TestR_BAS_025_TheBudgetAndCollapsedMisses(t *testing.T) {
 	w := newWorld(t, worldOptions{})
@@ -127,8 +127,8 @@ func TestR_BAS_025_TheBudgetAndCollapsedMisses(t *testing.T) {
 			}
 		}
 		for k := 0; k < names-2; k++ {
-			if got := next(); got.Status != http.StatusServiceUnavailable || got.Code() != "bastion_busy" {
-				t.Errorf("a request beyond the two slots: %d %q, want 503 bastion_busy", got.Status, got.Code())
+			if got := next(); got.Status != http.StatusServiceUnavailable || got.Code() != "busy" {
+				t.Errorf("a request beyond the two slots: %d %q, want 503 busy", got.Status, got.Code())
 			}
 		}
 		if n := held.Load(); n != 2 {

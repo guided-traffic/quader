@@ -108,7 +108,7 @@ What the Bastion meets on the wire from a main installation of this release; no 
 | Behaviour | Where | What C does with it |
 |---|---|---|
 | A forward of `/v2` and `/v2/…` (the repository routes, `_token`, `_catalog`) is admitted like `/api/<format>/…` and `/files/…`; any other family still answers `404 not_found` as problem details | `forwardablePath` in [recognize.go](../../internal/bastionmain/recognize.go) | forwards the registry root to `bastion.main.packages_url` |
-| The probe of `POST /v2/_token` answers `204` with `Quader-Bastion-Route: read-with-body`, its form unread; the real `POST` with the form is served. A probe of a method the token service or the catalog does not answer (`PUT /v2/_token`, `POST /v2/_catalog`) answers that route's `405`, not `204` (Q-BAS-189) | `tellRoute` in [registry/bastion.go](../../internal/api/registry/bastion.go) | the probe flow of R-BAS-014, unchanged |
+| Since interface version 8 the format table names `POST /v2/_token` a read route with a body and the Bastion forwards it at once; a probe of it is refused `403`, its form unread (up to version 7 it answered `204` with `Quader-Bastion-Route: read-with-body`); the real `POST` with the form is served. A probe of a method the token service or the catalog does not answer (`PUT /v2/_token`, `POST /v2/_catalog`) answers that route's `405`, not `204` (Q-BAS-189) | `tellRoute` in [registry/bastion.go](../../internal/api/registry/bastion.go) | the probe flow of R-BAS-014, unchanged |
 | A token answer (`GET` or `POST /v2/_token`) is `pass` and its `Quader-Bastion-Subject` names the Quader token the token service accepted (`token=<id>; principal=<id>; expires=<s>`), `invalid` on its `401`, `anonymous` for an anonymous token request; the catalog is `pass` with the chain's caller (Q-BAS-187) | `bastionmark.NoteCaller` in [mark.go](../../internal/api/bastionmark/mark.go) | keeps nothing of the answer (R-BAS-051); the subject is a true statement about the credential of the request |
 | The probe of a write below `/v2/` answers `403` `DENIED` in the distribution's shape: `This address is read-only: it serves downloads and accepts no uploads.` (`bastionmark.ReadOnlyDetail`, every format alike since E16, R-BAS-099 row 1) | `readOnly` in [mark.go](../../internal/api/bastionmark/mark.go) | replays and keeps it as every probe refusal |
 | A registry token's `Quader-Bastion-Read` is never `full` (an anonymous registry token's neither), and its subject is the token it was issued for with the registry token's expiry; the check answers the same (`partial` at most, `expiresAt` the registry token's) | `bastionmain.CapRegistryShape`, [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go) | serves a registry token per URL after a conditional request (R-BAS-022) |
@@ -174,6 +174,7 @@ returns package 3's `ShapeResolver` (without one, the check answers `503`).
 ```text
 internal/bastion/
 ├── iface/            the wire contract of both sides; stdlib only; guarded by testdata/interface.txt
+├── cataloguebounds/  the figures of the public catalogue's transfer (page, batch, largest document), outside the interface's shape; a leaf
 ├── answers/          the validity rules of R-BAS-020 and the feed log; a leaf
 ├── metrics/          every metric of R-BAS-040, defined once; a leaf
 ├── mainclient/       the client of the main installation: HTTPClient, SlotBudget, Reloader, TokenSource, errors; token file and holder
@@ -196,13 +197,18 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | File | Responsibility |
 |---|---|
 | [iface/version.go](../../internal/bastion/iface/version.go) | `InterfaceVersion` |
-| [iface/routes.go](../../internal/bastion/iface/routes.go) | the four route paths, the feed query parameters, the operation names, the mirrored path families |
-| [iface/headers.go](../../internal/bastion/iface/headers.go) | every header name of R-BAS-008, R-BAS-013, R-BAS-014, R-BAS-017, R-BAS-059 (`Quader-Bastion-Counted`), R-BAS-082 (`Quader-Bastion-Package`, `Quader-Bastion-Package-Read`) and R-BAS-073 (`Quader-Bastion-Handover`), the probe, route and counted values, the token prefix |
+| [iface/routes.go](../../internal/bastion/iface/routes.go) | the route paths (the four of the interface and the four of the catalogue), the query parameters, the operation names, the mirrored path families |
+| [iface/headers.go](../../internal/bastion/iface/headers.go) | every header name of R-BAS-008, R-BAS-013, R-BAS-014, R-BAS-017, R-BAS-059 (`Quader-Bastion-Counted`), R-BAS-082 (`Quader-Bastion-Package`, `Quader-Bastion-Package-Read`) and R-BAS-073 (`Quader-Bastion-Handover`), R-BAS-096 (`Quader-Bastion-Limits`) and the contact's `Quader-Bastion-Edge-Limit` and `Quader-Bastion-Catalogue-Kept` (R-BAS-010), the counted value, the token prefix |
 | [iface/marking.go](../../internal/bastion/iface/marking.go) | `Class`, `Read`, `Marking` (Set, Parse, Strip; `Counted`; `Package` and `PackageRead` with the five refusals of R-BAS-082 in `parsePackage`), `SubjectKind`, `Subject` and its header form |
 | [iface/package.go](../../internal/bastion/iface/package.go) | the package names of the interface: `ValidPackage`, `MaxPackageBytes` (512) and the strict percent-encoding of `Quader-Bastion-Package` (R-BAS-082) |
 | [iface/cursor.go](../../internal/bastion/iface/cursor.go) | `Cursor` and the synthetic `t:<RFC 3339>` form |
 | [iface/wire.go](../../internal/bastion/iface/wire.go) | the bodies of the handshake (with the format table `HandshakeFormats` and `BoundRepository`, R-BAS-057), check (with `packages` in request and answer, always written, and the request's rules `CheckRequest.PackagesProblem`, R-BAS-083), feed and downloads, `FeedKind`, `DecodeStrict`, `Marshal` |
-| [iface/regtoken.go](../../internal/bastion/iface/regtoken.go) | the registry token's form below `/v2/` and the unverified reading of its claims: the anonymous claim (R-BAS-052, Q-BAS-185), the grant (`RegistryTokenGrant`, `RegistryGrant.Pulls`, Q-BAS-246) and the expiry (`RegistryTokenExpiry`, Q-BAS-252) |
+| [iface/regtoken.go](../../internal/bastion/iface/regtoken.go) | the registry token's form below `/v2/` and the unverified reading of its claims of payload versions 1 and 2 (Q-BAS-339): the anonymous claim (R-BAS-052, Q-BAS-185), the grant (`RegistryTokenGrant`, `RegistryGrant.Pulls`, Q-BAS-246) and the expiry (`RegistryTokenExpiry`, Q-BAS-252) |
+| [iface/configuration.go](../../internal/bastion/iface/configuration.go) | the handshake's `Configuration` (switches, limits, the place's table, flood, slots, throughput, ceiling) and its `Validate` (R-BAS-093) |
+| [iface/usage.go](../../internal/bastion/iface/usage.go) | the reporting batch's `UsageReport` and `ReplicaStatus` with their bounds (R-LIM-045) |
+| [iface/contact.go](../../internal/bastion/iface/contact.go) | the contact's headers: `EdgeLimit`, `ParseEdgeLimit`, `ParseCatalogueKept` (R-BAS-010) |
+| [iface/catalogue.go](../../internal/bastion/iface/catalogue.go) | the public catalogue (R-BAS-101 to R-BAS-103): `CatalogueChanges`, `CataloguePublic`, `CatalogueBatch`, the frames (`WriteCatalogueFrame`, `ReadCatalogueFrame`) and the path grammar (`CataloguePath`, `ParseCataloguePath`) |
+| [cataloguebounds/bounds.go](../../internal/bastion/cataloguebounds/bounds.go) | the page of the change list, the batch and the largest document (Q-BAS-345) |
 | [iface/handover.go](../../internal/bastion/iface/handover.go) | the handover per blob (R-BAS-072, R-BAS-073): the offer `HandoverOffer`, the value `Handover` with `EncodeHandover`, `DecodeHandover` and `Check`, the data key `HandoverKey` that renders `[REDACTED]`, `ETagContentAddress`, and the copies of `S` and of the connection pattern ([Q-BAS-280](../spec/bastion.md#q-bas-280--the-wire-checks-storedsize-against-ssize-itself)) |
 | [iface/problems.go](../../internal/bastion/iface/problems.go) | the problem codes of R-BAS-008, R-BAS-009, R-BAS-014 and R-BAS-029 |
 | [iface/surface_test.go](../../internal/bastion/iface/surface_test.go) | the generator of the surface and the guard of R-BAS-009 |
@@ -404,11 +410,12 @@ and stores a `Recognition`; the Mark stage installs the observer; authentication
 request; the marking wrapper adds `Quader-Bastion-Class`, `-Repository`, `-Read`, `-Subject` and `-Interface` at the status line. The
 engine keeps what the class allows, streams the rest.
 
-**Write probe** (R-BAS-014): a method other than `GET` and `HEAD` becomes a bodiless `Do` with `Probe` set, no credential and
-`Quader-Bastion-Probe: 1`. The dispatcher calls `RouteObserver.Matched` after the match: for an `Upload`, `Delete`, `Admin` route or a
-coarse action other than `read` it returns the `bastion_read_only` error, which the format renders in its own shape; for a read route
-that takes a body it answers `204` with `Quader-Bastion-Route: read-with-body` and reports `handled`. The Bastion replays a `403` or
-`404` and, after a `204`, forwards the real request.
+**Write probe** (R-BAS-014, R-BAS-095, Q-BAS-351): a method other than `GET` and `HEAD` whose path matches no read route with a body of
+the format table (`HandshakeFormat.ReadsWithBody`) becomes a bodiless `Do` with `Probe` set and no credential; no header names it since
+interface version 8, and the recognition stage reads it from its form (`bastionmain.IsProbe`: a writing method, no body, no caller's
+credential). The dispatcher calls `RouteObserver.Matched` after the match: for an `Upload`, `Delete`, `Admin` route, a coarse action other
+than `read`, or any route of a probe it returns the `read_only` error, which the format renders in its own shape. The Bastion replays a
+`403` or `404`. A request that matches `readWithBody` is forwarded at once with its body and the caller's credential (`forwardWithBody`).
 
 **One cache, several replicas.** An entry kept under a key that carries the values of the request headers named by `Vary` is also written
 under the key without them ([entries.go](../../internal/bastion/engine/entries.go) `saveEntry`), and a replica that has not learned the
@@ -455,15 +462,15 @@ backend's first `Check`; it never depends on the main installation (Q-BAS-44).
 - An answer of the class `handover` is taken only from a forward that offered: `Response.Handover` holds its value (read before the strip),
   or `Response.HandoverErr` says why it holds none the engine may use; to a forward that did not offer, or as a value on another class, it is
   `ErrBadAnswer` (`takeHandover`, R-BAS-073).
-- The `Response` has its `Quader-Bastion-*` headers removed and parsed into `Marking` (`Marked` false for an unmarked answer). `Response.Route` is the value of `Quader-Bastion-Route`, read before the strip (the engine's probe decides on it, [Q-BAS-108](../spec/bastion.md#q-bas-108--the-route-of-a-probe-answer-is-read-before-the-marking-is-stripped)). The
+- The `Response` has its `Quader-Bastion-*` headers removed and parsed into `Marking` (`Marked` false for an unmarked answer). (`Response.Route` and the header it read, Q-BAS-108, went with interface version 8.) The
   slot of the budget is held until the body ends or `Close` is called, so **the engine closes every body on every path**
   (`TestR_BAS_025_EveryPathClosesTheResponseBodyAndSoReleasesItsSlot` serves every kind of answer over a budget of one slot and counts the slots after each).
 - `Forward.Class` is `Anonymous` for a request without a credential: those requests share the anonymous slots.
-- Errors, mapped to the answers of R-BAS-029: `ErrBusy` (`503 bastion_busy`); `ErrUnreachable` (`*UnreachableError`;
-  `Timeout` true means `504 main_timeout`, otherwise `502 main_failed`); `ErrBadAnswer` (`502 main_failed`); `ErrTokenRefused` (only in
-  the answer to a call of the interface's own: a `401 bastion_token_invalid` to a forward is an `*AnswerError`, `502 main_failed`, and moves nothing, Q-BAS-121) and
+- Errors, mapped to the answers of R-BAS-029: `ErrBusy` (`503 busy`); `ErrUnreachable` (`*UnreachableError`;
+  `Timeout` true means `504 gateway_timeout`, otherwise `502 bad_gateway`); `ErrBadAnswer` (`502 bad_gateway`); `ErrTokenRefused` (only in
+  the answer to a call of the interface's own: a `401 bastion_token_invalid` to a forward is an `*AnswerError`, `502 bad_gateway`, and moves nothing, Q-BAS-121) and
   `ErrInterfaceMismatch` concern the Bastion, are never passed on, and have already made the link unreachable by `Link.Guard` (`503
-  main_unreachable` for the caller). Any other error of a forward does not make the link unreachable (R-BAS-027, Q-BAS-44). A context error of the
+  unavailable` for the caller). Any other error of a forward does not make the link unreachable (R-BAS-027, Q-BAS-44). A context error of the
   caller's own context is returned as it is, also when a call of the interface's own fails to decode an answer after the caller was
   cancelled: closing the connection can draw an answer that raced the close, such as an empty `200`.
 
@@ -524,7 +531,7 @@ flow is `engine.ServeHTTP` ([request.go](../../internal/bastion/engine/request.g
 |---|---|---|
 | 1 host | `stepHost`: the request's host, or the forwarded host of a trusted proxy (Q-BAS-83) | `421 misdirected_request` |
 | 2 block list | `stepBlocked` → `guard.Blocked` | `429 address_blocked` |
-| 3 path | `stepPath` → `classify` ([family.go](../../internal/bastion/engine/family.go)): `/api/<format>/<projectKey>/<repoKey>/…` and `/files/<projectKey>/<repoKey>/…` read by `qname.ParseAddress` (the key rules of INV-5 live there; the repository is the qualified name `<projectKey>/<repoKey>` in every answer key, check, cache entry and marking); one segment after the format, a `~cache` key, a percent-encoded family, format, project or key segment and a dot segment are refused, because the main installation's router decodes (Q-BAS-121). The registry root `/v2/…` by `qname.ParseRegistryAddress` and its core routes, on a bound host every path below `/v2/` as the bound repository (R-BAS-051, R-BAS-057, Q-BAS-195). The credential is read here, once the family is known | `404 bastion_not_served` (below `/v2/` `NAME_UNKNOWN`), no request |
+| 3 path | `stepPath` → `classify` ([family.go](../../internal/bastion/engine/family.go)): `/api/<format>/<projectKey>/<repoKey>/…` and `/files/<projectKey>/<repoKey>/…` read by `qname.ParseAddress` (the key rules of INV-5 live there; the repository is the qualified name `<projectKey>/<repoKey>` in every answer key, check, cache entry and marking); one segment after the format, a `~cache` key, a percent-encoded family, format, project or key segment and a dot segment are refused, because the main installation's router decodes (Q-BAS-121). The registry root `/v2/…` by `qname.ParseRegistryAddress` and its core routes, on a bound host every path below `/v2/` as the bound repository (R-BAS-051, R-BAS-057, Q-BAS-195). The credential is read here, once the family is known | `404 not_found` (below `/v2/` `NAME_UNKNOWN`), no request |
 | 3a token form | `stepTokenForm`: the form of `POST /v2/_token`, at most 16 KiB, read before the limits; its password is the credential | `413` |
 | 4 limits, credentials | `stepLimits` → `guard.Request`; for `GET`, `HEAD` and an anonymous `POST /v2/_token` `stepCredentials`: syntax and checksum before any request, `bst` and unknown prefixes refused, anonymous only while the handshake said `anonymousReads` (before the first handshake: `503`, Q-BAS-99), the failed-authentication timeout for a credential without a usable answer | `429 rate_limited`, `401 invalid_token`, `401 credentials_required`, `429 auth_timeout` |
 | 5 method | `OPTIONS` → `405`; other methods → [probe.go](../../internal/bastion/engine/probe.go) (Q-BAS-81) | |
@@ -547,8 +554,8 @@ records the credential, shape and package answers of a marked response (`recordA
 repository while the capped shape is `partial`, through `putPackage` and `capPackage`) and then acts by its class: `artifact` and `shared` 200 are kept, with
 the marking's package as the entry's `Package` (`entryPackage`, replaced at every renewal and cleared by a marking without one) (artifact: the fill of
 [fill.go](../../internal/bastion/engine/fill.go), a document: held whole and written through a `cache.Fill` with its entry), a `304` closes its body, serves
-and renews the entry, `private` is kept in memory as the caller's copy, `absent` fills the negative cache, everything else is passed through (a `403` is also kept as the caller's URL answer; a `404` that is not `absent` never is, Q-BAS-124). An unmarked `5xx`, a connect error and a timeout answer `502 main_failed` or
-`504 main_timeout`.
+and renews the entry, `private` is kept in memory as the caller's copy, `absent` fills the negative cache, everything else is passed through (a `403` is also kept as the caller's URL answer; a `404` that is not `absent` never is, Q-BAS-124). An unmarked `5xx`, a connect error and a timeout answer `502 bad_gateway` or
+`504 gateway_timeout`.
 
 **The cache** (Q-BAS-98): the engine holds a `*cache.Cache` and nothing of the raw `cache.Backend`. An entry is found by `LookupEntry` (the signature, the
 bytes' existence and size are checked there, a stale entry is deleted there and counted), written by `StoreEntry` (signed there; unsigned without a key),
@@ -584,7 +591,7 @@ entry the URL answers of its repositories, not their package answers), and they 
 
 **Collapsing**: `group` is a single-flight per replica (checks are shared with their result, misses with a wait and a second decision); with the
 bucket backend and Valkey `shared.FlightLock` makes the other replicas wait (`waitRemote`, at most 30 s); a lock that cannot be asked
-returns `held` with an error and the replica fetches itself. A waiter of the replica's own flight waits at most `collapseWait` (30 s) and then answers `503 bastion_busy` (`waitLeader`). A miss decides on what it read from the cache before it joins, so `miss` closes two windows: a request whose cache key already carries the Vary waits for a flight still led under the plain key (a fetch that began before the replica knew the names and has not stored its entry yet), and a request that becomes the leader of a flight finds the entry the just-ended flight left (`leftEntry`) and decides again instead of fetching a second time (R-BAS-018, R-BAS-025).
+returns `held` with an error and the replica fetches itself. A waiter of the replica's own flight waits at most `collapseWait` (30 s) and then answers `503 busy` (`waitLeader`). A miss decides on what it read from the cache before it joins, so `miss` closes two windows: a request whose cache key already carries the Vary waits for a flight still led under the plain key (a fetch that began before the replica knew the names and has not stored its entry yet), and a request that becomes the leader of a flight finds the entry the just-ended flight left (`leftEntry`) and decides again instead of fetching a second time (R-BAS-018, R-BAS-025).
 A key whose last fetch left nothing shareable is marked for a minute and not collapsed (Q-BAS-86): a mark that depends on the caller's rights (a refusal, a private document) is the caller's own
 (`markVolatileFor`, keyed by credential and cache key), a mark that does not (a search, a document too large to keep) is the key's (`markVolatile`, Q-BAS-125).
 
@@ -880,7 +887,7 @@ the machine's own noise. The attack's own forwards of 4 MiB took 1.2 to 2.8 s at
 ### What each client prints for a refusal
 
 Every client against `e4 stub`, which answers the four error shapes of
-[Q-BAS-337](../spec/bastion.md#q-bas-337--a-bastions-own-refusals-take-one-of-four-error-shapes-a-format-declares) exactly as R-BAS-095
+[Q-BAS-337](../spec/bastion.md#q-bas-337--a-bastions-own-refusals-take-one-of-five-error-shapes-a-format-declares) exactly as R-BAS-095
 specifies them (**specified, not built**): the reads with `503 busy` and `Retry-After: 2`, and with `429 rate_limited` and `Retry-After: 2`;
 the writes with `403 read_only`. The stub answers what a client needs before its first content request (the registry's `/v2/`, NuGet's service
 index, Galaxy's API root) and refuses the rest. Measured: the output, the exit code, the requests the stub received.
@@ -1128,8 +1135,8 @@ The Mark stage ([bastionmark](../../internal/api/bastionmark/mark.go)) wraps the
 authentication → rate limits → router`; the authentication stage reports the caller it accepted through `httpserver.WithPrincipalNote`,
 so the subject is right for answers that never reach a route. What happens to one forwarded read:
 
-1. The dispatcher (or `rawfiles`) matches the route and calls `Observer.Matched`. A write is refused here (`bastion_read_only`, rendered by the format's
-   `WriteError`); the probe of a read route that takes a body is answered `204` with `Quader-Bastion-Route: read-with-body`. Nothing has
+1. The dispatcher (or `rawfiles`) matches the route and calls `Observer.Matched`. A write is refused here (`read_only`, rendered by the format's
+   `WriteError`); the probe of a read route that takes a body is refused too (since interface version 8). Nothing has
    been decided or read yet.
 2. The decision point allows the request and the repository resolves; the dispatcher calls `Observer.Decided` with the subject and the
    index of the decision. The stage asks `ShapeResolver` for the caller's shape on the addressed repository, once, and keeps the request's
@@ -1211,7 +1218,7 @@ property, `chart-managed-keys.yaml`; [helm-chart.md](helm-chart.md#the-bastion-c
 ## Run the role locally
 
 The role needs a main installation that knows its token: it handshakes at start and, until that works, answers a read that needs the main installation with
-`503 main_unreachable`. Three ways, from the one that needs nothing to the real one.
+`503 unavailable`. Three ways, from the one that needs nothing to the real one.
 
 **1. Without a main installation (verified).** The role starts, is ready, and answers with its own problems:
 
@@ -1235,9 +1242,9 @@ go run ./cmd/quader serve --role bastion --config .out/bastion/quader.yaml
 ```
 
 In a second shell: `curl -s 127.0.0.1:18081/readyz` (ready: the cache backend's first check passed), `curl -s 127.0.0.1:18081/metrics | grep quader_bastion_main_reachable`
-(`0`), `curl -si -H 'Host: packages.example.com' 127.0.0.1:18443/ui/` (`404 bastion_not_served`; the engine answers only for the host of `server.base_url`, so send
+(`0`), `curl -si -H 'Host: packages.example.com' 127.0.0.1:18443/ui/` (`404 not_found`; the engine answers only for the host of `server.base_url`, so send
 the header), and a read with a well-formed token (`go run ./internal/tools/bsttoken` prints one; a Bastion token as a credential is refused, use a
-`qdr_pat_` token) answers `503 main_unreachable` with `Retry-After: 30`. A key of another section stops the role: add `database: {host: x}` to the file and the
+`qdr_pat_` token) answers `503 unavailable` with `Retry-After: 30`. A key of another section stops the role: add `database: {host: x}` to the file and the
 start names `database.host` and the role. No TLS is configured on the listeners here; with `server.tls.certificates` both serve it and reload it ([tls.md](tls.md)).
 
 **2. Against the in-process main installation (verified).** The scenario of R-BAS-048 starts the role from a configuration file exactly as the command does and

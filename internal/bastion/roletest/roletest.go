@@ -278,7 +278,7 @@ bastion:
 	if code, body, _ := get(reader2); code != 200 || !bytes.Equal(body, w.body) {
 		t.Fatalf("%s: inside the grace period: %d, %d bytes", b.Name, code, len(body))
 	}
-	// A token the replica has not seen gets 503 main_unreachable with Retry-After: 30.
+	// A token the replica has not seen gets 503 unavailable with Retry-After: 30.
 	code, _, h := get(reader3)
 	if code != http.StatusServiceUnavailable || h.Get("Retry-After") != "30" {
 		t.Fatalf("%s: an unseen token while the main installation is down: %d, Retry-After %q", b.Name, code, h.Get("Retry-After"))

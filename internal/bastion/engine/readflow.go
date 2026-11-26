@@ -420,7 +420,7 @@ func (e *engine) leftEntry(q *rq) bool {
 // answer became a fill of the request's cache key, the request follows the fill from its spool on its own permission
 // and does not wait for its end (R-BAS-054, Q-BAS-172). A wait for the leader's answer that outlasts collapseWait is
 // not extended and not turned into a request of its own, which would multiply the load on a main installation that is
-// slow: it answers 503 bastion_busy with Retry-After, and the retry finds the entry or joins the fetch again
+// slow: it answers 503 busy with Retry-After, and the retry finds the entry or joins the fetch again
 // (R-BAS-025, Q-BAS-123).
 func (e *engine) waitLeader(q *rq, c *call) (again bool) {
 	t := time.NewTimer(e.collapseWait)

@@ -162,7 +162,7 @@ type engine struct {
 
 const (
 	// collapseWaitMax is how long a request waits for the fetch of another request of this replica for the same
-	// cache key before it answers 503 bastion_busy with Retry-After (R-BAS-025).
+	// cache key before it answers 503 busy with Retry-After (R-BAS-025).
 	collapseWaitMax = 30 * time.Second
 	// fillStallMax is how long the main installation may send no byte to a fill before it is abandoned.
 	fillStallMax = 60 * time.Second

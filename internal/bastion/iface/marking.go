@@ -105,6 +105,9 @@ func (m Marking) Set(h http.Header) {
 		h.Set(HeaderRead, string(m.Read))
 	}
 	h.Set(HeaderSubject, m.Subject.Header())
+	if m.Subject.Kind == SubjectToken && m.Subject.Limits != nil && m.Subject.Limits.Valid() {
+		h.Set(HeaderLimits, m.Subject.Limits.Header())
+	}
 	h.Set(HeaderInterface, strconv.Itoa(m.Interface))
 	if m.Counted {
 		h.Set(HeaderCounted, CountedDownload)
@@ -161,6 +164,16 @@ func ParseMarking(h http.Header) (m Marking, ok bool, err error) {
 			return Marking{}, true, err
 		}
 		m.Subject = sub
+	}
+	if v := h.Values(HeaderLimits); len(v) > 0 {
+		if len(v) != 1 || m.Subject.Kind != SubjectToken {
+			return Marking{}, true, fmt.Errorf("%w: %s %q without one token subject", ErrMarking, HeaderLimits, v)
+		}
+		l, err := ParseSubjectLimits(v[0])
+		if err != nil {
+			return Marking{}, true, err
+		}
+		m.Subject.Limits = &l
 	}
 	if v := h.Get(HeaderInterface); v != "" {
 		n, err := strconv.Atoi(v)
@@ -241,6 +254,71 @@ type Subject struct {
 	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
 	// RetryAfterSeconds is set with [SubjectThrottled] only.
 	RetryAfterSeconds *int `json:"retryAfterSeconds,omitempty"`
+	// Limits is the subject's key and rule at the Bastion's place (R-BAS-096), set with [SubjectToken] only and only once
+	// the main installation resolves a rule there; absent for every other kind, since the Bastion decides an anonymous
+	// caller's key and rule itself. In the marking it travels in [HeaderLimits].
+	Limits *SubjectLimits `json:"limits,omitempty"`
+}
+
+// SubjectLimits names what a Bastion charges a signed-in caller against (R-BAS-096, Q-BAS-328): the subject key of the
+// download limits (limits_subject of R-LIM-030: user:<id>, technical_token:<id>, ci:<issuer>:<project>) and the ID of the
+// rule of the Bastion's place the main installation resolved for the caller, which names an entry of the handshake's
+// [PlaceTable].
+type SubjectLimits struct {
+	Key  string `json:"key"`
+	Rule string `json:"rule"`
+}
+
+// Valid reports whether the key is within the bounds of [ValidPackage] and the rule an ID of [ValidRuleID].
+func (l SubjectLimits) Valid() bool { return ValidPackage(l.Key) && ValidRuleID(l.Rule) }
+
+// MaxRuleIDBytes bounds a rule ID of a [PlaceTable].
+const MaxRuleIDBytes = 64
+
+// ValidRuleID reports whether s can name a rule of a [PlaceTable]: 1 to [MaxRuleIDBytes] bytes of letters, digits, ".",
+// ":", "_" and "-" (a UUID is one), so that it needs no encoding in [HeaderLimits].
+func ValidRuleID(s string) bool {
+	if s == "" || len(s) > MaxRuleIDBytes {
+		return false
+	}
+	for i := range len(s) {
+		c := s[i]
+		switch {
+		case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c >= '0' && c <= '9', c == '.', c == ':', c == '_', c == '-':
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+// Header formats the value of [HeaderLimits]: "key=<key>; rule=<rule>", the key percent-encoded as [HeaderPackage] is.
+func (l SubjectLimits) Header() string { return "key=" + encodePackage(l.Key) + "; rule=" + l.Rule }
+
+// ParseSubjectLimits reads a value written by [SubjectLimits.Header]: both members once, in either order, the key
+// decoding strictly to a name of [ValidPackage], the rule a [ValidRuleID].
+func ParseSubjectLimits(v string) (SubjectLimits, error) {
+	var l SubjectLimits
+	var haveKey, haveRule bool
+	for _, part := range strings.Split(v, ";") {
+		k, val, ok := strings.Cut(strings.TrimSpace(part), "=")
+		switch {
+		case ok && k == "key" && !haveKey:
+			key, good := decodePackage(val)
+			if !good {
+				return SubjectLimits{}, fmt.Errorf("%w: %s %q", ErrMarking, HeaderLimits, v)
+			}
+			l.Key, haveKey = key, true
+		case ok && k == "rule" && !haveRule:
+			l.Rule, haveRule = val, true
+		default:
+			return SubjectLimits{}, fmt.Errorf("%w: %s %q", ErrMarking, HeaderLimits, v)
+		}
+	}
+	if !haveKey || !haveRule || !l.Valid() {
+		return SubjectLimits{}, fmt.Errorf("%w: %s %q", ErrMarking, HeaderLimits, v)
+	}
+	return l, nil
 }
 
 // Header formats the subject for [HeaderSubject] (R-BAS-013):

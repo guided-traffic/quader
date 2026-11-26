@@ -99,8 +99,22 @@ func TestR_BAS_057_TheHandshakeCarriesTheFormatTable(t *testing.T) {
 		}
 	}
 	raw, _ := iface.Marshal(table)
-	if !strings.Contains(string(raw), `{"id":"npm","registryRoot":false,"replayHeaders":["Npm-Notice"],"rateLimitedStatus":429,"retryAfterMaxSeconds":0,"boundPrefixes":[]}`) {
+	if !strings.Contains(string(raw), `{"id":"npm","registryRoot":false,"replayHeaders":["Npm-Notice"],"rateLimitedStatus":429,"retryAfterMaxSeconds":0,"boundPrefixes":[],"errorShape":"npm","readWithBody":[{"method":"POST","path":"/api/npm/{project}/{repo}/-/npm/v1/security/advisories/bulk"}`) {
 		t.Errorf("npm on the wire: %s", raw)
+	}
+	// The error shapes and the read routes that take a body (R-BAS-095): each format's declaration, the token service's POST
+	// for the registry root.
+	for id, shape := range map[string]iface.ErrorShape{
+		"npm": iface.ErrorShapeNPM, "nuget": iface.ErrorShapeText, "oci": iface.ErrorShapeDistribution, "ansible": iface.ErrorShapeGalaxy,
+		"deb": iface.ErrorShapeProblem, "clamav": iface.ErrorShapeProblem,
+	} {
+		if got := table.Lookup(id).ErrorShape; got != shape {
+			t.Errorf("%s declares the error shape %q, want %q", id, got, shape)
+		}
+	}
+	if !ociEntry.ReadsWithBody(http.MethodPost, "/v2/_token") || ociEntry.ReadsWithBody(http.MethodPost, "/v2/web/docker/app/blobs/uploads/") ||
+		!table.Lookup("npm").ReadsWithBody(http.MethodPost, "/api/npm/web/npm-all/-/npm/v1/security/audits/quick") {
+		t.Errorf("the read routes with a body: oci %+v npm %+v", ociEntry.ReadWithBody, table.Lookup("npm").ReadWithBody)
 	}
 	// The Bastion's tests read the table of maintest: it is the table of the registered formats.
 	if !reflect.DeepEqual(table, maintest.Formats()) {

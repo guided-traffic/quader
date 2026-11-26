@@ -48,7 +48,12 @@ func keptKind(k formats.RouteKind) bool {
 //   - a document a Metadata or Computed route serves carries an ETag and answers the same request with that ETag in
 //     If-None-Match 304: the Bastion revalidates the documents it keeps with conditional requests;
 //   - the format's WriteError answers a rate limit with catalog.Facts.Bastion.RateLimited(): a Bastion's own rate-limit refusals
-//     on the format's family take that status.
+//     on the format's family take that status;
+//   - the format declares catalog.Facts.Bastion.ErrorShape;
+//   - catalog.Facts.Bastion.ReadWithBody lists exactly the format's routes of a method other than GET and HEAD whose kind is a
+//     read (R-BAS-095): every example of such a route matches an entry of its method, and every entry matches an example of
+//     such a route. A Bastion refuses every other request of such a method as a write, so an undeclared read route would be
+//     refused at a Bastion, and a stale entry would forward a write's body.
 //
 // A route whose answers cannot meet the content-address or the conditional duty by design is listed in Fixture.NoBastion with the
 // reason; the header duty has no exemption, since a header is either declared or left out.
@@ -60,6 +65,10 @@ func (r *run) bastion() {
 	}
 	r.rateLimitStatus()
 	r.forwardError()
+	r.readWithBody(routes)
+	if r.d.Bastion.ErrorShape == "" {
+		r.failf("catalog.Facts.Bastion.ErrorShape is not declared: declare the shape of a Bastion's own refusals the format's clients print a reason from, one of problem, npm, text, distribution and galaxy (R-BAS-095, Q-BAS-337)")
+	}
 	allowed := map[string]bool{}
 	for _, h := range slices.Concat(catalog.RepresentationHeaders(), catalog.PerRequestHeaders(), r.d.Bastion.ReplayHeaders) {
 		allowed[http.CanonicalHeaderKey(h)] = true
@@ -274,6 +283,48 @@ func (r *run) rateLimitStatus() {
 		if got := rec.Header().Get("Retry-After"); got != told {
 			r.failf("WriteError tells a rate limit of %s to wait Retry-After %q and catalog.Facts.Bastion says %s (RetryAfterMax %s): a Bastion's own refusals on the format's family tell the declared wait, so declare the cap WriteError applies, or 0 when it tells the true wait",
 				wait, got, told, r.d.Bastion.RetryAfterMax)
+		}
+	}
+}
+
+// readsWithBody reports whether a route of a writing method reads: a kind that serves content or documents with the action
+// read, the rule the main installation's backstop refuses every other write of a Bastion by (R-BAS-014).
+func readsWithBody(rt formats.Route) bool {
+	if rt.Method == http.MethodGet || rt.Method == http.MethodHead || rt.Action != formats.ActionRead {
+		return false
+	}
+	switch rt.Kind {
+	case formats.Download, formats.Metadata, formats.Computed, formats.Volatile:
+		return true
+	}
+	return false
+}
+
+// readWithBody is the duty of the declared read routes that take a body (R-BAS-095).
+func (r *run) readWithBody(routes []formats.Route) {
+	declared := r.d.Bastion.ReadWithBody
+	used := make([]bool, len(declared))
+	for _, rt := range routes {
+		if !readsWithBody(rt) {
+			continue
+		}
+		for _, ex := range rt.Examples {
+			path := "/" + strings.TrimPrefix(ex, "/")
+			found := false
+			for i, b := range declared {
+				if b.Method == rt.Method && b.Matches(path) {
+					used[i], found = true, true
+				}
+			}
+			if !found {
+				r.failf("route %s (%s %s) reads with a body and catalog.Facts.Bastion.ReadWithBody lists no entry of %s that matches its example %q: a Bastion refuses it as a write; declare it (R-BAS-095)",
+					rt.Name, rt.Method, rt.Template, rt.Method, ex)
+			}
+		}
+	}
+	for i, b := range declared {
+		if !used[i] {
+			r.failf("catalog.Facts.Bastion.ReadWithBody lists %s %q, which matches the example of no route of a writing method that reads: a Bastion would forward a write's body; remove it (R-BAS-095)", b.Method, b.Template)
 		}
 	}
 }

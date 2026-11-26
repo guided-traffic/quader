@@ -54,7 +54,7 @@ func TestR_BAS_027_AnswersHeldServeCachedContentForThePeriodAndTheGraceThenNothi
 	if w := s.get(doc, "Authorization", bearer(s.full)); w.Code != 200 || w.Body.String() != "all packages" {
 		t.Fatalf("%d", w.Code)
 	}
-	// a token never seen, and a miss, get 503 main_unreachable with Retry-After: 30
+	// a token never seen, and a miss, get 503 unavailable with Retry-After: 30
 	for name, c := range map[string][]string{
 		"an unseen token": {"/api/npm/web/npm-all/pkg0.tgz", bearer(s.part)},
 		"a cold package":  {"/api/npm/web/npm-all/cold.tgz", bearer(s.full)},
@@ -65,7 +65,7 @@ func TestR_BAS_027_AnswersHeldServeCachedContentForThePeriodAndTheGraceThenNothi
 			hdr = []string{"Authorization", c[1]}
 		}
 		w := s.get(c[0], hdr...)
-		if w.Code != 503 || problemCode(w) != "main_unreachable" || w.Header().Get("Retry-After") != "30" || w.Header().Get("Cache-Control") != "no-store" {
+		if w.Code != 503 || problemCode(w) != "unavailable" || w.Header().Get("Retry-After") != "30" || w.Header().Get("Cache-Control") != "no-store" {
 			t.Errorf("%s: %d %s %v", name, w.Code, w.Body, w.Header())
 		}
 	}
@@ -106,7 +106,7 @@ func TestR_BAS_027_AWriteWhileUnreachableAnswers503(t *testing.T) {
 	s := newSiteHarness(t, options{})
 	s.setUnreachable(true)
 	w := s.do(http.MethodPut, "/api/npm/web/npm-all/pkg", strings.NewReader("x"), "Authorization", bearer(s.full))
-	if w.Code != 503 || problemCode(w) != "main_unreachable" {
+	if w.Code != 503 || problemCode(w) != "unavailable" {
 		t.Fatalf("%d %s", w.Code, w.Body)
 	}
 }
@@ -139,7 +139,7 @@ func TestR_BAS_028_AMismatchOrARefusedTokenOnARequestMakesTheReplicaUnreachable(
 			}
 			s.main.doFn = func(mainclient.Forward) (*mainclient.Response, error) { return nil, row.cause }
 			w := s.get(tgz, "Authorization", bearer(who))
-			if w.Code != 503 || problemCode(w) != "main_unreachable" {
+			if w.Code != 503 || problemCode(w) != "unavailable" {
 				t.Fatalf("%d %s", w.Code, w.Body)
 			}
 			if s.link.Reachable() {
@@ -166,8 +166,8 @@ func TestR_BAS_006_R_BAS_021_ARefusalOfTheTokenOnAForwardDoesNotMakeTheReplicaUn
 		status int
 		code   string
 	}{
-		"the typed refusal": {mainclient.ErrTokenRefused, 503, "main_unreachable"},
-		"the bad answer":    {&mainclient.AnswerError{Status: 401, Code: iface.CodeTokenInvalid}, 502, "main_failed"},
+		"the typed refusal": {mainclient.ErrTokenRefused, 503, "unavailable"},
+		"the bad answer":    {&mainclient.AnswerError{Status: 401, Code: iface.CodeTokenInvalid}, 502, "bad_gateway"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			s := newSiteHarness(t, options{})
@@ -221,7 +221,7 @@ func TestR_BAS_029_EveryOwnAnswerIsProblemDetailsWithNoStoreAndTheRightFields(t 
 				&answerVal{Answer: answerBase(answers.Shape, s.clock.now(), tokenSubject("full", nil), "web/npm-all"), Read: iface.ReadNone, Status: 401})
 			return s.get(tgz, "Authorization", bearer(s.full))
 		}, auth: true},
-		{name: "bastion_not_served", status: 404, code: "bastion_not_served", call: get("/ui/")},
+		{name: "not_found", status: 404, code: "not_found", call: get("/ui/")},
 		{name: "method_not_allowed", status: 405, code: "method_not_allowed", call: func(s *siteHarness) *httptest.ResponseRecorder {
 			return s.do(http.MethodOptions, tgz, nil)
 		}},
@@ -250,14 +250,14 @@ func TestR_BAS_029_EveryOwnAnswerIsProblemDetailsWithNoStoreAndTheRightFields(t 
 		{name: "address_blocked", status: 429, code: "address_blocked", retry: "60", setup: func(s *siteHarness) {
 			s.guard.blocked = guard.Verdict{Status: 429, Code: iface.CodeAddressBlocked, RetryAfter: time.Minute, Reason: metrics.RefusedBlocked}
 		}, call: get(tgz)},
-		{name: "main_failed", status: 502, code: "main_failed", setup: func(s *siteHarness) {
+		{name: "bad_gateway", status: 502, code: "bad_gateway", setup: func(s *siteHarness) {
 			s.main.doFn = func(mainclient.Forward) (*mainclient.Response, error) { return nil, mainclient.ErrUnreachable }
 		}, call: get(tgz, "Authorization", "")},
-		{name: "main_unreachable", status: 503, code: "main_unreachable", retry: "30", setup: func(s *siteHarness) { s.setUnreachable(true) }, call: get(tgz)},
-		{name: "bastion_busy", status: 503, code: "bastion_busy", retry: "1", setup: func(s *siteHarness) {
+		{name: "unavailable", status: 503, code: "unavailable", retry: "30", setup: func(s *siteHarness) { s.setUnreachable(true) }, call: get(tgz)},
+		{name: "busy", status: 503, code: "busy", retry: "1", setup: func(s *siteHarness) {
 			s.main.doFn = func(mainclient.Forward) (*mainclient.Response, error) { return nil, mainclient.ErrBusy }
 		}, call: get(tgz)},
-		{name: "main_timeout", status: 504, code: "main_timeout", setup: func(s *siteHarness) {
+		{name: "gateway_timeout", status: 504, code: "gateway_timeout", setup: func(s *siteHarness) {
 			s.main.doFn = func(mainclient.Forward) (*mainclient.Response, error) { return nil, context.DeadlineExceeded }
 		}, call: get(tgz)},
 	}
@@ -312,7 +312,7 @@ func TestR_BAS_014_AWriteIsProbedWithoutBodyAndCredentialAndTheRefusalIsReplayed
 	s := newSiteHarness(t, options{})
 	body := &countingReader{r: strings.NewReader(strings.Repeat("u", 1<<20))}
 	w := s.do(http.MethodPut, "/api/npm/web/npm-all/acme-sdk", body, "Authorization", bearer(s.full), "Content-Type", "application/json", "Cookie", "a=b")
-	if w.Code != 403 || !strings.Contains(w.Body.String(), "bastion_read_only") {
+	if w.Code != 403 || !strings.Contains(w.Body.String(), "read_only") {
 		t.Fatalf("%d %s", w.Code, w.Body)
 	}
 	if body.n != 0 {
@@ -354,7 +354,7 @@ func TestR_BAS_014_ThousandWritesToOnePathCauseOneProbe(t *testing.T) {
 	}
 	wg.Wait()
 	for i := 0; i < 950; i++ {
-		if w := s.do(http.MethodPut, "/api/npm/web/npm-all/acme-sdk", strings.NewReader("x")); w.Code != 403 || !strings.Contains(w.Body.String(), "bastion_read_only") {
+		if w := s.do(http.MethodPut, "/api/npm/web/npm-all/acme-sdk", strings.NewReader("x")); w.Code != 403 || !strings.Contains(w.Body.String(), "read_only") {
 			t.Fatalf("%d %s", w.Code, w.Body)
 		}
 	}
@@ -401,7 +401,7 @@ func TestR_BAS_014_AWriteThatMissedTheKeptAnswerBeforeTheProbeEndedDoesNotProbeA
 		t.Fatalf("%d", w.Code)
 	}
 	close(release)
-	if w := <-held; w.Code != 403 || !strings.Contains(w.Body.String(), "bastion_read_only") {
+	if w := <-held; w.Code != 403 || !strings.Contains(w.Body.String(), "read_only") {
 		t.Fatalf("%d %s", w.Code, w.Body)
 	}
 	if n := m.count(); n != 1 {
@@ -423,7 +423,7 @@ func TestR_BAS_014_ANuGetPushWithoutACredentialIsStillRefusedByTheProbe(t *testi
 	s := newSiteHarness(t, options{})
 	s.setAnonymous(false)
 	w := s.do(http.MethodPut, "/api/nuget/web/nuget-all/v2/package", strings.NewReader("nupkg"), "X-NuGet-ApiKey", "key")
-	if w.Code != 403 || !strings.Contains(w.Body.String(), "bastion_read_only") {
+	if w.Code != 403 || !strings.Contains(w.Body.String(), "read_only") {
 		t.Fatalf("%d %s", w.Code, w.Body)
 	}
 	if r := s.main.requests()[0]; r.Header.Get("X-Nuget-Apikey") != "" {
@@ -431,13 +431,14 @@ func TestR_BAS_014_ANuGetPushWithoutACredentialIsStillRefusedByTheProbe(t *testi
 	}
 }
 
-func TestR_BAS_014_ARouteThatTakesABodyIsForwardedWithTheCallersCredentialAfter204(t *testing.T) {
+// TestR_BAS_095_ARouteThatTakesABodyIsForwardedWithTheCallersCredential: a request that matches a read route with a body of
+// the format table (npm's bulk audit) is forwarded at once with its body and the caller's credential, without a probe; its
+// answer is passed on and never kept.
+func TestR_BAS_095_ARouteThatTakesABodyIsForwardedWithTheCallersCredential(t *testing.T) {
 	s := newSiteHarness(t, options{})
-	s.site.probe = func(f mainclient.Forward) (*mainclient.Response, error) {
-		// The client removes the marking headers and hands the route over in its own field.
-		r := resp(204, marking(iface.ClassPass, "", "web/npm-all", iface.Subject{Kind: iface.SubjectAnonymous}), nil, "")
-		r.Route = iface.RouteReadWithBody
-		return r, nil
+	s.site.probe = func(mainclient.Forward) (*mainclient.Response, error) {
+		t.Error("a read route with a body was probed")
+		return nil, mainclient.ErrUnreachable
 	}
 	inner := s.main.doFn
 	s.main.doFn = func(f mainclient.Forward) (*mainclient.Response, error) {
@@ -451,18 +452,18 @@ func TestR_BAS_014_ARouteThatTakesABodyIsForwardedWithTheCallersCredentialAfter2
 		t.Fatalf("%d %s", w.Code, w.Body)
 	}
 	reqs := s.main.requests()
-	if len(reqs) != 2 || !reqs[0].Probe || reqs[1].Probe {
+	if len(reqs) != 1 || reqs[0].Probe {
 		t.Fatalf("%+v", reqs)
 	}
-	if reqs[1].Header.Get("Authorization") != bearer(s.full) || string(reqs[1].Body) != `{"lodash":["1.0.0"]}` || reqs[1].Method != http.MethodPost {
-		t.Fatalf("the real request: %+v", reqs[1])
+	if reqs[0].Header.Get("Authorization") != bearer(s.full) || string(reqs[0].Body) != `{"lodash":["1.0.0"]}` || reqs[0].Method != http.MethodPost {
+		t.Fatalf("the request: %+v", reqs[0])
 	}
 	if s.cache.entryCount() != 0 {
 		t.Fatal("the answer to a body request was kept")
 	}
 	// a chunked body is held up to the limit, and 413 above it
 	s.cfg.Bastion.Main.MaxForwardedBody = 10
-	r := httptest.NewRequest(http.MethodPost, "https://packages.example.com/api/npm/web/npm-all/-/npm/v1/security/advisories/bulk2", io.NopCloser(strings.NewReader(strings.Repeat("z", 100))))
+	r := httptest.NewRequest(http.MethodPost, "https://packages.example.com/api/npm/web/npm-all/-/npm/v1/security/advisories/bulk", io.NopCloser(strings.NewReader(strings.Repeat("z", 100))))
 	r.ContentLength = -1
 	r.RemoteAddr = "203.0.113.7:1"
 	r.Header.Set("Authorization", bearer(s.full))
@@ -499,7 +500,7 @@ func TestR_BAS_014_AProbeAnswerThatIsNotARefusalIsReplayedAndNotKept(t *testing.
 		t.Fatalf("a 404 probe answer is kept: %d probes", s.main.count())
 	}
 	s.site.probe = func(mainclient.Forward) (*mainclient.Response, error) { return respUnmarked(502, nil, "gw"), nil }
-	if w := s.do(http.MethodPost, "/api/npm/web/npm-all/y", nil); w.Code != 502 || problemCode(w) != "main_failed" {
+	if w := s.do(http.MethodPost, "/api/npm/web/npm-all/y", nil); w.Code != 502 || problemCode(w) != "bad_gateway" {
 		t.Fatalf("%d %s", w.Code, w.Body)
 	}
 }
@@ -699,7 +700,7 @@ func TestR_BAS_019_AnAnonymousRequestBeforeTheFirstHandshakeIs503(t *testing.T) 
 	s.site.artifacts[tgz] = []byte("tarball")
 	for name, hdr := range map[string][]string{"anonymous": nil, "an unseen token": {"Authorization", bearer(s.full)}} {
 		w := s.get(tgz, hdr...)
-		if w.Code != http.StatusServiceUnavailable || problemCode(w) != "main_unreachable" || w.Header().Get("Retry-After") != "30" {
+		if w.Code != http.StatusServiceUnavailable || problemCode(w) != "unavailable" || w.Header().Get("Retry-After") != "30" {
 			t.Errorf("%s: %d %s", name, w.Code, w.Body)
 		}
 	}

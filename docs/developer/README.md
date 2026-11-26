@@ -194,7 +194,7 @@ quader/
 │   │                         # session/ (UI sessions, CSRF, the session cache), oidc/ (providers, login flow, callback, break-glass),
 │   │                         # jws/ (compact JWS and JWK sets, a leaf the login and the CI validation share)
 │   ├── authz/                # decision point: engine, compiled grant index, epochs, policy and role service, decision audit
-│   ├── bastion/              # the Quader Bastion's own code (R-BAS-001, bastion.md): iface (the wire contract), answers, metrics, mainclient, cache, shared, guard, downloads, engine, server; its own packages import no subsystem of the main installation and the role enables none (archtest, transitive, with the listed exceptions of its dependency closure)
+│   ├── bastion/              # the Quader Bastion's own code (R-BAS-001, bastion.md): iface (the wire contract), cataloguebounds (the catalogue's figures), answers, metrics, mainclient, cache, shared, guard, downloads, engine, server; its own packages import no subsystem of the main installation and the role enables none (archtest, transitive, with the listed exceptions of its dependency closure)
 │   ├── bastionmain/          # the main installation's side of the Bastion: the seams of the work packages (recognition, token authenticator, read-shape resolver, route observer, chain stages)
 │   ├── backup/               # quader backup: contracts, run record, lease; format/ target/ fixup/ tables/ (backup.md)
 │   ├── journal/              # the revocation journal: object, ports, replay handlers (backup.md)

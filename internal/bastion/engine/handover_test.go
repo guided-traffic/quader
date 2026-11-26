@@ -111,7 +111,7 @@ func newHandoverRig(t *testing.T, o options) *hoRig {
 // setSwitch sets the registration's switch and lets the link read it from the handshake.
 func (x *hoRig) setSwitch(on bool) {
 	x.main.mu.Lock()
-	x.main.hs.Handover = on
+	x.main.hs.Configuration.Switches.Handover = on
 	x.main.mu.Unlock()
 	x.link.RequestHandshake()
 	x.tick()

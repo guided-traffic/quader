@@ -130,7 +130,7 @@ func (s *site) doFn(f mainclient.Forward) (*mainclient.Response, error) {
 			return s.probe(f)
 		}
 		return resp(http.StatusForbidden, marking(iface.ClassPass, "", s.repoOf(f.Request.URL.Path), iface.Subject{Kind: iface.SubjectAnonymous}), http.Header{"Content-Type": {"application/problem+json"}},
-			`{"code":"bastion_read_only","detail":"read-only"}`), nil
+			`{"code":"read_only","detail":"read-only"}`), nil
 	}
 	path := f.Request.URL.Path
 	tok := tokenOf(f.Request.Header)

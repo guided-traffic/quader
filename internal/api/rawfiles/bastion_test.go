@@ -75,7 +75,7 @@ func TestR_BAS_013_FilesRoutesTellTheObserverTheirKind(t *testing.T) {
 
 // TestR_BAS_014_FilesWritesAreRefusedByTheObserver: the refusal of the observer is the answer, before any decision.
 func TestR_BAS_014_FilesWritesAreRefusedByTheObserver(t *testing.T) {
-	o := &recordingObserver{refuse: errs.E(errs.Forbidden, errs.CodeBastionReadOnly, "read-only")}
+	o := &recordingObserver{refuse: errs.E(errs.Forbidden, errs.CodeReadOnly, "read-only")}
 	rec := observedRequest(t, o, "PUT", "/files/it/files-local/a/b.zip")
 	if rec.Code != 403 || len(o.matched) != 1 {
 		t.Fatalf("%d, matched %v", rec.Code, o.matched)

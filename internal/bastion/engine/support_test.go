@@ -363,7 +363,7 @@ func (c *testCache) entryRecords() map[string][]byte {
 func handshake() iface.Handshake {
 	return iface.Handshake{
 		InterfaceVersion: iface.InterfaceVersion, ResponseBaseURL: "https://packages.example.com",
-		AnonymousReads: true, RecordDownloads: true, ServerTime: epoch, Formats: formatTable(),
+		AnonymousReads: true, RecordDownloads: true, ServerTime: epoch, Formats: formatTable(), Configuration: maintest.Configuration(false),
 	}
 }
 

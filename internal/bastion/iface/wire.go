@@ -69,9 +69,9 @@ type Handshake struct {
 	// endpoint's host_roots binds the host of [Handshake.ResponseBaseURL] to
 	// (R-EP-006, R-BAS-057, Q-BAS-178), absent when it binds none.
 	BoundRepository string `json:"boundRepository,omitempty"`
-	// Handover is the registration's switch of the handover per blob (R-BAS-071): while it is true the Bastion offers
-	// to take a handover on a miss ([HandoverOffer], R-BAS-072). Always present.
-	Handover bool `json:"handover"`
+	// Configuration is the registration's configuration (R-BAS-093): its switches, the handover per blob among them, and
+	// its limits. Always present; the Bastion refuses a handshake whose configuration breaks [Configuration.Validate].
+	Configuration Configuration `json:"configuration"`
 }
 
 // HandshakeFormat is one entry of the handshake's format table (R-BAS-057): the
@@ -97,6 +97,110 @@ type HandshakeFormat struct {
 	// BoundPrefixes are the literal bound-host patterns of the format (R-EP-006),
 	// paths from the host root: "/v2/" for the registry root.
 	BoundPrefixes []string `json:"boundPrefixes"`
+	// ErrorShape is the shape of every answer of the Bastion's own on the format's family (R-BAS-095, Q-BAS-337): its
+	// refusal of a write, its limits and the table of R-BAS-029. Always present.
+	ErrorShape ErrorShape `json:"errorShape"`
+	// ReadWithBody are the format's read routes that take a body (R-BAS-095): a request whose method and escaped path
+	// match an entry ([HandshakeFormat.ReadsWithBody]) is forwarded with its body; every other request of a method that
+	// is not GET or HEAD is a write. Always present, [] when there are none.
+	ReadWithBody []BodyRoute `json:"readWithBody"`
+}
+
+// ErrorShape is one of the shapes a Bastion renders its own answers in on a format's family (R-BAS-095, Q-BAS-337). A
+// shape is a member of the interface: adding one raises [InterfaceVersion].
+type ErrorShape string
+
+// The error shapes. The body of each carries the answer's code and its detail; the status line is the error's.
+const (
+	// ErrorShapeProblem is problem details (RFC 9457), application/problem+json, the type about:blank.
+	ErrorShapeProblem ErrorShape = "problem"
+	// ErrorShapeNPM is {"error": "<detail>"}, application/json: npm prints the member error.
+	ErrorShapeNPM ErrorShape = "npm"
+	// ErrorShapeText is one line "<code>: <detail>", text/plain; charset=utf-8.
+	ErrorShapeText ErrorShape = "text"
+	// ErrorShapeDistribution is the error list of the OCI distribution specification:
+	// {"errors": [{"code": "<registry code>", "message": "<detail>", "detail": {"code": "<code>"}}]}.
+	ErrorShapeDistribution ErrorShape = "distribution"
+	// ErrorShapeGalaxy is the error list of a Galaxy's API:
+	// {"errors": [{"status": "<status>", "code": "<code>", "title": "<status phrase>.", "detail": "<detail>"}]}, which
+	// ansible-galaxy reads and problem details are not (measured 2026-11-26, Q-BAS-337).
+	ErrorShapeGalaxy ErrorShape = "galaxy"
+)
+
+// Valid reports whether s is one of the five shapes.
+func (s ErrorShape) Valid() bool {
+	switch s {
+	case ErrorShapeProblem, ErrorShapeNPM, ErrorShapeText, ErrorShapeDistribution, ErrorShapeGalaxy:
+		return true
+	}
+	return false
+}
+
+// BodyRoute is one read route that takes a body (R-BAS-095): a method other than GET and HEAD and a path pattern from the
+// host root whose segments are literal or a placeholder "{name}" that stands for one non-empty segment, as the main
+// installation's router matches a route: "/api/npm/{project}/{repo}/-/npm/v1/security/advisories/bulk", "/v2/_token".
+type BodyRoute struct {
+	Method string `json:"method"`
+	Path   string `json:"path"`
+}
+
+// valid reports whether the route has a method of token characters other than GET and HEAD and a pattern from the root
+// whose placeholders are whole segments.
+func (b BodyRoute) valid() bool {
+	if b.Method == "" || b.Method == http.MethodGet || b.Method == http.MethodHead || strings.ToUpper(b.Method) != b.Method ||
+		strings.ContainsAny(b.Method, " \t\r\n/:;,") || !strings.HasPrefix(b.Path, "/") {
+		return false
+	}
+	for _, seg := range strings.Split(b.Path[1:], "/") {
+		inner, isParam := strings.CutPrefix(seg, "{")
+		if isParam {
+			inner, isParam = strings.CutSuffix(inner, "}")
+			if !isParam || inner == "" || strings.ContainsAny(inner, "{}.") {
+				return false
+			}
+			continue
+		}
+		if seg == "" || seg == "." || seg == ".." || strings.ContainsAny(seg, "{}") {
+			return false
+		}
+	}
+	return true
+}
+
+// matches reports whether an escaped path is matched by the route's pattern: the same number of segments, a literal
+// segment byte for byte, a placeholder any non-empty segment. A path that spells a literal segment encoded does not match:
+// the request is then a write and refused, so a spelling the table does not name fails closed.
+func (b BodyRoute) matches(escapedPath string) bool {
+	if !strings.HasPrefix(escapedPath, "/") {
+		return false
+	}
+	pat, got := strings.Split(b.Path[1:], "/"), strings.Split(escapedPath[1:], "/")
+	if len(pat) != len(got) {
+		return false
+	}
+	for i, seg := range pat {
+		if strings.HasPrefix(seg, "{") {
+			if got[i] == "" {
+				return false
+			}
+			continue
+		}
+		if got[i] != seg {
+			return false
+		}
+	}
+	return true
+}
+
+// ReadsWithBody reports whether a request of the method on the escaped path is one of the format's read routes that take a
+// body (R-BAS-095).
+func (f HandshakeFormat) ReadsWithBody(method, escapedPath string) bool {
+	for _, b := range f.ReadWithBody {
+		if b.Method == method && b.matches(escapedPath) {
+			return true
+		}
+	}
+	return false
 }
 
 // HandshakeFormats is the handshake's format table.
@@ -112,15 +216,15 @@ func (f HandshakeFormat) CapRetryAfter(d time.Duration) time.Duration {
 }
 
 // Lookup returns the entry of the format id, or the defaults of R-BAS-057 for a
-// format the table does not name: no replay headers, the rate-limit status 429
-// and the true wait.
+// format the table does not name: no replay headers, the rate-limit status 429,
+// the true wait, the shape problem and no read route with a body.
 func (t HandshakeFormats) Lookup(id string) HandshakeFormat {
 	for _, f := range t {
 		if f.ID == id {
 			return f
 		}
 	}
-	return HandshakeFormat{ID: id, RateLimitedStatus: http.StatusTooManyRequests}
+	return HandshakeFormat{ID: id, RateLimitedStatus: http.StatusTooManyRequests, ErrorShape: ErrorShapeProblem}
 }
 
 // RegistryRoot returns the entry of the format that declares the registry root;
@@ -138,7 +242,8 @@ func (t HandshakeFormats) RegistryRoot() (HandshakeFormat, bool) {
 // Validate checks the table as the Bastion reads it: every entry has an ID, once;
 // at most one declares the registry root; a rate-limit status is 429 or 503; the
 // longest wait is not negative; a replay header is a canonical header name without the prefix "Quader-"; a bound
-// prefix starts with "/". The main installation's catalog holds the formats to
+// prefix starts with "/"; the error shape is one of the five; a read route with a body has a method other than GET and
+// HEAD and a pattern of whole segments. The main installation's catalog holds the formats to
 // stricter rules (catalog.BastionFacts); this is what the Bastion relies on.
 func (t HandshakeFormats) Validate() error {
 	seen := map[string]bool{}
@@ -151,6 +256,13 @@ func (t HandshakeFormats) Validate() error {
 			return fmt.Errorf("bastion handshake: format %q has the rate-limit status %d", f.ID, f.RateLimitedStatus)
 		case f.RetryAfterMaxSeconds < 0:
 			return fmt.Errorf("bastion handshake: format %q has the longest wait %d s", f.ID, f.RetryAfterMaxSeconds)
+		case !f.ErrorShape.Valid():
+			return fmt.Errorf("bastion handshake: format %q has the error shape %q", f.ID, f.ErrorShape)
+		}
+		for _, b := range f.ReadWithBody {
+			if !b.valid() {
+				return fmt.Errorf("bastion handshake: format %q has the read route with a body %s %q", f.ID, b.Method, b.Path)
+			}
 		}
 		seen[f.ID] = true
 		if f.RegistryRoot {
@@ -328,12 +440,16 @@ const (
 	// the repository itself and every virtual repository that includes it,
 	// recursively.
 	FeedContent FeedKind = "content"
+	// FeedCatalogue: the public catalogue of a registration changed (R-BAS-101). A Bastion whose web interface is on reads
+	// its change list ([PathCatalogue]) at once instead of at its next poll; the entry names no registration, so every such
+	// Bastion reads, and one whose catalogue did not change gets an empty list.
+	FeedCatalogue FeedKind = "catalogue"
 )
 
-// Valid reports whether k is one of the five kinds.
+// Valid reports whether k is one of the six kinds.
 func (k FeedKind) Valid() bool {
 	switch k {
-	case FeedToken, FeedPrincipal, FeedGrants, FeedSettings, FeedContent:
+	case FeedToken, FeedPrincipal, FeedGrants, FeedSettings, FeedContent, FeedCatalogue:
 		return true
 	}
 	return false
@@ -369,15 +485,23 @@ type FeedAnswer struct {
 	Reset bool `json:"reset"`
 }
 
-// DownloadsRequest is the body of POST /api/v1/bastion/downloads (R-BAS-016).
+// DownloadsRequest is the body of POST /api/v1/bastion/downloads (R-BAS-016): the
+// reporting batch, which carries download events, usage and the replica's status
+// (R-LIM-045). A batch without an event is valid: usage and status are reported
+// whether or not downloads are recorded.
 type DownloadsRequest struct {
-	// Events are at most bastions.downloads.max_batch events.
+	// Events are at most bastions.downloads.max_batch events; empty while
+	// recordDownloads is false.
 	Events []DownloadEvent `json:"events"`
 	// Dropped counts the events the Bastion lost since DroppedSince.
 	Dropped int `json:"dropped"`
 	// DroppedSince is the start of the period Dropped counts, set with a
 	// non-zero Dropped.
 	DroppedSince *time.Time `json:"droppedSince,omitempty"`
+	// Usage is what the Bastion counted per subject since the last batch (R-LIM-045).
+	Usage UsageReport `json:"usage"`
+	// Status is the sending replica's state (R-UI-240).
+	Status ReplicaStatus `json:"status"`
 }
 
 // DownloadEvent is one artifact the Bastion served from its cache (R-BAS-016,

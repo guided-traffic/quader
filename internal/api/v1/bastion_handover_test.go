@@ -75,8 +75,9 @@ func TestR_BAS_071_TheOperationsOfTheSwitchAndTheHandshake(t *testing.T) {
 			w := httptest.NewRecorder()
 			s.handler.ServeHTTP(w, r)
 			var h iface.Handshake
-			if err := iface.DecodeStrict(w.Body, &h); err != nil || w.Code != http.StatusOK || h.Handover != on {
-				t.Fatalf("%d %v: handover %v, want %v", w.Code, err, h.Handover, on)
+			if err := iface.DecodeStrict(w.Body, &h); err != nil || w.Code != http.StatusOK || h.Configuration.Switches.Handover != on ||
+				h.Configuration.Validate() != nil {
+				t.Fatalf("%d %v: handover %v, want %v", w.Code, err, h.Configuration.Switches.Handover, on)
 			}
 		})
 	}

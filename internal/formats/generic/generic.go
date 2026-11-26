@@ -36,6 +36,8 @@ func (Format) Descriptor() formats.Descriptor {
 	notFound := 1800
 	return formats.Descriptor{
 		Facts: catalog.Facts{
+			// curl prints a refusal's body as it is: problem details, the core's shape of /files/ (R-BAS-095).
+			Bastion:                   catalog.BastionFacts{ErrorShape: catalog.ShapeProblem},
 			ID:                        ID,
 			DisplayName:               "Generic",
 			Classes:                   []formats.Class{formats.Local},

@@ -24,7 +24,7 @@ import (
 // answers (the marking is in their headers) become the response.
 func (s *site) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := s.doFn(mainclient.Forward{Request: r, IfNoneMatch: r.Header.Get("If-None-Match"), Probe: r.Header.Get(iface.HeaderProbe) != ""})
+		resp, err := s.doFn(mainclient.Forward{Request: r, IfNoneMatch: r.Header.Get("If-None-Match"), Probe: probeForm(r)})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -185,4 +185,11 @@ func none(t *testing.T, st *site) string {
 func asError(p any) error {
 	err, _ := p.(error)
 	return err
+}
+
+// probeForm reads a probe as the main installation does (bastionmain.IsProbe): a write without a body and without a caller's
+// credential.
+func probeForm(r *http.Request) bool {
+	return r.Method != http.MethodGet && r.Method != http.MethodHead && r.ContentLength == 0 && len(r.TransferEncoding) == 0 &&
+		r.Header.Get("Authorization") == ""
 }

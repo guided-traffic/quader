@@ -103,8 +103,9 @@ func (f *Format) Descriptor() formats.Descriptor {
 			// document says otherwise (R-AUTHZ-018, Q-AUTHZ-2).
 			OwnershipDefault: catalog.OwnershipEnforce,
 			SettingsSchema:   settingsSchema,
-			// A Bastion's own refusals tell a NuGet client at most the wait WriteError tells it (R-NUGET-002, R-BAS-058).
-			Bastion: catalog.BastionFacts{RetryAfterMax: maxRetryAfter},
+			// A Bastion's own refusals tell a NuGet client at most the wait WriteError tells it (R-NUGET-002, R-BAS-058), in the
+			// one line WriteError writes: dotnet prints the status and never a body (measured 2026-11-26), the line serves curl.
+			Bastion: catalog.BastionFacts{RetryAfterMax: maxRetryAfter, ErrorShape: catalog.ShapeText},
 		},
 		ContractVersion: formats.ContractVersion,
 		VersionFetch:    formats.FetchLeadFile, // the .nupkg; the .nuspec and the symbol package beside it are none (R-API-079)

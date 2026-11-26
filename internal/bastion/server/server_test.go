@@ -157,15 +157,15 @@ func TestR_BAS_100_TheLegalPagesAreRenderedAtStartAndServedByNoRouteYet(t *testi
 	}
 	client := "http://" + h.srv.ClientAddr().String()
 	for _, path := range []string{"/ui/de/legal/imprint", "/ui/data/v1/legal", "/api/v1/legal?locale=de"} {
-		if code, _, body := get(t, client+path); code != 404 || !strings.Contains(body, iface.CodeNotServed) {
+		if code, _, body := get(t, client+path); code != 404 || !strings.Contains(body, iface.CodeNotFound) {
 			t.Errorf("GET %s = %d %s", path, code, body)
 		}
 	}
 }
 
 // TestR_BAS_001_TheRoleServesItsTwoListenersAndAnswersWithItsOwnProblems: with the keys of the acceptance the
-// role starts, becomes ready, and the client listener answers as the engine does: 404 bastion_not_served as
-// problem details to the paths the spec names, 421 to another host, and 503 main_unreachable to a read that
+// role starts, becomes ready, and the client listener answers as the engine does: 404 not_found as
+// problem details to the paths the spec names, 421 to another host, and 503 unavailable to a read that
 // needs a main installation that is not reachable (R-BAS-001, R-BAS-003, R-BAS-027).
 func TestR_BAS_001_TheRoleServesItsTwoListenersAndAnswersWithItsOwnProblems(t *testing.T) {
 	h := start(t, minimal(writeTokenFile(t, t.TempDir()), ""))
@@ -181,9 +181,9 @@ func TestR_BAS_001_TheRoleServesItsTwoListenersAndAnswersWithItsOwnProblems(t *t
 		status int
 		code   string
 	}{
-		"/api/v1/system/ping": {404, iface.CodeNotServed}, "/ui/": {404, iface.CodeNotServed}, "/auth/oidc/corp/start": {404, iface.CodeNotServed},
-		"/": {404, iface.CodeNotServed}, "/.well-known/x": {404, iface.CodeNotServed},
-		"/api/npm/web/npm-all/lodash": {503, "main_unreachable"}, "/files/web/raw/x": {503, "main_unreachable"},
+		"/api/v1/system/ping": {404, iface.CodeNotFound}, "/ui/": {404, iface.CodeNotFound}, "/auth/oidc/corp/start": {404, iface.CodeNotFound},
+		"/": {404, iface.CodeNotFound}, "/.well-known/x": {404, iface.CodeNotFound},
+		"/api/npm/web/npm-all/lodash": {503, "unavailable"}, "/files/web/raw/x": {503, "unavailable"},
 	} {
 		code, header, body := get(t, client+path)
 		var p struct {

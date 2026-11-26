@@ -111,7 +111,7 @@ func TestR_BAS_008_ATokenOfAnotherTypeLeavesTheRequestOrdinary(t *testing.T) {
 	tokens := &fakeTokens{}
 	for name, r := range map[string]*http.Request{
 		"a personal access token":     forwarded("/api/npm/web/npm-all/lodash", iface.HeaderAuthorization, "Bearer "+pat, iface.HeaderInterface, version(), iface.HeaderReplica, "pod-1"),
-		"no Bastion token":            forwarded("/api/npm/web/npm-all/lodash", iface.HeaderInterface, version(), iface.HeaderProbe, "1", iface.HeaderReplica, "pod-1"),
+		"no Bastion token":            forwarded("/api/npm/web/npm-all/lodash", iface.HeaderInterface, version(), iface.HeaderReplica, "pod-1"),
 		"another scheme":              forwarded("/api/npm/web/npm-all/lodash", iface.HeaderAuthorization, "Basic "+tokValid),
 		"a bare token":                forwarded("/api/npm/web/npm-all/lodash", iface.HeaderAuthorization, tokValid),
 		"an empty value":              forwarded("/api/npm/web/npm-all/lodash", iface.HeaderAuthorization, ""),
@@ -180,12 +180,11 @@ func TestR_BAS_008_AValidTokenRecognizesTheRequest(t *testing.T) {
 		}
 	})
 
-	t.Run("the probe flag needs a method that is not GET or HEAD", func(t *testing.T) {
+	t.Run("the probe needs a method that is not GET or HEAD, no body and no credential", func(t *testing.T) {
 		for method, want := range map[string]bool{http.MethodPut: true, http.MethodPost: true, http.MethodDelete: true, http.MethodGet: false, http.MethodHead: false} {
 			r := httptest.NewRequest(method, "/api/npm/web/npm-all/lodash", nil)
 			r.Header.Set(iface.HeaderAuthorization, "Bearer "+tokValid)
 			r.Header.Set(iface.HeaderInterface, version())
-			r.Header.Set(iface.HeaderProbe, iface.ProbeValue)
 			_, seen := run(t, RecognizeOptions{Tokens: &fakeTokens{}}, r)
 			rec, _ := RecognitionFrom(seen.Context())
 			if rec.Probe != want {

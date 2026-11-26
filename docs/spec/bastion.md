@@ -191,6 +191,10 @@ Priority: **MVP** · Covers: DIST-024
   stops startup with an error that names the key and the role.
   The role has `server.ops_tls` as well (R-BAS-044), is chosen by `--role bastion` and by nothing else, and takes `--log-level` as
   its one flag ([Q-BAS-50](#q-bas-50--the-role-has-a-configuration-tree-of-its-own-chosen-by---role-alone)).
+- *Revised on 2026-11-26 by the owner's statement on W-35 ([Q-BAS-14](#q-bas-14--no-web-interface-at-the-bastion), R-BAS-101 to
+  R-BAS-103):* the role gains a read-only web interface for anonymous visitors, switched on per registration at the main installation
+  (`gui`, `docs`), fed by the public catalogue the replica mirrors over the interface; it still has no management API, no login and no
+  session. *Today, until W-35's packages P7 and P9 land:* no web interface; the catalogue's wire exists (interface version 8).
 - Horizontal replicas: every Bastion replica is identical and interchangeable (INV-2); a request may reach any replica, and
   nothing a request needs is held only by the replica an earlier request reached (INV-18): answers, document copies and a
   local cache volume are caches whose loss costs performance only. The Bastion has no PostgreSQL; what it must not lose lives
@@ -227,8 +231,10 @@ Priority: **MVP** · Covers: DIST-024
 about a Bastion comes from its registration and reaches it with the handshake (R-BAS-093): the switches, the limits' mode and preset, the
 rules of its place, the flood figures, the slots, the throughput, the anonymous ceiling and the egress addresses. The bullets below hold
 for what stays in the chart; the second bullet's "state of the main installation" gains the configuration, which is the Bastion's own and
-held at the main installation. *Today, until E8 and E9a land:* every setting of a Bastion, its limits included, is a value of its chart,
-and the Bastion reads none from the main installation.
+held at the main installation; W-35's switches `gui` and `docs` are members of it (R-BAS-102). *Built by E7:* the configuration travels in
+the handshake (interface version 8); until E8 it is the interim one of [Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour), which equals the chart's figures of today. *Today,
+until E8 and E9a land:* every setting of a Bastion, its limits included, is a value of its chart, and the Bastion applies nothing of the
+configuration but its switch `handover`.
 
 - Every setting of a Bastion is a value of its chart: the main installation and the Bastion token, the cache, the periods, the
   limits, the blocking, the trusted proxies, Valkey, TLS and monitoring (owner,
@@ -263,6 +269,10 @@ Priority: **MVP** · Covers: DIST-024
   installation's router decodes every segment before it compares it, so `/api/%761/users` is `/api/v1/users` there: a path
   whose family, format, project or key segment contains a percent-encoding, and a path with a `.` or `..` segment, answer `404`
   from the Bastion as well ([Q-BAS-121](#q-bas-121--a-path-is-classified-as-the-main-installations-router-will-read-it-and-a-token-refusal-on-a-forward-is-no-statement-about-the-bastions-token)).
+- *Revised on 2026-11-26 (W-35, R-BAS-101 to R-BAS-103):* while its registration's switch `gui` is on, a Bastion also serves its read-only
+  web interface below `/ui/`, `/` as a redirect to it, and `/robots.txt` and `/sitemap.xml` at the host root, from the catalogue it mirrors
+  and never by a request to the main installation (W-35's packages P9 and P10). *Today, until they land:* every such path answers `404`
+  as below.
 - There is no login, no session, no cookie and no browser flow. A `Cookie` header is ignored and never forwarded. A session
   token never reaches the Bastion from Quader, because Quader never sets a cookie for the Bastion's host.
 - The ops listener serves `/healthz`, `/readyz` and `/metrics` as on every Quader role ([operations-and-observability.md](operations-and-observability.md)
@@ -271,12 +281,12 @@ Priority: **MVP** · Covers: DIST-024
 Acceptance criteria:
 
 - A table test sends every row of INV-6's path table to the Bastion: only `/api/<format>/…`, `/files/…` and `/v2/…` reach the read
-  flow (the core routes of `/v2/` as R-BAS-051 says); the others answer `404` with `bastion_not_served` and the counting double of the
+  flow (the core routes of `/v2/` as R-BAS-051 says); the others answer `404` with `not_found` and the counting double of the
   main installation records no request.
 - A request with `Cookie: __Host-qdr_session=…` and no other credential is treated as anonymous, and the request the Bastion
   forwards carries no `Cookie`.
 - `/api/%761/users`, `/api/%76%31/bastion/handshake` and every other encoded spelling of a family, format, project or key segment
-  answer `404 bastion_not_served`, reach the main installation never, and leave the replica reachable however often they are
+  answer `404 not_found`, reach the main installation never, and leave the replica reachable however often they are
   repeated (`TestR_BAS_003_R_BAS_018_APathIsClassifiedAsTheMainInstallationsRouterWillRouteIt`,
   `TestR_BAS_003_R_BAS_006_AnEncodedSpellingOfTheInterfaceRoutesCannotTurnTheReplicaUnreachable`).
 
@@ -377,6 +387,11 @@ The Bastion token identifies the Bastion and may only have tokens checked; it re
   names `<projectKey>/<repoKey>`), and
   submitting download events (R-BAS-016). It cannot issue tokens, change a Secret, read a package, write content, or read the
   audit trail.
+- *Revised on 2026-11-26 (W-35, R-BAS-101, [Q-BAS-7](#q-bas-7--the-bastion-fetches-with-the-callers-token-and-its-own-token-reads-no-package)):*
+  the token also reads the public catalogue of its own registration through the catalogue routes (the change list, the documents and
+  the public set): what an anonymous caller reads anyway, stripped of internal identities (W-35's B.10), and only while the
+  registration's switch `gui` is on (`404 not_found` otherwise, documentation only while `docs` is on). It reads no other registration's
+  catalogue and still no package. *Built by E7 with P5:* the routes, which answer an empty catalogue until W-35's builder (P6) lands.
 - **Forwarded requests** are decided on the caller's credential alone. The Bastion token on a forwarded request only makes the
   main installation add the marking headers of R-BAS-013 and refuse writes (R-BAS-014); a forwarded request without a caller
   credential is anonymous, whatever the Bastion token is.
@@ -454,6 +469,10 @@ Priority: **MVP** · Covers: quader-only
   ([Q-BAS-96](#q-bas-96--a-bastion-is-a-target-of-the-setup-page-and-of-the-guides-read-only-and-by-link-for-everyone)).
   For npm, the configure snippet sets `replace-registry-host=always`, so that a lockfile written against another host resolves
   through the Bastion.
+- *Revised on 2026-11-26 (W-34, W-35):* the card holds the registration's configuration (R-UI-240): the switches `gui` and `docs` beside
+  the handover, the limits, and, while `gui` is on and a reporting replica's catalogue is not kept (`Quader-Bastion-Catalogue-Kept: false`),
+  the sentence of W-35's B.2b; the client setup for a Bastion is rendered by the Bastion's own web interface as well, on its host and
+  without publish lines (W-35's P9). *Today, until E12 and P9 land:* the card and the client setup as below.
 - **Manual.** The admin manual gains `docs/manual/admin/bastion.md`: register a Bastion, issue its token, the chart values of a
   minimal and of an HA install, the settings on the main installation (the registration's `egress`, R-BAS-017;
   `server.additional_base_urls`), verify with the handshake metric, renew the token, and what each alert of R-BAS-041 means.
@@ -482,7 +501,8 @@ installation's ingress or its Service.
 | `GET /api/v1/bastion/handshake` | interface version, the Bastion's identity and token expiry, the main installation's state the Bastion needs | R-BAS-010 |
 | `POST /api/v1/bastion/check` | a caller's credential and its read shape on repositories, with the answer's validity | R-BAS-011 |
 | `GET /api/v1/bastion/feed` | the revocation feed | R-BAS-015 |
-| `POST /api/v1/bastion/downloads` | download events served from the Bastion's cache | R-BAS-016 |
+| `POST /api/v1/bastion/downloads` | download events served from the Bastion's cache, its usage and its status | R-BAS-016 |
+| `GET /api/v1/bastion/catalogue`, `GET …/catalogue/document`, `POST …/catalogue/documents`, `GET …/catalogue/public` | the public catalogue of the registration (W-35) | R-BAS-101 |
 | every `/api/<format>/…` and `/files/…` route | a forwarded read, decided as the caller's own request and marked | R-BAS-013, R-BAS-014 |
 
 - **Headers of every request from the Bastion:** `Quader-Bastion-Interface: <n>` (R-BAS-009); `User-Agent:
@@ -509,7 +529,7 @@ installation's ingress or its Service.
 - `Quader-Bastion-Authorization` is redacted like `Authorization` in every log, span and support bundle (R-OPS-013), and the
   main installation never echoes a `Quader-Bastion-*` request header.
 - The operations are in the OpenAPI document under the tag `bastion`, marked `x-quader-bastion-interface: <n>` and declared
-  `x-quader-permission: {bastion: true}` (`<n>` is 7 since R-BAS-091), which the shared authorization step admits on the recognition result alone
+  `x-quader-permission: {bastion: true}` (`<n>` is 8 since the wire of [interface version 8](#the-interface-version-8-the-shared-wire)), which the shared authorization step admits on the recognition result alone
   ([Q-BAS-52](#q-bas-52--recognition-and-marking-are-one-chain-stage-before-authentication-the-dispatcher-tells-an-observer-about-the-route));
   they are not part of the management API's v1 promise but of the interface version (R-ARCH-025).
 - Main side metrics: `quader_bastion_interface_requests_total{bastion, operation, outcome}`,
@@ -566,10 +586,11 @@ The Bastion interface has a version of its own, separate from the release number
   of its own.
 - **The raises so far**, each with the requirement that describes it: 4, the format table and the bound repository (R-BAS-057); 5, the
   read shapes per package (R-BAS-087); 6, the handover per blob (R-BAS-073); 7, the longest wait a format's client is told,
-  `retryAfterMaxSeconds` of the format table (R-BAS-091). The version is `iface.InterfaceVersion`; the comment beside it names the
-  same list. *Specified on 2026-11-26, not built (package E7):* 8, the configuration, the subject's limits, the usage and status reports,
-  the format table's `errorShape` and `readWithBody`, the renamed codes and W-35's catalogue ([the wire of interface version 8](#the-interface-version-8-the-shared-wire),
-  [Q-BAS-322](#q-bas-322--both-topics-raise-the-interface-version-once-to-8)).
+  `retryAfterMaxSeconds` of the format table (R-BAS-091); 8, the configuration, the subject's limits, the usage and status reports,
+  the format table's `errorShape` and `readWithBody`, the renamed codes, the probe's headers gone, the contact's headers, the registry
+  token's payload version 2 read, and W-35's catalogue ([the wire of interface version 8](#the-interface-version-8-the-shared-wire),
+  [Q-BAS-322](#q-bas-322--both-topics-raise-the-interface-version-once-to-8); built on 2026-11-26 by E7 with W-35's P5). The version is
+  `iface.InterfaceVersion`; the comment beside it names the same list.
 
 Acceptance criteria:
 
@@ -589,7 +610,7 @@ after every reconnect, and after a feed entry of the kind `settings` (R-BAS-015)
 
 ```json
 {
-  "interfaceVersion": 7,
+  "interfaceVersion": 8,
   "bastion": {"name": "partners", "tokenId": "0192f1c4-…", "tokenExpiresAt": "2027-11-02T00:00:00Z"},
   "installation": {"baseUrl": "https://quader.example.com", "release": "0.14.0"},
   "responseBaseUrl": "https://packages.example.com",
@@ -600,13 +621,16 @@ after every reconnect, and after a feed entry of the kind `settings` (R-BAS-015)
 }
 ```
 
-*(example answer; the members `formats` and `boundRepository` are R-BAS-057's, `handover` R-BAS-071's)*
+*(example answer; the members `formats` and `boundRepository` are R-BAS-057's, `configuration` R-BAS-093's)*
 
 *Revised on 2026-11-26 (R-BAS-093, [the wire of interface version 8](#the-interface-version-8-the-shared-wire)):* the answer gains `configuration` and loses the top-level
 `handover`, which moves into `configuration.switches`; the forwarded host counts only when the Bastion connected from an address of its own
 registration's `egress` (R-BAS-017); the contact also records the edge figure the Bastion reports in `Quader-Bastion-Edge-Limit` and
-W-35's `Quader-Bastion-Catalogue-Kept`. *Today, until E7 and E8 land:* the answer is the one above with `handover` at its top level; the
-forwarded host counts from the registration's own `egress` since E13 (2026-11-26).
+W-35's `Quader-Bastion-Catalogue-Kept`. *Built by E7:* `configuration` replaces `handover` (until E8 the interim configuration of
+[Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour) with the registration's revision and handover); the two contact headers are read when a replica sends them, a malformed value
+answers `400`, and they go into the event `bastion.contact` and the contact's fingerprint, not yet into its row, which gains the columns
+with E8 ([Q-BAS-354](#q-bas-354--the-contact-headers-are-optional-and-recorded-in-the-contacts-event-until-e8)); no replica sends them yet (E9a sends the edge figure, W-35's P7 the catalogue's). The forwarded host counts from the
+registration's own `egress` since E13 (2026-11-26).
 
 - `responseBaseUrl` is the response base URL the main installation derived for this request (R-OPS-005, R-EP-003), with the
   Bastion's forwarded host counted only when the Bastion connected from an address of its registration's `egress` (R-BAS-017). The Bastion
@@ -628,7 +652,10 @@ Acceptance criteria:
 
 - With `https://packages.example.com` missing from `server.additional_base_urls`, the handshake answers
   `"responseBaseUrl": "https://quader.example.com"`, the Bastion sets `quader_bastion_base_url_mismatch 1` and answers a cold
-  `npm view` with `503 main_unreachable`.
+  `npm view` with `503 unavailable`.
+- *As built by E7:* `TestR_BAS_093_TheHandshakeCarriesTheConfigurationAndRecordsTheContact` (`internal/api/v1`): the configuration
+  answered, valid, with the registration's revision and switches; a malformed `Quader-Bastion-Edge-Limit` or
+  `Quader-Bastion-Catalogue-Kept` answers `400`.
 - `GET /api/v1/bastions/partners` shows the replica names and the release of every Bastion replica within one
   `handshake_interval`.
 
@@ -807,7 +834,13 @@ body and without a request to the main installation, with `403 read_only` and a 
 probe as the anonymous caller for routing (Q-BAS-118), the headers `Quader-Bastion-Probe` and `Quader-Bastion-Route` and the detail that
 names the main installation's URL go; the main installation's refusal of a forwarded write stays as R-BAS-095's backstop with the neutral
 detail, and the forward of a path outside the package families keeps answering `404`. *Today, until E15 lands:* the probe below is what
-runs; its refusal has the neutral detail since E16 (R-BAS-099 row 1).
+runs; its refusal has the neutral detail since E16 (R-BAS-099 row 1). *Revised on 2026-11-26 by E7 (interface version 8,
+[Q-BAS-351](#q-bas-351--until-e15-a-probe-is-recognized-by-its-form-and-a-read-route-with-a-body-is-the-format-tables)):* the headers
+`Quader-Bastion-Probe` and `Quader-Bastion-Route` are gone. The Bastion forwards a request that matches a read route with a body of the
+format table (`readWithBody`, R-BAS-095) at once, with its body and the caller's credential, and probes every other request of a method
+other than `GET` and `HEAD`; the main installation recognizes a probe by its form, a forward of such a method without a body and without a
+caller's credential (`bastionmain.IsProbe`), and refuses every probe at the route match, a read route's as well (H-2293), so it answers no
+`204` any more. The bullets below that name the two headers or the `204` describe the interface up to version 7.
 
 The Bastion is read-only for package content (owner, [Q-BAS-2](#q-bas-2--the-bastion-is-read-only-for-package-content)). It
 answers a write in the client's protocol shape and points at the main installation, without format knowledge of its own
@@ -822,7 +855,7 @@ answers a write in the client's protocol shape and points at the main installati
   answers `GET` and `HEAD` only and decides nothing), and the probe goes no further (H-469).
 - The main installation's middleware answers a Bastion probe after routing and before any handler or body read:
   - a route whose `RouteKind` is `Upload`, `Delete` or `Admin`, or whose coarse action is not `read`: `403` with the problem
-    code `bastion_read_only` in the format's error shape (R-ARCH-023), whose detail names no address: `This address is read-only: it
+    code `read_only` in the format's error shape (R-ARCH-023), whose detail names no address: `This address is read-only: it
     serves downloads and accepts no uploads.` (R-BAS-099 row 1; until E16 it named the main installation's URL of the addressed
     repository);
   - a read route that takes a body (npm's `POST …/-/npm/v1/security/advisories/bulk`): `204` with `Quader-Bastion-Route:
@@ -838,11 +871,11 @@ answers a write in the client's protocol shape and points at the main installati
   `/api/%76%31/tokens` is `/api/v1/tokens` - answers `404 not_found` as problem details of the management API before authentication,
   whatever its method and credential: a forward reaches no route of the management API, the login tree or the UI ([Q-BAS-115](#q-bas-115--a-request-with-quader-bastion-authorization-is-a-forward-and-a-forward-reaches-only-the-package-families)).
 - A forwarded non-probe write that reaches the main installation anyway (a defect) is refused the same way, since the
-  Bastion token makes every write `bastion_read_only`.
+  Bastion token makes every write `read_only`.
 - The test is the route's kind and action, not the method alone ([Q-BAS-74](#q-bas-74--a-write-is-a-route-of-a-writing-kind-or-a-coarse-action-other-than-read)):
   a `PUT`, `DELETE` or `POST` on an `Upload`, `Delete` or `Admin` route, or on any route whose coarse action is not `read`, is
   refused whoever sent it; npm's family of unimplemented endpoints (`Admin`, whatever the method) is therefore `403
-  bastion_read_only` to a Bastion, where a direct client gets its `404` or `501`. The real request of a read route that takes a
+  read_only` to a Bastion, where a direct client gets its `404` or `501`. The real request of a read route that takes a
   body (npm's audit) is served.
 
 Acceptance criteria:
@@ -852,9 +885,9 @@ Acceptance criteria:
   64 KiB of the upload body were read.
 - `npm audit` through the Bastion returns the main installation's answer.
 - 1,000 `PUT` requests to one path within a minute cause one probe to the main installation.
-- With nothing `public`, the probe of `npm publish` answers `403 bastion_read_only` with the read-only sentence through the
-  real authentication stage, the probe of `npm audit` `204`, and no handler runs
-  (`TestR_BAS_014_AProbeIsAnsweredThroughTheRealAuthenticationStage`).
+- With nothing `public`, the probe of `npm publish` answers `403 read_only` with the read-only sentence through the
+  real authentication stage, the probe of `npm audit` `403` too (since interface version 8), a forward with a body is no probe, and no
+  handler runs (`TestR_BAS_014_AProbeIsAnsweredThroughTheRealAuthenticationStage`).
 
 ### R-BAS-015 · Revocation feed
 Priority: **MVP** · Covers: RMT-040
@@ -1095,13 +1128,13 @@ Q-BAS-17). Each request passes these steps in order; the first that answers ends
 2. **Block list** (R-BAS-037): a blocked address answers `429 address_blocked`.
 3. **Path family.** `/api/v1/…` and every path outside `/api/<format>/<projectKey>/<repoKey>/…`,
    `/files/<projectKey>/<repoKey>/…` and the registry root (`/v2/<projectKey>/<repoKey>/…` and its three core routes, R-BAS-051;
-   on a bound host the bound-host prefixes, R-BAS-057) answer `404 bastion_not_served` (R-BAS-003; below `/v2/` in the
+   on a bound host the bound-host prefixes, R-BAS-057) answer `404 not_found` (R-BAS-003; below `/v2/` in the
    distribution's shape, Q-BAS-169): a protocol path needs four segments before its rest, a raw path three, a registry path three. `<projectKey>/<repoKey>` is the addressed repository's qualified name for the Bastion's
    bookkeeping (answer keys, the check, cache entries) until the main installation's `Quader-Bastion-Repository` confirms it; a
    project segment that does not match `^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` or a key that does not match
    `^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$` (INV-5) answers `404` without a request, and so does `/api/npm/web` with one segment after
    the format. The Bastion reads no other part of a path. A family, format, project or key segment that is percent-encoded
-   and a `.` or `..` segment are not classified: the path answers `404 bastion_not_served` (Q-BAS-121).
+   and a `.` or `..` segment are not classified: the path answers `404 not_found` (Q-BAS-121).
 4. **Per-address limits** (R-BAS-035) and **credentials** (R-BAS-019), including the failed-authentication timeout (R-BAS-036).
 5. **Method.** `GET` and `HEAD` go to the read flow (R-BAS-020 to R-BAS-024); `OPTIONS` answers `405`; every other method goes
    to the write refusal of R-BAS-014. A write needs no credential before its probe ([Q-BAS-81](#q-bas-81--a-write-is-decided-by-the-probe-first-its-credential-is-checked-only-if-the-real-request-is-forwarded)).
@@ -1141,7 +1174,7 @@ without sessions:
 - **Anonymous.** A request without a credential is anonymous exactly when the main installation serves anonymous reads
   (owner, [Q-BAS-12](#q-bas-12--anonymous-reads-as-on-the-main-installation-with-misses-absorbed-at-the-bastion)): with
   `anonymousReads: false` from the handshake the Bastion answers `401 credentials_required` with the challenge itself, without a
-  request; before the first successful handshake the setting is not known and an anonymous request answers `503 main_unreachable`
+  request; before the first successful handshake the setting is not known and an anonymous request answers `503 unavailable`
   ([Q-BAS-99](#q-bas-99--a-replica-that-has-not-handshaken-answers-an-anonymous-request-503)); with `true` the anonymous caller's answers are kept under the key `anonymous`, shared by every anonymous caller, since
   the main installation's decision does not depend on the client address ([authorization.md](authorization.md) R-AUTHZ-029).
 - **Client address.** R-ARCH-006 with the Bastion's `server.trusted_proxies` and `server.forwarded_header`. For the limits and
@@ -1242,7 +1275,7 @@ and the Bastion keeps what may be kept (owner, Q-BAS-7):
   forwarded as `HEAD` and keeps answers only.
 - **Errors.** An answer that carries the marking is the main installation's own, whatever its status, and is passed on
   (`pass`). A connect or TLS error, a timeout, and an unmarked `5xx` (an ingress or proxy in front of the main installation)
-  answer `502 main_failed` or `504 main_timeout` from the Bastion (R-BAS-029) and keep no answer.
+  answer `502 bad_gateway` or `504 gateway_timeout` from the Bastion (R-BAS-029) and keep no answer.
 
 Acceptance criteria:
 
@@ -1391,14 +1424,14 @@ Priority: **MVP** · Covers: quader-only
 restart; a request on behalf of an anonymous caller is bounded by the anonymous ceiling as well; a fill is paced by the registration's
 throughput, so at the cap it holds its slot longer, and a miss that waits `queueTimeout` answers `503 busy`; the write probe and the sentence
 on its slot go (R-BAS-095). *Today, until E9a and E10 land:* the three values are chart values, nothing paces a fill, and the answer is
-`503 bastion_busy`.
+`503 busy`.
 
 - **Budget** ([Q-BAS-35](#q-bas-35--the-concurrency-budget-is-per-replica-with-a-share-for-anonymous-misses)). Every request to
   the main installation except the handshake and the feed takes a slot: forwards, conditional requests, checks, probes,
   download batches. A replica holds at most `ceil(bastion.main.max_concurrent ÷ bastion.replicas)` slots, of which requests on
   behalf of anonymous callers may hold at most `bastion.main.anonymous_share`, rounded down and at least one slot while the share is above 0
   ([Q-BAS-75](#q-bas-75--the-anonymous-cap-of-the-budget-is-the-share-rounded-down-at-least-one-slot)). A request that gets no slot within
-  `bastion.main.queue_timeout` answers `503 bastion_busy` with `Retry-After: 1`. Misses can therefore never put more than the
+  `bastion.main.queue_timeout` answers `503 busy` with `Retry-After: 1`. Misses can therefore never put more than the
   budget onto the main installation, whatever arrives. A slot is held until the response body ends, and no client's speed
   decides how long that is ([Q-BAS-123](#q-bas-123--the-fill-reads-the-main-installation-at-its-own-speed-and-no-client-holds-a-slot-or-a-waiter)):
   an artifact fill reads its body at the main installation's speed; the body of a pass-through is cut when the client takes a chunk
@@ -1410,7 +1443,7 @@ on its slot go (R-BAS-095). *Today, until E9a and E10 land:* the three values ar
   the cache key>`, 30 s, extended by the holder). A waiter is served from the result only when its own answer allows it
   (R-BAS-022, R-BAS-023); otherwise it makes its own conditional request. Collapsing never shares a decision. The flight ends
   when the fill is committed, not when the leader's client has taken the bytes, and a waiter that has waited 30 s answers `503
-  bastion_busy` with `Retry-After: 1` and makes no request of its own. A waiter of an artifact fill does not wait: it follows the spool
+  busy` with `Retry-After: 1` and makes no request of its own. A waiter of an artifact fill does not wait: it follows the spool
   on its own permission, and across replicas it waits while the holder extends the lock, up to `bastion.cache.fill_wait_max`
   (R-BAS-054, [Q-BAS-172](#q-bas-172--a-ranged-miss-streams-from-the-spool-and-a-caller-of-a-running-fill-follows-it-on-its-own-permission);
   *superseded in place on 2026-11-22 for artifact fills*; a document fill is followed on a `full` shape only,
@@ -1502,7 +1535,7 @@ Answers the Bastion already holds stay valid for a configurable grace period bey
     artifacts and shared documents, also past their revalidation periods (possibly stale metadata), and its own private copies; an
     entry that a `content` entry of the feed (which the link still reads while it can) names, received after `validatedAt − 15 s`,
     is not served: the grace period extends an answer, never past a withdrawal (Q-BAS-122);
-  - a token the Bastion has not seen, and a miss, get `503 main_unreachable` with `Retry-After: 30`;
+  - a token the Bastion has not seen, and a miss, get `503 unavailable` with `Retry-After: 30`;
   - after the grace period of every answer has passed, at the latest `answers.period + grace_period` after unreachability began,
     the replica serves nothing: every read answers `503`.
 - Download events are buffered (R-BAS-039). `quader_bastion_main_reachable` is 0 and
@@ -1540,14 +1573,15 @@ Acceptance criteria:
 ### R-BAS-029 · Responses of the Bastion's own
 Priority: **MVP** · Covers: quader-only
 
-*Revised on 2026-11-26 ([Q-BAS-321](#q-bas-321--the-bastions-own-codes-are-named-by-their-status-its-texts-name-no-party-and-its-problem-type-is-aboutblank), R-BAS-095, R-BAS-099):* the codes are `not_found` for
-`bastion_not_served`, and `unavailable`, `bad_gateway`, `gateway_timeout` and `busy` for `main_unreachable`, `main_failed`, `main_timeout`
-and `bastion_busy`; `403 read_only` joins the table for a write; the texts are Q-BAS-321's and name no party; every answer of the
+*Revised on 2026-11-26 ([Q-BAS-321](#q-bas-321--the-bastions-own-codes-are-named-by-their-status-its-texts-name-no-party-and-its-problem-type-is-aboutblank), R-BAS-095, R-BAS-099):* the codes `bastion_not_served`,
+`main_unreachable`, `main_failed`, `main_timeout` and `bastion_busy` became `not_found`, `unavailable`, `bad_gateway`, `gateway_timeout`
+and `busy`; `403 read_only` joins the table for a write; the texts are Q-BAS-321's and name no party; every answer of the
 Bastion's own takes the error shape the format declares (`errorShape`), and where that is `problem`, problem details whose `type` is
 `about:blank`; the package families answer a write `403`, and `405` stays for a path that serves `GET` and `HEAD` only. *Built by E16:*
 the texts of Q-BAS-321 and the type `about:blank` with the status phrase as the title, on every problem of the client listener, the
 chain's own refusals included (`errs.WithBastionAnswer`); the RateLimit policy names `requests`, `misses`, `failed-auth` and `blocking`
-(R-BAS-099 rows 2 to 4). *Today, until E7 and E15 land:* the codes of the table below, and problem details on every family but `/v2/`.
+(R-BAS-099 rows 2 to 4). *Built by E7 (interface version 8):* the codes of the table below. *Today, until E15 lands:* problem details
+on every family but `/v2/`, whatever the format table's `errorShape`.
 
 The Bastion produces only these answers itself; every other body comes from the main installation
 ([Q-BAS-39](#q-bas-39--the-bastions-own-refusals-are-problem-details)). They are problem details (RFC 9457,
@@ -1558,10 +1592,10 @@ The Bastion produces only these answers itself; every other body comes from the 
 |---|---|---|
 | `401` | `invalid_token`, `credentials_required` | a malformed or refused credential (R-BAS-019), a kept `invalid` answer, no anonymous reads at the main installation |
 | `404`, `403`, `401` | the code of the kept refusal | a read-shape answer `none` (R-BAS-022) |
-| `404` | `bastion_not_served` | a path outside the mirrored families (R-BAS-018) |
+| `404` | `not_found` | a path outside the mirrored families (R-BAS-018) |
 | `405`, `413`, `421` | `method_not_allowed`, `payload_too_large`, `misdirected_request` | R-BAS-014, R-BAS-018 |
 | `429` | `rate_limited`, `auth_timeout`, `address_blocked` | R-BAS-035 to R-BAS-037, with `Retry-After` and the `RateLimit-Policy` and `RateLimit` fields of R-API-016 |
-| `502`, `503`, `504` | `main_failed`, `main_unreachable`, `bastion_busy`, `main_timeout` | R-BAS-021, R-BAS-025, R-BAS-027 |
+| `502`, `503`, `504` | `bad_gateway`, `unavailable`, `busy`, `gateway_timeout` | R-BAS-021, R-BAS-025, R-BAS-027 |
 
 - Package clients act on the status and the challenge; the body is Quader's, not the format's. The difference is functional
   and shows only in the client's message.
@@ -1578,7 +1612,7 @@ The Bastion produces only these answers itself; every other body comes from the 
   Q-LIM-291). The `detail` (the `message` below `/v2/`) names that wait in words ("Too many requests from this address. Try again in 15
   minutes."); `Retry-After` and the `RateLimit` field's `t` carry it, but at most the longest wait the format of the request tells its
   clients (`retryAfterMaxSeconds` of the handshake's format table, R-BAS-057): NuGet and Ansible Galaxy 30 s, every other format the
-  whole wait. Every other `Retry-After` of the Bastion's own (`main_unreachable` 30 s, `bastion_busy` 1 s) is held to the same cap.
+  whole wait. Every other `Retry-After` of the Bastion's own (`unavailable` 30 s, `busy` 1 s) is held to the same cap.
 
 Acceptance criteria:
 
@@ -2103,7 +2137,7 @@ On a cold Bastion every one of these requests is a miss as well.
 |---|---|---|---|---|---|
 | `limits.anonymous` | 10/s, burst 40 | 50/s, burst 1,000 | the main installation's profile Anonymous: two installs of 475 packages, or ten pulls of 40 layers, at once | 4,000 in the first minute, 3,000 in each further (640, 600) | 3,000,000 (600,000) at the Bastion's own stage; hits are served from the cache, everything else is bounded by the replicas' `server.max_in_flight` (1,024 each) and the network (H-382) |
 | `limits.authenticated` | 50/s, burst 200 | 200/s, burst 4,000 | the main installation's profile Standard: an install of up to 4,000 packages at once | 16,000 in the first minute, 12,000 in each further (3,200, 3,000) | as above; a credential the Bastion holds no answer for costs a check, an invalid one the failed-authentication timeout (R-BAS-036, unchanged) |
-| `limits.misses.anonymous_per_minute` | 30 | 1,000 | on a cold Bastion every request is a miss: a minute holds what the anonymous burst holds at once | 1,000 requests to the main installation (30) | 1,000,000 by count (30,000), but the main installation is reached through the 16 anonymous slots of a Bastion of two replicas (R-BAS-025, unchanged): the 17th waits 2 s and is answered `503 bastion_busy`, and each forward is charged to its caller's own budget at the main installation (R-BAS-017) |
+| `limits.misses.anonymous_per_minute` | 30 | 1,000 | on a cold Bastion every request is a miss: a minute holds what the anonymous burst holds at once | 1,000 requests to the main installation (30) | 1,000,000 by count (30,000), but the main installation is reached through the 16 anonymous slots of a Bastion of two replicas (R-BAS-025, unchanged): the 17th waits 2 s and is answered `503 busy`, and each forward is charged to its caller's own budget at the main installation (R-BAS-017) |
 | `limits.misses.authenticated_per_minute` | 300 | 4,000 | as above, the burst with a credential | 4,000 (300) | bounded by the 64 slots of the budget (`bastion.main.max_concurrent`), as above |
 | `blocking.threshold` | 300 | 3,000 | the anonymous class's minute: an address is blocked only once it was refused as many requests in a minute as the class admits in one | blocked when it sends, after its burst, 6,000 anonymous (900) or 15,000 with a credential (3,300) requests a minute; within about 4 s at 1,000 a second | each address on its own, as before; a flood spread thin enough stays below every per-address figure (H-382, H-455) |
 | `edgeLimit.requestsPerSecond` | 100 | 1,000 | HAProxy Ingress counts HTTP requests also on a kept-alive connection (R-BAS-038): an `npm ci` is about 190 a second, two at once from one address about 380 | at most 60,000 reach the Bastion's own stage (6,000) | per address only, as before |
@@ -2207,9 +2241,9 @@ carries an address, a token, a path or a repository's name):
 | `quader_bastion_handover_enabled`, `quader_bastion_handover_cooldown` | gauge | — |
 
 - `quader_bastion_refused_total` counts requests the Bastion refused itself. `reason="read_only"` counts a write refused with `403
-  bastion_read_only` (R-BAS-014), whether the probe answered it or the kept answer replayed it, and a body above
+  read_only` (R-BAS-014), whether the probe answered it or the kept answer replayed it, and a body above
   `bastion.main.max_forwarded_body`; a `404` that the main installation answers to a probe (a path with no route) is its own answer,
-  relayed, and raises no counter either fresh or replayed ([Q-BAS-147](#q-bas-147--only-a-403-bastion_read_only-counts-as-a-read_only-refusal-fresh-or-replayed)).
+  relayed, and raises no counter either fresh or replayed ([Q-BAS-147](#q-bas-147--only-a-403-read_only-counts-as-a-read_only-refusal-fresh-or-replayed)).
   `reason="foreign_location"` counts an answer of the main installation the Bastion did not pass on because its `Location` named another
   scheme, host or port than the Bastion's, answered `502` instead (R-BAS-099 row 6,
   [Q-BAS-427](#q-bas-427--a-location-on-another-host-is-answered-502-at-the-bastion-whatever-the-status)); it stays at 0 while the main
@@ -2358,7 +2392,7 @@ Acceptance criteria:
 
 - `kubectl drain` of the node of one Bastion replica during a 10-minute `npm ci` and `dotnet restore` loop on the e2e cluster
   causes zero failed client runs.
-- A Bastion started while the main installation is down becomes ready, answers `503 main_unreachable`, and serves after the main
+- A Bastion started while the main installation is down becomes ready, answers `503 unavailable`, and serves after the main
   installation comes back without a restart.
 
 ### R-BAS-044 · TLS on every connection of the Bastion
@@ -2373,8 +2407,8 @@ R-ARCH-035):
   stops startup; the trust is the system roots plus `trustedCA`);
 - **after the main installation's cut into roles** (phase 6a; the key `bastion.main.packages_url` is built, the chart of the
   main installation renders the roles with WP6a.3; [ha-and-helm.md](ha-and-helm.md) R-HA-002, Q-HA-74): the forwards and
-  the probes of the client (`mainclient.HTTPClient.Do`) go to `packages_url`, the four interface operations (handshake,
-  check, feed, downloads) to `url`; the same trust (system roots plus `trustedCA`) applies to both; the interface of R-BAS-008 (`/api/v1/bastion/…`) is served by the
+  the probes of the client (`mainclient.HTTPClient.Do`) go to `packages_url`, the interface operations (handshake,
+  check, feed, downloads, and since interface version 8 the catalogue's) to `url`; the same trust (system roots plus `trustedCA`) applies to both; the interface of R-BAS-008 (`/api/v1/bastion/…`) is served by the
   main installation's role `api` and the forwarded package and raw-file requests by `packages`. A `bastion.main.url` that
   names the main installation's edge reaches both, because the edge splits by path. A Bastion that calls the main
   installation's Services directly sets `bastion.main.url` to the Service of `api` and `bastion.main.packages_url` to the
@@ -2939,7 +2973,7 @@ Acceptance criteria:
   integration tier's.
 - The end-to-end run found four defects, each fixed with a test: the Bastion chart had no Sentinel credential (R-BAS-046, `secrets.valkeySentinel`); a replica did not find
   the document its peer kept (R-BAS-018, R-BAS-023: the Vary names are learned per replica); a write probe through a main installation that refuses anonymous requests
-  got `401` instead of `403 bastion_read_only` (R-BAS-014, fixed on main by Q-BAS-118); and a partial reader got a `304` it had not asked for (R-BAS-023, Q-BAS-107).
+  got `401` instead of `403 read_only` (R-BAS-014, fixed on main by Q-BAS-118); and a partial reader got a `304` it had not asked for (R-BAS-023, Q-BAS-107).
 
 ## Every format
 
@@ -3009,7 +3043,7 @@ the open gaps H-1242 to H-1249, H-1290, H-1295 and H-1296 of [What this does not
 | A cached entry replays only `Content-Type`, `Content-Encoding`, `Content-Language`, `Content-Disposition`, `ETag`, `Cache-Control`, `Expires`, `Last-Modified`, `Vary` and `Repr-Digest`; `Docker-Content-Digest`, `Docker-Distribution-API-Version` and `Link` are dropped from a hit and passed on a miss | `keepHeader` and `replayHeader` in [respond.go](../../internal/bastion/engine/respond.go) (lines 124 to 155) |
 | A document above 64 MiB is passed through and the caller's `Range` is not forwarded, so a ranged request for such a document gets the whole body | `maxDocumentBytes` and `onShared` in [forward.go](../../internal/bastion/engine/forward.go) (lines 21, 386 to 395), `stripRequest` (lines 99 to 115) |
 | The Bastion answers `If-None-Match` from an entry and not `If-Modified-Since` | `serveSource` in [serve.go](../../internal/bastion/engine/serve.go) (line 56) |
-| A caller's `Range` on a miss waits for the whole fill; a second caller of a running fill waits at most 30 s and is then answered `503 bastion_busy` | `waitFill` in [fill.go](../../internal/bastion/engine/fill.go) (lines 296 to 316), `waitLeader` in [readflow.go](../../internal/bastion/engine/readflow.go) (lines 357 to 374) |
+| A caller's `Range` on a miss waits for the whole fill; a second caller of a running fill waits at most 30 s and is then answered `503 busy` | `waitFill` in [fill.go](../../internal/bastion/engine/fill.go) (lines 296 to 316), `waitLeader` in [readflow.go](../../internal/bastion/engine/readflow.go) (lines 357 to 374) |
 | The setup page offers a Bastion as a target for every format, OCI included, whose snippets then name the Bastion's image prefix that answers `404` today | `bastionBase` and `imagePrefix` in [packages_api.go](../../internal/api/v1/packages_api.go) (lines 717 to 752, 844 to 876); [bastion-targets.ts](../../web/src/app/features/setup/bastion-targets.ts) has no filter by format |
 | The interface is at version 3 | [version.go](../../internal/bastion/iface/version.go) (line 12) |
 
@@ -3066,8 +3100,9 @@ repository ([Q-BAS-165](#q-bas-165--the-registry-root-is-a-path-family-of-the-ba
   token (R-OCI-004, R-OCI-005); the answer is `pass`, never kept and never collapsed, and its body is never logged. The token service
   checks `service` against the host of the response base URL, which for a recognized Bastion request is the Bastion's host (R-BAS-017).
   The Bastion reads the one credential the token service reads, for its own syntax check, slot class and limits, and keeps or logs
-  nothing of it: the Basic password of a `GET`, the form's `password` of a `POST`. A `POST` is a read route that takes a body: its probe
-  is answered `204` with `Quader-Bastion-Route: read-with-body` (R-BAS-014), and the real request carries the form (at most 16 KiB,
+  nothing of it: the Basic password of a `GET`, the form's `password` of a `POST`. A `POST` is a read route that takes a body: since interface
+  version 8 the format table names it (`readWithBody` of the entry with `registryRoot`, R-BAS-095) and the Bastion forwards it at once
+  without a probe; up to version 7 its probe was answered `204` with `Quader-Bastion-Route: read-with-body` (R-BAS-014). The request carries the form (at most 16 KiB,
   within `bastion.main.max_forwarded_body`). A `POST` whose form holds a `password` takes an authenticated slot and the authenticated
   limits; a malformed token in it is refused `401` without a forward and counted (R-BAS-036). The anonymous `GET` of a token
   follows R-BAS-019: refused `401` by the Bastion itself while `anonymousReads` is false. The Bastion's own challenge below `/v2/` names no
@@ -3104,7 +3139,7 @@ Acceptance criteria:
   request log; `GET /v2/web/docker` and `/v2/%77eb/docker/app/manifests/1` answer `404` `NAME_UNKNOWN` without a request
   (`TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion`).
 - Unit (`internal/bastionmain`): `forwardablePath` admits `/v2/web/docker/app/manifests/1`, `/v2/_token` and `/v2/` and still refuses
-  `/api/%76%31/tokens`; the probe of `POST /v2/_token` answers `204` read-with-body and the probe of `POST /v2/web/docker-local/app/blobs/uploads/`
+  `/api/%76%31/tokens`; the probe of `POST /v2/_token` answers `403` (since interface version 8, a probe of a read route is refused) and the probe of `POST /v2/web/docker-local/app/blobs/uploads/`
   answers `403` `DENIED` in the distribution's shape whose message is the read-only sentence of R-BAS-099 row 1
   (`TestR_BAS_051_TheMainInstallationForwardsTheRegistryRoot`). *As built, in three packages, since the domain package of the backstop
   imports neither the token service nor a format's error shape:* the backstop in `internal/bastionmain` (`TestR_BAS_051_TheMainInstallationForwardsTheRegistryRoot`), the refusal of
@@ -3266,7 +3301,7 @@ address, committed, the last 64 KiB of every transfer withheld until then. Three
   `If-Modified-Since` and `If-Range` are decided at once from the answer's validator, date and length.
 - **A second caller follows the running fill.** A caller of a cache key whose artifact fill runs on its replica gets its own permission
   first (a usable `full` answer, or a conditional request naming the fill's content address answered `304`; a refusal is replayed) and
-  is then served from the spool like the leader's client, instead of waiting 30 s and being answered `503 bastion_busy`. A registry-token
+  is then served from the spool like the leader's client, instead of waiting 30 s and being answered `503 busy`. A registry-token
   caller of a layer that fifty pods ask for at once therefore costs one transfer and fifty conditional requests. *Amended on 2026-11-22,
   built on 2026-11-23 (R-BAS-085):* a usable `full` answer also means a package answer `full` on the fill's package, which the leader's
   marking supplies, so fifty pods whose registry tokens each hold such an answer follow the fill without a request; a token that has none
@@ -3423,6 +3458,11 @@ Priority: **MVP** · Covers: quader-only
   forward is the main installation's (`bastionForwarded` in [wire_bastion.go](../../internal/app/wire_bastion.go); found by
   `TestR_BAS_057_ABoundHostThroughABastion` and fixed with the Bastion's side).
 - The members raise the interface to version 4 (R-BAS-009); `retryAfterMaxSeconds` raises it to version 7 (R-BAS-091).
+- *Built on 2026-11-26 by E7 (interface version 8):* every entry carries `errorShape` and `readWithBody` (R-BAS-095), from
+  `catalog.Facts.Bastion.ErrorShape` and `ReadWithBody` of the format; `BastionFormatTable` writes a declared pattern below
+  `/api/<format>/{project}/{repo}` (and below `/v2/{project}/{repo}` for the format of the registry root) and adds the token service's
+  `POST /v2/_token` to the entry of the registry root ([Q-BAS-353](#q-bas-353--a-format-declares-its-read-routes-with-a-body-below-the-repository-and-kit-check-19-holds-the-list-to-its-routes)). The Bastion reads `readWithBody` (`HandshakeFormat.ReadsWithBody`) to
+  forward a read route with a body at once; it renders no shape yet (E15).
 - *Built on 2026-11-22, the main installation's side (package B):* the table is `v1.BastionFormatTable(formats.List())`, built once by the
   composition root, one entry per format with routes in the order of the format IDs (generic, which has none, has no entry); the lists
   are empty, never null, and a replica without the table answers `"formats": []`
@@ -3465,7 +3505,7 @@ The contract a format keeps so that every Bastion serves it without a decision o
 | A rate limit of the format answers the status `catalog.Facts.Bastion.RateLimitedStatus` (429 unless declared) | the Bastion's own rate-limit refusals of the format's family take that status | kit check 19 (through `WriteError`) |
 | A rate limit of the format tells the client the wait capped by `catalog.Facts.Bastion.RetryAfterMax` (the whole wait unless declared): a wait of a second as one second, a wait of a day as the cap or as a day | the Bastion's own refusals of the format's family tell the declared wait (R-BAS-091); a cap `WriteError` applies and the facts do not declare would reach the format's clients from a Bastion uncapped | kit check 19 (through `WriteError`) |
 | A write has a writing kind or an action other than `read`; a read route that takes a body is `Volatile` with `read` | the probe of R-BAS-014 | built (R-BAS-014) |
-| *Specified on 2026-11-26, not built (E15):* a route with a writing method whose kind is a read is listed in `catalog.Facts.Bastion.ReadWithBody`; `WriteError` renders `catalog.Facts.Bastion.ErrorShape` (`problem`, `npm`, `text`, `distribution`) | the Bastion's own refusal of a write and every answer of its own in the format's shape (R-BAS-095, [Q-BAS-337](#q-bas-337--a-bastions-own-refusals-take-one-of-four-error-shapes-a-format-declares)); they replace the row above once the probe goes | kit check 19 |
+| *Built on 2026-11-26 by E7 (Q-BAS-353):* a route with a writing method whose kind is a read is listed in `catalog.Facts.Bastion.ReadWithBody`, and no entry lists a route the format does not have; the format declares `catalog.Facts.Bastion.ErrorShape`. *Specified, not built (E15):* `WriteError` renders the declared shape (`problem`, `npm`, `text`, `distribution`, `galaxy`) | the Bastion's own refusal of a write and every answer of its own in the format's shape (R-BAS-095, [Q-BAS-337](#q-bas-337--a-bastions-own-refusals-take-one-of-five-error-shapes-a-format-declares)); they replace the row above once the probe goes | kit check 19 |
 | `absent` comes from the core's lookups | the negative cache (R-BAS-024) | built (Q-BAS-70) |
 | Every rights decision of a content route is made through the host before its status line; a response that draws on packages other than the one it was decided for also decides a package-less read; a reader of only the response's package receives the same status, body and validators as a reader of the whole repository | a document marked `shared` for a reader of one package is served to every reader of that package in full (R-BAS-081, R-BAS-082) | kit check 21 (R-BAS-086) |
 
@@ -4782,7 +4822,7 @@ Priority: **P1** · Covers: quader-only
 - **At a mismatch** nothing changes and nothing is owed (R-BAS-009, R-BAS-027, R-BAS-028): the main installation answers `400
   bastion_interface_mismatch`, a Bastion replica treats it as unreachable and raises `QuaderBastionInterfaceMismatch`; callers with live
   answers (credential, shape, package, URL) get warm content for up to `period + grace`, never past a token's expiry or a withdrawal the feed
-  carried; every image pull fails with `503 main_unreachable` for the window, because the token request is a forward and a new registry token
+  carried; every image pull fails with `503 unavailable` for the window, because the token request is a forward and a new registry token
   is a stranger, while npm and NuGet callers whose tokens were seen in the last period keep installing warm content. A rolling update of the
   main installation's replicas makes a Bastion replica switch to unreachable and back, as today. A Bastion rolled back to version 4 that
   shares a bucket with version 5 replicas ignores the member `package` of entries.
@@ -4931,8 +4971,11 @@ of the main installation decides; the chart keeps what the installation of the p
   `PATCH /api/v1/bastions/{name}` takes `limits` with `limits:write` and the other members with `endpoints:write`; `GET` shows `limits` to
   a holder of `endpoints:read` or `limits:read`.
 
-*Not built* (packages E7, the wire; E8, the main installation's side with migration 00148; E9a, the Bastion's side and the chart; E12, the
-card). Today the flood figures and the slots are chart values and a change is a rollout (R-BAS-002); there is no mode, preset, place,
+*Built on 2026-11-26 by E7, the wire's part:* `iface.Configuration` with its `Validate`, the handshake's member, the link's refusal of a
+handshake whose configuration `Validate` refuses, the contact headers ([Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour), [Q-BAS-354](#q-bas-354--the-contact-headers-are-optional-and-recorded-in-the-contacts-event-until-e8)). Of the members a
+Bastion reads after E7 only `switches.handover` (R-BAS-072); the main installation answers the catalogue routes by `switches.gui` and
+`switches.docs` (R-BAS-102); nothing reads `limits` (E9a, E9b, E10 do). *Not built* (E8, the main installation's side with migration 00148;
+E9a, the Bastion's side and the chart; E12, the card). Today the flood figures and the slots are chart values and a change is a rollout (R-BAS-002); there is no mode, preset, place,
 throughput or ceiling at a Bastion; `handover` is a top-level member of the registration and the handshake (R-BAS-071); `gui` and `docs`
 do not exist.
 
@@ -5048,32 +5091,50 @@ itself and names nothing of the main installation in the refusal (R-BAS-099). It
   `POST /v2/_token`. A request that matches an entry is forwarded as today, with its body (at most `bastion.main.max_forwarded_body`, a
   larger body `413 payload_too_large`) and the caller's credential, and its answer is `pass`; an anonymous `POST /v2/_token` is answered by
   the Bastion (R-BAS-094).
-- **The shape** ([Q-BAS-337](#q-bas-337--a-bastions-own-refusals-take-one-of-four-error-shapes-a-format-declares)). The format table
-  gains `errorShape`, one of four the Bastion renders, and the Bastion uses it for every answer of its own on the format's family (this
+- **The shape** ([Q-BAS-337](#q-bas-337--a-bastions-own-refusals-take-one-of-five-error-shapes-a-format-declares)). The format table
+  gains `errorShape`, one of five the Bastion renders, and the Bastion uses it for every answer of its own on the format's family (this
   refusal, the limits of R-BAS-096, the table of R-BAS-029), so a client receives a body it parses:
 
 | `errorShape` | Formats | Body |
 |---|---|---|
-| `problem` | Debian, Ansible Galaxy, generic (`/files/`), the ClamAV definitions; the default for a format the table does not name | problem details (RFC 9457) |
+| `problem` | Debian, generic (`/files/`), the ClamAV definitions; the default for a format the table does not name | problem details (RFC 9457) |
 | `npm` | npm | `{"error": "<detail>"}`, `application/json` |
 | `text` | NuGet | one line `read_only: <detail>`, `text/plain; charset=utf-8` |
 | `distribution` | the registry root | `{"errors": [{"code": "DENIED", "message": "<detail>", "detail": {"code": "read_only"}}]}` (R-BAS-029's mapping of the other codes) |
+| `galaxy` | Ansible Galaxy | `{"errors": [{"status": "403", "code": "read_only", "title": "Forbidden.", "detail": "<detail>"}]}`, `application/json`, the list a Galaxy's API answers |
+
+What each format's clients print, measured on 2026-11-26 against a stub that answered the shapes (developer/bastion.md, "What each client
+prints for a refusal"), and why each format declares its shape:
+
+| Format | Shape | What the client prints | Why this shape |
+|---|---|---|---|
+| npm | `npm` | the status and the detail (`npm error 403 403 Forbidden - PUT … - <detail>`); retries a `503` after 10 s and 60 s of its own | npm reads the member `error` |
+| NuGet | `text` | the status and reason phrase only, never a body; retries five times about 1 s apart | the body changes nothing dotnet shows; the line serves curl and logs, and is what `WriteError` writes |
+| OCI (docker, podman) | `distribution` | podman and docker print the message (`denied: <detail>`); a refusal of a `HEAD` reaches docker without a body | the registries' own shape (R-OCI-008) |
+| Ansible Galaxy | `galaxy` | with problem details `Message: <status phrase> Code: Unknown`, and a `429` on the version list made ansible-galaxy 2.17.14 exit 250 ("Unexpected Exception … 'results'") against today's Bastion; it reads the Galaxy's own `errors` list (`Message: <detail> Code: <code>`) | none of the other four is a list ansible-galaxy reads |
+| Debian | `problem` | APT prints the reason phrase only; `apt-get update` exits 0 when refused | the body changes nothing APT shows; problem details serve curl |
+| ClamAV definitions | `problem` | freshclam acts on the status alone | as Debian |
+| generic (`/files/`) | `problem` | curl prints the body as it is | the core's shape of `/files/` |
 
 - **The main installation's backstop** stays: a forwarded write that reaches it anyway (a defect) is refused `403 read_only` in the format's
   error shape with the same neutral detail. Its admission of probes as the anonymous caller for routing (Q-BAS-118) goes, and so do the
   headers `Quader-Bastion-Probe` and `Quader-Bastion-Route`.
 - **Kit check 19** gains two duties for every format (R-BAS-058): each route with a writing method whose kind is a read is listed in
   `readWithBody`, and the format's `WriteError` renders the declared `errorShape`.
-- **What is given up:** the format's own refusal body beyond the four shapes; the `404` of a write to a path without a route; a read route
+- **What is given up:** the format's own refusal body beyond the five shapes; the `404` of a write to a path without a route; a read route
   with a body that a format forgets to declare, which is refused and so fails closed (H-2293).
 
-*Not built* (package E7, the members of the format table and the code `read_only`; E15, the refusal at the Bastion, the removal of the probe
-and the kit's duties; E16, the neutral text of the main installation's backstop).
+*Built on 2026-11-26 by E7:* the members `errorShape` (five shapes, [Q-BAS-337](#q-bas-337--a-bastions-own-refusals-take-one-of-five-error-shapes-a-format-declares))
+and `readWithBody` of the format table, declared by every format ([Q-BAS-353](#q-bas-353--a-format-declares-its-read-routes-with-a-body-below-the-repository-and-kit-check-19-holds-the-list-to-its-routes)); the code `read_only`; the headers
+`Quader-Bastion-Probe` and `Quader-Bastion-Route` gone, the Bastion forwarding a declared read route with a body at once and the main
+installation recognizing a probe by its form ([Q-BAS-351](#q-bas-351--until-e15-a-probe-is-recognized-by-its-form-and-a-read-route-with-a-body-is-the-format-tables)); kit check 19's duty that `readWithBody` equals the format's routes of a
+writing method whose kind is a read, and that a format declares its `errorShape`. *Built by E16:* the backstop's neutral text. *Not built*
+(E15): the refusal at the Bastion in the five shapes, the removal of the probe, and the duty that `WriteError` renders the declared shape.
 
 Acceptance criteria:
 
 - Unit (`internal/bastion/engine`, under 1 s): `PUT`, `POST`, `DELETE` and `PATCH` on npm, NuGet, OCI and `/files/` paths answer `403
-  read_only` in the four shapes, the counting double of the main installation records nothing, and less than 64 KiB of a 1 MiB body is
+  read_only` in the five shapes, the counting double of the main installation records nothing, and less than 64 KiB of a 1 MiB body is
   read; npm's bulk audit and `POST /v2/_token` with a credential are forwarded.
 - Kit (every format, about 20 ms each): the two duties; a `testformat` defect each.
 - Integration (area `bastion`): `write_test` asserts the Bastion's refusal and no request at the main installation; the probe's cases go, so
@@ -5136,6 +5197,9 @@ The owner's choices (c) of [Q-LIM-305](usage-and-limits.md#q-lim-305--a-bastion-
   check answer and the marking; the handshake carries the place's table, each rule's ID with its effective figures, the address rules and the
   kind rules; the Bastion resolves the address rules (the longest prefix wins) and the kind rules itself.
 
+*Built on 2026-11-26 by E7, the wire's part:* `subject.limits` of the check answer and `Quader-Bastion-Limits` of the marking
+(`iface.SubjectLimits`, read and written with the key percent-encoded; a marking that names limits for a subject other than a token, twice
+or malformed is refused). The member is optional on the wire, absent until E8 resolves a rule at the Bastion's place ([Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour)).
 *Not built* (package E8, the place, the subject key in the check answer and the marking; E9b, the budgets at the Bastion; E9a, the figures
 from the configuration). Today a Bastion counts requests and misses per client address only, with the chart's figures (R-BAS-035), and what
 it serves from its cache is counted against no budget.
@@ -5239,8 +5303,8 @@ sets it, `internal/vuln/scanner/pull.go`), so row 5 does not list it; the allowl
 [Q-BAS-428](#q-bas-428--a-forward-is-marked-on-the-requests-context-and-every-writer-of-an-error-renders-through-one-function)):
 
 - **Row 1, the text.** `Marker.readOnly` ([mark.go](../../internal/api/bastionmark/mark.go)) answers `bastion_read_only` with
-  `bastionmark.ReadOnlyDetail`, for every format; the options `MainURL` and `RegistryRoot` of the Mark stage are gone. The code is E7's,
-  the refusal at the Bastion E15's.
+  `bastionmark.ReadOnlyDetail`, for every format; the options `MainURL` and `RegistryRoot` of the Mark stage are gone. The code is E7's
+  (`read_only` since interface version 8), the refusal at the Bastion E15's.
 - **Row 2, the texts.** The Bastion's own answers have Q-BAS-321's texts ([respond.go](../../internal/bastion/engine/respond.go),
   [request.go](../../internal/bastion/engine/request.go), `probe.go`, `registry.go`); the detail of the failed-authentication timeout
   says "a credential that cannot be checked now" instead of naming the Bastion. Every code is a member of the interface
@@ -5281,8 +5345,10 @@ sets it, `internal/vuln/scanner/pull.go`), so row 5 does not list it; the allowl
   and the members stay. A miss of every member of a virtual repository is the virtual engine's own `404`, which names no member. What
   the formats' handlers write of their own is not inventoried text by text (H-2295).
 
-*Not built* (packages E7, E15, E17, and W-35's catalogue, as the table says): rows 1 (the refusal at the Bastion and the code), 2
-(the codes), 8 for a signed-in caller and 14. Row 8 for the anonymous caller is built by E14a: its token is the Bastion's, whose payload
+*Built on 2026-11-26 by E7:* rows 1 and 2, the codes (`read_only`, and the Bastion's own codes of Q-BAS-321, in `iface/problems.go` and
+the code registry of `internal/errs`), and row 8, the readers of payload version 2 (`iface.RegistryTokenAnonymous`, `RegistryTokenExpiry`,
+`RegistryTokenGrant` read versions 1 and 2, the sealed part never). *Not built* (packages E15, E17, and W-35's catalogue, as the table
+says): row 1's refusal at the Bastion, row 8 for a signed-in caller (E17 issues version 2) and row 14. Row 8 for the anonymous caller is built by E14a: its token is the Bastion's, whose payload
 names the key ID `bastion`, `a` and `exp` and nothing of the main installation (R-BAS-094).
 
 Acceptance criteria:
@@ -5305,9 +5371,11 @@ Acceptance criteria:
 
 The wire of this section and of W-35's web interface, built by one package (E7 of [developer/bastion-limits.md](../developer/bastion-limits.md)
 together with W-35's package P5), which raises `iface.InterfaceVersion` once, from 7 to 8
-([Q-BAS-322](#q-bas-322--both-topics-raise-the-interface-version-once-to-8)). Until E8 lands the main installation sends the built-in
-configuration of Q-BAS-327 for every registration, and the Bastion ignores what no package of its side uses yet. *Not built* (package E7);
-the interface is at version 7 today (R-BAS-091).
+([Q-BAS-322](#q-bas-322--both-topics-raise-the-interface-version-once-to-8)). Until E8 lands the main installation sends an interim
+configuration for every registration that equals a Bastion's behaviour of today ([Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour); Q-BAS-327's built-in configuration is the one a
+Bastion falls back to, E9a's), and the Bastion ignores what no package of its side uses yet. *Built on 2026-11-26* (E7 with W-35's P5):
+`InterfaceVersion` is 8, and every member below is in [internal/bastion/iface](../../internal/bastion/iface), read and written as this
+section says; what each side does with it after E7 is said per member.
 
 **The handshake's member `configuration`** (R-BAS-093), beside the members of R-BAS-010 and R-BAS-057; the top-level `handover` goes into
 it:
@@ -5354,14 +5422,23 @@ measurement sets, and the ceiling's figures are examples for the same reason)*
   `partnerNetwork`, `internal` or `custom`; `mode` is `audit` or `enforce`; `kindRules` names a rule for each of the five kinds of R-LIM-011 (a certificate takes the kind rule of the technical tokens, Q-LIM-96);
   `addressRules` holds canonical prefixes (R-LIM-002) and names rules of `rules`. `Validate` refuses anything else, and a refused member
   fails the handshake.
+- The flood figures are positive integers, never `null`: flood protection is never unlimited, and an address that is to meet none is an
+  exempt network; a block's `durationSeconds` is not above its `maxDurationSeconds`; a ceiling's `burst` is set only with its rate.
 - The types are `iface.Configuration`, `iface.Switches`, `iface.Limits`, `iface.PlaceTable`, `iface.Figures`, `iface.Flood`, `iface.Slots`,
-  `iface.Throughput` and `iface.Ceiling` in [wire.go](../../internal/bastion/iface/wire.go).
+  `iface.Throughput` and `iface.Ceiling` in [configuration.go](../../internal/bastion/iface/configuration.go), with `iface.FloodClass`,
+  `FloodRate`, `FailedAuth`, `Blocking`, `AddressRule`, `KindRules` and `ThroughputHours` for their members.
+- *After E7:* the main installation answers `bastionmain.InterimConfiguration` with the registration's revision and switch of the handover
+  ([Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour)): mode `enforce`, preset `custom`, one rule `interim-unlimited` without a figure for every kind, the flood figures and slots of the
+  Bastion chart's defaults today, no throughput cap and no ceiling. The link refuses a handshake whose configuration `Validate` refuses and
+  applies `switches.handover`; nothing reads the rest until E9a.
 
 **The subject's limits** (R-BAS-096). The check answer's `subject` gains `limits: {"key": "<limits_subject>", "rule": "<rule ID>"}` for a
 usable subject (`token`; for `anonymous` the member is absent, since the Bastion decides an anonymous caller's key and rule itself), and the
 marking gains the header `Quader-Bastion-Limits: key=<limits_subject>; rule=<rule ID>` on every answer that carries
 `Quader-Bastion-Subject: token=…`. The key is percent-encoded as `Quader-Bastion-Package` is (R-BAS-013); the rule is the rule of the
-Bastion place the main installation resolved for the caller, or the kind rule's ID where no single-caller or group rule matched.
+Bastion place the main installation resolved for the caller, or the kind rule's ID where no single-caller or group rule matched. The member
+and the header are optional on the wire: until E8 resolves rules at the Bastion's place the main installation sends neither ([Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour)), and a
+marking that names limits for a subject other than a token, twice, or malformed is refused (`iface.SubjectLimits`, `ParseSubjectLimits`).
 
 **The reporting batch** (R-BAS-016, R-LIM-045). `POST /api/v1/bastion/downloads` gains two members, always present:
 
@@ -5395,40 +5472,47 @@ Bastion place the main installation resolved for the caller, or the kind rule's 
 - `usage.rows` holds at most 100,000 keys per batch window and the rest in `overflow`, per repository and subject kind (Q-LIM-308);
   `status.blocks` at most 100, the newest. `events` and `dropped` keep their meaning; the Bastion sends a batch every flush whether or not
   `recordDownloads` is true, and with it false `events` is empty.
-- The types are `iface.UsageReport`, `iface.UsageRow`, `iface.UsageOverflow` and `iface.ReplicaStatus`.
+- The types are `iface.UsageReport`, `iface.UsageRow`, `iface.UsageOverflow` and `iface.ReplicaStatus` (with `CacheStatus`,
+  `ThroughputStatus`, `ThroughputClasses`, `StatusBlock`) in [usage.go](../../internal/bastion/iface/usage.go); `MaxUsageRows` and
+  `MaxStatusBlocks` are the bounds, and the keys of `limited` and `wouldLimit` are the figures' names (`iface.FigureNames`).
+- *After E7:* the main installation refuses a batch whose usage or status breaks a bound (`422`) and stores nothing of them (E8); the
+  Bastion sends both empty, with the lists as `[]`, and sends a batch only when it holds events, as before (E9b sends usage, E8 and E9a
+  the status, each with its own flush). The intake's bound on a batch's body is still the one of events (`max_batch` times 10 KiB); E8
+  sizes it for 100,000 rows.
 
 **The format table** (R-BAS-057) gains, per format:
 
-- `errorShape`: `problem`, `npm`, `text` or `distribution` (R-BAS-095), always present; `catalog.Facts.Bastion.ErrorShape` of the format.
+- `errorShape`: `problem`, `npm`, `text`, `distribution` or `galaxy` (R-BAS-095,
+  [Q-BAS-337](#q-bas-337--a-bastions-own-refusals-take-one-of-five-error-shapes-a-format-declares)), always present;
+  `catalog.Facts.Bastion.ErrorShape` of the format (`problem` where a format declares none; kit check 19 requires the declaration).
 - `readWithBody`: a list of `{"method": "POST", "path": "<pattern>"}`, the format's routes with a writing method whose kind is a read, as
-  the route table's patterns (`{name}` segments matched as the router matches them); `[]` where there are none. npm's
-  `{"method": "POST", "path": "/api/npm/{project}/{repo}/-/npm/v1/security/advisories/bulk"}` and the registry root's
-  `{"method": "POST", "path": "/v2/_token"}`.
+  paths from the host root whose `{name}` segments stand for one non-empty segment each; `[]` where there are none ([Q-BAS-353](#q-bas-353--a-format-declares-its-read-routes-with-a-body-below-the-repository-and-kit-check-19-holds-the-list-to-its-routes)). A request
+  matches by its method and its escaped path, a literal segment byte for byte, so a spelling the table does not name is a write and fails
+  closed (`HandshakeFormat.ReadsWithBody`). As built: npm's `POST /api/npm/{project}/{repo}/-/npm/v1/security/advisories/bulk`,
+  `…/-/npm/v1/security/audits` and `…/-/npm/v1/security/audits/quick` (the legacy audit npm falls back to, found in the route table beside
+  the bulk one), and the registry root's `POST /v2/_token`; no other format has one.
 
 **The problem codes** (R-BAS-029, Q-BAS-321): `bastion_read_only` becomes `read_only`, `bastion_not_served` `not_found`,
 `main_unreachable` `unavailable`, `main_failed` `bad_gateway`, `main_timeout` `gateway_timeout`, `bastion_busy` `busy`. The constants of
 `iface/problems.go` and the code registry of `internal/errs` change with them; `bastion_token_invalid`, `bastion_interface_mismatch`,
 `bastion_base_url_unknown` and `bastion_not_implemented` stay, since they concern the Bastion and never reach a caller. The headers
-`Quader-Bastion-Probe` and `Quader-Bastion-Route` and the value `read-with-body` leave the interface (R-BAS-095).
+`Quader-Bastion-Probe` and `Quader-Bastion-Route` and the value `read-with-body` leave the interface (R-BAS-095); until E15 removes the probe,
+the main installation recognizes it by its form ([Q-BAS-351](#q-bas-351--until-e15-a-probe-is-recognized-by-its-form-and-a-read-route-with-a-body-is-the-format-tables)).
 
 **The contact** (R-BAS-010) gains two request headers of the handshake, recorded with the replica's contact:
-`Quader-Bastion-Edge-Limit: rps=<n>; connections=<n>` or `off` (R-BAS-093) and W-35's `Quader-Bastion-Catalogue-Kept: true|false`.
+`Quader-Bastion-Edge-Limit: rps=<n>; connections=<n>` (either member alone) or `off` (R-BAS-093) and W-35's
+`Quader-Bastion-Catalogue-Kept: true|false` (`iface.EdgeLimit`, `ParseEdgeLimit`, `ParseCatalogueKept`). Both are optional: a replica that
+does not know the value sends none ([Q-BAS-354](#q-bas-354--the-contact-headers-are-optional-and-recorded-in-the-contacts-event-until-e8)).
 
 **The registry token's readers** (Q-BAS-339): `iface.RegistryTokenAnonymous`, `RegistryTokenExpiry` and `RegistryTokenGrant` read payload
-versions 1 and 2; E17 then issues version 2.
+versions 1 and 2; E17 then issues version 2. Version 2 is `2:<opaque key id>:<readable claims>:<sealed claims>`: the readable claims are one
+JSON object, followed by `:` and at least one byte of the sealed part, which a Bastion never reads.
 
-**W-35's catalogue** (that plan's package P5, named here so that the version rises once; its requirements and decisions are that package's):
-
-- Routes, with the Bastion token: `GET /api/v1/bastion/catalogue?after=<seq>&limit=<n>` (`PathCatalogue`), `GET
-  /api/v1/bastion/catalogue/document?path=<path>` (`PathCatalogueDocument`) and `GET /api/v1/bastion/catalogue/public`
-  (`PathCataloguePublic`); `404 not_found` while the registration's `gui` is off, documentation paths only while `docs` is on.
-- Types: `CatalogueChanges{Entries []CatalogueChange{Path, SHA256, Size, Deleted, Seq}, Cursor, More, Reset}` and
-  `CataloguePublic{Projects []string, Repositories []{Name, Format, Class, Wiki bool}}`.
-- The document path grammar as pure functions with a round-trip parser that refuses dot segments and encoded slashes: `index/<n>`,
-  `packages/<id>`, `packages/<id>/versions`, `…/versions/<v>`, `…/readme`, `…/vulnerabilities`, `…/signatures`, `…/contents`, `…/docs`,
-  `…/docs/entries/<type>/<name>`, `…/docs/files/<file>`, `setup/<project>/<repo>/<client>[/<package>/<version>]`,
-  `signatures/objects/<sha256>`, `signing/trusted-root.json`, `signing/chain.pem`.
-- The feed kind the catalogue needs is that package's to name; a `settings` entry already carries a change of `gui` and `docs`.
+**W-35's catalogue** (that plan's package P5, built in the same change; its requirements are R-BAS-101 to R-BAS-103): the routes
+`PathCatalogue`, `PathCatalogueDocument`, `PathCatalogueDocuments` and `PathCataloguePublic`, the types `CatalogueChanges`,
+`CatalogueChange`, `CatalogueBatch`, `CatalogueFrame`, `CataloguePublic` and `CatalogueRepository`, the path grammar `CataloguePath` with
+`ParseCataloguePath`, the frame functions `WriteCatalogueFrame` and `ReadCatalogueFrame`, and the feed kind `catalogue`, in
+[catalogue.go](../../internal/bastion/iface/catalogue.go); R-BAS-101 says what each is.
 
 **What a Bastion of version 7 and a main installation of version 8 do with each other** (R-BAS-009's rule, unchanged): they do not talk.
 The Bastion's handshake answers `400 bastion_interface_mismatch` with `"interfaceVersion": 8`; the Bastion treats the main installation as
@@ -5439,7 +5523,13 @@ Main installation and Bastions are upgraded together, and the release notes say 
 Acceptance criteria:
 
 - `TestR_BAS_009_TheInterfaceChangesOnlyWithItsVersion` with the regenerated surface at version 8; unit tests of every new member's
-  `Validate` and round trip, and of the catalogue's path grammar; under 0.5 s in all.
+  `Validate` and round trip, and of the catalogue's path grammar; under 0.5 s in all. *As built* (`internal/bastion/iface`, 0.13 s for the
+  package, data of bytes): `TestR_BAS_093_TheConfigurationTravelsWholeAndItsRulesHold`,
+  `TestR_BAS_096_TheSubjectsLimitsTravelInTheCheckAndTheMarking`, `TestR_BAS_016_ABatchCarriesUsageAndStatusWithoutADownload`,
+  `TestR_BAS_093_TheContactReportsTheEdgeAndTheCatalogue`, `TestR_BAS_103_TheCataloguePathGrammarRoundTrips`,
+  `TestR_BAS_101_TheCatalogueChangeListHoldsItsOrder`, `TestR_BAS_101_TheBatchReadIsFramed`,
+  `TestR_BAS_095_AReadRouteWithABodyIsMatchedAsTheRouterMatchesIt`, `TestR_BAS_052_AVersion2RegistryTokenReadsOnlyItsReadableClaims`,
+  and the format table's members in `TestR_BAS_057_TheHandshakeCarriesTheFormatTable`.
 
 ## The Bastion's imprint and privacy notice
 
@@ -5463,7 +5553,7 @@ Hauptinstanz" and "Je kleiner der Footprint, desto besser".
   that no language has a text for is none.
 - **Serving.** Not yet: the Bastion has no web interface, and this requirement adds no listener and no route
   ([Q-BAS-342](#q-bas-342--the-pages-are-rendered-at-start-and-served-by-no-route-until-the-bastions-web-interface)). `/ui/…` and
-  `/api/v1/…` still answer `404 bastion_not_served` (R-BAS-003). The web interface serves the pages from `Pages(locale)` of
+  `/api/v1/…` still answer `404 not_found` (R-BAS-003). The web interface serves the pages from `Pages(locale)` of
   `internal/bastion/legal`, which the replica holds from its start (`Server.Legal`), and links them in its footer
   ([H-2304](#h-2304--a-bastion-serves-its-imprint-and-privacy-notice-only-with-its-web-interface)).
 - **Imports.** `internal/bastion/legal` imports `internal/packages/readme` and `internal/legaltext` by a scoped allowance of the
@@ -5476,7 +5566,7 @@ Acceptance criteria:
   SVG, a frame, an event handler and a `javascript:` link are dropped; an image of another site is a link, one of the Bastion's origin
   is gone; the address block, the table and the three kinds of link stay; the German locale shows the English text marked `en`.
 - Unit ([server_test.go](../../internal/bastion/server/server_test.go), a second): a replica started with a German imprint holds it
-  for both locales, and `/ui/de/legal/imprint`, `/ui/data/v1/legal` and `/api/v1/legal` answer `404 bastion_not_served`.
+  for both locales, and `/ui/de/legal/imprint`, `/ui/data/v1/legal` and `/api/v1/legal` answer `404 not_found`.
 - Configuration ([ui_test.go](../../internal/config/ui_test.go)): the role takes `ui.legal`, refuses a text above 64 KiB naming the
   key, and refuses `ui.readme` as a key of another section
   ([bastion_role_test.go](../../internal/config/bastion_role_test.go)).
@@ -5484,6 +5574,131 @@ Acceptance criteria:
   and the values schema refuses a text above 64 KiB.
 - Architecture ([bastion_test.go](../../internal/archtest/bastion_test.go)): the renderer and the language rule are allowed in
   `internal/bastion/legal` only, and an import of a module package by the renderer would be named.
+
+## The public catalogue: the wire of the Bastion's web interface
+
+W-35, the owner's answers of 2026-11-26, 11:51 to its working paper: "über die Hauptinstanz kann ich die GUI vom Bastion aktivieren um dem
+Nutzer zum Beispiel verfügbare Public-Images und die gefundenen Vulnerabilities anzuzeigen" (Q-BAS-14 revised). A Bastion's read-only web
+interface for anonymous visitors is served from a public catalogue that the main installation builds per registration and the Bastion
+mirrors whole, so that no page view reaches the main installation. This section is the catalogue's wire, built with the interface
+version 8 by W-35's package P5 together with E7 ([ADR-303](../decisions.md#adr-303--the-public-catalogue-travels-on-the-bastion-interface-as-compressed-documents-under-a-change-list));
+the builder (P6), the store and sync at the Bastion (P7) and the pages (P9 to P11) follow it.
+
+### R-BAS-101 · The catalogue's routes: a change list, documents and the public set
+Priority: **P1** · Covers: quader-only
+
+The priority is the one of R-BAS-100, the other requirement of W-35's web interface on this page.
+
+- **Routes** of the Bastion interface (R-BAS-008), with the Bastion token as `Authorization: Bearer` and nothing else
+  ([Q-BAS-350](#q-bas-350--the-catalogue-routes-answer-the-bastion-token-alone-by-the-registrations-switches)):
+
+| Route | Answers | Type |
+|---|---|---|
+| `GET /api/v1/bastion/catalogue?after=<seq>&limit=<n>` | the changes after the cursor `after` (0 for the start), at most `limit`, clamped to the main installation's page | `iface.CatalogueChanges` |
+| `GET /api/v1/bastion/catalogue/document?path=<path>` | one document, gzip-compressed, `application/gzip`, the SHA-256 of its raw bytes as the `ETag` | the document's bytes |
+| `POST /api/v1/bastion/catalogue/documents` `{"paths": [...]}` | several documents in one answer of frames, `application/vnd.quader.catalogue-batch` ([Q-BAS-347](#q-bas-347--the-batch-read-answers-frames-of-a-json-line-and-the-compressed-bytes)) | `iface.CatalogueBatch`, `iface.CatalogueFrame` |
+| `GET /api/v1/bastion/catalogue/public` | the public set: the projects and the repositories (name, format, class, whether the wiki is public) the catalogue shows | `iface.CataloguePublic` |
+
+- **The change list.** Every entry names a document path (R-BAS-103), its `sha256` and `size`, or `deleted`, and a `seq` above the cursor and
+  above the entry before it; `cursor` is the last `seq` answered, `more` says the limit cut the answer, and `reset` that the cursor is no
+  longer valid (the catalogue was rebuilt, a restore reset it): the Bastion reads the list again from 0 and keeps serving what it holds
+  (`CatalogueChanges.Validate`).
+- **Compression and the address** ([Q-BAS-346](#q-bas-346--a-document-travels-gzip-compressed-and-is-addressed-by-its-raw-bytes)). A document travels and is kept gzip-compressed, each document compressed alone.
+  Its `sha256` and `size`, in an entry, in a frame and in the single read's `ETag`, are those of the raw bytes: a document's address does
+  not change with the compressor. The Bastion decompresses what it receives, to at most the size it was told, and verifies the SHA-256
+  before it keeps the compressed bytes.
+- **The batch read** ([Q-BAS-347](#q-bas-347--the-batch-read-answers-frames-of-a-json-line-and-the-compressed-bytes)). One to `cataloguebounds.BatchMaxPaths` paths of the grammar, none twice (else `400`). The
+  answer holds one frame per path in the request's order: a line of JSON (`path`, `sha256`, `size`, `gzipSize`, `missing`) and the
+  document's `gzipSize` compressed bytes; a path the catalogue does not hold, or a documentation path while `docs` is off, is a frame
+  with `missing: true` and no bytes. The main installation stops before the frame that would take the answer's compressed bytes above
+  `cataloguebounds.BatchMaxBytes`, and answers at least one frame; the Bastion asks again for the paths the answer did not reach.
+- **The feed** ([Q-BAS-349](#q-bas-349--a-catalogue-entry-of-the-feed-names-no-registration-and-neither-does-a-configuration-change)). A change of the catalogue writes a feed entry of the kind `catalogue` (R-BAS-015), which names no
+  registration: every Bastion whose web interface is on reads its change list at once instead of at its next poll. A change of `gui` or
+  `docs` is a change of the configuration and travels as `settings` (R-BAS-093).
+- **The bounds** ([Q-BAS-345](#q-bas-345--the-catalogues-bounds-are-figures-outside-the-interfaces-shape)) are figures of `internal/bastion/cataloguebounds`, outside the interface's shape, set from the
+  measurement of the catalogue's size of 2026-11-26 ([developer/bastion.md](../developer/bastion.md)): a change list's page of 5,000
+  entries without a limit and 10,000 at most, a batch of 5,000 paths and 8 MiB of compressed bytes, a document of 16 MiB raw at most.
+
+*Built on 2026-11-26 (W-35's P5 with E7), the wire and the routes:* [catalogue.go](../../internal/bastion/iface/catalogue.go),
+[bounds.go](../../internal/bastion/cataloguebounds/bounds.go), [bastion_catalogue_api.go](../../internal/api/v1/bastion_catalogue_api.go)
+and the four operations of the OpenAPI tag `bastion`. Until the builder exists (W-35's P6) the routes answer by the switches as R-BAS-102
+says and, past them, an empty change list (its cursor the request's), an empty public set, `404 not_found` for every document and a
+missing frame for every path of a batch. *Not built:* the builder and its table (P6, migrations 00146 and 00147), the writer of the feed
+kind `catalogue` (P6), the sync, the store and the frames' reading at the Bastion (P7).
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/iface`): the change list's order and cursor, the frames written and read back with their bounds, a batch of
+  one to the bound of paths (`TestR_BAS_101_TheCatalogueChangeListHoldsItsOrder`, `TestR_BAS_101_TheBatchReadIsFramed`).
+- Unit (`internal/api/v1`): the four routes answer by the switches and as the grammar says
+  (`TestR_BAS_102_TheCatalogueRoutesAnswerByTheSwitches`).
+
+### R-BAS-102 · The switches gui and docs
+Priority: **P1** · Covers: quader-only
+
+- `switches.gui` and `switches.docs` are members of the registration's configuration (R-BAS-093), set on the card (R-UI-240), off for a new
+  registration, delivered with the handshake and changed by a `settings` entry of the feed in about 3 s.
+- **gui** switches the Bastion's web interface: while it is off, every catalogue route answers `404 not_found` and the Bastion serves no
+  page (its pages answer `404` as every path outside the package families does, R-BAS-003), stops its sync, makes its `catalogue/` tree
+  unreadable and lets the sweep delete it; the main installation deletes the registration's catalogue (P6, P7, P9).
+- **docs** switches the documentation of the web interface, and is effective only with `gui`: while it is off, a documentation path of the
+  grammar (`CataloguePath.Documentation`: the README, the docs tree, its entries and files) answers `404 not_found` on the single read and
+  is a missing frame of a batch, and the builder builds none (P11).
+- The token reads only its own registration's catalogue: the routes take the registration from the recognition of the token, never from
+  the request ([Q-BAS-350](#q-bas-350--the-catalogue-routes-answer-the-bastion-token-alone-by-the-registrations-switches)).
+
+*Built on 2026-11-26 (P5 with E7):* the switches on the wire and the routes' answers by them. Until E8 stores a configuration the main
+installation answers the interim one, whose `gui` and `docs` are off ([Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour)), so every catalogue route answers `404 not_found`.
+*Not built:* the switches on the card (E12), everything the switches start and stop at the Bastion (P7, P9) and at the builder (P6).
+
+Acceptance criteria:
+
+- Unit (`internal/api/v1`, `TestR_BAS_102_TheCatalogueRoutesAnswerByTheSwitches`, 0.2 s, no data): with `gui` off the four routes answer
+  `404 not_found`; with it on and `docs` off a documentation path answers `404` and names the documentation.
+
+### R-BAS-103 · The grammar of a document's path
+Priority: **P1** · Covers: quader-only
+
+A document of the catalogue is named by a path of this grammar (`iface.CataloguePath`, `ParseCataloguePath`; [Q-BAS-348](#q-bas-348--a-document-path-is-canonical-segment-by-segment-and-names-packages-by-their-catalogue-id)):
+
+| Path | Document |
+|---|---|
+| `index/<n>` | a page of the index of public packages |
+| `packages/<id>` | a package (`<id>` is the package's catalogue ID) |
+| `packages/<id>/versions` | its versions list |
+| `packages/<id>/versions/<v>` | a version |
+| `packages/<id>/versions/<v>/readme`, `…/vulnerabilities`, `…/signatures`, `…/contents`, `…/docs` | the version's README, open findings, signatures, contents and docs tree |
+| `packages/<id>/versions/<v>/docs/entries/<type>/<name>` | an entry of the docs tree |
+| `packages/<id>/versions/<v>/docs/files/<file...>` | a file of the docs tree |
+| `packages/<id>/versions/<v>/state` | the times of the version's documents (built, checked, scanned) |
+| `state` | the times of the catalogue as a whole |
+| `setup/<project>/<repo>/<client>[/<id>/<v>]` | the client set-up of a repository, or of a package's version (by the package's catalogue ID) |
+| `files/<project>/<repo>/folder[/<path...>]` | a folder's listing of a generic repository (the root without a path) |
+| `files/<project>/<repo>/file/<path...>` | a generic file's description |
+| `files/<project>/<repo>/setup/<client>/<path...>` | a generic file's set-up per client |
+| `signatures/objects/<sha256>` | a signature's original (64 lowercase hex) |
+| `signing/trusted-root.json`, `signing/chain.pem` | the anchors to verify signatures offline |
+
+- **One spelling.** A path is written segment by segment; every byte of a value outside the unreserved characters of RFC 3986
+  (`A-Z a-z 0-9 - . _ ~`) is `%XX` with upper-case hex, and the parser refuses every other spelling: an unreserved character encoded, a
+  lower-case hex digit, a `%` without two digits. So a document has exactly one path, and the writer and the parser are each other's inverse.
+- **What no value holds.** No value contains `/` (an encoded slash is refused), none is `.` or `..`, none is empty, and each is valid UTF-8
+  of at most 512 bytes without a control character; a path is at most 4 KiB. A name that holds a `/`, as npm's scoped names do, is never a
+  segment: packages are named by their catalogue ID, and a generic file's path is one segment per path segment. A generic file whose name
+  holds a control character or invalid UTF-8 has no path and is not in the catalogue; the builder skips it (P6).
+- **Times are not content** (a duty of the builder, P6; [Q-BAS-348](#q-bas-348--a-document-path-is-canonical-segment-by-segment-and-names-packages-by-their-catalogue-id)): a document carries no time of its building or checking
+  (`builtAt`, `checkedAt`, `syncedAt`, `scannedAt` and the like). Those times go into the version's `state` document or the catalogue's
+  `state`, so that a document changes only with its content: measured on 2026-11-26, every npm vulnerabilities document changed every 15
+  minutes with nothing published, and 14,200 Ansible entries were 14,200 distinct documents where 1,264 were left without the time
+  fields.
+
+*Built on 2026-11-26 (P5 with E7):* the grammar as pure functions. *Not built:* the builder's documents (P6) and its duty above.
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/iface`, `TestR_BAS_103_TheCataloguePathGrammarRoundTrips`, milliseconds): every form is written and read back to
+  the same value, `+`, `:`, a space, `%`, `?` and non-ASCII letters round-trip, and dot segments, encoded slashes in either case, empty
+  segments, other spellings and unknown forms are refused.
 
 ## Deferred
 
@@ -5660,6 +5875,9 @@ the Bastion caches the bytes; a cached artifact is served to another caller only
 caller may read it (an answer kept for the bound). The Bastion's own token identifies the Bastion and may only have tokens
 checked; it reads no package." The development agent records no revisit condition.
 
+*Revised on 2026-11-26 (W-35, R-BAS-101, [Q-BAS-350](#q-bas-350--the-catalogue-routes-answer-the-bastion-token-alone-by-the-registrations-switches)):* the Bastion's own token also reads the public catalogue of its registration
+while its web interface is on: what an anonymous caller reads anyway, stripped of internal identities. It still reads no package.
+
 **Applied in the spec:** R-BAS-005, R-BAS-021, R-BAS-022.
 
 ### Q-BAS-8 · Answers are kept for a period and a revocation feed drops them within seconds
@@ -5807,10 +6025,16 @@ session, no UI." The development agent records no revisit condition.
 
 **Applied in the spec:** R-BAS-003, R-BAS-019.
 
+*Superseded by the owner on 2026-11-26* (W-35, his answers of 11:51): "über die Hauptinstanz kann ich die GUI vom Bastion aktivieren um dem
+Nutzer zum Beispiel verfügbare Public-Images und die gefundenen Vulnerabilities anzuzeigen". A Bastion serves a read-only web interface for
+anonymous visitors, switched on per registration (R-BAS-102), from a catalogue it mirrors (R-BAS-101); there is still no login and no
+session at a Bastion, and package clients keep their tokens. [ADR-303](../decisions.md#adr-303--the-public-catalogue-travels-on-the-bastion-interface-as-compressed-documents-under-a-change-list).
+
 ### Q-BAS-15 · The Bastion is configured only through its chart
 
 Status: **Decided by the owner on 2026-11-02** — option (a). *Superseded by the owner on 2026-11-26 ([Q-BAS-323](#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation)) for every value the table of R-BAS-093 names: a Bastion's switches, limits, throughput and egress
-addresses come from its registration; the chart keeps the rest. Today, until E8 and E9a land, this decision is what the code does.*
+addresses come from its registration; the chart keeps the rest. Today, until E8 and E9a land, this decision is what the code does. The
+switches `gui` and `docs` of W-35 are members of the same configuration (R-BAS-102).*
 
 Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
 
@@ -6273,8 +6497,8 @@ body; npm and NuGet have none.
 
 **Applied in the spec:** R-BAS-014.
 
-*Superseded on 2026-11-26 by the owner's [Q-BAS-336](#q-bas-336--the-bastion-refuses-a-write-itself):* the Bastion refuses a write itself in one of four error
-shapes ([Q-BAS-337](#q-bas-337--a-bastions-own-refusals-take-one-of-four-error-shapes-a-format-declares)), and the format declares its read
+*Superseded on 2026-11-26 by the owner's [Q-BAS-336](#q-bas-336--the-bastion-refuses-a-write-itself):* the Bastion refuses a write itself in one of five error
+shapes ([Q-BAS-337](#q-bas-337--a-bastions-own-refusals-take-one-of-five-error-shapes-a-format-declares)), and the format declares its read
 routes with a body. *Today, until E15 lands:* the probe of option (a) runs.
 
 ### Q-BAS-39 · The Bastion's own refusals are problem details
@@ -6604,7 +6828,7 @@ carries it.
 
 **Applied in the spec:** R-BAS-004; code: `internal/errs/codes.go`, `internal/api/v1/bastion_*_api.go`, `internal/app/wire_bastion.go`.
 
-### Q-BAS-54 · The role's process reuses the shell of the others and answers `bastion_not_served` until the engine exists
+### Q-BAS-54 · The role's process reuses the shell of the others and answers `not_found` until the engine exists
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The placeholder engine it names is gone: the engine
 ([Q-BAS-100](#q-bas-100--one-implementation-of-the-link-the-budget-the-sweep-and-the-cache-use-and-the-role-builds-real-components-only)) is the handler of the client listener.
@@ -7119,13 +7343,13 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) Refuse on the method alone | Simple | Trivial | The audit `POST` could not be forwarded |
 | (c) Refuse only the probe | Narrow | Nothing else changes | A forwarded write would reach the handler |
 
-**Choice:** (a). The refusal is rendered by the format (`WriteError`, R-ARCH-023): npm's body carries `bastion_read_only` and the
+**Choice:** (a). The refusal is rendered by the format (`WriteError`, R-ARCH-023): npm's body carries `read_only` and the
 detail `This is a read-only Bastion of <server.base_url>; publish to <server.base_url>/api/npm/<key>/` (`/files/<key>/` for the
 raw file routes, which call the observer themselves with the kinds `download`, `metadata` for a listing, `upload` and `delete`).
 A `GET` on an `Admin` route is not a write and is decided as the caller's own request. The class label of a probe in
 `quader_bastion_forwarded_requests_total` is `probe`.
 
-**Rationale:** the Bastion token makes every write `bastion_read_only` (R-BAS-014); the kind and the action are what the format
+**Rationale:** the Bastion token makes every write `read_only` (R-BAS-014); the kind and the action are what the format
 declared for the route, so no route table is copied. The development agent would revisit the `Admin`-with-`read` case if a format
 adds a route of that shape that a Bastion must forward.
 
@@ -7640,7 +7864,7 @@ while the main installation is down) the setting is not known.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `503 main_unreachable` until the first handshake (chosen) | Neither admitted nor refused as a credential problem | Honest: the Bastion does not know; the client retries, as for an unseen token | A warm cache serves no anonymous request until the main installation answered once |
+| (a) `503 unavailable` until the first handshake (chosen) | Neither admitted nor refused as a credential problem | Honest: the Bastion does not know; the client retries, as for an unseen token | A warm cache serves no anonymous request until the main installation answered once |
 | (b) `401 credentials_required` | Unknown means off | Safe | A wrong statement to a client: anonymous access may be on; clients stop retrying |
 | (c) Admit from the cache | Unknown means on | Availability | Serves content the main installation may have closed to anonymous readers |
 
@@ -8052,7 +8276,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 Context: with anonymous access off (the default), the authentication stage answered a probe - recognized, `Quader-Bastion-Probe: 1`, no
 credential of a caller by design - `401 credentials_required` before the router ran, so `npm publish` through a Bastion got a `401`
-instead of R-BAS-014's `403 bastion_read_only`. The tests had used a stand-in authentication that admitted every request.
+instead of R-BAS-014's `403 read_only`. The tests had used a stand-in authentication that admitted every request.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -8060,7 +8284,7 @@ instead of R-BAS-014's `403 bastion_read_only`. The tests had used a stand-in au
 | (b) Admit it as the registration | The Bastion principal | Names the Bastion in the log | A principal the decision point should never see would reach the route; the rate limits would charge the Bastion |
 | (c) Answer the probe in the Recognize stage | No router | Simple | The stage does not know the route, its kind or the format's error shape, which R-BAS-014 asks for |
 
-**Choice:** (a). A probe never passes the route match: a route that is not a read route is refused `403 bastion_read_only`, a read route
+**Choice:** (a). A probe never passes the route match: a route that is not a read route is refused `403 read_only`, a read route
 that takes a body is answered `204` (Q-BAS-74), and a path with no route ends in the format's or the core's `404`. Only forwards of the
 package families reach the stage at all (Q-BAS-115). A forwarded request without a caller credential that is no probe is still the
 stage's, and refused while anonymous access is off.
@@ -8135,7 +8359,7 @@ refusal of the Bastion's own token: the replica turned unreachable, once per pol
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Refuse what cannot be read as the router will read it: a percent-encoding in the family, format or key segment, and a `.` or `..` segment, answer `404 bastion_not_served` (chosen) | The Bastion still compares what it received; it just does not classify an ambiguous spelling | No format or router knowledge in the Bastion; a test holds the rule against `net/http.ServeMux` | A client that encodes a letter of the family, format or key (none does) is refused |
+| (a) Refuse what cannot be read as the router will read it: a percent-encoding in the family, format or key segment, and a `.` or `..` segment, answer `404 not_found` (chosen) | The Bastion still compares what it received; it just does not classify an ambiguous spelling | No format or router knowledge in the Bastion; a test holds the rule against `net/http.ServeMux` | A client that encodes a letter of the family, format or key (none does) is refused |
 | (b) Decode every segment and forward the decoded form | The Bastion reads as the router does | Equal reading | Changes the cache key and the bytes that reach the main installation; two spellings of one URL are two readings |
 | (c) Link the main installation's router | Same code | Exact | Against R-BAS-001 (the Bastion links none of the main installation's code) |
 
@@ -8143,7 +8367,7 @@ refusal of the Bastion's own token: the replica turned unreachable, once per pol
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) It refuses the Bastion's token only in the answer to a call the Bastion makes itself: handshake, feed, check, download batch; the same answer to a forward is a bad answer (`502 main_failed`), the gauge stays and the link is not told (chosen) | The path of a forward is the caller's, so the answer to it can come from any route | The only calls whose path the Bastion chooses are the ones that count | A really revoked token is noticed by the next feed poll (within `poll_interval`), not by a forward |
+| (a) It refuses the Bastion's token only in the answer to a call the Bastion makes itself: handshake, feed, check, download batch; the same answer to a forward is a bad answer (`502 bad_gateway`), the gauge stays and the link is not told (chosen) | The path of a forward is the caller's, so the answer to it can come from any route | The only calls whose path the Bastion chooses are the ones that count | A really revoked token is noticed by the next feed poll (within `poll_interval`), not by a forward |
 | (b) Keep reading it on a forward | Nothing changes | One mechanism | Any caller turns the replica unreachable by naming a route of the interface in a spelling the Bastion does not catch |
 | (c) Tell the two apart by a header of the answer | The main installation marks its answers | Exact | Needs a change of the interface, and `InterfaceVersion` |
 
@@ -8184,7 +8408,7 @@ change so often that the grace period stops helping.
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: security findings P3 and B4. A budget slot is held until the response body ends, and the body was read at the client's write speed, so seventeen connections that took their tarball one
-socket buffer at a time held every anonymous slot (everybody else got `503 bastion_busy`), and a second caller of the same cold key waited behind a slow leader without a bound.
+socket buffer at a time held every anonymous slot (everybody else got `503 busy`), and a second caller of the same cold key waited behind a slow leader without a bound.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -8196,7 +8420,7 @@ For the waiters:
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A waiter that has waited 30 s answers `503 bastion_busy` with `Retry-After: 1` (chosen) | The retry joins the fetch again or finds the entry | No extra load on a main installation that is slow | The caller retries |
+| (a) A waiter that has waited 30 s answers `503 busy` with `Retry-After: 1` (chosen) | The retry joins the fetch again or finds the entry | No extra load on a main installation that is slow | The caller retries |
 | (b) It makes its own request | N requests after the wait | The caller is served | A slow main installation gets the multiplied load the collapsing exists to avoid |
 
 For the body of a pass-through, which cannot be spooled (an answer above `max_object_bytes`, without `Content-Length`, a document above the limit): the client must take each 32 KiB chunk within 10 s,
@@ -8413,7 +8637,7 @@ Context: finding F-45. `TestR_BAS_026_AFeedPageOfAThousandEntriesIsAppliedAgains
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: the failure scenarios of R-BAS-049 (a replica lost, the main installation failing over, a rolling upgrade) ask for "zero failed iterations". R-HA-052 states the pass condition of its pod-crash row as "no client iteration fails after its own retries". R-BAS-021 lets a forward that meets a connect or TLS error, a timeout or an unmarked `5xx` answer `502 main_failed` or `504 main_timeout` and keep nothing, and R-BAS-027 lets a replica that cannot handshake serve only what its answers allow. A command for a package the Bastion has not seen is a miss, which is a forward to the main installation; a fault of the main installation that meets that forward reaches the client.
+Context: the failure scenarios of R-BAS-049 (a replica lost, the main installation failing over, a rolling upgrade) ask for "zero failed iterations". R-HA-052 states the pass condition of its pod-crash row as "no client iteration fails after its own retries". R-BAS-021 lets a forward that meets a connect or TLS error, a timeout or an unmarked `5xx` answer `502 bad_gateway` or `504 gateway_timeout` and keep nothing, and R-BAS-027 lets a replica that cannot handshake serve only what its answers allow. A command for a package the Bastion has not seen is a miss, which is a forward to the main installation; a fault of the main installation that meets that forward reaches the client.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -8539,7 +8763,7 @@ remote member served (R-REPO-048's exposure set), which is the only case with a 
 development agent would revisit this if a `content` entry could name every virtual repository of a format.
 **Applied in the spec:** R-BAS-015 table; code: `internal/bastionmain/feed.go`.
 
-### Q-BAS-147 · Only a 403 `bastion_read_only` counts as a `read_only` refusal, fresh or replayed
+### Q-BAS-147 · Only a 403 `read_only` counts as a `read_only` refusal, fresh or replayed
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -8899,7 +9123,7 @@ Context: a cached entry replays the representation headers only ([respond.go](..
 Status: **Decided by the planner in the owner's absence** — selected from the options below; the owner reviews it.
 
 Context: a layer of gigabytes takes minutes to fill. A caller's `Range` on a miss waits for the whole fill before its first byte, and a
-second caller of the same key waits 30 s and is then answered `503 bastion_busy` ([fill.go](../../internal/bastion/engine/fill.go)
+second caller of the same key waits 30 s and is then answered `503 busy` ([fill.go](../../internal/bastion/engine/fill.go)
 `waitFill`, [readflow.go](../../internal/bastion/engine/readflow.go) `waitLeader`). A rollout whose pods pull one new image through a
 Bastion is exactly that.
 
@@ -9235,7 +9459,7 @@ method; the token service answers `GET` and `POST`, the catalog `GET` and `HEAD`
 |---|---|---|---|
 | (a) They tell the marking only for the methods they answer; any other method gets the route's own `405` (chosen) | `tellRoute` with the route's methods | A probe learns what the route does with the method; nothing reads a body for a method no route serves | A probe of such a method costs the main installation the `405` instead of a kept refusal of `403` |
 | (b) For every method | One call | Simple | A `PUT /v2/_token` would be answered `204`, and the Bastion would forward its body only to receive the `405` |
-| (c) Every other method as a write, `403 bastion_read_only` | A refusal of the probe | Kept by the Bastion like every write refusal | A write refusal for a route that writes nothing; the client is told the wrong reason |
+| (c) Every other method as a write, `403 read_only` | A refusal of the probe | Kept by the Bastion like every write refusal | A write refusal for a route that writes nothing; the client is told the wrong reason |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-051; code: [bastion.go](../../internal/api/registry/bastion.go).
 
@@ -9359,7 +9583,7 @@ of an artifact fill do (R-BAS-054). A document is shared only with full readers 
 |---|---|---|---|
 | (a) A waiter follows a document fill with a usable `full` shape answer or a check that says `full`; any other waits for the commit and decides again; an artifact fill is followed after a conditional request as R-BAS-054 says (chosen) | One permission rule per kind | No partial reader is served a shared document from a spool | A partial reader of a large document waits for the fill |
 | (b) A conditional request for documents too | As for artifacts | No wait | A `304` to a shared document's validator is not the partial reader's own answer (Q-BAS-107) |
-| (c) No following of documents | Wait for every document | Simple | A `freshclam` storm of a cold container answers `503 bastion_busy` after 30 s |
+| (c) No following of documents | Wait for every document | Simple | A `freshclam` storm of a cold container answers `503 busy` after 30 s |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-054; code: `followFill` in [fill.go](../../internal/bastion/engine/fill.go).
 *Extended on 2026-11-22, built on 2026-11-23 (R-BAS-085):* a usable `full` answer for a document fill also means a package answer `full`
@@ -10913,7 +11137,7 @@ client protocol's shape and names the address to publish to (the development age
 Hauptinstanz." It supersedes Q-BAS-38, Q-BAS-74's consequence for a Bastion, and Q-BAS-118. **Applied in the spec:** R-BAS-014, R-BAS-051,
 R-BAS-058, R-BAS-095.
 
-### Q-BAS-337 · A Bastion's own refusals take one of four error shapes a format declares
+### Q-BAS-337 · A Bastion's own refusals take one of five error shapes a format declares
 
 Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -10927,6 +11151,15 @@ Context: the owner's Q-BAS-336 gives up the format's own refusal shape. A client
 | (c) The format ships a template | | Every shape | Format knowledge as data the Bastion interprets |
 
 **Choice:** (a); kit check 19 holds `WriteError` to the declared shape. **Applied in the spec:** R-BAS-029, R-BAS-058, R-BAS-095.
+
+*Amended in place on 2026-11-26 by E7, from the measurement of what each client prints (developer/bastion.md, "What each client prints
+for a refusal"):* a fifth shape, `galaxy`, `{"errors": [{"status", "code", "title", "detail"}]}`, the list a Galaxy's API answers, is
+Ansible Galaxy's. ansible-galaxy 2.17.14 reads no problem details (it printed `Message: Forbidden Code: Unknown` for them, and a `429` on a
+collection's version list made it exit 250 with "Unexpected Exception … 'results'" against the Bastion of that day), while it prints the
+detail and the code of the Galaxy's own list. None of the four is that list (`distribution` names a registry code and an object as its
+detail), and a fifth shape is a raise of the interface, which version 8 is anyway. The table of R-BAS-095 holds the five with what each
+client printed. The development agent would revisit a format's shape, which is a fact of the format and no raise, if a client is found
+that reads another shape better.
 
 ### Q-BAS-338 · A Bastion reveals nothing of the main installation
 
@@ -11003,6 +11236,155 @@ Context: R-BAS-100. The Bastion has no web interface yet; the owner: "Je kleiner
 | (b) A route of its own now (`/legal/…` as HTML) | | The pages are reachable at once | A listener's family and a page design the web interface would replace |
 
 **Choice:** (a).
+
+### Q-BAS-345 · The catalogue's bounds are figures outside the interface's shape
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the page of the change list, the batch and the largest document are numbers a measurement sets and may move; every exported
+declaration of `internal/bastion/iface` is the interface's surface, and a change of it raises the version (R-BAS-009).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A leaf package of their own, `internal/bastion/cataloguebounds`, that both sides import (chosen) | The main installation clamps to them, a Bastion asks for at most them | A measurement moves a figure without a raise; one place | A Bastion of another release may ask for more than it gets, which `more` and a partial batch already handle |
+| (b) Constants of `iface` | In the surface | One package | Every figure change is a lockstep upgrade |
+| (c) A member of the handshake | The main installation tells its figures | Exact | A raise now for figures that are not shape |
+
+**Choice:** (a), with the measured figures of 2026-11-26: a page of 5,000 entries, 10,000 at most; a batch of 5,000 paths and 8 MiB
+compressed; 16 MiB raw per document. **Applied in the spec:** R-BAS-101.
+
+### Q-BAS-346 · A document travels gzip-compressed and is addressed by its raw bytes
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the catalogue measured 159 MiB raw and 45 MiB gzip for 2,670 public versions (3.5 to 1, each document alone); the Bastion verifies
+what it stores.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Kept and sent gzip-compressed, the SHA-256 and the size of the raw bytes (chosen) | The Bastion decompresses to verify, bounded by the size it was told | An address that does not change with the compressor's version or level; the bytes a page needs are the compressed ones | A decompression per document received |
+| (b) The SHA-256 of the compressed bytes | Verify without decompressing | Cheaper at the Bastion | A new compressor changes every address and the builder sends every document again |
+| (c) Raw on the wire, HTTP's own compression | `Content-Encoding` per answer | Standard | Compressed again per request; the batch's frames are no HTTP answers |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-101.
+
+### Q-BAS-347 · The batch read answers frames of a JSON line and the compressed bytes
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the measurement of 2026-11-26 derived 12 minutes of round trips for 36,043 documents read one at a time at 20 ms, more than their
+bytes cost.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `POST …/catalogue/documents` with the paths, answered by frames: a JSON line, then `gzipSize` bytes (chosen) | Request order; a missing document is a frame without bytes; the answer stops at a bound | The bytes as they are kept, no encoding of them; a reader streams frame by frame | A media type of the interface's own |
+| (b) A JSON answer with base64 documents | One JSON value | Ordinary | A third more bytes, and the whole answer held to parse |
+| (c) multipart/mixed | A standard | Tools | Boundaries to scan for in compressed bytes; headers per part for three facts |
+
+**Choice:** (a); the single read stays for one document. **Applied in the spec:** R-BAS-101.
+
+### Q-BAS-348 · A document path is canonical segment by segment and names packages by their catalogue ID
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: W-35's P5 asks for pure functions with a round-trip parser that refuses dot segments and encoded slashes; the measurement found no
+paths for generic files and documents that changed with their times alone.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every byte outside RFC 3986's unreserved characters percent-encoded upper-case, one spelling read; no `/` in a value; packages by their catalogue ID, generic files segment by segment; the times in a `state` document (chosen) | One path per document; a scoped npm name needs no slash in a segment | A store, a cache and a sitemap key on the text; no traversal | A generic name with a control character has no path |
+| (b) `url.PathEscape` and the router's decoding | Lenient | Familiar | Several spellings of one document; `%2F` as a slash or not by reader |
+| (c) Names, with `%2F` allowed for scopes | Readable | — | An encoded slash is exactly what the plan refuses |
+
+**Choice:** (a). The times of building and checking belong to `packages/<id>/versions/<v>/state` and `state`, a duty of the builder (P6).
+**Applied in the spec:** R-BAS-103.
+
+### Q-BAS-349 · A catalogue entry of the feed names no registration, and neither does a configuration change
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the feed is one for all registrations (R-BAS-015). A change of a catalogue concerns one registration, and so does
+`bastion.configuration.changed` (R-BAS-093), which the feed maps to `settings`, so every replica of every Bastion handshakes.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The kind `catalogue` without a list, and `settings` as it is (chosen) | Every Bastion with the web interface on reads its change list, every replica handshakes | No new member; the cost is bounded by `bastions.max_registrations` times the replicas, a request each, an empty answer for the others | Every Bastion learns that some catalogue or some configuration changed (H-2306) |
+| (b) A list of registration IDs in the entry | Only the named Bastion acts | Fewer requests | A Bastion learns the IDs of the other registrations |
+| (c) No feed kind; the poll | Nothing new | Simplest | A publish shows after the poll, not within the feed's seconds |
+
+**Choice:** (a). The development agent would revisit it if the handshakes or change-list reads of many Bastions became a load.
+**Applied in the spec:** R-BAS-093, R-BAS-101.
+
+### Q-BAS-350 · The catalogue routes answer the Bastion token alone, by the registration's switches
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the catalogue is what an anonymous visitor reads; the routes are interface routes (R-BAS-008).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The Bastion token alone, its own registration's catalogue, `404 not_found` while `gui` is off, documentation only while `docs` is on (chosen) | The recognition names the registration; the switches come from its configuration | Nothing to read while the interface is off; no other registration's catalogue reachable | A holder of the token reads what a visitor reads, in bulk (H-2305) |
+| (b) Anonymous | The main installation's public reads | No token | The main installation's view, not the stripped catalogue |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-005, R-BAS-101, R-BAS-102.
+
+### Q-BAS-351 · Until E15, a probe is recognized by its form, and a read route with a body is the format table's
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: version 8 removes `Quader-Bastion-Probe` and `Quader-Bastion-Route` (R-BAS-095), so that E15 needs no raise; the probe itself stays
+until E15 refuses writes at the Bastion.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The Bastion forwards a declared read route with a body at once and probes the rest; the main installation reads a probe from its form, a forward of a writing method without a body and without a caller's credential, and refuses every probe at the route match (chosen) | `bastionmain.IsProbe`; no `204` any more | No header; a probe still reaches no handler; an undeclared read route fails closed (H-2293) | A forward of such a route without a body and without a credential is taken for a probe and refused, a request no client sends |
+| (b) Keep the headers until E15 | No change now | — | A second raise for E15 |
+| (c) Refuse writes at the Bastion now | E15's work | — | Not this package's; its five shapes are E15's |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-014, R-BAS-051, R-BAS-095.
+
+### Q-BAS-352 · Until E8, the main installation sends an interim configuration that equals today's behaviour
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: E7 lands the wire before E8 gives a registration a configuration; E9a may apply what arrives before E8 lands.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The registration's revision and handover, `gui` and `docs` off, one rule without a figure for every kind, the chart's flood figures and slots of today, no throughput cap, no ceiling, `enforce`, `custom` (chosen) | `bastionmain.InterimConfiguration` | A Bastion that applies it changes nothing; the revision moves with every change of the handover | Figures held twice until E8 (the chart's defaults and this function) |
+| (b) Q-BAS-327's built-in configuration (the Internet preset, every switch off) | Fail closed | Strict | Changes the limits of every Bastion before anybody set them, and switches the handover off |
+| (c) Revision 0 always | Simpler | — | E9a could not see a change of the handover |
+
+**Choice:** (a). The subject's `limits` in the check answer and `Quader-Bastion-Limits` are optional on the wire and absent until E8.
+**Applied in the spec:** R-BAS-002, R-BAS-010, R-BAS-093, R-BAS-096, the wire.
+
+### Q-BAS-353 · A format declares its read routes with a body below the repository, and kit check 19 holds the list to its routes
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-095's `readWithBody` is a format's fact; the route table already knows every route's method, kind and action.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Declared in `catalog.Facts.Bastion.ReadWithBody` as patterns below the repository, one per spelling; the handshake's table prefixes `/api/<format>/{project}/{repo}` (and `/v2/{project}/{repo}` for the registry root) and adds the token service's `POST /v2/_token`; kit check 19 fails a read route of a writing method whose examples no entry matches and an entry no such route's example matches (chosen) | Data, held to the routes | A declaration a reviewer reads; the kit catches a forgotten one at the main installation | A route with an optional part is declared once per spelling (npm's `audits[/quick]`) |
+| (b) Derived from the route table | No declaration | Never forgotten | A template's grammar (`[/quick]`, a custom matcher) is not a pattern the Bastion can match |
+
+**Choice:** (a). The kit also requires every format to declare its `errorShape`; that `WriteError` renders the declared shape is E15's
+duty. **Applied in the spec:** R-BAS-057, R-BAS-058, R-BAS-095.
+
+### Q-BAS-354 · The contact headers are optional and recorded in the contact's event until E8
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `Quader-Bastion-Edge-Limit` and `Quader-Bastion-Catalogue-Kept` report what only later packages know (the edge figure E9a renders,
+whether the catalogue is kept P7 decides); the contact's row has no columns for them and this package adds no migration.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Optional; a malformed value answers `400`; recorded in `bastion.contact`'s details and the contact's fingerprint, the row's columns with E8 (chosen) | A replica sends what it knows | No value claimed that nobody measured | The card has nothing to show until E8 |
+| (b) Required, `off` and `false` until known | Always present | Uniform | A false statement about the edge and the store |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-010, the wire.
 
 ### Q-BAS-425 · The headers of a forwarded answer pass an allowlist, and a format's need is a replay header
 
@@ -11271,7 +11653,10 @@ namespace, accepted from any address. Its holder can ask the check about any cre
 the main installation's throttle and its `token.rejected` events count against that address; add `artifact.downloaded` events
 for any principal and path, at most `bastions.downloads.events_per_second` a second (Q-BAS-117; always marked with the registration's
 name, so attributable to the Bastion, not to the principal);
-and read the token and principal IDs of the feed. It cannot read a package, write content or issue a token. What makes it real: a
+and read the token and principal IDs of the feed. It cannot read a package, write content or issue a token. Since interface version 8
+it also reads the registration's public catalogue while the web interface is on (R-BAS-101,
+[H-2305](../security/bastion.md#h-2305--the-bastion-token-reads-its-registrations-public-catalogue-in-bulk)) and learns the configuration the
+handshake delivers ([H-2307](../security/bastion.md#h-2307--a-bastions-configuration-tells-its-holder-the-rules-and-networks-of-its-place)). What makes it real: a
 compromised Bastion pod or a leaked Secret; revoking the token ends it, and the last contact on the screen of R-BAS-007 shows
 unknown addresses.
 
@@ -11293,7 +11678,7 @@ Stage: R-BAS-025 and R-BAS-035. Subject: the availability of the Bastion for ano
 
 Dormant until phase 5b; then live on a Bastion whose main installation has `public` repositories. Per-address limits and blocks do
 not bound a flood spread over many addresses. The anonymous share of `max_concurrent` bounds what reaches the main installation,
-and authenticated callers keep their share, but legitimate anonymous callers wait or get `503 bastion_busy` while it lasts. What
+and authenticated callers keep their share, but legitimate anonymous callers wait or get `503 busy` while it lasts. What
 makes it real: a botnet against a public repository; the edge limit (R-BAS-038) and the network provider are the next lines.
 
 *Revised on 2026-11-26:* the owner's [Q-BAS-326](#q-bas-326--an-anonymous-ceiling-per-bastion-and-the-one-for-one-paths-removed) adds a ceiling for all anonymous callers of a Bastion together
@@ -11529,7 +11914,7 @@ Live on every Bastion. The fills in progress of a replica hold together at most 
 temporary storage, and the chart sizes the volume from it, so the pod is not evicted for a burst of cold requests for large artifacts. What
 the bound costs: a fill that would pass it is passed through unkept and counted in `quader_bastion_cache_errors_total{op="spool"}`, so
 under a burst of large cold artifacts the cache keeps fewer of them (a client retrying later finds the spool free); and a request with
-`Range` or a conditional header, which is answered from the spool, answers `502 main_failed`; one whose spool fails during the transfer is cut (Q-BAS-123). A spool file lives until the last client of its fill is done, so a
+`Range` or a conditional header, which is answered from the spool, answers `502 bad_gateway`; one whose spool fails during the transfer is cut (Q-BAS-123). A spool file lives until the last client of its fill is done, so a
 slow client keeps its file for as long as it reads.
 With the volume backend the spool is a directory of the cache volume: the chart checks that `cacheVolume.size` holds `max_bytes` plus
 the spool, but nothing watches what else a volume holds, and a volume (`emptyDir`) filled by something else is still evicted. What makes

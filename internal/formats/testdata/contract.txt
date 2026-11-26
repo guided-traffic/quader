@@ -883,11 +883,17 @@ formats.ViewReadme: value = (repeated, place 2 of its group)
 formats.ViewSummary: value ViewFields = 1 << iota (place 0 of its group)
 formats.Virtual: value = catalog.Virtual
 formats.Volatile: value = (repeated, place 6 of its group)
+catalog.BastionFacts: field ErrorShape ErrorShape
 catalog.BastionFacts: field RateLimitedStatus int
+catalog.BastionFacts: field ReadWithBody []BodyRoute
 catalog.BastionFacts: field ReplayHeaders []string
 catalog.BastionFacts: field RetryAfterMax time.Duration
 catalog.BastionFacts: method CapRetryAfter(time.Duration) time.Duration
 catalog.BastionFacts: method RateLimited() int
+catalog.BastionFacts: method Shape() ErrorShape
+catalog.BodyRoute: field Method string
+catalog.BodyRoute: field Template string
+catalog.BodyRoute: method Matches(string) bool
 catalog.Class: method Valid() bool
 catalog.Class: type string
 catalog.Entry: embedded Facts
@@ -903,6 +909,7 @@ catalog.Entry: field VersionOrder VersionOrder
 catalog.Entry: field VersionPath func(string, string) (string, bool)
 catalog.Entry: method HasSettings() bool
 catalog.Entry: method ValidateSettings(Class, json.RawMessage) []SettingViolation
+catalog.ErrorShape: type string
 catalog.Exposure: field Exposable bool
 catalog.Exposure: field Packages bool
 catalog.Exposure: field Tags bool
@@ -975,6 +982,7 @@ catalog.Versioning: method InRange(string, string) bool
 catalog.Versioning: method Prerelease(string) (bool, bool)
 catalog.Versioning: method ValidateRange(string) error
 catalog.Default: func() *Registry
+catalog.ErrorShapes: func() []ErrorShape
 catalog.NewRegistry: func() *Registry
 catalog.Or: func(*Registry) *Registry
 catalog.PackageChanged: func(int64, string) string
@@ -999,6 +1007,11 @@ catalog.RegistryRootBasePath: value = "/v2/{project}/{key}/"
 catalog.Remote: value Class = "remote"
 catalog.SettingInvalid: value = "invalid_value"
 catalog.SettingNotApplicable: value = "not_applicable"
+catalog.ShapeDistribution: value ErrorShape = "distribution"
+catalog.ShapeGalaxy: value ErrorShape = "galaxy"
+catalog.ShapeNPM: value ErrorShape = "npm"
+catalog.ShapeProblem: value ErrorShape = "problem"
+catalog.ShapeText: value ErrorShape = "text"
 catalog.SubjectName: value PatternSubject = "name"
 catalog.SubjectPath: value PatternSubject = "path"
 catalog.Virtual: value Class = "virtual"

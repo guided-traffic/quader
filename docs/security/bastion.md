@@ -64,7 +64,7 @@ whose disagreement with the main installation could serve bytes.
   reaches every Bastion replica within the feed's poll interval and one round trip (R-BAS-026). During an outage of the main
   installation a revoked token reads on for the grace period (H-383).
 - **Writes.** None reach the main installation as writes: the Bastion sends a bodiless probe, the main installation answers `403
-  bastion_read_only` in the protocol's shape, and no upload body leaves the Bastion (R-BAS-014).
+  read_only` in the protocol's shape, and no upload body leaves the Bastion (R-BAS-014).
 - **Learn about others.** The Bastion sends no cache state (Q-BAS-40), and negative entries go only to callers who read the whole
   repository, and a `404` that is not `absent` is never kept for anybody, so a narrowed reader cannot time hidden names (Q-BAS-42, Q-BAS-124). The time of a hit still tells whether a readable package
   was fetched recently (H-390).
@@ -83,6 +83,7 @@ API key (R-BAS-005).
 | Read the revocation feed: token IDs, principal IDs, qualified repository names `<projectKey>/<repoKey>` (R-BAS-015) | Reach any route on a further endpoint |
 | Submit download events for its cached downloads, marked with its registration (R-BAS-016) | Submit any other audit event type |
 | Make the main installation mark its forwarded responses and refuse writes (R-BAS-013, R-BAS-014) | Turn an anonymous forwarded request into anything but anonymous |
+| Read its registration's configuration in the handshake (R-BAS-093) and, while the registration's web interface is on, its public catalogue (R-BAS-101) | Read another registration's configuration or catalogue, or a catalogue while `gui` is off |
 
 What its holder can still do with those rights is H-386. It is revoked like every token, journaled, and renewed by hand with an
 overlap (R-BAS-006); the Bastion warns 30 days before it expires and alerts when the main installation refuses it (R-BAS-041).
@@ -120,8 +121,8 @@ What the main installation does with a request that claims to come from a Bastio
 | Forwarded headers | Each registration lists the networks its Bastion connects from (`egress`, at most 32, no `/0`); they are not in `server.trusted_proxies`. A Bastion's forwarded client address and host count only for a request whose Bastion token was recognized and that came from its own registration's networks; a request with that token from anywhere else - another registration's network included - and every request of a registration with an empty list is the Bastion's own request, from its address, and its request line says `bastion_egress: "unlisted"`; any request without the token from a Bastion's address - a workload sharing the egress - cannot choose its client address (rate limits, throttle, audit) or its response base URL ([Q-BAS-430](../spec/bastion.md#q-bas-430--a-bastion-is-recognized-by-its-token-its-reports-about-its-callers-count-only-from-its-own-registrations-networks), [Q-BAS-116](../spec/bastion.md#q-bas-116--the-bastions-forwarded-headers-count-only-for-a-recognized-request-from-an-address-of-bastionstrusted_proxies), [H-467](../spec/bastion.md#h-467--behind-the-main-installations-own-ingress-the-forwarded-host-is-what-the-ingress-reports)). The networks are read from the replica's snapshot of the registrations, never per request. | [recognize.go](../../internal/bastionmain/recognize.go), [egress.go](../../internal/bastionmain/egress.go), [snapshot.go](../../internal/bastionmain/snapshot.go), [wire_bastion.go](../../internal/app/wire_bastion.go) |
 | Throttle of rejected Bastion tokens | The stage runs before the authentication stage, so it counts rejected `qdr_bst_` tokens against the address that sent them (a budget of its own, the size of R-AUTH-038's); the token service asks the throttle after its cache, so a throttled address is refused a token the replica does not hold without a lookup, and a known one passes ([Q-BAS-65](../spec/bastion.md#q-bas-65--the-recognition-admits-an-interface-route-on-its-own-proof-throttles-tokens-it-cannot-place-and-counts-the-bastion-in-the-read-class), H-440). `token.rejected` names the request's source; the token's last use records the Bastion's own address | [recognize.go](../../internal/bastionmain/recognize.go), [authenticator.go](../../internal/bastionmain/authenticator.go), [bastion.go](../../internal/auth/token/bastion.go) |
 | Interface routes | Admitted on the recognition alone, as the registration, which holds no grant and is not internal in the decision point ([Q-AUTHZ-320](../spec/authorization.md#q-authz-320--a-bastion-registration-is-not-internal-a-bastion-reads-for-the-caller-it-forwards-for)): the Bastion reads nothing on its own credential; the registration's requests are charged to the read class under its token ([H-438](../spec/bastion.md#h-438--the-interface-calls-of-a-bastion-share-the-read-budget-of-its-token)) | [bastion_services.go](../../internal/api/v1/bastion_services.go), [index.go](../../internal/authz/index.go) |
-| Write probe | Admitted as the anonymous caller for routing only, whatever the levels say; answered at the route match (`403 bastion_read_only` or `204`) before any decision, handler or body read ([Q-BAS-118](../spec/bastion.md#q-bas-118--a-write-probe-is-admitted-as-the-anonymous-caller-for-routing-only), [H-469](../spec/bastion.md#h-469--a-probe-admitted-for-routing-runs-any-handler-below-the-package-families-that-does-not-tell-the-marking-its-route)) | [bastion_services.go](../../internal/api/v1/bastion_services.go) |
-| Check | The caller's credential is validated by the authentication stage of the default endpoint as a direct request from the caller's address: the endpoint's token types, the failed-credential throttle and `token.rejected` apply to that address, never to the Bastion's. The caller's address counts only when the check came from the registration's networks; otherwise the check runs for the address it came from ([Q-BAS-432](../spec/bastion.md#q-bas-432--the-callers-address-a-check-names-counts-only-from-the-bastions-own-networks-too)). A subject that is not usable gets no shapes; the shapes of a usable one are decided on the caller's own subject, as at the main installation's door, with no mark of the Bastion (Q-BAS-148). No `authz.denied` is written, and the request log line stays the registration's ([Q-BAS-119](../spec/bastion.md#q-bas-119--the-check-runs-the-credential-through-a-stage-that-records-nothing-in-the-request-log)). | [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go) |
+| Write probe | Admitted as the anonymous caller for routing only, whatever the levels say; answered at the route match (`403 read_only` or `204`) before any decision, handler or body read ([Q-BAS-118](../spec/bastion.md#q-bas-118--a-write-probe-is-admitted-as-the-anonymous-caller-for-routing-only), [H-469](../spec/bastion.md#h-469--a-probe-admitted-for-routing-runs-any-handler-below-the-package-families-that-does-not-tell-the-marking-its-route)) | [bastion_services.go](../../internal/api/v1/bastion_services.go) |
+| Check | The caller's credential is validated by the authentication stage of the default endpoint as a direct request from the caller's address: the endpoint's token types, the failed-credential throttle and `token.rejected` apply to that address, never to the Bastion's. A subject that is not usable gets no shapes; the shapes of a usable one are decided on the caller's own subject, as at the main installation's door, with no mark of the Bastion (Q-BAS-148). No `authz.denied` is written, and the request log line stays the registration's ([Q-BAS-119](../spec/bastion.md#q-bas-119--the-check-runs-the-credential-through-a-stage-that-records-nothing-in-the-request-log)). | [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go) |
 | Feed | Entries carry IDs and qualified repository names only. A cursor that is gone, from the future beyond the lookback or older than the audit retention, or too far behind, answers `reset`, never a truncated list. An event whose target cannot be read drops every answer. Every journaled event is either mapped or listed with the reason it narrows nothing a Bastion keeps, held to the audit registry by a test; moving a repository to another project and removing or re-roling a project member drop every permission answer ([Q-BAS-120](../spec/bastion.md#q-bas-120--unassigning-a-repository-from-a-project-drops-every-permission-answer-and-every-journaled-event-is-classified)). A restore makes the feed answer reset to a Bastion whose cursor lies before it, because the journal replay re-applies narrowings without writing audit events (R-REPO-061). A narrowed repository and a new claim end the cached answers of the repository and of the virtual repositories over it (`content`), a `global` claim every answer (`grants`), so a name that a member removal, a pattern or a claim took away is not served from a Bastion's cache for the entry's period ([Q-BAS-146](../spec/bastion.md#q-bas-146--a-content-narrowing-and-a-claim-of-scope-members-yield-a-content-entry-a-global-claim-yields-grants)). | [feed.go](../../internal/bastionmain/feed.go) |
 | Download intake | Events are recorded as `artifact.downloaded` marked `origin: bastion` with the registration's name, a time in the future at the time of receipt; a lost, expired or malformed event is counted in `bastion.downloads.dropped`. A batch is charged to its registration by its events (`bastions.downloads.events_per_second`, in units of 100); beyond it the answer is `429` and nothing is recorded ([Q-BAS-117](../spec/bastion.md#q-bas-117--download-events-are-charged-to-their-registration-by-their-count), [H-468](../spec/bastion.md#h-468--the-download-budget-is-per-registration-so-many-registrations-at-their-budget-still-fill-the-audit-buffer)). The time the Bastion reports is trusted ([H-439](../spec/bastion.md#h-439--download-events-enter-the-audit-trail-with-the-time-the-bastion-reports)). | [downloads.go](../../internal/bastionmain/downloads.go) |
 | Last contact | Written at most once a minute per replica, at most 256 rows per registration; a change of a reported value is `bastion.contact`. The values are what the Bastion says about itself, except the address, which is the one the main installation saw. | [contact.go](../../internal/bastionmain/contact.go) |
@@ -199,7 +200,7 @@ Without Valkey every counter and block holds per replica at the configured value
   send 3,000,000 anonymous requests and 1,000,000 misses a minute (600,000 and 30,000 before). What bounds them is the Bastion's capacity
   (`server.max_in_flight` per replica, hits served from the cache), the network provider (H-382), and toward the main installation the
   concurrency budget, which lets at most 16 anonymous requests of a Bastion of two replicas reach it at once and answers the rest
-  `503 bastion_busy` after 2 s; each forward is charged to its caller at the main installation (R-BAS-017). Raising the per-address figures
+  `503 busy` after 2 s; each forward is charged to its caller at the main installation (R-BAS-017). Raising the per-address figures
   therefore widened what one address can do, not what the main installation receives from many.
 - The address the guard counts is only the client's when the chart's `config.server.trusted_proxies` names the ingress controller's pods; the
   chart refuses a render without it while its Ingress is on (Q-BAS-130). Before, every caller shared the controller's address by default: one
@@ -433,13 +434,28 @@ have landed:
 | Egress addresses per registration (built, E13) | A Bastion token makes its forwarded client address count only from its own registration's addresses, no longer from any address of one list for all registrations ([who may speak as a Bastion](#who-may-speak-as-a-bastion)) | R-BAS-017, Q-BAS-334 |
 | Nothing names the main installation | No host, base URL, request ID, rule, place, internal repository name or version in a Bastion's answers; what remains tells that an installation stands behind it, not which ([H-2294](#h-2294--a-bastions-answers-still-tell-that-an-installation-stands-behind-it)) | R-BAS-099 |
 
+## The public catalogue and the configuration on the wire
+
+Interface version 8 (built on 2026-11-26 by E7 with W-35's P5; [spec/bastion.md](../spec/bastion.md#the-interface-version-8-the-shared-wire),
+R-BAS-101 to R-BAS-103, [ADR-303](../decisions.md#adr-303--the-public-catalogue-travels-on-the-bastion-interface-as-compressed-documents-under-a-change-list)).
+What it changes in the trust boundary:
+
+| Change | What it means for trust | Held by |
+|---|---|---|
+| The Bastion token reads the public catalogue | The catalogue routes admit the Bastion token alone and take the registration from its recognition: a token reads its own registration's catalogue, nothing while the registration's `gui` is off (`404 not_found`), no documentation while `docs` is off. What it reads is what an anonymous visitor reads, stripped of internal identities (W-35's B.10), in bulk ([H-2305](#h-2305--the-bastion-token-reads-its-registrations-public-catalogue-in-bulk)) | R-BAS-101, R-BAS-102, Q-BAS-350 |
+| A document's address is checked by the Bastion | A document's SHA-256 is of its raw bytes; a Bastion decompresses what it receives, at most to the size it was told, and verifies the SHA-256 before it keeps it. A path has one spelling, no dot segment and no encoded slash, so a path cannot name a file outside the catalogue's tree of the store (W-35's P7 keeps the documents by their address) | R-BAS-101, R-BAS-103, Q-BAS-346, Q-BAS-348 |
+| The feed's catalogue entries and configuration changes name no registration | Every Bastion learns that some registration's catalogue or configuration changed, and when ([H-2306](#h-2306--every-bastion-learns-when-some-catalogue-or-some-configuration-changed)) | R-BAS-015, Q-BAS-349 |
+| A configuration in the handshake | A Bastion learns the figures, the rule IDs, the address rules and the exempt networks of its place; whoever holds its token or takes over a pod learns them too ([H-2307](#h-2307--a-bastions-configuration-tells-its-holder-the-rules-and-networks-of-its-place)). Until E8 the main installation sends an interim configuration with no rule but one without figures, no address rule and no exempt network, so nothing of the kind travels yet | R-BAS-093, Q-BAS-352 |
+| The probe without headers | Until E15 a probe is a forward of a writing method without a body and without a caller's credential; the main installation admits it as the anonymous caller for routing only and refuses it at the route match, a read route's probe as well, so a probe reaches no handler whatever route it names (H-2293) | R-BAS-014, Q-BAS-351 |
+
 ## What this does not cover
 
 The gaps of the Bastion's mechanisms are recorded on the spec page, where the mechanisms are, and only linked here. The one gap
 that no mechanism of the Bastion holds, because the chart leaves it to the cluster operator, is recorded on this page:
 [H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods). The gaps of the owner's decisions of 2026-11-26 (W-34), specified and
 not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285, H-2289 to H-2297,
-H-2348 to H-2351 (H-2291, H-2348 and H-2349 are E13's, built);
+H-2348 to H-2351 (H-2291, H-2348 and H-2349 are E13's, built); so are the gaps of the public catalogue's wire (W-35, interface version 8),
+H-2305 to H-2307;
 those of a Bastion's budgets are on [usage-and-limits.md](usage-and-limits.md#what-this-does-not-cover) (H-2284, H-2286 to H-2288). Numbers
 marked [derived] are calculated from the defaults, not measured.
 
@@ -640,6 +656,7 @@ for the registration, the public address of every connection of the main install
 ### H-2280 · Whoever answers as the main installation sets a Bastion's limits and switches
 
 Stage: the handshake's member `configuration` (R-BAS-093; packages E7 and E9a). Subject: every figure, switch and rule a Bastion applies.
+The member travels since E7 (interface version 8); of it a replica applies only `switches.handover`, which the handshake carried before.
 Dormant until E9a lands; then live wherever an attacker can answer a Bastion's handshake: a certificate for the main installation's host
 from a CA the Bastion trusts (the system roots or `bastion.main.ca_file`) together with a position on the path, or a main installation
 taken over. What it gains beyond today's forged answers: the web interface switched on, Unlimited figures, no ceiling and no throughput cap
@@ -652,7 +669,8 @@ mechanisms.
 ### H-2281 · The check answer names each caller's subject key and rule to the Bastion
 
 Stage: the check answer's `subject.limits` and the marking's `Quader-Bastion-Limits` (R-BAS-096, Q-BAS-328; packages E7 and E8). Subject:
-the users, technical tokens and CI projects whose credentials pass through a Bastion, and the rules that name them. Live once E8 lands.
+the users, technical tokens and CI projects whose credentials pass through a Bastion, and the rules that name them. The member and the
+header are on the wire since E7 and empty: the main installation names no key and no rule until E8. Live once E8 lands.
 Today the marking names a presented token's ID and its principal's ID ([H-386](../spec/bastion.md#h-386--whoever-holds-the-bastion-token-can-test-credentials-name-client-addresses-and-add-download-events));
 the key adds a technical token's ID and a CI project's issuer and project ID, and the rule's ID tells which callers have a rule of their own
 at the Bastion place. What makes it real: the holder of the Bastion token, or a process that took over a Bastion pod, collecting the keys of
@@ -757,8 +775,8 @@ Stage: R-BAS-099 (package E16). Subject: what an internet caller learns of the m
 inherent: a miss takes longer than a hit, a `503 unavailable` follows an outage of the link, the address of a repository carries its
 project's key (INV-5), and the registry token's grant names the repositories a caller asked for. The owner's rule hides the main
 installation's name, address and structure; that a Bastion is a cache in front of something is its purpose. Since E16 the texts say "this
-service" and "this address" and the problem type is `about:blank`; until E7 renames them, the codes themselves (`main_unreachable`,
-`main_failed`, `main_timeout`, `bastion_busy`, `bastion_not_served`, `bastion_read_only`) still tell a caller that a Bastion answers
+service" and "this address" and the problem type is `about:blank`; until E7 renames them, the codes themselves (`unavailable`,
+`bad_gateway`, `gateway_timeout`, `busy`, `not_found`, `read_only`) still tell a caller that a Bastion answers
 and that a main installation stands behind it.
 
 ### H-2295 · Problem texts the main installation relays are inventoried only in part
@@ -808,3 +826,33 @@ a block set in triage or a lowered visibility reached it at its next read. Now t
 (rule 3 of R-BAS-020, `freshFor`), which reaches every replica within the feed's poll interval and one round trip, the bound of the
 revocations (R-BAS-026: within 5 s); a full reader's shared document has the same bound. A withdrawal the feed
 does not carry is H-2292's. What makes it real: an anonymous `npm install` through a Bastion within the seconds after an unpublish.
+
+### H-2305 · The Bastion token reads its registration's public catalogue in bulk
+
+Stage: the catalogue routes (R-BAS-101, R-BAS-102; W-35's P5, built; the builder P6 fills them). Subject: the public packages, versions,
+open findings, signatures, documentation and set-up snippets of the repositories a registration's catalogue shows. Dormant until P6 builds
+a catalogue and an administrator switches a registration's `gui` on; then live wherever the Bastion token is. Its holder reads the whole
+catalogue at once, with the change list as an index, where an anonymous visitor reads the same pages one at a time through the main
+installation's public reads or the Bastion's pages; nothing in the catalogue is closed to the anonymous caller, so the gain is speed and
+completeness, and, with public remotes in the catalogue, the company's dependency footprint in one pull (W-35's D3). What makes it real: a
+leaked token Secret or a taken-over Bastion pod. What holds: the token reads no other registration's catalogue and nothing while `gui` is
+off; revoking the token ends it.
+
+### H-2306 · Every Bastion learns when some catalogue or some configuration changed
+
+Stage: the feed entries of the kinds `catalogue` and `settings` (R-BAS-015, R-BAS-093, R-BAS-101; Q-BAS-349). Subject: the times at which
+the main installation published into a public repository or changed a Bastion's configuration. Live for `settings` since phase 5b, for
+`catalogue` once P6 writes the entries. An entry names no registration, so a Bastion reads the times of changes that concern other
+registrations, and from the catalogue entries the times of publishes into public repositories of any registration's catalogue. What makes it
+real: a holder of any Bastion token reading the feed. What holds: an entry carries no repository, package or registration, and the publish
+itself is public once it is in a catalogue. Naming the registration would tell every Bastion the others' IDs instead.
+
+### H-2307 · A Bastion's configuration tells its holder the rules and networks of its place
+
+Stage: the handshake's `configuration.limits` (R-BAS-093, R-BAS-096; the wire since E7, the content with E8). Subject: the figures of each
+rule of the Bastion's place, its rule IDs, its address rules (prefixes such as a partner's network) and its exempt networks. Dormant until E8
+sends a configuration of the registration's own (the interim one carries one rule without figures and no address); then live wherever the
+Bastion token is, or a Bastion pod is taken over. Its holder learns which networks the administrator exempts or treats differently and how
+much each kind of caller may take, which helps an attacker size a flood below the figures and pick an address range that is exempt. What
+holds: a configuration names no user, group or profile (Q-BAS-320 sends each rule's effective figures, not the profiles), and the figures
+bound only what this Bastion admits; the main installation charges every forward to the caller there (Q-LIM-306).

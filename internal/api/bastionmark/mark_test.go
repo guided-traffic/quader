@@ -507,7 +507,7 @@ func TestR_BAS_013_HeadersOnlyOnBastionRequests(t *testing.T) {
 				for _, ex := range rt.Examples {
 					// Every request carries the headers a Bastion would send and a token that no stage recognized.
 					rec := r.doBody(rt.Method, "/api/"+id+"/web/"+key+"/"+ex, strings.NewReader(""),
-						iface.HeaderAuthorization, "Bearer qdr_bst_nothing", iface.HeaderInterface, strconv.Itoa(iface.InterfaceVersion), iface.HeaderProbe, "1", hCred, "token")
+						iface.HeaderAuthorization, "Bearer qdr_bst_nothing", iface.HeaderInterface, strconv.Itoa(iface.InterfaceVersion), hCred, "token")
 					if got := hasMarking(rec.Header()); len(got) > 0 {
 						t.Fatalf("%s %s %s (decision %d): %d carries %v", rt.Method, id, ex, outcome, rec.Code, got)
 					}
@@ -623,7 +623,7 @@ func TestR_BAS_090_TheBytesOfRecognizedForwardsAreCountedByRegistrationAndClass(
 // TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat: the write probe is answered after routing and before any
 // handler or body read.
 func TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat(t *testing.T) {
-	t.Run("every write route of the fake format is refused with bastion_read_only and no address", func(t *testing.T) {
+	t.Run("every write route of the fake format is refused with read_only and no address", func(t *testing.T) {
 		r := newRig(t)
 		for _, tc := range []struct{ method, path string }{
 			{"PUT", "/api/mk/web/mk-local/f/x.bin"},
@@ -644,10 +644,10 @@ func TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat(t *testing.T) {
 			t.Fatalf("a handler ran: %v", r.reached)
 		}
 	})
-	t.Run("a read route that takes a body answers 204 with the route header and the handler does not run", func(t *testing.T) {
+	t.Run("the probe of a read route that takes a body is refused and the handler does not run (H-2293)", func(t *testing.T) {
 		r := newRig(t)
 		rec := r.do("POST", "/api/mk/web/mk-local/audit/left-pad", hRecognize, "probe")
-		if rec.Code != 204 || rec.Header().Get(iface.HeaderRoute) != iface.RouteReadWithBody || len(r.reached) != 0 {
+		if rec.Code != 403 || rec.Header().Get("X-Mk-Error") != iface.CodeReadOnly || len(r.reached) != 0 {
 			t.Fatalf("%d %v reached %v", rec.Code, rec.Header(), r.reached)
 		}
 		if markingOf(t, rec).Class != iface.ClassPass {
@@ -668,7 +668,7 @@ func TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat(t *testing.T) {
 			t.Fatalf("%v", rec.Header())
 		}
 	})
-	t.Run("a write that reaches the main installation without the probe header is refused the same way", func(t *testing.T) {
+	t.Run("a write that reaches the main installation in the form of no probe is refused the same way", func(t *testing.T) {
 		r := newRig(t)
 		rec := r.do("PUT", "/api/mk/web/mk-local/f/x.bin", hRecognize, "forward", hCred, "token")
 		if rec.Code != 403 || rec.Header().Get("X-Mk-Error") != iface.CodeReadOnly || len(r.reached) != 0 {
@@ -679,7 +679,7 @@ func TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat(t *testing.T) {
 		r := newRig(t)
 		r.status = 200
 		rec := r.do("POST", "/api/mk/web/mk-local/audit/left-pad", hRecognize, "forward", hCred, "token")
-		if rec.Code != 200 || len(r.reached) != 1 || rec.Header().Get(iface.HeaderRoute) != "" {
+		if rec.Code != 200 || len(r.reached) != 1 {
 			t.Fatalf("%d %v", rec.Code, rec.Header())
 		}
 		if markingOf(t, rec).Class != iface.ClassPass {
@@ -717,8 +717,8 @@ func (f failingReader) Read([]byte) (int, error) {
 	return 0, io.EOF
 }
 
-// TestR_BAS_014_RealFormats: the refusal is in the error shape of npm and of NuGet, and every write route of
-// both is refused as a probe.
+// TestR_BAS_014_RealFormats: the refusal is in the error shape of npm and of NuGet, and every route of both of a method
+// other than GET and HEAD is refused as a probe, a read route that takes a body as well (H-2293).
 func TestR_BAS_014_RealFormats(t *testing.T) {
 	fs := []formats.Format{npm.New(), nuget.New()}
 	keys := map[string]string{"npm": "npm-all", "nuget": "nuget-v3"}
@@ -727,23 +727,22 @@ func TestR_BAS_014_RealFormats(t *testing.T) {
 		rec := r.do("PUT", "/api/npm/web/npm-all/lodash", hRecognize, "probe")
 		body := rec.Body.String()
 		if rec.Code != 403 || rec.Header().Get("Content-Type") != "application/json" ||
-			!strings.Contains(body, `"code":"bastion_read_only"`) || !strings.Contains(body, ReadOnlyDetail) || strings.Contains(body, mainURL) {
+			!strings.Contains(body, `"code":"read_only"`) || !strings.Contains(body, ReadOnlyDetail) || strings.Contains(body, mainURL) {
 			t.Fatalf("%d %v\n%s", rec.Code, rec.Header(), body)
 		}
 	})
-	t.Run("npm audit is a read route that takes a body", func(t *testing.T) {
+	t.Run("npm audit, forwarded with its body, is served; its probe is refused", func(t *testing.T) {
 		r := newRig(t, fs...)
 		for _, p := range []string{"/-/npm/v1/security/advisories/bulk", "/-/npm/v1/security/audits", "/-/npm/v1/security/audits/quick"} {
-			rec := r.do("POST", "/api/npm/web/npm-all"+p, hRecognize, "probe")
-			if rec.Code != 204 || rec.Header().Get(iface.HeaderRoute) != iface.RouteReadWithBody {
-				t.Errorf("%s: %d %v", p, rec.Code, rec.Header())
+			if rec := r.do("POST", "/api/npm/web/npm-all"+p, hRecognize, "probe"); rec.Code != 403 {
+				t.Errorf("the probe of %s: %d %v", p, rec.Code, rec.Header())
 			}
 		}
 	})
 	t.Run("dotnet nuget push is refused without a credential", func(t *testing.T) {
 		r := newRig(t, fs...)
 		rec := r.do("PUT", "/api/nuget/web/nuget-v3/v3/package", hRecognize, "probe")
-		if rec.Code != 403 || !strings.Contains(rec.Body.String(), "bastion_read_only") {
+		if rec.Code != 403 || !strings.Contains(rec.Body.String(), "read_only") {
 			t.Fatalf("%d %v\n%s", rec.Code, rec.Header(), rec.Body.String())
 		}
 	})
@@ -760,10 +759,15 @@ func TestR_BAS_014_RealFormats(t *testing.T) {
 				for _, ex := range rt.Examples {
 					rec := r.do(rt.Method, "/api/"+id+"/web/"+keys[id]+"/"+ex, hRecognize, "probe")
 					switch {
-					case writes && rec.Code == 403 && strings.Contains(rec.Body.String(), "bastion_read_only"):
+					case rec.Code != 403 || !strings.Contains(rec.Body.String(), "read_only"):
+					case writes:
 						refused++
-					case !writes && rec.Code == 204 && rec.Header().Get(iface.HeaderRoute) == iface.RouteReadWithBody:
+						continue
+					default:
 						bodies++
+						continue
+					}
+					switch {
 					default:
 						t.Errorf("%s %s %s: %d %v", rt.Method, id, ex, rec.Code, rec.Header())
 					}

@@ -11,6 +11,7 @@ import (
 	"github.com/guided-traffic/quader/internal/api/bastionmark"
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
 	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formathost"
@@ -251,7 +252,7 @@ func (a *App) bastionThrottle() func(*http.Request) bastionmain.Throttle {
 	}
 }
 
-// bastionServices are the services of the four interface operations of the default endpoint (R-BAS-010,
+// bastionServices are the services of the interface operations of the default endpoint (R-BAS-010,
 // R-BAS-011, R-BAS-015, R-BAS-016); a replica without a database, and every other endpoint, has none.
 func (a *App) bastionServices(rt *endpointRuntime) v1.BastionServices {
 	in, id := part[infra](a.parts), part[identityArea](a.parts)
@@ -279,6 +280,25 @@ func (a *App) bastionServices(rt *endpointRuntime) v1.BastionServices {
 		Formats:         v1.BastionFormatTable(formats.List()),
 		BoundRepository: a.bastionBoundRepository(),
 		Handover:        a.bastionSnapshot(),
+		Configuration:   a.bastionConfiguration(),
+	}
+}
+
+// bastionConfiguration answers a registration's configuration for the handshake and the catalogue routes (R-BAS-093): until a
+// registration holds one (package E8) the interim configuration with the registration's revision and its switch of the handover
+// per blob, read from the registration in one statement. nil, the handler's own interim configuration, where the replica has
+// no registration service.
+func (a *App) bastionConfiguration() func(context.Context, bastionmain.Recognition) (iface.Configuration, error) {
+	regs := a.bastionRegistrations()
+	if regs == nil {
+		return nil
+	}
+	return func(ctx context.Context, rec bastionmain.Recognition) (iface.Configuration, error) {
+		reg, err := regs.Get(ctx, rec.Bastion)
+		if err != nil {
+			return iface.Configuration{}, err
+		}
+		return bastionmain.InterimConfiguration(reg.Revision, reg.Handover), nil
 	}
 }
 

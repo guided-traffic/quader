@@ -32,11 +32,11 @@ func (e *engine) errCredentialsRequired(q *rq) *errs.Error {
 }
 
 func errUnreachable() *errs.Error {
-	return errs.E(errs.Unavailable, errs.CodeMainUnreachable, "This service is not available right now; try again later.", errs.WithRetryAfter(retryUnreachable))
+	return errs.E(errs.Unavailable, errs.CodeUnavailable, "This service is not available right now; try again later.", errs.WithRetryAfter(retryUnreachable))
 }
 
 func errBusy() *errs.Error {
-	return errs.E(errs.Unavailable, errs.CodeBastionBusy, "Too many requests are waiting; try again in a moment.", errs.WithRetryAfter(retryBusy))
+	return errs.E(errs.Unavailable, errs.CodeBusy, "Too many requests are waiting; try again in a moment.", errs.WithRetryAfter(retryBusy))
 }
 
 // errShapeNone is the refusal of a read-shape answer none: the status the main installation said the caller
@@ -80,7 +80,7 @@ func (e *engine) problem(q *rq, err *errs.Error) {
 	httpserver.Problem(q.w, q.r, err)
 }
 
-// fail answers 502 main_failed or 504 main_timeout: the request to the main installation did not produce an
+// fail answers 502 bad_gateway or 504 gateway_timeout: the request to the main installation did not produce an
 // answer to pass on (R-BAS-021). Nothing is kept.
 func (e *engine) fail(q *rq, err error) {
 	q.finish(metrics.ClassPass, metrics.ResultError)
@@ -88,7 +88,7 @@ func (e *engine) fail(q *rq, err error) {
 	var timeout net.Error
 	switch {
 	case errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &timeout) && timeout.Timeout()):
-		e.problem(q, errs.E(errs.UpstreamTimeout, errs.CodeMainTimeout, "This service did not answer in time; try again later."))
+		e.problem(q, errs.E(errs.UpstreamTimeout, errs.CodeGatewayTimeout, "This service did not answer in time; try again later."))
 	default:
 		e.problem(q, errBadGateway())
 	}
@@ -96,7 +96,7 @@ func (e *engine) fail(q *rq, err error) {
 
 // errBadGateway is the 502 of an answer the Bastion could not get or does not pass on (R-BAS-021, R-BAS-099 row 6).
 func errBadGateway() *errs.Error {
-	return errs.E(errs.UpstreamFailed, errs.CodeMainFailed, "This service could not answer; try again later.")
+	return errs.E(errs.UpstreamFailed, errs.CodeBadGateway, "This service could not answer; try again later.")
 }
 
 // mainError maps the error of a request to the main installation to the Bastion's answer (R-BAS-021,
@@ -119,7 +119,7 @@ func (e *engine) mainError(q *rq, err error) {
 }
 
 // unreachable answers the request that needs the main installation while the replica treats it as unreachable
-// (R-BAS-027): 503 main_unreachable with Retry-After: 30.
+// (R-BAS-027): 503 unavailable with Retry-After: 30.
 func (e *engine) unreachable(q *rq) {
 	e.refuse(q, errUnreachable(), metrics.RefusedUnreachable)
 }
