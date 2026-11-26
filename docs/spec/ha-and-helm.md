@@ -623,12 +623,15 @@ leaves their text to them.
   the pods and their count.
 - **Replicas and placement**: 2 replicas (at least 2 with `highAvailability.enforce`), a PodDisruptionBudget with `maxUnavailable: 1`, the
   spread constraints and tolerations of R-HA-032, an optional autoscaler on CPU. The capacity is replicas × `config.malware.scanner.slots`
-  (2); `config.malware.concurrency` (4) should not exceed it.
+  (2), and the scan controller's calls follow it: it resolves the headless Service to the ready replicas every 10 seconds
+  ([malware-scanning.md](malware-scanning.md) R-MAL-038), so a replica the autoscaler adds takes calls within seconds of its readiness.
 - **Probes and drain.** Readiness, the check `malwareScannerClamav` ([operations-and-observability.md](operations-and-observability.md#q-ops-221--a-scanner-units-readiness-check-is-its-name-in-camel-case-the-same-in-the-process-that-calls-it) Q-OPS-221), holds while the TLS material is loaded, the first database is
   loaded and `clamd` answers `PING`, and the process is not draining; the label `listener` of its listener and of the worker's link to it is
   `malware-scanner-clamav` ([Q-HA-373](#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool)); liveness is the scanner's `/healthz`. `terminationGracePeriodSeconds: 60`; at `SIGTERM` new calls are answered
   `503 scanner_draining`.
-- **Service and policies.** `<fullname>-malware-scanner-clamav`: `ClusterIP`, port `https` 8080, no `service.type`, no Ingress. NetworkPolicy
+- **Service and policies.** `<fullname>-malware-scanner-clamav`: headless (`clusterIP: None`, `publishNotReadyAddresses: false`,
+  [Q-HA-500](#q-ha-500--the-malware-scanners-service-is-headless)), port `https` 8080, no `service.type`, no Ingress; its name resolves to
+  the ready pods' addresses, which the worker calls each under the Service's TLS name. NetworkPolicy
   (R-HA-042): `:8080` from the pods of the worker Deployments that claim the queue `malware`; `:8081` from the ops sources; the scan listener
   `:8082` of `packages` also from the malware scanner pods. The chart sets `config.malware.scanner.url` and `config.malware.scan_listener.url`
   as R-HA-066 sets the image scanning's, refused when set by hand (R-HA-029), and renders `QUADER_SERVER_SCAN_LISTEN=:8082` on the main
@@ -640,9 +643,9 @@ leaves their text to them.
   [operations-and-observability.md](operations-and-observability.md) R-OPS-048), and the malware scanner's
   name as one more entry of `server.scan_clients` (the configuration refuses a `scan_listener.client_name` outside that list). The pool
   list of the worker accepts the queue `malware` (R-HA-062).
-- **Alerts.** The chart's rules carry the four alerts of [malware-scanning.md](malware-scanning.md) R-MAL-026 while the malware scanning
+- **Alerts.** The chart's rules carry the five alerts of [malware-scanning.md](malware-scanning.md) R-MAL-026 while the malware scanning
   is on: `QuaderMalwareFound`, `QuaderMalwareDatabaseStale` (its threshold `config.malware.database.stale_after`, default 48 h),
-  `QuaderMalwareScannerUnavailable` and `QuaderMalwareBacklog`, with their `promtool` tests in
+  `QuaderMalwareScannerUnavailable` (the scan controller's capacity), `QuaderMalwareChecksOverdue` and `QuaderMalwareBacklog`, with their `promtool` tests in
   [rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml).
 - **The signatures' alerts and anchors.** The rules carry the three alerts of [signatures.md](signatures.md) R-SIG-039 and the one of its
   gate per repository (R-SIG-075) while `config.signatures.enabled` (the default): `QuaderSignatureInvalid`, `QuaderSignatureBacklog`,
@@ -657,7 +660,8 @@ Acceptance criteria:
 - Chart test (`test/chart`, about 1 s): with default values the Deployment `quader-malware-scanner-clamav` has the containers `quader`
   (`--role scanner`, the kind `clamav`) and `clamd` (the pinned image), the volumes above and no other, no Secret but the TLS pair and the CA in
   `quader`, none in `clamd`; `clamd.conf` holds `LocalSocket`, no `TCPSocket`, `AlertExceedsMax yes` and `ConcurrentDatabaseReload no`; the
-  policy admits `:8080` from the worker pool that claims `malware` only; with `config.malware.enabled: false` nothing of it renders.
+  policy admits `:8080` from the worker pool that claims `malware` only; the Service is headless and publishes no address of a pod that is
+  not ready; with `config.malware.enabled: false` nothing of it renders.
 
 ### R-HA-069 · The updater Deployment `malware-updater-freshclam`
 Priority: **P1** · Covers: quader-only
@@ -6550,11 +6554,14 @@ The malware scanner (R-HA-068) is sized in each profile from the measurement of
 [Q-HA-361](#q-ha-361--the-malware-scanners-default-size), not from the starting points above
 ([Q-HA-364](#q-ha-364--the-sizing-profiles-size-the-malware-scanner-from-the-measurement)):
 
-| Profile | Malware scanner replicas (HPA min–max) | `clamd` requests CPU / memory | `clamd` memory limit | `config.malware.concurrency` |
-|---|---|---|---|---|
-| small, malware scanner | 2 (no HPA) | 250m / 1280Mi | 2Gi | 4 |
-| medium, malware scanner | 2 (2–4) | 500m / 1280Mi | 2Gi | 4 |
-| large, malware scanner | 3 (3–6) | 500m / 1280Mi | 2Gi | 6 |
+| Profile | Malware scanner replicas (HPA min–max) | `clamd` requests CPU / memory | `clamd` memory limit |
+|---|---|---|---|
+| small, malware scanner | 2 (no HPA) | 250m / 1280Mi | 2Gi |
+| medium, malware scanner | 2 (2–4) | 500m / 1280Mi | 2Gi |
+| large, malware scanner | 3 (3–6) | 500m / 1280Mi | 2Gi |
+
+The calls of the scan controller follow the replicas the autoscaler runs, each with `config.malware.scanner.slots` (2), so no profile
+sets a number of calls ([malware-scanning.md](malware-scanning.md) R-MAL-038, [Q-HA-501](#q-ha-501--the-profiles-set-no-number-of-calls-the-replicas-do)).
 
 - **After the cut into roles** (phase 6a, Q-HA-75) the `web` columns are those of the `packages` Deployment, and every
   profile adds `api` with 2 replicas (HPA 2–4 in medium and large), 500m / 512Mi requests, a 1Gi memory limit and a 5Gi
@@ -12403,7 +12410,9 @@ second part) and `clamd` must agree on where the database and the socket are, an
 
 ### Q-HA-364 · The sizing profiles size the malware scanner from the measurement
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Amended on
+2026-11-26: `config.malware.concurrency` went with the scan controller, and no profile sets a number of calls
+([Q-HA-501](#q-ha-501--the-profiles-set-no-number-of-calls-the-replicas-do)).
 
 Context: the profiles of R-HA-050 named no malware scanner, so each ran the defaults: two pods, a fixed count, and `malware.concurrency` 4.
 Measured (Q-HA-361): a loaded `clamd` holds 1.0 GiB; a warm scan of 100 MiB takes 0.25 s of `clamd`, so a call is bounded by the read of the blob
@@ -13474,6 +13483,35 @@ Status: **Decided by the development agent** (W-37, 2026-11-26).
 The retention of the history of the stored content ([storage.md](storage.md) R-STOR-110, 400 days by default, 92 days to three years) keeps
 its binary default and gets no key in the chart's values: the plain path needs none, and an operator who must set another value sets the
 variable `QUADER_STORAGE_HISTORY_RETENTION` through `extraEnv`. The chart's schema and tests are unchanged. **Applied in the spec:** R-STOR-110.
+
+### Q-HA-500 · The malware scanners' Service is headless
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the scan controller ([malware-scanning.md](malware-scanning.md) R-MAL-038, Q-MAL-121) calls each malware scanner replica by its
+address, so that its calls follow the replicas the autoscaler runs; a ClusterIP Service spread each connection at random.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `clusterIP: None` and `publishNotReadyAddresses: false` on `<fullname>-malware-scanner-clamav`, its name, port and certificate unchanged (chosen) | Headless | The name resolves to the ready pods; the certificate's name stays the one the worker verifies; no RBAC | `clusterIP` is immutable: an installation's existing Service must be replaced once (deleted, or the release upgraded with `--force`) |
+| (b) A second, headless Service beside the ClusterIP one | Two Services | No replacement | Two names for one unit, and a certificate name that is not the one the worker dials by |
+| (c) EndpointSlices through the Kubernetes API | Exact | Events | List and watch rights for the worker |
+
+**Choice:** (a). CoreDNS's cache lags readiness by seconds; a draining pod answers `503 scanner_draining` meanwhile, which pauses it in the
+controller. **Applied in the spec:** R-HA-068.
+
+### Q-HA-501 · The profiles set no number of calls; the replicas do
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+It amends [Q-HA-364](#q-ha-364--the-sizing-profiles-size-the-malware-scanner-from-the-measurement), whose `config.malware.concurrency` of
+4, 4 and 6 went with the key.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No profile sets the scan controller's calls; they follow the replicas times `config.malware.scanner.slots`, bounded by `config.malware.controller.max_in_flight` (256) (chosen) | One number less | The autoscaler's range of each profile is the scanning's range; nothing to keep in step | — |
+| (b) Each profile sets `max_in_flight` to its maximum replicas × 2 | A bound per profile | Tighter | A second place that must follow the autoscaler's range |
+
+**Choice:** (a). **Applied in the spec:** R-HA-050.
 
 ### H-37 · A database restore revives revoked credentials and removed grants
 

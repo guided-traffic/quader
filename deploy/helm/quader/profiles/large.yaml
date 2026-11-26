@@ -55,8 +55,6 @@ malwareScannerClamav:
       limits:
         memory: 2Gi
 config:
-  malware:
-    concurrency: 6                      # the calls in flight: the minimum of malware scanners × config.malware.scanner.slots (2)
   database:
     pool:
       max_conns: 30

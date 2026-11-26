@@ -3406,6 +3406,47 @@ cadences); the tab kept with a link from Settings (the owner's place shows a lin
 
 **Revisit condition:** the owner's word on the place, or a second page of the stored content that the one page cannot carry.
 
+### ADR-311 · The scan controller addresses each malware scanner replica
+
+**Status:** Decided by the owner's words of 2026-11-26 ("Wir brauchen eine Art Scan-Controller, der die Reihenfolge und Abfolge der
+Artifaktscans überwacht und leitet. Er [weiß,] wieviele Scanner im Moment zur Verfügung stehen und verteilt darauf Artefaktscans."); the
+form by the development agent ([Q-MAL-120](spec/malware-scanning.md#q-mal-120--the-job-malware-scan-grows-into-the-scan-controller) to
+[Q-MAL-127](spec/malware-scanning.md#q-mal-127--the-floors-batches-continue-after-the-last-digest),
+[Q-HA-500](spec/ha-and-helm.md#q-ha-500--the-malware-scanners-service-is-headless),
+[R-MAL-038](spec/malware-scanning.md#r-mal-038--the-scan-controller)). It builds W-36's P2.
+
+**Context.** The job `malware-scan` kept a fixed `malware.concurrency` (4) calls open through one ClusterIP Service, which spread each
+connection at random over the replicas. A replica the autoscaler added added no throughput, two calls could meet on one replica while
+another idled (`scanner_busy`), a slow or failing replica got the same share as a healthy one, and nothing recorded what the scanning
+could do or how far behind it was.
+
+**Decision.**
+- The job becomes the scan controller, in the worker, under its queue and its `coalesce` lease: no new pod, no new service account.
+- The Service `<fullname>-malware-scanner-clamav` is headless. Every 10 s the controller resolves its name to the ready replicas'
+  addresses and calls each by its address under the Service's TLS name, up to `malware.scanner.slots` on each, at most
+  `malware.controller.max_in_flight` (256) in all; the key `malware.concurrency` goes.
+- A call goes to the replica with the most free slots, a tie to the shorter recent scan time. A replica that fails rests for 30 s, doubling
+  up to 5 minutes; one that loads a new signature set or drains pauses for 10 s, which is no failure. Its call goes to another replica at
+  once, without an attempt. With no replica that can take a call the controller holds back and continues once the first rest ends.
+- One slot stays kept for the rows a download waits for; new content is served by repository in turn.
+- The controller writes one transient row, `malware_controller`: its state, its capacity, its calls, each replica, the scans and the
+  seconds its slots were held within the hour, the rows due by lane, and from one pass at most every five minutes the verdicts by how
+  current their check is and the oldest check. Discovery and the sweep run hourly, and when an administrator runs the task.
+- `QuaderMalwareScannerUnavailable` reads the capacity; `QuaderMalwareChecksOverdue` is new.
+
+**Consequences.** The scanning's pace follows the replicas the autoscaler runs; a slow replica costs its own share only; an administrator
+reads from one row whether replicas must be added. The Service's kind changes, so an installation's existing ClusterIP Service must be
+replaced once (`clusterIP` is immutable). Capacity follows what the cluster's DNS lists (H-2403), and demand moves rescans forward in the
+pressure lane (H-2402).
+
+**Alternatives considered.** A Deployment of its own for the controller (a pod, a certificate, a link and a lease for what one job already
+is); `concurrency` sized from the replicas' own reports through the ClusterIP Service (random spreading still collides, and capacity would
+rest on the scanners' statements, H-1161); watching EndpointSlices through the Kubernetes API (list and watch rights for the worker, and a
+second path outside Kubernetes); the scanners pulling work (a scanner would need to write verdicts, ADR-212, ADR-213).
+
+**Revisit condition:** CoreDNS's cache that lags readiness long enough to cost calls in the owner's installation, or a second malware
+scanning tool beside ClamAV.
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -11544,10 +11585,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-HA
 
-267 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
+269 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
 
 <details>
-<summary>Q-HA: 267 questions</summary>
+<summary>Q-HA: 269 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11816,6 +11857,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-HA-495](spec/ha-and-helm.md#q-ha-495--a-stopping-scanner-tries-its-sign-off-again-for-ten-seconds-a-replica-that-vanished-without-a-word-stays-lost-by-the-registrys-rule) | A stopping scanner tries its sign-off again for ten seconds; a replica that vanished without a word stays lost by the registry's rule | Decided by the development agent | (a), and the profile stops its scanners before quader and the malware scanner's container with `TERM`, as the kubelet does (`deploy/ui-dev/serve.sh`, `malware.sh`). | — |
 | [Q-HA-496](spec/ha-and-helm.md#q-ha-496--two-processes-of-one-name-stand-side-by-side-the-rows-key-is-the-processs-uid-and-the-profile-names-its-image-scanner-after-the-unit) | Two processes of one name stand side by side: the row's key is the process's UID, and the profile names its image scanner after the unit | Decided by the development agent | (a) The profile sets `QUADER_POD_NAME=<project>-vuln-scanner-trivy` for both processes, as the chart does | — |
 | [Q-HA-497](spec/ha-and-helm.md#q-ha-497--the-drain-per-role-holds-its-p99-to-the-larger-of-the-warm-ups-and-the-post-drain-windows) | The drain per role holds its p99 to the larger of the warm-up's and the post-drain window's | Decided by the development agent on 2026-11-26 | (a) The bound is twice the larger of the warm-up's p99 and the post-drain window's (the minute after the drain window, until the load ends); each role's phase is logged | — |
+| [Q-HA-500](spec/ha-and-helm.md#q-ha-500--the-malware-scanners-service-is-headless) | The malware scanners' Service is headless | Decided by the development agent on 2026-11-26 | (a) `clusterIP: None` and `publishNotReadyAddresses: false` on `<fullname>-malware-scanner-clamav`, its name, port and certificate unchanged | [ADR-311](#adr-311--the-scan-controller-addresses-each-malware-scanner-replica) |
+| [Q-HA-501](spec/ha-and-helm.md#q-ha-501--the-profiles-set-no-number-of-calls-the-replicas-do) | The profiles set no number of calls; the replicas do | Decided by the development agent on 2026-11-26 | (a) No profile sets the scan controller's calls; they follow the replicas times `config.malware.scanner.slots`, bounded by `config.malware.controller.max_in_flight` (256) | — |
 | [Q-HA-505](spec/ha-and-helm.md#q-ha-505--capacity-is-a-key-of-the-element-a-size-with-the-schemas-pattern) | Capacity is a key of the element, a size with the schema's pattern | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-106, Q-STOR-503) | (a) `capacity` in the element of `config.storage.connections`, passed through, the values file's element with `capacity: ""`; the schema allows an empty string or a whole number with a unit of `KiB` to `TiB` or `KB` to `TB`, the binary checks the bound of `1GiB` | — |
 | [Q-HA-506](spec/ha-and-helm.md#q-ha-506--storagehistoryretention-has-no-chart-line) | `storage.history.retention` has no chart line | Decided by the development agent | — | — |
 
@@ -11936,10 +11979,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-MAL
 
-99 questions on [spec/malware-scanning.md](spec/malware-scanning.md).
+107 questions on [spec/malware-scanning.md](spec/malware-scanning.md).
 
 <details>
-<summary>Q-MAL: 99 questions</summary>
+<summary>Q-MAL: 107 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12035,6 +12078,14 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-MAL-117](spec/malware-scanning.md#q-mal-117--a-request-is-the-boost-of-a-whole-cycle-not-a-mark-of-due) | A request is the boost of a whole cycle, not a mark of due | Decided by the development agent | (a) An administrator's rescan, a change of the limits and the floor set `requested` and add a whole cycle to the pressure until the verdict is written again | — |
 | [Q-MAL-118](spec/malware-scanning.md#q-mal-118--the-lanes-asked-new-retry-then-the-pressure) | The lanes: asked, new, retry, then the pressure | Decided by the development agent | (a) The due lanes 0 `asked`, 1 `new`, 2 `retry` by `not_before`, then the verdicts whose pressure reached the cycle, highest first; the slot kept for `asked` stays (Q-MAL-64) | — |
 | [Q-MAL-119](spec/malware-scanning.md#q-mal-119--a-verdict-keeps-the-unit-the-engine-of-its-answer-and-the-replica) | A verdict keeps the unit, the engine of its answer and the replica | Decided by the development agent | (a) The scanner names `clamd`'s version in every answer (`engine`), asked with `VERSION` until `clamd` answers once and kept; the verdict keeps it with the unit's name and the replica from the header | [ADR-310](#adr-310--rescans-are-ranked-by-scan-pressure-with-the-floor-of-what-was-downloaded-lately) |
+| [Q-MAL-120](spec/malware-scanning.md#q-mal-120--the-job-malware-scan-grows-into-the-scan-controller) | The job `malware-scan` grows into the scan controller | Decided by the development agent | (a) The job `malware-scan` becomes the scan controller, in the worker, under its queue and its `coalesce` lease | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret), [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener), [ADR-311](#adr-311--the-scan-controller-addresses-each-malware-scanner-replica) |
+| [Q-MAL-121](spec/malware-scanning.md#q-mal-121--each-replica-by-its-address-through-the-headless-service) | Each replica by its address, through the headless Service | Decided by the development agent | (a) The Service is headless; every 10 s the controller resolves the host of `malware.scanner.url` to the ready pods' addresses and calls each by its address under the Service's TLS name, up to `malware.scanner.slots` on each | — |
+| [Q-MAL-122](spec/malware-scanning.md#q-mal-122--a-call-goes-to-the-least-loaded-replica-and-a-replica-rests-or-pauses) | A call goes to the least loaded replica, and a replica rests or pauses | Decided by the development agent | (a) The most free slots, a tie to the shorter recent scan time; a failure (no connection, a refused handshake, no `clamd`, busy) rests the replica 30 s doubling to 5 minutes; a reload or a drain pauses it 10 s without doubling; the call goes to another replica at once, without an attempt | — |
+| [Q-MAL-123](spec/malware-scanning.md#q-mal-123--with-no-replica-it-holds-back-and-continues-when-the-first-rest-ends) | With no replica it holds back and continues when the first rest ends | Decided by the development agent | (a) No call; the rows stay due as they are; the run ends `no_scanner` and is enqueued again to start when the first rest or pause ends, after 30 s while none is listed | — |
+| [Q-MAL-124](spec/malware-scanning.md#q-mal-124--new-content-is-served-by-repository-in-turn) | New content is served by repository in turn | Decided by the development agent | (a) The lane `new` by holder repository in turn, oldest first within each, starting after the repository served last; `asked` first come first served; the pressure installation-wide | — |
+| [Q-MAL-125](spec/malware-scanning.md#q-mal-125--one-row-of-what-the-controller-sees) | One row of what the controller sees | Decided by the development agent | (a) One row, `malware_controller`, written at most every 15 s while the controller runs and when a run ends, with a class pass over the verdicts at most every 5 minutes; discovery and the sweep hourly and when an administrator runs the task; the worker exports the controller's gauges for 15 minutes after it saw them | — |
+| [Q-MAL-126](spec/malware-scanning.md#q-mal-126--a-change-of-the-rescan-settings-is-followed-by-a-re-rank) | A change of the rescan settings is followed by a re-rank | Decided by the development agent | (a) The row keeps the settings' version the ranks were made with; a run that reads another version ranks the verdicts with demand or a request again, in batches, and writes the version | — |
+| [Q-MAL-127](spec/malware-scanning.md#q-mal-127--the-floors-batches-continue-after-the-last-digest) | The floor's batches continue after the last digest | Decided by the development agent | (a) Batches of 10,000 in digest order, each starting after the last digest the one before requested | [ADR-311](#adr-311--the-scan-controller-addresses-each-malware-scanner-replica) |
 | [Q-MAL-128](spec/malware-scanning.md#q-mal-128--the-worst-part-decides-a-units-word) | The worst part decides a unit's word | Decided by the development agent on 2026-11-26 (W-36's plan, B.3) | (a) The worst part decides, in a fixed order, and the details name it and count the rest | — |
 | [Q-MAL-129](spec/malware-scanning.md#q-mal-129--a-page-reads-its-malware-state-in-two-statements) | A page reads its malware state in two statements | Decided by the development agent on 2026-11-26 (W-36's plan, B.4, which named three: the versions, the images and the set in use) | (a) One statement for every format's units, the OCI walk inside it, plus one for the installation's terms | — |
 | [Q-MAL-130](spec/malware-scanning.md#q-mal-130--the-state-is-in-every-answer-while-the-scanning-is-on) | The state is in every answer while the scanning is on | Decided by the development agent on 2026-11-26 (W-36's plan, B.4) | (a) Always, while `malware.enabled` | — |

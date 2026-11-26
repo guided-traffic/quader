@@ -262,27 +262,52 @@ tests:
               description: Scanning goes on with the database in use, and malware published since it was built is not found (R-MAL-010, R-MAL-026). The settings page of the malware scanning names the last failure of the task malware-sync-db; check the freshclam container of the worker pods that claim the queue malware and its egress to database.clamav.net, or, without internet, deploy the files of cvdupdate to the repository malware.database.repository names (R-MAL-012). Before the first version is stored the age is 0 and the alert stays silent (H-1140).
 
   # --- QuaderMalwareScannerUnavailable -----------------------------------------------------------------------
-  - name: QuaderMalwareScannerUnavailable fires when calls are put off and no verdict is made
+  - name: QuaderMalwareScannerUnavailable fires when the scan controller reaches no replica while scans wait
     interval: 1m
     input_series:
-      - {series: 'quader_malware_scans_total{namespace="default",result="scanner_unavailable",pod="w1"}', values: '0+1x120'}
+      - {series: 'quader_malware_controller_capacity{namespace="default",pod="w1"}', values: '4x10 0x60'}
+      - {series: 'quader_malware_backlog{namespace="default",lane="new",pod="w1"}', values: '3x70'}
     alert_rule_test:
-      - {eval_time: 10m, alertname: QuaderMalwareScannerUnavailable, exp_alerts: []}
+      - {eval_time: 20m, alertname: QuaderMalwareScannerUnavailable, exp_alerts: []}
       - eval_time: 40m
         alertname: QuaderMalwareScannerUnavailable
         exp_alerts:
           - exp_labels: {severity: critical}
             exp_annotations:
-              summary: Malware scans are put off because no malware scanner or its clamd answers, and none finishes.
-              description: For a quarter of an hour every call of the job was put off for a reason of the installation and no verdict was made (R-MAL-005, R-MAL-026). New content stays pending, and where only checked artifacts can be downloaded it is refused after the wait. scanner_unavailable is no ready malware scanner pod or a refused handshake; clamd_unavailable is a clamd that does not answer beside a scanner. A malware scanner is not ready until it loaded a signature database (GET /readyz?verbose=1 of the pod says database).
+              summary: The scan controller reaches no malware scanner replica that can take a call, while scans wait.
+              description: For a quarter of an hour the scan controller of the job malware-scan saw no replica it could call (R-MAL-038, R-MAL-026) and holds back; new content stays pending, and where only checked artifacts can be downloaded it is refused after the wait. The malware scanners' headless Service lists no ready pod, or every replica rests after failing (no connection, a refused handshake, no clamd, busy). A malware scanner is not ready until it loaded a signature database (GET /readyz?verbose=1 of the pod says database); quader_malware_controller_replicas shows the replicas by state, the worker's log line "a malware scanner replica rests" the code.
 
-  - name: QuaderMalwareScannerUnavailable stays silent while verdicts are made
+  - name: QuaderMalwareScannerUnavailable stays silent while nothing waits, and while a replica takes calls
     interval: 1m
     input_series:
-      - {series: 'quader_malware_scans_total{namespace="default",result="clamd_unavailable",pod="w1"}', values: '0+1x120'}
-      - {series: 'quader_malware_scans_total{namespace="default",result="clean",pod="w2"}', values: '0+2x120'}
+      - {series: 'quader_malware_controller_capacity{namespace="default",pod="w1"}', values: '0x120'}
+      - {series: 'quader_malware_backlog{namespace="default",lane="new",pod="w1"}', values: '0x60 3x60'}
+      - {series: 'quader_malware_controller_capacity{namespace="default",pod="w2"}', values: '_x60 2x60'}
     alert_rule_test:
       - {eval_time: 100m, alertname: QuaderMalwareScannerUnavailable, exp_alerts: []}
+
+  # --- QuaderMalwareChecksOverdue ----------------------------------------------------------------------------
+  - name: QuaderMalwareChecksOverdue fires when checks stay overdue for six hours
+    interval: 1m
+    input_series:
+      - {series: 'quader_malware_checks{namespace="default",age="overdue",pod="w1"}', values: '0x60 12x500'}
+    alert_rule_test:
+      - {eval_time: 4h, alertname: QuaderMalwareChecksOverdue, exp_alerts: []}
+      - eval_time: 8h
+        alertname: QuaderMalwareChecksOverdue
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: Malware checks have been due longer than the rescan settings allow; the scanning falls behind.
+              description: Verdicts whose scan pressure reached the cycle stay unscanned past overdue_after for six hours (R-MAL-037, R-MAL-038). The scanners do not keep up with what presses; compare the scan controller's capacity and the seconds its slots were held within the hour on Admin area, Settings, Malware scanning, then raise malwareScannerClamav's replicas or config.malware.scanner.slots, or stretch the rescan settings.
+
+  - name: QuaderMalwareChecksOverdue stays silent while the scanning keeps up
+    interval: 1m
+    input_series:
+      - {series: 'quader_malware_checks{namespace="default",age="overdue",pod="w1"}', values: '0x600'}
+      - {series: 'quader_malware_checks{namespace="default",age="due",pod="w1"}', values: '300x600'}
+    alert_rule_test:
+      - {eval_time: 9h, alertname: QuaderMalwareChecksOverdue, exp_alerts: []}
 
   # --- QuaderMalwareBacklog ----------------------------------------------------------------------------------
   - name: QuaderMalwareBacklog fires when the oldest pending file waited more than an hour

@@ -965,6 +965,24 @@ type LimitSetting struct {
 	UpdatedBy    pgtype.UUID
 }
 
+type MalwareController struct {
+	ID                  bool
+	State               string
+	Capacity            int32
+	InFlight            int32
+	Replicas            json.RawMessage
+	ScansLastHour       int64
+	BusySecondsLastHour float64
+	Lanes               json.RawMessage
+	Ages                json.RawMessage
+	Backlog             json.RawMessage
+	OldestCheckAt       pgtype.Timestamptz
+	RankedWith          int64
+	SweptAt             pgtype.Timestamptz
+	AggregatedAt        pgtype.Timestamptz
+	ObservedAt          pgtype.Timestamptz
+}
+
 type MalwareDatabase struct {
 	ID            bool
 	Version       pgtype.Text

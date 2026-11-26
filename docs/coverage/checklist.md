@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,394 spec requirements:
-809 cover catalog features, 585 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,395 spec requirements:
+809 cover catalog features, 586 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>585 requirements</summary>
+<summary>586 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3374,6 +3374,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-MAL-006 | The scanner's read of a blob: the route on the scan listener and its token | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-007 | The malware scanner: what it unpacks and what it hands to `clamd` | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-008 | Limits | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-038 | The scan controller | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-010 | The updater `malware-updater-freshclam`, and the task `malware-sync-db` that asks it | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-032 | The updater's `quader` container: the seed, the listing and the files | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-033 | Verifying a container before it is stored | P1 | [malware-scanning.md](../spec/malware-scanning.md) |

@@ -178,8 +178,8 @@ func TestR_HA_050_SizingProfiles(t *testing.T) {
 
 			// The malware scanner's row (Q-HA-364): its replicas or autoscaler, clamd's requests and limit, the calls in flight.
 			mrow := profileRow(t, name+", malware scanner")
-			if len(mrow) != 5 {
-				t.Fatalf("the malware scanner's row has %d cells, want 5: %v", len(mrow), mrow)
+			if len(mrow) != 4 {
+				t.Fatalf("the malware scanner's row has %d cells, want 4: %v", len(mrow), mrow)
 			}
 			replicas, hasHPA, min, max := replicasCell(t, mrow[1])
 			ms := find(docs, "Deployment", "quader-malware-scanner-clamav")
@@ -203,8 +203,8 @@ func TestR_HA_050_SizingProfiles(t *testing.T) {
 				quantity(at(clamdRes, "requests", "memory")) != wantClamd[1] || quantity(at(clamdRes, "limits", "memory")) != mrow[3] {
 				t.Errorf("clamd resources = %v, want %s and a limit of %s", clamdRes, mrow[2], mrow[3])
 			}
-			if got := quantity(at(cfg, "malware", "concurrency")); got != mrow[4] {
-				t.Errorf("config.malware.concurrency = %q, want %q", got, mrow[4])
+			if got := at(cfg, "malware", "controller"); got != nil {
+				t.Errorf("config.malware.controller = %v: the scan controller's calls follow the replicas, no profile sets them (Q-HA-501)", got)
 			}
 		})
 	}

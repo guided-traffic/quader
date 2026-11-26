@@ -42,6 +42,7 @@ func alertSeverities() []alertSeverity {
 		{"QuaderMalwareFound", "warning"},
 		{"QuaderMalwareDatabaseStale", "warning"},
 		{"QuaderMalwareScannerUnavailable", "critical"},
+		{"QuaderMalwareChecksOverdue", "warning"},
 		{"QuaderMalwareBacklog", "warning"},
 		{"QuaderSignatureInvalid", "warning"},
 		{"QuaderSignatureBacklog", "warning"},
