@@ -31,8 +31,9 @@ commands:
   bastion create <name> [--description <text>]   register a Bastion (R-BAS-004)
   bastion token create <name> [--ttl 8760h]     print a Bastion token once (R-BAS-004)
   bastion token revoke <name> <token-id>        revoke a Bastion token (R-BAS-004)
+  bastion token generate                        print a new Bastion token value for bastions.declared (R-BAS-127)
 
-every command but storage offline, which reads no configuration, takes --config <file> and --log-level <level>`
+every command but storage offline and bastion token generate, which read no configuration, takes --config <file> and --log-level <level>`
 
 // adminCmd dispatches the bootstrap and recovery commands (R-ARCH-001,
 // R-AUTH-015).

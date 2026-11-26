@@ -367,6 +367,8 @@ type Bastion struct {
 	LimitsSlots      json.RawMessage
 	LimitsThroughput json.RawMessage
 	LimitsCeiling    json.RawMessage
+	DeclaredAt       pgtype.Timestamptz
+	DeclaredToken    pgtype.UUID
 }
 
 type BastionCatalogue struct {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/guided-traffic/quader/internal/auth/token"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 )
 
@@ -13,6 +14,7 @@ import (
 
 const bastionUsage = "usage: quader admin bastion create <name> [--description <text>] [--config <file>]\n" +
 	"       quader admin bastion token create <name> [--ttl 8760h] [--description <text>] [--config <file>]\n" +
+	"       quader admin bastion token generate\n" +
 	"       quader admin bastion token revoke <name> <token-id> [--config <file>]"
 
 // bastionCmd is quader admin bastion create|token create|token revoke.
@@ -28,6 +30,8 @@ func bastionCmd(args []string, s streams) error {
 			switch args[1] {
 			case "create":
 				return bastionTokenCreate(args[2:], s)
+			case "generate":
+				return bastionTokenGenerate(args[2:], s)
 			case "revoke":
 				return bastionTokenRevoke(args[2:], s)
 			}
@@ -79,6 +83,22 @@ func bastionTokenCreate(args []string, s streams) error {
 		_, err = fmt.Fprintln(s.stdout, created.Secret)
 		return err
 	})
+}
+
+// bastionTokenGenerate is quader admin bastion token generate (R-BAS-127): it prints a new Bastion token in the format the main
+// installation issues and nothing else, so that a value for bastions.declared and the Bastion's mainToken Secret can be made
+// without the installation, before its first start or after a fresh database. It reads no configuration and opens no database;
+// the value becomes a token of a registration only when quader migrate applies the declaration that names its Secret.
+func bastionTokenGenerate(args []string, s streams) error {
+	if len(args) > 0 {
+		return usageError{bastionUsage}
+	}
+	v, err := token.Generate(token.TypeBST)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(s.stdout, v)
+	return err
 }
 
 // bastionTokenRevoke is quader admin bastion token revoke <name> <token-id>.

@@ -14244,7 +14244,9 @@ paths:
         registration's configuration whole. `limits.preset` names a preset to apply in this request (R-LIM-046, Q-LIM-311): the
         place's five kind rules, the flood figures and the mode, then the other members of the patch on top; `custom` applies
         nothing. A change of `limits.mode` needs recent authentication (`401 reauthentication_required`, R-LIM-044). The limits
-        are held to the rules a Bastion applies them by (`422` with the member named).
+        are held to the rules a Bastion applies them by (`422` with the member named). A registration the installation's
+        configuration declares (`declared` is set, R-BAS-127) refuses a new `description` and new `egress` with `409
+        managed_by_config`: they follow `bastions.declared`; a patch that names them with their current value changes nothing.
       x-quader-permission:
         authenticated: true
       x-quader-if-match: required
@@ -14274,6 +14276,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
         "412":
           $ref: "#/components/responses/PreconditionFailed"
         "413":
@@ -14298,7 +14302,9 @@ paths:
       summary: Delete a Bastion registration
       description: |
         Deletes the registration and revokes its tokens (`token.revoked`, journaled, R-HA-054). Records `bastion.deleted`,
-        journaled: a restore to a point before the deletion brings the registration back disabled (Q-BAS-145).
+        journaled: a restore to a point before the deletion brings the registration back disabled (Q-BAS-145). A registration the
+        installation's configuration declares (R-BAS-127) answers `409 managed_by_config`: the next `quader migrate` would create
+        it again; its declaration is removed first.
       x-quader-permission:
         permission: endpoints:write
       responses:
@@ -14310,6 +14316,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
         "429":
           $ref: "#/components/responses/TooManyRequests"
         "500":
@@ -14400,7 +14408,8 @@ paths:
         Revokes one token of the registration; `204` for a token that is revoked already. The handler requires `endpoints:write`
         or `tokens:revoke` (Q-BAS-24), so a security administrator can revoke a leaked token without managing endpoints; the
         declaration is the coarse `authenticated` form for that reason. Records `token.revoked` with `resource_type: bastion`,
-        journaled (R-HA-054).
+        journaled (R-HA-054). The token the registration's configuration declares (`declared: true`, R-BAS-127) answers `409
+        managed_by_config`: it ends with a new value in its Secret or the removal of the declaration, applied by `quader migrate`.
       x-quader-permission:
         authenticated: true
       parameters:
@@ -14425,6 +14434,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
         "429":
           $ref: "#/components/responses/TooManyRequests"
         "500":
@@ -31242,8 +31253,16 @@ components:
     Bastion:
       type: object
       description: A Bastion registration, a principal of the kind `bastion` (R-BAS-004).
-      required: [id, name, description, enabled, switches, limits, egress, createdAt, tokens, contacts, status]
+      required: [id, name, description, enabled, switches, limits, egress, createdAt, tokens, contacts, status, declared]
       properties:
+        declared:
+          description: |
+            Set while the installation's configuration declares the registration (`bastions.declared`, R-BAS-127): its
+            `description`, its `egress` and its declared token follow the configuration, which `quader migrate` applies on every
+            run, and the registration is not deleted here. Null otherwise.
+          oneOf:
+            - $ref: "#/components/schemas/BastionDeclaration"
+            - type: "null"
         id:
           type: string
           format: uuid
@@ -31283,6 +31302,7 @@ components:
         name: partners
         description: The partner network
         enabled: true
+        declared: null
         switches: {handover: false, gui: false, docs: false}
         limits:
           mode: enforce
@@ -31307,6 +31327,7 @@ components:
             createdAt: "2026-11-02T10:05:00Z"
             expiresAt: "2027-11-02T10:05:00Z"
             lastUsedAt: "2026-11-02T10:06:12Z"
+            declared: false
         contacts:
           - replica: quader-bastion-7d9c-x2k4q
             contactAt: "2026-11-02T10:06:12Z"
@@ -31476,10 +31497,29 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Bastion"
+    BastionDeclaration:
+      type: object
+      description: The declaration of a registration in the installation's configuration (R-BAS-127).
+      required: [since, secretName]
+      properties:
+        since:
+          type: string
+          format: date-time
+          description: When the first run of `quader migrate` that declared it applied the entry.
+        secretName:
+          type: string
+          description: |
+            The Kubernetes Secret the declared token comes from, as the configuration of the replica that answers names it
+            (`bastions.declared.<name>.secret_name`); empty outside the chart. Never a value.
     BastionTokenSummary:
       type: object
-      required: [id, hint, description, createdAt, expiresAt, lastUsedAt]
+      required: [id, hint, description, createdAt, expiresAt, lastUsedAt, declared]
       properties:
+        declared:
+          type: boolean
+          description: |
+            The token the registration's configuration declares (R-BAS-127): its value is the Secret's, it does not expire, and it
+            is not revoked here (`409 managed_by_config`).
         id:
           type: string
           format: uuid
@@ -31491,8 +31531,9 @@ components:
           type: string
           format: date-time
         expiresAt:
-          type: string
+          type: [string, "null"]
           format: date-time
+          description: The expiry; null for the declared token, which does not expire (R-BAS-127, Q-BAS-466).
         lastUsedAt:
           type: [string, "null"]
           format: date-time

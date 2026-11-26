@@ -165,7 +165,10 @@ Two trees serve the Bastion ([bastion.md](bastion.md), Q-BAS-50).
 `bastions.downloads.max_age` (`720h`), `bastions.downloads.events_per_second` (`200`) and `events_burst` (`2000`, at least 100, holding `max_batch`
 in units of `config.DownloadEventsPerUnit` (100), a window of at most 12 h), `auth.tokens.bst.default_ttl` (`8760h`) and `max_ttl` (`9480h`, `default_ttl` must not exceed it) and
 `auth.tokens.max_active_per_principal.bst` (`3`). `bst` in an endpoint's `auth.token_types` stops startup naming the key
-([endpoints.go](../../internal/config/endpoints.go), R-BAS-005).
+([endpoints.go](../../internal/config/endpoints.go), R-BAS-005). `bastions.declared` (`{}`; R-BAS-127) is a map keyed by the registration's name with
+`description`, `egress`, `token_file` and `secret_name`; the load checks the form only (the name, at most 1,024 characters of description, at
+most 32 networks, a clean absolute `token_file`, no more entries than `max_registrations`) and reads no file; `quader migrate` reads the
+token file and applies the map ([migrate_bastions.go](../../internal/app/migrate_bastions.go)).
 
 **The role's tree** ([bastion_role.go](../../internal/config/bastion_role.go)): a second root struct `BastionConfig` with the sections `server`
 (listen, ops_listen, base_url, trusted_proxies, forwarded_header, max_in_flight, tls, ops_tls), `bastion` (main, answers, feed, cache,

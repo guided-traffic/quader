@@ -1331,7 +1331,10 @@ request. Do not note a lookup whose empty result is not an answer (an optional r
 Migrations ([database.md](database.md#migrations-of-the-bastion-q-bas-48)): `00032_bastion` (expand: `bastion`, `bastion_contact`,
 the name rule, the token guard), `00033_bastion_kinds` (contract, `requires-app >= 0.1.0`: the checks of `principal.kind` and
 `api_token.type`), `00034_bastion_validate` (expand), and W-35's `00146_bastion_catalogue` (expand: the public catalogue's tables,
-[database.md](database.md#the-bastions-public-catalogue-00146)). The query files are owned by the package that writes them and read by others
+[database.md](database.md#the-bastions-public-catalogue-00146)). `00148_bastion_declared` (expand) marks a registration the configuration declares and its declared token
+(R-BAS-127, [database.md](database.md#migrations-of-the-bastion-q-bas-48)); the apply is
+[declared.go](../../internal/bastionmain/declared.go), run by `quader migrate` through
+[migrate_bastions.go](../../internal/app/migrate_bastions.go). The query files are owned by the package that writes them and read by others
 as the table in [Seams](#seams) says; nobody edits another package's file: add a file of your own.
 
 ## Configuration

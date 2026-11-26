@@ -40,6 +40,7 @@ export function sampleBastionToken(over: Partial<BastionTokenSummary> = {}): Bas
     createdAt: inDays(-165),
     expiresAt: inDays(200),
     lastUsedAt: inDays(-1),
+    declared: false,
     ...over,
   };
 }
@@ -92,6 +93,7 @@ export function sampleBastion(over: Partial<Bastion> = {}): Bastion {
     limits: sampleBastionLimits(),
     status: [],
     egress: ['198.51.100.16/28'],
+    declared: null,
     createdAt: inDays(-170),
     tokens: [sampleBastionToken()],
     contacts: [
@@ -253,7 +255,7 @@ export class FakeBastionsApi extends BastionsApi {
       hint: summary.hint,
       description: summary.description,
       createdAt: summary.createdAt,
-      expiresAt: summary.expiresAt,
+      expiresAt: summary.expiresAt ?? '',
     };
   }
 

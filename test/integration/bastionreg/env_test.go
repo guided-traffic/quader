@@ -307,6 +307,8 @@ type replicaOpts struct {
 	maxRegistrations int
 	// bindings run before the replica serves: the decision point reads the role bindings when it starts.
 	bindings func(e *env)
+	// declaredSecrets names the Secret of each registration the replica's configuration declares (R-BAS-127).
+	declaredSecrets map[string]string
 }
 
 func (e *env) newReplica(name string, o replicaOpts) *replica {
@@ -379,7 +381,7 @@ func (e *env) newReplica(name string, o replicaOpts) *replica {
 	})
 	r.manager = principal.NewManager(principal.ManagerOptions{DB: r.db, Notifier: r.changes, Recorder: rec, BreakGlassName: "breakglass"})
 	r.regs = bastionmain.NewRegistrations(bastionmain.RegistrationOptions{
-		DB: r.db, Notifier: r.changes, Recorder: rec, Tokens: r.tokens, Max: o.maxRegistrations,
+		DB: r.db, Notifier: r.changes, Recorder: rec, Tokens: r.tokens, Max: o.maxRegistrations, DeclaredSecrets: o.declaredSecrets,
 	})
 	r.auth = bastionAuth{bastionmain.NewAuthenticator(r.tokens)}
 	r.stage = auth.New(auth.Options{

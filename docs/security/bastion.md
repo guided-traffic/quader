@@ -101,13 +101,38 @@ that owns it:
 - **The token is refused everywhere but on the interface.** As `Authorization: Bearer`, as the Basic password and as `X-NuGet-ApiKey` it
   is `401 invalid_token` before any lookup; listing it in an endpoint's `auth.token_types` stops start-up
   ([tokens-and-credentials.md](tokens-and-credentials.md#bastion-tokens)).
-- **It always expires and is limited in number.** At most three unrevoked tokens per registration by default, so that an overlap fits and
+- **An issued token always expires and is limited in number** (the declared token of [the next section](#a-registration-the-configuration-declares) does not, and counts against no limit). At most three unrevoked tokens per registration by default, so that an overlap fits and
   a forgotten token does not accumulate; the value is shown once and is in no event, no log line and no list.
 - **Who manages it.** `endpoints:write` registers, issues, disables and deletes; `tokens:revoke` alone may revoke a token, so a
   security administrator can end a leaked token without managing endpoints. Every operation is an audit event with `resource_type`
   `bastion`, a revocation is journaled, and deleting a registration revokes its tokens first.
 - **Disabling is not revoking.** A disabled registration refuses its tokens within `auth.revocation_bound` on every replica and enabling
   it restores them; nothing is deleted.
+
+### A registration the configuration declares
+
+Built ([R-BAS-127](../spec/bastion.md#r-bas-127--a-bastion-registration-declared-in-the-main-installations-configuration)). The main
+installation's configuration may declare a registration and the value of its token (`bastions.declared`), so that it exists again after a
+fresh database:
+
+- **What the main installation's pods now read.** The migration Job alone mounts the Bastion's token Secret, read-only and optional, at
+  `/var/run/secrets/quader/bastion-tokens/<name>/token` ([_bastions.tpl](../../deploy/helm/quader/templates/_bastions.tpl)); no api,
+  packages, worker, scanner, backup or restore pod mounts it. `quader migrate` reads the file, checks the value (the issued format, at most
+  1,024 bytes) and forgets it: its errors and the audit events name the token's hint at most, never the value.
+- **Stored as an issued token is.** The database keeps the SHA-256 of the value and its hint, in `api_token` like every token, with
+  `created_via: configuration`, and the registration points at it (`bastion.declared_token`). The configuration file and its ConfigMaps
+  hold the path and the Secret's name, never the value.
+- **Who can change it.** Whoever writes the Secret in the main installation's namespace (and whoever writes the values in Git) decides the
+  Bastion's credential at the next rollout: they can rotate it, or put in the value of another Bastion they hold, which makes that
+  Bastion speak as this registration. That is the right to write a Secret of the namespace, which already decides the database's and the
+  key ring's credentials. On the API the declared members (description, networks), the declared token's revocation and the deletion answer
+  `409 managed_by_config`; an administrator keeps the switches, the limits and the enablement, so disabling the registration still refuses
+  the declared token at once.
+- **What it does not loosen.** A revoked, expired or another registration's value stops the run: a token revoked because it leaked does not
+  come back by configuration. The value must be a Bastion token in the issued format, so the routing by prefix (R-BAS-005), the Bastion's
+  own check and the log redaction hold for it as for every Bastion token.
+- **It does not expire** ([H-2366](#h-2366--a-declared-bastion-token-does-not-expire)), and a restore can leave the Bastion refused until the
+  next migration ([H-2367](#h-2367--after-a-restore-the-declared-token-is-the-restore-points-until-the-next-migration)).
 
 ## The main installation's side of the interface
 
@@ -473,7 +498,8 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
 not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285, H-2289 to H-2297,
 H-2348 to H-2351, H-2354, H-2355 (H-2291, H-2348 and H-2349 are E13's, built; H-2281 to H-2283, H-2354 and H-2355 E8's, live); so are the gaps of the public catalogue's wire (W-35, interface version 8),
 H-2305 to H-2307, and of its builder (W-35's P6), H-2308 to H-2314; so are the gaps of the packages built since: H-2356 and H-2357
-(E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11), H-2322 and H-2323 (W-35's P8 with E17);
+(E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11), H-2322 and H-2323 (W-35's P8 with E17); and of a registration the
+configuration declares (R-BAS-127), H-2366 and H-2367;
 those of a Bastion's budgets are on [usage-and-limits.md](usage-and-limits.md#what-this-does-not-cover) (H-2284, H-2286 to H-2288). Numbers
 marked [derived] are calculated from the defaults, not measured.
 
@@ -1059,3 +1085,26 @@ slots of the chart's former defaults (a wait of 2 s), so after its first handsha
 slots alone, as before E9a (the measurement's flood of distinct artifacts reached 12 to 18 requests and 34 to 52 MB a second at the main
 installation from 256 addresses). The built-in configuration's ceiling holds only before the first handshake. What closes it: E8, whose
 registration carries the ceiling's default (Q-BAS-448) for every Bastion.
+
+### H-2366 · A declared Bastion token does not expire
+
+Stage: R-BAS-127, [Q-BAS-466](../spec/bastion.md#q-bas-466--the-declared-token-does-not-expire-its-lifetime-is-its-declarations). Subject:
+the token a registration's configuration declares. Live wherever `bastions.declared` is used. An issued Bastion token always expires, so a
+token nobody renews ends by itself; the declared one ends only when its Secret holds another value or the declaration is removed, and
+nothing at either side reminds anyone to rotate it (the Bastion's metric of the remaining lifetime is `+Inf`). What makes it real: a value
+copied out of the Secret (a backup of the namespace, a support bundle, a laptop) stays a working Bastion credential for as long as nobody
+changes the Secret. What it can do is still only what a Bastion token can (R-BAS-005), from the networks of the registration's `egress` for
+anything a caller's address decides (R-BAS-017). Rotating the Secret on a schedule of the operator's closes it for each rotation; the card's
+**Last used** shows whether a copy is used beside the Bastion.
+
+### H-2367 · After a restore the declared token is the restore point's until the next migration
+
+Stage: R-BAS-127, R-HA-054, [backup-and-restore.md](../spec/backup-and-restore.md). Subject: a registration the configuration declares, after
+a restore. Live after every restore. The restore Job applies no declaration: the registration, its mark and its declared token are those of
+the restore point, and the journal's replay revokes a declared token that a rotation revoked after it. A value stored after the point is not
+known until the next `quader migrate`, the upgrade that turns `restore.enabled` off: until then the Bastion holding the current value is
+refused (its callers are served from its cache within the grace period, then refused), and a value the Secret held at the restore point
+but replaced since is accepted again until that run revokes it. What makes it real: a rotation between the restore point and the restore,
+which is the case where the old value was rotated because it may have leaked. The upgrade that turns `restore.enabled` off closes it: its
+migration Job is a pre-upgrade hook and runs before the roles' new replicas start.
+

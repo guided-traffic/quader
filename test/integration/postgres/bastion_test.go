@@ -93,8 +93,14 @@ func TestBastionMigration(t *testing.T) {
 		token := "INSERT INTO quader.api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at) " +
 			"VALUES ($1, $2, decode(repeat('cd', 32), 'hex'), 'qdr_bst_…abcd', $3, 'Bastion token', '{}', 'api', %s)"
 		mustExec(t, admin, strings.Replace(token, "%s", "now() + interval '1 year'", 1), bastionToken, "bst", bastionPrincipal)
-		// A Bastion token expires; a bst token of a user principal is refused by the owner guard.
+		// An issued Bastion token expires; only one the configuration declares (created_via configuration, R-BAS-127) may not. A bst
+		// token of a user principal is refused by the owner guard.
 		wantState(t, admin, "23514", strings.Replace(token, "%s", "NULL", 1), "bb000000-0000-0000-0000-0000000000b2", "bst", bastionPrincipal)
+		mustExec(t, admin, "INSERT INTO quader.api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at) "+
+			"VALUES ('bb000000-0000-0000-0000-0000000000b4', 'bst', decode(repeat('ce', 32), 'hex'), 'qdr_bst_…abce', $1, 'Bastion token', '{}', 'configuration', NULL)",
+			bastionPrincipal)
+		// Gone again, so the statements below count the one issued token.
+		mustExec(t, admin, "DELETE FROM quader.api_token WHERE id = 'bb000000-0000-0000-0000-0000000000b4'")
 		wantState(t, admin, "23514", strings.Replace(token, "%s", "now() + interval '1 day'", 1), "bb000000-0000-0000-0000-0000000000b3", "xyz", bastionPrincipal)
 	})
 

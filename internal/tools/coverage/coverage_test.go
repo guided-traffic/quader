@@ -171,8 +171,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1353 since the main installation builds the public catalogue (R-BAS-104 to R-BAS-108, five P1 requirements of W-35, P6).
 		// 1355 since a forward's problems and a relayed registry token name nothing of the main installation (R-BAS-114, R-BAS-115,
 		// two P1 requirements of W-35, P8, with W-34's E17).
-		if len(m.Reqs) != 1355 || count[prioMVP] != 742 || count[prioP1] != 574 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1355 (742, 574, 39)",
+		// 1356 since a Bastion registration can be declared in the main installation's configuration (R-BAS-127, one MVP
+		// requirement).
+		if len(m.Reqs) != 1356 || count[prioMVP] != 743 || count[prioP1] != 574 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1356 (743, 574, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

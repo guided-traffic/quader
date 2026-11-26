@@ -10491,10 +10491,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-333 questions on [spec/bastion.md](spec/bastion.md).
+338 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 333 questions</summary>
+<summary>Q-BAS: 338 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10831,6 +10831,11 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-462](spec/bastion.md#q-bas-462--served-twice-means-filled-once-and-served-from-the-same-store-once-more) | Served twice means filled once and served from the same store once more | Decided by the development agent on 2026-11-26 | (a) A fill by any replica and a serve from the store by any replica | — |
 | [Q-BAS-463](spec/bastion.md#q-bas-463--the-protected-bytes-are-counted-by-the-sweep-and-shown-by-the-replica-that-swept) | The protected bytes are counted by the sweep and shown by the replica that swept | Decided by the development agent on 2026-11-26 | (a) A sweep of the timer lists the markers of both areas, a sweep of the size those of the area it sweeps; the replica that swept sets the gauge, one of a bucket without the lease sets it to 0 | — |
 | [Q-BAS-464](spec/bastion.md#q-bas-464--a-replicas-own-commit-lets-the-next-serve-write-the-marker-again) | A replica's own commit lets the next serve write the marker again | Decided by the development agent on 2026-11-26 | (a) A commit of the replica forgets the throttle of its content address | — |
+| [Q-BAS-465](spec/bastion.md#q-bas-465--a-bastion-registration-can-be-declared-in-the-main-installations-configuration-and-quader-migrate-applies-it) | A Bastion registration can be declared in the main installation's configuration, and quader migrate applies it | Decided by the development agent on 2026-11-26 | (a) `bastions.declared` in the configuration, applied by `quader migrate` on every run with the token's value from a Secret | — |
+| [Q-BAS-466](spec/bastion.md#q-bas-466--the-declared-token-does-not-expire-its-lifetime-is-its-declarations) | The declared token does not expire: its lifetime is its declaration's | Decided by the development agent on 2026-11-26 | (a) No expiry; the token ends when the Secret holds another value or the declaration is removed; the authenticator accepts no expiry only for a registration's declared token | — |
+| [Q-BAS-467](spec/bastion.md#q-bas-467--the-declared-value-is-a-bastion-token-in-the-issued-format-made-by-a-command-or-by-issue-token) | The declared value is a Bastion token in the issued format, made by a command or by Issue token | Decided by the development agent on 2026-11-26 | (a) Only the issued format (`qdr_bst_`, 57 characters, checksum); `quader admin bastion token generate` prints one without configuration or database; a token issued on the screen whose value the Secret holds is taken as the declared one | — |
+| [Q-BAS-468](spec/bastion.md#q-bas-468--a-declaration-taken-out-keeps-the-registration-a-revoked-value-stops-the-run) | A declaration taken out keeps the registration; a revoked value stops the run | Decided by the development agent on 2026-11-26 | (a) The registration stays, its mark and declared token go (reason `admin`), the run logs a warning; a revoked, expired or foreign value stops the run naming the entry | — |
+| [Q-BAS-469](spec/bastion.md#q-bas-469--only-the-migration-job-reads-the-declared-token) | Only the migration Job reads the declared token | Decided by the development agent on 2026-11-26 | (a) The chart projects the Secrets into the migration Job alone, optional, read-only; replicas verify against the hash in the database | — |
 
 </details>
 
@@ -13041,10 +13046,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-709 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+712 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 709 questions</summary>
+<summary>Q-UI: 712 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13757,6 +13762,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1492](spec/api-and-ui.md#q-ui-1492--an-opened-row-names-an-item-that-is-no-file-by-its-action-and-its-version) | An opened row names an item that is no file by its action and its version | Decided by the development agent on 2026-11-26 | (a) A file's item shows its path, linked; an item of a version, a manifest or a decision shows its action's name with its version muted beside it, no link; its digest where it names one, a dash otherwise | — |
 | [Q-UI-1493](spec/api-and-ui.md#q-ui-1493--the-log-of-one-rows-events-is-group-and-its-chip-events-of) | The log of one row's events is `?group=` and its chip **Events of** | Decided by the development agent on 2026-11-26 | (a) `?group=<first event's ID>`, the chip **Events of** with the unit's name, the caption "The events of one row", from `GET /api/v1/audit/rows/{id}/events` | — |
 | [Q-UI-1494](spec/api-and-ui.md#q-ui-1494--german-counts-a-rows-items-as-einträge-and-a-days-volume-as-gbtag) | German counts a row's items as "Einträge" and a day's volume as "GB/Tag" | Decided by the development agent on 2026-11-26 | (a) A row's items are "Einträge" (an item is a file, a version's event or a decision), and the compact line of a limit profile and a rule's override say "GB/Tag" and "/Tag" | — |
+| [Q-UI-1497](spec/api-and-ui.md#q-ui-1497--a-declared-bastion-registration-says-where-it-comes-from-with-the-words-of-a-declared-account) | A declared Bastion registration says where it comes from, with the words of a declared account | Decided by the development agent on 2026-11-26 | (a) A lock line under the facts in the declared account's words: "From the Helm values, token from Secret <name>. Its description, addresses and that token are changed or removed there; to delete it, remove it there first.", and "From the installation's configuration file. …" without a Secret's name; the addresses as text, no field | — |
+| [Q-UI-1498](spec/api-and-ui.md#q-ui-1498--a-declared-registrations-card-offers-no-delete) | A declared registration's card offers no Delete | Decided by the development agent on 2026-11-26 | (a) **Delete** is not rendered; the lock line says to remove it in the values first | — |
+| [Q-UI-1499](spec/api-and-ui.md#q-ui-1499--the-declared-token-reads-never-under-expires-and-in-the-configuration-under-its-name-with-no-revoke) | The declared token reads Never under Expires and "In the configuration" under its name, with no Revoke | Decided by the development agent on 2026-11-26 | (a) In its row **Expires** reads **Never**, a lock with "In the configuration" stands beside the hint under its name, and the actions' cell is empty; the other tokens keep **Revoke** | — |
 
 </details>
 

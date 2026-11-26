@@ -3244,6 +3244,62 @@
       },
       "additionalProperties": false
     },
+    "bastions": {
+      "type": "object",
+      "description": "The Bastion registrations declared in the values (R-BAS-127): rendered into config.bastions.declared and applied by the migration Job, which alone mounts the token Secrets",
+      "properties": {
+        "declared": {
+          "type": "array",
+          "default": [],
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "token"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,19}$"
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 1024
+              },
+              "egress": {
+                "type": "array",
+                "maxItems": 32,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "token": {
+                "type": "object",
+                "required": [
+                  "existingSecret"
+                ],
+                "properties": {
+                  "existingSecret": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "default": "token"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "signatures": {
       "type": "object",
       "description": "The trust anchors of the signatures on artifacts declared in the values (R-SIG-018): rendered into config.signatures.anchors and applied by the migration Job with the scope configuration",

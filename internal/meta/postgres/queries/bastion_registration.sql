@@ -16,17 +16,19 @@ VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(description)::text, sqlc.arg(egress):
 -- name: BastionGet :many
 -- A registration by name. revision is the ETag (R-API-012); enabled is the principal's status; handover is the switch of the
 -- handover per blob (R-BAS-071, 00110); egress the networks the Bastion connects from (R-BAS-017, 00145), each in the text form of
--- cidr, which always names the prefix length; gui, docs and the limits_* members the rest of its configuration (R-BAS-093, 00147).
+-- cidr, which always names the prefix length; gui, docs and the limits_* members the rest of its configuration (R-BAS-093, 00147);
+-- declared_at the mark of a registration the configuration declares (R-BAS-127, 00148), NULL otherwise.
 SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
        b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput,
-       b.limits_ceiling
+       b.limits_ceiling, b.declared_at
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name = sqlc.arg(name)::text;
 
 -- name: BastionLock :many
 -- The registration by name, locking the principal row: an update or a delete compares If-Match with the
 -- revision in the transaction that writes.
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.revision
+SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.revision,
+       (b.declared_at IS NOT NULL)::boolean AS declared, coalesce(b.declared_token::text, '')::text AS declared_token
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name = sqlc.arg(name)::text
    FOR UPDATE OF p;
@@ -36,7 +38,7 @@ SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.re
 -- after and a generous max_rows.
 SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
        b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput,
-       b.limits_ceiling
+       b.limits_ceiling, b.declared_at
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name > sqlc.arg(after)::text
  ORDER BY p.name
@@ -170,7 +172,8 @@ SELECT count(*) FROM api_token
 -- creation and last use. Revoked tokens are listed only when include_revoked is set. Newest first.
 SELECT t.id::text AS id, t.hint, t.description, t.created_at, t.expires_at, t.revoked_at, t.last_used_at,
        coalesce(host(t.last_used_addr), '')::text AS last_used_addr,
-       coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired
+       coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired,
+       EXISTS (SELECT 1 FROM bastion b WHERE b.declared_token = t.id)::boolean AS declared
   FROM api_token t
  WHERE t.principal_id = sqlc.arg(id)::text::uuid AND t.type = 'bst'
    AND (sqlc.arg(include_revoked)::boolean OR t.revoked_at IS NULL)
@@ -179,26 +182,68 @@ SELECT t.id::text AS id, t.hint, t.description, t.created_at, t.expires_at, t.re
 -- name: BastionListTokensOfAll :many
 -- The same for the list of registrations: one read for all of them.
 SELECT t.principal_id::text AS bastion_id, t.id::text AS id, t.hint, t.description, t.created_at, t.expires_at,
-       t.last_used_at, coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired
+       t.last_used_at, coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired,
+       EXISTS (SELECT 1 FROM bastion b WHERE b.declared_token = t.id)::boolean AS declared
   FROM api_token t
  WHERE t.type = 'bst' AND t.revoked_at IS NULL
  ORDER BY t.principal_id, t.id DESC;
 
 -- name: BastionTokenOwner :many
 -- The registration a token belongs to, for the revocation of one token by ID (R-BAS-004): no row when the
--- token is not a Bastion token of that registration.
-SELECT t.id::text AS id, t.principal_id::text AS bastion_id, t.revoked_at
+-- token is not a Bastion token of that registration. declared says it is the token the registration's configuration declares
+-- (R-BAS-127), which the API does not revoke.
+SELECT t.id::text AS id, t.principal_id::text AS bastion_id, t.revoked_at,
+       EXISTS (SELECT 1 FROM bastion b WHERE b.declared_token = t.id)::boolean AS declared
   FROM api_token t JOIN principal p ON p.id = t.principal_id
  WHERE t.id = sqlc.arg(id)::text::uuid AND t.type = 'bst' AND p.kind = 'bastion' AND p.name = sqlc.arg(name)::text;
 
 -- name: BastionTokenBySecret :many
 -- The lookup of the Bastion authenticator (internal/bastionmain.TokenAuthenticator): one indexed read by the
 -- secret hash, joined with the registration; a row of another type is never returned here. rejection_due says
--- whether token.rejected is due for this token (at most once an hour, as for every token, R-AUTH-023 step 4).
+-- whether token.rejected is due for this token (at most once an hour, as for every token, R-AUTH-023 step 4); declared whether it
+-- is the token its registration's configuration declares (R-BAS-127), the one Bastion token that may have no expiry.
 SELECT t.id::text AS token_id, t.principal_id::text AS bastion_id, p.name, (p.status = 'active')::boolean AS enabled,
        t.expires_at, coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired,
        (t.revoked_at IS NOT NULL)::boolean AS revoked, t.hint,
-       coalesce(t.rejection_logged_at IS NULL OR t.rejection_logged_at < now() - interval '1 hour', true)::boolean AS rejection_due
-  FROM api_token t JOIN principal p ON p.id = t.principal_id
+       coalesce(t.rejection_logged_at IS NULL OR t.rejection_logged_at < now() - interval '1 hour', true)::boolean AS rejection_due,
+       coalesce(b.declared_token = t.id, false)::boolean AS declared
+  FROM api_token t JOIN principal p ON p.id = t.principal_id JOIN bastion b ON b.principal_id = p.id
  WHERE t.secret_sha256 = sqlc.arg(secret_sha256)::bytea AND t.type = 'bst' AND p.kind = 'bastion';
 
+
+-- name: BastionDeclaredList :many
+-- The registrations the configuration declares (R-BAS-127) with the hash of their declared token, for the run of quader migrate that
+-- applies bastions.declared: the ones it no longer declares lose the mark and their token. Taken under the configuration lock.
+SELECT p.id::text AS id, p.name, coalesce(b.declared_token::text, '')::text AS declared_token,
+       coalesce(t.secret_sha256, ''::bytea)::bytea AS declared_sha256, (t.revoked_at IS NOT NULL)::boolean AS declared_revoked
+  FROM principal p JOIN bastion b ON b.principal_id = p.id LEFT JOIN api_token t ON t.id = b.declared_token
+ WHERE p.kind = 'bastion' AND b.declared_at IS NOT NULL
+ ORDER BY p.name;
+
+-- name: BastionSetDeclared :many
+-- Set the mark of a registration the configuration declares, keeping the time of its first declaration, or clear it with its token
+-- pointer (R-BAS-127). No row when the mark already is the one asked for.
+UPDATE bastion
+   SET declared_at = CASE WHEN sqlc.arg(declared)::boolean THEN coalesce(declared_at, now()) END,
+       declared_token = CASE WHEN sqlc.arg(declared)::boolean THEN declared_token END
+ WHERE principal_id = sqlc.arg(id)::text::uuid AND (declared_at IS NOT NULL) <> sqlc.arg(declared)::boolean
+RETURNING principal_id::text AS id;
+
+-- name: BastionSetDeclaredToken :exec
+-- Point a declared registration at the token its configuration declares (R-BAS-127), or at none.
+UPDATE bastion SET declared_token = NULLIF(sqlc.arg(token_id)::text, '')::uuid WHERE principal_id = sqlc.arg(id)::text::uuid;
+
+-- name: BastionTokenByHash :many
+-- A token whose value has the hash, whatever its state: quader migrate takes a value the configuration declares that was issued on
+-- the screen as the declared token, and refuses one that is revoked, expired or another principal's (R-BAS-127). At most one row
+-- (secret_sha256 is unique).
+SELECT t.id::text AS id, t.principal_id::text AS principal_id, t.type, (t.revoked_at IS NOT NULL)::boolean AS revoked,
+       coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired, coalesce(p.name, '')::text AS owner_name
+  FROM api_token t LEFT JOIN principal p ON p.id = t.principal_id
+ WHERE t.secret_sha256 = sqlc.arg(secret_sha256)::bytea;
+
+-- name: BastionTokenUnexpire :exec
+-- A token issued on the screen whose value the configuration declares becomes the declared token: it no longer expires, its lifetime
+-- is its declaration's, and the row is the configuration's (created_via configuration, which the check api_token_check requires of a
+-- Bastion token without an expiry; token.created keeps how it was issued) (R-BAS-127, Q-BAS-466).
+UPDATE api_token SET expires_at = NULL, created_via = 'configuration' WHERE id = sqlc.arg(id)::text::uuid AND type = 'bst';

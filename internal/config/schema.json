@@ -1173,6 +1173,12 @@
           },
           "type": "object"
         },
+        "declared": {
+          "default": {},
+          "description": "Bastion registrations the configuration declares, keyed by the registration's name (R-BAS-127). Each entry names description, egress (the networks the Bastion connects from, CIDR or single addresses) and token_file, the absolute path of a file that holds the Bastion's token (qdr_bst_, 57 characters, the value the Bastion's chart reads from mainToken.existingSecret), and secret_name, the Kubernetes Secret the admin page names. quader migrate applies the map on every run, also on a fresh database: it creates a missing registration, makes its description, networks and token follow the entry, replaces the token when the file holds another value, and of a registration no longer declared revokes the token it had declared and keeps the rest. Only migrate reads the file; a value that is not a Bastion token stops migrate with the name. Limits, presets, switches and tokens issued on the screen stay an administrator's. In the chart, bastions.declared renders this map. As an environment variable the map is JSON, for example QUADER_BASTIONS_DECLARED='{\"partners\":{\"egress\":[\"198.51.100.0/28\"],\"token_file\":\"/run/secrets/partners/token\"}}'.",
+          "type": "object",
+          "x-quader-env": "QUADER_BASTIONS_DECLARED"
+        },
         "downloads": {
           "additionalProperties": false,
           "properties": {

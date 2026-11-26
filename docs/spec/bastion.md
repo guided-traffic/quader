@@ -31,7 +31,9 @@ registry token's payload version 2 (row 8 of R-BAS-099, package E17, built on 20
 inventory of what a forward relays in R-BAS-029, Q-BAS-385 to Q-BAS-389); they revise in place R-BAS-002, R-BAS-009, R-BAS-010, R-BAS-014 to R-BAS-017, R-BAS-023,
 R-BAS-025, R-BAS-029, R-BAS-031, R-BAS-035 to R-BAS-038, R-BAS-046, R-BAS-051, R-BAS-052, R-BAS-054, R-BAS-058, R-BAS-059, R-BAS-071,
 R-BAS-074, Q-BAS-15, Q-BAS-21, Q-BAS-38, Q-BAS-43, Q-BAS-74, Q-BAS-88, Q-BAS-116, Q-BAS-118, Q-BAS-123, Q-BAS-315, H-388, H-1244, H-2272,
-H-2273 and H-2277, each with a marked sentence of what the code does until its package lands.
+H-2273 and H-2277, each with a marked sentence of what the code does until its package lands. The owner's wish of 2026-11-26 that a Bastion stays connected
+after a fresh database is specified and built in [A registration the configuration declares](#a-registration-the-configuration-declares)
+(R-BAS-127, Q-BAS-465 to Q-BAS-469, H-2366 and H-2367).
 
 This page specifies the Quader Bastion: a second, smaller deployment of Quader that is exposed to the internet, gives external
 parties read access to the content of a main installation with the main installation's own tokens, keeps a cache of what it
@@ -320,6 +322,8 @@ Priority: **MVP** · Covers: DIST-025
   most `auth.tokens.bst.max_ttl`, defaulting to `auth.tokens.bst.default_ttl`; 0, a negative value, under 60 seconds and above the
   maximum are `400 invalid_ttl`, and a missing description becomes `Bastion <name>`
   ([Q-BAS-63](#q-bas-63--a-bastion-tokens-lifetime-is-ttlseconds-alone-every-violation-is-400-invalid_ttl-the-description-is-optional)).
+  *Amended on 2026-11-26 (R-BAS-127, [Q-BAS-466](#q-bas-466--the-declared-token-does-not-expire-its-lifetime-is-its-declarations)):* the
+  token a registration's configuration declares does not expire and counts against no limit; every issued token still expires.
   At most `auth.tokens.max_active_per_principal.bst` unrevoked tokens exist per registration, so an overlap (R-BAS-006) fits and a
   forgotten token does not accumulate. The validation is the token service's, through its cache and revocation bound
   ([Q-BAS-62](#q-bas-62--the-bastion-token-authenticator-is-the-token-services-with-its-cache-gate-and-change-area)); disabling a
@@ -2762,6 +2766,9 @@ config:
 
 # ── Existing Secrets (the chart never creates one) ──────────────────────────
 secrets:
+  # The Bastion's token: issued on the main installation's Bastions page, or declared in its values (bastions.declared, R-BAS-127),
+  # where the main installation's migration Job reads the same value from a Secret of its namespace, so that the registration survives a
+  # fresh database. Make a value with `quader admin bastion token generate`.
   mainToken:
     existingSecret: ""                  # required; example: quader-bastion-token (the qdr_bst_ token)
     key: token
@@ -6237,6 +6244,104 @@ Acceptance criteria:
   `TestR_BAS_101_TheCatalogueRoutesServeTheKeptDocuments`, `TestR_BAS_101_TheBatchStopsAtItsBound` (`internal/api/v1`), milliseconds.
 - Integration: the end of `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch`: a catalogue switched off and on answers the
   cursor of the one before with `reset`, on PostgreSQL.
+
+## A registration the configuration declares
+
+The owner's wish of 2026-11-26: "Kannst du bitte dafür sorgen, dass der Bastion immer mit der Instanz verbunden wird, auch wenn du die DB
+resetest." His installation had been started on a fresh database; the registration and its token lived only in the database, so his
+Bastion was refused at every handshake while its chart still held the old token. The development agent's answer is a registration the
+main installation's configuration declares, after the pattern of an account the configuration declares
+([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-077) and of the trust anchors of R-SIG-018
+([Q-BAS-465](#q-bas-465--a-bastion-registration-can-be-declared-in-the-main-installations-configuration-and-quader-migrate-applies-it)).
+
+### R-BAS-127 · A Bastion registration declared in the main installation's configuration
+Priority: **MVP** · Covers: DIST-025
+
+The priority is MVP: it is what makes a Bastion reliable for an installation run from Git, where a fresh database must not cut the
+Bastion off until someone registers it again by hand.
+
+```yaml
+bastions:
+  declared:                                   # default {}; keyed by the registration's name
+    partners:                                 # example: ^[a-z][a-z0-9-]{0,19}$
+      description: Partner access             # example; default empty
+      egress: [10.252.0.0/16]                 # example; the networks the Bastion connects from (R-BAS-017); default none
+      token_file: /var/run/secrets/quader/bastion-tokens/partners/token   # example; required, a clean absolute path
+      secret_name: quader-bastion-token       # example; the Secret the card names, empty outside the chart
+```
+
+The chart renders the map from `bastions.declared` of its values, a list of `{name, description, egress, token: {existingSecret, key}}`
+(key `token` by default), and mounts the Secrets into the migration Job alone
+([Q-BAS-469](#q-bas-469--only-the-migration-job-reads-the-declared-token)). As an environment variable the map is JSON
+(`QUADER_BASTIONS_DECLARED`).
+
+- **At load** the form is checked and no file is read: the name's rule, a description of at most 1,024 characters, at most 32 networks
+  each an address or a network in CIDR form, a clean absolute `token_file`, and no more entries than `bastions.max_registrations`.
+- **The value** is a Bastion token in the format the main installation issues: `qdr_bst_`, 57 characters, the checksum of R-AUTH-022. It is
+  the same value the Bastion's chart reads from `secrets.mainToken`. A random string of a secret generator is refused
+  ([Q-BAS-467](#q-bas-467--the-declared-value-is-a-bastion-token-in-the-issued-format-made-by-a-command-or-by-issue-token)). An operator
+  makes one with `quader admin bastion token generate`, which needs no configuration and no database, or with the card's **Issue token**.
+- **`quader migrate` applies it** on every run, after the trust anchors and before the project upstream, in one transaction with the actor
+  `system:configuration`, under the configuration lock of the registrations (R-ARCH-017). It reads each entry's file first (the trailing
+  line break dropped, at most 1,024 bytes) and checks the value and the networks (R-BAS-017's rules); a missing, empty, oversized or
+  malformed file, or a network the rules refuse, stops the run with `bastions.declared.<name>` named, every problem in one error, and
+  nothing written. Then, per entry:
+  - a registration that does not exist is created (`bastion.created` with `source: configuration`), with the preset Internet and every
+    other default of a new registration, and counts against `bastions.max_registrations`;
+  - the registration is marked (`bastion.declared_at`, migration 00148; `bastion.updated` with `fields: [declared]`,
+    `reason: configuration`);
+  - its description and its networks follow the entry (`bastion.updated` with the field and `reason: configuration`, and the networks'
+    lists before and after);
+  - the value's hash becomes its declared token (`bastion.declared_token`): the same value writes nothing; a value the database does not
+    hold is stored as an issued token is (its SHA-256 and its hint, R-AUTH-023), with no expiry, `created_via: configuration` and
+    `token.created`; a value that is a token of this registration issued on the screen is taken as the declared token and no longer expires
+    (its row becomes `created_via: configuration`, the one form of a Bastion token without an expiry the database admits;
+    `bastion.updated` with `fields: [token]`); then a previous declared token is revoked with the reason `rotated`
+    (`token.revoked`, journaled), so a rotation is a change of the Secret and a rollout;
+  - a value that is revoked (also the declared token's own value, revoked since), expired, or another registration's token stops the run with
+    the entry named and the hint, never the value
+    ([Q-BAS-468](#q-bas-468--a-declaration-taken-out-keeps-the-registration-a-revoked-value-stops-the-run)).
+
+  A registration marked whose name the configuration no longer declares loses the mark, its declared token is revoked with the reason
+  `admin`, `bastion.updated` records `reason: configuration_removed`, and the run logs a warning naming it; the registration, its other
+  tokens and everything an administrator set stay. A second run with the same configuration writes nothing.
+- **The declared token does not expire** ([Q-BAS-466](#q-bas-466--the-declared-token-does-not-expire-its-lifetime-is-its-declarations)):
+  its lifetime is its declaration's. The authenticator of the Bastion interface accepts a Bastion token without an expiry only when it is its
+  registration's declared token; the handshake sends `tokenExpiresAt` as the zero time for it, which the Bastion reads as no expiry
+  (its metric of the remaining lifetime is `+Inf`, and it warns of no expiry). The interface is unchanged. The declared token does not count
+  against `auth.tokens.max_active_per_principal.bst`.
+- **What stays the administrator's:** the switches, the limits and the rules of the place, enable and disable, and tokens issued on the
+  screen. They survive every run; after a fresh database they are the defaults of a new registration again.
+- **The API and the card** ([api-and-ui.md](api-and-ui.md) [Q-UI-1497](api-and-ui.md#q-ui-1497--a-declared-bastion-registration-says-where-it-comes-from-with-the-words-of-a-declared-account)
+  to [Q-UI-1499](api-and-ui.md#q-ui-1499--the-declared-token-reads-never-under-expires-and-in-the-configuration-under-its-name-with-no-revoke)): the
+  registration carries `declared: {since, secretName}` (null otherwise; the Secret's name as the configuration of the replica that answers
+  names it) and each token `declared`; `expiresAt` is null for the declared token. A `PATCH` that changes `description` or `egress` of a
+  declared registration, the revocation of its declared token and its deletion answer `409 managed_by_config`.
+- **A restore** ([backup-and-restore.md](backup-and-restore.md)) brings the registration back as it was at the restore point, mark and
+  declared token included; the journal's replay revokes a declared token that a rotation revoked after that point. The restore Job applies
+  no declaration: a value stored after the point is missing, and the Bastion is refused, until the next `quader migrate` (the upgrade that
+  turns `restore.enabled` off) stores it again.
+
+*Built on 2026-11-26:* [config/bastions.go](../../internal/config/bastions.go),
+[00148_bastion_declared.sql](../../internal/meta/postgres/migrations/00148_bastion_declared.sql),
+[declared.go](../../internal/bastionmain/declared.go), [migrate_bastions.go](../../internal/app/migrate_bastions.go),
+`InsertDeclaredBastionTx` and `ParseDeclaredBastion` in [token/bastion.go](../../internal/auth/token/bastion.go),
+[_bastions.tpl](../../deploy/helm/quader/templates/_bastions.tpl), [bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts),
+`quader admin bastion token generate` in [admin_bastion.go](../../cmd/quader/admin_bastion.go).
+
+Acceptance criteria:
+
+- Unit, milliseconds, bytes: `TestR_BAS_127_TheDeclaredRegistrationsAreCheckedInTheirFormOnly` (`internal/config`),
+  `TestR_BAS_127_TheDeclaredTokenIsReadFromItsFileAndChecked` (`internal/app`),
+  `TestR_BAS_127_TheRunDecidesEachDeclaredTokenFromWhatTheRegistrationHolds` (`internal/bastionmain`: created, unchanged, changed, revoked,
+  released), `TestR_BAS_127_TheGeneratedValueIsABastionToken` (`cmd/quader`).
+- Integration, area `bastionreg`, about 3 s: `TestR_BAS_127_ADeclaredRegistrationSurvivesAFreshDatabase`: after `quader migrate` on a
+  fresh database the registration exists with its members and the authenticator of the handshake accepts the value without an expiry; a
+  second run records nothing and keeps the revision; the API reads it declared with the Secret's name and refuses the declared members,
+  the token's revocation and the deletion with `409 managed_by_config` while it takes a switch; a new value replaces the token and the old
+  one is refused within the revocation bound; the revoked value back in the file stops the run naming the entry and not the value; a value
+  issued on the screen is taken; a run without the declaration releases the registration and keeps it and its issued token.
+- Chart: `TestR_BAS_127_TheDeclaredBastionsReachTheMigrationJobAlone`. Web: the card's case of `bastions.spec.ts`.
 
 ## Deferred
 
@@ -12776,6 +12881,86 @@ marker, and the refilled object would stay unprotected for up to an hour.
 
 **Choice:** (a). **Applied in the spec:** R-BAS-098; code: `forgetTouch` in [store.go](../../internal/bastion/cache/store.go), `Fill.Commit`
 in [fill.go](../../internal/bastion/cache/fill.go).
+
+### Q-BAS-465 · A Bastion registration can be declared in the main installation's configuration, and quader migrate applies it
+
+Status: **Decided by the development agent on 2026-11-26** (the owner's wish of the same day, R-BAS-127) — selected from the options below;
+the owner reviews it at the walkthrough.
+
+Context: a registration and its token lived only in the database. After a fresh database the owner's Bastion was refused at every handshake
+until someone registered it again by hand and rolled the new token out to the Bastion.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `bastions.declared` in the configuration, applied by `quader migrate` on every run with the token's value from a Secret (chosen) | The pattern of the declared accounts (R-REPO-077), the role bindings and the trust anchors | One source in Git for both releases; survives a fresh database; the migration lock orders it; a broken value stops the upgrade before a pod rolls | The value of the token has to exist before the first install |
+| (b) Every replica registers the declaration at start | | No Job involved | Every replica would read the Secret; replicas of two releases write against each other during a rolling update |
+| (c) A Bastion registers itself with a bootstrap secret | | No step at the main installation | A second credential that can create registrations, exposed to the internet side |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-127; code: [declared.go](../../internal/bastionmain/declared.go),
+[migrate_bastions.go](../../internal/app/migrate_bastions.go).
+
+### Q-BAS-466 · The declared token does not expire: its lifetime is its declaration's
+
+Status: **Decided by the development agent on 2026-11-26** (R-BAS-127) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: an issued Bastion token always expires (R-BAS-004, Q-BAS-19), so that a forgotten token does not live on and renewal happens by
+hand with an overlap. A declared token lives in a Secret both releases read; whoever writes the Secret renews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No expiry; the token ends when the Secret holds another value or the declaration is removed; the authenticator accepts no expiry only for a registration's declared token (chosen) | | A Bastion run from Git is never cut off by a date; one rule, checked where the token is read | Nothing forces a rotation: H-2366 |
+| (b) An expiry of `auth.tokens.bst.max_ttl` from each run of migrate | | A token expires when no release happens for 13 months | Every run writes; an installation without upgrades is cut off; the expiry says nothing about the Secret |
+| (c) The expiry of `auth.tokens.bst.default_ttl` from the first run | | As an issued token | The Bastion is cut off after a year although the configuration still declares it |
+
+**Choice:** (a). The handshake's `tokenExpiresAt` is the zero time for it, which the Bastion already reads as no expiry; the interface's
+version stays. **Applied in the spec:** R-BAS-127, R-BAS-004; code: `loadBastion` in [token/bastion.go](../../internal/auth/token/bastion.go),
+migration [00148](../../internal/meta/postgres/migrations/00148_bastion_declared.sql).
+
+### Q-BAS-467 · The declared value is a Bastion token in the issued format, made by a command or by Issue token
+
+Status: **Decided by the development agent on 2026-11-26** (R-BAS-127) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: the owner's Secrets are made by hand or by a secret generator (`iso.gtrfc.com/autogenerate`), which writes random characters
+without the prefix. Whether such a value could be accepted was the question.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Only the issued format (`qdr_bst_`, 57 characters, checksum); `quader admin bastion token generate` prints one without configuration or database; a token issued on the screen whose value the Secret holds is taken as the declared one (chosen) | | Every check that reads the prefix keeps working: the Bastion refuses a malformed token file at start (R-BAS-006), every other route refuses `qdr_bst_` before a lookup (R-BAS-005), the syntax step refuses a typo without the database, the log redaction and secret scanners find the value | A secret generator's value cannot be used as it is |
+| (b) Also any string of at least 32 random characters | | The generator's Secret works unchanged | The Bastion's own check, the interface's routing by prefix and the redaction would all need a second form; a value without type would be looked up on any route |
+| (c) The main installation adds the prefix and checksum to a generated value | | The generator's Secret works at the main installation | The Bastion holds another string than the main installation stores; both sides must agree on a derivation |
+
+**Choice:** (a). The declared token counts against no limit of `auth.tokens.max_active_per_principal.bst`, so a declaration never fails an
+issuance or a run. **Applied in the spec:** R-BAS-127; code: `ParseDeclaredBastion` in
+[token/bastion.go](../../internal/auth/token/bastion.go), `bastionTokenGenerate` in [admin_bastion.go](../../cmd/quader/admin_bastion.go).
+
+### Q-BAS-468 · A declaration taken out keeps the registration; a revoked value stops the run
+
+Status: **Decided by the development agent on 2026-11-26** (R-BAS-127) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: what a run does with a registration the configuration no longer names, and with a value that is not usable.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The registration stays, its mark and declared token go (reason `admin`), the run logs a warning; a revoked, expired or foreign value stops the run naming the entry (chosen) | As the brief and the declared accounts do | A typo in the values does not delete a registration with its limits and contacts; a revoked value never becomes valid again by configuration | A registration no longer wanted is deleted by hand |
+| (b) The registration is deleted | | The configuration is the whole truth | One wrong rollout deletes what an administrator set |
+| (c) A revoked value is accepted again | | Rolling the Secret back works | A token revoked because it leaked would be valid again |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-127; code: `release` and `applyToken` in [declared.go](../../internal/bastionmain/declared.go).
+
+### Q-BAS-469 · Only the migration Job reads the declared token
+
+Status: **Decided by the development agent on 2026-11-26** (R-BAS-127) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The chart projects the Secrets into the migration Job alone, optional, read-only; replicas verify against the hash in the database (chosen) | As the trust anchors' material (R-SIG-018) | The smallest set of pods that hold the value; a missing Secret fails the Job with the entry named instead of a pod waiting on its volume | A rotation needs a rollout (the Job runs at install and upgrade) |
+| (b) Every replica mounts it and compares at use | As the declared accounts (R-REPO-077) | A rotation without a rollout | Every api, packages and worker pod holds the Bastion's credential |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-127; code: [_bastions.tpl](../../deploy/helm/quader/templates/_bastions.tpl).
 
 ### Q-BAS-440 · The configuration reaches the handshake from the replica's snapshot, in one statement of one moment
 

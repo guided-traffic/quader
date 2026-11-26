@@ -1,6 +1,6 @@
 # The Quader Bastion
 
-How to run a read-only, internet-facing cache of your installation for clients outside your network: register a Bastion, issue its token, set up the main installation, install the Bastion chart with a minimal or a highly available configuration, check that it works, renew its token without an outage, let it read large files from the object store directly, and what each alert of its monitoring means.
+How to run a read-only, internet-facing cache of your installation for clients outside your network: declare a Bastion in the values of an installation run from Git, or register it and issue its token on the screen, set up the main installation, install the Bastion chart with a minimal or a highly available configuration, check that it works, renew its token without an outage, let it read large files from the object store directly, and what each alert of its monitoring means.
 
 ## What a Bastion is
 
@@ -39,11 +39,47 @@ A Docker Engine reads Docker Hub images through a mirror at the root of a host (
 
 | Where | What |
 |---|---|
-| Main installation | A registration and a token (the next two sections); the address the Bastion connects from on its card ([The addresses a Bastion connects from](#the-addresses-a-bastion-connects-from)); its address in `server.additional_base_urls` |
+| Main installation | A registration and a token: declared in the values ([the next section](#declare-the-bastion-in-the-values)), or made on the screen (the two sections after it); the address the Bastion connects from on its card ([The addresses a Bastion connects from](#the-addresses-a-bastion-connects-from)); its address in `server.additional_base_urls` |
 | Bastion namespace | The Secret of the token; a TLS certificate source for the listener (cert-manager or a Secret); the main installation reachable over HTTPS; a public name and certificate on the Bastion's ingress |
 | Network | The Bastion reaches the main installation's endpoint on port 443; the main installation does not reach the Bastion |
 
+## Declare the Bastion in the values
+
+For an installation run from Git, declare the Bastion in the values of the chart `quader`. The registration and its token then exist after every install and upgrade, also after a fresh database, without anyone registering it again on the screen.
+
+1. **Make the token's value once.** Run `quader admin bastion token generate`; it prints a new Bastion token and needs no configuration and no database, for example `kubectl -n quader exec deploy/quader-api -- /usr/local/bin/quader admin bastion token generate` or `docker run --rm <the Quader image> admin bastion token generate` *(examples)*. **Issue token** on a registration's card gives a value as well. A random string from a secret generator does not work: the value must be a Bastion token (`qdr_bst_`, 57 characters with its checksum), because the Bastion and the main installation both check that before anything else.
+2. **Put the value into a Secret in both namespaces**: in the main installation's namespace for its migration Job, and in the Bastion's namespace for `secrets.mainToken` of the chart `quader-bastion`. When both releases run in one namespace, one Secret serves both. The chart never creates a Secret:
+
+```shell
+kubectl -n quader create secret generic quader-bastion-token --from-literal=token='qdr_bst_…'   # example: namespace and name
+```
+
+3. **Declare it** in the values of the chart `quader`:
+
+```yaml
+bastions:
+  declared:
+    - name: partners                    # example; lower-case letters, digits and -, at most 20 characters
+      description: Partner access       # example; optional
+      egress: [10.252.0.0/16]           # example; the addresses the Bastion connects from (see below); optional
+      token:
+        existingSecret: quader-bastion-token   # example; the Secret of step 2
+        key: token                      # default
+```
+
+4. **Roll out.** The migration Job (`quader migrate`) of the install or upgrade reads the Secret and creates the registration with the preset Internet and every other default of a new registration, or brings an existing one in line: its description, its addresses and its token follow the entry. Only the migration Job mounts the Secret; the database keeps the token's hash, as it does of every token. A missing Secret, or a value that is not a Bastion token, stops the Job with the name of the entry, before any pod rolls.
+
+On the card the registration reads "From the Helm values, token from Secret quader-bastion-token" *(example)*. Its description and addresses are shown and not edited there, **Delete** is not offered, and its token is listed with **Never** under **Expires**, "In the configuration" under its name and no **Revoke**: the declared token does not expire, it ends when its Secret holds another value. Everything else on the card stays yours: the switches, the limits, **Disable** and **Enable**, and more tokens with **Issue token**. These survive every upgrade; after a fresh database they are the defaults of a new registration again, so set them anew or keep them in your notes.
+
+**Rotate the token** by putting a new value into both Secrets and rolling out the main installation: its migration Job stores the new value and revokes the old one at once, so update the Bastion's Secret first, or at the same time. The Bastion re-reads its token file without a restart ([Renew the token with an overlap](#renew-the-token-with-an-overlap)). A value that was revoked, by a rotation or because it leaked, never works again: putting it back into the Secret stops the migration Job.
+
+**Take a declaration out** of the values to manage the registration on the screen again: the next migration Job revokes the declared token, logs a warning naming the registration, and keeps the registration with everything else. Delete it on the card if it is no longer needed.
+
+After a restore the registration and its token are as at the restore point until the upgrade that turns `restore.enabled` off; its migration Job applies the declaration again ([After the restore](backup-and-restore.md#after-the-restore)).
+
 ## Register a Bastion
+
+For an installation not run from Git, or a Bastion you try out, register it on the screen:
 
 1. Open **Admin area › Bastions** and choose **New Bastion**. The screen needs the permission to read endpoints (`endpoints:read`: the roles admin, security-admin, auditor and repository-admin); the actions need the permission to change them (`endpoints:write`: admin and security-admin). Revoking a token alone needs `endpoints:write` or `tokens:revoke`.
 2. Enter a **Name** that starts with a lower-case letter and holds lower-case letters, digits and `-`, at most 20 characters (`partners`, for example). The name cannot be changed later. The **Description** is free text.
@@ -249,7 +285,7 @@ What stays: the address of the repository the client asked for, the package it a
 
 ## Renew the token with an overlap
 
-A token is renewed by hand, and the old and the new one work side by side, so no request fails:
+A token declared in the values is rotated through its Secret ([Declare the Bastion in the values](#declare-the-bastion-in-the-values)). A token issued on the screen is renewed by hand, and the old and the new one work side by side, so no request fails:
 
 1. Before the old token expires, open the card of the registration and choose **Issue token** again. The card now lists both tokens.
 2. Put the new token into the Secret of the Bastion (`secrets.mainToken`), the way you manage your other Secrets. The chart never writes it, and the Bastion cannot change a Secret.
@@ -356,7 +392,7 @@ When the main installation is unreachable for a replica, the replica serves what
 
 ## Disable or delete a Bastion
 
-**Disable** on the card stops the Bastion's token from working, without deleting anything. The replicas then treat the main installation as unreachable and serve from their cache within the grace period. **Enable** reverses it. **Delete** asks you to type the name, removes the registration and revokes its tokens at once; the Bastion's pods keep running until you remove them, and answer as for an unreachable main installation.
+**Disable** on the card stops the Bastion's token from working, without deleting anything. The replicas then treat the main installation as unreachable and serve from their cache within the grace period. **Enable** reverses it. A registration declared in the values is disabled and enabled here too; to delete it, take it out of the values first. **Delete** asks you to type the name, removes the registration and revokes its tokens at once; the Bastion's pods keep running until you remove them, and answer as for an unreachable main installation.
 
 A Bastion that is no longer needed is removed with `helm uninstall`, and its registration deleted here. Remove its address from `server.additional_base_urls` afterwards; the addresses it connected from went with the registration.
 

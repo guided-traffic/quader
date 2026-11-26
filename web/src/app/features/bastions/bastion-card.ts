@@ -28,6 +28,8 @@ const DAY_MS = 86_400_000;
 
 /** The state of a token against `now`: expired, expiring within the warning window, or fine. */
 export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: number): 'expired' | 'soon' | 'ok' {
+  // The declared token does not expire (R-BAS-127).
+  if (!token.expiresAt) return 'ok';
   const left = Date.parse(token.expiresAt) - now;
   if (left <= 0) return 'expired';
   return left < BASTION_TOKEN_WARN_DAYS * DAY_MS ? 'soon' : 'ok';
@@ -64,6 +66,23 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
         <dt i18n="@@bastion.created">Created</dt>
         <dd>{{ bastion().createdAt | date: 'medium' }}</dd>
       </dl>
+      @if (bastion().declared; as d) {
+        <!-- A registration the configuration declares (R-BAS-127, Q-UI-1497): the words of an account the configuration declares. -->
+        <p class="source-note" role="note" data-testid="bastion-declared">
+          <span class="material-icons inline" aria-hidden="true">lock</span>
+          @if (d.secretName) {
+            <span i18n="@@bastion.declared-helm"
+              >From the Helm values, token from Secret <code class="secret-name" translate="no">{{ d.secretName }}</code>. Its description,
+              addresses and that token are changed or removed there; to delete it, remove it there first.</span
+            >
+          } @else {
+            <span i18n="@@bastion.declared-file"
+              >From the installation's configuration file. Its description, addresses and declared token are changed or removed there; to
+              delete it, remove it there first.</span
+            >
+          }
+        </p>
+      }
 
       @if (canWrite()) {
         <div class="row-actions">
@@ -82,10 +101,13 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
               <span class="visually-hidden"> {{ bastion().name }}</span>
             </button>
           }
-          <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="remove()">
-            <ng-container i18n="@@bastion.delete">Delete</ng-container>
-            <span class="visually-hidden"> {{ bastion().name }}</span>
-          </button>
+          <!-- A declared registration is not deleted here (Q-UI-1498): the next run of quader migrate would create it again. -->
+          @if (!bastion().declared) {
+            <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="remove()">
+              <ng-container i18n="@@bastion.delete">Delete</ng-container>
+              <span class="visually-hidden"> {{ bastion().name }}</span>
+            </button>
+          }
         </div>
       }
 
@@ -152,12 +174,21 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
               <span class="secondary"
                 ><span class="dot-separated"
                   ><code translate="no">{{ t.hint }}</code
-                  ><span i18n="@@bastion.token.created">Created <quader-time-ago [at]="t.createdAt" absolute="title" /></span></span
+                  ><span i18n="@@bastion.token.created">Created <quader-time-ago [at]="t.createdAt" absolute="title" /></span
+                  >@if (t.declared) {<span class="declared-token" data-testid="bastion-token-declared"
+                      ><span class="material-icons inline" aria-hidden="true">lock</span>&ngsp;<ng-container i18n="@@bastion.token.declared"
+                        >In the configuration</ng-container
+                      ></span
+                    >}</span
                 ></span
               >
             </th>
             <td>
-              <quader-time-ago [at]="t.expiresAt" absolute="title" />
+              @if (t.expiresAt; as at) {
+                <quader-time-ago [at]="at" absolute="title" />
+              } @else {
+                <span i18n="@@bastion.token.never">Never</span>
+              }
               @switch (expiry(t)) {
                 @case ('expired') {
                   <span class="expiry-mark"><span class="badge bad"><span class="material-icons" aria-hidden="true">error</span><ng-container i18n="@@bastion.token.expired">Expired</ng-container></span></span>
@@ -175,7 +206,8 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
               }
             </td>
             <td class="actions">
-              @if (canRevoke()) {
+              <!-- The declared token ends with a change of its Secret (Q-UI-1499): no Revoke; the line under its name says why. -->
+              @if (!t.declared && canRevoke()) {
                 <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="revoke(t)">
                   <ng-container i18n="@@bastion.token.revoke">Revoke</ng-container>
                   <span class="visually-hidden"> {{ t.description }}</span>
@@ -202,6 +234,18 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
     .expiry-mark {
       display: block;
       margin-block-start: var(--quader-space-1);
+    }
+    /* The lock line of a declared registration, as an account the configuration declares has it (Q-UI-1161, Q-UI-1497): the sign keeps
+       to the first line, and a long Secret's name breaks inside the sentence's measure. */
+    .source-note {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--quader-space-1);
+      max-inline-size: var(--quader-settings-measure);
+      margin: var(--quader-space-2) 0 var(--quader-space-3);
+    }
+    .source-note .secret-name {
+      overflow-wrap: anywhere;
     }
   `,
 })
@@ -299,6 +343,7 @@ export class BastionCard {
   }
 
   protected remaining(t: BastionTokenSummary): string {
+    if (!t.expiresAt) return '';
     const seconds = Math.max(60, Math.ceil((Date.parse(t.expiresAt) - this.now()) / 1000));
     // Whole days, rounded up, while a day or more is left; else whole minutes.
     return formatDuration(seconds >= 86_400 ? Math.ceil(seconds / 86_400) * 86_400 : Math.ceil(seconds / 60) * 60, this.locale);

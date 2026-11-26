@@ -30,7 +30,8 @@ import (
 // the runner's one connection: the change log writes the authz change in the
 // transaction, so every running replica rebuilds its grant index from the poll
 // (R-AUTHZ-028, no Valkey needed); the audit writer records the events with the
-// actor system:configuration in the same transaction.
+// actor system:configuration in the same transaction. Then the CI issuers, the trust anchors, the Bastion registrations of
+// bastions.declared (R-BAS-127) and the project upstream with its accounts.
 //
 // instance is the Job's pod name, stored as the replica of the audit events.
 func DeclaredState(cfg *config.Config, instance string, log *slog.Logger) func(context.Context, *postgres.MigrationSession) error {
@@ -63,6 +64,9 @@ func DeclaredState(cfg *config.Config, instance string, log *slog.Logger) func(c
 			return err
 		}
 		if err := applySignatureAnchors(ctx, s, changes, recorder, cfg, log); err != nil {
+			return err
+		}
+		if err := applyDeclaredBastions(ctx, s, changes, recorder, cfg, log); err != nil {
 			return err
 		}
 		return ReconcileUpstream(ctx, s, changes, recorder, cfg, catalog.Default(), log)

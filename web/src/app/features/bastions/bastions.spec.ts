@@ -707,6 +707,47 @@ describe('The addresses a Bastion connects from (R-UI-243)', () => {
   });
 });
 
+describe('A registration the configuration declares (R-BAS-127)', () => {
+  const declared = () =>
+    sampleBastion({
+      declared: { since: inDays(-2), secretName: 'quader-bastion-token' },
+      egress: ['10.252.0.0/16'],
+      tokens: [
+        sampleBastionToken({ id: 't-declared', description: 'Bastion partners (declared in the configuration)', expiresAt: null, declared: true }),
+        sampleBastionToken({ id: 't-issued', description: 'partners 2026' }),
+      ],
+    });
+
+  it('R-BAS-127 the card names the Secret, keeps the declared members and the declared token, and offers no Delete', async () => {
+    const { root } = await renderScreen(BastionList, {
+      setup: (g) => void ((g(BastionsApi) as FakeBastionsApi).bastions = [declared()]),
+    });
+    const partners = card(root, 'partners');
+    expect(text(partners.querySelector('[data-testid="bastion-declared"]')!).replace('lock', '').trim()).toBe(
+      'From the Helm values, token from Secret quader-bastion-token. Its description, addresses and that token are changed or removed there; to delete it, remove it there first.',
+    );
+    const buttons = [...partners.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/help_outline/.test(t));
+    expect(buttons.some((b) => b.startsWith('Delete'))).toBe(false);
+    expect(buttons.some((b) => b.startsWith('Issue token'))).toBe(true);
+    expect(buttons.filter((b) => b.startsWith('Revoke'))).toEqual(['Revoke partners 2026']);
+    const rows = partners.querySelectorAll('table')[1]!.querySelectorAll('tbody tr');
+    expect(text(rows[0]!)).toContain('Never');
+    expect(text(rows[0]!.querySelector('[data-testid="bastion-token-declared"]')!)).toContain('In the configuration');
+    // The networks are the configuration's: text, no field, no Save.
+    expect(partners.querySelectorAll('quader-bastion-egress input')).toHaveLength(0);
+    expect(text(partners.querySelector('[data-testid="bastion-egress-list"]')!)).toBe('10.252.0.0/16');
+    expect(await seriousViolations(root)).toEqual([]);
+  });
+
+  it("R-BAS-127 without a Secret's name the card says the configuration file, and the declared token never expires", async () => {
+    const { root } = await renderScreen(BastionList, {
+      setup: (g) => void ((g(BastionsApi) as FakeBastionsApi).bastions = [{ ...declared(), declared: { since: inDays(-2), secretName: '' } }]),
+    });
+    expect(text(card(root, 'partners').querySelector('[data-testid="bastion-declared"]')!)).toContain("From the installation's configuration file.");
+    expect(tokenExpiry({ expiresAt: null }, Date.now())).toBe('ok');
+  });
+});
+
 describe('Bastions in the navigation and the help (R-BAS-007, R-UI-050)', () => {
   it('R-BAS-007 the entry needs endpoints:read and the "?" opens the Bastion page of the manual', async () => {
     const { get } = await renderScreen(BastionList, { capabilities: ['endpoints:read'] });

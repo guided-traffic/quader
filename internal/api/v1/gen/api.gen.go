@@ -9934,9 +9934,14 @@ type BannerInputSeverity string
 // Bastion A Bastion registration, a principal of the kind `bastion` (R-BAS-004).
 type Bastion struct {
 	// Contacts The last contact of each replica, the most recent first (R-BAS-010).
-	Contacts    []BastionContact `json:"contacts"`
-	CreatedAt   time.Time        `json:"createdAt"`
-	Description string           `json:"description"`
+	Contacts  []BastionContact `json:"contacts"`
+	CreatedAt time.Time        `json:"createdAt"`
+
+	// Declared Set while the installation's configuration declares the registration (`bastions.declared`, R-BAS-127): its
+	// `description`, its `egress` and its declared token follow the configuration, which `quader migrate` applies on every
+	// run, and the registration is not deleted here. Null otherwise.
+	Declared    *BastionDeclaration `json:"declared"`
+	Description string              `json:"description"`
 
 	// Egress The networks the Bastion connects from (R-BAS-017, R-UI-243): the main installation believes the caller's address and the
 	// host a Bastion forwards, and the caller's address of its check, only on a request of this registration that comes from one
@@ -10108,6 +10113,16 @@ type BastionContact struct {
 	InterfaceVersion int     `json:"interfaceVersion"`
 	Release          string  `json:"release"`
 	Replica          string  `json:"replica"`
+}
+
+// BastionDeclaration The declaration of a registration in the installation's configuration (R-BAS-127).
+type BastionDeclaration struct {
+	// SecretName The Kubernetes Secret the declared token comes from, as the configuration of the replica that answers names it
+	// (`bastions.declared.<name>.secret_name`); empty outside the chart. Never a value.
+	SecretName string `json:"secretName"`
+
+	// Since When the first run of `quader migrate` that declared it applied the entry.
+	Since time.Time `json:"since"`
 }
 
 // BastionDownloadEvent defines model for BastionDownloadEvent.
@@ -10519,12 +10534,18 @@ type BastionTokenCreated struct {
 
 // BastionTokenSummary defines model for BastionTokenSummary.
 type BastionTokenSummary struct {
-	CreatedAt   time.Time          `json:"createdAt"`
-	Description string             `json:"description"`
-	ExpiresAt   time.Time          `json:"expiresAt"`
-	Hint        string             `json:"hint"`
-	Id          openapi_types.UUID `json:"id"`
-	LastUsedAt  *time.Time         `json:"lastUsedAt"`
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Declared The token the registration's configuration declares (R-BAS-127): its value is the Secret's, it does not expire, and it
+	// is not revoked here (`409 managed_by_config`).
+	Declared    bool   `json:"declared"`
+	Description string `json:"description"`
+
+	// ExpiresAt The expiry; null for the declared token, which does not expire (R-BAS-127, Q-BAS-466).
+	ExpiresAt  *time.Time         `json:"expiresAt"`
+	Hint       string             `json:"hint"`
+	Id         openapi_types.UUID `json:"id"`
+	LastUsedAt *time.Time         `json:"lastUsedAt"`
 }
 
 // CacheEntry defines model for CacheEntry.

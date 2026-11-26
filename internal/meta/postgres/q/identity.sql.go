@@ -285,6 +285,7 @@ const identityCountActiveTokens = `-- name: IdentityCountActiveTokens :one
 SELECT count(*) FROM api_token
  WHERE principal_id = $1::text::uuid AND type = $2::text
    AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > now())
+   AND NOT EXISTS (SELECT 1 FROM bastion b WHERE b.declared_token = api_token.id)
 `
 
 type IdentityCountActiveTokensParams struct {
@@ -292,6 +293,8 @@ type IdentityCountActiveTokensParams struct {
 	Type        string
 }
 
+// The token a Bastion registration's configuration declares (R-BAS-127) is not counted: the limit bounds what is issued on the screen
+// and the command, and a declaration never fails an issuance or a run of quader migrate by it.
 func (q *Queries) IdentityCountActiveTokens(ctx context.Context, arg IdentityCountActiveTokensParams) (int64, error) {
 	row := q.db.QueryRow(ctx, identityCountActiveTokens, arg.PrincipalID, arg.Type)
 	var count int64

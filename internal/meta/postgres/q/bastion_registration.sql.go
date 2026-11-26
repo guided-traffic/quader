@@ -39,10 +39,54 @@ func (q *Queries) BastionCountActiveTokens(ctx context.Context, id string) (int6
 	return count, err
 }
 
+const bastionDeclaredList = `-- name: BastionDeclaredList :many
+SELECT p.id::text AS id, p.name, coalesce(b.declared_token::text, '')::text AS declared_token,
+       coalesce(t.secret_sha256, ''::bytea)::bytea AS declared_sha256, (t.revoked_at IS NOT NULL)::boolean AS declared_revoked
+  FROM principal p JOIN bastion b ON b.principal_id = p.id LEFT JOIN api_token t ON t.id = b.declared_token
+ WHERE p.kind = 'bastion' AND b.declared_at IS NOT NULL
+ ORDER BY p.name
+`
+
+type BastionDeclaredListRow struct {
+	ID              string
+	Name            string
+	DeclaredToken   string
+	DeclaredSha256  []byte
+	DeclaredRevoked bool
+}
+
+// The registrations the configuration declares (R-BAS-127) with the hash of their declared token, for the run of quader migrate that
+// applies bastions.declared: the ones it no longer declares lose the mark and their token. Taken under the configuration lock.
+func (q *Queries) BastionDeclaredList(ctx context.Context) ([]BastionDeclaredListRow, error) {
+	rows, err := q.db.Query(ctx, bastionDeclaredList)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []BastionDeclaredListRow{}
+	for rows.Next() {
+		var i BastionDeclaredListRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.DeclaredToken,
+			&i.DeclaredSha256,
+			&i.DeclaredRevoked,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const bastionGet = `-- name: BastionGet :many
 SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
        b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput,
-       b.limits_ceiling
+       b.limits_ceiling, b.declared_at
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name = $1::text
 `
@@ -64,11 +108,13 @@ type BastionGetRow struct {
 	LimitsSlots      json.RawMessage
 	LimitsThroughput json.RawMessage
 	LimitsCeiling    json.RawMessage
+	DeclaredAt       pgtype.Timestamptz
 }
 
 // A registration by name. revision is the ETag (R-API-012); enabled is the principal's status; handover is the switch of the
 // handover per blob (R-BAS-071, 00110); egress the networks the Bastion connects from (R-BAS-017, 00145), each in the text form of
-// cidr, which always names the prefix length; gui, docs and the limits_* members the rest of its configuration (R-BAS-093, 00147).
+// cidr, which always names the prefix length; gui, docs and the limits_* members the rest of its configuration (R-BAS-093, 00147);
+// declared_at the mark of a registration the configuration declares (R-BAS-127, 00148), NULL otherwise.
 func (q *Queries) BastionGet(ctx context.Context, name string) ([]BastionGetRow, error) {
 	rows, err := q.db.Query(ctx, bastionGet, name)
 	if err != nil {
@@ -95,6 +141,7 @@ func (q *Queries) BastionGet(ctx context.Context, name string) ([]BastionGetRow,
 			&i.LimitsSlots,
 			&i.LimitsThroughput,
 			&i.LimitsCeiling,
+			&i.DeclaredAt,
 		); err != nil {
 			return nil, err
 		}
@@ -243,7 +290,7 @@ func (q *Queries) BastionKindRulesInsert(ctx context.Context, arg BastionKindRul
 const bastionList = `-- name: BastionList :many
 SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
        b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput,
-       b.limits_ceiling
+       b.limits_ceiling, b.declared_at
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name > $1::text
  ORDER BY p.name
@@ -272,6 +319,7 @@ type BastionListRow struct {
 	LimitsSlots      json.RawMessage
 	LimitsThroughput json.RawMessage
 	LimitsCeiling    json.RawMessage
+	DeclaredAt       pgtype.Timestamptz
 }
 
 // Keyset order by name; there are at most bastions.max_registrations of them, so the caller may pass an empty
@@ -302,6 +350,7 @@ func (q *Queries) BastionList(ctx context.Context, arg BastionListParams) ([]Bas
 			&i.LimitsSlots,
 			&i.LimitsThroughput,
 			&i.LimitsCeiling,
+			&i.DeclaredAt,
 		); err != nil {
 			return nil, err
 		}
@@ -316,7 +365,8 @@ func (q *Queries) BastionList(ctx context.Context, arg BastionListParams) ([]Bas
 const bastionListTokens = `-- name: BastionListTokens :many
 SELECT t.id::text AS id, t.hint, t.description, t.created_at, t.expires_at, t.revoked_at, t.last_used_at,
        coalesce(host(t.last_used_addr), '')::text AS last_used_addr,
-       coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired
+       coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired,
+       EXISTS (SELECT 1 FROM bastion b WHERE b.declared_token = t.id)::boolean AS declared
   FROM api_token t
  WHERE t.principal_id = $1::text::uuid AND t.type = 'bst'
    AND ($2::boolean OR t.revoked_at IS NULL)
@@ -338,6 +388,7 @@ type BastionListTokensRow struct {
 	LastUsedAt   pgtype.Timestamptz
 	LastUsedAddr string
 	Expired      bool
+	Declared     bool
 }
 
 // The tokens of a registration for the registration's document (R-BAS-004, R-BAS-007): ID, hint, expiry,
@@ -361,6 +412,7 @@ func (q *Queries) BastionListTokens(ctx context.Context, arg BastionListTokensPa
 			&i.LastUsedAt,
 			&i.LastUsedAddr,
 			&i.Expired,
+			&i.Declared,
 		); err != nil {
 			return nil, err
 		}
@@ -374,7 +426,8 @@ func (q *Queries) BastionListTokens(ctx context.Context, arg BastionListTokensPa
 
 const bastionListTokensOfAll = `-- name: BastionListTokensOfAll :many
 SELECT t.principal_id::text AS bastion_id, t.id::text AS id, t.hint, t.description, t.created_at, t.expires_at,
-       t.last_used_at, coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired
+       t.last_used_at, coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired,
+       EXISTS (SELECT 1 FROM bastion b WHERE b.declared_token = t.id)::boolean AS declared
   FROM api_token t
  WHERE t.type = 'bst' AND t.revoked_at IS NULL
  ORDER BY t.principal_id, t.id DESC
@@ -389,6 +442,7 @@ type BastionListTokensOfAllRow struct {
 	ExpiresAt   pgtype.Timestamptz
 	LastUsedAt  pgtype.Timestamptz
 	Expired     bool
+	Declared    bool
 }
 
 // The same for the list of registrations: one read for all of them.
@@ -410,6 +464,7 @@ func (q *Queries) BastionListTokensOfAll(ctx context.Context) ([]BastionListToke
 			&i.ExpiresAt,
 			&i.LastUsedAt,
 			&i.Expired,
+			&i.Declared,
 		); err != nil {
 			return nil, err
 		}
@@ -422,17 +477,20 @@ func (q *Queries) BastionListTokensOfAll(ctx context.Context) ([]BastionListToke
 }
 
 const bastionLock = `-- name: BastionLock :many
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.revision
+SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.revision,
+       (b.declared_at IS NOT NULL)::boolean AS declared, coalesce(b.declared_token::text, '')::text AS declared_token
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name = $1::text
    FOR UPDATE OF p
 `
 
 type BastionLockRow struct {
-	ID       string
-	Name     string
-	Enabled  bool
-	Revision int64
+	ID            string
+	Name          string
+	Enabled       bool
+	Revision      int64
+	Declared      bool
+	DeclaredToken string
 }
 
 // The registration by name, locking the principal row: an update or a delete compares If-Match with the
@@ -451,6 +509,8 @@ func (q *Queries) BastionLock(ctx context.Context, name string) ([]BastionLockRo
 			&i.Name,
 			&i.Enabled,
 			&i.Revision,
+			&i.Declared,
+			&i.DeclaredToken,
 		); err != nil {
 			return nil, err
 		}
@@ -610,6 +670,56 @@ func (q *Queries) BastionSetConfiguration(ctx context.Context, arg BastionSetCon
 		return nil, err
 	}
 	return items, nil
+}
+
+const bastionSetDeclared = `-- name: BastionSetDeclared :many
+UPDATE bastion
+   SET declared_at = CASE WHEN $1::boolean THEN coalesce(declared_at, now()) END,
+       declared_token = CASE WHEN $1::boolean THEN declared_token END
+ WHERE principal_id = $2::text::uuid AND (declared_at IS NOT NULL) <> $1::boolean
+RETURNING principal_id::text AS id
+`
+
+type BastionSetDeclaredParams struct {
+	Declared bool
+	ID       string
+}
+
+// Set the mark of a registration the configuration declares, keeping the time of its first declaration, or clear it with its token
+// pointer (R-BAS-127). No row when the mark already is the one asked for.
+func (q *Queries) BastionSetDeclared(ctx context.Context, arg BastionSetDeclaredParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, bastionSetDeclared, arg.Declared, arg.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const bastionSetDeclaredToken = `-- name: BastionSetDeclaredToken :exec
+UPDATE bastion SET declared_token = NULLIF($1::text, '')::uuid WHERE principal_id = $2::text::uuid
+`
+
+type BastionSetDeclaredTokenParams struct {
+	TokenID string
+	ID      string
+}
+
+// Point a declared registration at the token its configuration declares (R-BAS-127), or at none.
+func (q *Queries) BastionSetDeclaredToken(ctx context.Context, arg BastionSetDeclaredTokenParams) error {
+	_, err := q.db.Exec(ctx, bastionSetDeclaredToken, arg.TokenID, arg.ID)
+	return err
 }
 
 const bastionSetEgress = `-- name: BastionSetEgress :many
@@ -789,12 +899,59 @@ func (q *Queries) BastionSnapshot(ctx context.Context) ([]BastionSnapshotRow, er
 	return items, nil
 }
 
+const bastionTokenByHash = `-- name: BastionTokenByHash :many
+SELECT t.id::text AS id, t.principal_id::text AS principal_id, t.type, (t.revoked_at IS NOT NULL)::boolean AS revoked,
+       coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired, coalesce(p.name, '')::text AS owner_name
+  FROM api_token t LEFT JOIN principal p ON p.id = t.principal_id
+ WHERE t.secret_sha256 = $1::bytea
+`
+
+type BastionTokenByHashRow struct {
+	ID          string
+	PrincipalID string
+	Type        string
+	Revoked     bool
+	Expired     bool
+	OwnerName   string
+}
+
+// A token whose value has the hash, whatever its state: quader migrate takes a value the configuration declares that was issued on
+// the screen as the declared token, and refuses one that is revoked, expired or another principal's (R-BAS-127). At most one row
+// (secret_sha256 is unique).
+func (q *Queries) BastionTokenByHash(ctx context.Context, secretSha256 []byte) ([]BastionTokenByHashRow, error) {
+	rows, err := q.db.Query(ctx, bastionTokenByHash, secretSha256)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []BastionTokenByHashRow{}
+	for rows.Next() {
+		var i BastionTokenByHashRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PrincipalID,
+			&i.Type,
+			&i.Revoked,
+			&i.Expired,
+			&i.OwnerName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const bastionTokenBySecret = `-- name: BastionTokenBySecret :many
 SELECT t.id::text AS token_id, t.principal_id::text AS bastion_id, p.name, (p.status = 'active')::boolean AS enabled,
        t.expires_at, coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired,
        (t.revoked_at IS NOT NULL)::boolean AS revoked, t.hint,
-       coalesce(t.rejection_logged_at IS NULL OR t.rejection_logged_at < now() - interval '1 hour', true)::boolean AS rejection_due
-  FROM api_token t JOIN principal p ON p.id = t.principal_id
+       coalesce(t.rejection_logged_at IS NULL OR t.rejection_logged_at < now() - interval '1 hour', true)::boolean AS rejection_due,
+       coalesce(b.declared_token = t.id, false)::boolean AS declared
+  FROM api_token t JOIN principal p ON p.id = t.principal_id JOIN bastion b ON b.principal_id = p.id
  WHERE t.secret_sha256 = $1::bytea AND t.type = 'bst' AND p.kind = 'bastion'
 `
 
@@ -808,11 +965,13 @@ type BastionTokenBySecretRow struct {
 	Revoked      bool
 	Hint         string
 	RejectionDue bool
+	Declared     bool
 }
 
 // The lookup of the Bastion authenticator (internal/bastionmain.TokenAuthenticator): one indexed read by the
 // secret hash, joined with the registration; a row of another type is never returned here. rejection_due says
-// whether token.rejected is due for this token (at most once an hour, as for every token, R-AUTH-023 step 4).
+// whether token.rejected is due for this token (at most once an hour, as for every token, R-AUTH-023 step 4); declared whether it
+// is the token its registration's configuration declares (R-BAS-127), the one Bastion token that may have no expiry.
 func (q *Queries) BastionTokenBySecret(ctx context.Context, secretSha256 []byte) ([]BastionTokenBySecretRow, error) {
 	rows, err := q.db.Query(ctx, bastionTokenBySecret, secretSha256)
 	if err != nil {
@@ -832,6 +991,7 @@ func (q *Queries) BastionTokenBySecret(ctx context.Context, secretSha256 []byte)
 			&i.Revoked,
 			&i.Hint,
 			&i.RejectionDue,
+			&i.Declared,
 		); err != nil {
 			return nil, err
 		}
@@ -844,7 +1004,8 @@ func (q *Queries) BastionTokenBySecret(ctx context.Context, secretSha256 []byte)
 }
 
 const bastionTokenOwner = `-- name: BastionTokenOwner :many
-SELECT t.id::text AS id, t.principal_id::text AS bastion_id, t.revoked_at
+SELECT t.id::text AS id, t.principal_id::text AS bastion_id, t.revoked_at,
+       EXISTS (SELECT 1 FROM bastion b WHERE b.declared_token = t.id)::boolean AS declared
   FROM api_token t JOIN principal p ON p.id = t.principal_id
  WHERE t.id = $1::text::uuid AND t.type = 'bst' AND p.kind = 'bastion' AND p.name = $2::text
 `
@@ -858,10 +1019,12 @@ type BastionTokenOwnerRow struct {
 	ID        string
 	BastionID string
 	RevokedAt pgtype.Timestamptz
+	Declared  bool
 }
 
 // The registration a token belongs to, for the revocation of one token by ID (R-BAS-004): no row when the
-// token is not a Bastion token of that registration.
+// token is not a Bastion token of that registration. declared says it is the token the registration's configuration declares
+// (R-BAS-127), which the API does not revoke.
 func (q *Queries) BastionTokenOwner(ctx context.Context, arg BastionTokenOwnerParams) ([]BastionTokenOwnerRow, error) {
 	rows, err := q.db.Query(ctx, bastionTokenOwner, arg.ID, arg.Name)
 	if err != nil {
@@ -871,7 +1034,12 @@ func (q *Queries) BastionTokenOwner(ctx context.Context, arg BastionTokenOwnerPa
 	items := []BastionTokenOwnerRow{}
 	for rows.Next() {
 		var i BastionTokenOwnerRow
-		if err := rows.Scan(&i.ID, &i.BastionID, &i.RevokedAt); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.BastionID,
+			&i.RevokedAt,
+			&i.Declared,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -880,6 +1048,18 @@ func (q *Queries) BastionTokenOwner(ctx context.Context, arg BastionTokenOwnerPa
 		return nil, err
 	}
 	return items, nil
+}
+
+const bastionTokenUnexpire = `-- name: BastionTokenUnexpire :exec
+UPDATE api_token SET expires_at = NULL, created_via = 'configuration' WHERE id = $1::text::uuid AND type = 'bst'
+`
+
+// A token issued on the screen whose value the configuration declares becomes the declared token: it no longer expires, its lifetime
+// is its declaration's, and the row is the configuration's (created_via configuration, which the check api_token_check requires of a
+// Bastion token without an expiry; token.created keeps how it was issued) (R-BAS-127, Q-BAS-466).
+func (q *Queries) BastionTokenUnexpire(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, bastionTokenUnexpire, id)
+	return err
 }
 
 const bastionUpdateDescription = `-- name: BastionUpdateDescription :exec

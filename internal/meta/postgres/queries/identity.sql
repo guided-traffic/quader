@@ -535,9 +535,12 @@ UPDATE api_token SET rejection_logged_at = now()
 RETURNING id::text AS id;
 
 -- name: IdentityCountActiveTokens :one
+-- The token a Bastion registration's configuration declares (R-BAS-127) is not counted: the limit bounds what is issued on the screen
+-- and the command, and a declaration never fails an issuance or a run of quader migrate by it.
 SELECT count(*) FROM api_token
  WHERE principal_id = sqlc.arg(principal_id)::text::uuid AND type = sqlc.arg(type)::text
-   AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > now());
+   AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > now())
+   AND NOT EXISTS (SELECT 1 FROM bastion b WHERE b.declared_token = api_token.id);
 
 -- name: IdentityInsertToken :one
 -- ttl_secs is relative to the database clock, negative for no expiry; cap_micros (Unix microseconds, 0 for none)

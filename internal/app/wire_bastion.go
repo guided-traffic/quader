@@ -16,6 +16,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/bastionmain/catalogue"
+	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formathost"
 	"github.com/guided-traffic/quader/internal/formats"
@@ -87,7 +88,21 @@ func (a *App) bastionRegistrations() *bastionmain.Registrations {
 	}
 	return bastionmain.NewRegistrations(bastionmain.RegistrationOptions{
 		DB: in.db, Notifier: in.changes, Recorder: in.rec, Tokens: id.tokens, Max: a.cfg.Bastions.MaxRegistrations,
+		DeclaredSecrets: DeclaredBastionSecrets(a.cfg),
 	})
+}
+
+// DeclaredBastionSecrets names, by registration, the Secret of each token bastions.declared declares (R-BAS-127), for the mark the API
+// shows; nil without a declaration.
+func DeclaredBastionSecrets(cfg *config.Config) map[string]string {
+	if len(cfg.Bastions.Declared) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(cfg.Bastions.Declared))
+	for name, d := range cfg.Bastions.Declared {
+		out[name] = d.SecretName
+	}
+	return out
 }
 
 // bastionAuthenticator builds the bastionmain.TokenAuthenticator over the token service (R-BAS-005): the

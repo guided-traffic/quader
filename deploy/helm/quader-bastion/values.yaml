@@ -165,6 +165,9 @@ config:
 
 # ── Existing Secrets (the chart never creates one) ──────────────────────────
 secrets:
+  # The Bastion's token: issued on the main installation's Bastions page, or declared in its values (bastions.declared, R-BAS-127),
+  # where the main installation's migration Job reads the same value from a Secret of its namespace, so that the registration survives a
+  # fresh database. Make a value with `quader admin bastion token generate`.
   mainToken:
     existingSecret: ""                  # required; example: quader-bastion-token (the qdr_bst_ token)
     key: token

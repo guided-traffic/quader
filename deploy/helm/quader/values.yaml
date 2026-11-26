@@ -747,6 +747,29 @@ trustedCA:
 #         trustedRootFrom:              # or trustedRoot: inline trusted_root.json, at most 1 MiB
 #           configMapKeyRef: {name: company-sigstore-root, key: trusted_root.json}
 
+# ── Bastions declared in the values (docs/spec/bastion.md R-BAS-127) ────────────────────
+# A Bastion registration that exists because the values say so, also after a fresh database. The chart renders the list into
+# config.bastions.declared; the migration Job (quader migrate) applies it on every install and upgrade: it creates a missing
+# registration, makes its description, egress and token follow the entry, replaces the token when the Secret holds another value (a
+# rotation is a change of the Secret and a rollout), and of a registration taken out of the list revokes the declared token and keeps
+# the registration. Limits, presets, switches and tokens issued on the screen stay an administrator's; after a fresh database they are
+# the registration's defaults again. The Bastions page shows the entry's members read-only. The token comes from an existing Secret of
+# the release namespace: the same value the Bastion's chart reads from secrets.mainToken. Only the migration Job mounts it, read-only,
+# at /var/run/secrets/quader/bastion-tokens/<name>/token; the database keeps its hash, as it does of every token. The value is a Bastion
+# token (qdr_bst_, 57 characters with its checksum); a random string of a secret generator is refused, because the Bastion and the main
+# installation both check the format before anything else. Make one with `quader admin bastion token generate` (needs no database:
+# kubectl exec into an api pod, or run the image) or with the Bastions page's Issue token, and put it into the Secret of both releases.
+# A missing Secret or a value that is not a Bastion token stops the migration Job with the entry's name. With migrations.mode disabled,
+# whoever runs quader migrate provides the file.
+bastions:
+  declared: []                          # no declaration; example:
+  #  - name: partners                   # the registration's name: ^[a-z][a-z0-9-]{0,19}$, unique
+  #    description: Partner access      # optional
+  #    egress: [10.252.0.0/16]          # the networks the Bastion connects from, CIDR or single addresses; optional
+  #    token:
+  #      existingSecret: quader-bastion-token   # required; the Secret the Bastion's chart names in secrets.mainToken
+  #      key: token                     # default token
+
 # ── Quader's signing identity (R-HA-071, docs/spec/signatures.md R-SIG-046) ──────────────
 # One identity per installation: an ECDSA P-256 key with a code-signing certificate of the company's CA, with which Quader signs as a
 # registry and issues its attestations. At most one source. The Secret (tls.crt: the leaf and its intermediates, tls.key: the key,

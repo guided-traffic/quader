@@ -62,6 +62,17 @@ type Registration struct {
 	Tokens []RegistrationToken
 	// Contacts are the last contact of each replica, the most recent first (R-BAS-010).
 	Contacts []Contact
+	// Declared is set while the installation's configuration declares the registration (R-BAS-127): its description, its networks
+	// and its declared token are the configuration's then, and the registration is not deleted on the API. Nil otherwise.
+	Declared *Declaration
+}
+
+// Declaration is what a registration shows of its declaration (R-BAS-127): since when the configuration declares it, and the Secret
+// the declared token comes from as the configuration of the replica that answers names it (empty outside the chart, and on a replica
+// whose configuration does not declare it).
+type Declaration struct {
+	Since      time.Time
+	SecretName string
 }
 
 // RegistrationToken is the public record of a Bastion token.
@@ -70,10 +81,14 @@ type RegistrationToken struct {
 	Hint        string
 	Description string
 	CreatedAt   time.Time
-	ExpiresAt   time.Time
-	LastUsedAt  *time.Time
+	// ExpiresAt is the expiry; nil for the declared token, which does not expire (R-BAS-127).
+	ExpiresAt  *time.Time
+	LastUsedAt *time.Time
 	// Expired says the expiry has passed although the token is not revoked.
 	Expired bool
+	// Declared says it is the token the registration's configuration declares (R-BAS-127): it ends with a change of its Secret or of
+	// the declaration, not on the API.
+	Declared bool
 }
 
 // Contact is the last handshake of one replica of a Bastion (R-BAS-010).
@@ -138,6 +153,9 @@ type RegistrationOptions struct {
 	Tokens *token.Service
 	// Max is bastions.max_registrations.
 	Max int
+	// DeclaredSecrets names, by registration, the Secret of the token the replica's configuration declares (R-BAS-127,
+	// bastions.declared.<name>.secret_name); the API shows it beside the mark. Nil for none.
+	DeclaredSecrets map[string]string
 }
 
 // Registrations is the registration service.
@@ -187,41 +205,7 @@ func (r *Registrations) Create(ctx context.Context, c principal.Caller, in NewRe
 			return err
 		}
 		qs := principal.Queries(tx)
-		n, err := qs.BastionCount(ctx)
-		if err != nil {
-			return err
-		}
-		if int(n) >= r.o.Max {
-			return errs.E(errs.Conflict, errs.CodeConflict, fmt.Sprintf("%d Bastion registrations exist, the most bastions.max_registrations allows; delete one first.", n))
-		}
-		id := principal.NewID()
-		rows, err := qs.IdentityInsertPrincipal(ctx, q.IdentityInsertPrincipalParams{ID: id, Kind: string(principal.KindBastion), Name: in.Name, CreatedBy: c.Actor.ID})
-		if err != nil {
-			return err
-		}
-		if len(rows) == 0 {
-			return errs.E(errs.Conflict, errs.CodeAlreadyExists, "A Bastion registration with this name exists.")
-		}
-		if err := qs.BastionInsert(ctx, q.BastionInsertParams{ID: id, Description: in.Description, Egress: EgressText(egress)}); err != nil {
-			return err
-		}
-		// The place's five kind rules of the preset Internet (R-LIM-046); the row's columns hold the rest of DefaultLimits.
-		if err := insertKindRules(ctx, qs, id, c.Actor.ID); err != nil {
-			return err
-		}
-		if err := r.notify(tx, id); err != nil {
-			return err
-		}
-		if len(egress) > 0 {
-			if err := r.notifyEgress(tx, id); err != nil {
-				return err
-			}
-		}
-		if err := r.o.Recorder.RecordTx(ctx, tx, audit.Event{
-			Type: audit.EventBastionCreated, Outcome: audit.Success, Actor: c.Actor, Source: c.Source,
-			Subject: audit.Subject{Kind: "bastion", ID: id, Name: in.Name},
-			Details: mustJSON(map[string]any{"source": in.Source, "description": in.Description, "egress": EgressText(egress)}),
-		}); err != nil {
+		if _, err := r.insertTx(ctx, tx, c, in, egress); err != nil {
 			return err
 		}
 		out, err = load(ctx, qs, in.Name)
@@ -231,6 +215,48 @@ func (r *Registrations) Create(ctx context.Context, c principal.Caller, in NewRe
 		return Registration{}, principal.DBErr("bastion.create", err)
 	}
 	return out, nil
+}
+
+// insertTx writes a new registration inside tx, which holds the configuration lock (R-ARCH-017): the count against
+// bastions.max_registrations, the principal and the row, the five kind rules of the preset Internet, the change areas and
+// bastion.created. It returns the principal ID.
+func (r *Registrations) insertTx(ctx context.Context, tx meta.Tx, c principal.Caller, in NewRegistration, egress []netip.Prefix) (string, error) {
+	qs := principal.Queries(tx)
+	n, err := qs.BastionCount(ctx)
+	if err != nil {
+		return "", err
+	}
+	if int(n) >= r.o.Max {
+		return "", errs.E(errs.Conflict, errs.CodeConflict, fmt.Sprintf("%d Bastion registrations exist, the most bastions.max_registrations allows; delete one first.", n))
+	}
+	id := principal.NewID()
+	rows, err := qs.IdentityInsertPrincipal(ctx, q.IdentityInsertPrincipalParams{ID: id, Kind: string(principal.KindBastion), Name: in.Name, CreatedBy: c.Actor.ID})
+	if err != nil {
+		return "", err
+	}
+	if len(rows) == 0 {
+		return "", errs.E(errs.Conflict, errs.CodeAlreadyExists, "A Bastion registration with this name exists.")
+	}
+	if err := qs.BastionInsert(ctx, q.BastionInsertParams{ID: id, Description: in.Description, Egress: EgressText(egress)}); err != nil {
+		return "", err
+	}
+	// The place's five kind rules of the preset Internet (R-LIM-046); the row's columns hold the rest of DefaultLimits.
+	if err := insertKindRules(ctx, qs, id, c.Actor.ID); err != nil {
+		return "", err
+	}
+	if err := r.notify(tx, id); err != nil {
+		return "", err
+	}
+	if len(egress) > 0 {
+		if err := r.notifyEgress(tx, id); err != nil {
+			return "", err
+		}
+	}
+	return id, r.o.Recorder.RecordTx(ctx, tx, audit.Event{
+		Type: audit.EventBastionCreated, Outcome: audit.Success, Actor: c.Actor, Source: c.Source,
+		Subject: audit.Subject{Kind: "bastion", ID: id, Name: in.Name},
+		Details: mustJSON(map[string]any{"source": in.Source, "description": in.Description, "egress": EgressText(egress)}),
+	})
 }
 
 // load reads a registration with its tokens, contacts, the rules of its place and the states of its replicas; a 404 when there is
@@ -251,7 +277,7 @@ func load(ctx context.Context, qs *q.Queries, name string) (Registration, error)
 			mode: g.LimitsMode, preset: g.LimitsPreset, flood: g.LimitsFlood, slots: g.LimitsSlots, throughput: g.LimitsThroughput,
 			ceiling: g.LimitsCeiling,
 		}),
-		Egress: egressOf(g.Egress), CreatedAt: g.CreatedAt.Time, Revision: g.Revision,
+		Egress: egressOf(g.Egress), CreatedAt: g.CreatedAt.Time, Revision: g.Revision, Declared: declarationOf(optTime(g.DeclaredAt.Time, g.DeclaredAt.Valid)),
 	}
 	toks, err := qs.BastionListTokens(ctx, q.BastionListTokensParams{ID: g.ID})
 	if err != nil {
@@ -259,7 +285,7 @@ func load(ctx context.Context, qs *q.Queries, name string) (Registration, error)
 	}
 	out.Tokens = make([]RegistrationToken, 0, len(toks))
 	for _, t := range toks {
-		out.Tokens = append(out.Tokens, tokenOf(t.ID, t.Hint, t.Description, t.CreatedAt.Time, t.ExpiresAt.Time, t.LastUsedAt.Time, t.LastUsedAt.Valid, t.Expired))
+		out.Tokens = append(out.Tokens, tokenOf(t.ID, t.Hint, t.Description, t.CreatedAt.Time, optTime(t.ExpiresAt.Time, t.ExpiresAt.Valid), optTime(t.LastUsedAt.Time, t.LastUsedAt.Valid), t.Expired, t.Declared))
 	}
 	contacts, err := qs.BastionContactList(ctx, g.ID)
 	if err != nil {
@@ -315,12 +341,57 @@ func contactOf(replica string, at time.Time, addr, release string, version int32
 	return c
 }
 
-func tokenOf(id, hint, desc string, created, expires, lastUsed time.Time, lastUsedValid, expired bool) RegistrationToken {
-	t := RegistrationToken{ID: id, Hint: hint, Description: desc, CreatedAt: created, ExpiresAt: expires, Expired: expired}
-	if lastUsedValid {
-		t.LastUsedAt = &lastUsed
+func tokenOf(id, hint, desc string, created time.Time, expires, lastUsed *time.Time, expired, declared bool) RegistrationToken {
+	return RegistrationToken{
+		ID: id, Hint: hint, Description: desc, CreatedAt: created, ExpiresAt: expires, LastUsedAt: lastUsed, Expired: expired, Declared: declared,
 	}
-	return t
+}
+
+// optTime is a nullable column's time, nil when it is NULL.
+func optTime(t time.Time, valid bool) *time.Time {
+	if !valid {
+		return nil
+	}
+	return &t
+}
+
+// declarationOf is the mark of a registration the configuration declares (R-BAS-127); nil when it is not set. The Secret's name is
+// the replica's own configuration's ([Registrations.withSecrets]).
+func declarationOf(at *time.Time) *Declaration {
+	if at == nil {
+		return nil
+	}
+	return &Declaration{Since: *at}
+}
+
+// withSecrets names the Secret of each declared registration as the replica's configuration does.
+func (r *Registrations) withSecrets(regs ...*Registration) {
+	for _, g := range regs {
+		if g.Declared != nil {
+			g.Declared.SecretName = r.o.DeclaredSecrets[g.Name]
+		}
+	}
+}
+
+// refuseDeclared refuses a patch that changes a member the configuration declares for the registration cur, when declared says it is
+// declared (R-BAS-127); a patch that names them with their value changes nothing and passes. egress is the patch's list, parsed.
+func refuseDeclared(declared bool, cur Registration, p Patch, egress []netip.Prefix) error {
+	if !declared {
+		return nil
+	}
+	if p.Description != nil && *p.Description != cur.Description {
+		return managedByConfig("The description of " + cur.Name)
+	}
+	if p.Egress != nil && !slices.Equal(egress, cur.Egress) {
+		return managedByConfig("The networks " + cur.Name + " connects from")
+	}
+	return nil
+}
+
+// managedByConfig is the 409 of a change the configuration decides (R-BAS-127).
+func managedByConfig(what string) error {
+	return errs.E(errs.Conflict, errs.CodeManagedByConfig,
+		what+" is declared in the installation's configuration (bastions.declared); change it there and roll out.")
 }
 
 // notFound is the 404 of a registration that does not exist.
@@ -334,6 +405,7 @@ func (r *Registrations) Get(ctx context.Context, name string) (Registration, err
 		out, err = load(ctx, q.New(db), name)
 		return err
 	})
+	r.withSecrets(&out)
 	return out, principal.DBErr("bastion.get", err)
 }
 
@@ -375,7 +447,7 @@ func (r *Registrations) List(ctx context.Context) ([]Registration, error) {
 					ceiling: g.LimitsCeiling,
 				}),
 				Egress: egressOf(g.Egress), CreatedAt: g.CreatedAt.Time, Revision: g.Revision, Tokens: []RegistrationToken{},
-				Contacts: []Contact{}, Place: []PlaceRule{}, Status: []ReplicaState{},
+				Contacts: []Contact{}, Place: []PlaceRule{}, Status: []ReplicaState{}, Declared: declarationOf(optTime(g.DeclaredAt.Time, g.DeclaredAt.Valid)),
 			})
 		}
 		for _, k := range kinds {
@@ -392,7 +464,7 @@ func (r *Registrations) List(ctx context.Context) ([]Registration, error) {
 		}
 		for _, t := range toks {
 			if i, ok := byID[t.BastionID]; ok {
-				out[i].Tokens = append(out[i].Tokens, tokenOf(t.ID, t.Hint, t.Description, t.CreatedAt.Time, t.ExpiresAt.Time, t.LastUsedAt.Time, t.LastUsedAt.Valid, t.Expired))
+				out[i].Tokens = append(out[i].Tokens, tokenOf(t.ID, t.Hint, t.Description, t.CreatedAt.Time, optTime(t.ExpiresAt.Time, t.ExpiresAt.Valid), optTime(t.LastUsedAt.Time, t.LastUsedAt.Valid), t.Expired, t.Declared))
 			}
 		}
 		for _, ct := range contacts {
@@ -406,6 +478,7 @@ func (r *Registrations) List(ctx context.Context) ([]Registration, error) {
 			// own document's.
 			out[i].Preset = EffectivePreset(out[i].Limits, out[i].Place)
 			out[i].Place = nil
+			r.withSecrets(&out[i])
 		}
 		return nil
 	})
@@ -457,6 +530,9 @@ func (r *Registrations) Update(ctx context.Context, c principal.Caller, name str
 		}
 		cur, err := load(ctx, qs, name)
 		if err != nil {
+			return err
+		}
+		if err := refuseDeclared(lock.Declared, cur, p, egress); err != nil {
 			return err
 		}
 		subject := audit.Subject{Kind: "bastion", ID: lock.ID, Name: name}
@@ -721,6 +797,10 @@ func (r *Registrations) Delete(ctx context.Context, c principal.Caller, name str
 		}
 		if len(rows) == 0 {
 			return notFound()
+		}
+		if rows[0].Declared {
+			return errs.E(errs.Conflict, errs.CodeManagedByConfig,
+				name+" is declared in the installation's configuration (bastions.declared), which would create it again; remove the declaration and roll out first.")
 		}
 		id := rows[0].ID
 		revoked, err := r.o.Tokens.RevokeAllOfBastionTx(ctx, tx, c, id, token.ReasonAdmin)

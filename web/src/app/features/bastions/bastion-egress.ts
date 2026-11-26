@@ -160,7 +160,8 @@ export class BastionEgress {
   protected readonly max = 32;
   protected readonly busy = signal(false);
   protected readonly error = signal<ApiError | null>(null);
-  protected readonly canWrite = computed(() => this.session.has('endpoints:write'));
+  /** A registration the configuration declares takes its networks from there (R-BAS-127): the list is text then. */
+  protected readonly canWrite = computed(() => this.session.has('endpoints:write') && !this.bastion().declared);
   protected readonly headingId = computed(() => `bastion-egress-${this.bastion().name}`);
   protected readonly noteId = computed(() => `bastion-egress-note-${this.bastion().name}`);
 

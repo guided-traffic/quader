@@ -55,9 +55,15 @@ func toBastion(b bastionmain.Registration) gen.Bastion {
 		rep.Replica, rep.ReportedAt = st.Replica, utc(st.ReportedAt)
 		out.Status = append(out.Status, rep)
 	}
+	if b.Declared != nil {
+		out.Declared = &gen.BastionDeclaration{Since: utc(b.Declared.Since), SecretName: b.Declared.SecretName}
+	}
 	for _, t := range b.Tokens {
 		sum := gen.BastionTokenSummary{
-			Id: uuidOf(t.ID), Hint: t.Hint, Description: t.Description, CreatedAt: utc(t.CreatedAt), ExpiresAt: utc(t.ExpiresAt),
+			Id: uuidOf(t.ID), Hint: t.Hint, Description: t.Description, CreatedAt: utc(t.CreatedAt), Declared: t.Declared,
+		}
+		if t.ExpiresAt != nil {
+			sum.ExpiresAt = refTo(utc(*t.ExpiresAt))
 		}
 		if t.LastUsedAt != nil {
 			sum.LastUsedAt = refTo(utc(*t.LastUsedAt))
@@ -175,6 +181,7 @@ type bastionPatchBody struct {
 	Tokens    json.RawMessage `json:"tokens"`
 	Contacts  json.RawMessage `json:"contacts"`
 	Status    json.RawMessage `json:"status"`
+	Declared  json.RawMessage `json:"declared"`
 }
 
 // bastionSwitchesPatch is the member switches of a merge patch.

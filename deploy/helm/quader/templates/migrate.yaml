@@ -116,6 +116,10 @@ spec:
             {{- with include "quader.signatureAnchorsMount" . }}
             {{- . | nindent 12 }}
             {{- end }}
+            {{- /* The token files of the Bastion registrations declared in bastions.declared, which quader migrate applies (R-BAS-127). */}}
+            {{- with include "quader.bastionTokensMount" . }}
+            {{- . | nindent 12 }}
+            {{- end }}
       volumes:
         - name: config
           configMap:
@@ -125,6 +129,9 @@ spec:
             sizeLimit: {{ .Values.tmp.sizeLimit }}
         {{- include "quader.secretVolumes" (dict "root" . "scope" "migrate") | nindent 8 }}
         {{- with include "quader.signatureAnchorsVolume" . }}
+        {{- . | nindent 8 }}
+        {{- end }}
+        {{- with include "quader.bastionTokensVolume" . }}
         {{- . | nindent 8 }}
         {{- end }}
 {{- end }}

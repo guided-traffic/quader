@@ -15,7 +15,8 @@ type BastionToken struct {
 	// BastionID is the registration's principal ID and Name its name.
 	BastionID string
 	Name      string
-	// ExpiresAt is the token's expiry; a Bastion token always expires.
+	// ExpiresAt is the token's expiry; an issued Bastion token always expires, and the token a registration's configuration declares
+	// does not: zero (R-BAS-127), which the handshake sends as the zero time and the Bastion reads as no expiry.
 	ExpiresAt time.Time
 }
 

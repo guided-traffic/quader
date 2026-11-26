@@ -21,7 +21,7 @@ function contact(replica: string, address: string, baseUrl: string, minutesAgo: 
 }
 
 function token(id: string, description: string, hint: string, createdDays: number, expiresDays: number): Json {
-  return { id, hint, description, createdAt: at(-createdDays), expiresAt: at(expiresDays), lastUsedAt: at(-0.002) };
+  return { id, hint, description, createdAt: at(-createdDays), expiresAt: at(expiresDays), lastUsedAt: at(-0.002), declared: false };
 }
 
 /**
@@ -39,6 +39,7 @@ function registrations(frankfurtOn: boolean): Json {
         name: 'dmz-frankfurt-edge',
         description: 'The DMZ of the Frankfurt data centre, for the build agents of our partners',
         enabled: true,
+        declared: null,
         switches: { handover: frankfurtOn, gui: false, docs: false },
         // The /64 its IPv6 replica leaves from; the other replica came from an IPv4 address it does not list (R-UI-243).
         egress: ['2001:db8:85a3::/64'],
@@ -57,11 +58,17 @@ function registrations(frankfurtOn: boolean): Json {
         name: 'partners',
         description: 'The partner network',
         enabled: true,
+        // Declared in the Helm values (R-BAS-127, Q-UI-1497 to Q-UI-1499): the lock line with the Secret, no Delete, the networks as
+        // text with the warning of its replica's unlisted address and no Add, the declared token without an expiry and without Revoke
+        // beside one issued on the screen.
+        declared: { since: at(-2), secretName: 'quader-bastion-token' },
         switches: { handover: false, gui: false, docs: false },
-        // No network yet: the empty list's warning and the offer of its replica's address (R-UI-243).
-        egress: [],
+        egress: ['10.252.0.0/16'],
         createdAt: at(-170),
-        tokens: [token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e41', 'partners 2026', 'qdr_bst_3kQ9', 165, 200)],
+        tokens: [
+          { ...token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e44', 'Bastion partners (declared in the configuration)', 'qdr_bst_Lm4c', 2, 0), expiresAt: null, declared: true },
+          token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e41', 'partners 2026', 'qdr_bst_3kQ9', 165, 200),
+        ],
         contacts: [contact('quader-bastion-7d9c5b8f6-p4r7t', '203.0.113.7', 'https://packages.example.com', 1)],
       },
     ],
@@ -164,6 +171,7 @@ export async function* bastionsHandover(page: Page): AsyncGenerator<string> {
   yield 'empty';
   await answer(page, true, readable);
   await expect(page.getByRole('switch', { name: 'Direct reads from the object store for dmz-frankfurt-edge' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.locator('main [data-testid="bastion-declared"]')).toBeVisible();
   yield 'switch';
   await answer(page, true, blocked);
   await expect(page.locator('main [data-testid="bastion-handover-reasons"]')).toBeVisible();

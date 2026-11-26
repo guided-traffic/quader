@@ -10454,6 +10454,10 @@ the longest IPv6 network of 43 characters), with **Remove**, **Add address** and
 default of a new registration ([Q-UI-1484](#q-ui-1484--the-list-is-a-field-per-network-and-a-refused-entry-keeps-what-was-typed)). A holder of `endpoints:read` alone reads the networks as a line of text
 and the warnings without **Add**. English and German. E12 moves the list into **Details** and leaves the warnings on the card.
 
+*Amended on 2026-11-26 ([bastion.md](bastion.md) R-BAS-127, [Q-UI-1497](#q-ui-1497--a-declared-bastion-registration-says-where-it-comes-from-with-the-words-of-a-declared-account)):*
+a registration the configuration declares shows its networks as the line of text a reader sees, with the warnings and without **Add**,
+also to a holder of `endpoints:write`: they follow the Helm values.
+
 Acceptance criteria:
 
 - Vitest (about 1 s): the empty list's warning; a contact from an unlisted address offers to add it, and **Add** sends one `PATCH` with the
@@ -29051,6 +29055,50 @@ walkthrough.
 | (c) Revert to the server's list on a refusal | R-UI-240's rule | | The typed list is lost with its typo |
 
 **Choice:** (a). The card's live reload (R-UI-213) sets the fields again only when the server's list changed. **Applied in the spec:** R-UI-243.
+
+### Q-UI-1497 · A declared Bastion registration says where it comes from, with the words of a declared account
+
+Status: **Decided by the development agent on 2026-11-26** ([bastion.md](bastion.md) R-BAS-127) — selected from the options below; the
+owner reviews it at the walkthrough.
+
+Context: a registration the configuration declares (`declared` set) takes its description, its addresses and one token from the Helm values;
+the card has to say so and keep those members out of reach. An account the configuration declares already says it on the registry's page
+(Q-UI-1161): a lock line "From the Helm values: Secret … Change or remove it there."
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A lock line under the facts in the declared account's words: "From the Helm values, token from Secret <name>. Its description, addresses and that token are changed or removed there; to delete it, remove it there first.", and "From the installation's configuration file. …" without a Secret's name; the addresses as text, no field (chosen) | | One wording for what the configuration declares, wherever it stands; says what is read-only and what to do | A longer line than the account's |
+| (b) A badge "Declared in the configuration" beside the name | | Short | Says neither where nor what is read-only |
+| (c) The fields shown disabled | | The form is the same | A disabled field invites a click and explains nothing |
+
+**Choice:** (a). The brief's words "Declared in the configuration" are not used: the declared accounts, whose words the brief asked for,
+say "From the Helm values". **Applied in the spec:** R-BAS-127, R-UI-243 (the list is text for a declared registration).
+
+### Q-UI-1498 · A declared registration's card offers no Delete
+
+Status: **Decided by the development agent on 2026-11-26** (R-BAS-127) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Delete** is not rendered; the lock line says to remove it in the values first (chosen) | | No action that can only fail; the API's `409 managed_by_config` stays for other clients | The action's place is empty |
+| (b) **Delete** that answers the `409` as an error | | The same buttons on every card | An action offered to be refused |
+| (c) **Delete** disabled with a hint | | Visible | A disabled control and a second text for what the lock line says |
+
+**Choice:** (a). **Disable**, **Enable** and **Issue token** stay: they are the administrator's. **Applied in the spec:** R-BAS-127.
+
+### Q-UI-1499 · The declared token reads Never under Expires and "In the configuration" under its name, with no Revoke
+
+Status: **Decided by the development agent on 2026-11-26** (R-BAS-127) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) In its row **Expires** reads **Never**, a lock with "In the configuration" stands beside the hint under its name, and the actions' cell is empty; the other tokens keep **Revoke** (chosen) | | The row says why it cannot be revoked here; the table keeps its columns and its form at 1024 px (Q-UI-959; in the actions' cell the words stacked the table there) | The reason is not where Revoke would be |
+| (b) The declared token left out of the table | | Fewer rows | **Last used** of the token the Bastion actually uses is hidden |
+| (c) **Revoke** answered with the `409` | | | An action offered to be refused |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-127, R-BAS-007.
 
 ## What this does not cover
 

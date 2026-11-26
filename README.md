@@ -2080,6 +2080,7 @@ ci:                                     # GitLab CI OIDC (docs/spec/gitlab-ci-oi
   #     ca_bundle_ref: file:/var/run/secrets/gitlab-ca/ca.crt # example: an instance behind a private CA
 bastions:                               # the main installation's side of the Bastion (docs/spec/bastion.md; the Bastion's own tree is a separate file)
   max_registrations: 16                 # default; 1 to 256; also bounds the bastion label of the interface metrics (R-BAS-004)
+  declared: {}                          # default; registrations quader migrate applies, keyed by name (R-BAS-127); the chart renders it from bastions.declared
   downloads:
     max_batch: 1000                     # default; events one request of the intake accepts (R-BAS-016)
     max_age: 720h                       # default; older events are counted as dropped
@@ -3490,6 +3491,28 @@ A `*From.configMapKeyRef` names a key of a ConfigMap in the release namespace; o
 configuration file carries that path (`certificates_file`, `keys_file`, `pem_file`, `trusted_root_file`). A Secret is not accepted: the material is
 public. A ConfigMap that does not exist keeps the Job's pod from starting. With `migrations.mode: disabled`, whoever runs `quader migrate`
 provides the files at those paths. Security: whoever can write the values or the named ConfigMaps chooses whom the installation trusts as a signer.
+
+Bastion registrations declared in the values ([R-BAS-127](docs/spec/bastion.md#r-bas-127--a-bastion-registration-declared-in-the-main-installations-configuration)):
+the chart renders `bastions.declared` into `config.bastions.declared` (a map keyed by `name`), and the migration Job creates each
+registration, makes its description, networks and token follow the entry, and replaces the token when the Secret holds another value; a
+registration taken out of the list keeps everything but its declared token, which is revoked. The default declares none and renders nothing.
+
+```yaml
+bastions:
+  declared: []                          # default: none
+  # - name: partners                    # example; ^[a-z][a-z0-9-]{0,19}$, unique (a duplicate fails the render)
+  #   description: Partner access       # optional
+  #   egress: [10.252.0.0/16]           # optional; the networks the Bastion connects from, at most 32
+  #   token:
+  #     existingSecret: quader-bastion-token   # required; the Secret the Bastion's chart names in secrets.mainToken
+  #     key: token                      # default
+```
+
+Only the migration Job mounts the Secrets, read-only and optional, at `/var/run/secrets/quader/bastion-tokens/<name>/token`; the database
+keeps the token's hash. The value must be a Bastion token (`qdr_bst_`, 57 characters with its checksum): make it with
+`quader admin bastion token generate` or **Issue token**. A missing Secret or another value stops the Job with the entry's name. Security:
+whoever can write the Secret decides the Bastion's credential at the next rollout, and the declared token does not expire
+([H-2366](docs/security/bastion.md#h-2366--a-declared-bastion-token-does-not-expire)).
 
 Quader's signing identity ([R-HA-071](docs/spec/ha-and-helm.md#r-ha-071--the-signing-identitys-secret-in-the-worker-pods-only), [signatures.md
 R-SIG-046](docs/spec/signatures.md#r-sig-046--the-identity-from-the-helm-values)): at most one source, mounted into the worker pods only, its

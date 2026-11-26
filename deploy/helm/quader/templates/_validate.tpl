@@ -263,6 +263,8 @@ fullnameOverride that fit. A name that carries a value of the installation (a po
 {{- include "quader.validateSignatures" . -}}
 {{- include "quader.validateSigning" . -}}
 {{- include "quader.validateUpstreamAccounts" . -}}
+{{- /* The Bastion registrations declared in bastions.declared (R-BAS-127, templates/_bastions.tpl). */ -}}
+{{- include "quader.validateBastions" . -}}
 
 {{- /* The PrometheusRule (R-HA-045): a name in disabledAlerts that is no alert is a typo. */ -}}
 {{- $alertNames := include "quader.rules.names" . | fromJsonArray -}}

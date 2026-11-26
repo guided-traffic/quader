@@ -2,9 +2,11 @@ package token
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/auth/scope"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -39,6 +41,8 @@ type BastionInfo struct {
 	Hint      string
 	BastionID string
 	Name      string
+	// ExpiresAt is the token's expiry; zero for the token a registration's configuration declares, which does not expire
+	// (R-BAS-127).
 	ExpiresAt time.Time
 }
 
@@ -94,7 +98,8 @@ func (s *Service) bastionTTL(ttl time.Duration) (time.Duration, error) {
 
 // RevokeBastionToken revokes one token of a registration (R-BAS-004): token.revoked with resource_type bastion
 // and the journal entry (R-HA-054). A token that is revoked already, or has expired, ends nothing and
-// succeeds; a token that is no Bastion token of that registration is a 404.
+// succeeds; a token that is no Bastion token of that registration is a 404, and the token the registration's configuration
+// declares a 409 managed_by_config (R-BAS-127).
 func (s *Service) RevokeBastionToken(ctx context.Context, c principal.Caller, bastion, id string) error {
 	if !principal.IsID(id) {
 		return principal.NotFound("The token")
@@ -107,6 +112,11 @@ func (s *Service) RevokeBastionToken(ctx context.Context, c principal.Caller, ba
 		}
 		if len(rows) == 0 {
 			return principal.NotFound("The token")
+		}
+		if rows[0].Declared {
+			// The token the configuration declares ends with a change of its Secret, or of the declaration (R-BAS-127).
+			return errs.E(errs.Conflict, errs.CodeManagedByConfig,
+				"The token is declared in the installation's configuration (bastions.declared); put another value in its Secret, or remove the declaration, and roll out.")
 		}
 		_, err = s.revokeTree(ctx, tx, qs, c, id, ReasonAdmin, false)
 		return err
@@ -141,7 +151,8 @@ func (s *Service) AuthenticateBastion(ctx context.Context, raw string, req Reque
 	gateOpen := s.o.Gate.Open()
 	if gateOpen {
 		if ct, ok := s.tokens.Get(hash); ok && ct.info.Type == TypeBST {
-			if ct.info.ExpiresAt != nil && s.o.Now().Before(*ct.info.ExpiresAt) {
+			// Only a registration's declared token reaches the cache without an expiry (loadBastion, R-BAS-127).
+			if ct.info.ExpiresAt == nil || s.o.Now().Before(*ct.info.ExpiresAt) {
 				return bastionInfo(raw, ct.info), nil
 			}
 			s.tokens.Remove(hash) // expired since the fill: the database path logs the rejection
@@ -207,15 +218,18 @@ func (s *Service) loadBastion(ctx context.Context, hash [32]byte) (cachedToken, 
 			return &rejection{err: ErrExpired, id: r.TokenID, hint: r.Hint, owner: ref, due: r.RejectionDue}
 		case !r.Enabled:
 			return ErrOwner
-		case !r.ExpiresAt.Valid:
-			// A Bastion token always expires (R-BAS-004); a row without an expiry is a storage fault, never an
-			// acceptance.
+		case !r.ExpiresAt.Valid && !r.Declared:
+			// An issued Bastion token always expires (R-BAS-004); only the token a registration's configuration declares has no
+			// expiry (R-BAS-127, Q-BAS-466). Any other row without one is a storage fault, never an acceptance.
 			return ErrUnknown
 		}
-		exp := r.ExpiresAt.Time
 		ct.info = Info{
-			ID: r.TokenID, Type: TypeBST, Scope: scope.Default(), ExpiresAt: &exp,
+			ID: r.TokenID, Type: TypeBST, Scope: scope.Default(),
 			Owner: principal.Principal{ID: r.BastionID, Kind: principal.KindBastion, Name: r.Name, Status: principal.StatusActive},
+		}
+		if r.ExpiresAt.Valid {
+			exp := r.ExpiresAt.Time
+			ct.info.ExpiresAt = &exp
 		}
 		return nil
 	})
@@ -228,4 +242,64 @@ func (s *Service) loadBastion(ctx context.Context, hash [32]byte) (cachedToken, 
 		return cachedToken{}, principal.DBErr("token.authenticate_bastion", err)
 	}
 	return ct, nil
+}
+
+// The token a Bastion registration's configuration declares (R-BAS-127, Q-BAS-465 to Q-BAS-467): quader migrate stores the hash of the
+// value the Secret holds, as an issued token's is stored (R-AUTH-023), with no expiry and created_via configuration, and revokes it with
+// the reason rotated when the Secret holds another value. It counts against no limit of auth.tokens.max_active_per_principal.bst.
+
+// ViaConfiguration is created_via of the token a declaration names: the run of quader migrate that stored it.
+const ViaConfiguration = "configuration"
+
+// DeclaredBastionToken is a value of bastions.declared: its hash and its hint, never the value.
+type DeclaredBastionToken struct {
+	Hash [32]byte
+	Hint string
+}
+
+// ParseDeclaredBastion checks a value a declaration names (R-BAS-127): a Bastion token in the format the main installation issues
+// (qdr_bst_, 57 characters, the checksum of R-AUTH-022), and returns its hash and hint. The error names no part of the value.
+func ParseDeclaredBastion(raw string) (DeclaredBastionToken, error) {
+	if typ, err := Check(raw); err != nil || typ != TypeBST {
+		return DeclaredBastionToken{}, errors.New("the value is not a Bastion token (qdr_bst_, 57 characters, its checksum)")
+	}
+	return DeclaredBastionToken{Hash: Hash(raw), Hint: Hint(raw)}, nil
+}
+
+// InsertDeclaredBastionTx stores the declared token of the registration bastionID inside tx: the hash and hint of the value, no
+// expiry, created_via configuration, and token.created with resource_type bastion. It returns the token's ID.
+func (s *Service) InsertDeclaredBastionTx(ctx context.Context, tx meta.Tx, c principal.Caller, bastionID, name string, t DeclaredBastionToken) (string, error) {
+	sc, err := scope.Parse(nil, s.o.Scope)
+	if err != nil {
+		return "", err
+	}
+	qs := principal.Queries(tx)
+	owner, err := lockOwner(ctx, qs, bastionID, TypeBST)
+	if err != nil {
+		return "", err
+	}
+	id := principal.NewID()
+	desc := "Bastion " + name + " (declared in the configuration)"
+	if _, err := qs.IdentityInsertToken(ctx, q.IdentityInsertTokenParams{
+		ID: id, Type: string(TypeBST), SecretSha256: t.Hash[:], Hint: t.Hint, PrincipalID: bastionID, Description: desc,
+		Scope: string(sc.Marshal()), CreatedBy: c.Actor.ID, CreatedVia: ViaConfiguration, TtlSecs: -1,
+	}); err != nil {
+		return "", err
+	}
+	return id, s.o.Recorder.RecordTx(ctx, tx, audit.Event{
+		Type: audit.EventTokenCreated, Outcome: audit.Success, Actor: c.Actor, Source: c.Source,
+		// As every Bastion token's event (Service.insertTx): the resource type bastion, the registration in the data.
+		Subject: audit.Subject{Kind: "bastion", ID: id, Name: t.Hint},
+		Details: mustJSON(map[string]any{
+			"type": string(TypeBST), "owner": owner.Ref(), "scope": json.RawMessage(sc.Marshal()), "expiresAt": nil,
+			"createdVia": ViaConfiguration, "description": desc, "bastion": name, "tokenId": id,
+		}),
+	})
+}
+
+// RevokeBastionTokenTx revokes one Bastion token inside tx with the reason given (R-BAS-127: rotated for a declared value the Secret
+// replaced, admin for one whose declaration was removed): token.revoked with its journal entry, and the replicas' caches told.
+func (s *Service) RevokeBastionTokenTx(ctx context.Context, tx meta.Tx, c principal.Caller, id, reason string) error {
+	_, err := s.revokeTree(ctx, tx, principal.Queries(tx), c, id, reason, false)
+	return err
 }

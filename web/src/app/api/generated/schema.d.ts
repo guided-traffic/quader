@@ -5205,7 +5205,9 @@ export interface paths {
         /**
          * Delete a Bastion registration
          * @description Deletes the registration and revokes its tokens (`token.revoked`, journaled, R-HA-054). Records `bastion.deleted`,
-         *     journaled: a restore to a point before the deletion brings the registration back disabled (Q-BAS-145).
+         *     journaled: a restore to a point before the deletion brings the registration back disabled (Q-BAS-145). A registration the
+         *     installation's configuration declares (R-BAS-127) answers `409 managed_by_config`: the next `quader migrate` would create
+         *     it again; its declaration is removed first.
          */
         delete: operations["deleteBastion"];
         options?: never;
@@ -5225,7 +5227,9 @@ export interface paths {
          *     registration's configuration whole. `limits.preset` names a preset to apply in this request (R-LIM-046, Q-LIM-311): the
          *     place's five kind rules, the flood figures and the mode, then the other members of the patch on top; `custom` applies
          *     nothing. A change of `limits.mode` needs recent authentication (`401 reauthentication_required`, R-LIM-044). The limits
-         *     are held to the rules a Bastion applies them by (`422` with the member named).
+         *     are held to the rules a Bastion applies them by (`422` with the member named). A registration the installation's
+         *     configuration declares (`declared` is set, R-BAS-127) refuses a new `description` and new `egress` with `409
+         *     managed_by_config`: they follow `bastions.declared`; a patch that names them with their current value changes nothing.
          */
         patch: operations["updateBastion"];
         trace?: never;
@@ -5270,7 +5274,8 @@ export interface paths {
          * @description Revokes one token of the registration; `204` for a token that is revoked already. The handler requires `endpoints:write`
          *     or `tokens:revoke` (Q-BAS-24), so a security administrator can revoke a leaked token without managing endpoints; the
          *     declaration is the coarse `authenticated` form for that reason. Records `token.revoked` with `resource_type: bastion`,
-         *     journaled (R-HA-054).
+         *     journaled (R-HA-054). The token the registration's configuration declares (`declared: true`, R-BAS-127) answers `409
+         *     managed_by_config`: it ends with a new value in its Secret or the removal of the declaration, applied by `quader migrate`.
          */
         delete: operations["revokeBastionToken"];
         options?: never;
@@ -14275,6 +14280,7 @@ export interface components {
          *       "name": "partners",
          *       "description": "The partner network",
          *       "enabled": true,
+         *       "declared": null,
          *       "switches": {
          *         "handover": false,
          *         "gui": false,
@@ -14343,7 +14349,8 @@ export interface components {
          *           "description": "partners 2026",
          *           "createdAt": "2026-11-02T10:05:00Z",
          *           "expiresAt": "2027-11-02T10:05:00Z",
-         *           "lastUsedAt": "2026-11-02T10:06:12Z"
+         *           "lastUsedAt": "2026-11-02T10:06:12Z",
+         *           "declared": false
          *         }
          *       ],
          *       "contacts": [
@@ -14361,6 +14368,12 @@ export interface components {
          *     }
          */
         Bastion: {
+            /**
+             * @description Set while the installation's configuration declares the registration (`bastions.declared`, R-BAS-127): its
+             *     `description`, its `egress` and its declared token follow the configuration, which `quader migrate` applies on every
+             *     run, and the registration is not deleted here. Null otherwise.
+             */
+            declared: components["schemas"]["BastionDeclaration"] | null;
             /** Format: uuid */
             id: string;
             name: string;
@@ -14506,15 +14519,36 @@ export interface components {
         BastionList: {
             items: components["schemas"]["Bastion"][];
         };
+        /** @description The declaration of a registration in the installation's configuration (R-BAS-127). */
+        BastionDeclaration: {
+            /**
+             * Format: date-time
+             * @description When the first run of `quader migrate` that declared it applied the entry.
+             */
+            since: string;
+            /**
+             * @description The Kubernetes Secret the declared token comes from, as the configuration of the replica that answers names it
+             *     (`bastions.declared.<name>.secret_name`); empty outside the chart. Never a value.
+             */
+            secretName: string;
+        };
         BastionTokenSummary: {
+            /**
+             * @description The token the registration's configuration declares (R-BAS-127): its value is the Secret's, it does not expire, and it
+             *     is not revoked here (`409 managed_by_config`).
+             */
+            declared: boolean;
             /** Format: uuid */
             id: string;
             hint: string;
             description: string;
             /** Format: date-time */
             createdAt: string;
-            /** Format: date-time */
-            expiresAt: string;
+            /**
+             * Format: date-time
+             * @description The expiry; null for the declared token, which does not expire (R-BAS-127, Q-BAS-466).
+             */
+            expiresAt: string | null;
             /** Format: date-time */
             lastUsedAt: string | null;
         };
@@ -30992,6 +31026,7 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             501: components["responses"]["NotImplemented"];
@@ -31031,6 +31066,7 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             412: components["responses"]["PreconditionFailed"];
             413: components["responses"]["PayloadTooLarge"];
             415: components["responses"]["UnsupportedMediaType"];
@@ -31109,6 +31145,7 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             501: components["responses"]["NotImplemented"];

@@ -661,6 +661,15 @@ statements: `BastionSnapshot` (one statement with each registration's rules and 
 [bastion_contact.sql](../../internal/meta/postgres/queries/bastion_contact.sql), `LimitBastionsOfProfile` in
 [limits.sql](../../internal/meta/postgres/queries/limits.sql). Expand phase only.
 
+**00148_bastion_declared** ([bastion.md](../spec/bastion.md) R-BAS-127, Q-BAS-465 to Q-BAS-469): a registration the configuration declares.
+`bastion` gains `declared_at` (the mark, set and cleared by `quader migrate`) and `declared_token` (a foreign key to `api_token`, `ON DELETE
+SET NULL`; set only while `declared_at` is, `bastion_declared_token_check`); `bastion_revision` covers `declared_at`. `api_token_check`
+admits a `bst` token without an expiry only with `created_via` `configuration` (the authenticator accepts one only when it is its registration's `declared_token`; a token issued on the screen that a declaration takes over gets `configuration` too), and
+`api_token_created_via_check` admits `configuration`. The statements `BastionDeclaredList`, `BastionSetDeclared`, `BastionSetDeclaredToken`,
+`BastionTokenByHash` and `BastionTokenUnexpire` in [bastion_registration.sql](../../internal/meta/postgres/queries/bastion_registration.sql);
+`IdentityCountActiveTokens` leaves the declared token out of the limit per principal. Expand phase only (Q-ARCH-340 keeps the phases'
+rules off: the step replaces two checks).
+
 ## The database's repository of the image scanning (00089)
 
 [00089_vuln_image_db_drop](../../internal/meta/postgres/migrations/00089_vuln_image_db_drop.sql) removes the private slot of the image
