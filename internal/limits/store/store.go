@@ -178,7 +178,7 @@ func profileOf(p q.LimitProfilesRow) limits.Profile {
 	f := limits.Figures{
 		p.RequestsPerSecond.Int64, p.RequestsBurst.Int64, p.RequestsPerHour.Int64, p.CachedBytesPerSecond.Int64,
 		p.CachedBytesPerHour.Int64, p.UncachedBytesPerSecond.Int64, p.UncachedBytesPerHour.Int64,
-		p.UpstreamRequestsPerHour.Int64, p.ParallelDownloads.Int64, p.BytesPerDay.Int64, p.RefusedPerHour.Int64,
+		p.UpstreamRequestsPerHour.Int64, p.ParallelTransfers.Int64, p.BytesPerDay.Int64, p.RefusedPerHour.Int64,
 	}
 	return limits.Profile{
 		ID: p.ID, Key: p.Key, Name: p.Name, Description: p.Description, Builtin: p.Builtin, Figures: f, Version: p.Version,

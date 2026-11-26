@@ -78,10 +78,10 @@ store serves the object to whoever holds it. Q-STOR-284 keeps links away from bl
 link's life after a change of a decision that was already taken. What makes it real: a finding or a takedown within the minute after a
 client received a link, and a long link life.
 
-### H-1276 · The limit of parallel downloads does not see a link's transfer, and the byte windows count its size at issuance
+### H-1276 · The limit of parallel transfers does not see a link's transfer, and the byte windows count its size at issuance
 
 Component: the download limits ([usage-and-limits.md](../spec/usage-and-limits.md) R-LIM-040). Subject: every budget key, a speed limit
-or none (Q-LIM-99). Dormant: live once the switch is on. The parallel lease ends with the `307`, so `parallelDownloads` bounds how many links a caller
+or none (Q-LIM-99). Dormant: live once the switch is on. The parallel lease ends with the `307`, so `parallelTransfers` bounds how many links a caller
 receives at once, not how many transfers run; a caller can start many transfers from the store within the links' lives. The hour and day
 windows count the item's size once at issuance: a link fetched several times within its life is charged once, a link never fetched is
 charged in full. What makes it real: a caller that requests links faster than it fetches them, or fetches one link many times.

@@ -2149,7 +2149,7 @@ export async function seedLimits(admin: Api): Promise<void> {
         key: limitProfile,
         name: 'Partners with a contract for the nightly mirrors',
         description: 'External partners with a contract for nightly mirrors of the release artifacts',
-        figures: { requestsPerSecond: 50, requestsBurst: 200, requestsPerHour: 5000, cachedBytesPerHour: 50_000_000_000, parallelDownloads: 6 },
+        figures: { requestsPerSecond: 50, requestsBurst: 200, requestsPerHour: 5000, cachedBytesPerHour: 50_000_000_000, parallelTransfers: 6 },
       },
       { 'Idempotency-Key': `renders-profile-${limitProfile}` },
     ),

@@ -28,7 +28,7 @@ const (
 	UncachedBytesPerSecond
 	UncachedBytesPerHour
 	UpstreamRequestsPerHour
-	ParallelDownloads
+	ParallelTransfers
 	BytesPerDay
 	RefusedPerHour
 	// NumFigures is the number of figures.
@@ -37,14 +37,14 @@ const (
 
 var figureNames = [NumFigures]string{
 	"requestsPerSecond", "requestsBurst", "requestsPerHour", "cachedBytesPerSecond", "cachedBytesPerHour",
-	"uncachedBytesPerSecond", "uncachedBytesPerHour", "upstreamRequestsPerHour", "parallelDownloads", "bytesPerDay",
+	"uncachedBytesPerSecond", "uncachedBytesPerHour", "upstreamRequestsPerHour", "parallelTransfers", "bytesPerDay",
 	"refusedPerHour",
 }
 
 // columnNames are the columns of limit_profile in figure order.
 var columnNames = [NumFigures]string{
 	"requests_per_second", "requests_burst", "requests_per_hour", "cached_bytes_per_second", "cached_bytes_per_hour",
-	"uncached_bytes_per_second", "uncached_bytes_per_hour", "upstream_requests_per_hour", "parallel_downloads",
+	"uncached_bytes_per_second", "uncached_bytes_per_hour", "upstream_requests_per_hour", "parallel_transfers",
 	"bytes_per_day", "refused_per_hour",
 }
 

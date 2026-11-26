@@ -18,7 +18,7 @@ export const FIGURES: readonly Figure[] = [
   'uncachedBytesPerSecond',
   'uncachedBytesPerHour',
   'upstreamRequestsPerHour',
-  'parallelDownloads',
+  'parallelTransfers',
   'bytesPerDay',
   'refusedPerHour',
 ];
@@ -30,7 +30,7 @@ export const GB = 1_000_000_000;
 /** The unit a field holds: a count, or bytes shown as MB or GB. */
 export type FigureUnit = 'count' | 'mb' | 'gb';
 
-export type FigureGroupId = 'requests' | 'cache' | 'upstream' | 'downloads' | 'refused';
+export type FigureGroupId = 'requests' | 'cache' | 'upstream' | 'transfers' | 'refused';
 
 export interface FigureGroup {
   readonly id: FigureGroupId;
@@ -62,10 +62,12 @@ export function figureGroups(): readonly FigureGroup[] {
       figures: ['uncachedBytesPerSecond', 'uncachedBytesPerHour', 'upstreamRequestsPerHour'],
     },
     {
-      id: 'downloads',
-      heading: $localize`:@@limits.group.downloads:Downloads`,
-      help: $localize`:@@limits.group.downloads-help:A further download waits up to 10 seconds, then is refused, or at once while a server holds many waiting downloads.`,
-      figures: ['parallelDownloads', 'bytesPerDay'],
+      // A download a person asks for is many transfers (R-LIM-007, Q-LIM-293): the help says what one costs, so that nobody reads the
+      // figure as images or installs at once. The numbers are the clients' measured at Q-LIM-293.
+      id: 'transfers',
+      heading: $localize`:@@limits.group.transfers:Transfers`,
+      help: $localize`:@@limits.group.transfers-help:Each layer of an image and each package of an install is one transfer: a pull runs 3 to 6 at once, an npm, pnpm or Yarn install 8 to 64, a NuGet restore one per package. A further transfer waits up to 10 seconds, then is refused, or at once while a server holds many waiting transfers.`,
+      figures: ['parallelTransfers', 'bytesPerDay'],
     },
     {
       id: 'refused',
@@ -141,7 +143,7 @@ export function fieldLabel(figure: Figure): string {
       return $localize`:@@limits.field.gb-hour:GB per hour`;
     case 'upstreamRequestsPerHour':
       return $localize`:@@limits.field.upstream-requests:Upstream requests per hour`;
-    case 'parallelDownloads':
+    case 'parallelTransfers':
       return $localize`:@@limits.field.parallel:In parallel`;
     case 'bytesPerDay':
       return $localize`:@@limits.field.gb-day:GB per day`;
@@ -169,8 +171,8 @@ export function figureName(figure: Figure | string): string {
       return $localize`:@@limits.figure.upstream-hour:From the upstream per hour`;
     case 'upstreamRequestsPerHour':
       return $localize`:@@limits.figure.upstream-requests:Upstream requests per hour`;
-    case 'parallelDownloads':
-      return $localize`:@@limits.figure.parallel:Parallel downloads`;
+    case 'parallelTransfers':
+      return $localize`:@@limits.figure.parallel:Parallel transfers`;
     case 'bytesPerDay':
       return $localize`:@@limits.figure.day:Volume per day`;
     case 'refusedPerHour':
@@ -276,8 +278,8 @@ export function limitText(figure: Figure, value: number | null | undefined, loca
       return $localize`:@@limits.limit.burst:${amount}:amount: burst`;
     case 'bytesPerDay':
       return $localize`:@@limits.limit.per-day:${amount}:amount: per day`;
-    case 'parallelDownloads':
-      return $localize`:@@limits.limit.parallel:${amount}:amount: in parallel`;
+    case 'parallelTransfers':
+      return $localize`:@@limits.limit.parallel:${amount}:amount: transfers in parallel`;
     default:
       return $localize`:@@limits.limit.per-hour:${amount}:amount: per hour`;
   }
@@ -285,7 +287,7 @@ export function limitText(figure: Figure, value: number | null | undefined, loca
 
 /**
  * The eleven figures in one compact line (R-UI-178): "200/s · 1,000 burst · 50,000/h · cache 200 MB/s, 300 GB/h · upstream 50 MB/s,
- * 30 GB/h, 2,000 req/h · 20 parallel · 1,000 GB/day · 500 refused/h". An unlimited figure is left out; nothing set reads "Unlimited".
+ * 30 GB/h, 2,000 req/h · 250 parallel transfers · 1,000 GB/day · 500 refused/h". An unlimited figure is left out; nothing set reads "Unlimited".
  */
 export function compactFigures(figures: Figures | FigureOverrides, locale: string): string {
   const v = (f: Figure): number | null => figures[f] ?? null;
@@ -313,8 +315,9 @@ export function compactFigures(figures: Figures | FigureOverrides, locale: strin
   const ur = v('upstreamRequestsPerHour');
   if (ur !== null) up.push($localize`:@@limits.compact.upstream-requests:${c(ur)}:n: req/h`);
   if (up.length) parts.push($localize`:@@limits.compact.upstream:upstream ${up.join(', ')}:values:`);
-  const par = v('parallelDownloads');
-  if (par !== null) parts.push($localize`:@@limits.compact.parallel:${c(par)}:n: parallel`);
+  const par = v('parallelTransfers');
+  // The figure's words stay on one line ("64 parallel transfers" never breaks before its last word).
+  if (par !== null) parts.push($localize`:@@limits.compact.parallel:${c(par)}:n: parallel transfers`.replace(/ /g, ' '));
   const day = v('bytesPerDay');
   if (day !== null) parts.push(`${gb(day)} GB/day`);
   const ref = v('refusedPerHour');
@@ -341,7 +344,7 @@ function windowSuffix(figure: Figure): string {
       return '/s';
     case 'bytesPerDay':
       return '/day';
-    case 'parallelDownloads':
+    case 'parallelTransfers':
     case 'requestsBurst':
       return '';
     default:
@@ -364,8 +367,8 @@ function shortName(figure: Figure): string {
       return $localize`:@@limits.short.uncached:uncached`;
     case 'upstreamRequestsPerHour':
       return $localize`:@@limits.short.upstream-requests:upstream requests`;
-    case 'parallelDownloads':
-      return $localize`:@@limits.short.parallel:parallel`;
+    case 'parallelTransfers':
+      return $localize`:@@limits.short.parallel:parallel transfers`;
     case 'bytesPerDay':
       return $localize`:@@limits.short.day:volume`;
     case 'refusedPerHour':

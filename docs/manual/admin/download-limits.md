@@ -13,7 +13,7 @@ Every request on a repository's address is charged to a caller: a user (all sess
 | From the cache, GB per hour | hour | 429 before the next download starts |
 | From the upstream, MB per second | second | the fill is slowed |
 | From the upstream, GB per hour; upstream requests per hour | hour | what is cached is still served, what needs the upstream is refused |
-| Downloads in parallel | — | a further download waits up to 10 seconds, then 429; while waiting downloads hold a quarter of a replica's request slots, 429 at once |
+| Parallel transfers | — | a further transfer waits up to 10 seconds, then 429; while waiting transfers hold a quarter of a replica's request slots, 429 at once. Each layer of an image and each package of an install is one transfer: a pull runs 3 to 6 at once, an npm, pnpm or Yarn install 8 to 64, a NuGet restore one per package. The built-in profiles allow Anonymous 64, Restricted 64, Standard 250, Technical 1,000 |
 | GB per day | day | 429 before the next download starts |
 | Refused requests per hour | hour | the caller is blocked for the block time. Counted are refusals of access (a name the caller may not read or write), failed credentials and unknown repositories; a 429 of any limit is not counted, so a caller that sends past its request limit is slowed to that limit and not blocked |
 

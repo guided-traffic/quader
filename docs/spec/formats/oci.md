@@ -455,7 +455,7 @@ The format's `WriteError` (R-ARCH-008) maps every core error onto the distributi
 | Denied by the decision point | 403 | `DENIED` |
 | A refusal of the registry itself: the push of a manifest the journal replay withheld (R-OCI-013, R-OCI-033), a deletion that would leave a dangling reference (R-OCI-018) | 409 | `DENIED` |
 | Operation not offered (write to a remote, a delete through a virtual repository, an unsupported parameter) | 405 or 400 | `UNSUPPORTED` |
-| Rate limit (R-ARCH-005 step 7), and every refusal of the download limits (`rate_limited`, `download_limit_reached`, `upstream_limit_reached`, `too_many_parallel_downloads`, `caller_blocked`, [usage-and-limits.md](../usage-and-limits.md) R-LIM-020) | 429 | `TOOMANYREQUESTS` with `Retry-After`; the limit's `detail` as `message` |
+| Rate limit (R-ARCH-005 step 7), and every refusal of the download limits (`rate_limited`, `download_limit_reached`, `upstream_limit_reached`, `too_many_parallel_transfers`, `caller_blocked`, [usage-and-limits.md](../usage-and-limits.md) R-LIM-020) | 429 | `TOOMANYREQUESTS` with `Retry-After`; the limit's `detail` as `message` |
 | Upstream rate limit without a stored copy (R-REPO-029: 503 with `Retry-After`) | 503 | `TOOMANYREQUESTS` |
 | Upstream failure, offline, circuit open, object lost | 502, 503, 504 | `UNAVAILABLE` (distribution's code; the specification allows registry-specific codes) |
 

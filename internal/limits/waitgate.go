@@ -5,7 +5,7 @@ import "sync/atomic"
 // WaitingShare is the share of an endpoint's request slots that downloads waiting for a parallel slot may hold on a replica:
 // one in WaitingShare (R-LIM-024, Q-LIM-60, F-163). A waiting download keeps the request slot of step 4 of the chain
 // (server.max_in_flight, or the endpoint's own) for up to limits.parallel.wait; without a bound, a burst of callers at their
-// parallelDownloads figure fills the slots with requests that only wait, and the replica sheds every new request, another
+// parallelTransfers figure fills the slots with requests that only wait, and the replica sheds every new request, another
 // caller's too. Three quarters of the slots stay for requests that are served.
 const WaitingShare = 4
 

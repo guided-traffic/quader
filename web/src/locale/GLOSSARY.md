@@ -53,6 +53,7 @@ unless the line is too short, and then breaks at the joint with a hyphen; withou
 | identity provider | Identitätsanbieter |
 | break-glass account | Break-Glass-Konto |
 | ceiling (configuration limit) | Obergrenze |
+| transfer (one answer with a body: a layer of an image, a package of an install; a download a person asks for is many), parallel transfers, Transfers (the group of the limits' editor) | Übertragung, gleichzeitige Übertragungen, Übertragungen |
 | draft (unsaved form content) | Entwurf |
 | preset (of actions) | Vorlage |
 | rotate (a token) | rotieren |

@@ -40,7 +40,7 @@ export function readTexts(texts: FigureTexts): { figures: Record<Figure, number 
 }
 
 /**
- * The eleven fields of a profile in the groups of R-UI-178 (Requests, From the cache, From the upstream, Downloads, Refused
+ * The eleven fields of a profile in the groups of R-UI-178 (Requests, From the cache, From the upstream, Transfers, Refused
  * requests): a heading, the help line of what happens at the limit, and the fields, each as wide as its number (Q-UI-335). An empty
  * field is unlimited and says so as its placeholder. The value is in the field.
  *

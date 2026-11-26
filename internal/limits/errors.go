@@ -12,7 +12,7 @@ import (
 const (
 	CodeDownloadLimitReached     = "download_limit_reached"
 	CodeUpstreamLimitReached     = "upstream_limit_reached"
-	CodeTooManyParallelDownloads = "too_many_parallel_downloads"
+	CodeTooManyParallelTransfers = "too_many_parallel_transfers"
 	CodeCallerBlocked            = "caller_blocked"
 )
 
@@ -72,8 +72,11 @@ func (r refusal) detail(retry time.Duration) string {
 		return fmt.Sprintf("The download limit of %s is used up. %s", amount(r.figure, r.limit, r.window), wait)
 	case CodeUpstreamLimitReached:
 		return fmt.Sprintf("The upstream limit%s of %s is used up; what is cached is still served. %s", who, amount(r.figure, r.limit, r.window), wait)
-	case CodeTooManyParallelDownloads:
-		return fmt.Sprintf("The limit of %d parallel downloads is reached. %s", r.limit, wait)
+	case CodeTooManyParallelTransfers:
+		// A pull or an install is many transfers (R-LIM-007): the sentence says what the limit counts, so that nobody reads it
+		// as images or installs at once (Q-LIM-293).
+		return fmt.Sprintf("The limit of %d parallel transfers is reached: each layer of an image and each package of an install is one transfer. %s",
+			r.limit, wait)
 	case CodeCallerBlocked:
 		return "Too many refused requests: requests of this caller are refused for a while. " + wait
 	}

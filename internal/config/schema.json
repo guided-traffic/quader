@@ -2369,7 +2369,7 @@
           "properties": {
             "lease": {
               "default": "1m",
-              "description": "How long a download's lease holds its place without a renewal; a crashed replica's leases end after it.",
+              "description": "How long a transfer's lease of the figure parallelTransfers holds its place without a renewal; a crashed replica's leases end after it.",
               "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
               "type": "string",
               "x-quader-env": "QUADER_LIMITS_PARALLEL_LEASE",
@@ -2377,7 +2377,7 @@
             },
             "wait": {
               "default": "10s",
-              "description": "How long a further download waits for a free place before it answers 429; 0 answers at once.",
+              "description": "How long a transfer beyond the figure parallelTransfers waits for a free place before it answers 429; 0 answers at once.",
               "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
               "type": "string",
               "x-quader-env": "QUADER_LIMITS_PARALLEL_WAIT",

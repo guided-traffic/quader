@@ -2076,7 +2076,7 @@ const (
 	BytesPerDay             LimitFigureName = "bytesPerDay"
 	CachedBytesPerHour      LimitFigureName = "cachedBytesPerHour"
 	CachedBytesPerSecond    LimitFigureName = "cachedBytesPerSecond"
-	ParallelDownloads       LimitFigureName = "parallelDownloads"
+	ParallelTransfers       LimitFigureName = "parallelTransfers"
 	RefusedPerHour          LimitFigureName = "refusedPerHour"
 	RequestsBurst           LimitFigureName = "requestsBurst"
 	RequestsPerHour         LimitFigureName = "requestsPerHour"
@@ -2095,7 +2095,7 @@ func (e LimitFigureName) Valid() bool {
 		return true
 	case CachedBytesPerSecond:
 		return true
-	case ParallelDownloads:
+	case ParallelTransfers:
 		return true
 	case RefusedPerHour:
 		return true
@@ -12276,7 +12276,7 @@ type LimitFigureOverrides struct {
 	BytesPerDay             *int64 `json:"bytesPerDay,omitempty"`
 	CachedBytesPerHour      *int64 `json:"cachedBytesPerHour,omitempty"`
 	CachedBytesPerSecond    *int64 `json:"cachedBytesPerSecond,omitempty"`
-	ParallelDownloads       *int64 `json:"parallelDownloads,omitempty"`
+	ParallelTransfers       *int64 `json:"parallelTransfers,omitempty"`
 	RefusedPerHour          *int64 `json:"refusedPerHour,omitempty"`
 	RequestsBurst           *int64 `json:"requestsBurst,omitempty"`
 	RequestsPerHour         *int64 `json:"requestsPerHour,omitempty"`
@@ -12288,10 +12288,13 @@ type LimitFigureOverrides struct {
 
 // LimitFigures Every figure of R-LIM-004, each present in an answer; `null` is unlimited. Bytes are bytes.
 type LimitFigures struct {
-	BytesPerDay             *int64 `json:"bytesPerDay"`
-	CachedBytesPerHour      *int64 `json:"cachedBytesPerHour"`
-	CachedBytesPerSecond    *int64 `json:"cachedBytesPerSecond"`
-	ParallelDownloads       *int64 `json:"parallelDownloads"`
+	BytesPerDay          *int64 `json:"bytesPerDay"`
+	CachedBytesPerHour   *int64 `json:"cachedBytesPerHour"`
+	CachedBytesPerSecond *int64 `json:"cachedBytesPerSecond"`
+
+	// ParallelTransfers Transfers of the caller in progress at once across all replicas (R-LIM-024): each layer of an image and each package of
+	// an install is one transfer, so one pull or one install holds several at once (R-LIM-007).
+	ParallelTransfers       *int64 `json:"parallelTransfers"`
 	RefusedPerHour          *int64 `json:"refusedPerHour"`
 	RequestsBurst           *int64 `json:"requestsBurst"`
 	RequestsPerHour         *int64 `json:"requestsPerHour"`
@@ -19019,8 +19022,8 @@ type UsageBudgetFigures struct {
 	// CachedBytesPerSecond One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
 	CachedBytesPerSecond UsageBudgetFigure `json:"cachedBytesPerSecond"`
 
-	// ParallelDownloads One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
-	ParallelDownloads UsageBudgetFigure `json:"parallelDownloads"`
+	// ParallelTransfers One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
+	ParallelTransfers UsageBudgetFigure `json:"parallelTransfers"`
 
 	// RefusedPerHour One figure of a budget key; a windowed figure has `used` (the live estimate) and `windowSeconds`, a rate its limit alone.
 	RefusedPerHour UsageBudgetFigure `json:"refusedPerHour"`

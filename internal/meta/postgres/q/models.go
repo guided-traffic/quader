@@ -879,7 +879,7 @@ type LimitProfile struct {
 	UncachedBytesPerSecond  pgtype.Int8
 	UncachedBytesPerHour    pgtype.Int8
 	UpstreamRequestsPerHour pgtype.Int8
-	ParallelDownloads       pgtype.Int8
+	ParallelTransfers       pgtype.Int8
 	BytesPerDay             pgtype.Int8
 	RefusedPerHour          pgtype.Int8
 	Version                 int64

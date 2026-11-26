@@ -338,13 +338,13 @@ func (e *Engine) Live(ctx context.Context, key string) (used Figures, err error)
 	read(UpstreamRequestsPerHour, ctrUpstreamHour, hour)
 	read(BytesPerDay, ctrBytesDay, day)
 	read(RefusedPerHour, ctrRefusedHour, hour)
-	ops[ParallelDownloads] = b.Add(cluster.LimitOp{Kind: cluster.OpLeaseCount, Bucket: bucket, Now: now, TTL: 2 * e.o.LeaseTTL})
+	ops[ParallelTransfers] = b.Add(cluster.LimitOp{Kind: cluster.OpLeaseCount, Bucket: bucket, Now: now, TTL: 2 * e.o.LeaseTTL})
 	res, _, err := e.run(ctx, &b)
 	if err != nil {
 		return used, err
 	}
 	for fig, op := range ops {
-		if fig == ParallelDownloads {
+		if fig == ParallelTransfers {
 			used[fig] = res[op].Count
 			continue
 		}

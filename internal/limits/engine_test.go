@@ -354,8 +354,9 @@ func TestR_LIM_021_TheCheckBeforeADownload(t *testing.T) {
 	})
 }
 
-func TestR_LIM_024_ParallelDownloads(t *testing.T) {
-	f := BuiltinProfiles()[ProfileAnonymous] // 4 parallel
+func TestR_LIM_024_ParallelTransfers(t *testing.T) {
+	f := BuiltinProfiles()[ProfileAnonymous]
+	f[ParallelTransfers] = 4 // a figure the test fills with four transfers
 	r := newRig(t, ModeEnforce, f)
 	ctx := context.Background()
 	var held []*Charge
@@ -367,7 +368,7 @@ func TestR_LIM_024_ParallelDownloads(t *testing.T) {
 		held = append(held, c)
 	}
 	c := r.e.Begin(anonCaller("198.51.100.9"), qname.Repo{})
-	if err := r.e.Admit(ctx, c); codeOf(err) != CodeTooManyParallelDownloads {
+	if err := r.e.Admit(ctx, c); codeOf(err) != CodeTooManyParallelTransfers {
 		t.Fatalf("the fifth download: %v", err)
 	}
 	r.e.Finish(held[0])
@@ -408,8 +409,8 @@ func TestR_LIM_024_ParallelDownloads(t *testing.T) {
 			}
 		}
 		start := time.Now()
-		if err := r.e.Admit(ctx, begin("198.51.100.10")); codeOf(err) != CodeTooManyParallelDownloads || time.Since(start) > 500*time.Millisecond {
-			t.Fatalf("the sixth download with the share held: %v after %s, want too_many_parallel_downloads at once", err, time.Since(start))
+		if err := r.e.Admit(ctx, begin("198.51.100.10")); codeOf(err) != CodeTooManyParallelTransfers || time.Since(start) > 500*time.Millisecond {
+			t.Fatalf("the sixth download with the share held: %v after %s, want too_many_parallel_transfers at once", err, time.Since(start))
 		}
 		if err := r.e.Admit(ctx, begin("198.51.100.11")); err != nil {
 			t.Fatalf("another caller's download beside the held share: %v", err)
@@ -432,7 +433,7 @@ func TestR_LIM_024_ParallelDownloads(t *testing.T) {
 			}
 		}
 		c := r.e.Begin(anonCaller("198.51.100.9"), qname.Repo{})
-		if err := r.e.Admit(ctx, c); codeOf(err) != CodeTooManyParallelDownloads {
+		if err := r.e.Admit(ctx, c); codeOf(err) != CodeTooManyParallelTransfers {
 			t.Fatalf("the third download on the share: %v", err)
 		}
 		if !r.e.Fallback() {
@@ -526,7 +527,8 @@ func TestR_LIM_024_ParallelDownloads(t *testing.T) {
 // crash is a replica's engine that is left alone: no Finish, no flush, no Stop.
 func TestR_LIM_024_ACrashedReplicasLeasesEndAtTheirScore(t *testing.T) {
 	ctx := context.Background()
-	f := BuiltinProfiles()[ProfileAnonymous] // 4 parallel
+	f := BuiltinProfiles()[ProfileAnonymous]
+	f[ParallelTransfers] = 4 // a figure the crashed replica's transfers fill
 	r := newRig(t, ModeEnforce, f)
 	other := NewEngine(Options{
 		Store: r.store, Index: func() *Index { return r.x }, Replica: "r2", Now: r.clk.now, LeaseTTL: time.Minute,
@@ -539,8 +541,8 @@ func TestR_LIM_024_ACrashedReplicasLeasesEndAtTheirScore(t *testing.T) {
 	}
 	admit := func() error { return other.Admit(ctx, other.Begin(anonCaller("198.51.100.12"), qname.Repo{})) }
 	r.clk.add(time.Minute - time.Second)
-	if err := admit(); codeOf(err) != CodeTooManyParallelDownloads {
-		t.Fatalf("a second before the leases end: %v, want too_many_parallel_downloads", err)
+	if err := admit(); codeOf(err) != CodeTooManyParallelTransfers {
+		t.Fatalf("a second before the leases end: %v, want too_many_parallel_transfers", err)
 	}
 	r.clk.add(time.Second)
 	if err := admit(); err != nil {
@@ -666,7 +668,7 @@ func TestR_LIM_022_ARefusedUpstreamRequestIsCountedNowhere(t *testing.T) {
 	})
 	t.Run("a download the parallel lease refuses gives its upstream request back, in Valkey and on the replica's share", func(t *testing.T) {
 		one := two
-		one[ParallelDownloads] = 1
+		one[ParallelTransfers] = 1
 		for _, down := range []bool{false, true} {
 			f := one
 			if down {
@@ -680,7 +682,7 @@ func TestR_LIM_022_ARefusedUpstreamRequestIsCountedNowhere(t *testing.T) {
 			}
 			for range 3 {
 				c := r.e.Begin(anonCaller("198.51.100.41"), qname.Repo{})
-				if err := r.e.MayFetch(ctx, c, 5, true); codeOf(err) != CodeTooManyParallelDownloads {
+				if err := r.e.MayFetch(ctx, c, 5, true); codeOf(err) != CodeTooManyParallelTransfers {
 					t.Fatalf("down %v, a second download beside the first: %v", down, err)
 				}
 				r.e.Finish(c)

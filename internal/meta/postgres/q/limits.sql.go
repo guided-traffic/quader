@@ -180,13 +180,13 @@ const insertLimitProfile = `-- name: InsertLimitProfile :exec
 INSERT INTO limit_profile (id, key, name, description, builtin,
                            requests_per_second, requests_burst, requests_per_hour, cached_bytes_per_second,
                            cached_bytes_per_hour, uncached_bytes_per_second, uncached_bytes_per_hour,
-                           upstream_requests_per_hour, parallel_downloads, bytes_per_day, refused_per_hour,
+                           upstream_requests_per_hour, parallel_transfers, bytes_per_day, refused_per_hour,
                            created_by, updated_by)
 SELECT $1::text::uuid, $2, $3, $4, false,
        (f ->> 'requests_per_second')::bigint, (f ->> 'requests_burst')::bigint, (f ->> 'requests_per_hour')::bigint,
        (f ->> 'cached_bytes_per_second')::bigint, (f ->> 'cached_bytes_per_hour')::bigint,
        (f ->> 'uncached_bytes_per_second')::bigint, (f ->> 'uncached_bytes_per_hour')::bigint,
-       (f ->> 'upstream_requests_per_hour')::bigint, (f ->> 'parallel_downloads')::bigint, (f ->> 'bytes_per_day')::bigint,
+       (f ->> 'upstream_requests_per_hour')::bigint, (f ->> 'parallel_transfers')::bigint, (f ->> 'bytes_per_day')::bigint,
        (f ->> 'refused_per_hour')::bigint,
        NULLIF($5::text, '')::uuid, NULLIF($5::text, '')::uuid
   FROM (SELECT $6::text::jsonb AS f) x
@@ -550,7 +550,7 @@ const limitProfiles = `-- name: LimitProfiles :many
 
 SELECT id::text AS id, key, name, description, builtin,
        requests_per_second, requests_burst, requests_per_hour, cached_bytes_per_second, cached_bytes_per_hour,
-       uncached_bytes_per_second, uncached_bytes_per_hour, upstream_requests_per_hour, parallel_downloads, bytes_per_day,
+       uncached_bytes_per_second, uncached_bytes_per_hour, upstream_requests_per_hour, parallel_transfers, bytes_per_day,
        refused_per_hour, version, created_at, COALESCE(created_by::text, '')::text AS created_by, updated_at,
        COALESCE(updated_by::text, '')::text AS updated_by
   FROM limit_profile
@@ -571,7 +571,7 @@ type LimitProfilesRow struct {
 	UncachedBytesPerSecond  pgtype.Int8
 	UncachedBytesPerHour    pgtype.Int8
 	UpstreamRequestsPerHour pgtype.Int8
-	ParallelDownloads       pgtype.Int8
+	ParallelTransfers       pgtype.Int8
 	BytesPerDay             pgtype.Int8
 	RefusedPerHour          pgtype.Int8
 	Version                 int64
@@ -607,7 +607,7 @@ func (q *Queries) LimitProfiles(ctx context.Context) ([]LimitProfilesRow, error)
 			&i.UncachedBytesPerSecond,
 			&i.UncachedBytesPerHour,
 			&i.UpstreamRequestsPerHour,
-			&i.ParallelDownloads,
+			&i.ParallelTransfers,
 			&i.BytesPerDay,
 			&i.RefusedPerHour,
 			&i.Version,
@@ -887,7 +887,7 @@ UPDATE limit_profile p
        uncached_bytes_per_second = (f ->> 'uncached_bytes_per_second')::bigint,
        uncached_bytes_per_hour = (f ->> 'uncached_bytes_per_hour')::bigint,
        upstream_requests_per_hour = (f ->> 'upstream_requests_per_hour')::bigint,
-       parallel_downloads = (f ->> 'parallel_downloads')::bigint, bytes_per_day = (f ->> 'bytes_per_day')::bigint,
+       parallel_transfers = (f ->> 'parallel_transfers')::bigint, bytes_per_day = (f ->> 'bytes_per_day')::bigint,
        refused_per_hour = (f ->> 'refused_per_hour')::bigint,
        version = p.version + 1, updated_at = now(), updated_by = NULLIF($3::text, '')::uuid
   FROM (SELECT $6::text::jsonb AS f) x

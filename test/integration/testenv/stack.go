@@ -290,7 +290,7 @@ func (s *Stack) KeyRing(tb testing.TB) *secrets.KeyRing {
 }
 
 // LimitsMode sets the mode of the download limits (R-LIM-026). A new instance starts in enforce; a test of another mechanism
-// that sends more than a profile admits (many parallel downloads of one user, a load) asks for audit, in which nothing on a
+// that sends more than a profile admits (many parallel transfers of one user, a load) asks for audit, in which nothing on a
 // protocol path is refused or slowed (Q-LIM-4). Before a replica starts, or wait for the change area after it.
 func (s *Stack) LimitsMode(mode string) {
 	s.tb.Helper()

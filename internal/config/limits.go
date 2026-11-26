@@ -12,10 +12,10 @@ type Limits struct {
 	Usage         LimitsUsage    `yaml:"usage"`
 }
 
-// LimitsParallel configures the parallel downloads (R-LIM-024).
+// LimitsParallel configures the leases and the wait of the parallel transfers (R-LIM-024).
 type LimitsParallel struct {
-	Lease time.Duration `yaml:"lease" default:"60s" validate:"min=10s" doc:"How long a download's lease holds its place without a renewal; a crashed replica's leases end after it."`
-	Wait  time.Duration `yaml:"wait" default:"10s" doc:"How long a further download waits for a free place before it answers 429; 0 answers at once."`
+	Lease time.Duration `yaml:"lease" default:"60s" validate:"min=10s" doc:"How long a transfer's lease of the figure parallelTransfers holds its place without a renewal; a crashed replica's leases end after it."`
+	Wait  time.Duration `yaml:"wait" default:"10s" doc:"How long a transfer beyond the figure parallelTransfers waits for a free place before it answers 429; 0 answers at once."`
 }
 
 // LimitsPacing configures the slowing of a download (R-LIM-023).

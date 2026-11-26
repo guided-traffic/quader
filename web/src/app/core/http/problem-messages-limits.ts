@@ -8,7 +8,7 @@ export const LIMIT_REFUSALS: readonly string[] = [
   'rate_limited',
   'download_limit_reached',
   'upstream_limit_reached',
-  'too_many_parallel_downloads',
+  'too_many_parallel_transfers',
   'caller_blocked',
 ];
 
@@ -57,7 +57,7 @@ const FIGURES: readonly string[] = [
   'uncachedBytesPerSecond',
   'uncachedBytesPerHour',
   'upstreamRequestsPerHour',
-  'parallelDownloads',
+  'parallelTransfers',
   'bytesPerDay',
   'refusedPerHour',
 ];
@@ -90,9 +90,10 @@ export function limitNotice(problem: Partial<Problem> | null, retryAfter: number
         return $localize`:@@limits.notice.ceiling:The repository's limit from the upstream for all callers like you is used up; what is cached can still be downloaded.` + again;
       }
       break;
-    case 'too_many_parallel_downloads':
+    case 'too_many_parallel_transfers':
       if (limit !== null) {
-        return $localize`:@@limits.notice.parallel:You have ${limit}:count: downloads running, the most you may have at once.` + again;
+        // Transfers, not downloads: a pull or an install of another client of the caller holds several (R-LIM-007, Q-LIM-293).
+        return $localize`:@@limits.notice.parallel:You have ${limit}:count: transfers running, the most you may have at once; each layer of an image and each package of an install is one.` + again;
       }
       break;
     case 'rate_limited':

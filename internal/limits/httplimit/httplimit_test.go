@@ -57,7 +57,7 @@ func TestR_LIM_020_TheRateLimitPolicyOfEveryFigureThatRefusesBesideTheRequestFig
 			spend(e, func(c *limits.Charge) { c.AddCached(10) })
 			return e.Admit(ctx, c)
 		}},
-		{limits.ParallelDownloads, 1, `"parallel";q=1;w=1;qu="concurrent-requests"`, func(e *limits.Engine, c *limits.Charge) error {
+		{limits.ParallelTransfers, 1, `"parallel";q=1;w=1;qu="concurrent-requests"`, func(e *limits.Engine, c *limits.Charge) error {
 			if err := e.Admit(ctx, e.Begin(caller, qname.Repo{})); err != nil {
 				t.Fatalf("the first download: %v", err)
 			}

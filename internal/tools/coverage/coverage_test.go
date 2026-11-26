@@ -146,8 +146,9 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1315 since NuGet's install forms by package type, its icon, licence file, frameworks, symbols, revision and release notes, and
 		// what a build or an install of a package runs (R-NUGET-037 to R-NUGET-039, three P1 requirements of W-30, G6).
 		// 1316 since a format declares what one download from an upstream is (R-OPS-053, one P1 requirement of W31).
-		if len(m.Reqs) != 1316 || count[prioMVP] != 723 || count[prioP1] != 554 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1316 (723, 554, 39)",
+		// 1317 since what one act of a client costs in transfers (R-LIM-041, one MVP requirement of W32).
+		if len(m.Reqs) != 1317 || count[prioMVP] != 724 || count[prioP1] != 554 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1317 (724, 554, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

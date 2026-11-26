@@ -9,7 +9,7 @@ every caller downloads. It covers:
 
 - the subject a request is charged to (a user, a technical token, a CI project, an anonymous address), for every kind of caller and
   credential;
-- the figures that are counted (requests, bytes from the cache, bytes from the upstream, upstream requests, parallel downloads, a
+- the figures that are counted (requests, bytes from the cache, bytes from the upstream, upstream requests, parallel transfers, a
   day's volume, refused requests), what each counts in every protocol, and their windows;
 - profiles (named sets of every figure), assignments of a profile to a caller at the instance, a project or a repository, the
   order in which an assignment is found, and the ceilings of a remote repository for all anonymous and all signed-in callers
@@ -84,8 +84,15 @@ The owner decided five more questions on 2026-11-20, each for every format:
 | 21 | The downloads that wait for a parallel slot hold at most a fixed share of a replica's request slots; a further one is refused at once (F-163) | R-LIM-024, [Q-LIM-60](#q-lim-60--waiting-downloads-hold-at-most-a-quarter-of-an-endpoints-request-slots) |
 | 22 | "Option B: Ein 429 zählt nicht zur Sperre": a `429` of a request figure is not a refused request and does not count toward `refusedPerHour`; a caller that keeps sending past its figure is held to the figure's rate, and the block of decision 19 stays what it was, a brake on the refusals R-LIM-008 names | R-LIM-008, R-LIM-025, [Q-LIM-58](#q-lim-58--a-429-of-a-request-figure-is-not-a-refused-request) |
 
-The request figures of the built-in profiles are set from a measurement (Q-LIM-59); every other number of them is the development
-agent's estimate, which the owner did not change.
+The owner decided one more question on 2026-11-26, for every format, after his rule of the same morning that a download is the
+unit a person asked for (an image with all its parts, an install), never a single file (W-31 of the project plan):
+
+| # | Decision of the owner, 2026-11-26, 10:27 | Where |
+|---|---|---|
+| 23 | "Option A, default darf aber großzügiger sein als 2, wir bauen hier enterprise software für große firmen": the limit of parallel downloads counts every transfer in progress, as before, and is named what it is, `parallelTransfers`, "parallel transfers", wherever a person or a client reads it, with what one pull or install costs; the built-in values are generous, sized for large companies | R-LIM-004, R-LIM-007, R-LIM-010, R-LIM-024, R-LIM-041, [Q-LIM-293](#q-lim-293--the-limit-counts-transfers-and-is-named-parallel-transfers), [Q-LIM-294](#q-lim-294--the-built-in-parallel-transfers-are-set-from-a-measurement-of-the-clients) |
+
+The request figures of the built-in profiles are set from a measurement (Q-LIM-59), and so are their parallel transfers (Q-LIM-294);
+every other number of them is the development agent's estimate, which the owner did not change.
 
 ## Terms
 
@@ -93,7 +100,7 @@ agent's estimate, which the owner did not change.
 |---|---|
 | Caller | Whoever sends a request: a person through a session or a personal token, a system through a technical token, a CI job through its CI token, or an anonymous client. |
 | Subject | The unit a budget hangs on (R-LIM-001): a user, a technical token, a CI project, an anonymous address, or the system. Several credentials can share one subject (a user's sessions and personal tokens); one credential always has exactly one subject. |
-| Figure | One counted quantity with its window: requests per second with a burst, requests per hour, bytes from the cache per second and per hour, bytes from the upstream per second and per hour, upstream requests per hour, parallel downloads, bytes per day, refused requests per hour (R-LIM-004). |
+| Figure | One counted quantity with its window: requests per second with a burst, requests per hour, bytes from the cache per second and per hour, bytes from the upstream per second and per hour, upstream requests per hour, parallel transfers, bytes per day, refused requests per hour (R-LIM-004). |
 | Window | The time a figure counts over: one second (with a burst, so the window of the request figure is `burst ÷ rate` seconds), one hour, one day. Windows are rolling (R-LIM-018). |
 | Profile | A named set of every figure (R-LIM-010); an empty figure is unlimited. Built-in profiles: Unlimited, Standard, Technical, Restricted, Anonymous; an instance administrator adds own ones. |
 | Assignment (rule) | A place, a "who" (a single user, a single technical token, a CI project, an address or address range, a group, or every caller of a kind), a profile and optional overrides of single figures (R-LIM-011). |
@@ -104,7 +111,7 @@ agent's estimate, which the owner did not change.
 | Cached bytes | Bytes of a response body that Quader sent to the caller from what it already held (R-LIM-006). |
 | Uncached bytes | Bytes Quader received from an upstream in an exchange the caller led (R-LIM-006). |
 | Upstream request | One exchange the remote engine starts with an upstream for the caller, a revalidation included (R-LIM-006). |
-| Download | A response whose body is content: the answer of a route of the kind `Download` to a `GET` with a body (R-LIM-007). Only downloads are checked before they start, slowed and counted as parallel. |
+| Transfer | A response whose body is content: the answer of a route of the kind `Download` to a `GET` with a body (R-LIM-007). Only transfers are checked before they start, slowed and counted as parallel. This page's mechanics also call one a *download*; what a person asks for and calls a download (a pull of an image with its layers, an install with its packages) is many transfers (decision 23). |
 | Document | A response body of a route of the kind `Metadata`, `Computed` or `Volatile` (an npm package document, a NuGet registration, an APT index, an OCI manifest of a tag). |
 | Refused request | A request the decision point refused, whose credential failed, or whose repository does not exist (R-LIM-008). |
 | Block | The state of a budget key whose refused requests passed their limit: every request charged to it is answered 429 for the block's time (R-LIM-025). |
@@ -231,7 +238,7 @@ Priority: **MVP** · Covers: BEYOND-030
 | `uncachedBytesPerSecond` | bytes per second | 1 second | uncached bytes of fills the caller leads | the fill is slowed, no error (R-LIM-023) |
 | `uncachedBytesPerHour` | bytes | 1 hour | uncached bytes | what is cached is still served; what needs the upstream answers 429 `upstream_limit_reached` (R-LIM-022) |
 | `upstreamRequestsPerHour` | upstream requests | 1 hour | upstream requests for the caller (R-LIM-006) | as `uncachedBytesPerHour` |
-| `parallelDownloads` | downloads | — (a count of downloads in progress) | the subject's downloads in progress across all replicas (R-LIM-024) | a further download waits up to 10 s, then 429 `too_many_parallel_downloads` |
+| `parallelTransfers` | transfers | — (a count of transfers in progress) | the subject's transfers in progress across all replicas (R-LIM-024): each layer of an image and each package of an install is one, so one pull or install holds several (R-LIM-041) | a further transfer waits up to 10 s, then 429 `too_many_parallel_transfers` |
 | `bytesPerDay` | bytes | 1 day | cached plus uncached bytes | 429 `download_limit_reached` before a download starts |
 | `refusedPerHour` | refused requests | 1 hour | refused requests (R-LIM-008) | the budget key is blocked for the block's time (R-LIM-025) |
 
@@ -341,12 +348,18 @@ Acceptance criteria:
 - `npm install` of a lockfile with 200 cached tarballs through a virtual repository records 200 downloads under the remote member,
   none under the virtual repository.
 
-### R-LIM-007 · A download
+### R-LIM-007 · A transfer
 Priority: **MVP** · Covers: BEYOND-030
 
-- A **download** is the answer to a `GET` (not `HEAD`) on a route whose kind is `Download` (`formats.RouteKind`, R-ARCH-008) or of a
+- A **transfer** is the answer to a `GET` (not `HEAD`) on a route whose kind is `Download` (`formats.RouteKind`, R-ARCH-008) or of a
   file on `/files/` (not a folder listing), that writes a body: `200`, or `206` for any range. A `304`, a refusal and a `HEAD` are
-  none.
+  none. The mechanics of this page also call a transfer *a download* (the check before a download starts, the download's lease, its
+  pacing).
+- **What a person calls a download is many transfers** (decision 23, the owner's rule of 2026-11-26): a pull of an image is a
+  manifest, a config and a transfer per layer; an install is a transfer per package. The figure that counts transfers at once is
+  therefore named `parallelTransfers`, and every text a person or a client reads about it (the screens, the refusal's `detail`, the
+  manual) says *transfers* and what one pull or install holds (R-LIM-041). The byte figures keep the word *download* where they mean
+  the bytes a person downloads ("The download limit of 300 GB per hour is used up").
 - A request holds at most one parallel lease: a miss that took it at step 9a and is then served from the stored item (a range, a
   follower that fetched for itself) passes `Admit` without a second check.
 - Only downloads are checked before they start against `cachedBytesPerHour` and `bytesPerDay` (R-LIM-021), slowed (R-LIM-023) and
@@ -480,7 +493,7 @@ A NuGet client's first attempt without its credentials is not counted (R-LIM-005
 | `HEAD`, a folder listing | request only, Document | — |
 | `PUT`, `DELETE` | Write | — |
 
-The generic format has no remote class yet, so its requests count requests, cached bytes, parallel downloads and the day's volume.
+The generic format has no remote class yet, so its requests count requests, cached bytes, parallel transfers and the day's volume.
 
 </details>
 
@@ -496,6 +509,8 @@ A profile is a named set of every figure of R-LIM-004. An empty figure is unlimi
 - Five built-in profiles exist with these values. The three request figures (Req/s, Burst, Req/h) are set from a measurement of
   real clients so that normal use never reaches them (the owner's decision 18;
   [Q-LIM-59](#q-lim-59--the-built-in-profiles-request-figures-are-set-from-a-measurement-of-real-clients), migration 00085); the
+  parallel transfers from a measurement of how many transfers each client holds at once, generous for large companies (decision
+  23; [Q-LIM-294](#q-lim-294--the-built-in-parallel-transfers-are-set-from-a-measurement-of-the-clients), migration 00141); the
   others are the development agent's estimates, which the owner did not change. Built-ins cannot be deleted or renamed; their
   figures and description can be changed by an instance administrator, except Unlimited, whose figures stay empty (409
   `profile_immutable`).
@@ -503,15 +518,21 @@ A profile is a named set of every figure of R-LIM-004. An empty figure is unlimi
 | Profile (key) | Req/s | Burst | Req/h | Cached MB/s | Cached GB/h | Uncached MB/s | Uncached GB/h | Upstream req/h | Parallel | GB/day | Refused/h |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Unlimited (`unlimited`) | – | – | – | – | – | – | – | – | – | – | – |
-| Standard (`standard`) | 200 | 4000 | 100000 | 200 | 300 | 50 | 30 | 2000 | 20 | 1000 | 500 |
-| Technical (`technical`) | 1000 | 20000 | 1000000 | 500 | 1000 | 100 | 100 | 10000 | 50 | 5000 | 2000 |
-| Restricted (`restricted`) | 100 | 1000 | 25000 | 50 | 50 | 10 | 5 | 200 | 6 | 100 | 100 |
-| Anonymous (`anonymous`) | 50 | 1000 | 20000 | 20 | 10 | 5 | 2 | 20 | 4 | 30 | 60 |
+| Standard (`standard`) | 200 | 4000 | 100000 | 200 | 300 | 50 | 30 | 2000 | 250 | 1000 | 500 |
+| Technical (`technical`) | 1000 | 20000 | 1000000 | 500 | 1000 | 100 | 100 | 10000 | 1000 | 5000 | 2000 |
+| Restricted (`restricted`) | 100 | 1000 | 25000 | 50 | 50 | 10 | 5 | 200 | 64 | 100 | 100 |
+| Anonymous (`anonymous`) | 50 | 1000 | 20000 | 20 | 10 | 5 | 2 | 20 | 64 | 30 | 60 |
 
 - The window of the burst is `burst ÷ rate`: 20 s for Anonymous, Standard and Technical, 10 s for Restricted. What the figures hold,
   measured (Q-LIM-59): one `docker pull` of an image of 40 layers is 48 requests within 0.3 s, an `npm ci` of 475 packages 475
   requests within 2.5 s; Anonymous holds ten such pulls or two such installs at once from one address, Standard an install of 4,000
   packages, Technical twenty parallel CI jobs of one token installing 475 packages each.
+- The parallel transfers, measured (Q-LIM-294): a `docker pull` runs 3 transfers at once on its daemon, a `podman pull` 6, an npm
+  install 15, a pnpm install up to 64, a `dotnet restore` one per package. Anonymous (64) holds four npm installs or ten podman pulls
+  at once from one address; Standard (250) a developer's `dotnet restore` of 200 packages beside a `docker pull` and five `podman pull`s,
+  or a pnpm install, five podman pulls and an npm install together; Technical (1,000) twenty CI jobs of one token running pnpm 10 or 11 (50 each), 66
+  such jobs running npm (15 each), or five restores of 200 packages; Restricted (64) one install of any of the JavaScript clients
+  whole. A transfer beyond the figure waits up to 10 s (R-LIM-024).
 
 - An instance administrator creates own profiles (key `^[a-z][a-z0-9-]{1,31}$`, unique and immutable; name 1 to 64 characters,
   unique; description at most 1024) and deletes one that no assignment and no project maximum names (409 `profile_in_use`
@@ -536,7 +557,7 @@ CREATE TABLE limit_profile (
   uncached_bytes_per_second   bigint NULL CHECK (uncached_bytes_per_second > 0),
   uncached_bytes_per_hour     bigint NULL CHECK (uncached_bytes_per_hour > 0),
   upstream_requests_per_hour  bigint NULL CHECK (upstream_requests_per_hour > 0),
-  parallel_downloads          bigint NULL CHECK (parallel_downloads > 0),
+  parallel_transfers          bigint NULL CHECK (parallel_transfers > 0),
   bytes_per_day               bigint NULL CHECK (bytes_per_day > 0),
   refused_per_hour            bigint NULL CHECK (refused_per_hour > 0),
   version                     bigint NOT NULL DEFAULT 1,
@@ -669,7 +690,7 @@ has no rules):
   - A request to `web/npm-local` (no rules): repository and project hold none; at the instance, no rule names Alice; two group
     rules match: per figure the larger of Standard and Restricted, which is Standard throughout. Budget key: Alice at the instance.
 - **A technical token of a repository.** Repository `web/npm-local` has an account `sa:web/npm-local/ci` with the technical token
-  `release` (R-AUTH-046) and the rule `technicalToken` `release` → Technical with `parallelDownloads: 100`. A request with any
+  `release` (R-AUTH-046) and the rule `technicalToken` `release` → Technical with `parallelTransfers: 100`. A request with any
   secret of `release` to `web/npm-local` stops at the repository's single-caller rule. A request of the same token to
   `web/npm-remote`, which it may not read, is decided at the instance (`every` `technicalToken` → Technical) and counted as a
   refused request there.
@@ -811,7 +832,7 @@ read on a request ([Q-LIM-10](#q-lim-10--the-enforcing-counters-live-in-valkey-t
 | Cached bytes per hour, bytes per day of a budget key | Valkey, sliding window in bytes | `GET` at the check; `INCRBY` at the flush | at the flush after the bytes were written |
 | Uncached bytes per hour of a budget key and of a ceiling | Valkey, sliding window in bytes | `GET` in the take of step 9a; `INCRBY` at the flush | at the flush after the bytes were read |
 | Upstream requests per hour of a budget key and of a ceiling | Valkey, sliding window | the take of step 9a (the script of stage 7); a give-back after a parallel lease refused (Q-LIM-110) | at step 9a, in the same step as the decision, and only when the upstream request is admitted |
-| Parallel downloads of a budget key | Valkey, a sorted set of leases | `ZADD`, `ZREMRANGEBYSCORE`, `ZCARD`, `ZREM` | at the start and the end of a download |
+| Parallel transfers of a budget key | Valkey, a sorted set of leases | `ZADD`, `ZREMRANGEBYSCORE`, `ZCARD`, `ZREM` | at the start and the end of a download |
 | Refused requests per hour of a budget key, and its block | Valkey, sliding window and a marker | `INCRBY` at the flush; `SET NX EX`, `GET`, `DELIFEQ` | at the flush; the block at the flush that passes the limit |
 | Bytes per second (pacing) | the replica's memory, with the cluster's count of the key's downloads | `ZCARD` in the flush | continuously |
 
@@ -882,10 +903,10 @@ Priority: **MVP** · Covers: BEYOND-030
     limit (the bound of the two-window estimate). A request the request figures, a block or the class of R-API-016 refused is in no
     request window (R-LIM-017).
   - Bytes per hour and per day: in each fixed window at most the limit, plus the bytes that the subject's downloads admitted before
-    the limit was reached still transfer (a download is never cut, owner decision 4; at most `parallelDownloads` downloads), plus one
+    the limit was reached still transfer (a download is never cut, owner decision 4; at most `parallelTransfers` transfers), plus one
     `limits.flush_interval` (1 s) of the subject's transfer rate that was not yet charged when a check read the counter.
   - Ceilings: as bytes per hour and upstream requests, over all subjects of the class.
-  - Parallel downloads: at most the limit across the cluster, except for the downloads of a replica that crashed, whose leases
+  - Parallel transfers: at most the limit across the cluster, except for the downloads of a replica that crashed, whose leases
     keep their place for at most `limits.parallel.lease` (60 s), and a take that Valkey ran after the replica had given up on it
     and after the drop of the same lease, which keeps its place as long ([Q-LIM-95](#q-lim-95--a-lease-is-given-up-in-both-places-it-may-be-held-and-a-drop-valkey-did-not-take-is-sent-again-until-the-leases-end)).
   - Bytes per second: R-LIM-023.
@@ -901,7 +922,7 @@ Every figure fails open to the replica's share and never refuses a request becau
 | Figure | While Valkey is unreachable on a replica |
 |---|---|
 | Requests, upstream requests, bytes per hour and per day, refused requests | a local window per budget key and ceiling with the limit ÷ n, n the live replicas of the role in the replica's pool (R-ARCH-034); local windows start empty. The take runs on them under the replica's lock: a refused request fills no local window either. The class of R-API-016 decides on its own token bucket of the replica's share (R-ARCH-034), which takes nothing when it refuses; a request it refuses after the local windows took it is taken back from them |
-| Parallel downloads | a local count per budget key with ⌈limit ÷ n⌉ of the replica's own downloads in progress: a lease is given up on the share and in Valkey, wherever its take ran ([Q-LIM-95](#q-lim-95--a-lease-is-given-up-in-both-places-it-may-be-held-and-a-drop-valkey-did-not-take-is-sent-again-until-the-leases-end)) |
+| Parallel transfers | a local count per budget key with ⌈limit ÷ n⌉ of the replica's own downloads in progress: a lease is given up on the share and in Valkey, wherever its take ran ([Q-LIM-95](#q-lim-95--a-lease-is-given-up-in-both-places-it-may-be-held-and-a-drop-valkey-did-not-take-is-sent-again-until-the-leases-end)) |
 | Block | only blocks the replica set itself in its local state are known; a block set before the outage is not seen |
 | Pacing | the replica paces at the figure ÷ n |
 | The check's wait | at most `valkey.command_timeout`, then the local state, as every limiter |
@@ -925,7 +946,7 @@ codes:
 | `rate_limited` | `requestsPerSecond`/`requestsBurst`, `requestsPerHour` | the time after which the caller's next request fits, if nothing else uses the room: the refused request is in no window (R-LIM-017), so the wait is true; at least 1 s, rounded up as **One wait** says |
 | `download_limit_reached` | `cachedBytesPerHour`, `bytesPerDay` | the time until the window's estimate leaves room for one more byte, at least 1 s, at most the window: up to an hour or a day, and honest (the owner's decision 20) |
 | `upstream_limit_reached` | `uncachedBytesPerHour`, `upstreamRequestsPerHour`, a ceiling | as above |
-| `too_many_parallel_downloads` | `parallelDownloads` | 1 s |
+| `too_many_parallel_transfers` | `parallelTransfers` | 1 s |
 | `caller_blocked` | a block (R-LIM-025) | the block's remaining time |
 
 - **One wait** ([Q-LIM-291](#q-lim-291--a-refusal-names-one-wait-in-the-unit-its-text-names-it-in)). The wait of the table is rounded up
@@ -955,7 +976,7 @@ codes:
   every answer on a protocol path that a request figure charged carries `RateLimit-Policy: "requests";q=<burst>;w=<W>,
   "requests-hour";q=<n>;w=3600` (for the figures that are set) and `RateLimit` with `r` and `t` for each; a refusal by another
   figure adds that figure's policy and remaining, with `qu="content-bytes"` for byte figures and `qu="concurrent-requests"` for
-  `parallelDownloads` (`"cached-hour"`, `"uncached-hour"`, `"upstream-hour"`, `"day"`, `"parallel"`, `"refused-hour"`). The endpoint's
+  `parallelTransfers` (`"cached-hour"`, `"uncached-hour"`, `"upstream-hour"`, `"day"`, `"parallel"`, `"refused-hour"`). The endpoint's
   class and, in `audit`, the R-API-016 class add their own members as today.
 - **Request log**: the fields of R-LIM-030; the `429` names the figure in `limiter` (`limits.<figure>`) and the counter's mode in
   `limit_mode` (`cluster`, or `fallback` while the replica counts its share alone, as R-OPS-010 defines the field;
@@ -1053,25 +1074,27 @@ Priority: **MVP** · Covers: BEYOND-030
 
 Acceptance criteria:
 
-- `cachedBytesPerSecond` 10 MB, one 100 MB download: it takes between 9 and 11 s. Two parallel downloads of the subject on two
+- `cachedBytesPerSecond` 10 MB, one 100 MB download: it takes between 9 and 11 s. Two parallel transfers of the subject on two
   replicas take between 18 and 22 s together.
 - `cachedBytesPerSecond` 1,000: a 1 MB download completes at the floor in about 16 s, and no gap between two writes exceeds one
   second.
 
-### R-LIM-024 · Parallel downloads
+### R-LIM-024 · Parallel transfers
 Priority: **MVP** · Covers: BEYOND-030
 
 - A download takes a lease in the budget key's sorted set: member `<replica ID>:<download ID>`, score the lease's end
   (now + `limits.parallel.lease`, 60 s), in one `MULTI` with `ZREMRANGEBYSCORE <key> -inf <now>` and `ZCARD`. The lease is admitted
-  when the count including it is at most `parallelDownloads`; otherwise it is removed again (`ZREM`) and the download waits.
+  when the count including it is at most `parallelTransfers`; otherwise it is removed again (`ZREM`) and the download waits. The
+  figure counts transfers (R-LIM-007): a pull or an install of one client holds several leases at once, one per transfer in
+  progress (R-LIM-041).
 - **Waiting** ([Q-LIM-14](#q-lim-14--a-further-download-waits-up-to-10-seconds-then-429)): the download asks again once per second,
-  up to `limits.parallel.wait` (10 s), holding its request slot of step 4; then 429 `too_many_parallel_downloads`. A client that
+  up to `limits.parallel.wait` (10 s), holding its request slot of step 4; then 429 `too_many_parallel_transfers`. A client that
   leaves stops waiting.
 - **The share of waiting downloads** (the owner's decision 21, F-163;
   [Q-LIM-60](#q-lim-60--waiting-downloads-hold-at-most-a-quarter-of-an-endpoints-request-slots)): on each replica, the downloads that
   wait hold at most a quarter of the request slots of the endpoint they came through (`server.max_in_flight`, or the endpoint's own
   `max_in_flight`, R-ARCH-005 step 4): 1,024 of the default 4,096, 256 of a further endpoint's 1,024. A download that would wait while
-  that share is held is refused at once with 429 `too_many_parallel_downloads` and a `Retry-After` of 1 s; its lease is given up. The
+  that share is held is refused at once with 429 `too_many_parallel_transfers` and a `Retry-After` of 1 s; its lease is given up. The
   other three quarters stay for requests that are served, so a burst of callers at their figure cannot make the replica shed another
   caller's requests. The share is a constant (`limits.WaitingShare`), not a setting: it follows the endpoint's `max_in_flight`.
 - The replica renews the leases of its downloads older than 20 s in the flush and removes ended ones there.
@@ -1084,8 +1107,8 @@ Priority: **MVP** · Covers: BEYOND-030
 
 Acceptance criteria:
 
-- An endpoint with 8 request slots, a subject at `parallelDownloads` 1 whose one download is paced: two further downloads of the
-  subject wait; the next is refused at once (well within a second) with `too_many_parallel_downloads`, and another caller's request is
+- An endpoint with 8 request slots, a subject at `parallelTransfers` 1 whose one transfer is paced: two further transfers of the
+  subject wait; the next is refused at once (well within a second) with `too_many_parallel_transfers`, and another caller's request is
   served beside them.
 - The capacity test of R-ARCH-027 (`TestNPMPerf`, twenty technical tokens of the profile Technical in `enforce`, without a rule of
   their own) answers every request with 200 or the replica's own 503 `server_busy`.
@@ -1105,7 +1128,7 @@ its bytes, and no lease can last as long as it does. What each figure does with 
 | `requestsPerSecond`, `requestsBurst`, `requestsPerHour`, the block | unchanged: the `307` is a request at stage 7 like every other |
 | `cachedBytesPerSecond` | **no condition**: a budget key that has it set gets links as every other, in `enforce` and in `audit` alike; the transfer by a link is not paced, since Quader writes none of its bytes, and a streamed download of the same caller is paced as before (R-LIM-023) ([security/download-links.md](../security/download-links.md) H-1352) |
 | `cachedBytesPerHour`, `bytesPerDay` | checked before the link as before a stream (R-LIM-021, `Admit`); the item's size is charged in full as cached bytes when the link is issued, and reaches the windows at the next flush |
-| `parallelDownloads` | checked before the link (`Admit` takes the lease and may wait); the lease ends with the `307`, so the figure bounds issuances, not transfers ([security/download-links.md](../security/download-links.md) H-1276) |
+| `parallelTransfers` | checked before the link (`Admit` takes the lease and may wait); the lease ends with the `307`, so the figure bounds issuances, not transfers ([security/download-links.md](../security/download-links.md) H-1276) |
 | `uncachedBytesPerSecond`, `uncachedBytesPerHour`, `upstreamRequestsPerHour`, the ceilings | unchanged: a link is only ever a stored item's (a remote's miss is streamed by the leader, R-REPO-041) |
 
 - **No figure is a condition of a link**; the built-in profiles' `cachedBytesPerSecond` (R-LIM-010) keeps no caller from links, so on a new
@@ -1127,6 +1150,46 @@ Acceptance criteria:
   `429 download_limit_reached` in `enforce` and recorded as `would_limit:cachedBytesPerHour` in `audit` (`TestR_LIM_040_ALinkAndTheFigures`).
 - Unit (`internal/formathost`): a caller with `cachedBytesPerSecond` gets `307` in `enforce` and in `audit`, and the charge holds the
   item's size; a used-up `cachedBytesPerHour` answers `429` and no link (`TestR_STOR_070_TheConditionsOfALink`).
+
+### R-LIM-041 · What one act of a client costs in transfers, and how a person reads the figure
+Priority: **MVP** · Covers: BEYOND-030
+
+The figure `parallelTransfers` counts transfers (R-LIM-007), and one act of a client holds several at once (decision 23). How many,
+per format and client, measured on 2026-11-26 or taken from the client where no measurement ran
+([Q-LIM-294](#q-lim-294--the-built-in-parallel-transfers-are-set-from-a-measurement-of-the-clients)):
+
+| Format | Client and act | Transfers at once | Source |
+|---|---|---|---|
+| OCI | `docker pull` (Docker 29.9.3), one image or several at once, `docker compose pull` | 3 per daemon, whatever the number of pulls | measured |
+| OCI | `docker build` (BuildKit) of an image `FROM` an image of 40 layers | 4 | measured |
+| OCI | `podman pull` (Podman 5.8.9) | 6 per pull; five pulls at once 30 | measured |
+| OCI | `ctr images pull` (containerd 2.4.2) | no bound: 32 for an image of 40 layers, 11 for one of 10 | measured |
+| OCI | a Kubernetes node (the kubelet through containerd's CRI) | 3 per pull, pulls one after the other unless the node allows parallel pulls | the clients' defaults, not measured |
+| Helm charts in OCI | `helm pull`, `helm install` of a chart | at most 2: the chart's config and its archive | the protocol, not measured |
+| npm | `npm install`, `npm ci` (npm 10, 11, 12) | 15 | measured |
+| npm | `pnpm install` (pnpm 10 and 11; pnpm 12 on a machine of 20 cores) | 50; 64 | measured |
+| npm | `yarn install` (Yarn 1.22; Yarn 4.18) | 8; 32 | measured |
+| NuGet | `dotnet restore` (.NET SDK 10.0.403) | no bound: one per package of the restore, 200 of 200 | measured |
+| Debian | `apt-get install`, `apt-get download` (APT 3.0.4) | 1: one connection per host, its pipelined requests answered in order | measured |
+| Ansible Galaxy | `ansible-galaxy collection install` | 1: one archive after the other | the client, not measured |
+| Generic | `curl`, `wget`, a download from the screen | 1 per file | the clients |
+
+- **The words a person reads** name the figure as what it counts, never as downloads: the API's member `parallelTransfers` and the
+  code `too_many_parallel_transfers` (R-LIM-020); the screens' **Parallel transfers**, the editor's group **Transfers** and a
+  profile's compact line "250 parallel transfers" (R-UI-178); the meter of a caller's limits (R-UI-184); the notice of a refused
+  download (R-UI-186); the manual's tables of the figures.
+- **Where the figure is set and where its refusal is explained, one sentence says what one unit costs:** the editor's help of the
+  group **Transfers** ("Each layer of an image and each package of an install is one transfer: a pull runs 3 to 6 at once, an npm,
+  pnpm or Yarn install 8 to 64, a NuGet restore one per package."), the refusal's `detail` ("The limit of 250 parallel transfers is
+  reached: each layer of an image and each package of an install is one transfer. Try again in 1 second."), the notice on the screen
+  and the manual's rows of the figure.
+
+Acceptance criteria:
+
+- Unit (`internal/limits`): the refusal's `detail` names transfers and what one is, and its wait of one second
+  (`TestR_LIM_020_TheDetailAndRetryAfterNameOneWait`).
+- Unit (web): the figure's name, its limit's text and the help of its group (`figures.spec.ts`), and the notice of a refused download
+  (`usage.spec.ts`, R-UI-186).
 
 ### R-LIM-025 · The block after refused requests
 Priority: **MVP** · Covers: BEYOND-030
@@ -1438,7 +1501,7 @@ A profile:
     "uncachedBytesPerSecond": 10000000,
     "uncachedBytesPerHour": 5000000000,
     "upstreamRequestsPerHour": 200,
-    "parallelDownloads": 6,
+    "parallelTransfers": 6,
     "bytesPerDay": 100000000000,
     "refusedPerHour": 100
   },
@@ -1486,7 +1549,7 @@ A rule:
     "requestsPerSecond": 50, "requestsBurst": 200, "requestsPerHour": 5000,
     "cachedBytesPerSecond": 50000000, "cachedBytesPerHour": 50000000000,
     "uncachedBytesPerSecond": 10000000, "uncachedBytesPerHour": 20000000000,
-    "upstreamRequestsPerHour": 200, "parallelDownloads": 6, "bytesPerDay": 100000000000, "refusedPerHour": 100
+    "upstreamRequestsPerHour": 200, "parallelTransfers": 6, "bytesPerDay": 100000000000, "refusedPerHour": 100
   },
   "clamped": {},
   "capped": true,
@@ -1562,7 +1625,7 @@ Priority: **MVP** · Covers: BEYOND-030
 *(examples: settings; mode preview, read from the `audit` limit events of the five-minute buckets)*
 
 ```json
-{"project": "web", "profile": "technical", "overrides": {"bytesPerDay": 2000000000000}, "effective": {"requestsPerSecond": 400, "requestsBurst": 2000, "requestsPerHour": 200000, "cachedBytesPerSecond": 500000000, "cachedBytesPerHour": 1000000000000, "uncachedBytesPerSecond": 100000000, "uncachedBytesPerHour": 100000000000, "upstreamRequestsPerHour": 10000, "parallelDownloads": 50, "bytesPerDay": 2000000000000, "refusedPerHour": 2000}, "version": 1, "updatedAt": "2026-11-20T08:30:00Z", "updatedBy": "ada"}
+{"project": "web", "profile": "technical", "overrides": {"bytesPerDay": 2000000000000}, "effective": {"requestsPerSecond": 400, "requestsBurst": 2000, "requestsPerHour": 200000, "cachedBytesPerSecond": 500000000, "cachedBytesPerHour": 1000000000000, "uncachedBytesPerSecond": 100000000, "uncachedBytesPerHour": 100000000000, "upstreamRequestsPerHour": 10000, "parallelTransfers": 50, "bytesPerDay": 2000000000000, "refusedPerHour": 2000}, "version": 1, "updatedAt": "2026-11-20T08:30:00Z", "updatedBy": "ada"}
 ```
 
 ```json
@@ -1654,7 +1717,7 @@ A subject's detail:
         "uncachedBytesPerHour": {"limit": 30000000000, "used": 50000000, "windowSeconds": 3600},
         "upstreamRequestsPerHour": {"limit": 2000, "used": 120, "windowSeconds": 3600},
         "bytesPerDay": {"limit": 1000000000000, "used": 1253000000, "windowSeconds": 86400},
-        "parallelDownloads": {"limit": 20, "used": 2},
+        "parallelTransfers": {"limit": 250, "used": 14},
         "refusedPerHour": {"limit": 500, "used": 3, "windowSeconds": 3600},
         "requestsPerSecond": {"limit": 200, "burst": 1000},
         "cachedBytesPerSecond": {"limit": 200000000},
@@ -1701,7 +1764,7 @@ for a repository it can read) answers the resolution of R-LIM-013 step by step, 
   ],
   "place": {"kind": "repository", "repository": "web/npm-remote"},
   "rule": {"id": "0193f2a0-7c1e-7b55-9a10-3f2c8d4e5a61", "who": {"kind": "group", "group": "contractors"}, "profile": "restricted", "capped": true},
-  "effective": {"requestsPerSecond": 50, "requestsBurst": 200, "requestsPerHour": 5000, "cachedBytesPerSecond": 50000000, "cachedBytesPerHour": 50000000000, "uncachedBytesPerSecond": 10000000, "uncachedBytesPerHour": 20000000000, "upstreamRequestsPerHour": 200, "parallelDownloads": 6, "bytesPerDay": 100000000000, "refusedPerHour": 100},
+  "effective": {"requestsPerSecond": 50, "requestsBurst": 200, "requestsPerHour": 5000, "cachedBytesPerSecond": 50000000, "cachedBytesPerHour": 50000000000, "uncachedBytesPerSecond": 10000000, "uncachedBytesPerHour": 20000000000, "upstreamRequestsPerHour": 200, "parallelTransfers": 6, "bytesPerDay": 100000000000, "refusedPerHour": 100},
   "clamped": {},
   "figureSources": {"uncachedBytesPerHour": "override"},
   "ceiling": {"class": "signedIn", "uncachedBytesPerHour": 50000000000, "upstreamRequestsPerHour": 2000}
@@ -2108,18 +2171,20 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Share by the key's downloads on the replica over its leases in the cluster, refreshed each second; a floor of 64 KiB/s per download (chosen) | No round trip per chunk | The sum stays at the figure while the counts are current; no download stalls | The floor lets many parallel downloads exceed the figure; a second of lag at changes |
+| (a) Share by the key's downloads on the replica over its leases in the cluster, refreshed each second; a floor of 64 KiB/s per download (chosen) | No round trip per chunk | The sum stays at the figure while the counts are current; no download stalls | The floor lets many parallel transfers exceed the figure; a second of lag at changes |
 | (b) A Valkey token bucket per chunk | Exact | Exact | A round trip per 16 KiB |
 | (c) Each replica paces at the full figure | — | Simple | The figure multiplies with the replicas the subject's downloads reach |
 
-**Choice:** (a). **Rationale:** pacing must cost nothing per chunk; the leases already exist for parallel downloads. Revisit if
-the floor matters (a figure below `parallelDownloads × 64 KiB/s`). **Applied in the spec:** R-LIM-023.
+**Choice:** (a). **Rationale:** pacing must cost nothing per chunk; the leases already exist for parallel transfers. Revisit if
+the floor matters (a figure below `parallelTransfers × 64 KiB/s`). **Applied in the spec:** R-LIM-023.
 
 ### Q-LIM-14 · A further download waits up to 10 seconds, then 429
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: the owner wrote "further ones wait or 429". npm opens up to 15 connections, the Anonymous profile allows 4.
+Context: the owner wrote "further ones wait or 429". npm opens up to 15 connections, the Anonymous profile allowed 4 (64 since
+[Q-LIM-294](#q-lim-294--the-built-in-parallel-transfers-are-set-from-a-measurement-of-the-clients); a `dotnet restore` still opens
+one per package).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -2491,7 +2556,7 @@ names each budget key's rule and every figure, the rates included.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The detail resolves the subject at each place its rows recorded on the index compiled from the store (`limits.Index.ResolveAt`): the rule and the figures that apply there now (chosen) | — | No column more in the hottest table; the rates and the parallel downloads are named too | A rule changed within the day is shown as it is now, not as it was |
+| (a) The detail resolves the subject at each place its rows recorded on the index compiled from the store (`limits.Index.ResolveAt`): the rule and the figures that apply there now (chosen) | — | No column more in the hottest table; the rates and the parallel transfers are named too | A rule changed within the day is shown as it is now, not as it was |
 | (b) Store the rule's ID in every usage row | — | The rule that applied to each row | A column more in every row, written every ten seconds; still no rates |
 
 **Choice:** (a). Revisit if the owner wants the history of a budget's rules. **Applied in the spec:** R-LIM-034. Code: `budgetKeys` in
@@ -2725,7 +2790,8 @@ From the protocol, not run (a run of each would cost minutes for a number the pr
 **Choice:** (a). The windows of the bursts are 20 s (10 s for Restricted). The hour is consistent with the burst: Anonymous 20 and
 Restricted 25 bursts, Standard 25, Technical 50 (a system runs all day); each is far below what the rate would allow in an hour, so a
 caller that stays at its rate meets the hour figure, not the burst. Only the request figures change: the byte, upstream, parallel and
-refused figures keep the estimates of the first migration.
+refused figures keep the estimates of the first migration (the parallel transfers were set from a measurement of their own on
+2026-11-26, [Q-LIM-294](#q-lim-294--the-built-in-parallel-transfers-are-set-from-a-measurement-of-the-clients)).
 
 **`package_write`** (Q-LIM-56, a burst of 400 at 10 a second, 1,600 since Q-LIM-292): a pull spends one unit (the `POST` of the
 token); it holds every single-platform push and the measured multi-platform push (95 unsafe requests). The burst of 400 did not hold a
@@ -2747,11 +2813,11 @@ Status: **Decided by the owner on 2026-11-20: waiting downloads are capped** (de
 only while the replica already sheds). **The share is the development agent's** — selected from the options below; the owner reviews
 it at the walkthrough.
 
-Context: a download beyond the subject's `parallelDownloads` waits up to 10 s for a place (Q-LIM-14), holding its request slot of
+Context: a download beyond the subject's `parallelTransfers` waits up to 10 s for a place (Q-LIM-14), holding its request slot of
 step 4 of the chain (R-ARCH-005). In the capacity test of R-ARCH-027 (`TestNPMPerf`, P-8: 1,000 requests a second of a 50 KiB tarball
-over 20 technical tokens, each with 50 parallel downloads) the waiting downloads held their slots while the replica shed every new
+over 20 technical tokens, each with 50 parallel transfers) the waiting downloads held their slots while the replica shed every new
 request; the test passed only because its tokens were given the profile Unlimited (F-163; the nightly of 2026-11-19 answered 1,922
-requests 429 `too_many_parallel_downloads`). The slots are the endpoint's: `server.max_in_flight` (4,096) for the default endpoint, a
+requests 429 `too_many_parallel_transfers`). The slots are the endpoint's: `server.max_in_flight` (4,096) for the default endpoint, a
 further endpoint's own `max_in_flight` (1,024 by default).
 
 Found while the capacity test ran without the exemption on 2026-11-20: the 429s had a second cause. A batch of the limits was bounded
@@ -2770,7 +2836,7 @@ is one round trip, `TestR_LIM_017_AFlushOfAThousandEndedDownloadsIsOneRoundTrip`
 | (e) One bound per replica over all endpoints | | One counter | The slots are per endpoint: a further endpoint's 1,024 slots could all be held by waiters of a bound sized for 4,096 |
 
 **Choice:** (a), per endpoint and replica, the constant `limits.WaitingShare` (4). A download that would wait while the share is held
-gives up its lease and gets 429 `too_many_parallel_downloads` with a `Retry-After` of 1 s at once.
+gives up its lease and gets 429 `too_many_parallel_transfers` with a `Retry-After` of 1 s at once.
 
 **Result** (the capacity test once on the kind cluster, `linux/arm64`, 2026-11-20, its twenty tokens under the profile Technical in
 Enforce, without the exemption): P-8 offered 1,000 requests a second of the cached 50 KiB tarball and got 25,376 answers 200 and 3,399
@@ -2780,12 +2846,12 @@ The run shows the two fixes together (the share and the flush's batch without a 
 **Rationale:** what an install needs is a queue of a few seconds for its own surplus connections; what the replica needs is most of
 its slots for requests it serves. A quarter gives both on the default endpoint with an order of magnitude to spare. The development
 agent would revisit the share if installs on one replica are refused at once in normal use (`quader_limits_decisions_total{figure=
-"parallelDownloads",outcome="limited"}` without overload), or if an endpoint with few slots (below 40) makes the share smaller than
+"parallelTransfers",outcome="limited"}` without overload), or if an endpoint with few slots (below 40) makes the share smaller than
 one install's surplus.
 
 **Applied in the spec:** R-LIM-024, Q-LIM-14 (its revisit note). Code: [waitgate.go](../../internal/limits/waitgate.go),
 `Engine.parallel` in [engine.go](../../internal/limits/engine.go), `waitGates` in [ratelimit.go](../../internal/api/v1/ratelimit.go).
-Tests: `TestR_LIM_024_ParallelDownloads` in [engine_test.go](../../internal/limits/engine_test.go),
+Tests: `TestR_LIM_024_ParallelTransfers` in [engine_test.go](../../internal/limits/engine_test.go),
 `TestR_LIM_024_WaitingDownloadsHoldAtMostTheirShareOfTheRequestSlots` in [figures_test.go](../../test/integration/limits/figures_test.go);
 `TestNPMPerf` without its tokens' exemption ([npm_perf_test.go](../../test/e2e/npm_perf_test.go)).
 
@@ -2943,7 +3009,7 @@ as a failed call. A download's lease was dropped only where its flush ran, so a 
 reached Valkey stayed on the share, and one taken in Valkey and dropped by a flush that ran on the share stayed in Valkey, each for
 its `limits.parallel.lease`. A take that ran into the timeout is decided on the share, but a Valkey that held the command ran it
 afterwards and holds that lease too. In the nightly of 2026-11-20 (`TestHAFaults_ValkeySlow`: every Valkey command held up to 2 s for
-three minutes) one `packages` replica answered 176 tarball requests 429 `too_many_parallel_downloads` after the 10 s wait, within one
+three minutes) one `packages` replica answered 176 tarball requests 429 `too_many_parallel_transfers` after the 10 s wait, within one
 minute and on its share (`limit_mode` `fallback` in the 35 of its log that survived, ⌈50 ÷ 3⌉ = 17 places per token), while k6 sent
 each token's tarballs to that replica at five a second and the other replicas served them in under a second: a few downloads in
 progress per token against 17 places, the rest held by downloads that had ended. The k6 p99 of the slow minutes was 4.07 s; without that replica's
@@ -2961,11 +3027,11 @@ minute it was 554 ms, within R-HA-057's bound of the baseline plus twice the com
 **Rationale:** a lease is a place of a download in progress; once the download ended it must leave every count it may be in, and the
 replica cannot tell whether a timed-out take reached Valkey. Dropping in both places costs nothing on the request path. The development
 agent would revisit this if the late take that outruns its own drop shows in a run (a token refused in `cluster` mode within a minute
-of a slow Valkey, `quader_limits_decisions_total{figure="parallelDownloads",outcome="limited"}`).
+of a slow Valkey, `quader_limits_decisions_total{figure="parallelTransfers",outcome="limited"}`).
 
 **Applied in the spec:** R-LIM-018, R-LIM-019, R-LIM-024. Code: `dropOp`, `dropLease`, `keepUnsent` in
 [engine.go](../../internal/limits/engine.go), `flushCounters` in [flush.go](../../internal/limits/flush.go). Tests: five cases of
-`TestR_LIM_024_ParallelDownloads` in [engine_test.go](../../internal/limits/engine_test.go) on a store that is down or answers after
+`TestR_LIM_024_ParallelTransfers` in [engine_test.go](../../internal/limits/engine_test.go) on a store that is down or answers after
 running the batch: a lease taken on the share and ended by a flush that reached Valkey, one taken in Valkey and ended by a flush on the
 share, a take Valkey ran after the timeout, a lease given up at once as a waiting download does, and an unsent drop forgotten at the
 lease's end.
@@ -3020,7 +3086,7 @@ lines 125 to 159), and a lease is given up when its request ends ([engine.go](..
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `Admit` before the link as before a stream; the item's size charged at issuance; the lease ends with the `307` (chosen) | A link is a download of its size, decided like one | The hour and day budgets hold for links; nothing waits for a transfer Quader cannot see | `parallelDownloads` bounds issuances, not transfers |
+| (a) `Admit` before the link as before a stream; the item's size charged at issuance; the lease ends with the `307` (chosen) | A link is a download of its size, decided like one | The hour and day budgets hold for links; nothing waits for a transfer Quader cannot see | `parallelTransfers` bounds issuances, not transfers |
 | (b) The lease lasts the link's life | A link holds a parallel slot until it expires | Some bound on parallel transfers | A one-second layer holds a slot for a minute: a pull of several layers at a low figure waits and fails where a stream would pass |
 | (c) Nothing charged at issuance | | | The byte windows would never fill: a link would be a way around the hour and day budgets |
 
@@ -3197,6 +3263,136 @@ steps (a loop of publishes of large packages).
 `APIRateLimitPackageWrite` in [m1.go](../../internal/config/m1.go). Test: `TestAPISection` "R-API-016 the default burst of package_write
 holds a push of the largest image on four platforms" ([api_test.go](../../internal/config/api_test.go), unit).
 
+### Q-LIM-293 · The limit counts transfers and is named parallel transfers
+
+Status: **Decided by the owner on 2026-11-26, 10:27** (decision 23): "Option A, default darf aber großzügiger sein als 2, wir bauen hier
+enterprise software für große firmen". The names are the development agent's.
+
+Context: the owner's rule of the same morning (W-31): a download is the logical unit a person asked for, an image with all its parts,
+never a single file. The figure `parallelDownloads` counted every transfer to a client in progress (R-LIM-024): a `docker pull` holds
+three leases at once, an npm install fifteen, a `dotnet restore` one per package. A profile's line "20 parallel" therefore read as twenty
+images at once, which it never was.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Count transfers, and name the figure so (the owner's choice) | The mechanism stays; the API, the code, the screens and the manual say *transfers* and what one pull or install holds | What the server can count; it bounds connections, which is what the limit protects | A person has to translate a pull into transfers; the sentence where the figure is set does that for them |
+| (b) Count units: a pull, an install | A lease per image or per install | Reads as the owner's unit | The server sees no unit: a pull's blobs arrive over several connections without a marker of their image, an install has no start and no end on the wire; a guess per format |
+| (c) Both, two figures | | Each reader finds their unit | Two numbers to set where one bounds the connections |
+
+**Choice:** (a), with these names, used everywhere without an alias (pre-alpha, rule 9): the API member, the overrides' member and the
+figure of a refusal `parallelTransfers`; the problem code `too_many_parallel_transfers`; the column `parallel_transfers`
+(migration 00141, which renames the overrides' member and the recorded limit events too); the metric label
+`quader_limits_decisions_total{figure="parallelTransfers"}` and the request log's `limiter: limits.parallelTransfers` (both carry the
+figure's name); on the screens **Parallel transfers** (German "Gleichzeitige Übertragungen"), the editor's group **Transfers**
+("Übertragungen"), the field **In parallel**, a limit "250 transfers in parallel", a compact line "250 parallel transfers", an override
+"+ parallel transfers 100".
+
+Left as they are, each with its reason: the settings `limits.parallel.lease` and `limits.parallel.wait` (they name the mechanism's
+lease and wait, not the figure; their descriptions now say *transfer*); the RateLimit policy `"parallel"` with
+`qu="concurrent-requests"` (a policy name of the draft's fields, which counts concurrent requests and is right); the word *download*
+in this page's mechanics (the check before a download starts, a download's lease and pacing: one transfer, R-LIM-007); the byte
+figures' "download limit" and the code `download_limit_reached`, which mean the bytes a person downloads, whatever the unit.
+
+**Rationale:** the owner chose to keep counting what the server can count. A name that says what is counted, and a sentence that says
+what one pull or install holds, keep a person from reading it as images at once; an alias of the old name would keep the misreading
+alive.
+
+**Applied in the spec:** R-LIM-004, R-LIM-007, R-LIM-020, R-LIM-024, R-LIM-041; [api-and-ui.md](api-and-ui.md) R-UI-178, R-UI-184,
+R-UI-186. Code: `ParallelTransfers` in [figures.go](../../internal/limits/figures.go), `CodeTooManyParallelTransfers` in
+[errors.go](../../internal/limits/errors.go), [figures.ts](../../web/src/app/features/limits/figures.ts),
+[problem-messages-limits.ts](../../web/src/app/core/http/problem-messages-limits.ts).
+
+### Q-LIM-294 · The built-in parallel transfers are set from a measurement of the clients
+
+Status: **Decided by the owner on 2026-11-26 that the built-in values are generous, sized for large companies** (decision 23). The
+numbers are the development agent's, from the measurement below — selected from the options below; the owner reviews them at the
+walkthrough.
+
+Context: Q-LIM-59 set the request figures from a measurement and left the parallel figure at the first migration's estimates
+(Standard 20, Technical 50, Restricted 6, Anonymous 4). They contradicted R-LIM-010's own promises: twenty CI jobs of one token running
+npm (15 transfers each) need 300, and a single `dotnet restore` of 200 packages opens 200 at once.
+
+**The measurement**, run once on 2026-11-26 on a development machine (`linux/arm64` containers, 20 cores) with the client images of
+the e2e harness (Docker 29.9.3 with its own daemon, Podman 5.8.9, the npm clients of R-NPM-045, the .NET SDK 10.0.403, APT 3.0.4)
+against a stub server that held each transfer 0.5 s before its body, as a slow network does, and counted the transfers in progress at
+once; not a test of the suite. The table of R-LIM-041 lists every client; the stub served an image of 40 layers, five of 10 layers, 200
+npm packages, 200 NuGet packages and 50 Debian packages. A client that the harness has no image of (ansible-galaxy's install, helm, a
+Kubernetes node) is taken from the client.
+
+| Option | Anonymous, Standard, Technical, Restricted | For | Against |
+|---|---|---|---|
+| (a) Each profile holds the use R-LIM-010 promises it, with room (chosen) | 64, 250, 1,000, 64 | Anonymous: four npm installs or ten podman pulls at once from one address (a team behind one NAT before it signs in); Standard: a developer's restore of 200 packages beside a pull, or a pnpm install, five podman pulls and an npm install together; Technical: twenty CI jobs of one token running pnpm 10 or 11 (1,000) or npm (300, more than three times over), five restores of 200 packages; Restricted: one install of any JavaScript client whole | One token may hold 1,000 transfers at once: a quarter of a replica's default request slots (below) |
+| (b) Smaller: 16, 100, 500, 16 | | A token holds an eighth of a replica's slots | A pnpm install and a NuGet restore wait on every machine; twenty pnpm jobs of one token wait |
+| (c) No figure for signed-in callers | | Nothing waits | No bound on the connections of a token that loops |
+| (d) Larger: Technical 4,096 | | No CI fleet ever waits | One token could hold every request slot of a replica |
+
+**Choice:** (a): Anonymous 64, Standard 250, Technical 1,000, Restricted 64. Technical holds the twenty CI jobs of R-LIM-010 for every
+measured client with a bound (npm 300, pnpm 10 and 11 1,000, Yarn 4 640, podman 120; pnpm 12 on runners of 20 cores 1,280, of which 280
+wait a moment), 66 jobs running npm, or 333 hosts pulling with docker. A client without a bound (`dotnet restore`, `ctr`) opens one
+transfer per package or layer; what is beyond the figure waits up to 10 s for a place, which a cached package frees in milliseconds
+(H-2261).
+
+**What a replica keeps** (the limit protects a replica's connections and bandwidth): a transfer holds one of the endpoint's request
+slots (`server.max_in_flight`, 4,096 by default) for as long as it runs, and the transfers that wait hold at most a quarter of them
+([Q-LIM-60](#q-lim-60--waiting-downloads-hold-at-most-a-quarter-of-an-endpoints-request-slots)). The largest built-in figure, 1,000, is
+less than a quarter of the default endpoint's slots: one token whose transfers all land on one replica holds at most 1,000 running and,
+with every other caller's waiting transfers, 1,024 waiting, so at least half of the replica's slots serve others; across n replicas
+behind the ingress its transfers spread to about 1,000 ÷ n each. A further endpoint's 1,024 slots are not held that way (H-2260). The
+bandwidth stays the byte figures': `cachedBytesPerSecond` is the subject's, whatever its number of transfers, and the floor of 64 KiB/s
+per transfer (R-LIM-023) passes no built-in profile's rate (Technical: 500 MB/s over 1,000 transfers is 500 kB/s each). Valkey holds a
+lease per transfer in the key's sorted set; 1,000 members are one `ZCARD` as 50 were.
+
+**Not changed here: the other estimated figures**, which a pull of an image or a large install meets in normal enterprise use; they
+are the owner's to decide (H-2262):
+
+| Profile | Figure | What reaches it |
+|---|---|---|
+| Anonymous | `upstreamRequestsPerHour` 20 | the first pull of one image of more than about 17 layers through a remote (a pull is a request per layer, the manifests and the config); an npm install of more than 10 packages that are not cached (a document and a tarball each) |
+| Anonymous | `uncachedBytesPerHour` 2 GB | the first pull of one large image through a remote (a CUDA or a database image is several GB) |
+| Anonymous | `cachedBytesPerHour` 10 GB, `bytesPerDay` 30 GB | a team behind one NAT pulling images of 1 GB: ten pulls an hour, thirty a day |
+| Anonymous | `cachedBytesPerSecond` 20 MB/s, `uncachedBytesPerSecond` 5 MB/s | every pull of a large image: 1 GB takes 50 s from the cache, 200 s from the upstream |
+| Standard | `upstreamRequestsPerHour` 2,000 | two first installs of 475 packages an hour through a remote (950 upstream requests each: a document and a tarball per package) |
+| Standard | `uncachedBytesPerHour` 30 GB | a developer's first pulls of a few large images through a remote in an hour |
+| Standard | `uncachedBytesPerSecond` 50 MB/s | every first pull through a remote of a large image: 1 GB takes 20 s |
+| Technical | `upstreamRequestsPerHour` 10,000 | twenty parallel CI jobs of one token installing 475 packages each on a cold cache (9,500) |
+| Technical | `uncachedBytesPerHour` 100 GB | a CI fleet's first pulls of new images through a remote after a release of its base images |
+| Restricted | `upstreamRequestsPerHour` 200 | one first install of more than 100 packages through a remote |
+| Restricted | `uncachedBytesPerHour` 5 GB | one first pull of a large image through a remote |
+
+**Rationale:** the owner asked for generous values; the clients' own parallelism is what a figure meets, and with it measured the
+figures can hold the use the page promises instead of a guess. The development agent would revisit them when a client is found whose
+normal command opens more transfers than its profile holds and waits for it (`quader_limits_decisions_total{figure="parallelTransfers",
+outcome="limited"}` without overload), when the request slots of an endpoint are lowered below four times the Technical figure, or when
+a CI fleet of one token is seen to hold more of a replica than the replica's other callers can spare.
+
+**Applied in the spec:** R-LIM-010, R-LIM-041, Q-LIM-14's context. Code: migration
+[00141_limits_parallel_transfers.sql](../../internal/meta/postgres/migrations/00141_limits_parallel_transfers.sql), `BuiltinProfiles` in
+[model.go](../../internal/limits/model.go).
+
+### Q-LIM-295 · The migration replaces a built-in parallel figure only where it still holds the first migration's value
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the new values reach an existing installation through a migration. Quader is pre-alpha (rule 9), but the owner's own
+installation follows every release, and an administrator may have changed a built-in profile's figure (R-LIM-010).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Set the new value where the figure still holds the first migration's (20, 50, 6, 4) (chosen) | An administrator's value, a number or unlimited, stays | An administrator's choice stands; an untouched installation gets the measured values | An administrator who had set exactly the old value is taken for untouched |
+| (b) Set every built-in profile's figure | | One state everywhere | Overwrites a choice an administrator made on purpose |
+| (c) Leave existing installations as they are | | Nothing changes under an administrator | Every installation keeps the figures the owner found too small |
+
+**Choice:** (a). The step also renames the column, the member of every rule's and project maximum's overrides (an unlimited override
+stays `null`) and the figure of the recorded limit events, so that the usage overview and the rule tables read the new name for the past
+too; audit events keep the words they were written with. **Rationale:** a value that differs from the old built-in one is an
+administrator's decision, and the owner's rule is that a decision of his stands until he reverses it; the old value itself is the
+estimate the owner asked to replace.
+
+**Applied in the spec:** R-LIM-010. Code: migration
+[00141_limits_parallel_transfers.sql](../../internal/meta/postgres/migrations/00141_limits_parallel_transfers.sql). Test:
+`TestR_HA_020_TheParallelTransfersStepKeepsAnAdministratorsValue` in
+[parallel_transfers_test.go](../../test/integration/postgres/parallel_transfers_test.go) (integration area `postgres`, about 3 s).
+
 ## What this does not cover
 
 - The protocol gaps for the owner: [Gaps of the protocols](#gaps-of-the-protocols).
@@ -3212,7 +3408,7 @@ during the incident admits up to its limit again (per replica its share, togethe
 ### H-1006 · A download admitted before its budget was used up runs to its end
 
 Component: the check before a download (R-LIM-021). Subject: every budget key with an hour or day byte figure. Live in `enforce`.
-What makes it real: a subject with `parallelDownloads` downloads of large files started just below the limit transfers all of them
+What makes it real: a subject with `parallelTransfers` downloads of large files started just below the limit transfers all of them
 in full (owner, decision 4: never in the middle); the overshoot is bounded by R-LIM-018.
 
 ### H-1007 · Many addresses are many anonymous budgets
@@ -3249,3 +3445,30 @@ and CI projects without a rule of their own." as the installation stored them. B
 the screen shows them as written (`translate="no"`, R-UI-214) and the German render pass does not count them as a server's sentence.
 What would end it: the screen says a built-in profile's first name and description from its key in its language, and shows the stored
 text only once an administrator changed it; that needs the API to tell a changed text from the first one, which it does not.
+
+### H-2260 · A technical token's transfers can hold most of a further endpoint's request slots on one replica
+
+Component: the parallel transfers (R-LIM-024) with the built-in Technical figure of 1,000 (Q-LIM-294), and the request slots of a
+further endpoint (its own `max_in_flight`, 1,024 by default, [endpoints.md](endpoints.md) R-EP-015). Subject: the other callers of a
+further endpoint whose requests land on the same replica. Dormant until a further endpoint exists; live in `enforce` and `audit` when a
+technical token runs many CI jobs through it. What makes it real: up to 1,000 transfers of one token through one replica's further
+endpoint hold 1,000 of its 1,024 slots, and the replica sheds the endpoint's other requests with 503 `server_busy` until they end. On the
+default endpoint (4,096 slots) the same token holds at most a quarter. A rule with a smaller figure for that token, or a larger
+`max_in_flight` of the endpoint, closes it for an installation; the figure is not bounded by the endpoint's slots.
+
+### H-2261 · A client without a bound of its own opens one transfer per package or layer
+
+Component: the parallel transfers (R-LIM-024) and the clients of R-LIM-041 without a bound: `dotnet restore` (one transfer per package
+of the restore) and `ctr images pull` (one per layer). Subject: a caller whose restore or pull has more packages or layers than its
+figure. Live in `enforce`. What makes it real: the transfers beyond the figure wait up to `limits.parallel.wait` (10 s); with cached
+packages the places free within milliseconds and the restore completes, but over a slow link, with large packages or with a low figure a
+transfer waits 10 s and gets 429, and NuGet retries about once a second without reading `Retry-After`. The numbers of R-LIM-041 were
+measured once against a stub, not against Quader; ansible-galaxy, helm and a Kubernetes node were not measured.
+
+### H-2262 · The byte and upstream figures of the built-in profiles are estimates that normal enterprise use meets
+
+Component: the built-in profiles (R-LIM-010): their byte figures and `upstreamRequestsPerHour`, the development agent's estimates of the
+first migration, which neither Q-LIM-59 nor Q-LIM-294 changed. Subject: every caller under a built-in profile, most of all anonymous
+callers of a public remote and CI tokens on a cold cache. Live in `enforce`. What makes it real: the uses listed in Q-LIM-294's table
+*Not changed here*; an anonymous first pull of an image of more than about 17 layers through a remote meets `upstreamRequestsPerHour`
+20 and answers 429 `upstream_limit_reached`, and docker does not retry it. The owner decides those values.

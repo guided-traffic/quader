@@ -4261,7 +4261,7 @@ Priority: **P1** · Covers: quader-only
 | The malware gate (R-MAL-018) | the serve | a find or a withdrawn release yields `content`; the switch turned on is not in the feed (H-1102) | 3 s, or 10 min |
 | The vulnerability block (R-VULN-033 to R-VULN-037) | the serve | a block set in triage yields `content`; an automatic block is not in the feed (H-385) | 3 s, or 10 min |
 | The signature gate (R-SIG-063, R-SIG-064) | the serve (manifests) | withdrawn releases and narrowed trust yield `content`; a pending `503` is never kept | 3 s |
-| Download limits (byte budgets, parallel downloads, a block) and request figures | `Admit` (never on a `304`); stage 7 | not applied to hits, as for full readers today (R-LIM-001); because package answers renew by use, the renewing conditional request of a blocked or limited subject is refused within one period | at most `answers.period` ([H-1381](#h-1381--the-main-installations-limits-and-blocks-do-not-reach-hits-from-per-package-answers)) |
+| Download limits (byte budgets, parallel transfers, a block) and request figures | `Admit` (never on a `304`); stage 7 | not applied to hits, as for full readers today (R-LIM-001); because package answers renew by use, the renewing conditional request of a blocked or limited subject is refused within one period | at most `answers.period` ([H-1381](#h-1381--the-main-installations-limits-and-blocks-do-not-reach-hits-from-per-package-answers)) |
 | Download recording | `Served` | the Bastion's download events (R-BAS-039, R-BAS-059) | buffered |
 
 A `full` package answer obeys exactly the validity rules of a `full` answer on the repository, and the entry the same freshness and
@@ -4274,7 +4274,7 @@ now asked the main installation per artifact and met every gate at every pull
   token ID (of the Quader token behind a registry token), the principal, the client address, the repository, the request path and the
   SHA-256; download events carry no package. The main installation no longer sees its request-log lines of the 11 to 12 conditional
   requests per pull nor charges them to the subject's request figures (`requestsPerSecond`, `requestsPerHour` are charged 3 requests instead
-  of 14 per warm pull); the token request is still logged and charged; `cachedBytesPerHour`, `bytesPerDay` and `parallelDownloads` are
+  of 14 per warm pull); the token request is still logged and charged; `cachedBytesPerHour`, `bytesPerDay` and `parallelTransfers` are
   unchanged, since a `304` carries no body and is answered before `Admit`, and hits are counted nowhere (R-LIM-001).
 
 Acceptance criteria:

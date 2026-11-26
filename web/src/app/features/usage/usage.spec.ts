@@ -288,15 +288,15 @@ describe('What a limited caller sees (R-UI-186)', () => {
     expect(limitNotice({ code: 'caller_blocked' }, 60, 'en-US', Date.parse('2026-11-20T10:54:00'))).toMatch(
       /^Downloads are paused for you until 10:55\sAM after too many refused requests\.$/,
     );
-    expect(limitNotice({ code: 'too_many_parallel_downloads', figure: 'parallelDownloads', limit: 4 }, 1, 'en-US')).toBe(
-      'You have 4 downloads running, the most you may have at once. Try again in 1 second.',
+    expect(limitNotice({ code: 'too_many_parallel_transfers', figure: 'parallelTransfers', limit: 4 }, 1, 'en-US')).toBe(
+      'You have 4 transfers running, the most you may have at once; each layer of an image and each package of an install is one. Try again in 1 second.',
     );
     expect(waitText(30)).toBe('30 seconds');
   });
 
   it('R-UI-186 a refused download shows the notice with See your usage, and the page stays', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ code: 'too_many_parallel_downloads', figure: 'parallelDownloads', limit: 20, retryAfterSeconds: 1, detail: 'x' }), {
+      new Response(JSON.stringify({ code: 'too_many_parallel_transfers', figure: 'parallelTransfers', limit: 20, retryAfterSeconds: 1, detail: 'x' }), {
         status: 429,
         headers: { 'Content-Type': 'application/problem+json', 'Retry-After': '1' },
       }),
@@ -308,7 +308,7 @@ describe('What a limited caller sees (R-UI-186)', () => {
     expect(fetchMock.mock.calls[0]![1]).toMatchObject({ headers: { Range: 'bytes=0-0' } });
     const notice = get(Notifier).notices().at(-1)!;
     expect(notice.kind).toBe('alert');
-    expect(notice.text).toBe('You have 20 downloads running, the most you may have at once. Try again in 1 second.');
+    expect(notice.text).toBe('You have 20 transfers running, the most you may have at once; each layer of an image and each package of an install is one. Try again in 1 second.');
     expect(notice.action?.label).toBe('See your usage');
   });
 

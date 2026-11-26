@@ -1702,15 +1702,15 @@
     </unit>
     <unit id="limits.notice.parallel">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-limits.ts:95</note>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:96</note>
       </notes>
       <segment>
-        <source>You have <ph id="0" equiv="count" disp="limit"/> downloads running, the most you may have at once.</source>
+        <source>You have <ph id="0" equiv="count" disp="limit"/> transfers running, the most you may have at once; each layer of an image and each package of an install is one.</source>
       </segment>
     </unit>
     <unit id="limits.notice.requests">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-limits.ts:99</note>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:100</note>
       </notes>
       <segment>
         <source>Your request limit of <ph id="0" equiv="limit" disp="amount"/> is used up.</source>
@@ -1718,7 +1718,7 @@
     </unit>
     <unit id="limits.notice.too-many">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-limits.ts:100</note>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:101</note>
       </notes>
       <segment>
         <source>Too many requests.</source>
@@ -1726,7 +1726,7 @@
     </unit>
     <unit id="limits.notice.generic">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-limits.ts:103</note>
+        <note category="location">src/app/core/http/problem-messages-limits.ts:104</note>
       </notes>
       <segment>
         <source>A download limit refused this download.</source>
@@ -11853,9 +11853,9 @@
     <unit id="limits.unlimited">
       <notes>
         <note category="location">src/app/features/limits/figure-fields.ts:78,79</note>
-        <note category="location">src/app/features/limits/figures.ts:103</note>
-        <note category="location">src/app/features/limits/figures.ts:267</note>
-        <note category="location">src/app/features/limits/figures.ts:323</note>
+        <note category="location">src/app/features/limits/figures.ts:105</note>
+        <note category="location">src/app/features/limits/figures.ts:269</note>
+        <note category="location">src/app/features/limits/figures.ts:326</note>
         <note category="location">src/app/features/limits/repository-limits-section.ts:71,72</note>
         <note category="location">src/app/features/limits/repository-limits-section.ts:90,91</note>
         <note category="location">src/app/features/usage/limit-explain.ts:245</note>
@@ -11920,25 +11920,25 @@
         <source>With the upstream budget used up, what is cached is still served.</source>
       </segment>
     </unit>
-    <unit id="limits.group.downloads">
+    <unit id="limits.group.transfers">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:66</note>
+        <note category="location">src/app/features/limits/figures.ts:68</note>
       </notes>
       <segment>
-        <source>Downloads</source>
+        <source>Transfers</source>
       </segment>
     </unit>
-    <unit id="limits.group.downloads-help">
+    <unit id="limits.group.transfers-help">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:67</note>
+        <note category="location">src/app/features/limits/figures.ts:69</note>
       </notes>
       <segment>
-        <source>A further download waits up to 10 seconds, then is refused, or at once while a server holds many waiting downloads.</source>
+        <source>Each layer of an image and each package of an install is one transfer: a pull runs 3 to 6 at once, an npm, pnpm or Yarn install 8 to 64, a NuGet restore one per package. A further transfer waits up to 10 seconds, then is refused, or at once while a server holds many waiting transfers.</source>
       </segment>
     </unit>
     <unit id="limits.group.refused">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:72</note>
+        <note category="location">src/app/features/limits/figures.ts:74</note>
       </notes>
       <segment>
         <source>Refused requests</source>
@@ -11946,7 +11946,7 @@
     </unit>
     <unit id="limits.group.refused-help">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:73</note>
+        <note category="location">src/app/features/limits/figures.ts:75</note>
       </notes>
       <segment>
         <source>Above the limit the caller is blocked for the block time.</source>
@@ -11954,7 +11954,7 @@
     </unit>
     <unit id="limits.profile.name">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:105</note>
+        <note category="location">src/app/features/limits/figures.ts:107</note>
         <note category="location">src/app/features/limits/profile-editor.ts:64,65</note>
       </notes>
       <segment>
@@ -11963,7 +11963,7 @@
     </unit>
     <unit id="limits.profile.description">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:106</note>
+        <note category="location">src/app/features/limits/figures.ts:108</note>
         <note category="location">src/app/features/limits/profile-editor.ts:90,92</note>
       </notes>
       <segment>
@@ -11972,7 +11972,7 @@
     </unit>
     <unit id="limits.rule.profile">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:107</note>
+        <note category="location">src/app/features/limits/figures.ts:109</note>
         <note category="location">src/app/features/limits/maximum-dialog.ts:65,66</note>
         <note category="location">src/app/features/limits/rule-dialog.ts:144,145</note>
       </notes>
@@ -11982,7 +11982,7 @@
     </unit>
     <unit id="limits.rule.note">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:108</note>
+        <note category="location">src/app/features/limits/figures.ts:110</note>
         <note category="location">src/app/features/limits/rule-dialog.ts:181,183</note>
       </notes>
       <segment>
@@ -11991,7 +11991,7 @@
     </unit>
     <unit id="limits.ceilings.anonymous">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:111</note>
+        <note category="location">src/app/features/limits/figures.ts:113</note>
         <note category="location">src/app/features/limits/repository-limits-section.ts:207</note>
         <note category="location">src/app/features/usage/limit-explain.ts:179</note>
       </notes>
@@ -12001,7 +12001,7 @@
     </unit>
     <unit id="limits.ceilings.signed-in">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:112</note>
+        <note category="location">src/app/features/limits/figures.ts:114</note>
         <note category="location">src/app/features/limits/repository-limits-section.ts:208</note>
         <note category="location">src/app/features/usage/limit-explain.ts:180</note>
       </notes>
@@ -12011,7 +12011,7 @@
     </unit>
     <unit id="limits.field.requests-second">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:131</note>
+        <note category="location">src/app/features/limits/figures.ts:133</note>
       </notes>
       <segment>
         <source>Per second</source>
@@ -12019,7 +12019,7 @@
     </unit>
     <unit id="limits.field.burst">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:133</note>
+        <note category="location">src/app/features/limits/figures.ts:135</note>
       </notes>
       <segment>
         <source>Burst</source>
@@ -12027,7 +12027,7 @@
     </unit>
     <unit id="limits.field.requests-hour">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:135</note>
+        <note category="location">src/app/features/limits/figures.ts:137</note>
       </notes>
       <segment>
         <source>Per hour</source>
@@ -12035,7 +12035,7 @@
     </unit>
     <unit id="limits.field.mb-second">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:138</note>
+        <note category="location">src/app/features/limits/figures.ts:140</note>
       </notes>
       <segment>
         <source>MB per second</source>
@@ -12043,7 +12043,7 @@
     </unit>
     <unit id="limits.field.gb-hour">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:141</note>
+        <note category="location">src/app/features/limits/figures.ts:143</note>
       </notes>
       <segment>
         <source>GB per hour</source>
@@ -12051,7 +12051,7 @@
     </unit>
     <unit id="limits.field.upstream-requests">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:143</note>
+        <note category="location">src/app/features/limits/figures.ts:145</note>
       </notes>
       <segment>
         <source>Upstream requests per hour</source>
@@ -12059,7 +12059,7 @@
     </unit>
     <unit id="limits.field.parallel">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:145</note>
+        <note category="location">src/app/features/limits/figures.ts:147</note>
       </notes>
       <segment>
         <source>In parallel</source>
@@ -12067,7 +12067,7 @@
     </unit>
     <unit id="limits.field.gb-day">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:147</note>
+        <note category="location">src/app/features/limits/figures.ts:149</note>
       </notes>
       <segment>
         <source>GB per day</source>
@@ -12075,7 +12075,7 @@
     </unit>
     <unit id="limits.field.refused-hour">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:149</note>
+        <note category="location">src/app/features/limits/figures.ts:151</note>
       </notes>
       <segment>
         <source>Per hour</source>
@@ -12083,7 +12083,7 @@
     </unit>
     <unit id="limits.figure.requests-second">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:157</note>
+        <note category="location">src/app/features/limits/figures.ts:159</note>
       </notes>
       <segment>
         <source>Requests per second</source>
@@ -12091,7 +12091,7 @@
     </unit>
     <unit id="limits.figure.burst">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:159</note>
+        <note category="location">src/app/features/limits/figures.ts:161</note>
       </notes>
       <segment>
         <source>Burst</source>
@@ -12099,7 +12099,7 @@
     </unit>
     <unit id="limits.figure.requests-hour">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:161</note>
+        <note category="location">src/app/features/limits/figures.ts:163</note>
       </notes>
       <segment>
         <source>Requests per hour</source>
@@ -12107,7 +12107,7 @@
     </unit>
     <unit id="limits.figure.cache-second">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:163</note>
+        <note category="location">src/app/features/limits/figures.ts:165</note>
       </notes>
       <segment>
         <source>From the cache per second</source>
@@ -12115,7 +12115,7 @@
     </unit>
     <unit id="limits.figure.cache-hour">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:165</note>
+        <note category="location">src/app/features/limits/figures.ts:167</note>
       </notes>
       <segment>
         <source>From the cache per hour</source>
@@ -12123,7 +12123,7 @@
     </unit>
     <unit id="limits.figure.upstream-second">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:167</note>
+        <note category="location">src/app/features/limits/figures.ts:169</note>
       </notes>
       <segment>
         <source>From the upstream per second</source>
@@ -12131,7 +12131,7 @@
     </unit>
     <unit id="limits.figure.upstream-hour">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:169</note>
+        <note category="location">src/app/features/limits/figures.ts:171</note>
       </notes>
       <segment>
         <source>From the upstream per hour</source>
@@ -12139,7 +12139,7 @@
     </unit>
     <unit id="limits.figure.upstream-requests">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:171</note>
+        <note category="location">src/app/features/limits/figures.ts:173</note>
       </notes>
       <segment>
         <source>Upstream requests per hour</source>
@@ -12147,15 +12147,15 @@
     </unit>
     <unit id="limits.figure.parallel">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:173</note>
+        <note category="location">src/app/features/limits/figures.ts:175</note>
       </notes>
       <segment>
-        <source>Parallel downloads</source>
+        <source>Parallel transfers</source>
       </segment>
     </unit>
     <unit id="limits.figure.day">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:175</note>
+        <note category="location">src/app/features/limits/figures.ts:177</note>
       </notes>
       <segment>
         <source>Volume per day</source>
@@ -12163,7 +12163,7 @@
     </unit>
     <unit id="limits.figure.refused">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:177</note>
+        <note category="location">src/app/features/limits/figures.ts:179</note>
       </notes>
       <segment>
         <source>Refused per hour</source>
@@ -12171,7 +12171,7 @@
     </unit>
     <unit id="limits.figure.ceiling-anonymous">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:179</note>
+        <note category="location">src/app/features/limits/figures.ts:181</note>
       </notes>
       <segment>
         <source>Ceiling of all anonymous callers</source>
@@ -12179,7 +12179,7 @@
     </unit>
     <unit id="limits.figure.ceiling-signed-in">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:181</note>
+        <note category="location">src/app/features/limits/figures.ts:183</note>
       </notes>
       <segment>
         <source>Ceiling of all signed-in callers</source>
@@ -12187,7 +12187,7 @@
     </unit>
     <unit id="limits.field.count-invalid">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:222</note>
+        <note category="location">src/app/features/limits/figures.ts:224</note>
       </notes>
       <segment>
         <source>A whole number of at least 1, or empty for unlimited.</source>
@@ -12195,8 +12195,8 @@
     </unit>
     <unit id="limits.field.amount-invalid">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:228</note>
-        <note category="location">src/app/features/limits/figures.ts:232</note>
+        <note category="location">src/app/features/limits/figures.ts:230</note>
+        <note category="location">src/app/features/limits/figures.ts:234</note>
       </notes>
       <segment>
         <source>A number above 0, or empty for unlimited.</source>
@@ -12204,7 +12204,7 @@
     </unit>
     <unit id="limits.limit.per-second">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:274</note>
+        <note category="location">src/app/features/limits/figures.ts:276</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="amount" disp="amount"/> per second</source>
@@ -12212,7 +12212,7 @@
     </unit>
     <unit id="limits.limit.burst">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:276</note>
+        <note category="location">src/app/features/limits/figures.ts:278</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="amount" disp="amount"/> burst</source>
@@ -12220,7 +12220,7 @@
     </unit>
     <unit id="limits.limit.per-day">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:278</note>
+        <note category="location">src/app/features/limits/figures.ts:280</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="amount" disp="amount"/> per day</source>
@@ -12228,15 +12228,15 @@
     </unit>
     <unit id="limits.limit.parallel">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:280</note>
+        <note category="location">src/app/features/limits/figures.ts:282</note>
       </notes>
       <segment>
-        <source><ph id="0" equiv="amount" disp="amount"/> in parallel</source>
+        <source><ph id="0" equiv="amount" disp="amount"/> transfers in parallel</source>
       </segment>
     </unit>
     <unit id="limits.limit.per-hour">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:282</note>
+        <note category="location">src/app/features/limits/figures.ts:284</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="amount" disp="amount"/> per hour</source>
@@ -12244,7 +12244,7 @@
     </unit>
     <unit id="limits.compact.burst">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:299</note>
+        <note category="location">src/app/features/limits/figures.ts:301</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="n" disp="c(burst)"/> burst</source>
@@ -12252,7 +12252,7 @@
     </unit>
     <unit id="limits.compact.cache">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:307</note>
+        <note category="location">src/app/features/limits/figures.ts:309</note>
       </notes>
       <segment>
         <source>cache <ph id="0" equiv="values" disp="cache.join(&apos;, &apos;)"/></source>
@@ -12260,7 +12260,7 @@
     </unit>
     <unit id="limits.compact.upstream-requests">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:314</note>
+        <note category="location">src/app/features/limits/figures.ts:316</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="n" disp="c(ur)"/> req/h</source>
@@ -12268,7 +12268,7 @@
     </unit>
     <unit id="limits.compact.upstream">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:315</note>
+        <note category="location">src/app/features/limits/figures.ts:317</note>
       </notes>
       <segment>
         <source>upstream <ph id="0" equiv="values" disp="up.join(&apos;, &apos;)"/></source>
@@ -12276,15 +12276,15 @@
     </unit>
     <unit id="limits.compact.parallel">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:317</note>
+        <note category="location">src/app/features/limits/figures.ts:320</note>
       </notes>
       <segment>
-        <source><ph id="0" equiv="n" disp="c(par)"/> parallel</source>
+        <source><ph id="0" equiv="n" disp="c(par)"/> parallel transfers</source>
       </segment>
     </unit>
     <unit id="limits.compact.refused">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:321</note>
+        <note category="location">src/app/features/limits/figures.ts:324</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="n" disp="c(ref)"/> refused/h</source>
@@ -12292,7 +12292,7 @@
     </unit>
     <unit id="limits.override.unlimited">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:329</note>
+        <note category="location">src/app/features/limits/figures.ts:332</note>
       </notes>
       <segment>
         <source>+ <ph id="0" equiv="figure" disp="what"/> unlimited</source>
@@ -12300,7 +12300,7 @@
     </unit>
     <unit id="limits.short.requests">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:356</note>
+        <note category="location">src/app/features/limits/figures.ts:359</note>
       </notes>
       <segment>
         <source>requests</source>
@@ -12308,7 +12308,7 @@
     </unit>
     <unit id="limits.short.burst">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:358</note>
+        <note category="location">src/app/features/limits/figures.ts:361</note>
       </notes>
       <segment>
         <source>burst</source>
@@ -12316,7 +12316,7 @@
     </unit>
     <unit id="limits.short.cache">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:361</note>
+        <note category="location">src/app/features/limits/figures.ts:364</note>
       </notes>
       <segment>
         <source>cache</source>
@@ -12324,7 +12324,7 @@
     </unit>
     <unit id="limits.short.uncached">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:364</note>
+        <note category="location">src/app/features/limits/figures.ts:367</note>
       </notes>
       <segment>
         <source>uncached</source>
@@ -12332,7 +12332,7 @@
     </unit>
     <unit id="limits.short.upstream-requests">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:366</note>
+        <note category="location">src/app/features/limits/figures.ts:369</note>
       </notes>
       <segment>
         <source>upstream requests</source>
@@ -12340,15 +12340,15 @@
     </unit>
     <unit id="limits.short.parallel">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:368</note>
+        <note category="location">src/app/features/limits/figures.ts:371</note>
       </notes>
       <segment>
-        <source>parallel</source>
+        <source>parallel transfers</source>
       </segment>
     </unit>
     <unit id="limits.short.day">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:370</note>
+        <note category="location">src/app/features/limits/figures.ts:373</note>
       </notes>
       <segment>
         <source>volume</source>
@@ -12356,7 +12356,7 @@
     </unit>
     <unit id="limits.short.refused">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:372</note>
+        <note category="location">src/app/features/limits/figures.ts:375</note>
       </notes>
       <segment>
         <source>refused</source>
@@ -12364,7 +12364,7 @@
     </unit>
     <unit id="limits.override.more">
       <notes>
-        <note category="location">src/app/features/limits/figures.ts:380</note>
+        <note category="location">src/app/features/limits/figures.ts:383</note>
       </notes>
       <segment>
         <source>+ <ph id="0" equiv="count" disp="set.length - 2"/> more</source>

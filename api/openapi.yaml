@@ -35551,7 +35551,7 @@ components:
       description: Every figure of R-LIM-004, each present in an answer; `null` is unlimited. Bytes are bytes.
       additionalProperties: false
       required: [requestsPerSecond, requestsBurst, requestsPerHour, cachedBytesPerSecond, cachedBytesPerHour, uncachedBytesPerSecond,
-        uncachedBytesPerHour, upstreamRequestsPerHour, parallelDownloads, bytesPerDay, refusedPerHour]
+        uncachedBytesPerHour, upstreamRequestsPerHour, parallelTransfers, bytesPerDay, refusedPerHour]
       properties:
         requestsPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
         requestsBurst: {type: [integer, "null"], format: int64, minimum: 1}
@@ -35561,7 +35561,13 @@ components:
         uncachedBytesPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
         uncachedBytesPerHour: {type: [integer, "null"], format: int64, minimum: 1}
         upstreamRequestsPerHour: {type: [integer, "null"], format: int64, minimum: 1}
-        parallelDownloads: {type: [integer, "null"], format: int64, minimum: 1}
+        parallelTransfers:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+          description: |
+            Transfers of the caller in progress at once across all replicas (R-LIM-024): each layer of an image and each package of
+            an install is one transfer, so one pull or one install holds several at once (R-LIM-007).
         bytesPerDay: {type: [integer, "null"], format: int64, minimum: 1}
         refusedPerHour: {type: [integer, "null"], format: int64, minimum: 1}
     LimitFigureOverrides:
@@ -35579,13 +35585,13 @@ components:
         uncachedBytesPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
         uncachedBytesPerHour: {type: [integer, "null"], format: int64, minimum: 1}
         upstreamRequestsPerHour: {type: [integer, "null"], format: int64, minimum: 1}
-        parallelDownloads: {type: [integer, "null"], format: int64, minimum: 1}
+        parallelTransfers: {type: [integer, "null"], format: int64, minimum: 1}
         bytesPerDay: {type: [integer, "null"], format: int64, minimum: 1}
         refusedPerHour: {type: [integer, "null"], format: int64, minimum: 1}
     LimitFigureName:
       type: string
       enum: [requestsPerSecond, requestsBurst, requestsPerHour, cachedBytesPerSecond, cachedBytesPerHour, uncachedBytesPerSecond,
-        uncachedBytesPerHour, upstreamRequestsPerHour, parallelDownloads, bytesPerDay, refusedPerHour]
+        uncachedBytesPerHour, upstreamRequestsPerHour, parallelTransfers, bytesPerDay, refusedPerHour]
     LimitProfile:
       type: object
       required: [key, name, description, builtin, figures, usedBy, version, createdAt, createdBy, updatedAt, updatedBy]
@@ -36065,7 +36071,7 @@ components:
       type: object
       additionalProperties: false
       required: [requestsPerSecond, requestsPerHour, cachedBytesPerSecond, cachedBytesPerHour, uncachedBytesPerSecond,
-        uncachedBytesPerHour, upstreamRequestsPerHour, parallelDownloads, bytesPerDay, refusedPerHour]
+        uncachedBytesPerHour, upstreamRequestsPerHour, parallelTransfers, bytesPerDay, refusedPerHour]
       properties:
         requestsPerSecond: {$ref: "#/components/schemas/UsageBudgetFigure"}
         requestsPerHour: {$ref: "#/components/schemas/UsageBudgetFigure"}
@@ -36074,7 +36080,7 @@ components:
         uncachedBytesPerSecond: {$ref: "#/components/schemas/UsageBudgetFigure"}
         uncachedBytesPerHour: {$ref: "#/components/schemas/UsageBudgetFigure"}
         upstreamRequestsPerHour: {$ref: "#/components/schemas/UsageBudgetFigure"}
-        parallelDownloads: {$ref: "#/components/schemas/UsageBudgetFigure"}
+        parallelTransfers: {$ref: "#/components/schemas/UsageBudgetFigure"}
         bytesPerDay: {$ref: "#/components/schemas/UsageBudgetFigure"}
         refusedPerHour: {$ref: "#/components/schemas/UsageBudgetFigure"}
     UsageBudget:

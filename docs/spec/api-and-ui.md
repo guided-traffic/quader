@@ -501,7 +501,7 @@ R-UI-045); API text stays English.
 | 422 | `reserved_name` | A create uses a name reserved by a route (R-API-004) |
 | 428 | `precondition_required` | `If-Match` required (R-API-012) |
 | 429 | `rate_limited` | R-API-016, and the request figures of [usage-and-limits.md](usage-and-limits.md) R-LIM-020; `Retry-After` set |
-| 429 | `download_limit_reached`, `upstream_limit_reached`, `too_many_parallel_downloads`, `caller_blocked` | A figure of [usage-and-limits.md](usage-and-limits.md) R-LIM-020 on a protocol path; `Retry-After` set; the members `figure`, `limit`, `windowSeconds`, `place`, `retryAfterSeconds` |
+| 429 | `download_limit_reached`, `upstream_limit_reached`, `too_many_parallel_transfers`, `caller_blocked` | A figure of [usage-and-limits.md](usage-and-limits.md) R-LIM-020 on a protocol path; `Retry-After` set; the members `figure`, `limit`, `windowSeconds`, `place`, `retryAfterSeconds` |
 | 422 | `limit_above_maximum` | A project or repository rule above its cap ([usage-and-limits.md](usage-and-limits.md) R-LIM-016); `errors[]` names each figure with its cap |
 | 500 | `internal` | Unexpected failure (R-ARCH-023) |
 | 502 | `upstream_error` | A synchronous action that calls an upstream or issuer failed |
@@ -8721,7 +8721,7 @@ Priority: **MVP** · Covers: BEYOND-030
 
 `/admin/limits/profiles` lists the profiles (`GET /api/v1/limits/profiles`): name with the badge **Built-in**, description, the
 eleven figures in one compact cell ("200/s · 1,000 burst · 50,000/h · cache 200 MB/s, 300 GB/h · upstream 50 MB/s, 30 GB/h, 2,000
-req/h · 20 parallel · 1,000 GB/day · 500 refused/h"; an unlimited figure is left out; Unlimited reads "Unlimited"), and **Used by**
+req/h · 250 parallel transfers · 1,000 GB/day · 500 refused/h"; an unlimited figure is left out; Unlimited reads "Unlimited"), and **Used by**
 ("4 rules, 1 project maximum"). **New profile** in the head and a row's **Edit** open the editor; **Delete** is offered for an own
 profile that nothing uses, else shown disabled with the reason ("Used by 3 rules").
 
@@ -8731,15 +8731,18 @@ The editor is a page (`/admin/limits/profiles/new`, `/admin/limits/profiles/{key
   **Description (optional)**.
 - The figures in four groups, each a heading and its fields, each field as wide as its input (R-UI-087's rule; a field of seven
   digits and its unit): **Requests** (per second, burst, per hour), **From the cache** (MB per second, GB per hour), **From the
-  upstream** (MB per second, GB per hour, upstream requests per hour), **Downloads** (in parallel, GB per day), **Refused requests**
+  upstream** (MB per second, GB per hour, upstream requests per hour), **Transfers** (in parallel, GB per day; the figure counts
+  transfers, [usage-and-limits.md](usage-and-limits.md) R-LIM-041), **Refused requests**
   (per hour). The value is in the field (a default is a value in the field, [CLAUDE.md](../../CLAUDE.md)); an empty field is unlimited, and the field
   says so as its placeholder "Unlimited". Units are decimal: 1 MB is 1,000,000 bytes, 1 GB 1,000,000,000
   ([Q-UI-736](#q-ui-736--the-ui-shows-decimal-mb-and-gb-the-api-bytes)); the API's bytes are converted on load and on save, and a
   value that is not a whole number of bytes after conversion is rounded down.
 - A help line per group, one sentence: what happens at the limit ("At the limit a request is answered 429 with the time to wait.",
   "Above the rate a download is slowed down; above the hourly amount the next download is refused before it starts.", "With the
-  upstream budget used up, what is cached is still served.", "A further download waits up to 10 seconds, then is refused, or at
-  once while a server holds many waiting downloads.", the wait and the share of R-LIM-024), and under **From the
+  upstream budget used up, what is cached is still served.", "Each layer of an image and each package of an install is one
+  transfer: a pull runs 3 to 6 at once, an npm, pnpm or Yarn install 8 to 64, a NuGet restore one per package. A further transfer
+  waits up to 10 seconds, then is refused, or at once while a server holds many waiting transfers.", what one pull or install holds
+  (R-LIM-041), the wait and the share of R-LIM-024), and under **From the
   cache** the note that a very low rate makes a large file take longer than some clients wait in total.
 - Unlimited cannot be edited: its page shows the figures read-only with "Unlimited is always unlimited."
 - **Save** sends `PUT` (or `POST`) with `If-Match`; a `412` opens the conflict dialog of R-UI-042.
@@ -8956,7 +8959,7 @@ caller, not its reference: a user's display name ("Priya Raman"), a technical to
   that applies and why in one sentence, read from the explanation ("Rule for the group contractors at web/npm-remote, profile
   Restricted, one figure changed"), and every figure as a row: the figure's name, a meter of used against limit for the windowed
   figures (**Requests per hour**, **From the cache per hour**, **From the upstream per hour**, **Upstream requests per hour**,
-  **Volume per day**, **Parallel downloads**, **Refused per hour**), and the rates as text (**Requests per second**, **From the cache
+  **Volume per day**, **Parallel transfers**, **Refused per hour**), and the rates as text (**Requests per second**, **From the cache
   per second**, **From the upstream per second**); an unlimited figure reads "Unlimited".
 - **Which limit applies**: a quiet button **Explain for a repository**, which opens a panel with a repository field (the repositories
   of the scope) and shows the steps of R-LIM-035 as an ordered list ("Repository web/npm-remote: no rule for alice. Groups: rule for
@@ -9009,14 +9012,15 @@ Priority: **MVP** · Covers: BEYOND-030
   page: "Your download limit of 300 GB per hour is used up. Try again in 14 minutes.", written in the reader's language from the
   problem's members `figure`, `limit` and `retryAfterSeconds` (the problem's `detail` where it lacks them), with the link **See
   your usage** to `/profile/usage`; a `caller_blocked` says "Downloads are paused for you until 10:55 after too many refused
-  requests." A caller without a session (a visitor) gets the same text without the link. The UI learns of the refusal by asking for
+  requests."; a `too_many_parallel_transfers` says "You have 250 transfers running, the most you may have at once; each layer of an
+  image and each package of an install is one." (R-LIM-041). A caller without a session (a visitor) gets the same text without the link. The UI learns of the refusal by asking for
   the download's first byte before the browser downloads
   ([Q-UI-753](#q-ui-753--a-download-of-the-ui-asks-for-its-first-byte-before-the-browser-downloads-it)).
 - A slowed download is not announced: the browser's download shows its rate.
 
 Acceptance criteria:
 
-- A file download refused with `too_many_parallel_downloads` shows the notice with the problem's text and the link, and the page
+- A file download refused with `too_many_parallel_transfers` shows the notice with the problem's text and the link, and the page
   stays as it was.
 
 ### R-UI-187 · Upstream registries in the admin area

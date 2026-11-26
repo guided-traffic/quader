@@ -114,7 +114,7 @@ func TestR_LIM_021_TheDownloadThatCrossesTheDayCompletesAndTheNextIsRefusedBefor
 // parallel place, a further download is refused (the wait is 0 in this stack). In audit neither happens.
 func TestR_LIM_024_AFurtherDownloadIsRefusedWhileTheOnlyPlaceIsTakenAndTheFirstIsSlowed(t *testing.T) {
 	e := newEnvWith(t, envOptions{valkey: true, env: []string{"QUADER_LIMITS_PACING_MIN_BYTES_PER_SECOND=16384"}})
-	e.rule(t, rFiles, every("user"), map[string]any{"cachedBytesPerSecond": 1, "parallelDownloads": 1})
+	e.rule(t, rFiles, every("user"), map[string]any{"cachedBytesPerSecond": 1, "parallelTransfers": 1})
 	var first testenv.Answer
 	var took time.Duration
 	var wg sync.WaitGroup
@@ -126,7 +126,7 @@ func TestR_LIM_024_AFurtherDownloadIsRefusedWhileTheOnlyPlaceIsTakenAndTheFirstI
 	time.Sleep(700 * time.Millisecond)
 	second := e.st.Do(e.r, "GET", e.filePath, e.reader, nil)
 	wg.Wait()
-	refusal(t, second, "the second download while the first runs", "too_many_parallel_downloads", "parallelDownloads")
+	refusal(t, second, "the second download while the first runs", "too_many_parallel_transfers", "parallelTransfers")
 	if first.Status != 200 || len(first.Body) != fileSize {
 		t.Fatalf("the slowed download: %d, %d bytes", first.Status, len(first.Body))
 	}
@@ -167,7 +167,7 @@ func TestR_LIM_024_WaitingDownloadsHoldAtMostTheirShareOfTheRequestSlots(t *test
 		st.Policy("other-reads", []string{"read"}, []string{rFiles}, o)
 		other = st.Token(o, scope.Default())
 	}, env: []string{"QUADER_LIMITS_PARALLEL_WAIT=10s", "QUADER_SERVER_MAX_IN_FLIGHT=8", "QUADER_LIMITS_PACING_MIN_BYTES_PER_SECOND=32768"}})
-	e.rule(t, rFiles, every("user"), map[string]any{"cachedBytesPerSecond": 1, "parallelDownloads": 1})
+	e.rule(t, rFiles, every("user"), map[string]any{"cachedBytesPerSecond": 1, "parallelTransfers": 1})
 	var wg sync.WaitGroup
 	statuses := make([]int, 3)
 	for i := range 3 { // the first holds the place, the next two wait for it
@@ -175,7 +175,7 @@ func TestR_LIM_024_WaitingDownloadsHoldAtMostTheirShareOfTheRequestSlots(t *test
 		time.Sleep(300 * time.Millisecond)
 	}
 	start := time.Now()
-	refusal(t, e.st.Do(e.r, "GET", e.filePath, e.reader, nil), "the download beyond the waiting share", "too_many_parallel_downloads", "parallelDownloads")
+	refusal(t, e.st.Do(e.r, "GET", e.filePath, e.reader, nil), "the download beyond the waiting share", "too_many_parallel_transfers", "parallelTransfers")
 	if took := time.Since(start); took > time.Second {
 		t.Fatalf("the download beyond the waiting share was refused after %s, want at once", took)
 	}

@@ -17273,8 +17273,12 @@ export interface components {
             uncachedBytesPerHour: number | null;
             /** Format: int64 */
             upstreamRequestsPerHour: number | null;
-            /** Format: int64 */
-            parallelDownloads: number | null;
+            /**
+             * Format: int64
+             * @description Transfers of the caller in progress at once across all replicas (R-LIM-024): each layer of an image and each package of
+             *     an install is one transfer, so one pull or one install holds several at once (R-LIM-007).
+             */
+            parallelTransfers: number | null;
             /** Format: int64 */
             bytesPerDay: number | null;
             /** Format: int64 */
@@ -17302,14 +17306,14 @@ export interface components {
             /** Format: int64 */
             upstreamRequestsPerHour?: number | null;
             /** Format: int64 */
-            parallelDownloads?: number | null;
+            parallelTransfers?: number | null;
             /** Format: int64 */
             bytesPerDay?: number | null;
             /** Format: int64 */
             refusedPerHour?: number | null;
         };
         /** @enum {string} */
-        LimitFigureName: "requestsPerSecond" | "requestsBurst" | "requestsPerHour" | "cachedBytesPerSecond" | "cachedBytesPerHour" | "uncachedBytesPerSecond" | "uncachedBytesPerHour" | "upstreamRequestsPerHour" | "parallelDownloads" | "bytesPerDay" | "refusedPerHour";
+        LimitFigureName: "requestsPerSecond" | "requestsBurst" | "requestsPerHour" | "cachedBytesPerSecond" | "cachedBytesPerHour" | "uncachedBytesPerSecond" | "uncachedBytesPerHour" | "upstreamRequestsPerHour" | "parallelTransfers" | "bytesPerDay" | "refusedPerHour";
         LimitProfile: {
             key: string;
             name: string;
@@ -17727,7 +17731,7 @@ export interface components {
             uncachedBytesPerSecond: components["schemas"]["UsageBudgetFigure"];
             uncachedBytesPerHour: components["schemas"]["UsageBudgetFigure"];
             upstreamRequestsPerHour: components["schemas"]["UsageBudgetFigure"];
-            parallelDownloads: components["schemas"]["UsageBudgetFigure"];
+            parallelTransfers: components["schemas"]["UsageBudgetFigure"];
             bytesPerDay: components["schemas"]["UsageBudgetFigure"];
             refusedPerHour: components["schemas"]["UsageBudgetFigure"];
         };

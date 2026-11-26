@@ -807,8 +807,9 @@ tarballs 1,063 and 1,108 ms in the warm-up and the drain window, which is why th
 1Gi when the drain of `packages` ran a fourth `packages` pod beside the three (the replacement's pool beside the evicted pod's). Every
 request that needed the database waited about 16 s, on every replica at once: 2 s for the restart and crash recovery, then until the
 startup probe let the pod back into `quader-db-rw` and the standby streamed again, because a commit waits for the synchronous standby.
-The failure reads as a k6 p99 of 14 s against 197 ms and 168 tarballs answered `429 too_many_parallel_downloads` after 10 to 26 s: k6's
-open arrival rate held about 200 tarball downloads per token in that window, the built-in profile Technical admits 50 at a time, and a
+The failure reads as a k6 p99 of 14 s against 197 ms and 168 tarballs answered `429 too_many_parallel_transfers` after 10 to 26 s: k6's
+open arrival rate held about 200 tarball downloads per token in that window, the built-in profile Technical admitted 50 at a time then (1,000
+since [Q-LIM-294](../spec/usage-and-limits.md#q-lim-294--the-built-in-parallel-transfers-are-set-from-a-measurement-of-the-clients)), and a
 download beyond it waits `limits.parallel.wait` (10 s) and is then refused (R-LIM-024), which is the limit working as specified. The
 `/api/v1/system/ping` of the ping load stayed below 40 ms throughout, and the host used 15 to 19 of its 32 CPUs before the wait and 2 to
 5 during it: the runner did not stall, the pods waited. The run before (2026-11-19, run 44625277245) had come within 8 MiB of the
@@ -816,7 +817,8 @@ limit at the same step. When a drain leg shows a stall on every replica at the s
 says whether a PostgreSQL pod was `OOMKilled`, and `evidence/pods.csv` holds its memory every 5 s. The limit is now 3Gi
 ([local-profile.md](local-profile.md), [postgres.yaml](../../deploy/dev/postgres.yaml)).
 
-**Why a switchover does not meet the parallel downloads' limit** (read in the code on 2026-11-23). The reading that any hold of the
+**Why a switchover does not meet the parallel transfers' limit** (read in the code on 2026-11-23, when the profile Technical held 50; 1,000
+since Q-LIM-294). The reading that any hold of the
 database longer than about 3.3 s puts a k6 token over its 50 parallel downloads (50 at 15 tarballs a second per token) assumes that a
 held request holds a place; it does not. The place is a lease taken at the admission just before the status line
 (`Engine.Admit` in [engine.go](../../internal/limits/engine.go), called by `edge.ServeItem` in
@@ -1550,8 +1552,8 @@ The fixture ([npm_load_test.go](../../test/e2e/npm_load_test.go), `npmHAFx`, onc
 - the service account `e2e-npm-ha` with `read`, `deploy`, `delete` on `npm-local` and `read` on `npm-remote` and `npm-all`, and 17
   tokens: two per `npm ci` loop, which alternates them per command, and one for the publisher; the service account `e2e-npm-ha-k6`
   with `read` on the three and 20 tokens for k6, which takes them in turn per request: k6 does not slow down when answers stop, so
-  while the database holds every request its downloads pile up in flight, and a token holds at most the 50 parallel downloads of a
-  technical token's built-in profile (R-LIM-024; on three tokens a hold of 16 s refused 168 tarballs, 2026-11-20); on 20 a hold of
+  while the database holds every request its downloads pile up in flight, and a token held at most the 50 parallel transfers of a
+  technical token's built-in profile then (R-LIM-024, 1,000 since Q-LIM-294; on three tokens a hold of 16 s refused 168 tarballs, 2026-11-20); on 20 a hold of
   20 s leaves a token about 45 (decision 17 of the reading of 2026-11-23: the load spreads, the limit stays). The `package_read` class of
   R-API-016 budgets 200 requests/s per token with a burst of 1,000 in 5 s, and one loop asks for 475 tarballs every 2.5 s (finding 1 below);
 - three packages `@e2e/ha-<run>-lib0..2` in `npm-local`, nine versions of `@e2e/ha-<run>-blob` with 1 MiB to 5 MiB of random bytes (k6's
@@ -1602,7 +1604,7 @@ is checked for `localhost`. Twenty tokens of the service account `e2e-npm-perf` 
 again). The tokens have no rule of their own: they run under the profile Technical in Enforce, as a CI system's tokens would. Until
 2026-11-20 they were given the profile Unlimited, because under overload the downloads that waited for a parallel slot held the
 replica's request slots and every further request was shed (F-163); since the waiting downloads hold at most a quarter of the slots
-([R-LIM-024](../spec/usage-and-limits.md#r-lim-024--parallel-downloads)), and since a flush drops any number of ended downloads' leases
+([R-LIM-024](../spec/usage-and-limits.md#r-lim-024--parallel-transfers)), and since a flush drops any number of ended downloads' leases
 (a batch of the limits was bounded to 255 operations, and the flush of a busy replica failed and left the leases for a minute), the
 exemption is gone. Run once on 2026-11-20 on `linux/arm64`: P-8 25,376 answers 200 and 3,399 shed, no 429. The scenarios run one after
 the other for 30 s each:

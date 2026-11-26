@@ -74,8 +74,8 @@ type npmHAFixture struct {
 
 // haK6Tokens are k6's tokens, every one an account may hold (auth.tokens.max_active_per_principal), of the account haK6SA. k6
 // does not slow down when answers stop: while the database holds every request (an OOM kill of the primary held 16 s on
-// 2026-11-20, a switchover holds 6 to 9 s) its downloads pile up in flight, and a token holds at most the 50 parallel downloads of
-// the built-in profile of a technical token (R-LIM-024), which refused 168 of them when the load ran on three tokens at about 15
+// 2026-11-20, a switchover holds 6 to 9 s) its downloads pile up in flight, and a token held at most the 50 parallel transfers of
+// the built-in profile of a technical token then (R-LIM-024; 1,000 since Q-LIM-294), which refused 168 of them when the load ran on three tokens at about 15
 // tarballs a second each. The limit stays and the load spreads (decision 17 of the reading of 2026-11-23): on 20 tokens the same
 // 45 tarballs a second leave a token 45 in flight after a hold of 20 s.
 const (

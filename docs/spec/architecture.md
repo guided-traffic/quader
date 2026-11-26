@@ -4567,7 +4567,7 @@ inside the process.
   `CLIENT SETNAME` and `CLIENT SETINFO`. `DISCARD`, `SUNSUBSCRIBE` and `PUNSUBSCRIBE` are sent by
   the client library when it resets a Pub/Sub connection; Quader issues no sharded or pattern
   subscription. `INCRBY` and the four sorted-set commands are the download limits' (byte charges and the
-  leases of parallel downloads, [usage-and-limits.md](usage-and-limits.md) R-LIM-017, Q-LIM-10). `EVALSHA` and `EVAL` run one
+  leases of parallel transfers, [usage-and-limits.md](usage-and-limits.md) R-LIM-017, Q-LIM-10). `EVALSHA` and `EVAL` run one
   script, the take of a request (R-ARCH-034, [usage-and-limits.md](usage-and-limits.md) Q-LIM-57), which calls only `GET`,
   `INCRBY` and `EXPIRE` on the keys it is given; a script runs under the ACL of the user that sends it, so the two commands grant no
   command and no key beyond the list. A replica's first connection writes its probe key and runs the take with no key (`EVAL`,
@@ -4732,7 +4732,7 @@ The owning pages define the limit classes, their bucket keys and their values
 - **The download limits' counters** ([usage-and-limits.md](usage-and-limits.md) R-LIM-017, R-LIM-018) use the same arithmetic with
   three additions: the rate and the burst (or the limit of an hour or a day) are given per call, since each budget key has figures
   of its own; windows reach 24 hours, in the key family `lim` whose keys live at most 48 hours (`maxLimiterWindow` is 12 hours for the
-  other limiters); bytes are charged with `INCRBY`, and parallel downloads are leases in a sorted set. They fall back as every
+  other limiters); bytes are charged with `INCRBY`, and parallel transfers are leases in a sorted set. They fall back as every
   cluster limiter does, under the limiter name `limits`.
 - A limiter is registered with `LimiterSet.NewLimiter(name, scope, rate, burst)` (Q-ARCH-38). Scope `cluster`
   counts across all replicas. Scope `replica` counts in the replica's memory and is meant for limits

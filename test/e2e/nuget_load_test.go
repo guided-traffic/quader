@@ -70,7 +70,7 @@ type nugetHAFixture struct {
 }
 
 // nugetHAK6Tokens are k6's tokens, of an account of their own, for the reason of haK6Tokens: k6's 30 requests/s pile up in
-// flight while the database holds every request, and a token holds at most 50 parallel downloads (R-LIM-024); 20 tokens leave a
+// flight while the database holds every request, and a token held at most 50 parallel transfers then (R-LIM-024; 1,000 since Q-LIM-294); 20 tokens leave a
 // token 30 in flight after a hold of 20 s.
 const (
 	nugetHAK6Tokens = 20

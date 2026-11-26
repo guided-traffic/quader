@@ -55,7 +55,7 @@ func workedIndex() *Index {
 		},
 		Rule{
 			ID: "r-release", Place: repoPlace(webNpmLocal, 12), WhoKind: WhoTechnicalToken, WhoRef: "tt-release",
-			Profile: ProfileTechnical, Overrides: override(ParallelDownloads, 100),
+			Profile: ProfileTechnical, Overrides: override(ParallelTransfers, 100),
 		},
 		Rule{ID: "r-inst-24", Place: InstancePlace(), WhoKind: WhoAddress, WhoRef: "198.51.100.0/24", Profile: ProfileRestricted},
 		Rule{
@@ -75,7 +75,7 @@ func workedIndex() *Index {
 func TestR_LIM_034_TheRuleOfABudgetKeyIsTheOneThatAppliesThereNow(t *testing.T) {
 	x := workedIndex()
 	release := Subject{Kind: KindTechnicalToken, Ref: "tt-release"}
-	if res := x.ResolveAt(release, repoPlace(webNpmLocal, 12)); res.Rule == nil || res.Rule.ID != "r-release" || res.Figures[ParallelDownloads] != 100 {
+	if res := x.ResolveAt(release, repoPlace(webNpmLocal, 12)); res.Rule == nil || res.Rule.ID != "r-release" || res.Figures[ParallelTransfers] != 100 {
 		t.Fatalf("the repository's rule: %+v", res.Rule)
 	}
 	if res := x.ResolveAt(release, InstancePlace()); res.Rule == nil || res.Rule.ID != "builtin-"+EveryTechnicalToken {
@@ -116,7 +116,7 @@ func TestR_LIM_013_WorkedExamples(t *testing.T) {
 		tok := Subject{Kind: KindTechnicalToken, Ref: "tt-release"}
 		res := x.Resolve(tok, webNpmLocal, false)
 		want := tech
-		want[ParallelDownloads] = 100
+		want[ParallelTransfers] = 100
 		if res.Rule.ID != "r-release" || res.Figures != want {
 			t.Fatalf("rule %s figures %v", res.Rule.ID, res.Figures)
 		}

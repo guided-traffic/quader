@@ -12,7 +12,7 @@ export const WINDOWED: readonly (keyof BudgetFigures)[] = [
   'uncachedBytesPerHour',
   'upstreamRequestsPerHour',
   'bytesPerDay',
-  'parallelDownloads',
+  'parallelTransfers',
   'refusedPerHour',
 ];
 export const RATES: readonly (keyof BudgetFigures)[] = ['requestsPerSecond', 'cachedBytesPerSecond', 'uncachedBytesPerSecond'];

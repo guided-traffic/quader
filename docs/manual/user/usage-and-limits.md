@@ -4,7 +4,7 @@ How much you may download from Quader and how fast, where you see what you downl
 
 ## What a download limit is
 
-An installation can limit how much each caller downloads: how many requests per second and per hour, how many bytes per hour and per day from the cache and from the upstream of a remote repository, how many downloads at once, and how many refused requests per hour. Your sessions in the browser and every personal token of yours share one budget; a technical token of a system has a budget of its own.
+An installation can limit how much each caller downloads: how many requests per second and per hour, how many bytes per hour and per day from the cache and from the upstream of a remote repository, how many transfers at once, and how many refused requests per hour. Your sessions in the browser and every personal token of yours share one budget; a technical token of a system has a budget of its own.
 
 Every installation starts in the mode **Enforce**: the limits apply. In the mode **Audit**, which an administrator can switch to, everything is counted and shown, and nothing is refused or slowed. Your **Usage** page says which mode is in force.
 
@@ -34,7 +34,7 @@ A client that meets a limit gets the answer `429 Too Many Requests` with the tim
 | Bytes per second | The download is slowed down; nothing fails |
 | Bytes per hour or per day | The next download is refused before it starts; a download that has started finishes. The time to wait is the rest of the hour or the day, and it is meant: there is no room before then |
 | From the upstream | What is in the cache is still served; only what Quader would have to fetch first is refused |
-| Downloads at once | A further download waits up to 10 seconds, then is refused. While a server already holds many waiting downloads, a further one is refused at once |
+| Parallel transfers | Each layer of an image and each package of an install is one transfer, so one pull or install runs several at once: `docker pull` 3 (for every pull of its daemon together), `podman pull` 6, `npm install` 15, `pnpm install` up to 64, `yarn install` 8 (Yarn 1) or 32 (Yarn 4), `dotnet restore` one per package, `apt-get` and `ansible-galaxy` 1. A further transfer waits up to 10 seconds, then is refused. While a server already holds many waiting transfers, a further one is refused at once. The built-in limits are 64 transfers at once without a sign-in, 250 for a signed-in user and 1,000 for a technical token or a CI project |
 | Refused requests | After too many refused requests in an hour (names you may not read or write, a repository that does not exist), every request is refused for the block time, 15 minutes by default. A 429 of a limit is not one: a client that sends past its request limit is slowed to the limit, never blocked for it |
 
 ### What your client shows

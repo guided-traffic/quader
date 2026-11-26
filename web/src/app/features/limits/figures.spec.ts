@@ -1,7 +1,7 @@
 import { PROFILE_FIGURES, sampleInstanceRules } from '../../api/testing/fakes-limits';
 import { everyLabel, subjectReference, subjectTitle, whoView } from './callers';
 import { readTexts, textsOf } from './figure-fields';
-import { compactFigures, formatBytes, fromField, limitText, overridesSummary, toField } from './figures';
+import { compactFigures, figureGroups, figureName, formatBytes, fromField, limitText, overridesSummary, toField } from './figures';
 import { orderRules } from './limit-rules';
 import { keyFromName } from './profile-editor';
 import { overridesOf } from './rule-dialog';
@@ -22,10 +22,19 @@ describe('Download limits: figures and callers (R-UI-178, R-UI-179)', () => {
 
   it('R-UI-178 says a profile in one compact line and leaves an unlimited figure out', () => {
     expect(compactFigures(PROFILE_FIGURES['standard']!, 'en-US').replaceAll(' ', ' ')).toBe(
-      '200/s · 1,000 burst · 50,000/h · cache 200 MB/s, 300 GB/h · upstream 50 MB/s, 30 GB/h, 2,000 req/h · 20 parallel · 1,000 GB/day · 500 refused/h',
+      '200/s · 1,000 burst · 50,000/h · cache 200 MB/s, 300 GB/h · upstream 50 MB/s, 30 GB/h, 2,000 req/h · 250 parallel transfers · 1,000 GB/day · 500 refused/h',
     );
     expect(compactFigures(PROFILE_FIGURES['unlimited']!, 'en-US')).toBe('Unlimited');
     expect(compactFigures({ ...PROFILE_FIGURES['standard']!, requestsBurst: null, refusedPerHour: null }, 'en-US')).not.toContain('burst');
+  });
+
+  it('R-LIM-041 names the parallel figure transfers and says what one pull or install holds where it is set', () => {
+    expect(figureName('parallelTransfers')).toBe('Parallel transfers');
+    expect(limitText('parallelTransfers', 250, 'en-US')).toBe('250 transfers in parallel');
+    const group = figureGroups().find((g) => g.figures.includes('parallelTransfers'));
+    expect(group?.heading).toBe('Transfers');
+    expect(group?.help).toContain('Each layer of an image and each package of an install is one transfer');
+    expect(group?.help).toContain('a pull runs 3 to 6 at once');
   });
 
   it('R-LIM-004 a burst needs the rate and is at least the rate', () => {
@@ -37,17 +46,17 @@ describe('Download limits: figures and callers (R-UI-178, R-UI-179)', () => {
 
   it('R-UI-179 names the overrides after the profile, two at most, then how many more', () => {
     expect(overridesSummary({ uncachedBytesPerHour: 20_000_000_000 }, 'en-US')).toEqual(['+ uncached 20 GB/h']);
-    expect(overridesSummary({ requestsPerHour: 10, parallelDownloads: 100, bytesPerDay: null, refusedPerHour: 5 }, 'en-US')).toEqual([
+    expect(overridesSummary({ requestsPerHour: 10, parallelTransfers: 100, bytesPerDay: null, refusedPerHour: 5 }, 'en-US')).toEqual([
       '+ requests 10/h',
-      '+ parallel 100',
+      '+ parallel transfers 100',
       '+ 2 more',
     ]);
   });
 
   it('R-UI-179 writes only the figures the person changed against the profile', () => {
     const base = PROFILE_FIGURES['restricted']!;
-    const figures = { ...base, uncachedBytesPerHour: 20_000_000_000, parallelDownloads: 6 };
-    expect(overridesOf(figures, new Set(['uncachedBytesPerHour', 'parallelDownloads']), base)).toEqual({ uncachedBytesPerHour: 20_000_000_000 });
+    const figures = { ...base, uncachedBytesPerHour: 20_000_000_000, parallelTransfers: 64 };
+    expect(overridesOf(figures, new Set(['uncachedBytesPerHour', 'parallelTransfers']), base)).toEqual({ uncachedBytesPerHour: 20_000_000_000 });
     expect(overridesOf({ ...base, bytesPerDay: null }, new Set(['bytesPerDay']), base)).toEqual({ bytesPerDay: null });
   });
 

@@ -3773,7 +3773,7 @@ export const screens: readonly Screen[] = [
   { id: 'admin-usage-caller-ci', path: `/ui/admin/usage/ci/${ciIssuer}:${ciProject.id}`, kinds: admins },
   { id: 'admin-limits', path: '/ui/admin/limits', kinds: auditors, walk: limitRulesWalk, tables: 'quader-limit-rules quader-data-table' },
   { id: 'admin-limits-profiles', path: '/ui/admin/limits/profiles', kinds: auditors, de: true },
-  { id: 'admin-limits-profile', path: '/ui/admin/limits/profiles/standard', kinds: auditors },
+  { id: 'admin-limits-profile', path: '/ui/admin/limits/profiles/standard', kinds: auditors, de: true },
   { id: 'admin-limits-profile-unlimited', path: '/ui/admin/limits/profiles/unlimited', kinds: admins },
   { id: 'admin-limits-profile-new', path: '/ui/admin/limits/profiles/new', kinds: admins },
   { id: 'admin-limits-projects', path: '/ui/admin/limits/projects', kinds: auditors },

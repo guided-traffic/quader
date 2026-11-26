@@ -43,7 +43,7 @@ func TestNPMPerf(t *testing.T) {
 		ensureSA(t, adm, perfSA)
 		ensurePolicy(t, adm, perfSA, []string{npmLocalKey, npmRemoteKey, npmAllKey}, [2]any{"sa:" + perfSA, []string{"read"}})
 		// Each technical token is a subject of the download limits (R-LIM-001): twenty tokens carry P-7's 2,000 requests/s under the
-		// profile Technical, in Enforce and without a rule of their own (R-LIM-024: the downloads that wait for a parallel slot hold at most
+		// profile Technical, in Enforce and without a rule of their own (R-LIM-024: the transfers that wait for a parallel slot hold at most
 		// a quarter of the replica's request slots)
 		tokens := pacedSATokens(t, adm, perfSA, 20, 3600)
 		local := func(p string) string {

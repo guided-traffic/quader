@@ -92,9 +92,11 @@ func TestR_LIM_020_TheDetailAndRetryAfterNameOneWait(t *testing.T) {
 			}
 		}
 	}
-	t.Run("R-LIM-020 the parallel downloads' refusal names one second", func(t *testing.T) {
-		e := refusal{code: CodeTooManyParallelDownloads, figure: ParallelDownloads.String(), limit: 4, retry: time.Second}.err()
-		if e.RetryAfter != time.Second || !strings.HasSuffix(e.Detail, "Try again in 1 second.") {
+	t.Run("R-LIM-020 R-LIM-041 the parallel transfers' refusal names transfers, what one is, and one second", func(t *testing.T) {
+		e := refusal{code: CodeTooManyParallelTransfers, figure: ParallelTransfers.String(), limit: 4, retry: time.Second}.err()
+		want := "The limit of 4 parallel transfers is reached: each layer of an image and each package of an install is one transfer. " +
+			"Try again in 1 second."
+		if e.RetryAfter != time.Second || e.Detail != want {
 			t.Errorf("%s %q", e.RetryAfter, e.Detail)
 		}
 	})
