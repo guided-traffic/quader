@@ -19,7 +19,7 @@ import { PackagePage, VersionPage } from './pages/package-pages';
 
 /**
  * The Bastion's pages in a browser (api-and-ui.md R-UI-227 to R-UI-229, rule 11 of promt.md): the shell with an old state and with no
- * catalogue to show, a project's packages, a package, an npm version, an image and an Ansible collection's documentation, each against
+ * catalogue to show, a project's packages, a package, an npm version with its README, an image and an Ansible collection's documentation, each against
  * the main installation's in-memory fakes (the same shapes the catalogue holds) and the Bastion's own bindings, measured by the render
  * set's layout checks at 390 and 1,440 px (`make ui-states`); `UI_STATES_PICTURES=1` writes the pictures. The Bastion's reads of
  * `/ui/data/v1/` are R-UI-228's spec; here the views read the fakes, as the main installation's states do.
@@ -98,12 +98,11 @@ describe("the Bastion's pages in a browser (R-UI-227, R-UI-229)", () => {
     );
   });
 
-  it('an npm version with its open findings and signatures', async () => {
+  // The fakes' npm version holds no vulnerability report, so its tab Vulnerabilities is not drawn here; the findings' state is open
+  // (R-UI-230).
+  it('an npm version with its README', async () => {
     await expectState('bastion-version-npm', () =>
       openInPage(VersionPage, { project: 'web', format: 'npm', name: '@team-a/ui', version: '1.4.0' }, { providers }),
-    );
-    await expectState('bastion-version-npm-vulnerabilities', () =>
-      openInPage(VersionPage, { project: 'web', format: 'npm', name: '@team-a/ui', version: '1.4.0', tab: 'vulnerabilities' }, { providers }),
     );
   });
 

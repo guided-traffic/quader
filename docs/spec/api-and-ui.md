@@ -10699,16 +10699,16 @@ render suite (R-UI-170 to R-UI-176) hold four of them in both schemes at two wid
 
 *Built in part on 2026-11-26 (W-35's P9,
 [Q-UI-1442](#q-ui-1442--the-bastions-pages-are-measured-in-the-states-suite-against-the-fakes-until-the-profile-starts-a-bastion)):* the
-layout checks hold eight states of the Bastion's pages at 390 and 1,440 px, light, in English, in `make ui-states` (the CI job
-ui-layout-fixtures): the shell with an old state and not ready, a project's packages, an image's tags, an npm version and its tab
-Vulnerabilities, an image, an Ansible collection's documentation, against the main installation's fakes and the Bastion's own
-bindings; their pictures (`UI_STATES_PICTURES=1`) were looked at. *Not built:* the renders against a running Bastion in front of the
+layout checks hold seven states of the Bastion's pages at 390 and 1,440 px, light, in English, in `make ui-states` (the CI job
+ui-layout-fixtures): the shell with an old state and not ready, a project's packages, an image's tags, an npm version with its
+README, an image, an Ansible collection's documentation, against the main installation's fakes and the Bastion's own
+bindings; their pictures (`UI_STATES_PICTURES=1`) were looked at. *Not built:* a version's open findings and signatures in a picture (the fakes' npm version holds no report), the renders against a running Bastion in front of the
 profile's instance, dark, 1,024 px and German, the legal pages, the search's result and a generic folder (R-UI-229's open part): the UI
 development profile starts no Bastion.
 
 Acceptance criteria:
 
-- States ([bastion.states.spec.ts](../../web/src/bastion/bastion.states.spec.ts), 3.6 s, measured 2026-11-26): the render set's
+- States ([bastion.states.spec.ts](../../web/src/bastion/bastion.states.spec.ts), 3.4 s, measured 2026-11-26): the render set's
   `layoutFindings` and `innerScroll` find nothing in any of the states at either width.
 - To build: `make ui-renders GREP=bastion` renders the pages above against a Bastion of the profile; `make ui-renders-parts-check` holds
   every Bastion page exactly once.
