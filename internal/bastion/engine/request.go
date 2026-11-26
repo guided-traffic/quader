@@ -71,6 +71,11 @@ type rq struct {
 	// passOnly is set for a core route of the registry root: its answer is passed on and nothing of it is kept or
 	// collapsed (R-BAS-051).
 	passOnly bool
+	// asGet is set for a HEAD whose request to the main installation is sent as a GET, so that the document it addresses is
+	// kept and the HEAD answered from it (R-BAS-021, Q-BAS-476): the fill of a HEAD answered 200 for a document, and the
+	// conditional request of a kept document or of the caller's copy. What the answer does is a GET's; what reaches the caller
+	// is a HEAD's.
+	asGet bool
 	// offer is the handover offer the request's last forward carried (R-BAS-072); noOffer keeps every further forward of
 	// the request without one (the forward that replaces a failed handover). handoverOutcome gives the request log's
 	// bastion_handover once the request received a handover (R-BAS-075).

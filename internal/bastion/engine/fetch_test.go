@@ -248,15 +248,17 @@ func TestR_BAS_021_AnArtifactAboveTheLimitOrWithoutALengthIsPassedThrough(t *tes
 	}
 }
 
-func TestR_BAS_021_AHeadMissIsForwardedAsHeadAndKeepsAnswersOnly(t *testing.T) {
+// TestR_BAS_021_AHeadMissOfAnArtifactIsForwardedAsHeadAndKeepsAnswersOnly: a HEAD of an artifact never becomes a GET, which
+// would be a download at the main installation (Q-BAS-476): the HEAD alone is forwarded, and only the answers are kept.
+func TestR_BAS_021_AHeadMissOfAnArtifactIsForwardedAsHeadAndKeepsAnswersOnly(t *testing.T) {
 	s := newSiteHarness(t, options{})
 	s.site.artifacts[tgz] = []byte("tarball")
 	w := s.do(http.MethodHead, tgz, nil, "Authorization", bearer(s.full))
 	if w.Code != http.StatusOK || w.Body.Len() != 0 {
 		t.Fatalf("%d %d", w.Code, w.Body.Len())
 	}
-	if r := s.main.requests()[0]; r.Method != http.MethodHead {
-		t.Fatalf("forwarded as %s", r.Method)
+	if reqs := s.main.requests(); len(reqs) != 1 || reqs[0].Method != http.MethodHead {
+		t.Fatalf("forwarded as %+v", reqs)
 	}
 	if s.cache.objectCount() != 0 || s.cache.entryCount() != 0 {
 		t.Fatal("a HEAD kept content")

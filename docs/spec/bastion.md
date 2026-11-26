@@ -1296,7 +1296,24 @@ and the Bastion keeps what may be kept (owner, Q-BAS-7):
   ([Q-BAS-173](#q-bas-173--a-shared-answer-above-the-memory-bound-is-spooled-by-its-content-address); *superseded in place on
   2026-11-22: every document above 64 MiB was passed through*). A caller's `Range` on a miss is served from the growing spool, and a
   second caller of a running fill follows it on its own permission (R-BAS-054). A `HEAD` miss is
-  forwarded as `HEAD` and keeps answers only.
+  forwarded as `HEAD`; of an artifact it keeps answers only (*superseded in place on 2026-11-26: a `HEAD` miss of a document kept answers
+  only as well, so a client that only `HEAD`s a tag cost the main installation one request per pull*). *Revised on 2026-11-26 by
+  [Q-BAS-475](#q-bas-475--a-head-of-a-document-is-answered-from-what-the-bastion-keeps), built the same day (package W34-E18):* a `HEAD`
+  of a document is answered from what the Bastion keeps, for every format. A `HEAD` miss is still forwarded as `HEAD`, since only the
+  marking of the answer tells the Bastion what the path is; when it answers `200` marked `shared` or `private` with a `Content-Length`
+  within the memory bound of the document's class (the smaller of 64 MiB and `documents_max_bytes`, or of `private_documents_max_bytes`
+  for a copy, which for a caller with a token needs a validator), the Bastion sends the `GET` of the path with the caller's credential,
+  keeps its answer as a `GET`'s answer is kept (an entry, the caller's copy or the anonymous caller's copy, R-BAS-023, R-BAS-094) and
+  answers the `HEAD` from it, with the `GET`'s headers and no body ([Q-BAS-476](#q-bas-476--a-head-miss-learns-from-its-marking-that-it-addresses-a-document-and-then-sends-the-get),
+  [Q-BAS-477](#q-bas-477--the-get-of-a-head-is-sent-only-for-a-document-the-bastion-keeps-in-memory)). That `GET` is a miss of the
+  caller's address and an upstream request of its subject (R-BAS-035, R-BAS-096); when one of them, the link or the anonymous ceiling
+  refuses it, the caller receives the `HEAD`'s answer the Bastion holds ([Q-BAS-478](#q-bas-478--a-refused-get-of-a-head-passes-the-heads-answer-on)).
+  The conditional request of a `HEAD` for a kept document within that bound, or for the caller's copy, is a conditional `GET`, so a
+  `304` renews what is kept and a `200` replaces it, as for a `GET`. A `HEAD` of an artifact is never sent as a `GET`: answered from a
+  kept artifact, else forwarded as `HEAD`, as before. The main installation counts the `GET` of a `HEAD` as its download where it
+  counts the `GET` of that document ([H-2375](../security/bastion.md#h-2375--the-get-of-a-head-is-a-download-at-the-main-installation));
+  a `HEAD` the Bastion answers is never reported as one (R-BAS-059). Code: [headfill.go](../../internal/bastion/engine/headfill.go)
+  (`fillForHead`, `admitFill`, `headAsGet`), `rq.asGet` and `sentMethod` in [forward.go](../../internal/bastion/engine/forward.go).
 - **Errors.** An answer that carries the marking is the main installation's own, whatever its status, and is passed on
   (`pass`). A connect or TLS error, a timeout, and an unmarked `5xx` (an ingress or proxy in front of the main installation)
   answer `502 bad_gateway` or `504 gateway_timeout` from the Bastion (R-BAS-029) and keep no answer.
@@ -1307,6 +1324,15 @@ Acceptance criteria:
   `Quader-Bastion-Authorization` to the main installation, and the main installation's audit shows `$FULL` as actor.
 - A tarball whose bytes the in-process main installation corrupts after the status line is aborted at the client, and a second
   request fetches again.
+- *Added on 2026-11-26 (Q-BAS-475), as built:* unit (`internal/bastion/engine`, under 0.1 s together, documents of a few bytes):
+  `TestR_BAS_021_AHeadMissOfADocumentIsFilledAsAGetAndAnsweredFromIt` (a full reader's cold `HEAD` sends the `HEAD` and the `GET`, three
+  `HEAD`s and a `GET` after it nothing, a `HEAD` after the period one conditional `GET`, a moved document replaces the entry),
+  `TestR_BAS_023_AHeadOfADocumentKeepsTheCopyOfACallerWithoutFull`, `TestR_BAS_021_AHeadOfADocumentAboveTheMemoryBoundStaysAHead`,
+  `TestR_BAS_021_AHeadMissOfAnArtifactIsForwardedAsHeadAndKeepsAnswersOnly`, `TestR_BAS_035_TheGetOfAHeadIsAMissAndARefusedOnePassesTheHeadOn`
+  and `TestR_BAS_096_AHeadIsChargedAsARequestAndItsGetAsAnUpstreamRequest`. Integration (area `bastion`, about 0.15 s of
+  `TestR_BAS_021_R_BAS_094_AnAnonymousPullAndAnAnonymousDocumentSpareTheMainInstallation`): Docker's sequence (the `HEAD` of a tag no client
+  fetched by `GET`, the manifest by digest, the blobs) from one address costs the main installation the `HEAD` and the `GET` of the tag, the
+  same pull from another address nothing, counted at the main installation's side.
 
 ### R-BAS-022 · Artifacts
 Priority: **MVP** · Covers: RMT-040
@@ -1342,6 +1368,9 @@ for the bound (owner, Q-BAS-7):
 - `Range` and `If-Range` with the content address, `If-None-Match`, `If-Modified-Since` (evaluated only without `If-None-Match`,
   against the entry's `Last-Modified`, RFC 9110 section 13.1.3; R-BAS-056) and `HEAD` from the caller are answered from the entry
   (RFC 9110), after the same permission rule. A range is verified by reading the object to its end ([Q-BAS-82](#q-bas-82--a-range-is-verified-by-reading-the-object-to-its-end-a-callers-range-or-conditional-on-a-miss-is-answered-from-the-verified-spool)).
+  The check of a `HEAD` of an artifact is a conditional `HEAD`, and a `HEAD` miss of an artifact stays a `HEAD`: a `GET` would be a
+  download at the main installation. A kept document, by contrast, is checked for a `HEAD` by the conditional `GET` of R-BAS-023, and a
+  `HEAD` miss of a document fills its entry by a `GET` (R-BAS-021, [Q-BAS-476](#q-bas-476--a-head-miss-learns-from-its-marking-that-it-addresses-a-document-and-then-sends-the-get)).
 - **Content address.** A strong `ETag` names the SHA-256 when it is `"<64 hex>"` (R-STOR-012) or `"sha256:<64 hex>"` (the
   registry's spelling, R-OCI-008, Q-OCI-62); the Bastion's conditional request sends the entry's `ETag` as the main installation
   gave it (R-BAS-053). *Superseded in place on 2026-11-22: only the first spelling was read, so every OCI artifact would have been
@@ -1392,6 +1421,10 @@ for the metadata period with each caller for whom the main installation confirme
   copy. A private copy is never written to the cache backend or to Valkey.
 - **Search** and every other `pass` answer (`Volatile` routes, `-/whoami`) go to the main installation per caller on every
   request and are never kept ([Q-BAS-41](#q-bas-41--search-results-go-to-the-main-installation-per-caller)).
+- **`HEAD`** (*added on 2026-11-26 by [Q-BAS-475](#q-bas-475--a-head-of-a-document-is-answered-from-what-the-bastion-keeps),
+  built the same day*): a `HEAD` of a document is answered from the shared entry, the caller's copy or the anonymous caller's copy under the
+  rules above, with the headers a `GET` answer carries and no body. A `HEAD` without any of them fills one by the `GET` of R-BAS-021, and
+  the conditional request of a `HEAD` is the conditional `GET` above.
 - Metadata of a new version reaches a `full` caller within `metadata_revalidate_after` (H-384).
 
 ```yaml
@@ -3359,7 +3392,7 @@ What a Bastion keeps of the registry follows from the kinds of the format's rout
 
 | Route | Kind | At the Bastion |
 |---|---|---|
-| Manifest by tag (`GET`, `HEAD …/manifests/<tag>`) | `Metadata` | a document: shared for a `full` reader, the caller's private copy otherwise; revalidated after `metadata_revalidate_after`, so a moved tag reaches the Bastion within the period ([H-384](#h-384--a-version-newly-published-appears-at-the-bastion-only-after-the-metadata-period)) |
+| Manifest by tag (`GET`, `HEAD …/manifests/<tag>`) | `Metadata` | a document: shared for a `full` reader, the caller's private copy otherwise; revalidated after `metadata_revalidate_after`, so a moved tag reaches the Bastion within the period ([H-384](#h-384--a-version-newly-published-appears-at-the-bastion-only-after-the-metadata-period)). A `HEAD` of the tag fills the document by a `GET` and is answered from it (R-BAS-021, Q-BAS-475; true since 2026-11-26, before which only a `GET` kept it) |
 | Manifest by digest, blob (`GET`, `HEAD`) | `Download` | an artifact, kept under its content address, immutable |
 | Tags list | `Metadata` | a document, with its `Link` for the next page |
 | Referrers | `Volatile` | `pass`: forwarded per request, never kept, so a signature or an attestation pushed at the main installation is listed through a Bastion at once |
@@ -3733,7 +3766,10 @@ The existing rules hold for every format: a hit at the Bastion is not counted at
 - **An image.** By the main installation's rule (formats/oci.md Q-OCI-222), a pull of a tag is the download of its manifest by the tag or
   by its digest, a `HEAD` is none, and a blob is a download of its item. Through a Bastion: `docker pull` of a warm single-platform image
   `GET`s the tag (a document, counted at its fill, so reported) and the blobs (artifacts, reported); containerd `HEAD`s the tag (not
-  reported) and `GET`s the manifests by digest and the blobs (reported). The audit trail of a Bastion pull is therefore what the main
+  reported) and `GET`s the manifests by digest and the blobs (reported). *Since 2026-11-26 (R-BAS-021, Q-BAS-475):* the `HEAD` of a tag
+  the Bastion does not hold is followed by the `GET` that keeps it, which the main installation counts as the tag's download for the
+  caller that sent the `HEAD`, once per fill ([H-2375](../security/bastion.md#h-2375--the-get-of-a-head-is-a-download-at-the-main-installation));
+  the `HEAD`s the Bastion answers from it are reported as nothing. The audit trail of a Bastion pull is therefore what the main
   installation's own audit trail would hold for the same requests.
 - **Usage and limits.** What a Bastion forwards is charged at the main installation to the caller's subject (R-LIM-003), the token
   requests by the token service's own rule and the conditional requests of a registry token as requests of the token's subject; what the
@@ -5286,7 +5322,8 @@ commands per hour derived; a podman pull has one request less since the Bastion 
 | `apt-get update` and `install` (the measurement's suite; a real suite and 106 packages, R-LIM-042) | 8 (118 derived) | 4,500 (305) | 250 (16) |
 | `ansible-galaxy collection install` of 4 collections (12, R-LIM-042) | 17 (49 derived) | 2,117 (734) | 117 (40) |
 | `curl` of one file | 1 | 36,000 | 2,000 |
-| a warm `docker pull` (the tag's `HEAD`, Q-BAS-271) | 1 | 36,000 | 2,000 |
+| a warm `docker pull` (the tag's `HEAD`, Q-BAS-271; until 2026-11-26) | 1 | 36,000 | 2,000 |
+| a warm `docker pull` since Q-BAS-475 (within the metadata period; one conditional `GET` of the tag per period after it) | 0 | not bound by the ceiling | not bound |
 
 - The hour binds a sustained load: 36,000 an hour is 10 a second on average, the second's figure of 100 only shapes a burst. The main
   installation answered the measurement's restore at about 115 requests a second through 16 slots on a loaded workstation (derived from
@@ -5294,9 +5331,12 @@ commands per hour derived; a podman pull has one request less since the Bastion 
   the default keeps all anonymous internet callers of one Bastion below what one restore takes there, and a flood of distinct artifacts
   from any number of addresses at 100 misses a second at most, 10 on average over the hour (the attack of the measurement reached 12 to
   18 a second with files of 4 MiB, bounded only by the slots).
-- **Where the two sides pull apart** (derived): a public image pulled warm sends its tag's `HEAD` to the main installation every time, so
-  one Bastion serves at most 36,000 anonymous `docker pull`s an hour (864,000 a day) before it answers `503 busy`; the cold installs of a
-  busy public mirror whose content changes are 75 `npm ci` an hour. A large public audience of one Bastion beyond that needs a higher
+- **Where the two sides pull apart** (derived): a public image pulled warm sent its tag's `HEAD` to the main installation every time, so
+  one Bastion served at most 36,000 anonymous `docker pull`s an hour (864,000 a day) before it answered `503 busy`. *Since 2026-11-26
+  (R-BAS-021, [Q-BAS-475](#q-bas-475--a-head-of-a-document-is-answered-from-what-the-bastion-keeps)):* the tag's `HEAD` is answered from
+  the kept document, so a warm pull costs the main installation nothing within `metadata_revalidate_after` and one conditional `GET` of the
+  tag per period after it where the entry is kept; the ceiling no longer bounds warm pulls.
+  The cold installs of a busy public mirror whose content changes are still 75 `npm ci` an hour. A large public audience of one Bastion beyond that needs a higher
   ceiling on the card, set by the administrator; the default picks the shield of the main installation, as the owner's rule says, and this
   is its price.
 
@@ -5314,7 +5354,7 @@ Acceptance criteria:
   two replicas share one ceiling through Valkey (`TestR_BAS_094_WithValkeyTheReplicasShareOneCeiling`).
 - Integration (area `bastion`, one case, about 3 s): an anonymous `docker pull` replay through the in-process Bastion makes no token request
   at the counting double of the main installation, and an anonymous npm document read ten times within the period sends one request.
-  *As built:* `TestR_BAS_094_AnAnonymousPullAndAnAnonymousDocumentSpareTheMainInstallation` (the npm document of a local repository whose
+  *As built:* `TestR_BAS_021_R_BAS_094_AnAnonymousPullAndAnAnonymousDocumentSpareTheMainInstallation` (the npm document of a local repository whose
   artifacts are public and whose wiki is not, so that it is filtered for the anonymous caller, Q-BAS-149); the engine's unit tests
   `TestR_BAS_094_TheBastionAnswersAnAnonymousTokenRequestItself` and `TestR_BAS_094_AnAnonymousDocumentIsKeptForTheMetadataPeriod`.
 
@@ -13579,6 +13619,82 @@ replaces a replica's state. The card adds the replicas' states up (R-UI-240), an
 
 **Choice:** (a). **Applied in the spec:** R-BAS-016, R-LIM-045, the wire's reporting batch; code: `downloads.ReporterOptions.Report`,
 [status.go](../../internal/bastion/server/status.go).
+
+### Q-BAS-475 · A HEAD of a document is answered from what the Bastion keeps
+
+Status: **Decided by the development agent on 2026-11-26** (the brief of package W34-E18), from the owner's principle for a Bastion of the
+same day: it is internet-facing, bears the load alone and shields the main installation. The owner reviews it at the walkthrough.
+
+Context: W34-E9b measured that every warm `docker pull` through a Bastion, from the same address or another, still costs the main
+installation one forward, the tag's `HEAD` ([developer/bastion.md](../developer/bastion.md#a-head-of-a-document-answered-from-the-cache)):
+the read flow kept a document only from a `GET` answered `200`, and Docker and containerd `HEAD` a tag and never `GET` it. The anonymous
+ceiling (36,000 an hour) therefore bounded a popular public image at about 36,000 warm pulls an hour per Bastion, and every warm pull loaded
+the main installation.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A `HEAD` of a document is answered from the kept entry or copy while it is fresh; a miss fills it as a `GET`, kept and answered from; a `HEAD` of an artifact stays as it is; budgets and flood protection charge the `HEAD` from the cache as a cached `GET` of a document and the fill as a forward (chosen) | For every format: the read flow is shared | A warm pull costs the main installation nothing within the metadata period | The first `HEAD` of a document costs the document's body once per period; the fill is counted at the main installation as the document's `GET` (H-2375) |
+| (b) Keep the `HEAD`'s answer without a body, as an entry of headers only | A new kind of entry | No body transferred | A second kind of entry for the cache, the sweep and the shared bucket; a `GET` of the same key still misses |
+| (c) Leave it: one forward per warm pull | | Nothing to build | The ceiling bounds warm pulls of public images, and every pull loads the main installation |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-021, R-BAS-022, R-BAS-023, R-BAS-053's table, R-BAS-059, R-BAS-094's table; code:
+[headfill.go](../../internal/bastion/engine/headfill.go).
+
+### Q-BAS-476 · A HEAD miss learns from its marking that it addresses a document, and then sends the GET
+
+Status: **Decided by the development agent on 2026-11-26** (package W34-E18) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: Q-BAS-475 fills a `HEAD` miss of a document as a `GET` and leaves a `HEAD` of an artifact a `HEAD`. A Bastion does not know a
+route's kind before the main installation answers: the format table of the handshake names no routes (R-BAS-057), and the marking's class
+(`shared`, `private`, `artifact`) is what tells it. A `GET` of an artifact or of a counted document is a download at the main installation,
+noted at its status line (R-BAS-059), so a `GET` sent first and dropped once its marking says `artifact` would still count a download.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Forward the `HEAD`; when its answer is `200` marked `shared` or `private`, send the `GET` with the caller's credential and keep its answer; a `HEAD` whose key holds a document entry or the caller's copy sends its conditional request as a `GET` (chosen) | Two requests on the first `HEAD` of a document, none within the period after it, one conditional `GET` per period | No interface change; an artifact's `HEAD` never becomes a download | The main installation answers the first `HEAD` of a document twice (the `HEAD` renders it as the `GET` does; npm's renditions keep the second cheap) |
+| (b) Send every `HEAD` miss as a `GET` and drop the body when the marking says `artifact` | One request | One round trip | Every artifact's `HEAD` is a download at the main installation, with its bytes started |
+| (c) The route kinds in the handshake's format table, so the Bastion knows before it asks | One request, only for documents | Exact | A change of the interface for every format; a route table at the Bastion that must match the main installation's matchers |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-021, R-BAS-022; code: `fillForHead` and `headAsGet` in
+[headfill.go](../../internal/bastion/engine/headfill.go), `rq.asGet`.
+
+### Q-BAS-477 · The GET of a HEAD is sent only for a document the Bastion keeps in memory
+
+Status: **Decided by the development agent on 2026-11-26** (package W34-E18) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: the `GET` a `HEAD` sends transfers the whole document from the main installation to the Bastion, while the caller of the `HEAD`
+receives none of it. The largest documents are npm's package documents (up to 128 MiB at the main installation, `MaxDocumentBytes`) and
+Debian's indexes (128 MiB). Measured once (2026-11-26, `BenchmarkR_NPM_010_RenderThousandVersions`, Apple M1 Ultra): a package of 1,000
+versions with 40 dependencies each renders in about 19 ms to 2.7 MiB (full) or 2.3 MiB (abbreviated). Derived: a cold `HEAD` of such a
+package document costs the main installation its rendering once (the `HEAD` renders it; the `GET` is served from the rendition it kept) and
+2.7 MiB of transfer, which a caller sending the `GET` itself causes as well; the `GET` is kept, so the same key costs nothing more within
+the period, and a caller that `HEAD`s distinct documents pays one miss of its address and two upstream requests for each.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Only when the `HEAD`'s answer declares a `Content-Length` within the memory bound of the document's class (the smaller of 64 MiB and `documents_max_bytes` shared, of `private_documents_max_bytes` for a copy), its `Vary` can be keyed on, and a copy of a caller with a token has a validator: what the `GET` returns is then kept (chosen) | Above it the `HEAD`'s answer is passed on, as before | A `HEAD` never causes a transfer the Bastion throws away, and never a spool fill | A document above 64 MiB is still `HEAD`ed at the main installation on every request |
+| (b) Every document, spooled above the memory bound by its content address as a `GET` is (Q-BAS-173) | | Every document `HEAD` answered from the cache | A `HEAD` of up to `max_object_bytes` (2 GiB by default) makes the Bastion read that much for a caller that receives nothing |
+| (c) A small fixed bound, 1 MiB | | A small transfer per `HEAD` | npm's documents of packages with a few hundred versions stay one forward per `HEAD` |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-021; code: the `limit` of `fillForHead`.
+
+### Q-BAS-478 · A refused GET of a HEAD passes the HEAD's answer on
+
+Status: **Decided by the development agent on 2026-11-26** (package W34-E18) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: Q-BAS-475 charges the `GET` a `HEAD` sends as a forward: a miss of the caller's address (R-BAS-035), an upstream request of its
+subject (R-BAS-096), a slot and, for the anonymous caller, the ceiling (R-BAS-025, R-BAS-094). When the `GET` is refused or not answered,
+the Bastion already holds the main installation's answer to the `HEAD`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The caller receives the `HEAD`'s answer as before Q-BAS-475; nothing is kept (chosen) | The refusal is counted where its figure counts it (the guard's refusals, the budget's limited count), and nothing is written by it | The caller is never refused a `HEAD` the main installation answered; the figure still holds what reaches the main installation | A caller over its figure is not told so on this request |
+| (b) Answer the refusal | | The figure's refusal is visible | The main installation's work is thrown away for a request it served |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-021; code: `admitFill` in [headfill.go](../../internal/bastion/engine/headfill.go).
 
 ### Q-BAS-440 · The configuration reaches the handshake from the replica's snapshot, in one statement of one moment
 

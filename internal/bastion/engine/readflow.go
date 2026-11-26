@@ -360,6 +360,7 @@ func (e *engine) conditional(q *rq, ent *cache.Entry, priv *privDoc) bool {
 	case ent != nil:
 		validator = entryETag(*ent)
 	}
+	q.asGet = e.headAsGet(q, ent, priv)
 	e.forward(q, mainclient.KindConditional, validator, &baseline{ent: ent, priv: priv})
 	return true
 }

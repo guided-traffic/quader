@@ -10491,10 +10491,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-357 questions on [spec/bastion.md](spec/bastion.md).
+361 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 357 questions</summary>
+<summary>Q-BAS: 361 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10855,6 +10855,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-472](spec/bastion.md#q-bas-472--a-block-at-a-bastion-holds-for-the-rest-of-the-quarter-hour-it-began-in-and-the-next) | A block at a Bastion holds for the rest of the quarter hour it began in and the next | Decided by the development agent on 2026-11-26 | (a) A counter of the quarter hour the block began in; a request is refused while that counter or the previous one is set: 15 to 30 minutes | — |
 | [Q-BAS-473](spec/bastion.md#q-bas-473--a-fills-own-caller-is-checked-when-the-answer-names-the-class-artifact-and-paced-as-it-receives-not-as-the-fill-reads) | A fill's own caller is checked when the answer names the class artifact, and paced as it receives, not as the fill reads | Decided by the development agent on 2026-11-26 | (a) The miss is charged as an upstream request before it is sent; the answer of the class `artifact` is checked against the uncached hour, the day and the lease before the first byte to the caller; the caller's writes are paced, the fill reads on | — |
 | [Q-BAS-474](spec/bastion.md#q-bas-474--a-replica-reports-its-usage-as-deltas-with-every-flush-and-its-state-says-of-each-figure-whose-it-is) | A replica reports its usage as deltas with every flush, and its state says of each figure whose it is | Decided by the development agent on 2026-11-26 | (a) Each flush (every `bastion.audit.flush_interval`, 1 s by default) sends the usage counted since the last one, kept for the next on a failure, and the state; the wire section says per figure whether it is the replica's own or the Bastion's, and a block's reason is one of three codes | — |
+| [Q-BAS-475](spec/bastion.md#q-bas-475--a-head-of-a-document-is-answered-from-what-the-bastion-keeps) | A HEAD of a document is answered from what the Bastion keeps | Decided by the development agent on 2026-11-26 | (a) A `HEAD` of a document is answered from the kept entry or copy while it is fresh; a miss fills it as a `GET`, kept and answered from; a `HEAD` of an artifact stays as it is; budgets and flood protection charge the `HEAD` from the cache as a cached `GET` of a document and the fill as a forward | — |
+| [Q-BAS-476](spec/bastion.md#q-bas-476--a-head-miss-learns-from-its-marking-that-it-addresses-a-document-and-then-sends-the-get) | A HEAD miss learns from its marking that it addresses a document, and then sends the GET | Decided by the development agent on 2026-11-26 | (a) Forward the `HEAD`; when its answer is `200` marked `shared` or `private`, send the `GET` with the caller's credential and keep its answer; a `HEAD` whose key holds a document entry or the caller's copy sends its conditional request as a `GET` | — |
+| [Q-BAS-477](spec/bastion.md#q-bas-477--the-get-of-a-head-is-sent-only-for-a-document-the-bastion-keeps-in-memory) | The GET of a HEAD is sent only for a document the Bastion keeps in memory | Decided by the development agent on 2026-11-26 | (a) Only when the `HEAD`'s answer declares a `Content-Length` within the memory bound of the document's class (the smaller of 64 MiB and `documents_max_bytes` shared, of `private_documents_max_bytes` for a copy), its `Vary` can be keyed on, and a copy of a caller with a token has a validator: what the `GET` returns is then kept | — |
+| [Q-BAS-478](spec/bastion.md#q-bas-478--a-refused-get-of-a-head-passes-the-heads-answer-on) | A refused GET of a HEAD passes the HEAD's answer on | Decided by the development agent on 2026-11-26 | (a) The caller receives the `HEAD`'s answer as before Q-BAS-475; nothing is kept | — |
 
 </details>
 

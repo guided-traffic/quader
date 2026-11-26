@@ -227,8 +227,8 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   milliseconds); integration `bastionshared` `TestR_BAS_096_WithValkeyTheReplicasShareTheBudgets` (0.2 s) and `bastion`
   `TestR_BAS_096_ASubjectOverItsBudgetIsRefusedInItsFormatsShapeAndItsUsageAndStateReachTheMainInstallation` (3.7 s with its world).
 - *Measured on 2026-11-26 for E9a's open point*: a warm anonymous `docker pull` through a Bastion still sends the tag's `HEAD` to the main
-  installation, once per pull, whatever the address
-  ([developer/bastion.md](bastion.md#a-warm-anonymous-pull-and-the-tags-head-measured-2026-11-26)).
+  installation, once per pull, whatever the address; E18 answers it from the cache since
+  ([developer/bastion.md](bastion.md#a-head-of-a-document-answered-from-the-cache)).
 
 ### E10 · The throughput
 
@@ -326,7 +326,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   gaps H-2350 and H-2351 of [security/bastion.md](../security/bastion.md#h-2350--anyone-can-mint-an-anonymous-registry-token-of-a-bastion).
   Tests: the engine's `TestR_BAS_094_TheBastionAnswersAnAnonymousTokenRequestItself` and
   `TestR_BAS_094_AnAnonymousDocumentIsKeptForTheMetadataPeriod` (about 0.05 s together, documents of bytes) and the area `bastion`'s
-  `TestR_BAS_094_AnAnonymousPullAndAnAnonymousDocumentSpareTheMainInstallation` (about 7 s with its world, an image of two blobs of 1 KiB
+  `TestR_BAS_021_R_BAS_094_AnAnonymousPullAndAnAnonymousDocumentSpareTheMainInstallation` (about 7 s with its world, an image of two blobs of 1 KiB
   and one npm document).
 
 ### E15 · Writes refused at the Bastion
@@ -382,6 +382,20 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   replays' scan of `test/integration/bastion` decodes every registry token a Bastion relays. Tests:
   `TestR_BAS_115_ARegistryTokenReadsOnlyItsAnonymityExpiryAndGrant` (unit, milliseconds) and the scan (about 0 s more). The identifiers
   of the joint package are W-35's (R-BAS-114, R-BAS-115, Q-BAS-385 to Q-BAS-389, H-2322, H-2323, ADR-304); H-2297 is updated.
+
+### E18 · A HEAD of a document answered from what the Bastion keeps
+
+- **Builds** E9b's open point: a `HEAD` of a document is answered from the kept entry or copy, a `HEAD` miss marked `shared` or `private`
+  within the memory bound is followed by the `GET` that keeps it, and the conditional request of a `HEAD` of a kept document is a `GET`;
+  for every format, without an interface change (R-BAS-021, R-BAS-023).
+- **Files**: [headfill.go](../../internal/bastion/engine/headfill.go) (new), `forward.go` (`ask` split from `send`, `sentMethod`),
+  `readflow.go` (`conditional`), `request.go` (`rq.asGet`).
+- *Built on 2026-11-26.* Tests: six unit tests in `internal/bastion/engine` (under 0.1 s together, documents of a few bytes) and Docker's
+  sequence from two addresses in `TestR_BAS_021_R_BAS_094_AnAnonymousPullAndAnAnonymousDocumentSpareTheMainInstallation` (area `bastion`,
+  about 0.15 s more, one more tag of the same manifest). What it costs and what was measured:
+  [developer/bastion.md](bastion.md#a-head-of-a-document-answered-from-the-cache). Decisions Q-BAS-475 to Q-BAS-478 of
+  [spec/bastion.md](../spec/bastion.md#q-bas-475--a-head-of-a-document-is-answered-from-what-the-bastion-keeps); gaps H-2374 and H-2375 of
+  [security/bastion.md](../security/bastion.md#h-2374--a-head-makes-the-bastion-read-a-document-its-caller-never-receives).
 
 H-2298 and H-2299 are spare and stay unused.
 

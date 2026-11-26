@@ -49,6 +49,18 @@ func (e *engine) forward(q *rq, kind mainclient.Kind, validator string, bl *base
 // send is the forward after the guard admitted the miss: the request with the caller's credential, the Bastion's own
 // conditional and, where R-BAS-072 allows it, the offer to take a handover; then the answer by its marking.
 func (e *engine) send(q *rq, kind mainclient.Kind, validator string, bl *baseline) {
+	resp, sent, done, err := e.ask(q, kind, validator, bl)
+	if err != nil {
+		e.mainError(q, err)
+		return
+	}
+	defer done()
+	e.process(q, resp, sent, bl)
+}
+
+// ask sends the request to the main installation and returns its answer, the time it was sent and the function that ends the
+// request once the answer is handled.
+func (e *engine) ask(q *rq, kind mainclient.Kind, validator string, bl *baseline) (*mainclient.Response, time.Time, func(), error) {
 	sent := e.now()
 	// The request to the main installation does not end with the client: an artifact fill reads on at the
 	// main installation's speed when the client is slow or gone (Q-BAS-123). Everything else ends with the client.
@@ -61,14 +73,22 @@ func (e *engine) send(q *rq, kind mainclient.Kind, validator string, bl *baselin
 	})
 	if err != nil {
 		hold.release()
-		e.mainError(q, err)
-		return
+		return nil, sent, nil, err
 	}
-	defer func() {
+	return resp, sent, func() {
 		hold.release()
 		_ = resp.Body.Close() // the body of a fill that took the response over is replaced by an empty one
-	}()
-	e.process(q, resp, sent, bl)
+	}, nil
+}
+
+// sentMethod is the method of the request the Bastion sent to the main installation: a GET for a HEAD it sends as one
+// (rq.asGet), the caller's method otherwise. What an answer does to the cache follows it; what reaches the caller follows the
+// caller's method.
+func (q *rq) sentMethod() string {
+	if q.asGet {
+		return http.MethodGet
+	}
+	return q.r.Method
 }
 
 // mainHold is the context of a request to the main installation: it ends with the client's request unless a
@@ -133,6 +153,7 @@ func (e *engine) forwardRequest(q *rq) *http.Request {
 	fr := q.r.Clone(q.ctx())
 	fr.Header = q.r.Header.Clone()
 	stripRequest(fr.Header)
+	fr.Method = q.sentMethod()
 	if q.cred.dropped {
 		// An anonymous registry token is the anonymous caller: the main installation serves the request without a
 		// credential where the artifacts are public (R-BAS-052, Q-BAS-168).
@@ -315,7 +336,7 @@ func (e *engine) onPass(q *rq, resp *mainclient.Response, sent time.Time) {
 		e.markVolatile(q.cacheKey) // a search or another answer that is nobody's to share
 	}
 	keepable := resp.Status == http.StatusForbidden && !noStore(resp.Header)
-	if q.r.Method == http.MethodGet && keepable {
+	if q.sentMethod() == http.MethodGet && keepable {
 		body, rest, whole := readBounded(resp.Body, maxRefusalBody)
 		if whole {
 			h := replayHeader(resp.Header, q.facts.ReplayHeaders)
@@ -368,7 +389,7 @@ func (e *engine) onAbsent(q *rq, resp *mainclient.Response, bl *baseline) {
 	if bl != nil && bl.ent != nil {
 		e.dropEntry(q.ctx(), q.cacheKey)
 	}
-	if q.r.Method != http.MethodGet || resp.Status != http.StatusNotFound {
+	if q.sentMethod() != http.MethodGet || resp.Status != http.StatusNotFound {
 		e.markVolatile(q.cacheKey)
 		e.passThrough(q, resp, nil, metrics.ClassAbsent, metrics.ResultMiss)
 		return
@@ -409,7 +430,13 @@ func (e *engine) onPrivate(q *rq, resp *mainclient.Response, sent time.Time, bl 
 		return
 	}
 	limit := min(e.docMemory, int64(e.cfg.Cache.PrivateDocumentsMaxBytes))
-	if q.r.Method != http.MethodGet || resp.Status != http.StatusOK || limit <= 0 {
+	// A copy without a validator is of no use to a caller whose copy is validated on every use; the anonymous caller's is served
+	// for the metadata period without one, and fetched again after it (Q-BAS-437).
+	kept := resp.Header.Get("Etag") != "" || q.cred.anonymous
+	if kept && limit > 0 && e.fillForHead(q, resp, limit) {
+		return
+	}
+	if q.sentMethod() != http.MethodGet || resp.Status != http.StatusOK || limit <= 0 {
 		e.passThrough(q, resp, nil, metrics.ClassPrivate, metrics.ResultMiss)
 		return
 	}
@@ -418,10 +445,8 @@ func (e *engine) onPrivate(q *rq, resp *mainclient.Response, sent time.Time, bl 
 		e.passThroughRest(q, resp, body, rest, metrics.ClassPrivate)
 		return
 	}
-	// A copy without a validator is of no use to a caller whose copy is validated on every use; the anonymous caller's is served
-	// for the metadata period without one, and fetched again after it (Q-BAS-437).
-	if etag := resp.Header.Get("Etag"); etag != "" || q.cred.anonymous {
-		d := &privDoc{Answer: answerBase(answers.URL, sent, sub, q.repo), Status: resp.Status, Header: replayHeader(resp.Header, q.facts.ReplayHeaders), Body: body, ETag: etag}
+	if kept {
+		d := &privDoc{Answer: answerBase(answers.URL, sent, sub, q.repo), Status: resp.Status, Header: replayHeader(resp.Header, q.facts.ReplayHeaders), Body: body, ETag: resp.Header.Get("Etag")}
 		e.privPut(q.cred.key, q.cacheKey, d)
 	}
 	e.serveBuffered(q, resp, body, metrics.ClassPrivate)
@@ -464,11 +489,14 @@ func (e *engine) onShared(q *rq, resp *mainclient.Response, sent time.Time, bl *
 			return
 		}
 	}
-	if q.r.Method != http.MethodGet || resp.Status != http.StatusOK {
+	limit := min(e.docMemory, int64(e.cfg.Cache.DocumentsMaxBytes))
+	if e.fillForHead(q, resp, limit) {
+		return
+	}
+	if q.sentMethod() != http.MethodGet || resp.Status != http.StatusOK {
 		e.passThrough(q, resp, nil, metrics.ClassShared, metrics.ResultMiss)
 		return
 	}
-	limit := min(e.docMemory, int64(e.cfg.Cache.DocumentsMaxBytes))
 	body, rest, whole := readBounded(resp.Body, limit)
 	if !whole {
 		if sha, size := e.spoolable(resp); sha != "" {

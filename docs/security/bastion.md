@@ -298,6 +298,7 @@ These are properties of [internal/bastion/engine](../../internal/bastion/engine)
 | A caller of a running fill is served from its spool only after its own permission (a usable `full` answer, a check, or a conditional request answered `304`); the last 64 KiB of what it asked for wait for the commit, and a fill that fails cuts every follower | `followFill`, `streamFill` | `TestR_BAS_054_LargeArtifacts` |
 | The main installation unreachable: cached content for the answers the grace period allows, `503` for everything else, nothing after the grace period; a token past its expiry is refused throughout | `answers.State`, `unreachable` | `TestR_BAS_027_AnswersHeldServeCachedContentForThePeriodAndTheGraceThenNothing`, `TestR_BAS_020_ATokenIsRefusedFromItsExpiryOnAlsoWhileTheMainInstallationIsUnreachable` |
 | Requests to the main installation are bounded: the budget per replica with a share for anonymous callers, held until the response body ends or is closed, the per-address miss limit, one fetch per key | `mainclient.SlotBudget`, `forward`, `miss`, every `resp.Body.Close` | `TestR_BAS_025_MissesNeverPutMoreThanTheBudgetOntoTheMainInstallation`, `TestR_BAS_025_EveryPathClosesTheResponseBodyAndSoReleasesItsSlot`, `TestR_BAS_035_AMissLimitedAddressKeepsGettingItsHits` |
+| A `HEAD` makes the Bastion send a `GET` only after the main installation answered that `HEAD` `200` for this caller and marked it a document (`shared` or `private`) whose declared length is within the memory bound of its class; the `GET` carries the caller's own credential, so it reads nothing the `HEAD` did not, is kept by the same shared-or-private rule as the caller's own `GET`, and is charged as a forward (a miss of the address, an upstream request, a slot, the anonymous ceiling) after the `HEAD`'s slot is freed; a `HEAD` of an artifact is never sent as a `GET` (Q-BAS-475 to Q-BAS-478, [H-2374](#h-2374--a-head-makes-the-bastion-read-a-document-its-caller-never-receives), [H-2375](#h-2375--the-get-of-a-head-is-a-download-at-the-main-installation)) | `fillForHead`, `admitFill`, `headAsGet` | `TestR_BAS_021_AHeadMissOfADocumentIsFilledAsAGetAndAnsweredFromIt`, `TestR_BAS_023_AHeadOfADocumentKeepsTheCopyOfACallerWithoutFull`, `TestR_BAS_021_AHeadOfADocumentAboveTheMemoryBoundStaysAHead`, `TestR_BAS_021_AHeadMissOfAnArtifactIsForwardedAsHeadAndKeepsAnswersOnly`, `TestR_BAS_035_TheGetOfAHeadIsAMissAndARefusedOnePassesTheHeadOn` |
 | Before the first handshake the replica does not know whether anonymous requests are admitted, and answers them `503` rather than admit them or call the access off (Q-BAS-99) | `stepCredentials` | `TestR_BAS_019_AnAnonymousRequestBeforeTheFirstHandshakeIs503` |
 | A request from a blocked address is counted and refused, and kept out of the request log, so a flood does not fill the log; the guard logs one line per block | `Verdict.Quiet`, `engine.WithQuietSlot`, `server.requestLog` | `TestR_BAS_037_ARequestFromABlockedAddressIsCountedButNotLoggedOneByOne` |
 
@@ -514,8 +515,8 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
 not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285, H-2289 to H-2297,
 H-2348 to H-2351, H-2354, H-2355 (H-2291, H-2348 and H-2349 are E13's, built; H-2281 to H-2283, H-2354 and H-2355 E8's, live); so are the gaps of the public catalogue's wire (W-35, interface version 8),
 H-2305 to H-2307, and of its builder (W-35's P6), H-2308 to H-2314; so are the gaps of the packages built since: H-2356 and H-2357
-(E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11), H-2322 and H-2323 (W-35's P8 with E17); and of a registration the
-configuration declares (R-BAS-127), H-2366 and H-2367;
+(E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11), H-2322 and H-2323 (W-35's P8 with E17), H-2374 and H-2375 (E18);
+and of a registration the configuration declares (R-BAS-127), H-2366 and H-2367;
 those of a Bastion's budgets are on [usage-and-limits.md](usage-and-limits.md#what-this-does-not-cover) (H-2284, H-2286 to H-2288, H-2368, H-2369). Numbers
 marked [derived] are calculated from the defaults, not measured.
 
@@ -819,6 +820,38 @@ the object is evicted like one fetched once if no other replica serves it. Two r
 and neither fill protects it. What makes it real: a working set that had been pushed out of the protected share by more recent reads (H-2290)
 and is read again on the same replica within the hour. What would close it: the serve comparing the object's own time with its throttle
 (option (b) of Q-BAS-464).
+
+### H-2374 · A HEAD makes the Bastion read a document its caller never receives
+
+Stage: R-BAS-021, [Q-BAS-476](../spec/bastion.md#q-bas-476--a-head-miss-learns-from-its-marking-that-it-addresses-a-document-and-then-sends-the-get)
+and [Q-BAS-477](../spec/bastion.md#q-bas-477--the-get-of-a-head-is-sent-only-for-a-document-the-bastion-keeps-in-memory) (package E18,
+built). Subject: the transfer from the main installation to the Bastion, an availability property; nothing is read that the caller may
+not read. Live on every Bastion since 2026-11-26. A `HEAD` of a document the Bastion does not hold costs a request of a few hundred bytes
+and an answer without a body, and makes the Bastion read the document's whole body from the main installation: up to 64 MiB (the memory
+bound), 2.7 MiB for an npm package of 1,000 versions [measured: the render benchmark]. A `GET` of the same document makes the Bastion read
+the same bytes too (a document is read whole before it is served); the difference is the caller's own side: the `GET`'s caller is sent the
+bytes, the `HEAD`'s caller receives a few hundred bytes, so the transfer a caller causes per byte it receives is larger. What bounds it: the document is
+kept, so the same key costs nothing more within `metadata_revalidate_after`; each such `HEAD` is two misses of its address and two upstream
+requests of its subject, and the anonymous ones take from the anonymous ceiling twice; the slots of R-BAS-025. What makes it real: a caller
+that `HEAD`s many distinct large documents (npm package documents of packages with many versions, Debian indexes up to 64 MiB) from many
+addresses, at the anonymous ceiling's rate. What would close it: a lower bound of the `GET` for the anonymous caller, or charging the `GET`'s
+bytes to the caller's uncached bytes (R-BAS-096) as if it had received them.
+
+### H-2375 · The GET of a HEAD is a download at the main installation
+
+Stage: R-BAS-021, R-BAS-059, [Q-BAS-476](../spec/bastion.md#q-bas-476--a-head-miss-learns-from-its-marking-that-it-addresses-a-document-and-then-sends-the-get)
+(package E18, built). Subject: the main installation's download count, usage and audit log (`artifact.downloaded`). Live on every
+Bastion since 2026-11-26 for the documents the main installation counts when it serves them: an OCI tag's manifest (Q-OCI-222), Debian's
+index files, every document the item store serves (R-BAS-059's list); not a document a format renders itself, such as npm's package
+documents. Measured in the area `bastion` (2026-11-26):
+after one anonymous `HEAD` of a tag through a Bastion the audit log held `artifact.downloaded` for the tag from the caller's address, with
+the main installation as origin, although the caller had sent only the `HEAD`, which the main installation counts as no download. It happens
+once per fill: a cold `HEAD`, and a revalidation whose `GET` is answered `200` because the document moved; a `304` counts nothing, and the
+`HEAD`s the Bastion answers from what it keeps are reported as nothing. A Docker pull through a Bastion whose tag was cold therefore counts
+the tag and the manifest by digest, where the same pull at the main installation counts only the manifest by digest. What makes it real: a
+report or a budget at the main installation that counts tag downloads of callers who only resolve tags (Docker, containerd, the kubelet).
+What would close it: a statement of the forward that it fills for a `HEAD`, which the main installation's counting writer honours, a member of
+the interface (a new interface version).
 
 ### H-2291 · An egress list that no longer names a Bastion's address pools its callers silently
 

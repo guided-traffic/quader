@@ -652,7 +652,9 @@ and after 30 s the average must reach 64 KiB per second (`tooSlow`), or the tran
 **Serving from the cache** ([serve.go](../../internal/bastion/engine/serve.go)): `serveSource` answers `If-None-Match`, `Range` with `If-Range`, `HEAD`
 and `416`; `streamVerified` copies the cache's verifying reader and withholds the last 64 KiB of the output until the whole object was read, so a
 range is verified by reading the object to its end; a failed read cuts the transfer. A served artifact adds a `DownloadEvent` (a `GET` whose
-body was delivered from the cache, `200` or `206`; a `HEAD` and a `304` are no download).
+body was delivered from the cache, `200` or `206`; a `HEAD` and a `304` are no download). A `HEAD` of a document without an entry or copy
+is filled by a `GET` and answered from it ([headfill.go](../../internal/bastion/engine/headfill.go),
+[below](#a-head-of-a-document-answered-from-the-cache)).
 
 **Answers** ([answerstore.go](../../internal/bastion/engine/answerstore.go)): an LRU in memory (`answers.max_entries`) and, when `Shared.Shared()` is
 true, records in `shared.AnswerStore`, which signs and verifies them itself (Q-BAS-93): the engine hands over plain JSON. `answerStore.get` judges every
@@ -895,8 +897,8 @@ What the two tables show, beside the counts:
   with every request; docker and podman take a registry token.
 - **One anonymous `dotnet restore` of 200 packages meets the 16 anonymous slots of a Bastion of one replica**: 200 requests at once, 31 to 40
   of them answered `503` busy after the queue's 2 s. NuGet retried each and the restore succeeded (exit 0), 3.5 s cold.
-- **A warm docker pull still sends the tag's `HEAD` to the main installation** (Q-BAS-271, Docker never `GET`s the tag, so it has no entry),
-  and every warm pull with a credential costs its token requests; podman's anonymous token is forwarded too, which
+- **A warm docker pull still sends the tag's `HEAD` to the main installation** (Q-BAS-271, Docker never `GET`s the tag, so it has no entry;
+  answered from the cache since W34-E18, [below](#a-head-of-a-document-answered-from-the-cache)), and every warm pull with a credential costs its token requests; podman's anonymous token is forwarded too, which
   [Q-BAS-335](../spec/bastion.md#q-bas-335--the-bastion-answers-an-anonymous-token-request-itself) will answer at the Bastion.
 - **The 1 GiB image** crossed from the main installation at 23 to 51 MB/s here (21 to 47 s cold), and from the Bastion's cache in 2.6 to
   8.5 s (126 to 400 MB/s), on loopback and under the load above.
@@ -940,30 +942,39 @@ Bastion's counters:
   installation. The scaled-down runs above give documents 256 MiB. Neither configuration starts any more: the role and the chart refuse an
   artifacts' room below one `max_object_bytes` (R-BAS-031), and `hack/bastion-measure/attack.sh` now also lowers `max_object_bytes` to 1 GiB.
 
-### A warm anonymous pull and the tag's HEAD (measured 2026-11-26)
+### A HEAD of a document answered from the cache
 
-The open point E9a left (W34-E9b): does a warm anonymous `docker pull` still send the tag's `HEAD` to the main installation now that a
-Bastion answers the anonymous token itself and keeps the anonymous caller's documents for the metadata period (E14a, R-BAS-094)? Measured
-once in the area `bastion` (an in-process Bastion in front of the stack, `relaxed` flood figures, the anonymous world of
-`TestR_BAS_094_AnAnonymousPullAndAnAnonymousDocumentSpareTheMainInstallation`, an image of two blobs of 1 KiB), with Docker's sequence:
-`GET /v2/`, the anonymous token, `HEAD` of the tag, then the manifest and the blobs by digest; Docker never `GET`s the tag. The scratch test
-is not kept: a measurement is not a test.
+W34-E9b measured on 2026-11-26 that every warm `docker pull` still sent the tag's `HEAD` to the main installation (cold 4 requests, every
+warm pull 1, from any address): a `HEAD` answer has no body, the read flow kept a document only from a `GET` answered `200`, and Docker and
+containerd `HEAD` a tag and never `GET` it. W34-E18 built what that measurement proposed, for every format
+([R-BAS-021](../spec/bastion.md#r-bas-021--fetching-on-a-miss-with-the-callers-credential),
+[Q-BAS-475](../spec/bastion.md#q-bas-475--a-head-of-a-document-is-answered-from-what-the-bastion-keeps) to
+[Q-BAS-478](../spec/bastion.md#q-bas-478--a-refused-get-of-a-head-passes-the-heads-answer-on)), in
+[headfill.go](../../internal/bastion/engine/headfill.go):
 
-| Pull | Requests at the main installation |
-|---|---|
-| cold, address A | 4: the tag's `HEAD`, the manifest and the two blobs by digest |
-| warm, address A, the same second | 1: the tag's `HEAD` |
-| warm, address B | 1: the tag's `HEAD` |
-| five more warm pulls, address C | 1 each: the tag's `HEAD` |
+| Case | What the read flow does | Where |
+|---|---|---|
+| `HEAD` of a fresh entry or copy | answered from it with the `GET`'s headers and no body, as before (`serveSource`, `serveFill` write no body for a `HEAD`) | `fromEntry`, `fromAnonymousCopy` |
+| `HEAD` miss | forwarded as `HEAD`: the Bastion knows a route's kind only from the marking. A `200` marked `shared` or `private` whose `Content-Length` is within the memory bound of its class (the smaller of 64 MiB and `documents_max_bytes`, or `private_documents_max_bytes`; a token caller's copy needs an `ETag`) and whose `Vary` is keyable: the HEAD's slot is freed, `admitFill` charges a miss of the address and an upstream request, and `ask` sends the `GET` with `rq.asGet` set; `process` handles its answer as a `GET`'s (`sentMethod`) and serves the `HEAD` from what it kept | `fillForHead` from `onShared`, `onPrivate` |
+| the `GET` refused or failed | the `HEAD`'s answer is passed on, nothing kept, nothing written by the refusal | `admitFill`, `fillForHead` |
+| conditional request of a `HEAD` | a conditional `GET` when the key holds a document entry within the memory bound or the caller's copy (a `304` renews, a `200` replaces, a `404` marked `absent` is kept, a `403` kept as the URL answer); a conditional `HEAD` for an artifact | `headAsGet` from `conditional` |
+| `HEAD` of an artifact | never a `GET` (it would be a download at the main installation): from a kept artifact, else forwarded as `HEAD` | `onArtifactBody` (unchanged) |
 
-**Yes, it forwards it, every pull.** Why: a `HEAD` answer has no body, and the read flow keeps a document only from a `GET` answered `200`
-(`onShared`, `onPrivate` in [forward.go](../../internal/bastion/engine/forward.go)); the tag therefore never has an entry nor an anonymous
-copy, and each `HEAD` is a miss that is passed through. With the anonymous ceiling's 36,000 requests an hour a popular public image is held
-to about 36,000 pulls an hour per Bastion [derived: one request per warm pull]. What it would take to keep the tag's manifest for the
-metadata period: a `HEAD` miss of a path whose `GET` the Bastion keeps (a manifest by tag below `/v2/`) is sent as a `GET`, its answer kept
-as the entry, and the `HEAD` answered from it, as the conditional request of R-BAS-022 answers a later one; the warm pull then costs nothing
-at the main installation within `metadata_revalidate_after`, and one conditional `GET` after it. The cost is the manifest's body (kilobytes)
-once per period instead of headers. Not built: it changes the read flow of R-BAS-022 for every format's `HEAD`, which is not E9b's.
+What it costs, measured and derived:
+
+- **Measured** (area `bastion`, 2026-11-26, the anonymous world of
+  `TestR_BAS_021_R_BAS_094_AnAnonymousPullAndAnAnonymousDocumentSpareTheMainInstallation`, an image of two blobs of 1 KiB, Docker's
+  sequence with a tag no client fetched by `GET`): the first pull from address A cost the main installation 2 requests, both for the tag
+  (the `HEAD`, then the `GET`); the same pull from address B cost 0. The test keeps the second figure as its assertion, counted at the main
+  installation's side. The audit log of the main installation then held `artifact.downloaded` for `app/_tags/head-only` from address A,
+  origin the main installation: the `GET` of a `HEAD` is a download there ([H-2375](../security/bastion.md#h-2375--the-get-of-a-head-is-a-download-at-the-main-installation)).
+- **Measured** (`BenchmarkR_NPM_010_RenderThousandVersions`, Apple M1 Ultra, 2026-11-26): an npm package of 1,000 versions renders in
+  about 19 ms to 2.7 MiB (full) or 2.3 MiB (abbreviated).
+- **Derived:** a cold `HEAD` of such a document costs the main installation one rendering (the `HEAD` renders it, the `GET` is served from
+  the rendition it kept) and 2.7 MiB of transfer, once per cache key and period, which a caller who sent the `GET` would cause as well.
+  Above 64 MiB a `HEAD` stays one forward per request ([Q-BAS-477](../spec/bastion.md#q-bas-477--the-get-of-a-head-is-sent-only-for-a-document-the-bastion-keeps-in-memory)).
+  A warm `docker pull` costs nothing within `metadata_revalidate_after` and one conditional `GET` of the tag after it, so the anonymous
+  ceiling no longer bounds warm pulls of a public image ([R-BAS-094](../spec/bastion.md#r-bas-094--what-an-anonymous-request-may-cause-at-the-main-installation)'s table).
 
 ### The flood again, with the protection of what was served twice (measured 2026-11-26)
 
