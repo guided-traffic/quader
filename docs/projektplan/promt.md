@@ -317,8 +317,9 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W30-A5 · A collection is published from the screen, with its import's log (W-30; the owner's d5 = a, no approval) | the plan's package A5 with R-ANS-061 and R-ANS-062: the upload's operation and dialog, the import's warning for a missing changelog, a per-format table of publishing from the screen; Q-ANS-140 to Q-ANS-149, Q-UI-1320 to Q-UI-1329, ADR-289, H-2180 to H-2189 | landed and pushed on 2026-11-26 at 09:00 |
 | W30-G9 · A generic file's commands behind the button, and a content type that says what it is (W-30) | R-GENERIC-017 of the plan `.dev/w30-plan.md`: curl, wget and PowerShell in the panel at every place a file has an act, the upload's commands, a closed list of guessed text types; Q-UI-1330 to Q-UI-1339, ADR-290, H-2190 to H-2199 | landed and pushed on 2026-11-26 at 07:40 |
 | W30-G2 · An upstream's package shows its documentation before a version of it is stored (W-30) | R-CUR-028 of the plan `.dev/w30-plan.md`: read through, not stored, per format; the facts the same answers carry; Q-CUR-260 to Q-CUR-269, Q-UI-1340 to Q-UI-1349, ADR-291, H-2200 to H-2209 | landed and pushed on 2026-11-26 at 08:29 |
-| W30-G5 · "Used by": a version's page lists the packages that depend on its package (W-30) | R-API-086 of the plan `.dev/w30-plan.md`: a side table every format fills, the read under the reader's scope, a filter `dependsOn` of the package list; Q-API-455 to Q-API-459, Q-UI-1350 to Q-UI-1359, ADR-294, H-2220 to H-2229, migration 00139 | in work since 2026-11-26, 07:14 |
-| W30-G6 · NuGet complete (W-30) | R-NUGET-037 to R-NUGET-039 of the plan: the install forms by package type, the icon, the licence file, the frameworks, the symbols, what a build runs, and the upload on the screen after W30-A5; Q-NUGET-155 to Q-NUGET-169, Q-UI-1360 to Q-UI-1369, ADR-293, H-2230 to H-2239 | in work since 2026-11-26, 07:14 |
+| W30-G5 · "Used by": a version's page lists the packages that depend on its package (W-30) | R-API-086 of the plan `.dev/w30-plan.md`: a side table every format fills, the read under the reader's scope, a filter `dependsOn` of the package list; Q-API-455 to Q-API-459, Q-UI-1350 to Q-UI-1359, ADR-294, H-2220 to H-2229, migration 00139 | landed and pushed on 2026-11-26 at 10:20 |
+| W30-G6 · NuGet complete (W-30) | R-NUGET-037 to R-NUGET-039 of the plan: the install forms by package type, the icon, the licence file, the frameworks, the symbols, what a build runs, and the upload on the screen after W30-A5; Q-NUGET-155 to Q-NUGET-169, Q-UI-1360 to Q-UI-1369, ADR-293, H-2230 to H-2239 | built at about 09:34 (three commits, the upload from the screen with the token operation made one for every format); lands after W30-G5 |
+| W31 · A download is the unit a person asked for, in the top bar's Downloads and every other place (W-31) | R-OPS-049 to R-OPS-052 and R-UI-210 to R-UI-212 rewritten; R-OPS-053 to R-OPS-055, Q-OPS-427 to Q-OPS-436, Q-UI-1380 to Q-UI-1389, Q-CUR-270 to Q-CUR-274, H-2250 to H-2259, ADR-295, migration 00140 | in work since 2026-11-26, 09:09 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1309,6 +1310,47 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 10:20, by W30-G5 (W-30; R-API-086; Q-API-455 to Q-API-459; Q-UI-1350, Q-UI-1351; gaps H-2220 to
+  H-2224; migration 00139): a version's page lists the packages that use its package, and the package list filters by
+  it.** Under a version's dependencies the block **Used by** names each package the installation holds that depends
+  on this one, once, by its newest version that does, with the kind and the range it asks for; at most 50 by name,
+  then "and N more." and the link **Packages of this project that use it** to the project's list filtered by
+  `dependsOn`. Per format: npm (dependencies, peer, optional and dev dependencies, aliases resolved), NuGet (every
+  framework group, one line per distinct range, the ID in lower case), Debian (Pre-Depends, Depends, Recommends,
+  Suggests, Enhances, every alternative of `a | b`, and a package is used under the names it provides, one step),
+  Ansible Galaxy (a collection's one list); OCI, generic files and the ClamAV definitions state no dependency and show
+  nothing; the tab Upstream shows nothing, an upstream's dependents are not this installation's to know. Written
+  where a version's facts are written (publish, a remote's fill or its describe job); what was stored before is read
+  by an entry of the maintenance task `remote-describe`, in batches of 100, without a job. Privacy: the read covers
+  every project the reader may read and walks only the repositories its scope reads, so a dependent the reader may
+  not read changes neither the list, the count nor the time (measured at 50,000 packages with 5,000 dependents of one
+  name: 23 to 35 ms for the block, 150 to 161 ms for the filtered list); an integration test holds the statements'
+  plans. Departed from the plan: the read is not bound to the project (as the public registries' and the rest of the
+  version's page); a list with ids is planned for its values (`plan_cache_mode`), which the existing filters by
+  search, keyword and deprecation gain too, because the cached generic plan took 1.5 s a page from the sixth request
+  on; the backfill writes directly. The landing: two commits picked onto main, the count of requirements 1,312;
+  the thirteen gates green on the second run (the first was red by my own resolver of the pinned count, which had copied two lines of code from the other side; repaired inside the commit before anything was pushed, and the resolver compiles its result now), the dialogs' states, the renders in English (105 screens) and German (10) without a layout finding, the block looked at with 2 and with 81 dependents at 1,440 px and in German at 390 px, the integration areas conventions, packages, search, querybudget, postgres, authz, backup, ansiblelocal, deblocal, debremote, nuget and npm green. Open: a repository the reader reads only in part is walked whole (H-2220, on the security page of the
+  search); a Helm chart's dependencies are not matched to the charts Quader holds (H-2221); a removed Debian
+  architecture's relations stay with the version (H-2222); the block does not say whether a dependent's range holds
+  the version on the page (H-2223); a worker's start asks every version of the four formats whether it was read
+  (H-2224). Not verified: the backfill's time on a large installation; a picture of a reader who may read only one of
+  two dependents' repositories (the integration test holds the case); real clients.
+
+- **Open since 2026-11-26, 09:09, the owner's task (W-31): a download is the unit a person asked for, everywhere.** With a
+  picture of the top bar's Downloads, whose section Finished showed seven rows of one image of 241 B to 10.1 MiB:
+  "Ich habe gestern ein Image herunter geladen und festgestellt, dass der Download-Drawer mir einzelne Layer anzuzeigen
+  scheint. Das ist nicht gewünscht. Alle Downloads sind überall in Quader zu logischen Einheiten zusammen zu fassen. Bei
+  OCI-images ist es das Image selbst mit allem was dazu gehört. Einen Download in vielen kleinen Dateien anzuzeigen,
+  macht den gesamten prozess unübersichtlich. Bitte beachte das." Read in his development database: the 100 finished
+  rows are 12 queue rows and 13 images; one download ahead of one tag wrote more than 30 rows (every platform's layers,
+  configs and attestations), so "the last 100" held 13 images. The cause is a decision of mine, not a fault of the
+  code: R-OPS-049 and Q-OPS-419 define a download as one transfer of one artifact's body. The builder W31 replaces
+  that definition by the unit per format (an image as it was asked for; a version's tarball, package or archive; one
+  Debian package; one file), counts and keeps the last 100 by unit, shows one row per unit in the drawer without a
+  list of parts, and sweeps every other place that shows or counts downloads (a remote's tab Downloads, the counts of
+  a package and a version, usage and limits, the audit log, the manual). A place where the unit would change what a
+  limit or an audit record means is not changed by it and comes to the owner as a decision.
 
 - **Closed on 2026-11-26, 09:00 (R-UI-213; Q-UI-1370; gap H-2240): a link to a screen whose script the server no longer holds
   opens the link's address from the server, and a navigation that fails says so.** The owner, 08:40, with a picture of
