@@ -453,23 +453,69 @@ func (c *HTTPClient) Do(ctx context.Context, f Forward) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
+	since := c.now()
 	release, err := c.acquire(ctx, f.Class, kind)
 	if err != nil {
 		return nil, err
 	}
+	adm, err := c.admit(ctx, f, kind, since)
+	if err != nil {
+		release()
+		return nil, err
+	}
 	resp, err := c.send(ctx, kind, req)
 	if err != nil {
+		adm.Cancel()
 		release()
 		return nil, err
 	}
 	out, err := c.accept(resp, release, f.Offer.MaxSize >= 1)
 	if err != nil {
+		adm.Cancel()
 		_ = resp.Body.Close()
 		release()
 		return nil, err
 	}
+	sb := out.Body.(*slotBody)
+	paced := adm.Pace(sb.ReadCloser)
+	sb.ReadCloser = paced
+	if c.o.Throughput != nil {
+		out.Pacing = paced
+	}
 	return out, nil
 }
+
+// admit admits a forward through the throughput after its slot (R-BAS-097): a miss waits for its first bytes at most the rest
+// of the queue's time since it asked for its slot; the continuation of a fill runs already and is only paced.
+func (c *HTTPClient) admit(ctx context.Context, f Forward, kind Kind, since time.Time) (Admission, error) {
+	t := c.o.Throughput
+	switch {
+	case t == nil:
+		return unpaced{}, nil
+	case f.RangeFrom > 0:
+		return t.Running(ctx, f.Class), nil
+	}
+	adm, err := t.Admit(ctx, f.Class, since)
+	if err != nil {
+		var te *ThroughputError
+		if errors.As(err, &te) {
+			c.o.Metrics.MainRequests.WithLabelValues(string(kind), metrics.OutcomeBusy).Inc()
+		}
+		return nil, err
+	}
+	return adm, nil
+}
+
+// unpaced is the admission of a client without a throughput.
+type unpaced struct{}
+
+func (unpaced) Pace(body io.ReadCloser) PacedBody { return unpacedBody{body} }
+func (unpaced) Cancel()                           {}
+
+type unpacedBody struct{ io.ReadCloser }
+
+func (unpacedBody) Waiting() bool         { return false }
+func (unpacedBody) Waited() time.Duration { return 0 }
 
 // accept turns the main installation's answer to a forward into a [Response], or into the error it stands for.
 // On an error the caller closes the body and releases the slot. offered says whether the forward carried the offer of

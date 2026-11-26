@@ -297,6 +297,9 @@ var (
 	timeoutFamily    = registerKeyFamily("timeout", 1, MaxTimeoutTTL)
 	answerFamily     = registerKeyFamily("ans", 1, MaxAnswerTTL)
 	sweepFamily      = registerKeyFamily("sweep", 1, MaxSweepLeaseTTL)
+	// throughputFamily holds the byte counters of a Bastion's throughput (R-BAS-097, valkey_bastion_bytes.go): the bytes of a
+	// slice of a second per bucket and the bytes of an hour per class.
+	throughputFamily = registerKeyFamily("throughput", 1, MaxThroughputTTL)
 )
 
 // <<< M5b bastion

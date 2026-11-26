@@ -257,6 +257,10 @@ func (e *engine) passThrough(q *rq, resp *mainclient.Response, pre []byte, class
 	buf := make([]byte, 32<<10)
 	began, sent := time.Now(), int64(len(pre))
 	rc := http.NewResponseController(q.out)
+	waited := func() time.Duration { return 0 }
+	if resp.Pacing != nil {
+		waited = resp.Pacing.Waited
+	}
 	for {
 		n, err := resp.Body.Read(buf)
 		if n > 0 {
@@ -265,7 +269,7 @@ func (e *engine) passThrough(q *rq, resp *mainclient.Response, pre []byte, class
 				return
 			}
 			sent += int64(n)
-			if e.tooSlow(began, sent) {
+			if e.tooSlow(began, sent, waited()) {
 				// The budget slot is held until the body ends: a client that takes the body slower than the
 				// floor does not keep it (R-BAS-025, Q-BAS-123).
 				e.log.Warn("a pass-through transfer is cut: the client takes it slower than the floor", "bytes", sent, "after", time.Since(began).Round(time.Second).String())
@@ -282,9 +286,10 @@ func (e *engine) passThrough(q *rq, resp *mainclient.Response, pre []byte, class
 }
 
 // tooSlow reports whether a pass-through transfer has taken longer than the grace period and moved fewer bytes
-// per second, on average since it began, than the floor.
-func (e *engine) tooSlow(began time.Time, sent int64) bool {
-	el := time.Since(began)
+// per second, on average since it began, than the floor. The time its read waited for the throughput's cap does not count: a
+// transfer the cap slows is never cut for it (R-BAS-097).
+func (e *engine) tooSlow(began time.Time, sent int64, paced time.Duration) bool {
+	el := time.Since(began) - paced
 	return el > e.paceGrace && float64(sent) < el.Seconds()*float64(e.paceMinRate)
 }
 

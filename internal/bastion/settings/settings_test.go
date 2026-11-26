@@ -68,7 +68,8 @@ func with(rev int64, n int) iface.Configuration {
 
 // TestR_BAS_093_ABuiltinConfigurationFailsClosed: before its first handshake, without a stored configuration, a replica applies
 // the built-in one (Q-BAS-327): every switch off, the Internet preset in Enforce with its flood figures, the default slots and
-// anonymous ceiling, the throughput unlimited, and a revision no registration has.
+// anonymous ceiling, the default throughput of 200 MB/s with a quarter for anonymous callers and no hourly volume (Q-BAS-455),
+// and a revision no registration has.
 func TestR_BAS_093_ABuiltinConfigurationFailsClosed(t *testing.T) {
 	m, err := metrics.New(nil)
 	if err != nil {
@@ -87,8 +88,8 @@ func TestR_BAS_093_ABuiltinConfigurationFailsClosed(t *testing.T) {
 		t.Fatalf("slots %+v", a.Slots)
 	case a.Ceiling != (Ceiling{PerSecond: 100, Burst: 2000, PerHour: 36000}):
 		t.Fatalf("ceiling %+v", a.Ceiling)
-	case c.Limits.Throughput.BytesPerSecond != nil:
-		t.Fatal("the built-in throughput is capped")
+	case a.Throughput != (Throughput{BytesPerSecond: 200_000_000, AnonymousShare: 0.25}) || a.Throughput.AnonymousBytesPerSecond() != 50_000_000:
+		t.Fatalf("throughput %+v", a.Throughput)
 	}
 	if gauge(t, m.ConfigSource.WithLabelValues("builtin")) != 1 || gauge(t, m.ConfigSource.WithLabelValues("main")) != 0 {
 		t.Fatal("quader_bastion_configuration_source does not say builtin")

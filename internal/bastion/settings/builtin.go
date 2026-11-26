@@ -23,6 +23,11 @@ const (
 	DefaultMaxConcurrent      = 64
 	DefaultAnonymousShare     = 0.25
 	DefaultQueueTimeoutMillis = 5000
+	// DefaultThroughputBytesPerSecond and DefaultThroughputAnonymousShare are the throughput (R-BAS-097, Q-BAS-455): 200 MB/s
+	// between the main installation and the whole Bastion, of which the anonymous callers' misses take at most a quarter. It
+	// carries a cold image of 5.9 GB in 30 s and the measured flood of distinct files (34 to 52 MB/s) in full.
+	DefaultThroughputBytesPerSecond = 200_000_000
+	DefaultThroughputAnonymousShare = 0.25
 )
 
 func figure(v int64) *int64 { return &v }
@@ -69,8 +74,10 @@ func Builtin() iface.Configuration {
 				Blocking:       iface.Blocking{Threshold: 3000, WindowSeconds: 60, DurationSeconds: 900, MaxDurationSeconds: 86400},
 				ExemptNetworks: []string{},
 			},
-			Slots:      iface.Slots{MaxConcurrent: DefaultMaxConcurrent, AnonymousShare: DefaultAnonymousShare, QueueTimeoutMillis: DefaultQueueTimeoutMillis},
-			Throughput: iface.Throughput{AnonymousShare: 0.25},
+			Slots: iface.Slots{MaxConcurrent: DefaultMaxConcurrent, AnonymousShare: DefaultAnonymousShare, QueueTimeoutMillis: DefaultQueueTimeoutMillis},
+			Throughput: iface.Throughput{
+				BytesPerSecond: figure(DefaultThroughputBytesPerSecond), AnonymousShare: DefaultThroughputAnonymousShare,
+			},
 			AnonymousCeiling: iface.Ceiling{
 				RequestsPerSecond: figure(DefaultCeilingPerSecond), Burst: figure(DefaultCeilingBurst),
 				RequestsPerHour: figure(DefaultCeilingPerHour),

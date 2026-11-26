@@ -115,10 +115,13 @@ func errBadGateway() *errs.Error {
 // R-BAS-025, R-BAS-027, R-BAS-028).
 func (e *engine) mainError(q *rq, err error) {
 	var ceiling *mainclient.CeilingError
+	var throughput *mainclient.ThroughputError
 	switch {
 	case q.ctx().Err() != nil:
 		// The caller went away: there is nobody to answer.
 		q.finish(metrics.ClassPass, metrics.ResultError)
+	case errors.As(err, &throughput):
+		e.refuseThroughput(q, throughput)
 	case errors.As(err, &ceiling):
 		// Above the anonymous ceiling: 503 busy with the wait the ceiling names, which the format caps (R-BAS-094, R-BAS-091).
 		e.refuse(q, errs.E(errs.Unavailable, errs.CodeBusy, "Too many requests are waiting; try again in a moment.",
@@ -133,6 +136,39 @@ func (e *engine) mainError(q *rq, err error) {
 	default:
 		e.fail(q, err)
 	}
+}
+
+// refuseThroughput answers a miss the throughput did not admit (R-BAS-097): at the cap 503 busy with the wait until the first
+// slice with room; with its class's hourly volume used up 429 upstream_limit_reached, or the status the format declares for a
+// rate limit, with the wait and the figure. Both name nothing of the main installation (R-BAS-099).
+func (e *engine) refuseThroughput(q *rq, t *mainclient.ThroughputError) {
+	if !t.Hour {
+		e.refuse(q, errs.E(errs.Unavailable, errs.CodeBusy, "Too many downloads are running; try again in a moment.",
+			errs.WithRetryAfter(max(oneWait(t.RetryAfter), retryBusy))), metrics.RefusedThroughput)
+		return
+	}
+	kind := errs.RateLimited
+	if e.factsOf(q).RateLimitedStatus == http.StatusServiceUnavailable {
+		kind = errs.Unavailable
+	}
+	wait := oneWait(t.RetryAfter)
+	e.refuse(q, errs.E(kind, codeUpstreamLimitReached,
+		"The volume this service may fetch per hour is used up; what it holds is still served. Try again in "+humanWait(wait)+".",
+		errs.WithRetryAfter(wait), errs.WithExtension("figure", "bytesPerHour"), errs.WithExtension("limit", t.HourLimit),
+		errs.WithExtension("windowSeconds", int64(time.Hour/time.Second)), errs.WithExtension("retryAfterSeconds", int64(wait/time.Second))),
+		metrics.RefusedThroughput)
+}
+
+// codeUpstreamLimitReached is usage-and-limits.md R-LIM-020's code of an upstream volume used up, which a Bastion answers when a
+// class's hourly volume of the throughput is (R-BAS-097).
+const codeUpstreamLimitReached = "upstream_limit_reached"
+
+// humanWait names a wait of oneWait in words: seconds below two minutes, minutes from there.
+func humanWait(d time.Duration) string {
+	if d < 2*time.Minute {
+		return strconv.FormatInt(int64(d/time.Second), 10) + " seconds"
+	}
+	return strconv.FormatInt(int64(d/time.Minute), 10) + " minutes"
 }
 
 // unreachable answers the request that needs the main installation while the replica treats it as unreachable

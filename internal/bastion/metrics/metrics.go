@@ -58,6 +58,9 @@ const (
 	HandoverCooldown         = "quader_bastion_handover_cooldown"
 	ConfigurationRevision    = "quader_bastion_configuration_revision"
 	ConfigurationSource      = "quader_bastion_configuration_source"
+	ThroughputLimit          = "quader_bastion_throughput_limit_bytes_per_second"
+	ThroughputWaitTotal      = "quader_bastion_throughput_wait_seconds_total"
+	ThroughputRefusedTotal   = "quader_bastion_throughput_refused_total"
 )
 
 // Label values. The sets are closed: a value outside them is a defect, never a new series.
@@ -162,6 +165,23 @@ const (
 	// RefusedCeiling: an anonymous caller's request to the main installation above the Bastion's anonymous ceiling, answered
 	// 503 busy (R-BAS-094).
 	RefusedCeiling = "anonymous_ceiling"
+	// RefusedThroughput: a miss the throughput did not admit, answered 503 busy at the cap or 429 when its class's hourly volume
+	// is used up (R-BAS-097).
+	RefusedThroughput = "throughput"
+
+	// bucket of quader_bastion_throughput_limit_bytes_per_second (R-BAS-097, Q-BAS-332).
+	BucketTotal     = "total"
+	BucketAnonymous = "anonymous"
+
+	// class of quader_bastion_throughput_wait_seconds_total and quader_bastion_throughput_refused_total: on whose behalf the
+	// Bastion reads (R-BAS-097).
+	ThroughputAnonymous = "anonymous"
+	ThroughputSignedIn  = "signed_in"
+	ThroughputCatalogue = "catalogue"
+
+	// reason of quader_bastion_throughput_refused_total: at the cap, or the class's hourly volume used up.
+	ThroughputBusy = "busy"
+	ThroughputHour = "hour"
 
 	// source of quader_bastion_configuration_source (R-BAS-093): where the configuration the replica applies came from.
 	ConfigurationFromMain    = "main"
@@ -266,6 +286,12 @@ type Metrics struct {
 	// came from (main, stored, builtin) and 0 for the others (R-BAS-093).
 	ConfigRevision prometheus.Gauge
 	ConfigSource   *prometheus.GaugeVec
+	// ThroughputLimit is the configured byte rate of the whole Bastion by bucket (total, anonymous), 0 while unlimited;
+	// ThroughputWait counts the seconds this replica's reads waited for the cap, by class; ThroughputRefused counts the misses
+	// the throughput did not admit, by class and reason (busy, hour) (R-BAS-097).
+	ThroughputLimit   *prometheus.GaugeVec
+	ThroughputWait    *prometheus.CounterVec
+	ThroughputRefused *prometheus.CounterVec
 }
 
 // New creates the collectors and registers them on reg; a nil reg creates them unregistered. The series with
@@ -324,6 +350,9 @@ func New(reg prometheus.Registerer) (*Metrics, error) {
 		HandoverCooldown:     prometheus.NewGauge(prometheus.GaugeOpts{Name: HandoverCooldown, Help: "1 while this replica sends no offer after a failure of the object store's path (R-BAS-075)."}),
 		ConfigRevision:       prometheus.NewGauge(prometheus.GaugeOpts{Name: ConfigurationRevision, Help: "The revision of the configuration this replica applies (R-BAS-093)."}),
 		ConfigSource:         gauge(ConfigurationSource, "1 for where the configuration this replica applies came from (main, stored, builtin), 0 for the others (R-BAS-093).", "source"),
+		ThroughputLimit:      gauge(ThroughputLimit, "The configured byte rate between the main installation and the whole Bastion, by bucket (total, anonymous); 0 while unlimited (R-BAS-097).", "bucket"),
+		ThroughputWait:       counter(ThroughputWaitTotal, "Seconds this replica's reads from the main installation and the object store waited for the throughput cap, by class (anonymous, signed_in, catalogue) (R-BAS-097).", "class"),
+		ThroughputRefused:    counter(ThroughputRefusedTotal, "Misses the throughput did not admit, by class and reason (busy, hour) (R-BAS-097).", "class", "reason"),
 	}
 	m.seed()
 	if reg == nil {
@@ -392,7 +421,7 @@ func (m *Metrics) seed() {
 	for _, o := range []string{OpGet, OpPut, OpDelete, OpList, OpSpool} {
 		m.CacheErrors.WithLabelValues(o)
 	}
-	for _, r := range []string{RefusedBlocked, RefusedRateLimited, RefusedMissLimited, RefusedAuthTimeout, RefusedInvalid, RefusedBusy, RefusedUnreachable, RefusedNotServed, RefusedReadOnly, RefusedForeignLocation, RefusedCeiling} {
+	for _, r := range []string{RefusedBlocked, RefusedRateLimited, RefusedMissLimited, RefusedAuthTimeout, RefusedInvalid, RefusedBusy, RefusedUnreachable, RefusedNotServed, RefusedReadOnly, RefusedForeignLocation, RefusedCeiling, RefusedThroughput} {
 		m.Refused.WithLabelValues(r)
 	}
 	m.Blocks.WithLabelValues(BlockRefusals)
@@ -410,6 +439,15 @@ func (m *Metrics) seed() {
 	for _, s := range []string{ConfigurationFromMain, ConfigurationFromStored, ConfigurationFromBuiltin} {
 		m.ConfigSource.WithLabelValues(s)
 	}
+	for _, b := range []string{BucketTotal, BucketAnonymous} {
+		m.ThroughputLimit.WithLabelValues(b)
+	}
+	for _, c := range []string{ThroughputAnonymous, ThroughputSignedIn, ThroughputCatalogue} {
+		m.ThroughputWait.WithLabelValues(c)
+		for _, r := range []string{ThroughputBusy, ThroughputHour} {
+			m.ThroughputRefused.WithLabelValues(c, r)
+		}
+	}
 }
 
 func (m *Metrics) collectors() []prometheus.Collector {
@@ -421,6 +459,7 @@ func (m *Metrics) collectors() []prometheus.Collector {
 		m.CacheBytes, m.CacheCapacity, m.CacheEvictions, m.CacheCorrupt, m.CacheErrors, m.CacheSweeps, m.CacheNoRoom,
 		m.CacheProtected, m.Refused, m.Blocks, m.Blocked, m.AuditEvents, m.AuditBuffer, m.AuditDropped,
 		m.Handovers, m.FillBytes, m.HandoverEnabled, m.HandoverCooldown, m.ConfigRevision, m.ConfigSource,
+		m.ThroughputLimit, m.ThroughputWait, m.ThroughputRefused,
 	}
 }
 
@@ -435,5 +474,6 @@ func Names() []string {
 		CacheSweepsTotal, CacheNoRoomTotal, CacheProtectedBytes,
 		RefusedTotal, BlocksTotal, BlockedAddresses, AuditEventsTotal, AuditBufferEvents, AuditEventsDroppedTotal,
 		HandoversTotal, FillBytesTotal, HandoverEnabled, HandoverCooldown, ConfigurationRevision, ConfigurationSource,
+		ThroughputLimit, ThroughputWaitTotal, ThroughputRefusedTotal,
 	}
 }

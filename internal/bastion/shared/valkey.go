@@ -116,6 +116,7 @@ func New(v *cluster.Valkey, o Options) (*State, error) {
 		Flights:  valkeyFlights{lock: cluster.NewFlightLock(v, cluster.FlightLockOptions{Registerer: o.Registry, InstanceUID: o.Instance})},
 		Sweep:    valkeySweep{store: store},
 		Answers:  &valkeyAnswers{store: store, signer: o.Signer, m: o.Metrics, log: o.Log},
+		Bytes:    &valkeyBytes{store: store, local: newLocalBytes(o.Replicas, o.Now)},
 		Shared:   v.Available,
 	}, nil
 }

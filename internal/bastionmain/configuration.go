@@ -11,11 +11,14 @@ import "github.com/guided-traffic/quader/internal/bastion/iface"
 //   - the flood figures, the failed-authentication timeout and the blocking the Bastion chart held before they became members
 //     of this configuration (R-BAS-093), no exempt network;
 //   - the slots the chart held then (max_concurrent 64, anonymous_share 0.25, queue_timeout 2 s);
-//   - no throughput cap and no anonymous ceiling (both unlimited);
+//   - no anonymous ceiling (unlimited);
+//   - the throughput every registration has by default (R-BAS-097, Q-BAS-455): 200 MB/s, a quarter of it for anonymous callers,
+//     no hourly volume. It is the one figure that changes what a Bastion does: the default a registration gets once it holds its
+//     own configuration (E8) is what the interim one sends;
 //   - the mode enforce and the preset custom, since no preset's figures are what it holds.
 //
-// A Bastion applies the whole configuration (E9a): its flood figures and slots are these; the place and the throughput are read by
-// nothing yet (E9b, E10).
+// A Bastion applies the whole configuration (E9a): its flood figures, slots and throughput are these; the place is read by
+// nothing yet (E9b).
 
 // InterimRule is the ID of the one rule of the interim configuration.
 const InterimRule = "interim-unlimited"
@@ -36,6 +39,7 @@ var interimFlood = iface.Flood{
 func InterimConfiguration(revision int64, handover bool) iface.Configuration {
 	flood := interimFlood
 	flood.ExemptNetworks = []string{}
+	bytesPerSecond := int64(InterimThroughputBytesPerSecond)
 	return iface.Configuration{
 		Revision: revision,
 		Switches: iface.Switches{Handover: handover},
@@ -49,9 +53,18 @@ func InterimConfiguration(revision int64, handover bool) iface.Configuration {
 					Anonymous: InterimRule, User: InterimRule, TechnicalToken: InterimRule, CI: InterimRule, Administrator: InterimRule,
 				},
 			},
-			Flood:      flood,
-			Slots:      iface.Slots{MaxConcurrent: 64, AnonymousShare: 0.25, QueueTimeoutMillis: 2000},
-			Throughput: iface.Throughput{AnonymousShare: 0.25},
+			Flood: flood,
+			Slots: iface.Slots{MaxConcurrent: 64, AnonymousShare: 0.25, QueueTimeoutMillis: 2000},
+			Throughput: iface.Throughput{
+				BytesPerSecond: &bytesPerSecond, AnonymousShare: InterimThroughputAnonymousShare,
+			},
 		},
 	}
 }
+
+// The throughput of the interim configuration (R-BAS-097, Q-BAS-455): the default of every registration, 200 MB/s between the
+// main installation and the whole Bastion, of which anonymous callers' misses take at most a quarter, and no hourly volume.
+const (
+	InterimThroughputBytesPerSecond = 200_000_000
+	InterimThroughputAnonymousShare = 0.25
+)

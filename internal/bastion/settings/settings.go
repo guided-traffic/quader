@@ -5,9 +5,9 @@
 // reads it once, at its start, and carries it on its context ([With], [Holder.For]); the guard, the anonymous ceiling and the
 // engine read their figures from there.
 //
-// The figures the replica reads of it here are the flood protection (R-BAS-035 to R-BAS-037, Q-LIM-307), the slots (R-BAS-025)
-// and the anonymous ceiling (R-BAS-094); the switches, the place's table and the throughput are kept whole for the packages
-// that apply them (R-BAS-096, R-BAS-097, W-35).
+// The figures the replica reads of it here are the flood protection (R-BAS-035 to R-BAS-037, Q-LIM-307), the slots (R-BAS-025),
+// the anonymous ceiling (R-BAS-094) and the throughput (R-BAS-097); the switches and the place's table are kept whole for the
+// packages that apply them (R-BAS-096, W-35).
 package settings
 
 import (
@@ -41,6 +41,7 @@ type Applied struct {
 	Flood         Flood
 	Slots         Slots
 	Ceiling       Ceiling
+	Throughput    Throughput
 }
 
 // Flood is the flood protection per address (R-BAS-035 to R-BAS-037, Q-LIM-307) with its windows as durations and its exempt
@@ -96,6 +97,38 @@ type Ceiling struct {
 // Unlimited reports whether the ceiling holds nothing.
 func (c Ceiling) Unlimited() bool { return c.PerSecond <= 0 && c.PerHour <= 0 }
 
+// Throughput is the byte rate the Bastion reads at (R-BAS-097, Q-BAS-332): the total of the whole Bastion, the anonymous
+// callers' share of it, and an hourly volume per class. A figure of 0 is unlimited.
+type Throughput struct {
+	BytesPerSecond int64
+	AnonymousShare float64
+	// Hour is the hourly volume of the anonymous callers, the signed-in callers and the public catalogue.
+	Hour ThroughputHours
+}
+
+// ThroughputHours are the hourly volumes per class; 0 is unlimited.
+type ThroughputHours struct {
+	Anonymous, SignedIn, Catalogue int64
+}
+
+// AnonymousBytesPerSecond is the anonymous callers' bucket: the share of the total, 0 while the total is unlimited.
+func (t Throughput) AnonymousBytesPerSecond() int64 {
+	return int64(float64(t.BytesPerSecond) * t.AnonymousShare)
+}
+
+func throughputOf(t iface.Throughput) Throughput {
+	v := func(p *int64) int64 {
+		if p == nil {
+			return 0
+		}
+		return *p
+	}
+	return Throughput{
+		BytesPerSecond: v(t.BytesPerSecond), AnonymousShare: t.AnonymousShare,
+		Hour: ThroughputHours{Anonymous: v(t.BytesPerHour.Anonymous), SignedIn: v(t.BytesPerHour.SignedIn), Catalogue: v(t.BytesPerHour.Catalogue)},
+	}
+}
+
 // FromConfiguration validates c as the link does (iface.Configuration.Validate) and builds what the replica applies.
 func FromConfiguration(c iface.Configuration, src Source) (*Applied, error) {
 	if err := c.Validate(); err != nil {
@@ -120,7 +153,8 @@ func FromConfiguration(c iface.Configuration, src Source) (*Applied, error) {
 			MaxConcurrent: c.Limits.Slots.MaxConcurrent, AnonymousShare: c.Limits.Slots.AnonymousShare,
 			QueueTimeout: time.Duration(c.Limits.Slots.QueueTimeoutMillis) * time.Millisecond,
 		},
-		Ceiling: ceilingOf(c.Limits.AnonymousCeiling),
+		Ceiling:    ceilingOf(c.Limits.AnonymousCeiling),
+		Throughput: throughputOf(c.Limits.Throughput),
 	}
 	for _, n := range f.ExemptNetworks {
 		p, err := netip.ParsePrefix(n)

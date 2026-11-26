@@ -122,6 +122,8 @@ type State struct {
 	Flights  FlightLock
 	Sweep    SweepLease
 	Answers  AnswerStore
+	// Bytes are the byte counters of the throughput (R-BAS-097).
+	Bytes Bytes
 	// Shared reports whether the state is shared across replicas (Valkey configured and available).
 	Shared func() bool
 }
@@ -138,6 +140,6 @@ func NewLocal(replicas int, now func() time.Time) *State {
 	l := newLocal(replicas, now)
 	return &State{
 		Limiter: l, Blocks: newMemBlocks(now), Timeouts: newMemBlocks(now), Flights: newLocalFlights(),
-		Sweep: localSweep{}, Answers: newMemAnswers(now), Shared: func() bool { return false },
+		Sweep: localSweep{}, Answers: newMemAnswers(now), Bytes: newLocalBytes(replicas, now), Shared: func() bool { return false },
 	}
 }

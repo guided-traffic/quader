@@ -29,6 +29,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
 	"github.com/guided-traffic/quader/internal/bastion/shared"
+	"github.com/guided-traffic/quader/internal/bastion/throughput"
 	"github.com/guided-traffic/quader/internal/config"
 )
 
@@ -72,6 +73,9 @@ type Deps struct {
 	// Handover is the link client of the handover per blob (internal/bastion/handover, R-BAS-074); nil offers no
 	// handover. The server builds it with the trust and the timeouts of the connection to the main installation.
 	Handover *handover.Client
+	// Throughput paces a handover's direct read from the object store (R-BAS-097); the client of the main installation paces
+	// what it reads with the same pacer. nil paces nothing.
+	Throughput *throughput.Pacer
 }
 
 // Engine is the Bastion's request flow.

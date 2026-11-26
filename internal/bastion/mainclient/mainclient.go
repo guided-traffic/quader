@@ -101,6 +101,59 @@ func (e *CeilingError) Error() string { return "mainclient: the anonymous ceilin
 // Is matches [ErrBusy].
 func (e *CeilingError) Is(target error) bool { return target == ErrBusy }
 
+// ThroughputError is the refusal of a miss by the throughput between the main installation and the Bastion (R-BAS-097): at the
+// cap, no first bytes for it within the queue's time (503 busy, it matches [ErrBusy]), or its class's hourly volume used up
+// (Hour, 429 upstream_limit_reached or the format's status, with HourLimit the figure). RetryAfter is the wait until the
+// throughput would admit it.
+type ThroughputError struct {
+	RetryAfter time.Duration
+	Hour       bool
+	HourLimit  int64
+}
+
+// Error implements error.
+func (e *ThroughputError) Error() string {
+	if e.Hour {
+		return "mainclient: the hourly volume of the throughput is used up"
+	}
+	return "mainclient: the throughput is at its cap"
+}
+
+// Is matches [ErrBusy] for a refusal at the cap.
+func (e *ThroughputError) Is(target error) bool { return target == ErrBusy && !e.Hour }
+
+// Throughput is the cap on the bytes the Bastion reads (R-BAS-097, Q-BAS-331); throughput.Pacer implements it. The client admits
+// every forward through it after the slot and reads the answer's body at its pace, so the slot is held while the body waits.
+type Throughput interface {
+	// Admit admits a new transfer of the class: it reserves the transfer's first bytes, for which it waits at most until since
+	// plus the queue's time (limits.slots.queueTimeoutMillis), or returns a *ThroughputError.
+	Admit(ctx context.Context, class Class, since time.Time) (Admission, error)
+	// Running is the admission of a transfer that runs already, the continuation of a fill (R-BAS-075): it is paced, never
+	// refused, because a running transfer is slowed and never cut.
+	Running(ctx context.Context, class Class) Admission
+}
+
+// Admission is an admitted transfer. Exactly one of Pace and Cancel is called: Pace with the body to read, Cancel for an
+// answer that is not read, which gives its reserved bytes back.
+type Admission interface {
+	Pace(body io.ReadCloser) PacedBody
+	Cancel()
+}
+
+// PacedBody is a body read at the throughput's pace. Its Pacing tells what the pacing does, so that whoever reads the body does
+// not count the cap's wait as a stall of the main installation or a slowness of the client (R-BAS-097: a running transfer is
+// slowed, never cut).
+type PacedBody interface {
+	io.ReadCloser
+	Pacing
+}
+
+// Pacing is what a paced read tells of its pacing: whether it waits for the cap now, and how long it waited in all.
+type Pacing interface {
+	Waiting() bool
+	Waited() time.Duration
+}
+
 // MismatchError carries the version the main installation spoke, when it said (the problem member
 // interfaceVersion, or the answer header); 0 when it did not.
 type MismatchError struct{ Main int }
@@ -204,6 +257,8 @@ type Response struct {
 	// offer (R-BAS-075). The engine owns Handover's data key and destroys it at every end.
 	Handover    *iface.Handover
 	HandoverErr error
+	// Pacing is the pacing of Body by the throughput (R-BAS-097); nil for a body that is not paced.
+	Pacing Pacing
 }
 
 // Client is the Bastion's view of the main installation. Every method takes the budget slot its kind needs
@@ -239,6 +294,8 @@ type Options struct {
 	Tokens  TokenSource
 	// Budget is the slot budget; nil means no bound (tests of other packages).
 	Budget Budget
+	// Throughput admits every forward after its slot and paces its body (R-BAS-097); nil paces nothing.
+	Throughput Throughput
 	// EdgeLimit is bastion.edge_limit, the edge figure of the ingress in front of the replica, which every handshake reports in
 	// Quader-Bastion-Edge-Limit (R-BAS-093); nil sends no such header.
 	EdgeLimit *iface.EdgeLimit

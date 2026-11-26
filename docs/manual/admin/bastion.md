@@ -316,9 +316,20 @@ to limit it:
 | `quader_bastion_bytes_served_total{source}` | the Bastion | the bytes it sent to its clients, from its cache (`cache`) or as they came from the main installation (`main`) |
 
 For example, `sum by (class) (rate(quader_bastion_forwarded_bytes_total{bastion="partners"}[5m]))` on the main installation is the
-bandwidth the Bastion `partners` takes, split into anonymous and signed-in clients. Nothing limits it per Bastion yet: what bounds it is each
-client's own download limits on the main installation (they apply to a client behind a Bastion when the Bastion's card lists the address it
-connects from) and the Bastion's budget of requests to the main installation (64 at once by default, a setting of its registration).
+bandwidth the Bastion `partners` takes, split into anonymous and signed-in clients.
+
+**The cap.** Each Bastion reads at most 200 MB/s from the main installation and the object store together, and its anonymous clients' downloads
+at most a quarter of it, 50 MB/s; these are the defaults of its registration. Set the figure to the Bastion's share of the real link between the
+two networks: only what the Bastion does not hold yet crosses it, what it serves from its cache does not. At the cap the running downloads
+slow down and share it, none is cut; a new download whose first bytes would wait longer than the Bastion's queue time (5 s by default) is
+answered `503` with `Retry-After`, and what the cache holds is served as before. Without Valkey each replica reads at most the figure divided
+by the number of replicas. The Bastion's metrics:
+
+| Series | What it says |
+|---|---|
+| `quader_bastion_throughput_limit_bytes_per_second{bucket}` | the figure in force, for all clients (`total`) and for anonymous ones (`anonymous`); `0` without a cap |
+| `quader_bastion_throughput_wait_seconds_total{class}` | the seconds the replica's downloads waited for the cap, by `anonymous`, `signed_in` and `catalogue`; rising by about one second a second per download means that the cap, not your network, sets the pace |
+| `quader_bastion_throughput_refused_total{class, reason}` | the downloads refused at the cap (`busy`) or because a class's hourly volume was used up (`hour`) |
 
 ## What the alerts mean
 

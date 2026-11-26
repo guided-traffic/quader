@@ -180,6 +180,7 @@ internal/bastion/
 ├── mainclient/       the client of the main installation: HTTPClient, SlotBudget, Reloader, TokenSource, errors; token file and holder
 ├── link/             the replica's standing connection: handshake, feed poll, reachable or not, mismatch, token lifetime; Guard wraps the client
 ├── settings/         the configuration the replica applies (R-BAS-093): Applied, Holder (Apply, LoadStored, For), Builtin, With/From
+├── throughput/       the cap on the bytes the replica reads (R-BAS-097): Pacer (Admit, Running, Reader, CatalogueReader), the paced reader
 ├── handover/         the link client of a handover per blob and the readers of a plain and an encrypted copy (R-BAS-074); imports blobcrypt
 ├── cache/            Backend, Entry, the HMAC Signer; the volume and bucket backends, Cache, Fill, the sweep, Fault (a test's switch)
 ├── shared/           the shared state (limiters, block list, timeouts, flight lock, sweep lease, answer records): the local form and the Valkey form
@@ -233,6 +234,8 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [cache/store.go](../../internal/bastion/cache/store.go), [cache/sweep.go](../../internal/bastion/cache/sweep.go) | `Cache` (what the engine uses; `StoreConfiguration` and `LoadConfiguration`, the object `configuration/current.json` of Q-BAS-327), `New`, `NewVolume`, `NewBucket`, `Options`; `SweepOnce`, `RunSweeper` |
 | [shared/shared.go](../../internal/bastion/shared/shared.go) | `Limiter`, `BlockList`, `FlightLock`, `SweepLease`, `AnswerStore`, `State`, `NewLocal` |
 | [shared/local.go](../../internal/bastion/shared/local.go) | the local forms: token buckets, sliding-window counters, block list, flights, answers in memory, all bounded |
+| [throughput/throughput.go](../../internal/bastion/throughput/throughput.go) | the throughput of R-BAS-097: `Pacer` over `shared.Bytes` and the applied configuration; the buckets (total, anonymous share, the catalogue's half), the reservation per slice of 100 ms, `Admit` (a miss's first bytes within its queue time, else `mainclient.ThroughputError`), `Running` and `Reader` (paced, never refused), the class's hourly volume, `Export` (the limit's gauge) |
+| [shared/bytes.go](../../internal/bastion/shared/bytes.go) | `Bytes`: the byte counters of the throughput per name and window, the replica's share in memory without Valkey, `cluster.BastionStore`'s `ClaimBytes`, `ReleaseBytes` and `AddBytes` with it |
 | [shared/valkey.go](../../internal/bastion/shared/valkey.go) | `Open`, `New`, `Options`: the Valkey forms over `cluster.BastionStore`, the limiters of R-ARCH-034 and the FlightLock, with the local forms as the fallback; the signing of answer records |
 | [guard/guard.go](../../internal/bastion/guard/guard.go) | `Guard`, `Verdict`, `AddressKey` |
 | [guard/instance.go](../../internal/bastion/guard/instance.go) | `New`, `Options` (`Figures`, the configuration of the decision), `Instance`: the limits of the classes anonymous, authenticated and `gui` (`Page`), the miss limits, the timeout, the blocking |
@@ -400,6 +403,20 @@ forward, a conditional request, a check, a probe and the background refresh of a
 takes nothing. `Take` reads the hour's count, then takes from the bucket, then counts the hour: a refusal takes nothing from either, and
 requests decided at the same instant may pass the hour by their number (H-2356). A refusal is `mainclient.CeilingError` (it `Is` `ErrBusy`):
 the slot goes back at once, the engine answers `503 busy` with the ceiling's wait and counts `reason="anonymous_ceiling"`.
+
+**The throughput** ([throughput.go](../../internal/bastion/throughput/throughput.go), R-BAS-097, Q-BAS-455 to Q-BAS-459). One
+`throughput.Pacer` per replica, built by the server over `State.Bytes` and `Holder.Current`, given to the client of the main installation
+(`mainclient.Options.Throughput`) and to the engine (`Deps.Throughput`, for a handover's direct read). A bucket (`total`, `anonymous`) counts
+in slices of 100 ms, each a tenth of its second's figure; a read reserves its next chunk (a quarter of the total's slice, 4 KiB to 1 MiB) in
+the first slice with room in each of its buckets, sleeps until the slice begins and reads at most what it reserved; the rest goes back at its
+end. `HTTPClient.Do` admits a forward after its slot (`Admit`: the first 64 KiB in a slice that begins within the queue time since the slot
+was asked for, else `ThroughputError`, which `Is` `ErrBusy`; with the class's hour used up a `ThroughputError` with `Hour`), wraps the
+answer's body in the paced reader inside the slot's body and sets `Response.Pacing`; a continuation (`RangeFrom > 0`) is `Running`, paced
+and never refused. The engine answers the refusals (`refuseThroughput`: `503 busy`, or `429 upstream_limit_reached` in the format's status),
+paces a handover's direct read (`Pacer.Reader`), keeps a fill's stall bound from firing while its source waits for the cap
+(`fillRun.pacing`) and takes the cap's wait out of a pass-through's floor (`tooSlow`). With Valkey the slices are the keys
+`throughput:v1:<bucket>:<slice>` of [valkey.md](valkey.md#the-bastions-keys); without, each replica claims its share in memory. The
+built-in and the interim configuration hold the default of Q-BAS-455, 200 MB/s with a quarter for anonymous callers.
 
 **Add a limit.** A new limiter is a name `bastion.<name>` in [guard/instance.go](../../internal/bastion/guard/instance.go), a call to
 `State.Limiter.Allow` (bucket) or `Add` (count), and a row in R-BAS-035 to R-BAS-037; the name is a metric label, so it carries no address. Its
@@ -1052,7 +1069,8 @@ The two profiles, in the form of R-LIM-042: each figure holds the uses named wit
 - **The throughput cap** (R-BAS-097): 200 MB/s for the registration, its anonymous share at the default 25 %, 50 MB/s. The anonymous share
   equals the anonymous profile's uncached rate, so one anonymous first pull of 1 GB takes 20 s, no slower than measured here (21 to 47 s),
   while a flood of distinct artifacts from any number of addresses is held to 50 MB/s, about what the attack reached on this machine and
-  180 GB an hour; the hourly volumes stay unlimited by default. The specification's default today is unlimited; this is a proposal to E10.
+  180 GB an hour; the hourly volumes stay unlimited by default. *Taken by E10 (2026-11-26) as the default,
+  [Q-BAS-455](../spec/bastion.md#q-bas-455--the-throughput-is-200-mbs-by-default-a-quarter-for-anonymous-callers).*
 - **What "served twice" must protect** (R-BAS-098): the working set the attack evicted was 475 entries served twice before it; R-BAS-098's
   80 % for protected entries keeps such a set as long as it is below 1.4 GiB of a 1.75 GiB artifact area, and the churn then cycles
   through the remaining fifth.

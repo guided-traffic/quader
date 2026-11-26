@@ -1433,9 +1433,11 @@ throughput, so at the cap it holds its slot longer, and a miss that waits `queue
 on its slot go (R-BAS-095). *Built by E9a (2026-11-26):* the slots are the configuration's and resized in place
 (`SlotBudget.Resize`), and a request of the anonymous class takes from the anonymous ceiling after its slot, giving the slot back when the
 ceiling refuses it ([Q-BAS-445](#q-bas-445--the-anonymous-ceiling-is-taken-in-the-slot-budget-after-the-slot)). The defaults are 64, 0.25
-and **5 s** (R-BAS-096, [Q-BAS-448](#q-bas-448--the-defaults-of-the-anonymous-ceiling-and-of-the-slots)). *Today, until E10 lands:* nothing
-paces a fill, and the answer is `503 busy`. *Until E8 lands* the main installation sends the interim slots of Q-BAS-352, whose wait is still
-2 s.
+and **5 s** (R-BAS-096, [Q-BAS-448](#q-bas-448--the-defaults-of-the-anonymous-ceiling-and-of-the-slots)). *Built by E10 (2026-11-26):* a
+forward that got its slot is admitted by the throughput, which refuses a miss at the cap at once with `503 busy` and the wait until its first
+bytes ([Q-BAS-457](#q-bas-457--a-miss-at-the-cap-is-refused-at-once-when-its-first-bytes-would-come-after-its-queue-time)), and its body
+is read at the cap's pace while it holds the slot (R-BAS-097). *Until E8 lands* the main installation sends the interim slots of Q-BAS-352,
+whose wait is still 2 s.
 
 - **Budget** ([Q-BAS-35](#q-bas-35--the-concurrency-budget-is-per-replica-with-a-share-for-anonymous-misses)). Every request to
   the main installation except the handshake and the feed takes a slot: forwards, conditional requests, checks, probes,
@@ -2258,7 +2260,7 @@ carries an address, a token, a path or a repository's name):
 | `quader_bastion_cache_sweeps_total` | counter | `trigger` (`interval`, `size`) |
 | `quader_bastion_cache_no_room_total` | counter | `area` (`artifacts`, `documents`) |
 | `quader_bastion_cache_protected_bytes` | gauge | `area` (`artifacts`, `documents`) |
-| `quader_bastion_refused_total` | counter | `reason` (`blocked`, `rate_limited`, `miss_limited`, `auth_timeout`, `invalid_token`, `busy`, `unreachable`, `not_served`, `read_only`, `foreign_location`, `anonymous_ceiling`) |
+| `quader_bastion_refused_total` | counter | `reason` (`blocked`, `rate_limited`, `miss_limited`, `auth_timeout`, `invalid_token`, `busy`, `unreachable`, `not_served`, `read_only`, `foreign_location`, `anonymous_ceiling`, `throughput`) |
 | `quader_bastion_blocks_total` | counter | `reason` (`refusals`) |
 | `quader_bastion_blocked_addresses` | gauge | — |
 | `quader_bastion_audit_events_total` | counter | `outcome` (`sent`, `spooled`, `dropped`) |
@@ -2269,6 +2271,9 @@ carries an address, a token, a path or a repository's name):
 | `quader_bastion_handover_enabled`, `quader_bastion_handover_cooldown` | gauge | — |
 | `quader_bastion_configuration_revision` | gauge | — |
 | `quader_bastion_configuration_source` | gauge | `source` (`main`, `stored`, `builtin`) |
+| `quader_bastion_throughput_limit_bytes_per_second` | gauge | `bucket` (`total`, `anonymous`) |
+| `quader_bastion_throughput_wait_seconds_total` | counter | `class` (`anonymous`, `signed_in`, `catalogue`) |
+| `quader_bastion_throughput_refused_total` | counter | `class`, `reason` (`busy`, `hour`) |
 
 - `quader_bastion_refused_total` counts requests the Bastion refused itself. `reason="read_only"` counts a write refused with `403
   read_only` (R-BAS-014), whether the probe answered it or the kept answer replayed it, and a body above
@@ -2278,7 +2283,12 @@ carries an address, a token, a path or a repository's name):
   scheme, host or port than the Bastion's, answered `502` instead (R-BAS-099 row 6,
   [Q-BAS-427](#q-bas-427--a-location-on-another-host-is-answered-502-at-the-bastion-whatever-the-status)); it stays at 0 while the main
   installation renders a forward's URLs on the Bastion's base URL. `reason="anonymous_ceiling"` counts a request refused `503 busy` above the
-  anonymous ceiling (R-BAS-094, since E9a).
+  anonymous ceiling (R-BAS-094, since E9a). `reason="throughput"` counts a miss the throughput did not admit, `503 busy` at the cap or `429`
+  with its class's hour used up (R-BAS-097, since E10).
+- `quader_bastion_throughput_limit_bytes_per_second` is the configured figure of the whole Bastion per bucket, 0 while unlimited;
+  `quader_bastion_throughput_wait_seconds_total` the seconds this replica's reads waited for the cap, a rate near 1 per transfer saying that
+  the cap, not the main installation, sets the pace; `quader_bastion_throughput_refused_total` the misses refused by the cap (`busy`) or by a
+  class's hourly volume (`hour`) (R-BAS-097, since E10).
 - `quader_bastion_configuration_revision` is the revision of the configuration the replica applies and `quader_bastion_configuration_source`
   is 1 for where it came from: `main` after a handshake, `stored` for the one a replica found in its cache backend at start, `builtin`
   without one (R-BAS-093, Q-BAS-327, since E9a).
@@ -3329,8 +3339,8 @@ address, committed, the last 64 KiB of every transfer withheld until then. Three
   committed, or fetches itself ([H-1245](#h-1245--a-caller-on-another-replica-waits-for-a-running-fill-without-a-byte-up-to-fill_wait_max)).
 - A fill holds its budget slot until the main installation's body ends ([H-1244](#h-1244--cold-fills-of-large-blobs-hold-budget-slots-and-spool-for-the-length-of-their-transfer));
   a fill read by a handover holds it for the handover's answer only (R-BAS-074). *Revised on 2026-11-26 (R-BAS-097):* a fill is paced
-  by the registration's throughput, so at the cap it holds its slot and its spool longer. *Today, until E10 lands:* a fill reads at the
-  main installation's speed.
+  by the registration's throughput, so at the cap it holds its slot and its spool longer. *Built by E10 (2026-11-26);* the time a fill
+  waits for the cap is no stall.
   The defaults of `max_object_bytes` and `spool_max_bytes` (2 GiB each) stay; a layer above them is passed through on every request, and
   the manual's sizing of the cache names images.
 
@@ -4083,7 +4093,9 @@ value as an `iface.HandoverKey` copied from the format's key (destroyed at once)
 Priority: **P1** · Covers: quader-only
 
 *Revised on 2026-11-26 (R-BAS-097):* a direct read is paced by the registration's throughput like a fill from the
-main installation, so the cap covers both sources. *Today, until E10 lands:* a direct read is not paced.
+main installation, so the cap covers both sources. *Built by E10 (2026-11-26):* the engine reads the direct read through the throughput's
+pacer (`throughput.Pacer.Reader`) in the class of the caller whose miss offered the handover; it was admitted as that miss and is never
+refused, only slowed; a continuation from the main installation is paced without an admission (`mainclient.Throughput.Running`).
 
 - **The fill's source.** A `handover` answer starts the fill of R-BAS-021 with the object store as its source instead of the answer's body.
   The answer's body is empty, so its budget slot is free at once, and the direct read holds no slot of the budget towards the main
@@ -4954,7 +4966,7 @@ of the main installation decides; the chart keeps what the installation of the p
 | the rules of the Bastion place | through `/api/v1/bastions/{name}/limits/assignments` ([usage-and-limits.md](usage-and-limits.md) R-LIM-043) | the preset's kind rules | `limits:write` |
 | `limits.flood` | per address: the request and miss figures of the classes `anonymous`, `authenticated` and `gui`, the failed-authentication timeout, the blocks, the exempt networks (R-BAS-035 to R-BAS-037) | the preset's | `limits:write` |
 | `limits.slots` | `maxConcurrent`, `anonymousShare`, `queueTimeout` (R-BAS-025) | 64, 0.25, 5 s (R-BAS-096) | `limits:write` |
-| `limits.throughput` | R-BAS-097 | unlimited | `limits:write` |
+| `limits.throughput` | R-BAS-097 | 200 MB/s, an anonymous share of 25 %, no hourly volume (Q-BAS-455) | `limits:write` |
 | `limits.anonymousCeiling` | R-BAS-094 | 100 a second, burst 2,000, 36,000 an hour (R-BAS-094, from E4's measurement) | `limits:write` |
 | `egress` | the addresses the Bastion connects from (R-BAS-017, R-UI-243) | empty | `endpoints:write` |
 
@@ -5007,10 +5019,11 @@ applies it in `Start` before the client listener binds, and the built-in configu
 `config.bastion.limits`, `failed_auth`, `blocking` and `main.max_concurrent`, `anonymous_share`, `queue_timeout` (a file that sets one stops
 startup naming it, the chart's schema refuses it), and renders the edge figure as `bastion.edge_limit`, which every handshake reports
 ([Q-BAS-447](#q-bas-447--the-edge-figure-is-a-chart-managed-section-of-the-configuration-file-and-every-handshake-reports-it)). Read
-nowhere yet at the Bastion: `mode`, `preset`, `place` (E9b), `throughput` (E10), `switches.gui` and `docs` (W-35's P7). *Not built* (E8, the
+nowhere yet at the Bastion: `mode`, `preset`, `place` (E9b), `switches.gui` and `docs` (W-35's P7); `throughput` since E10 (R-BAS-097). *Not built* (E8, the
 main installation's side with migration 00148; E12, the card). Until E8 the main installation sends the interim configuration
 (Q-BAS-352), whose only member an administrator changes is the switch `handover`, and a change reaches a Bastion with its next regular
-handshake, not with a `settings` entry of the feed; there is no mode, preset, place, throughput or ceiling at the main installation;
+handshake, not with a `settings` entry of the feed; there is no mode, preset, place or ceiling at the main installation, and the throughput is
+the default of Q-BAS-455;
 `handover` is a top-level member of the registration (R-BAS-071); `gui` and `docs` do not exist there.
 
 *Built (package E13, 2026-11-26):* the member `egress` (migration 00145, `bastion.egress cidr[]`), read and written by `GET`, `POST` and
@@ -5366,30 +5379,71 @@ The owner's choice (a) of [Q-BAS-331](#q-bas-331--the-maximum-throughput-is-enfo
 throughput is enforced at the Bastion, on every byte it reads.
 
 - **What is paced.** One pacing reader wraps every body the Bastion reads: a fill from the main installation, an answer passed through, a
-  handover's read from the object store (R-BAS-074), a forwarded document, and W-35's catalogue pull, which counts as the registration's own
-  traffic.
+  handover's read from the object store (R-BAS-074), a forwarded document, the continuation of a fill (R-BAS-075), and W-35's catalogue
+  pull, which counts as the registration's own traffic. The handover's direct read crosses the network to the object store; where that is
+  not the network to the main installation (an object store reached over another link than the main installation's), it still takes from
+  the same cap, which then bounds both links together: the owner's choice of one figure for every byte the Bastion reads (Q-BAS-331). The
+  Bastion's own calls of the interface (handshake, feed, check, downloads) carry bodies of kilobytes and are not paced.
 - **Two buckets per registration**
   ([Q-BAS-332](#q-bas-332--the-throughput-has-two-buckets-the-total-and-the-anonymous-share)): the total, and the anonymous share of it
   (`limits.throughput.anonymousShare`, default 25 %). A read an anonymous caller started takes from both; a signed-in caller's read and the
-  catalogue pull take from the total only, the catalogue below the callers' misses in priority.
-- **The figures**: `limits.throughput.bytesPerSecond`, the card's "Maximum throughput to this Bastion" in MB/s, unlimited by default; on
-  demand `bytesPerHour` per class (`anonymous`, `signedIn`, `catalogue`), unlimited by default.
-- **Across replicas**: one bucket in Valkey when the Bastion has one; without, each replica takes `bytesPerSecond ÷ bastion.replicas`.
-- **At the cap**: fills slow down, so their slots stay taken longer; a new miss waits `limits.slots.queueTimeout` and then answers `503 busy`
-  with `Retry-After`; when a class's hourly volume is used up, its next miss answers `429 upstream_limit_reached` (or the format's status,
-  R-BAS-057) with the time to wait; hits are always served.
-- **Metrics**: `quader_bastion_throughput_limit_bytes_per_second`, `quader_bastion_throughput_wait_seconds_total{class}` and
-  `quader_bastion_throughput_refused_total{class,reason="busy|hour"}` beside R-BAS-090's byte counters.
+  catalogue pull take from the total only, the catalogue below the callers' misses in priority: it reads from a slice only while the slice
+  is less than half used ([Q-BAS-458](#q-bas-458--the-catalogue-reads-from-a-slice-only-while-it-is-less-than-half-used)). An anonymous
+  share of 0 admits no anonymous miss; a share of 1 is the total alone.
+- **The figures**: `limits.throughput.bytesPerSecond`, the card's "Maximum throughput to this Bastion" in MB/s, **200 MB/s by default**, of
+  which the anonymous share is 50 MB/s ([Q-BAS-455](#q-bas-455--the-throughput-is-200-mbs-by-default-a-quarter-for-anonymous-callers));
+  `null` is unlimited. On demand `bytesPerHour` per class (`anonymous`, `signedIn`, `catalogue`), unlimited by default. The card says that
+  the figure is the Bastion's share of the real link between the two networks and that only misses cross it (R-UI-240). A new figure holds
+  for the next bytes every transfer reserves, also for one that runs (R-BAS-093).
+- **How it paces** ([Q-BAS-456](#q-bas-456--a-bucket-counts-in-slices-of-100-ms-and-a-read-reserves-its-next-bytes-in-the-first-slice-with-room)):
+  a bucket counts in slices of 100 ms, each holding a tenth of its second's figure. A read reserves its next bytes (a quarter of the total's
+  slice, at least 4 KiB and at most 1 MiB) in the first slice from now on that has room in each of its buckets, waits until that slice
+  begins, and reads at most what it reserved; what it does not read (the end of a body, a `304`) is given back. The reservations queue in the
+  order they were made, so N transfers at the cap read about an N-th of it each; a running transfer is slowed and never cut. The time a read
+  waits for the cap is no stall of a fill (its stall bound of 60 s) and does not count against the floor of a pass-through (R-BAS-025).
+- **Across replicas**: with Valkey a slice is one counter of the Bastion's prefix (`throughput:v1:<bucket>:<slice>`, raised by `INCRBY` and
+  the part above the limit given back at once), so the replicas share one cap; without, and while Valkey cannot be used, each replica takes
+  `bytesPerSecond ÷ bastion.replicas`, so two replicas without Valkey read 2 × 100 MB/s = 200 MB/s together at the default
+  ([H-2360](../security/bastion.md#h-2360--without-valkey-the-throughputs-replicas-hold-their-shares-as-bastionreplicas-says)).
+- **At the cap** ([Q-BAS-457](#q-bas-457--a-miss-at-the-cap-is-refused-at-once-when-its-first-bytes-would-come-after-its-queue-time)): a
+  new miss is admitted after its slot when its first bytes (at most 64 KiB) find room in a slice that begins within
+  `limits.slots.queueTimeoutMillis` of when it asked for its slot; otherwise it answers `503 busy` at once, with the wait until the first slice
+  with room as `Retry-After` (at least 1 s) and the format's shape. Fills slow down, so their slots stay taken longer, and the slots' own wait
+  (R-BAS-025) answers the rest. When a class's hourly volume is used up, its next miss answers `429 upstream_limit_reached` (or the format's
+  status, R-BAS-057) with the time to wait and the members `figure` (`bytesPerHour`), `limit`, `windowSeconds` and `retryAfterSeconds`; a
+  transfer that runs is never refused by the hour
+  ([H-2361](../security/bastion.md#h-2361--the-throughputs-hourly-volume-is-checked-when-a-miss-is-admitted-not-while-it-reads)).
+  A revalidation (the Bastion's own conditional request) is a miss of this kind; hits are always served.
+- **Metrics**: `quader_bastion_throughput_limit_bytes_per_second{bucket="total|anonymous"}` (the configured figure, 0 while unlimited),
+  `quader_bastion_throughput_wait_seconds_total{class="anonymous|signed_in|catalogue"}` and
+  `quader_bastion_throughput_refused_total{class,reason="busy|hour"}` beside R-BAS-090's byte counters; a refused miss also counts
+  `quader_bastion_refused_total{reason="throughput"}` and `quader_bastion_main_requests_total{outcome="busy"}`.
 
-*Not built* (package E10). Today the Bastion has no byte rate towards the main installation: R-BAS-025's slots bound the requests in flight,
-and a handover's read from the object store is not paced (H-2273).
+*Built on 2026-11-26 (package E10).* [internal/bastion/throughput](../../internal/bastion/throughput/throughput.go): `Pacer` (the buckets,
+the reservation per slice, `Admit`, `Running`, `Reader` for a handover's direct read, `CatalogueReader` for W-35's pull, which no package
+calls yet); the counters `shared.Bytes` ([bytes.go](../../internal/bastion/shared/bytes.go)) over `cluster.BastionStore.ClaimBytes`,
+`ReleaseBytes` and `AddBytes` ([valkey_bastion_bytes.go](../../internal/cluster/valkey_bastion_bytes.go)); the client of the main
+installation admits every forward after its slot and paces its body (`mainclient.Throughput`, `ThroughputError`, `Response.Pacing`); the
+engine paces a handover's direct read, answers the refusals (`refuseThroughput` in [respond.go](../../internal/bastion/engine/respond.go)),
+and lets neither the fill's stall bound nor the pass-through's floor count the cap's wait. The default is the built-in configuration's and
+the interim configuration's (`settings.DefaultThroughputBytesPerSecond`, `bastionmain.InterimThroughputBytesPerSecond`).
 
-Acceptance criteria:
+Acceptance criteria (as built):
 
-- Unit (`internal/bastion/shared`, `internal/bastion/engine`, with an injected clock, under 1 s): at 1 MB/s with an anonymous share of 25 %,
-  an anonymous fill reads at most 250 KB in a second while a signed-in fill takes the rest; a new miss at the cap answers `503 busy` after the
-  queue's time; the hourly volume of a class used up answers `429`; a hit is served at once.
-- Integration (area `bastionshared`, about 3 s): two replicas share one cap through Valkey.
+- Unit (`internal/bastion/throughput`, a clock the test drives, 0.3 s together, endless bodies of zeros read by the kilobyte): at 1 MB/s
+  with an anonymous share of 25 %, an anonymous fill reads 250 KB in a second while a signed-in fill takes the other 750 KB
+  (`TestR_BAS_097_AnAnonymousFillReadsAtMostItsShareWhileASignedInFillTakesTheRest`); a new miss of either class at the cap is refused at
+  once with the wait until the first slice with room, while a running transfer of 300 KB is slowed and completes
+  (`TestR_BAS_097_ANewMissAtTheCapIsBusyWhileARunningTransferSlowsAndCompletes`); an unread reservation is given back; a class whose hour is
+  used up is refused its next miss with the hour, a signed-in one is admitted; without Valkey one replica of two reads half; an unlimited
+  throughput paces nothing; the catalogue waits first.
+- Unit (`internal/bastion/mainclient`, 0.02 s): a forward is admitted after its slot and its body paced, a continuation paced without an
+  admission, a refused miss not sent and its slot given back (`TestR_BAS_097_AForwardIsAdmittedAfterItsSlotAndItsBodyIsPaced`).
+- Unit (`internal/bastion/engine`, 0.03 s, bytes and a blob of 192 KiB): a refused miss answers `503 busy` or `429 upstream_limit_reached`
+  and a hit is served (`TestR_BAS_097_AMissTheThroughputRefusesIsBusyOrUsedUpAndAHitIsServed`); a handover's direct read is paced
+  (`TestR_BAS_097_AHandoversDirectReadIsPaced`).
+- Integration (area `bastionshared`, 2.3 s): with Valkey one replica alone reads the whole 1 MB/s, and two replicas at once read 500 KB each
+  (`TestR_BAS_097_WithValkeyTheReplicasShareOneThroughputCap`).
 
 ### R-BAS-098 · The cache protects what was served twice
 Priority: **MVP** · Covers: quader-only
@@ -5582,7 +5636,7 @@ it:
         "exemptNetworks": []
       },
       "slots": {"maxConcurrent": 64, "anonymousShare": 0.25, "queueTimeoutMillis": 2000},
-      "throughput": {"bytesPerSecond": null, "anonymousShare": 0.25,
+      "throughput": {"bytesPerSecond": 200000000, "anonymousShare": 0.25,
                      "bytesPerHour": {"anonymous": null, "signedIn": null, "catalogue": null}},
       "anonymousCeiling": {"requestsPerSecond": 100, "burst": 1000, "requestsPerHour": 100000}
     }
@@ -5606,7 +5660,8 @@ measurement sets, and the ceiling's figures are examples for the same reason)*
   ([Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour)): mode `enforce`, preset `custom`, one rule `interim-unlimited` without a figure for every kind, the flood figures and slots of the
   Bastion chart's defaults today, no throughput cap and no ceiling. The link refuses a handshake whose configuration `Validate` refuses and
   applies `switches.handover`. *Since E9a* the Bastion applies the whole member (R-BAS-093): the flood figures, the slots and the anonymous
-  ceiling; `mode`, `preset`, `place` and `throughput` wait for E9b and E10.
+  ceiling; `mode`, `preset` and `place` wait for E9b. *Since E10* the interim configuration carries the default throughput of 200 MB/s with an
+  anonymous share of 25 % (Q-BAS-455), which the Bastion applies (R-BAS-097).
 
 **The subject's limits** (R-BAS-096). The check answer's `subject` gains `limits: {"key": "<limits_subject>", "rule": "<rule ID>"}` for a
 usable subject (`token`; for `anonymous` the member is absent, since the Bastion decides an anonymous caller's key and rule itself), and the
@@ -8791,8 +8846,8 @@ the gap H-459 of the first build.
 `TestR_BAS_025_TheFloorOfAPassThroughStartsAfterTheGracePeriodAndIsAnAverage`.
 
 *Revised on 2026-11-26 by the owner's [Q-BAS-331](#q-bas-331--the-maximum-throughput-is-enforced-at-the-bastion-on-every-byte-it-reads):* a fill reads the main installation at its own speed up to
-the registration's throughput (R-BAS-097), so at the cap a fill holds its slot longer and new misses wait. *Today, until E10 lands:* at the
-main installation's speed.
+the registration's throughput (R-BAS-097), so at the cap a fill holds its slot longer and new misses wait. *Built by E10 (2026-11-26):* the
+floor does not count the time a pass-through's read waited for the cap.
 
 ### Q-BAS-124 · A `404` that is not marked `absent` is never kept as a URL answer
 
@@ -11716,7 +11771,10 @@ Context: E7 lands the wire before E8 gives a registration a configuration; E9a m
 | (c) Revision 0 always | Simpler | — | E9a could not see a change of the handover |
 
 **Choice:** (a). The subject's `limits` in the check answer and `Quader-Bastion-Limits` are optional on the wire and absent until E8.
-**Applied in the spec:** R-BAS-002, R-BAS-010, R-BAS-093, R-BAS-096, the wire.
+**Applied in the spec:** R-BAS-002, R-BAS-010, R-BAS-093, R-BAS-096, the wire. *Revised on 2026-11-26 by E10
+([Q-BAS-455](#q-bas-455--the-throughput-is-200-mbs-by-default-a-quarter-for-anonymous-callers)):* the interim configuration carries the
+default throughput every registration has (200 MB/s, a quarter for anonymous callers), not "no throughput cap"; it is its one member that
+changes what a Bastion did before.
 
 ### Q-BAS-353 · A format declares its read routes with a body below the repository, and kit check 19 holds the list to its routes
 
@@ -12318,6 +12376,93 @@ With Ansible Galaxy's 503 (Q-BAS-451) kit check 16 accepts 429 or 503 for a refu
 declaration. **Choice:** (a). **Applied in the spec:** R-BAS-058, R-BAS-095, [usage-and-limits.md](usage-and-limits.md) R-LIM-036; code:
 [shape.go](../../internal/errs/shape.go), [checks_bastion.go](../../internal/formats/formattest/checks_bastion.go),
 [checks_admission.go](../../internal/formats/formattest/checks_admission.go).
+
+### Q-BAS-455 · The throughput is 200 MB/s by default, a quarter for anonymous callers
+
+Status: **Decided by the development agent on 2026-11-26** (package E10) — selected from the options below; the owner reviews it at the
+walkthrough. It revises the default of R-BAS-097 that the owner's option (a) of k8 named, "Unlimited" (Q-BAS-331), on his two rules
+together: figures generous for a large company (Q-LIM-303), and the transfer network protected without an administrator's act.
+
+Context: the measurement of 2026-11-26 (developer/bastion.md, "What a client's command costs through a Bastion"): a flood of distinct
+4 MiB files from 256 addresses drew 34 to 52 MB/s from the main installation (peaks 67 to 80), bounded only by the slots; a cold image of
+1 GiB came at 23 to 51 MB/s; the signed-in profile's uncached rate is 125 MB/s per subject. A Bastion serves the internet; its internal users
+use the main installation directly, and only misses cross the link, hits do not.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) 200 MB/s, an anonymous share of 25 % (50 MB/s), no hourly volume (chosen) | The measurement's proposal | A cold image of 5.9 GB crosses in 30 s, the measured flood crosses in full, and anonymous misses never take more than a quarter; no measured normal command is slowed (the fastest single transfer measured was 51 MB/s, one anonymous first pull of 1 GB takes 20 s at the share) | Two signed-in subjects pulling cold at 125 MB/s each share 200 MB/s; a link slower than 200 MB/s is not protected until the administrator sets its share (the card says so) |
+| (b) Unlimited, as k8's option text said | No cap until an administrator sets one | Nothing slowed | An out-of-the-box Bastion leaves the transfer network to the flood the owner asked to prevent |
+| (c) 50 MB/s | What the flood reached | Tight | Slower than one signed-in subject's cold pull (125 MB/s) |
+
+**Choice:** (a). An administrator sets the figure per Bastion to a share of the real link (R-UI-240). **Applied in the spec:** R-BAS-093's
+table, R-BAS-097; code: [builtin.go](../../internal/bastion/settings/builtin.go) (the built-in configuration),
+[configuration.go](../../internal/bastionmain/configuration.go) (the interim configuration, which every registration gets until E8).
+
+### Q-BAS-456 · A bucket counts in slices of 100 ms, and a read reserves its next bytes in the first slice with room
+
+Status: **Decided by the development agent on 2026-11-26** (package E10) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-097 paces every byte against a bucket of the whole Bastion, shared by the replicas through Valkey, whose ACL user runs no
+script (`INCRBY`, `EXPIRE`, `GET`, `MULTI`, `EXEC`), and a running transfer must be slowed, never cut.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Counters per slice of 100 ms; a read reserves a chunk (a quarter of the total's slice, 4 KiB to 1 MiB) in the first slice with room in each of its buckets, waits until it begins, gives back what it did not read (chosen) | One `MULTI INCRBY EXPIRE EXEC` per chunk with Valkey, a second for an excess or a give-back | No script; the reservations queue in order, so the transfers at the cap share it evenly and a running one always gets its next chunk; even within a second | At 200 MB/s a read at full speed costs about 200 round trips a second; a slice marked full on a replica stays skipped by it after a give-back frees it |
+| (b) A token bucket with a theoretical arrival time in one counter | One counter per bucket | Exact | Lifting the counter after an idle period needs a compare-and-set: two replicas lifting at once push every read out by the idle time |
+| (c) A fixed second | 1 s windows | Fewer round trips | A second's whole figure at its start; transfers race at every boundary |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-097; code: [throughput.go](../../internal/bastion/throughput/throughput.go),
+[valkey_bastion_bytes.go](../../internal/cluster/valkey_bastion_bytes.go).
+
+### Q-BAS-457 · A miss at the cap is refused at once when its first bytes would come after its queue time
+
+Status: **Decided by the development agent on 2026-11-26** (package E10) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-097 said a new miss at the cap "waits `queueTimeout` and then answers `503 busy`". With reservations by slice (Q-BAS-456) the
+Bastion knows at once in which slice a miss's first bytes would come.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) After its slot, a miss reserves its first bytes (at most 64 KiB) in a slice that begins within the queue time since it asked for its slot; with none, `503 busy` at once with the wait until the first slice with room (chosen) | One wait for the slot and the bytes together; the request is sent at once and its body waits for its slice | The client learns the true wait; a refused miss holds no slot and no goroutine for nothing; small first bytes keep the admission of many documents from holding the slices large bodies read from | At the default figures the cap rarely refuses: with 64 slots the slots' own wait refuses first, and the cap slows |
+| (b) Wait the whole queue time, then refuse | As the text said | Literal | Waits while it knows the answer, holding the slot |
+| (c) Admit every miss and only slow it | | Nothing refused | An attack opens ever more transfers, each ever slower |
+
+**Choice:** (a). A transfer that runs (the continuation of a fill, a handover's direct read, the catalogue) is never refused. **Applied in
+the spec:** R-BAS-025, R-BAS-097; code: `Pacer.Admit` in [throughput.go](../../internal/bastion/throughput/throughput.go), `HTTPClient.Do` in
+[client.go](../../internal/bastion/mainclient/client.go).
+
+### Q-BAS-458 · The catalogue reads from a slice only while it is less than half used
+
+Status: **Decided by the development agent on 2026-11-26** (package E10) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: Q-BAS-332 puts W-35's catalogue pull below the callers' misses in priority: at the cap the catalogue waits first.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The catalogue claims in the total's slice with half the slice as its limit (chosen) | The callers claim up to the whole slice | No coordination beyond the counter; at the cap the catalogue waits and the callers always find the half it did not take | An idle Bastion pulls its catalogue at half the cap (45 MiB in under a second at the default) |
+| (b) A flag "callers wait" in Valkey | | Exact priority | One more key and round trip per wait |
+| (c) The catalogue in later slices only | | Callers first | The catalogue starves at a steady cap |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-097; code: `Pacer.CatalogueReader` in
+[throughput.go](../../internal/bastion/throughput/throughput.go), which W-35's pull calls once it is built.
+
+### Q-BAS-459 · A class's hourly volume is checked when a miss is admitted and counted as its bytes are read
+
+Status: **Decided by the development agent on 2026-11-26** (package E10) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-097's `bytesPerHour` per class, unlimited by default, refuses "its next miss"; a running transfer is never cut.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A sliding hour over two counters of whole hours per class (`INCRBY`); a miss is refused when the estimate reached the figure; a reader adds what it read at each reservation and at its end, and only while the class has a figure (chosen) | The limiters' sliding window, for bytes | No round trip while the figure is unlimited (the default); the wait is computed from the counters | The transfers in flight at the moment the hour fills pass it by their size (H-2361) |
+| (b) Reserve the hour with each chunk | | Exact | Would cut or stall a running transfer at the hour |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-097; code: `hourUsed` and `reader.flush` in
+[throughput.go](../../internal/bastion/throughput/throughput.go).
 
 ### Q-BAS-460 · The access marker is the protection, because a fill writes none
 
@@ -13016,8 +13161,9 @@ says that it need not wait for them. Narrowed by the handover (R-BAS-074): a fil
 handover's answer, so where a registration's handover is on, such fills hold the spool and no slot; the spool's part stays.
 
 *Revised on 2026-11-26 by the owner's [Q-BAS-331](#q-bas-331--the-maximum-throughput-is-enforced-at-the-bastion-on-every-byte-it-reads):* the throughput paces fills (R-BAS-097), so at the cap a cold fill
-holds its slot and its spool longer than the figures above; the cap bounds the bytes, the slots still bound the fills in flight. *Today,
-until E10 lands:* as above.
+holds its slot and its spool longer than the figures above; the cap bounds the bytes, the slots still bound the fills in flight. *Since E10
+(2026-11-26)* the cap holds: at the default 200 MB/s a cold fill of 2 GiB holds its slot at least 11 s, and while transfers share the cap
+each holds it longer.
 
 ### H-1245 · A caller on another replica waits for a running fill without a byte up to fill_wait_max
 
@@ -13325,8 +13471,9 @@ caller at the Bastion; none of them is built here.
 
 *Decided on 2026-11-26:* the owner chose all three remedies: the cache protects what was served twice
 ([Q-BAS-333](#q-bas-333--what-was-served-twice-is-protected-in-the-cache), R-BAS-098, package E11), the throughput is capped per Bastion ([Q-BAS-331](#q-bas-331--the-maximum-throughput-is-enforced-at-the-bastion-on-every-byte-it-reads), R-BAS-097, E10), and budgets
-per subject apply at the Bastion ([usage-and-limits.md](usage-and-limits.md) Q-LIM-305, R-BAS-096, E9b). *Today, until those land:* live as
-described.
+per subject apply at the Bastion ([usage-and-limits.md](usage-and-limits.md) Q-LIM-305, R-BAS-096, E9b). *Since E10 (2026-11-26)* the churn
+crosses the transfer network at most at the throughput's cap, and anonymous misses at most at its anonymous share (50 MB/s by default);
+*until E11 and E9b land* the working set is still evicted as described.
 
 *Narrowed on 2026-11-26 by E11 (R-BAS-098):* a stream of single requests for distinct artifacts no longer evicts what was served twice, as
 long as that fits in 80 % of an area; it still crosses the transfer network one fill per request, and the refills of what was served once
@@ -13349,8 +13496,9 @@ network. What would close it: a maximum throughput per Bastion, which waits for 
 
 *Decided on 2026-11-26:* the owner chose a maximum throughput per Bastion, enforced at the Bastion on every byte it
 reads ([Q-BAS-331](#q-bas-331--the-maximum-throughput-is-enforced-at-the-bastion-on-every-byte-it-reads), R-BAS-097, package E10); a taken-over Bastion ignores it
-([H-2289](../security/bastion.md#h-2289--a-bastion-that-was-taken-over-ignores-its-throughput-cap)). *Today, until E10 lands:* live as
-described.
+([H-2289](../security/bastion.md#h-2289--a-bastion-that-was-taken-over-ignores-its-throughput-cap)). *Closed by E10 (2026-11-26):* every
+Bastion paces what it reads to its registration's throughput, 200 MB/s by default (R-BAS-097). What stays is the Bastion's own honesty
+(H-2289) and the replicas' shares without Valkey ([H-2360](../security/bastion.md#h-2360--without-valkey-the-throughputs-replicas-hold-their-shares-as-bastionreplicas-says)).
 
 ### H-2274 · The main installation counts no handover, and the Bastion counts only its fills by class
 

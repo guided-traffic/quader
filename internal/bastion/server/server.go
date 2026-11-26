@@ -44,6 +44,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 	bmetrics "github.com/guided-traffic/quader/internal/bastion/metrics"
 	"github.com/guided-traffic/quader/internal/bastion/settings"
+	"github.com/guided-traffic/quader/internal/bastion/throughput"
 	"github.com/guided-traffic/quader/internal/buildinfo"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -252,8 +253,12 @@ func (s *Server) buildDeps() (engine.Deps, error) {
 		MaxConcurrent: slots.MaxConcurrent, Replicas: b.Replicas, AnonymousShare: slots.AnonymousShare, QueueTimeout: slots.QueueTimeout,
 		Ceiling: guard.NewCeiling(st, s.configuration.For), Metrics: s.bm,
 	})
+	// The throughput between the main installation and the Bastion (R-BAS-097): one pacer per replica over the shared byte
+	// counters, which the client admits every forward through and the engine paces a handover's direct read with.
+	pacer := throughput.New(throughput.Options{Bytes: st.Bytes, Figures: s.configuration.Current, Metrics: s.bm})
 	s.configuration.Watch(func(a *settings.Applied) {
 		budget.Resize(a.Slots.MaxConcurrent, a.Slots.AnonymousShare, a.Slots.QueueTimeout)
+		pacer.Export(a)
 	})
 	s.holder = mainclient.NewHolder(tok)
 	edge := iface.EdgeLimit{}
@@ -262,7 +267,7 @@ func (s *Server) buildDeps() (engine.Deps, error) {
 	}
 	client, err := mainclient.New(mainclient.Options{
 		URL: b.Main.URL, PackagesURL: b.Main.PackagesURL, BaseURL: s.cfg.Server.BaseURL, Replica: s.instance, Release: buildinfo.Get().Version, Tokens: s.holder,
-		Budget: budget, EdgeLimit: &edge,
+		Budget: budget, Throughput: pacer, EdgeLimit: &edge,
 		ConnectTimeout: b.Main.ConnectTimeout, ResponseHeaderTimeout: b.Main.ResponseHeaderTimeout, CAFile: b.Main.CAFile,
 		Metrics: s.bm, Log: s.log, Tracer: s.tracer, Obs: s.metrics, TLSMetrics: s.tlsm,
 	})
@@ -281,7 +286,7 @@ func (s *Server) buildDeps() (engine.Deps, error) {
 	}
 	d := engine.Deps{
 		Config: s.cfg, Log: s.log.With("component", "engine"), Metrics: s.bm, Replica: s.instance, Release: buildinfo.Get().Version,
-		Main: client, Cache: c, Shared: st, Guard: g, Handover: links,
+		Main: client, Cache: c, Shared: st, Guard: g, Handover: links, Throughput: pacer,
 	}
 	if s.o.Deps != nil {
 		s.o.Deps(&d)

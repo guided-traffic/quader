@@ -148,9 +148,17 @@ func (e *engine) onHandover(q *rq, resp *mainclient.Response, sent time.Time) {
 		return
 	}
 	r := e.newFillRun(q, resp, fill, h.SHA256, h.Size, sent, cache.EntryArtifact)
-	r.direct = &directFill{read: rd, cancel: readCancel, key: q.cacheKey, cont: e.continuation(q.hold.ctx, q), m: e.d.Metrics}
+	// The direct read crosses the network to the object store and is paced like a fill from the main installation (R-BAS-097,
+	// Q-BAS-331). It was admitted as the miss whose forward offered the handover, so it is never refused, only slowed.
+	var body io.ReadCloser = rd
+	if e.d.Throughput != nil {
+		paced := e.d.Throughput.Reader(readCtx, e.budgetClass(q), rd)
+		body = paced
+		r.pacing.set(paced)
+	}
+	r.direct = &directFill{body: body, cancel: readCancel, key: q.cacheKey, cont: e.continuation(q.hold.ctx, q), m: e.d.Metrics}
 	q.handoverOutcome = r.direct.logged
-	e.runFill(q, r, rd, func() { readCancel(); end() })
+	e.runFill(q, r, body, func() { readCancel(); end() })
 }
 
 // checkHandover holds a handover to R-BAS-073's checks before the read, and to what the fill needs of the answer. refused is
@@ -195,10 +203,10 @@ func (e *engine) fallback(q *rq, cause error, cool bool) {
 // caller's request as the miss sent it, with the Bastion's own Range from the spooled length and If-Range with the fill's
 // validator, without the offer. Its request is taken now, while the caller's request lives; it runs in the fill's goroutine
 // with the fill's context.
-func (e *engine) continuation(ctx context.Context, q *rq) func(from int64, etag string, size int64) (io.ReadCloser, error) {
+func (e *engine) continuation(ctx context.Context, q *rq) func(from int64, etag string, size int64) (*mainclient.Response, error) {
 	fr := e.forwardRequest(q)
 	class, addr := e.budgetClass(q), q.clientText
-	return func(from int64, etag string, size int64) (io.ReadCloser, error) {
+	return func(from int64, etag string, size int64) (*mainclient.Response, error) {
 		resp, err := e.d.Main.Do(ctx, mainclient.Forward{
 			Request: fr, Class: class, Kind: mainclient.KindForward, ClientAddress: addr, RangeFrom: from, IfRange: etag,
 		})
@@ -209,7 +217,7 @@ func (e *engine) continuation(ctx context.Context, q *rq) func(from int64, etag 
 			_ = resp.Body.Close()
 			return nil, err
 		}
-		return resp.Body, nil
+		return resp, nil
 	}
 }
 
@@ -234,10 +242,12 @@ func continues(resp *mainclient.Response, from int64, etag string, size int64) e
 // directFill is what a fill whose source is a direct read holds besides the spool: the read, the cancel that ends it at the
 // stall bound, the continuation, and the handover's one outcome.
 type directFill struct {
-	read   *handover.Read
+	// body is what the fill reads of the direct read: the read paced by the throughput, or the read itself. Its Close destroys
+	// the read's key.
+	body   io.Closer
 	cancel context.CancelFunc
 	key    string
-	cont   func(from int64, etag string, size int64) (io.ReadCloser, error)
+	cont   func(from int64, etag string, size int64) (*mainclient.Response, error)
 	m      *metrics.Metrics
 	// turned is set once the fill reads from the main installation; the stall bound then ends the fill's request.
 	turned atomic.Bool
@@ -276,7 +286,7 @@ func (r *fillRun) turnToMain(err error, spooled int64) (io.ReadCloser, bool) {
 	if d == nil || d.turned.Load() {
 		return nil, false
 	}
-	_ = d.read.Close()
+	_ = d.body.Close()
 	if errors.Is(err, handover.ErrDigest) {
 		r.e.log.Warn("a handed blob is not its digest; its key sends no offer for the revalidation period", "sha256", r.sha)
 		r.e.markNoOffer(d.key)
@@ -290,12 +300,13 @@ func (r *fillRun) turnToMain(err error, spooled int64) (io.ReadCloser, bool) {
 	d.turned.Store(true)
 	d.finish(metrics.HandoverContinued)
 	r.e.log.Info("a direct read broke off; the fill continues from the main installation", "sha256", r.sha, "from", spooled, "error", err.Error())
-	body, cerr := d.cont(spooled, r.etag, r.size)
+	resp, cerr := d.cont(spooled, r.etag, r.size)
 	if cerr != nil {
 		r.e.log.Warn("the continuation of a fill failed", "sha256", r.sha, "error", cerr.Error())
 		return nil, false
 	}
-	return body, true
+	r.pacing.set(resp.Pacing)
+	return resp.Body, true
 }
 
 // stall ends what the fill reads now when no byte arrived within the stall bound: the direct read, which the run then

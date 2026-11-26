@@ -4,7 +4,7 @@ Status: specified on 2026-11-26 (W-34; the owner's answers to the working paper 
 and E5 are **built** (the cache bounded at every commit and the bytes counted, R-BAS-089, R-BAS-090; the format's cap of the wait and the
 figures that let one normal command through, R-BAS-091, R-BAS-092, interface version 7), and so are E16, E14a (the anonymous token and
 the anonymous documents of R-BAS-094), E13 (the addresses a Bastion connects from), E7 (the shared wire, interface version 8, with
-W-35's P5) and E15 (writes refused at the Bastion in the five error shapes, R-BAS-095) and E9a (the configuration at the Bastion, the flood protection's figures from it, the anonymous ceiling) and E11 (the cache protects what was served twice, R-BAS-098); E4 is measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this
+W-35's P5) and E15 (writes refused at the Bastion in the five error shapes, R-BAS-095) and E9a (the configuration at the Bastion, the flood protection's figures from it, the anonymous ceiling) and E10 (the throughput, R-BAS-097) and E11 (the cache protects what was served twice, R-BAS-098); E4 is measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this
 page and the specification. Every other package is **not built**. The requirements are [bastion.md](../spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation)
 R-BAS-093 to R-BAS-099 and [its wire](../spec/bastion.md#the-interface-version-8-the-shared-wire),
 [usage-and-limits.md](../spec/usage-and-limits.md#a-bastion-as-a-place) R-LIM-043 to R-LIM-046 and
@@ -53,7 +53,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 | 2 | E13 | egress addresses on the registration | E6 | built |
 | 3 | E8 | the main installation's side | E7, W32, W36, E4 | not built |
 | 3 | E9a | the configuration at the Bastion, flood protection, the anonymous ceiling | E7, E4 | built |
-| 3 | E10 | the throughput | E7 | not built |
+| 3 | E10 | the throughput | E7 | built |
 | 3 | E15 | writes refused at the Bastion | E7 | built |
 | 4 | E9b | budgets on what the Bastion serves | E9a, E8 | not built |
 | 4 | E11 | the cache protects what was served twice | E1 (may take any free place from wave 2 on) | built |
@@ -148,7 +148,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 - *What E9a left:* the status of the reporting batch (`ReplicaStatus`, which the wire's text gave to "E8 and E9a"): no package sends it yet;
   E12's live state needs it, and E9b's flush is where it is cheapest to add. Until E8 the interim configuration holds no ceiling and a 2 s
   wait (H-2357), and a change reaches a Bastion with its regular handshake (the `settings` entry of the feed is E8's), so the integration
-  case takes the 5 s handshake of the harness, not 3 s. `mode`, `preset`, `place` and `throughput` are read by nothing yet (E9b, E10).
+  case takes the 5 s handshake of the harness, not 3 s. `mode`, `preset` and `place` are read by nothing yet (E9b); `throughput` since E10.
 
 ### E9b · Budgets on what the Bastion serves
 
@@ -171,6 +171,20 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 - **Files**: `internal/bastion/engine/fill.go`, `forward.go`, `handover.go`; `internal/bastion/shared/`.
 - **Tests**: unit with an injected clock, under 1 s; integration, two replicas sharing one cap through Valkey, about 3 s.
 - **Identifiers**: Q-BAS-331, Q-BAS-332, H-2289.
+- *Built on 2026-11-26.* The package [internal/bastion/throughput](../../internal/bastion/throughput/throughput.go) (`Pacer`, the paced
+  reader) over the byte counters `shared.Bytes` ([bytes.go](../../internal/bastion/shared/bytes.go)) and, with Valkey,
+  `cluster.BastionStore.ClaimBytes`, `ReleaseBytes` and `AddBytes` ([valkey_bastion_bytes.go](../../internal/cluster/valkey_bastion_bytes.go),
+  the key family `throughput`); the files the plan named changed less than planned: the client of the main installation admits and paces
+  every forward in one place (`mainclient.Throughput`, `HTTPClient.Do`), so `fill.go` and `forward.go` only keep the cap's wait out of the
+  stall bound and the floor, and `handover.go` paces the direct read. The default of 200 MB/s with an anonymous share of 25 % is the
+  built-in configuration's and the interim configuration's (Q-BAS-455, a revision of R-BAS-097's "unlimited").
+  A miss at the cap is refused at once with the wait until its first bytes instead of after the queue time (Q-BAS-457).
+  W-35's pull has `Pacer.CatalogueReader` to call; nothing calls it yet. The replica's status in the reporting batch
+  (`iface.ThroughputStatus`) is still sent by no package (E9b's flush, E12's live state). Decisions Q-BAS-455 to Q-BAS-459, gaps H-2360 and
+  H-2361 of [security/bastion.md](../security/bastion.md#h-2360--without-valkey-the-throughputs-replicas-hold-their-shares-as-bastionreplicas-says).
+  Tests: [throughput_test.go](../../internal/bastion/throughput/throughput_test.go) (seven cases, 0.3 s, a clock the test drives),
+  the client's admission (0.02 s), the engine's refusals and a paced direct read (0.03 s), and `bastionshared`'s
+  `TestR_BAS_097_WithValkeyTheReplicasShareOneThroughputCap` (2.3 s).
 
 ### E11 · The cache protects what was served twice
 
@@ -310,7 +324,7 @@ H-2298 and H-2299 are spare.
 | E8 | unit; integration `bastionreg`, `limits` | rows | 1.5 s; 3 s; 4 s |
 | E9a | unit; chart test; integration `bastion`, `bastionshared` | none to bytes | 1 s; chart; 9 s (two cases); 0.2 s (measured: see E9a's entry) |
 | E9b | unit; integration `bastionshared`, `bastion` | bytes | 2 s; 2 s; 5 s |
-| E10 | unit (injected clock); integration with Valkey | bytes | under 1 s; 3 s |
+| E10 | unit (injected clock); integration with Valkey | bytes to 300 KB | 0.35 s; 2.3 s (measured: see E10's entry) |
 | E11 | unit | none | 0.9 s measured (planned under 0.5 s) |
 | E12 | Vitest; renders | fixtures | about 4 s; renders |
 | E13 | unit; integration `bastionreg` | rows | 3 s |

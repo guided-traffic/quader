@@ -29,6 +29,8 @@ const (
 	MaxAnswerTTL = 48 * time.Hour
 	// MaxSweepLeaseTTL bounds two sweep intervals (the interval is at most 24 h).
 	MaxSweepLeaseTTL = 48 * time.Hour
+	// MaxThroughputTTL bounds the byte counters of the throughput (R-BAS-097): a counter of an hour lives two hours.
+	MaxThroughputTTL = 2 * time.Hour
 )
 
 // MarkKind selects the family of an address mark.

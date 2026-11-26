@@ -30,6 +30,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/maintest"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
 	"github.com/guided-traffic/quader/internal/bastion/shared"
+	"github.com/guided-traffic/quader/internal/bastion/throughput"
 	"github.com/guided-traffic/quader/internal/config"
 )
 
@@ -515,6 +516,8 @@ type options struct {
 	// handover is the link client of the handover per blob; nil offers none (R-BAS-074). log is the engine's logger.
 	handover *handover.Client
 	log      *slog.Logger
+	// throughput paces a handover's direct read (R-BAS-097); nil paces nothing.
+	throughput *throughput.Pacer
 }
 
 func newHarness(t *testing.T, o options) *harness {
@@ -571,6 +574,7 @@ func newHarness(t *testing.T, o options) *harness {
 	d := Deps{
 		Config: cfg, Metrics: h.m, Replica: "bastion-0", Release: "test", Now: h.clock.now, Main: h.link.Guard(client),
 		Cache: h.cache.Cache, Shared: h.state, Guard: h.guard, Downloads: h.dl, Link: h.link, Handover: o.handover, Log: o.log,
+		Throughput: o.throughput,
 	}
 	e, err := newFlow(d)
 	if err != nil {

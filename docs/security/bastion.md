@@ -433,7 +433,7 @@ have landed:
 | Less of the internet reaches the main installation | Writes are refused at the Bastion, anonymous token requests are answered there, anonymous documents are kept for the metadata period, and a ceiling bounds what all anonymous callers of a Bastion cause together; a write never reaches the main installation's routing, so Q-BAS-118's admission of probes goes. *Built by E14a:* the anonymous token and the anonymous documents. *Built by E15:* the refusal of writes at the Bastion and the end of the
 probes' admission; a write costs the Bastion its request limit and nothing of the main installation. The Bastion issues a token without a key: it is worth a request without a credential, anyone can mint one, and the main installation refuses it ([H-2350](#h-2350--anyone-can-mint-an-anonymous-registry-token-of-a-bastion)); a withdrawal reaches a kept anonymous document through the feed ([H-2351](#h-2351--a-withdrawal-reaches-an-anonymous-callers-kept-document-within-the-feeds-bound-no-longer-at-its-next-read)) | R-BAS-094, R-BAS-095, Q-BAS-435 |
 | Budgets per subject at the Bastion | A hit is counted against the caller's budget at the Bastion's place, which narrows [H-1381](../spec/bastion.md#h-1381--the-main-installations-limits-and-blocks-do-not-reach-hits-from-per-package-answers); the subject key and the applying rule come from the main installation, which names more of each caller to the Bastion than the marking did ([H-2281](#h-2281--the-check-answer-names-each-callers-subject-key-and-rule-to-the-bastion)) | R-BAS-096, Q-BAS-328 |
-| A cap on the bytes between the two | The Bastion paces every body it reads; a Bastion that was taken over ignores its own cap ([H-2289](#h-2289--a-bastion-that-was-taken-over-ignores-its-throughput-cap)) | R-BAS-097 |
+| A cap on the bytes between the two (built, E10) | The Bastion paces every body it reads, from the main installation and from the object store, to its registration's throughput, 200 MB/s by default with a quarter for anonymous callers, so a flood of distinct artifacts fills neither the transfer network nor the store's egress beyond it; a Bastion that was taken over ignores its own cap ([H-2289](#h-2289--a-bastion-that-was-taken-over-ignores-its-throughput-cap)); without Valkey each replica holds its share ([H-2360](#h-2360--without-valkey-the-throughputs-replicas-hold-their-shares-as-bastionreplicas-says)); the hourly volume refuses the next miss, not a running transfer ([H-2361](#h-2361--the-throughputs-hourly-volume-is-checked-when-a-miss-is-admitted-not-while-it-reads)) | R-BAS-097, Q-BAS-455 |
 | The Bastion reports usage and state | The main installation stores what a Bastion says it served; it is the Bastion's word ([H-2282](#h-2282--the-usage-and-the-state-a-bastion-reports-are-its-word)) | R-BAS-016, R-LIM-045 |
 | Egress addresses per registration (built, E13) | A Bastion token makes its forwarded client address count only from its own registration's addresses, no longer from any address of one list for all registrations ([who may speak as a Bastion](#who-may-speak-as-a-bastion)) | R-BAS-017, Q-BAS-334 |
 | Nothing names the main installation | No host, base URL, request ID, rule, place, internal repository name or version in a Bastion's answers; what remains tells that an installation stands behind it, not which ([H-2294](#h-2294--a-bastions-answers-still-tell-that-an-installation-stands-behind-it)) | R-BAS-099 |
@@ -472,7 +472,8 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
 [H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods). The gaps of the owner's decisions of 2026-11-26 (W-34), specified and
 not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285, H-2289 to H-2297,
 H-2348 to H-2351 (H-2291, H-2348 and H-2349 are E13's, built); so are the gaps of the public catalogue's wire (W-35, interface version 8),
-H-2305 to H-2307, and of its builder (W-35's P6), H-2308 to H-2314;
+H-2305 to H-2307, and of its builder (W-35's P6), H-2308 to H-2314; so are the gaps of the packages built since: H-2356 and H-2357
+(E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11);
 those of a Bastion's budgets are on [usage-and-limits.md](usage-and-limits.md#what-this-does-not-cover) (H-2284, H-2286 to H-2288). Numbers
 marked [derived] are calculated from the defaults, not measured.
 
@@ -720,11 +721,11 @@ off. What closes it for an installation: the bucket backend or persistent volume
 
 ### H-2289 · A Bastion that was taken over ignores its throughput cap
 
-Stage: R-BAS-097 (package E10), the owner's option (a) of k8, which enforces the cap at the Bastion. Subject: the network between a Bastion
-and the main installation, and the object store's egress through handovers. Today nothing caps these bytes per Bastion
-([H-2273](../spec/bastion.md#h-2273--the-bytes-between-a-bastion-and-the-main-installation-are-counted-and-not-bounded)); once E10 lands the
-cap holds for a Bastion that runs its own code. A process that took over a Bastion pod reads at the speed the main installation and the
-object store give it, bounded by the callers' budgets at the main installation (each forward is its caller's request there) and by the main
+Stage: R-BAS-097 (package E10, built: `throughput.Pacer`), the owner's option (a) of k8, which enforces the cap at the Bastion. Subject: the
+network between a Bastion and the main installation, and the object store's egress through handovers. Live for a Bastion that does not run
+its own code: since E10 the cap holds for every Bastion that does (it closed
+[H-2273](../spec/bastion.md#h-2273--the-bytes-between-a-bastion-and-the-main-installation-are-counted-and-not-bounded)). A process that took
+over a Bastion pod reads at the speed the main installation and the object store give it, bounded by the callers' budgets at the main installation (each forward is its caller's request there) and by the main
 installation's own limits; a handover's direct read still needs a forward per blob. What would close it: the owner's option (c) of k8, a cap
 at the main installation as well, not chosen.
 
@@ -979,6 +980,27 @@ so requests decided at the same instant may each pass a full hour: at most the r
 anonymous slots (16 by default), beyond the figure. What makes it real: an operator who sizes the ceiling from the main installation's
 capacity and runs several replicas without Valkey errs toward less, never toward more, except for the in-flight overshoot. Valkey closes
 the first; the second is the cost of counting without a script (the Bastion's Valkey user runs none).
+
+### H-2360 · Without Valkey the throughput's replicas hold their shares as bastion.replicas says
+
+Stage: R-BAS-097, Q-BAS-456 (package E10, built: `shared.Bytes`). Subject: the bytes a Bastion reads from the main installation and the
+object store. Live on every Bastion without Valkey, and for a slice in which Valkey becomes unavailable. Without Valkey each replica counts
+its own slices and takes `bytesPerSecond ÷ bastion.replicas`: two replicas read 2 × 100 MB/s = 200 MB/s together at the default while both
+carry load, a replica that carries all of it reads at half the figure, and with autoscaling `bastion.replicas` is the maximum, so a Bastion
+running fewer replicas reads below the figure, never above it. While Valkey cannot be used a replica claims its share in memory in addition
+to what it already claimed of the same slice in Valkey: during the slice of the failure, at most its share more than the figure [derived].
+What makes it real: an operator who sizes the figure to the link and runs several replicas without Valkey errs toward less, except for the
+slice of a failure. Valkey closes it, as for the anonymous ceiling (H-2356).
+
+### H-2361 · The throughput's hourly volume is checked when a miss is admitted, not while it reads
+
+Stage: R-BAS-097, Q-BAS-459 (package E10, built). Subject: the hourly volume per class (`bytesPerHour`), unlimited by default, so dormant
+until an administrator sets one. A miss is refused once its class's sliding hour reached the figure; a transfer that runs is never refused,
+and its bytes are added to the hour as it reserves its next chunk and at its end. The transfers in flight when the hour fills pass the figure
+by what they still read: at most the class's transfers in flight times their sizes, for the anonymous class its 16 slots and the direct reads
+of the handovers they started, each up to `max_object_bytes` (2 GiB by default) [derived]. Misses admitted at the same instant may each pass
+the check, as the anonymous ceiling's hour does (H-2356). What makes it real: an administrator who sets an hourly volume as a hard budget of
+the link; the per-second figure is the bound that holds at every moment.
 
 ### H-2357 · Until the main installation sends a configuration of its own, a Bastion has no anonymous ceiling after its first handshake
 

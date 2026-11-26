@@ -10361,8 +10361,10 @@ demand ([Q-UI-1480](#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-th
     of [Q-UI-1481](#q-ui-1481--a-preset-is-applied-after-a-dialog-that-names-what-it-replaces).
   - **Mode**: the line "Mode: Enforce" or "Mode: Audit. Limits are counted, not applied at this Bastion." with **Switch to Audit…** or
     **Switch to Enforce…**, the dialogs of R-UI-182 for this Bastion, after recent authentication.
-  - **Maximum throughput to this Bastion**: a number field in MB/s, as wide as five digits, holding "Unlimited" as its value until a number
-    is set (a default is a value in the field), with **Save changes**.
+  - **Maximum throughput to this Bastion**: a number field in MB/s, as wide as five digits, holding the registration's figure, 200 by default
+    ([bastion.md](bastion.md) Q-BAS-455; a default is a value in the field; emptied it is "Unlimited"), with **Save changes**, and below it
+    the sentence "Set this to the Bastion's share of the link between the two networks. Only what the Bastion does not hold crosses it;
+    what it serves from its cache does not."
 - **Details** (a closed disclosure): the flood figures per address (anonymous, signed-in and pages: requests per second, burst, misses a
   minute; the failed-authentication timeout; the blocks; the exempt networks), the slots to the main installation, the anonymous ceiling,
   the throughput's anonymous share and GB per hour per class, the egress addresses (R-UI-243), and the link **Rules of this Bastion** to

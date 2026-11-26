@@ -214,6 +214,7 @@ it, and what it calls are typed methods; nothing outside this package forms a ke
 | `lock:fetch` | `lock:fetch:v1:<sha256 hex of the cache key>` | the holder's token | `cluster.flight_lock_ttl`, 30 s | `NewFlightLock` over `FlightKeyFromHash` |
 | `rl` | `rl:v1:bastion-<name>:<hash>:<window>` | a counter | two windows | `LimiterSet.NewLimiter`, `Limiter.TakeUncharged`, `Limiter.Estimate`, `Limiter.EstimateWithin` |
 | `rl` | `rl:v1:bastion-<name>-refused:<hash>:<window>` | a counter of the refusals of the limiter above | two windows | `Limiter.TakeUncharged`, `Limiter.EstimateWithin` (Q-BAS-127) |
+| `throughput` | `throughput:v1:<bucket>:<slice>`, `throughput:v1:hour-<class>:<hour>` | the bytes the replicas claimed of a slice of 100 ms of a bucket (`total`, `anonymous`), and the bytes a class read in an hour, both counted from the Unix epoch | the slice's end plus 10 s; two hours | `BastionStore.ClaimBytes`, `ReleaseBytes`, `AddBytes` ([valkey_bastion_bytes.go](../../internal/cluster/valkey_bastion_bytes.go), R-BAS-097) |
 
 - **Addresses.** The guard's address key is an IPv4 address or the /64 of an IPv6 address. A key part may hold identifiers and hashes only,
   so `AddressPart` writes `:` as `_` and `.` and `/` as `-`: `203.0.113.7` is `203-0-113-7`, `2001:db8:1:2::/64` is `2001_db8_1_2__-64`. The
@@ -234,6 +235,10 @@ it, and what it calls are typed methods; nothing outside this package forms a ke
   has no such command. `Take`, which charges refused requests (R-ARCH-034, right for logins), is unchanged and stays the main installation's.
   The fallback of `TakeUncharged` is `Take`'s token bucket, which takes nothing when it refuses; the rate and the burst are divided by the live
   replicas, which the Bastion sets to `bastion.replicas`.
+- **Bytes of the throughput** (R-BAS-097, Q-BAS-456). `ClaimBytes` raises a slice's counter by the bytes asked for (`MULTI`, `INCRBY`,
+  `EXPIRE NX`, `EXEC`) and gives the part above the limit back at once with `INCRBY` of its negative, so concurrent claims never grant more than
+  the limit together; `ReleaseBytes` gives back what a reader did not read; `AddBytes` counts a class's hour and reads the previous hour's
+  counter in the same round trip. `INCRBY` with a negative amount is the user's `+incrby`; no `DECR` and no script.
 - **Degraded mode.** Every failed call counts `quader_valkey_degraded_total{mechanism="bastion_state"}`. A Valkey that cannot be reached never
   stops the replica or makes it unready: the state runs from memory.
 - **The ACL user.** The Bastion's user has the commands of the main installation's rule and the patterns `~quader-bastion:*` and

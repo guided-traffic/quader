@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/cache"
@@ -110,6 +111,9 @@ type fillRun struct {
 	// class is the budget class of the caller whose request started the fill, the class of its bytes in
 	// quader_bastion_fill_bytes_total (R-BAS-090, Q-BAS-307).
 	class string
+	// pacing is the throughput's pacing of the source the fill reads now (R-BAS-097): while it waits for the cap, the stall
+	// bound does not end the fill.
+	pacing pacingRef
 
 	mu      sync.Mutex
 	written int64
@@ -185,7 +189,18 @@ func (r *fillRun) run(body io.ReadCloser, end, flightDone func()) {
 		r.finishWith(fillFailed)
 	}
 	defer end()
-	stall := time.AfterFunc(e.fillStall, func() { r.stall(end) })
+	var stallTimer atomic.Pointer[time.Timer]
+	stallTimer.Store(time.AfterFunc(e.fillStall, func() {
+		if r.pacing.waiting() {
+			// The source waits for the throughput's cap, not for its own bytes: a fill the cap slows is never cut (R-BAS-097).
+			if t := stallTimer.Load(); t != nil {
+				t.Reset(e.fillStall)
+			}
+			return
+		}
+		r.stall(end)
+	}))
+	stall := stallTimer.Load()
 	defer stall.Stop()
 	defer func() { _ = body.Close() }() // whichever body is current; a direct read's Close destroys its key
 
@@ -271,6 +286,7 @@ func (e *engine) fillSpool(q *rq, resp *mainclient.Response, pre []byte, sha str
 		return
 	}
 	r := e.newFillRun(q, resp, fill, sha, size, sent, kind)
+	r.pacing.set(resp.Pacing)
 	// The fill takes over the response, the request to the main installation and the flight.
 	body := resp.Body
 	if len(pre) > 0 {
@@ -319,6 +335,26 @@ func (e *engine) runFill(q *rq, r *fillRun, body io.ReadCloser, end func()) {
 	}
 	q.finish(class, metrics.ResultMiss)
 	e.serveFill(q, r, metrics.SourceMain, false)
+}
+
+// pacingRef holds the pacing of a fill's current source, which the continuation of a direct read replaces (R-BAS-075) while the
+// stall bound's timer reads it.
+type pacingRef struct {
+	mu sync.Mutex
+	p  mainclient.Pacing
+}
+
+func (r *pacingRef) set(p mainclient.Pacing) {
+	r.mu.Lock()
+	r.p = p
+	r.mu.Unlock()
+}
+
+// waiting reports whether the source waits for the throughput's cap now.
+func (r *pacingRef) waiting() bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.p != nil && r.p.Waiting()
 }
 
 // spoolEntry is the signed entry of a committed fill (R-BAS-021, R-BAS-023): the headers a cached answer replays,
