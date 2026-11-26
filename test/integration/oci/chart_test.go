@@ -88,6 +88,10 @@ func TestR_OCI_042_AChartsPageShowsItsFactsReadmeAndValues(t *testing.T) {
 	if files, _ := md["chartFiles"].(map[string]any); files["values"] != "replicaCount: 2\n" {
 		t.Errorf("the values: %v", md["chartFiles"])
 	}
+	// R-API-085: the Chart.yaml's deprecated is the version's deprecation, without a message.
+	if dep, _ := d["deprecation"].(map[string]any); dep == nil || dep["scope"] != "version" || dep["message"] != nil {
+		t.Errorf("the chart's deprecation: %v", d["deprecation"])
+	}
 	r := p.st.Do(p.reps[0], http.MethodGet, "/api/v1/packages/"+id+"/versions/0.3.0/readme", p.admin, nil)
 	if r.Status != http.StatusOK || !strings.Contains(r.JSON(t)["html"].(string), "<table>") {
 		t.Errorf("the README: %d %s", r.Status, r.Body)
@@ -97,13 +101,18 @@ func TestR_OCI_042_AChartsPageShowsItsFactsReadmeAndValues(t *testing.T) {
 	// version, the list by content with include=kind by each entry's leading version.
 	list := p.st.Do(p.reps[0], http.MethodGet, "/api/v1/packages?repository="+url.QueryEscape(project+"/"+repoLocal), p.admin, nil)
 	for _, it := range list.JSON(t)["items"].([]any) {
-		if pkg := it.(map[string]any); pkg["name"] == "charts/web" && pkg["kind"] != "helm-chart" {
-			t.Errorf("the package list's kind of the chart: %v", pkg["kind"])
+		if pkg := it.(map[string]any); pkg["name"] == "charts/web" && (pkg["kind"] != "helm-chart" || pkg["deprecation"] == nil) {
+			t.Errorf("the package list's kind and deprecation of the chart: %v %v", pkg["kind"], pkg["deprecation"])
 		}
+	}
+	// The filter deprecated finds the chart by the statement OCIViewDeprecated (R-API-085).
+	deprecated := p.st.Do(p.reps[0], http.MethodGet, "/api/v1/packages?deprecated=true&repository="+url.QueryEscape(project+"/"+repoLocal), p.admin, nil)
+	if found, _ := deprecated.JSON(t)["items"].([]any); len(found) != 1 || found[0].(map[string]any)["name"] != "charts/web" {
+		t.Errorf("the filter deprecated: %d %s", deprecated.Status, deprecated.Body)
 	}
 	vs := p.st.Do(p.reps[0], http.MethodGet, "/api/v1/packages/"+id+"/versions?group=content&include=kind", p.admin, nil)
 	items, _ := vs.JSON(t)["items"].([]any)
-	if len(items) != 1 || items[0].(map[string]any)["kind"] != "helm-chart" {
+	if len(items) != 1 || items[0].(map[string]any)["kind"] != "helm-chart" || items[0].(map[string]any)["deprecation"] == nil {
 		t.Errorf("the list by content's kind: %d %s", vs.Status, vs.Body)
 	}
 }
