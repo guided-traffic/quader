@@ -304,7 +304,7 @@ Acceptance criteria:
 Priority: **MVP** · Covers: DIST-025
 
 - **Registration.** A Bastion is registered on the main installation as a principal of the kind `bastion`, reference
-  `bastion:<name>`, name `^[a-z][a-z0-9-]{0,19}$` ([authorization.md](authorization.md) R-AUTHZ-002). It holds no grants, no
+  `bastion:<name>`, name `^[a-z][a-z0-9-]{0,19}$` ([authorization.md](authorization.md) R-AUTHZ-002) other than `presets`, the path of the presets' list (R-BAS-093). It holds no grants, no
   roles, no group memberships and no package ownership: a policy entry, a role binding, an owner record or a membership that
   names it answers `422 principal_not_allowed` ([Q-BAS-60](#q-bas-60--a-bastion-registration-is-refused-by-every-write-path-with-one-top-level-422-principal_not_allowed)).
   It is not internal ([authorization.md](authorization.md) R-AUTHZ-030,
@@ -339,7 +339,7 @@ Priority: **MVP** · Covers: DIST-025
 | Operation | Capability | Answer |
 |---|---|---|
 | `POST /api/v1/bastions` `{"name", "description"}` | `endpoints:write` | `201` with the registration |
-| `GET /api/v1/bastions`, `GET /api/v1/bastions/{name}` | `endpoints:read` | name, description, `enabled`, its tokens (ID, hint, `expiresAt`, `createdAt`, `lastUsedAt`), and the last contact of R-BAS-010: time, client address, Bastion release, interface version, reported base URL, replica |
+| `GET /api/v1/bastions`, `GET /api/v1/bastions/{name}` | `endpoints:read`; `GET /api/v1/bastions/{name}` also `limits:read`, which reads `id`, `name`, `limits` and `status` only (R-BAS-093) | name, description, `enabled`, its tokens (ID, hint, `expiresAt`, `createdAt`, `lastUsedAt`), and the last contact of R-BAS-010: time, client address, Bastion release, interface version, reported base URL, replica |
 | `PATCH /api/v1/bastions/{name}` `{"description", "enabled"}` | `endpoints:write` | `200` |
 | `DELETE /api/v1/bastions/{name}` | `endpoints:write` | `204`; revokes its tokens (`token.revoked`, journaled) |
 | `POST /api/v1/bastions/{name}/tokens` `{"description", "ttlSeconds"}` | `endpoints:write`; a session needs a recent authentication ([api-and-ui.md](api-and-ui.md) R-API-007) | `201` with the token secret, once (R-AUTH-022) |
@@ -5102,7 +5102,16 @@ of the main installation decides; the chart keeps what the installation of the p
   above it (R-UI-240): the ingress would refuse what the Bastion admits.
 - **Permissions** ([Q-BAS-325](#q-bas-325--the-limit-members-of-a-registration-need-limitswrite-the-others-endpointswrite)):
   `PATCH /api/v1/bastions/{name}` takes `limits` with `limits:write` and the other members with `endpoints:write`; `GET` shows `limits` to
-  a holder of `endpoints:read` or `limits:read`.
+  a holder of `endpoints:read` or `limits:read`. `GET /api/v1/bastions/{name}` admits either: `endpoints:read` reads every member,
+  `limits:read` alone reads `id`, `name`, `limits` and `status` (the state the replicas reported, its blocks among it) and no other
+  member, so the limits page and its tab **Blocks** (R-UI-241) work for a holder of `limits:read` without the tokens, contacts, networks,
+  switches and description; a caller with neither gets `403`. The list `GET /api/v1/bastions` stays `endpoints:read`'s. `GET
+  /api/v1/bastions/presets` (`limits:read`) lists the three presets of R-LIM-046 as `bastionmain.Presets` holds and the patch applies
+  them, which the preset's dialog reads ([api-and-ui.md](api-and-ui.md) Q-UI-1485); `presets` is therefore no registration name. *Built on
+  2026-11-26 (the day's findings, batch B):* `GetBastion`, `toBastionLimits` and `ListBastionPresets` of
+  [bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go), the reserved name in `bastionmain.ValidName`; tests
+  `TestR_BAS_093_TheReadOfARegistrationNeedsEndpointsReadOrLimitsRead`, `TestR_BAS_093_ThePresetsAreReadWithLimitsRead` (unit, no
+  database) and `TestR_BAS_004_CapabilitiesGateTheOperations` (area `bastionreg`, a token cut down to `limits:read`).
 
 *Built on 2026-11-26 by E7, the wire's part:* `iface.Configuration` with its `Validate`, the handshake's member, the link's refusal of a
 handshake whose configuration `Validate` refuses, the contact headers ([Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour), [Q-BAS-354](#q-bas-354--the-contact-headers-are-optional-and-recorded-in-the-contacts-event-until-e8)). Of the members a

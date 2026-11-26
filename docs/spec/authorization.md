@@ -3431,7 +3431,7 @@ The owner's decisions 8 and 14 of 2026-11-19 (W-26) name the instance administra
 
 | Capability | What it admits | Held by |
 |---|---|---|
-| `limits:read` | Read profiles, every rule, ceilings, the mode, the mode preview, project maxima, blocks, the explanation of any subject | `admin`, `security-admin`, `auditor` |
+| `limits:read` | Read profiles, every rule, ceilings, the mode, the mode preview, project maxima, blocks, the explanation of any subject, a Bastion registration's limits and its replicas' state with the presets (`GET /api/v1/bastions/{name}` without its other members, `GET /api/v1/bastions/presets`; [bastion.md](bastion.md) R-BAS-093) | `admin`, `security-admin`, `auditor` |
 | `limits:write` | Write profiles, the instance's rules, uncapped rules anywhere, every ceiling, the mode, the block time, project maxima; lift any block | `admin` |
 | `usage:read` | The usage of every subject in every scope, the detail, the export | `admin`, `security-admin`, `auditor` |
 

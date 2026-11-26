@@ -2,8 +2,10 @@ package v1
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/authz"
@@ -47,6 +49,52 @@ func TestR_BAS_093_ThePatchOfTheLimitsNeedsLimitsWrite(t *testing.T) {
 	}
 	if w := patch(allowAll{}, `{"limits":[1]}`); w.Code != http.StatusBadRequest {
 		t.Fatalf("limits that are no object: %d %s", w.Code, w.Body)
+	}
+}
+
+// TestR_BAS_093_TheReadOfARegistrationNeedsEndpointsReadOrLimitsRead: a caller that holds neither endpoints:read nor limits:read
+// is refused 403 before the service reads (the shared step admits every authenticated caller). What either one reads is
+// test/integration/bastionreg's. Milliseconds, no database.
+func TestR_BAS_093_TheReadOfARegistrationNeedsEndpointsReadOrLimitsRead(t *testing.T) {
+	regs := bastionmain.NewRegistrations(bastionmain.RegistrationOptions{Max: 4})
+	for _, access := range []holdsOnly{{}, {"limits:write": true}, {"endpoints:write": true}, {"usage:read": true}} {
+		s := newSetup(t, func(o *Options) { o.Access, o.Bastions = access, regs }, authed)
+		problem(t, s.do(http.MethodGet, "/api/v1/bastions/partners", "", nil), http.StatusForbidden, errs.CodeForbidden)
+	}
+}
+
+// TestR_BAS_093_ThePresetsAreReadWithLimitsRead (Q-UI-1485): GET /api/v1/bastions/presets answers the three presets of
+// bastionmain.Presets in the card's order with the profiles of the five kind rules, the flood figures and the mode, to a holder of
+// limits:read, and 403 to a holder of endpoints:read alone. Milliseconds, no database.
+func TestR_BAS_093_ThePresetsAreReadWithLimitsRead(t *testing.T) {
+	get := func(access Access) *httptest.ResponseRecorder {
+		s := newSetup(t, func(o *Options) { o.Access = access }, authed)
+		return s.do(http.MethodGet, "/api/v1/bastions/presets", "", nil)
+	}
+	problem(t, get(holdsOnly{"endpoints:read": true}), http.StatusForbidden, errs.CodeForbidden)
+	w := get(holdsOnly{"limits:read": true})
+	var body struct {
+		Items []struct {
+			Name  string            `json:"name"`
+			Kinds map[string]string `json:"kinds"`
+			Flood iface.Flood       `json:"flood"`
+			Mode  string            `json:"mode"`
+		} `json:"items"`
+	}
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &body) != nil || len(body.Items) != 3 {
+		t.Fatalf("%d %s", w.Code, w.Body)
+	}
+	want := bastionmain.Presets()
+	for i, name := range []iface.LimitsPreset{iface.PresetInternet, iface.PresetPartnerNetwork, iface.PresetInternal} {
+		got, p := body.Items[i], want[name]
+		if got.Name != string(name) || got.Mode != string(p.Mode) || !reflect.DeepEqual(got.Flood, p.Flood) {
+			t.Errorf("item %d: %+v, want %s", i, got, name)
+		}
+		for api, store := range map[string]string{"anonymous": "anonymous", "user": "user", "technicalToken": "technical_token", "ci": "ci", "administrator": "administrator"} {
+			if got.Kinds[api] != p.Kinds[store] {
+				t.Errorf("%s: the kind %s names %q, the server applies %q", name, api, got.Kinds[api], p.Kinds[store])
+			}
+		}
 	}
 }
 

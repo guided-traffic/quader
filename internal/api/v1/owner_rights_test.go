@@ -119,6 +119,8 @@ var ownerRightsReads = map[string]string{
 	"getVersion":          "the build facts of the replica; nothing of an account",
 	"getAvatar":           "an image by its digest, readable by every authenticated caller (Q-AUTH-195); nothing of the caller's account",
 	"getRepositoryMirror": "decided through the decision point with the scope (requireMirrorReader)",
+	"getBastion": "endpoints:read or limits:read through the decision point with the scope (GetBastion, R-BAS-093); nothing of the " +
+		"caller's account",
 	"listDeliveryRules":   "decided through the decision point with the scope (requireRuleReader, R-CUR-005)",
 	"getDeliveryRulesSummary": "decided through the decision point with the scope (readerOrModeWriter: a reader of the rules or a writer " +
 		"of the configuration, R-CUR-005, R-CUR-025)",

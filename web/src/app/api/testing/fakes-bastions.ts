@@ -3,7 +3,9 @@ import {
   Bastion,
   BastionConfigurationPatch,
   BastionContact,
+  BastionPreset,
   BastionsApi,
+  BastionView,
   BastionTokenCreated,
   BastionTokenSummary,
   NewBastion,
@@ -27,6 +29,31 @@ const problem = (status: number, code: string, extra: Record<string, unknown> = 
 export const BASTION_SECRET = 'qdr_bst_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklm';
 
 const DAY = 86_400_000;
+
+/** The flood figures every preset writes, as `bastionmain.Presets` holds them (R-LIM-046). */
+const PRESET_FLOOD: BastionPreset['flood'] = {
+  anonymous: { requestsPerSecond: 50, burst: 1000, missesPerMinute: 1000 },
+  authenticated: { requestsPerSecond: 200, burst: 4000, missesPerMinute: 4000 },
+  gui: { requestsPerSecond: 20, burst: 100 },
+  failedAuth: { maxFailures: 20, windowSeconds: 600, timeoutSeconds: 900 },
+  blocking: { threshold: 3000, windowSeconds: 60, durationSeconds: 900, maxDurationSeconds: 86400 },
+  exemptNetworks: [],
+};
+
+const presetKinds = (anonymous: string, user: string, machine: string, administrator: string): BastionPreset['kinds'] => ({
+  anonymous,
+  user,
+  technicalToken: machine,
+  ci: machine,
+  administrator,
+});
+
+/** What `GET /api/v1/bastions/presets` answers: the server's table of R-LIM-046 (`bastionmain.Presets`). */
+export const BASTION_PRESETS: readonly BastionPreset[] = [
+  { name: 'internet', kinds: presetKinds('bastion-anonymous', 'bastion-signed-in', 'bastion-signed-in', 'bastion-signed-in'), flood: PRESET_FLOOD, mode: 'enforce' },
+  { name: 'partnerNetwork', kinds: presetKinds('anonymous', 'standard', 'technical', 'unlimited'), flood: PRESET_FLOOD, mode: 'enforce' },
+  { name: 'internal', kinds: presetKinds('unlimited', 'unlimited', 'unlimited', 'unlimited'), flood: PRESET_FLOOD, mode: 'enforce' },
+];
 
 /** A time `days` from now (negative: ago) as the API writes it. */
 export function inDays(days: number): string {
@@ -114,6 +141,8 @@ export class FakeBastionsApi extends BastionsApi {
   lastTokenRequest: NewBastionToken | null = null;
   /** At most this many unrevoked tokens per registration (`auth.tokens.max_active_per_principal.bst`). */
   tokenLimit = 3;
+  /** What `presets()` answers: the server's table unless a test changes it. */
+  presetTable: readonly BastionPreset[] = BASTION_PRESETS;
   failure: ApiError | null = null;
   listFailure: ApiError | null = null;
   bastions: Bastion[] = [
@@ -157,8 +186,13 @@ export class FakeBastionsApi extends BastionsApi {
     return [...this.bastions].sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  override async get(name: string): Promise<Versioned<Bastion>> {
+  override async get(name: string): Promise<Versioned<BastionView>> {
     return { value: this.find(name), etag: this.etagOf(name) };
+  }
+
+  override async presets(): Promise<readonly BastionPreset[]> {
+    this.calls.push('presets');
+    return this.presetTable;
   }
 
   override async create(body: NewBastion, idempotencyKey: string): Promise<Bastion> {

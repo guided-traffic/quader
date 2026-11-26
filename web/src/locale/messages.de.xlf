@@ -7146,7 +7146,7 @@
       <notes>
         <note category="location">src/app/features/bastions/bastion-limit-details.ts:145,147</note>
         <note category="location">src/app/features/bastions/bastion-limit-details.ts:177,178</note>
-        <note category="location">src/app/features/bastions/presets.ts:165</note>
+        <note category="location">src/app/features/bastions/presets.ts:126</note>
       </notes>
       <segment>
         <source>Networks without flood protection</source>
@@ -7290,7 +7290,7 @@
     <unit id="bastion.preset.none">
       <notes>
         <note category="location">src/app/features/bastions/bastion-limit-details.ts:351</note>
-        <note category="location">src/app/features/bastions/presets.ts:165</note>
+        <note category="location">src/app/features/bastions/presets.ts:126</note>
       </notes>
       <segment>
         <source>none</source>
@@ -7364,7 +7364,7 @@
     </unit>
     <unit id="bastion.limits-page.budgets">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits-page.ts:102,105</note>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:105,108</note>
       </notes>
       <segment>
         <source> These rules count what this Bastion serves. The installation&apos;s own rules count what it serves, including what this Bastion fetches. </source>
@@ -7373,7 +7373,7 @@
     </unit>
     <unit id="limits.rules.add">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits-page.ts:106,109</note>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:109,112</note>
         <note category="location">src/app/features/limits/limits-rules-tab.ts:32,35</note>
         <note category="location">src/app/features/limits/project-limits-section.ts:52,54</note>
         <note category="location">src/app/features/limits/repository-limits-section.ts:47,49</note>
@@ -7385,7 +7385,7 @@
     </unit>
     <unit id="limits.blocks.loading">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits-page.ts:147,148</note>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:150,151</note>
         <note category="location">src/app/features/limits/limits-blocks-tab.ts:49,50</note>
       </notes>
       <segment>
@@ -7395,7 +7395,7 @@
     </unit>
     <unit id="bastion.blocks.caption">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits-page.ts:173</note>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:176</note>
       </notes>
       <segment>
         <source>Blocks at Bastion <ph id="0" equiv="name" disp="this.state.name()"/></source>
@@ -7404,7 +7404,7 @@
     </unit>
     <unit id="bastion.blocks.empty">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits-page.ts:174</note>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:177</note>
       </notes>
       <segment>
         <source>No replica reported a block in the last hour.</source>
@@ -7413,7 +7413,7 @@
     </unit>
     <unit id="bastion.blocks.col-address">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits-page.ts:176</note>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:179</note>
       </notes>
       <segment>
         <source>Address</source>
@@ -7422,7 +7422,7 @@
     </unit>
     <unit id="bastion.blocks.col-until">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits-page.ts:177</note>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:180</note>
       </notes>
       <segment>
         <source>Until</source>
@@ -7431,7 +7431,7 @@
     </unit>
     <unit id="bastion.blocks.col-reason">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits-page.ts:178</note>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:181</note>
       </notes>
       <segment>
         <source>Reason</source>
@@ -7440,7 +7440,7 @@
     </unit>
     <unit id="bastion.blocks.col-replica">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits-page.ts:179</note>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:182</note>
       </notes>
       <segment>
         <source>Replica</source>
@@ -7495,7 +7495,7 @@
     <unit id="bastion.preset.custom">
       <notes>
         <note category="location">src/app/features/bastions/bastion-limits.ts:116,119</note>
-        <note category="location">src/app/features/bastions/presets.ts:66</note>
+        <note category="location">src/app/features/bastions/presets.ts:27</note>
       </notes>
       <segment>
         <source>Custom</source>
@@ -7695,7 +7695,7 @@
     </unit>
     <unit id="bastion.preset.dialog-title">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:29,30</note>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:30,31</note>
       </notes>
       <segment>
         <source>Apply the preset <ph id="0" equiv="INTERPOLATION" disp="{{ label }}"/>?</source>
@@ -7704,7 +7704,7 @@
     </unit>
     <unit id="bastion.preset.nothing">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:39,41</note>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:40,42</note>
       </notes>
       <segment>
         <source>The preset changes nothing: the rules, the flood figures and the mode are already its own.</source>
@@ -7713,7 +7713,7 @@
     </unit>
     <unit id="bastion.preset.replaces">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:41,42</note>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:42,43</note>
       </notes>
       <segment>
         <source>The preset replaces:</source>
@@ -7722,7 +7722,7 @@
     </unit>
     <unit id="bastion.preset.kind-rules">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:43,44</note>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:44,45</note>
       </notes>
       <segment>
         <source>Rules for every caller of a kind</source>
@@ -7731,7 +7731,7 @@
     </unit>
     <unit id="bastion.preset.flood">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:51,52</note>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:52,53</note>
       </notes>
       <segment>
         <source>Flood protection per address</source>
@@ -7740,7 +7740,7 @@
     </unit>
     <unit id="bastion.preset.keeps">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:64,67</note>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:65,68</note>
       </notes>
       <segment>
         <source>The rules for single callers, groups and addresses stay.</source>
@@ -7749,7 +7749,7 @@
     </unit>
     <unit id="bastion.preset.loading">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:67,70</note>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:68,71</note>
       </notes>
       <segment>
         <source>Reading the rules of this Bastion.</source>
@@ -7758,7 +7758,7 @@
     </unit>
     <unit id="limits.cancel">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:71,72</note>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:72,73</note>
         <note category="location">src/app/features/limits/limit-mode.ts:114,115</note>
         <note category="location">src/app/features/limits/limits-rules-tab.ts:56,58</note>
         <note category="location">src/app/features/limits/maximum-dialog.ts:79,80</note>
@@ -7771,7 +7771,7 @@
     </unit>
     <unit id="bastion.preset.apply">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:73,76</note>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:74,77</note>
       </notes>
       <segment>
         <source> Apply preset </source>
@@ -7780,7 +7780,7 @@
     </unit>
     <unit id="bastion.preset.change">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:135</note>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:142</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="what" disp="c.what"/>: <ph id="1" equiv="from" disp="c.from"/> → <ph id="2" equiv="to" disp="c.to"/></source>
@@ -8033,7 +8033,7 @@
     </unit>
     <unit id="bastion.preset.internet">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:60</note>
+        <note category="location">src/app/features/bastions/presets.ts:21</note>
       </notes>
       <segment>
         <source>Internet</source>
@@ -8042,7 +8042,7 @@
     </unit>
     <unit id="bastion.preset.partner">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:62</note>
+        <note category="location">src/app/features/bastions/presets.ts:23</note>
       </notes>
       <segment>
         <source>Partner network</source>
@@ -8051,7 +8051,7 @@
     </unit>
     <unit id="bastion.preset.internal">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:64</note>
+        <note category="location">src/app/features/bastions/presets.ts:25</note>
       </notes>
       <segment>
         <source>Internal</source>
@@ -8060,7 +8060,7 @@
     </unit>
     <unit id="bastion.preset.internet-sentence">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:74</note>
+        <note category="location">src/app/features/bastions/presets.ts:35</note>
       </notes>
       <segment>
         <source>Strict limits for callers from the internet; administrators too.</source>
@@ -8069,7 +8069,7 @@
     </unit>
     <unit id="bastion.preset.partner-sentence">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:76</note>
+        <note category="location">src/app/features/bastions/presets.ts:37</note>
       </notes>
       <segment>
         <source>The installation&apos;s own profiles for known partners.</source>
@@ -8078,7 +8078,7 @@
     </unit>
     <unit id="bastion.preset.internal-sentence">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:78</note>
+        <note category="location">src/app/features/bastions/presets.ts:39</note>
       </notes>
       <segment>
         <source>No limits, everything counted.</source>
@@ -8087,7 +8087,7 @@
     </unit>
     <unit id="bastion.preset.custom-sentence">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:80</note>
+        <note category="location">src/app/features/bastions/presets.ts:41</note>
       </notes>
       <segment>
         <source>The rules or the flood figures differ from every preset.</source>
@@ -8096,7 +8096,7 @@
     </unit>
     <unit id="bastion.flood.anonymous-rps">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:93</note>
+        <note category="location">src/app/features/bastions/presets.ts:54</note>
       </notes>
       <segment>
         <source>Anonymous callers: requests a second</source>
@@ -8105,7 +8105,7 @@
     </unit>
     <unit id="bastion.flood.anonymous-burst">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:94</note>
+        <note category="location">src/app/features/bastions/presets.ts:55</note>
       </notes>
       <segment>
         <source>Anonymous callers: burst</source>
@@ -8114,7 +8114,7 @@
     </unit>
     <unit id="bastion.flood.anonymous-misses">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:95</note>
+        <note category="location">src/app/features/bastions/presets.ts:56</note>
       </notes>
       <segment>
         <source>Anonymous callers: misses a minute</source>
@@ -8123,7 +8123,7 @@
     </unit>
     <unit id="bastion.flood.signed-rps">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:96</note>
+        <note category="location">src/app/features/bastions/presets.ts:57</note>
       </notes>
       <segment>
         <source>Signed-in callers: requests a second</source>
@@ -8132,7 +8132,7 @@
     </unit>
     <unit id="bastion.flood.signed-burst">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:97</note>
+        <note category="location">src/app/features/bastions/presets.ts:58</note>
       </notes>
       <segment>
         <source>Signed-in callers: burst</source>
@@ -8141,7 +8141,7 @@
     </unit>
     <unit id="bastion.flood.signed-misses">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:98</note>
+        <note category="location">src/app/features/bastions/presets.ts:59</note>
       </notes>
       <segment>
         <source>Signed-in callers: misses a minute</source>
@@ -8150,7 +8150,7 @@
     </unit>
     <unit id="bastion.flood.pages-rps">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:99</note>
+        <note category="location">src/app/features/bastions/presets.ts:60</note>
       </notes>
       <segment>
         <source>Pages of the web interface: requests a second</source>
@@ -8159,7 +8159,7 @@
     </unit>
     <unit id="bastion.flood.pages-burst">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:100</note>
+        <note category="location">src/app/features/bastions/presets.ts:61</note>
       </notes>
       <segment>
         <source>Pages of the web interface: burst</source>
@@ -8168,7 +8168,7 @@
     </unit>
     <unit id="bastion.flood.failures">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:101</note>
+        <note category="location">src/app/features/bastions/presets.ts:62</note>
       </notes>
       <segment>
         <source>Failed sign-ins before a timeout</source>
@@ -8177,7 +8177,7 @@
     </unit>
     <unit id="bastion.flood.failures-window">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:102</note>
+        <note category="location">src/app/features/bastions/presets.ts:63</note>
       </notes>
       <segment>
         <source>Failed sign-ins counted over, in seconds</source>
@@ -8186,7 +8186,7 @@
     </unit>
     <unit id="bastion.flood.timeout">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:103</note>
+        <note category="location">src/app/features/bastions/presets.ts:64</note>
       </notes>
       <segment>
         <source>Timeout after failed sign-ins, in seconds</source>
@@ -8195,7 +8195,7 @@
     </unit>
     <unit id="bastion.flood.block-threshold">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:104</note>
+        <note category="location">src/app/features/bastions/presets.ts:65</note>
       </notes>
       <segment>
         <source>Refused requests before a block</source>
@@ -8204,7 +8204,7 @@
     </unit>
     <unit id="bastion.flood.block-window">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:105</note>
+        <note category="location">src/app/features/bastions/presets.ts:66</note>
       </notes>
       <segment>
         <source>Refused requests counted over, in seconds</source>
@@ -8213,7 +8213,7 @@
     </unit>
     <unit id="bastion.flood.block-duration">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:106</note>
+        <note category="location">src/app/features/bastions/presets.ts:67</note>
       </notes>
       <segment>
         <source>First block, in seconds</source>
@@ -8222,7 +8222,7 @@
     </unit>
     <unit id="bastion.flood.block-max">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:107</note>
+        <note category="location">src/app/features/bastions/presets.ts:68</note>
       </notes>
       <segment>
         <source>Longest block, in seconds</source>
@@ -8231,7 +8231,7 @@
     </unit>
     <unit id="bastion.preset.no-rule">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:146</note>
+        <note category="location">src/app/features/bastions/presets.ts:107</note>
       </notes>
       <segment>
         <source>no rule</source>
@@ -8240,7 +8240,7 @@
     </unit>
     <unit id="bastion.preset.profile-one-changed">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:150</note>
+        <note category="location">src/app/features/bastions/presets.ts:111</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="profile" disp="name(rule.profile)"/> with 1 changed figure</source>
@@ -8249,7 +8249,7 @@
     </unit>
     <unit id="bastion.preset.profile-changed">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:151</note>
+        <note category="location">src/app/features/bastions/presets.ts:112</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="profile" disp="name(rule.profile)"/> with <ph id="1" equiv="count" disp="changed"/> changed figures</source>
@@ -8258,7 +8258,7 @@
     </unit>
     <unit id="bastion.preset.mode">
       <notes>
-        <note category="location">src/app/features/bastions/presets.ts:169</note>
+        <note category="location">src/app/features/bastions/presets.ts:130</note>
       </notes>
       <segment>
         <source>Mode</source>

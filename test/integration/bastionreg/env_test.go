@@ -471,9 +471,9 @@ func bindRole(e *env, role, userID string) {
 }
 
 // cast is the people of most tests: an administrator, an auditor (endpoints:read only), a security
-// administrator, and an administrator whose token is cut down to tokens:revoke.
+// administrator, an administrator whose token is cut down to tokens:revoke, and the auditor with a token cut down to limits:read.
 type cast struct {
-	admin, auditor, security, revokeOnly string
+	admin, auditor, security, revokeOnly, limitsOnly string
 }
 
 // newCast creates the people and binds their roles, then starts a replica; it returns the replica and the
@@ -492,6 +492,7 @@ func (e *env) newCast(name string, o replicaOpts) (*replica, cast) {
 		auditor:    seed.pat(auditor, `{"inherit":true,"system":["endpoints:read"]}`),
 		security:   seed.pat(sec, `{"inherit":true,"system":["endpoints:read","endpoints:write","tokens:revoke"]}`),
 		revokeOnly: seed.pat(rev, `{"inherit":false,"system":["tokens:revoke"]}`),
+		limitsOnly: seed.pat(auditor, `{"inherit":false,"system":["limits:read"]}`),
 	}
 	seed.stop()
 	return e.newReplica(name, o), c

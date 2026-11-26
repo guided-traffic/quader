@@ -415,6 +415,45 @@ func (e BastionPatchLimitsPreset) Valid() bool {
 	}
 }
 
+// Defines values for BastionPresetMode.
+const (
+	BastionPresetModeAudit   BastionPresetMode = "audit"
+	BastionPresetModeEnforce BastionPresetMode = "enforce"
+)
+
+// Valid indicates whether the value is a known member of the BastionPresetMode enum.
+func (e BastionPresetMode) Valid() bool {
+	switch e {
+	case BastionPresetModeAudit:
+		return true
+	case BastionPresetModeEnforce:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BastionPresetName.
+const (
+	BastionPresetNameInternal       BastionPresetName = "internal"
+	BastionPresetNameInternet       BastionPresetName = "internet"
+	BastionPresetNamePartnerNetwork BastionPresetName = "partnerNetwork"
+)
+
+// Valid indicates whether the value is a known member of the BastionPresetName enum.
+func (e BastionPresetName) Valid() bool {
+	switch e {
+	case BastionPresetNameInternal:
+		return true
+	case BastionPresetNameInternet:
+		return true
+	case BastionPresetNamePartnerNetwork:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BastionRepositoryReadRead.
 const (
 	BastionRepositoryReadReadFull    BastionRepositoryReadRead = "full"
@@ -9931,17 +9970,19 @@ type BannerInput struct {
 // BannerInputSeverity Defaults to `info`.
 type BannerInputSeverity string
 
-// Bastion A Bastion registration, a principal of the kind `bastion` (R-BAS-004).
+// Bastion A Bastion registration, a principal of the kind `bastion` (R-BAS-004). Every member is present for a caller that holds
+// `endpoints:read`; a caller that reads one registration with `limits:read` alone reads `id`, `name`, `limits` and `status`, and
+// every other member is absent (R-BAS-093).
 type Bastion struct {
 	// Contacts The last contact of each replica, the most recent first (R-BAS-010).
-	Contacts  []BastionContact `json:"contacts"`
-	CreatedAt time.Time        `json:"createdAt"`
+	Contacts  *[]BastionContact `json:"contacts,omitempty"`
+	CreatedAt *time.Time        `json:"createdAt,omitempty"`
 
 	// Declared Set while the installation's configuration declares the registration (`bastions.declared`, R-BAS-127): its
 	// `description`, its `egress` and its declared token follow the configuration, which `quader migrate` applies on every
 	// run, and the registration is not deleted here. Null otherwise.
-	Declared    *BastionDeclaration `json:"declared"`
-	Description string              `json:"description"`
+	Declared    *BastionDeclaration `json:"declared,omitempty"`
+	Description *string             `json:"description,omitempty"`
 
 	// Egress The networks the Bastion connects from (R-BAS-017, R-UI-243): the main installation believes the caller's address and the
 	// host a Bastion forwards, and the caller's address of its check, only on a request of this registration that comes from one
@@ -9949,8 +9990,8 @@ type Bastion struct {
 	// the Bastion counts as the Bastion's own address, with one budget and one block for all. An entry is an IPv4 or IPv6 address
 	// (read as its `/32` or `/128`) or a network in CIDR form; the answer gives each with its prefix length. Refused are more than
 	// 32, a network listed twice, a `/0` and a network with bits set beyond its prefix (`422` with a field error at the entry).
-	Egress  BastionEgress      `json:"egress"`
-	Enabled bool               `json:"enabled"`
+	Egress  *BastionEgress     `json:"egress,omitempty"`
+	Enabled *bool              `json:"enabled,omitempty"`
 	Id      openapi_types.UUID `json:"id"`
 
 	// Limits The limits of the registration's configuration (R-BAS-093). The rules of the Bastion's place are read and written through
@@ -9963,10 +10004,10 @@ type Bastion struct {
 	Status []BastionReplicaStatus `json:"status"`
 
 	// Switches The switches of the registration's configuration (R-BAS-093), each off for a new registration.
-	Switches BastionSwitches `json:"switches"`
+	Switches *BastionSwitches `json:"switches,omitempty"`
 
 	// Tokens The unrevoked tokens, newest first. Neither the value nor its hash is part of it.
-	Tokens []BastionTokenSummary `json:"tokens"`
+	Tokens *[]BastionTokenSummary `json:"tokens,omitempty"`
 }
 
 // BastionCatalogueChanges The changes of a registration's public catalogue after a cursor (R-BAS-101).
@@ -10427,6 +10468,34 @@ type BastionPatchLimitsMode string
 
 // BastionPatchLimitsPreset defines model for BastionPatch.Limits.Preset.
 type BastionPatchLimitsPreset string
+
+// BastionPreset What applying a preset to a Bastion's limits writes (R-LIM-046).
+type BastionPreset struct {
+	// Flood The flood protection per client address (R-BAS-035 to R-BAS-037, Q-LIM-307).
+	Flood BastionFlood `json:"flood"`
+
+	// Kinds The profile (its key) each kind rule of the Bastion's place names, by the caller kind of `LimitWhoEvery`.
+	Kinds struct {
+		Administrator  string `json:"administrator"`
+		Anonymous      string `json:"anonymous"`
+		Ci             string `json:"ci"`
+		TechnicalToken string `json:"technicalToken"`
+		User           string `json:"user"`
+	} `json:"kinds"`
+	Mode BastionPresetMode `json:"mode"`
+	Name BastionPresetName `json:"name"`
+}
+
+// BastionPresetMode defines model for BastionPreset.Mode.
+type BastionPresetMode string
+
+// BastionPresetName defines model for BastionPreset.Name.
+type BastionPresetName string
+
+// BastionPresetList defines model for BastionPresetList.
+type BastionPresetList struct {
+	Items []BastionPreset `json:"items"`
+}
 
 // BastionReplicaStatus The state a replica reported with its last batch (R-LIM-045), the Bastion's word (H-2282).
 type BastionReplicaStatus struct {
@@ -24867,6 +24936,9 @@ type ServerInterface interface {
 	// CreateBastion Register a Bastion
 	// (POST /api/v1/bastions)
 	CreateBastion(w http.ResponseWriter, r *http.Request)
+	// ListBastionPresets List the presets of a Bastion's limits
+	// (GET /api/v1/bastions/presets)
+	ListBastionPresets(w http.ResponseWriter, r *http.Request)
 	// DeleteBastion Delete a Bastion registration
 	// (DELETE /api/v1/bastions/{name})
 	DeleteBastion(w http.ResponseWriter, r *http.Request, name string)
@@ -27258,6 +27330,20 @@ func (siw *ServerInterfaceWrapper) CreateBastion(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateBastion(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListBastionPresets operation middleware
+func (siw *ServerInterfaceWrapper) ListBastionPresets(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListBastionPresets(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -47287,6 +47373,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/package-owners", wrapper.ListOwnedPackages)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/bastions", wrapper.ListBastions)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/bastions", wrapper.CreateBastion)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/bastions/presets", wrapper.ListBastionPresets)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/bastions/{name}", wrapper.DeleteBastion)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/bastions/{name}", wrapper.GetBastion)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/bastions/{name}", wrapper.UpdateBastion)

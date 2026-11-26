@@ -278,8 +278,9 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 - **Identifiers**: R-UI-240 to R-UI-243, Q-UI-1480 to Q-UI-1489 (Q-UI-1480 to Q-UI-1482 decided in the specification, Q-UI-1483 and
   Q-UI-1484 by E13, which built R-UI-243's section on the card).
 - **Built** on 2026-11-26. The card's section `<quader-bastion-limits>` ([bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts))
-  with the state of [bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts), the presets' table and words of
-  [presets.ts](../../web/src/app/features/bastions/presets.ts), the preset's dialog, the details' form
+  with the state of [bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts), the presets' words and their comparison in
+  [presets.ts](../../web/src/app/features/bastions/presets.ts) (the table itself is the server's, `GET /api/v1/bastions/presets` since
+  the day's findings of 2026-11-26, Q-UI-1485), the preset's dialog, the details' form
   ([bastion-limit-details.ts](../../web/src/app/features/bastions/bastion-limit-details.ts)), the switches
   ([bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts)) and `<quader-bastion-egress>` in two parts (warnings on
   the card, the list in **Details**); `BastionsApi.configure`, a merge patch of `switches` and `limits`; the mode's dialog of

@@ -881,6 +881,26 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
     expect(presetButtons(limitsOf(root, 'partners')).find((b) => b.getAttribute('aria-pressed') === 'true')!.textContent).toContain('Partner network');
   });
 
+  it("R-UI-240 the preset's dialog names the server's table, which it reads when it opens, and holds no copy of its own", async () => {
+    const { fixture, root, get } = await renderScreen(BastionList, {
+      capabilities: ADMIN,
+      setup: (g) => {
+        withProfiles(g);
+        const api = g(BastionsApi) as FakeBastionsApi;
+        api.presetTable = api.presetTable.map((p) => (p.name === 'partnerNetwork' ? { ...p, kinds: { ...p.kinds, administrator: 'standard' } } : p));
+      },
+    });
+    const api = get(BastionsApi) as FakeBastionsApi;
+    expect(api.calls).not.toContain('presets');
+    buttonByText(limitsOf(root, 'partners'), 'Partner network').click();
+    await settle(fixture);
+    const dialog = overlay().querySelector('quader-bastion-preset-dialog') as HTMLElement;
+    expect(api.calls).toContain('presets');
+    expect([...dialog.querySelectorAll('[data-testid="preset-kinds"] li')].map((li) => text(li))).toContain(
+      'Every administrator: Bastion: signed-in → Standard',
+    );
+  });
+
   it("R-UI-240 the preset's dialog says nothing changes where the preset changes nothing, and Custom is shown, not offered", async () => {
     const { fixture, root } = await renderScreen(BastionList, {
       capabilities: ADMIN,

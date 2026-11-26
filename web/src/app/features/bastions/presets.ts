@@ -1,4 +1,4 @@
-import { Bastion } from '../../api/bastions-api';
+import { Bastion, BastionPreset } from '../../api/bastions-api';
 import { CallerKind, LimitProfile, LimitRule } from '../../api/limits-api';
 import { everyLabel } from '../limits/callers';
 import { formatCount } from '../limits/figures';
@@ -13,45 +13,6 @@ export const PRESET_NAMES: readonly PresetName[] = ['internet', 'partnerNetwork'
 
 /** The kinds of a Bastion place's five kind rules, in the order a preset writes and names them (R-LIM-046). */
 export const PRESET_KINDS: readonly CallerKind[] = ['anonymous', 'user', 'technicalToken', 'ci', 'administrator'];
-
-/** What a preset writes (R-LIM-046): the profile of each kind rule, the flood figures and the mode. */
-export interface Preset {
-  readonly kinds: Readonly<Record<CallerKind, string>>;
-  readonly flood: BastionFlood;
-  readonly mode: BastionLimits['mode'];
-}
-
-/**
- * The flood figures every preset writes (R-LIM-046, R-BAS-092's figures): per address anonymous 50 a second with a burst of 1,000 and
- * 1,000 misses a minute, signed-in 200, 4,000 and 4,000, the web interface's pages 20 a second with a burst of 100, R-BAS-036's
- * failed-authentication timeout and R-BAS-037's blocks.
- */
-function presetFlood(): BastionFlood {
-  return {
-    anonymous: { requestsPerSecond: 50, burst: 1000, missesPerMinute: 1000 },
-    authenticated: { requestsPerSecond: 200, burst: 4000, missesPerMinute: 4000 },
-    gui: { requestsPerSecond: 20, burst: 100 },
-    failedAuth: { maxFailures: 20, windowSeconds: 600, timeoutSeconds: 900 },
-    blocking: { threshold: 3000, windowSeconds: 60, durationSeconds: 900, maxDurationSeconds: 86400 },
-    exemptNetworks: [],
-  };
-}
-
-function kinds(anonymous: string, user: string, machine: string, administrator: string): Record<CallerKind, string> {
-  return { anonymous, user, technicalToken: machine, ci: machine, administrator };
-}
-
-/**
- * The three presets of R-LIM-046 as the main installation writes them (`bastionmain.Presets`, internal/bastionmain/configuration.go).
- * The API reads no preset, so the screen holds the table of the spec to name what a preset replaces before it is applied
- * (Q-UI-1481, Q-UI-1485); the server applies its own table, and a difference between the two would show as a dialog that names a
- * change the server does not make, never as a wrong configuration.
- */
-export const PRESETS: Readonly<Record<PresetName, Preset>> = {
-  internet: { kinds: kinds('bastion-anonymous', 'bastion-signed-in', 'bastion-signed-in', 'bastion-signed-in'), flood: presetFlood(), mode: 'enforce' },
-  partnerNetwork: { kinds: kinds('anonymous', 'standard', 'technical', 'unlimited'), flood: presetFlood(), mode: 'enforce' },
-  internal: { kinds: kinds('unlimited', 'unlimited', 'unlimited', 'unlimited'), flood: presetFlood(), mode: 'enforce' },
-};
 
 /** A preset's name on the segmented control and in its dialog. */
 export function presetLabel(preset: BastionLimits['preset']): string {
@@ -123,18 +84,18 @@ export interface PresetChanges {
 }
 
 /**
- * What applying `target` to a registration with `limits` and the place's `rules` replaces (Q-UI-1481): each kind rule whose profile or
- * changed figures differ from the preset's (the rule's profile named by `profiles`, its changed figures counted), each flood figure that
- * differs, the exempt networks where any are listed, and the mode. A kind rule the place does not hold is named as added.
+ * What applying `preset`, as the server lists and applies it (`GET /api/v1/bastions/presets`, Q-UI-1485), to a registration with
+ * `limits` and the place's `rules` replaces (Q-UI-1481): each kind rule whose profile or changed figures differ from the preset's (the
+ * rule's profile named by `profiles`, its changed figures counted), each flood figure that differs, the exempt networks where any are
+ * listed, and the mode. A kind rule the place does not hold is named as added.
  */
 export function presetChanges(
   limits: BastionLimits,
   rules: readonly LimitRule[],
   profiles: readonly LimitProfile[],
-  target: PresetName,
+  preset: BastionPreset,
   locale: string,
 ): PresetChanges {
-  const preset = PRESETS[target];
   const name = (key: string): string => profiles.find((p) => p.key === key)?.name ?? key;
   const kindChanges: PresetChange[] = [];
   for (const kind of PRESET_KINDS) {

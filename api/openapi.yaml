@@ -14179,15 +14179,45 @@ paths:
           $ref: "#/components/responses/NotImplemented"
         "503":
           $ref: "#/components/responses/Unavailable"
+  /api/v1/bastions/presets:
+    get:
+      operationId: listBastionPresets
+      tags: [bastions]
+      summary: List the presets of a Bastion's limits
+      description: |
+        The three presets of R-LIM-046 in the order the card offers them (Internet, Partner network, Internal), each with what applying it
+        writes: the profile each of the five kind rules of the Bastion's place names, the flood figures and the mode. The screen reads it to
+        name what a preset replaces before it is applied (R-UI-240, Q-UI-1485); `PATCH /api/v1/bastions/{name}` with `limits.preset`
+        applies the same table. The name `presets` is therefore no registration name (R-BAS-004).
+      x-quader-permission:
+        permission: limits:read
+      responses:
+        "200":
+          description: The presets.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BastionPresetList"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   /api/v1/bastions/{name}:
     parameters:
       - name: name
         in: path
         required: true
-        description: The registration name (R-BAS-004).
+        description: The registration name (R-BAS-004). `presets` is reserved and addresses the list of the presets.
         schema:
           type: string
           pattern: "^[a-z][a-z0-9-]{0,19}$"
+          x-quader-reserved-names: [presets]
     get:
       operationId: getBastion
       tags: [bastions]
@@ -14195,9 +14225,11 @@ paths:
       description: |
         The registration with its unrevoked tokens, the last contact of each replica, its configuration and the state each replica
         reported within the last hour (R-BAS-004, R-BAS-010, R-BAS-093, R-LIM-045). The ETag is the registration's revision, which a
-        change of a rule of the Bastion's place or of a profile such a rule names raises as well (Q-BAS-320).
+        change of a rule of the Bastion's place or of a profile such a rule names raises as well (Q-BAS-320). The handler admits
+        `endpoints:read`, which reads every member, or `limits:read`, which reads `id`, `name`, `limits` and `status` and no other
+        member (R-BAS-093, Q-BAS-325), so the declaration is the coarse `authenticated` form; a caller that holds neither gets `403`.
       x-quader-permission:
-        permission: endpoints:read
+        authenticated: true
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
       responses:
@@ -14350,6 +14382,7 @@ paths:
           schema:
             type: string
             pattern: "^[a-z][a-z0-9-]{0,19}$"
+            x-quader-reserved-names: [presets]
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
@@ -14419,6 +14452,7 @@ paths:
           schema:
             type: string
             pattern: "^[a-z][a-z0-9-]{0,19}$"
+            x-quader-reserved-names: [presets]
         - name: id
           in: path
           required: true
@@ -19968,6 +20002,7 @@ paths:
           schema:
             type: string
             pattern: "^[a-z][a-z0-9-]{0,19}$"
+            x-quader-reserved-names: [presets]
     get:
       operationId: listBastionLimitAssignments
       tags: [limits]
@@ -20068,6 +20103,7 @@ paths:
           schema:
             type: string
             pattern: "^[a-z][a-z0-9-]{0,19}$"
+            x-quader-reserved-names: [presets]
         - name: id
           in: path
           required: true
@@ -31252,8 +31288,11 @@ components:
     # >>> M13 bastion
     Bastion:
       type: object
-      description: A Bastion registration, a principal of the kind `bastion` (R-BAS-004).
-      required: [id, name, description, enabled, switches, limits, egress, createdAt, tokens, contacts, status, declared]
+      description: |
+        A Bastion registration, a principal of the kind `bastion` (R-BAS-004). Every member is present for a caller that holds
+        `endpoints:read`; a caller that reads one registration with `limits:read` alone reads `id`, `name`, `limits` and `status`, and
+        every other member is absent (R-BAS-093).
+      required: [id, name, limits, status]
       properties:
         declared:
           description: |
@@ -31377,6 +31416,48 @@ components:
           $ref: "#/components/schemas/BastionThroughput"
         anonymousCeiling:
           $ref: "#/components/schemas/BastionCeiling"
+    BastionPresetList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BastionPreset"
+    BastionPreset:
+      type: object
+      description: What applying a preset to a Bastion's limits writes (R-LIM-046).
+      required: [name, kinds, flood, mode]
+      properties:
+        name:
+          type: string
+          enum: [internet, partnerNetwork, internal]
+        kinds:
+          type: object
+          description: The profile (its key) each kind rule of the Bastion's place names, by the caller kind of `LimitWhoEvery`.
+          required: [anonymous, user, technicalToken, ci, administrator]
+          properties:
+            anonymous: {type: string}
+            user: {type: string}
+            technicalToken: {type: string}
+            ci: {type: string}
+            administrator: {type: string}
+        flood:
+          $ref: "#/components/schemas/BastionFlood"
+        mode:
+          type: string
+          enum: [audit, enforce]
+      example:
+        name: internet
+        kinds: {anonymous: bastion-anonymous, user: bastion-signed-in, technicalToken: bastion-signed-in, ci: bastion-signed-in, administrator: bastion-signed-in}
+        flood:
+          anonymous: {requestsPerSecond: 50, burst: 1000, missesPerMinute: 1000}
+          authenticated: {requestsPerSecond: 200, burst: 4000, missesPerMinute: 4000}
+          gui: {requestsPerSecond: 20, burst: 100}
+          failedAuth: {maxFailures: 20, windowSeconds: 600, timeoutSeconds: 900}
+          blocking: {threshold: 3000, windowSeconds: 60, durationSeconds: 900, maxDurationSeconds: 86400}
+          exemptNetworks: []
+        mode: enforce
     BastionFlood:
       type: object
       additionalProperties: false

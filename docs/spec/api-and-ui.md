@@ -10396,7 +10396,7 @@ closed list (`refusals`, `failed_auth`, `refused_requests`) in words with its nu
 warning ([Q-UI-1486](#q-ui-1486--the-edge-warning-stands-in-plain-view-not-under-the-flood-figures-in-details)), W-35's sentence of a
 catalogue a restart loses (while `gui` is on and a contact reported `catalogueKept: false`) and R-UI-243's warnings; the preset (a
 segmented control of three pressed buttons, **Custom** a pressed segment that is no button), its dialog
-([bastion-preset-dialog.ts](../../web/src/app/features/bastions/bastion-preset-dialog.ts), with the presets' table of the screen,
+([bastion-preset-dialog.ts](../../web/src/app/features/bastions/bastion-preset-dialog.ts), with the presets' table it reads from `GET /api/v1/bastions/presets`,
 [Q-UI-1485](#q-ui-1485--the-screen-holds-the-presets-table-to-name-what-a-preset-replaces)); the mode with R-UI-182's dialog
 (`LimitModeDialog` of [limit-mode.ts](../../web/src/app/features/limits/limit-mode.ts) with the Bastion's name and its sentences, no
 preview, H-2365), whose `401 reauthentication_required` stands in the dialog while the session asks for the sign-in; the throughput field
@@ -29160,6 +29160,13 @@ change the API.
 
 **Choice:** (a); the server applies its own table, so a difference can never configure a Bastion wrongly. A read of the presets is the
 better end state and is named in E12's report. **Applied in the spec:** R-UI-240.
+
+*Revised on 2026-11-26 to (b) (the day's findings, batch B):* `GET /api/v1/bastions/presets` (`limits:read`) lists
+`bastionmain.Presets` in the card's order, the dialog reads it when it opens, and the screen's copy `PRESETS` is gone; the name
+`presets` is no registration name (R-BAS-004). One table, the one the server applies. **Applied in the spec:** R-UI-240, R-BAS-093,
+[bastion.md](bastion.md) R-BAS-004; code: `ListBastionPresets` of
+[bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go),
+[bastion-preset-dialog.ts](../../web/src/app/features/bastions/bastion-preset-dialog.ts).
 
 ### Q-UI-1486 · The edge warning stands in plain view, not under the flood figures in Details
 

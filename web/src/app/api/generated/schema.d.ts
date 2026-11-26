@@ -5183,12 +5183,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bastions/presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the presets of a Bastion's limits
+         * @description The three presets of R-LIM-046 in the order the card offers them (Internet, Partner network, Internal), each with what applying it
+         *     writes: the profile each of the five kind rules of the Bastion's place names, the flood figures and the mode. The screen reads it to
+         *     name what a preset replaces before it is applied (R-UI-240, Q-UI-1485); `PATCH /api/v1/bastions/{name}` with `limits.preset`
+         *     applies the same table. The name `presets` is therefore no registration name (R-BAS-004).
+         */
+        get: operations["listBastionPresets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/bastions/{name}": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description The registration name (R-BAS-004). */
+                /** @description The registration name (R-BAS-004). `presets` is reserved and addresses the list of the presets. */
                 name: string;
             };
             cookie?: never;
@@ -5197,7 +5220,9 @@ export interface paths {
          * Read a Bastion registration
          * @description The registration with its unrevoked tokens, the last contact of each replica, its configuration and the state each replica
          *     reported within the last hour (R-BAS-004, R-BAS-010, R-BAS-093, R-LIM-045). The ETag is the registration's revision, which a
-         *     change of a rule of the Bastion's place or of a profile such a rule names raises as well (Q-BAS-320).
+         *     change of a rule of the Bastion's place or of a profile such a rule names raises as well (Q-BAS-320). The handler admits
+         *     `endpoints:read`, which reads every member, or `limits:read`, which reads `id`, `name`, `limits` and `status` and no other
+         *     member (R-BAS-093, Q-BAS-325), so the declaration is the coarse `authenticated` form; a caller that holds neither gets `403`.
          */
         get: operations["getBastion"];
         put?: never;
@@ -14274,7 +14299,9 @@ export interface components {
             nextCursor: string | null;
         };
         /**
-         * @description A Bastion registration, a principal of the kind `bastion` (R-BAS-004).
+         * @description A Bastion registration, a principal of the kind `bastion` (R-BAS-004). Every member is present for a caller that holds
+         *     `endpoints:read`; a caller that reads one registration with `limits:read` alone reads `id`, `name`, `limits` and `status`, and
+         *     every other member is absent (R-BAS-093).
          * @example {
          *       "id": "0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a40",
          *       "name": "partners",
@@ -14377,19 +14404,19 @@ export interface components {
             /** Format: uuid */
             id: string;
             name: string;
-            description: string;
-            enabled: boolean;
-            egress: components["schemas"]["BastionEgress"];
-            switches: components["schemas"]["BastionSwitches"];
+            description?: string;
+            enabled?: boolean;
+            egress?: components["schemas"]["BastionEgress"];
+            switches?: components["schemas"]["BastionSwitches"];
             limits: components["schemas"]["BastionLimits"];
             /** @description The state each replica reported with its last batch within the last hour, the newest first (R-LIM-045); a block that ended is left out (Q-BAS-443). */
             status: components["schemas"]["BastionReplicaStatus"][];
             /** Format: date-time */
-            createdAt: string;
+            createdAt?: string;
             /** @description The unrevoked tokens, newest first. Neither the value nor its hash is part of it. */
-            tokens: components["schemas"]["BastionTokenSummary"][];
+            tokens?: components["schemas"]["BastionTokenSummary"][];
             /** @description The last contact of each replica, the most recent first (R-BAS-010). */
-            contacts: components["schemas"]["BastionContact"][];
+            contacts?: components["schemas"]["BastionContact"][];
         };
         /** @description The switches of the registration's configuration (R-BAS-093), each off for a new registration. */
         BastionSwitches: {
@@ -14423,6 +14450,66 @@ export interface components {
             slots: components["schemas"]["BastionSlots"];
             throughput: components["schemas"]["BastionThroughput"];
             anonymousCeiling: components["schemas"]["BastionCeiling"];
+        };
+        BastionPresetList: {
+            items: components["schemas"]["BastionPreset"][];
+        };
+        /**
+         * @description What applying a preset to a Bastion's limits writes (R-LIM-046).
+         * @example {
+         *       "name": "internet",
+         *       "kinds": {
+         *         "anonymous": "bastion-anonymous",
+         *         "user": "bastion-signed-in",
+         *         "technicalToken": "bastion-signed-in",
+         *         "ci": "bastion-signed-in",
+         *         "administrator": "bastion-signed-in"
+         *       },
+         *       "flood": {
+         *         "anonymous": {
+         *           "requestsPerSecond": 50,
+         *           "burst": 1000,
+         *           "missesPerMinute": 1000
+         *         },
+         *         "authenticated": {
+         *           "requestsPerSecond": 200,
+         *           "burst": 4000,
+         *           "missesPerMinute": 4000
+         *         },
+         *         "gui": {
+         *           "requestsPerSecond": 20,
+         *           "burst": 100
+         *         },
+         *         "failedAuth": {
+         *           "maxFailures": 20,
+         *           "windowSeconds": 600,
+         *           "timeoutSeconds": 900
+         *         },
+         *         "blocking": {
+         *           "threshold": 3000,
+         *           "windowSeconds": 60,
+         *           "durationSeconds": 900,
+         *           "maxDurationSeconds": 86400
+         *         },
+         *         "exemptNetworks": []
+         *       },
+         *       "mode": "enforce"
+         *     }
+         */
+        BastionPreset: {
+            /** @enum {string} */
+            name: "internet" | "partnerNetwork" | "internal";
+            /** @description The profile (its key) each kind rule of the Bastion's place names, by the caller kind of `LimitWhoEvery`. */
+            kinds: {
+                anonymous: string;
+                user: string;
+                technicalToken: string;
+                ci: string;
+                administrator: string;
+            };
+            flood: components["schemas"]["BastionFlood"];
+            /** @enum {string} */
+            mode: "audit" | "enforce";
         };
         /** @description The flood protection per client address (R-BAS-035 to R-BAS-037, Q-LIM-307). */
         BastionFlood: {
@@ -30963,6 +31050,31 @@ export interface operations {
             503: components["responses"]["Unavailable"];
         };
     };
+    listBastionPresets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The presets. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BastionPresetList"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
     getBastion: {
         parameters: {
             query?: never;
@@ -30971,7 +31083,7 @@ export interface operations {
                 "If-None-Match"?: components["parameters"]["IfNoneMatch"];
             };
             path: {
-                /** @description The registration name (R-BAS-004). */
+                /** @description The registration name (R-BAS-004). `presets` is reserved and addresses the list of the presets. */
                 name: string;
             };
             cookie?: never;
@@ -31009,7 +31121,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description The registration name (R-BAS-004). */
+                /** @description The registration name (R-BAS-004). `presets` is reserved and addresses the list of the presets. */
                 name: string;
             };
             cookie?: never;
@@ -31041,7 +31153,7 @@ export interface operations {
                 "If-Match": components["parameters"]["IfMatch"];
             };
             path: {
-                /** @description The registration name (R-BAS-004). */
+                /** @description The registration name (R-BAS-004). `presets` is reserved and addresses the list of the presets. */
                 name: string;
             };
             cookie?: never;

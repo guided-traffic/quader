@@ -33,8 +33,12 @@ var namePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{0,19}$`)
 // maxDescription is the longest description of a registration or a token, in characters.
 const maxDescription = 1024
 
+// reservedName is the one name of the pattern that is no registration name: GET /api/v1/bastions/presets lists the presets
+// (R-BAS-004, R-LIM-046), so a registration of that name could not be read.
+const reservedName = "presets"
+
 // ValidName reports whether a string is a registration name.
-func ValidName(name string) bool { return namePattern.MatchString(name) }
+func ValidName(name string) bool { return namePattern.MatchString(name) && name != reservedName }
 
 // Registration is a Bastion registration as the API shows it.
 type Registration struct {
@@ -186,7 +190,7 @@ func checkDescription(pointer, d string) error {
 // registrations, event bastion.created.
 func (r *Registrations) Create(ctx context.Context, c principal.Caller, in NewRegistration) (Registration, error) {
 	if !ValidName(in.Name) {
-		return Registration{}, invalid("/name", "invalid_name", "The name must match ^[a-z][a-z0-9-]{0,19}$.")
+		return Registration{}, invalid("/name", "invalid_name", "The name must match ^[a-z][a-z0-9-]{0,19}$ and must not be "+reservedName+".")
 	}
 	if err := checkDescription("/description", in.Description); err != nil {
 		return Registration{}, err

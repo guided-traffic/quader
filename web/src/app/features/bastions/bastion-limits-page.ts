@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Injectable, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { Bastion, BastionsApi } from '../../api/bastions-api';
+import { BastionView, BastionsApi } from '../../api/bastions-api';
 import { LimitPlace } from '../../api/limits-api';
 import { ApiError } from '../../api/problem';
 import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
@@ -20,7 +20,7 @@ import { ReportedBlock, blockReasonText, reportedBlocks } from './bastion-state'
 @Injectable()
 export class BastionPageState {
   readonly name = signal('');
-  readonly bastion = signal<Bastion | null>(null);
+  readonly bastion = signal<BastionView | null>(null);
   readonly failure = signal<ApiError | null>(null);
   /** Set by the frame: reads the registration again. */
   reload: () => Promise<void> = async () => undefined;
@@ -73,10 +73,13 @@ export class BastionLimitsPage {
     });
     this.state.reload = () => this.load();
     // The blocks and the state come from the replicas' reports, which change without the viewer (R-UI-213).
-    live({ reload: () => this.load(), every: () => (this.session.has('endpoints:read') ? LIVE_IDLE_MS : null) });
+    live({ reload: () => this.load(), every: () => (this.reads() ? LIVE_IDLE_MS : null) });
   }
 
-  /** Reads the registration; a viewer without `endpoints:read` cannot, and the tab **Blocks** says why with the answer. */
+  /** Whether the viewer reads the registration: its limits and its state with `limits:read`, every member with `endpoints:read` (R-BAS-093). */
+  private readonly reads = (): boolean => this.session.has('limits:read') || this.session.has('endpoints:read');
+
+  /** Reads the registration; a viewer with neither permission cannot, and the tab **Blocks** says why with the answer. */
   private async load(): Promise<void> {
     try {
       const { value } = await this.api.get(this.state.name());

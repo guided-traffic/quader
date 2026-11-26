@@ -17,8 +17,9 @@ export interface PresetDialogData {
 
 /**
  * "Apply the preset Partner network?" (Q-UI-1481): before a preset replaces the five kind rules of a Bastion's place, its flood figures
- * and its mode (R-LIM-046), the dialog reads the place's rules and the profiles and names each thing that changes, from what to what,
- * and says that the rules of single callers, groups and addresses stay; where the preset changes nothing it says so alone. **Apply
+ * and its mode (R-LIM-046), the dialog reads the presets as the server applies them (Q-UI-1485), the place's rules and the profiles and
+ * names each thing that changes, from what to what, and says that the rules of single callers, groups and addresses stay; where the
+ * preset changes nothing it says so alone. **Apply
  * preset** reads the registration for its `ETag` and sends `PATCH` with `limits.preset` (Q-LIM-311); a refusal stands in the dialog.
  */
 @Component({
@@ -118,13 +119,19 @@ export class BastionPresetDialog {
     void this.read();
   }
 
-  /** Reads the place's rules and the profiles; the failure stays until they answer (R-UI-216). */
+  /** Reads the presets as the server applies them, the place's rules and the profiles; the failure stays until they answer (R-UI-216). */
   protected async read(): Promise<void> {
     const b = this.data.bastion;
     try {
-      const [rules, profiles] = await Promise.all([this.limits.rules({ kind: 'bastion', bastion: b.name }), this.limits.profiles()]);
+      const [presets, rules, profiles] = await Promise.all([
+        this.bastions.presets(),
+        this.limits.rules({ kind: 'bastion', bastion: b.name }),
+        this.limits.profiles(),
+      ]);
+      const preset = presets.find((p) => p.name === this.data.preset);
+      if (!preset) throw new ApiError(404, { code: 'not_found', detail: `The server lists no preset ${this.data.preset}.` }, null);
       this.readFailure.set(null);
-      this.changes.set(presetChanges(b.limits, rules, profiles, this.data.preset, this.locale));
+      this.changes.set(presetChanges(b.limits, rules, profiles, preset, this.locale));
     } catch (e) {
       this.readFailure.set(asApiError(e));
     }

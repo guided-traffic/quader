@@ -15,19 +15,23 @@ import (
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // The Bastion registrations and their tokens (R-BAS-004, Q-BAS-24). The declarations are in the document:
-// endpoints:read for the reads, endpoints:write for the writes, x-quader-if-match on the update, and the coarse authenticated
-// form for the revocation of one token, because the handler admits endpoints:write or tokens:revoke, and for the update, because
+// endpoints:read for the list, endpoints:write for the writes, x-quader-if-match on the update, and the coarse authenticated
+// form for the read of one registration, because the handler admits endpoints:read or limits:read (R-BAS-093), for the revocation
+// of one token, because the handler admits endpoints:write or tokens:revoke, and for the update, because
 // the handler requires limits:write for the member limits and endpoints:write for every other (Q-BAS-325). The rules are those of
 // bastionmain.Registrations; the handlers decode, call it and encode.
 
 // Capabilities a Bastion registration is managed with (Q-BAS-24, Q-BAS-325).
 const (
+	capabilityEndpointsRead  = "endpoints:read"
 	capabilityEndpointsWrite = "endpoints:write"
 	capabilityTokensRevoke   = "tokens:revoke"
+	capabilityLimitsRead     = "limits:read"
 	capabilityLimitsWrite    = "limits:write"
 )
 
@@ -41,20 +45,14 @@ func (s *Server) bastionsReady(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
+// toBastion is a registration with every member, as a holder of endpoints:read reads it.
 func toBastion(b bastionmain.Registration) gen.Bastion {
-	out := gen.Bastion{
-		Id: uuidOf(b.ID), Name: b.Name, Description: b.Description, Enabled: b.Enabled,
-		Switches: gen.BastionSwitches{Handover: b.Switches.Handover, Gui: b.Switches.GUI, Docs: b.Switches.Docs},
-		Limits:   bastionLimitsRep(b.Limits, b.Preset), Status: make([]gen.BastionReplicaStatus, 0, len(b.Status)),
-		Egress: bastionmain.EgressText(b.Egress), CreatedAt: utc(b.CreatedAt),
-		Tokens: make([]gen.BastionTokenSummary, 0, len(b.Tokens)), Contacts: make([]gen.BastionContact, 0, len(b.Contacts)),
-	}
-	for _, st := range b.Status {
-		var rep gen.BastionReplicaStatus
-		viaJSON(st.Status, &rep)
-		rep.Replica, rep.ReportedAt = st.Replica, utc(st.ReportedAt)
-		out.Status = append(out.Status, rep)
-	}
+	out := toBastionLimits(b)
+	egress := gen.BastionEgress(bastionmain.EgressText(b.Egress))
+	tokens := make([]gen.BastionTokenSummary, 0, len(b.Tokens))
+	contacts := make([]gen.BastionContact, 0, len(b.Contacts))
+	out.Description, out.Enabled, out.Egress, out.CreatedAt = &b.Description, &b.Enabled, &egress, refTo(utc(b.CreatedAt))
+	out.Switches = &gen.BastionSwitches{Handover: b.Switches.Handover, Gui: b.Switches.GUI, Docs: b.Switches.Docs}
 	if b.Declared != nil {
 		out.Declared = &gen.BastionDeclaration{Since: utc(b.Declared.Since), SecretName: b.Declared.SecretName}
 	}
@@ -68,7 +66,7 @@ func toBastion(b bastionmain.Registration) gen.Bastion {
 		if t.LastUsedAt != nil {
 			sum.LastUsedAt = refTo(utc(*t.LastUsedAt))
 		}
-		out.Tokens = append(out.Tokens, sum)
+		tokens = append(tokens, sum)
 	}
 	for _, c := range b.Contacts {
 		ct := gen.BastionContact{
@@ -78,7 +76,23 @@ func toBastion(b bastionmain.Registration) gen.Bastion {
 		if c.EdgeLimit != nil {
 			ct.EdgeLimit = refTo(c.EdgeLimit.Header())
 		}
-		out.Contacts = append(out.Contacts, ct)
+		contacts = append(contacts, ct)
+	}
+	out.Tokens, out.Contacts = &tokens, &contacts
+	return out
+}
+
+// toBastionLimits is a registration as a holder of limits:read without endpoints:read reads it (R-BAS-093): its name, its limits and
+// the state its replicas reported, and none of its tokens, contacts, networks, switches or description.
+func toBastionLimits(b bastionmain.Registration) gen.Bastion {
+	out := gen.Bastion{
+		Id: uuidOf(b.ID), Name: b.Name, Limits: bastionLimitsRep(b.Limits, b.Preset), Status: make([]gen.BastionReplicaStatus, 0, len(b.Status)),
+	}
+	for _, st := range b.Status {
+		var rep gen.BastionReplicaStatus
+		viaJSON(st.Status, &rep)
+		rep.Replica, rep.ReportedAt = st.Replica, utc(st.ReportedAt)
+		out.Status = append(out.Status, rep)
 	}
 	return out
 }
@@ -150,12 +164,43 @@ func (s *Server) CreateBastion(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, r, http.StatusCreated, toBastion(b))
 }
 
-// GetBastion implements GET /api/v1/bastions/{name}.
+// ListBastionPresets implements GET /api/v1/bastions/presets: the three presets of R-LIM-046 as bastionmain.Presets holds them and
+// PATCH applies them, in the order of the card's segmented control (R-UI-240, Q-UI-1485). It reads no database.
+func (s *Server) ListBastionPresets(w http.ResponseWriter, r *http.Request) {
+	all := bastionmain.Presets()
+	items := make([]gen.BastionPreset, 0, len(all))
+	for _, name := range []iface.LimitsPreset{iface.PresetInternet, iface.PresetPartnerNetwork, iface.PresetInternal} {
+		p := all[name]
+		out := gen.BastionPreset{Name: gen.BastionPresetName(name), Mode: gen.BastionPresetMode(p.Mode)}
+		out.Kinds.Anonymous, out.Kinds.User = p.Kinds[limits.EveryAnonymous], p.Kinds[limits.EveryUser]
+		out.Kinds.TechnicalToken, out.Kinds.Ci = p.Kinds[limits.EveryTechnicalToken], p.Kinds[limits.EveryCI]
+		out.Kinds.Administrator = p.Kinds[limits.EveryAdministrator]
+		viaJSON(p.Flood, &out.Flood)
+		if out.Flood.ExemptNetworks == nil {
+			out.Flood.ExemptNetworks = []string{}
+		}
+		items = append(items, out)
+	}
+	writeJSON(w, r, http.StatusOK, gen.BastionPresetList{Items: items})
+}
+
+// GetBastion implements GET /api/v1/bastions/{name}: every member for a holder of endpoints:read, the limits and the replicas' state
+// for a holder of limits:read alone (R-BAS-093), 403 for a caller that holds neither.
 func (s *Server) GetBastion(w http.ResponseWriter, r *http.Request, name string, _ gen.GetBastionParams) {
 	if !s.bastionsReady(w, r) {
 		return
 	}
-	b, err := s.o.Bastions.Get(r.Context(), name)
+	ctx := r.Context()
+	if err := s.requireAny(ctx, capabilityEndpointsRead, capabilityLimitsRead); err != nil {
+		failIdentity(w, r, err)
+		return
+	}
+	full, err := s.holds(ctx, capabilityEndpointsRead)
+	if err != nil {
+		failIdentity(w, r, err)
+		return
+	}
+	b, err := s.o.Bastions.Get(ctx, name)
 	if err != nil {
 		failIdentity(w, r, err)
 		return
@@ -164,7 +209,11 @@ func (s *Server) GetBastion(w http.ResponseWriter, r *http.Request, name string,
 		return
 	}
 	SetETag(w, b.Revision, "")
-	writeJSON(w, r, http.StatusOK, toBastion(b))
+	out := toBastionLimits(b)
+	if full {
+		out = toBastion(b)
+	}
+	writeJSON(w, r, http.StatusOK, out)
 }
 
 // bastionPatchBody is a merge patch of a registration. The read-only members are accepted and ignored.

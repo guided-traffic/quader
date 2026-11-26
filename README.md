@@ -3003,7 +3003,8 @@ The operations of GitLab CI federation ([docs/developer/ci-oidc.md](docs/develop
 |---|---|---|
 | `GET /api/v1/bastions` | `listBastions` | `endpoints:read` |
 | `POST /api/v1/bastions` | `createBastion` | `endpoints:write` |
-| `GET /api/v1/bastions/{name}` | `getBastion` | `endpoints:read` |
+| `GET /api/v1/bastions/presets` | `listBastionPresets` | `limits:read` |
+| `GET /api/v1/bastions/{name}` | `getBastion` | authenticated; `endpoints:read` (every member) or `limits:read` (`id`, `name`, `limits`, `status`), decided in the handler |
 | `PATCH /api/v1/bastions/{name}` | `updateBastion` | `endpoints:write` · `If-Match` |
 | `DELETE /api/v1/bastions/{name}` | `deleteBastion` | `endpoints:write` |
 | `POST /api/v1/bastions/{name}/tokens` | `createBastionToken` | `endpoints:write` · recent sign-in · idempotent · the secret once |

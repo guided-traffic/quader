@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -394,6 +395,31 @@ func TestR_BAS_004_CapabilitiesGateTheOperations(t *testing.T) {
 		want(t, r.call("PATCH", bastions+"/partners", c.auditor, map[string]any{"enabled": false}, "If-Match", "*"), http.StatusForbidden, "")
 		want(t, r.call("DELETE", bastions+"/partners", c.auditor, nil), http.StatusForbidden, "")
 		want(t, r.call("DELETE", bastions+"/partners/tokens/"+id, c.auditor, nil), http.StatusForbidden, "")
+	})
+	t.Run("a caller with limits:read only reads one registration's limits and state and nothing else of it (R-BAS-093)", func(t *testing.T) {
+		got := r.call("GET", bastions+"/partners", c.limitsOnly, nil)
+		want(t, got, http.StatusOK, "")
+		body := got.json(t)
+		members := make([]string, 0, len(body))
+		for k := range body {
+			members = append(members, k)
+		}
+		sort.Strings(members)
+		if strings.Join(members, ",") != "id,limits,name,status" {
+			t.Errorf("the members a holder of limits:read reads: %v", members)
+		}
+		if full := r.call("GET", bastions+"/partners", c.auditor, nil).json(t); full["tokens"] == nil || full["contacts"] == nil || full["egress"] == nil {
+			t.Errorf("a holder of endpoints:read reads every member: %v", full)
+		}
+		want(t, r.call("GET", bastions, c.limitsOnly, nil), http.StatusForbidden, "")
+		want(t, r.call("PATCH", bastions+"/partners", c.limitsOnly, map[string]any{"limits": map[string]any{"mode": "audit"}}, "If-Match", "*"), http.StatusForbidden, "")
+		want(t, r.call("GET", bastions+"/partners", c.revokeOnly, nil), http.StatusForbidden, "")
+		// The presets are limits:read's; their path is no registration name (Q-UI-1485).
+		if items, _ := r.call("GET", bastions+"/presets", c.limitsOnly, nil).json(t)["items"].([]any); len(items) != 3 {
+			t.Errorf("the presets: %v", items)
+		}
+		want(t, r.call("GET", bastions+"/presets", c.revokeOnly, nil), http.StatusForbidden, "")
+		want(t, r.call("POST", bastions, c.admin, map[string]any{"name": "presets"}), http.StatusUnprocessableEntity, "")
 	})
 	t.Run("a token cut down to tokens:revoke revokes a Bastion token and does nothing else", func(t *testing.T) {
 		want(t, r.call("GET", bastions, c.revokeOnly, nil), http.StatusForbidden, "")

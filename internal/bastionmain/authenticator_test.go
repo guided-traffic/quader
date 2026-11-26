@@ -96,7 +96,7 @@ func TestR_BAS_005_ARejectedBastionTokenNamesTheRequestsSourceAndTheUseIsTheBast
 func TestR_BAS_004_TheNameRule(t *testing.T) {
 	for name, ok := range map[string]bool{
 		"partners": true, "a": true, "a-b-9": true, "abcdefghijklmnopqrst": true,
-		"": false, "Partners": false, "1abc": false, "-ab": false, "a_b": false, "abcdefghijklmnopqrstu": false, "a b": false,
+		"": false, "presets": false, "Partners": false, "1abc": false, "-ab": false, "a_b": false, "abcdefghijklmnopqrstu": false, "a b": false,
 	} {
 		if ValidName(name) != ok {
 			t.Errorf("ValidName(%q) = %v, want %v", name, !ok, ok)
