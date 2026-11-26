@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { gzipSync } from 'node:zlib';
+import { crc32, deflateSync, gzipSync } from 'node:zlib';
 import { APIRequestContext } from '@playwright/test';
 import { zipArchive } from './advisories';
 import { expectStatus, mainProject, otherProject, patient, registryToken, tarEntry, tarGz } from './seed';
@@ -12,7 +12,16 @@ import { expectStatus, mainProject, otherProject, patient, registryToken, tarEnt
  * (text). A few kilobytes in all; a run again publishes the same bytes, which answer a conflict.
  */
 export const factsNpm = { format: 'npm', name: '@acme/portal-shell', version: '2.3.0' } as const;
-export const factsNuget = { format: 'nuget', name: 'Acme.Platform.Http', version: '3.1.0' } as const;
+/**
+ * 3.2.1 adds what a NuGet version shows beyond its nuspec (R-NUGET-038, R-NUGET-039): an icon, a licence file, release notes of twenty
+ * lines, build logic, an analyzer, an install script, a symbol package and its repository on a host whose commit addresses the page knows.
+ * A new version, not a changed 3.1.0: an instance that holds 3.1.0 from an older seed shows the new facts on 3.2.1.
+ */
+export const factsNuget = { format: 'nuget', name: 'Acme.Platform.Http', version: '3.2.1' } as const;
+/** A .NET tool, a template package and a package that carries nothing but its nuspec (R-NUGET-037, R-NUGET-038). */
+export const factsNugetTool = { format: 'nuget', name: 'Acme.Platform.Cli', version: '1.4.0' } as const;
+export const factsNugetTemplate = { format: 'nuget', name: 'Acme.Platform.Templates', version: '2.0.0' } as const;
+export const factsNugetPlain = { format: 'nuget', name: 'Acme.Platform.Meta', version: '1.0.0' } as const;
 export const factsCollection = { format: 'ansible', name: 'acme.network', version: '2.0.0' } as const;
 export const factsImage = {
   format: 'oci',
@@ -119,9 +128,54 @@ async function publishNpm(ctx: APIRequestContext, edge: string, auth: Record<str
   await expectStatus(res, [200, 201, 409], `npm publish ${factsNpm.name}@${factsNpm.version}`);
 }
 
+/** A PNG of 64 x 64 pixels, four squares of two colours: an icon a package embeds. */
+function iconPng(): Buffer {
+  const size = 64;
+  const chunk = (type: string, data: Buffer): Buffer => {
+    const len = Buffer.alloc(4);
+    len.writeUInt32BE(data.length);
+    const td = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+    const crc = Buffer.alloc(4);
+    crc.writeUInt32BE(crc32(td) >>> 0);
+    return Buffer.concat([len, td, crc]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(size, 0);
+  ihdr.writeUInt32BE(size, 4);
+  ihdr[8] = 8; // bit depth
+  ihdr[9] = 2; // RGB
+  const rows: Buffer[] = [];
+  for (let y = 0; y < size; y++) {
+    const row = Buffer.alloc(1 + size * 3);
+    for (let x = 0; x < size; x++) {
+      const dark = (x < size / 2) !== (y < size / 2);
+      row.set(dark ? [0x1f, 0x4f, 0x99] : [0x63, 0xa4, 0xe8], 1 + x * 3);
+    }
+    rows.push(row);
+  }
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', deflateSync(Buffer.concat(rows))),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+/** Twenty lines of release notes, as a changelog of a release writes them. */
+const RELEASE_NOTES = [
+  'Changes in 3.2.1:',
+  ...['Retries', 'Timeouts', 'Telemetry', 'Handlers', 'Logging'].flatMap((area) => [
+    `- ${area}: the client honours the server's Retry-After header.`,
+    `- ${area}: a cancelled request no longer counts as a failure.`,
+    `- ${area}: the defaults are read from the configuration section of the platform.`,
+    `- ${area}: fixed a race when two requests share one handler.`,
+  ]).slice(0, 19),
+].join('\n');
+
 /** The NuGet package: four framework groups, one of them empty, a dependency the installation holds (Acme.Logging.Abstractions). */
-function nupkg(): Buffer {
-  const { name: id, version } = factsNuget;
+function nupkg(version: string = factsNuget.version): Buffer {
+  const { name: id } = factsNuget;
+  const rich = version !== '3.1.0';
   const nuspec = `<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
@@ -129,12 +183,15 @@ function nupkg(): Buffer {
     <version>${version}</version>
     <authors>Platform engineering</authors>
     <description>Typed HTTP clients of the platform's services, with retries, timeouts and the platform's telemetry.</description>
-    <license type="expression">Apache-2.0</license>
+    ${rich ? '<license type="file">LICENSE.txt</license>\n    <icon>images/icon.png</icon>' : '<license type="expression">Apache-2.0</license>'}
     <projectUrl>https://git.example.invalid/platform/http</projectUrl>
-    <repository type="git" url="https://git.example.invalid/platform/http.git" branch="main" commit="9c1e2f4a7b3d5e6f8a9b0c1d2e3f4a5b6c7d8e9f" />
+    ${
+      rich
+        ? '<repository type="git" url="https://github.com/acme-platform/http.git" branch="refs/heads/release/3.2" commit="4b7e2a9c1d3f5e6a8b0c2d4e6f8a0b1c3d5e7f9a" />'
+        : '<repository type="git" url="https://git.example.invalid/platform/http.git" branch="main" commit="9c1e2f4a7b3d5e6f8a9b0c1d2e3f4a5b6c7d8e9f" />'
+    }
     <copyright>Copyright 2026 Acme platform engineering</copyright>
-    <releaseNotes>Retries honour Retry-After.
-Timeouts are per attempt, not per call.</releaseNotes>
+    <releaseNotes>${rich ? RELEASE_NOTES : 'Retries honour Retry-After.\nTimeouts are per attempt, not per call.'}</releaseNotes>
     <tags>http client retry polly resilience telemetry platform acme</tags>
     <dependencies>
       <group targetFramework="net9.0">
@@ -164,6 +221,37 @@ Timeouts are per attempt, not per call.</releaseNotes>
     { name: `lib/net8.0/${id}.dll`, data: Buffer.from(`MZ ${id} ${version} net8.0`) },
     { name: `lib/netstandard2.0/${id}.dll`, data: Buffer.from(`MZ ${id} ${version} netstandard2.0`) },
     { name: `lib/net472/${id}.dll`, data: Buffer.from(`MZ ${id} ${version} net472`) },
+    ...(rich
+      ? [
+          { name: 'images/icon.png', data: iconPng() },
+          { name: 'LICENSE.txt', data: Buffer.from('MIT License\n\nCopyright 2026 Acme platform engineering\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software.\n') },
+          { name: `build/${id}.targets`, data: Buffer.from('<Project><Target Name="AcmeHttpCheck" BeforeTargets="Build" /></Project>') },
+          { name: `buildTransitive/net8.0/${id}.props`, data: Buffer.from('<Project />') },
+          { name: `analyzers/dotnet/cs/${id}.Generators.dll`, data: Buffer.from(`MZ ${id} generators`) },
+          { name: 'tools/install.ps1', data: Buffer.from('param($installPath, $toolsPath, $package, $project)') },
+        ]
+      : []),
+  ]);
+}
+
+/** A symbol package of the rich version: one portable PDB, as `dotnet pack -p:SymbolPackageFormat=snupkg` builds it. */
+function snupkg(): Buffer {
+  const { name: id, version } = factsNuget;
+  const nuspec = `<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd"><metadata><id>${id}</id><version>${version}</version><authors>Platform engineering</authors><description>Symbols</description><packageTypes><packageType name="SymbolsPackage" /></packageTypes></metadata></package>`;
+  return zipArchive([
+    { name: `${id}.nuspec`, data: Buffer.from(nuspec) },
+    { name: `lib/net9.0/${id}.pdb`, data: Buffer.concat([Buffer.from('BSJB'), Buffer.alloc(60)]) },
+  ]);
+}
+
+/** A package of one nuspec and one folder: a .NET tool, a template package, or a package that carries nothing (no type, no folder). */
+function smallNupkg(p: { readonly name: string; readonly version: string }, type: string | null, folder: string | null, description: string): Buffer {
+  const nuspec = `<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd"><metadata><id>${p.name}</id><version>${p.version}</version><authors>Platform engineering</authors><description>${description}</description>${type ? `<packageTypes><packageType name="${type}" /></packageTypes>` : ''}</metadata></package>`;
+  return zipArchive([
+    { name: `${p.name}.nuspec`, data: Buffer.from(nuspec) },
+    ...(folder ? [{ name: folder, data: Buffer.from(`MZ ${p.name}`) }] : []),
   ]);
 }
 
@@ -279,10 +367,18 @@ async function pushImage(ctx: APIRequestContext, edge: string, pat: string): Pro
 export async function seedFacts(ctx: APIRequestContext, edge: string, token: string): Promise<void> {
   const auth = { Authorization: `Bearer ${token}` };
   await publishNpm(ctx, edge, auth);
-  const nuget = await patient(() =>
-    ctx.put(`/api/nuget/${otherProject}/nuget-internal/v3/package`, { data: nupkg(), headers: { ...auth, 'Content-Type': 'application/octet-stream' } }),
-  );
-  await expectStatus(nuget, [200, 201, 202, 409], `nuget push ${factsNuget.name} ${factsNuget.version}`);
+  const push = async (resource: 'package' | 'symbolpackage', data: Buffer, what: string): Promise<void> => {
+    const res = await patient(() =>
+      ctx.put(`/api/nuget/${otherProject}/nuget-internal/v3/${resource}`, { data, headers: { ...auth, 'Content-Type': 'application/octet-stream' } }),
+    );
+    await expectStatus(res, [200, 201, 202, 409], what);
+  };
+  await push('package', nupkg('3.1.0'), `nuget push ${factsNuget.name} 3.1.0`);
+  await push('package', nupkg(), `nuget push ${factsNuget.name} ${factsNuget.version}`);
+  await push('symbolpackage', snupkg(), `nuget push ${factsNuget.name} ${factsNuget.version}.snupkg`);
+  await push('package', smallNupkg(factsNugetTool, 'DotnetTool', `tools/net8.0/any/${factsNugetTool.name}.dll`, 'The command line of the platform.'), `nuget push ${factsNugetTool.name}`);
+  await push('package', smallNupkg(factsNugetTemplate, 'Template', 'content/service/.template.config/template.json', 'Project templates of the platform.'), `nuget push ${factsNugetTemplate.name}`);
+  await push('package', smallNupkg(factsNugetPlain, null, null, 'A package that brings nothing but its description.'), `nuget push ${factsNugetPlain.name}`);
   const archive = collectionArchive();
   const [namespace, name] = factsCollection.name.split('.') as [string, string];
   const ansible = await patient(() =>

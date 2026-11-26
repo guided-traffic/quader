@@ -171,6 +171,30 @@ export async function* versionHead(page: Page): AsyncGenerator<string> {
   }
 }
 
+/**
+ * A NuGet version's forms of installing it (R-NUGET-037, Q-UI-1360): the page as it opens, the panel on the .NET CLI's default form, and
+ * where the version has the tab Visual Studio, that tab with its Central Package Management chosen, a form of two lines.
+ */
+export async function* formsHead(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main quader-page-header h1')).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  yield '';
+  await openCommand(page);
+  yield 'install';
+  const panel = page.locator('.client-command-panel');
+  const vs = panel.getByRole('tab', { name: 'Visual Studio' });
+  if ((await vs.count()) > 0) {
+    await vs.click();
+    // The tabs keep every client's panel, the ones not chosen hidden: the select is the one in Visual Studio's panel.
+    const chosen = panel.getByRole('tabpanel', { name: 'Visual Studio' });
+    // By the form's snippet id, which no language changes.
+    await chosen.locator('.command-form select').selectOption('visual-studio.install.cpm');
+    await expect(chosen.locator('quader-code-window')).toBeVisible();
+    yield 'install-vs';
+  }
+  await page.keyboard.press('Escape');
+}
+
 /** A head of thirty versions: as it opens, the switch's list bounded at ten with its link to all of them, and the command panel. */
 export function manyVersionsHead(onlyPrereleases = false): (page: Page) => AsyncGenerator<string> {
   return async function* (page: Page) {

@@ -43,14 +43,14 @@ import { withVerify } from './verify';
 import { routeTooMany } from './suggestions';
 import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
 import { mirrorFilled } from './mirror';
-import { headLoading, longReadmeHead, manyVersionsHead, rowCommand, threeRepositoriesHead, versionHead } from './version-heads';
+import { formsHead, headLoading, longReadmeHead, manyVersionsHead, rowCommand, threeRepositoriesHead, versionHead } from './version-heads';
 import { deprecatedCollection, deprecationActs } from './deprecations';
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
 import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { downloadsWalk } from './downloads';
 import { cachedDeb, cachedNpm } from './cached';
 import { brokenDeb, debRelationLookups, docsDeb, manyFilesDeb } from './debdocs';
-import { factsCollection, factsImage, factsNpm, factsNuget } from './facts';
+import { factsCollection, factsImage, factsNpm, factsNuget, factsNugetPlain, factsNugetTemplate, factsNugetTool } from './facts';
 import { usedByMany, usedByNone, usedByTwo } from './used-by';
 import { bareRole, blockedRole, pipRole } from './roles';
 import { accountOfferWalk, registryAccountWalk } from './upstream-accounts';
@@ -3287,6 +3287,12 @@ export const screens: readonly Screen[] = [
   // metadata fills every block, and the table of its versions, so the formats can be put side by side.
   { id: 'package-version-npm-details', path: `${ver(P, factsNpm, factsNpm.version)}?tab=details`, kinds: ['plain'], de: true },
   { id: 'package-version-nuget-details', path: `${ver(O, factsNuget, factsNuget.version)}?tab=details`, kinds: ['plain'], de: true },
+  // NuGet complete (W-30 G6, R-NUGET-037 to R-NUGET-039): the head with the icon, the licence file and what a build runs, and the panel's
+  // forms of a library, a .NET tool and a template; a package that carries nothing beyond its nuspec.
+  { id: 'package-version-nuget-facts-head', path: ver(O, factsNuget, factsNuget.version), kinds: ['plain'], walk: formsHead, de: true },
+  { id: 'package-version-nuget-tool-head', path: ver(O, factsNugetTool, factsNugetTool.version), kinds: ['plain'], walk: formsHead, de: true },
+  { id: 'package-version-nuget-template-head', path: ver(O, factsNugetTemplate, factsNugetTemplate.version), kinds: ['plain'], walk: formsHead },
+  { id: 'package-version-nuget-plain-details', path: `${ver(O, factsNugetPlain, factsNugetPlain.version)}?tab=details`, kinds: ['plain'], de: true },
   { id: 'package-version-oci-details', path: `${ver(P, factsImage, factsImage.tags[0])}?tab=details`, kinds: ['plain'], de: true },
   { id: 'package-version-deb-details', path: `${ver(O, docsDeb, docsDeb.version)}?tab=details`, kinds: ['plain'], de: true, expected: debRelationLookups },
   { id: 'package-version-ansible-details', path: `${ver(O, factsCollection, factsCollection.version)}?tab=details`, kinds: ['plain'], de: true },
