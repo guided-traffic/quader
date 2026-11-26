@@ -42,6 +42,7 @@ import { routeTooMany } from './suggestions';
 import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
 import { mirrorFilled } from './mirror';
 import { headLoading, longReadmeHead, manyVersionsHead, rowCommand, threeRepositoriesHead, versionHead } from './version-heads';
+import { deprecatedCollection, deprecationActs } from './deprecations';
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
 import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { downloadsWalk } from './downloads';
@@ -3078,6 +3079,20 @@ export const screens: readonly Screen[] = [
   { id: 'package-oci-many', path: pkg(P, { format: 'oci', name: 'portal/worker' }), kinds: ['plain'], walk: imageTagsFiltered, de: true },
   { id: 'package-nuget', path: pkg(O, nugetPackage), kinds: all, walk: versionHead, de: true },
   { id: 'package-nuget-versions', path: table(O, nugetPackage), kinds: ['plain'] },
+  // Deprecation (R-API-085, Q-UI-1300 to Q-UI-1302): the banner of each format, the table and the switch with their marks, the act's
+  // menu and dialog, the list Packages filtered by it (deprecations.ts).
+  { id: 'deprecation-nuget-version', path: ver(O, nugetPackage, nugetPackage.versions[0]), kinds: ['power'], walk: deprecationActs, de: true, states: overlays('install', 'switch', 'acts', 'dialog') },
+  { id: 'deprecation-nuget-versions', path: table(O, nugetPackage), kinds: ['plain'], de: true },
+  { id: 'deprecation-npm-version', path: ver(P, longNamePackage, '0.3.0'), kinds: ['power'], walk: deprecationActs, de: true, states: overlays('install', 'switch', 'acts', 'dialog') },
+  {
+    id: 'deprecation-ansible-version',
+    path: ver(O, { format: 'ansible', name: `${deprecatedCollection.namespace}.${deprecatedCollection.name}` }, deprecatedCollection.versions[1]),
+    kinds: ['power'],
+    walk: deprecationActs,
+    de: true,
+    states: overlays('install', 'switch', 'acts', 'dialog'),
+  },
+  { id: 'deprecation-packages', path: `${P}/packages?deprecated=true`, kinds: ['plain'], de: true },
   { id: 'package-deb', path: pkg(O, debPackage), kinds: all },
   { id: 'package-ansible', path: pkg(O, { format: 'ansible', name: collectionName }), kinds: all, walk: versionHead, de: true },
   // The head's loads (R-UI-217): the panel while the commands are read, the switch while its versions are.

@@ -1247,7 +1247,7 @@ releases:
 `;
 
 /** A collection archive with the MANIFEST.json and FILES.json ansible-galaxy builds (test/ansiblestub/ansiblegen). */
-function collection(namespace: string, name: string, version: string): Buffer {
+export function collection(namespace: string, name: string, version: string): Buffer {
   const files: [string, Buffer][] = [
     ['README.md', Buffer.from(`# ${namespace}.${name}\n\nRoles and modules of the platform team, version ${version}.\n`)],
     ['changelogs/changelog.yaml', Buffer.from(platformChangelog)],
