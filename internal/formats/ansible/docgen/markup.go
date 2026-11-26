@@ -14,8 +14,8 @@ import (
 // The links to the documentation itself (R-ANS-048, Q-ANS-94): M(), P(), O() and RV() become links only to what the version's own tree
 // holds, and the address is built here from the names that were found, never taken from the text. An address is page-relative:
 // "?doc=<type>/<name>" opens an entry, "#parameter-<path>" and "#return-<path>" an option or a return value of the entry that is open, and
-// the two together one of another entry. [PageLink] is the grammar of exactly these addresses; the sanitizer of the operations keeps a
-// relative link only when it matches.
+// the two together one of another entry; an option of a role's entry point is "#parameter-<entry point>--<path>" (R-ANS-052). [PageLink]
+// is the grammar of exactly these addresses; the sanitizer of the operations keeps a relative link only when it matches.
 
 // MaxMarkupInput is the longest text one conversion reads; more is cut (R-ANS-039).
 const MaxMarkupInput = 64 << 10
@@ -35,7 +35,13 @@ type Links struct {
 	Entries func(typ, name string) bool
 	// Options and Returns are the paths of the entry's own options (with their aliases) and return values, as [OptionPath] spells them.
 	Options, Returns map[string]bool
+	// EntryPoint is the entry point of a role whose prose this is (R-ANS-052), "" for a plugin: an option's anchor is then
+	// "parameter-<entry point>--<path>", as the documentation site spells it.
+	EntryPoint string
 }
+
+// EntryPointAnchor is the anchor of an option of a role's entry point without its "parameter-": "<entry point>--<path>" (R-ANS-052).
+func EntryPointAnchor(entryPoint, path string) string { return entryPoint + "--" + path }
 
 // Entry reports whether a full name such as ns.coll.mount names an entry of the type in this collection's tree, and returns its name.
 func (l *Links) Entry(full, typ string) (string, bool) {
@@ -307,6 +313,9 @@ func (r *renderer) reference(macro, text string) (href, shown string) {
 	if !other {
 		key, _, _ := strings.Cut(text, "=")
 		if p := OptionPath(key); p != "" && r.links.own(macro)[p] {
+			if ep := r.links.EntryPoint; ep != "" && macro == "O" {
+				p = EntryPointAnchor(ep, p)
+			}
 			return "#" + anchor + p, text
 		}
 		return "", text
@@ -315,10 +324,25 @@ func (r *renderer) reference(macro, text string) (href, shown string) {
 	if !ok {
 		return "", text
 	}
+	if typ == "role" {
+		return r.roleOption(macro, full, opt)
+	}
 	key, _, _ := strings.Cut(opt, "=")
 	name, found := r.links.Entry(full, typ)
-	if p := OptionPath(key); found && p != "" && typ != "role" {
+	if p := OptionPath(key); found && p != "" {
 		return EntryDoc(typ, name) + "#" + anchor + p, opt
+	}
+	return "", opt
+}
+
+// roleOption resolves O(ns.coll.role#role:entry:option) (R-ANS-052, H-2102): a link to the option's anchor on the role's page when the tree
+// holds the role and the entry point is a plain name; the shown text is entry:option, as the documentation site shows it.
+func (r *renderer) roleOption(macro, full, opt string) (href, shown string) {
+	ep, key, ok := strings.Cut(opt, ":")
+	key, _, _ = strings.Cut(key, "=")
+	name, found := r.links.Entry(full, "role")
+	if p := OptionPath(key); macro == "O" && ok && found && p != "" && pathSeg.MatchString(ep) {
+		return EntryDoc("role", name) + "#parameter-" + EntryPointAnchor(ep, p), opt
 	}
 	return "", opt
 }

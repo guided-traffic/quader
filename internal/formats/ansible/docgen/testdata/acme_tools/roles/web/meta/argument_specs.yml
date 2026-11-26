@@ -1,0 +1,32 @@
+argument_specs:
+  main:
+    short_description: Installs the web server
+    description:
+      - Installs and starts the web server.
+    author: Hans
+    version_added: 1.2.0
+    options:
+      web_port:
+        description: The port.
+        type: int
+        default: 8080
+      web_tls:
+        description: TLS settings.
+        type: dict
+        options:
+          cert:
+            description: The certificate's path.
+            type: path
+            required: true
+          protocols:
+            description: The protocols.
+            type: list
+            elements: str
+            choices: [TLSv1.2, TLSv1.3]
+  reload:
+    short_description: Reloads the configuration
+    options:
+      web_graceful:
+        description: Waits for open connections.
+        type: bool
+        default: true

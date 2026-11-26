@@ -150,4 +150,9 @@ type DocsStore interface {
 	RebuildDocs(ctx context.Context, repoID int64, reader rows.ArchiveReader, checkpoint string) (next string, done bool, err error)
 	// RebuildRemoteDocs re-derives a remote's rows from its stored docs-blob documents; the same checkpoint rule as RebuildDocs.
 	RebuildRemoteDocs(ctx context.Context, repoID int64, checkpoint string) (next string, done bool, err error)
+	// PutChangelog records the changelog of a version in the transaction that writes its version row (R-ANS-053): at a publish, at the fill
+	// of a remote's archive and in the reindex; nil records that the archive holds none.
+	PutChangelog(ctx context.Context, tx formats.Tx, repoID int64, name, version string, c *rows.DocChangelog) error
+	// DocChangelog reads the changelog of a version; found is false when it has none or was not read.
+	DocChangelog(ctx context.Context, repoID int64, name, version string) (rows.DocChangelog, bool, error)
 }

@@ -178,6 +178,9 @@ func (s docsStore) DocTree(ctx context.Context, repoID int64, name, version stri
 			return err
 		}
 		tree.State = st
+		if tree.Changelog, err = changelogHead(ctx, qs, repoID, name, version); err != nil {
+			return err
+		}
 		if st.State != rows.DocAvailable {
 			return nil
 		}
@@ -354,10 +357,14 @@ func (s docsStore) RebuildDocs(ctx context.Context, repoID int64, reader rows.Ar
 			// An archive the reader refuses or cannot read is left as it is: the reindex of the rows reports it.
 			continue
 		}
-		if set.Readme == nil && len(set.Files) == 0 && len(set.Entries) == 0 {
-			continue
-		}
 		if err := s.o.DB.InTx(ctx, func(tx meta.Tx) error {
+			// The changelog is recorded whether the archive holds one or not, so the next reindex does not read it again (R-ANS-053).
+			if err := s.PutChangelog(ctx, tx, repoID, v.Name, v.Version, set.Changelog); err != nil {
+				return err
+			}
+			if set.Readme == nil && len(set.Files) == 0 && len(set.Entries) == 0 {
+				return nil
+			}
 			if err := s.PutDocs(ctx, tx, repoID, v.Name, v.Version, set); err != nil {
 				return err
 			}

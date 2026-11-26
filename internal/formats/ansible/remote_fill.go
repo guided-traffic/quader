@@ -12,6 +12,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/ansible/collection"
+	"github.com/guided-traffic/quader/internal/formats/ansible/docgen"
 	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 	"github.com/guided-traffic/quader/internal/formats/ansible/version"
 	"github.com/guided-traffic/quader/internal/formats/untrusted"
@@ -55,7 +56,10 @@ func (a remoteAdapter) InspectFill(ctx context.Context, rc formats.RemoteContext
 			Payload: &inspectedRole{id: t.roleID, fetchDocs: memberSettings(rc.Settings).FetchDocumentation},
 		}, nil
 	}
-	arc, err := collection.ReadArchive(ctx, body, lim)
+	// The changelog is read in the same pass (R-ANS-053): the upstream's docs-blob carries none, and the rest of a remote's documentation
+	// stays the upstream's.
+	cl := docgen.NewChangelogReader()
+	arc, err := collection.ReadArchive(ctx, body, lim, collection.WithTap(cl))
 	if err != nil {
 		var ce *collection.Error
 		if errors.As(err, &ce) {
@@ -74,7 +78,7 @@ func (a remoteAdapter) InspectFill(ctx context.Context, rc formats.RemoteContext
 			"ansible.namespace": arc.Namespace, "ansible.name": arc.Name, "ansible.requires_ansible": arc.RequiresAnsible,
 			"ansible.dependency_count": strconv.Itoa(len(arc.Dependencies)),
 		},
-		Payload: &inspected{archive: arc},
+		Payload: &inspected{archive: arc, changelog: cl.Changelog(t.ns + "." + t.name), changelogRead: true},
 	}, nil
 }
 
@@ -149,11 +153,17 @@ func (a remoteAdapter) putManifest(ctx context.Context, tx formats.Tx, c formats
 	if err != nil {
 		return err
 	}
-	return st.PutCachedVersion(ctx, tx, rows.VersionRow{
+	if err := st.PutCachedVersion(ctx, tx, rows.VersionRow{
 		RepoID: c.Repo.ID, Name: c.Inspection.Package, Version: arc.Version, SortKey: version.SortKey(sv), ItemID: c.Item.ID,
 		SHA256: sumOf(c.Digests.SHA256), Size: c.Size, RequiresAnsible: arc.RequiresAnsible, Dependencies: arc.Dependencies,
 		CollectionInfo: arc.Info, PublishedAt: at,
-	})
+	}); err != nil {
+		return err
+	}
+	if !ins.changelogRead {
+		return nil
+	}
+	return st.PutChangelog(ctx, tx, c.Repo.ID, c.Inspection.Package, arc.Version, ins.changelog)
 }
 
 // inspectedRole is what InspectFill hands the commit of a role archive.

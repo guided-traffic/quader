@@ -22,7 +22,13 @@ const (
 const (
 	DocFormatMarkdown = "markdown"
 	DocFormatHTML     = "html"
+	// DocFormatText is a changelog in reStructuredText, shown as the text it is and not rendered (R-ANS-053).
+	DocFormatText = "text"
 )
+
+// ChangelogFile is the name the changelog of a version has among the files of its documentation (R-ANS-053): no file of docs/ can have it,
+// since those end in .md.
+const ChangelogFile = "changelog"
 
 // The states of the documentation of a version (R-ANS-033).
 const (
@@ -77,6 +83,17 @@ type DocSet struct {
 	Warnings []DocWarning
 	// MoreWarnings counts the warnings left out beyond [MaxDocWarnings]; the import task reports them in one last message.
 	MoreWarnings int
+	// Changelog is the changelog the generator read from the archive, nil when it holds none (R-ANS-053). It is stored apart from the other
+	// rows (ansible_changelogs), because a remote's comes with the archive and its other rows with the upstream's docs-blob.
+	Changelog *DocChangelog
+}
+
+// DocChangelog is the changelog of a version (R-ANS-053): the member of the archive it was read from, its format ([DocFormatMarkdown] for
+// changelogs/changelog.yaml rendered by the generator and for a CHANGELOG.md, [DocFormatText] for a CHANGELOG.rst), the body, and whether a
+// bound cut it.
+type DocChangelog struct {
+	Source, Format, Body string
+	Truncated            bool
 }
 
 // DocFile is the README or a Markdown file of docs/. Format is [DocFormatMarkdown] for a generated set and [DocFormatHTML] for an
@@ -136,10 +153,19 @@ type DocTree struct {
 	Counts map[string]int
 	// Warnings are the stored warnings of the version.
 	Warnings []DocWarning
+	// Changelog is the changelog of the version without its body, nil when it has none (R-ANS-053). It is read whatever the State: a
+	// remote's comes with its archive, before or without the upstream's documentation.
+	Changelog *DocChangelog
 }
 
 // DocsReader is the optional interface of an [ArchiveReader] that also generates the documentation of an archive (R-ANS-034): the reindex
 // asks for it through the data port's RebuildDocs. The format implements it over the blob store and the generator.
 type DocsReader interface {
 	ReadDocs(ctx context.Context, ref ArchiveRef) (DocSet, error)
+}
+
+// ChangelogReader is the optional interface of an [ArchiveReader] that reads only the changelog of an archive (R-ANS-053): the reindex of
+// a remote repository asks for it, whose other documentation is the upstream's. A nil changelog is an archive that holds none.
+type ChangelogReader interface {
+	ReadChangelog(ctx context.Context, ref ArchiveRef) (*DocChangelog, error)
 }

@@ -1,0 +1,140 @@
+{
+  "attributes": {
+    "check_mode": {
+      "description": "Can run in check mode.",
+      "support": "partial"
+    },
+    "diff_mode": {
+      "description": "Shows no diff.",
+      "support": "none"
+    }
+  },
+  "author": "Hans",
+  "collection": "acme.tools",
+  "description": "Asks the API whether O(host) answers.",
+  "filename": "/private/tmp/claude-501/-Users-hfi-repos-quader/e491bc03-6082-45ee-9efa-c3e989f367df/scratchpad/ac/ansible_collections/acme/tools/plugins/modules/ping_host.py",
+  "has_action": false,
+  "module": "ping_host",
+  "notes": [
+    "The module's note.",
+    "The fragment's note."
+  ],
+  "options": {
+    "api_url": {
+      "description": [
+        "The address of the API."
+      ],
+      "required": true,
+      "type": "str"
+    },
+    "attributes": {
+      "aliases": [
+        "attr"
+      ],
+      "description": [
+        "The attributes the resulting filesystem object should have.",
+        "To get supported flags look at the man page for I(chattr) on the target system.",
+        "This string should contain the attributes in the same order as the one displayed by I(lsattr).",
+        "The C(=) operator is assumed as default, otherwise C(+) or C(-) operators need to be included in the string."
+      ],
+      "type": "str",
+      "version_added": "2.3",
+      "version_added_collection": "ansible.builtin"
+    },
+    "group": {
+      "description": [
+        "Name of the group that should own the filesystem object, as would be fed to I(chown).",
+        "When left unspecified, it uses the current group of the current user unless you are root, in which case it can preserve the previous ownership."
+      ],
+      "type": "str"
+    },
+    "host": {
+      "description": "The host.",
+      "required": true,
+      "type": "str"
+    },
+    "mode": {
+      "description": [
+        "The permissions the resulting filesystem object should have.",
+        "For those used to I(/usr/bin/chmod) remember that modes are actually octal numbers. You must give Ansible enough information to parse them correctly. For consistent results, quote octal numbers (for example, C('644') or C('1777')) so Ansible receives a string and can do its own conversion from string into number. Adding a leading zero (for example, C(0755)) works sometimes, but can fail in loops and some other circumstances.",
+        "Giving Ansible a number without following either of these rules will end up with a decimal number which will have unexpected results.",
+        "As of Ansible 1.8, the mode may be specified as a symbolic mode (for example, C(u+rwx) or C(u=rw,g=r,o=r)).",
+        "If C(mode) is not specified and the destination filesystem object B(does not) exist, the default C(umask) on the system will be used when setting the mode for the newly created filesystem object.",
+        "If C(mode) is not specified and the destination filesystem object B(does) exist, the mode of the existing filesystem object will be used.",
+        "Specifying C(mode) is the best way to ensure filesystem objects are created with the correct permissions. See CVE-2020-1736 for further details."
+      ],
+      "type": "raw"
+    },
+    "owner": {
+      "description": [
+        "Name of the user that should own the filesystem object, as would be fed to I(chown).",
+        "When left unspecified, it uses the current user unless you are root, in which case it can preserve the previous ownership.",
+        "Specifying a numeric username will be assumed to be a user ID and not a username. Avoid numeric usernames to avoid this confusion."
+      ],
+      "type": "str"
+    },
+    "selevel": {
+      "description": [
+        "The level part of the SELinux filesystem object context.",
+        "This is the MLS/MCS attribute, sometimes known as the C(range).",
+        "When set to C(_default), it will use the C(level) portion of the policy if available."
+      ],
+      "type": "str"
+    },
+    "serole": {
+      "description": [
+        "The role part of the SELinux filesystem object context.",
+        "When set to C(_default), it will use the C(role) portion of the policy if available."
+      ],
+      "type": "str"
+    },
+    "setype": {
+      "description": [
+        "The type part of the SELinux filesystem object context.",
+        "When set to C(_default), it will use the C(type) portion of the policy if available."
+      ],
+      "type": "str"
+    },
+    "seuser": {
+      "description": [
+        "The user part of the SELinux filesystem object context.",
+        "By default it uses the C(system) policy, where applicable.",
+        "When set to C(_default), it will use the C(user) portion of the policy if available."
+      ],
+      "type": "str"
+    },
+    "timeout": {
+      "default": 10,
+      "description": "Seconds; this module waits less.",
+      "type": "int"
+    },
+    "unsafe_writes": {
+      "default": false,
+      "description": [
+        "Influence when to use atomic operation to prevent data corruption or inconsistent reads from the target filesystem object.",
+        "By default this module uses atomic operations to prevent data corruption or inconsistent reads from the target filesystem objects, but sometimes systems are configured or just broken in ways that prevent this. One example is docker mounted filesystem objects, which cannot be updated atomically from inside the container and can only be written in an unsafe manner.",
+        "This option allows Ansible to fall back to unsafe methods of updating filesystem objects when atomic operations fail (however, it doesn't force Ansible to perform unsafe writes).",
+        "IMPORTANT! Unsafe writes are subject to race conditions and can lead to data corruption."
+      ],
+      "type": "bool",
+      "version_added": "2.2",
+      "version_added_collection": "ansible.builtin"
+    },
+    "validate": {
+      "description": "A command that checks the file.",
+      "type": "str"
+    }
+  },
+  "requirements": [
+    "python >= 3.9",
+    "requests"
+  ],
+  "seealso": [
+    {
+      "module": "acme.tools.ping_host"
+    }
+  ],
+  "short_description": "Pings a host through the API",
+  "version_added": "1.1.0",
+  "version_added_collection": "acme.tools"
+}

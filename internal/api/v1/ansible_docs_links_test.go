@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 )
@@ -100,5 +101,62 @@ func TestR_ANS_049_AnOptionCarriesItsConfigurationAndTheCollectionOfItsVersion(t
 	up := &docsRead{ps: gen.ps, name: "acme.tools", state: rows.DocState{Source: rows.DocSourceUpstream}}
 	if u := entryOf(up, rows.DocEntry{Type: "callback", Name: "timer", HasDocs: true, Doc: json.RawMessage(doc)}); u.VersionAddedCollection != nil {
 		t.Errorf("an upstream entry that names no collection got %q", *u.VersionAddedCollection)
+	}
+}
+
+// TestR_ANS_052_ARolesEntryPointsAreTablesWithAnchorsOfTheirOwn: a role's entry points come in the order of the file with their prose as
+// sanitized HTML; O() of an entry point's own option links to parameter-<entry point>--<path>, and O() of another role's option to its
+// page; an option of another entry point is code (R-ANS-052, H-2102). Unit, about a millisecond.
+func TestR_ANS_052_ARolesEntryPointsAreTablesWithAnchorsOfTheirOwn(t *testing.T) {
+	st := &treeStore{entries: []rows.DocEntryHead{{Type: "role", Name: "web"}, {Type: "role", Name: "db"}}}
+	d := &docsRead{
+		ps: PackageServices{Readme: testReadme(t)}, st: st, ctx: context.Background(), name: "acme.tools",
+		state: rows.DocState{Source: rows.DocSourceGenerated},
+	}
+	doc := `{"doc":{"entry_points":[
+	  {"name":"main","short_description":"Installs","version_added":"1.2.0","author":["Hans"],
+	   "description":["Set O(web_tls.cert) or O(acme.tools.db#role:main:db_port); O(reload_only) is reload's. <script>x</script>"],
+	   "options":[{"name":"web_tls","type":"dict","suboptions":[{"name":"cert","type":"path","required":true}]}]},
+	  {"name":"reload","options":[{"name":"reload_only","type":"bool","default":true}]}]}}`
+	e := entryOf(d, rows.DocEntry{Type: "role", Name: "web", HasDocs: true, Doc: json.RawMessage(doc), ReadmeMD: "# web"})
+	if e.EntryPoints == nil || len(*e.EntryPoints) != 2 || e.ReadmeHtml == nil {
+		t.Fatalf("entry = %+v", e)
+	}
+	main, reload := (*e.EntryPoints)[0], (*e.EntryPoints)[1]
+	desc := strings.Join(*main.Description, "")
+	for _, want := range []string{
+		`<a href="#parameter-main--web_tls/cert"><code>web_tls.cert</code></a>`,
+		`<a href="?doc=role/db#parameter-main--db_port"><code>main:db_port</code></a>`,
+		`<code>reload_only</code>`,
+	} {
+		if !strings.Contains(desc, want) {
+			t.Errorf("main's description lacks %s:\n%s", want, desc)
+		}
+	}
+	if strings.Contains(desc, "<script") || main.Name != "main" || *main.ShortDescription != "Installs" || *main.VersionAddedCollection != "acme.tools" ||
+		(*main.Author)[0] != "Hans" {
+		t.Errorf("main = %+v, %s", main, desc)
+	}
+	opts := *main.Options
+	if len(opts) != 1 || opts[0].Suboptions == nil || (*opts[0].Suboptions)[0].Name != "cert" || !*(*opts[0].Suboptions)[0].Required {
+		t.Errorf("options = %+v", opts)
+	}
+	if reload.Name != "reload" || reload.Options == nil || (*reload.Options)[0].Default != true {
+		t.Errorf("reload = %+v", reload)
+	}
+}
+
+// TestR_ANS_053_AChangelogInReStructuredTextIsTextInAPreElement: the text is escaped, and a text whose escaped form passes the bound of a
+// rendered document is cut on a character. Unit, about a millisecond.
+func TestR_ANS_053_AChangelogInReStructuredTextIsTextInAPreElement(t *testing.T) {
+	if out, cut := preText("v1\n==\n<b>x</b> & é"); out != "<pre>v1\n==\n&lt;b&gt;x&lt;/b&gt; &amp; é</pre>" || cut {
+		t.Errorf("pre = %q, %v", out, cut)
+	}
+	out, cut := preText(strings.Repeat("é<", 200_000))
+	if !cut || len(out) > 1<<20 || !strings.HasSuffix(out, "</pre>") || !utf8.ValidString(out) {
+		t.Errorf("%d bytes, cut %v", len(out), cut)
+	}
+	if !matchesChangelog(&rows.DocQuery{Terms: []string{"Change", "log"}}) || matchesChangelog(&rows.DocQuery{Terms: []string{"news"}}) {
+		t.Error("the changelog's title rule")
 	}
 }

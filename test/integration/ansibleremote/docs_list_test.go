@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func listOf(v any) []any { l, _ := v.([]any); return l }
@@ -73,4 +75,22 @@ func TestR_ANS_026_ACollectionInstalledThroughARemoteIsListedAndItsDocumentation
 	if file.Status != http.StatusOK || strings.Contains(string(file.Body), "<script") || strings.Contains(string(file.Body), "onerror") {
 		t.Errorf("file: %d %s", file.Status, file.Body)
 	}
+
+	// R-ANS-053: the fill read the cached archive's changelog, which the upstream's docs-blob does not carry; the newest version first.
+	if cl := obj(td["changelog"]); cl["name"] != "changelog" || cl["source"] != "changelogs/changelog.yaml" {
+		t.Errorf("the tree's changelog = %v", td["changelog"])
+	}
+	cl := e.st.Do(r, http.MethodGet, p+"/docs/files/changelog", e.admin, nil)
+	html, _ := cl.JSON(t)["html"].(string)
+	if cl.Status != http.StatusOK || !strings.Contains(html, "v2.0.0") || strings.Index(html, "v2.0.0") > strings.Index(html, "v1.0.0") {
+		t.Errorf("changelog: %d %s", cl.Status, cl.Body)
+	}
+	// A changelog an older generator recorded (as every cached archive has none before the upgrade) is read again from the cached archive
+	// by the reindex a starting worker queues; the upstream is not asked.
+	rid := e.repoID(repo)
+	e.st.Exec(`DELETE FROM ansible_changelogs WHERE repo_id = $1`, rid)
+	e.st.Start(t, testenv.ReplicaOptions{Name: "all-late", Role: "all", DialOverride: e.dial})
+	eventually(t, 60*time.Second, "the changelog read again", func() bool {
+		return e.st.Number(`SELECT count(*) FROM ansible_changelogs WHERE repo_id = $1 AND format = 'markdown'`, rid) == 1
+	})
 }

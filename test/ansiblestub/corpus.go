@@ -20,6 +20,8 @@ type versionDef struct {
 	signed          bool
 	// links are the symbolic links of the version's archive (ansiblegen.Spec.Links).
 	links map[string]string
+	// changelog gives the archive a changelogs/changelog.yaml of two releases (R-ANS-053).
+	changelog bool
 	// seq orders the creation times: version n was created n days after the start of the corpus.
 	seq int
 }
@@ -121,7 +123,7 @@ func defaultCorpus(fillers int) ([]*collectionDef, []*roleDef) {
 	cols := []*collectionDef{
 		mk("acme", "base", ver("1.0.0"), ver("1.2.0")),
 		mk("acme", "tools", ver("1.0.0"), ver("1.1.0"),
-			&versionDef{version: "2.0.0", requiresAnsible: ">=2.15.0", deps: map[string]string{"acme.base": ">=1.0.0"}},
+			&versionDef{version: "2.0.0", requiresAnsible: ">=2.15.0", deps: map[string]string{"acme.base": ">=1.0.0"}, changelog: true},
 			ver("2.1.0-rc.1")),
 		mk("acme", "signed", &versionDef{version: "1.0.0", signed: true}),
 		mk("other", "stuff", ver("1.0.0")),
@@ -207,6 +209,10 @@ func (c *archiveCache) collection(def *collectionDef, v *versionDef, kind archiv
 		return a, nil
 	}
 	spec := ansiblegen.Spec{Namespace: def.ns, Name: def.name, Version: v.version, Dependencies: v.deps, RequiresAnsible: v.requiresAnsible, Links: v.links}
+	if v.changelog {
+		spec.Extra = map[string]string{"changelogs/changelog.yaml": "releases:\n  1.0.0:\n    changes:\n      release_summary: First release.\n" +
+			"  " + v.version + ":\n    changes:\n      major_changes:\n      - Needs ansible-core 2.15.\n"}
+	}
 	switch kind {
 	case kindVariant:
 		spec.Extra = map[string]string{"variant.txt": "the second archive of this version\n"}

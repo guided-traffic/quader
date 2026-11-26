@@ -24,12 +24,19 @@ const (
 // yamlNode and scalarKind keep the callers short.
 type yamlNode = yaml.Node
 
-const scalarKind = yaml.ScalarNode
+const (
+	scalarKind   = yaml.ScalarNode
+	mappingKind  = yaml.MappingNode
+	sequenceKind = yaml.SequenceNode
+)
 
 var errYAMLRefused = errors.New("the YAML uses an anchor, an alias, a tag or a merge key, or is too large or too deep")
 
 // parseYAML parses text and checks the tree against the refusals. An empty document is a nil node.
-func parseYAML(text string) (*yaml.Node, error) {
+func parseYAML(text string) (*yaml.Node, error) { return parseYAMLWithin(text, maxYAMLNodes) }
+
+// parseYAMLWithin is parseYAML with another bound of nodes: a changelog holds more nodes than a plugin's documentation (R-ANS-053).
+func parseYAMLWithin(text string, maxNodes int) (*yaml.Node, error) {
 	var root yaml.Node
 	if err := yaml.Unmarshal([]byte(text), &root); err != nil {
 		return nil, errors.New("the text is not valid YAML")
@@ -40,7 +47,7 @@ func parseYAML(text string) (*yaml.Node, error) {
 	nodes := 0
 	var walk func(n *yaml.Node, depth int) error
 	walk = func(n *yaml.Node, depth int) error {
-		if nodes++; nodes > maxYAMLNodes || depth > maxYAMLDepth {
+		if nodes++; nodes > maxNodes || depth > maxYAMLDepth {
 			return errYAMLRefused
 		}
 		if n.Kind == yaml.AliasNode || n.Anchor != "" || n.Style&yaml.TaggedStyle != 0 || n.Kind == yaml.ScalarNode && n.Tag == "!!merge" {
@@ -192,8 +199,10 @@ func (w *searchWords) add(s string) {
 	}
 }
 
-// optionList shapes a mapping of options (or suboptions) into a list of named objects; names collects the option names.
-func optionList(n *yaml.Node, w *searchWords, depth int) []any {
+// optionList shapes a mapping of options (or suboptions) into a list of named objects; names collects the option names. nested is the
+// key of the options below an option: suboptions in a plugin's documentation, options in a role's argument specs (R-ANS-052); the list
+// is suboptions either way.
+func optionList(n *yaml.Node, w *searchWords, depth int, nested string) []any {
 	keys, vals := pairs(n)
 	if len(keys) == 0 || depth > maxYAMLDepth {
 		return nil
@@ -230,7 +239,7 @@ func optionList(n *yaml.Node, w *searchWords, depth int) []any {
 				w.add(PlainText(d))
 			}
 		}
-		if sub := optionList(member(spec, "suboptions"), w, depth+1); sub != nil {
+		if sub := optionList(member(spec, nested), w, depth+1, nested); sub != nil {
 			o["suboptions"] = sub
 		}
 		out = append(out, o)
@@ -357,7 +366,7 @@ func shapeDoc(n *yaml.Node, contentType, contentName string, w *searchWords) (do
 	for _, d := range textList(member(n, "description")) {
 		w.add(PlainText(d))
 	}
-	if o := optionList(member(n, "options"), w, 0); o != nil {
+	if o := optionList(member(n, "options"), w, 0, "suboptions"); o != nil {
 		doc["options"] = o
 	}
 	if s := seeAlso(member(n, "seealso")); s != nil {

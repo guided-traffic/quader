@@ -90,10 +90,11 @@ type blobDoc struct {
 }
 
 // docKeys are the keys of doc that are kept (R-ANS-035); another key is dropped when the rows are written. The members of an option and a
-// return value are kept as received, and the operations read only those R-ANS-035 lists (with the configuration of R-ANS-049).
+// return value are kept as received, and the operations read only those R-ANS-035 lists (with the configuration of R-ANS-049); entry_points
+// is a role's argument specs as Quader's generator writes them (R-ANS-052), which a Galaxy does not send (its doc_strings of a role is {}).
 var docKeys = [...]string{
 	"module", "plugin_type", "short_description", "description", "version_added", "version_added_collection", "author", "notes",
-	"requirements", "options", "seealso", "attributes", "deprecated", "extends_documentation_fragment", "positional",
+	"requirements", "options", "seealso", "attributes", "deprecated", "extends_documentation_fragment", "positional", "entry_points",
 }
 
 // ParseUpstreamDocs parses the docs-blob document of an upstream (R-ANS-035) into a [rows.DocSet] with the source upstream and the

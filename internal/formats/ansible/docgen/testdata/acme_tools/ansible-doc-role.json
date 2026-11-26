@@ -1,0 +1,50 @@
+{
+  "collection": "acme.tools",
+  "entry_points": {
+    "main": {
+      "author": "Hans",
+      "description": [
+        "Installs and starts the web server."
+      ],
+      "options": {
+        "web_port": {
+          "default": 8080,
+          "description": "The port.",
+          "type": "int"
+        },
+        "web_tls": {
+          "description": "TLS settings.",
+          "options": {
+            "cert": {
+              "description": "The certificate's path.",
+              "required": true,
+              "type": "path"
+            },
+            "protocols": {
+              "choices": [
+                "TLSv1.2",
+                "TLSv1.3"
+              ],
+              "description": "The protocols.",
+              "elements": "str",
+              "type": "list"
+            }
+          },
+          "type": "dict"
+        }
+      },
+      "short_description": "Installs the web server",
+      "version_added": "1.2.0"
+    },
+    "reload": {
+      "options": {
+        "web_graceful": {
+          "default": true,
+          "description": "Waits for open connections.",
+          "type": "bool"
+        }
+      },
+      "short_description": "Reloads the configuration"
+    }
+  }
+}

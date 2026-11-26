@@ -36,6 +36,8 @@ type Store struct {
 	RoleJobs []string
 	roles    map[roleKey]rows.Role
 	packaged map[roleKey]bool
+	// Changelogs are the changelogs put per version, a nil value for a version recorded as having none (R-ANS-053).
+	Changelogs map[string]*rows.DocChangelog
 }
 
 type key struct {

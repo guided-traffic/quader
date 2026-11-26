@@ -17,6 +17,9 @@ import (
 type inspected struct {
 	archive *collection.Archive
 	docs    *rows.DocSet
+	// changelog is what the fill of a remote's archive read of its changelog (R-ANS-053), nil for none; changelogRead says it was read.
+	changelog     *rows.DocChangelog
+	changelogRead bool
 }
 
 // Inspect reads an upload that enters the repository (R-ANS-010, FMT-008): a collection archive is untrusted input and is read within
@@ -41,7 +44,7 @@ func (f *Format) Inspect(ctx context.Context, in formats.InspectInput) (*formats
 			"The path names "+info.Package+" "+info.Version+", the archive declares "+name+" "+a.Version+".")
 	}
 	// The documentation is derived from the same pass (R-ANS-034); it never fails the inspection.
-	docs := gen.Build(a.ReadmeName)
+	docs := gen.Build(a.ReadmeName, name)
 	return &formats.Inspection{
 		Package: name, Version: a.Version,
 		Properties: map[string]string{

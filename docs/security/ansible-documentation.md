@@ -4,8 +4,9 @@ Status: built in the backend (owner task T-19; requirements [R-ANS-033 to R-ANS-
 the one of R-AUTHZ-034 (`Host.WikiReadable`, `authz.ReadScope.MayReadWiki`; see [visibility.md](visibility.md)).
 
 This page describes what the text of a collection's documentation can make Quader do and show, and who may read it. Two parties write that text and
-neither is trusted: a **publisher** (the plugin sources, the README and the `docs/` files of an archive, read at publish) and an **upstream Galaxy** (the
-`docs-blob/` document of a remote repository). The reader is any caller who may read the repository, and a browser on Quader's own origin. The archive
+neither is trusted: a **publisher** (the plugin sources and fragments, a role's argument specs, the README, the `docs/` files and the changelog of an
+archive, read at publish) and an **upstream Galaxy** (the `docs-blob/` document of a remote repository, and the changelog of the archive it served, read at
+the fill under the archive reader's bounds). The reader is any caller who may read the repository, and a browser on Quader's own origin. The archive
 reader's bounds are on [ansible.md](ansible.md); the remote engine's checks on [remote-repositories.md](remote-repositories.md) and
 [ansible-remote.md](ansible-remote.md); the README renderer's policy is the one of [R-UI-008](../spec/api-and-ui.md); who may read the wiki part is
 decided by [permissions.md](permissions.md) (R-AUTHZ-034). The code is `internal/formats/ansible/docgen` (the generator and the
@@ -16,19 +17,22 @@ markup converter), [internal/formats/ansible](../../internal/formats/ansible) (`
 
 | Step | What is decided | Where | Result |
 |---|---|---|---|
-| 1 | Only text is read: members under `plugins/<type>/`, `roles/<role>/README.md`, `README.md`, `docs/*.md`, sidecar `.yml` files. **Nothing is executed**: no `ansible-doc`, no Python, no import of a plugin, no template. `go list -deps` of the generator names no `os/exec` (a test) | `docgen` | A crafted source is data |
+| 1 | Only text is read: members under `plugins/<type>/` (the fragments of `plugins/doc_fragments/` included), `roles/<role>/README.md`, a role's argument specs below `roles/<role>/meta/`, `README.md`, `docs/*.md`, sidecar `.yml` files, and the changelog (`changelogs/changelog.yaml`, `CHANGELOG.md`, `CHANGELOG.rst`). **Nothing is executed**: no `ansible-doc`, no Python, no import of a plugin, no template. `go list -deps` of the generator names no `os/exec` (a test) | `docgen` | A crafted source is data |
 | 2 | A source is read up to 2 MiB, a literal up to 512 KiB, 256 MiB of source per archive, 64 Markdown files; the rest of a member is discarded while it streams through its digest | the archive reader's tap | A bound crossed drops that part with a warning and never fails the publish |
-| 3 | The three strings are found by a lexical scan of module-level assignments of one string literal; an f-string, a call, a name or a literal inside a function is not read | `docgen` | No expression is evaluated; the entry is listed without documentation |
-| 4 | `DOCUMENTATION` and `RETURN` are decoded as a YAML node tree and walked, never into Go values; an anchor, alias, tag, merge key, more than 20,000 nodes or nesting beyond 24 refuses that entry | the walker of `meta/runtime.yml` | The entry has no documentation, a warning says why |
-| 5 | The result is stored as structured text and Markdown, never as HTML | `ansible_doc_entries`, `ansible_doc_files` | Nothing stored can run |
+| 3 | The three strings are found by a lexical scan of module-level assignments of one string literal, a fragment's by the same scan of the statements of its class `ModuleDocFragment`; an f-string, a call, a name or a literal inside a function is not read | `docgen` | No expression is evaluated; the entry is listed without documentation, a fragment stays unmerged with a warning |
+| 3a | A fragment is merged only from the archive being published and only into its own collection's entries; a name of another collection or of `ansible.builtin` is never resolved, so a publish reads nothing outside its archive (R-ANS-051) | `docgen/fragments.go` | A hostile fragment can change only the documentation of its own collection, which its publisher writes anyway |
+| 3b | A changelog member is read up to 4 MiB; changelog.yaml is decoded under the walker below with a bound of 100,000 nodes; the stored changelog is at most 512 KiB, cut after a whole version or line; every character of an entry of changelog.yaml is escaped as Markdown, its literals become code spans and only `http` and `https` targets become links (R-ANS-053) | `docgen/changelog.go` | A changelog of megabytes is cut, never refused; an entry's `<script>` is text before the renderer and the allowlist see it |
+| 4 | `DOCUMENTATION`, `RETURN`, a fragment's attribute and a role's argument specs (at most 512 KiB) are decoded as a YAML node tree and walked, never into Go values; an anchor, alias, tag, merge key, more than 20,000 nodes or nesting beyond 24 refuses that entry, fragment or role | the walker of `meta/runtime.yml` | The entry has no documentation (a role keeps its README), a warning says why |
+| 5 | The result is stored as structured text and Markdown (a reStructuredText changelog as text), never as HTML | `ansible_doc_entries`, `ansible_doc_files`, `ansible_changelogs` | Nothing stored can run |
 | 6 | Names are values of columns; no name builds a path, a statement or an object-store key | the data port | A hostile name is a string |
 
 ## What reaches a browser
 
 | Text | Path | Control |
 |---|---|---|
-| A generated README or `docs/` file | Markdown row, rendered per request | goldmark and the README allowlist, link and image rules of R-UI-008 |
-| The prose of a plugin | Ansible markup in the row | `docgen.RenderMarkup` escapes all text first and recognizes a fixed macro set, links only for `http` and `https`; then the same allowlist |
+| A generated README or `docs/` file, a changelog in Markdown | Markdown row, rendered per request | goldmark and the README allowlist, link and image rules of R-UI-008 |
+| A changelog in reStructuredText | Text row | Escaped into a `pre` element, then the same allowlist |
+| The prose of a plugin or of a role's entry point | Ansible markup in the row | `docgen.RenderMarkup` escapes all text first and recognizes a fixed macro set, links only for `http` and `https` and to addresses of `docgen.PageLink` built from names the server found; then the same allowlist |
 | An upstream's `html`, `readme_html` | Stored as received, sanitized **on every serving**, by `docs-blob/` and by the file operation | `Host.Markup().SanitizeHTML`, the allowlist of R-UI-008 |
 | An example, a sample, a default | JSON text | The UI binds it as text in a code block; it is never highlighted or evaluated |
 
@@ -70,8 +74,9 @@ The route walks the members by tier and position and serves the first that has d
 `quader_ansible_docs_read_total` counts the route and `quader_ansible_docs_fill_total` the fills of the request path; the three management operations and the failures of the job `ansible-docs-fill` are not counted (R-ANS-045 names them). Live today for every installation; it hides a failing fetch job from the dashboards until the fetch row is read.
 
 - [H-890](../spec/formats/ansible.md#h-890--the-size-of-the-documentation-of-a-full-mirror-and-of-many-local-versions-is-not-measured): the size of a full mirror's documentation is not measured.
-- [H-891](../spec/formats/ansible.md#h-891--documentation-fragments-are-not-merged-into-the-documentation-of-a-generated-entry): fragments are not merged into a generated entry.
-- [H-892](../spec/formats/ansible.md#h-892--the-generator-reads-literals-not-python-and-does-not-read-role-argument-specs): the generator reads literals, not Python.
+- [H-891](../spec/formats/ansible.md#h-891--fragments-of-ansiblebuiltin-and-of-other-collections-are-not-merged-into-a-generated-entry): fragments of `ansible.builtin` and of other collections are not merged.
+- [H-892](../spec/formats/ansible.md#h-892--the-generator-reads-literals-not-python): the generator reads literals, not Python.
+- [H-2140](../spec/formats/ansible.md#h-2140--argument-specs-with-yaml-anchors-are-not-read): argument specs with YAML anchors are refused.
 - [H-893](../spec/formats/ansible.md#h-893--an-upstreams-html-and-the-sanitizer-policy-can-differ-in-what-they-keep): an upstream's HTML and the policy differ in what they keep.
 - [H-894](../spec/formats/ansible.md#h-894--the-wiki-gate-registry-proves-the-surfaces-it-lists-not-that-it-lists-every-surface): the registry proves the surfaces it lists.
 

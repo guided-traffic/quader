@@ -12,6 +12,162 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const ansibleChangelogGet = `-- name: AnsibleChangelogGet :one
+SELECT format, source, body, truncated
+  FROM ansible_changelogs
+ WHERE repo_id = $1::bigint AND name = $2::text AND version = $3::text AND format <> 'none'
+`
+
+type AnsibleChangelogGetParams struct {
+	RepoID  int64
+	Name    string
+	Version string
+}
+
+type AnsibleChangelogGetRow struct {
+	Format    string
+	Source    string
+	Body      string
+	Truncated bool
+}
+
+// The changelog of a version; a version without one has no row of a format other than none.
+func (q *Queries) AnsibleChangelogGet(ctx context.Context, arg AnsibleChangelogGetParams) (AnsibleChangelogGetRow, error) {
+	row := q.db.QueryRow(ctx, ansibleChangelogGet, arg.RepoID, arg.Name, arg.Version)
+	var i AnsibleChangelogGetRow
+	err := row.Scan(
+		&i.Format,
+		&i.Source,
+		&i.Body,
+		&i.Truncated,
+	)
+	return i, err
+}
+
+const ansibleChangelogHead = `-- name: AnsibleChangelogHead :one
+SELECT format, source, truncated
+  FROM ansible_changelogs
+ WHERE repo_id = $1::bigint AND name = $2::text AND version = $3::text AND format <> 'none'
+`
+
+type AnsibleChangelogHeadParams struct {
+	RepoID  int64
+	Name    string
+	Version string
+}
+
+type AnsibleChangelogHeadRow struct {
+	Format    string
+	Source    string
+	Truncated bool
+}
+
+// Whether a version has a changelog, without its body: the tree names it (R-ANS-053).
+func (q *Queries) AnsibleChangelogHead(ctx context.Context, arg AnsibleChangelogHeadParams) (AnsibleChangelogHeadRow, error) {
+	row := q.db.QueryRow(ctx, ansibleChangelogHead, arg.RepoID, arg.Name, arg.Version)
+	var i AnsibleChangelogHeadRow
+	err := row.Scan(&i.Format, &i.Source, &i.Truncated)
+	return i, err
+}
+
+const ansibleChangelogStaleVersions = `-- name: AnsibleChangelogStaleVersions :many
+SELECT v.item_id, v.name, v.version, i.path, i.blob_sha256 AS sha256, COALESCE(i.size, 0)::bigint AS size
+  FROM ansible_collection_versions v
+  JOIN items i ON i.id = v.item_id
+  LEFT JOIN ansible_changelogs c ON c.repo_id = v.repo_id AND c.name = v.name AND c.version = v.version
+ WHERE v.repo_id = $1::bigint
+   AND v.name || '/' || v.version > $2::text
+   AND i.blob_sha256 IS NOT NULL
+   AND (c.generator IS NULL OR c.generator < $3::integer)
+ ORDER BY v.name || '/' || v.version
+ LIMIT $4::integer
+`
+
+type AnsibleChangelogStaleVersionsParams struct {
+	RepoID    int64
+	After     string
+	Generator int32
+	RowLimit  int32
+}
+
+type AnsibleChangelogStaleVersionsRow struct {
+	ItemID  int64
+	Name    string
+	Version string
+	Path    string
+	Sha256  []byte
+	Size    int64
+}
+
+// The changelog step of the reindex of a remote (R-ANS-053): the cached versions after the checkpoint whose changelog was not read, or was
+// read by a generator older than the given one.
+func (q *Queries) AnsibleChangelogStaleVersions(ctx context.Context, arg AnsibleChangelogStaleVersionsParams) ([]AnsibleChangelogStaleVersionsRow, error) {
+	rows, err := q.db.Query(ctx, ansibleChangelogStaleVersions,
+		arg.RepoID,
+		arg.After,
+		arg.Generator,
+		arg.RowLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AnsibleChangelogStaleVersionsRow{}
+	for rows.Next() {
+		var i AnsibleChangelogStaleVersionsRow
+		if err := rows.Scan(
+			&i.ItemID,
+			&i.Name,
+			&i.Version,
+			&i.Path,
+			&i.Sha256,
+			&i.Size,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const ansibleChangelogUpsert = `-- name: AnsibleChangelogUpsert :exec
+INSERT INTO ansible_changelogs (repo_id, name, version, generator, format, source, body, truncated, read_at)
+VALUES ($1::bigint, $2::text, $3::text, $4::integer, $5::text,
+        $6::text, $7::text, $8::boolean, now())
+ON CONFLICT (repo_id, name, version) DO UPDATE
+   SET generator = EXCLUDED.generator, format = EXCLUDED.format, source = EXCLUDED.source, body = EXCLUDED.body,
+       truncated = EXCLUDED.truncated, read_at = now()
+`
+
+type AnsibleChangelogUpsertParams struct {
+	RepoID    int64
+	Name      string
+	Version   string
+	Generator int32
+	Format    string
+	Source    string
+	Body      string
+	Truncated bool
+}
+
+// The changelog of a version, or the record that it has none (format none); the version row exists in the same transaction.
+func (q *Queries) AnsibleChangelogUpsert(ctx context.Context, arg AnsibleChangelogUpsertParams) error {
+	_, err := q.db.Exec(ctx, ansibleChangelogUpsert,
+		arg.RepoID,
+		arg.Name,
+		arg.Version,
+		arg.Generator,
+		arg.Format,
+		arg.Source,
+		arg.Body,
+		arg.Truncated,
+	)
+	return err
+}
+
 const ansibleDocsAllEntries = `-- name: AnsibleDocsAllEntries :many
 SELECT content_type, content_name, short_description, has_docs, doc, readme_md, readme_html, search_text
   FROM ansible_doc_entries
@@ -520,15 +676,57 @@ func (q *Queries) AnsibleDocsRemoteWithoutRows(ctx context.Context, arg AnsibleD
 	return items, nil
 }
 
+const ansibleDocsStaleRepositories = `-- name: AnsibleDocsStaleRepositories :many
+SELECT r.id
+  FROM repositories r
+ WHERE r.format = 'ansible' AND r.class IN ('local', 'remote')
+   AND EXISTS (
+         SELECT 1
+           FROM ansible_collection_versions v
+           JOIN items i ON i.id = v.item_id AND i.blob_sha256 IS NOT NULL
+           LEFT JOIN ansible_changelogs c ON c.repo_id = v.repo_id AND c.name = v.name AND c.version = v.version
+           LEFT JOIN ansible_version_docs d ON d.repo_id = v.repo_id AND d.name = v.name AND d.version = v.version
+          WHERE v.repo_id = r.id
+            AND (c.generator IS NULL OR c.generator < $1::integer
+                 OR (d.source = 'generated' AND d.generator < $1::integer)))
+ ORDER BY r.id
+`
+
+// The local and remote Ansible Galaxy repositories a worker queues the reindex for when it starts (R-ANS-044, R-ANS-053): those that hold a
+// version whose changelog was not read by the given generator, or whose generated documentation is older than it. A version of a local
+// repository without any documentation has no row of ansible_version_docs and is not stale for that alone, so a store whose archives hold
+// none does not queue a reindex at every start.
+func (q *Queries) AnsibleDocsStaleRepositories(ctx context.Context, generator int32) ([]int64, error) {
+	rows, err := q.db.Query(ctx, ansibleDocsStaleRepositories, generator)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const ansibleDocsStaleVersions = `-- name: AnsibleDocsStaleVersions :many
 SELECT v.item_id, v.name, v.version, i.path, i.blob_sha256 AS sha256, COALESCE(i.size, 0)::bigint AS size
   FROM ansible_collection_versions v
   JOIN items i ON i.id = v.item_id
   LEFT JOIN ansible_version_docs d ON d.repo_id = v.repo_id AND d.name = v.name AND d.version = v.version
+  LEFT JOIN ansible_changelogs c ON c.repo_id = v.repo_id AND c.name = v.name AND c.version = v.version
  WHERE v.repo_id = $1::bigint
    AND v.name || '/' || v.version > $2::text
    AND i.blob_sha256 IS NOT NULL
-   AND (d.generator IS NULL OR d.generator < $3::integer)
+   AND (d.generator IS NULL OR d.generator < $3::integer
+        OR c.generator IS NULL OR c.generator < $3::integer)
  ORDER BY v.name || '/' || v.version
  LIMIT $4::integer
 `
@@ -550,7 +748,7 @@ type AnsibleDocsStaleVersionsRow struct {
 }
 
 // The step of the reindex: the stored versions of a local repository after the checkpoint (name and version joined by a slash) whose
-// documentation is missing or was made by a generator older than the given one.
+// documentation or changelog is missing or was made by a generator older than the given one.
 func (q *Queries) AnsibleDocsStaleVersions(ctx context.Context, arg AnsibleDocsStaleVersionsParams) ([]AnsibleDocsStaleVersionsRow, error) {
 	rows, err := q.db.Query(ctx, ansibleDocsStaleVersions,
 		arg.RepoID,
@@ -706,4 +904,31 @@ func (q *Queries) AnsibleDocsUpsertFetch(ctx context.Context, arg AnsibleDocsUps
 		arg.Reason,
 	)
 	return err
+}
+
+const ansibleReindexRepository = `-- name: AnsibleReindexRepository :many
+SELECT r.class::text AS class
+  FROM repositories r
+ WHERE r.id = $1::bigint AND r.format = 'ansible'
+`
+
+// The class of the Ansible Galaxy repository a reindex job names; a job about any other repository finds nothing.
+func (q *Queries) AnsibleReindexRepository(ctx context.Context, repoID int64) ([]string, error) {
+	rows, err := q.db.Query(ctx, ansibleReindexRepository, repoID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var class string
+		if err := rows.Scan(&class); err != nil {
+			return nil, err
+		}
+		items = append(items, class)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

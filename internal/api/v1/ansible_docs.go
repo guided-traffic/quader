@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"html"
 	"net/http"
 	"sort"
 	"strconv"
@@ -193,15 +194,31 @@ func (s *Server) GetPackageVersionDocs(w http.ResponseWriter, r *http.Request, i
 		reason := gen.PackageDocTreeReason(d.state.Reason)
 		out.Reason = &reason
 	}
+	// The tree is read in every state: the changelog comes with the archive, before or without the rest (R-ANS-053).
+	tree, err := d.st.DocTree(d.ctx, d.repo.NumericID(), d.name, d.ver, query)
+	if err != nil {
+		httpserver.Problem(w, r, errs.Wrap(err, "api.getPackageVersionDocs"))
+		return
+	}
 	if d.state.State == rows.DocAvailable {
-		tree, err := d.st.DocTree(d.ctx, d.repo.NumericID(), d.name, d.ver, query)
-		if err != nil {
-			httpserver.Problem(w, r, errs.Wrap(err, "api.getPackageVersionDocs"))
-			return
-		}
 		out = treeOf(out, tree, query != nil, d.canSeeWarnings())
 	}
+	if c := tree.Changelog; c != nil && (query == nil || matchesChangelog(query)) {
+		out.Changelog = &gen.PackageDocChangelogHead{
+			Name: gen.Changelog, Source: c.Source, Format: c.Format, Truncated: c.Truncated,
+		}
+	}
 	writeTagged(w, r, out)
+}
+
+// matchesChangelog is the rule of a file's title for the changelog (R-ANS-036): every term is a substring of "changelog", whatever the case.
+func matchesChangelog(q *rows.DocQuery) bool {
+	for _, t := range q.Terms {
+		if !strings.Contains(rows.ChangelogFile, strings.ToLower(t)) {
+			return false
+		}
+	}
+	return true
 }
 
 // canSeeWarnings reports whether the caller holds deploy on the repository: the warnings describe the publisher's sources and are shown as the
@@ -472,7 +489,43 @@ func entryOf(d *docsRead, e rows.DocEntry) gen.PackageDocEntry {
 	out.Seealso = seeAlsoOf(m, doc["seealso"])
 	out.Attributes = attributesOf(m, doc["attributes"])
 	out.Deprecated = deprecatedOf(m, doc["deprecated"])
+	out.EntryPoints = entryPointsOf(m, doc["entry_points"])
 	return out
+}
+
+// entryPointsOf builds the entry points of a role (R-ANS-052): each with its prose as sanitized HTML whose O() links the entry point's own
+// options to the anchors parameter-<entry point>--<path>, and its options as the tables of a plugin's.
+func entryPointsOf(m markupHTML, v any) *[]gen.PackageDocEntryPoint {
+	list, ok := v.([]any)
+	if !ok {
+		return nil
+	}
+	var out []gen.PackageDocEntryPoint
+	for _, x := range list {
+		ep, _ := x.(map[string]any)
+		name, _ := ep["name"].(string)
+		if name == "" {
+			continue
+		}
+		em := m
+		if m.links != nil {
+			l := *m.links
+			l.Options, l.Returns, l.EntryPoint = map[string]bool{}, map[string]bool{}, name
+			pathsOf(l.Options, ep["options"], "suboptions", "", 0)
+			em.links = &l
+		}
+		p := gen.PackageDocEntryPoint{
+			Name: name, ShortDescription: textOf(ep["short_description"]), VersionAdded: textOf(ep["version_added"]),
+			VersionAddedCollection: em.added(ep), Description: em.list(ep["description"]), Notes: em.list(ep["notes"]),
+			Requirements: em.list(ep["requirements"]), Author: textList(ep["author"]), Options: optionsOf(em, ep["options"], 0),
+			Seealso: seeAlsoOf(em, ep["seealso"]), Attributes: attributesOf(em, ep["attributes"]),
+		}
+		out = append(out, p)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return &out
 }
 
 // links is the page an entry's prose is shown on (R-ANS-048): the paths of its options (with their aliases) and return values, and the names
@@ -789,12 +842,18 @@ func deprecatedOf(m markupHTML, v any) *gen.PackageDocDeprecated {
 // its strong tag follow the README operation (R-API-029).
 func (s *Server) GetPackageVersionDocFile(w http.ResponseWriter, r *http.Request, id gen.PackageId, version gen.PackageVersionPath, file string, params gen.GetPackageVersionDocFileParams) {
 	d, err := s.resolveDocs(r, id, version, params.Repository)
-	if err == nil && d.state.State != rows.DocAvailable {
+	if err == nil && d.state.State != rows.DocAvailable && file != rows.ChangelogFile {
 		err = docsNotFound()
 	}
 	var f rows.DocFile
-	found := false
-	if err == nil {
+	found, cut := false, false
+	switch {
+	case err == nil && file == rows.ChangelogFile:
+		// The changelog is answered in every state of the documentation (R-ANS-053).
+		var c rows.DocChangelog
+		c, found, err = d.st.DocChangelog(d.ctx, d.repo.NumericID(), d.name, d.ver)
+		f, cut = rows.DocFile{Name: rows.ChangelogFile, Format: c.Format, Body: c.Body}, c.Truncated
+	case err == nil:
 		f, found, err = d.st.DocFile(d.ctx, d.repo.NumericID(), d.name, d.ver, file)
 	}
 	if err == nil && !found {
@@ -809,12 +868,19 @@ func (s *Server) GetPackageVersionDocFile(w http.ResponseWriter, r *http.Request
 		return
 	}
 	out := gen.PackageDocFile{Name: f.Name, ContentType: gen.PackageDocFileContentTypeTextmarkdown}
-	if f.Format == rows.DocFormatHTML {
+	switch f.Format {
+	case rows.DocFormatHTML:
 		out.Html = d.ps.Readme.SanitizeHTML(f.Body)
-	} else {
+	case rows.DocFormatText:
+		// reStructuredText is not rendered: the text, escaped, in a pre element (R-ANS-053, Q-ANS-64).
+		out.ContentType = gen.PackageDocFileContentTypeTextplain
+		out.Html, out.Truncated = preText(f.Body)
+		out.Html = d.ps.Readme.SanitizeHTML(out.Html)
+	default:
 		res := d.ps.Readme.Render(f.Body)
 		out.Html, out.Truncated, out.ExternalImagesBlocked = res.HTML, res.Truncated, res.ExternalImagesBlocked
 	}
+	out.Truncated = out.Truncated || cut
 	b, err := json.Marshal(out)
 	if err != nil {
 		httpserver.Problem(w, r, errs.Wrap(err, "api.writeJSON"))
@@ -825,6 +891,20 @@ func (s *Server) GetPackageVersionDocFile(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(append(b, '\n'))
+}
+
+// preText is a text in a pre element, escaped, and cut on a character so that it stays within the bound of a rendered document; cut says
+// it was.
+func preText(s string) (string, bool) {
+	out := "<pre>" + html.EscapeString(s) + "</pre>"
+	if len(out) <= readme.MaxHTMLBytes {
+		return out, false
+	}
+	n := readme.MaxHTMLBytes/6 - 16
+	for n > 0 && !utf8.RuneStart(s[n]) {
+		n--
+	}
+	return "<pre>" + html.EscapeString(s[:n]) + "</pre>", true
 }
 
 // docFileTag is the strong tag of a file: the source, its format, the renderer version and the image policy (the README rule of R-API-029).

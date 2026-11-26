@@ -45,8 +45,84 @@ func isIdentStart(c byte) bool {
 }
 func isIdentByte(c byte) bool { return isIdentStart(c) || c >= '0' && c <= '9' }
 
+// fragmentClass is the class whose attributes a documentation fragment holds (R-ANS-051): ansible-doc reads the attribute DOCUMENTATION, or
+// the one an extends_documentation_fragment entry names after a dot, upper-cased, of `class ModuleDocFragment`.
+const fragmentClass = "ModuleDocFragment"
+
+// scanState is what the scanner knows of the statement a line starts: with fragment set, the attributes of the fragment class are read
+// instead of the module-level names.
+type scanState struct {
+	fragment bool
+	// inClass says the lines since the last statement at column 0 are the body of the fragment class; indent is the indentation of its
+	// first statement, -1 before it.
+	inClass bool
+	indent  int
+}
+
 // scanLiterals returns the last literal assigned to each of the three names. maxText bounds the decoded text of one literal.
 func scanLiterals(src []byte, maxText int) map[string]literal {
+	return scan(src, maxText, &scanState{})
+}
+
+// scanFragment returns the last literal assigned to each upper-case attribute of the class ModuleDocFragment of a fragment's source
+// (R-ANS-051): the statements directly in the class body, at the indentation of its first statement. Nothing is evaluated; an attribute
+// whose value is no literal is not read, as a module-level name is not.
+func scanFragment(src []byte, maxText int) map[string]literal {
+	return scan(src, maxText, &scanState{fragment: true, indent: -1})
+}
+
+// lineName reads the name a line starts with, at column 0 for a module and at the class body's indentation for a fragment, and returns
+// it with the index after it; ok is false for a line that starts no name the scan reads.
+func (st *scanState) lineName(src []byte, i int) (name string, end int, ok bool) {
+	n := len(src)
+	k := i
+	for k < n && (src[k] == ' ' || src[k] == '\t') {
+		k++
+	}
+	if k >= n || src[k] == '\n' || src[k] == '\r' || src[k] == '#' || !isIdentStart(src[k]) {
+		return "", 0, false // a blank line or a comment changes nothing
+	}
+	j := k
+	for j < n && isIdentByte(src[j]) {
+		j++
+	}
+	word := string(src[k:j])
+	if !st.fragment {
+		dn, isDoc := isDocName(src[k:j])
+		return dn, j, k == i && isDoc
+	}
+	if k == i {
+		st.inClass, st.indent = false, -1
+		if word == "class" {
+			c := skipBlank(src, j, false)
+			e := c
+			for e < n && isIdentByte(src[e]) {
+				e++
+			}
+			st.inClass = string(src[c:e]) == fragmentClass
+		}
+		return "", 0, false
+	}
+	if !st.inClass {
+		return "", 0, false
+	}
+	if st.indent < 0 {
+		st.indent = k - i
+	}
+	return word, j, k-i == st.indent && upperName(word)
+}
+
+// upperName reports whether s is an attribute name ansible-doc can ask for: the upper-cased last part of a fragment's name.
+func upperName(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if c := s[i]; c != '_' && (c < 'A' || c > 'Z') && (c < '0' || c > '9') {
+			return false
+		}
+	}
+	return s != ""
+}
+
+func scan(src []byte, maxText int, st *scanState) map[string]literal {
 	out := map[string]literal{}
 	n := len(src)
 	i, depth, lineStart := 0, 0, true
@@ -54,17 +130,11 @@ func scanLiterals(src []byte, maxText int) map[string]literal {
 		c := src[i]
 		if lineStart && depth == 0 {
 			lineStart = false
-			if isIdentStart(c) {
-				j := i
-				for j < n && isIdentByte(src[j]) {
-					j++
-				}
-				if name, ok := isDocName(src[i:j]); ok {
-					if next, lit, read := assignment(src, j, maxText); read {
-						out[name] = lit
-						i = next
-						continue
-					}
+			if name, j, ok := st.lineName(src, i); ok {
+				if next, lit, read := assignment(src, j, maxText); read {
+					out[name] = lit
+					i = next
+					continue
 				}
 			}
 		}

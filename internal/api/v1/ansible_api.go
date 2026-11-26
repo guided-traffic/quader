@@ -25,6 +25,7 @@ type AnsibleStore interface {
 	DocTree(ctx context.Context, repoID int64, name, version string, q *rows.DocQuery) (rows.DocTree, error)
 	DocEntry(ctx context.Context, repoID int64, name, version, typ, entry string) (rows.DocEntry, bool, error)
 	DocFile(ctx context.Context, repoID int64, name, version, file string) (rows.DocFile, bool, error)
+	DocChangelog(ctx context.Context, repoID int64, name, version string) (rows.DocChangelog, bool, error)
 	// The signatures a client posts for a version of a local repository (signatures.md R-SIG-031).
 	AddSignature(ctx context.Context, in rows.SignatureInput) (rows.PostedSignature, error)
 	RemoveSignature(ctx context.Context, repoID int64, name, version, fingerprint string, a rows.Audit) (bool, error)

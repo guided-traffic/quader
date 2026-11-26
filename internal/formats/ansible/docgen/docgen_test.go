@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/guided-traffic/quader/internal/formats/ansible/docgen"
 	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
@@ -14,6 +15,14 @@ import (
 
 // build feeds the members to a generator the way the archive reader's tap does (Wants first, the capped body after) and builds the set.
 func build(t testing.TB, lim docgen.Limits, readme string, members map[string]string) rows.DocSet {
+	return buildAs(t, lim, readme, testCollection, members)
+}
+
+// testCollection is the collection the members of build belong to.
+const testCollection = "acme.tools"
+
+// buildAs is build for the collection named collection.
+func buildAs(t testing.TB, lim docgen.Limits, readme, collection string, members map[string]string) rows.DocSet {
 	t.Helper()
 	g := docgen.NewGenerator(lim)
 	paths := make([]string, 0, len(members))
@@ -32,7 +41,7 @@ func build(t testing.TB, lim docgen.Limits, readme string, members map[string]st
 		}
 		g.Take(p, body)
 	}
-	return g.Build(readme)
+	return g.Build(readme, collection)
 }
 
 func sortStrings(s []string) {
@@ -351,9 +360,21 @@ func FuzzR_ANS_034_Generator(f *testing.F) {
 	f.Add("DOCUMENTATION = (\n 'a: b'\n 'c: d'\n)\nEXAMPLES = \"\"\"x\"\"\"\n")
 	f.Add("DOCUMENTATION = '''a: &x b\nc: *x'''")
 	f.Add("X = r'\\")
+	f.Add("class ModuleDocFragment(object):\n    DOCUMENTATION = r'''\noptions: {a: {type: str}}\n'''\n    OTHER = 'options: {b: {}}'\n")
+	f.Add("argument_specs:\n  main:\n    options:\n      a: {type: dict, options: {b: {type: str}}}\n")
+	f.Add("releases:\n  1.0.0:\n    changes:\n      bugfixes: ['``x`` `y <https://e.x>`_ <script>']\n")
 	f.Fuzz(func(t *testing.T, src string) {
 		lim := docgen.DefaultLimits()
 		lim.Literal, lim.Source = 4096, 8192
-		build(t, lim, "", map[string]string{"plugins/modules/m.py": src, "plugins/modules/m.yml": src, "docs/a.md": src, "roles/r/README.md": src})
+		// The inputs of R-ANS-051 to R-ANS-053 take the same bytes: a fragment the module extends, a role's argument specs and the changelog.
+		mod := "DOCUMENTATION = '''\nmodule: m\nextends_documentation_fragment: [acme.tools.f, acme.tools.f.other]\n'''\n"
+		set := build(t, lim, "", map[string]string{
+			"plugins/modules/m.py": src, "plugins/modules/m.yml": src, "docs/a.md": src, "roles/r/README.md": src,
+			"plugins/modules/n.py": mod, "plugins/doc_fragments/f.py": src, "roles/r/meta/argument_specs.yml": src,
+			"changelogs/changelog.yaml": src, "CHANGELOG.md": src,
+		})
+		if c := set.Changelog; c != nil && (len(c.Body) > docgen.ChangelogBody || !utf8.ValidString(c.Body)) {
+			t.Errorf("a changelog of %d bytes, UTF-8 %v", len(c.Body), utf8.ValidString(c.Body))
+		}
 	})
 }

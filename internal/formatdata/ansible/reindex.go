@@ -157,6 +157,29 @@ func (s localStore) rebuildOne(ctx context.Context, repoID int64, a q.AnsibleArc
 	return created, rewritten, skipped, err
 }
 
+// remoteChangelogs is the reindex of a remote repository (R-ANS-053): the changelog of every cached archive that was not read by this
+// generator; the rest of a remote's documentation is the upstream's and is not read from the archive. A reader without ReadChangelog reads
+// nothing.
+func remoteChangelogs(ctx context.Context, run *jobs.Run, st *Store, reader rows.ArchiveReader, repoID int64, cp *reindexCheckpoint) error {
+	cr, ok := reader.(rows.ChangelogReader)
+	if !ok {
+		return nil
+	}
+	for {
+		next, done, err := st.RebuildChangelogs(ctx, repoID, cr, cp.DocsAfter)
+		if err != nil {
+			return err
+		}
+		cp.DocsAfter = next
+		if err := run.SaveCheckpoint(ctx, cp); err != nil {
+			return err
+		}
+		if done {
+			return nil
+		}
+	}
+}
+
 // reindexCheckpoint is the state of the job a drain resumes from.
 type reindexCheckpoint struct {
 	After string `json:"after"`
@@ -166,24 +189,27 @@ type reindexCheckpoint struct {
 }
 
 // ReindexHandler is the handler of the job ansible-reindex: it reads the repository named by the job's target and steps through its
-// archives with reader until the last (R-ANS-012). A job for a repository that is not a local Ansible Galaxy repository (a virtual one,
-// whose reindex only drops its merged documents) has nothing to rebuild.
+// archives with reader until the last (R-ANS-012). For a remote repository it reads the changelogs of the cached archives (R-ANS-053); a
+// job for any other repository (a virtual one, whose reindex only drops its merged documents) has nothing to rebuild.
 func ReindexHandler(st *Store, reader rows.ArchiveReader) jobs.Handler {
 	return func(ctx context.Context, run *jobs.Run) error {
 		repoID, err := strconv.ParseInt(run.TargetKey, 10, 64)
 		if err != nil {
 			return jobs.Permanent(errNotBuilt("a reindex without a repository"))
 		}
-		repos, err := q.New(run.DB()).AnsibleReplayRepository(ctx, repoID)
+		classes, err := q.New(run.DB()).AnsibleReindexRepository(ctx, repoID)
 		if err != nil {
 			return err
-		}
-		if len(repos) == 0 {
-			return nil
 		}
 		var cp reindexCheckpoint
 		if _, err := run.LoadCheckpoint(&cp); err != nil {
 			return err
+		}
+		switch {
+		case len(classes) == 1 && classes[0] == "remote":
+			return remoteChangelogs(ctx, run, st, reader, repoID, &cp)
+		case len(classes) == 0 || classes[0] != "local":
+			return nil
 		}
 		var total RebuildResult
 		for !cp.RowsDone {

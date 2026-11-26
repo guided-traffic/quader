@@ -77,7 +77,7 @@ collection and a role were installed from the public Galaxy with `-vvvv` and the
 | The version document of the public Galaxy is large (community.general 10.0.0: 848,148 bytes, because `metadata.contents` lists every plugin) and its `download_url` is `https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/artifacts/<ns>-<name>-<version>.tar.gz`, which answers 302 to a signed `https://galaxy.ansible.com/api/pulp/content/published/<file>?expires=…&validate_token=…` on the same host | `curl` | Bound of a stored document and the trimmed rendering (R-ANS-017, Q-ANS-10) |
 | The documentation of a version is **not** in the version document. The public Galaxy and the owner's galaxy_ng serve it at the version's `href` plus `docs-blob/` (`…/collections/index/<ns>/<name>/versions/<version>/docs-blob/`) as `{"docs_blob":{"contents":[…],"collection_readme":{"name","html"},"documentation_files":[{"name","html"}]}}`. The version document carries `metadata.contents` (`name`, `description`, `content_type` per entry) and, outside `metadata`, `manifest`, `files`, `git_url` and `git_commit_sha`; it has no `docs_blob` member (checked on both servers). An item of `docs_blob.contents` is `{content_name, content_type, doc_strings, readme_file, readme_html}`; `doc_strings` is `{doc, return, examples, metadata}` in the form ansible-doc prints it, except that `doc.options` and `return` are lists of named objects (`name` plus the fields) with `suboptions` and `contains` nested the same way; `readme_*` are set for roles. Sizes of the `docs-blob/` answer on 2026-11-11: community.general 10.0.0 3,472,149 bytes (833 entries: 591 module, 77 module_utils, 42 doc_fragments, 34 lookup, 26 callback, 21 filter, 13 inventory, 10 become, 10 connection, 4 cache, 3 test, 2 action; 709 with `doc_strings`, a median entry 3.6 KB, the largest 59 KB), community.general 14.0.1 3.3 MB, fortinet.fortios 2.6.0 6.5 MB, amazon.aws 12.1.0 2.0 MB, cisco.ios 11.6.0 1.2 MB, ansible.netcommon 8.7.1 155 KB. The owner's `hans_fischer.common` 1.5.0: 4,122 bytes, 32 entries (8 module, 8 filter, 16 module_utils), **every `doc_strings` null**, `collection_readme.html` set, `documentation_files` empty | `curl` (GET, 2026-11-11); `galaxy_importer/schema.py` (`DocsBlob`, `DocsBlobContentItem`) and `loaders/doc_string.py` (`_transform_doc_strings`) of galaxy-importer, master | R-ANS-033 to R-ANS-036, Q-ANS-56 |
 | The importer produces the document at import, not from the archive as such: it unpacks the collection into a collections tree and runs the program `ansible-doc --json` of its own environment once per plugin type (`become`, `cache`, `callback`, `cliconf`, `connection`, `filter`, `httpapi`, `inventory`, `lookup`, `shell`, `module`, `strategy`, `test`, `vars`); without that program it logs a warning and leaves `doc_strings` empty (the state of the owner's collection). A content item exists for every file of `plugins/<type>/`, for `module_utils` and `doc_fragments` too, which have no `doc_strings`. The README is `README.md`, the documentation files are the `.md` files directly in `docs/`, each at most 512 KiB, rendered by Python-Markdown (`extra`) and sanitized by nh3 against a small allowlist; **reStructuredText is not rendered** (`DOCFILE_EXTENSIONS = [".md"]`). A content name must match `^(?!.*__)[a-z_][0-9a-z_]*$`. A role has a `readme_html` from the `README.md` of the role | `galaxy_importer/loaders/doc_string.py`, `loaders/content.py`, `utils/markup.py`, `constants.py` of galaxy-importer, master | Q-ANS-57, Q-ANS-58, Q-ANS-64 |
-| Whether `ansible-doc` executes plugin code was **not verified** here: for modules it reads the `DOCUMENTATION`, `EXAMPLES` and `RETURN` strings from the source without importing it; for some plugin types it loads the plugin. Fragments (`extends_documentation_fragment`) are merged by ansible-doc, from the same collection, from `ansible.builtin` and from other collections | reading the importer; ansible-doc itself was not read | Q-ANS-58, H-891 |
+| Whether `ansible-doc` executes plugin code was **not verified** here: for modules it reads the `DOCUMENTATION`, `EXAMPLES` and `RETURN` strings from the source without importing it; for some plugin types it loads the plugin. Fragments (`extends_documentation_fragment`) are merged by ansible-doc, from the same collection, from `ansible.builtin` and from other collections; how they merge was read in `add_fragments` and `merge_fragment` of `ansible/utils/plugin_docs.py` of ansible-core 2.15.8 on 2026-11-26 and run against a fixture (R-ANS-051) | reading the importer; ansible-core 2.15.8's `plugin_docs.py` | Q-ANS-58, Q-ANS-96, H-891 |
 | Publishing is `POST <api root>v3/artifacts/collections/` with `multipart/form-data` of two parts, `sha256` (the hex digest of the archive) and `file`; the answer is JSON with `task` (resolved with `urljoin(api root, task)`); the client then polls that URL with GET, reading `state`, `finished_at`, `messages[].level/message` and, when `state` is `failed`, `error.code` and `error.description`; a 404 while polling is retried | `publish_collection`, `wait_import_task` in 2.21.6 | R-ANS-008, R-ANS-009 |
 | The galaxy_ng documentation shows the part order `file`, then `sha256`; the client sends `sha256` first | the documentation page of the v3 API; `prepare_multipart` call in 2.21.6 | A publish handler accepts both orders (R-ANS-008) |
 | The client sends a configured `token=` or `--token` as `Authorization: Token <token>` (class `GalaxyToken`), a configured `username` and `password` as Basic, and a `token` with `auth_url` as a Bearer token it obtains from that URL with a refresh-token grant; the download of the archive carries the same header with `unredirected_headers=['Authorization']`; a role archive is downloaded with `open_url` **without** that header, which falls back to `~/.netrc` (a preemptive Basic header for the host) | `token.py`, `cli/galaxy.py` lines 650 to 690, `_download_file`, `role.py` `fetch`, `urls.py` `_configure_auth` in 2.21.6 | R-ANS-006, R-ANS-015 |
@@ -1163,7 +1163,8 @@ shows it too). In Quader it is the **wiki part** of the repository (R-ANS-037). 
 files of the collection's `docs/` directory, and one **entry** per content item of the collection: a module, a plugin of any type, a role.
 An entry has a type, a name, a short description and, where the source documents it, the documentation of the plugin in the Galaxy form
 (`doc`, `return`, `examples`, R-ANS-035). The documentation is **derived data**: nothing in it is a source of truth for the archive, and it
-can be rebuilt (below).
+can be rebuilt (below). The changelog of a version (R-ANS-053) is read from the archive in both the local and the remote class and kept
+in a table of its own, `ansible_changelogs`.
 
 | Class | Where the documentation comes from | What is kept | When |
 |---|---|---|---|
@@ -1262,7 +1263,8 @@ decoded under bounds ([Q-ANS-58](#q-ans-58--the-generator-scans-the-python-sourc
   content name is the path below the directory with dots for slashes and without `.py` (`storage/s3.py` is `storage.s3`); a file named
   `__init__.py` is no item, nor is one whose name starts with `_` (private and deprecated modules); a name that does not match
   `^(?!.*__)[a-z_][0-9a-z_]*$` per part makes the entry a warning and no item. Roles: a directory `roles/<role>/` is a role item with the role
-  name; its `README.md` (at most 512 KiB) is its `readme_md`. `playbooks/` and `meta/` are no items. The README is the member named by
+  name; its `README.md` (at most 512 KiB) is its `readme_md`, and its argument specs below `meta/` are its entry points (R-ANS-052).
+  `playbooks/` and `meta/` are no items. The changelog is read as R-ANS-053 says. The README is the member named by
   `collection_info.readme` or, if empty, `README.md` at the root; the files are the `.md` files directly in `docs/` (at most 64, each at most
   512 KiB; the importer's bound); a file that is not UTF-8 is a warning and no file.
 - **How the reader hands members over (one pass).** `collection.ReadArchive` takes an optional tap (`collection.WithTap(Tap)`; `Tap.Wants(path)
@@ -1277,8 +1279,10 @@ decoded under bounds ([Q-ANS-58](#q-ans-58--the-generator-scans-the-python-sourc
   parenthesized literal; implicit concatenation of adjacent literals). A sidecar `plugins/<dir>/<name>.yml` (or `.yaml`) next to the module or
   plugin holds the same three keys as YAML and wins over the source. Anything else (an f-string, a value built by a name or a call, a literal
   inside a class or a function) is **not read**: the item stays in the list with `has_docs` false and no warning, except for a literal that
-  exceeds 512 KiB or does not close, which is a warning (`docs_literal_too_large`, `docs_literal_unterminated`). `doc_fragments` and
-  `module_utils` are listed and have no `doc` ([H-891](#h-891--documentation-fragments-are-not-merged-into-the-documentation-of-a-generated-entry)).
+  exceeds 512 KiB or does not close, which is a warning (`docs_literal_too_large`, `docs_literal_unterminated`). A `doc_fragments` source is
+  scanned for the literal attributes of its class `ModuleDocFragment`, which are merged into the entries that name them (R-ANS-051);
+  `doc_fragments` and `module_utils` are listed and have no `doc` of their own
+  ([H-891](#h-891--fragments-of-ansiblebuiltin-and-of-other-collections-are-not-merged-into-a-generated-entry)).
 - **Decoding.** The text of `DOCUMENTATION` and `RETURN` is YAML decoded into a node tree and walked, never into Go values, with the walker and the
   refusals of `meta/runtime.yml` (Q-ANS-30): an anchor, an alias, a tag or a merge key, more than 20,000 nodes or a nesting deeper than 24 makes
   the entry `has_docs` false with the warning `docs_yaml_refused`. `EXAMPLES` stays a text. The result is shaped like the Galaxy's
@@ -1438,7 +1442,9 @@ plan of R-ANS-022. The answer names the repository it was read from.
   `suboptions` and `contains` nested to a depth of 12 (deeper is dropped with the warning kept in the tree's `warnings`), an option with its
   `configuration` and `versionAddedCollection` and a return value with its `versionAddedCollection` (R-ANS-049); `examples` is the text
   (the UI highlights it as YAML, R-ANS-050; Quader never runs it); `seealso` entries carry `module`, `entry` (R-ANS-048), `description` and `link` (a link is kept only
-  for `http` and `https`); `extendsFragments` is the list of fragment names that were **not** merged (H-891); `readmeHtml` is set for roles. `fullName` is
+  for `http` and `https`); `extendsFragments` is the list of fragment names that were **not** merged (R-ANS-051, H-891); `readmeHtml` is set
+  for roles, and `entryPoints` for a role with argument specs (R-ANS-052). The tree carries `changelog` and the file operation answers the
+  name `changelog` (R-ANS-053). `fullName` is
   `<ns>.<name>.<content name>`. An entry that does not exist is `404 not_found`; one with `hasDocs` false answers 200 with the header
   fields and no sections.
 - **The file** (`getPackageVersionDocFile`): `{name, contentType, html, truncated, externalImagesBlocked}`, as the README answer of R-API-029 (the
@@ -1661,9 +1667,14 @@ Acceptance criteria:
 Priority: **P1** · Covers: quader-only
 
 The `ansible-reindex` job (R-ANS-012) gains a documentation step: for every stored archive after the checkpoint it regenerates the rows of a version that has
-none or whose `generator` is below `docgen.Version` (the archive is read anyway); for a remote repository it re-derives the rows from the stored `docs/` documents
-(`RebuildRemoteDocs`) and queues the fetch for a version with neither. The enqueue of a restore (R-BAK-008) covers it. A step never changes stored bytes of an
-archive, writes rows in one transaction per version, and leaves a version whose archive is unreadable with its old rows and a warning in the job log.
+none, whose `generator` is below `docgen.Version`, or whose changelog row (R-ANS-053) is missing or older (the archive is read anyway). For a remote
+repository the job reads the changelog of every cached archive whose row is missing or older, from the archive in the store and without asking the upstream;
+its other documentation is fetched by the job `ansible-docs-fill` (R-ANS-042). `RebuildRemoteDocs` of the port, which would re-derive a remote's rows from the
+stored `docs-blob/` documents, is not called by the job (read on 2026-11-26). The enqueue of a restore (R-BAK-008) covers it, and a worker that starts queues the
+job for every local and remote repository that holds a version whose changelog row is missing or older, or whose generated rows are older, than
+`docgen.Version` ([Q-ANS-99](#q-ans-99--a-worker-that-starts-queues-the-reindex-of-what-an-older-generator-made)): an upgrade that raises the
+generator rebuilds what was published or cached before it without an operator's act. A step never changes stored bytes of an archive, writes rows in one
+transaction per version, and leaves a version whose archive is unreadable with its old rows and a warning in the job log.
 
 Acceptance criteria:
 
@@ -1833,7 +1844,8 @@ Priority: **P1** · Covers: quader-only
   holds it, and are code otherwise (another collection, `ansible.builtin` included, or a name the tree does not hold). `O(path)` and
   `RV(path)` link to the anchor in the same entry when the entry has that option or return value (an alias counts); `O(ns.coll.name#type:path)`
   and `RV(…)` link to the anchor in the entry they name when the tree holds that entry. `O(path=value)` shows `path=value` and links to `path`;
-  `O(ignore:x)` and an option of a role's entry point (`#role:entry:x`) are code. `E(x)` is code.
+  `O(ignore:x)` is code; `O(ns.coll.role#role:entry:path)` links to `?doc=role/<role>#parameter-<entry>--<path>` when the tree holds the
+  role, and `O(path)` in the prose of a role's entry point to that entry point's option (R-ANS-052). `E(x)` is code.
 - **See also.** A see-also entry whose `module` (or `plugin` with `plugin_type`) names an entry of the tree carries `entry`
   (`<type>/<name>`) and links to it.
 - **In place.** A link opens the entry or the anchor in the page, without a reload, and keeps the open tab and the search; it has an address that
@@ -1863,7 +1875,7 @@ Priority: **P1** · Covers: quader-only
   version that names a `version_added` and no collection counts in the collection being published
   ([Q-ANS-93](#q-ans-93--an-anchor-is-parameter--or-return--and-the-path-of-names-and-a-generated-version_added-counts-in-its-own-collection)). An
   upstream's entry that names none keeps the plain number.
-- `docgen.Version` is 2: the reindex rebuilds the rows of a generated version (R-ANS-044). An upstream's rows are stored as received and need no
+- `docgen.Version` was 2 for this; it is 3 since R-ANS-051 to R-ANS-053: the reindex rebuilds the rows of a generated version (R-ANS-044). An upstream's rows are stored as received and need no
   rebuild.
 
 Acceptance criteria:
@@ -1894,6 +1906,109 @@ Acceptance criteria:
   names the sections the page shows; the examples' text is the source.
 - The renders `ansible-doc-module`, `ansible-doc-anchor`, `ansible-doc-lookup` and `ansible-doc-callback` (light and dark, 1,440, 1,024 and
   390 px, the first three also in German).
+
+### R-ANS-051 · Fragments of the same collection are merged
+Priority: **P1** · Covers: quader-only
+
+The generator (R-ANS-034) reads the documentation fragments of the collection being published and merges them into the entries that name
+them in `extends_documentation_fragment`, as ansible-doc does (`add_fragments` and `merge_fragment` of `ansible/utils/plugin_docs.py`,
+ansible-core 2.15.8, read; [Q-ANS-96](#q-ans-96--a-fragment-of-the-collection-is-merged-as-ansible-doc-merges-it-from-the-literal-of-its-class)).
+
+- **Which fragment.** `ns.coll.name` names the attribute `DOCUMENTATION` of `class ModuleDocFragment` in `plugins/doc_fragments/name.py` of
+  the archive; when no such file exists, the part after the last dot names an attribute of the file before it, upper-cased
+  (`ns.coll.files.validate` is `VALIDATE` of `files.py`). The attribute is read as the literal it is, by the scanner of R-ANS-034 applied
+  to the statements of the class body; an attribute built by an expression is not read. Its YAML is decoded under the same refusals.
+- **How it merges.** An option of both keeps the entry's place and the entry's members, with the members of the fragment's option it
+  lacks; an option of the fragment alone is appended, in the fragment's order; attributes merge the same way; notes and see-also are
+  appended; requirements become the sorted union. Several fragments merge in the order named. The search finds a merged option.
+- **What stays listed.** A fragment of `ansible.builtin` (by its full or its short name), of another collection, or one of the collection
+  that cannot be read stays in `extends_documentation_fragment`, the list `extendsFragments` of R-ANS-036, which now means "not merged"
+  only for these ([H-891](#h-891--fragments-of-ansiblebuiltin-and-of-other-collections-are-not-merged-into-a-generated-entry)). A fragment
+  of the collection that cannot be read is a warning `docs_fragment_not_read` (a missing attribute, a value that is no literal, a fragment
+  with neither `options` nor `attributes`, which ansible-doc refuses too) or `docs_yaml_refused`. A fragment is no entry with
+  documentation of its own; it is listed as before.
+- An entry of a **remote** is the upstream's, which ansible-doc merged already.
+
+Acceptance criteria:
+
+- `TestR_ANS_051_AFragmentOfTheCollectionIsMergedAsAnsibleDocMergesIt` (unit): a module of the fixture `docgen/testdata/acme_tools` that
+  extends two fragments of its collection (one by an attribute) and `ansible.builtin.files` has the options, notes, requirements, see-also
+  and attributes that `ansible-doc --json` of ansible-core 2.15.8 made of the same files (`ansible-doc-module.json`), without the options of
+  `ansible.builtin.files`, which stays listed.
+- `TestR_ANS_051_AFragmentThatCannotBeReadStaysListed` and `TestR_ANS_051_OneFragmentServesManyEntries` (unit).
+- `ansiblelocal` (integration): the operation answers the merged option and `extendsFragments` `[ansible.builtin.files]`.
+- Measured once, 2026-11-26, not a test: the generator over the 108 collections of the community package 8.7.0 merged every literal
+  fragment its modules name; 96 references stayed unmerged because their attribute is computed (`amazon.aws.boto3`, `amazon.aws.tags.modules`)
+  and 19 because ansible-doc cannot resolve the name either (`netapp_eseries.santricity.santricity.netapp.eseries`).
+
+### R-ANS-052 · A role's argument specs
+Priority: **P1** · Covers: quader-only
+
+The generator reads a role's argument specs, as ansible-doc does for `-t role`
+([Q-ANS-97](#q-ans-97--a-roles-entry-points-are-groups-of-its-page-with-the-tables-of-a-plugins-options)).
+
+- **Where.** The first of `roles/<role>/meta/argument_specs.yml`, `.yaml`, `.json`, `meta/main.yml`, `.yaml`, `.json` that exists (the
+  order of ansible-core's `RoleMixin`), under the key `argument_specs`; at most 512 KiB, YAML under the refusals of R-ANS-034.
+- **What.** Each entry point, in the order of the file, with its `short_description`, `description`, `author`, `version_added`
+  (`version_added_collection`), `notes`, `requirements`, `seealso`, `attributes` and `options`, whose nested options (written `options` in
+  argument specs) become `suboptions`, so the tables of a plugin's options draw them. The role's entry is `hasDocs` true; its short
+  description is `main`'s, or the first entry point's; the search finds an entry point's option. A role's README stays.
+- **The entry operation** answers `entryPoints` beside `readmeHtml` (R-ANS-036). The anchor of an entry point's option is
+  `parameter-<entry point>--<path>`, as the documentation site spells it; `O(x)` in an entry point's prose links to its own option, and
+  `O(ns.coll.role#role:entry:path)` to that anchor on the role's page when the tree holds the role (R-ANS-048's grammar, `docgen.PageLink`).
+- **The protocol document** (R-ANS-035) carries a generated role's entry points in `doc_strings.doc.entry_points`; a Galaxy's
+  `doc_strings` of a role is `{}` (community.sops 2.2.1, read 2026-11-26), so a remote's role has none
+  ([H-2141](#h-2141--a-remotes-role-has-no-entry-points)).
+- A role whose specs cannot be read keeps its README and has no entry points, with a warning (H-2140 for YAML with anchors).
+
+Acceptance criteria:
+
+- `TestR_ANS_052_ARolesArgumentSpecsAreItsEntryPoints` (unit): the fixture's role has the entry points, descriptions and nested options
+  `ansible-doc --json -t role` made (`ansible-doc-role.json`); `TestR_ANS_052_WhereARoleKeepsItsArgumentSpecs` (unit): the order of the
+  files, `meta/main.yml`, refused YAML.
+- `TestR_ANS_052_AnEntryPointsProseLinksItsOwnOptions` (unit) and `TestR_ANS_052_ARolesEntryPointsAreTablesWithAnchorsOfTheirOwn` (unit,
+  the operation).
+- `ansiblelocal` (integration): a role's two entry points and the link to an entry point's option.
+- The render `ansible-doc-role` and `ansible-doc-role-anchor`.
+
+### R-ANS-053 · The changelog of a version
+Priority: **P1** · Covers: quader-only
+
+A collection's changelog is documentation that comes with the format (the owner's rule of 2026-11-25), shown as a file **Changelog** of
+the tree's group Documentation ([Q-ANS-98](#q-ans-98--the-changelog-is-read-from-the-archive-into-a-table-of-its-own-and-changelogyaml-is-rendered-as-escaped-markdown)).
+
+- **The source**, the first that is there and can be read: `changelogs/changelog.yaml` (antsibull-changelog's), rendered as Markdown, the
+  newest version first, with the release summary, the categories in antsibull-changelog's order and titles (Major Changes, Minor Changes,
+  Breaking Changes / Porting Guide, Deprecated Features, Removed Features (previously deprecated), Security Fixes, Bugfixes, Known Issues,
+  then a category of the collection's own configuration by its key), and the plugins (by type), modules and other objects (roles,
+  playbooks) a release added, by their full names; `trivial` is left out; else `CHANGELOG.md` at the root, Markdown as it is; else
+  `CHANGELOG.rst`, shown as text and not rendered (R-ANS-039). The root's names are matched without regard to case.
+- **Untrusted.** An entry of changelog.yaml is escaped character by character, its reStructuredText literals become code spans and its
+  `http`/`https` links links; the Markdown reaches the browser only through the README renderer and its sanitizer, the text in an escaped
+  `pre` element.
+- **Bounds.** At most 4 MiB of a member are read and 100,000 YAML nodes decoded; the stored body is at most 512 KiB, cut after the last
+  whole version (or line) that fits, and `truncated` is set. A changelog.yaml beyond the read bound or refused is a warning, and the next
+  source is used. A changelog is never a reason to refuse a publish.
+- **When it is read.** At a local publish (the generator) and at the fill of a remote's archive (`InspectFill`, the same pass under the
+  bounds of R-ANS-031); the upstream's `docs-blob/` holds none. It is stored per version in `ansible_changelogs`, with a row of format
+  `none` for an archive that has none; the reindex reads it again for a row of an older generator, for a remote from the cached archive
+  (R-ANS-044).
+- **Served** by the tree (`changelog`, its source, format and `truncated`) and the file operation under the name `changelog`
+  (`text/markdown` or `text/plain`), in every state of the documentation, since a remote's comes before or without the upstream's. It is
+  wiki content (R-ANS-037): the operations it is read through are.
+
+Acceptance criteria:
+
+- `TestR_ANS_053_TheChangelogIsRenderedByVersionAndCategory`, `TestR_ANS_053_TheChangelogsSourcesAndBounds`,
+  `TestR_ANS_053_AChangelogReaderAloneReadsTheChangelogOfAnArchive` (unit, the generator); `TestR_ANS_053_APublishStoresTheChangelog…`,
+  `TestR_ANS_053_TheFillOfARemotesArchiveReadsItsChangelog` (unit, the format); `TestR_ANS_053_AChangelogInReStructuredTextIsTextInAPreElement`
+  (unit, the operation).
+- `ansiblelocal` (integration): the tree's changelog, the file rendered with an entry's tag as text, and a changelog an older generator
+  recorded read again by the reindex a starting worker queues. `ansibleremote` (integration): the changelog of a cached archive, the newest
+  version first, read again from the cached archive after its row was lost.
+- Measured once, 2026-11-26, not a test: of the 108 collections of the community package 8.7.0, 104 have a changelog (99 changelog.yaml,
+  2 Markdown, 3 reStructuredText); none is cut, the largest changelog.yaml is 240 KB.
+- The renders `ansible-doc-changelog` and `ansible-doc-changelog-md`.
 
 ## Roles through a remote
 
@@ -3403,6 +3518,67 @@ Status: **Decided by the development agent** on 2026-11-25 — selected from the
 dependency and HTML. **Revisit** when a second page highlights YAML: then the code window's YAML moves onto this tokenizer. **Applied in the
 spec:** R-ANS-050.
 
+### Q-ANS-96 · A fragment of the collection is merged as ansible-doc merges it, from the literal of its class
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Q-ANS-58 left fragments unmerged and named option (c) of it for later; W-30 (the owner's "Galaxy vollständig und ebenbürdig
+ersetzen") makes the documentation site the measure, which merges them. A fragment is a Python class whose attributes are YAML strings.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Merge the collection's own fragments by ansible-doc's rules, read from the literal attributes of `class ModuleDocFragment` by the scanner; the entry's option keeps its place, the fragment's follow (chosen) | `fragments.go` | What ansible-doc shows, proven against its output for the same files; nothing is executed; one fragment serves every entry | A fragment computed in Python is not read (H-892) |
+| (b) As (a), with the options sorted by name, as the documentation site lists them | — | The site's order | Quader's tables keep the source's order everywhere else, and a remote's entry (ansible-doc's JSON) is in (a)'s order: the two classes would differ |
+| (c) Also fetch fragments of other collections from repositories this installation holds | — | `community.general.*` fragments merged | A publish would depend on another repository and on the reader's rights to it; `ansible.builtin` is not in any repository |
+
+**Choice:** (a). **Rationale:** it is the measure's behaviour for what the archive holds, and the order is the one a remote's
+upstream sends. **Revisit** when the owner wants `ansible.builtin`'s fragments (a bundled copy of ansible-core's fragments, then a
+version question). **Applied in the spec:** R-ANS-034, R-ANS-051; H-891 narrowed.
+
+### Q-ANS-97 · A role's entry points are groups of its page, with the tables of a plugin's options
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The entry points in the role's stored documentation (`doc.entry_points`, options with `suboptions`), answered as `entryPoints` of the entry and drawn as one group per entry point with the two-column tables; anchors `parameter-<entry point>--<path>` (chosen) | One page per role, as the site's | The site's anchors; the tables, anchors and links of A1 serve unchanged; the role's README stays on the same page | A role with many entry points is a long page (one scrollbar, R-UI-215) |
+| (b) A page per entry point (`?doc=role/web:main`) | The site's own split for some roles | Short pages | A new kind of address in the grammar of Q-ANS-94 for a split the site does not make (its role page lists every entry point) |
+| (c) Argument specs as a code block of YAML | — | Nothing to shape | Not searchable, no anchors, unlike every other option on the page |
+
+**Choice:** (a). **Rationale:** the documentation site shows one page per role with a section per entry point, and the option tables
+exist. YAML with anchors stays refused as everywhere in the generator (H-2140). **Revisit** if a role's page with many entry points is
+too long to read. **Applied in the spec:** R-ANS-036, R-ANS-048 (H-2102 closed), R-ANS-052.
+
+### Q-ANS-98 · The changelog is read from the archive into a table of its own, and changelog.yaml is rendered as escaped Markdown
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A table `ansible_changelogs` per version, written at a publish, at a remote's fill and by the reindex, with a row `none` for an archive without; changelog.yaml rendered by the server to Markdown in which every character of an entry is escaped, then served through the README renderer (chosen) | `changelog.go`, migration `ansible_changelogs` | A remote shows it although the upstream's docs-blob has none; one renderer and sanitizer for every Markdown; the record `none` keeps the start-up check from reading an archive twice | The headings are antsibull-changelog's English words, rendered by the server (H-2143) |
+| (b) A file of `ansible_doc_files` | No table | — | A remote's files are the upstream's and are replaced when its docs-blob is fetched; the changelog would vanish or have to be merged back |
+| (c) The structure of changelog.yaml as JSON, rendered by the web application | Headings in the reader's language | Translated headings | A second renderer of entries whose markup is reStructuredText; the Markdown and reStructuredText changelogs would still be files |
+
+**Choice:** (a). **Rationale:** it is the one form that serves both classes and all three sources through the operations that exist.
+**Revisit** if the owner wants the headings in German. **Applied in the spec:** R-ANS-033, R-ANS-044, R-ANS-053.
+
+### Q-ANS-99 · A worker that starts queues the reindex of what an older generator made
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `docgen.Version` 3 changes what a local version's documentation holds, and no cached archive has a changelog row before this
+change. Until now a raised generator took effect at the next reindex an operator started (R-REPO-016) or a restore queued.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A worker that starts queues `ansible-reindex` for every local and remote repository with a version whose changelog row is missing or older, or whose generated documentation is older, than `docgen.Version` (`QueueStaleReindex`); the reindex of a remote reads the changelogs of its cached archives (chosen) | The start-up rule of R-HA-022's background migrations, as the task remote-describe does | No operator act after an upgrade; the job coalesces per repository; a second start finds nothing | One query over the versions at every start |
+| (b) A task of its own with a schedule | — | Visible on the tasks page | A schedule for work that only an upgrade creates |
+| (c) Leave it to the operator's reindex | — | Nothing to build | A local collection keeps its old documentation, and a remote shows no changelog, until someone acts |
+
+**Choice:** (a). **Rationale:** the brief's rule: a local collection must not keep its old documentation until someone acts, and the
+reindex is the job that already does the work. **Revisit** if the start-up query is slow on a large store (H-890). **Applied in the
+spec:** R-ANS-044, R-ANS-053.
+
 ### Q-ANS-110 · Roles are readable through a remote and published inside a collection
 
 Status: **Decided by the owner on 2026-11-25** — option (b), the favourite of the working paper W-30 (its decision d1; his words: "überall
@@ -3537,10 +3713,26 @@ at its top. Live for every such reference with a wrong path; the documentation s
 them to its pages of that collection. Quader would link only to a collection this installation holds, which needs a lookup across
 repositories the reader may read. Live for every entry that refers to `ansible.builtin` (most modules' see-also).
 
-### H-2102 · An option of a role's entry point is no link
+### H-2140 · Argument specs with YAML anchors are not read
 
-`O(ns.coll.role#role:entry:option)` is code: the role's argument specs are not read yet (H-892), so a role's page has no option anchors.
-Live for every collection whose prose refers to role options; it ends with the argument specs.
+A role's argument specs that use an anchor and an alias (to share an option between entry points) are refused like every YAML the
+generator reads (R-ANS-034, the refusals of `meta/runtime.yml`), so the role keeps its README and shows no entry points, with the warning
+`docs_yaml_refused`. ansible-doc reads them. Measured on 2026-11-26: 3 of the 20 roles with argument specs in the community package 8.7.0
+(`sensu.sensu_go`'s `agent`, `backend`, `install`). Live for such roles of a local publish; an expansion bounded by the node count would
+admit them and is not built.
+
+### H-2141 · A remote's role has no entry points
+
+The upstream's `docs-blob/` carries `doc_strings` `{}` for a role (community.sops 2.2.1, read on 2026-11-26), and a remote's
+documentation is the upstream's (R-ANS-033), so a role of a remote shows its README and no entry points, although the cached archive holds
+the argument specs. Live for every remote role with argument specs; reading them at the fill as the changelog is would close it.
+
+### H-2142 · A changelog's headings are English
+
+The headings of a rendered changelog.yaml (the version, Release Summary, the categories, New Plugins) are antsibull-changelog's English
+titles written by the server into the Markdown (Q-ANS-98), so a reader in German sees them in English beside the translated page. A
+category of the collection's own `changelogs/config.yaml` is titled by its key, not by the title that file gives it (the file is not
+read). Live for every changelog.yaml.
 
 ### H-1970 · A collection document's highest_version counts a pre-release
 
@@ -3739,21 +3931,22 @@ The rows of R-ANS-033 cost, for the largest collections of the public Galaxy, 1 
 the bounds per version (R-ANS-031). Live for a mirror whose patterns select large collections with many versions, and for a local repository that
 publishes a documented version often; dormant for a pull-through remote that only fills what clients ask for. The setting switches the fetch off per remote.
 
-### H-891 · Documentation fragments are not merged into the documentation of a generated entry
+### H-891 · Fragments of ansible.builtin and of other collections are not merged into a generated entry
 
-ansible-doc merges `extends_documentation_fragment` (fragments of the same collection, of `ansible.builtin` and of other collections) into a plugin's
-options, notes and requirements. Quader's generator shows the plugin's own `DOCUMENTATION` and lists the fragment names (`extendsFragments`), so a
-parameter that a plugin takes through a fragment is missing from its parameter table, and `module_utils` and `doc_fragments` files are listed without a
-page. Live for every generated entry that extends a fragment (collections with a shared connection or authentication fragment); an entry of a **remote** is not affected, its upstream merged them. The owner's `hans_fischer.common` 1.5.0 has none to show:
-its `doc_strings` are null on his galaxy_ng.
+ansible-doc merges `extends_documentation_fragment` from the same collection, from `ansible.builtin` and from other collections. Quader's
+generator merges the collection's own (R-ANS-051) and lists the others (`extendsFragments`), so a parameter that a plugin takes through
+`ansible.builtin.files` (mode, owner, group and the like) or a fragment of another collection is missing from its parameter table, and
+`module_utils` and `doc_fragments` files are listed without a page. Live for every generated entry that extends such a fragment (most file
+modules extend `ansible.builtin.files`); an entry of a **remote** is not affected, its upstream merged them.
 
-### H-892 · The generator reads literals, not Python, and does not read role argument specs
+### H-892 · The generator reads literals, not Python
 
-A `DOCUMENTATION`, `EXAMPLES` or `RETURN` that is not a module-level string literal (built by concatenation with a name, a call, an f-string, assigned inside
-a class or function, or imported from another file) is not read: the entry is listed with `has_docs` false and **no warning**, because a lexical scan cannot tell "no
-documentation" from "documentation in a form it does not understand". Roles are listed with their README only; `meta/argument_specs.yml` and `meta/main.yml` are
-not read. Live for collections that generate their documentation at build time or document roles by argument specs; the page then says the plugin has no
-documentation although the author wrote some.
+A `DOCUMENTATION`, `EXAMPLES` or `RETURN` that is not a module-level string literal, and a fragment's attribute that is not a literal in the
+body of its class (built by concatenation with a name, a call, an f-string, assigned inside a function, or imported from another file), is
+not read: a plugin is listed with `has_docs` false and **no warning**, because a lexical scan cannot tell "no documentation" from
+"documentation in a form it does not understand"; a fragment of the collection that is not read stays listed with the warning
+`docs_fragment_not_read`. Live for collections that generate their documentation at build time (measured on 2026-11-26: `amazon.aws`
+builds its `boto3` fragment in Python, so 95 of its modules keep it unmerged).
 
 ### H-893 · An upstream's HTML and the sanitizer policy can differ in what they keep
 

@@ -12,6 +12,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AnsibleChangelog struct {
+	RepoID    int64
+	Name      string
+	Version   string
+	Generator int32
+	Format    string
+	Source    string
+	Body      string
+	Truncated bool
+	ReadAt    pgtype.Timestamptz
+}
+
 type AnsibleCollectionVersion struct {
 	RepoID          int64
 	Name            string

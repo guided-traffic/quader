@@ -2914,6 +2914,21 @@ func (e PackageChangelogFile) Valid() bool {
 	}
 }
 
+// Defines values for PackageDocChangelogHeadName.
+const (
+	Changelog PackageDocChangelogHeadName = "changelog"
+)
+
+// Valid indicates whether the value is a known member of the PackageDocChangelogHeadName enum.
+func (e PackageDocChangelogHeadName) Valid() bool {
+	switch e {
+	case Changelog:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PackageDocEntrySource.
 const (
 	PackageDocEntrySourceGenerated PackageDocEntrySource = "generated"
@@ -2935,12 +2950,15 @@ func (e PackageDocEntrySource) Valid() bool {
 // Defines values for PackageDocFileContentType.
 const (
 	PackageDocFileContentTypeTextmarkdown PackageDocFileContentType = "text/markdown"
+	PackageDocFileContentTypeTextplain    PackageDocFileContentType = "text/plain"
 )
 
 // Valid indicates whether the value is a known member of the PackageDocFileContentType enum.
 func (e PackageDocFileContentType) Valid() bool {
 	switch e {
 	case PackageDocFileContentTypeTextmarkdown:
+		return true
+	case PackageDocFileContentTypeTextplain:
 		return true
 	default:
 		return false
@@ -13264,6 +13282,23 @@ type PackageDocAttribute struct {
 	Support     *string   `json:"support,omitempty"`
 }
 
+// PackageDocChangelogHead The changelog of the version (R-ANS-053), read from the archive at a publish and at the fill of a remote's archive, so it is present
+// in every state of the tree. Its text is the file `name` of the file operation. Absent when the archive holds none.
+type PackageDocChangelogHead struct {
+	// Format `markdown` (changelog.yaml rendered by version and category, or a Markdown file) or `text` (reStructuredText, shown as text).
+	Format string                      `json:"format"`
+	Name   PackageDocChangelogHeadName `json:"name"`
+
+	// Source The member of the archive, `changelogs/changelog.yaml`, `CHANGELOG.md` or `CHANGELOG.rst`.
+	Source string `json:"source"`
+
+	// Truncated The changelog was longer than 512 KiB and is cut after the last whole version or line.
+	Truncated bool `json:"truncated"`
+}
+
+// PackageDocChangelogHeadName defines model for PackageDocChangelogHead.Name.
+type PackageDocChangelogHeadName string
+
 // PackageDocConfigCli defines model for PackageDocConfigCli.
 type PackageDocConfigCli struct {
 	Name   *string `json:"name,omitempty"`
@@ -13306,10 +13341,15 @@ type PackageDocEntry struct {
 	Deprecated  *PackageDocDeprecated  `json:"deprecated,omitempty"`
 	Description *[]string              `json:"description,omitempty"`
 
+	// EntryPoints Roles. The entry points of the role's argument specs, in the order of the file (R-ANS-052). The anchor of an entry point's option
+	// is `parameter-<entry point>--<path>`, and its prose links `O()` of the entry point's own options to it.
+	EntryPoints *[]PackageDocEntryPoint `json:"entryPoints,omitempty"`
+
 	// Examples Text, shown in a code block; the client highlights it as YAML (R-ANS-050), and Quader never runs it.
 	Examples *string `json:"examples,omitempty"`
 
-	// ExtendsFragments The documentation fragments that were not merged into the entry.
+	// ExtendsFragments The documentation fragments that were not merged into the entry: a generated entry merges the fragments of its own collection
+	// (R-ANS-051), so these are fragments of `ansible.builtin`, of another collection, or ones that could not be read.
 	ExtendsFragments *[]string `json:"extendsFragments,omitempty"`
 
 	// FullName `<namespace>.<name>.<content name>`.
@@ -13351,9 +13391,27 @@ type PackageDocEntryHead struct {
 	Type             string `json:"type"`
 }
 
-// PackageDocFile The README or a Markdown file, as the README answer of R-API-029 (R-ANS-036).
+// PackageDocEntryPoint One entry point of a role (R-ANS-052); the prose members are sanitized HTML as in an entry.
+type PackageDocEntryPoint struct {
+	Attributes   *[]PackageDocAttribute `json:"attributes,omitempty"`
+	Author       *[]string              `json:"author,omitempty"`
+	Description  *[]string              `json:"description,omitempty"`
+	Name         string                 `json:"name"`
+	Notes        *[]string              `json:"notes,omitempty"`
+	Options      *[]PackageDocOption    `json:"options,omitempty"`
+	Requirements *[]string              `json:"requirements,omitempty"`
+	Seealso      *[]PackageDocSeeAlso   `json:"seealso,omitempty"`
+
+	// ShortDescription Plain text.
+	ShortDescription       *string `json:"shortDescription,omitempty"`
+	VersionAdded           *string `json:"versionAdded,omitempty"`
+	VersionAddedCollection *string `json:"versionAddedCollection,omitempty"`
+}
+
+// PackageDocFile The README, a Markdown file or the changelog, as the README answer of R-API-029 (R-ANS-036, R-ANS-053).
 type PackageDocFile struct {
-	// ContentType The type of the source; `html` is always sanitized HTML.
+	// ContentType The type of the source; `html` is always sanitized HTML. `text/plain` is a changelog in reStructuredText, whose `html` is the text
+	// in a `pre` element (R-ANS-053).
 	ContentType PackageDocFileContentType `json:"contentType"`
 
 	// ExternalImagesBlocked The number of external images replaced by links.
@@ -13361,11 +13419,12 @@ type PackageDocFile struct {
 	Html                  string `json:"html"`
 	Name                  string `json:"name"`
 
-	// Truncated The source or the rendered HTML exceeded a limit of R-UI-008.
+	// Truncated The source or the rendered HTML exceeded a limit of R-UI-008, or a changelog was cut at its bound (R-ANS-053).
 	Truncated bool `json:"truncated"`
 }
 
-// PackageDocFileContentType The type of the source; `html` is always sanitized HTML.
+// PackageDocFileContentType The type of the source; `html` is always sanitized HTML. `text/plain` is a changelog in reStructuredText, whose `html` is the text
+// in a `pre` element (R-ANS-053).
 type PackageDocFileContentType string
 
 // PackageDocFileHead defines model for PackageDocFileHead.
@@ -13458,6 +13517,10 @@ type PackageDocSeeAlso struct {
 // alphabetical order.
 type PackageDocTree struct {
 	BuiltAt *time.Time `json:"builtAt,omitempty"`
+
+	// Changelog The changelog of the version (R-ANS-053), read from the archive at a publish and at the fill of a remote's archive, so it is present
+	// in every state of the tree. Its text is the file `name` of the file operation. Absent when the archive holds none.
+	Changelog *PackageDocChangelogHead `json:"changelog,omitempty"`
 
 	// Files The README first, when there is one, then the Markdown files of `docs/` in name order.
 	Files  *[]PackageDocFileHead `json:"files,omitempty"`
@@ -23348,7 +23411,7 @@ type ServerInterface interface {
 	// GetPackageVersionDocEntry Read the documentation page of one module, plugin or role
 	// (GET /api/v1/packages/{packageId}/versions/{version}/docs/entries/{type}/{name})
 	GetPackageVersionDocEntry(w http.ResponseWriter, r *http.Request, packageId PackageId, version PackageVersionPath, pType string, name string, params GetPackageVersionDocEntryParams)
-	// GetPackageVersionDocFile Read the README or a Markdown file of the documentation of a version
+	// GetPackageVersionDocFile Read the README, a Markdown file or the changelog of the documentation of a version
 	// (GET /api/v1/packages/{packageId}/versions/{version}/docs/files/{file})
 	GetPackageVersionDocFile(w http.ResponseWriter, r *http.Request, packageId PackageId, version PackageVersionPath, file string, params GetPackageVersionDocFileParams)
 	// GetPackageVersionReadme Read the rendered README of a version

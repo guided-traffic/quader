@@ -838,6 +838,18 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
+## The changelog of a collection version (00136)
+
+[00136_ansible_changelogs](../../internal/meta/postgres/migrations/00136_ansible_changelogs.sql) adds `ansible_changelogs`, the changelog of
+an Ansible collection version read from its archive ([formats/ansible.md](../spec/formats/ansible.md) R-ANS-053, Q-ANS-98): one row per
+version whose archive was read for it, local or cached by a remote, with the `generator` that read it (`docgen.Version`), the `format`
+(`markdown`, `text`, or `none` for an archive without one), the member it came from, the body (at most 512 KiB) and `truncated`. The row
+hangs off `ansible_collection_versions` and goes with it. The table is export class `transient` (R-BAK-004): the reindex reads it again,
+and a worker that starts queues that reindex for every repository with a row that is missing or older (`AnsibleDocsStaleRepositories`,
+Q-ANS-99). Expand phase only. The statements are `AnsibleChangelog*` and `AnsibleDocsStaleRepositories` in
+[ansible_docs.sql](../../internal/meta/postgres/queries/ansible_docs.sql); `AnsibleDocsStaleVersions` also selects a version whose
+changelog row is missing or older.
+
 ## The roles an Ansible remote read (00134)
 
 [00134_ansible_roles](../../internal/meta/postgres/migrations/00134_ansible_roles.sql) adds `ansible_roles`, the facts of the roles a

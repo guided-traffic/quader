@@ -11497,17 +11497,20 @@ paths:
       - name: file
         in: path
         required: true
-        description: The name of the README or of a Markdown file below `docs/`, as the tree lists it, percent-encoded.
+        description: |
+          The name of the README or of a Markdown file below `docs/`, as the tree lists it, percent-encoded; `changelog` is the changelog of
+          the tree's member `changelog`.
         schema:
           type: string
     get:
       operationId: getPackageVersionDocFile
       tags: [packages]
-      summary: Read the README or a Markdown file of the documentation of a version
+      summary: Read the README, a Markdown file or the changelog of the documentation of a version
       description: |
         The README or a Markdown file of a visible version as sanitized HTML, as the README operation answers it (R-ANS-036, R-API-029,
         R-UI-008). A name the tree does not list is `404`. The `ETag` is a strong tag over the source, the renderer version and the image
-        policy. The wiki rule of the tree applies (R-ANS-037).
+        policy. The wiki rule of the tree applies (R-ANS-037). `changelog` answers the changelog (R-ANS-053) in every state of the
+        documentation, since it comes with the archive.
       x-quader-permission:
         public: true
       x-quader-part: wiki
@@ -28098,6 +28101,8 @@ components:
           description: The README first, when there is one, then the Markdown files of `docs/` in name order.
           items:
             $ref: "#/components/schemas/PackageDocFileHead"
+        changelog:
+          $ref: "#/components/schemas/PackageDocChangelogHead"
         groups:
           type: array
           items:
@@ -28107,6 +28112,27 @@ components:
           description: What the generator left out and why. Only for a caller who holds `deploy` on the repository.
           items:
             $ref: "#/components/schemas/PackageDocWarning"
+    PackageDocChangelogHead:
+      type: object
+      additionalProperties: false
+      required: [name, source, format, truncated]
+      description: |
+        The changelog of the version (R-ANS-053), read from the archive at a publish and at the fill of a remote's archive, so it is present
+        in every state of the tree. Its text is the file `name` of the file operation. Absent when the archive holds none.
+      properties:
+        name:
+          type: string
+          enum: [changelog]
+        source:
+          type: string
+          description: The member of the archive, `changelogs/changelog.yaml`, `CHANGELOG.md` or `CHANGELOG.rst`.
+        format:
+          type: string
+          description: |
+            `markdown` (changelog.yaml rendered by version and category, or a Markdown file) or `text` (reStructuredText, shown as text).
+        truncated:
+          type: boolean
+          description: The changelog was longer than 512 KiB and is cut after the last whole version or line.
     PackageDocFileHead:
       type: object
       additionalProperties: false
@@ -28261,12 +28287,68 @@ components:
             $ref: "#/components/schemas/PackageDocAttribute"
         extendsFragments:
           type: array
-          description: The documentation fragments that were not merged into the entry.
+          description: |
+            The documentation fragments that were not merged into the entry: a generated entry merges the fragments of its own collection
+            (R-ANS-051), so these are fragments of `ansible.builtin`, of another collection, or ones that could not be read.
           items:
             type: string
         readmeHtml:
           type: string
           description: Roles. The README of the role as sanitized HTML.
+        entryPoints:
+          type: array
+          description: |
+            Roles. The entry points of the role's argument specs, in the order of the file (R-ANS-052). The anchor of an entry point's option
+            is `parameter-<entry point>--<path>`, and its prose links `O()` of the entry point's own options to it.
+          items:
+            $ref: "#/components/schemas/PackageDocEntryPoint"
+    PackageDocEntryPoint:
+      type: object
+      additionalProperties: false
+      required: [name]
+      description: One entry point of a role (R-ANS-052); the prose members are sanitized HTML as in an entry.
+      properties:
+        name:
+          type: string
+        shortDescription:
+          type: string
+          description: Plain text.
+        versionAdded:
+          type: string
+        versionAddedCollection:
+          type: string
+        description:
+          type: array
+          items:
+            type: string
+            description: Sanitized HTML.
+        notes:
+          type: array
+          items:
+            type: string
+            description: Sanitized HTML.
+        requirements:
+          type: array
+          items:
+            type: string
+            description: Sanitized HTML.
+        author:
+          type: array
+          items:
+            type: string
+            description: Text.
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageDocOption"
+        seealso:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageDocSeeAlso"
+        attributes:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageDocAttribute"
     PackageDocDeprecated:
       type: object
       additionalProperties: false
@@ -28440,19 +28522,21 @@ components:
       type: object
       additionalProperties: false
       required: [name, contentType, html, truncated, externalImagesBlocked]
-      description: The README or a Markdown file, as the README answer of R-API-029 (R-ANS-036).
+      description: The README, a Markdown file or the changelog, as the README answer of R-API-029 (R-ANS-036, R-ANS-053).
       properties:
         name:
           type: string
         contentType:
           type: string
-          enum: [text/markdown]
-          description: The type of the source; `html` is always sanitized HTML.
+          enum: [text/markdown, text/plain]
+          description: |
+            The type of the source; `html` is always sanitized HTML. `text/plain` is a changelog in reStructuredText, whose `html` is the text
+            in a `pre` element (R-ANS-053).
         html:
           type: string
         truncated:
           type: boolean
-          description: The source or the rendered HTML exceeded a limit of R-UI-008.
+          description: The source or the rendered HTML exceeded a limit of R-UI-008, or a changelog was cut at its bound (R-ANS-053).
         externalImagesBlocked:
           type: integer
           format: int32

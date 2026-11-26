@@ -157,6 +157,12 @@ func (f *Format) commitVersion(ctx context.Context, tx formats.Tx, c formats.Com
 	}, p.audit, p.info); err != nil {
 		return err
 	}
+	if d := p.docs; d != nil {
+		// The changelog commits with the version too, a row of none included (R-ANS-053).
+		if err := st.PutChangelog(ctx, tx, c.Repo.ID, name, a.Version, d.Changelog); err != nil {
+			return err
+		}
+	}
 	if d := p.docs; d != nil && (d.Readme != nil || len(d.Files) > 0 || len(d.Entries) > 0) {
 		// The documentation commits with the version: a publish that fails after this leaves no row (R-ANS-033).
 		if err := st.PutDocs(ctx, tx, c.Repo.ID, name, a.Version, *d); err != nil {

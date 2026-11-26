@@ -39,8 +39,9 @@ func (b ansibleBlobReader) Open(ctx context.Context, sha256 [32]byte, size int64
 type ansibleArchives struct{ blobs ansibledata.BlobReader }
 
 var (
-	_ rows.ArchiveReader = ansibleArchives{}
-	_ rows.DocsReader    = ansibleArchives{}
+	_ rows.ArchiveReader   = ansibleArchives{}
+	_ rows.DocsReader      = ansibleArchives{}
+	_ rows.ChangelogReader = ansibleArchives{}
 )
 
 // ReadDocs generates the documentation of a stored archive in the one pass of the reader, as a publish does (R-ANS-034, R-ANS-044).
@@ -55,7 +56,22 @@ func (r ansibleArchives) ReadDocs(ctx context.Context, ref rows.ArchiveRef) (row
 	if err != nil {
 		return rows.DocSet{}, err
 	}
-	return gen.Build(a.ReadmeName), nil
+	return gen.Build(a.ReadmeName, a.Namespace+"."+a.Name), nil
+}
+
+// ReadChangelog reads only the changelog of a stored archive, for the reindex of a remote (R-ANS-053).
+func (r ansibleArchives) ReadChangelog(ctx context.Context, ref rows.ArchiveRef) (*rows.DocChangelog, error) {
+	body, err := r.blobs.Open(ctx, ref.SHA256, ref.Size)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = body.Close() }()
+	cl := docgen.NewChangelogReader()
+	a, err := collection.ReadArchive(ctx, body, collection.DefaultLimits(), collection.WithTap(cl))
+	if err != nil {
+		return nil, err
+	}
+	return cl.Changelog(a.Namespace + "." + a.Name), nil
 }
 
 func (r ansibleArchives) ReadArchive(ctx context.Context, ref rows.ArchiveRef) (rows.ArchiveFacts, error) {
@@ -75,14 +91,23 @@ func (r ansibleArchives) ReadArchive(ctx context.Context, ref rows.ArchiveRef) (
 }
 
 // startAnsibleReindex builds the handler of the job ansible-reindex on a replica that claims jobs (R-ANS-012). The kind is registered
-// earlier, with a handler that finds this one when a run starts.
-func (a *App) startAnsibleReindex(in infra, ports map[formats.ID]any) error {
+// earlier, with a handler that finds this one when a run starts. It then queues the reindex of every repository whose documentation or
+// changelogs an older generator made (R-ANS-044, R-ANS-053): an upgrade that raises docgen.Version rebuilds them without an operator.
+func (a *App) startAnsibleReindex(ctx context.Context, in infra, ports map[formats.ID]any) error {
 	st, ok := ports[ansibleformat.ID].(*ansibledata.Store)
 	if !ok {
 		return fmt.Errorf("formats: the Ansible Galaxy data port is not the PostgreSQL store")
 	}
 	a.ansibleReindex.set(ansibledata.ReindexHandler(st, ansibleArchives{blobs: ansibleBlobs(in.blobs)}))
 	a.ansibleDocsFill.set(ansibledata.DocsFillHandler(st, ansibleBackground{a}))
+	n, err := st.QueueStaleReindex(ctx)
+	if err != nil {
+		return fmt.Errorf("formats: queueing the reindex of Ansible Galaxy documentation: %w", err)
+	}
+	if n > 0 {
+		a.log.Info("queued the reindex of Ansible Galaxy repositories whose documentation an older generator made", "repositories", n,
+			"generator", docgen.Version)
+	}
 	return nil
 }
 

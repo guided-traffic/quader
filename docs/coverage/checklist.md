@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,296 spec requirements:
-795 cover catalog features, 501 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,299 spec requirements:
+795 cover catalog features, 504 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>501 requirements</summary>
+<summary>504 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3222,6 +3222,9 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-ANS-048 | Links and anchors in the documentation | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-049 | Plugin configuration and the collection behind a version number | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-050 | The page's contents, highlighted examples, and the sections of filter, test and lookup plugins | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
+| R-ANS-051 | Fragments of the same collection are merged | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
+| R-ANS-052 | A role's argument specs | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
+| R-ANS-053 | The changelog of a version | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-CLAMAV-001 | The format `clamav` and its descriptor | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-CLAMAV-002 | Packages, versions and the layout | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-CLAMAV-003 | What a version shows | P1 | [formats/clamav.md](../spec/formats/clamav.md) |

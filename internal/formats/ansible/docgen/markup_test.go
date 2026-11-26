@@ -88,7 +88,12 @@ func TestR_ANS_048_TheMacrosLinkOnlyToWhatTheTreeHolds(t *testing.T) {
 		"O(acme.tools.mount#module:fstab)":         `<a href="?doc=module/mount#parameter-fstab"><code>fstab</code></a>`,
 		"RV(acme.tools.mount#module:dev)":          `<a href="?doc=module/mount#return-dev"><code>dev</code></a>`,
 		"O(acme.tools.gone#module:fstab)":          "<code>fstab</code>",
-		"O(acme.tools.web#role:main:port)":         "<code>main:port</code>",
+		"O(acme.tools.web#role:main:port)":         `<a href="?doc=role/web#parameter-main--port"><code>main:port</code></a>`,
+		"O(acme.tools.web#role:main:tls.cert=x)":   `<a href="?doc=role/web#parameter-main--tls/cert"><code>main:tls.cert=x</code></a>`,
+		"O(acme.tools.web#role:port)":              "<code>port</code>",
+		"O(acme.tools.web#role:a b:port)":          "<code>a b:port</code>",
+		"RV(acme.tools.web#role:main:port)":        "<code>main:port</code>",
+		"O(acme.tools.gone#role:main:port)":        "<code>main:port</code>",
 		"O(acme.tools.mount#module:a b)":           "<code>a b</code>",
 		"E(HOME) and V(true)":                      "<code>HOME</code> and <code>true</code>",
 		"See M(acme.tools.mount) and O(src).":      `See <a href="?doc=module/mount"><code>acme.tools.mount</code></a> and <a href="#parameter-src"><code>src</code></a>.`,
@@ -109,6 +114,25 @@ func TestR_ANS_048_TheMacrosLinkOnlyToWhatTheTreeHolds(t *testing.T) {
 	}
 }
 
+// TestR_ANS_052_AnEntryPointsProseLinksItsOwnOptions: in the prose of a role's entry point, O() of the entry point's option links to the
+// anchor parameter-<entry point>--<path>, the anchor of the documentation site (H-2102 closed). Unit, microseconds.
+func TestR_ANS_052_AnEntryPointsProseLinksItsOwnOptions(t *testing.T) {
+	l := testLinks()
+	l.EntryPoint = "main"
+	for in, want := range map[string]string{
+		"O(opts.mode)": `<a href="#parameter-main--opts/mode"><code>opts.mode</code></a>`,
+		"O(nothing)":   "<code>nothing</code>",
+		"RV(dev)":      `<a href="#return-dev"><code>dev</code></a>`,
+	} {
+		if got := docgen.RenderMarkup(in, l); got != want {
+			t.Errorf("RenderMarkup(%q) = %q, want %q", in, got, want)
+		}
+	}
+	if !docgen.PageLink("?doc=role/web#parameter-main--opts/mode") {
+		t.Error("PageLink refuses an entry point's anchor")
+	}
+}
+
 var (
 	tagRE   = regexp.MustCompile(`<(/?)([a-zA-Z][a-zA-Z0-9]*)`)
 	hrefRE  = regexp.MustCompile(`href="([^"]*)"`)
@@ -123,11 +147,14 @@ func FuzzR_ANS_039_RenderMarkup(f *testing.F) {
 	for _, s := range []string{
 		"C(<script>)", "L(a,javascript:x)", "I(B(I(B(I(x)))))", `L(a\,b,https://e.com)`, "HORIZONTALLINE", "U(", `\`,
 		"M(acme.tools.mount)", `O(acme.tools.mount#module:x="><b>)`, "P(acme.tools.env#lookup)", "RV(dev.name)", "O(opts[].mode=1)",
+		`O(acme.tools.web#role:main:x"><b>)`, "O(acme.tools.web#role:main:opts.mode)",
 	} {
 		f.Add(s)
 	}
 	f.Fuzz(func(t *testing.T, in string) {
-		for _, links := range []*docgen.Links{nil, testLinks()} {
+		ep := testLinks()
+		ep.EntryPoint = "main"
+		for _, links := range []*docgen.Links{nil, testLinks(), ep} {
 			out := docgen.RenderMarkup(in, links)
 			for _, m := range tagRE.FindAllStringSubmatch(out, -1) {
 				if !allowed[m[2]] {

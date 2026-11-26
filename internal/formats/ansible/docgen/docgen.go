@@ -25,8 +25,9 @@ import (
 
 // Version is the version of the code that derives the rows, stored as ansible_version_docs.generator: the reindex rebuilds a version whose
 // stored generator is older (R-ANS-044). It is raised with every change of what the generator makes of a source: 2 keeps the configuration
-// of an option, version_added_collection and positional (R-ANS-049, R-ANS-050).
-const Version = 2
+// of an option, version_added_collection and positional (R-ANS-049, R-ANS-050); 3 merges the collection's fragments, reads a role's
+// argument specs and the changelog (R-ANS-051 to R-ANS-053).
+const Version = 3
 
 // Limits are the bounds the generator reads under (R-ANS-031). A bound crossed drops that part, sets Truncated and adds a warning; it
 // never fails a publish (R-ANS-034).
@@ -111,6 +112,12 @@ type Generator struct {
 	spent     int64
 	exhausted bool
 	cutPaths  map[string]bool
+	// collection is the full name of the collection, known at Build; fragments are the collection's fragments read so far (R-ANS-051).
+	collection string
+	fragments  map[string]fragment
+	// roleSpecs are the files below a role's meta/ that can hold its argument specs (R-ANS-052).
+	roleSpecs map[string]map[string][]byte
+	changelog *ChangelogReader
 }
 
 // NewGenerator returns a generator that reads under lim.
@@ -118,12 +125,16 @@ func NewGenerator(lim Limits) *Generator {
 	return &Generator{
 		lim: lim, items: map[string]*item{}, sidecars: map[string][]byte{}, markdown: map[string][]byte{},
 		roles: map[string]bool{}, roleDocs: map[string][]byte{}, cutPaths: map[string]bool{},
+		fragments: map[string]fragment{}, roleSpecs: map[string]map[string][]byte{}, changelog: NewChangelogReader(),
 	}
 }
 
 // Wants reports whether the member at path is read, and how many bytes of it at most (R-ANS-034); a member it does not want is streamed
 // through the digest and kept nowhere. The archive reader's tap asks it for every file member, so it also notes the roles it sees.
 func (g *Generator) Wants(p string) (maxBytes int64, ok bool) {
+	if max, ok := g.changelog.Wants(p); ok {
+		return max, true
+	}
 	segs := strings.Split(p, "/")
 	switch {
 	case len(segs) >= 3 && segs[0] == "plugins":
@@ -137,7 +148,7 @@ func (g *Generator) Wants(p string) (maxBytes int64, ok bool) {
 			if file == "__init__.py" || strings.HasPrefix(file, "_") {
 				return 0, false
 			}
-			if hasNoDocs(typ) {
+			if typ == "module_utils" {
 				return 0, true
 			}
 			if g.spent >= g.lim.SourceBudget {
@@ -156,6 +167,9 @@ func (g *Generator) Wants(p string) (maxBytes int64, ok bool) {
 		if len(segs) == 3 && segs[2] == "README.md" {
 			return g.lim.File + 1, true
 		}
+		if _, _, spec := roleMember(segs); spec {
+			return g.lim.File + 1, true
+		}
 	case len(segs) == 1 && strings.HasSuffix(segs[0], ".md"), len(segs) == 2 && segs[0] == "docs" && strings.HasSuffix(segs[1], ".md"):
 		return g.lim.File + 1, true
 	}
@@ -167,7 +181,16 @@ func (g *Generator) Take(p string, body []byte) { g.Add(Member{Path: p, Body: bo
 
 // Add hands over a wanted member, in archive order. It never fails: a member that cannot be used becomes a warning of [Generator.Build].
 func (g *Generator) Add(m Member) {
+	g.changelog.Take(m.Path, m.Body)
 	segs := strings.Split(m.Path, "/")
+	if role, file, spec := roleMember(segs); spec {
+		if g.roleSpecs[role] == nil {
+			g.roleSpecs[role] = map[string][]byte{}
+		}
+		g.roles[role] = true
+		g.roleSpecs[role][file] = m.Body
+		return
+	}
 	switch {
 	case len(segs) >= 3 && segs[0] == "plugins":
 		typ, known := pluginType(segs[1])
@@ -208,7 +231,7 @@ func (g *Generator) addPlugin(m Member, typ string, rest []string) {
 	}
 	it := &item{typ: typ, name: strings.Join(parts, "."), path: strings.TrimSuffix(m.Path, ".py")}
 	g.items[typ+"\x00"+it.name] = it
-	if hasNoDocs(typ) {
+	if typ == "module_utils" {
 		return
 	}
 	if g.cutPaths[m.Path] {
@@ -219,6 +242,11 @@ func (g *Generator) addPlugin(m Member, typ string, rest []string) {
 	src := m.Body
 	if int64(len(src)) > g.lim.Source {
 		src = src[:g.lim.Source]
+	}
+	if typ == "doc_fragments" {
+		// A fragment is no entry of its own; its class attributes are merged into the entries that extend it (R-ANS-051).
+		it.lits = scanFragment(src, int(g.lim.Literal))
+		return
 	}
 	it.lits = scanLiterals(src, int(g.lim.Literal))
 }
@@ -259,10 +287,17 @@ func (w *warnings) add(p, code, msg string) {
 }
 
 // Build derives the documentation. readmeName is the name of the README the manifest declares (collection_info.readme), "" for the default
-// "README.md"; the README is read when it is a Markdown file at the root of the archive or directly in docs/. The order of entries, files and
-// warnings is deterministic, the bounds are applied and the warnings collected.
-func (g *Generator) Build(readmeName string) rows.DocSet {
+// "README.md"; the README is read when it is a Markdown file at the root of the archive or directly in docs/. collection is the full name
+// the manifest declares, "<namespace>.<name>": the fragments of that collection are merged (R-ANS-051), and the changelog names what a
+// release added by it (R-ANS-053). The order of entries, files and warnings is deterministic, the bounds are applied and the warnings
+// collected.
+func (g *Generator) Build(readmeName, collection string) rows.DocSet {
+	g.collection = collection
 	set := rows.DocSet{Source: rows.DocSourceGenerated, Generator: Version}
+	set.Changelog = g.changelog.Changelog(collection)
+	for _, w := range g.changelog.Warnings() {
+		g.warns.add(w.Path, w.Code, w.Message)
+	}
 	if g.exhausted {
 		g.warns.add("plugins", CodeBudgetExhausted, "the Python sources past the budget of an archive are listed and not read")
 	}
@@ -338,6 +373,7 @@ func (g *Generator) entry(it *item) (e rows.DocEntry) {
 	if doc == nil {
 		return e
 	}
+	g.mergeFragments(doc, &w)
 	e.ShortDescription = short
 	var ret any
 	if l := returnList(retNode, &w, 0); l != nil {
@@ -433,6 +469,13 @@ func (g *Generator) role(name string) rows.DocEntry {
 	e := rows.DocEntry{Type: "role", Name: name}
 	var w searchWords
 	w.add(searchName(name))
+	if eps, short, ok := g.entryPoints(name, &w); ok {
+		if blob, err := roleDoc(eps); err == nil && int64(len(blob)) <= g.lim.Entry {
+			e.HasDocs, e.Doc, e.ShortDescription = true, blob, short
+		} else {
+			g.warns.add("roles/"+name+"/meta", CodeEntryTooLarge, "the argument specs of the role are larger than the bound of an entry, so it is listed without them")
+		}
+	}
 	if body, ok := g.roleDocs[name]; ok {
 		switch {
 		case int64(len(body)) > g.lim.File:

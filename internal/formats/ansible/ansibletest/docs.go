@@ -3,6 +3,7 @@ package ansibletest
 import (
 	"context"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -121,6 +122,11 @@ func (s *Store) DocTree(_ context.Context, repoID int64, name, version string, q
 	s.docInit()
 	k := key{repoID, name, version}
 	t := rows.DocTree{State: s.docState(k), Counts: map[string]int{}}
+	if c := s.Changelogs[changelogKey(repoID, name, version)]; c != nil {
+		head := *c
+		head.Body = ""
+		t.Changelog = &head
+	}
 	r, ok := s.docs[k]
 	if !ok {
 		return t, nil
@@ -222,4 +228,32 @@ func (s *Store) RebuildDocs(context.Context, int64, rows.ArchiveReader, string) 
 // RebuildRemoteDocs does nothing, for the same reason.
 func (s *Store) RebuildRemoteDocs(context.Context, int64, string) (string, bool, error) {
 	return "", true, nil
+}
+
+// changelogKey is the key of [Store.Changelogs]: "<repository id>/<name>/<version>".
+func changelogKey(repoID int64, name, version string) string {
+	return strconv.FormatInt(repoID, 10) + "/" + name + "/" + version
+}
+
+// PutChangelog records the changelog of a version, nil for none (R-ANS-053).
+func (s *Store) PutChangelog(_ context.Context, _ formats.Tx, repoID int64, name, version string, c *rows.DocChangelog) error {
+	defer s.lock()()
+	if s.Changelogs == nil {
+		s.Changelogs = map[string]*rows.DocChangelog{}
+	}
+	if c != nil {
+		cp := *c
+		c = &cp
+	}
+	s.Changelogs[changelogKey(repoID, name, version)] = c
+	return nil
+}
+
+// DocChangelog reads the changelog of a version.
+func (s *Store) DocChangelog(_ context.Context, repoID int64, name, version string) (rows.DocChangelog, bool, error) {
+	defer s.lock()()
+	if c := s.Changelogs[changelogKey(repoID, name, version)]; c != nil {
+		return *c, true, nil
+	}
+	return rows.DocChangelog{}, false, nil
 }
