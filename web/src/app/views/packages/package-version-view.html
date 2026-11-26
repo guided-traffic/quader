@@ -93,8 +93,9 @@
     <p class="facts-line">
       <span class="dot-separated">
         @if (grade(); as g) {
+          <!-- The grade is no snippet of a search engine: a result outlives a fix by the crawler's revisit (R-UI-231). -->
           <a class="facts-grade" [routerLink]="[]" [queryParams]="{ tab: 'vulnerabilities' }" queryParamsHandling="merge">
-            <quader-grade [grade]="g" [image]="format() === 'oci'" [format]="format()" />
+            <span data-nosnippet><quader-grade [grade]="g" [image]="format() === 'oci'" [format]="format()" /></span>
           </a>
         }
         <!-- An image's date is Pushed, or Fetched where only remotes hold it; every other format's Published (Q-UI-1314). -->
@@ -287,7 +288,10 @@
           @switch (t.id) {
             @case ('vulnerabilities') {
               @if (activeTab() === 'vulnerabilities') {
-                <quader-package-vulnerabilities [report]="vulnerabilityReport()" [packageName]="d.name" [image]="format() === 'oci'" [format]="format()" [severity]="severityFilter()" [signedIn]="signedIn()" [advisoryLinks]="advisoryLinks()" />
+                <!-- The open findings are no snippet of a search engine (R-UI-231). -->
+                <div data-nosnippet>
+                  <quader-package-vulnerabilities [report]="vulnerabilityReport()" [packageName]="d.name" [image]="format() === 'oci'" [format]="format()" [severity]="severityFilter()" [signedIn]="signedIn()" [advisoryLinks]="advisoryLinks()" />
+                </div>
               }
             }
             @case ('documentation') {

@@ -116,7 +116,8 @@
           @if (graded()) {
             <td>
               @if (v.grade; as g) {
-                <quader-grade [grade]="g" [image]="format() === 'oci'" [format]="format()" />
+                <!-- No snippet of a search engine (R-UI-231). -->
+                <span data-nosnippet><quader-grade [grade]="g" [image]="format() === 'oci'" [format]="format()" /></span>
               } @else {
                 <span class="muted">–</span>
               }

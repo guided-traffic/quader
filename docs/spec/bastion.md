@@ -281,7 +281,8 @@ Priority: **MVP** · Covers: DIST-024
   web interface below `/ui/`, `/` as a redirect to it, and `/robots.txt` and `/sitemap.xml` at the host root, from the catalogue it mirrors
   and never by a request to the main installation (W-35's packages P9 and P10). *Built by P9 on 2026-11-26:* `/`, `/ui` and everything
   below `/ui/` are the web interface's (R-BAS-116, R-BAS-117), whatever the switch says: off, they answer `404 not_found` as below.
-  *Until P10 lands:* `/robots.txt` and `/sitemap.xml` answer `404` as below.
+  *Built by P10 on 2026-11-26:* `/robots.txt`, `/sitemap.xml` and every path below `/sitemap/` are the web interface's too (R-BAS-122):
+  `robots.txt` answers whatever the switch says, the sitemap `404` while it is off.
 - There is no login, no session, no cookie and no browser flow. A `Cookie` header is ignored and never forwarded. A session
   token never reaches the Bastion from Quader, because Quader never sets a cookie for the Bastion's host.
 - The ops listener serves `/healthz`, `/readyz` and `/metrics` as on every Quader role ([operations-and-observability.md](operations-and-observability.md)
@@ -6666,6 +6667,7 @@ Priority: **P1** · Covers: quader-only
 | `Lookup(format, name)` | a public package of the format by its name, else by its key, as a page's address names it (R-BAS-118, [Q-BAS-395](#q-bas-395--the-lookup-finds-a-package-by-its-name-then-by-its-key); added by W-35's P9) |
 | `Versions(id, after, limit)` | a page of the package's versions list, as the main installation answered it |
 | `Document(path)` | a document of the grammar (R-BAS-103) that the state shows (R-BAS-112), raw and compressed, verified against its SHA-256 on every read |
+| `Packages()` | every public package of the index by name, each with its public repositories only, and a revision that stays exactly while the index's pages, the public set and the switch `docs` do: the sitemap's source (R-BAS-122, [Q-BAS-414](#q-bas-414--the-reader-lists-the-public-packages-under-a-revision-for-the-sitemap); added by W-35's P10) |
 
 - While the switch `gui` is off every method answers `ErrOff`, while no state is served `ErrNotReady` (R-BAS-111).
 - **Integrity on read** (W-35's D6, [Q-BAS-372](#q-bas-372--a-document-that-does-not-verify-fails-the-round-a-missing-frame-takes-its-path-out)).
@@ -6679,7 +6681,8 @@ Acceptance criteria:
 - Unit: the search's pages, sort and keyword match and a sort it refuses, the versions' pages, an index page not served
   (`TestR_BAS_109_ARoundMirrorsTheCatalogueAndReadsOnlyWhatChanged`); `TestR_BAS_113_AnIntegrityFailureIsFetchedAgain` (a document the
   main installation sent that does not verify fails the round and is fetched by the next; a stored document changed on the volume is not
-  served and is fetched again). Milliseconds.
+  served and is fetched again). Milliseconds. `TestR_BAS_122_PackagesListsThePublicPackagesUnderARevision` (the public packages with their
+  public repositories; a round that changed nothing keeps the revision, a narrower public set and `docs` off move it; off answers `ErrOff`).
 
 ## The Bastion's web interface
 
@@ -6694,8 +6697,8 @@ Go side is [internal/bastion/gui](../../internal/bastion/gui); the application i
 Priority: **P1** · Covers: quader-only
 
 - **Mounted before the engine** ([Q-BAS-390](#q-bas-390--the-web-interface-owns--ui-and-everything-below-ui-before-the-engine)). The
-  client listener hands `/`, `/ui` and every path below `/ui/` to the web interface and every other path to the engine as before
-  (R-BAS-018). No path of the engine's families is the web interface's, and no address of the web interface is a family of the engine.
+  client listener hands `/`, `/ui` and every path below `/ui/` to the web interface, and since W-35's P10 `/robots.txt`, `/sitemap.xml` and
+  every path below `/sitemap/` (R-BAS-122), and every other path to the engine as before (R-BAS-018). No path of the engine's families is the web interface's, and no address of the web interface is a family of the engine.
 - **Read-only by construction** (W-35's B.7). Every address of the web interface answers `GET` and `HEAD`; every other method is answered
   `405 method_not_allowed` with `Allow: GET, HEAD` before anything else, its body unread and the catalogue not read. Its data come from the
   replica's catalogue reader (`Server.Catalogue`) and its legal pages (`Server.Legal`) alone: a document the catalogue does not hold is a
@@ -6754,6 +6757,8 @@ Priority: **P1** · Covers: quader-only
   of 100, per address by default), never the anonymous class's budget and never a miss. A refusal is `429` (`rate_limited`,
   `address_blocked`) with `Retry-After` rounded up to whole seconds and the RateLimit fields under the policy name `pages`
   ([Q-BAS-394](#q-bas-394--a-refusal-of-the-class-gui-names-the-policy-pages)); a refusal of a blocked address is not logged one by one.
+  *Revised by W-35's P10:* a page's address answers the refusal as a page of its own (R-BAS-123); the data, the bundle's files, `robots.txt`
+  and the sitemap keep the problem.
 
 *Built on 2026-11-26 (W-35's P9):* [gui.go](../../internal/bastion/gui/gui.go), `webui.Options.CSP`, `ReferrerPolicy`, `OnIndex` and
 `Problem` of [webui.go](../../internal/webui/webui.go), `errs.CodeNotReady`, `engine.MarkQuiet`.
@@ -6863,6 +6868,132 @@ Acceptance criteria:
   `/api/v1/` (R-BAS-118's criterion).
 - Unit: `TestR_BAS_117_EveryAnswerCarriesTheHeadersAndNoCookie` (no `Quader-` header, no `Server`); the shell's spec finds no
   "main installation" on a page (`R-UI-227 an old state shows the band …`, [bastion.spec.ts](../../web/src/bastion/bastion.spec.ts)).
+
+## Search engines find the Bastion's pages
+
+W-35's package P10 (the owner, 2026-11-26: the Bastion is "für anonyme User aus dem Netz die sich über die publizierten Inhalte informieren
+wollen", and people find such pages through search engines; the design is W-35's B.11, [ADR-306](../decisions.md#adr-306--search-engines-read-a-bastions-pages-through-a-head-and-a-text-the-bastion-fills-from-its-catalogue)).
+A crawler reads a page's head and text that the Bastion fills from its catalogue, `robots.txt` and a sitemap at the host's root; all of
+it from the Bastion's own catalogue and on its own `server.base_url`, none of it by a request to the main installation and none of it
+naming the main installation (R-BAS-120). The Go side is [seo.go](../../internal/bastion/gui/seo.go),
+[crawl.go](../../internal/bastion/gui/crawl.go), [refusal.go](../../internal/bastion/gui/refusal.go) and
+[internal/bastion/gui/page](../../internal/bastion/gui/page); the application's part is [api-and-ui.md](api-and-ui.md) R-UI-231.
+
+### R-BAS-121 · A page's head and text for a reader that runs no script
+Priority: **P1** · Covers: quader-only
+
+- **Two slots** ([Q-BAS-405](#q-bas-405--the-bastion-fills-the-pages-head-and-text-from-its-catalogue-into-the-applications-indexhtml)).
+  The application's `index.html` holds `<!--QUADER_HEAD-->` in its head and `<!--QUADER_PAGE-->` in its root element after the spinner;
+  the committed placeholder of a binary without the web build holds them too. A page's address is answered with the document, its two
+  slots filled after the nonce went in, so that nothing a slot carries can take the page's nonce. The application replaces the root's
+  content when it starts.
+- **The head.** `<title>` as the application writes it ("<page> – Quader", R-UI-231's words), `<meta name="description">` (the package's
+  description, cut to 300 characters), `<link rel="canonical">` and `<link rel="alternate" hreflang>` for `en`, `de` and `x-default` (the
+  address without a locale, which redirects by the visitor's language), all on the Bastion's own `server.base_url`; `<meta name="robots"
+  content="noindex">` where the address is not to be indexed; JSON-LD in `<script type="application/ld+json">`: `SoftwareApplication` for
+  a package's and a version's page (`name`, `softwareVersion`, `description`, `license`, `keywords`, `datePublished`, `url`), `TechArticle`
+  for a documentation entry's (`?tab=documentation&doc=<type>/<name>` that the version's tree holds), `WebPage` for the start, a project's
+  list, the versions and the legal pages. The encoder escapes `<`, `>` and `&`, so no member closes the script element; the policy of
+  R-BAS-117 is unchanged (JSON-LD is a data block).
+- **The text.** Inside the root element, `<div class="quader-page">`: the way from the start, the heading, the description, the facts every
+  format has (the newest version, when it was published, its licences and keywords), the README as the catalogue keeps it (only while the
+  catalogue shows it: `docs` on and a public wiki, R-BAS-112), the links to the projects, a project's packages or a package's versions (the
+  first 100 each), and the footer's legal links. A browser that runs the application does not show it: a rule under the page's nonce hides
+  it and the application's spinner shows until the application starts (R-UI-217); `<noscript>` shows it and hides the spinner
+  ([Q-BAS-406](#q-bas-406--the-text-is-hidden-from-a-browser-that-runs-the-application-and-shown-without-script)). Its few fixed words
+  are a table in both languages in Go, the application's own words.
+- **No format knowledge** (W-35's B.11). The head and the text read only the members of the main installation's shapes that are the same
+  for every format: the summary's `name`, `description`, `latestVersion`, `keywords` and `updatedAt`, a version's `version`, `publishedAt`,
+  `licenses` and `keywords`, the README's `html`, the documentation tree's entry `name` and `shortDescription`, and the versions list's
+  `version`. A format's `metadata` is never decoded. There is no install command in the text
+  ([Q-BAS-409](#q-bas-409--the-text-carries-no-install-command)).
+- **Status and indexing** ([Q-BAS-407](#q-bas-407--an-address-the-catalogue-does-not-show-is-404),
+  [Q-BAS-408](#q-bas-408--what-is-indexed-the-pages-themselves-never-the-findings-or-a-list-of-results)). An address the catalogue does not
+  show is `404` with `noindex` and no canonical address: no route of the application, a package not public in the address's project, a
+  version it does not hold, a project's list without a package, a legal page without a text. An address that opens the findings
+  (`tab=vulnerabilities`, a `severity`) and a list with a search, a filter, a sort or a cursor are `noindex`, canonical without their
+  query; every other query is dropped from the canonical address; a documentation entry's keeps `tab` and `doc`. While the replica holds
+  no state a page is `503` with `Retry-After: 30`, `noindex` and the title "Quader" alone (R-BAS-117).
+- **Cost** ([Q-BAS-410](#q-bas-410--a-pages-head-and-text-are-written-per-request-without-a-cache)). Two or three documents of the
+  catalogue per page, as a person's browser reads them a moment later; nothing is kept per address.
+
+*Built on 2026-11-26 (W-35's P10):* [seo.go](../../internal/bastion/gui/seo.go), [page](../../internal/bastion/gui/page),
+`webui.Options.Page` and `webui.Fill` of [webui.go](../../internal/webui/webui.go), the slots of `web/src/bastion/index.html` and of the
+placeholder [dist/index.html](../../internal/bastion/gui/dist/index.html).
+
+Acceptance criteria:
+
+- Unit ([seo_test.go](../../internal/bastion/gui/seo_test.go), milliseconds): `TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue` (a
+  package's page in German with every member of its head and text; a version's, the versions', a documentation entry's, a list's, the
+  start's and the imprint's title, canonical address, JSON-LD type and robots rule; `tab=vulnerabilities` and `severity` noindex, a list's
+  search noindex, other queries dropped; nine addresses `404` with `noindex` and no canonical; a README the catalogue does not show is not
+  in the text; not ready `503`; the text hidden under the page's nonce; a description with `</script>` closes nothing; a sentinel in a
+  version's `metadata` is on no page); [page_test.go](../../internal/bastion/gui/page/page_test.go):
+  `TestR_BAS_121_TheAddressGrammarIsTheApplicationsRoutes` (fourteen addresses, the one spelling of a route, the absolute address).
+- Vitest ([search-engines.spec.ts](../../web/src/bastion/search-engines.spec.ts)): the page holds both slots and no `<title>` of its own.
+- Integration (area `bastion`, inside `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut`, no world of its own, about
+  0.1 s): `crawlWebInterface` reads the package's page as a crawler, finds its title, canonical address on the Bastion's base URL, heading,
+  README and JSON-LD, scans it for the main installation, and the double in front of the main installation records nothing but the
+  Bastion's interface operations meanwhile.
+
+### R-BAS-122 · `robots.txt` and the sitemap at the host's root
+Priority: **P1** · Covers: quader-only
+
+- **`/robots.txt`** ([Q-BAS-411](#q-bas-411--robotstxt-keeps-a-crawler-off-the-package-api-and-the-findings-documents-and-lets-it-render-the-pages)).
+  While the web interface is on: `Allow: /ui/`, `Disallow: /ui/data/*vulnerabilit`, `Disallow: /api/`, `Disallow: /files/`,
+  `Disallow: /v2/` and `Sitemap: <server.base_url>/sitemap.xml`. The data of the pages stay allowed, so that a crawler that renders the
+  application can render a page; they answer `X-Robots-Tag: noindex` (every answer below `/ui/data/`). While the web interface is off:
+  `Disallow: /` for every crawler. While the replica knows neither its switches nor a state: `503 not_ready`, which a crawler takes as
+  "try again later" rather than as a rule. `text/plain`, `no-cache` with an ETag; answered also while the switch `gui` is off.
+- **The sitemap** ([Q-BAS-412](#q-bas-412--the-sitemap-lists-the-start-the-projects-the-packages-and-the-legal-pages-split-at-50000-and-kept-per-revision)).
+  `/sitemap.xml` is a sitemap index of the files `/sitemap/<n>.xml`, each of at most 50,000 addresses. It lists, each in both languages with
+  `xhtml:link` alternates for `en`, `de` and `x-default`: the start, every project's list that holds a package, every package's page in every
+  project whose public repository holds it, its documentation pages (the hook of W-35's P11), and the imprint and the privacy notice that
+  have a text. `lastmod` is the package's `updatedAt` (a list's and the start's the newest of theirs; none for a legal page). A version's
+  own page is not listed: a package's page links its versions. The set is built from the reader's `Packages()` once per revision and every
+  file is kept compressed with it; a crawler that takes `gzip` gets those bytes, `no-cache` with an ETag of the revision and the file.
+  Off: `404`; not ready: `503 not_ready`.
+- Every request of both counts in the class `gui` (R-BAS-117).
+
+*Built on 2026-11-26 (W-35's P10):* [crawl.go](../../internal/bastion/gui/crawl.go), the hook [crawl_docs.go](../../internal/bastion/gui/crawl_docs.go),
+`Reader.Packages` of [reader.go](../../internal/bastion/catalogue/reader.go), `Owns` of [gui.go](../../internal/bastion/gui/gui.go).
+
+Acceptance criteria:
+
+- Unit ([seo_test.go](../../internal/bastion/gui/seo_test.go), 0.14 s): `TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot` (the rules on,
+  off and undecided; the sitemap off and not ready; the data's `X-Robots-Tag`; the index and the one file with twelve addresses in their
+  order, the alternates and `lastmod`; five file names that answer `404`; gzip and `304`; 25,001 tiny packages split into two files of 50,000
+  and 8 addresses under a new revision); `TestR_BAS_122_PackagesListsThePublicPackagesUnderARevision`
+  ([catalogue_test.go](../../internal/bastion/catalogue/catalogue_test.go)).
+- Integration (area `bastion`, `crawlWebInterface`): `robots.txt` names the sitemap on the Bastion's base URL, the sitemap's file lists the
+  package's page.
+
+### R-BAS-123 · A page's address over the limit of the class gui is a page in the Bastion's shape
+Priority: **P1** · Covers: quader-only
+
+W-35's P9b found that a person whose browser hit the class `gui` read problem details as raw JSON.
+
+- A page's address the guard refuses (the class `gui` or the block list, R-BAS-117) is answered `429` with `Retry-After` and the class's
+  RateLimit fields as before, and a page of its own instead of problem details
+  ([Q-BAS-413](#q-bas-413--a-refused-pages-address-is-a-page-drawn-by-the-document-alone)): the bar with the mark and the name, the heading
+  "Too many requests", the sentence of the refusal with the wait ("Too many requests came from your address. Try again in 2 seconds.", or
+  the block list's), "The page tries again by itself.", and the footer's legal links. In the address's language; an address without one
+  (`/`, `/ui`, an address the handler redirects) in the visitor's (`Accept-Language`), English otherwise.
+- The page loads nothing: its styles are in the document under its own nonce, it runs no script, and it loads itself again after the wait
+  (`<meta http-equiv="refresh">`). Both colour schemes follow the system's. It is `noindex` and `no-store`, and `HEAD` carries no body.
+- A page's address is `/`, `/ui`, an address the bundle's handler redirects to a locale, and an address below a locale that it answers with
+  the application's `index.html`. The data, the bundle's files, `robots.txt` and the sitemap keep the problem details of R-BAS-117.
+- It names no party (R-BAS-120).
+
+*Built on 2026-11-26 (W-35's P10):* [refusal.go](../../internal/bastion/gui/refusal.go),
+[page/refusal.go](../../internal/bastion/gui/page/refusal.go), `webui.IsDocument` and `webui.Negotiate`.
+
+Acceptance criteria:
+
+- Unit ([seo_test.go](../../internal/bastion/gui/seo_test.go), microseconds): `TestR_BAS_123_APageOverTheLimitIsAPageInTheBastionsShape`
+  (four page addresses in their languages with the headers, the policy's nonce on the styles, the refresh, noindex, no script and no
+  link; `HEAD`; the data, a file of the bundle, `robots.txt` and the sitemap keep the problem; the block list's sentence and the footer).
+- Rendered (both schemes, 390 and 1,440 px, English and German) and looked at; the renders are not committed.
 
 ## A registration the configuration declares
 
@@ -13328,6 +13459,158 @@ published in this project."
 | (c) The builder leaves such a project out of the public set | — | — | The public set also hides what fell out (R-BAS-112); a project without packages is still public |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-118, R-UI-229.
+
+### Q-BAS-405 · The Bastion fills the page's head and text from its catalogue into the application's index.html
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's B.11, P10) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: R-BAS-121. The owner wants the Bastion's pages to be found. The application's `index.html` holds a spinner; a crawler that runs no
+script reads nothing else, and one that renders reads every page as "Package – Quader".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The Go handler fills two slots of `index.html` from the catalogue's documents (chosen) | A head and a text per address, the application replaces the text | One source: the documents the application reads a moment later; no Node.js; no work at the main installation; no second copy of a README | A small Go template beside the application's views |
+| (b) Pages pre-rendered by the catalogue builder | Documents of HTML in the catalogue | — | A second renderer far from the Bastion's routes; READMEs stored twice |
+| (c) Server-side rendering of the application | — | The rendered page itself | Node.js in the image, against R-ARCH-003's one static binary, and an SSR build of every component |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-121, R-BAS-003.
+
+### Q-BAS-406 · The text is hidden from a browser that runs the application, and shown without script
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P10) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-121, R-UI-217 (every load shows the spinner). The text stands in the root element beside the spinner until the application
+starts.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A rule under the page's nonce hides the text; `<noscript>` shows it and hides the spinner (chosen) | A person sees the spinner, then the page; a reader without script the text | No page that jumps from a bare text into the application; a reader without script still reads | The text is not what a person sees for a moment |
+| (b) The text shown until the application replaces it | — | — | A page in the browser's plain look, then the application's: a jump on every cold load |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-121.
+
+### Q-BAS-407 · An address the catalogue does not show is 404
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P10, D15) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-121. The bundle's handler answered every route of a locale `200` with `index.html`, and the application then said "Page not
+found".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `404` with `noindex` for an address the catalogue does not show: no route, a package not public in the address's project, a version it does not hold, a project without a package, a legal page without a text (chosen) | The status says what the page says | A search engine drops a page that became private at its next visit (D15); no page indexed twice under another project | A package a person reaches under another project's address is shown with the status 404 |
+| (b) `200` for every route | — | No reads for the status | Soft 404s: search engines index "Page not found" |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-121.
+
+### Q-BAS-408 · What is indexed: the pages themselves, never the findings or a list of results
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's B.11, P10) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: R-BAS-121. W-35's B.11: findings stay out of search engines (a result outlives a fix by the crawler's revisit, and "which public
+images of company X are open to CVE-Y" would be a web search).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `tab=vulnerabilities` and a `severity` `noindex`, canonical without them; a list with a query `noindex`, canonical the list; every other query dropped from the canonical address; a documentation entry keeps `tab` and `doc` (chosen) | One indexed address per page | No findings and no result pages in an index; an entry of the documentation is a page of its own | — |
+| (b) Every query its own page | — | — | The same page under many addresses, findings among them |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-121.
+
+### Q-BAS-409 · The text carries no install command
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P10) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-121. W-35's B.11 put "the first install snippet's content" into the text. The catalogue's set-ups are documents per
+repository and client (R-BAS-103); which client is a format's first is the format's knowledge (npm, pnpm, Yarn), which the Bastion does not
+hold, and the reader lists no set-ups.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No install command in the text (chosen) | The application shows it, as it does now | No format knowledge at the Bastion; a crawler ranks on names, descriptions and READMEs | A reader without script reads no command |
+| (b) A table of each format's first client in Go | — | The command in the text | A table that grows with every format, beside the application's |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-121.
+
+### Q-BAS-410 · A page's head and text are written per request, without a cache
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P10) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-121. W-35's B.11 proposed an LRU of fragments keyed by the address, the locale and the documents' hashes. Measured once
+(2026-11-26, a benchmark against the catalogue in memory, a README of 23 KB): a package's page takes 0.42 ms, of which the templates are
+about 15 % (0.06 ms) and the reads of the documents the rest; the real reader's reads are the store's and verify each document.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No cache (chosen) | Two or three documents read per page, as a person's browser reads them | No memory per address; nothing to keep in step with the catalogue | A crawler's page costs the reads |
+| (b) An LRU keyed by the documents' hashes | — | Saves the templates | The key needs the reads it would save, so it saves 15 % |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-121.
+
+### Q-BAS-411 · robots.txt keeps a crawler off the package API and the findings' documents, and lets it render the pages
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's B.11, P10) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: R-BAS-122. A crawler that renders the application reads its data below `/ui/data/v1/`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `Allow: /ui/`; `Disallow: /ui/data/*vulnerabilit`, `/api/`, `/files/`, `/v2/`; the data `X-Robots-Tag: noindex`; off `Disallow: /`; undecided `503` (chosen) | A rendering crawler renders a page and does not fetch the findings | A crawler that heeds the file costs the main installation nothing; the data are no result; a replica that starts does not give a rule it might take back | The pattern `*` is an extension of the standard (the large search engines read it) |
+| (b) `Disallow: /ui/data/` | — | — | A rendering crawler sees every page empty |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-122.
+
+### Q-BAS-412 · The sitemap lists the start, the projects, the packages and the legal pages, split at 50,000 and kept per revision
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's B.11, P10) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: R-BAS-122. W-35's B.11 listed the start, every package's page, the newest version's documentation and the legal pages. The
+protocol bounds a file at 50,000 addresses.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The start, every project's list (beyond B.11), every package in every project that shows it, the documentation through P11's hook, the legal pages, each in both languages; an index of files of 50,000; built once per revision of `Packages()`, every file kept gzip-compressed (chosen) | A crawl from the sitemap reaches every page by its links | A file of 50,000 addresses is about 25 MB; a crawler that fetches it again costs no rebuild while the catalogue is the same | The compressed files of one revision in memory |
+| (b) Built per request | — | No memory | Tens of milliseconds and megabytes of compression per fetch, which a scraper can repeat within the class `gui` |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-122.
+
+### Q-BAS-413 · A refused page's address is a page drawn by the document alone
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P10, P9b's open point 3) — selected from the options below; the owner
+reviews it at the walkthrough.
+
+Context: R-BAS-123. A refusal of the class `gui` answered every address with problem details, which a browser shows as raw JSON. The
+bundle's files are counted in the same class, so a page that loads them is refused as well.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A page with its styles under its own nonce, the mark inline, no script, a refresh after the wait, for a page's address only (chosen) | A person reads a sentence in the Bastion's look, and the page tries again by itself | Loads nothing, so the refusal cannot cascade; the data keep the problem the application reads | The look is a copy of the shell's in a few rules |
+| (b) The application's `index.html` with 429 | — | The shell itself | Its scripts and styles are refused too |
+| (c) Problem details as before | — | — | Raw JSON for a person |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-123, R-BAS-117.
+
+### Q-BAS-414 · The reader lists the public packages under a revision for the sitemap
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P10) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-122, R-BAS-113. The sitemap lists every public package; the reader had a search of pages of at most 100.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `Reader.Packages()`: every public package with its public repositories, and a revision of the index's pages, the public set and `docs` (chosen) | One pass over the index | The sitemap is rebuilt exactly when what it lists may have changed | One method more on the reader |
+| (b) The search, page by page | — | No change of the reader | A sort of the whole index per page: quadratic in the packages |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-113, R-BAS-122.
 
 ### Q-BAS-425 · The headers of a forwarded answer pass an allowlist, and a format's need is a replay header
 

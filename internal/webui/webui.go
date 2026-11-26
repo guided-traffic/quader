@@ -41,6 +41,20 @@ const NoncePlaceholder = "QUADER_CSP_NONCE"
 // MountPath is the path prefix the handler serves. Register it as "/ui/".
 const MountPath = "/ui/"
 
+// The slots of a document that [Options.Page] fills: a comment in the head of index.html and one in its root element.
+const (
+	HeadSlot = "<!--QUADER_HEAD-->"
+	PageSlot = "<!--QUADER_PAGE-->"
+)
+
+// Fill is what [Options.Page] answers for a document: its status, 0 for 200, and the bytes that replace [HeadSlot] and
+// [PageSlot]. The bytes are written as they are: the caller escapes what it puts in.
+type Fill struct {
+	Status int
+	Head   []byte
+	Body   []byte
+}
+
 // Options configures New.
 type Options struct {
 	// Locales are the served locale codes (ui.locales), for example ["en", "de"]. Required.
@@ -62,9 +76,11 @@ type Options struct {
 	CSP string
 	// ReferrerPolicy replaces the Referrer-Policy of the documents, same-origin by default. Optional.
 	ReferrerPolicy string
-	// OnIndex is called before a document (a locale's index.html) is written: it may set headers and returns the status, 0 for
-	// 200. Optional; the Bastion answers a page 503 while it holds no state to show (R-BAS-117).
-	OnIndex func(w http.ResponseWriter, r *http.Request) int
+	// Page is called before a document (a locale's index.html) is written, with the locale and the nonce of the response: it may
+	// set headers and returns the status (0 for 200) and what fills the document's two slots, [HeadSlot] in its head and
+	// [PageSlot] in its root element; a slot without a fill stays the comment it is. Optional; the Bastion answers a page 503 while
+	// it holds no state to show (R-BAS-117) and fills the slots with the page's head and text from its catalogue (R-BAS-121).
+	Page func(w http.ResponseWriter, r *http.Request, locale, nonce string) Fill
 	// Problem writes an error answer of the handler (a method it does not serve, a file it does not hold, the shared store that
 	// could not be asked) in place of its minimal problem details. Optional; the Bastion renders its own (Q-BAS-321).
 	Problem func(w http.ResponseWriter, r *http.Request, status int)
@@ -87,7 +103,7 @@ type Handler struct {
 	shared        *sharedCache // nil without Options.Shared
 	onSharedError func(locale, path string, err error)
 	referrer      string
-	onIndex       func(http.ResponseWriter, *http.Request) int
+	page          func(http.ResponseWriter, *http.Request, string, string) Fill
 	problem       func(http.ResponseWriter, *http.Request, int)
 }
 
@@ -144,7 +160,7 @@ func New(opts Options) (*Handler, error) {
 		bundles:       make(map[string]*bundle, len(opts.Locales)),
 		onSharedError: opts.OnSharedError,
 		referrer:      opts.ReferrerPolicy,
-		onIndex:       opts.OnIndex,
+		page:          opts.Page,
 		problem:       opts.Problem,
 	}
 	if h.referrer == "" {
@@ -255,9 +271,16 @@ func (h *Handler) redirect(w http.ResponseWriter, r *http.Request, target string
 	http.Redirect(w, r, u.String(), http.StatusFound)
 }
 
-func (h *Handler) serveLocale(w http.ResponseWriter, r *http.Request, b *bundle, tail string) {
+// IsDocument reports whether the path below a locale (the <route> of /ui/<locale>/<route>) is answered with the locale's
+// index.html, a page of the application, and not with a file of its build: the locale's root, a route whose last segment has no
+// extension, a package's page and a repository's file page.
+func IsDocument(tail string) bool {
 	last := tail[strings.LastIndexByte(tail, '/')+1:]
-	if tail == "" || tail == "index.html" || !strings.Contains(last, ".") || isPackageRoute(tail) || isFilesRoute(tail) {
+	return tail == "" || tail == "index.html" || !strings.Contains(last, ".") || isPackageRoute(tail) || isFilesRoute(tail)
+}
+
+func (h *Handler) serveLocale(w http.ResponseWriter, r *http.Request, b *bundle, tail string) {
+	if IsDocument(tail) {
 		h.serveIndex(w, r, b)
 		return
 	}
@@ -346,10 +369,14 @@ func (h *Handler) serveIndex(w http.ResponseWriter, r *http.Request, b *bundle) 
 
 	hd := w.Header()
 	status := http.StatusOK
-	if h.onIndex != nil {
-		if s := h.onIndex(w, r); s != 0 {
-			status = s
+	if h.page != nil {
+		// The slots are filled after the nonce went in, so that nothing a fill carries can take the nonce of the page.
+		f := h.page(w, r, b.locale, nonce)
+		if f.Status != 0 {
+			status = f.Status
 		}
+		body = fillSlot(body, HeadSlot, f.Head)
+		body = fillSlot(body, PageSlot, f.Body)
 	}
 	hd.Set("Content-Type", "text/html; charset=utf-8")
 	hd.Set("Content-Length", strconv.Itoa(len(body)))
@@ -362,6 +389,14 @@ func (h *Handler) serveIndex(w http.ResponseWriter, r *http.Request, b *bundle) 
 	if r.Method != http.MethodHead {
 		_, _ = w.Write(body)
 	}
+}
+
+// fillSlot replaces the first slot of a document with fill; a document without the slot, or no fill, is left as it is.
+func fillSlot(doc []byte, slot string, fill []byte) []byte {
+	if len(fill) == 0 {
+		return doc
+	}
+	return bytes.Replace(doc, []byte(slot), fill, 1)
 }
 
 func contentType(name string) string {

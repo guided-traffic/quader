@@ -45,7 +45,8 @@ export async function probeDownload(href: string, signal: AbortSignal): Promise<
  */
 @Directive({
   selector: 'a[quaderDownload]',
-  host: { '(click)': 'click($event)' },
+  // A download is no page: a crawler that follows links leaves it alone (R-UI-231), and the robots rules keep it off the package API.
+  host: { '(click)': 'click($event)', rel: 'nofollow' },
 })
 export class DownloadLink {
   private readonly el = inject<ElementRef<HTMLAnchorElement>>(ElementRef);

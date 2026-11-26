@@ -329,6 +329,39 @@ func TestR_BAS_113_TheLookupFindsAPublicPackageByItsFormatAndName(t *testing.T) 
 	}
 }
 
+// TestR_BAS_122_PackagesListsThePublicPackagesUnderARevision: the sitemap's source lists every public package with its public
+// repositories only, and its revision stays while nothing it lists changed and moves when the public set or docs does (R-BAS-122).
+func TestR_BAS_122_PackagesListsThePublicPackagesUnderARevision(t *testing.T) {
+	r := newRig(t)
+	r.main.SetPublic(public("acme/npm-local", "acme/npm-other"))
+	r.publish(leftPad, rightPd)
+	r.on(true, true)
+	r.tick()
+	list, rev, err := r.cat.Packages()
+	if err != nil || len(list) != 2 || list[0].Name != "left-pad" || list[1].Name != "right-pad" ||
+		strings.Join(list[1].Repositories, ",") != "acme/npm-other" {
+		t.Fatalf("packages = %+v %v", list, err)
+	}
+	r.tick()
+	if _, again, _ := r.cat.Packages(); again != rev {
+		t.Error("a round that changed nothing moved the revision")
+	}
+	r.main.SetPublic(public("acme/npm-local"))
+	r.tick()
+	list, moved, _ := r.cat.Packages()
+	if len(list) != 1 || list[0].Name != "left-pad" || moved == rev {
+		t.Errorf("after the public set lost a repository: %+v, revision moved %t", list, moved != rev)
+	}
+	r.on(true, false)
+	if _, docs, _ := r.cat.Packages(); docs == moved {
+		t.Error("docs off did not move the revision")
+	}
+	r.on(false, false)
+	if _, _, err := r.cat.Packages(); !errors.Is(err, catalogue.ErrOff) {
+		t.Errorf("off: %v", err)
+	}
+}
+
 func TestR_BAS_113_AnIntegrityFailureIsFetchedAgain(t *testing.T) {
 	r := newRig(t)
 	r.publish(leftPad)

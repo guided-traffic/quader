@@ -72,6 +72,7 @@ func TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut(t *
 		t.Fatalf("the states: bucket %+v, volume %+v", st, v.srv.Catalogue().State())
 	}
 	walkWebInterface(t, b, entry.ID)
+	crawlWebInterface(t, w, b)
 
 	// The link cut: both serve on with the time of their last confirmation.
 	w.front.SetDown(true)
@@ -160,6 +161,61 @@ func walkWebInterface(t *testing.T, r *replica, id string) {
 		}
 	}
 	downloadFromVersionPage(t, r, versionBody)
+}
+
+// crawlWebInterface reads the Bastion as a crawler that runs no script does (R-BAS-121, R-BAS-122, W-35's B.11): robots.txt names the
+// sitemap on the Bastion's base URL, the sitemap lists the package's page, and the page's own answer carries its name, its README and
+// its canonical address; none of it names the main installation, and none of it reaches the main installation: the double in front of
+// it records nothing but the Bastion's own interface operations (its polling and the catalogue's sync) meanwhile.
+func crawlWebInterface(t *testing.T, w *world, r *replica) {
+	t.Helper()
+	var names []string
+	for _, n := range r.mainNames {
+		if !strings.Contains(n, "/ui/") {
+			names = append(names, n)
+		}
+	}
+	page := "/ui/en/projects/" + testenv.DefaultProject + "/packages/npm/plain-lib"
+	mark := w.front.Mark()
+	for p, want := range map[string][]string{
+		"/robots.txt":    {"Disallow: /api/\n", "Sitemap: " + baseURL + "/sitemap.xml\n"},
+		"/sitemap.xml":   {"<loc>" + baseURL + "/sitemap/0.xml</loc>"},
+		"/sitemap/0.xml": {"<loc>" + baseURL + page + "</loc>"},
+		page: {
+			`<title>plain-lib – Quader</title>`, `<link rel="canonical" href="` + baseURL + page + `">`, `<h1>plain-lib</h1>`,
+			`<article><h1`, `"@type":"SoftwareApplication"`,
+		},
+	} {
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, r.client+p, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Host = baseHost
+		res, err := clientHTTP.Do(req)
+		if err != nil {
+			t.Fatalf("GET %s: %v", p, err)
+		}
+		body, _ := io.ReadAll(res.Body)
+		_ = res.Body.Close()
+		if res.StatusCode != http.StatusOK {
+			t.Errorf("GET %s = %d %s", p, res.StatusCode, body)
+		}
+		for _, s := range want {
+			if !bytes.Contains(body, []byte(s)) {
+				t.Errorf("GET %s lacks %q:\n%s", p, s, body)
+			}
+		}
+		for _, n := range names {
+			if bytes.Contains(body, []byte(n)) {
+				t.Errorf("GET %s: the answer names the main installation (%q)", p, n)
+			}
+		}
+	}
+	for _, rec := range w.front.Since(mark) {
+		if !strings.HasPrefix(rec.Path, "/api/v1/bastion/") {
+			t.Errorf("a crawler's read reached the main installation: %s %s", rec.Method, rec.Path)
+		}
+	}
 }
 
 // downloadFromVersionPage follows a version page's download link as a visitor's browser does (R-BAS-107, Q-BAS-398): the file's

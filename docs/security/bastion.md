@@ -530,6 +530,21 @@ Anonymous visitors from the internet read the public catalogue in a browser at t
 | One origin with the package API | A browser that answered a `401` of the package API holds Basic credentials for the origin ([H-2325](#h-2325--the-web-interface-shares-its-origin-with-the-package-api)) | — |
 | A rolling upgrade | A replica answers a file of another release's bundle `404`; the page loads itself again ([H-2324](#h-2324--a-page-of-one-release-asks-a-replica-of-another-for-a-file-its-bundle-lacks)) | R-BAS-116 |
 
+## Search engines
+
+W-35's package P10, built on 2026-11-26 ([spec/bastion.md](../spec/bastion.md#search-engines-find-the-bastions-pages), R-BAS-121 to
+R-BAS-123, R-UI-231). A crawler reads a page's head and text, `robots.txt` and the sitemap at the Bastion's host. What it means for trust:
+
+| Mechanism | What it means for trust | Held by |
+|---|---|---|
+| From the catalogue alone | The head, the text, `robots.txt` and the sitemap are written from the replica's catalogue and its legal pages, on the Bastion's own `server.base_url`; the integration case counts no request at the main installation for a crawler's reads and scans what it reads for the main installation's names | R-BAS-121, R-BAS-122, R-BAS-120 |
+| No format's metadata | Only the members of the main installation's shapes that are the same for every format are decoded; a sentinel in a version's `metadata` reaches no page in the unit test | R-BAS-121 |
+| JSON-LD cannot close its element | The encoder escapes `<`, `>` and `&`; a description with `</script>` stays inside the data block, and the page's policy runs no inline script anyway | R-BAS-121 |
+| The findings stay out of search results | The findings' documents are disallowed, an address that opens them is `noindex`, and the grade and the findings are `data-nosnippet` on the pages; the text carries no finding at all | R-BAS-121, R-BAS-122, R-UI-231 |
+| A crawler costs the main installation nothing | `robots.txt` disallows the package API's families and the download links are `nofollow`; a crawler that ignores both is an anonymous client under the class `gui` and the miss limits ([H-2337](#h-2337--a-page-a-crawler-reads-costs-the-bastion-its-reads-and-a-crawler-that-ignores-robotstxt-reaches-the-package-api)) | R-BAS-122, R-UI-231 |
+| What became private leaves the index | A page the catalogue no longer shows answers `404`, which a search engine reads at its next visit ([H-2334](#h-2334--a-search-engine-keeps-a-page-after-its-content-became-private-until-it-visits-again)) | R-BAS-121 |
+| A refusal is a page that loads nothing | A page's address over the class `gui` is a page with its styles under its own nonce and no script; it cannot cascade into refused files | R-BAS-123 |
+
 ## What this does not cover
 
 The gaps of the Bastion's mechanisms are recorded on the spec page, where the mechanisms are, and only linked here. The one gap
@@ -1244,6 +1259,43 @@ the page's Trusted Types policy (R-BAS-117), so a script, a handler or a frame d
 A tightened server allowlist reaches the catalogue only when the builder renders the document again (the policy's hash in the
 fingerprint is W-35's P11). What makes it real: the same origin serves the package API (H-2325), so a script that ran would act with what
 the browser holds for the origin.
+
+### H-2334 · A search engine keeps a page after its content became private, until it visits again
+
+Stage: the pages' status and the sitemap (R-BAS-121, R-BAS-122, W-35's D15). Subject: a package or a project whose level an administrator
+lowered, or a version deleted, after a search engine indexed its page. The Bastion hides it within seconds of the builder's run (R-BAS-112)
+and answers its address `404`, and the sitemap of the next revision no longer lists it; the search engine's index, its snippet and its
+cached copy keep the name, the description and the README's start until the crawler visits the address again, days to weeks for a page of
+little traffic. Live, inherent to indexing: nothing the Bastion answers can reach into an index. What makes it real: making public what was
+meant to be internal, even for an hour. What would narrow it: the search engines' removal tools, used by the operator for the address.
+
+### H-2335 · The README in a page's text is the catalogue's stored HTML, inserted as it was rendered
+
+Stage: the page's text (R-BAS-121, W-35's D1). Subject: a publisher of a public package, or an upstream author behind a public remote. The
+text inside the root element carries the README the main installation rendered and sanitized (R-UI-008's allowlist), as the catalogue
+stored it: the Bastion does not sanitize it again, and Angular's sanitizer, which binds it on the application's page (H-2327), does not run
+for the text. Dormant: the page's policy runs no inline script, no handler and no script of another origin, and Trusted Types hold, so markup
+the server's allowlist let through would show, not run; the text is hidden in a browser that runs the application. What makes it real: a
+flaw in the main installation's allowlist together with a way past the page's policy; a tightened allowlist reaches the catalogue only when
+the builder renders the document again.
+
+### H-2336 · The sitemap lists every public package for anyone in one fetch
+
+Stage: the sitemap (R-BAS-122, W-35's D3). Subject: the company's public packages and, with a public remote, the dependency footprint of its
+builds. The catalogue's search and the pages already enumerate what is public; the sitemap lists it in one file of up to 50,000 addresses,
+and a search engine makes it findable by a web search. Live by the owner's answer that public remotes are part of the catalogue: a public
+npmjs.com or Docker Hub remote lists everything internal builds pulled. The only mitigation is not to make such a remote public; the card's
+sentence and the manual say so (W-35's P12).
+
+### H-2337 · A page a crawler reads costs the Bastion its reads, and a crawler that ignores robots.txt reaches the package API
+
+Stage: the pages' head and text and the class `gui` (R-BAS-121, R-BAS-117, W-35's D9, D12). Subject: the availability of a Bastion. A page's
+head and text read two or three documents of the catalogue per request and keep nothing per address
+([Q-BAS-410](../spec/bastion.md#q-bas-410--a-pages-head-and-text-are-written-per-request-without-a-cache)); the sitemap is built once per
+revision. A crawler spread over many addresses is bounded by the class per address and `server.max_in_flight` alone (H-2326). A crawler that
+ignores `robots.txt` and `nofollow` follows a version's download links into the package API, where it is an anonymous client under the miss
+limits and the anonymous ceiling (R-BAS-094): it can make the main installation fill what the Bastion does not hold yet. Live against the
+Bastion's CPU for the first; dormant for the second while the anonymous limits hold.
 
 ### H-2356 · The anonymous ceiling is a share per replica without Valkey, and requests in flight pass its hour
 

@@ -825,9 +825,11 @@ mux.Handle("/ui/", h) // do not strip the prefix
 test's (`app.Options.UIAssets`, `testenv.ReplicaOptions.UI`). The app sets two more: `Shared` (the shared asset store, `nil` on a
 replica without the area `ui-assets`) and `OnSharedError` (the log line of a `503`). The Bastion's web interface
 ([internal/bastion/gui](../../internal/bastion/gui/gui.go), R-BAS-116, R-BAS-117) serves its own bundle with the same handler and sets
-the other four: `CSP` (its stricter policy with the nonce's slot), `ReferrerPolicy` (`no-referrer`), `OnIndex` (a page answered `503`
-with `Retry-After` while the replica holds no catalogue) and `Problem` (its own problem details for the handler's `404`, `405` and
-`503`).
+the other four: `CSP` (its stricter policy with the nonce's slot), `ReferrerPolicy` (`no-referrer`), `Page` (a page's status and the
+fill of its two slots `<!--QUADER_HEAD-->` and `<!--QUADER_PAGE-->`, written after the nonce went in: the head and the text a crawler reads,
+R-BAS-121, and `503` with `Retry-After` while the replica holds no catalogue) and `Problem` (its own problem details for the handler's
+`404`, `405` and `503`). `IsDocument` says which paths below a locale are a page, `Negotiate` the locale of `Accept-Language`; the Bastion's
+page of a refusal reads both (R-BAS-123).
 
 ## The Bastion's application
 
@@ -878,6 +880,13 @@ until the Bastion has mirrored a builder's run after the seed (`awaitBastionCata
 [bastion-gui.ts](../../web/e2e/renders/bastion-gui.ts)). The Bastion's pages are screens of the render suite like any other
 (`bastion-*`, the kind `anonymous`, in the German pass too, at the Bastion's origin), so the parts of `make ui-renders SHARD=i/n` hold them
 ([Q-UI-1444](../spec/api-and-ui.md#q-ui-1444--the-bastions-pages-are-rendered-against-the-profiles-bastion-in-every-part-of-the-renders)).
+
+**What a search engine reads** (W-35's P10, [api-and-ui.md](../spec/api-and-ui.md) R-UI-231, [bastion.md](../spec/bastion.md) R-BAS-121).
+`index.html` holds two slots the Bastion's Go handler fills, `<!--QUADER_HEAD-->` after the charset and `<!--QUADER_PAGE-->` in the root
+element after the spinner, and no `<title>` of its own; keep both where they are. The routes of a project's list, a package, a version and
+the versions take their titles from the address (`packagesTitle` and its neighbours in `app.routes.ts`), in the words of the server's head
+(`internal/bastion/gui/page/texts.go`): a change of one is a change of the other. In the shared views the grade and the findings stand in a
+`span` or `div` with `data-nosnippet`, and `quaderDownload` sets `rel="nofollow"` on its link.
 
 **A view stays usable by both.** A view takes its reads from the abstract classes of `api/` and the plumbing that each application
 binds (`FormatCatalog`, `SystemClients`, `MEMORY_OWNER` of the disclosure's memory, `LegalApi`); a helper it imports lives in a module

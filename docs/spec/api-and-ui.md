@@ -10746,6 +10746,34 @@ Acceptance criteria:
   layout checks find nothing in any picture; `make ui-renders-parts-check` holds every Bastion screen exactly once in the parts of the job
   ui-layout.
 
+### R-UI-231 · The Bastion's application for search engines
+Priority: **P1** · Covers: quader-only
+
+W-35's B.11 and P10 ([bastion.md](bastion.md) R-BAS-121 to R-BAS-123): what a crawler that renders the Bastion's application reads.
+
+- **Titles name the page** ([Q-UI-1460](#q-ui-1460--the-bastions-titles-name-the-page-in-the-servers-words)). A project's list is "Packages
+  in <project>", a package's page its name, a version's its name and version, the versions' "Versions of <name>", each with "– Quader";
+  the start, the legal pages and not found keep theirs. They are the words of the head the Bastion writes (R-BAS-121), so the title a
+  rendering crawler reads is the one a crawler that runs no script reads.
+- **No snippet of the findings** ([Q-UI-1461](#q-ui-1461--the-grade-and-the-findings-are-wrapped-in-a-span-or-div-with-data-nosnippet)).
+  The grade in a version's facts and in the versions' table, and the tab of the open findings, stand in a `span` or `div` with
+  `data-nosnippet`, the elements on which search engines read it. The shared views carry it, so the main installation's pages do too.
+- **A download is `nofollow`** ([Q-UI-1462](#q-ui-1462--every-download-link-is-nofollow)): every link of `quaderDownload` and the
+  signature originals' and the receipt's downloads.
+- **The slots** (R-BAS-121, [Q-UI-1463](#q-ui-1463--the-bastions-indexhtml-holds-the-servers-slots-and-no-title-of-its-own)). The
+  Bastion's `index.html` holds the head's slot after its charset and the text's in the root element after the spinner, and no `<title>` of
+  its own: the server's head always writes one.
+
+*Built on 2026-11-26 (W-35's P10):* the title resolvers of [app.routes.ts](../../web/src/bastion/app.routes.ts), the wrappers of
+`package-version-view.html` and `package-detail-view.html`, the host of [download-link.ts](../../web/src/app/shared/download-link.ts),
+`signature-report.html`, [index.html](../../web/src/bastion/index.html).
+
+Acceptance criteria:
+
+- Vitest ([search-engines.spec.ts](../../web/src/bastion/search-engines.spec.ts), milliseconds): the five routes' titles; the grade and
+  the findings inside `data-nosnippet`, every download of the signatures' report `nofollow`, a rendered `quaderDownload` link
+  `rel="nofollow"`; the slots of `index.html`.
+
 ## Deferred
 
 P2, Later and Out-of-scope entries of the three catalog pages this page draws on, plus P1 entries
@@ -29471,6 +29499,64 @@ held npm, an image and Ansible collections without their documentation (the wiki
 
 **Choice:** (a). Helm charts and generic files stay outside the public set: the seed has no public repository of them, and a generic
 folder has no page at the Bastion yet. **Applied in the spec:** R-UI-230.
+
+### Q-UI-1460 · The Bastion's titles name the page, in the server's words
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P10) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-231, R-BAS-121. A crawler that renders the application reads the title the application sets; every package's was "Package –
+Quader", every version's "Package version – Quader".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Title resolvers of the Bastion's routes from the address's parameters: "Packages in <project>", "<name>", "<name> <version>", "Versions of <name>"; the server's head writes the same (chosen) | No read for a title | The two crawlers read one title; nothing waits for data | Two new texts in both languages, kept equal in Go |
+| (b) The views set the title from what they read | — | The package's own spelling | The main installation's views change; the title waits for the read |
+
+**Choice:** (a). **Applied in the spec:** R-UI-231.
+
+### Q-UI-1461 · The grade and the findings are wrapped in a span or div with data-nosnippet
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's B.11, P10) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: R-UI-231. W-35's B.11: "the vulnerability parts and the list's grade cells carry `data-nosnippet`". Search engines read the
+attribute on `span`, `div` and `section` only. The Bastion's list of packages shows no grade; its versions' table and a version's facts do.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A `span` around the grade in the facts and in the versions' table, a `div` around the tab of the findings, in the shared views (chosen) | Both applications carry it | The elements search engines read it on; one template | A wrapper element each |
+| (b) The attribute on the components' hosts | — | No wrapper | Search engines ignore it there |
+
+**Choice:** (a). **Applied in the spec:** R-UI-231.
+
+### Q-UI-1462 · Every download link is nofollow
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's B.11, P10) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: R-UI-231. A version's files download through the Bastion's package routes (Q-BAS-398), which robots.txt disallows.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The directive `quaderDownload` sets `rel="nofollow"` on its host; the signatures' report's downloads carry it (chosen) | Every download link of every application | A crawler that follows links leaves a download alone even where it ignores robots.txt | — |
+| (b) Only at the Bastion | — | — | A second binding for the same link |
+
+**Choice:** (a). **Applied in the spec:** R-UI-231.
+
+### Q-UI-1463 · The Bastion's index.html holds the server's slots and no title of its own
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's B.11, P10) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: R-UI-231, R-BAS-121. The build keeps HTML comments of `index.html` (verified in the production build of 2026-11-26).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `<!--QUADER_HEAD-->` after the charset, `<!--QUADER_PAGE-->` in the root element after the spinner, no `<title>` (chosen) | The server's head holds the title | One title; Angular replaces the root's content at its start | A page served without the fill has no title (the placeholder of a binary without the web build is filled too) |
+| (b) A static title beside the slot | — | A title without the server | Two titles in one head |
+
+**Choice:** (a). **Applied in the spec:** R-UI-231.
 
 ### Q-UI-1490 · The audit log holds its German actions by the act's word and a shorter word where it reads right
 

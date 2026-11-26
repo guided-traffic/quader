@@ -38,6 +38,8 @@ type reader struct {
 	docs  map[string][]byte
 	// reads counts every read, which a request that must not read counts against.
 	reads int
+	// revision is what Packages answers as the revision of the packages.
+	revision string
 }
 
 func (r *reader) State() catalogue.State { r.mu.Lock(); defer r.mu.Unlock(); return r.state }
@@ -58,7 +60,23 @@ func (r *reader) served() error {
 }
 
 func (r *reader) PublicSet() (iface.CataloguePublic, error) {
-	return iface.CataloguePublic{Projects: []string{"acme", "upstream", "web"}}, r.served()
+	return iface.CataloguePublic{
+		Projects: []string{"acme", "upstream", "web"},
+		Repositories: []iface.CatalogueRepository{
+			{Name: "acme/npm", Format: "npm", Class: "local", Wiki: true},
+			{Name: "upstream/npmjs", Format: "npm", Class: "remote"},
+			{Name: "web/galaxy", Format: "ansible", Class: "local", Wiki: true},
+		},
+	}, r.served()
+}
+
+func (r *reader) Packages() ([]catalogue.Entry, string, error) {
+	if err := r.served(); err != nil {
+		return nil, "", err
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]catalogue.Entry(nil), r.pkgs...), r.revision, nil
 }
 
 func (r *reader) Search(q catalogue.Query) (catalogue.Page, error) {
@@ -184,7 +202,7 @@ func legalPages(t *testing.T) *legal.Pages {
 
 func newGUI(t *testing.T, r *reader, mod func(*Options)) *Handler {
 	t.Helper()
-	o := Options{Catalogue: r, Legal: legalPages(t), Assets: bundleFS()}
+	o := Options{Catalogue: r, Legal: legalPages(t), BaseURL: "https://bastion.example.com", Assets: bundleFS()}
 	if mod != nil {
 		mod(&o)
 	}
@@ -341,7 +359,7 @@ func TestR_BAS_117_TheStateDecidesOffNotReadyAndServing(t *testing.T) {
 		rec.Header().Get("Location") != "/ui/de/projects/acme?x=1" || rec.Header().Get("Vary") != "Accept-Language" {
 		t.Errorf("the locale's redirect = %d %v", rec.Code, rec.Header())
 	}
-	if rec := do(h, http.MethodGet, "/ui/en/projects/acme/packages/ansible/acme.web"); rec.Code != 200 ||
+	if rec := do(h, http.MethodGet, "/ui/en/projects/web/packages/ansible/acme.web"); rec.Code != 200 ||
 		!strings.Contains(rec.Body.String(), `lang="en"`) {
 		t.Errorf("a page = %d %s", rec.Code, rec.Body.String())
 	}
@@ -400,7 +418,7 @@ func TestR_BAS_117_EveryRequestCountsInTheClassGui(t *testing.T) {
 		t.Error("a refused request read the catalogue")
 	}
 	g.blocked = true
-	if rec := do(h, http.MethodGet, "/ui/en/"); rec.Code != 429 || problemCode(t, rec) != "address_blocked" || quiet != 1 {
+	if rec := do(h, http.MethodGet, "/ui/data/v1/state"); rec.Code != 429 || problemCode(t, rec) != "address_blocked" || quiet != 1 {
 		t.Errorf("blocked = %d %s, quiet %d", rec.Code, rec.Body.String(), quiet)
 	}
 }
@@ -518,7 +536,7 @@ func TestR_BAS_118_TheDataAreTheMainInstallationsShapesFromTheCatalogue(t *testi
 // TestR_BAS_116_TheBundleIsTheBastionsOwnAndBuildsWithoutTheWebBuild: the embedded tree holds the committed placeholder, which
 // starts the handler without a web build, and names nothing of the main installation.
 func TestR_BAS_116_TheBundleIsTheBastionsOwnAndBuildsWithoutTheWebBuild(t *testing.T) {
-	h, err := New(Options{Catalogue: newReader(), Legal: legalPages(t)})
+	h, err := New(Options{Catalogue: newReader(), Legal: legalPages(t), BaseURL: "https://bastion.example.com"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -538,7 +556,7 @@ func TestR_BAS_116_TheBundleIsTheBastionsOwnAndBuildsWithoutTheWebBuild(t *testi
 // locales with the notices of its bundled software (R-UI-001, Q-UI-144), and no script of it holds the session or the writes. The
 // web job of CI builds the UI and sets QUADER_UI_BUILT=1, where a placeholder is a failure; elsewhere the test is skipped.
 func TestR_BAS_116_TheEmbeddedBundleCarriesItsNotices(t *testing.T) {
-	h, err := New(Options{Catalogue: newReader(), Legal: legalPages(t)})
+	h, err := New(Options{Catalogue: newReader(), Legal: legalPages(t), BaseURL: "https://bastion.example.com"})
 	if err != nil {
 		t.Fatal(err)
 	}

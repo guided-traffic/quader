@@ -51,3 +51,7 @@ func negotiate(header string, locales []string) string {
 	}
 	return ""
 }
+
+// Negotiate picks the locale for an Accept-Language header out of the served locales, as a request without a locale in its path is
+// redirected; "" when no listed tag matches.
+func Negotiate(header string, locales []string) string { return negotiate(header, locales) }

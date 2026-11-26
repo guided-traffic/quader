@@ -1,7 +1,12 @@
-// Package gui is the Bastion's read-only web interface (W-35, R-BAS-116 to R-BAS-120): the second, small Angular application of
+// Package gui is the Bastion's read-only web interface (W-35, R-BAS-116 to R-BAS-123): the second, small Angular application of
 // web/src/bastion, embedded into the binary from dist/, and the data it reads, all of it from the replica's public catalogue
 // (internal/bastion/catalogue) and its rendered legal pages. It is mounted on the client listener before the engine and owns `/`,
-// `/ui` and everything below `/ui/`.
+// `/ui` and everything below `/ui/`, and `/robots.txt` and the sitemap at the host's root.
+//
+// Search engines (W-35's B.11, R-BAS-121 to R-BAS-123). A page's address is answered with the application's index.html, its head
+// and its text filled from the catalogue (seo.go, package page) for a reader that runs no script; robots.txt and the sitemap name
+// the pages on the Bastion's own base URL (crawl.go); a page's address the class gui refuses is a page of its own, not problem
+// details (refusal.go).
 //
 // Read-only by construction (W-35's B.7). Every address answers GET and HEAD only and every other method 405 without reading a
 // body. Nothing here reaches the main installation: the package imports neither the client of the main installation, nor the
@@ -24,12 +29,14 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/catalogue"
 	"github.com/guided-traffic/quader/internal/bastion/guard"
+	pg "github.com/guided-traffic/quader/internal/bastion/gui/page"
 	"github.com/guided-traffic/quader/internal/bastion/legal"
 	"github.com/guided-traffic/quader/internal/bastion/settings"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -90,6 +97,9 @@ type Options struct {
 	Catalogue catalogue.Reader
 	// Legal is the imprint and the privacy notice rendered at start (Server.Legal). Required.
 	Legal *legal.Pages
+	// BaseURL is the Bastion's own server.base_url: every absolute address a page's head, robots.txt and the sitemap name is on it
+	// (R-BAS-121, W-35's B.13), never on the main installation's. Required.
+	BaseURL string
 	// Guard counts every request in the class gui; nil admits every request (tests).
 	Guard Guard
 	// Flood is the class gui's figures of the configuration a request read, for the RateLimit fields of a refusal; nil leaves them
@@ -108,6 +118,10 @@ type Handler struct {
 	o   Options
 	ui  *webui.Handler
 	log *slog.Logger
+	// sm is the sitemap of the catalogue's current revision (R-BAS-122).
+	sm sitemapState
+	// pages writes what a crawler reads of a page and the page of a refusal (R-BAS-121, R-BAS-123).
+	pages *pg.Renderer
 }
 
 // New builds the handler over the application's build.
@@ -115,16 +129,19 @@ func New(o Options) (*Handler, error) {
 	if o.Catalogue == nil || o.Legal == nil {
 		return nil, errors.New("gui: the catalogue and the legal pages are required")
 	}
+	if u, err := url.Parse(o.BaseURL); err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") {
+		return nil, errors.New("gui: the Bastion's base URL is required")
+	}
 	if o.Assets == nil {
 		o.Assets = Bundle()
 	}
-	h := &Handler{o: o, log: o.Log}
+	h := &Handler{o: o, log: o.Log, pages: pg.NewRenderer()}
 	if h.log == nil {
 		h.log = slog.New(slog.DiscardHandler)
 	}
 	ui, err := webui.New(webui.Options{
 		Locales: locales(), DefaultLocale: defaultLocale, Assets: o.Assets, CSP: CSP, ReferrerPolicy: "no-referrer",
-		OnIndex: h.onIndex,
+		Page:    h.fill,
 		Problem: func(w http.ResponseWriter, r *http.Request, status int) { h.problem(w, r, statusError(status)) },
 	})
 	if err != nil {
@@ -134,10 +151,12 @@ func New(o Options) (*Handler, error) {
 	return h, nil
 }
 
-// Owns reports whether the web interface serves a path of the client listener: `/`, `/ui` and everything below `/ui/`. Every other
-// path is the engine's (R-BAS-018).
+// Owns reports whether the web interface serves a path of the client listener: `/`, `/ui` and everything below `/ui/`, and at the
+// host's root `/robots.txt`, `/sitemap.xml` and everything below `/sitemap/` (R-BAS-122). Every other path is the engine's
+// (R-BAS-018).
 func Owns(path string) bool {
-	return path == "/" || path == "/ui" || strings.HasPrefix(path, "/ui/")
+	return path == "/" || path == "/ui" || strings.HasPrefix(path, "/ui/") ||
+		path == pathRobots || path == pathSitemap || strings.HasPrefix(path, sitemapDir)
 }
 
 // Placeholder reports whether the binary holds no build of the application and serves the placeholder page.
@@ -161,33 +180,33 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	path := r.URL.Path
 	st := h.o.Catalogue.State()
+	if path == pathRobots {
+		// Also while the web interface is off: then it keeps every crawler away from the host (R-BAS-122).
+		h.robots(w, r, st)
+		return
+	}
 	if st.Decided && !st.Enabled {
 		h.problem(w, r, errNotFound())
 		return
 	}
 	switch {
+	case path == pathSitemap || strings.HasPrefix(path, sitemapDir):
+		h.sitemap(w, r, st.Ready)
 	case path == "/" || path == "/ui":
 		w.Header().Set("Cache-Control", "no-store")
 		http.Redirect(w, r, webui.MountPath, http.StatusFound)
 	case strings.HasPrefix(path, dataRoot):
+		// The data are what a page reads, never a page a search engine shows (W-35's B.11).
+		w.Header().Set("X-Robots-Tag", "noindex")
 		h.data(w, r, st.Ready)
 	case strings.HasPrefix(path, "/ui/data/") || path == "/ui/data":
+		w.Header().Set("X-Robots-Tag", "noindex")
 		h.problem(w, r, errNotFound())
 	default:
-		// The bundle's files, the locale's redirect and the pages; a page while not ready is served 503 (onIndex).
+		// The bundle's files, the locale's redirect and the pages, a page with its head and text from the catalogue and 503 while not
+		// ready (fill).
 		h.ui.ServeHTTP(w, r)
 	}
-}
-
-// onIndex answers a page 503 with Retry-After while the replica holds no state: the application shows its sentence, a crawler
-// indexes nothing (W-35's B.2b).
-func (h *Handler) onIndex(w http.ResponseWriter, _ *http.Request) int {
-	st := h.o.Catalogue.State()
-	if st.Decided && st.Ready {
-		return 0
-	}
-	w.Header().Set("Retry-After", strconv.Itoa(int(notReadyRetry/time.Second)))
-	return http.StatusServiceUnavailable
 }
 
 // secure sets the headers every answer of the web interface carries (R-BAS-117, W-35's B.7); a page replaces the policy with its
@@ -222,13 +241,23 @@ func (h *Handler) admit(w http.ResponseWriter, r *http.Request) bool {
 		code = guard.CodeRateLimited
 	}
 	wait := oneWait(v.RetryAfter)
-	opts := []errs.Option{errs.WithRetryAfter(wait)}
+	var fields [][2]string
 	if h.o.Flood != nil {
 		rate := h.o.Flood(r.Context())
 		window := max(1, (rate.Burst+rate.RequestsPerSecond-1)/max(1, rate.RequestsPerSecond))
-		opts = append(opts,
-			errs.WithHeader("RateLimit-Policy", `"pages";q=`+strconv.Itoa(rate.Burst)+";w="+strconv.Itoa(window)),
-			errs.WithHeader("RateLimit", `"pages";r=0;t=`+strconv.FormatInt(int64(wait/time.Second), 10)))
+		fields = [][2]string{
+			{"RateLimit-Policy", `"pages";q=` + strconv.Itoa(rate.Burst) + ";w=" + strconv.Itoa(window)},
+			{"RateLimit", `"pages";r=0;t=` + strconv.FormatInt(int64(wait/time.Second), 10)},
+		}
+	}
+	if locale, ok := h.pageLocale(r); ok {
+		// A person reads a page in the Bastion's shape, not problem details; the data keep theirs (R-BAS-123).
+		h.refusalPage(w, r, locale, wait, code == guard.CodeAddressBlocked, fields)
+		return false
+	}
+	opts := []errs.Option{errs.WithRetryAfter(wait)}
+	for _, f := range fields {
+		opts = append(opts, errs.WithHeader(f[0], f[1]))
 	}
 	detail := "Too many requests from this address. Try again in " + strconv.FormatInt(int64(wait/time.Second), 10) + " seconds."
 	if code == guard.CodeAddressBlocked {

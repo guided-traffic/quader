@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, RedirectCommand, Router, Routes } from '@angular/router';
+import { ActivatedRouteSnapshot, CanActivateFn, RedirectCommand, ResolveFn, Router, Routes } from '@angular/router';
 import { LegalPageName } from '../app/api/legal-api';
 import { LegalStore } from '../app/core/legal-store';
 import { leadsWithDocs, packageMatcher, versionMatcher, versionsMatcher } from '../app/features/packages/package-matchers';
@@ -17,6 +17,19 @@ function legalPage(name: LegalPageName): CanActivateFn {
     return new RedirectCommand(router.parseUrl('/not-found'), { skipLocationChange: true });
   };
 }
+
+/*
+ * The titles of a project's list, a package, a version and the versions name what the page shows, as the head the Bastion writes for
+ * a crawler does (R-UI-231, R-BAS-121): a crawler that renders the page reads the title the application sets, so a generic "Package"
+ * would be every package's. The server's words (internal/bastion/gui/page/texts.go) are these.
+ */
+const packagesTitle: ResolveFn<string> = (route: ActivatedRouteSnapshot) =>
+  $localize`:@@bastion.title.packages:Packages in ${route.paramMap.get('project') ?? ''}:project:`;
+const packageTitle: ResolveFn<string> = (route: ActivatedRouteSnapshot) => route.paramMap.get('name') ?? '';
+const versionTitle: ResolveFn<string> = (route: ActivatedRouteSnapshot) =>
+  `${route.paramMap.get('name') ?? ''} ${route.paramMap.get('version') ?? ''}`;
+const versionsTitle: ResolveFn<string> = (route: ActivatedRouteSnapshot) =>
+  $localize`:@@bastion.title.versions:Versions of ${route.paramMap.get('name') ?? ''}:name:`;
 
 /**
  * The routes of the Bastion's application (R-UI-227, W-35's B.3): the start, a project's packages, a package, a version, the versions'
@@ -36,29 +49,29 @@ export const BASTION_ROUTES: Routes = [
     children: [
       {
         path: '',
-        title: $localize`:@@route.packages.title:Packages`,
+        title: packagesTitle,
         loadComponent: () => import('./pages/package-list-page').then((m) => m.PackageListPage),
       },
       {
         matcher: versionsMatcher,
         canMatch: [leadsWithDocs],
-        title: $localize`:@@route.packages.versions.title:Versions`,
+        title: versionsTitle,
         loadComponent: () => import('./pages/package-pages').then((m) => m.PackagePage),
       },
       {
         matcher: versionMatcher,
-        title: $localize`:@@route.packages.version.title:Package version`,
+        title: versionTitle,
         loadComponent: () => import('./pages/package-pages').then((m) => m.VersionPage),
       },
       {
         matcher: packageMatcher,
         canMatch: [leadsWithDocs],
-        title: $localize`:@@route.packages.detail.title:Package`,
+        title: packageTitle,
         loadComponent: () => import('./pages/package-pages').then((m) => m.VersionPage),
       },
       {
         matcher: packageMatcher,
-        title: $localize`:@@route.packages.detail.title:Package`,
+        title: packageTitle,
         loadComponent: () => import('./pages/package-pages').then((m) => m.PackagePage),
       },
     ],

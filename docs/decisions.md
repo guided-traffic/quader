@@ -3261,6 +3261,41 @@ the main installation's API paths mirrored one by one (an answer for every route
 **Revisit condition:** a second base URL per Bastion (a host of its own for the pages, H-2325), or a Bastion whose rollouts need the hashed
 files of the release before (H-2324).
 
+### ADR-306 · Search engines read a Bastion's pages through a head and a text the Bastion fills from its catalogue
+
+**Status:** Decided by the owner on 2026-11-26 that the web interface is to be found (W-35's g-answers: the Bastion is "für anonyme User aus
+dem Netz die sich über die publizierten Inhalte informieren wollen"); the design by the development agent (W-35's B.11,
+[Q-BAS-405](spec/bastion.md#q-bas-405--the-bastion-fills-the-pages-head-and-text-from-its-catalogue-into-the-applications-indexhtml) to
+[Q-BAS-414](spec/bastion.md#q-bas-414--the-reader-lists-the-public-packages-under-a-revision-for-the-sitemap),
+[R-BAS-121](spec/bastion.md#r-bas-121--a-pages-head-and-text-for-a-reader-that-runs-no-script) to
+[R-BAS-123](spec/bastion.md#r-bas-123--a-pages-address-over-the-limit-of-the-class-gui-is-a-page-in-the-bastions-shape),
+[R-UI-231](spec/api-and-ui.md#r-ui-231--the-bastions-application-for-search-engines)). It builds W-35's P10.
+
+**Context.** The Bastion's pages are an Angular application (ADR-305): its `index.html` holds a spinner and nothing a crawler that runs no
+script could index, and every page had the same title. The Bastion runs no Node.js, and a page view never reaches the main installation.
+
+**Decision.**
+- The Bastion's Go handler answers a page's address with the application's `index.html` and fills two slots from the catalogue's
+  documents: a head (title, description, canonical address and the other languages' on the Bastion's own `server.base_url`, the robots
+  rule, JSON-LD) and the page's text inside the root element, which the application replaces when it starts. Only the members of the main
+  installation's shapes that are the same for every format are read.
+- An address the catalogue does not show is `404`; the findings, a list of results and a page without a state are never indexed.
+- `/robots.txt` and the sitemap at the host's root, from the index, on the Bastion's base URL; the package API's families and the findings'
+  documents are disallowed.
+- The application titles a page by what it shows; the grade and the findings are no snippet; a download is `nofollow`.
+- A page's address the class `gui` refuses is a page in the Bastion's shape, not problem details.
+
+**Consequences.** A crawler that heeds robots costs the main installation nothing, and one that does not is an anonymous client under the
+class `gui` and the miss limits. A page view by a crawler reads two or three documents, as a person's browser does. A search engine keeps a
+page until it revisits it (H-2334). No change of the interface, no migration.
+
+**Alternatives considered.** Pages pre-rendered by the main installation's catalogue builder (a second renderer far from the Bastion's
+routes, READMEs stored twice); server-side rendering of the Angular application (Node.js in the image, against R-ARCH-003's one static
+binary); no head at all (every page "Package – Quader", nothing for a crawler that runs no script).
+
+**Revisit condition:** a search engine that no longer renders scripts' pages differently from their text, or a format whose pages need a
+member of its own metadata in the head.
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -10527,10 +10562,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-375 questions on [spec/bastion.md](spec/bastion.md).
+385 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 375 questions</summary>
+<summary>Q-BAS: 385 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10856,6 +10891,16 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-397](spec/bastion.md#q-bas-397--a-document-is-answered-compressed-as-stored-with-its-sha-256-as-its-etag) | A document is answered compressed as stored, with its SHA-256 as its ETag | Decided by the development agent on 2026-11-26 | (a) The stored gzip to a client that takes it (`"<sha>-gzip"`), the raw bytes otherwise (`"<sha>"`), `Vary: Accept-Encoding` | [ADR-305](#adr-305--a-bastion-serves-a-read-only-web-interface-of-its-own-from-the-public-catalogue-never-from-the-main-installation) |
 | [Q-BAS-398](spec/bastion.md#q-bas-398--a-versions-file-downloads-through-the-bastions-package-route) | A version's file downloads through the Bastion's package route | Decided by the development agent on 2026-11-26 | (a) The builder writes `contentUrl` as the path of `downloadUrl` when that is on the Bastion's base URL, `null` otherwise; the page's repository of a file reads a package route too | — |
 | [Q-BAS-399](spec/bastion.md#q-bas-399--the-start-page-offers-a-project-only-while-it-shows-a-package) | The start page offers a project only while it shows a package | Decided by the development agent on 2026-11-26 | (a) `projects` lists a project of the public set only when a search of it finds a package | — |
+| [Q-BAS-405](spec/bastion.md#q-bas-405--the-bastion-fills-the-pages-head-and-text-from-its-catalogue-into-the-applications-indexhtml) | The Bastion fills the page's head and text from its catalogue into the application's index.html | Decided by the development agent on 2026-11-26 | (a) The Go handler fills two slots of `index.html` from the catalogue's documents | [ADR-306](#adr-306--search-engines-read-a-bastions-pages-through-a-head-and-a-text-the-bastion-fills-from-its-catalogue) |
+| [Q-BAS-406](spec/bastion.md#q-bas-406--the-text-is-hidden-from-a-browser-that-runs-the-application-and-shown-without-script) | The text is hidden from a browser that runs the application, and shown without script | Decided by the development agent on 2026-11-26 | (a) A rule under the page's nonce hides the text; `<noscript>` shows it and hides the spinner | — |
+| [Q-BAS-407](spec/bastion.md#q-bas-407--an-address-the-catalogue-does-not-show-is-404) | An address the catalogue does not show is 404 | Decided by the development agent on 2026-11-26 | (a) `404` with `noindex` for an address the catalogue does not show: no route, a package not public in the address's project, a version it does not hold, a project without a package, a legal page without a text | — |
+| [Q-BAS-408](spec/bastion.md#q-bas-408--what-is-indexed-the-pages-themselves-never-the-findings-or-a-list-of-results) | What is indexed: the pages themselves, never the findings or a list of results | Decided by the development agent on 2026-11-26 | (a) `tab=vulnerabilities` and a `severity` `noindex`, canonical without them; a list with a query `noindex`, canonical the list; every other query dropped from the canonical address; a documentation entry keeps `tab` and `doc` | — |
+| [Q-BAS-409](spec/bastion.md#q-bas-409--the-text-carries-no-install-command) | The text carries no install command | Decided by the development agent on 2026-11-26 | (a) No install command in the text | — |
+| [Q-BAS-410](spec/bastion.md#q-bas-410--a-pages-head-and-text-are-written-per-request-without-a-cache) | A page's head and text are written per request, without a cache | Decided by the development agent on 2026-11-26 | (a) No cache | — |
+| [Q-BAS-411](spec/bastion.md#q-bas-411--robotstxt-keeps-a-crawler-off-the-package-api-and-the-findings-documents-and-lets-it-render-the-pages) | robots.txt keeps a crawler off the package API and the findings' documents, and lets it render the pages | Decided by the development agent on 2026-11-26 | (a) `Allow: /ui/`; `Disallow: /ui/data/*vulnerabilit`, `/api/`, `/files/`, `/v2/`; the data `X-Robots-Tag: noindex`; off `Disallow: /`; undecided `503` | — |
+| [Q-BAS-412](spec/bastion.md#q-bas-412--the-sitemap-lists-the-start-the-projects-the-packages-and-the-legal-pages-split-at-50000-and-kept-per-revision) | The sitemap lists the start, the projects, the packages and the legal pages, split at 50,000 and kept per revision | Decided by the development agent on 2026-11-26 | (a) The start, every project's list (beyond B.11), every package in every project that shows it, the documentation through P11's hook, the legal pages, each in both languages; an index of files of 50,000; built once per revision of `Packages()`, every file kept gzip-compressed | — |
+| [Q-BAS-413](spec/bastion.md#q-bas-413--a-refused-pages-address-is-a-page-drawn-by-the-document-alone) | A refused page's address is a page drawn by the document alone | Decided by the development agent on 2026-11-26 | (a) A page with its styles under its own nonce, the mark inline, no script, a refresh after the wait, for a page's address only | — |
+| [Q-BAS-414](spec/bastion.md#q-bas-414--the-reader-lists-the-public-packages-under-a-revision-for-the-sitemap) | The reader lists the public packages under a revision for the sitemap | Decided by the development agent on 2026-11-26 | (a) `Reader.Packages()`: every public package with its public repositories, and a revision of the index's pages, the public set and `docs` | [ADR-306](#adr-306--search-engines-read-a-bastions-pages-through-a-head-and-a-text-the-bastion-fills-from-its-catalogue) |
 | [Q-BAS-425](spec/bastion.md#q-bas-425--the-headers-of-a-forwarded-answer-pass-an-allowlist-and-a-formats-need-is-a-replay-header) | The headers of a forwarded answer pass an allowlist, and a format's need is a replay header | Decided by the development agent on 2026-11-26 | (a) An allowlist: the core's representation headers, the format's replay headers of the handshake's table and a fixed list of the framing, the wait, the challenge, the methods, the links, the distribution's version and `Location`; npm declares `Npm-Notice` | [ADR-304](#adr-304--the-main-installation-renders-a-forwards-problems-for-a-caller-of-a-bastion-and-a-registry-token-seals-what-it-does-not-need-to-show) |
 | [Q-BAS-426](spec/bastion.md#q-bas-426--a-forward-reads-a-neutral-detail-for-every-failure-of-the-remote-engine-chosen-by-the-code-when-the-problem-is-rendered) | A forward reads a neutral detail for every failure of the remote engine, chosen by the code when the problem is rendered | Decided by the development agent on 2026-11-26 | (a), with "The package could not be fetched right now." for the failures and "The caller may not bring new content into the cache of this repository." for `populate_not_permitted`. | — |
 | [Q-BAS-427](spec/bastion.md#q-bas-427--a-location-on-another-host-is-answered-502-at-the-bastion-whatever-the-status) | A Location on another host is answered 502 at the Bastion, whatever the status | Decided by the development agent on 2026-11-26 | (a) `502` for any answer whose `Location` is neither relative nor on the Bastion's scheme, host and port; counted by the reason `foreign_location` | — |
@@ -13120,10 +13165,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-739 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+743 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 739 questions</summary>
+<summary>Q-UI: 743 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13847,6 +13892,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1451](spec/api-and-ui.md#q-ui-1451--the-bastions-reads-put-a-versions-times-back-into-its-documents) | The Bastion's reads put a version's times back into its documents | Decided by the development agent on 2026-11-26 | (a) The reads of a version's documents read its state once (shared for 5 s by the documents of a page) and set each time back at its JSON pointer | — |
 | [Q-UI-1452](spec/api-and-ui.md#q-ui-1452--an-origin-and-an-anchor-without-a-name-say-what-they-know) | An origin and an anchor without a name say what they know | Decided by the development agent on 2026-11-26 | (a) An upload that names nobody is "Uploaded"; an anchor without a title is its scope alone | — |
 | [Q-UI-1453](spec/api-and-ui.md#q-ui-1453--the-render-seeds-nuget-debian-and-collections-repositories-are-public-with-their-documentation) | The render seed's NuGet, Debian and collections repositories are public with their documentation | Decided by the development agent on 2026-11-26 | (a) `nuget-internal` and the long Debian repository of `platform` public with their wiki, the collections' wiki public; a seed run on an earlier database sets the level | — |
+| [Q-UI-1460](spec/api-and-ui.md#q-ui-1460--the-bastions-titles-name-the-page-in-the-servers-words) | The Bastion's titles name the page, in the server's words | Decided by the development agent on 2026-11-26 | (a) Title resolvers of the Bastion's routes from the address's parameters: "Packages in <project>", "<name>", "<name> <version>", "Versions of <name>"; the server's head writes the same | — |
+| [Q-UI-1461](spec/api-and-ui.md#q-ui-1461--the-grade-and-the-findings-are-wrapped-in-a-span-or-div-with-data-nosnippet) | The grade and the findings are wrapped in a span or div with data-nosnippet | Decided by the development agent on 2026-11-26 | (a) A `span` around the grade in the facts and in the versions' table, a `div` around the tab of the findings, in the shared views | — |
+| [Q-UI-1462](spec/api-and-ui.md#q-ui-1462--every-download-link-is-nofollow) | Every download link is nofollow | Decided by the development agent on 2026-11-26 | (a) The directive `quaderDownload` sets `rel="nofollow"` on its host; the signatures' report's downloads carry it | — |
+| [Q-UI-1463](spec/api-and-ui.md#q-ui-1463--the-bastions-indexhtml-holds-the-servers-slots-and-no-title-of-its-own) | The Bastion's index.html holds the server's slots and no title of its own | Decided by the development agent on 2026-11-26 | (a) `<!--QUADER_HEAD-->` after the charset, `<!--QUADER_PAGE-->` in the root element after the spinner, no `<title>` | — |
 | [Q-UI-1480](spec/api-and-ui.md#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-the-throughput-everything-else-is-behind-details) | A Bastion's card shows the preset, the mode and the throughput; everything else is behind Details | Decided by the development agent on 2026-11-26 | (a) The preset, the mode and the maximum throughput on the card; the figures, slots, ceiling, shares, egress addresses and switches of W-35 behind **Details**; the rules on a page of their own | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
 | [Q-UI-1481](spec/api-and-ui.md#q-ui-1481--a-preset-is-applied-after-a-dialog-that-names-what-it-replaces) | A preset is applied after a dialog that names what it replaces | Decided by the development agent on 2026-11-26 | (a); the dialog says nothing where the preset changes nothing. | — |
 | [Q-UI-1482](spec/api-and-ui.md#q-ui-1482--the-egress-addresses-warn-with-the-address-of-the-last-contact-and-offer-to-add-it) | The egress addresses warn with the address of the last contact and offer to add it | Decided by the development agent on 2026-11-26 | (a) A warning for an empty list and for a contact from an unlisted address, with **Add** for that address | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |

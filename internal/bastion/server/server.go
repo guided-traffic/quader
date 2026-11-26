@@ -202,7 +202,7 @@ func New(o Options) (*Server, error) {
 // (Q-LIM-307), with the class's figures of the configuration the request read for the RateLimit fields of a refusal.
 func (s *Server) newGUI() (*gui.Handler, error) {
 	return gui.New(gui.Options{
-		Catalogue: s.catalogue, Legal: s.legal, Guard: s.deps.Guard, Quiet: engine.MarkQuiet,
+		Catalogue: s.catalogue, Legal: s.legal, BaseURL: s.cfg.Server.BaseURL, Guard: s.deps.Guard, Quiet: engine.MarkQuiet,
 		Flood: func(ctx context.Context) settings.Rate { return s.configuration.For(ctx).Flood.GUI },
 		Log:   s.log.With("component", "gui"),
 	})

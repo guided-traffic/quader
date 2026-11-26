@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Quader</title>
+    <!--QUADER_HEAD-->
     <base href="/ui/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
@@ -18,6 +18,9 @@
         <span class="quader-spinner quader-spinner-page" aria-hidden="true"><svg viewBox="0 0 64 64" focusable="false" aria-hidden="true"><rect x="4" y="4" width="36" height="16" rx="1.5"></rect><rect x="44" y="4" width="16" height="16" rx="1.5"></rect><rect x="24" y="24" width="36" height="16" rx="1.5"></rect><rect x="44" y="44" width="16" height="16" rx="1.5"></rect><rect x="4" y="44" width="36" height="16" rx="1.5"></rect><rect x="4" y="24" width="16" height="16" rx="1.5"></rect></svg></span>
         <span class="quader-loading-text"><span lang="en">Loading Quader.</span><span lang="de">Quader wird geladen.</span></span>
       </div>
+      <!-- The page as text for a reader that runs no script, a crawler among them (R-BAS-121): the server fills the slot below and the
+           one in the head from the catalogue (internal/bastion/gui/page); the app replaces all of it when it starts. -->
+      <!--QUADER_PAGE-->
     </quader-root>
   </body>
 </html>

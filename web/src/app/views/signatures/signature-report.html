@@ -174,7 +174,7 @@
         }
       </dl>
       <p class="sig-actions">
-        <a class="btn btn-tertiary" [href]="e.original" download i18n="@@sig.download">Download original</a>
+        <a class="btn btn-tertiary" [href]="e.original" download rel="nofollow" i18n="@@sig.download">Download original</a>
       </p>
       <quader-disclosure class="sig-technical" [inline]="true" [heading]="technicalHeading">
         <dl class="facts">
@@ -318,7 +318,7 @@
       </dl>
       @if (receiptDownload(e); as href) {
         <p class="sig-actions">
-          <a class="btn btn-tertiary" [href]="href" download i18n="@@sig.receipt.download">Download attestation</a>
+          <a class="btn btn-tertiary" [href]="href" download rel="nofollow" i18n="@@sig.receipt.download">Download attestation</a>
         </p>
       }
       <quader-disclosure class="sig-technical" [inline]="true" [heading]="technicalHeading">
@@ -395,7 +395,7 @@
           </td>
           <td class="num nowrap" [attr.title]="a.size + ' B'">{{ size(a.size) }}</td>
           <td class="nowrap"><quader-time-ago [at]="a.receivedAt" absolute="title" /></td>
-          <td><a class="btn btn-tertiary" [href]="a.original" download i18n="@@sig.download">Download original</a></td>
+          <td><a class="btn btn-tertiary" [href]="a.original" download rel="nofollow" i18n="@@sig.download">Download original</a></td>
         </tr>
       }
     </quader-data-table>

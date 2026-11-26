@@ -2,7 +2,9 @@ package catalogue
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -36,6 +38,10 @@ type Reader interface {
 	// Document is a document by its path of the grammar (R-BAS-103), verified; ok is false for a path the catalogue does not hold
 	// or does not show: an index page, a package that is not public, documentation while docs is off.
 	Document(ctx context.Context, path string) (Document, bool, error)
+	// Packages is every public package in the order of the index (by name), each with only its public repositories, and a revision
+	// that is the same exactly while the index's pages, the public set and the switch docs are: what the sitemap is built from and
+	// kept by (R-BAS-122).
+	Packages() ([]Entry, string, error)
 }
 
 var _ Reader = (*Catalogue)(nil)
@@ -249,6 +255,44 @@ func (c *Catalogue) Document(ctx context.Context, path string) (Document, bool, 
 		return Document{}, false, nil
 	}
 	return Document{Path: path, SHA256: r.sha, Size: r.size, Raw: raw, Gzip: gz}, true, nil
+}
+
+// Packages implements [Reader].
+func (c *Catalogue) Packages() ([]Entry, string, error) {
+	s, err := c.served()
+	if err != nil {
+		return nil, "", err
+	}
+	h := sha256.New()
+	if s.index != nil {
+		for _, p := range s.index.pages {
+			_, _ = fmt.Fprintln(h, p)
+		}
+	}
+	repos := make([]string, 0, len(s.repos))
+	for name, r := range s.repos {
+		repos = append(repos, fmt.Sprintf("%s %t", name, r.Wiki))
+	}
+	sort.Strings(repos)
+	_, _ = fmt.Fprintln(h, strings.Join(repos, ","), s.docs)
+	out := []Entry{}
+	if s.index != nil {
+		for _, e := range s.index.entries {
+			var public []string
+			for _, r := range e.Repositories {
+				if _, ok := s.repos[r]; ok {
+					public = append(public, r)
+				}
+			}
+			if len(public) == 0 {
+				continue
+			}
+			v := *e
+			v.Repositories = public
+			out = append(out, v)
+		}
+	}
+	return out, hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // Versions implements [Reader]: the versions list of the package (packages/<id>/versions), a page after the version named by
