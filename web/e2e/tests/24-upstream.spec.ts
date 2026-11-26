@@ -59,7 +59,8 @@ test('R-CUR-018 R-CUR-015 a reader looks a package up and asks for a version, a 
     const member = await admin.put(`/api/v1/projects/${project}/members/${encodeURIComponent(`user:${user}`)}`, { data: { role } });
     expect(member.ok(), await member.text()).toBeTruthy();
   }
-  const versionRow = (page: typeof alice.page) => page.getByTestId('upstream-lookup').getByRole('row').filter({ hasText: version });
+  // The versions' table, not a table of the README the package shows above it (R-CUR-028).
+  const versionRow = (page: typeof alice.page) => page.getByTestId('upstream-lookup').locator('quader-data-table').getByRole('row').filter({ hasText: version });
 
   await test.step('alice opens the tab Upstream: the remote delivers only what is allowed; the lookup by exact name shows the package, not allowed', async () => {
     await alice.page.goto(tab);

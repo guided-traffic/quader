@@ -103,7 +103,20 @@ async function answer(p: Page, a: Answers): Promise<void> {
   await p.route(searchUrl, (r) =>
     json(r, {
       hits: [
-        { name: a.name, description: a.description, latest: a.list[0], updated: null, flags: [], delivery: all, stored: 'partial', request: null, level: all, inherited: all, versionRules: { allow: 0, block: 0 } },
+        {
+          name: a.name,
+          description: a.description,
+          latest: a.list[0],
+          updated: null,
+          flags: [],
+          ...(a.keywords ? { keywords: a.keywords } : {}),
+          delivery: all,
+          stored: 'partial',
+          request: null,
+          level: all,
+          inherited: all,
+          versionRules: { allow: 0, block: 0 },
+        },
       ],
       total: 1,
       nextCursor: null,
@@ -164,7 +177,7 @@ function npmAnswers(over: Partial<Answers> = {}): Answers {
     description: 'Lodash modular utilities.',
     list: ['4.17.21', '4.17.20', '4.17.19', '4.17.15', '5.0.0-beta.1'],
     tags: { latest: '4.17.21' },
-    keywords: ['modules', 'stdlib', 'util'],
+    keywords: ['modules', 'stdlib', 'util', 'functional', 'server', 'client', 'browser', 'lodash-modularized', 'es6'],
     about: npmAbout,
     readme: true,
     answer: available('4.17.21', longReadme('lodash')),

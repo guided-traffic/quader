@@ -193,6 +193,11 @@ Tests and what they cost (each run once):
 | `TestR_CUR_009_TheCatalogueSaysStoredOfATagARemotePulledThrough` (area `ociremote`) | integration | about 2.3 s | the stub's image `acme/b`: one index of 1.3 KB pulled |
 | `TestR_CUR_010_ASubSectionIsPreviewedAndDownloadedThroughTheCatalogue` (area `ansibleremote`) | integration | about 3.2 s | two archives of the stub's corpus |
 | the preview's counts in `TestR_CUR_010_ADownloadAheadOfOneVersionAndOfAPackage` (area `npm`) | integration | unchanged | unchanged |
+| kit check 22's README case of npm, NuGet and Ansible Galaxy (R-CUR-028) | unit | milliseconds per format | npm `left-pad-readme.json` 5 KB; NuGet `newtonsoft.json-13.0.4-readme.md` 2 KB; Ansible `gal-docs-blob.json` 0.5 KB |
+| `TestR_CUR_028_TheReadmeCall` (`internal/remotecuration/catalogue`), `TestR_CUR_028_TheReadmeOfANuGetPackageIsAskedWhereTheTemplateNamesIt`, `TestR_CUR_028_AGalaxysFactsAndReadmes`, `TestR_CUR_028_AnAddressIsALinkOnlyForHTTPAndHTTPS`, `TestR_CUR_028_TheFactsOfAnUpstreamPackageAreTheSchemas` | unit | milliseconds to microseconds | a few hundred bytes; the engine's test builds one README of 1 MiB in memory to hold the bound |
+| `TestR_CUR_028_AnUpstreamPackageShowsItsReadmeReadThroughAndNotStored` (area `npm`) | integration | about 2 s | the stub's corpus |
+| the lookup's short description in `TestR_DEB_036_TheCatalogueSearchesTheIndexesTheRemoteParsed` (area `debremote`) | integration | one lookup more, milliseconds | unchanged |
+| `upstream-docs.spec.ts` | Vitest | about 1 s | canned answers |
 
 What a leg gains: the unit job well under a second; the integration shards about 9.8 s (npm 2.7 s, debremote 1.5 s, ansibleremote
 3.2 s, ociremote 2.3 s). A new format adds its `catalogue.go`, a kit fixture of a few kilobytes and no integration case of its own unless its catalogue

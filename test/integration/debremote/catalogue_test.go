@@ -62,6 +62,10 @@ func TestR_DEB_036_TheCatalogueSearchesTheIndexesTheRemoteParsed(t *testing.T) {
 	if desc == "" {
 		t.Fatalf("the parse kept no short description of %s", pkg)
 	}
+	// The lookup names the short description the rows keep, no facts and no README (R-CUR-028, Q-CUR-262).
+	if m := lookup().JSON(t); m["description"] == "" || m["about"] != nil || m["readme"] != false {
+		t.Errorf("R-CUR-028 the lookup of %s: description %q, about %v, readme %v", pkg, m["description"], m["about"], m["readme"])
+	}
 	if !has(search(strings.ToUpper(pkg), false)) {
 		t.Errorf("the search by the name %s does not find it", pkg)
 	}

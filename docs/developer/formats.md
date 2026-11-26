@@ -668,7 +668,11 @@ the item store, [oci.md](oci.md#upload-sessions-r-stor-011); the in-memory host 
    [upstream-words.ts](../../web/src/app/features/repositories/upstream/upstream-words.ts),
    [Q-CUR-166](../spec/remote-curation.md#q-cur-166--the-hint-under-the-upstream-search-is-a-code-the-screen-says-in-its-language)), and adds its rows to `TestR_CUR_007_EveryRemoteFormatDeclaresItsCatalogue` and
    `TestR_CUR_006_EveryRemoteFormatHasItsVersionCanon` in [catalogue_test.go](../../internal/formats/all/catalogue_test.go)
-   ([remote-curation.md](../spec/remote-curation.md) R-CUR-023).
+   ([remote-curation.md](../spec/remote-curation.md) R-CUR-023). Its `Package` fills `PackageInfo.About` with the newest version's
+   facts its answers hold (licence, links, dependencies, deprecation) and `Keywords`, and where its upstream serves a README it
+   implements `discover.Documented.Readme` (one request at most, an address the lent upstream refuses answered with
+   `formats.UnreachedHost`; a README the lookup read anyway handed over on `PackageInfo.Readme`), and its kit case names `License` and
+   `Readme` or `NoReadme` ([R-CUR-028](../spec/remote-curation.md#r-cur-028--an-opened-package-of-the-tab-upstream-shows-its-documentation-and-the-facts-of-its-newest-version-read-through-and-not-stored), ADR-291).
    Give every route at least one example; a name that two routes could both match needs a `Route.Match` that tells them apart.
    A `Download` route whose clients all check a digest declares it in `Route.ClientDigest`, with its evidence, and gets its row in
    `TestR_STOR_071_EveryFormatDeclaresWhetherItsClientsCheck` ([What a signed link needs of a format](#what-a-signed-link-needs-of-a-format));
