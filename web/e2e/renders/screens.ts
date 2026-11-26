@@ -394,8 +394,14 @@ async function* collectionUpload(page: Page): AsyncGenerator<string> {
   const publish = '**/api/ansible/*/*/v3/artifacts/collections/';
   const tasks = '**/api/v1/projects/*/repositories/*/ansible/imports/*';
   await page.route(tokens, (r) =>
-    r.fulfill({ status: 201, json: { token: 'qdr_pat_render', expiresAt: at, publishPath: '/api/ansible/platform/collections/v3/artifacts/collections/' } }),
+    r.fulfill({
+      status: 201,
+      json: { id: '9c1e0000-0000-4000-8000-0000000000a1', token: 'qdr_pat_render', expiresAt: at, publishPath: '/api/ansible/platform/collections/v3/artifacts/collections/' },
+    }),
   );
+  // The dialog revokes the token once the publish answered.
+  const revoke = '**/api/v1/tokens/9c1e0000-0000-4000-8000-0000000000a1';
+  await page.route(revoke, (r) => (r.request().method() === 'DELETE' ? r.fulfill({ status: 204 }) : r.fallback()));
   await page.route(publish, (r) => r.fulfill({ status: 202, json: { task: `https://quader.example/api/ansible/platform/collections/v3/imports/collections/${id}/` } }));
   await page.route(tasks, (r) => r.fulfill({ status: 200, json: task }));
   await dialog.locator('.dialog-actions .btn-confirm').click();
@@ -419,6 +425,7 @@ async function* collectionUpload(page: Page): AsyncGenerator<string> {
   await page.unroute(publish);
   await page.unroute(tokens);
   await page.unroute(tasks);
+  await page.unroute(revoke);
 }
 
 /**

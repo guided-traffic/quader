@@ -9192,6 +9192,9 @@ type AnsibleTombstoneList struct {
 type AnsibleUploadToken struct {
 	ExpiresAt time.Time `json:"expiresAt"`
 
+	// Id The token's id; the dialog revokes it with `DELETE /api/v1/tokens/{id}` once the publish answered.
+	Id string `json:"id"`
+
 	// PublishPath The client's publish route of the repository, relative to the server, `/api/ansible/{projectKey}/{repoKey}/v3/artifacts/collections/`.
 	PublishPath string `json:"publishPath"`
 

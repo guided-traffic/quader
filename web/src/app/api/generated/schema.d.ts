@@ -7220,8 +7220,10 @@ export interface paths {
          *     the shadowing probes of a first version among them (R-ARCH-001: the role `api` asks no upstream). The token is an ordinary
          *     personal access token: it is in the caller's list of tokens until it expires, its creation is the audit event
          *     `token.created`, and it can be revoked. A remote repository, a virtual repository without a deployment target and a repository
-         *     of another format answer `405 not_applicable`; the break-glass account holds no token (`403`). Needs `deploy` on the
-         *     repository.
+         *     of another format answer `405 not_applicable`; the break-glass account holds no token (`403`). Only a browser's session is
+         *     answered: a caller with a token is refused `403` (a client publishes with its own token, and a token may not mint the next one).
+         *     The dialog revokes the token (`DELETE /api/v1/tokens/{id}`) once the publish answered, so five minutes is its longest life.
+         *     Needs `deploy` on the repository.
          */
         post: operations["createAnsibleUploadToken"];
         delete?: never;
@@ -16713,6 +16715,8 @@ export interface components {
         };
         /** @description The token of one upload from the screen (R-ANS-061). */
         AnsibleUploadToken: {
+            /** @description The token's id; the dialog revokes it with `DELETE /api/v1/tokens/{id}` once the publish answered. */
+            id: string;
             /** @description The secret, shown once; sent as `Authorization: Bearer <token>` to `publishPath`. */
             token: string;
             /** Format: date-time */

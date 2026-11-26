@@ -24,7 +24,8 @@ export abstract class AnsibleApi {
    * The screens' publish of a collection archive (R-ANS-061, Q-ANS-140): `POST …/ansible/upload-tokens` issues the caller's token of
    * five minutes for this repository; the archive goes with it to the client's own publish route (`publishPath`, served by the role
    * packages with every check of `ansible-galaxy collection publish`); `GET …/ansible/imports/{id}` reads the task it answered,
-   * `completed` or `failed`. A refusal before the archive was read rejects with an `ApiError` whose code is the management API's
+   * `completed` or `failed`; the token is revoked once the publish answered. It lives in this call only: it is never shown, logged,
+   * stored or put into an address. A refusal before the archive was read rejects with an `ApiError` whose code is the management API's
    * (a Galaxy error's code gets the prefix `ansible_` where the server's code has it). The file is sent as it is: the server reads its
    * name and version from its `MANIFEST.json`.
    */
@@ -55,6 +56,10 @@ export class HttpAnsibleApi extends AnsibleApi {
       );
     } catch (e) {
       throw galaxyFailure(e);
+    } finally {
+      // The token served one publish: it is revoked once the publish answered, failed or was cancelled, so that five minutes is the
+      // longest it lives (Q-ANS-140); a revocation that fails leaves it to expire.
+      void this.client.delete(`/api/v1/tokens/${seg(issued.id)}`).catch(() => undefined);
     }
     const id = (answer.task ?? '').replace(/\/+$/, '').split('/').pop() ?? '';
     return (await this.client.getJson<AnsibleImportTask>(`${repositoryUrl(ref)}/ansible/imports/${seg(id)}`)).body;

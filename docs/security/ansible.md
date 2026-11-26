@@ -88,14 +88,20 @@ manifest ([Q-ANS-142](../spec/formats/ansible.md#q-ans-142--the-name-and-the-ver
 |---|---|---|
 | The session cookie without the CSRF token, with a wrong token, or with an `Origin` that is not the endpoint's, asking for the upload token | `403 csrf_failed` in the management API's problem shape; no token is issued | The authentication stage ([stage.go](../../internal/auth/stage.go) `bySession`, `CheckCSRF`) on the role `api`, before the router and the operation |
 | The session with its CSRF token | A token of the caller for five minutes, scoped to the repository, created via `ui`, the audit event `token.created`; answered with `no-store` | The operation's `deploy` check, then the token service |
+| A token, any token, asking for an upload token | `403`: only a session is answered, so a client publishes with its own token and an upload token never mints the next one | The operation |
+| The upload token on `POST /api/v1/tokens` or on the upload-token operation | `403`: it mints no token | The token service's scope rules; the operation |
 | The upload token on the publish route | The publish; the event `package.published` names the caller and the upload token | The role `packages`: the client's publish route with every check |
-| The upload token on another repository | Refused by the token's scope | The decision point |
+| The upload token on another repository | `403` for a publish, `404` for a read: its scope names the one repository | The decision point |
+| The upload token after the publish answered | `401`: the dialog revokes it (`DELETE /api/v1/tokens/{id}`) once the publish answered, failed or was cancelled | The token service |
 | The session cookie, with or without its CSRF token, on the Galaxy route `POST …/v3/artifacts/collections/` | `401` with the Basic challenge, as before the screen's upload existed: the cookie is no credential for a write below `/api/<format>/` (`sessionAllowed`) | The authentication stage and the dispatcher's coarse check |
 | A body above `ansible.max_archive_bytes` | `413`, as for the client's token; a declared length is refused before the body is read | The handler's spool |
 | Any of it while the installation is in read-only maintenance | `503` with `Retry-After` for the token and for the publish | The management API's write gate and the dispatcher's |
 
-The token is a credential in the page's memory for at most five minutes; it can do nothing but read and publish into the one repository, and
-it is in the caller's list of tokens, where the caller can revoke it, until it expires. Proven by
+The token is a credential in the page's memory for the one publish, five minutes at most when its revocation fails: it can do nothing but
+read and publish into the one repository and cannot create a token. It is never shown on the screen or put into a command (Q-UI-1336), never
+written to the console, an address or the browser's storage, and the publish route's answer, the address of the task, does not echo it. A
+refusal's notice and its "Copy report" hold the call's method and path and the answer's headers, never a request header, so the
+`Authorization` header that carries it is in no report ([failure.ts](../../web/src/app/core/http/failure.ts) `callOf`, `shownHeaders`). Proven by
 `TestR_ANS_061_TheScreensPublishRunsOnTheRolesTheChartRuns` and `TestR_ANS_061_TheScreensUploadWithASessionIsGuardedAsEveryManagementWrite`
 (integration `ansiblelocal`, a replica of the role `api` and one of the role `packages`).
 

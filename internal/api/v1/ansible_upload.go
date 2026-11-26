@@ -22,17 +22,24 @@ const uploadTokenTTL = 5 * time.Minute
 // Q-ANS-140): a personal access token of the caller for five minutes, with read and deploy on the repository and, for a virtual
 // repository, on its deployment target, and nothing else. The browser publishes with it through the client's own route, which the
 // role packages serves with the shadowing probes the role api may not make (R-ARCH-001, Q-ARCH-301); the session never leaves the
-// role api.
+// role api. Only a session is answered: a client publishes with its own token, and a token may not mint the next one. The answer
+// names the token's id, by which the dialog revokes it once the publish answered.
 func (s *Server) CreateAnsibleUploadToken(w http.ResponseWriter, r *http.Request, projectKey gen.ProjectKey, repoKey gen.RepoKey) {
 	if !s.identityReady(w, r) {
+		return
+	}
+	ctx := r.Context()
+	p := httpserver.PrincipalFrom(ctx)
+	if p.Credential.Method != httpserver.MethodSession {
+		// A client publishes with its own token; a token that minted upload tokens could renew itself without end.
+		httpserver.Problem(w, r, errs.E(errs.Forbidden, errs.CodeForbidden,
+			"The token of an upload from the screen is issued to a browser's session only; a client publishes with its own token."))
 		return
 	}
 	_, holder, ok := s.ansibleTarget(w, r, projectKey, repoKey, true)
 	if !ok {
 		return
 	}
-	ctx := r.Context()
-	p := httpserver.PrincipalFrom(ctx)
 	addressed := qname.Repo{Project: projectKey, Key: repoKey}
 	repos := []string{addressed.String()}
 	if holder.Name != addressed {
@@ -65,7 +72,7 @@ func (s *Server) CreateAnsibleUploadToken(w http.ResponseWriter, r *http.Request
 		expires = created.Record.ExpiresAt.UTC()
 	}
 	writeJSON(w, r, http.StatusCreated, gen.AnsibleUploadToken{
-		Token: created.Secret, ExpiresAt: expires,
+		Id: created.Record.ID, Token: created.Secret, ExpiresAt: expires,
 		PublishPath: "/api/ansible/" + url.PathEscape(projectKey) + "/" + url.PathEscape(repoKey) + "/v3/artifacts/collections/",
 	})
 }

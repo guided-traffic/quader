@@ -51,6 +51,8 @@ type venv struct {
 	// reader reads everything, writer reads, deploys and manages the local member and the virtual repositories, plain does the same
 	// without manage (it meets the shadowing check).
 	reader, writer, plain string
+	// writerP and plainP are the people behind writer and plain, for a browser's session of theirs.
+	writerP, plainP testenv.Person
 }
 
 type options struct {
@@ -107,6 +109,7 @@ func newEnv(t *testing.T, o options) *venv {
 	e.st.Bind("admin", rita)
 	e.reader, e.writer = e.st.Token(reader, scope.Default()), e.st.Token(writer, scope.Default())
 	e.plain = e.st.Token(plain, scope.Default())
+	e.writerP, e.plainP = writer, plain
 	all := []string{rLocal, rGalaxy, rVirtual, rReverse, rNoLocal, rLocalV}
 	e.st.Policy("ans-readers", []string{"read"}, all, reader)
 	e.st.Policy("ans-writers", []string{"read", "deploy", "delete", "manage"}, []string{rLocal, rVirtual, rReverse, rLocalV, rNoLocal}, writer)

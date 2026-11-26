@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/guided-traffic/quader/internal/auth/session"
 	"github.com/guided-traffic/quader/internal/formats/ansible/collection/collectiontest"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
@@ -22,8 +23,18 @@ func TestR_ANS_061_TheScreensUploadThroughAVirtualRepositoryIsItsTargetsAndItsRe
 	api := func(repo, sub string) string {
 		return "/api/v1/projects/" + testenv.DefaultProject + "/repositories/" + repo + "/ansible/" + sub
 	}
-	upload := func(repo, token string, s collectiontest.Spec) testenv.Answer {
-		m := e.st.Do(e.rep, http.MethodPost, api(repo, "upload-tokens"), token, nil)
+	// The browser of a person: a live session as a sign-in leaves it, its cookie, its CSRF token and the endpoint's origin.
+	browser := func(u testenv.Person) []string {
+		id, secret, csrf := session.NewID(), session.NewSecret(), session.NewSecret()
+		e.st.Exec(`INSERT INTO ui_session (id, secret_sha256, csrf_sha256, principal_id, auth_method, authenticated_at, idle_timeout,
+		                                   absolute_expires_at, created_addr, user_agent)
+		           VALUES ($1::uuid, $2, $3, $4::uuid, 'oidc', now(), interval '1 hour', now() + interval '12 hours', '192.0.2.7', 'it-browser')`,
+			id, session.Hash(secret), session.Hash(csrf), u.ID)
+		return []string{"Cookie", session.CookieSession + "=" + secret, "X-CSRF-Token", csrf, "Origin", "http://" + testenv.DefaultHost}
+	}
+	writer, plain := browser(e.writerP), browser(e.plainP)
+	upload := func(repo string, hdr []string, s collectiontest.Spec) testenv.Answer {
+		m := e.st.Do(e.rep, http.MethodPost, api(repo, "upload-tokens"), "", nil, hdr...)
 		if m.Status != http.StatusCreated {
 			t.Fatalf("the upload token of %s: %d %s", repo, m.Status, m.Body)
 		}
@@ -32,22 +43,22 @@ func TestR_ANS_061_TheScreensUploadThroughAVirtualRepositoryIsItsTargetsAndItsRe
 		p, _ := doc["publishPath"].(string)
 		return e.st.Do(e.rep, http.MethodPost, p, tok, collectiontest.Build(s), "Content-Type", "application/gzip")
 	}
-	a := upload(rVirtual, e.writer, spec("mine", "tools", "1.0.0"))
+	a := upload(rVirtual, writer, spec("mine", "tools", "1.0.0"))
 	if a.Status != http.StatusAccepted {
 		t.Fatalf("publish: %d %s", a.Status, a.Body)
 	}
 	addr, _ := a.JSON(t)["task"].(string)
-	task := e.st.Do(e.rep, http.MethodGet, api(rVirtual, "imports/"+path.Base(strings.TrimSuffix(addr, "/"))), e.writer, nil)
+	task := e.st.Do(e.rep, http.MethodGet, api(rVirtual, "imports/"+path.Base(strings.TrimSuffix(addr, "/"))), "", nil, writer...)
 	if task.Status != http.StatusOK || task.JSON(t)["state"] != "completed" {
 		t.Fatalf("the task through the virtual repository: %d %s", task.Status, task.Body)
 	}
 	if n := e.st.Number(`SELECT count(*) FROM ansible_collection_versions v JOIN repositories r ON r.id = v.repo_id WHERE r.key = $1 AND v.name = 'mine.tools'`, rLocal); n != 1 {
 		t.Errorf("%d rows in %s", n, rLocal)
 	}
-	if b := upload(rVirtual, e.plain, spec("other", "stuff", "77.0.0")); b.Status != http.StatusForbidden || errorCode(b) != "shadows_remote_package" {
+	if b := upload(rVirtual, plain, spec("other", "stuff", "77.0.0")); b.Status != http.StatusForbidden || errorCode(b) != "shadows_remote_package" {
 		t.Errorf("a name the remote member serves, without manage: %d %s", b.Status, b.Body)
 	}
-	if c := e.st.Do(e.rep, http.MethodPost, api(rNoLocal, "upload-tokens"), e.writer, nil); c.Status != http.StatusForbidden && c.Status != http.StatusMethodNotAllowed {
+	if c := e.st.Do(e.rep, http.MethodPost, api(rNoLocal, "upload-tokens"), "", nil, writer...); c.Status != http.StatusForbidden && c.Status != http.StatusMethodNotAllowed {
 		t.Errorf("a virtual repository without a target: %d %s", c.Status, c.Body)
 	}
 }

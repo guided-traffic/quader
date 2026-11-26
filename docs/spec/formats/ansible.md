@@ -2265,11 +2265,16 @@ on the repository's page, by the client's own publish (the owner, 2026-11-25: "d
   [architecture.md](../architecture.md) Q-ARCH-294, Q-ARCH-301). The browser's session lives on the role `api`, and the protocol paths ignore
   a session cookie for a write. So the dialog takes three steps:
   1. `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/upload-tokens` (`createAnsibleUploadToken`, `deploy` on the
-     repository; with a session it needs the session's CSRF token like every management write) issues a personal access token of the caller,
-     for five minutes, whose scope is `read` and `deploy` on this repository and, for a virtual repository, on its deployment target, and
-     nothing else. It answers the token, its expiry and `publishPath`, the client's publish route of the repository. The token is an ordinary
-     token: `token.created` is its audit event, it is in the caller's list of tokens until it expires (created via `ui`), and it can be revoked.
-  2. The archive goes as the raw body (`application/gzip`) to `publishPath` with `Authorization: Bearer <token>`: every check of
+     repository) issues a personal access token of the caller, for five minutes, whose scope is `read` and `deploy` on this repository and,
+     for a virtual repository, on its deployment target, and nothing else. Only a browser's session is answered, with its CSRF token like
+     every management write: a caller with a token is refused `403`, so that a client publishes with its own token and a token never mints
+     the next one. It answers the token's id, the token, its expiry and `publishPath`, the client's publish route of the repository. The
+     token is an ordinary token: `token.created` is its audit event and it is in the caller's list of tokens (created via `ui`); the dialog
+     revokes it (`DELETE /api/v1/tokens/{id}`) once the publish answered, failed or was cancelled, so five minutes is its longest life and
+     not its usual one. The token lives in the dialog's call only: it is never shown, written to the console, the address or the browser's
+     storage, or put into a command (Q-UI-1336), and the error notice's report holds no request header.
+  2. The archive goes as the raw body (`application/gzip`) to `publishPath` with `Authorization: Bearer <token>`; the answer, the address
+     of the task, never echoes the token. Every check of
      `ansible-galaxy collection publish` applies, the coarse `deploy`, the read-only maintenance mode, the repository's state and format, the
      deployment target of a virtual repository (R-ANS-024), the name and the version of `MANIFEST.json` (never the file's name,
      [Q-ANS-142](#q-ans-142--the-name-and-the-version-come-from-the-manifest-and-the-file-name-is-not-compared)), `deploy` on that collection, the
@@ -2335,11 +2340,12 @@ Galaxy's upload and import log, element by element, and what Quader shows of eac
 Acceptance criteria:
 
 - `TestR_ANS_061_TheScreensPublishRunsOnTheRolesTheChartRuns` (integration `ansiblelocal`, about 3 s with the stack's start, archives under
-  a kilobyte; a replica of the role `api` and one of the role `packages`, the guard of the split roles): the token is issued on `api`, a
-  personal access token of five minutes whose scope names the repository only, answered with `no-store`; the publish with it on `packages`
-  stores the version, its task with R-ANS-062's warning is read on `api`, and the event names the caller and the upload token; the token is
-  refused on another repository; an archive that is no collection is a failed task; a reader and a generic repository get no token; `packages`
-  serves no management operation.
+  a kilobyte; a replica of the role `api` and one of the role `packages`, the guard of the split roles): the token is issued to the session on
+  `api`, a personal access token of five minutes created via `ui` whose scope names the repository only, answered with `no-store`; the
+  publish with it on `packages` stores the version and does not echo it, its task with R-ANS-062's warning is read on `api`, and the event
+  names the caller and the upload token; the token publishes into no other repository (`403`), reads none (`404`), mints no personal token
+  (`403`) and no next upload token (`403`), and once revoked is refused (`401`); a client's token gets no upload token; an archive that is
+  no collection is a failed task; a reader and a generic repository get no token; `packages` serves no management operation.
 - `TestR_ANS_061_TheScreensUploadWithASessionIsGuardedAsEveryManagementWrite` (integration `ansiblelocal`, about 3 s with the stack's start,
   archives under a kilobyte and one body of 1 MiB and one byte; the split roles): the session's request for the token without the CSRF token,
   with a wrong one or from a foreign origin is `403 csrf_failed` and issues no token; with it the session gets a token created via the UI and
@@ -4126,7 +4132,7 @@ before it landed; the integration replicas run `web`).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `api` issues the caller a token of five minutes for this repository; the browser publishes with it on the client's route, `packages` serves it (chosen) | Three calls: the token, the publish, the task | Every check, the shadowing probes included, is the client's on the role that may make them; no role gains a part; the session stays on `api`, `packages` sees a token, as the owner's trust cut has it (ADR-155) | A short-lived credential in the page's memory; it is in the caller's token list until it expires; the page's endpoint must serve the `packages` family (H-2182) |
+| (a) `api` issues the session a token of five minutes for this repository; the browser publishes with it on the client's route, `packages` serves it, and the dialog revokes it then (chosen) | Four calls: the token, the publish, the task, the revocation | Every check, the shadowing probes included, is the client's on the role that may make them; no role gains a part; the session stays on `api`, `packages` sees a token, as the owner's trust cut has it (ADR-155) | A short-lived credential in the page's memory; it is in the caller's token list until it is revoked; the page's endpoint must serve the `packages` family (H-2182) |
 | (b) The management operation hands the request to the publish route in process (the first build) | One call | One road in code | Works on `web` and `all` only; on `api` there is no dispatcher |
 | (c) Build the format host and the remote engine on `api` | One call | Works everywhere | `api` would fill caches and ask upstreams, against Q-ARCH-294; with the read-only view only, the shadowing check of every first version a remote could serve fails closed |
 | (d) `api` stores the archive and a job on a `worker` publishes it | The task becomes waiting and running | No credential in the browser | A new job kind, task states and a schema change; a publish is no longer processed in the request (Q-ANS-8) |
