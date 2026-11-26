@@ -106,3 +106,42 @@ func TestR_ARCH_001_VirtualEngineOverTheView(t *testing.T) {
 		}
 	}
 }
+
+// managementNeeds is what an operation of the management API that a format decides needs of a role, per operation (Q-ARCH-1070): the
+// Host it writes through, and the virtual engine that Host asks what the caller may read of a repository (formats.CallerVersions).
+// The operation is served on the roles with the management API (R-ARCH-001); an operation that adds a need adds a row.
+var managementNeeds = map[string][]Area{
+	"PUT and DELETE .../packages/{name}/deprecation (R-API-085)": {AreaManagementHost, AreaVirtualEngine},
+}
+
+// TestR_ARCH_001_AManagementOperationAFormatDecidesHasItsHostOnEveryManagementRole: every role with the management API enables what
+// the operations a format decides need, and the role api, which builds no format host, refuses to start without the virtual engine its
+// Host resolves the caller's read scope with; web and all take their format host. A Host without a Resolver answered the deprecation
+// with 500 on api (Q-ARCH-1070); the role table alone did not show it, since it lists areas, not what a Host was built with.
+func TestR_ARCH_001_AManagementOperationAFormatDecidesHasItsHostOnEveryManagementRole(t *testing.T) {
+	for _, role := range []string{"api", "web", "all"} {
+		sub, err := SubsystemsFor(role)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for op, needs := range managementNeeds {
+			for _, area := range needs {
+				if !sub.Has(area) {
+					t.Errorf("%s: %s needs the area %s", role, op, area)
+				}
+			}
+		}
+	}
+	_, err := appFor(t, "api").wireManagementHost(t.Context(), infra{}, repositoryArea{}, authzArea{}, formatsArea{}, filesArea{},
+		virtualEngineArea{}, formatHostArea{})
+	if err == nil || !strings.HasPrefix(err.Error(), "management-host: ") || !strings.Contains(err.Error(), "no virtual engine") {
+		t.Errorf("api: err = %v", err)
+	}
+	for _, role := range []string{"web", "all"} {
+		_, err := appFor(t, role).wireManagementHost(t.Context(), infra{}, repositoryArea{}, authzArea{}, formatsArea{}, filesArea{},
+			virtualEngineArea{}, formatHostArea{})
+		if err == nil || !strings.Contains(err.Error(), "no format host") || strings.Contains(err.Error(), "no virtual engine") {
+			t.Errorf("%s: err = %v", role, err)
+		}
+	}
+}

@@ -21,7 +21,8 @@ func roleTable() map[string][]Area {
 	listener := []Area{AreaLimits, AreaDownloadLinks, AreaVirtualEngine, AreaAuth, AreaEndpoints, AreaAPI}
 	filling := []Area{AreaProxyEngine, AreaFormatHost}
 	// The shared asset store of the UI is where the UI is served (R-HA-020, Q-HA-120): api, web and all.
-	management := []Area{AreaPackagesAPI, AreaVulnAPI, AreaSessions, AreaLogin, AreaUIAssets, AreaCIExchange}
+	// The Host of the management operations a format decides is the format host where the role builds one (Q-ARCH-1070).
+	management := []Area{AreaManagementHost, AreaPackagesAPI, AreaVulnAPI, AreaSessions, AreaLogin, AreaUIAssets, AreaCIExchange}
 	// The background engine runs where jobs are claimed (R-REPO-053) and where the management API lends the upstream catalogue an
 	// upstream (remote-curation.md R-CUR-008): worker, api, web and all.
 	jobs := []Area{AreaMirrorEngine}

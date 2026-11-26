@@ -5,6 +5,8 @@ package nuget
 import (
 	"strings"
 	"testing"
+
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_NUGET_036_ALocalVersionIsDeprecatedThroughTheManagementAPIAndServed: the management operation deprecates one version of a local
@@ -16,6 +18,8 @@ import (
 func TestR_NUGET_036_ALocalVersionIsDeprecatedThroughTheManagementAPIAndServed(t *testing.T) {
 	e := newWriteEnv(t)
 	a := e.replica("web-a")
+	// The management operation and the screens' reads go to a replica of the role api, which serves no package protocol (R-ARCH-001).
+	m := e.st.Start(t, testenv.ReplicaOptions{Name: "api-a", Role: "api"})
 	e.mustPush(a, "nuget-local", e.tokDev, nupkg(t, pkgSpec{id: "Acme.Old", version: "1.0.0"}))
 	e.mustPush(a, "nuget-local", e.tokDev, nupkg(t, pkgSpec{id: "Acme.Old", version: "2.0.0"}))
 	e.mustPush(a, "nuget-local", e.tokDev, nupkg(t, pkgSpec{id: "Acme.New", version: "3.0.0"}))
@@ -23,10 +27,10 @@ func TestR_NUGET_036_ALocalVersionIsDeprecatedThroughTheManagementAPIAndServed(t
 	body := map[string]any{"version": "1.0.0", "reasons": []string{"legacy"}, "message": "Use Acme.New.", "alternatePackage": map[string]any{"name": "Acme.New"}}
 
 	t.Run("R-API-085 who may not deploy is refused, whether or not it may read (R-AUTHZ-016)", func(t *testing.T) {
-		if ans := e.st.Do(a, "PUT", op, e.tokReader, body); ans.Status != 403 {
+		if ans := e.st.Do(m, "PUT", op, e.tokReader, body); ans.Status != 403 {
 			t.Errorf("a reader: %d %s", ans.Status, ans.Body)
 		}
-		if ans := e.st.Do(a, "PUT", op, e.tokNobody, body); ans.Status != 403 {
+		if ans := e.st.Do(m, "PUT", op, e.tokNobody, body); ans.Status != 403 {
 			t.Errorf("a person without a grant: %d %s", ans.Status, ans.Body)
 		}
 	})
@@ -36,21 +40,21 @@ func TestR_NUGET_036_ALocalVersionIsDeprecatedThroughTheManagementAPIAndServed(t
 			"no reason":   {"version": "1.0.0", "message": "x"},
 			"a bad range": {"version": "1.0.0", "reasons": []string{"Other"}, "alternatePackage": map[string]any{"name": "Acme.New", "range": "[2,1]"}},
 		} {
-			if ans := e.st.Do(a, "PUT", op, e.tokDev, b); ans.Status != 422 {
+			if ans := e.st.Do(m, "PUT", op, e.tokDev, b); ans.Status != 422 {
 				t.Errorf("%s: %d %s", name, ans.Status, ans.Body)
 			}
 		}
 	})
 	t.Run("R-NUGET-036 deprecate one version", func(t *testing.T) {
 		rev := e.rev("nuget-local", "acme.old")
-		ans := e.st.Do(a, "PUT", op, e.tokDev, body)
+		ans := e.st.Do(m, "PUT", op, e.tokDev, body)
 		if ans.Status != 200 {
 			t.Fatalf("%d %s", ans.Status, ans.Body)
 		}
 		if got := string(ans.Body); !strings.Contains(got, `"reasons":["Legacy"]`) || !strings.Contains(got, `"range":"*"`) || !strings.Contains(got, `"scope":"version"`) {
 			t.Errorf("answer %s", got)
 		}
-		if again := e.st.Do(a, "PUT", op, e.tokDev, body); again.Status != 200 {
+		if again := e.st.Do(m, "PUT", op, e.tokDev, body); again.Status != 200 {
 			t.Fatalf("repeat: %d %s", again.Status, again.Body)
 		}
 		if e.rev("nuget-local", "acme.old") != rev+1 || e.events("package.metadata_changed", "nuget-local", "acme.old/1.0.0") != 1 {
@@ -63,38 +67,38 @@ func TestR_NUGET_036_ALocalVersionIsDeprecatedThroughTheManagementAPIAndServed(t
 		}
 	})
 	t.Run("R-API-085 the screens mark it, link the alternate and filter by the latest version", func(t *testing.T) {
-		id := e.st.Do(a, "GET", "/api/v1/packages/lookup?format=nuget&name=Acme.Old", e.tokDev, nil).JSON(t)["id"].(string)
-		vers := e.st.Do(a, "GET", "/api/v1/packages/"+id+"/versions", e.tokDev, nil)
+		id := e.st.Do(m, "GET", "/api/v1/packages/lookup?format=nuget&name=Acme.Old", e.tokDev, nil).JSON(t)["id"].(string)
+		vers := e.st.Do(m, "GET", "/api/v1/packages/"+id+"/versions", e.tokDev, nil)
 		if !strings.Contains(string(vers.Body), `"version":"1.0.0"`) || strings.Count(string(vers.Body), `"deprecation":`) != 1 {
 			t.Errorf("versions %s", vers.Body)
 		}
-		d := e.st.Do(a, "GET", "/api/v1/packages/"+id+"/versions/1.0.0", e.tokDev, nil).JSON(t)
+		d := e.st.Do(m, "GET", "/api/v1/packages/"+id+"/versions/1.0.0", e.tokDev, nil).JSON(t)
 		dep, _ := d["deprecation"].(map[string]any)
 		alt, _ := dep["alternatePackage"].(map[string]any)
 		if dep["message"] != "Use Acme.New." || alt["name"] != "Acme.New" || alt["packageId"] == nil {
 			t.Errorf("details %v", d["deprecation"])
 		}
-		if l := e.st.Do(a, "GET", "/api/v1/packages?format=nuget&deprecated=true", e.tokDev, nil); strings.Contains(string(l.Body), "Acme.Old") {
+		if l := e.st.Do(m, "GET", "/api/v1/packages?format=nuget&deprecated=true", e.tokDev, nil); strings.Contains(string(l.Body), "Acme.Old") {
 			t.Errorf("a package whose latest version is not deprecated is listed: %s", l.Body)
 		}
 		v2 := map[string]any{"version": "2.0.0", "reasons": []string{"Other"}}
-		if ans := e.st.Do(a, "PUT", op, e.tokDev, v2); ans.Status != 200 {
+		if ans := e.st.Do(m, "PUT", op, e.tokDev, v2); ans.Status != 200 {
 			t.Fatalf("2.0.0: %d %s", ans.Status, ans.Body)
 		}
-		l := e.st.Do(a, "GET", "/api/v1/packages?format=nuget&deprecated=true", e.tokDev, nil)
+		l := e.st.Do(m, "GET", "/api/v1/packages?format=nuget&deprecated=true", e.tokDev, nil)
 		if items, _ := l.JSON(t)["items"].([]any); len(items) != 1 || items[0].(map[string]any)["deprecation"] == nil {
 			t.Errorf("the filter: %s", l.Body)
 		}
-		s := e.st.Do(a, "GET", "/api/v1/search/suggestions?q=acme.old", e.tokDev, nil)
+		s := e.st.Do(m, "GET", "/api/v1/search/suggestions?q=acme.old", e.tokDev, nil)
 		if !strings.Contains(string(s.Body), `"deprecated":true`) {
 			t.Errorf("the suggestion is not marked: %s", s.Body)
 		}
 	})
 	t.Run("R-NUGET-036 clear", func(t *testing.T) {
-		if ans := e.st.Do(a, "DELETE", op+"?version=1.0.0", e.tokDev, nil); ans.Status != 204 {
+		if ans := e.st.Do(m, "DELETE", op+"?version=1.0.0", e.tokDev, nil); ans.Status != 204 {
 			t.Fatalf("%d %s", ans.Status, ans.Body)
 		}
-		if ans := e.st.Do(a, "DELETE", op+"?version=1.0.0", e.tokDev, nil); ans.Status != 204 {
+		if ans := e.st.Do(m, "DELETE", op+"?version=1.0.0", e.tokDev, nil); ans.Status != 204 {
 			t.Fatalf("repeat: %d %s", ans.Status, ans.Body)
 		}
 		if got := e.st.Text(`SELECT details->>'change' FROM audit_event WHERE action = 'package.metadata_changed' AND path = 'acme.old/1.0.0' ORDER BY occurred_at DESC LIMIT 1`); got != "undeprecate" {

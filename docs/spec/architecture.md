@@ -157,6 +157,7 @@ routes read them. The areas of the client listener are split by route family:
 | `proxy-engine` | the remote engine: fills, flights, the negative cache (R-REPO-025) | **no** | yes | no | yes |
 | `virtual-engine` | the virtual engine (R-REPO-019) | the explanation only, over a read-only view of the remote members (Q-ARCH-294) | yes | no | yes |
 | `formathost` | the format host and the protocol dispatcher of `/api/<format>/` | **no** | yes | no | yes |
+| `management-host` | the Host the management operations a format decides write through (a deprecation, R-API-085) and the files seam's serve check reads through (Q-ARCH-1070) | a Host of its own: item store, package store, decision point, the virtual engine as its Resolver; no remote engine, no dispatcher | **no** | no | the format host |
 | `packages-api` | the services of the package screens of the management API (R-API-029, R-API-030) | yes | **no** | no | yes |
 | `vuln-api` | the services of the vulnerability operations of the management API | yes | **no** | no | yes |
 | `sessions` | the session store (R-AUTH-001) | yes | **no** | no | yes |
@@ -9991,7 +9992,7 @@ operations the snapshot). The explanation asks the remote members `Cached` and `
 ([internal/virtual/explain.go](../../internal/virtual/explain.go)). (2) The `files` area builds a seam, and the serve check of
 the item store calls the format's `ServeCheck` with the Host, which reads the stored marks through `FormatData` only
 ([formathost/hooks.go](../../internal/formathost/hooks.go), [formats/npm/servecheck.go](../../internal/formats/npm/servecheck.go)).
-The seam took the Host from the format host, which `api` does not build; the content routes of R-API-025 (WP6a.4) call it, so `api` gets the serve-check host of `wireServeCheckHost` ([wire_files.go](../../internal/app/wire_files.go)), and the routes answer on `api` and `web` and are an unknown path on `packages`.
+The seam took the Host from the format host, which `api` does not build; the content routes of R-API-025 (WP6a.4) call it, so `api` gets the serve-check host, built today by the area `management-host` ([wire_management_host.go](../../internal/app/wire_management_host.go), Q-ARCH-1070), and the routes answer on `api` and `web` and are an unknown path on `packages`.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -13229,6 +13230,35 @@ the Secret then applied by `upstream-accounts.sh secret` from made-up values. Th
 changed token 54 s after its apply, and the files of the deleted Secret were gone 60 s after the delete; the pod ran throughout with no
 restart. The Secret carried no `last-applied-configuration` annotation, and its managed fields named the keys `username` and `token` with no
 value. Nothing asked Docker Hub.
+
+### Q-ARCH-1070 · The role `api` writes what a format decides through a Host of its own with the virtual engine as its Resolver
+
+Status: **Decided by the development agent** on 2026-11-26; the owner reviews it at the walkthrough.
+
+Context: the deprecation of a version or a package (api-and-ui.md R-API-085) is an operation of the management API that its format
+decides and writes (`formats.Deprecator`): it authorizes with the Host, writes in `Host.Write`, and asks what the caller may read of the
+repository with `formats.CallerVersions`, which reads the Host's `Resolver().ReadScope`. The role `api` builds no format host
+([Q-ARCH-301](#q-arch-301--which-operations-reach-the-engines-on-api-and-what-the-files-seam-reads-there)); the Host its `files` area
+built for the serve check had no Resolver, and its stub answered `ReadScope` with the internal error "Virtual resolution is not wired on
+this replica." So the deprecation answered 500 on `api` and 200 on `web` and `all`, the pipeline's `e2e (nuget)` among the failures.
+Q-ARCH-301 rested on "no route that makes such a call exists on the role"; the deprecation is the first route that does. The role has the
+virtual engine already, over the read-only view of the remote members (Q-ARCH-294).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The area `management-host` on the roles of the management API: the format host where the role builds one, else (`api`) the Host of the serve check built after the virtual engine with that engine as its Resolver (chosen) | One Host per role, as before; the operation reads the area | A format's write is the same call on every role; `ReadScope` answers from the decision point the role has; no fetch is reachable, since the engine on `api` reads the remotes through the read-only view; `web` stays the union of `api` and `packages` | One more area in the role table |
+| (b) Build `formathost` on `api` | No new area | Nothing to build | Gives `api` the dispatcher and the remote engine Q-ARCH-294 keeps off it |
+| (c) Change `formats.CallerVersions` to ask the decision point through another member of the Host | No Resolver needed | The resolver is not asked for something that is not a resolution | Changes the format contract (R-ARCH-008) for one role |
+
+**Choice:** (a). The step `management-host` ([wire_management_host.go](../../internal/app/wire_management_host.go)) runs on `api`, `web`
+and `all` and takes the optional `formatHostArea`: where the role enables `formathost` it requires that host and returns it; on `api` it
+requires the item store, the decision point, the repository reader and the virtual engine, builds the Host with
+`formathost.NewResolver(engine, readScoper)` and sets it as the replica's Host, which the files seam reads (Q-ARCH-301's serve check
+unchanged). The management API's deprecation operation takes the area's Host. `TestR_ARCH_001_AManagementOperationAFormatDecidesHasItsHostOnEveryManagementRole`
+([roles_wiring_test.go](../../internal/app/roles_wiring_test.go)) holds a table of what each such operation needs of a role and refuses an
+`api` start without the virtual engine; the integration cases of the deprecation in `nuget`, `npm` and `ansiblelocal` send the operation
+and the screens' reads to a replica of the role `api`. **Revisit** when an operation of the management API needs the remote engine: it
+belongs on `packages` or a `worker`, as Q-ARCH-301 says.
 
 ## What this does not cover
 

@@ -9422,10 +9422,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-ARCH
 
-287 questions on [spec/architecture.md](spec/architecture.md).
+288 questions on [spec/architecture.md](spec/architecture.md).
 
 <details>
-<summary>Q-ARCH: 287 questions</summary>
+<summary>Q-ARCH: 288 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9716,6 +9716,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-1067](spec/architecture.md#q-arch-1067--a-git-worktree-and-an-instance-other-than-1-read-no-account-unless-a-variable-names-a-file) | A git worktree and an instance other than 1 read no account unless a variable names a file | Decided by the development agent | (b) The main checkout's instance 1 and cluster read the file; everything else none unless `UPSTREAM_ACCOUNTS_FILE` names one | — |
 | [Q-ARCH-1068](spec/architecture.md#q-arch-1068--the-kind-nodes-take-docker-hubs-account-from-the-hosts-docker-first-and-from-the-profiles-file-second) | The kind nodes take Docker Hub's account from the host's Docker first and from the profile's file second | Decided by the development agent | (b) The host's Docker first, the profile's file second | — |
 | [Q-ARCH-1069](spec/architecture.md#q-arch-1069--the-kind-profile-names-the-accounts-secret-only-while-it-exists-and-the-kubelet-fills-an-optional-source-that-appears-later) | The kind profile names the account's Secret only while it exists, and the kubelet fills an optional source that appears later | Decided by the development agent | (a) `release_values` layers `values-upstream-accounts.yaml` only while the Secret `quader-upstream-docker-hub` exists | — |
+| [Q-ARCH-1070](spec/architecture.md#q-arch-1070--the-role-api-writes-what-a-format-decides-through-a-host-of-its-own-with-the-virtual-engine-as-its-resolver) | The role `api` writes what a format decides through a Host of its own with the virtual engine as its Resolver | Decided by the development agent on 2026-11-26 | (a) The area `management-host` on the roles of the management API: the format host where the role builds one, else (`api`) the Host of the serve check built after the virtual engine with that engine as its Resolver | — |
 
 </details>
 

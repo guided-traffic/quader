@@ -221,6 +221,9 @@ func wiringSteps() []step {
 		newStep(AreaProxyEngine, onFilling, (*App).wireProxyEngine),
 		newStep(AreaVirtualEngine, withListener, (*App).wireVirtualEngine, withOptional(proxyEngineArea{})),
 		newStep(AreaFormatHost, onFilling, (*App).wireFormatHost),
+		// The Host of the management operations a format decides: the format host where the role builds one, else (api) a Host with the
+		// virtual engine as its Resolver (Q-ARCH-1070).
+		newStep(AreaManagementHost, onManagement, (*App).wireManagementHost, withOptional(formatHostArea{})),
 		newStep(AreaMirrorEngine, onWorker|onManagement, (*App).wireMirrorEngine, withOptional(proxyEngineArea{}, formatHostArea{})),
 		newStep(AreaPackagesAPI, onManagement, (*App).wirePackagesAPI),
 		newStep(AreaVulnAPI, onManagement, (*App).wireVulnAPI),
