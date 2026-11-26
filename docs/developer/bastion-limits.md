@@ -288,7 +288,8 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   ([bastion-limits-page.ts](../../web/src/app/features/bastions/bastion-limits-page.ts)) with `orderBastionRules` of `limit-rules.ts`; the
   overview's **Place** and a caller's **By place** ([usage-places.ts](../../web/src/app/features/usage/usage-places.ts)). Decisions
   Q-UI-1485 to Q-UI-1489; gaps H-2364, H-2365 (both in api-and-ui.md). With E9b's report the state line takes the cache's fill,
-  capacity and protected bytes from one replica (the bucket backend reports the whole Bastion's cache in each) and names the block reasons
+  capacity and protected bytes from one replica (the bucket backend reports the whole Bastion's cache in each; *since E19* it adds up the
+  replicas whose `cache.shared` is false and takes the shared one once) and names the block reasons
   of its closed list (`refusals`, `failed_auth`, `refused_requests`) in words, on the card and on **Blocks** (`blockReasonText`). A
   declared registration (R-BAS-127) shows the section as every other card; its addresses are text there as well. Tests: Vitest, 19 cases in `bastions.spec.ts`,
   `bastion-limits-page.spec.ts` and `usage.spec.ts`, about 2.5 s together, fixtures only.
@@ -396,6 +397,23 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   [developer/bastion.md](bastion.md#a-head-of-a-document-answered-from-the-cache). Decisions Q-BAS-475 to Q-BAS-478 of
   [spec/bastion.md](../spec/bastion.md#q-bas-475--a-head-of-a-document-is-answered-from-what-the-bastion-keeps); gaps H-2374 and H-2375 of
   [security/bastion.md](../security/bastion.md#h-2374--a-head-makes-the-bastion-read-a-document-its-caller-never-receives).
+
+### E19 · Interface version 9: a fill for a HEAD is no download, and a replica says whether its cache is shared
+
+- **Builds** the two gaps of E18 and E12 that needed a member of the interface, in one raise from 8 to 9
+  ([the wire](../spec/bastion.md#the-interface-version-9-a-head-is-no-download-and-a-replica-says-whose-cache-it-reports)): the request header `Quader-Bastion-For-Head` of every `GET` a Bastion sends for a `HEAD`, which the
+  main installation answers as the `GET` but records and charges as the `HEAD` on a document's route (H-2375 closed), and the status's
+  `cache.shared`, with which the card adds up the caches of their own and takes the shared bucket once (H-2364 closed).
+- **Files**: `iface` (`headers.go`, `usage.go`, `version.go`, the surface file), `mainclient` (`Forward.ForHead`), `engine/forward.go`,
+  `server/status.go` and `server.go`; at the main installation `bastionmain` (`Recognition.ForHead`, `ForHead`, `StatesForHead`,
+  `Absence.NoteRoute`), `api/bastionmark/mark.go`, `items` (`Options.NoDownload`), `limits` (`Charge.NoDownload`), `api/v1/ratelimit.go`,
+  `app/wire_files.go`; the OpenAPI document's status members and interface annotations; `web/.../bastion-state.ts`.
+- *Built on 2026-11-26.* Tests: unit, seven cases in `internal/bastion/engine`, `internal/bastion/mainclient`, `internal/bastion/server`,
+  `internal/bastionmain`, `internal/items` and `internal/limits` (milliseconds each, no data beyond a few bytes); integration
+  `TestR_BAS_059_DockersHeadOfATagIsNoDownloadAtTheMainInstallation` (area `bastion`, about 3.5 s, an image of two blobs of 1 KiB); Vitest,
+  the card's volume case beside the bucket case (one case more, a fraction of a second, fixtures only). Decisions Q-BAS-479 to Q-BAS-482 of
+  [spec/bastion.md](../spec/bastion.md#q-bas-479--a-get-a-bastion-sends-for-a-head-says-so-in-a-header-of-the-request); gap H-2370 of
+  [security/bastion.md](../security/bastion.md#h-2370--a-bastion-token-takes-a-counted-documents-download-out-of-the-count).
 
 H-2298 and H-2299 are spare and stay unused.
 

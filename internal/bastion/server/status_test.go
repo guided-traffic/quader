@@ -51,3 +51,24 @@ func TestR_LIM_045_TheStatusCarriesTheCacheTheThroughputAndTheBlocksByTheirCodes
 		t.Fatalf("the blocks %+v (blocked %d)", s.Blocks, s.Blocked)
 	}
 }
+
+// TestR_LIM_045_TheStatusSaysWhetherItsCacheIsTheBastions: a replica on the bucket backend reports its cache's figures as the whole
+// Bastion's (shared), one on the volume backend as its own, so that a reader adds the second and takes the first once (Q-BAS-480).
+// Gauges only.
+func TestR_LIM_045_TheStatusSaysWhetherItsCacheIsTheBastions(t *testing.T) {
+	m, err := bmetrics.New(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.CacheBytes.WithLabelValues(bmetrics.AreaDocuments).Set(700)
+	for _, bucket := range []bool{false, true} {
+		r := &reporting{replica: "bastion-1", m: m, usage: usage.New(0), sharedCache: bucket, now: time.Now}
+		s := r.status()
+		if s.Cache.Shared != bucket || s.Cache.Bytes != 700 {
+			t.Errorf("bucket backend %v: the cache %+v", bucket, s.Cache)
+		}
+		if err := s.Validate(); err != nil {
+			t.Fatal(err)
+		}
+	}
+}

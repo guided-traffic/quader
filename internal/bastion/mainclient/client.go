@@ -678,6 +678,9 @@ func (c *HTTPClient) forwardRequest(ctx context.Context, f Forward) (*http.Reque
 	}
 	// The Bastion's own headers, after the copy of the caller's, which dropped every Quader-*, Range and If-* header.
 	f.Offer.Set(req.Header)
+	if f.ForHead && req.Method == http.MethodGet {
+		req.Header.Set(iface.HeaderForHead, iface.ForHeadValue)
+	}
 	if f.RangeFrom > 0 {
 		req.Header.Set("Range", "bytes="+strconv.FormatInt(f.RangeFrom, 10)+"-")
 		if f.IfRange != "" {

@@ -600,7 +600,10 @@ The Bastion interface has a version of its own, separate from the release number
   `retryAfterMaxSeconds` of the format table (R-BAS-091); 8, the configuration, the subject's limits, the usage and status reports,
   the format table's `errorShape` and `readWithBody`, the renamed codes, the probe's headers gone, the contact's headers, the registry
   token's payload version 2 read, and W-35's catalogue ([the wire of interface version 8](#the-interface-version-8-the-shared-wire),
-  [Q-BAS-322](#q-bas-322--both-topics-raise-the-interface-version-once-to-8); built on 2026-11-26 by E7 with W-35's P5). The version is
+  [Q-BAS-322](#q-bas-322--both-topics-raise-the-interface-version-once-to-8); built on 2026-11-26 by E7 with W-35's P5); 9, the request
+  header `Quader-Bastion-For-Head` of a `GET` that answers a `HEAD` and the status's `cache.shared`
+  ([the wire of interface version 9](#the-interface-version-9-a-head-is-no-download-and-a-replica-says-whose-cache-it-reports), built on
+  2026-11-26 by W34-E19). The version is
   `iface.InterfaceVersion`; the comment beside it names the same list.
 
 Acceptance criteria:
@@ -1310,9 +1313,12 @@ and the Bastion keeps what may be kept (owner, Q-BAS-7):
   refuses it, the caller receives the `HEAD`'s answer the Bastion holds ([Q-BAS-478](#q-bas-478--a-refused-get-of-a-head-passes-the-heads-answer-on)).
   The conditional request of a `HEAD` for a kept document within that bound, or for the caller's copy, is a conditional `GET`, so a
   `304` renews what is kept and a `200` replaces it, as for a `GET`. A `HEAD` of an artifact is never sent as a `GET`: answered from a
-  kept artifact, else forwarded as `HEAD`, as before. The main installation counts the `GET` of a `HEAD` as its download where it
-  counts the `GET` of that document ([H-2375](../security/bastion.md#h-2375--the-get-of-a-head-is-a-download-at-the-main-installation));
-  a `HEAD` the Bastion answers is never reported as one (R-BAS-059). Code: [headfill.go](../../internal/bastion/engine/headfill.go)
+  kept artifact, else forwarded as `HEAD`, as before. *Revised on 2026-11-26 by [Q-BAS-479](#q-bas-479--a-get-a-bastion-sends-for-a-head-says-so-in-a-header-of-the-request) (package
+  W34-E19, [interface version 9](#the-interface-version-9-a-head-is-no-download-and-a-replica-says-whose-cache-it-reports)):* the `GET` of a `HEAD` and the conditional `GET` of a
+  `HEAD` carry `Quader-Bastion-For-Head: true`, and the main installation answers them as the `GET`s they are, marking included, but
+  records no download for them, as for the `HEAD` they stand for (R-BAS-059); *until then it counted that `GET` as the document's download
+  where it counts the `GET` of that document ([H-2375](../security/bastion.md#h-2375--the-get-of-a-head-is-a-download-at-the-main-installation), closed)*.
+  A `HEAD` the Bastion answers is never reported as one (R-BAS-059). Code: [headfill.go](../../internal/bastion/engine/headfill.go)
   (`fillForHead`, `admitFill`, `headAsGet`), `rq.asGet` and `sentMethod` in [forward.go](../../internal/bastion/engine/forward.go).
 - **Errors.** An answer that carries the marking is the main installation's own, whatever its status, and is passed on
   (`pass`). A connect or TLS error, a timeout, and an unmarked `5xx` (an ingress or proxy in front of the main installation)
@@ -3767,10 +3773,14 @@ The existing rules hold for every format: a hit at the Bastion is not counted at
   by its digest, a `HEAD` is none, and a blob is a download of its item. Through a Bastion: `docker pull` of a warm single-platform image
   `GET`s the tag (a document, counted at its fill, so reported) and the blobs (artifacts, reported); containerd `HEAD`s the tag (not
   reported) and `GET`s the manifests by digest and the blobs (reported). *Since 2026-11-26 (R-BAS-021, Q-BAS-475):* the `HEAD` of a tag
-  the Bastion does not hold is followed by the `GET` that keeps it, which the main installation counts as the tag's download for the
-  caller that sent the `HEAD`, once per fill ([H-2375](../security/bastion.md#h-2375--the-get-of-a-head-is-a-download-at-the-main-installation));
-  the `HEAD`s the Bastion answers from it are reported as nothing. The audit trail of a Bastion pull is therefore what the main
-  installation's own audit trail would hold for the same requests.
+  the Bastion does not hold is followed by the `GET` that keeps it; *since W34-E19 (interface version 9, [Q-BAS-479](#q-bas-479--a-get-a-bastion-sends-for-a-head-says-so-in-a-header-of-the-request),
+  [Q-BAS-481](#q-bas-481--the-get-of-a-head-records-nothing-a-head-does-not-and-is-charged-at-the-main-installation-as-the-head))* that `GET` says so and the main installation records no download for it: no
+  download statistics, no repository activity, no `artifact.downloaded` and no download figure of the limits, as for the `HEAD` it stands
+  for; it is still marked `Counted`, so a later `GET` the Bastion serves from what it kept is reported as the tag's download. *Until
+  W34-E19 the main installation counted that `GET` as the tag's download for the caller that sent the `HEAD`, once per fill (H-2375,
+  closed).* The `HEAD`s the Bastion answers from it are reported as nothing. The audit trail of a Bastion pull is therefore what the main
+  installation's own audit trail would hold for the same requests: Docker's sequence (`HEAD` of the tag, `GET` of the manifest by its
+  digest, the blobs) records the manifest by digest and the blobs, one image as their unit (R-OPS-054).
 - **Usage and limits.** What a Bastion forwards is charged at the main installation to the caller's subject (R-LIM-003), the token
   requests by the token service's own rule and the conditional requests of a registry token as requests of the token's subject; what the
   Bastion serves from its cache is charged nowhere. *Revised on 2026-11-26 (R-BAS-096, [usage-and-limits.md](usage-and-limits.md)
@@ -3791,6 +3801,17 @@ Acceptance criteria:
   the note), `TestR_BAS_059_ARemoteTagIsCountedBeforeItsStatusLine` (`internal/formats/oci`: a remote tag's download exists when its status
   line goes out) and `TestR_BAS_059_ADownloadTheCoreCountedIsMarkedCounted` (`internal/api/bastionmark`: a download and a document marked, a
   `304`, a `404` and an ordinary caller not).
+- *Added on 2026-11-26 (W34-E19, [Q-BAS-479](#q-bas-479--a-get-a-bastion-sends-for-a-head-says-so-in-a-header-of-the-request) to [Q-BAS-482](#q-bas-482--the-main-installation-honours-the-statement-of-a-head-on-a-documents-route-only)), as built:*
+  integration (area `bastion`, about 3.5 s, an image of two blobs of 1 KiB): Docker's sequence through a Bastion records at the main
+  installation the manifest by digest and the two blobs, one image as their unit, and nothing for the `GET` that filled the tag's `HEAD`,
+  which carried the statement; a `GET` of the tag afterwards costs the main installation nothing and is reported by the Bastion
+  (`TestR_BAS_059_DockersHeadOfATagIsNoDownloadAtTheMainInstallation`). Unit, the Bastion's side (milliseconds, documents of a few
+  bytes): `TestR_BAS_059_OnlyTheGetOfAHeadSaysItIsForAHead` (`internal/bastion/engine`: the fill's `GET` and the `HEAD`'s conditional
+  `GET` carry it, the `HEAD`, a caller's `GET` and its conditional `GET` do not), `TestR_BAS_059_TheStatementOfAHeadIsTheEnginesAlone`
+  (`internal/bastion/mainclient`: a caller's own header never reaches the main installation). Unit, the main installation's side
+  (milliseconds, no data): `TestR_BAS_059_OnlyARecognizedGetSaysItIsForAHead` and
+  `TestR_BAS_059_TheStatementOfAHeadHoldsOnADocumentsRouteOnly` (`internal/bastionmain`), `TestR_BAS_059_TheGetOfAHeadRecordsNoDownload`
+  (`internal/items`), `TestR_BAS_059_TheGetOfAHeadIsChargedAsTheHead` (`internal/limits`).
 
 ### R-BAS-060 · Tests of the feature and what they cost
 Priority: **MVP** · Covers: quader-only
@@ -6011,7 +6032,9 @@ the Bastion's place, and a marking that names limits for a subject other than a 
   ([Q-BAS-474](#q-bas-474--a-replica-reports-its-usage-as-deltas-with-every-flush-and-its-state-says-of-each-figure-whose-it-is)).
 - **Whose each figure of `status` is** (Q-BAS-474), so that a reader adds only what is each replica's own: `cache.bytes`,
   `cache.capacityBytes` and `cache.protectedBytes` are the replica's view of its cache backend: its own on a volume, and the whole Bastion's
-  on a bucket, which every replica of a shared bucket reports alike (take one, never the sum); `cache.hits`, `cache.misses` and
+  on a bucket, which every replica of a shared bucket reports alike (take one, never the sum); *since interface version 9
+  ([Q-BAS-480](#q-bas-480--a-replicas-status-says-whether-its-cache-is-the-bastions-and-the-card-adds-up-only-caches-of-their-own))* `cache.shared` says which: `true` on the bucket backend, `false` on the volume backend, so that a
+  reader adds the replicas' own caches and takes the shared one once; `cache.hits`, `cache.misses` and
   `cache.evictions` are the replica's own since its start; `throughput.limited` and `throughput.bytesPerSecondByClass` the replica's own,
   the rate since its previous status; `limited` the subjects a budget refused on this replica within the last five minutes (a subject
   refused at two replicas counts at each); `blocks` the blocks this replica set that have not ended, the newest first, at most 100;
@@ -6075,6 +6098,44 @@ Acceptance criteria:
   `TestR_BAS_101_TheCatalogueChangeListHoldsItsOrder`, `TestR_BAS_101_TheBatchReadIsFramed`,
   `TestR_BAS_095_AReadRouteWithABodyIsMatchedAsTheRouterMatchesIt`, `TestR_BAS_052_AVersion2RegistryTokenReadsOnlyItsReadableClaims`,
   and the format table's members in `TestR_BAS_057_TheHandshakeCarriesTheFormatTable`.
+
+## The interface version 9: a HEAD is no download, and a replica says whose cache it reports
+
+Package W34-E19 (2026-11-26) raises `iface.InterfaceVersion` from 8 to 9 for two gaps of the day's packages
+([Q-BAS-479](#q-bas-479--a-get-a-bastion-sends-for-a-head-says-so-in-a-header-of-the-request), [Q-BAS-480](#q-bas-480--a-replicas-status-says-whether-its-cache-is-the-bastions-and-the-card-adds-up-only-caches-of-their-own)): the `GET` a Bastion sends to answer a `HEAD` was counted at the main
+installation as a download (H-2375), and the card could not tell a replica's own cache from the Bastion's shared one (H-2364 of
+[api-and-ui.md](api-and-ui.md)). Before the first stable release a raise costs nothing but the lockstep upgrade every raise needs.
+
+**The request header `Quader-Bastion-For-Head: true`** (`iface.HeaderForHead`, `iface.ForHeadValue`, `iface.ForHead`) on a forwarded
+`GET`: the Bastion sends it on the `GET` that fills a `HEAD` miss of a document and on the conditional `GET` that revalidates a kept
+document or the caller's copy for a `HEAD` (`rq.asGet`, `mainclient.Forward.ForHead`), and on nothing else; it is set after the caller's
+headers were copied, which drop every `Quader-*` header, so a caller's own value never reaches the main installation.
+
+- The main installation's recognition stage reads it on a recognized forwarded `GET` into `Recognition.ForHead`: exactly one value, `true`;
+  anything else is no statement. It removes the header, as it removes the handover's offer, so no stage behind it reads it; on a request
+  that is no recognized forward it is removed and means nothing.
+- The statement holds only once the request matched a route of a document, a metadata or a computed route (`bastionmain.ForHead`,
+  [Q-BAS-482](#q-bas-482--the-main-installation-honours-the-statement-of-a-head-on-a-documents-route-only)); on a download route, the route of an artifact, which a Bastion never sends it for, the `GET` counts as the
+  download it is.
+- Where it holds, the answer is the `GET`'s, marking included (`Counted` where the core counts that document, so a later serve from what
+  the Bastion kept is reported, R-BAS-059), and the main installation records nothing a `HEAD` would not record
+  ([Q-BAS-481](#q-bas-481--the-get-of-a-head-records-nothing-a-head-does-not-and-is-charged-at-the-main-installation-as-the-head)): no download statistics, no repository activity, no `artifact.downloaded` (`items.Options.NoDownload`),
+  and at the limits no cached bytes, no pacing, no download admission and no parallel lease (`limits.Charge.NoDownload`). Its request
+  figures, and the upstream request and the uncached bytes of a fill it causes at a remote repository, count as every forward's.
+
+**The status's `cache.shared`** (`iface.CacheStatus.Shared`), always present: `true` when the replica's cache is the Bastion's bucket (the
+bucket backend), `false` for the replica's own volume. The card adds `bytes`, `capacityBytes` and `protectedBytes` over the replicas whose
+cache is their own and takes the largest of the shared ones once (R-UI-240, Q-UI-1489 as revised).
+
+**What a Bastion of version 8 and a main installation of version 9 do with each other** (R-BAS-009's rule, unchanged): they do not talk;
+the handshake answers `400 bastion_interface_mismatch` with `"interfaceVersion": 9`, as for every raise. Main installation and Bastions
+are upgraded together.
+
+Acceptance criteria:
+
+- `TestR_BAS_009_TheInterfaceChangesOnlyWithItsVersion` with the regenerated surface at version 9; the tests named in R-BAS-059's
+  criteria for the header; `TestR_LIM_045_TheStatusSaysWhetherItsCacheIsTheBastions` (`internal/bastion/server`, milliseconds, gauges
+  only) for the member; the card's two cases in Vitest (R-UI-240).
 
 ## The Bastion's imprint and privacy notice
 
@@ -13695,6 +13756,82 @@ the Bastion already holds the main installation's answer to the `HEAD`.
 | (b) Answer the refusal | | The figure's refusal is visible | The main installation's work is thrown away for a request it served |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-021; code: `admitFill` in [headfill.go](../../internal/bastion/engine/headfill.go).
+
+### Q-BAS-479 · A GET a Bastion sends for a HEAD says so in a header of the request
+
+Status: **Decided by the development agent on 2026-11-26** (the brief of package W34-E19: a member of the interface in a new version), the form chosen
+by the development agent from the options below; the owner reviews it at the walkthrough.
+
+Context: H-2375. The `GET` that fills a `HEAD` (Q-BAS-476) is counted, charged and audited at the main installation as a download of the
+caller who sent only the `HEAD`; the owner's rule of 2026-11-26 is that counts count the units asked for, and a `HEAD` is none. A forward
+is the caller's request passed on, with its credential and the interface's headers; it has no body of the interface.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A request header of the interface, `Quader-Bastion-For-Head: true`, on the `GET`s of a `HEAD` only, read by the recognition stage into the `Recognition` and removed there, as the handover's offer is (chosen) | One header, interface version 9 | The form every statement of a forward already has (the offer of R-BAS-072); no stage behind the recognition reads it; a caller's own value never passes the Bastion's client | A header more on the wire |
+| (b) Send the `HEAD` itself with a header that asks the main installation to answer it with the body | | One request instead of two | A `HEAD` answered with a body breaks HTTP for every proxy between the two; the marking of the `HEAD` would decide the body |
+| (c) Report the fill's download back to the main installation to be subtracted | | No change of the forward | A count that is right only after a correction, and an audit event written and then denied |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-021, R-BAS-059, the wire of [interface version 9](#the-interface-version-9-a-head-is-no-download-and-a-replica-says-whose-cache-it-reports); code:
+`iface.HeaderForHead`, `mainclient.Forward.ForHead`, `Recognize`.
+
+### Q-BAS-480 · A replica's status says whether its cache is the Bastion's, and the card adds up only caches of their own
+
+Status: **Decided by the development agent on 2026-11-26** (the brief of package W34-E19), the form chosen by its builder from the options
+below; the owner reviews it at the walkthrough.
+
+Context: H-2364 of [api-and-ui.md](api-and-ui.md). The card's state line took the cache's bytes, capacity and protected bytes from the
+largest replica, right for the bucket backend, where every replica reports the whole Bastion's cache, and too low for the volume backend,
+where each replica has its own. The status said neither.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `cache.shared`, a boolean of the status: `true` on the bucket backend; the card sums the three figures over the replicas whose cache is their own and adds the largest shared value once (chosen) | One member, interface version 9 | One rule for both backends and for a rollout that changes the backend (the old replicas' own caches and the new bucket side by side) | A replica reports a fact of its configuration with every flush |
+| (b) The backend's name (`volume`, `bucket`) | | Names the backend | A reader still has to know which backend is shared; a third backend would need the reader changed |
+| (c) A Bastion-wide figure in the contact of the handshake | | Sent once per handshake | The card reads the status, not the contacts, for the state; two sources for one line |
+
+**Choice:** (a). **Applied in the spec:** the wire's table of whose figure it is (Q-BAS-474), [api-and-ui.md](api-and-ui.md) R-UI-240 and
+Q-UI-1489; code: `reporting.sharedCache` in [status.go](../../internal/bastion/server/status.go), `cacheFigure` in
+[bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts).
+
+### Q-BAS-481 · The GET of a HEAD records nothing a HEAD does not and is charged at the main installation as the HEAD
+
+Status: **Decided by the development agent on 2026-11-26** (package W34-E19) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: Q-BAS-479. The main installation records a download in four places, all through `items.Store.Served` (the statistics, the
+repository's activity, `artifact.downloaded`), and charges one in its limits: the cached bytes of the body (with their pacing), the
+download's admission before the status line (the cached hour, the day, the parallel lease) and step 9a's parallel lease of an artifact.
+For a `HEAD` it records none of them and charges its request figures. The brief: the request and upstream figures stay a forward's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The item store's `Served` records nothing for it (`Options.NoDownload`), and the charge counts no cached bytes, does not pace, admits without the download's checks and takes no parallel lease (`Charge.NoDownload`); request figures, upstream requests and uncached bytes stay (chosen) | One switch in each of the two places every format passes | Every format and every serve point at once; the answer and its marking unchanged | The bytes the Bastion receives are charged at the main installation to no figure of bytes; they are bounded by the memory bound of a document (Q-BAS-477) and the Bastion's own figures (H-2374) |
+| (b) Skip only the audit event | | The audit log right | The statistics and the budget still count a download nobody asked for |
+| (c) Each serve point asks | | Explicit | Five places in four packages to keep in step; a format's own serve point forgotten counts again |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-059, the wire of [interface version 9](#the-interface-version-9-a-head-is-no-download-and-a-replica-says-whose-cache-it-reports); code:
+[stats.go](../../internal/items/stats.go) (`Served`), [charge.go](../../internal/limits/charge.go) (`NoDownload`),
+[ratelimit.go](../../internal/api/v1/ratelimit.go).
+
+### Q-BAS-482 · The main installation honours the statement of a HEAD on a document's route only
+
+Status: **Decided by the development agent on 2026-11-26** (package W34-E19) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: Q-BAS-479 lets a recognized forward say that its `GET` is no download. A Bastion sends it only for a document (the marking
+`shared` or `private`, which a metadata or computed route gives); whoever holds a Bastion token could send it for an artifact as well, and
+the download of the artifact would then be counted nowhere and pass the caller's download figures at the main installation. The limits'
+stage, which builds the charge, runs before the route is known.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The statement holds once the route the request matched is a metadata or a computed route; the marking stage notes the route's kind in the request's record, and the item store and the charge ask where they count, after the route is known (chosen) | A download route's `GET` counts as it always did | A Bastion token takes no artifact out of the count or the download figures; nothing a Bastion sends today is refused | Two places ask a predicate instead of reading a flag |
+| (b) Refuse a `GET` with the statement on a download route | | The misuse is visible | A refusal code of the interface for a request no Bastion sends |
+| (c) Trust the statement on every route | | Simplest | A stolen Bastion token pulls artifacts with a caller's credential outside the download figures and the audit log's downloads |
+
+**Choice:** (a). **Applied in the spec:** the wire of [interface version 9](#the-interface-version-9-a-head-is-no-download-and-a-replica-says-whose-cache-it-reports); code: `ForHead`, `StatesForHead` in
+[recognition.go](../../internal/bastionmain/recognition.go), `Absence.NoteRoute` in [absence.go](../../internal/bastionmain/absence.go).
 
 ### Q-BAS-440 · The configuration reaches the handshake from the replica's snapshot, in one statement of one moment
 

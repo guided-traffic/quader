@@ -298,7 +298,7 @@ These are properties of [internal/bastion/engine](../../internal/bastion/engine)
 | A caller of a running fill is served from its spool only after its own permission (a usable `full` answer, a check, or a conditional request answered `304`); the last 64 KiB of what it asked for wait for the commit, and a fill that fails cuts every follower | `followFill`, `streamFill` | `TestR_BAS_054_LargeArtifacts` |
 | The main installation unreachable: cached content for the answers the grace period allows, `503` for everything else, nothing after the grace period; a token past its expiry is refused throughout | `answers.State`, `unreachable` | `TestR_BAS_027_AnswersHeldServeCachedContentForThePeriodAndTheGraceThenNothing`, `TestR_BAS_020_ATokenIsRefusedFromItsExpiryOnAlsoWhileTheMainInstallationIsUnreachable` |
 | Requests to the main installation are bounded: the budget per replica with a share for anonymous callers, held until the response body ends or is closed, the per-address miss limit, one fetch per key | `mainclient.SlotBudget`, `forward`, `miss`, every `resp.Body.Close` | `TestR_BAS_025_MissesNeverPutMoreThanTheBudgetOntoTheMainInstallation`, `TestR_BAS_025_EveryPathClosesTheResponseBodyAndSoReleasesItsSlot`, `TestR_BAS_035_AMissLimitedAddressKeepsGettingItsHits` |
-| A `HEAD` makes the Bastion send a `GET` only after the main installation answered that `HEAD` `200` for this caller and marked it a document (`shared` or `private`) whose declared length is within the memory bound of its class; the `GET` carries the caller's own credential, so it reads nothing the `HEAD` did not, is kept by the same shared-or-private rule as the caller's own `GET`, and is charged as a forward (a miss of the address, an upstream request, a slot, the anonymous ceiling) after the `HEAD`'s slot is freed; a `HEAD` of an artifact is never sent as a `GET` (Q-BAS-475 to Q-BAS-478, [H-2374](#h-2374--a-head-makes-the-bastion-read-a-document-its-caller-never-receives), [H-2375](#h-2375--the-get-of-a-head-is-a-download-at-the-main-installation)) | `fillForHead`, `admitFill`, `headAsGet` | `TestR_BAS_021_AHeadMissOfADocumentIsFilledAsAGetAndAnsweredFromIt`, `TestR_BAS_023_AHeadOfADocumentKeepsTheCopyOfACallerWithoutFull`, `TestR_BAS_021_AHeadOfADocumentAboveTheMemoryBoundStaysAHead`, `TestR_BAS_021_AHeadMissOfAnArtifactIsForwardedAsHeadAndKeepsAnswersOnly`, `TestR_BAS_035_TheGetOfAHeadIsAMissAndARefusedOnePassesTheHeadOn` |
+| A `HEAD` makes the Bastion send a `GET` only after the main installation answered that `HEAD` `200` for this caller and marked it a document (`shared` or `private`) whose declared length is within the memory bound of its class; the `GET` carries the caller's own credential, so it reads nothing the `HEAD` did not, is kept by the same shared-or-private rule as the caller's own `GET`, and is charged as a forward (a miss of the address, an upstream request, a slot, the anonymous ceiling) after the `HEAD`'s slot is freed; a `HEAD` of an artifact is never sent as a `GET` (Q-BAS-475 to Q-BAS-478, [H-2374](#h-2374--a-head-makes-the-bastion-read-a-document-its-caller-never-receives)); since interface version 9 the `GET` says that it answers a `HEAD` (`Quader-Bastion-For-Head`), and the main installation records no download for it on a document's route ([Q-BAS-479](../spec/bastion.md#q-bas-479--a-get-a-bastion-sends-for-a-head-says-so-in-a-header-of-the-request), [H-2375](#h-2375--the-get-of-a-head-is-a-download-at-the-main-installation), closed) | `fillForHead`, `admitFill`, `headAsGet`, `rq.asGet` | `TestR_BAS_059_OnlyTheGetOfAHeadSaysItIsForAHead`, `TestR_BAS_021_AHeadMissOfADocumentIsFilledAsAGetAndAnsweredFromIt`, `TestR_BAS_023_AHeadOfADocumentKeepsTheCopyOfACallerWithoutFull`, `TestR_BAS_021_AHeadOfADocumentAboveTheMemoryBoundStaysAHead`, `TestR_BAS_021_AHeadMissOfAnArtifactIsForwardedAsHeadAndKeepsAnswersOnly`, `TestR_BAS_035_TheGetOfAHeadIsAMissAndARefusedOnePassesTheHeadOn` |
 | Before the first handshake the replica does not know whether anonymous requests are admitted, and answers them `503` rather than admit them or call the access off (Q-BAS-99) | `stepCredentials` | `TestR_BAS_019_AnAnonymousRequestBeforeTheFirstHandshakeIs503` |
 | A request from a blocked address is counted and refused, and kept out of the request log, so a flood does not fill the log; the guard logs one line per block | `Verdict.Quiet`, `engine.WithQuietSlot`, `server.requestLog` | `TestR_BAS_037_ARequestFromABlockedAddressIsCountedButNotLoggedOneByOne` |
 
@@ -478,6 +478,13 @@ What it changes in the trust boundary:
 | A configuration in the handshake | A Bastion learns the figures, the rule IDs, the address rules and the exempt networks of its place; whoever holds its token or takes over a pod learns them too ([H-2307](#h-2307--a-bastions-configuration-tells-its-holder-the-rules-and-networks-of-its-place)). Since E8 the main installation sends each registration's own configuration | R-BAS-093, Q-BAS-440 |
 | No probe | Until E15 a probe was a forward of a writing method without a body and without a caller's credential, which the main installation admitted as the anonymous caller for routing only. E15 removed it: the main installation admits no forward for routing alone, a forwarded write is the authentication stage's and then the backstop's, and a read route with a body that a format does not declare is refused at the Bastion (H-2293) | R-BAS-095, Q-BAS-351 |
 
+Interface version 9 (built on 2026-11-26 by W34-E19; [spec/bastion.md](../spec/bastion.md#the-interface-version-9-a-head-is-no-download-and-a-replica-says-whose-cache-it-reports)) adds two members:
+
+| Change | What it means for trust | Held by |
+|---|---|---|
+| A forwarded `GET` may say that it answers a `HEAD` | `Quader-Bastion-For-Head: true` makes the main installation record no download for the answer and charge no download figure: no statistics, no activity, no `artifact.downloaded`, no cached bytes, admission or parallel lease. Only a recognized forward's statement counts (an ordinary request's header is removed and means nothing), and only on a metadata or computed route, the route of a document ([Q-BAS-482](../spec/bastion.md#q-bas-482--the-main-installation-honours-the-statement-of-a-head-on-a-documents-route-only)): on a download route the `GET` counts as it always did, so whoever holds a Bastion token cannot take an artifact out of the count, the audit log's downloads or the caller's download figures. What a token holder can still do: fetch a counted document without a download for it ([H-2370](#h-2370--a-bastion-token-takes-a-counted-documents-download-out-of-the-count)) | R-BAS-021, R-BAS-059, Q-BAS-479, Q-BAS-481, Q-BAS-482 |
+| The status says whether the cache is shared | `cache.shared` is the Bastion's word like every figure of its state ([H-2282](#h-2282--the-usage-and-the-state-a-bastion-reports-are-its-word)): a Bastion that lies about it makes the card add or not add its cache figures, nothing else | R-LIM-045, Q-BAS-480 |
+
 ## The builder of the public catalogue
 
 W-35's package P6, built on 2026-11-26 ([spec/bastion.md](../spec/bastion.md#the-builder-of-the-public-catalogue), R-BAS-104 to R-BAS-108).
@@ -515,7 +522,8 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
 not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285, H-2289 to H-2297,
 H-2348 to H-2351, H-2354, H-2355 (H-2291, H-2348 and H-2349 are E13's, built; H-2281 to H-2283, H-2354 and H-2355 E8's, live); so are the gaps of the public catalogue's wire (W-35, interface version 8),
 H-2305 to H-2307, and of its builder (W-35's P6), H-2308 to H-2314; so are the gaps of the packages built since: H-2356 and H-2357
-(E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11), H-2322 and H-2323 (W-35's P8 with E17), H-2374 and H-2375 (E18);
+(E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11), H-2322 and H-2323 (W-35's P8 with E17), H-2374 and H-2375 (E18;
+H-2375 closed by E19), H-2370 (E19);
 and of a registration the configuration declares (R-BAS-127), H-2366 and H-2367;
 those of a Bastion's budgets are on [usage-and-limits.md](usage-and-limits.md#what-this-does-not-cover) (H-2284, H-2286 to H-2288, H-2368, H-2369). Numbers
 marked [derived] are calculated from the defaults, not measured.
@@ -839,6 +847,14 @@ bytes to the caller's uncached bytes (R-BAS-096) as if it had received them.
 
 ### H-2375 · The GET of a HEAD is a download at the main installation
 
+*Closed on 2026-11-26 by W34-E19 (interface version 9, [Q-BAS-479](../spec/bastion.md#q-bas-479--a-get-a-bastion-sends-for-a-head-says-so-in-a-header-of-the-request) to
+[Q-BAS-482](../spec/bastion.md#q-bas-482--the-main-installation-honours-the-statement-of-a-head-on-a-documents-route-only)):* the `GET` of a `HEAD` and the conditional `GET` of a `HEAD` carry `Quader-Bastion-For-Head: true`, and
+on a document's route the main installation answers them as the `GET`s they are but records no download, no download event and no
+download figure for them, as for a `HEAD`. Measured in the area `bastion` (2026-11-26,
+`TestR_BAS_059_DockersHeadOfATagIsNoDownloadAtTheMainInstallation`): Docker's sequence through a Bastion recorded three
+`artifact.downloaded` at the main installation, the manifest by digest and two blobs of one image, and four with the item store's switch
+left out. What remains is what the main installation records for a `HEAD` anyway (its request log). What it was:
+
 Stage: R-BAS-021, R-BAS-059, [Q-BAS-476](../spec/bastion.md#q-bas-476--a-head-miss-learns-from-its-marking-that-it-addresses-a-document-and-then-sends-the-get)
 (package E18, built). Subject: the main installation's download count, usage and audit log (`artifact.downloaded`). Live on every
 Bastion since 2026-11-26 for the documents the main installation counts when it serves them: an OCI tag's manifest (Q-OCI-222), Debian's
@@ -852,6 +868,18 @@ the tag and the manifest by digest, where the same pull at the main installation
 report or a budget at the main installation that counts tag downloads of callers who only resolve tags (Docker, containerd, the kubelet).
 What would close it: a statement of the forward that it fills for a `HEAD`, which the main installation's counting writer honours, a member of
 the interface (a new interface version).
+
+### H-2370 · A Bastion token takes a counted document's download out of the count
+
+Stage: R-BAS-059, [Q-BAS-482](../spec/bastion.md#q-bas-482--the-main-installation-honours-the-statement-of-a-head-on-a-documents-route-only)
+(package W34-E19, built on 2026-11-26). Subject: the main installation's download count, statistics and `artifact.downloaded` of the
+documents it counts when it serves them: an OCI tag's manifest (Q-OCI-222), Debian's index files, the documents the item store serves.
+Live on every main installation with a Bastion since interface version 9. Whoever holds a Bastion token can send
+`Quader-Bastion-For-Head: true` on a forwarded `GET` of such a document, and the main installation then records no download for it and
+charges it no cached bytes; the request log still records the request with its caller. It cannot do so for an artifact: on a download
+route the statement is ignored. What makes it real: a stolen Bastion token, used to read counted documents unseen by the download
+reports; a Bastion itself already decides which of its own serves it reports ([H-2282](#h-2282--the-usage-and-the-state-a-bastion-reports-are-its-word)), so a taken-over Bastion gains nothing new. What
+would close it: none planned; the request log is the record of what was asked.
 
 ### H-2291 · An egress list that no longer names a Bastion's address pools its callers silently
 

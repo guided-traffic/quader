@@ -170,6 +170,38 @@ func TestR_BAS_096_AHeadIsChargedAsARequestAndItsGetAsAnUpstreamRequest(t *testi
 	})
 }
 
+// TestR_BAS_059_OnlyTheGetOfAHeadSaysItIsForAHead: the GET a HEAD's fill sends and the conditional GET that revalidates a document
+// for a HEAD carry the statement that they answer a HEAD, so that the main installation counts no download for them (Q-BAS-479);
+// the HEAD itself, a caller's GET and the conditional GET a caller's GET sends carry none. Documents of a few bytes.
+func TestR_BAS_059_OnlyTheGetOfAHeadSaysItIsForAHead(t *testing.T) {
+	s := newSiteHarness(t, options{})
+	s.site.docs[doc] = "version 1"
+	s.site.docs[doc+"-get"] = "fetched by GET"
+	auth := []string{"Authorization", bearer(s.full)}
+	says := func(what string, r recorded, method string, want bool) {
+		t.Helper()
+		if r.Method != method || r.ForHead != want {
+			t.Errorf("%s: %s, for a HEAD %v; want %s, %v", what, r.Method, r.ForHead, method, want)
+		}
+	}
+
+	reqs := costOf(t, s.harness, "a cold HEAD", 2, func() { headOK(t, s.harness, doc, `"d0"`, "version 1", auth...) })
+	says("the HEAD a cold HEAD forwards", reqs[0], http.MethodHead, false)
+	says("the GET that fills it", reqs[1], http.MethodGet, true)
+	reqs = costOf(t, s.harness, "a cold GET", 1, func() {
+		if w := s.get(doc+"-get", auth...); w.Code != http.StatusOK {
+			t.Fatalf("GET: %d", w.Code)
+		}
+	})
+	says("a caller's GET", reqs[0], http.MethodGet, false)
+
+	s.clock.advance(s.cfg.Bastion.Cache.MetadataRevalidateAfter + time.Second)
+	reqs = costOf(t, s.harness, "a HEAD after the period", 1, func() { headOK(t, s.harness, doc, `"d0"`, "version 1", auth...) })
+	says("the conditional GET of a HEAD", reqs[0], http.MethodGet, true)
+	reqs = costOf(t, s.harness, "a GET after the period", 1, func() { s.get(doc+"-get", auth...) })
+	says("the conditional GET of a caller's GET", reqs[0], http.MethodGet, false)
+}
+
 func anonymousRow(t *testing.T, use interface{ Drain() iface.UsageReport }) iface.UsageRow {
 	t.Helper()
 	for _, r := range use.Drain().Rows {

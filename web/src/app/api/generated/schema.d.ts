@@ -14386,7 +14386,7 @@ export interface components {
          *           "contactAt": "2026-11-02T10:06:12Z",
          *           "clientAddress": "198.51.100.20",
          *           "release": "0.15.0",
-         *           "interfaceVersion": 8,
+         *           "interfaceVersion": 9,
          *           "baseUrl": "https://packages.example.com",
          *           "edgeLimit": "rps=200; connections=1000",
          *           "catalogueKept": null
@@ -14400,7 +14400,7 @@ export interface components {
              *     `description`, its `egress` and its declared token follow the configuration, which `quader migrate` applies on every
              *     run, and the registration is not deleted here. Null otherwise.
              */
-            declared: components["schemas"]["BastionDeclaration"] | null;
+            declared?: components["schemas"]["BastionDeclaration"] | null;
             /** Format: uuid */
             id: string;
             name: string;
@@ -14568,6 +14568,8 @@ export interface components {
             /** Format: date-time */
             reportedAt: string;
             cache: {
+                /** @description Whose cache `bytes`, `capacityBytes` and `protectedBytes` describe (Q-BAS-480): true for the Bastion's bucket, which every replica reports alike (take one value), false for the replica's own volume (add the replicas up). */
+                shared: boolean;
                 /** Format: int64 */
                 bytes: number;
                 /** Format: int64 */
@@ -15035,6 +15037,8 @@ export interface components {
                 /** Format: date-time */
                 at: string;
                 cache: {
+                    /** @description True when the cache is the Bastion's bucket, which every replica shares and reports alike (the bucket backend); false for the replica's own volume (Q-BAS-480). */
+                    shared: boolean;
                     /** Format: int64 */
                     bytes: number;
                     /** Format: int64 */

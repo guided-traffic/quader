@@ -1,4 +1,4 @@
-interface version 8
+interface version 9
 const APIPrefix = "/api/"
 const APIv1Prefix = "/api/v1/"
 const BearerScheme = "Bearer"
@@ -61,12 +61,14 @@ const FeedPrincipal FeedKind = "principal"
 const FeedSettings FeedKind = "settings"
 const FeedToken FeedKind = "token"
 const FilesPrefix = "/files/"
+const ForHeadValue = "true"
 const HandoverKeyBytes = 32
 const HeaderAuthorization = "Quader-Bastion-Authorization"
 const HeaderCatalogueKept = "Quader-Bastion-Catalogue-Kept"
 const HeaderClass = "Quader-Bastion-Class"
 const HeaderCounted = "Quader-Bastion-Counted"
 const HeaderEdgeLimit = "Quader-Bastion-Edge-Limit"
+const HeaderForHead = "Quader-Bastion-For-Head"
 const HeaderForwarded = "Forwarded"
 const HeaderForwardedFor = "X-Forwarded-For"
 const HeaderForwardedHost = "X-Forwarded-Host"
@@ -185,6 +187,7 @@ func DecodeStrict(r io.Reader, v any) error
 func ETagContentAddress(etag string) (string, bool)
 func EncodeHandover(h Handover) (string, error)
 func FigureNames() []string
+func ForHead(h http.Header) bool
 func HandoverFrom(hdr http.Header) (h Handover, ok bool, err error)
 func HandoverOfferFrom(h http.Header) (offer HandoverOffer, ok bool, err error)
 func Marshal(v any) ([]byte, error)
@@ -224,6 +227,7 @@ type CacheStatus: field Evictions int64 `json:"evictions"`
 type CacheStatus: field Hits int64 `json:"hits"`
 type CacheStatus: field Misses int64 `json:"misses"`
 type CacheStatus: field ProtectedBytes int64 `json:"protectedBytes"`
+type CacheStatus: field Shared bool `json:"shared"`
 type CatalogueBatch struct
 type CatalogueBatch: field Paths []string `json:"paths"`
 type CatalogueChange struct

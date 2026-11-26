@@ -199,8 +199,13 @@ const DeliveryHandover = "handover"
 // whole file, or 206 for a range that starts at byte 0 (R-STOR-015). HEAD, 304
 // and `?stats=false` are not counted. It counts the download statistics, the
 // repository activity and, with audit.record_downloads, the asynchronous event
-// (R-OPS-015). It never blocks and never fails the request.
+// (R-OPS-015). It never blocks and never fails the request. The GET a Bastion
+// sends for a caller's HEAD (Options.NoDownload, Q-BAS-479) is recorded as the
+// HEAD would be: not at all.
 func (s *Store) Served(ctx context.Context, e ServedEvent) {
+	if s.noDl != nil && s.noDl(ctx) {
+		return
+	}
 	s.touch(e.Item.RepoID)
 	if e.CountStats && s.stats != nil {
 		s.stats.Add(e.Item.ID, actorID(e.Actor))

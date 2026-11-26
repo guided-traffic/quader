@@ -14492,7 +14492,7 @@ paths:
         last contact at most once a minute, with the edge figure (`Quader-Bastion-Edge-Limit`) and whether its catalogue is kept
         (`Quader-Bastion-Catalogue-Kept`) when the replica reports them; a malformed value of either answers `400
         malformed_request`. Not part of the management API's v1 promise but of the interface version (R-ARCH-025, R-BAS-009).
-      x-quader-bastion-interface: 8
+      x-quader-bastion-interface: 9
       x-quader-permission:
         bastion: true
       parameters:
@@ -14546,7 +14546,7 @@ paths:
         (`npm-all` instead of `web/npm-all`) answers `400 malformed_request`, like a body that does not read; a pair that
         breaks a rule of R-BAS-083 answers `422` with a field error at `/packages/<i>`; another interface version answers
         `400 bastion_interface_mismatch`.
-      x-quader-bastion-interface: 8
+      x-quader-bastion-interface: 9
       x-quader-permission:
         bastion: true
       parameters:
@@ -14596,7 +14596,7 @@ paths:
         `cursor` of an earlier answer or a synthetic `t:<RFC 3339>`; the answer holds every entry newer than the cursor and the
         entries within `bastions.feed.lookback` behind it, which the Bastion skips by ID. `reset: true` tells the Bastion to
         drop every answer.
-      x-quader-bastion-interface: 8
+      x-quader-bastion-interface: 9
       x-quader-permission:
         bastion: true
       parameters:
@@ -14652,7 +14652,7 @@ paths:
         events stores neither, so a batch sent again is never counted twice. The body is at most `bastions.downloads.max_batch` ×
         10 KiB for the events, 640 bytes for each of 100,000 usage rows and 256 KiB for the rest (Q-BAS-442), about 71 MiB with
         the defaults.
-      x-quader-bastion-interface: 8
+      x-quader-bastion-interface: 9
       x-quader-permission:
         bastion: true
       parameters:
@@ -14697,7 +14697,7 @@ paths:
         `after` (a `seq`, 0 for the start), at most `limit` (the main installation's page when absent, clamped to its largest).
         `reset: true` tells the Bastion to read the list again from 0. While the registration's switch `gui` is off the answer is
         `404 not_found`. Until the catalogue is built (W-35's package P6) the list is empty.
-      x-quader-bastion-interface: 8
+      x-quader-bastion-interface: 9
       x-quader-permission:
         bastion: true
       parameters:
@@ -14751,7 +14751,7 @@ paths:
         `400 malformed_request`; while the
         registration's switch `gui` is off, and for a documentation path while `docs` is off, the answer is `404 not_found`. Until
         the catalogue is built (W-35's package P6) every document answers `404 not_found`.
-      x-quader-bastion-interface: 8
+      x-quader-bastion-interface: 9
       x-quader-permission:
         bastion: true
       parameters:
@@ -14807,7 +14807,7 @@ paths:
         twice or more paths than the bound answer `400 malformed_request`; while the registration's switch `gui` is off the
         answer is `404 not_found`; a document the catalogue does not hold, and a documentation path while `docs` is off, is a
         frame with `missing: true`. Until the catalogue is built (W-35's package P6) every frame is missing.
-      x-quader-bastion-interface: 8
+      x-quader-bastion-interface: 9
       x-quader-permission:
         bastion: true
       parameters:
@@ -14865,7 +14865,7 @@ paths:
         The Bastion interface (R-BAS-101). The projects and repositories the calling registration's catalogue shows, each
         repository with its format, class and whether its wiki is public. While the registration's switch `gui` is off the
         answer is `404 not_found`. Until the catalogue is built (W-35's package P6) the set is empty.
-      x-quader-bastion-interface: 8
+      x-quader-bastion-interface: 9
       x-quader-permission:
         bastion: true
       parameters:
@@ -31372,7 +31372,7 @@ components:
             contactAt: "2026-11-02T10:06:12Z"
             clientAddress: 198.51.100.20
             release: 0.15.0
-            interfaceVersion: 8
+            interfaceVersion: 9
             baseUrl: https://packages.example.com
             edgeLimit: rps=200; connections=1000
             catalogueKept: null
@@ -31539,8 +31539,13 @@ components:
         reportedAt: {type: string, format: date-time}
         cache:
           type: object
-          required: [bytes, capacityBytes, hits, misses, evictions, protectedBytes]
+          required: [shared, bytes, capacityBytes, hits, misses, evictions, protectedBytes]
           properties:
+            shared:
+              type: boolean
+              description: >-
+                Whose cache `bytes`, `capacityBytes` and `protectedBytes` describe (Q-BAS-480): true for the Bastion's bucket, which every
+                replica reports alike (take one value), false for the replica's own volume (add the replicas up).
             bytes: {type: integer, format: int64}
             capacityBytes: {type: integer, format: int64}
             hits: {type: integer, format: int64}
@@ -32189,8 +32194,13 @@ components:
             cache:
               type: object
               additionalProperties: false
-              required: [bytes, capacityBytes, hits, misses, evictions, protectedBytes]
+              required: [shared, bytes, capacityBytes, hits, misses, evictions, protectedBytes]
               properties:
+                shared:
+                  type: boolean
+                  description: >-
+                    True when the cache is the Bastion's bucket, which every replica shares and reports alike (the bucket backend);
+                    false for the replica's own volume (Q-BAS-480).
                 bytes: {type: integer, format: int64, minimum: 0}
                 capacityBytes: {type: integer, format: int64, minimum: 0}
                 hits: {type: integer, format: int64, minimum: 0}

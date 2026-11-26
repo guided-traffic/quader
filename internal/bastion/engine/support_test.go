@@ -94,6 +94,8 @@ type recorded struct {
 	Offer     iface.HandoverOffer
 	RangeFrom int64
 	IfRange   string
+	// ForHead is the statement that the GET answers a HEAD (R-BAS-059, Q-BAS-479).
+	ForHead bool
 }
 
 // fakeMain is the small double of mainclient.Client the tests use: handlers answer, every request is recorded.
@@ -229,7 +231,7 @@ func (m *fakeMain) Do(ctx context.Context, f mainclient.Forward) (*mainclient.Re
 	defer done()
 	r := recorded{
 		Kind: f.Kind, Class: f.Class, Method: f.Request.Method, Target: f.Request.URL.RequestURI(), Header: f.Request.Header.Clone(), INM: f.IfNoneMatch, Addr: f.ClientAddress,
-		Offer: f.Offer, RangeFrom: f.RangeFrom, IfRange: f.IfRange,
+		Offer: f.Offer, RangeFrom: f.RangeFrom, IfRange: f.IfRange, ForHead: f.ForHead,
 	}
 	if f.Body != nil {
 		r.Body, _ = io.ReadAll(f.Body)

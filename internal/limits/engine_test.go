@@ -354,6 +354,43 @@ func TestR_LIM_021_TheCheckBeforeADownload(t *testing.T) {
 	})
 }
 
+// TestR_BAS_059_TheGetOfAHeadIsChargedAsTheHead: the GET a Bastion sends for a caller's HEAD (Q-BAS-481) is no download at the
+// main installation's limits: with the subject's parallel transfers all held and its cached hour spent, it is admitted, takes no
+// lease, counts no cached bytes and is not paced; its request counts as every request does. Counters in memory.
+func TestR_BAS_059_TheGetOfAHeadIsChargedAsTheHead(t *testing.T) {
+	f := BuiltinProfiles()[ProfileAnonymous]
+	f[ParallelTransfers], f[CachedBytesPerHour] = 1, 10*mb
+	r := newRig(t, ModeEnforce, f)
+	ctx := context.Background()
+	held := r.e.Begin(anonCaller("198.51.100.10"), qname.Repo{})
+	if err := r.e.Admit(ctx, held); err != nil {
+		t.Fatal(err)
+	}
+	held.AddCached(int(20 * mb))
+	r.e.Flush(ctx)
+	c := r.e.Begin(anonCaller("198.51.100.10"), qname.Repo{})
+	c.NoDownload(func() bool { return true })
+	if err := r.e.Admit(ctx, c); err != nil {
+		t.Fatalf("the GET of a HEAD was refused as a download: %v", err)
+	}
+	if err := r.e.MayFetch(ctx, c, 0, true); err != nil {
+		t.Fatalf("step 9a refused the GET of a HEAD: %v", err)
+	}
+	c.AddCached(512)
+	if c.Download() || c.lease != nil {
+		t.Fatalf("the GET of a HEAD is a download (%v) or holds a lease (%v)", c.Download(), c.lease != nil)
+	}
+	if cached, _ := c.Totals(); cached != 0 {
+		t.Fatalf("the GET of a HEAD counted %d cached bytes", cached)
+	}
+	r.e.Finish(c)
+	r.e.Finish(held)
+	r.e.Flush(ctx)
+	if req, _, cached, _, _, _ := r.usage.sum(); req != 2 || cached != 20*mb {
+		t.Fatalf("the usage: %d requests, %d cached bytes; want 2 and only the download's bytes", req, cached)
+	}
+}
+
 func TestR_LIM_024_ParallelTransfers(t *testing.T) {
 	f := BuiltinProfiles()[ProfileAnonymous]
 	f[ParallelTransfers] = 4 // a figure the test fills with four transfers

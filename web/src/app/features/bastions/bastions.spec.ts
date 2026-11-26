@@ -768,7 +768,7 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
   const report = (replica: string, over: Partial<Bastion['status'][number]> = {}): Bastion['status'][number] => ({
     replica,
     reportedAt: inDays(-1 / 1440),
-    cache: { bytes: 7e9, capacityBytes: 10e9, hits: 970, misses: 30, evictions: 4, protectedBytes: 4.5e9 },
+    cache: { shared: true, bytes: 7e9, capacityBytes: 10e9, hits: 970, misses: 30, evictions: 4, protectedBytes: 4.5e9 },
     throughput: { limited: false, bytesPerSecondByClass: { anonymous: 10e6, signedIn: 10.5e6, catalogue: 0 } },
     limited: 2,
     blocked: 1,
@@ -802,7 +802,26 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it("R-UI-240 the state line takes the cache once and adds up each replica's reads and callers of the last five minutes, with the meter and the link to the blocks", async () => {
+  it("R-UI-240 on the volume backend the state line adds up each replica's own cache", async () => {
+    const own = (replica: string, bytes: number): Bastion['status'][number] =>
+      report(replica, { cache: { shared: false, bytes, capacityBytes: 10e9, hits: 970, misses: 30, evictions: 4, protectedBytes: 2e9 } });
+    const { root } = await renderScreen(BastionList, {
+      capabilities: ADMIN,
+      setup: (g) =>
+        void ((g(BastionsApi) as FakeBastionsApi).bastions = [
+          sampleBastion({ status: [own('quader-bastion-7d9c-x2k4q', 7e9), own('quader-bastion-7d9c-m8v2j', 5e9)] }),
+        ]),
+    });
+    const state = limitsOf(root, 'partners').querySelector('[data-testid="bastion-state"]')!;
+    expect([...state.querySelectorAll('.state-line')[0]!.querySelectorAll('span')].map((s) => text(s))).toEqual([
+      'Cache 12.0 of 20.0 GB',
+      '97 % hits',
+      '4.0 GB protected',
+      '41 MB/s from the main installation',
+    ]);
+  });
+
+  it("R-UI-240 on the bucket backend the state line takes the cache once and adds up each replica's reads and callers of the last five minutes, with the meter and the link to the blocks", async () => {
     const { root } = await renderScreen(BastionList, {
       capabilities: ADMIN,
       setup: (g) =>

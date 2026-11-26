@@ -1,5 +1,7 @@
 package iface
 
+import "net/http"
+
 // The headers of the interface (R-BAS-008, R-BAS-010, R-BAS-013, R-BAS-017, R-BAS-096). Names
 // are canonical MIME header keys; compare them through net/http's Header, which
 // canonicalizes.
@@ -64,6 +66,23 @@ const (
 // an encrypted copy, a data key. Both sides redact it like Authorization in every log, span and support bundle (R-OPS-013),
 // and the Bastion's client strips it from every answer before the engine sees it, like every header with [HeaderPrefix].
 const HeaderHandover = "Quader-Bastion-Handover"
+
+// HeaderForHead is [ForHeadValue] on a forwarded GET that a Bastion sends to answer a caller's HEAD from what it keeps
+// (R-BAS-021, R-BAS-059, Q-BAS-479): the fill of a HEAD miss of a document and the conditional GET that revalidates a document
+// for a HEAD. The main installation answers it like the GET it is, its marking included, but records no download for it: a
+// HEAD is none. The Bastion sets it after the caller's headers were copied, so a caller's own value never reaches the main
+// installation; the main installation reads it only on a recognized forward, and no stage behind the recognition sees it.
+const HeaderForHead = "Quader-Bastion-For-Head"
+
+// ForHeadValue is the one value of [HeaderForHead].
+const ForHeadValue = "true"
+
+// ForHead reports whether a request's header says that its GET is sent for a HEAD: exactly one value, [ForHeadValue]. Any
+// other value, or more than one, is no such statement, and the GET counts as the download it is.
+func ForHead(h http.Header) bool {
+	vs := h.Values(HeaderForHead)
+	return len(vs) == 1 && vs[0] == ForHeadValue
+}
 
 // HeaderPrefix starts every header of the interface. The main installation never
 // echoes a request header with this prefix and redacts [HeaderAuthorization] and

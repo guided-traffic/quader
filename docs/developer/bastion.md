@@ -240,7 +240,7 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [shared/bytes.go](../../internal/bastion/shared/bytes.go) | `Bytes`: the counters per name and window of the throughput (`State.Bytes`) and of the budgets (`State.Budget`, the key family `budget`), the replica's share in memory without Valkey with the expiry it was made with, `cluster.BastionStore`'s `Claim`, `Release` and `Add` with it |
 | [budget/budget.go](../../internal/bastion/budget/budget.go), [budget/pace.go](../../internal/bastion/budget/pace.go) | the budgets of the Bastion's place (R-BAS-096): `SubjectOf` (the subject and rule of a request, Q-BAS-470), `Budgets` (`Charge`, `Limited`, `Blocks`), `Charge` (`Request`, `Count`, `Upstream`, `Transfer` with the lease, `Pace`, `Served`, `Refused` and its block, `End`), Audit in `decide`, the codes of R-LIM-020 |
 | [usage/usage.go](../../internal/bastion/usage/usage.go) | the replica's usage buffer (R-LIM-045, Q-LIM-308): rows per subject, credential, repository and rule in buckets of five minutes, the overflow rows, `Drain` and `Restore` |
-| [server/status.go](../../internal/bastion/server/status.go) | `reporting`: what every flush of the download reporter carries, the usage and the replica's state (the cache's gauges and counters, `throughput.Pacer.Status`, the budgets' limited subjects, the blocks of the guard and the budgets), Q-BAS-474 |
+| [server/status.go](../../internal/bastion/server/status.go) | `reporting`: what every flush of the download reporter carries, the usage and the replica's state (the cache's gauges and counters, `throughput.Pacer.Status`, the budgets' limited subjects, the blocks of the guard and the budgets), Q-BAS-474; `cache.shared` from the backend (`reporting.sharedCache`, the bucket's, Q-BAS-480) |
 | [shared/valkey.go](../../internal/bastion/shared/valkey.go) | `Open`, `New`, `Options`: the Valkey forms over `cluster.BastionStore`, the limiters of R-ARCH-034 and the FlightLock, with the local forms as the fallback; the signing of answer records |
 | [guard/guard.go](../../internal/bastion/guard/guard.go) | `Guard`, `Verdict`, `AddressKey` |
 | [guard/instance.go](../../internal/bastion/guard/instance.go) | `New`, `Options` (`Figures`, the configuration of the decision), `Instance`: the limits of the classes anonymous, authenticated and `gui` (`Page`), the miss limits, the timeout, the blocking, `Blocks` (the blocks and timeouts the replica set, for its status) |
@@ -967,12 +967,30 @@ What it costs, measured and derived:
   sequence with a tag no client fetched by `GET`): the first pull from address A cost the main installation 2 requests, both for the tag
   (the `HEAD`, then the `GET`); the same pull from address B cost 0. The test keeps the second figure as its assertion, counted at the main
   installation's side. The audit log of the main installation then held `artifact.downloaded` for `app/_tags/head-only` from address A,
-  origin the main installation: the `GET` of a `HEAD` is a download there ([H-2375](../security/bastion.md#h-2375--the-get-of-a-head-is-a-download-at-the-main-installation)).
+  origin the main installation: the `GET` of a `HEAD` was a download there
+  ([H-2375](../security/bastion.md#h-2375--the-get-of-a-head-is-a-download-at-the-main-installation), closed by W34-E19, below).
 - **Measured** (`BenchmarkR_NPM_010_RenderThousandVersions`, Apple M1 Ultra, 2026-11-26): an npm package of 1,000 versions renders in
   about 19 ms to 2.7 MiB (full) or 2.3 MiB (abbreviated).
 - **Derived:** a cold `HEAD` of such a document costs the main installation one rendering (the `HEAD` renders it, the `GET` is served from
   the rendition it kept) and 2.7 MiB of transfer, once per cache key and period, which a caller who sent the `GET` would cause as well.
   Above 64 MiB a `HEAD` stays one forward per request ([Q-BAS-477](../spec/bastion.md#q-bas-477--the-get-of-a-head-is-sent-only-for-a-document-the-bastion-keeps-in-memory)).
+
+**No download at the main installation (W34-E19, [interface version 9](../spec/bastion.md#the-interface-version-9-a-head-is-no-download-and-a-replica-says-whose-cache-it-reports)).** Every `GET` the read flow sends for a
+`HEAD` (`rq.asGet`: the fill and the conditional `GET`) goes out with `mainclient.Forward.ForHead`, which the client writes as
+`Quader-Bastion-For-Head: true` after the caller's headers ([Q-BAS-479](../spec/bastion.md#q-bas-479--a-get-a-bastion-sends-for-a-head-says-so-in-a-header-of-the-request)). At the main installation:
+
+| Step | Where | What it does |
+|---|---|---|
+| Recognition | [recognize.go](../../internal/bastionmain/recognize.go) | reads the header of a recognized forwarded `GET` into `Recognition.ForHead` and removes it, as it removes the handover's offer; an ordinary request loses it too (`withoutOffer`) |
+| The route's kind | `setRoute` of [mark.go](../../internal/api/bastionmark/mark.go), `Absence.NoteRoute` | notes the kind of the matched route in the request's record |
+| The statement | `ForHead`, `StatesForHead` of [recognition.go](../../internal/bastionmain/recognition.go) | `ForHead` holds on a metadata or computed route only (Q-BAS-482): an artifact's `GET` counts whatever a Bastion token says |
+| The download recording | `Served` of [stats.go](../../internal/items/stats.go), `items.Options.NoDownload` wired in [wire_files.go](../../internal/app/wire_files.go) | records nothing for it: no statistics, no activity, no `artifact.downloaded` |
+| The limits | stage 7 of [ratelimit.go](../../internal/api/v1/ratelimit.go), `Charge.NoDownload` of [charge.go](../../internal/limits/charge.go) | asks `ForHead` where a download is counted (the route is unknown at stage 7): no cached bytes, no pacing, no admission, no parallel lease; request and upstream figures stay |
+
+The marking is the `GET`'s, `Counted` included, so the Bastion records the entry as counted and reports a later `GET` it serves from it.
+Measured (area `bastion`, 2026-11-26, `TestR_BAS_059_DockersHeadOfATagIsNoDownloadAtTheMainInstallation`, an image of two blobs of
+1 KiB): Docker's sequence recorded three `artifact.downloaded` at the main installation (the manifest by digest and two blobs, one unit),
+four with the item store's switch left out; the test took 3.5 s.
   A warm `docker pull` costs nothing within `metadata_revalidate_after` and one conditional `GET` of the tag after it, so the anonymous
   ceiling no longer bounds warm pulls of a public image ([R-BAS-094](../spec/bastion.md#r-bas-094--what-an-anonymous-request-may-cause-at-the-main-installation)'s table).
 

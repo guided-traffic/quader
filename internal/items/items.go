@@ -94,6 +94,10 @@ type Options struct {
 	// repository's format classifies the path in and declares its unit to be. The events of a push and of a delete name it, so that
 	// the audit log shows the act as one row. Nil names none.
 	Units func(format, path string) DownloadUnit
+	// NoDownload reports whether the answer of a request is no download although it serves the content: the GET a Bastion sends
+	// to answer a caller's HEAD (bastion.md R-BAS-059, Q-BAS-479), which [Store.Served] records as it records a HEAD, not at all.
+	// Nil makes every served answer a download.
+	NoDownload func(ctx context.Context) bool
 }
 
 // Store is the item store.
@@ -110,6 +114,7 @@ type Store struct {
 	stats    *Stats
 	log      *slog.Logger
 	units    func(format, path string) DownloadUnit
+	noDl     func(ctx context.Context) bool
 }
 
 // New creates the store.
@@ -131,7 +136,7 @@ func New(o Options) (*Store, error) {
 	}
 	return &Store{
 		run: o.Runner, blobs: o.Blobs, rec: o.Recorder, jobs: o.Jobs, hooks: o.Hooks, cfg: o.Storage,
-		download: o.RecordDownloads, activity: o.Activity, stats: o.Stats, log: o.Log, units: o.Units,
+		download: o.RecordDownloads, activity: o.Activity, stats: o.Stats, log: o.Log, units: o.Units, noDl: o.NoDownload,
 	}, nil
 }
 

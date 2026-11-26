@@ -191,6 +191,73 @@ func TestR_BAS_008_AValidTokenRecognizesTheRequest(t *testing.T) {
 	})
 }
 
+// TestR_BAS_059_OnlyARecognizedGetSaysItIsForAHead: the statement that a forwarded GET answers a HEAD (Q-BAS-479) is the
+// Recognition's on a recognized GET with the one value the interface names, and nothing anywhere else: on a HEAD, with another
+// value, on an interface route or on an ordinary request it is none; no stage behind the recognition sees the header. Headers only.
+func TestR_BAS_059_OnlyARecognizedGetSaysItIsForAHead(t *testing.T) {
+	bst := []string{iface.HeaderAuthorization, "Bearer " + tokValid, iface.HeaderInterface, version()}
+	head := forwarded("/v2/web/docker-local/app/manifests/1", append(bst, iface.HeaderForHead, iface.ForHeadValue)...)
+	head.Method = http.MethodHead
+	for name, c := range map[string]struct {
+		r    *http.Request
+		want bool
+	}{
+		"a recognized GET":         {forwarded("/v2/web/docker-local/app/manifests/1", append(bst, iface.HeaderForHead, iface.ForHeadValue)...), true},
+		"a recognized GET without": {forwarded("/v2/web/docker-local/app/manifests/1", bst...), false},
+		"another value":            {forwarded("/v2/web/docker-local/app/manifests/1", append(bst, iface.HeaderForHead, "yes")...), false},
+		"a recognized HEAD":        {head, false},
+		"an interface route":       {forwarded(iface.PathHandshake, "Authorization", "Bearer "+tokValid, iface.HeaderInterface, version(), iface.HeaderForHead, iface.ForHeadValue), false},
+		"an ordinary request":      {forwarded("/v2/web/docker-local/app/manifests/1", iface.HeaderForHead, iface.ForHeadValue), false},
+		"a token of another type":  {forwarded("/v2/web/docker-local/app/manifests/1", iface.HeaderAuthorization, "Bearer "+pat, iface.HeaderForHead, iface.ForHeadValue), false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			w, seen := run(t, RecognizeOptions{Tokens: &fakeTokens{}}, c.r)
+			if seen == nil {
+				t.Fatalf("not served: %d %s", w.Code, w.Body)
+			}
+			if got := StatesForHead(seen.Context()); got != c.want {
+				t.Errorf("StatesForHead = %v, want %v", got, c.want)
+			}
+			// Before a route is known the statement holds for nothing (Q-BAS-482).
+			if ForHead(seen.Context()) {
+				t.Error("ForHead holds before the route is known")
+			}
+			if v := seen.Header.Values(iface.HeaderForHead); len(v) != 0 {
+				t.Errorf("a stage behind the recognition sees %s: %q", iface.HeaderForHead, v)
+			}
+		})
+	}
+}
+
+// TestR_BAS_059_TheStatementOfAHeadHoldsOnADocumentsRouteOnly: a recognized GET that says it answers a HEAD is no download on a
+// metadata or a computed route, the routes of the documents a Bastion fills for a HEAD; on a download route, on a route of no
+// content and before a route is known it counts as the download it is, so that a Bastion token takes no artifact out of the count
+// (Q-BAS-482). Contexts only.
+func TestR_BAS_059_TheStatementOfAHeadHoldsOnADocumentsRouteOnly(t *testing.T) {
+	stated := WithRecognition(context.Background(), Recognition{Bastion: "partners", ForHead: true})
+	plain := WithRecognition(context.Background(), Recognition{Bastion: "partners"})
+	for _, c := range []struct {
+		kind string
+		want bool
+	}{{"", false}, {KindDownload, false}, {KindVolatile, false}, {KindMetadata, true}, {KindComputed, true}} {
+		ctx, a := WithAbsence(stated)
+		if c.kind != "" {
+			a.NoteRoute(c.kind)
+		}
+		if got := ForHead(ctx); got != c.want {
+			t.Errorf("route %q: ForHead = %v, want %v", c.kind, got, c.want)
+		}
+		other, b := WithAbsence(plain)
+		b.NoteRoute(c.kind)
+		if ForHead(other) {
+			t.Errorf("route %q: ForHead holds without the statement", c.kind)
+		}
+	}
+	if ForHead(context.Background()) {
+		t.Error("ForHead holds on a request that is no Bastion's")
+	}
+}
+
 // TestR_BAS_009_AMissingOrDifferentInterfaceVersionAnswersAMismatch: the version of a recognized request is
 // checked before anything else; the problem names the main installation's version.
 func TestR_BAS_009_AMissingOrDifferentInterfaceVersionAnswersAMismatch(t *testing.T) {

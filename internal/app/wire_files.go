@@ -9,6 +9,7 @@ import (
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
 	"github.com/guided-traffic/quader/internal/auth"
 	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/files"
 	"github.com/guided-traffic/quader/internal/formathost"
 	"github.com/guided-traffic/quader/internal/formats"
@@ -94,7 +95,7 @@ func (a *App) wireFiles(ctx context.Context, in infra, repo repositoryArea, id i
 	store, err := items.New(items.Options{
 		Runner: in.db, Blobs: in.blobs, Recorder: in.rec, Jobs: in.queue,
 		Storage: a.cfg.Storage, RecordDownloads: a.cfg.Audit.RecordDownloads, Activity: activity, Stats: stats, Hooks: fm.hooks, Log: log,
-		Units: changeUnits,
+		Units: changeUnits, NoDownload: bastionmain.ForHead,
 	})
 	if err != nil {
 		return filesArea{}, err

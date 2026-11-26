@@ -174,6 +174,33 @@ func TestR_BAS_008_EveryRequestCarriesTheInterfaceHeaders(t *testing.T) {
 	}
 }
 
+// TestR_BAS_059_TheStatementOfAHeadIsTheEnginesAlone: a forward the engine sends for a HEAD carries Quader-Bastion-For-Head with
+// its one value; a caller's own value of the header never reaches the main installation, on a GET the engine did not mark or on
+// one it did (Q-BAS-479). No body.
+func TestR_BAS_059_TheStatementOfAHeadIsTheEnginesAlone(t *testing.T) {
+	r := newRig(t, nil)
+	ctx := context.Background()
+	for _, c := range []struct {
+		name    string
+		forHead bool
+	}{{"a caller's GET", false}, {"the GET of a HEAD", true}} {
+		f := forward(http.MethodGet, "/api/npm/web/npm-all/lodash", iface.HeaderForHead, "true", iface.HeaderForHead, "false")
+		f.ForHead = c.forHead
+		resp, err := r.c.Do(ctx, f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		closeBody(t, resp)
+		got := r.main.Headers("forward").Values(iface.HeaderForHead)
+		if want := map[bool]int{false: 0, true: 1}[c.forHead]; len(got) != want || (want == 1 && got[0] != iface.ForHeadValue) {
+			t.Errorf("%s: the main installation received %q", c.name, got)
+		}
+		if iface.ForHead(r.main.Headers("forward")) != c.forHead {
+			t.Errorf("%s: iface.ForHead reads %v", c.name, !c.forHead)
+		}
+	}
+}
+
 // TestR_BAS_008_TheBaseURLsPortIsTheForwardedPort: a non-default port is sent as the port and part of host=.
 func TestR_BAS_008_TheBaseURLsPortIsTheForwardedPort(t *testing.T) {
 	r := newRig(t, func(o *mainclient.Options) { o.BaseURL = "https://Packages.Example.com:8443" })

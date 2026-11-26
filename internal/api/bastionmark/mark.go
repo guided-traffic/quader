@@ -142,6 +142,7 @@ func (s *state) setRoute(mt bastionmain.RouteMatch) {
 	s.mu.Lock()
 	s.match, s.kind = &mt, mt.Kind
 	s.mu.Unlock()
+	s.absence.NoteRoute(mt.Kind) // whether a GET's statement of a HEAD holds (bastionmain.ForHead, Q-BAS-482)
 }
 
 // observer is the bastionmain.RouteObserver of one recognized request.

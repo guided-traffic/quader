@@ -17,6 +17,31 @@ type recorded struct{ events []audit.Event }
 func (r *recorded) RecordTx(context.Context, meta.Tx, audit.Event) error { return nil }
 func (r *recorded) Record(_ context.Context, ev audit.Event)             { r.events = append(r.events, ev) }
 
+type touched struct{ repos []string }
+
+func (a *touched) Touch(repoID string) { a.repos = append(a.repos, repoID) }
+
+type forHeadKey struct{}
+
+// R-BAS-059, Q-BAS-479: the GET a Bastion sends for a caller's HEAD serves the content but is no download: the store records it as
+// it records a HEAD, with no statistics, no activity and no event, while a GET of the same item beside it is recorded whole.
+func TestR_BAS_059_TheGetOfAHeadRecordsNoDownload(t *testing.T) {
+	rec, act := &recorded{}, &touched{}
+	s := &Store{
+		rec: rec, download: true, activity: act, stats: NewStats(nil, 0, nil),
+		noDl: func(ctx context.Context) bool { return ctx.Value(forHeadKey{}) != nil },
+	}
+	it := Item{ID: 7, RepoID: 1, Repository: qname.Repo{Project: "web", Key: "docker-local"}, Path: "app/_manifests/1", Size: 512}
+	s.Served(context.WithValue(context.Background(), forHeadKey{}, true), ServedEvent{Item: it, CountStats: true})
+	if len(rec.events) != 0 || len(act.repos) != 0 || len(s.stats.pending) != 0 {
+		t.Fatalf("the GET of a HEAD recorded %d events, %d activities, %d statistics", len(rec.events), len(act.repos), len(s.stats.pending))
+	}
+	s.Served(context.Background(), ServedEvent{Item: it, CountStats: true})
+	if len(rec.events) != 1 || len(act.repos) != 1 || s.stats.pending[7] == nil || s.stats.pending[7].n != 1 {
+		t.Fatalf("a GET recorded %d events, %d activities, statistics %+v", len(rec.events), len(act.repos), s.stats.pending[7])
+	}
+}
+
 // R-OPS-054: a download is audited per item, and from 2026-11-26 on its event names the item's size and the unit the host named: the
 // package, the version and the unit's key; an item of no package names none of the three.
 func TestR_OPS_054_ADownloadEventNamesItsUnitAndSize(t *testing.T) {

@@ -233,6 +233,10 @@ type Forward struct {
 	// caller's headers were copied, so a caller's own Quader-Bastion-Handover never reaches the main installation, and only
 	// a forward that offered accepts an answer of the class handover (R-BAS-073).
 	Offer iface.HandoverOffer
+	// ForHead says that the GET is sent to answer the caller's HEAD from what the Bastion keeps (R-BAS-021, Q-BAS-479): the
+	// client sends iface.HeaderForHead with it, after the caller's headers were copied, and the main installation records no
+	// download for the answer.
+	ForHead bool
 	// RangeFrom and IfRange are the Bastion's own continuation of a fill whose direct read broke off (R-BAS-075): Range
 	// "bytes=<RangeFrom>-" when RangeFrom is above 0, and If-Range with the fill's validator. The caller's own Range and
 	// If-* headers are never forwarded.

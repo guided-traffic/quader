@@ -126,6 +126,9 @@ func (s ReplicaStatus) MarshalJSON() ([]byte, error) {
 
 // CacheStatus is a replica's cache (R-BAS-031, R-BAS-098).
 type CacheStatus struct {
+	// Shared says whose cache Bytes, CapacityBytes and ProtectedBytes describe (Q-BAS-480): true for the Bastion's bucket, which
+	// every replica shares and reports alike (the bucket backend), false for the replica's own volume (the volume backend).
+	Shared         bool  `json:"shared"`
 	Bytes          int64 `json:"bytes"`
 	CapacityBytes  int64 `json:"capacityBytes"`
 	Hits           int64 `json:"hits"`

@@ -10389,7 +10389,9 @@ demand ([Q-UI-1480](#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-th
 ([bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts)) after the switch of the direct reads, in this order: the heading
 **Limits**; the state line, live with the list's read every minute (R-UI-213), summed over the replicas that reported in the last five
 minutes ([bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts),
-[Q-UI-1489](#q-ui-1489--the-state-line-takes-the-cache-once-adds-up-each-replicas-own-figures-and-counts-a-blocked-address-once)), with the throughput's meter (the
+[Q-UI-1489](#q-ui-1489--the-state-line-takes-the-cache-once-adds-up-each-replicas-own-figures-and-counts-a-blocked-address-once); *since
+W34-E19* the cache's fill, capacity and protected bytes added up over the replicas whose cache is their own and the shared bucket's once,
+as each report's `cache.shared` says, [Q-BAS-480](bastion.md#q-bas-480--a-replicas-status-says-whether-its-cache-is-the-bastions-and-the-card-adds-up-only-caches-of-their-own)), with the throughput's meter (the
 usage overview's `<quader-usage-meter>`, so the data colour below 70 %, then warning and danger, never green) and "4 callers limited now ·
 1 address blocked" linking to `/admin/bastions/{name}/limits/blocks` for a holder of `limits:read`, and under it why, each reason of the
 closed list (`refusals`, `failed_auth`, `refused_requests`) in words with its number of addresses (`blockReasons`); the warnings in plain view, the edge
@@ -29233,7 +29235,10 @@ rate and the callers limited are each replica's own.
 | (b) A line per replica | | Exact per replica | A card of many lines for a plain administrator |
 | (c) The newest report alone | | Simple | Half the Bastion's traffic unseen |
 
-**Choice:** (a). **Applied in the spec:** R-UI-240.
+**Choice:** (a). **Applied in the spec:** R-UI-240. *Revised on 2026-11-26 by W34-E19 ([Q-BAS-480](bastion.md#q-bas-480--a-replicas-status-says-whether-its-cache-is-the-bastions-and-the-card-adds-up-only-caches-of-their-own), interface
+version 9):* each report says whether its cache is the Bastion's shared bucket (`cache.shared`); the line adds the fill, capacity and
+protected bytes of the replicas whose cache is their own (the volume backend) and takes the largest shared value once (the bucket
+backend), so option (a)'s "Against" is gone (H-2364, closed).
 
 ## What this does not cover
 
@@ -29688,6 +29693,11 @@ list's row and its filter read one of the two rows, which one is not defined; th
 Live only for such a pair; it decides a mark, not a permission.
 
 ### H-2364 · A Bastion's state line shows the largest replica's cache, not the sum of caches per replica
+
+Closed on 2026-11-26 by W34-E19 ([Q-BAS-480](bastion.md#q-bas-480--a-replicas-status-says-whether-its-cache-is-the-bastions-and-the-card-adds-up-only-caches-of-their-own), interface version 9): a replica's status says whether its cache is the
+Bastion's (`cache.shared`), and the line adds up the caches of their own and takes the shared one once
+(`cacheFigure` of [bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts); Vitest, the card's two cases in
+[bastions.spec.ts](../../web/src/app/features/bastions/bastions.spec.ts)). What it was:
 
 Stage: R-UI-240, Q-UI-1489, the card's state line. The line takes the cache's fill, capacity and protected bytes from one report, the
 largest, which is right for the bucket backend, where every replica reports the whole Bastion's cache; with the volume backend each replica

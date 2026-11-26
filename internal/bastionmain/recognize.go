@@ -107,8 +107,8 @@ func Recognize(o RecognizeOptions) func(http.Handler) http.Handler {
 			route := !forward && interfacePath(segs)
 			raw := bastionCredential(r, route)
 			if !strings.HasPrefix(raw, iface.TokenPrefix) {
-				// An ordinary request that sends the offer gets what any request gets: the header reaches no stage behind this
-				// one (R-BAS-008, R-BAS-073).
+				// An ordinary request that sends the offer or the statement of a HEAD gets what any request gets: neither header
+				// reaches a stage behind this one (R-BAS-008, R-BAS-073, Q-BAS-479).
 				next.ServeHTTP(w, withoutOffer(r))
 				return
 			}
@@ -153,6 +153,8 @@ func Recognize(o RecognizeOptions) func(http.Handler) http.Handler {
 			if !route && r.Method == http.MethodGet {
 				// The offer of a handover per blob (R-BAS-072): a value the interface refuses, or more than one, is no offer.
 				rec.Offer, rec.Offered, _ = iface.HandoverOfferFrom(r.Header)
+				// The statement that the GET answers a HEAD (Q-BAS-479): a value other than the one the interface names is none.
+				rec.ForHead = iface.ForHead(r.Header)
 			}
 			// The stages behind this one get a request of their own: the credential that proved the
 			// Bastion is not in it, and the forwarded headers count with its registration's networks trusted.
@@ -166,7 +168,9 @@ func Recognize(o RecognizeOptions) func(http.Handler) http.Handler {
 			} else {
 				r2.Header.Del(iface.HeaderAuthorization)
 			}
-			r2.Header.Del(iface.HeaderHandover) // the offer is the Recognition's; no handler reads the header
+			// The offer and the statement of a HEAD are the Recognition's; no handler reads their headers.
+			r2.Header.Del(iface.HeaderHandover)
+			r2.Header.Del(iface.HeaderForHead)
 			if !route || op == "" {
 				next.ServeHTTP(w, r2)
 				return
@@ -278,14 +282,16 @@ func storeError(err error) error {
 	return errs.E(errs.Unavailable, errs.CodeDatabaseUnavailable, "The Bastion token cannot be checked right now.", errs.WithCause(err))
 }
 
-// withoutOffer returns r, or a copy of it without Quader-Bastion-Handover when it carries one: on a request that is no
-// recognized forward the offer is an ordinary header that no handler may read (R-BAS-073). A request without it pays nothing.
+// withoutOffer returns r, or a copy of it without Quader-Bastion-Handover and Quader-Bastion-For-Head when it carries one of
+// them: on a request that is no recognized forward they are ordinary headers that no handler may read (R-BAS-073, Q-BAS-479). A
+// request without them pays nothing.
 func withoutOffer(r *http.Request) *http.Request {
-	if len(r.Header.Values(iface.HeaderHandover)) == 0 {
+	if len(r.Header.Values(iface.HeaderHandover)) == 0 && len(r.Header.Values(iface.HeaderForHead)) == 0 {
 		return r
 	}
 	r2 := r.Clone(r.Context())
 	r2.Header.Del(iface.HeaderHandover)
+	r2.Header.Del(iface.HeaderForHead)
 	return r2
 }
 

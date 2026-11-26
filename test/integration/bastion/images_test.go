@@ -321,6 +321,57 @@ func TestR_BAS_057_ABoundHostThroughABastion(t *testing.T) {
 	}
 }
 
+// TestR_BAS_059_DockersHeadOfATagIsNoDownloadAtTheMainInstallation: Docker's sequence through a Bastion, a HEAD of a tag no client
+// fetched yet and then the manifest by its digest and the blobs, records at the main installation the downloads of the same pull at
+// the main installation itself: the manifest by digest and the two blobs, one image as their unit, and nothing for the GET that
+// filled the HEAD, which said so (Q-BAS-479, H-2375 closed). That GET is still answered as the GET it is: a GET of the tag
+// afterwards is served from what it kept and reported by the Bastion as the tag's download. About 3 s, an image of two blobs of 1 KiB.
+func TestR_BAS_059_DockersHeadOfATagIsNoDownloadAtTheMainInstallation(t *testing.T) {
+	w := ociWorld(t, worldOptions{})
+	img := newOCIImage("head-of-a-tag")
+	w.pushImage("app", img, "1")
+	b := w.newBastion(t, bastionOptions{Configure: relaxed}).wait()
+	r := b.reps[0]
+	const addr = "203.0.113.61"
+	o := callOpts{addr: addr, header: []string{"Authorization", "Bearer " + w.full.token, "Accept", accept}}
+	base := "/v2/" + ociLocal + "/app"
+	events := func(origin string) (n, units int64) {
+		const q = `FROM audit_event WHERE action = 'artifact.downloaded' AND host(source_ip) = $1 AND `
+		n = w.st.Number(`SELECT count(*) `+q+origin, addr)
+		units = w.st.Number(`SELECT count(DISTINCT details->>'unit') `+q+origin+` AND coalesce(details->>'unit', '') <> ''`, addr)
+		return n, units
+	}
+	const direct, viaBastion = "details->>'origin' IS NULL", "details->>'origin' = 'bastion'"
+
+	m := w.front.Mark()
+	if got := r.do(t, "HEAD", base+"/manifests/1", o); got.Status != http.StatusOK || got.Header.Get("Docker-Content-Digest") != digestOf(img.manifest) {
+		t.Fatalf("HEAD of the tag: %d %v", got.Status, got.Header)
+	}
+	fill := w.front.Forwards(m, base+"/manifests/1")
+	if len(fill) != 2 || fill[1].Method != http.MethodGet || fill[1].Header.Get("Quader-Bastion-For-Head") != "true" || fill[0].Header.Get("Quader-Bastion-For-Head") != "" {
+		t.Fatalf("the HEAD of the tag sent %+v, want the HEAD and the GET that says it answers a HEAD", fill)
+	}
+	for _, p := range []string{base + "/manifests/" + digestOf(img.manifest), base + "/blobs/" + digestOf(img.config), base + "/blobs/" + digestOf(img.layer)} {
+		if got := r.do(t, "GET", p, o); got.Status != http.StatusOK {
+			t.Fatalf("GET %s: %d", p, got.Status)
+		}
+	}
+	testWait(t, "the main installation's record of the pull", func() bool { n, _ := events(direct); return n >= 3 })
+	time.Sleep(time.Second) // the asynchronous recorder writes in order: an event of the earlier fill would be in by now
+	if n, units := events(direct); n != 3 || units != 1 {
+		t.Errorf("the main installation recorded %d downloads of %d units for the pull, want the manifest by digest and two blobs of one image", n, units)
+	}
+
+	m = w.front.Mark()
+	if got := r.do(t, "GET", base+"/manifests/1", o); got.Status != http.StatusOK || string(got.Body) != string(img.manifest) {
+		t.Fatalf("GET of the tag: %d", got.Status)
+	}
+	if n := w.front.Cost(m); n != 0 {
+		t.Errorf("the GET of the tag the HEAD kept cost the main installation %d requests", n)
+	}
+	testWait(t, "the Bastion's report of the tag served from what the HEAD kept", func() bool { n, _ := events(viaBastion); return n >= 1 })
+}
+
 // TestR_BAS_059_AHitIsReportedWhenTheMainInstallationCountedItsFill: a warm pull by tag through the Bastion is reported as the main
 // installation's own audit trail would record it: the tag's document and the two blobs, nothing for a HEAD of the tag; a warm npm read
 // still reports its tarball and no package document. About 4 s.

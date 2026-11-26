@@ -28,7 +28,9 @@ type reporting struct {
 	pacer   *throughput.Pacer
 	guard   *guard.Instance
 	state   *shared.State
-	now     func() time.Time
+	// sharedCache is the bucket backend: the cache's figures are the whole Bastion's, which every replica reports alike (Q-BAS-480).
+	sharedCache bool
+	now         func() time.Time
 }
 
 // report drains the usage and builds the state.
@@ -39,6 +41,7 @@ func (r *reporting) report() (iface.UsageReport, iface.ReplicaStatus) {
 // status is the replica's state now (R-LIM-045, R-UI-240).
 func (r *reporting) status() iface.ReplicaStatus {
 	st := iface.ReplicaStatus{Replica: r.replica, At: r.now().UTC()}
+	st.Cache.Shared = r.sharedCache
 	m := r.m
 	// The cache: what the replica's view of its backend holds and may hold, and what of it is protected (the Bastion's own figure
 	// with the bucket backend, which every replica reports alike, the replica's own with a volume); hits, misses and evictions are

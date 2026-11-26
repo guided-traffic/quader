@@ -39,6 +39,9 @@ import (
 type Absence struct {
 	missing, unknown, counted atomic.Bool
 
+	// kind is the kind of the route the request matched (NoteRoute), "" before the route is known.
+	kind atomic.Pointer[string]
+
 	pkgMu sync.Mutex
 	pkg   string
 	named packageState
@@ -70,6 +73,24 @@ const (
 
 // Absent reports whether the lookups of the request amount to "missing for every subject".
 func (a *Absence) Absent() bool { return a != nil && a.missing.Load() && !a.unknown.Load() }
+
+// NoteRoute records the kind of the route the request matched (a Kind constant). The marking stage's route observer calls it when the
+// dispatcher tells it the route, before the route decides, reads or serves anything; [ForHead] reads it.
+func (a *Absence) NoteRoute(kind string) {
+	if a != nil {
+		a.kind.Store(&kind)
+	}
+}
+
+// documentRoute reports whether the request matched a route of a document: a metadata or a computed route, whose answer a Bastion
+// keeps as a document (the classes shared and private, R-BAS-013). A download route's answer is an artifact; an unknown route is none.
+func (a *Absence) documentRoute() bool {
+	if a == nil {
+		return false
+	}
+	k := a.kind.Load()
+	return k != nil && (*k == KindMetadata || *k == KindComputed)
+}
 
 // Counted reports whether the core started an answer of the request that it counts as a download.
 func (a *Absence) Counted() bool { return a != nil && a.counted.Load() }

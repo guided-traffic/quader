@@ -9,6 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -264,6 +265,11 @@ func (s protocolStage) serve(w http.ResponseWriter, r *http.Request, next http.H
 	}
 	charge := s.o.Limits.Begin(caller, repo(r))
 	charge.SetWaitGate(s.gates.of(httpserver.EndpointFrom(ctx)))
+	if bastionmain.StatesForHead(ctx) {
+		// The GET a Bastion sends for a caller's HEAD of a document is charged as that HEAD (R-BAS-059, Q-BAS-481); whether the route
+		// is a document's is known only behind this stage (Q-BAS-482).
+		charge.NoDownload(func() bool { return bastionmain.ForHead(ctx) })
+	}
 	if r.URL.Path == httplimit.TokenPath {
 		charge.DeferRequestFigures() // the token service charges its subject after it authenticated (R-LIM-003)
 	}

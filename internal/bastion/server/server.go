@@ -304,7 +304,10 @@ func (s *Server) buildDeps() (engine.Deps, error) {
 		MaxInFlight: s.cfg.Server.MaxInFlight,
 	})
 	gi, _ := g.(*guard.Instance)
-	s.reporting = &reporting{replica: s.instance, m: s.bm, usage: use, budgets: budgets, pacer: pacer, guard: gi, state: st, now: time.Now}
+	s.reporting = &reporting{
+		replica: s.instance, m: s.bm, usage: use, budgets: budgets, pacer: pacer, guard: gi, state: st,
+		sharedCache: b.Cache.Backend == "bucket", now: time.Now,
+	}
 	d := engine.Deps{
 		Config: s.cfg, Log: s.log.With("component", "engine"), Metrics: s.bm, Replica: s.instance, Release: buildinfo.Get().Version,
 		Main: client, Cache: c, Shared: st, Guard: g, Handover: links, Throughput: pacer, Budgets: budgets,

@@ -22,7 +22,7 @@ function contact(replica: string, address: string, baseUrl: string, minutesAgo: 
     contactAt: at(-minutesAgo / 1440),
     clientAddress: address,
     release: '0.42.0',
-    interfaceVersion: 8,
+    interfaceVersion: 9,
     baseUrl,
     edgeLimit: 'rps=1000; connections=256',
     catalogueKept: null,
@@ -55,7 +55,8 @@ function report(replica: string, blocks: readonly Json[], over: Json = {}): Json
   return {
     replica,
     reportedAt: at(-1 / 1440),
-    cache: { bytes: 7_000_000_000, capacityBytes: 10_000_000_000, hits: 9_700, misses: 300, evictions: 12, protectedBytes: 4_500_000_000 },
+    // The volume backend: each replica's cache is its own, and the card adds them up (Q-BAS-480).
+    cache: { shared: false, bytes: 7_000_000_000, capacityBytes: 10_000_000_000, hits: 9_700, misses: 300, evictions: 12, protectedBytes: 4_500_000_000 },
     // Together 132 of the registration's 150 MB/s: the meter close to its cap, in the warning colour.
     throughput: { limited: false, bytesPerSecondByClass: { anonymous: 18_000_000, signedIn: 46_000_000, catalogue: 2_000_000 } },
     limited: 2,
@@ -235,7 +236,7 @@ async function seedBastionConfiguration(admin: Api): Promise<void> {
   const status = {
     replica: 'quader-bastion-6c9f7d5b8-k2m4x',
     at: new Date().toISOString(),
-    cache: { bytes: 7_000_000_000, capacityBytes: 20_000_000_000, hits: 9_700, misses: 300, evictions: 12, protectedBytes: 4_500_000_000 },
+    cache: { shared: true, bytes: 7_000_000_000, capacityBytes: 20_000_000_000, hits: 9_700, misses: 300, evictions: 12, protectedBytes: 4_500_000_000 },
     throughput: { limited: false, bytesPerSecondByClass: { anonymous: 12_000_000, signedIn: 29_000_000, catalogue: 0 } },
     limited: 4,
     blocked: 3,

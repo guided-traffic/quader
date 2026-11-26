@@ -145,7 +145,7 @@ func TestR_BAS_008_InterfaceRequestsAreCounted(t *testing.T) {
 	bst := s.registered("partners", e.registration("partners"))
 	s.iface(bst, http.MethodGet, iface.PathHandshake, nil)
 	s.iface(bst, http.MethodGet, iface.PathHandshake, nil)
-	s.iface(bst, http.MethodGet, iface.PathHandshake, nil, iface.HeaderInterface, "9")
+	s.iface(bst, http.MethodGet, iface.PathHandshake, nil, iface.HeaderInterface, strconv.Itoa(iface.InterfaceVersion+1))
 	s.iface(bst, http.MethodGet, iface.PathFeed+"?after=garbage", nil)
 	families, err := s.reg.Gather()
 	if err != nil {

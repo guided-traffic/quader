@@ -69,7 +69,7 @@ func (e *engine) ask(q *rq, kind mainclient.Kind, validator string, bl *baseline
 	q.offer = e.offerFor(q, kind, bl)
 	resp, err := e.d.Main.Do(hold.ctx, mainclient.Forward{
 		Request: e.forwardRequest(q), Class: e.budgetClass(q), Kind: kind, ClientAddress: q.clientText, IfNoneMatch: validator,
-		Offer: q.offer,
+		Offer: q.offer, ForHead: q.asGet,
 	})
 	if err != nil {
 		hold.release()

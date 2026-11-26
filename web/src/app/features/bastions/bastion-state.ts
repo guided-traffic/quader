@@ -38,27 +38,36 @@ export function freshReports(bastion: Pick<Bastion, 'status'>, now: number): Rep
 }
 
 /**
- * The card's state (R-UI-240, Q-UI-1489): the cache's fill, capacity and protected bytes are one replica's report, the largest, since on
- * the bucket backend every replica reports the whole Bastion's cache; the hits and misses, the reads and the callers limited are each
- * replica's own and are added up. An address blocked at several replicas counts once; where the replicas name fewer blocks than they
- * count (a replica names at most 100), the larger count stands. Null where no replica reported in the last five minutes.
+ * The cache's figure f over the reports (R-UI-240, Q-BAS-480): a replica on the volume backend reports a cache of its own, and those
+ * are added up; the replicas on the bucket backend (`shared`) report the whole Bastion's bucket alike, which counts once, as the
+ * largest of their values.
+ */
+function cacheFigure(reports: readonly ReplicaStatus[], f: (s: ReplicaStatus) => number): number {
+  const shared = reports.filter((s) => s.cache.shared).map(f);
+  const own = reports.filter((s) => !s.cache.shared).reduce((t, s) => t + f(s), 0);
+  return own + (shared.length > 0 ? Math.max(...shared) : 0);
+}
+
+/**
+ * The card's state (R-UI-240, Q-UI-1489): the cache's fill, capacity and protected bytes are the sum of the replicas' own caches on
+ * the volume backend and the bucket's figure once on the bucket backend, as each report says (Q-BAS-480); the hits and misses, the
+ * reads and the callers limited are each replica's own and are added up. An address blocked at several replicas counts once; where
+ * the replicas name fewer blocks than they count (a replica names at most 100), the larger count stands. Null where no replica
+ * reported in the last five minutes.
  */
 export function bastionState(bastion: Pick<Bastion, 'status'>, now: number): BastionState | null {
   const reports = freshReports(bastion, now);
   if (reports.length === 0) return null;
   const sum = (f: (s: ReplicaStatus) => number): number => reports.reduce((t, s) => t + f(s), 0);
-  const max = (f: (s: ReplicaStatus) => number): number => Math.max(...reports.map(f));
   const hits = sum((s) => s.cache.hits);
   const misses = sum((s) => s.cache.misses);
   const addresses = new Set(reports.flatMap((s) => s.blocks.map((b) => b.address)));
   return {
     replicas: reports.length,
-    // On the bucket backend every replica reports the whole Bastion's cache (E9b): its fill, capacity and protected bytes are one
-    // replica's value, the largest, never a sum.
-    cacheBytes: max((s) => s.cache.bytes),
-    capacityBytes: max((s) => s.cache.capacityBytes),
+    cacheBytes: cacheFigure(reports, (s) => s.cache.bytes),
+    capacityBytes: cacheFigure(reports, (s) => s.cache.capacityBytes),
     hitRatio: hits + misses > 0 ? hits / (hits + misses) : null,
-    protectedBytes: max((s) => s.cache.protectedBytes),
+    protectedBytes: cacheFigure(reports, (s) => s.cache.protectedBytes),
     bytesPerSecond: sum((s) => s.throughput.bytesPerSecondByClass.anonymous + s.throughput.bytesPerSecondByClass.signedIn + s.throughput.bytesPerSecondByClass.catalogue),
     throughputLimited: reports.some((s) => s.throughput.limited),
     limited: sum((s) => s.limited),

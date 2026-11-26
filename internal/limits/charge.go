@@ -42,6 +42,9 @@ type Charge struct {
 	refused  atomic.Bool
 	deferred atomic.Bool
 	download atomic.Bool
+	// noDownload reports whether the request's answer is no download although it carries the content (NoDownload); nil for every
+	// request but one that may be. It is set before the request is served and read where a download is counted.
+	noDownload func() bool
 	// holds are the fetches that charge the request after its client may have left (a detached fill, R-LIM-006): the flush
 	// keeps the charge until the last one released it.
 	holds     atomic.Int32
@@ -176,9 +179,10 @@ func (c *Charge) ServedRepo() int64 {
 	return c.served.Load()
 }
 
-// AddCached counts n bytes Quader wrote to the client from what it held (R-LIM-006).
+// AddCached counts n bytes Quader wrote to the client from what it held (R-LIM-006); nothing for a request that is no download
+// (NoDownload).
 func (c *Charge) AddCached(n int) {
-	if c == nil || n <= 0 {
+	if c == nil || n <= 0 || c.isNoDownload() {
 		return
 	}
 	c.pendCached.Add(int64(n))
@@ -338,6 +342,21 @@ func (c *Charge) Background(repoID int64) *Charge {
 	c.e.track(bg)
 	return bg
 }
+
+// NoDownload names the request as one whose answer may be no download although it carries the content: the GET a Bastion sends to
+// answer a caller's HEAD of a document (bastion.md R-BAS-059, Q-BAS-481), which the limits charge as the HEAD it stands for while
+// the predicate reports true. It is asked where a download is counted, after the route is known (Q-BAS-482): the body then counts
+// no cached bytes and is not paced, Admit admits it without the download's windows and parallel lease, and step 9a takes no
+// parallel lease for it; its request figures, and the upstream request and uncached bytes of a fill it causes at a remote
+// repository, count as for every request. The protocol stage calls it before the request is served.
+func (c *Charge) NoDownload(is func() bool) {
+	if c != nil {
+		c.noDownload = is
+	}
+}
+
+// isNoDownload reports whether the answer is no download now (NoDownload).
+func (c *Charge) isNoDownload() bool { return c.noDownload != nil && c.noDownload() }
 
 // Admit is [Engine.Admit] for the charge: the check before a download starts. A nil charge admits.
 func (c *Charge) Admit(ctx context.Context) error {

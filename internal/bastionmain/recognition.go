@@ -40,6 +40,10 @@ type Recognition struct {
 	// (storage.md R-STOR-095 step 1).
 	Offer   iface.HandoverOffer
 	Offered bool
+	// ForHead is true on a forwarded GET that the Bastion sent to answer a caller's HEAD from what it keeps (R-BAS-021, Q-BAS-479):
+	// Quader-Bastion-For-Head with its one value, read by the recognition stage like the offer and removed from the request. The
+	// answer is the GET's, marking included; the download recording skips it ([ForHead]).
+	ForHead bool
 	// FromEgress is true when the request came from one of the networks its registration lists as the addresses its Bastion
 	// connects from (R-BAS-017, Q-BAS-334): the address is the one stage 5 resolved with server.trusted_proxies, before anything
 	// the Bastion forwards counts. Only then do the caller's address and host a forward carries count, and the client address of a
@@ -58,4 +62,23 @@ func WithRecognition(ctx context.Context, rec Recognition) context.Context {
 func RecognitionFrom(ctx context.Context) (Recognition, bool) {
 	rec, ok := ctx.Value(recognitionKey{}).(Recognition)
 	return rec, ok
+}
+
+// ForHead reports whether the request is a recognized forward that a Bastion sent as a GET to answer a caller's HEAD of a document
+// (R-BAS-059, Q-BAS-479): its answer is no download, so the download statistics, the repository's activity, the event
+// artifact.downloaded and the download figures of the limits leave it out, as they leave out a HEAD. The statement holds only once
+// the request matched a route of a document (Q-BAS-482): a Bastion sends it for nothing else, and on a download route, or before the
+// route is known, the GET counts as the download it is, so that a Bastion token never takes an artifact's download out of the
+// count or out of the download figures. Any other request, and a request with the header that is no recognized forward, reports
+// false. It is read where a download is counted, never earlier, because the route is known only after the limits' stage.
+func ForHead(ctx context.Context) bool {
+	rec, ok := RecognitionFrom(ctx)
+	return ok && !rec.Route && rec.ForHead && absenceFrom(ctx).documentRoute()
+}
+
+// StatesForHead reports whether the request is a recognized forward that carried the statement of a HEAD, whatever its route: the
+// limits' stage, which runs before the route is known, asks it to decide whether to ask [ForHead] later at all.
+func StatesForHead(ctx context.Context) bool {
+	rec, ok := RecognitionFrom(ctx)
+	return ok && !rec.Route && rec.ForHead
 }

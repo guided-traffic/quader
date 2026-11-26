@@ -536,8 +536,8 @@ func markerRemaining(v string, now time.Time) (time.Duration, bool) {
 // windows and a parallel lease, in one round trip, before the status line. A request that holds a lease already (a miss that
 // took it at step 9a) passes without a second check. In audit nothing is refused and a would-limit is recorded.
 func (e *Engine) Admit(ctx context.Context, c *Charge) error {
-	if c == nil || c.bg || c.Subject.Kind == KindSystem {
-		return nil // no figure and no parallel lease for system work (Q-LIM-66)
+	if c == nil || c.bg || c.Subject.Kind == KindSystem || c.isNoDownload() {
+		return nil // no figure and no parallel lease for system work (Q-LIM-66), nor for an answer that is no download (Q-BAS-481)
 	}
 	c.download.Store(true)
 	c.mu.Lock()
@@ -824,7 +824,7 @@ func (e *Engine) MayFetch(ctx context.Context, c *Charge, repoID int64, artifact
 	if len(take.Windows) > 0 {
 		takeOp = b.Add(take)
 	}
-	if artifactGet && !c.bg && f[ParallelTransfers] > 0 {
+	if artifactGet && !c.bg && !c.isNoDownload() && f[ParallelTransfers] > 0 {
 		c.download.Store(true)
 		c.mu.Lock()
 		held := c.lease != nil

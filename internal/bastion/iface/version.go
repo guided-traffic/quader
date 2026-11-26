@@ -26,4 +26,8 @@ package iface
 // download batch; the format table's [ErrorShape] and readWithBody; the Bastion's own codes named by their status
 // (Q-BAS-321); the probe's headers gone; the contact's [HeaderEdgeLimit] and [HeaderCatalogueKept]; the registry token's
 // payload version 2 read; the public catalogue's routes, types, path grammar and the feed kind [FeedCatalogue].
-const InterfaceVersion = 8
+//
+// Version 9 (R-BAS-021, R-BAS-059, R-LIM-045, Q-BAS-479, Q-BAS-480): the request header [HeaderForHead] of a GET a Bastion
+// sends to answer a HEAD, which the main installation answers as the GET it is and counts as no download, and the status's
+// [CacheStatus.Shared], which says whether the cache's figures are the replica's own or the whole Bastion's.
+const InterfaceVersion = 9

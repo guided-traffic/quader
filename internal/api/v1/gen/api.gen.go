@@ -10201,6 +10201,9 @@ type BastionDownloadsRequest struct {
 			Hits           int64 `json:"hits"`
 			Misses         int64 `json:"misses"`
 			ProtectedBytes int64 `json:"protectedBytes"`
+
+			// Shared True when the cache is the Bastion's bucket, which every replica shares and reports alike (the bucket backend); false for the replica's own volume (Q-BAS-480).
+			Shared bool `json:"shared"`
 		} `json:"cache"`
 		Limited    int64  `json:"limited"`
 		Replica    string `json:"replica"`
@@ -10512,6 +10515,9 @@ type BastionReplicaStatus struct {
 		Hits           int64 `json:"hits"`
 		Misses         int64 `json:"misses"`
 		ProtectedBytes int64 `json:"protectedBytes"`
+
+		// Shared Whose cache `bytes`, `capacityBytes` and `protectedBytes` describe (Q-BAS-480): true for the Bastion's bucket, which every replica reports alike (take one value), false for the replica's own volume (add the replicas up).
+		Shared bool `json:"shared"`
 	} `json:"cache"`
 	Limited    int64     `json:"limited"`
 	Replica    string    `json:"replica"`

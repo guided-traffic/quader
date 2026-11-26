@@ -72,7 +72,7 @@ describe("A Bastion's limits page (R-UI-241)", () => {
         {
           replica: 'quader-bastion-7d9c-x2k4q',
           reportedAt: inDays(-1 / 1440),
-          cache: { bytes: 0, capacityBytes: 1, hits: 0, misses: 0, evictions: 0, protectedBytes: 0 },
+          cache: { shared: false, bytes: 0, capacityBytes: 1, hits: 0, misses: 0, evictions: 0, protectedBytes: 0 },
           throughput: { limited: false, bytesPerSecondByClass: { anonymous: 0, signedIn: 0, catalogue: 0 } },
           limited: 0,
           blocked: 2,
@@ -84,7 +84,7 @@ describe("A Bastion's limits page (R-UI-241)", () => {
         {
           replica: 'quader-bastion-7d9c-m8v2j',
           reportedAt: inDays(-2 / 1440),
-          cache: { bytes: 0, capacityBytes: 1, hits: 0, misses: 0, evictions: 0, protectedBytes: 0 },
+          cache: { shared: false, bytes: 0, capacityBytes: 1, hits: 0, misses: 0, evictions: 0, protectedBytes: 0 },
           throughput: { limited: false, bytesPerSecondByClass: { anonymous: 0, signedIn: 0, catalogue: 0 } },
           limited: 0,
           blocked: 1,

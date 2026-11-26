@@ -10491,10 +10491,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-361 questions on [spec/bastion.md](spec/bastion.md).
+365 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 361 questions</summary>
+<summary>Q-BAS: 365 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10859,6 +10859,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-476](spec/bastion.md#q-bas-476--a-head-miss-learns-from-its-marking-that-it-addresses-a-document-and-then-sends-the-get) | A HEAD miss learns from its marking that it addresses a document, and then sends the GET | Decided by the development agent on 2026-11-26 | (a) Forward the `HEAD`; when its answer is `200` marked `shared` or `private`, send the `GET` with the caller's credential and keep its answer; a `HEAD` whose key holds a document entry or the caller's copy sends its conditional request as a `GET` | — |
 | [Q-BAS-477](spec/bastion.md#q-bas-477--the-get-of-a-head-is-sent-only-for-a-document-the-bastion-keeps-in-memory) | The GET of a HEAD is sent only for a document the Bastion keeps in memory | Decided by the development agent on 2026-11-26 | (a) Only when the `HEAD`'s answer declares a `Content-Length` within the memory bound of the document's class (the smaller of 64 MiB and `documents_max_bytes` shared, of `private_documents_max_bytes` for a copy), its `Vary` can be keyed on, and a copy of a caller with a token has a validator: what the `GET` returns is then kept | — |
 | [Q-BAS-478](spec/bastion.md#q-bas-478--a-refused-get-of-a-head-passes-the-heads-answer-on) | A refused GET of a HEAD passes the HEAD's answer on | Decided by the development agent on 2026-11-26 | (a) The caller receives the `HEAD`'s answer as before Q-BAS-475; nothing is kept | — |
+| [Q-BAS-479](spec/bastion.md#q-bas-479--a-get-a-bastion-sends-for-a-head-says-so-in-a-header-of-the-request) | A GET a Bastion sends for a HEAD says so in a header of the request | Decided by the development agent on 2026-11-26 | (a) A request header of the interface, `Quader-Bastion-For-Head: true`, on the `GET`s of a `HEAD` only, read by the recognition stage into the `Recognition` and removed there, as the handover's offer is | — |
+| [Q-BAS-480](spec/bastion.md#q-bas-480--a-replicas-status-says-whether-its-cache-is-the-bastions-and-the-card-adds-up-only-caches-of-their-own) | A replica's status says whether its cache is the Bastion's, and the card adds up only caches of their own | Decided by the development agent on 2026-11-26 | (a) `cache.shared`, a boolean of the status: `true` on the bucket backend; the card sums the three figures over the replicas whose cache is their own and adds the largest shared value once | — |
+| [Q-BAS-481](spec/bastion.md#q-bas-481--the-get-of-a-head-records-nothing-a-head-does-not-and-is-charged-at-the-main-installation-as-the-head) | The GET of a HEAD records nothing a HEAD does not and is charged at the main installation as the HEAD | Decided by the development agent on 2026-11-26 | (a) The item store's `Served` records nothing for it (`Options.NoDownload`), and the charge counts no cached bytes, does not pace, admits without the download's checks and takes no parallel lease (`Charge.NoDownload`); request figures, upstream requests and uncached bytes stay | — |
+| [Q-BAS-482](spec/bastion.md#q-bas-482--the-main-installation-honours-the-statement-of-a-head-on-a-documents-route-only) | The main installation honours the statement of a HEAD on a document's route only | Decided by the development agent on 2026-11-26 | (a) The statement holds once the route the request matched is a metadata or a computed route; the marking stage notes the route's kind in the request's record, and the item store and the charge ask where they count, after the route is known | — |
 
 </details>
 
