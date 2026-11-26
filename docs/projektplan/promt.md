@@ -311,9 +311,11 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W30-A4 · A role read through a remote reads like a role (W-30, the owner's d1 = b) | R-ANS-056 of the plan `.dev/w30-plan.md`: owner and name, description, README, `role search`; no local publish of a role; Q-ANS-110 to Q-ANS-119, Q-UI-1260 to Q-UI-1269, H-2120 to H-2129, migration 00134 | landed and pushed on 2026-11-26 at 03:14, with the migrations 00134 and 00135 |
 | W30-G8 · A Debian package shows its relations, long description, changelog, copyright and file list (W-30) | R-DEB-038, R-DEB-039 of the plan `.dev/w30-plan.md`; the data archive read under bounds, which revises R-DEB-007; Q-DEB-140 to Q-DEB-149, Q-UI-1270 to Q-UI-1279, H-2130 to H-2139, migration 00134 | landed and pushed on 2026-11-26 at 01:25, with the migration 00132 (the OCI package takes 00133, the roles 00134) |
 | W30-A2 · The documentation generator reads fragments, a role's argument specs and the changelog (W-30) | R-ANS-051 to R-ANS-053 of the plan `.dev/w30-plan.md`; Q-ANS-96 to Q-ANS-105, Q-UI-1280 to Q-UI-1289, H-2140 to H-2149, migration 00136 | landed and pushed on 2026-11-26 at 03:54, with the migration 00136 |
-| W30-A3 · Finding collections, the page of a name in every format, the documentation searched across collections (W-30, the owner's d2 = b and d3 = b) | the plan's package A3 with R-ANS-057, R-ANS-058 and R-UI-220; Q-ANS-120 to Q-ANS-129, Q-UI-1290 to Q-UI-1299, H-2150 to H-2159 | built on 2026-11-26 at about 02:50 (three commits); sent back for the search's cost with 50,000 packages and its index, its record becomes ADR-287; lands after W30-A2 |
-| W30-G4 · "Deprecated" is a property of every format that has it (W-30) | R-API-085, R-NUGET-036, R-ANS-060 of the plan `.dev/w30-plan.md`; Q-API-440 to Q-API-449, Q-NUGET-140 to Q-NUGET-149, Q-ANS-130 to Q-ANS-139, Q-NPM-95 to Q-NPM-99, Q-UI-1300 to Q-UI-1309, ADR-286, H-2160 to H-2169 | in work since 2026-11-26, about 01:50 |
-| W30-G3 · One way to show a version's facts in every format (W-30) | the plan's package G3 with R-UI-221 and R-UI-222: an inventory of the six formats' Details and tables as they are now, then the differences closed; Q-UI-1310 to Q-UI-1319, ADR-288, H-2170 to H-2179 | in work since 2026-11-26, 03:15 |
+| W30-A3 · Finding collections, the page of a name in every format, the documentation searched across collections (W-30, the owner's d2 = b and d3 = b) | the plan's package A3 with R-ANS-057, R-ANS-058 and R-UI-220; Q-ANS-120 to Q-ANS-129, Q-UI-1290 to Q-UI-1299, H-2150 to H-2159 | built on 2026-11-26 at about 02:50; the search's index built (8 ms for a usual word at 50,000 collections, 447 ms before; the migration 00137, ADR-287); its builder rebases it for landing since 03:56 |
+| W30-G4 · "Deprecated" is a property of every format that has it (W-30) | R-API-085, R-NUGET-036, R-ANS-060 of the plan `.dev/w30-plan.md`; Q-API-440 to Q-API-449, Q-NUGET-140 to Q-NUGET-149, Q-ANS-130 to Q-ANS-139, Q-NPM-95 to Q-NPM-99, Q-UI-1300 to Q-UI-1309, ADR-286, H-2160 to H-2169 | landed and pushed on 2026-11-26 at 04:59, with the migration 00137 (W30-A3 takes 00138) |
+| W30-G3 · One way to show a version's facts in every format (W-30) | the plan's package G3 with R-UI-221 and R-UI-222: an inventory of the six formats' Details and tables as they are now, then the differences closed; Q-UI-1310 to Q-UI-1319, ADR-288, H-2170 to H-2179 | built on 2026-11-26 at about 04:40 (two commits); lands after W30-G4 and W30-A3, rebased by its builder |
+| W30-A5 · A collection is published from the screen, with its import's log (W-30; the owner's d5 = a, no approval) | the plan's package A5 with R-ANS-061 and R-ANS-062: the upload's operation and dialog, the import's warning for a missing changelog, a per-format table of publishing from the screen; Q-ANS-140 to Q-ANS-149, Q-UI-1320 to Q-UI-1329, ADR-289, H-2180 to H-2189 | built on 2026-11-26 at about 04:45 (two commits); sent back to prove the session's path (cookie and CSRF token) through the hand-off; lands after W30-G4, W30-A3 and W30-G3 |
+| W30-G9 · A generic file's commands behind the button, and a content type that says what it is (W-30) | R-GENERIC-017 of the plan `.dev/w30-plan.md`: curl, wget and PowerShell in the panel at every place a file has an act, the upload's commands, a closed list of guessed text types; Q-UI-1330 to Q-UI-1339, ADR-290, H-2190 to H-2199 | in work since 2026-11-26, 04:43 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1287,6 +1289,44 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 04:59, by W30-G4 (W-30; R-API-085, R-NUGET-036, R-ANS-060; ADR-286; Q-API-444 among its decisions;
+  gaps H-2160 to H-2166; migration 00137): "deprecated" is a property of every format that has it, with one look in
+  every place.** The planner's finding: only npm's deprecation reached a screen. Now a deprecated version or package
+  has the banner on its page (the reasons, the publisher's message as text, the package to use instead as a link
+  where the reader may read it) and the same mark in the table of versions, the version switch, a repository's
+  package list, the product-wide Packages, search hits and suggestions and on the tab Upstream; the package list's
+  drawer has the filter Deprecated (a package counts by its latest version). Per format: npm, one version with a
+  message, served as `versions[v].deprecated`; NuGet, one version with reasons, an optional message and an alternate
+  package, kept from a remote's registration and served in the registration and the search, with **Unlisted** as a
+  mark of its own beside it; Ansible Galaxy, the whole collection, served as `deprecated: true` in the collection's
+  document, a remote's from the documents it fetched; a Helm chart, by its Chart.yaml, only by pushing the chart; an
+  image, Debian and generic have none. Set by one management operation (`PUT` and `DELETE
+  …/packages/{name}/deprecation`, deploy on the package, the format decides the subject and refuses what its
+  protocol cannot carry), on the screen an item of the head's menu with a small dialog; undoing is the same act; the
+  audit event `package.metadata_changed`. What the clients do with it, read in their source, none run: `npm install`
+  warns and a range prefers a version that is not deprecated; `dotnet list package --deprecated` and Visual Studio
+  show the reasons and the alternate package and no client shows the message; no release of `ansible-galaxy` reads
+  the flag; `helm install` warns. The landing: the landing's tree is the builder's rebased tip; the 13 gates, the dialog states, the renders on a fresh instance (176 in English, 6 in German, no layout finding) and the whole areas `conventions`, `packages`, `nuget`, `ansiblelocal`, `oci`, `authz` and `postgres` green, the count of requirements 1,302; checked before the gates that the publisher's message is bound as text; looked at: a deprecated NuGet version's page in light at 1,440 px (the banner with the message, the reasons and the linked package to use instead, the menu in the head); seen and noted: the alternate's range reads in NuGet's notation, "[1.1.0, )". Open: `npm deprecate` over the protocol is not served, the
+  management operation writes the same state (H-2160); a NuGet remote and an Ansible remote know their upstream's
+  state only from the documents they fetched (H-2161, H-2162); Galaxy's PATCH of a collection's document is not
+  served (H-2163); a role read through a remote carries none (H-2164); the tab Upstream does not mark a chart the
+  remote has not cached (H-2165); which copy of a package's latest version the list reads is not defined (H-2166).
+  A decision of the builder's to know: a chart's flag is shown to every reader of the version, also one who may not
+  read the chart's config blob (Q-API-444: a read per row otherwise, and a mark that differs between readers of one
+  list). Not verified: the journey `dotnet list package --deprecated`; any real client; a remote's rows against a
+  real upstream.
+
+- **Open since 2026-11-26, 04:44, findings of the builder of W30-A5 while it compared publishing from the screen per
+  format; for the packages that follow (NuGet goes to W30-G6).** (1) NuGet has no upload on the screen, while nuget.org
+  has an "Upload Package" page; and `docs/spec/formats/nuget.md` (near line 539) says a package can be uploaded through
+  the management API and the UI's deploy dialog, which do not exist: the sentence is wrong until one is built. With
+  A5's hand-off of a management request to the protocol's publish route the upload is one operation and a one-file
+  dialog. (2) R-NPM-036 (P1: a raw tarball deployed through `/files/` and the UI's dialog) is specified and not built;
+  `/files/` answers 409 for the format. npmjs.com itself has no upload on the screen. (3) Debian: a `.deb` is uploaded
+  only by `PUT upload/<file>?distribution=&component=`; no registry of the format has a screen for it; a dialog would
+  need the distribution and the component under details. (4) A signature of a collection can be posted through the
+  API only (H-2180). Not verified by it: the formats' own registries' pages (from knowledge).
 
 - **Closed on 2026-11-26, 03:54, by W30-A2 (W-30; R-ANS-051 to R-ANS-053; Q-ANS-96 to Q-ANS-99; Q-UI-1280; gaps H-2140 to
   H-2143, H-891 and H-892 narrowed, H-2102 closed; migration 00136): the documentation of a collection published
