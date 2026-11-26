@@ -1,3 +1,4 @@
+import { PackageDocEntry } from '../../api/packages-api';
 import { commonFixture, docTree } from '../../api/testing/fakes-ansible-docs';
 import {
   README_DOC,
@@ -6,9 +7,11 @@ import {
   configLines,
   branchesOf,
   docNodes,
+  entrySections,
   firstDoc,
   holdsDoc,
   optionRows,
+  parameterGroups,
   parseDoc,
   returnRows,
   valueText,
@@ -156,6 +159,51 @@ describe('The model of the documentation screens', () => {
       { kind: 'cli', text: '--x' },
     ]);
     expect(configLines(undefined)).toEqual([]);
+  });
+
+  it('R-ANS-053 the changelog is the last file of Documentation, a page of the tree, and the first page where no file is', () => {
+    const changelog = { name: 'changelog', source: 'changelogs/changelog.yaml', format: 'markdown', truncated: false } as const;
+    const tree = { ...docTree(commonFixture()), changelog };
+    const docs = docNodes(tree, tree, false)[0];
+    expect([docs?.label, docs?.count]).toEqual(['Documentation', 3]);
+    expect(docs?.children.map((c) => [c.label, c.doc, c.tooltip]).at(-1)).toEqual(['Changelog', 'file/changelog', 'changelogs/changelog.yaml']);
+    expect(holdsDoc(tree, parseDoc('file/changelog'))).toBe(true);
+    expect(holdsDoc(docTree(commonFixture()), parseDoc('file/changelog'))).toBe(false);
+    const alone = { ...docTree(commonFixture({ files: [] })), changelog };
+    expect(firstDoc(alone)).toBe('file/changelog');
+    expect(docNodes(alone, alone, false)[0]?.children.map((c) => c.label)).toEqual(['Changelog']);
+  });
+
+  it('R-ANS-052 a role with argument specs has a group per entry point, whose rows have the anchors of that entry point', () => {
+    const entry: PackageDocEntry = {
+      type: 'role',
+      name: 'agent',
+      fullName: 'acme.platform.agent',
+      hasDocs: true,
+      source: 'generated',
+      readmeHtml: '<p>r</p>',
+      entryPoints: [
+        { name: 'main', options: [{ name: 'tls', suboptions: [{ name: 'cert', aliases: ['crt'] }] }] },
+        { name: 'upgrade', options: [{ name: 'tls' }] },
+      ],
+    };
+    const groups = parameterGroups(entry);
+    expect(groups.map((g) => [g.id, g.title, g.anchorPrefix])).toEqual([
+      ['entry-main', 'Entry point main', 'main--'],
+      ['entry-upgrade', 'Entry point upgrade', 'upgrade--'],
+    ]);
+    const main = optionRows(groups[0]?.options, groups[0]?.anchorPrefix);
+    expect(main.map((r) => [r.id, r.anchor, r.aliasAnchors])).toEqual([
+      ['main--/tls', 'parameter-main--tls', []],
+      ['main--/tls/cert', 'parameter-main--tls/cert', ['parameter-main--tls/crt']],
+    ]);
+    // One option name in two entry points is two rows: folding one leaves the other.
+    expect(optionRows(groups[1]?.options, groups[1]?.anchorPrefix)[0]?.id).toBe('upgrade--/tls');
+    expect(entrySections(entry, groups).map((s) => s.id)).toEqual(['doc-entry-main', 'doc-entry-upgrade', 'doc-readme']);
+    expect(entrySections({ ...entry, hasDocs: false, entryPoints: undefined }, [])).toEqual([]);
+    // A list default marks each of its elements among the choices, as the site marks them.
+    expect(optionRows([{ name: 'protocols', choices: ['TLSv1.2', 'TLSv1.3'], default: ['TLSv1.3'] }])[0]?.defaults).toEqual(['TLSv1.3']);
+    expect(optionRows([{ name: 'port', default: 22 }])[0]?.defaults).toEqual(['22']);
   });
 });
 

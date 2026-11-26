@@ -273,6 +273,40 @@ describe('An entry page of the documentation', () => {
     await expectAccessible(r.root);
   });
 
+  it('R-ANS-052 a role with argument specs shows its entry points with their tables and anchors, then its README', async () => {
+    const r = await show({
+      type: 'role',
+      name: 'agent',
+      fullName: 'acme.platform.agent',
+      shortDescription: 'Install the agent',
+      hasDocs: true,
+      source: 'generated',
+      readmeHtml: '<h1>agent</h1>',
+      entryPoints: [
+        {
+          name: 'main',
+          shortDescription: 'Install the agent',
+          versionAdded: '1.2.0',
+          versionAddedCollection: 'acme.platform',
+          description: ['Installs it.'],
+          author: ['Platform engineering'],
+          options: [{ name: 'tls', type: 'dict', suboptions: [{ name: 'cert', type: 'path', required: true }] }],
+        },
+        { name: 'upgrade', options: [{ name: 'restart', type: 'bool', default: true }] },
+      ],
+    });
+    expect(headings(r.root)).toEqual(['Entry point main', 'Entry point upgrade', 'README']);
+    expect(r.rows().map((row) => row.id)).toEqual(['parameter-main--tls', 'parameter-main--tls/cert', 'parameter-upgrade--restart']);
+    const main = r.root.querySelector('#doc-entry-main')!;
+    expect(text(main)).toContain('added in acme.platform 1.2.0');
+    expect(text(main)).toContain('Installs it.');
+    expect([...main.querySelectorAll('h4')].map((h) => text(h))).toEqual(['Parameters', 'Authors']);
+    expect(text(r.root.querySelector('#doc-readme')!)).toContain('agent');
+    const contents = [...r.root.querySelectorAll('[data-testid="doc-contents"] a')].map((a) => text(a));
+    expect(contents).toEqual(['Entry point main', 'Entry point upgrade', 'README']);
+    await expectAccessible(r.root);
+  });
+
   it('R-UI-061 names the documentation fragments that were not merged', async () => {
     const r = await show({ ...CHECK_HOST_REACHABLE, extendsFragments: ['community.general.attributes'] });
     expect(text(r.root.querySelector('[data-testid="doc-fragments"]')!)).toContain('community.general.attributes');

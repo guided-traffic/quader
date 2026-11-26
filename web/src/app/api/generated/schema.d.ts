@@ -4026,16 +4026,20 @@ export interface paths {
                 packageId: components["parameters"]["PackageId"];
                 /** @description The version string, percent-encoded. */
                 version: components["parameters"]["PackageVersionPath"];
-                /** @description The name of the README or of a Markdown file below `docs/`, as the tree lists it, percent-encoded. */
+                /**
+                 * @description The name of the README or of a Markdown file below `docs/`, as the tree lists it, percent-encoded; `changelog` is the changelog of
+                 *     the tree's member `changelog`.
+                 */
                 file: string;
             };
             cookie?: never;
         };
         /**
-         * Read the README or a Markdown file of the documentation of a version
+         * Read the README, a Markdown file or the changelog of the documentation of a version
          * @description The README or a Markdown file of a visible version as sanitized HTML, as the README operation answers it (R-ANS-036, R-API-029,
          *     R-UI-008). A name the tree does not list is `404`. The `ETag` is a strong tag over the source, the renderer version and the image
-         *     policy. The wiki rule of the tree applies (R-ANS-037).
+         *     policy. The wiki rule of the tree applies (R-ANS-037). `changelog` answers the changelog (R-ANS-053) in every state of the
+         *     documentation, since it comes with the archive.
          */
         get: operations["getPackageVersionDocFile"];
         put?: never;
@@ -12673,9 +12677,24 @@ export interface components {
             matchCount?: number;
             /** @description The README first, when there is one, then the Markdown files of `docs/` in name order. */
             files?: components["schemas"]["PackageDocFileHead"][];
+            changelog?: components["schemas"]["PackageDocChangelogHead"];
             groups?: components["schemas"]["PackageDocGroup"][];
             /** @description What the generator left out and why. Only for a caller who holds `deploy` on the repository. */
             warnings?: components["schemas"]["PackageDocWarning"][];
+        };
+        /**
+         * @description The changelog of the version (R-ANS-053), read from the archive at a publish and at the fill of a remote's archive, so it is present
+         *     in every state of the tree. Its text is the file `name` of the file operation. Absent when the archive holds none.
+         */
+        PackageDocChangelogHead: {
+            /** @enum {string} */
+            name: "changelog";
+            /** @description The member of the archive, `changelogs/changelog.yaml`, `CHANGELOG.md` or `CHANGELOG.rst`. */
+            source: string;
+            /** @description `markdown` (changelog.yaml rendered by version and category, or a Markdown file) or `text` (reStructuredText, shown as text). */
+            format: string;
+            /** @description The changelog was longer than 512 KiB and is cut after the last whole version or line. */
+            truncated: boolean;
         };
         PackageDocFileHead: {
             name: string;
@@ -12753,10 +12772,33 @@ export interface components {
             examples?: string;
             seealso?: components["schemas"]["PackageDocSeeAlso"][];
             attributes?: components["schemas"]["PackageDocAttribute"][];
-            /** @description The documentation fragments that were not merged into the entry. */
+            /**
+             * @description The documentation fragments that were not merged into the entry: a generated entry merges the fragments of its own collection
+             *     (R-ANS-051), so these are fragments of `ansible.builtin`, of another collection, or ones that could not be read.
+             */
             extendsFragments?: string[];
             /** @description Roles. The README of the role as sanitized HTML. */
             readmeHtml?: string;
+            /**
+             * @description Roles. The entry points of the role's argument specs, in the order of the file (R-ANS-052). The anchor of an entry point's option
+             *     is `parameter-<entry point>--<path>`, and its prose links `O()` of the entry point's own options to it.
+             */
+            entryPoints?: components["schemas"]["PackageDocEntryPoint"][];
+        };
+        /** @description One entry point of a role (R-ANS-052); the prose members are sanitized HTML as in an entry. */
+        PackageDocEntryPoint: {
+            name: string;
+            /** @description Plain text. */
+            shortDescription?: string;
+            versionAdded?: string;
+            versionAddedCollection?: string;
+            description?: string[];
+            notes?: string[];
+            requirements?: string[];
+            author?: string[];
+            options?: components["schemas"]["PackageDocOption"][];
+            seealso?: components["schemas"]["PackageDocSeeAlso"][];
+            attributes?: components["schemas"]["PackageDocAttribute"][];
         };
         PackageDocDeprecated: {
             /** @description Sanitized HTML. */
@@ -12833,16 +12875,17 @@ export interface components {
             description?: string[];
             details?: string[];
         };
-        /** @description The README or a Markdown file, as the README answer of R-API-029 (R-ANS-036). */
+        /** @description The README, a Markdown file or the changelog, as the README answer of R-API-029 (R-ANS-036, R-ANS-053). */
         PackageDocFile: {
             name: string;
             /**
-             * @description The type of the source; `html` is always sanitized HTML.
+             * @description The type of the source; `html` is always sanitized HTML. `text/plain` is a changelog in reStructuredText, whose `html` is the text
+             *     in a `pre` element (R-ANS-053).
              * @enum {string}
              */
-            contentType: "text/markdown";
+            contentType: "text/markdown" | "text/plain";
             html: string;
-            /** @description The source or the rendered HTML exceeded a limit of R-UI-008. */
+            /** @description The source or the rendered HTML exceeded a limit of R-UI-008, or a changelog was cut at its bound (R-ANS-053). */
             truncated: boolean;
             /**
              * Format: int32
@@ -27226,7 +27269,10 @@ export interface operations {
                 packageId: components["parameters"]["PackageId"];
                 /** @description The version string, percent-encoded. */
                 version: components["parameters"]["PackageVersionPath"];
-                /** @description The name of the README or of a Markdown file below `docs/`, as the tree lists it, percent-encoded. */
+                /**
+                 * @description The name of the README or of a Markdown file below `docs/`, as the tree lists it, percent-encoded; `changelog` is the changelog of
+                 *     the tree's member `changelog`.
+                 */
                 file: string;
             };
             cookie?: never;

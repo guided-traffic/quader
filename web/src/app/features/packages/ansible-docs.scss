@@ -45,6 +45,30 @@ span.tree-row {
   font-size: var(--quader-text-muted-size);
 }
 
+// The head of the changelog (R-ANS-053): its title and the member it was read from; the versions follow as the Markdown's headings.
+.changelog-head {
+  margin-block-end: var(--quader-space-3);
+
+  h3 {
+    margin: 0;
+    font: var(--quader-type-headline-small);
+  }
+
+  p {
+    margin-block: var(--quader-space-1) 0;
+    color: var(--quader-text-muted);
+  }
+}
+
+// The changelog's own note that it was cut, as the README component draws its note.
+.readme-note {
+  margin-block: 0 var(--quader-space-3);
+  padding: var(--quader-space-2) var(--quader-space-3);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-m);
+  background: var(--quader-surface-raised);
+}
+
 // A version that has a README and no entries has no tree: the page takes the whole width, also on a narrow content area.
 .browse.docs.readme-only {
   grid-template-columns: minmax(0, 1fr);

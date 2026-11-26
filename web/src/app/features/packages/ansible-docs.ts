@@ -18,13 +18,14 @@ import {
 import { Tree, TreeItem, TreeItemGroup } from '@angular/aria/tree';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { PackageDocEntry, PackageDocFile, PackageDocTree, PackagesApi } from '../../api/packages-api';
+import { PackageDocEntry, PackageDocFile, PackageDocTree, PackageReadme, PackagesApi } from '../../api/packages-api';
 import { ApiError } from '../../api/problem';
 import { ErrorNotice } from '../../shared/error-notice';
 import { failureOf, valueOf } from '../../shared/paged-resource';
 import { AnsibleDocEntry } from './ansible-doc-entry';
 import {
   DocNode,
+  CHANGELOG_FILE,
   README_DOC,
   allBranches,
   branchesOf,
@@ -202,6 +203,24 @@ export class AnsibleDocs {
   });
 
   private readonly pagePane = viewChild<ElementRef<HTMLElement>>('pagePane');
+
+  /** The name of the changelog among the files (R-ANS-053). */
+  protected readonly changelogFile = CHANGELOG_FILE;
+  /** The member of the archive the changelog was read from, as the tree names it. */
+  protected readonly changelogSource = computed(() => this.tree()?.changelog?.source ?? null);
+  /**
+   * The changelog's title is drawn for the one Quader renders from changelogs/changelog.yaml, which starts with its newest version; a
+   * CHANGELOG.md or .rst carries a title of its own, so there the heading stays for a screen reader only (Q-UI-1280).
+   */
+  protected readonly changelogTitled = computed(() => (this.changelogSource() ?? '').startsWith('changelogs/'));
+
+  /**
+   * A file as the README component draws it: its HTML is sanitized either way, a changelog in reStructuredText is a `pre` element. The
+   * changelog says itself when it was cut, so its own note replaces the README's.
+   */
+  protected asReadme(file: PackageDocFile, truncated: boolean): PackageReadme {
+    return { contentType: 'text/markdown', html: file.html, truncated, externalImagesBlocked: file.externalImagesBlocked };
+  }
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.cancelTimer());

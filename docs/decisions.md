@@ -12399,10 +12399,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-639 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+640 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 639 questions</summary>
+<summary>Q-UI: 640 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13045,6 +13045,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1270](spec/api-and-ui.md#q-ui-1270--a-debian-packages-relations-are-the-dependency-block-one-line-per-group-its-alternatives-side-by-side) | A Debian package's relations are the dependency block, one line per group, its alternatives side by side | Decided by the development agent on 2026-11-26 | (a) A heading per relation field and a plain list, one line per group: the names linked where the installation holds the package, the alternatives with "or" between them, the constraint after each name, muted | — |
 | [Q-UI-1271](spec/api-and-ui.md#q-ui-1271--the-source-package-of-a-debian-version-links-to-the-package-list-of-its-binaries) | The source package of a Debian version links to the package list of its binaries | Decided by the development agent on 2026-11-26 | (a) A link to the package list filtered by the keyword, which Debian answers with the source package; the filter's chip says "Source package" while the list shows Debian alone | — |
 | [Q-UI-1272](spec/api-and-ui.md#q-ui-1272--a-debian-packages-changelog-is-a-tab-its-copyright-a-fold-its-files-a-section-of-files) | A Debian package's changelog is a tab, its copyright a fold, its files a section of Files | Decided by the development agent on 2026-11-26 | (a) A tab **Changelog** after Details; the copyright file a closed fold under Package details (its licence stands on the facts line); the installed files a section under the package files of **Files**: the first 100, a filter on the path, "Show more" by 500, an architecture choice when the version has several | — |
+| [Q-UI-1280](spec/api-and-ui.md#q-ui-1280--a-roles-entry-points-are-sections-of-its-page-before-its-readme-and-the-changelog-is-a-file-of-documentation-with-a-head) | A role's entry points are sections of its page before its README, and the changelog is a file of Documentation with a head | Decided by the development agent on 2026-11-26 | (a) One section per entry point (heading "Entry point main", the short description, "added in", the prose, **Parameters** with the same two-column table, Notes, Requirements, Attributes, See also, Authors), then **README**; the changelog a file **Changelog** after the other files of Documentation, its page headed **Changelog** with the member it was read from and a note of its own when cut | — |
 
 </details>
 

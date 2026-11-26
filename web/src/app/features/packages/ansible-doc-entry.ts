@@ -1,9 +1,9 @@
-import { Location } from '@angular/common';
+import { Location, NgTemplateOutlet } from '@angular/common';
 import { Component, ElementRef, afterRenderEffect, computed, inject, input, linkedSignal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter, map } from 'rxjs';
-import { PackageDocEntry, PackageReadme } from '../../api/packages-api';
+import { PackageDocAttribute, PackageDocEntry, PackageDocEntryPoint, PackageDocSeeAlso, PackageReadme } from '../../api/packages-api';
 import { CopyButton } from '../../shared/copy-button';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { NoValue } from '../../shared/ui/no-value';
@@ -38,7 +38,7 @@ interface ParamTable {
  */
 @Component({
   selector: 'quader-ansible-doc-entry',
-  imports: [CopyButton, DataTable, DocProse, NoValue, PackageReadmeView, RouterLink],
+  imports: [CopyButton, DataTable, DocProse, NgTemplateOutlet, NoValue, PackageReadmeView, RouterLink],
   templateUrl: './ansible-doc-entry.html',
   styleUrl: './ansible-doc-entry.scss',
 })
@@ -66,7 +66,7 @@ export class AnsibleDocEntry {
 
   protected readonly groups = computed(() => parameterGroups(this.entry()));
   protected readonly sections = computed(() => entrySections(this.entry(), this.groups()));
-  private readonly allTables = computed(() => this.groups().map((group) => ({ group, rows: optionRows(group.options) })));
+  private readonly allTables = computed(() => this.groups().map((group) => ({ group, rows: optionRows(group.options, group.anchorPrefix) })));
   private readonly allReturns = computed(() => returnRows(this.entry().returnValues));
   protected readonly tables = computed<readonly ParamTable[]>(() =>
     this.allTables().map((t) => ({ group: t.group, rows: visibleRows(t.rows, this.foldedOptions()) })),
@@ -82,6 +82,9 @@ export class AnsibleDocEntry {
     const html = this.entry().readmeHtml;
     return html ? { contentType: 'text/markdown', html, truncated: false, externalImagesBlocked: 0 } : null;
   });
+
+  /** The README of a role without entry points: the page is the README alone; a role with them shows it after its entry points. */
+  protected readonly readmeAlone = computed(() => (this.entry().entryPoints?.length ? null : this.readme()));
 
   /** The address of the page without its fragment, as a link copied from it is opened elsewhere: it follows every navigation. */
   private readonly pageUrl = toSignal(
@@ -144,6 +147,21 @@ export class AnsibleDocEntry {
         el.scrollIntoView?.({ block: 'start' });
       });
     });
+  }
+
+  /** The list a template of attributes is given: the entry's or an entry point's. */
+  protected asAttributes(list: unknown): readonly PackageDocAttribute[] {
+    return Array.isArray(list) ? (list as PackageDocAttribute[]) : [];
+  }
+
+  /** The list a template of see-also entries is given: the entry's or an entry point's. */
+  protected asSeeAlso(list: unknown): readonly PackageDocSeeAlso[] {
+    return Array.isArray(list) ? (list as PackageDocSeeAlso[]) : [];
+  }
+
+  /** "added in" of a role's entry point (R-ANS-052). */
+  protected entryPointAdded(ep: PackageDocEntryPoint): string {
+    return addedText(ep.versionAdded, ep.versionAddedCollection);
   }
 
   /** The absolute address of a row: the page's address and the row's anchor. */

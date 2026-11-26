@@ -2,6 +2,7 @@ import { Locator, Page, Route, expect } from '@playwright/test';
 import {
   Kind,
   kinds,
+  ansibleNotesPackage,
   ansiblePackage,
   debPackage,
   deepFolder,
@@ -393,6 +394,13 @@ async function* docEntry(page: Page): AsyncGenerator<string> {
 /** An entry opened at the anchor of a suboption: the row marked and in view below the page's head (R-ANS-048). */
 async function* docAnchor(page: Page): AsyncGenerator<string> {
   await expect(page.locator('tr.is-target')).toBeInViewport();
+  yield '';
+}
+
+/** A collection's changelog as it opens: its head and the first version (R-ANS-053). */
+async function* docChangelog(page: Page): AsyncGenerator<string> {
+  await expect(page.getByTestId('docs-changelog')).toBeVisible();
+  await expect(page.locator('quader-ansible-docs .readme h2').first()).toBeVisible();
   yield '';
 }
 
@@ -2925,6 +2933,7 @@ const ver = (base: string, p: { readonly format: string; readonly name: string }
 /** The table of a package's versions where its name opens its newest version (R-UI-218, Q-UI-1242). */
 const table = (base: string, p: { readonly format: string; readonly name: string }): string => `${pkg(base, p)}/-/versions`;
 const collectionName = `${ansiblePackage.namespace}.${ansiblePackage.name}`;
+const notesName = `${ansibleNotesPackage.namespace}.${ansibleNotesPackage.name}`;
 
 export const screens: readonly Screen[] = [
   // Without a session (Q-UI-125).
@@ -3176,6 +3185,37 @@ export const screens: readonly Screen[] = [
     path: `${ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1])}?doc=callback/timer`,
     kinds: ['plain'],
     walk: docEntry,
+  },
+  // A role's entry points with their tables (R-ANS-052), one opened at the anchor of a nested option; the changelog rendered from
+  // changelog.yaml and a second collection's CHANGELOG.md (R-ANS-053). The module's page above holds the fragment's options (R-ANS-051).
+  {
+    id: 'ansible-doc-role',
+    path: `${ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1])}?doc=role/agent`,
+    kinds: ['plain'],
+    de: true,
+    tables: 'quader-ansible-doc-entry quader-data-table',
+    walk: docEntry,
+  },
+  {
+    id: 'ansible-doc-role-anchor',
+    path: `${ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1])}?doc=role/agent#parameter-main--agent_tls/protocols`,
+    kinds: ['plain'],
+    de: true,
+    walk: docAnchor,
+  },
+  {
+    id: 'ansible-doc-changelog',
+    path: `${ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1])}?doc=file/changelog`,
+    kinds: ['plain'],
+    de: true,
+    walk: docChangelog,
+  },
+  {
+    id: 'ansible-doc-changelog-md',
+    path: `${ver(O, { format: 'ansible', name: notesName }, ansibleNotesPackage.versions[0])}?doc=file/changelog`,
+    kinds: ['plain'],
+    de: true,
+    walk: docChangelog,
   },
   // A role a remote read (R-ANS-056, roles.ts): titled by its owner and name, its README first, the role's install command; its facts and
   // the name the rules see on Details; its newest version on the package's address and twenty versions in its table; a role the remote's

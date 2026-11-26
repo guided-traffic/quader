@@ -77,6 +77,8 @@ unless the line is too short, and then breaks at the joint with a hyphen; withou
 | client setup, snippet | Client-Einrichtung, Snippet |
 | deployment target | Veröffentlichungsziel |
 | README | README |
+| changelog (of a collection) | Changelog (der) |
+| entry point (of a role's argument specs) | Einstiegspunkt |
 | ClamAV definition updates (the switch of upstream/clamav) | ClamAV-Definitions-Updates |
 | set (of ClamAV databases), in use, outdated | Satz, in Verwendung, veraltet |
 | detached signature (of a ClamAV container) | abgetrennte Signatur |

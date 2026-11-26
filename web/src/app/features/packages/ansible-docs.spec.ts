@@ -159,6 +159,24 @@ describe('The Documentation tab of an Ansible collection', () => {
       expect(text(r.root.querySelector('[data-testid="doc-no-docs"]')!)).toBe('This plugin has no documentation in its source.');
     });
 
+    it('R-ANS-053 the changelog is the last file of Documentation and opens with its head, its source and its own note when cut', async () => {
+      const r = await open({ doc: 'file/changelog' }, (fake) =>
+        ansibleDocsFixture(fake, {
+          ...commonFixture(),
+          changelog: { source: 'changelogs/changelog.yaml', format: 'markdown', html: '<h2>v1.2.0</h2><h3>Bugfixes</h3>', truncated: true },
+        }),
+      );
+      expect(groups(r)).toEqual(['Documentation 3', 'Modules 8', 'Plugins 24']);
+      expect(label(current(r)!)).toBe('Changelog');
+      const page = r.root.querySelector('.pane-details')!;
+      expect(text(page.querySelector('[data-testid="docs-changelog"]')!)).toContain('Source in the archive: changelogs/changelog.yaml');
+      expect(page.querySelector('.readme h2')?.textContent).toBe('v1.2.0');
+      expect(text(page)).toContain('The changelog is shortened');
+      expect(text(page)).not.toContain('This README is shortened');
+      expect(r.fake.docCalls).toContain('file:changelog');
+      await expectAccessible(r.root);
+    });
+
     it('R-UI-060 a group opens and closes by a click on its row and keeps what the user chose', async () => {
       const r = await open();
       const modules = items(r).find((i) => rowText(i).startsWith('Modules'))!;

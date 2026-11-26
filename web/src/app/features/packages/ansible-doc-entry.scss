@@ -70,6 +70,26 @@ section {
   }
 }
 
+// A role's entry point (R-ANS-052): its own head, prose and tables, apart from the next by a rule, as the documentation site's sections.
+section.entry-point {
+  padding-block-start: var(--quader-space-3);
+  border-block-start: 1px solid var(--quader-border);
+
+  h3 {
+    margin-block-end: 0;
+    font: var(--quader-type-title-medium);
+  }
+
+  h4 {
+    margin-block: var(--quader-space-3) var(--quader-space-2);
+    font: var(--quader-type-label-large);
+  }
+
+  .doc-facts {
+    margin-block-end: var(--quader-space-2);
+  }
+}
+
 .doc-list {
   margin: 0;
   padding-inline-start: var(--quader-space-4);

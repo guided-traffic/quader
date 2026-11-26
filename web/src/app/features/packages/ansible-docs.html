@@ -138,8 +138,21 @@
         } @else if (page.isLoading()) {
           <quader-loading i18n="@@docs.page.loading">Loading the page.</quader-loading>
         } @else if (pageValue(); as p) {
-          @if (p.kind === 'file') {
-            <quader-package-readme [readme]="p.file" />
+          @if (p.kind === 'file' && p.file.name === changelogFile) {
+            <header class="changelog-head" data-testid="docs-changelog">
+              <h3 i18n="@@docs.changelog.title" [class.visually-hidden]="!changelogTitled()">Changelog</h3>
+              @if (changelogSource(); as src) {
+                <p class="doc-muted"><ng-container i18n="@@docs.changelog.source">Source in the archive:</ng-container>{{ ' ' }}<code translate="no">{{ src }}</code></p>
+              }
+            </header>
+            @if (p.file.truncated) {
+              <p class="readme-note" role="note" i18n="@@docs.changelog.truncated">
+                The changelog is shortened: it is longer than Quader keeps. The whole changelog is in the collection's archive.
+              </p>
+            }
+            <quader-package-readme [readme]="asReadme(p.file, false)" />
+          } @else if (p.kind === 'file') {
+            <quader-package-readme [readme]="asReadme(p.file, p.file.truncated)" />
           } @else {
             <quader-ansible-doc-entry [entry]="p.entry" [target]="fragment()" />
           }

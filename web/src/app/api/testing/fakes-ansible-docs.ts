@@ -30,6 +30,8 @@ export interface DocsFixture {
   files: DocFile[];
   entries: PackageDocEntry[];
   warnings?: PackageDocTree['warnings'];
+  /** The changelog of the version (R-ANS-053): the tree names it, the file operation serves it as `changelog`. */
+  changelog?: { source: string; format: 'markdown' | 'text'; html: string; truncated?: boolean };
 }
 
 const LABELS = { module: 'Modules', plugin: 'Plugins', role: 'Roles' } as const;
@@ -93,10 +95,23 @@ export function docTree(fx: DocsFixture, q?: string): PackageDocTree {
     groups,
     ...(searching ? { matchCount: left } : {}),
     ...(fx.warnings ? { warnings: fx.warnings } : {}),
+    ...(fx.changelog && (!searching || terms.every((t) => 'changelog'.includes(t)))
+      ? { changelog: { name: 'changelog', source: fx.changelog.source, format: fx.changelog.format, truncated: fx.changelog.truncated ?? false } }
+      : {}),
   };
 }
 
 export function docFile(fx: DocsFixture, name: string): PackageDocFile | null {
+  if (name === 'changelog' && fx.changelog) {
+    const c = fx.changelog;
+    return {
+      name,
+      contentType: c.format === 'text' ? 'text/plain' : 'text/markdown',
+      html: c.html,
+      truncated: c.truncated ?? false,
+      externalImagesBlocked: 0,
+    };
+  }
   const f = fx.files.find((x) => x.name === name);
   return f
     ? {

@@ -304,7 +304,11 @@ export const nugetPackage = {
 /** A Debian package of the platform project (W-7): two versions in the suite stable. */
 export const debPackage = { format: 'deb', repo: longDebKey, name: 'acme-agent', versions: ['1.2.0-1', '1.3.0-1'] } as const;
 /** An Ansible collection of the platform project (W-7): two versions. */
-export const ansiblePackage = { format: 'ansible', repo: 'collections', namespace: 'acme', name: 'platform', versions: ['1.0.0', '1.1.0'] } as const;
+// The second version is 1.2.0 since the collection holds a fragment, a role's argument specs and a changelog (R-ANS-051 to R-ANS-053): an
+// instance that holds an older 1.1.0 keeps it, and the screens read the version that has them.
+export const ansiblePackage = { format: 'ansible', repo: 'collections', namespace: 'acme', name: 'platform', versions: ['1.0.0', '1.2.0'] } as const;
+/** A second collection of the repository whose changelog is a CHANGELOG.md (R-ANS-053). */
+export const ansibleNotesPackage = { format: 'ansible', repo: 'collections', namespace: 'acme', name: 'notes', versions: ['1.0.0'] } as const;
 
 /** A thin client of the API with the cookie session of the caller, its CSRF token and the UI's origin (R-AUTH-012). */
 export class Api {
@@ -888,6 +892,9 @@ DOCUMENTATION = r'''
 module: mount_volume
 short_description: Control active and configured mount points of the platform's volumes
 version_added: "1.0.0"
+extends_documentation_fragment:
+  - acme.platform.connection
+  - ansible.builtin.files
 description:
   - Controls active and configured mount points in C(/etc/fstab) for the volumes of the platform, with retries for slow devices.
   - Use O(state=mounted) to mount a device and write it to the fstab, or O(state=present) to write the entry only. The options in
@@ -1105,22 +1112,160 @@ options:
 '''
 `;
 
+/** The fragment the module extends (R-ANS-051): the connection's options and a note, merged into its page. */
+const connectionFragment = `# -*- coding: utf-8 -*-
+
+
+class ModuleDocFragment(object):
+    # The options every module of the platform takes to reach its API.
+    DOCUMENTATION = r'''
+options:
+  api_url:
+    description:
+      - The address of the platform's API, for example V(https://platform.example.invalid/api).
+    type: str
+    required: true
+  api_token:
+    description: A token of the platform's API. Set it from a vault, never in the play.
+    type: str
+    aliases: [token]
+  validate_certs:
+    description: Whether the certificate of the API is checked.
+    type: bool
+    default: true
+notes:
+  - The API answers within 30 seconds; a slower answer is an error.
+'''
+`;
+
+/** The argument specs of the role agent (R-ANS-052): two entry points, one with nested options. */
+const agentArgumentSpecs = `---
+argument_specs:
+  main:
+    short_description: Install and start the platform's agent
+    description:
+      - Installs the agent from the platform's package repository and starts its service.
+      - Set O(agent_tls.cert) and O(agent_tls.key) to talk to the platform over TLS.
+    author:
+      - Platform engineering (@platform)
+    version_added: 1.2.0
+    options:
+      agent_version:
+        description: The version of the agent's package; the newest when empty.
+        type: str
+      agent_port:
+        description: The port the agent listens on.
+        type: int
+        default: 9100
+      agent_tls:
+        description: The agent's certificate and key.
+        type: dict
+        options:
+          cert:
+            description: The path of the certificate on the host.
+            type: path
+            required: true
+          key:
+            description: The path of the private key on the host.
+            type: path
+            required: true
+          protocols:
+            description: The TLS versions the agent accepts.
+            type: list
+            elements: str
+            choices: [TLSv1.2, TLSv1.3]
+            default: [TLSv1.3]
+  upgrade:
+    short_description: Upgrade the agent in place
+    description:
+      - Upgrades the agent and restarts it only when O(agent_restart) is true.
+    options:
+      agent_restart:
+        description: Whether the service is restarted after the upgrade.
+        type: bool
+        default: true
+`;
+
+/** A changelog of antsibull-changelog (R-ANS-053): five versions, every category, a new module, plugins and a role. */
+const platformChangelog = `ancestor: null
+releases:
+  1.0.0:
+    changes:
+      release_summary: First release of the platform's collection.
+    modules:
+    - description: Control active and configured mount points of the platform's volumes
+      name: mount_volume
+      namespace: ''
+    release_date: '2026-01-12'
+  1.0.1:
+    changes:
+      bugfixes:
+      - mount_volume - a device name with a space is quoted in the fstab (https://git.example.invalid/acme/platform/pull/4).
+      release_summary: Bugfix release.
+    release_date: '2026-02-03'
+  1.1.0:
+    changes:
+      deprecated_features:
+      - mount_volume - the option \`\`opts\`\` as a string is deprecated, give a list.
+      minor_changes:
+      - mount_volume - the option \`\`fstype\`\` takes \`\`auto\`\`.
+      - The lookup reads variables with a prefix, see \`the guide <https://git.example.invalid/acme/platform/docs>\`_.
+      release_summary: Feature release.
+      security_fixes:
+      - mount_volume - the credentials file is written with mode 0600.
+    plugins:
+      callback:
+      - description: Times every task and the play
+        name: timer
+        namespace: null
+      lookup:
+      - description: Read settings from the environment
+        name: env_vars
+        namespace: null
+    release_date: '2026-03-20'
+  1.1.1:
+    changes:
+      known_issues:
+      - mount_volume - a remount of a busy NFS share can take a minute.
+      release_summary: Maintenance release.
+    release_date: '2026-04-02'
+  1.2.0:
+    changes:
+      breaking_changes:
+      - The collection needs ansible-core 2.15 or later.
+      major_changes:
+      - Every module reads the connection to the platform from one shared fragment.
+      removed_features:
+      - mount_volume - the option \`\`legacy_mode\`\` is removed.
+      release_summary: Feature release with a role.
+    objects:
+      role:
+      - description: Install and start the platform's agent
+        name: agent
+        namespace: null
+    release_date: '2026-05-15'
+`;
+
 /** A collection archive with the MANIFEST.json and FILES.json ansible-galaxy builds (test/ansiblestub/ansiblegen). */
 function collection(namespace: string, name: string, version: string): Buffer {
-  const sha = (b: Buffer): string => createHash('sha256').update(b).digest('hex');
   const files: [string, Buffer][] = [
     ['README.md', Buffer.from(`# ${namespace}.${name}\n\nRoles and modules of the platform team, version ${version}.\n`)],
+    ['changelogs/changelog.yaml', Buffer.from(platformChangelog)],
     ['meta/runtime.yml', Buffer.from("requires_ansible: '>=2.15.0'\n")],
     ['plugins/callback/timer.py', Buffer.from(timerCallback)],
+    ['plugins/doc_fragments/connection.py', Buffer.from(connectionFragment)],
     ['plugins/lookup/env_vars.py', Buffer.from(envVarsLookup)],
     ['plugins/modules/mount_volume.py', Buffer.from(mountModule())],
     ['roles/agent/tasks/main.yml', Buffer.from('---\n- name: Install the agent\n  ansible.builtin.package:\n    name: acme-agent\n')],
+    ['roles/agent/meta/argument_specs.yml', Buffer.from(agentArgumentSpecs)],
     ['roles/agent/meta/main.yml', Buffer.from("---\ngalaxy_info:\n  author: platform\n  description: the agent\n  license: MIT\n  min_ansible_version: '2.15'\n  platforms: []\ndependencies: []\n")],
   ];
   const dirs = [
+    'changelogs',
     'meta',
     'plugins',
     'plugins/callback',
+    'plugins/doc_fragments',
     'plugins/lookup',
     'plugins/modules',
     'roles',
@@ -1128,6 +1273,41 @@ function collection(namespace: string, name: string, version: string): Buffer {
     'roles/agent/meta',
     'roles/agent/tasks',
   ];
+  return archive(namespace, name, version, files, dirs);
+}
+
+/** The archive of {@link ansibleNotesPackage}: a README and a CHANGELOG.md (R-ANS-053). */
+function notesCollection(namespace: string, name: string, version: string): Buffer {
+  const changelog = [
+    '# Changelog',
+    '',
+    '## 1.0.0 (2026-05-20)',
+    '',
+    '### Added',
+    '',
+    '- The role `notes` writes release notes into the play\'s log.',
+    '- A filter `notes_format` that renders a note as Markdown.',
+    '',
+    '### Fixed',
+    '',
+    '- A note with a `<tag>` is written as text.',
+    '',
+    '## 0.9.0 (2026-04-30)',
+    '',
+    '- First preview.',
+    '',
+  ].join('\n');
+  const files: [string, Buffer][] = [
+    ['CHANGELOG.md', Buffer.from(changelog)],
+    ['README.md', Buffer.from(`# ${namespace}.${name}\n\nRelease notes in the play, version ${version}.\n`)],
+    ['meta/runtime.yml', Buffer.from("requires_ansible: '>=2.15.0'\n")],
+  ];
+  return archive(namespace, name, version, files, ['meta']);
+}
+
+/** The tar.gz of a collection: its files and directories, with the FILES.json and MANIFEST.json ansible-galaxy writes. */
+function archive(namespace: string, name: string, version: string, files: [string, Buffer][], dirs: string[]): Buffer {
+  const sha = (b: Buffer): string => createHash('sha256').update(b).digest('hex');
   const list = [
     { name: '.', ftype: 'dir', chksum_type: null, chksum_sha256: null, format: 1 },
     ...[...dirs.map((d) => [d, null] as const), ...files]
@@ -1173,20 +1353,24 @@ function collection(namespace: string, name: string, version: string): Buffer {
   ]);
 }
 
-/** The collection of {@link ansiblePackage}, published as ansible-galaxy does (R-ANS-008); the import runs as a task. */
+/** The collections of {@link ansiblePackage} and {@link ansibleNotesPackage}, published as ansible-galaxy does (R-ANS-008). */
 async function publishCollections(ctx: APIRequestContext, auth: Record<string, string>): Promise<void> {
-  for (const version of ansiblePackage.versions) {
-    const archive = collection(ansiblePackage.namespace, ansiblePackage.name, version);
+  const all = [
+    ...ansiblePackage.versions.map((v) => ({ pkg: ansiblePackage, version: v, build: collection })),
+    ...ansibleNotesPackage.versions.map((v) => ({ pkg: ansibleNotesPackage, version: v, build: notesCollection })),
+  ];
+  for (const { pkg, version, build } of all) {
+    const tgz = build(pkg.namespace, pkg.name, version);
     const res = await patient(() =>
-      ctx.post(`/api/ansible/${otherProject}/${ansiblePackage.repo}/v3/artifacts/collections/`, {
-      headers: auth,
-      multipart: {
-        sha256: createHash('sha256').update(archive).digest('hex'),
-        file: { name: `${ansiblePackage.namespace}-${ansiblePackage.name}-${version}.tar.gz`, mimeType: 'application/gzip', buffer: archive },
-      },
-    }),
+      ctx.post(`/api/ansible/${otherProject}/${pkg.repo}/v3/artifacts/collections/`, {
+        headers: auth,
+        multipart: {
+          sha256: createHash('sha256').update(tgz).digest('hex'),
+          file: { name: `${pkg.namespace}-${pkg.name}-${version}.tar.gz`, mimeType: 'application/gzip', buffer: tgz },
+        },
+      }),
     );
-    await expectStatus(res, [200, 201, 202, 409], `ansible publish ${ansiblePackage.namespace}.${ansiblePackage.name} ${version}`);
+    await expectStatus(res, [200, 201, 202, 409], `ansible publish ${pkg.namespace}.${pkg.name} ${version}`);
   }
 }
 

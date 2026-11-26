@@ -50,7 +50,7 @@
     }
   </header>
 
-  @if (readme(); as r) {
+  @if (readmeAlone(); as r) {
     <quader-package-readme [readme]="r" />
   } @else if (!entry().hasDocs) {
     <p class="doc-none" data-testid="doc-no-docs">
@@ -75,8 +75,25 @@
     }
 
     @for (table of tables(); track table.group.id) {
-      <section [id]="'doc-' + table.group.id" [attr.aria-labelledby]="'doc-' + table.group.id + '-heading'">
-        <h3 [id]="'doc-' + table.group.id + '-heading'">{{ table.group.title }}</h3>
+      <section [id]="'doc-' + table.group.id" [attr.aria-labelledby]="'doc-' + table.group.id + '-heading'" [class.entry-point]="!!table.group.entryPoint">
+        <h3 [id]="'doc-' + table.group.id + '-heading'" [attr.translate]="table.group.entryPoint ? 'no' : null">{{ table.group.title }}</h3>
+        @if (table.group.entryPoint; as ep) {
+          @if (ep.shortDescription) {
+            <p class="doc-short" translate="no">{{ ep.shortDescription }}</p>
+          }
+          @if (entryPointAdded(ep); as added) {
+            <p class="doc-facts">
+              <span><ng-container i18n="@@docs.added-in">added in</ng-container>{{ ' ' }}<span translate="no">{{ added }}</span></span>
+            </p>
+          }
+          @if (ep.description?.length) {
+            <quader-doc-prose [html]="ep.description" />
+          }
+          @if (table.rows.length > 0) {
+            <h4 i18n="@@docs.parameters">Parameters</h4>
+          }
+        }
+        @if (table.rows.length > 0) {
         <quader-data-table [caption]="optionsCaption" [columns]="optionColumns" [empty]="false">
           @for (row of table.rows; track row.id) {
             <tr [id]="row.anchor" [attr.data-depth]="row.depth" [class.is-target]="target() === row.anchor || row.aliasAnchors.includes(target() ?? '')">
@@ -133,8 +150,8 @@
                     <ul class="choices">
                       @for (c of row.choices; track $index) {
                         <li>
-                          <code translate="no" [class.is-default]="row.hasDefault && c === row.defaultText">{{ c }}</code>
-                          @if (row.hasDefault && c === row.defaultText) {
+                          <code translate="no" [class.is-default]="row.defaults.includes(c)">{{ c }}</code>
+                          @if (row.defaults.includes(c)) {
                             {{ ' ' }}<span class="doc-muted" i18n="@@docs.choice-default">(default)</span>
                           }
                         </li>
@@ -165,6 +182,37 @@
             </tr>
           }
         </quader-data-table>
+        }
+        @if (table.group.entryPoint; as ep) {
+          @if (ep.notes?.length) {
+            <h4 i18n="@@docs.notes">Notes</h4>
+            <quader-doc-prose [html]="ep.notes" />
+          }
+          @if (ep.requirements?.length) {
+            <h4 i18n="@@docs.requirements">Requirements</h4>
+            <ul class="doc-list">
+              @for (r of ep.requirements; track $index) {
+                <li><quader-doc-prose [html]="[r]" /></li>
+              }
+            </ul>
+          }
+          @if (ep.attributes?.length) {
+            <h4 i18n="@@docs.attributes">Attributes</h4>
+            <ng-container *ngTemplateOutlet="attributeList; context: { $implicit: ep.attributes }" />
+          }
+          @if (ep.seealso?.length) {
+            <h4 i18n="@@docs.see-also">See also</h4>
+            <ng-container *ngTemplateOutlet="seeAlsoList; context: { $implicit: ep.seealso }" />
+          }
+          @if (ep.author?.length) {
+            <h4 i18n="@@docs.authors">Authors</h4>
+            <ul class="doc-list" translate="no">
+              @for (a of ep.author; track $index) {
+                <li>{{ a }}</li>
+              }
+            </ul>
+          }
+        }
       </section>
     }
 
@@ -189,53 +237,14 @@
     @if (entry().attributes?.length) {
       <section id="doc-attributes" aria-labelledby="doc-attributes-heading">
         <h3 id="doc-attributes-heading" i18n="@@docs.attributes">Attributes</h3>
-        <dl class="doc-attributes">
-          @for (a of entry().attributes ?? []; track a.name) {
-            <dt>
-              <code translate="no">{{ a.name }}</code>
-              @if (a.support) {
-                <span class="badge" translate="no">{{ a.support }}</span>
-              }
-            </dt>
-            <dd>
-              <quader-doc-prose [html]="a.description ?? []" />
-              <quader-doc-prose [html]="a.details ?? []" />
-            </dd>
-          }
-        </dl>
+        <ng-container *ngTemplateOutlet="attributeList; context: { $implicit: entry().attributes ?? [] }" />
       </section>
     }
 
     @if (entry().seealso?.length) {
       <section id="doc-seealso" aria-labelledby="doc-seealso-heading">
         <h3 id="doc-seealso-heading" i18n="@@docs.see-also">See also</h3>
-        <ul class="doc-list">
-          @for (s of entry().seealso ?? []; track $index) {
-            <li>
-              @if (s.module) {
-                @if (s.entry) {
-                  <a [routerLink]="[]" [queryParams]="{ doc: s.entry }" queryParamsHandling="merge" data-testid="doc-seealso-entry"
-                    ><code translate="no">{{ s.module }}</code></a
-                  >
-                } @else {
-                  <code translate="no">{{ s.module }}</code>
-                }
-              }
-              @if (s.description) {
-                <quader-doc-prose [html]="[s.description]" />
-              }
-              @if (s.link; as link) {
-                @if (safeHttpUrl(link); as href) {
-                  <span class="external-link">
-                    <a [href]="href" target="_blank" [attr.rel]="externalRel" translate="no">{{ link }}</a>
-                    <span class="material-icons" aria-hidden="true">open_in_new</span>
-                    <span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span>
-                  </span>
-                }
-              }
-            </li>
-          }
-        </ul>
+        <ng-container *ngTemplateOutlet="seeAlsoList; context: { $implicit: entry().seealso ?? [] }" />
       </section>
     }
 
@@ -329,5 +338,59 @@
         </ul>
       </section>
     }
+
+    @if (readme(); as r) {
+      <section id="doc-readme" aria-labelledby="doc-readme-heading">
+        <h3 id="doc-readme-heading" i18n="@@docs.readme">README</h3>
+        <quader-package-readme [readme]="r" />
+      </section>
+    }
   }
 </article>
+
+<ng-template #attributeList let-list>
+  <dl class="doc-attributes">
+    @for (a of asAttributes(list); track a.name) {
+      <dt>
+        <code translate="no">{{ a.name }}</code>
+        @if (a.support) {
+          <span class="badge" translate="no">{{ a.support }}</span>
+        }
+      </dt>
+      <dd>
+        <quader-doc-prose [html]="a.description ?? []" />
+        <quader-doc-prose [html]="a.details ?? []" />
+      </dd>
+    }
+  </dl>
+</ng-template>
+
+<ng-template #seeAlsoList let-list>
+  <ul class="doc-list">
+    @for (s of asSeeAlso(list); track $index) {
+      <li>
+        @if (s.module) {
+          @if (s.entry) {
+            <a [routerLink]="[]" [queryParams]="{ doc: s.entry }" queryParamsHandling="merge" data-testid="doc-seealso-entry"
+              ><code translate="no">{{ s.module }}</code></a
+            >
+          } @else {
+            <code translate="no">{{ s.module }}</code>
+          }
+        }
+        @if (s.description) {
+          <quader-doc-prose [html]="[s.description]" />
+        }
+        @if (s.link; as link) {
+          @if (safeHttpUrl(link); as href) {
+            <span class="external-link">
+              <a [href]="href" target="_blank" [attr.rel]="externalRel" translate="no">{{ link }}</a>
+              <span class="material-icons" aria-hidden="true">open_in_new</span>
+              <span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span>
+            </span>
+          }
+        }
+      </li>
+    }
+  </ul>
+</ng-template>
