@@ -2619,7 +2619,7 @@ The owner's task T-22 (2026-11-12): one search field with live suggestions for e
 
 - One member per kind asked (`repositories`, `packages`, `projects`, `users`, `groups`, `serviceAccounts`), absent for a kind not
   asked; `items` in the order of R-API-062, `more` by R-API-061. A user is `{"id", "username", "displayName", "disabled",
-  "avatarUrl"}`, a group `{"name", "description"}`, a service account `{"name", "description", "project"}` (R-API-078); a package's `name` is its display name and `id` the identifier of `GET /api/v1/packages/{packageId}`
+  "avatarUrl"}`, a group `{"name", "description"}`, a service account `{"name", "description", "project"}` (R-API-078); a package's `name` is its display name, `key` the normalized name its address uses (an Ansible role's `role/<id>`, [Q-UI-1261](#q-ui-1261--a-packages-address-is-its-key-its-title-its-name-and-the-search-finds-the-name)) and `id` the identifier of `GET /api/v1/packages/{packageId}`
   ([Q-API-271](#q-api-271--the-answer-holds-one-typed-member-per-kind-and-no-cursor)).
 - Not a list of R-API-010: no `cursor`, `nextCursor` or `Link`. The results page reads the lists (R-UI-098).
 - Permission: any caller (`x-quader-permission: public: true`), decided in the handler by R-API-061. Without a credential `401`
@@ -2697,7 +2697,8 @@ Priority: **MVP** · Covers: quader-only
 | group | every term is part of the name | 0 equal; 1 starts with `q`; 3 any other | name |
 | service account | every term is part of the stored name; active accounts only (R-API-078) | 0 equal; 1 starts with `q`; 3 any other | name |
 
-- A package matches on its stored name (`packages.name`, the format's normalized name) and shows its display name. A package held by
+- A package matches on its stored name (`packages.name`, the format's normalized name), by a word also on its display name (an Ansible
+  role `role/<id>` by the words of `<owner>.<name>`), and shows its display name. A package held by
   several repositories is one entry, placed in the first of them by qualified name that the caller reads; these are local and
   remote repositories, because a virtual repository holds no package rows (R-REPO-018).
 - Descriptions are not matched by the suggestions. The lists that the results page reads match them (R-UI-098), and they match
@@ -2730,7 +2731,8 @@ Acceptance criteria:
 Priority: **MVP** · Covers: quader-only
 
 Data model ([Q-API-274](#q-api-274--package-names-a-whole-name-prefix-on-a-c-collation-b-tree-and-word-prefixes-on-a-gin-tsvector-without-pg_trgm)),
-in migration `00076_search.sql`:
+in migration `00076_search.sql`, and the words of a display name that is more than the name's casing in `00135_packages_display_words.sql`
+([Q-UI-1261](#q-ui-1261--a-packages-address-is-its-key-its-title-its-name-and-the-search-finds-the-name)):
 
 ```sql
 ALTER TABLE packages
@@ -2738,7 +2740,16 @@ ALTER TABLE packages
         (to_tsvector('simple'::regconfig, regexp_replace(lower(name), '[^a-z0-9]+', ' ', 'g'))) STORED;
 CREATE INDEX packages_name_words ON packages USING gin (name_words);
 CREATE INDEX packages_name_lower ON packages ((lower(name) COLLATE "C"));
+-- 00135, one statement without a transaction:
+CREATE INDEX CONCURRENTLY IF NOT EXISTS packages_display_words ON packages
+    USING gin ((to_tsvector('simple'::regconfig, regexp_replace(lower(display_name), '[^a-z0-9]+', ' ', 'g'))))
+    WHERE lower(display_name) <> lower(name);
 ```
+
+The display words' index holds only the rows whose display name is more than the name's casing: the packages of Ansible roles a remote
+read today, at most one row per role and repository (a NuGet ID differs only in case and is found by its name). Its step writes no row
+of `packages` and does not block its writes; it reads the table once to build the index, as every index step does. Statement B matches
+a word in `name_words` or, for such a row, in the display name.
 
 How each kind is read ([Q-API-273](#q-api-273--repositories-are-matched-over-the-requests-grant-index-and-projects-over-their-rows-without-an-index)):
 
@@ -27045,10 +27056,10 @@ collection, `geerlingguy.php-versions` as no name at all, so the link led nowher
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The summary carries `key`, the normalized name; a list, the search and the recent packages link by it, the page's title is the summary's name, and the list's text filter matches the display name too (chosen) | `/packages/ansible/role/16`, titled `geerlingguy.pip` | One address per package whatever it is called; a person finds a role by its owner | A NuGet package's address is its lower-case ID, its title keeps the casing |
+| (a) The summary and the live suggestion carry `key`, the normalized name; a list, a repository's content, the search, its suggestions, the version switch and the recent packages link by it, the page's title is the summary's name, and the list's text filter matches the display name too (chosen) | `/packages/ansible/role/16`, titled `geerlingguy.pip` | One address per package whatever it is called; a person finds a role by its owner | A NuGet package's address is its lower-case ID, its title keeps the casing |
 | (b) The lookup also finds a package by its display name | Addresses stay names | — | Two packages of two repositories can share a display name and differ in key; a lookup that guesses is a lookup that can lead elsewhere |
 
-**Choice:** (a). **Applied in the spec:** R-API-029, R-UI-007. Code: `summaryOf` in [packages_api.go](../../internal/api/v1/packages_api.go),
+**Choice:** (a). **Applied in the spec:** R-API-029, R-API-060, R-UI-007. Code: `summaryOf` in [packages_api.go](../../internal/api/v1/packages_api.go), `suggestPackages` in [search_api.go](../../internal/api/v1/search_api.go),
 `PackageViewList` in [package_view.sql](../../internal/meta/postgres/queries/package_view.sql).
 
 ### Q-UI-1270 · A Debian package's relations are the dependency block, one line per group, its alternatives side by side

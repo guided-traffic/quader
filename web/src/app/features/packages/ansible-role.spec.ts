@@ -45,6 +45,16 @@ describe('The page of a role a remote read (R-ANS-056)', () => {
     await expectAccessible(r.root);
   });
 
+  it('R-ANS-056 the switch in the head lists the role\'s versions under its key, the address a lookup finds', async () => {
+    const r = await openRole();
+    r.root.querySelector<HTMLButtonElement>('quader-version-switch button')!.click();
+    await settle(r.fixture);
+    const hrefs = [...document.querySelectorAll<HTMLAnchorElement>('.version-menu a.menu-item')].map((a) => a.getAttribute('href'));
+    expect(hrefs.length).toBeGreaterThan(1);
+    expect(hrefs.every((h) => h?.startsWith('/projects/web/packages/ansible/role/16'))).toBe(true);
+    expect(hrefs.at(-1)).toBe('/projects/web/packages/ansible/role/16/-/versions');
+  });
+
   it('R-ANS-056 a role whose README is not there yet says why, in its README tab', async () => {
     for (const [state, words] of [
       ['queued', 'is fetching the README'],

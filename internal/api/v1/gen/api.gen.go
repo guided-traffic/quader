@@ -13640,6 +13640,10 @@ type PackageSuggestion struct {
 	// Id The identifier of `GET /api/v1/packages/{packageId}`.
 	Id string `json:"id"`
 
+	// Key The normalized name, the one the package's address uses; it differs from `name` where the format shows another name (an
+	// Ansible role's `<owner>.<name>` for its package `role/<id>`, R-ANS-056, Q-UI-1261).
+	Key *string `json:"key,omitempty"`
+
 	// Name The package's display name.
 	Name string `json:"name"`
 

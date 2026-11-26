@@ -43,7 +43,7 @@
         <quader-version-switch
           [project]="project()"
           [format]="format()"
-          [name]="p.name"
+          [name]="p.key ?? p.name"
           [shown]="v"
           [latest]="p.latestVersion"
           [count]="p.versionCount"

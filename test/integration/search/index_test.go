@@ -12,7 +12,8 @@ import (
 )
 
 // TestR_API_064_ThePackageStatementsUseTheirIndexes: statement A of the suggestions reads packages_name_lower and statement B
-// packages_name_words (migration 00076), with enable_seqscan off as R-API-064 states it, on a table of several thousand names of
+// packages_name_words (migration 00076), and for a word of a display name that is more than the name's casing packages_display_words
+// (00135, an Ansible role's <owner>.<name>), with enable_seqscan off as R-API-064 states it, on a table of several thousand names of
 // which few match. The plans are those the server runs: a prepared statement under plan_cache_mode = force_custom_plan, which
 // SearchCustomPlans sets for the transaction of the package statements. The generated column holds the words of the lower-cased
 // name.
@@ -26,6 +27,7 @@ func TestR_API_064_ThePackageStatementsUseTheirIndexes(t *testing.T) {
 	st.Exec(`INSERT INTO packages (repo_id, name, display_name)
 	         SELECT r.id, n, n FROM repositories r, unnest(ARRAY['@acme/ui-kit', '@acme/kit-ui', 'microsoft.extensions.logging']) n
 	          WHERE r.key = 'npm-a'`)
+	st.Exec(`INSERT INTO packages (repo_id, name, display_name) SELECT r.id, 'role/16', 'geerlingguy.pip' FROM repositories r WHERE r.key = 'npm-a'`)
 	key, _ := testenv.VersionKey(t, "npm", "1.0.0")
 	st.Exec(`INSERT INTO package_versions (package_id, version, display_version, sort_key, prerelease) SELECT id, '1.0.0', '1.0.0', $1, false FROM packages`, key)
 	st.Exec(`ANALYZE packages`)
@@ -70,6 +72,7 @@ func TestR_API_064_ThePackageStatementsUseTheirIndexes(t *testing.T) {
 	}{
 		{"statement A", "SearchPackagesByPrefix", "packages_name_lower", `'` + repos + `', '@acme/ui', '@acme/uj', '{}', 201`},
 		{"statement B", "SearchPackagesByWords", "packages_name_words", `'` + repos + `', '''kit'':*', '{}', '{}', 201`},
+		{"statement B by a display name's word", "SearchPackagesByWords", "packages_display_words", `'` + repos + `', '''geerlingguy'':*', '{}', '{}', 201`},
 	} {
 		text := statementText(t, c.statement)
 		t.Run("R-API-064 "+c.name+" reads "+c.index, func(t *testing.T) {
@@ -78,4 +81,12 @@ func TestR_API_064_ThePackageStatementsUseTheirIndexes(t *testing.T) {
 			}
 		})
 	}
+	t.Run("R-API-064 a display name that is more than the name's casing is found by its words", func(t *testing.T) {
+		got := st.Text(`SELECT string_agg(name, ',') FROM packages
+		                 WHERE to_tsvector('simple'::regconfig, regexp_replace(lower(display_name), '[^a-z0-9]+', ' ', 'g')) @@ to_tsquery('simple', 'geerlingguy:*')
+		                   AND lower(display_name) <> lower(name)`)
+		if got != "role/16" {
+			t.Fatalf("matched %q", got)
+		}
+	})
 }

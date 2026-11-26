@@ -47,6 +47,11 @@ func TestR_ANS_056_ARoleInstalledThroughARemoteReadsLikeARole(t *testing.T) {
 	if len(found) != 1 || obj(found[0])["key"] != "role/16" {
 		t.Errorf("search by the owner: %v", found)
 	}
+	// The search field's suggestion carries the key as well, so its link leads to the page (Q-UI-1261).
+	suggested := obj(e.st.Do(r, http.MethodGet, "/api/v1/search/suggestions?q=geerlingguy&kind=package", e.admin, nil).JSON(t)["packages"])
+	if s := listOf(suggested["items"]); len(s) != 1 || obj(s[0])["name"] != "geerlingguy.pip" || obj(s[0])["key"] != "role/16" {
+		t.Errorf("suggestion of the owner: %v", suggested)
+	}
 	lookup := e.st.Do(r, http.MethodGet, "/api/v1/packages/lookup?format=ansible&name=role/16", e.admin, nil)
 	id, _ := lookup.JSON(t)["id"].(string)
 	if lookup.Status != http.StatusOK || id == "" {

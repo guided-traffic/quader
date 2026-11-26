@@ -16606,6 +16606,11 @@ export interface components {
             format: string;
             /** @description The package's display name. */
             name: string;
+            /**
+             * @description The normalized name, the one the package's address uses; it differs from `name` where the format shows another name (an
+             *     Ansible role's `<owner>.<name>` for its package `role/<id>`, R-ANS-056, Q-UI-1261).
+             */
+            key?: string;
             /** @description The key of the project of `repository` (Q-API-277). */
             project: string;
             /**

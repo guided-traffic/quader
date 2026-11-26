@@ -209,11 +209,11 @@ export class RepositoryItemVersions {
   protected readonly allText = computed(() => this.shape().allVersionsText(formatNumber(this.more(), this.locale)));
   /** The package's page, which lists every version with filter, sort and **Load more** (R-UI-110). */
   protected packageLink(): string[] {
-    return versionsCommands(splitRef(this.repository()).project, this.pkg().format, this.pkg().name);
+    return versionsCommands(splitRef(this.repository()).project, this.pkg().format, this.pkg().key ?? this.pkg().name);
   }
   /** The page of a version (R-UI-111). */
   protected versionLink(version: string): string[] {
-    return versionCommands(splitRef(this.repository()).project, this.pkg().format, this.pkg().name, version);
+    return versionCommands(splitRef(this.repository()).project, this.pkg().format, this.pkg().key ?? this.pkg().name, version);
   }
   protected readonly columns = computed<readonly TableColumn[]>(() => {
     const s = this.shape();

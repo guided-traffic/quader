@@ -50,13 +50,13 @@ export function versionCommand(format: string, version: PackageVersion, clamavCl
     return setup ? { kind: 'clamav', setup } : { kind: 'none' };
   }
   if (repositories.length > 0) return { kind: 'menu', repository: repositories[0]!, repositories };
-  // Held by remotes whose rules do not deliver it: no command that would be refused; the note at the top of the page says why for each
+  // Held by remotes whose rules do not deliver it: no command that would be refused; the delivery note below says why for each
   // (R-CUR-014, Q-UI-1260). Such a remote is not disabled.
   if (version.repositories.some((r) => r.unavailableReason !== undefined)) {
     return {
       kind: 'note',
       cause: 'undelivered',
-      note: $localize`:@@pkg.install.undelivered:No repository delivers this version: the note at the top of the page says why.`,
+      note: $localize`:@@pkg.install.undelivered:No repository delivers this version: the note below says why.`,
     };
   }
   const keys = version.repositories

@@ -267,7 +267,7 @@ export function liveGroups(input: LiveInput): SearchGroup[] {
         secondary: `${p.project} / ${p.repository}`,
         format: p.format,
         literal: true,
-        commands: packageCommands(p.project, p.format, p.name),
+        commands: packageCommands(p.project, p.format, p.key ?? p.name),
       }),
     );
     add('package', 'main', answer.packages.more ? [...rows, moreEntry('package', q)] : rows);

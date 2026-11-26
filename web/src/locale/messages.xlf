@@ -17666,7 +17666,7 @@
         <note category="location">src/app/features/packages/version-command.ts:59</note>
       </notes>
       <segment>
-        <source>No repository delivers this version: the note at the top of the page says why.</source>
+        <source>No repository delivers this version: the note below says why.</source>
       </segment>
     </unit>
     <unit id="pkg.install.disabled-note">

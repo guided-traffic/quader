@@ -3178,10 +3178,12 @@ export const screens: readonly Screen[] = [
     walk: docEntry,
   },
   // A role a remote read (R-ANS-056, roles.ts): titled by its owner and name, its README first, the role's install command; its facts and
-  // the name the rules see on Details; twenty versions on its package page; a role the remote's rules block, and one without facts.
+  // the name the rules see on Details; its newest version on the package's address and twenty versions in its table; a role the remote's
+  // rules block, and one without facts.
   { id: 'package-version-ansible-role', path: ver(O, pipRole, pipRole.version), kinds: all, de: ['plain'] },
   { id: 'package-version-ansible-role-details', path: `${ver(O, pipRole, pipRole.version)}?tab=details`, kinds: ['plain'], de: ['plain'] },
   { id: 'package-ansible-role', path: pkg(O, pipRole), kinds: ['plain'] },
+  { id: 'package-ansible-role-versions', path: table(O, pipRole), kinds: ['plain'] },
   { id: 'package-version-ansible-role-blocked', path: ver(O, blockedRole, blockedRole.version), kinds: ['plain'], de: ['plain'] },
   { id: 'package-version-ansible-role-bare', path: ver(O, bareRole, bareRole.version), kinds: ['plain'] },
   { id: 'search-results-roles', path: '/ui/search?q=geerlingguy&kind=package', kinds: ['plain'], de: true },

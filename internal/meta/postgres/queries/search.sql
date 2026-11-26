@@ -26,7 +26,8 @@ SELECT p.id, p.repo_id, (p.name COLLATE "C")::text AS name, p.display_name, r.fo
  LIMIT sqlc.arg(max_rows)::int;
 
 -- name: SearchPackagesByWords :many
--- Statement B of R-API-064: the packages each of whose query words begins a word of the name (packages_name_words), in the same
+-- Statement B of R-API-064: the packages each of whose query words begins a word of the name (packages_name_words) or of a display
+-- name that is more than the name's casing (packages_display_words, 00135: an Ansible role's <owner>.<name>), in the same
 -- repositories, without the packages of statement A (skip). query is a to_tsquery text built from runs of a to z and 0 to 9 of
 -- the text only ('w1':* & 'w2':*), so no operator of the tsquery syntax reaches it from a request. It runs after
 -- SearchCustomPlans: planned for its text, it reads packages_name_words for a rare word and may walk packages_name_lower for a
@@ -35,7 +36,10 @@ SELECT p.id, p.repo_id, (p.name COLLATE "C")::text AS name, p.display_name, r.fo
   FROM packages p
   JOIN repositories r ON r.id = p.repo_id
  WHERE p.repo_id = ANY(sqlc.arg(repos)::bigint[])
-   AND p.name_words @@ to_tsquery('simple'::regconfig, sqlc.arg(query)::text)
+   AND (p.name_words @@ to_tsquery('simple'::regconfig, sqlc.arg(query)::text)
+        OR (lower(p.display_name) <> lower(p.name)
+            AND to_tsvector('simple'::regconfig, regexp_replace(lower(p.display_name), '[^a-z0-9]+', ' ', 'g'))
+                @@ to_tsquery('simple'::regconfig, sqlc.arg(query)::text)))
    AND NOT (p.id = ANY(sqlc.arg(skip)::bigint[]))
    AND EXISTS (SELECT 1 FROM package_version_listing pv
                 WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[])))

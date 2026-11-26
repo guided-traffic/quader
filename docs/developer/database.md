@@ -838,6 +838,23 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
+## The roles an Ansible remote read (00134)
+
+[00134_ansible_roles](../../internal/meta/postgres/migrations/00134_ansible_roles.sql) adds `ansible_roles`, the facts of the roles a
+remote Ansible Galaxy repository read ([ansible.md](../spec/formats/ansible.md) R-ANS-056): a row per repository and upstream role id with
+the owner and name (1 to 64 characters), the description (at most 4,096), the GitHub user, repository and branch, the tags and the
+dependencies (JSON arrays), the upstream's download count, the commit and the import time, and the README's state (`none`, `queued`,
+`available`, `absent`, `unavailable` with a reason), file name, HTML (at most 512 KiB) and the commit it was fetched for. The statements
+are [ansible_roles.sql](../../internal/meta/postgres/queries/ansible_roles.sql); the view joins it to the package `role/<id>` by
+`'role/' || role_id`. Export class `transient` ([roles_store.go](../../internal/formatdata/ansible/roles_store.go)): it is derived from
+upstream documents, a restore leaves it empty and the next lookup writes it; a restore without the remote caches deletes it with them.
+The rows are content: `upstream_repository_purge` is replaced again, the body of 00120 with the delete of `ansible_roles`. 
+[00135_packages_display_words](../../internal/meta/postgres/migrations/00135_packages_display_words.sql) is one statement without a
+transaction: the partial GIN index `packages_display_words` on the words of the lower-cased display name, `WHERE lower(display_name) <>
+lower(name)`, built `CONCURRENTLY`, so the search field's suggestions find a role by its owner (R-API-064, Q-UI-1261). It holds only
+the rows whose display name is more than the name's casing (Ansible roles today) and writes no row; `name_words` stays the name's, since
+a stored generated column that took the display name would rewrite every package.
+
 ## An image's facts (00133)
 
 [00133_oci_image_facts](../../internal/meta/postgres/migrations/00133_oci_image_facts.sql) adds three columns to `oci_manifests`
@@ -850,18 +867,6 @@ their blobs were kept. The task `remote-describe` walks both, and the job `oci-d
 and the config's bytes; the table keeps its export class `data` ([tables.go](../../internal/formatdata/oci/tables.go)). Expand phase only.
 The statements are `OCIPutManifest`, `OCIConfigWaiting`, `OCIDescribeTarget`, `OCIPutBlobs`, `OCIPutConfigFacts`,
 `OCIUndescribedManifests` and `OCITagFacts` in [oci_manifests.sql](../../internal/meta/postgres/queries/oci_manifests.sql).
-
-## The roles an Ansible remote read (00132)
-
-[00132_ansible_roles](../../internal/meta/postgres/migrations/00132_ansible_roles.sql) adds `ansible_roles`, the facts of the roles a
-remote Ansible Galaxy repository read ([ansible.md](../spec/formats/ansible.md) R-ANS-056): a row per repository and upstream role id with
-the owner and name (1 to 64 characters), the description (at most 4,096), the GitHub user, repository and branch, the tags and the
-dependencies (JSON arrays), the upstream's download count, the commit and the import time, and the README's state (`none`, `queued`,
-`available`, `absent`, `unavailable` with a reason), file name, HTML (at most 512 KiB) and the commit it was fetched for. The statements
-are [ansible_roles.sql](../../internal/meta/postgres/queries/ansible_roles.sql); the view joins it to the package `role/<id>` by
-`'role/' || role_id`. Export class `transient` ([roles_store.go](../../internal/formatdata/ansible/roles_store.go)): it is derived from
-upstream documents, a restore leaves it empty and the next lookup writes it; a restore without the remote caches deletes it with them.
-The rows are content: `upstream_repository_purge` is replaced again, the body of 00120 with the delete of `ansible_roles`.
 
 ## What the reader of a Debian data archive kept (00132)
 

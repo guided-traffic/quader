@@ -268,7 +268,7 @@ export class RepositoryItems {
   }
 
   protected detailLink(p: PackageSummary): string[] {
-    return packageCommands(splitRef(this.repository()).project, p.format, p.name);
+    return packageCommands(splitRef(this.repository()).project, p.format, p.key ?? p.name);
   }
 
   protected onFilter(value: string): void {
