@@ -314,9 +314,11 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W30-A3 · Finding collections, the page of a name in every format, the documentation searched across collections (W-30, the owner's d2 = b and d3 = b) | the plan's package A3 with R-ANS-057, R-ANS-058 and R-UI-220; Q-ANS-120 to Q-ANS-129, Q-UI-1290 to Q-UI-1299, H-2150 to H-2159 | landed and pushed on 2026-11-26 at 05:49, with the migration 00138 |
 | W30-G4 · "Deprecated" is a property of every format that has it (W-30) | R-API-085, R-NUGET-036, R-ANS-060 of the plan `.dev/w30-plan.md`; Q-API-440 to Q-API-449, Q-NUGET-140 to Q-NUGET-149, Q-ANS-130 to Q-ANS-139, Q-NPM-95 to Q-NPM-99, Q-UI-1300 to Q-UI-1309, ADR-286, H-2160 to H-2169 | landed and pushed on 2026-11-26 at 04:59, with the migration 00137 (W30-A3 takes 00138) |
 | W30-G3 · One way to show a version's facts in every format (W-30) | the plan's package G3 with R-UI-221 and R-UI-222: an inventory of the six formats' Details and tables as they are now, then the differences closed; Q-UI-1310 to Q-UI-1319, ADR-288, H-2170 to H-2179 | landed and pushed on 2026-11-26 at 07:08 |
-| W30-A5 · A collection is published from the screen, with its import's log (W-30; the owner's d5 = a, no approval) | the plan's package A5 with R-ANS-061 and R-ANS-062: the upload's operation and dialog, the import's warning for a missing changelog, a per-format table of publishing from the screen; Q-ANS-140 to Q-ANS-149, Q-UI-1320 to Q-UI-1329, ADR-289, H-2180 to H-2189 | built on 2026-11-26 at about 04:45 (two commits); sent back to prove the session's path (cookie and CSRF token) through the hand-off; lands after W30-G4, W30-A3 and W30-G3 |
-| W30-G9 · A generic file's commands behind the button, and a content type that says what it is (W-30) | R-GENERIC-017 of the plan `.dev/w30-plan.md`: curl, wget and PowerShell in the panel at every place a file has an act, the upload's commands, a closed list of guessed text types; Q-UI-1330 to Q-UI-1339, ADR-290, H-2190 to H-2199 | in work since 2026-11-26, 04:43 |
-| W30-G2 · An upstream's package shows its documentation before a version of it is stored (W-30) | R-CUR-028 of the plan `.dev/w30-plan.md`: read through, not stored, per format; the facts the same answers carry; Q-CUR-260 to Q-CUR-269, Q-UI-1340 to Q-UI-1349, ADR-291, H-2200 to H-2209 | in work since 2026-11-26, about 05:25 |
+| W30-A5 · A collection is published from the screen, with its import's log (W-30; the owner's d5 = a, no approval) | the plan's package A5 with R-ANS-061 and R-ANS-062: the upload's operation and dialog, the import's warning for a missing changelog, a per-format table of publishing from the screen; Q-ANS-140 to Q-ANS-149, Q-UI-1320 to Q-UI-1329, ADR-289, H-2180 to H-2189 | built; rebuilt at about 06:55 for split roles (an upload token of five minutes from the role `api`, the publish on the role `packages`); lands after W30-G9 |
+| W30-G9 · A generic file's commands behind the button, and a content type that says what it is (W-30) | R-GENERIC-017 of the plan `.dev/w30-plan.md`: curl, wget and PowerShell in the panel at every place a file has an act, the upload's commands, a closed list of guessed text types; Q-UI-1330 to Q-UI-1339, ADR-290, H-2190 to H-2199 | landed and pushed on 2026-11-26 at 07:40 |
+| W30-G2 · An upstream's package shows its documentation before a version of it is stored (W-30) | R-CUR-028 of the plan `.dev/w30-plan.md`: read through, not stored, per format; the facts the same answers carry; Q-CUR-260 to Q-CUR-269, Q-UI-1340 to Q-UI-1349, ADR-291, H-2200 to H-2209 | built on 2026-11-26 at about 06:35, held on the role `api` at 06:50; its builder rebases it onto the version facts since about 07:12 |
+| W30-G5 · "Used by": a version's page lists the packages that depend on its package (W-30) | R-API-086 of the plan `.dev/w30-plan.md`: a side table every format fills, the read under the reader's scope, a filter `dependsOn` of the package list; Q-API-455 to Q-API-459, Q-UI-1350 to Q-UI-1359, ADR-294, H-2220 to H-2229, migration 00139 | in work since 2026-11-26, 07:14 |
+| W30-G6 · NuGet complete (W-30) | R-NUGET-037 to R-NUGET-039 of the plan: the install forms by package type, the icon, the licence file, the frameworks, the symbols, what a build runs, and the upload on the screen after W30-A5; Q-NUGET-155 to Q-NUGET-169, Q-UI-1360 to Q-UI-1369, ADR-293, H-2230 to H-2239 | in work since 2026-11-26, 07:14 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1301,6 +1303,41 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 07:40, by W30-G9 (W-30; R-GENERIC-017; Q-GENERIC-10 to Q-GENERIC-12; Q-UI-1330 to Q-UI-1336;
+  ADR-290; gaps H-2191 to H-2193; no migration): a generic file has its commands behind the button every format has,
+  a file without a type gets the text type its name says, and no command a page shows puts the token into an
+  argument where the client can avoid it.** The last format without the panel (S19 had reported it as not
+  possible). A file's page keeps the browser's download as the main act; a chevron joined to it opens the panel: the
+  download's address, the tabs curl, wget and PowerShell with **Set up client** at the row's end, the server's
+  command for the chosen client, and as its second line "Check the download" (`sha256sum -c`, `Get-FileHash`); a
+  file's row in the list has the same button in place of the copy of its address; a folder's **Upload files** keeps
+  its dialog and gains the upload's command per client the same way. The setup teaches wget and PowerShell beside
+  curl, each with a sign-in that keeps the token off the command line. A file's name is untrusted: the address is
+  percent-encoded per segment, the saved name is one quoted argument with `./` before a leading dash; for curl and
+  wget 19 hostile names are run through a real shell in a unit test, PowerShell's quoting is checked as text (not
+  installed here). The type: a file deployed without one gets it from its name, from a closed list (Markdown, plain
+  text and logs, JSON, YAML, TOML, CSV) kept in one place; a deployed type wins; the list cannot yield HTML, SVG,
+  XML, JavaScript, CSS, PDF or an image, and a test fails if one is added; a deployed `text/html` is served as
+  before, as an attachment with `nosniff` and a sandboxing policy. Sent back once before the landing, for a defect
+  it had found elsewhere and left open: two places expanded the token into an argument, visible in the process
+  list, against the owner's decision for curl (Q-GENERIC-9). Now one rule (Q-UI-1336) for every command of a page:
+  the function `quader_curl` or `curl --config -` from standard input, `ansible-galaxy` by an environment variable;
+  changed at a file's Details, a package format's raw file, the repository's form and settings (whose command had
+  never worked: single quotes kept the variable from expanding), the tab Verify of every attested format, Debian's
+  key download and publish, Galaxy's publish, the offline uploads of the malware signatures and of a mirrored
+  database, NuGet's curl lines. `dotnet` and `nuget.exe` take a password and an API key only as an argument: the
+  page says so beside those commands and points to the `nuget.config` form. A unit test renders every client of
+  every format and fails on a token in an argument but those named. The landing: joined with the version facts (the
+  spec page's six hunks kept from both sides and checked against the commit's own changes, the translations by
+  unit); the 13 gates, the dialog states, the renders on a fresh instance (114 in English, 2 in German, no layout
+  finding) and the whole areas `transfer`, `files`, `repository` and `packages` green, the count of requirements
+  1,308; looked at: a file with a hostile name, its panel open on the tab curl, in light at 1,440 px (the address
+  encoded, the saved name quoted, the line that checks the download). Open: about 30 examples of the manual's pages
+  still put the token into an argument (documentation, not screens); the ClamAV admin page shows addresses as
+  fields (H-2191); a name with brackets may be read as a wildcard by `-OutFile` in Windows PowerShell 5.1 (H-2192);
+  wget and PowerShell were never run against Quader (H-2193). Not verified: the two client journeys whose snippets
+  changed (Ansible's publish line, Debian's key download), read against the snippets, not run.
 
 - **Closed on 2026-11-26, 07:08, by W30-G3 (W-30; R-UI-221, R-UI-222; Q-UI-1310 to Q-UI-1318; gaps H-2170 to H-2173, H-2124
   closed; no migration): a general property of a version has one block, one set of words and one place in every
