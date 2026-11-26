@@ -212,6 +212,7 @@ func TestR_BAS_058_KitCheck19(t *testing.T) {
 		{"a format that declares a cap its WriteError does not apply", testformat.DeclaresRetryAfterCap, `wait Retry-After "86400" and catalog.Facts.Bastion says 30`},
 		{"a format whose WriteError renders without the request (R-BAS-099)", testformat.IgnoresTheForward, "names the member repository of a remote's failure in the answer to a forward of a Bastion"},
 		{"a format that declares another error shape than WriteError renders (R-BAS-095)", testformat.DeclaresAnotherErrorShape, "which is not the declared error shape npm"},
+		{"a refusal of a download's checks with a header the format does not declare", testformat.UndeclaredRefusalHeader, "with the header " + testformat.UndeclaredHeader + ", which a Bastion does not pass on"},
 		{"a declared read route with a body no route serves (R-BAS-095)", testformat.StaleReadWithBody, `lists POST "/-/search", which matches the example of no route`},
 	} {
 		t.Run("R-BAS-058 "+c.name+" fails check 19 and no other check", func(t *testing.T) {

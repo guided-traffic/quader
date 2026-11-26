@@ -24,8 +24,9 @@ import (
 const CheckBastion Check = 19
 
 // keptByABastion reports whether a Bastion keeps an answer of this status of a Download, Metadata or Computed route as an entry
-// whose headers it replays: a 200, a ranged 206 and a 304 to its own conditional (R-BAS-021 to R-BAS-023). A refusal is replayed
-// with every header it carries and an error is passed on, so the header duty does not judge them (Q-BAS-184).
+// whose headers it replays: a 200, a ranged 206 and a 304 to its own conditional (R-BAS-021 to R-BAS-023). A refusal and an error are
+// passed on through the allowlist of R-BAS-099 row 5 (Q-BAS-425), which downloadRefusals judges for the refusals of a download's
+// checks; the header duty of the content routes does not judge them.
 func keptByABastion(status int) bool {
 	return status == http.StatusOK || status == http.StatusPartialContent || status == http.StatusNotModified
 }
@@ -47,6 +48,9 @@ func keptKind(k formats.RouteKind) bool {
 //     verifies it, and passes one without it through on every request;
 //   - a document a Metadata or Computed route serves carries an ETag and answers the same request with that ETag in
 //     If-None-Match 304: the Bastion revalidates the documents it keeps with conditional requests;
+//   - every header of the refusal of a download's checks (the malware gate, the vulnerability block) that WriteError renders for a
+//     forward is a representation header of the core, one a Bastion passes on of every answer (PassedHeaders) or a declared one: a
+//     Bastion passes the answer on with those alone (R-BAS-099 row 5);
 //   - the format's WriteError answers a rate limit with catalog.Facts.Bastion.RateLimited(): a Bastion's own rate-limit refusals
 //     on the format's family take that status;
 //   - the format declares catalog.Facts.Bastion.ErrorShape, and its WriteError renders the refusal of a write in that shape
@@ -67,6 +71,7 @@ func (r *run) bastion() {
 	}
 	r.rateLimitStatus()
 	r.forwardError()
+	r.downloadRefusals()
 	r.readWithBody(routes)
 	if r.d.Bastion.ErrorShape == "" {
 		r.failf("catalog.Facts.Bastion.ErrorShape is not declared: declare the shape of a Bastion's own refusals the format's clients print a reason from, one of problem, npm, text, distribution and galaxy (R-BAS-095, Q-BAS-337)")
@@ -261,6 +266,43 @@ func (r *run) forwardError() {
 		r.failf("WriteError names the main installation's request ID in the answer to a forward of a Bastion: render the error through errs.ProblemFor (R-BAS-099)")
 	case strings.Contains(all.String(), errs.ProblemTypePrefix):
 		r.failf("WriteError gives the answer to a forward of a Bastion the problem type %s…, a path of the management API: render the error through errs.ProblemFor, which gives it about:blank (R-BAS-099)", errs.ProblemTypePrefix)
+	}
+}
+
+// PassedHeaders are the headers a Bastion passes on of every answer of the main installation besides the core's representation
+// headers and the format's declared ones (R-BAS-099 row 5), as passedHeaders of internal/bastion/engine lists them: the framing,
+// the wait, the challenge of a 401, the methods of a 405, the links of a page, the distribution's API version and a Location on the
+// Bastion's host. TestR_BAS_099_TheKitKnowsTheHeadersABastionPasses of the engine holds the two lists equal.
+func PassedHeaders() []string {
+	return []string{
+		"Content-Length", "Content-Range", "Accept-Ranges", "Retry-After", "Www-Authenticate", "Allow", "Link",
+		"Docker-Distribution-Api-Version", "Location",
+	}
+}
+
+// downloadRefusals is the duty of WriteError towards a refusal of a download's checks forwarded from a Bastion (R-BAS-058,
+// R-BAS-099 row 5): every header of the refusal of the malware gate and of the vulnerability block is a representation header
+// of the core, one a Bastion passes on of every answer, or one the format declares (catalog.Facts.Bastion.ReplayHeaders). A
+// Bastion passes the main installation's answer on with those alone, so an undeclared header that the format's clients print
+// (NuGet's X-NuGet-Warning) would never reach a caller of a Bastion.
+func (r *run) downloadRefusals() {
+	allowed := map[string]bool{}
+	for _, h := range slices.Concat(catalog.RepresentationHeaders(), PassedHeaders(), r.d.Bastion.ReplayHeaders) {
+		allowed[http.CanonicalHeaderKey(h)] = true
+	}
+	for _, e := range []*errs.Error{
+		errs.E(errs.Forbidden, errs.CodeMalwareFound, "The malware scan found a threat in this file."),
+		errs.E(errs.Forbidden, errs.CodeVulnerabilityBlocked, "A vulnerability blocks this version."),
+	} {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequestWithContext(errs.WithBastionForward(context.Background()), http.MethodGet, DefaultBaseURL+"/", nil)
+		r.f.WriteError(rec, req, e)
+		for _, h := range slices.Sorted(maps.Keys(rec.Header())) {
+			if !allowed[http.CanonicalHeaderKey(h)] {
+				r.failf("WriteError answers the refusal %s with the header %s, which a Bastion does not pass on: declare it in catalog.Facts.Bastion.ReplayHeaders if every reader of the answer may receive it, or leave it out (R-BAS-058)",
+					e.Code, h)
+			}
+		}
 	}
 }
 

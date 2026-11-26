@@ -189,6 +189,9 @@ const (
 	// DeclaresAnotherErrorShape declares npm's error shape while WriteError renders problem details, so the main installation's
 	// backstop would refuse a write in another shape than the Bastion does: check 19 (bastion.md R-BAS-095).
 	DeclaresAnotherErrorShape Defect = "declares-another-error-shape"
+	// UndeclaredRefusalHeader puts a protocol header of the format's own on the refusal of a download's checks without declaring it in
+	// catalog.Facts.Bastion.ReplayHeaders, so a Bastion would pass the refusal on without it: check 19 (bastion.md R-BAS-058).
+	UndeclaredRefusalHeader Defect = "undeclared-refusal-header"
 	// DeclaresUnservedBody declares on the tarball route that the format's client checks a digest (Route.ClientDigest) while a
 	// local repository refuses the tarball 501, as a format whose downloads only its remote class serves: no case can show that
 	// the route's downloads are the stored blob, check 20 (storage.md R-STOR-071). Its test lists the route in NoContent with
@@ -271,6 +274,11 @@ func (f Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	if f.has(string(CapsRetryAfterUndeclared)) {
 		if e, ok := errs.As(err); ok && e.Kind == errs.RateLimited {
 			err = errs.E(e.Kind, e.Code, e.Detail, errs.WithRetryAfter(min(e.RetryAfter, 30*time.Second)))
+		}
+	}
+	if f.has(string(UndeclaredRefusalHeader)) {
+		if e, ok := errs.As(err); ok && e.Kind == errs.Forbidden {
+			w.Header().Set(UndeclaredHeader, "refused")
 		}
 	}
 	if f.has(string(IgnoresTheForward)) {

@@ -314,7 +314,7 @@ func Configuration(handover bool) iface.Configuration {
 // the IDs (R-BAS-057):
 // OCI with the registry root, its four replay headers and the bound prefix /v2/; the ClamAV definitions and Ansible Galaxy with
 // 503 for a rate limit; NuGet and Ansible Galaxy with the longest wait of 30 s their clients are told (R-BAS-058); npm with its audit
-// notice as a replay header (R-BAS-099 row 5); Debian with the defaults. The error shapes and the read routes that take a body
+// notice and NuGet with its warning as a replay header (R-BAS-099 row 5); Debian with the defaults. The error shapes and the read routes that take a body
 // are the formats' declarations (R-BAS-095): npm's npm with its three audit routes, NuGet's text, OCI's distribution with the
 // token service's POST, Ansible Galaxy's galaxy, problem for the rest. Generic has no routes and no entry.
 func Formats() iface.HandshakeFormats {
@@ -336,6 +336,7 @@ func Formats() iface.HandshakeFormats {
 	ansible.ErrorShape, nuget.ErrorShape = iface.ErrorShapeGalaxy, iface.ErrorShapeText
 	npm := plain("npm")
 	npm.ReplayHeaders, npm.ErrorShape = []string{"Npm-Notice"}, iface.ErrorShapeNPM
+	nuget.ReplayHeaders = []string{"X-Nuget-Warning"}
 	for _, p := range []string{"/-/npm/v1/security/advisories/bulk", "/-/npm/v1/security/audits", "/-/npm/v1/security/audits/quick"} {
 		npm.ReadWithBody = append(npm.ReadWithBody, iface.BodyRoute{Method: http.MethodPost, Path: "/api/npm/{project}/{repo}" + p})
 	}

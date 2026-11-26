@@ -3620,7 +3620,7 @@ The contract a format keeps so that every Bastion serves it without a decision o
 | A `Metadata` or `Computed` document is the same for every reader of the whole repository, or the route is `Volatile` | a shared document is served to every `full` reader | kit check 12 (built) |
 | A document route answers a conditional request with its own validator `304` | the Bastion revalidates documents with conditional requests; a route that ignores them costs a whole transfer per revalidation | kit check 19 |
 | Every response header of a content route is a representation header of the core, a header of the core's own (a request ID, a rate-limit field), or one of `catalog.Facts.Bastion.ReplayHeaders` | a cached answer replays the representation headers and the declared ones, and drops every other | kit check 19 |
-| A header a client of the format needs on any answer the Bastion passes on (a refusal, a `Volatile` answer) is a representation header of the core, one of the fixed list of R-BAS-099 row 5, or one of `catalog.Facts.Bastion.ReplayHeaders` (npm declares `Npm-Notice`, the notice of an audit that left names out) | a forwarded answer passes an allowlist: the representation headers, the declared ones and the fixed list (R-BAS-099 row 5, [Q-BAS-425](#q-bas-425--the-headers-of-a-forwarded-answer-pass-an-allowlist-and-a-formats-need-is-a-replay-header)) | the format's author; kit check 19 holds the content routes |
+| A header a client of the format needs on any answer the Bastion passes on (a refusal, a `Volatile` answer) is a representation header of the core, one of the fixed list of R-BAS-099 row 5, or one of `catalog.Facts.Bastion.ReplayHeaders` (npm declares `Npm-Notice`, the notice of an audit that left names out; NuGet `X-Nuget-Warning`, the text of a refused download `dotnet` prints, formats/nuget.md Q-SIG-241) | a forwarded answer passes an allowlist: the representation headers, the declared ones and the fixed list (R-BAS-099 row 5, [Q-BAS-425](#q-bas-425--the-headers-of-a-forwarded-answer-pass-an-allowlist-and-a-formats-need-is-a-replay-header)) | the format's author; kit check 19 holds the content routes and the refusals of a download's checks (the malware gate, the vulnerability block) that `WriteError` renders for a forward |
 | `WriteError` renders its error through `errs.ProblemFor` with the request, so that the answer to a recognized forward of a Bastion names no member repository of a remote's failure, carries no request ID of the main installation and, in problem details, has the type `about:blank` | a forward's answer reaches a caller of the Bastion, who learns nothing of the main installation (R-BAS-099 rows 3, 7 and 15, [Q-BAS-428](#q-bas-428--a-forward-is-marked-on-the-requests-context-and-every-writer-of-an-error-renders-through-one-function)) | kit check 19 (through `WriteError`) |
 | A rate limit of the format answers the status `catalog.Facts.Bastion.RateLimitedStatus` (429 unless declared) | the Bastion's own rate-limit refusals of the format's family take that status | kit check 19 (through `WriteError`) |
 | A rate limit of the format tells the client the wait capped by `catalog.Facts.Bastion.RetryAfterMax` (the whole wait unless declared): a wait of a second as one second, a wait of a day as the cap or as a day | the Bastion's own refusals of the format's family tell the declared wait (R-BAS-091); a cap `WriteError` applies and the facts do not declare would reach the format's clients from a Bastion uncapped | kit check 19 (through `WriteError`) |
@@ -3637,10 +3637,12 @@ The contract a format keeps so that every Bastion serves it without a decision o
   ([ADR-299](../decisions.md#adr-299--the-longest-wait-a-formats-client-is-told-is-a-fact-of-the-format)): `RetryAfterMax time.Duration`
   (0 or whole seconds) with `BastionFacts.CapRetryAfter`, the longest wait the format's clients are told (R-BAS-091). NuGet and Ansible
   Galaxy declare 30 s, the `maxRetryAfter` of their `WriteError`; npm, OCI, Debian and the ClamAV definitions declare none. npm declares
-  the replay header `Npm-Notice` (2026-11-26, R-BAS-099 row 5).
+  the replay header `Npm-Notice` (2026-11-26, R-BAS-099 row 5), NuGet `X-Nuget-Warning` (the day's findings of 2026-11-26, batch B:
+  `dotnet` prints it for a refused download, Q-SIG-241, and its text is the forward's since W-35's P8, R-BAS-114).
 - **Kit check 19** (`checks_bastion.go` of the conformance kit): over every content case, the duties above marked "kit check 19"; a
   `testformat` defect each (`DownloadWithoutContentAddress`, `UndeclaredReplayHeader`, `DocumentIgnoresConditional`,
-  `RateLimitedStatusDiffers`, `CapsRetryAfterUndeclared`, `DeclaresRetryAfterCap`, `IgnoresTheForward`, `DeclaresAnotherErrorShape`). A route whose answers cannot meet a duty by design is listed in the fixture with its reason, as for the
+  `RateLimitedStatusDiffers`, `CapsRetryAfterUndeclared`, `DeclaresRetryAfterCap`, `IgnoresTheForward`, `DeclaresAnotherErrorShape`,
+  `UndeclaredRefusalHeader`: a header of the refusal of a download's checks a Bastion would not pass on, `downloadRefusals`). A route whose answers cannot meet a duty by design is listed in the fixture with its reason, as for the
   other checks. Runs in every format's `TestR_ARCH_010_Conformance`, without PostgreSQL.
 - **As built** ([Q-BAS-181](#q-bas-181--the-cores-representation-and-per-request-headers-are-two-lists-of-the-catalog-and-the-content-headers-of-r-arch-007-are-representation-headers)
   to [Q-BAS-184](#q-bas-184--kit-check-19-judges-what-a-bastion-keeps-and-a-route-is-exempt-from-two-duties-only-with-a-reason)): the core's
@@ -5729,9 +5731,10 @@ sets it, `internal/vuln/scanner/pull.go`), so row 5 does not list it; the allowl
 - **Row 4.** `requests`, `misses`, `failed-auth`, `blocking` (`policyOf`).
 - **Row 5.** `replayHeader(src, declared)` is an allowlist: the core's representation headers, the replay headers of the request's
   format (the handshake's format table) and `Content-Length`, `Content-Range`, `Accept-Ranges`, `Retry-After`, `WWW-Authenticate`,
-  `Allow`, `Link`, `Docker-Distribution-Api-Version` and `Location` (`passedHeaders`). npm declares `Npm-Notice`, the one header a
-  format's client reads on an answer the Bastion only passes on (npm prints it after `npm audit`, R-NPM-038); every other format's
-  clients read the representation headers and the fixed list. Read in the code for the decision: OCI's upload headers
+  `Allow`, `Link`, `Docker-Distribution-Api-Version` and `Location` (`passedHeaders`). npm declares `Npm-Notice` (npm prints it after
+  `npm audit`, R-NPM-038) and NuGet `X-Nuget-Warning` (`dotnet` prints it for a refused download, Q-SIG-241; declared since the day's
+  findings of 2026-11-26, batch B: before, a Bastion's caller never saw it), the headers a format's client reads on an answer the
+  Bastion only passes on; every other format's clients read the representation headers and the fixed list. Read in the code for the decision: OCI's upload headers
   (`Docker-Upload-Uuid`, `Range`, `Oci-Chunk-Min-Length`) and NuGet's `Quader-Package` and `Quader-Version` answer writes only, and the
   OCI headers a pull reads are OCI's declared four.
 - **Row 6.** A `Location` that is neither a relative reference nor on the scheme, host and port of `server.base_url` answers `502` with

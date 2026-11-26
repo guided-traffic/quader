@@ -237,7 +237,10 @@ HTTP conventions for every NuGet endpoint:
   clients print that header of any answer as a warning: `dotnet restore` of the .NET SDK 10.0.403
   prints `warning : <message>` before each attempt's status line (measured on 2026-11-23). No
   other error carries it: a restore asks its sources with 404s, and the download limits' 429 is
-  Gap 1 of [usage-and-limits.md](../usage-and-limits.md), the owner's to decide.
+  Gap 1 of [usage-and-limits.md](../usage-and-limits.md), the owner's to decide. The format declares the header as a replay
+  header of its Bastion facts (`X-Nuget-Warning`, [bastion.md](../bastion.md) R-BAS-058), so that a Bastion, which passes an answer
+  on with an allowlist of headers, passes the warning of a refused download on to its caller; the text of a forward is the neutral
+  one of R-BAS-114. Kit check 19 holds it (`downloadRefusals`, since the day's findings of 2026-11-26, batch B).
 - The request headers `X-NuGet-Protocol-Version` and `X-NuGet-Client-Version` are ignored.
   `X-NuGet-Session-Id` is recorded in the request log so the requests of one restore can be
   correlated.
