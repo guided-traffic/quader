@@ -137,6 +137,8 @@ export class LimitRules {
         return $localize`:@@limits.rules.caption-project:Rules of project ${place.project}:project:`;
       case 'repository':
         return $localize`:@@limits.rules.caption-repository:Rules of ${place.repository}:repository:`;
+      case 'bastion':
+        return $localize`:@@limits.rules.caption-bastion:Rules of Bastion ${place.bastion}:bastion:`;
     }
   });
 

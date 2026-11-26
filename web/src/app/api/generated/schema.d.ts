@@ -329,7 +329,9 @@ export interface paths {
         /**
          * Describe a problem code
          * @description The `type` member of every problem is `/api/v1/problems/<code>`; this endpoint resolves it
-         *     to a description. The registry is embedded, so the URI resolves on every installation.
+         *     to a description. The registry is embedded, so the URI resolves on every installation. A problem a
+         *     Bastion answers, or one rendered for a forward of a Bastion, has the type `about:blank` instead
+         *     (bastion.md R-BAS-099).
          */
         get: operations["getProblemType"];
         put?: never;
@@ -5193,8 +5195,9 @@ export interface paths {
         };
         /**
          * Read a Bastion registration
-         * @description The registration with its unrevoked tokens and the last contact of each replica (R-BAS-004, R-BAS-010). The ETag is the
-         *     registration's revision.
+         * @description The registration with its unrevoked tokens, the last contact of each replica, its configuration and the state each replica
+         *     reported within the last hour (R-BAS-004, R-BAS-010, R-BAS-093, R-LIM-045). The ETag is the registration's revision, which a
+         *     change of a rule of the Bastion's place or of a profile such a rule names raises as well (Q-BAS-320).
          */
         get: operations["getBastion"];
         put?: never;
@@ -5208,14 +5211,21 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Change or disable a Bastion registration
-         * @description Changes the description, enables or disables the registration and switches its handover per blob (JSON merge patch). A
-         *     disabled registration refuses its tokens like a disabled service account's (R-AUTH-020) within the revocation bound of
-         *     every replica; the tokens stay unrevoked, so enabling the registration again restores them. A new description records
+         * Change or disable a Bastion registration, or configure it
+         * @description Changes the description, enables or disables the registration, its networks, its switches and its limits (JSON merge patch;
+         *     R-BAS-004, R-BAS-093). The handler requires `limits:write` for the member `limits` and `endpoints:write` for every other
+         *     member (Q-BAS-325), so the declaration is the coarse `authenticated` form; a patch of both needs both. A disabled
+         *     registration refuses its tokens like a disabled service account's (R-AUTH-020) within the revocation bound of every
+         *     replica; the tokens stay unrevoked, so enabling the registration again restores them. A new description records
          *     `bastion.updated`; a disable records `bastion.disabled`, journaled, so a restore to a point before it disables the
-         *     registration again (R-HA-054, Q-BAS-145); an enable records `bastion.enabled`. `handover` true records
-         *     `bastion.handover.enabled`, false `bastion.handover.disabled`, journaled, so a restore keeps the handover off; every
-         *     replica follows the switch within 2 seconds, and the Bastion learns it at its next handshake (R-BAS-071).
+         *     registration again (R-HA-054, Q-BAS-145); an enable records `bastion.enabled`. `switches.handover` true records
+         *     `bastion.handover.enabled`, false `bastion.handover.disabled`, journaled, so a restore keeps the handover off (R-BAS-071).
+         *     A change of a switch or of `limits` records `bastion.configuration.changed` with the parts changed and their values
+         *     before and after, and every Bastion handshakes again within one poll of the feed (about 3 s) and applies its
+         *     registration's configuration whole. `limits.preset` names a preset to apply in this request (R-LIM-046, Q-LIM-311): the
+         *     place's five kind rules, the flood figures and the mode, then the other members of the patch on top; `custom` applies
+         *     nothing. A change of `limits.mode` needs recent authentication (`401 reauthentication_required`, R-LIM-044). The limits
+         *     are held to the rules a Bastion applies them by (`422` with the member named).
          */
         patch: operations["updateBastion"];
         trace?: never;
@@ -5281,8 +5291,10 @@ export interface paths {
          *     token as `Authorization: Bearer` at start, every `bastion.main.handshake_interval`, after a reconnect and after a feed
          *     entry of the kind `settings` (R-BAS-010). The answer carries the main installation's interface version, the registration
          *     and the token in use, the response base URL this request resolved to, whether anonymous requests read anything (`anonymousReads`), the download
-         *     switch and the feed position. Records the replica's last contact at most once a minute. Not part of the management
-         *     API's v1 promise but of the interface version (R-ARCH-025, R-BAS-009).
+         *     switch, the feed position, the format table and the registration's `configuration` (R-BAS-093). Records the replica's
+         *     last contact at most once a minute, with the edge figure (`Quader-Bastion-Edge-Limit`) and whether its catalogue is kept
+         *     (`Quader-Bastion-Catalogue-Kept`) when the replica reports them; a malformed value of either answers `400
+         *     malformed_request`. Not part of the management API's v1 promise but of the interface version (R-ARCH-025, R-BAS-009).
          */
         get: operations["bastionHandshake"];
         put?: never;
@@ -5330,7 +5342,7 @@ export interface paths {
         /**
          * The revocation feed
          * @description The Bastion interface (R-BAS-015, Q-BAS-29, Q-BAS-30). The journaled audit events that remove or narrow access and the
-         *     content events, as entries of the kinds `token`, `principal`, `grants`, `settings` and `content`. `after` is the
+         *     content events, as entries of the kinds `token`, `principal`, `grants`, `settings`, `content` and `catalogue`. `after` is the
          *     `cursor` of an earlier answer or a synthetic `t:<RFC 3339>`; the answer holds every entry newer than the cursor and the
          *     entries within `bastions.feed.lookback` behind it, which the Bastion skips by ID. `reset: true` tells the Bastion to
          *     drop every answer.
@@ -5358,9 +5370,111 @@ export interface paths {
          * @description The Bastion interface (R-BAS-016). A batch of at most `bastions.downloads.max_batch` events, each recorded as an
          *     asynchronous `artifact.downloaded` with `details.origin: bastion`; an event older than `bastions.downloads.max_age` is
          *     not recorded and counts as dropped, one in the future is recorded at the time of receipt. A non-zero `dropped` records
-         *     `bastion.downloads.dropped`. With `audit.record_downloads: false` the answer is `204` and nothing is recorded.
+         *     `bastion.downloads.dropped`. With `audit.record_downloads: false` the answer is `204` and nothing is recorded. The batch
+         *     also carries the replica's `usage` and `status` (R-LIM-045), valid without an event; their bounds are checked (`422`
+         *     beyond them). The usage rows go into the usage store at the place `bastion:<id>` through the replica's usage buffer, and
+         *     the status replaces the replica's row of `bastion_status`, whether or not downloads are recorded; a batch refused for its
+         *     events stores neither, so a batch sent again is never counted twice. The body is at most `bastions.downloads.max_batch` ×
+         *     10 KiB for the events, 640 bytes for each of 100,000 usage rows and 256 KiB for the rest (Q-BAS-442), about 71 MiB with
+         *     the defaults.
          */
         post: operations["bastionDownloads"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bastion/catalogue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The change list of a Bastion's public catalogue
+         * @description The Bastion interface (R-BAS-101). The changes of the public catalogue of the calling registration after the cursor
+         *     `after` (a `seq`, 0 for the start), at most `limit` (the main installation's page when absent, clamped to its largest).
+         *     `reset: true` tells the Bastion to read the list again from 0. While the registration's switch `gui` is off the answer is
+         *     `404 not_found`. Until the catalogue is built (W-35's package P6) the list is empty.
+         */
+        get: operations["bastionCatalogue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bastion/catalogue/document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One document of a Bastion's public catalogue
+         * @description The Bastion interface (R-BAS-101, R-BAS-103). The document `path` of the calling registration's catalogue, gzip-compressed
+         *     (`application/gzip`), with the SHA-256 of its raw bytes as the `ETag`. A path outside the grammar of R-BAS-103 answers
+         *     `400 malformed_request`; while the
+         *     registration's switch `gui` is off, and for a documentation path while `docs` is off, the answer is `404 not_found`. Until
+         *     the catalogue is built (W-35's package P6) every document answers `404 not_found`.
+         */
+        get: operations["bastionCatalogueDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bastion/catalogue/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Several documents of a Bastion's public catalogue
+         * @description The Bastion interface (R-BAS-101, R-BAS-103). The batch read: the documents `paths` of the calling registration's
+         *     catalogue in one answer of frames (`application/vnd.quader.catalogue-batch`), one per path in the request's order: a line
+         *     of JSON (`path`, `sha256` and `size` of the raw document, `gzipSize`, `missing`) and the document's `gzipSize`
+         *     compressed bytes. The answer stops before the frame that would take its compressed bytes above the main installation's
+         *     bound and holds at least one frame; a path it does not reach is asked for again. A path outside the grammar, a path
+         *     twice or more paths than the bound answer `400 malformed_request`; while the registration's switch `gui` is off the
+         *     answer is `404 not_found`; a document the catalogue does not hold, and a documentation path while `docs` is off, is a
+         *     frame with `missing: true`. Until the catalogue is built (W-35's package P6) every frame is missing.
+         */
+        post: operations["bastionCatalogueDocuments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bastion/catalogue/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The public set of a Bastion's catalogue
+         * @description The Bastion interface (R-BAS-101). The projects and repositories the calling registration's catalogue shows, each
+         *     repository with its format, class and whether its wiki is public. While the registration's switch `gui` is off the
+         *     answer is `404 not_found`. Until the catalogue is built (W-35's package P6) the set is empty.
+         */
+        get: operations["bastionCataloguePublic"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7696,6 +7810,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bastions/{name}/limits/assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The registration name (R-BAS-004). */
+                name: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * List the rules of a Bastion's place
+         * @description The rules of the Bastion's place with their effective figures (R-LIM-043, R-LIM-032): the five kind rules its preset wrote
+         *     and the rules an administrator added; `404` for a name that is no registration.
+         */
+        get: operations["listBastionLimitAssignments"];
+        put?: never;
+        /**
+         * Create a rule at a Bastion's place
+         * @description A profile with overrides for one caller at the Bastion's place (R-LIM-043, R-LIM-032): a single user, technical token or CI
+         *     project, an address or a range, a group, or every caller of a kind. R-LIM-016's caps do not apply. Records
+         *     `limits.assignment.created` with `place: bastion:<name>` and `bastion.configuration.changed`, and raises the registration's
+         *     revision, which reaches the Bastion within about 3 s.
+         */
+        post: operations["createBastionLimitAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bastions/{name}/limits/assignments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The registration name (R-BAS-004). */
+                name: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Read a rule of a Bastion's place
+         * @description One rule (R-LIM-032).
+         */
+        get: operations["getBastionLimitAssignment"];
+        /**
+         * Replace a rule of a Bastion's place
+         * @description Profile, overrides and note; `who` is immutable (R-LIM-032).
+         */
+        put: operations["replaceBastionLimitAssignment"];
+        post?: never;
+        /**
+         * Delete a rule of a Bastion's place
+         * @description A kind rule a preset wrote is built in at its place: `409 assignment_builtin` (R-LIM-043); change its profile instead.
+         */
+        delete: operations["deleteBastionLimitAssignment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{projectKey}/limits/assignments": {
         parameters: {
             query?: never;
@@ -8810,7 +8987,8 @@ export interface components {
         /** @description RFC 9457 problem details. The extension members are `code`, `requestId`, `errors`, `currentEtag`, `job` and `references`. */
         Problem: {
             /**
-             * @description The relative URI `/api/v1/problems/<code>`.
+             * @description The relative URI `/api/v1/problems/<code>`; `about:blank` on a problem a Bastion answers or one rendered for a forward
+             *     of a Bastion (bastion.md R-BAS-099).
              * @example /api/v1/problems/not_found
              */
             type: string;
@@ -14097,7 +14275,63 @@ export interface components {
          *       "name": "partners",
          *       "description": "The partner network",
          *       "enabled": true,
-         *       "handover": false,
+         *       "switches": {
+         *         "handover": false,
+         *         "gui": false,
+         *         "docs": false
+         *       },
+         *       "limits": {
+         *         "mode": "enforce",
+         *         "preset": "internet",
+         *         "flood": {
+         *           "anonymous": {
+         *             "requestsPerSecond": 50,
+         *             "burst": 1000,
+         *             "missesPerMinute": 1000
+         *           },
+         *           "authenticated": {
+         *             "requestsPerSecond": 200,
+         *             "burst": 4000,
+         *             "missesPerMinute": 4000
+         *           },
+         *           "gui": {
+         *             "requestsPerSecond": 20,
+         *             "burst": 100
+         *           },
+         *           "failedAuth": {
+         *             "maxFailures": 20,
+         *             "windowSeconds": 600,
+         *             "timeoutSeconds": 900
+         *           },
+         *           "blocking": {
+         *             "threshold": 3000,
+         *             "windowSeconds": 60,
+         *             "durationSeconds": 900,
+         *             "maxDurationSeconds": 86400
+         *           },
+         *           "exemptNetworks": []
+         *         },
+         *         "slots": {
+         *           "maxConcurrent": 64,
+         *           "anonymousShare": 0.25,
+         *           "queueTimeoutMillis": 5000
+         *         },
+         *         "throughput": {
+         *           "bytesPerSecond": 200000000,
+         *           "anonymousShare": 0.25,
+         *           "bytesPerHour": {
+         *             "anonymous": null,
+         *             "signedIn": null,
+         *             "catalogue": null
+         *           }
+         *         },
+         *         "anonymousCeiling": {
+         *           "requestsPerSecond": 100,
+         *           "burst": 2000,
+         *           "requestsPerHour": 36000
+         *         }
+         *       },
+         *       "status": [],
          *       "egress": [
          *         "198.51.100.20/32"
          *       ],
@@ -14118,8 +14352,10 @@ export interface components {
          *           "contactAt": "2026-11-02T10:06:12Z",
          *           "clientAddress": "198.51.100.20",
          *           "release": "0.15.0",
-         *           "interfaceVersion": 3,
-         *           "baseUrl": "https://packages.example.com"
+         *           "interfaceVersion": 8,
+         *           "baseUrl": "https://packages.example.com",
+         *           "edgeLimit": "rps=200; connections=1000",
+         *           "catalogueKept": null
          *         }
          *       ]
          *     }
@@ -14131,18 +14367,141 @@ export interface components {
             description: string;
             enabled: boolean;
             egress: components["schemas"]["BastionEgress"];
-            /**
-             * @description The switch of the handover per blob (R-BAS-071): while it is on, the main installation may answer a forward of this
-             *     Bastion for a large file with a short-lived signed link of the object store, so the Bastion reads the bytes from the
-             *     store itself (R-STOR-095). Off for a new registration; changed by `PATCH` only.
-             */
-            handover: boolean;
+            switches: components["schemas"]["BastionSwitches"];
+            limits: components["schemas"]["BastionLimits"];
+            /** @description The state each replica reported with its last batch within the last hour, the newest first (R-LIM-045); a block that ended is left out (Q-BAS-443). */
+            status: components["schemas"]["BastionReplicaStatus"][];
             /** Format: date-time */
             createdAt: string;
             /** @description The unrevoked tokens, newest first. Neither the value nor its hash is part of it. */
             tokens: components["schemas"]["BastionTokenSummary"][];
             /** @description The last contact of each replica, the most recent first (R-BAS-010). */
             contacts: components["schemas"]["BastionContact"][];
+        };
+        /** @description The switches of the registration's configuration (R-BAS-093), each off for a new registration. */
+        BastionSwitches: {
+            /**
+             * @description The handover per blob (R-BAS-071): while it is on, the main installation may answer a forward of this Bastion for a large
+             *     file with a short-lived signed link of the object store, so the Bastion reads the bytes from the store itself (R-STOR-095).
+             */
+            handover: boolean;
+            /** @description The Bastion's read-only web interface (R-BAS-102); while it is off every catalogue route answers `404`. */
+            gui: boolean;
+            /** @description The documentation of the web interface (R-BAS-102), effective only with `gui`. */
+            docs: boolean;
+        };
+        /**
+         * @description The limits of the registration's configuration (R-BAS-093). The rules of the Bastion's place are read and written through
+         *     `/api/v1/bastions/{name}/limits/assignments` (R-LIM-043). Every figure is held to the rules a Bastion applies it by: flood
+         *     figures are positive integers, never null; a share lies in 0 to 1; a ceiling's burst only with its rate.
+         */
+        BastionLimits: {
+            /**
+             * @description Audit or Enforce of the budgets at this Bastion (R-LIM-044); the flood protection, the ceiling, the slots and the throughput hold in both (Q-LIM-309).
+             * @enum {string}
+             */
+            mode: "audit" | "enforce";
+            /**
+             * @description The preset the registration reads (R-LIM-046); `custom` once a kind rule or a flood figure differs from the preset last applied.
+             * @enum {string}
+             */
+            preset: "internet" | "partnerNetwork" | "internal" | "custom";
+            flood: components["schemas"]["BastionFlood"];
+            slots: components["schemas"]["BastionSlots"];
+            throughput: components["schemas"]["BastionThroughput"];
+            anonymousCeiling: components["schemas"]["BastionCeiling"];
+        };
+        /** @description The flood protection per client address (R-BAS-035 to R-BAS-037, Q-LIM-307). */
+        BastionFlood: {
+            anonymous: components["schemas"]["BastionFloodClass"];
+            authenticated: components["schemas"]["BastionFloodClass"];
+            gui: {
+                requestsPerSecond: number;
+                burst: number;
+            };
+            failedAuth: {
+                maxFailures: number;
+                windowSeconds: number;
+                timeoutSeconds: number;
+            };
+            blocking: {
+                threshold: number;
+                windowSeconds: number;
+                durationSeconds: number;
+                maxDurationSeconds: number;
+            };
+            /** @description Canonical prefixes no flood figure, timeout or block applies to. */
+            exemptNetworks: string[];
+        };
+        /** @description The requests in flight to the main installation across the Bastion's replicas (R-BAS-025). */
+        BastionSlots: {
+            maxConcurrent: number;
+            anonymousShare: number;
+            queueTimeoutMillis: number;
+        };
+        /** @description The byte rate the Bastion reads at (R-BAS-097); null is unlimited. */
+        BastionThroughput: {
+            /** Format: int64 */
+            bytesPerSecond: number | null;
+            anonymousShare: number;
+            bytesPerHour: {
+                /** Format: int64 */
+                anonymous: number | null;
+                /** Format: int64 */
+                signedIn: number | null;
+                /** Format: int64 */
+                catalogue: number | null;
+            };
+        };
+        /** @description The requests to the main installation on behalf of all anonymous callers of the Bastion together (R-BAS-094); null is unlimited. */
+        BastionCeiling: {
+            /** Format: int64 */
+            requestsPerSecond: number | null;
+            /** Format: int64 */
+            burst: number | null;
+            /** Format: int64 */
+            requestsPerHour: number | null;
+        };
+        /** @description The state a replica reported with its last batch (R-LIM-045), the Bastion's word (H-2282). */
+        BastionReplicaStatus: {
+            replica: string;
+            /** Format: date-time */
+            reportedAt: string;
+            cache: {
+                /** Format: int64 */
+                bytes: number;
+                /** Format: int64 */
+                capacityBytes: number;
+                /** Format: int64 */
+                hits: number;
+                /** Format: int64 */
+                misses: number;
+                /** Format: int64 */
+                evictions: number;
+                /** Format: int64 */
+                protectedBytes: number;
+            };
+            throughput: {
+                limited: boolean;
+                bytesPerSecondByClass: {
+                    /** Format: int64 */
+                    anonymous: number;
+                    /** Format: int64 */
+                    signedIn: number;
+                    /** Format: int64 */
+                    catalogue: number;
+                };
+            };
+            /** Format: int64 */
+            limited: number;
+            /** Format: int64 */
+            blocked: number;
+            blocks: {
+                address: string;
+                /** Format: date-time */
+                until: string;
+                reason: string;
+            }[];
         };
         BastionList: {
             items: components["schemas"]["Bastion"][];
@@ -14160,6 +14519,10 @@ export interface components {
             lastUsedAt: string | null;
         };
         BastionContact: {
+            /** @description The edge figure the replica reported (`off`, `rps=<n>`, `connections=<n>` or both, R-BAS-093); null when it reported none. */
+            edgeLimit: string | null;
+            /** @description Whether the replica's public catalogue survives a restart (R-BAS-101); null when it reported none. */
+            catalogueKept: boolean | null;
             replica: string;
             /** Format: date-time */
             contactAt: string;
@@ -14200,8 +14563,26 @@ export interface components {
         BastionPatch: {
             description?: string;
             enabled?: boolean;
-            /** @description Switches the handover per blob on or off (R-BAS-071); a `null` reads as absent and switches nothing, as for `enabled`. */
-            handover?: boolean;
+            /** @description `endpoints:write`. A switch that is absent or `null` is unchanged (R-BAS-071, R-BAS-102). */
+            switches?: {
+                handover?: boolean;
+                gui?: boolean;
+                docs?: boolean;
+            };
+            /**
+             * @description `limits:write`. A merge patch of the registration's limits (R-BAS-093): a member that is absent is unchanged, a nested member
+             *     merges. `preset` applies a preset first (R-LIM-046), `custom` nothing; a change of `mode` needs recent authentication.
+             */
+            limits?: {
+                /** @enum {string} */
+                mode?: "audit" | "enforce";
+                /** @enum {string} */
+                preset?: "internet" | "partnerNetwork" | "internal" | "custom";
+                flood?: Record<string, never>;
+                slots?: Record<string, never>;
+                throughput?: Record<string, never>;
+                anonymousCeiling?: Record<string, never>;
+            };
             /** @description Replaces the whole list; `[]` empties it, a `null` reads as absent and changes nothing. */
             egress?: components["schemas"]["BastionEgress"];
         };
@@ -14267,11 +14648,90 @@ export interface components {
              * @example web/docker-hub
              */
             boundRepository?: string;
+            configuration: components["schemas"]["BastionConfiguration"];
+        };
+        /**
+         * @description The registration's configuration (R-BAS-093, Q-BAS-320): applied whole by every replica; a figure is a positive integer
+         *     or `null` for unlimited. The main installation answers it from its snapshot of the registrations: the registration's own
+         *     members and the rules of its place with each rule's effective figures, of one moment.
+         */
+        BastionConfiguration: {
             /**
-             * @description The registration's switch of the handover per blob (R-BAS-071, R-BAS-073): while it is true the Bastion offers to take a
-             *     handover on a miss (`Quader-Bastion-Handover: accept; max-size=<n>`, R-BAS-072). Off for a new registration.
+             * Format: int64
+             * @description The registration's revision, raised also by a change of a rule of the Bastion's place or of a profile such a rule names.
              */
-            handover: boolean;
+            revision: number;
+            switches: {
+                /** @description The handover per blob (R-BAS-071, R-BAS-072). Off for a new registration. */
+                handover: boolean;
+                /** @description The read-only web interface (R-BAS-102). Off for a new registration. */
+                gui: boolean;
+                /** @description Its documentation, effective only with `gui` (R-BAS-102). Off for a new registration. */
+                docs: boolean;
+            };
+            limits: components["schemas"]["BastionConfigurationLimits"];
+        };
+        /** @description A Bastion's limits (R-BAS-093 to R-BAS-097). */
+        BastionConfigurationLimits: {
+            /** @enum {string} */
+            mode: "audit" | "enforce";
+            /** @enum {string} */
+            preset: "internet" | "partnerNetwork" | "internal" | "custom";
+            place: {
+                /** @description Each rule of the Bastion's place by its ID, with its effective figures. */
+                rules: {
+                    [key: string]: components["schemas"]["BastionFigures"];
+                };
+                addressRules: {
+                    /**
+                     * @description A canonical prefix; an address is a /32 or /128.
+                     * @example 198.51.100.0/24
+                     */
+                    prefix: string;
+                    rule: string;
+                }[];
+                kindRules: {
+                    anonymous: string;
+                    user: string;
+                    technicalToken: string;
+                    ci: string;
+                    administrator: string;
+                };
+            };
+            flood: components["schemas"]["BastionFlood"];
+            slots: components["schemas"]["BastionSlots"];
+            throughput: components["schemas"]["BastionThroughput"];
+            anonymousCeiling: components["schemas"]["BastionCeiling"];
+        };
+        BastionFloodClass: {
+            requestsPerSecond: number;
+            burst: number;
+            missesPerMinute: number;
+        };
+        /** @description The eleven figures of a rule (R-LIM-004) as read at a Bastion's place (R-BAS-096); `null` is unlimited. */
+        BastionFigures: {
+            /** Format: int64 */
+            requestsPerSecond: number | null;
+            /** Format: int64 */
+            requestsBurst: number | null;
+            /** Format: int64 */
+            requestsPerHour: number | null;
+            /** Format: int64 */
+            cachedBytesPerSecond: number | null;
+            /** Format: int64 */
+            cachedBytesPerHour: number | null;
+            /** Format: int64 */
+            uncachedBytesPerSecond: number | null;
+            /** Format: int64 */
+            uncachedBytesPerHour: number | null;
+            /** Format: int64 */
+            upstreamRequestsPerHour: number | null;
+            /** Format: int64 */
+            parallelTransfers: number | null;
+            /** Format: int64 */
+            bytesPerDay: number | null;
+            /** Format: int64 */
+            refusedPerHour: number | null;
         };
         /** @description A format's facts in the handshake's format table (R-BAS-057, R-BAS-058). */
         BastionHandshakeFormat: {
@@ -14309,6 +14769,15 @@ export interface components {
              *     ]
              */
             boundPrefixes: string[];
+            /** @description The shape of a Bastion's own answers on the format's family (R-BAS-095, Q-BAS-337). */
+            errorShape: string;
+            /** @description The format's read routes that take a body (R-BAS-095): a method other than GET and HEAD and a path pattern from the host root whose `{name}` segments stand for one segment each. Every other request of such a method is a write. */
+            readWithBody: {
+                /** @example POST */
+                method: string;
+                /** @example /api/npm/{project}/{repo}/-/npm/v1/security/advisories/bulk */
+                path: string;
+            }[];
         };
         BastionCheckRequest: {
             /** @description The token string the caller presented, or `null` for an anonymous caller. */
@@ -14356,6 +14825,12 @@ export interface components {
             /** Format: date-time */
             expiresAt?: string;
             retryAfterSeconds?: number;
+            /** @description Set with `token` only, once the main installation resolves a rule at the Bastion's place (R-BAS-096): the subject key of the download limits and the rule's ID. */
+            limits?: {
+                /** @example user:0191a0c4-1c2a-7c3e-8a51-6f7d2b9c4e41 */
+                key: string;
+                rule: string;
+            };
         };
         BastionRepositoryRead: {
             /** @enum {string} */
@@ -14377,7 +14852,7 @@ export interface components {
             /** Format: date-time */
             at: string;
             /** @enum {string} */
-            kind: "token" | "principal" | "grants" | "settings" | "content";
+            kind: "token" | "principal" | "grants" | "settings" | "content" | "catalogue";
             tokens?: string[];
             principals?: string[];
             repositories?: string[];
@@ -14387,6 +14862,94 @@ export interface components {
             dropped: number;
             /** Format: date-time */
             droppedSince?: string;
+            /** @description What the Bastion counted per subject, credential and repository in buckets (R-LIM-045); at most 100,000 rows. */
+            usage: {
+                bucketSeconds: number;
+                rows: {
+                    /** Format: date-time */
+                    bucketStart: string;
+                    subject: string;
+                    credential: string;
+                    repository: string;
+                    rule: string;
+                    /** Format: int64 */
+                    requests: number;
+                    /** Format: int64 */
+                    refused: number;
+                    /** Format: int64 */
+                    cachedBytes: number;
+                    /** Format: int64 */
+                    uncachedBytes: number;
+                    /** Format: int64 */
+                    upstreamRequests: number;
+                    limited: {
+                        [key: string]: number;
+                    };
+                    wouldLimit: {
+                        [key: string]: number;
+                    };
+                }[];
+                overflow: {
+                    /** Format: date-time */
+                    bucketStart: string;
+                    subjectKind: string;
+                    repository: string;
+                    /** Format: int64 */
+                    subjects: number;
+                    /** Format: int64 */
+                    requests: number;
+                    /** Format: int64 */
+                    refused: number;
+                    /** Format: int64 */
+                    cachedBytes: number;
+                    /** Format: int64 */
+                    uncachedBytes: number;
+                    /** Format: int64 */
+                    upstreamRequests: number;
+                }[];
+            };
+            /** @description The sending replica's state (R-UI-240); at most 100 blocks, the newest. */
+            status: {
+                replica: string;
+                /** Format: date-time */
+                at: string;
+                cache: {
+                    /** Format: int64 */
+                    bytes: number;
+                    /** Format: int64 */
+                    capacityBytes: number;
+                    /** Format: int64 */
+                    hits: number;
+                    /** Format: int64 */
+                    misses: number;
+                    /** Format: int64 */
+                    evictions: number;
+                    /** Format: int64 */
+                    protectedBytes: number;
+                };
+                throughput: {
+                    limited: boolean;
+                    bytesPerSecondByClass: {
+                        /** Format: int64 */
+                        anonymous: number;
+                        /** Format: int64 */
+                        signedIn: number;
+                        /** Format: int64 */
+                        catalogue: number;
+                    };
+                };
+                /** Format: int64 */
+                limited: number;
+                /** Format: int64 */
+                blocked: number;
+                blocks: {
+                    /** @example 203.0.113.0/24 */
+                    address: string;
+                    /** Format: date-time */
+                    until: string;
+                    reason: string;
+                }[];
+            };
         };
         BastionDownloadEvent: {
             /** Format: date-time */
@@ -14401,6 +14964,43 @@ export interface components {
             sha256: string;
             userAgent?: string;
             replica: string;
+        };
+        /** @description The changes of a registration's public catalogue after a cursor (R-BAS-101). */
+        BastionCatalogueChanges: {
+            entries: {
+                /**
+                 * @description A document path of the grammar of R-BAS-103.
+                 * @example packages/0193a0c4-77/versions/1.0.0
+                 */
+                path: string;
+                /** @description The SHA-256 of the raw document, empty for a deleted document. */
+                sha256: string;
+                /**
+                 * Format: int64
+                 * @description The size of the raw document in bytes; it travels gzip-compressed.
+                 */
+                size: number;
+                deleted: boolean;
+                /** Format: int64 */
+                seq: number;
+            }[];
+            /** Format: int64 */
+            cursor: number;
+            more: boolean;
+            reset: boolean;
+        };
+        /** @description The projects and repositories a registration's catalogue shows (R-BAS-101). */
+        BastionCataloguePublic: {
+            projects: string[];
+            repositories: {
+                /** @example web/npm-all */
+                name: string;
+                /** @example npm */
+                format: string;
+                /** @enum {string} */
+                class: "local" | "remote" | "virtual";
+                wiki: boolean;
+            }[];
         };
         /**
          * @description The level of an advisory (R-VULN-007); `unknown` is a level of its own and sorts last.
@@ -17585,8 +18185,14 @@ export interface components {
             /** @description `<projectKey>/<repoKey>`. */
             repository: string;
         };
-        /** @description Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014). */
-        LimitPlace: components["schemas"]["LimitPlaceInstance"] | components["schemas"]["LimitPlaceProject"] | components["schemas"]["LimitPlaceRepository"];
+        LimitPlaceBastion: {
+            /** @enum {string} */
+            kind: "bastion";
+            /** @description The registration's name (R-LIM-043). */
+            bastion: string;
+        };
+        /** @description Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014, R-LIM-043). */
+        LimitPlace: components["schemas"]["LimitPlaceInstance"] | components["schemas"]["LimitPlaceProject"] | components["schemas"]["LimitPlaceRepository"] | components["schemas"]["LimitPlaceBastion"];
         LimitWhoUser: {
             /** @enum {string} */
             kind: "user";
@@ -30519,6 +31125,13 @@ export interface operations {
                  *     here so that the answer is the interface's, not the binder's.
                  */
                 "Quader-Bastion-Interface"?: components["parameters"]["BastionInterface"];
+                /**
+                 * @description The edge figure of the ingress in front of the replica (R-BAS-093): `rps=<n>; connections=<n>`, either member alone, or `off`.
+                 * @example rps=100; connections=50
+                 */
+                "Quader-Bastion-Edge-Limit"?: string;
+                /** @description Whether the replica's copy of the public catalogue survives a restart (R-BAS-101). */
+                "Quader-Bastion-Catalogue-Kept"?: "true" | "false";
             };
             path?: never;
             cookie?: never;
@@ -30656,6 +31269,167 @@ export interface operations {
             413: components["responses"]["PayloadTooLarge"];
             415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            501: components["responses"]["NotImplemented"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    bastionCatalogue: {
+        parameters: {
+            query: {
+                /** @description The `seq` of the last change the Bastion applied, 0 for the start. */
+                after: number;
+                /** @description Changes at most; clamped to the main installation's largest page. */
+                limit?: number;
+            };
+            header?: {
+                /**
+                 * @description The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
+                 *     another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
+                 *     here so that the answer is the interface's, not the binder's.
+                 */
+                "Quader-Bastion-Interface"?: components["parameters"]["BastionInterface"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The changes after the cursor. */
+            200: {
+                headers: {
+                    "Quader-Bastion-Interface": components["headers"]["BastionInterface"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BastionCatalogueChanges"];
+                };
+            };
+            400: components["responses"]["BastionInterfaceMismatch"];
+            401: components["responses"]["BastionTokenInvalid"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            501: components["responses"]["NotImplemented"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    bastionCatalogueDocument: {
+        parameters: {
+            query: {
+                /**
+                 * @description A document path of the grammar of R-BAS-103.
+                 * @example packages/0193a0c4-77/versions/1.0.0/readme
+                 */
+                path: string;
+            };
+            header?: {
+                /**
+                 * @description The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
+                 *     another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
+                 *     here so that the answer is the interface's, not the binder's.
+                 */
+                "Quader-Bastion-Interface"?: components["parameters"]["BastionInterface"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The document, gzip-compressed. */
+            200: {
+                headers: {
+                    "Quader-Bastion-Interface": components["headers"]["BastionInterface"];
+                    /** @description The SHA-256 of the raw document, quoted. */
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/gzip": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["BastionTokenInvalid"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            501: components["responses"]["NotImplemented"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    bastionCatalogueDocuments: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
+                 *     another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
+                 *     here so that the answer is the interface's, not the binder's.
+                 */
+                "Quader-Bastion-Interface"?: components["parameters"]["BastionInterface"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    paths: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description The frames. */
+            200: {
+                headers: {
+                    "Quader-Bastion-Interface": components["headers"]["BastionInterface"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.quader.catalogue-batch": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["BastionTokenInvalid"];
+            404: components["responses"]["NotFound"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            501: components["responses"]["NotImplemented"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    bastionCataloguePublic: {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
+                 *     another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
+                 *     here so that the answer is the interface's, not the binder's.
+                 */
+                "Quader-Bastion-Interface"?: components["parameters"]["BastionInterface"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The public set. */
+            200: {
+                headers: {
+                    "Quader-Bastion-Interface": components["headers"]["BastionInterface"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BastionCataloguePublic"];
+                };
+            };
+            400: components["responses"]["BastionInterfaceMismatch"];
+            401: components["responses"]["BastionTokenInvalid"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             501: components["responses"]["NotImplemented"];
@@ -35010,6 +35784,191 @@ export interface operations {
             503: components["responses"]["Unavailable"];
         };
     };
+    listBastionLimitAssignments: {
+        parameters: {
+            query?: {
+                /** @description Only rules of this kind of caller. */
+                whoKind?: "user" | "technicalToken" | "ciProject" | "address" | "group" | "every";
+                /** @description Only rules of this profile key. */
+                profile?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The registration name (R-BAS-004). */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The answer. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LimitAssignmentList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createBastionLimitAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The registration name (R-BAS-004). */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LimitAssignmentWrite"];
+            };
+        };
+        responses: {
+            /** @description The answer. */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LimitAssignment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getBastionLimitAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The registration name (R-BAS-004). */
+                name: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The answer. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LimitAssignment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    replaceBastionLimitAssignment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012). */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                /** @description The registration name (R-BAS-004). */
+                name: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LimitAssignmentWrite"];
+            };
+        };
+        responses: {
+            /** @description The answer. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LimitAssignment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    deleteBastionLimitAssignment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The ETag loaded with the resource, or `*`. A `DELETE` honours it when sent and answers `412` for a stale one (R-API-012). */
+                "If-Match"?: components["parameters"]["IfMatchOptional"];
+            };
+            path: {
+                /** @description The registration name (R-BAS-004). */
+                name: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["Unprocessable"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
     listProjectLimitAssignments: {
         parameters: {
             query?: {
@@ -35849,6 +36808,8 @@ export interface operations {
             query?: {
                 /** @description Narrow the instance's overview to the repositories of one project (Q-API-353). */
                 project?: string;
+                /** @description `installation` for what the main installation served, `bastion:<name>` for what that Bastion served (R-LIM-045, R-UI-242); every place when absent. */
+                place?: string;
                 /** @description hour, day (default) or 30d. */
                 period?: "hour" | "day" | "30d";
                 /** @description Subject kinds. */
@@ -35895,6 +36856,8 @@ export interface operations {
             query?: {
                 /** @description Narrow the instance's overview to the repositories of one project (Q-API-353). */
                 project?: string;
+                /** @description `installation` for what the main installation served, `bastion:<name>` for what that Bastion served (R-LIM-045, R-UI-242); every place when absent. */
+                place?: string;
                 /** @description hour, day (default) or 30d. */
                 period?: "hour" | "day" | "30d";
                 /** @description Subject kinds. */

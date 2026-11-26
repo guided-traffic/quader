@@ -44,7 +44,7 @@ type Report struct {
 	ResponseBaseURL string
 	// EdgeLimit is the edge figure the replica reports (Quader-Bastion-Edge-Limit, R-BAS-093) and CatalogueKept whether its
 	// catalogue survives a restart (Quader-Bastion-Catalogue-Kept, R-BAS-101); nil when the replica reports none. They go into
-	// the event bastion.contact; the contact's row keeps them once package E8 gives it the columns.
+	// the event bastion.contact and the contact's row (edge_limit, catalogue_kept, 00147).
 	EdgeLimit     *iface.EdgeLimit
 	CatalogueKept *bool
 }
@@ -133,7 +133,7 @@ func (c *Contacts) Record(ctx context.Context, rec Recognition, rep Report) erro
 		var err error
 		row, err = qs.BastionContactUpsert(ctx, q.BastionContactUpsertParams{
 			ClientAddress: addr, Release: release, InterfaceVersion: int32(rec.Interface), //nolint:gosec // a small positive version
-			BaseUrl: baseURL, BastionID: rec.BastionID, Replica: replica, TokenID: rec.TokenID,
+			BaseUrl: baseURL, BastionID: rec.BastionID, Replica: replica, TokenID: rec.TokenID, EdgeLimit: edge, CatalogueKept: kept,
 		})
 		if err != nil || row.Written == 0 {
 			return err

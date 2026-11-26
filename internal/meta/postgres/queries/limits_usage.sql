@@ -41,7 +41,8 @@ ON CONFLICT (granularity, bucket_start, subject_kind, subject_ref, place, reposi
 -- name: UsageTotals :many
 -- The consumption of every subject in a period and scope (R-LIM-034): one row per subject. repos empty is the instance. A
 -- scope holds the rows its repositories served and the rows its virtual repositories took from a well-known repository
--- (via_repository_id, R-LIM-029, Q-LIM-63); a row matches the scope once, whichever of its two repositories is in it.
+-- (via_repository_id, R-LIM-029, Q-LIM-63); a row matches the scope once, whichever of its two repositories is in it. place narrows
+-- to the rows of one place key (bastion:<id>), or with 'installation' to the main installation's places (R-LIM-045, R-UI-242).
 SELECT b.subject_kind, b.subject_ref,
        sum(b.requests)::bigint AS requests, sum(b.refused)::bigint AS refused, sum(b.cached_bytes)::bigint AS cached_bytes,
        sum(b.uncached_bytes)::bigint AS uncached_bytes, sum(b.upstream_requests)::bigint AS upstream_requests
@@ -51,6 +52,8 @@ SELECT b.subject_kind, b.subject_ref,
         OR b.via_repository_id = ANY(sqlc.arg(repos)::bigint[]))
    AND b.subject_kind = ANY(sqlc.arg(kinds)::text[])
    AND (sqlc.arg(subject_ref)::text = '' OR b.subject_ref = sqlc.arg(subject_ref)::text)
+   AND (sqlc.arg(place)::text = '' OR (sqlc.arg(place)::text = 'installation' AND b.place NOT LIKE 'bastion:%')
+        OR b.place = sqlc.arg(place)::text)
  GROUP BY b.subject_kind, b.subject_ref;
 
 -- name: UsageEventTotals :many
@@ -60,6 +63,8 @@ SELECT e.subject_kind, e.subject_ref, e.mode, sum(e.count)::bigint AS events, ma
  WHERE e.granularity = sqlc.arg(granularity) AND e.bucket_start >= sqlc.arg(since)::text::timestamptz
    AND (cardinality(sqlc.arg(repos)::bigint[]) = 0 OR e.repository_id = ANY(sqlc.arg(repos)::bigint[]))
    AND (sqlc.arg(subject_ref)::text = '' OR e.subject_ref = sqlc.arg(subject_ref)::text)
+   AND (sqlc.arg(place)::text = '' OR (sqlc.arg(place)::text = 'installation' AND e.place NOT LIKE 'bastion:%')
+        OR e.place = sqlc.arg(place)::text)
  GROUP BY e.subject_kind, e.subject_ref, e.mode;
 
 -- name: UsageByPlace :many
@@ -83,6 +88,8 @@ SELECT b.subject_kind, b.subject_ref, b.place,
    AND (cardinality(sqlc.arg(repos)::bigint[]) = 0 OR b.repository_id = ANY(sqlc.arg(repos)::bigint[])
         OR b.via_repository_id = ANY(sqlc.arg(repos)::bigint[]))
    AND (sqlc.arg(subject_ref)::text = '' OR b.subject_ref = sqlc.arg(subject_ref)::text)
+   AND (sqlc.arg(place)::text = '' OR (sqlc.arg(place)::text = 'installation' AND b.place NOT LIKE 'bastion:%')
+        OR b.place = sqlc.arg(place)::text)
  GROUP BY b.subject_kind, b.subject_ref, b.place;
 
 -- name: UsageHistory :many

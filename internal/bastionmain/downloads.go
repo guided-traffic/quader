@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"slices"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/audit"
@@ -39,7 +40,9 @@ type IntakeOptions struct {
 	// R-OPS-054): the package, the version and the key of the audit log's rows (R-OPS-055), "" each where the repository or its
 	// format is not known here; nil names none.
 	Unit func(ctx context.Context, repository, path string) (pkg, version, key string)
-	Now  func() time.Time
+	// Usage stores the usage and the state a batch reports (R-LIM-045); its zero value stores neither.
+	Usage UsageOptions
+	Now   func() time.Time
 }
 
 // details is the data of the event of one reported download: the item, the Bastion, the replica that served it, and the unit
@@ -66,9 +69,13 @@ func (in *Intake) details(ctx context.Context, e iface.DownloadEvent, rec Recogn
 // across the replicas of the main installation.
 type EventBudget func(ctx context.Context, bastionID string, events int) (ok bool, retryAfter time.Duration)
 
-// Intake accepts the download events a Bastion served from its cache (R-BAS-016).
+// Intake accepts the download events a Bastion served from its cache (R-BAS-016), and the usage and the state it reports with them
+// (R-LIM-045).
 type Intake struct {
 	o IntakeOptions
+
+	mu       sync.Mutex
+	prunedAt time.Time
 }
 
 // NewIntake returns the intake.
@@ -93,19 +100,21 @@ type Outcome struct {
 	// Expired events were older than bastions.downloads.max_age, Invalid ones violated the contract of the
 	// event (no repository or path, a zero time, a SHA-256 that is no digest); both count as dropped.
 	Expired, Invalid int
-	// Disabled is true when audit.record_downloads is off: nothing was recorded.
+	// Disabled is true when audit.record_downloads is off: no event was recorded.
 	Disabled bool
+	// UsageDropped are the usage rows and overflow rows that broke a rule of R-LIM-045 (a subject, credential or repository that does
+	// not read, a time older than max_age) and were not stored.
+	UsageDropped int
 }
 
-// Accept records the events of a batch (R-BAS-016). A batch above max_batch is refused as a whole (422), and
-// so is one whose events the registration's budget does not hold (429 with Retry-After; nothing is recorded,
-// the Bastion keeps the batch and sends it again, Q-BAS-117); an event whose time lies in the future is
-// recorded at the time of receipt, one older than max_age or one that breaks the contract of the event is
-// dropped and counted. A batch that reports lost events, or loses events here, writes one
-// bastion.downloads.dropped with the total, so the loss is in the audit trail itself.
+// Accept records the events of a batch (R-BAS-016) and stores its usage and state (R-LIM-045). A batch above max_batch is refused as
+// a whole (422), and so is one whose events the registration's budget does not hold (429 with Retry-After; nothing is recorded or
+// stored, the Bastion keeps the batch and sends it again, Q-BAS-117); an event whose time lies in the future is recorded at the time
+// of receipt, one older than max_age or one that breaks the contract of the event is dropped and counted. A batch that reports lost
+// events, or loses events here, writes one bastion.downloads.dropped with the total, so the loss is in the audit trail itself. The
+// usage and the state are stored whether or not downloads are recorded, after every refusal was decided, so a batch sent again after
+// a refusal is never counted twice.
 func (in *Intake) Accept(ctx context.Context, rec Recognition, req iface.DownloadsRequest) (Outcome, error) {
-	// The batch's usage and status (R-LIM-045) are held to their bounds whether or not downloads are recorded; nothing of
-	// them is stored until package E8 gives them their tables.
 	if err := req.Usage.Validate(); err != nil {
 		return Outcome{}, errs.E(errs.Invalid, errs.CodeInvalid, "The batch's usage breaks a rule of the interface.",
 			errs.WithFields(errs.FieldError{Pointer: "/usage", Code: "invalid", Detail: err.Error()}))
@@ -114,30 +123,50 @@ func (in *Intake) Accept(ctx context.Context, rec Recognition, req iface.Downloa
 		return Outcome{}, errs.E(errs.Invalid, errs.CodeInvalid, "The batch's status breaks a rule of the interface.",
 			errs.WithFields(errs.FieldError{Pointer: "/status", Code: "invalid", Detail: err.Error()}))
 	}
-	if !in.o.Record {
-		return Outcome{Disabled: true}, nil
+	if in.o.Record {
+		if err := in.admit(ctx, rec, req); err != nil {
+			return Outcome{}, err
+		}
 	}
+	now := in.o.Now()
+	if err := in.acceptStatus(ctx, rec, req.Status, now); err != nil {
+		return Outcome{}, err
+	}
+	out := Outcome{UsageDropped: in.acceptUsage(ctx, rec, req.Usage, now)}
+	if !in.o.Record {
+		out.Disabled = true
+		return out, nil
+	}
+	return in.record(ctx, rec, req, now, out)
+}
+
+// admit refuses a batch of events the intake does not take (R-BAS-016, Q-BAS-117): above max_batch, a negative count of dropped
+// events, or more than the registration's budget holds.
+func (in *Intake) admit(ctx context.Context, rec Recognition, req iface.DownloadsRequest) error {
 	if len(req.Events) > in.o.MaxBatch {
-		return Outcome{}, errs.E(errs.Invalid, errs.CodeInvalid, "The batch holds more events than bastions.downloads.max_batch allows.",
+		return errs.E(errs.Invalid, errs.CodeInvalid, "The batch holds more events than bastions.downloads.max_batch allows.",
 			errs.WithFields(errs.FieldError{Pointer: "/events", Code: "too_many", Detail: "at most " + strconv.Itoa(in.o.MaxBatch) + " events per request"}))
 	}
 	if req.Dropped < 0 {
-		return Outcome{}, errs.E(errs.Invalid, errs.CodeInvalid, "The count of dropped events is negative.",
+		return errs.E(errs.Invalid, errs.CodeInvalid, "The count of dropped events is negative.",
 			errs.WithFields(errs.FieldError{Pointer: "/dropped", Code: "negative", Detail: "must not be negative"}))
 	}
 	if in.o.Events != nil && len(req.Events) > 0 {
 		if ok, retry := in.o.Events(ctx, rec.BastionID, len(req.Events)); !ok {
-			return Outcome{}, errs.E(errs.RateLimited, errs.CodeRateLimited,
+			return errs.E(errs.RateLimited, errs.CodeRateLimited,
 				"The registration reported more download events than bastions.downloads.events_per_second allows; send the batch again later.",
 				errs.WithRetryAfter(retry))
 		}
 	}
-	now := in.o.Now()
+	return nil
+}
+
+// record writes the events of an admitted batch as artifact.downloaded, and bastion.downloads.dropped for what was lost.
+func (in *Intake) record(ctx context.Context, rec Recognition, req iface.DownloadsRequest, now time.Time, out Outcome) (Outcome, error) {
 	kinds, err := in.kinds(ctx, req.Events)
 	if err != nil {
 		return Outcome{}, err
 	}
-	var out Outcome
 	for _, e := range req.Events {
 		switch {
 		case !validEvent(e):

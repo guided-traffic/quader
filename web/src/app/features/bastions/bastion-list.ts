@@ -104,7 +104,7 @@ export class BastionList {
   }
 
   private async loadConnections(items: readonly Bastion[]): Promise<void> {
-    if (!this.session.has('settings:read') || !items.some((b) => b.handover)) {
+    if (!this.session.has('settings:read') || !items.some((b) => b.switches.handover)) {
       this.connections.set(null);
       return;
     }

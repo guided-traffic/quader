@@ -449,7 +449,7 @@ What it changes in the trust boundary:
 | The Bastion token reads the public catalogue | The catalogue routes admit the Bastion token alone and take the registration from its recognition: a token reads its own registration's catalogue, nothing while the registration's `gui` is off (`404 not_found`), no documentation while `docs` is off. What it reads is what an anonymous visitor reads, stripped of internal identities (W-35's B.10), in bulk ([H-2305](#h-2305--the-bastion-token-reads-its-registrations-public-catalogue-in-bulk)) | R-BAS-101, R-BAS-102, Q-BAS-350 |
 | A document's address is checked by the Bastion | A document's SHA-256 is of its raw bytes; a Bastion decompresses what it receives, at most to the size it was told, and verifies the SHA-256 before it keeps it. A path has one spelling, no dot segment and no encoded slash, so a path cannot name a file outside the catalogue's tree of the store (W-35's P7 keeps the documents by their address) | R-BAS-101, R-BAS-103, Q-BAS-346, Q-BAS-348 |
 | The feed's catalogue entries and configuration changes name no registration | Every Bastion learns that some registration's catalogue or configuration changed, and when ([H-2306](#h-2306--every-bastion-learns-when-some-catalogue-or-some-configuration-changed)) | R-BAS-015, Q-BAS-349 |
-| A configuration in the handshake | A Bastion learns the figures, the rule IDs, the address rules and the exempt networks of its place; whoever holds its token or takes over a pod learns them too ([H-2307](#h-2307--a-bastions-configuration-tells-its-holder-the-rules-and-networks-of-its-place)). Until E8 the main installation sends an interim configuration with no rule but one without figures, no address rule and no exempt network, so nothing of the kind travels yet | R-BAS-093, Q-BAS-352 |
+| A configuration in the handshake | A Bastion learns the figures, the rule IDs, the address rules and the exempt networks of its place; whoever holds its token or takes over a pod learns them too ([H-2307](#h-2307--a-bastions-configuration-tells-its-holder-the-rules-and-networks-of-its-place)). Since E8 the main installation sends each registration's own configuration | R-BAS-093, Q-BAS-440 |
 | No probe | Until E15 a probe was a forward of a writing method without a body and without a caller's credential, which the main installation admitted as the anonymous caller for routing only. E15 removed it: the main installation admits no forward for routing alone, a forwarded write is the authentication stage's and then the backstop's, and a read route with a body that a format does not declare is refused at the Bastion (H-2293) | R-BAS-095, Q-BAS-351 |
 
 ## The builder of the public catalogue
@@ -471,7 +471,7 @@ The gaps of the Bastion's mechanisms are recorded on the spec page, where the me
 that no mechanism of the Bastion holds, because the chart leaves it to the cluster operator, is recorded on this page:
 [H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods). The gaps of the owner's decisions of 2026-11-26 (W-34), specified and
 not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285, H-2289 to H-2297,
-H-2348 to H-2351 (H-2291, H-2348 and H-2349 are E13's, built); so are the gaps of the public catalogue's wire (W-35, interface version 8),
+H-2348 to H-2351, H-2354, H-2355 (H-2291, H-2348 and H-2349 are E13's, built; H-2281 to H-2283, H-2354 and H-2355 E8's, live); so are the gaps of the public catalogue's wire (W-35, interface version 8),
 H-2305 to H-2307, and of its builder (W-35's P6), H-2308 to H-2314; so are the gaps of the packages built since: H-2356 and H-2357
 (E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11);
 those of a Bastion's budgets are on [usage-and-limits.md](usage-and-limits.md#what-this-does-not-cover) (H-2284, H-2286 to H-2288). Numbers
@@ -688,7 +688,7 @@ mechanisms.
 
 Stage: the check answer's `subject.limits` and the marking's `Quader-Bastion-Limits` (R-BAS-096, Q-BAS-328; packages E7 and E8). Subject:
 the users, technical tokens and CI projects whose credentials pass through a Bastion, and the rules that name them. The member and the
-header are on the wire since E7 and empty: the main installation names no key and no rule until E8. Live once E8 lands.
+header are on the wire since E7 and carry the key and the rule since E8 (2026-11-26). Live.
 Today the marking names a presented token's ID and its principal's ID ([H-386](../spec/bastion.md#h-386--whoever-holds-the-bastion-token-can-test-credentials-name-client-addresses-and-add-download-events));
 the key adds a technical token's ID and a CI project's issuer and project ID, and the rule's ID tells which callers have a rule of their own
 at the Bastion place. What makes it real: the holder of the Bastion token, or a process that took over a Bastion pod, collecting the keys of
@@ -697,7 +697,7 @@ the credentials it checks. Accepted with Q-LIM-302: the alternative sends the gr
 ### H-2282 · The usage and the state a Bastion reports are its word
 
 Stage: the reporting batch's `usage` and `status` (R-BAS-016, R-LIM-045; package E8). Subject: the usage overview's rows at a Bastion's
-place and the card's live state. Live once E8 lands. The holder of the Bastion token, or a taken-over pod, writes rows for any subject key at
+place and the card's live state. Live since E8 (2026-11-26). The holder of the Bastion token, or a taken-over pod, writes rows for any subject key at
 its own place (a user who downloaded nothing appears to), leaves its real consumption out, and reports any cache and throughput state. What
 it does not reach: the main installation's counters, which never read these rows, so no caller is refused because of them; and another
 Bastion's place, since the place is the registration of the token. Bounded by the batch's budget (R-BAS-016) and 100,000 keys a batch
@@ -706,9 +706,33 @@ Bastion's place, since the place is the registration of the token. Bounded by th
 ### H-2283 · The main installation keeps the addresses of a Bastion's blocks
 
 Stage: the transient table `bastion_status` (R-LIM-045; package E8). Subject: the client addresses a Bastion blocked, which are personal
-data. Live once E8 lands. Each replica's report replaces its row, which holds at most 100 blocks with their addresses, and the row goes with
-the replica's contact, kept 30 days ([contact.go](../../internal/bastionmain/contact.go) `contactRetention`), not with the block's end.
-Readers are the holders of `endpoints:read`. What would narrow it: deleting a replica's row with its last block, or at the next report.
+data. Live since E8 (2026-11-26), narrowed by [Q-BAS-443](../spec/bastion.md#q-bas-443--a-replicas-state-is-kept-an-hour-after-its-last-report-without-the-blocks-that-ended):
+each replica's report replaces its row and keeps only its blocks that have not ended, at most 100 with their addresses; a row not reported
+again for an hour is deleted ([report.go](../../internal/bastionmain/report.go) `statusRetention`), and a read leaves out every block that
+ended since. An address therefore stays as long as its block (at most `maxDurationSeconds`, a day by default) and at most an hour after its
+replica's last report. Readers are the holders of `endpoints:read`; the table is transient and never in a backup. What remains: a block's
+address is kept for the block's whole length, which the card needs to show it.
+
+### H-2354 · A Bastion's batch of up to about 71 MiB is decoded in memory at the main installation
+
+Stage: the intake of `POST /api/v1/bastion/downloads` (R-BAS-016, R-LIM-045; package E8,
+[Q-BAS-442](../spec/bastion.md#q-bas-442--a-batchs-body-is-sized-for-100000-usage-rows-and-its-usage-is-stored-after-every-refusal-was-decided)).
+Subject: the memory of the replica of the main installation that takes a batch. Live since E8. The body is bounded at `max_batch` × 10 KiB
++ 100,000 × 640 bytes + 256 KiB, about 71 MiB with the defaults, so that a report of 100,000 usage rows fits; the replica reads it whole and
+decodes it, which takes a multiple of it in memory. What makes it real: the holder of a Bastion token, or a taken-over Bastion pod, sending
+such batches as fast as the intake answers; the events' budget charges events only, not rows. What bounds it: the Bastion token (one per
+registration, `bastions.max_registrations`), the API's own request limits of the replica, and the body bound itself. What would close it: a
+streaming decoder of the rows, or a smaller bound with the report split by the Bastion.
+
+### H-2355 · The usage a deleted registration's Bastion reported stays in the usage store, named by its ID
+
+Stage: the usage store's rows at the place `bastion:<id>` (R-LIM-045; package E8). Subject: the callers whose use through a Bastion was
+reported before its registration was deleted. Live since E8. A deleted registration's rules go with it (the cascade of `limit_assignment`)
+and its replicas' states with their contacts, but its usage rows stay for their retention (R-LIM-027: five-minute rows a day, hourly rows
+30 days, then daily sums by repository and caller kind) like every row; the overview names their place by the registration's ID, since the
+name is gone, and the place filter cannot select them by name (Q-LIM-313). What makes it real: a reader of the overview who expects a
+deleted Bastion's callers to disappear with it. What holds: the rows hold what R-LIM-027 allows any row to hold, and the daily task erases
+a deleted user's rows (R-LIM-028).
 
 ### H-2285 · A replica restarted during an outage without its stored configuration applies the built-in one
 
@@ -905,10 +929,9 @@ itself is public once it is in a catalogue. Naming the registration would tell e
 
 ### H-2307 · A Bastion's configuration tells its holder the rules and networks of its place
 
-Stage: the handshake's `configuration.limits` (R-BAS-093, R-BAS-096; the wire since E7, the content with E8). Subject: the figures of each
-rule of the Bastion's place, its rule IDs, its address rules (prefixes such as a partner's network) and its exempt networks. Dormant until E8
-sends a configuration of the registration's own (the interim one carries one rule without figures and no address); then live wherever the
-Bastion token is, or a Bastion pod is taken over. Its holder learns which networks the administrator exempts or treats differently and how
+Stage: the handshake's `configuration.limits` (R-BAS-093, R-BAS-096; the wire since E7, the content since E8). Subject: the figures of each
+rule of the Bastion's place, its rule IDs, its address rules (prefixes such as a partner's network) and its exempt networks. Live since E8
+(2026-11-26) wherever the Bastion token is, or a Bastion pod is taken over. Its holder learns which networks the administrator exempts or treats differently and how
 much each kind of caller may take, which helps an attacker size a flood below the figures and pick an address range that is exempt. What
 holds: a configuration names no user, group or profile (Q-BAS-320 sends each rule's effective figures, not the profiles), and the figures
 bound only what this Bastion admits; the main installation charges every forward to the caller there (Q-LIM-306).
@@ -1004,8 +1027,11 @@ the link; the per-second figure is the bound that holds at every moment.
 
 ### H-2357 · Until the main installation sends a configuration of its own, a Bastion has no anonymous ceiling after its first handshake
 
-Stage: R-BAS-094, Q-BAS-352 (packages E9a, built, and E8, not built). Subject: what all anonymous callers of a Bastion together cause at the
-main installation. Live on every Bastion today: the interim configuration the main installation sends until E8 holds no ceiling and the
+*Closed by E8 (2026-11-26):* every registration's configuration holds the ceiling, a new one the default of Q-BAS-448, and the slots' 5 s
+wait. What it was:
+
+Stage: R-BAS-094, Q-BAS-352 (packages E9a and E8). Subject: what all anonymous callers of a Bastion together cause at the
+main installation. Live on every Bastion until E8: the interim configuration the main installation sends until E8 holds no ceiling and the
 slots of the chart's former defaults (a wait of 2 s), so after its first handshake a Bastion bounds an anonymous flood by its anonymous
 slots alone, as before E9a (the measurement's flood of distinct artifacts reached 12 to 18 requests and 34 to 52 MB a second at the main
 installation from 256 addresses). The built-in configuration's ceiling holds only before the first handshake. What closes it: E8, whose

@@ -20,11 +20,13 @@ const (
 // PlaceKind is where a rule is set and where its budget counts (R-LIM-011).
 type PlaceKind uint8
 
-// The places.
+// The places. PlaceBastion is a Bastion's place (R-LIM-043, Q-LIM-304): one per registration, whose rules decide and whose
+// counters count what that Bastion serves; a request of the main installation never resolves at it.
 const (
 	PlaceInstance PlaceKind = iota
 	PlaceProject
 	PlaceRepository
+	PlaceBastion
 )
 
 // String is the place kind as the API and the store spell it.
@@ -34,42 +36,61 @@ func (k PlaceKind) String() string {
 		return "project"
 	case PlaceRepository:
 		return "repository"
+	case PlaceBastion:
+		return "bastion"
 	}
 	return "instance"
 }
 
-// Place is the instance, a project or a repository. The index keys places by name (what a request carries) and keeps the
-// IDs, which the budget key and the usage store use, so a renamed project or repository keeps its budget.
+// Place is the instance, a project, a repository or a Bastion. The index keys places by name (what a request carries) and keeps
+// the IDs, which the budget key and the usage store use, so a renamed project or repository keeps its budget; a Bastion's place is
+// keyed by its registration's ID.
 type Place struct {
 	Kind       PlaceKind
 	ProjectID  string
 	ProjectKey string
 	RepoID     int64
 	Repo       qname.Repo
+	// BastionID is the principal ID of the registration of a Bastion's place, BastionName its name.
+	BastionID   string
+	BastionName string
+}
+
+// BastionPlace is the place of the registration id, named name.
+func BastionPlace(id, name string) Place {
+	return Place{Kind: PlaceBastion, BastionID: id, BastionName: name}
 }
 
 // InstancePlace is the instance.
 func InstancePlace() Place { return Place{Kind: PlaceInstance} }
 
 // Key is the place as the budget key and the usage store's place column write it: instance, project:<uuid>,
-// repository:<id> (R-LIM-014).
+// repository:<id>, bastion:<uuid> (R-LIM-014, R-LIM-043).
 func (p Place) Key() string {
 	switch p.Kind {
 	case PlaceProject:
 		return "project:" + p.ProjectID
 	case PlaceRepository:
 		return "repository:" + strconv.FormatInt(p.RepoID, 10)
+	case PlaceBastion:
+		return BastionPlaceKeyPrefix + p.BastionID
 	}
 	return "instance"
 }
 
-// LogName is the place as the request log names it (R-LIM-030): instance, project:<key>, repository:<project>/<key>.
+// BastionPlaceKeyPrefix starts the key of a Bastion's place (R-LIM-043, R-LIM-045).
+const BastionPlaceKeyPrefix = "bastion:"
+
+// LogName is the place as the request log names it (R-LIM-030): instance, project:<key>, repository:<project>/<key>,
+// bastion:<name>.
 func (p Place) LogName() string {
 	switch p.Kind {
 	case PlaceProject:
 		return "project:" + p.ProjectKey
 	case PlaceRepository:
 		return "repository:" + p.Repo.String()
+	case PlaceBastion:
+		return BastionPlaceKeyPrefix + p.BastionName
 	}
 	return "instance"
 }
@@ -129,13 +150,16 @@ type Profile struct {
 	UpdatedBy   string
 }
 
-// The keys of the built-in profiles.
+// The keys of the built-in profiles. ProfileBastionAnonymous and ProfileBastionSignedIn are the two profiles of a Bastion that
+// faces the internet (R-LIM-046), which its preset Internet names.
 const (
-	ProfileUnlimited  = "unlimited"
-	ProfileStandard   = "standard"
-	ProfileTechnical  = "technical"
-	ProfileRestricted = "restricted"
-	ProfileAnonymous  = "anonymous"
+	ProfileUnlimited        = "unlimited"
+	ProfileStandard         = "standard"
+	ProfileTechnical        = "technical"
+	ProfileRestricted       = "restricted"
+	ProfileAnonymous        = "anonymous"
+	ProfileBastionAnonymous = "bastion-anonymous"
+	ProfileBastionSignedIn  = "bastion-signed-in"
 )
 
 const (
@@ -143,18 +167,21 @@ const (
 	gb = 1_000_000_000
 )
 
-// BuiltinProfiles are the five built-in profiles with their values (R-LIM-010): the request figures set from a measurement
+// BuiltinProfiles are the seven built-in profiles with their values (R-LIM-010): the request figures set from a measurement
 // (Q-LIM-59, migration 00085), the parallel transfers from a measurement of how many transfers each client holds at once
 // (Q-LIM-294, migration 00141), the byte, upstream and refused figures from what the uses R-LIM-010 promises each profile cost
-// (R-LIM-042, Q-LIM-296, migration 00143). The migrations write the same numbers; a test compares them, and another that each
-// profile holds its promised uses.
+// (R-LIM-042, Q-LIM-296, migration 00143), and the two profiles of a Bastion from the measurement of one command of every client
+// through a Bastion (R-LIM-046, migration 00147). The migrations write the same numbers; a test compares them, and others that
+// each profile holds its promised uses.
 func BuiltinProfiles() map[string]Figures {
 	return map[string]Figures{
-		ProfileUnlimited:  {},
-		ProfileStandard:   {200, 4000, 100000, 250 * mb, 300 * gb, 125 * mb, 100 * gb, 20000, 250, 1000 * gb, 1000},
-		ProfileTechnical:  {1000, 20000, 1000000, 1250 * mb, 3000 * gb, 250 * mb, 500 * gb, 100000, 1000, 30000 * gb, 5000},
-		ProfileRestricted: {100, 1000, 25000, 100 * mb, 50 * gb, 50 * mb, 20 * gb, 3000, 64, 200 * gb, 300},
-		ProfileAnonymous:  {50, 1000, 20000, 100 * mb, 30 * gb, 50 * mb, 20 * gb, 3000, 64, 200 * gb, 300},
+		ProfileUnlimited:        {},
+		ProfileStandard:         {200, 4000, 100000, 250 * mb, 300 * gb, 125 * mb, 100 * gb, 20000, 250, 1000 * gb, 1000},
+		ProfileTechnical:        {1000, 20000, 1000000, 1250 * mb, 3000 * gb, 250 * mb, 500 * gb, 100000, 1000, 30000 * gb, 5000},
+		ProfileRestricted:       {100, 1000, 25000, 100 * mb, 50 * gb, 50 * mb, 20 * gb, 3000, 64, 200 * gb, 300},
+		ProfileAnonymous:        {50, 1000, 20000, 100 * mb, 30 * gb, 50 * mb, 20 * gb, 3000, 64, 200 * gb, 300},
+		ProfileBastionAnonymous: {50, 1250, 20000, 100 * mb, 30 * gb, 50 * mb, 9 * gb, 5200, 270, 220 * gb, 300},
+		ProfileBastionSignedIn:  {200, 5400, 100000, 250 * mb, 160 * gb, 125 * mb, 20 * gb, 12000, 340, 1300 * gb, 1000},
 	}
 }
 

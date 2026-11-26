@@ -196,6 +196,8 @@ func ruleOf(r q.LimitAssignmentsRow) limits.Rule {
 	case "repository":
 		place = limits.Place{Kind: limits.PlaceRepository, RepoID: r.RepositoryID, ProjectID: r.RepoProjectID, ProjectKey: r.ProjectKey}
 		place.Repo.Project, place.Repo.Key = r.ProjectKey, r.RepoKey
+	case "bastion":
+		place = limits.BastionPlace(r.BastionID, r.BastionName)
 	}
 	return limits.Rule{
 		ID: r.ID, Place: place, WhoKind: limits.WhoKind(r.WhoKind), WhoRef: r.WhoRef, Profile: r.Profile, Overrides: o,
@@ -237,7 +239,9 @@ func (s *Store) CreateProfile(ctx context.Context, actor audit.Actor, p limits.P
 	return err
 }
 
-// UpdateProfile replaces a profile's name, description and figures when its version matches.
+// UpdateProfile replaces a profile's name, description and figures when its version matches. The configuration of every Bastion
+// whose place has a rule that names the profile changes with it (R-LIM-043, Q-BAS-320): the trigger of 00147 raises each
+// registration's revision, and each gets bastion.configuration.changed with the part profile, so every Bastion handshakes again.
 func (s *Store) UpdateProfile(ctx context.Context, actor audit.Actor, key string, version int64, p limits.Profile) error {
 	err := s.in(ctx, func(qs *q.Queries, tx meta.Tx) error {
 		n, err := qs.UpdateLimitProfile(ctx, q.UpdateLimitProfileParams{
@@ -249,10 +253,22 @@ func (s *Store) UpdateProfile(ctx context.Context, actor audit.Actor, key string
 		if n == 0 {
 			return errs.Stale("The profile", 0)
 		}
-		return s.changed(ctx, tx, "profile", audit.Event{
+		if err := s.changed(ctx, tx, "profile", audit.Event{
 			Type: audit.EventLimitsProfileUpdated, Actor: actor,
 			Details: details(map[string]any{"key": key, "changes": map[string]any{"name": p.Name, "figures": p.Figures}}),
-		})
+		}); err != nil {
+			return err
+		}
+		bastions, err := qs.LimitBastionsOfProfile(ctx, key)
+		if err != nil {
+			return err
+		}
+		for _, b := range bastions {
+			if err := s.bastionChanged(ctx, tx, actor, limits.BastionPlace(b.ID, b.Name), map[string]any{"profile": key}); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 	if postgres.IsState(err, pgUniqueViolation) {
 		return errs.E(errs.Conflict, errs.CodeAlreadyExists, "A profile with this name exists already.")
@@ -289,14 +305,27 @@ const (
 )
 
 // placeText is a place as the audit details name it.
-func placeText(p limits.Place) string {
-	switch p.Kind {
-	case limits.PlaceProject:
-		return "project:" + p.ProjectKey
-	case limits.PlaceRepository:
-		return "repository:" + p.Repo.String()
+func placeText(p limits.Place) string { return p.LogName() }
+
+// bastionChanged records bastion.configuration.changed for the registration of a Bastion's place whose rules or profile figures a
+// write changed (R-BAS-093, R-LIM-043), in the write's transaction: the feed maps it to settings, so the Bastion handshakes again and
+// applies the revision the trigger of 00147 raised. A place of any other kind records nothing.
+func (s *Store) bastionChanged(ctx context.Context, tx meta.Tx, actor audit.Actor, p limits.Place, what map[string]any) error {
+	if p.Kind != limits.PlaceBastion {
+		return nil
 	}
-	return "instance"
+	part := "rules"
+	if _, ok := what["profile"]; ok {
+		part = "profile"
+	}
+	d := map[string]any{"parts": []string{part}}
+	for k, v := range what {
+		d[k] = v
+	}
+	return s.o.Audit.RecordTx(ctx, tx, audit.Event{
+		Type: audit.EventBastionConfigurationChanged, Outcome: audit.Success, Actor: actor,
+		Subject: audit.Subject{Kind: "bastion", ID: p.BastionID, Name: p.BastionName}, Details: details(d),
+	})
 }
 
 func ruleDetails(r limits.Rule) json.RawMessage {
@@ -312,12 +341,15 @@ func (s *Store) CreateRule(ctx context.Context, actor audit.Actor, r *limits.Rul
 	err := s.in(ctx, func(qs *q.Queries, tx meta.Tx) error {
 		if err := qs.InsertLimitAssignment(ctx, q.InsertLimitAssignmentParams{
 			ID: r.ID, PlaceKind: r.Place.Kind.String(), ProjectID: projectIDOf(r.Place), RepositoryID: repoIDOf(r.Place),
-			WhoKind: string(r.WhoKind), WhoRef: r.WhoRef, Profile: r.Profile, Overrides: overridesJSON(r.Overrides),
-			Capped: r.Capped, Note: r.Note, Actor: actor.ID,
+			BastionID: bastionIDOf(r.Place), WhoKind: string(r.WhoKind), WhoRef: r.WhoRef, Profile: r.Profile,
+			Overrides: overridesJSON(r.Overrides), Capped: r.Capped, Note: r.Note, Actor: actor.ID,
 		}); err != nil {
 			return err
 		}
-		return s.changed(ctx, tx, "assignment", audit.Event{Type: audit.EventLimitsAssignmentCreated, Actor: actor, Details: ruleDetails(*r)})
+		if err := s.changed(ctx, tx, "assignment", audit.Event{Type: audit.EventLimitsAssignmentCreated, Actor: actor, Details: ruleDetails(*r)}); err != nil {
+			return err
+		}
+		return s.bastionChanged(ctx, tx, actor, r.Place, map[string]any{"rule": r.ID})
 	})
 	if postgres.IsState(err, pgUniqueViolation) {
 		return errs.E(errs.Conflict, CodeAssignmentExists, "This place has a rule for this caller already.")
@@ -339,6 +371,13 @@ func repoIDOf(p limits.Place) int64 {
 	return 0
 }
 
+func bastionIDOf(p limits.Place) string {
+	if p.Kind == limits.PlaceBastion {
+		return p.BastionID
+	}
+	return ""
+}
+
 // UpdateRule replaces a rule's profile, overrides, cap and note when its version matches.
 func (s *Store) UpdateRule(ctx context.Context, actor audit.Actor, r limits.Rule, version int64) error {
 	return s.in(ctx, func(qs *q.Queries, tx meta.Tx) error {
@@ -351,7 +390,10 @@ func (s *Store) UpdateRule(ctx context.Context, actor audit.Actor, r limits.Rule
 		if n == 0 {
 			return errs.Stale("The rule", 0)
 		}
-		return s.changed(ctx, tx, "assignment", audit.Event{Type: audit.EventLimitsAssignmentUpdated, Actor: actor, Details: ruleDetails(r)})
+		if err := s.changed(ctx, tx, "assignment", audit.Event{Type: audit.EventLimitsAssignmentUpdated, Actor: actor, Details: ruleDetails(r)}); err != nil {
+			return err
+		}
+		return s.bastionChanged(ctx, tx, actor, r.Place, map[string]any{"rule": r.ID})
 	})
 }
 
@@ -368,7 +410,10 @@ func (s *Store) DeleteRule(ctx context.Context, actor audit.Actor, r limits.Rule
 		if n == 0 {
 			return errs.Stale("The rule", 0)
 		}
-		return s.changed(ctx, tx, "assignment", audit.Event{Type: audit.EventLimitsAssignmentDeleted, Actor: actor, Details: ruleDetails(r)})
+		if err := s.changed(ctx, tx, "assignment", audit.Event{Type: audit.EventLimitsAssignmentDeleted, Actor: actor, Details: ruleDetails(r)}); err != nil {
+			return err
+		}
+		return s.bastionChanged(ctx, tx, actor, r.Place, map[string]any{"rule": r.ID})
 	})
 }
 

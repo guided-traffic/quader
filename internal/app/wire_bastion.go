@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/api/bastionmark"
+	"github.com/guided-traffic/quader/internal/api/edge"
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
 	"github.com/guided-traffic/quader/internal/auth"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
@@ -18,6 +20,8 @@ import (
 	"github.com/guided-traffic/quader/internal/formathost"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/limits"
+	"github.com/guided-traffic/quader/internal/limits/httplimit"
 	"github.com/guided-traffic/quader/internal/observability"
 	"github.com/guided-traffic/quader/internal/qname"
 )
@@ -65,7 +69,7 @@ func (a *App) bastionStages(rt *endpointRuntime) (bastionmain.Stages, error) {
 	// >>> package 3
 	if shapes := a.bastionShapes(); shapes != nil {
 		st.Mark = bastionmark.New(bastionmark.Options{
-			Shapes: shapes, Metrics: a.bastionMetrics(), Log: a.log.With("component", "bastion"),
+			Shapes: shapes, Metrics: a.bastionMetrics(), Log: a.log.With("component", "bastion"), Limits: a.bastionSubjectLimits(),
 		}).Stage()
 	}
 	// <<< package 3
@@ -275,34 +279,93 @@ func (a *App) bastionServices(rt *endpointRuntime) v1.BastionServices {
 		Contacts: bastionmain.NewContacts(bastionmain.ContactOptions{DB: in.db, Audit: rec}),
 		Downloads: bastionmain.NewIntake(bastionmain.IntakeOptions{
 			DB: in.db, Audit: rec, MaxBatch: cfg.Bastions.Downloads.MaxBatch, MaxAge: cfg.Bastions.Downloads.MaxAge, Record: cfg.Audit.RecordDownloads,
-			Events: a.bastionEventBudget(), Unit: a.downloadUnitOf,
+			Events: a.bastionEventBudget(), Unit: a.downloadUnitOf, Usage: a.bastionUsage(),
 		}),
 		// The handshake's format table (R-BAS-057) and the binding of the Bastion's host as the match of /v2/ reads it.
 		Formats:         v1.BastionFormatTable(formats.List()),
 		BoundRepository: a.bastionBoundRepository(),
-		Handover:        a.bastionSnapshot(),
 		Configuration:   a.bastionConfiguration(),
 		// The public catalogue the builder keeps (R-BAS-101, wire_bastion_catalogue.go).
-		Catalogue: catalogue.NewDB(in.db),
+		Catalogue:     catalogue.NewDB(in.db),
+		SubjectLimits: a.bastionSubjectLimits(),
 	}
 }
 
-// bastionConfiguration answers a registration's configuration for the handshake and the catalogue routes (R-BAS-093): until a
-// registration holds one (package E8) the interim configuration with the registration's revision and its switch of the handover
-// per blob, read from the registration in one statement. nil, the handler's own interim configuration, where the replica has
-// no registration service.
-func (a *App) bastionConfiguration() func(context.Context, bastionmain.Recognition) (iface.Configuration, error) {
-	regs := a.bastionRegistrations()
-	if regs == nil {
+// bastionUsage is what the intake stores the usage and the state of a Bastion's batch with (R-LIM-045): the replica's usage buffer,
+// the repositories by their qualified names, the rules of the registration's place from the snapshot, and the database for the
+// replica's state.
+func (a *App) bastionUsage() bastionmain.UsageOptions {
+	in, dl := part[infra](a.parts), part[downloadLimitsArea](a.parts)
+	o := bastionmain.UsageOptions{RuleFigures: a.bastionSnapshot().RuleFigures}
+	if in.db != nil {
+		o.Writer = in.db
+	}
+	if dl.usage != nil {
+		o.Sink = dl.usage
+	}
+	if repos := part[repositoryArea](a.parts).reader; repos != nil {
+		o.Repository = func(ctx context.Context, name qname.Repo) (int64, bool) {
+			r, err := repos.ByName(ctx, name)
+			if err != nil {
+				return 0, false
+			}
+			id, err := strconv.ParseInt(r.ID, 10, 64)
+			return id, err == nil
+		}
+	}
+	return o
+}
+
+// bastionSubjectLimits names what a Bastion charges a signed-in caller against (R-BAS-096, Q-BAS-328, Q-LIM-302): the caller's subject
+// of the download limits, derived from the principal as a request of the main installation derives it, and the rule the replica's
+// index resolves for it at the registration's place, its administrator decided on the installed authorization index. It reads no
+// database. nil on a replica without the download limits.
+func (a *App) bastionSubjectLimits() func(context.Context, httpserver.Principal, string) *iface.SubjectLimits {
+	dl, az := part[downloadLimitsArea](a.parts), part[authzArea](a.parts)
+	if dl.index == nil {
 		return nil
 	}
-	return func(ctx context.Context, rec bastionmain.Recognition) (iface.Configuration, error) {
-		reg, err := regs.Get(ctx, rec.Bastion)
-		if err != nil {
-			return iface.Configuration{}, err
+	return func(ctx context.Context, p httpserver.Principal, bastionID string) *iface.SubjectLimits {
+		if p.Anonymous {
+			return nil
 		}
-		c := bastionmain.InterimConfiguration(reg.Revision, reg.Handover)
-		c.Switches = a.bastionSwitches(reg.Name, reg.Handover)
+		admin := false
+		if az.engine != nil {
+			idx := az.engine.Index()
+			admin = idx != nil && idx.HoldsAdmin(edge.SubjectOf(httpserver.WithPrincipal(ctx, p)))
+		}
+		subj, ok := limits.SubjectOf(httplimit.CallerOfPrincipal(ctx, p, admin))
+		if !ok {
+			return nil
+		}
+		return bastionmain.SubjectLimits(dl.index.get(), subj, bastionID)
+	}
+}
+
+// bastionConfiguration answers a registration's configuration for the handshake and the catalogue routes (R-BAS-093, Q-BAS-320):
+// from the replica's snapshot of the registrations, which reads a registration's revision and the rules of its place in one
+// statement and follows every change within the bound of R-ARCH-018; a registration the snapshot does not hold yet (created within
+// that bound) is read from the database, the snapshot's one statement again. A row whose configuration does not hold the Bastion's
+// rules answers 500, never a guess. nil where the replica has no database.
+func (a *App) bastionConfiguration() func(context.Context, bastionmain.Recognition) (iface.Configuration, error) {
+	db := part[infra](a.parts).db
+	if db == nil {
+		return nil
+	}
+	snap := a.bastionSnapshot()
+	return func(ctx context.Context, rec bastionmain.Recognition) (iface.Configuration, error) {
+		c, ok, err := snap.Configuration(rec.BastionID)
+		if !ok {
+			c, ok, err = bastionmain.ReadConfiguration(ctx, db, rec.BastionID)
+		}
+		switch {
+		case err != nil:
+			return iface.Configuration{}, errs.Wrap(err, "bastion.configuration")
+		case !ok:
+			return iface.Configuration{}, errs.E(errs.NotFound, errs.CodeNotFound, "The Bastion registration does not exist.")
+		}
+		// The test's switches gui and docs, when it set them (Options.BastionSwitches); the stored ones otherwise.
+		c.Switches = a.bastionSwitches(rec.Bastion, c.Switches)
 		return c, nil
 	}
 }

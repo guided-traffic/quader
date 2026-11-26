@@ -39,7 +39,7 @@ function registrations(frankfurtOn: boolean): Json {
         name: 'dmz-frankfurt-edge',
         description: 'The DMZ of the Frankfurt data centre, for the build agents of our partners',
         enabled: true,
-        handover: frankfurtOn,
+        switches: { handover: frankfurtOn, gui: false, docs: false },
         // The /64 its IPv6 replica leaves from; the other replica came from an IPv4 address it does not list (R-UI-243).
         egress: ['2001:db8:85a3::/64'],
         createdAt: at(-120),
@@ -57,7 +57,7 @@ function registrations(frankfurtOn: boolean): Json {
         name: 'partners',
         description: 'The partner network',
         enabled: true,
-        handover: false,
+        switches: { handover: false, gui: false, docs: false },
         // No network yet: the empty list's warning and the offer of its replica's address (R-UI-243).
         egress: [],
         createdAt: at(-170),

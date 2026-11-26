@@ -416,7 +416,7 @@ and never refused. The engine answers the refusals (`refuseThroughput`: `503 bus
 paces a handover's direct read (`Pacer.Reader`), keeps a fill's stall bound from firing while its source waits for the cap
 (`fillRun.pacing`) and takes the cap's wait out of a pass-through's floor (`tooSlow`). With Valkey the slices are the keys
 `throughput:v1:<bucket>:<slice>` of [valkey.md](valkey.md#the-bastions-keys); without, each replica claims its share in memory. The
-built-in and the interim configuration hold the default of Q-BAS-455, 200 MB/s with a quarter for anonymous callers.
+built-in configuration and, since E8, a new registration hold the default of Q-BAS-455, 200 MB/s with a quarter for anonymous callers.
 
 **Add a limit.** A new limiter is a name `bastion.<name>` in [guard/instance.go](../../internal/bastion/guard/instance.go), a call to
 `State.Limiter.Allow` (bucket) or `Add` (count), and a row in R-BAS-035 to R-BAS-037; the name is a metric label, so it carries no address. Its
@@ -444,9 +444,10 @@ The flood figures, the exempt networks, the slots and the anonymous ceiling are 
 - **Metrics.** `quader_bastion_configuration_revision` and `quader_bastion_configuration_source{source}`.
 - **The edge figure** is a chart-managed section of the file, `bastion.edge_limit` (`enabled`, `requests_per_second`, `connections`), which
   `mainclient.Options.EdgeLimit` sends with every handshake in `Quader-Bastion-Edge-Limit` (Q-BAS-447).
-- **Until E8** the main installation sends the interim configuration (Q-BAS-352): the chart's former flood figures and slots (a wait of 2 s),
-  no ceiling; an administrator changes only its switch `handover`, which a Bastion applies at its next regular handshake (the feed's
-  `settings` entry for a configuration's change is E8's). The integration suite gives a Bastion other figures on the Bastion's side of the wire
+- **Since E8** the main installation sends each registration's configuration, a new one with the defaults of Q-BAS-448 (the Internet preset,
+  the ceiling, a wait of 5 s), which an administrator changes with `PATCH /api/v1/bastions/{name}`; a change reaches a Bastion through the
+  feed's `settings` entry, at the latest with its next regular handshake. `maintest.Configuration` sends the same (a copy of
+  `settings.Builtin`, held to it by a test). The integration suite gives a Bastion other figures on the Bastion's side of the wire
   (`bastionOptions.Configure` in [replica_test.go](../../test/integration/bastion/replica_test.go)). A new
 shared mechanism is a typed method in `internal/cluster/valkey_bastion.go` first, then the interface in `shared.go`, its local form in `local.go` and its
 Valkey form in `valkey.go`.
@@ -1744,8 +1745,8 @@ resolver (trusting only the loopback) turns into the response base URL, so every
 passes the edge chain of a listener: no rate limit, no request log, no usage record. On a worker the areas `packages-api` and `vuln-api`
 are built for it; it is built at the first run.
 
-**Until E8** a registration's switches are the interim configuration's (off), so a running installation builds nothing yet; the tests
-and the measurement below set them through `app.Options.BastionSwitches`.
+The builder reads a registration's stored switches (since E8, `PATCH /api/v1/bastions/{name}` with `switches.gui` and `switches.docs`);
+the tests and the measurement below may set them through `app.Options.BastionSwitches` instead.
 
 **Tests** (tier, time, data):
 

@@ -64,6 +64,7 @@ func feedActions() []string {
 		audit.EventMalwareFound, audit.EventMalwareReleaseWithdrawn,
 		audit.EventSignatureReleaseWithdrawn, audit.EventSignatureAnchorRemoved, audit.EventSignatureAnchorUpdated,
 		audit.EventSignatureSettingsChanged, audit.EventSignatureSignerBlocked,
+		audit.EventBastionConfigurationChanged,
 	}
 }
 
@@ -186,21 +187,23 @@ type mapper func(ev FeedEvent, d *detailsDoc, defaultEndpoint string) []rawEntry
 // mappers is the table of R-BAS-015: the mapper of each audit action the feed reads. It is built once.
 var mappers = sync.OnceValue(func() map[string]mapper {
 	t := map[string]mapper{
-		audit.EventTokenRevoked:             func(ev FeedEvent, _ *detailsDoc, _ string) []rawEntry { return tokenEntry(ev.ResourceID) },
-		audit.EventTokenRotated:             func(_ FeedEvent, d *detailsDoc, _ string) []rawEntry { return tokenEntry(d.Predecessor) },
-		audit.EventCITokenRevoked:           func(_ FeedEvent, d *detailsDoc, _ string) []rawEntry { return tokenEntry(d.TokenIDs...) },
-		audit.EventUserGroupsSynced:         mapGroupsSynced,
-		audit.EventGroupMembersChanged:      mapMembersChanged,
-		"authz.role.unbound":                mapRoleUnbound,
-		"endpoint.exposure.updated":         mapExposure,
-		"endpoint.exposure.deleted":         mapExposure,
-		audit.EventSettingsAuthChanged:      mapSettings,
-		audit.EventProjectVisibilityChanged: mapVisibility,
-		audit.EventUserExternalChanged:      mapExternal,
-		audit.EventRepositoryNarrowed:       mapRepository,
-		eventClaimsChanged:                  mapRepository,
-		audit.EventNPMUnpublish:             mapWithdrawal,
-		audit.EventPackageDeleted:           mapWithdrawal,
+		audit.EventTokenRevoked:        func(ev FeedEvent, _ *detailsDoc, _ string) []rawEntry { return tokenEntry(ev.ResourceID) },
+		audit.EventTokenRotated:        func(_ FeedEvent, d *detailsDoc, _ string) []rawEntry { return tokenEntry(d.Predecessor) },
+		audit.EventCITokenRevoked:      func(_ FeedEvent, d *detailsDoc, _ string) []rawEntry { return tokenEntry(d.TokenIDs...) },
+		audit.EventUserGroupsSynced:    mapGroupsSynced,
+		audit.EventGroupMembersChanged: mapMembersChanged,
+		"authz.role.unbound":           mapRoleUnbound,
+		"endpoint.exposure.updated":    mapExposure,
+		"endpoint.exposure.deleted":    mapExposure,
+		audit.EventSettingsAuthChanged: mapSettings,
+		// A registration's configuration changed (R-BAS-093): every Bastion handshakes again and applies its own (Q-BAS-349).
+		audit.EventBastionConfigurationChanged: mapSettings,
+		audit.EventProjectVisibilityChanged:    mapVisibility,
+		audit.EventUserExternalChanged:         mapExternal,
+		audit.EventRepositoryNarrowed:          mapRepository,
+		eventClaimsChanged:                     mapRepository,
+		audit.EventNPMUnpublish:                mapWithdrawal,
+		audit.EventPackageDeleted:              mapWithdrawal,
 		// The withdrawals of the formats a Bastion serves since every format reaches it (R-BAS-050, R-BAS-055, Q-BAS-175): a deleted
 		// manifest (and the tags and children its cascade took), a withheld Debian package file, a package taken out of a suite, a new
 		// primary key and a withdrawn key, and a deleted Galaxy version each change which bytes a URL of the repository is answered with.

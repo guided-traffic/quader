@@ -233,11 +233,11 @@ about a Bastion comes from its registration and reaches it with the handshake (R
 rules of its place, the flood figures, the slots, the throughput, the anonymous ceiling and the egress addresses. The bullets below hold
 for what stays in the chart; the second bullet's "state of the main installation" gains the configuration, which is the Bastion's own and
 held at the main installation; W-35's switches `gui` and `docs` are members of it (R-BAS-102). *Built by E7:* the configuration travels in
-the handshake (interface version 8); until E8 it is the interim one of [Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour), which equals the chart's figures of today. *Built by E9a
+the handshake (interface version 8). *Built by E8 (2026-11-26):* the main installation stores it on the registration and sends it
+([Q-BAS-440](#q-bas-440--the-configuration-reaches-the-handshake-from-the-replicas-snapshot-in-one-statement-of-one-moment)). *Built by E9a
 (2026-11-26):* the Bastion applies the configuration whole, its flood figures, slots and anonymous ceiling among it, and the chart no longer
-holds `config.bastion.limits`, `failed_auth`, `blocking` and `main.max_concurrent`, `anonymous_share`, `queue_timeout`. *Today, until E8
-lands:* the main installation cannot store or change a configuration of its own; the switch `handover` is the one member an administrator
-changes, and the bullets below still say "every setting" for what only the chart sets.
+holds `config.bastion.limits`, `failed_auth`, `blocking` and `main.max_concurrent`, `anonymous_share`, `queue_timeout`: the registration's
+`PATCH` is the only place they are set.
 
 - Every setting of a Bastion is a value of its chart: the main installation and the Bastion token, the cache, the periods, the
   limits, the blocking, the trusted proxies, Valkey, TLS and monitoring (owner,
@@ -629,12 +629,12 @@ after every reconnect, and after a feed entry of the kind `settings` (R-BAS-015)
 *Revised on 2026-11-26 (R-BAS-093, [the wire of interface version 8](#the-interface-version-8-the-shared-wire)):* the answer gains `configuration` and loses the top-level
 `handover`, which moves into `configuration.switches`; the forwarded host counts only when the Bastion connected from an address of its own
 registration's `egress` (R-BAS-017); the contact also records the edge figure the Bastion reports in `Quader-Bastion-Edge-Limit` and
-W-35's `Quader-Bastion-Catalogue-Kept`. *Built by E7:* `configuration` replaces `handover` (until E8 the interim configuration of
-[Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour) with the registration's revision and handover); the two contact headers are read when a replica sends them, a malformed value
-answers `400`, and they go into the event `bastion.contact` and the contact's fingerprint, not yet into its row, which gains the columns
-with E8 ([Q-BAS-354](#q-bas-354--the-contact-headers-are-optional-and-recorded-in-the-contacts-event-until-e8)); every replica sends the edge figure since E9a (2026-11-26, the chart's
-`bastion.edge_limit`), and W-35's P7 will send the catalogue's. The forwarded host counts from the
-registration's own `egress` since E13 (2026-11-26).
+W-35's `Quader-Bastion-Catalogue-Kept`. *Built by E7:* `configuration` replaces `handover`; the two contact headers are read when a
+replica sends them, a malformed value answers `400`, and they go into the event `bastion.contact` and the contact's fingerprint
+([Q-BAS-354](#q-bas-354--the-contact-headers-are-optional-and-recorded-in-the-contacts-event-until-e8)). *Built by E8 (2026-11-26):*
+`configuration` is the registration's own, and the contact's row keeps both values (`bastion_contact.edge_limit`, `catalogue_kept`,
+migration 00147), which `GET /api/v1/bastions/{name}` shows per replica as `edgeLimit` and `catalogueKept`; every replica sends the edge figure since
+E9a (the chart's `bastion.edge_limit`), and W-35's P7 will send the catalogue's. The forwarded host counts from the registration's own `egress` since E13 (2026-11-26).
 
 - `responseBaseUrl` is the response base URL the main installation derived for this request (R-OPS-005, R-EP-003), with the
   Bastion's forwarded host counted only when the Bastion connected from an address of its registration's `egress` (R-BAS-017). The Bastion
@@ -910,7 +910,7 @@ the content events below ([Q-BAS-29](#q-bas-29--the-feed-reads-the-journals-even
 | `authz.role.unbound` of a user or service account | `principal` with that principal |
 | `group.deleted`, `authz.role.unbound` of a group, `authz.policy.deleted`, `authz.policy.updated`, `authz.settings.changed`, the `ci.issuer.*` and `ci.mapping.*` disables, deletions and updates, `endpoint.exposure.deleted` and `.updated` of the default endpoint | `{"kind": "grants"}`: every permission answer of every caller; `authz.settings.changed` that changed `visibility.artifacts` yields `settings` as well; one whose changed members are levels only (`visibility.artifacts`, `visibility.wiki`) and none of them lower than before yields no `grants`: a raise opens reads and makes no kept answer wrong |
 | `settings.auth.changed` | `{"kind": "settings"}` |
-| `bastion.configuration.changed` (R-BAS-093; *specified, not built*: package E8) | `{"kind": "settings"}`: every Bastion handshakes again and applies its registration's configuration; a change of one registration costs every replica of every Bastion one handshake |
+| `bastion.configuration.changed` (R-BAS-093; built by E8) | `{"kind": "settings"}`: every Bastion handshakes again and applies its registration's configuration; a change of one registration costs every replica of every Bastion one handshake |
 | `authz.project.visibility_changed` | `{"kind": "settings"}`, so the Bastion asks the handshake for `anonymousReads` again, and `grants` when the level was lowered ([authorization.md](authorization.md) R-AUTHZ-036) |
 | `user.external_changed` | `principal` with the user when the flag was set: the user read by `internal` through a Bastion as at the main installation (Q-BAS-148), and the flag ends that, so every answer the Bastion keeps for the user's credentials goes; clearing the flag only widens and yields none |
 | `npm.unpublish`, `package.deleted` | `{"kind": "content", "repositories": [<projectKey>/<repoKey>, …]}`: the repository and every virtual repository that includes it, recursively, at the time the feed is read, by their qualified names |
@@ -1030,8 +1030,11 @@ most `bastions.downloads.max_batch` (owner, [Q-BAS-13](#q-bas-13--downloads-serv
 - *Revised on 2026-11-26 by the owner's [Q-BAS-324](#q-bas-324--a-bastion-reports-usage-and-status-on-the-channel-of-its-download-events) ([usage-and-limits.md](usage-and-limits.md) R-LIM-045):* a batch
   gains `usage` and `status` ([the wire of interface version 8](#the-interface-version-8-the-shared-wire)); the main installation writes the usage rows into its usage store at the place of
   the Bastion and the status into a transient table per replica, and the Bastion sends a batch every flush also while `recordDownloads` is
-  false, then without events; a batch is charged to the registration's budget by its events and its usage rows. *Today, until E8 and E9b
-  land:* a batch carries download events only, and while `recordDownloads` is false the Bastion sends none.
+  false, then without events; a batch is charged to the registration's budget by its events, and its usage rows are bounded by their
+  number and the body's size ([Q-BAS-442](#q-bas-442--a-batchs-body-is-sized-for-100000-usage-rows-and-its-usage-is-stored-after-every-refusal-was-decided)).
+  *Built by E8 (2026-11-26):* the main installation stores both, also while `audit.record_downloads` is off, after every refusal of the
+  batch was decided; the body of a batch is bounded at `max_batch` × 10 KiB, 640 bytes per usage row of 100,000 and 256 KiB for the rest.
+  *Today, until E9b and E9a land:* the Bastion sends both empty, and a batch only when it holds events.
 
 ```yaml
 bastions:                              # the main installation's section (the Bastion's own is bastion)
@@ -1436,8 +1439,8 @@ ceiling refuses it ([Q-BAS-445](#q-bas-445--the-anonymous-ceiling-is-taken-in-th
 and **5 s** (R-BAS-096, [Q-BAS-448](#q-bas-448--the-defaults-of-the-anonymous-ceiling-and-of-the-slots)). *Built by E10 (2026-11-26):* a
 forward that got its slot is admitted by the throughput, which refuses a miss at the cap at once with `503 busy` and the wait until its first
 bytes ([Q-BAS-457](#q-bas-457--a-miss-at-the-cap-is-refused-at-once-when-its-first-bytes-would-come-after-its-queue-time)), and its body
-is read at the cap's pace while it holds the slot (R-BAS-097). *Until E8 lands* the main installation sends the interim slots of Q-BAS-352,
-whose wait is still 2 s.
+is read at the cap's pace while it holds the slot (R-BAS-097). Since E8 a new registration's slots are
+these (`bastionmain.DefaultLimits`).
 
 - **Budget** ([Q-BAS-35](#q-bas-35--the-concurrency-budget-is-per-replica-with-a-share-for-anonymous-misses)). Every request to
   the main installation except the handshake and the feed takes a slot: forwards, conditional requests, checks, probes,
@@ -3645,8 +3648,8 @@ The existing rules hold for every format: a hit at the Bastion is not counted at
   requests by the token service's own rule and the conditional requests of a registry token as requests of the token's subject; what the
   Bastion serves from its cache is charged nowhere. *Revised on 2026-11-26 (R-BAS-096, [usage-and-limits.md](usage-and-limits.md)
   R-LIM-045):* what the Bastion serves from its cache is charged at the Bastion's place to the caller's subject and reported to the main
-  installation's usage store; a forward stays charged at the main installation as well (two budgets, Q-LIM-306). *Today, until E8 and E9b
-  land:* charged nowhere. Since the read shapes per package are built (2026-11-23), a warm pull with a registry
+  installation's usage store; a forward stays charged at the main installation as well (two budgets, Q-LIM-306). *Built by E8:* the main
+  installation stores a reported usage row at the Bastion's place. *Today, until E9b lands:* no Bastion counts or reports what it serves. Since the read shapes per package are built (2026-11-23), a warm pull with a registry
   token is charged its token request and one check instead of a conditional request per manifest and blob (R-BAS-085, Q-BAS-253).
 - **Audit.** `artifact.downloaded` with `details.origin: bastion`, the request path as `path` (`/v2/web/docker/library/nginx/blobs/sha256:…`)
   and the qualified repository, as for every format (R-BAS-016). The interface version is 4 (R-BAS-057).
@@ -3855,8 +3858,9 @@ Priority: **P1** · Covers: quader-only
 *Revised on 2026-11-26 by the owner's [Q-BAS-323](#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation) (R-BAS-093):* the switch is `switches.handover` of the
 registration's configuration, set on the card beside `gui` and `docs`; a change of it writes `bastion.configuration.changed` beside
 `bastion.handover.enabled` or `.disabled` (the journal and its replay of a switch-off stay), and the feed's `settings` entry brings it to every
-Bastion within about 3 s; the handshake carries it in `configuration.switches`, no longer at its top level. *Today, until E7 and E8 land:*
-`handover` is a top-level member of the registration and of the handshake, and a Bastion learns a change at its next handshake.
+Bastion within about 3 s; the handshake carries it in `configuration.switches`, no longer at its top level. *Built by E7 and E8
+(2026-11-26):* as written; the registration's API names it `switches.handover`
+([Q-BAS-444](#q-bas-444--the-api-shows-a-registrations-switches-and-limits-as-members-of-their-own-and-its-patch-is-decided-per-member)).
 
 - **Where** ([Q-BAS-232](#q-bas-232--the-switch-is-per-registration-at-the-main-installation-and-the-bastions-chart-has-none)): a member of
   the registration, `handover`, kept at the main installation (`bastion.handover boolean NOT NULL DEFAULT false`), read by every replica
@@ -4993,7 +4997,7 @@ of the main installation decides; the chart keeps what the installation of the p
   backend, `configuration/current.json`, signed with `bastion.signing_key_file` where the backend's entries are signed (R-BAS-032) and in
   R-BAS-061's stored format with a cache key; a replica that starts while the main installation is unreachable applies that object when
   its signature holds, and otherwise a built-in configuration that fails closed: every switch off, the Internet preset's flood figures,
-  slots and ceiling, Enforce, throughput unlimited. It leaves the built-in or the stored configuration at its first handshake.
+  slots and ceiling, Enforce, the throughput of Q-BAS-455. It leaves the built-in or the stored configuration at its first handshake.
 - **The edge figure.** The Bastion reports its edge figure, which the chart renders into its configuration file as the chart-managed
   `bastion.edge_limit` (`requests_per_second`, `connections`, or off), with every handshake in the header `Quader-Bastion-Edge-Limit`, and
   the main installation records it with the contact (R-BAS-010). The card warns where a per-address request figure of the configuration lies
@@ -5019,12 +5023,26 @@ applies it in `Start` before the client listener binds, and the built-in configu
 `config.bastion.limits`, `failed_auth`, `blocking` and `main.max_concurrent`, `anonymous_share`, `queue_timeout` (a file that sets one stops
 startup naming it, the chart's schema refuses it), and renders the edge figure as `bastion.edge_limit`, which every handshake reports
 ([Q-BAS-447](#q-bas-447--the-edge-figure-is-a-chart-managed-section-of-the-configuration-file-and-every-handshake-reports-it)). Read
-nowhere yet at the Bastion: `mode`, `preset`, `place` (E9b), `switches.gui` and `docs` (W-35's P7); `throughput` since E10 (R-BAS-097). *Not built* (E8, the
-main installation's side with migration 00148; E12, the card). Until E8 the main installation sends the interim configuration
-(Q-BAS-352), whose only member an administrator changes is the switch `handover`, and a change reaches a Bastion with its next regular
-handshake, not with a `settings` entry of the feed; there is no mode, preset, place or ceiling at the main installation, and the throughput is
-the default of Q-BAS-455;
-`handover` is a top-level member of the registration (R-BAS-071); `gui` and `docs` do not exist there.
+nowhere yet at the Bastion: `mode`, `preset`, `place` (E9b), `switches.gui` and `docs` (W-35's P7); `throughput` since E10 (R-BAS-097). *Not built* (E12, the card).
+
+*Built on 2026-11-26 by E8, the main installation's side:* migration 00147 gives the registration `gui`, `docs`, `limits_mode`,
+`limits_preset` and the members `limits_flood`, `limits_slots`, `limits_throughput` and `limits_ceiling` in the interface's shapes, with a
+new registration's values (`bastionmain.DefaultLimits`: the preset Internet in Enforce, the slots of R-BAS-025, the throughput of Q-BAS-455 (200 MB/s, a quarter for anonymous callers), the
+anonymous ceiling of 100 requests a second with a burst of 2,000 and 36,000 an hour, measured, R-LIM-046); the revision trigger covers every
+member and, through `limit_assignment_bastion_revision` and `limit_profile_bastion_revision`, a rule of the place and a profile such a rule
+names. `PATCH /api/v1/bastions/{name}` takes `switches` (`endpoints:write`) and `limits` (`limits:write`, a merge patch; `limits.preset`
+applies a preset in the same request, Q-LIM-311; a change of `mode` needs recent authentication), records `bastion.configuration.changed`
+with the parts changed and their values before and after, and announces the change area `bastion_configuration`; `GET` shows `switches`,
+`limits` with the preset the registration reads (Q-LIM-312) and the replicas' `status`. The handshake answers from the replica's snapshot
+of the registrations, one statement that reads the revision with the rules of the place and each rule's profile figures
+([Q-BAS-440](#q-bas-440--the-configuration-reaches-the-handshake-from-the-replicas-snapshot-in-one-statement-of-one-moment)); a
+change of a rule of the place or of a profile records `bastion.configuration.changed` per registration
+([Q-BAS-441](#q-bas-441--a-change-of-a-rule-of-a-bastions-place-or-of-a-profile-it-names-records-the-configuration-change-of-each-registration)).
+`bastionmain.InterimConfiguration` is gone. Code: [configuration.go](../../internal/bastionmain/configuration.go),
+[registrations.go](../../internal/bastionmain/registrations.go), [snapshot.go](../../internal/bastionmain/snapshot.go),
+[bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go). The defaults of a new
+registration are the Bastion's built-in configuration's (`settings.Builtin`, Q-BAS-448); `TestR_BAS_093_ANewRegistrationIsTheBuiltInConfiguration`
+([builtin_test.go](../../internal/app/builtin_test.go)) holds the two to one another.
 
 *Built (package E13, 2026-11-26):* the member `egress` (migration 00145, `bastion.egress cidr[]`), read and written by `GET`, `POST` and
 `PATCH /api/v1/bastions/…` with `endpoints:write`, its rules ([Q-BAS-431](#q-bas-431--a-registration-lists-at-most-32-networks-an-address-is-its-own-network-and-0-is-refused)) and its recognition (R-BAS-017); a change records
@@ -5050,12 +5068,18 @@ Acceptance criteria:
   `TestR_BAS_093_AKeyThatMovedIntoTheConfigurationStopsStartupNamingIt` (`internal/config`).
 - Integration (area `bastion`, one case, about 3 s): a change made through the API is applied by the in-process Bastion within the feed's
   time. Integration (area `bastionreg`, about 3 s): the event, the revision and the feed entry. *As built by E9a:*
-  `TestR_BAS_093_AChangeOfTheRegistrationIsAppliedByTheBastion` (about 7 s: until E8 the change is the switch `handover` and travels with
-  the harness's 5 s handshake, measured 5 s after the API's answer; the feed's path is the link's unit test), and in the area
+  `TestR_BAS_093_AChangeOfTheRegistrationIsAppliedByTheBastion` (about 3 to 7 s: the switch `handover` and an anonymous flood figure,
+  through the registration's `PATCH` since E8; the change travels with the feed's `settings` entry or the harness's 5 s handshake), and in the area
   `bastionshared` `TestR_BAS_093_ANewFloodFigureHoldsAcrossTheReplicasWithValkey` (0.13 s).
 - Chart test: the keys that moved are refused, `edgeLimit.exemptCIDRs` renders `limit-whitelist`, the edge figure is rendered into the
   configuration file. *As built:* `TestR_BAS_093_TheKeysThatMovedIntoTheRegistrationAreRefused` and
   `TestR_BAS_038_TheEdgeLimitIsRenderedAndReported`.
+- *As built by E8:* `TestR_BAS_093_TheConfigurationCarriesEachRulesEffectiveFigures` and `TestR_LIM_046_EachPresetWritesTheTablesKindRulesAndFloodFigures`
+  ([configuration_test.go](../../internal/bastionmain/configuration_test.go), milliseconds, no data);
+  `TestR_BAS_093_ThePatchOfTheLimitsNeedsLimitsWrite` ([bastion_configuration_test.go](../../internal/api/v1/bastion_configuration_test.go),
+  0.06 s); `TestR_BAS_093_TheConfigurationLivesOnTheRegistration` (area `bastionreg`, rows only, about 3 s: the defaults, the 403 of a
+  security administrator, the revision, the event and the snapshot after a change of the limits, a preset in one request, a rule of the
+  place and a profile it names raising the revision of that registration and of no other).
 
 ### R-BAS-094 · What an anonymous request may cause at the main installation
 Priority: **MVP** · Covers: quader-only
@@ -5133,9 +5157,8 @@ which the format caps (R-BAS-091), in the family's shape of today (E15 brings th
 one key for all anonymous callers; with Valkey shared by the replicas, without it each replica holds the figures divided by
 `bastion.replicas` (Q-BAS-34): two replicas allow the figure together while the load is spread over both, one replica that takes the
 whole load half of it, and with autoscaling (`bastion.replicas` is `autoscaling.maxReplicas`) a Bastion that runs fewer replicas than its
-maximum allows that share of it (H-2356). *Not built* (E15, the writes; W-35's catalogue, `/v2/_catalog`). *Until E8 lands* the interim
-configuration (Q-BAS-352) holds no ceiling, so it applies only before a replica's first handshake (the built-in configuration's) and in
-the tests.
+maximum allows that share of it (H-2356). *Not built* (W-35's catalogue, `/v2/_catalog`). Since E8 every registration's configuration
+holds the ceiling, a new one the default below.
 
 **The default** ([Q-BAS-448](#q-bas-448--the-defaults-of-the-anonymous-ceiling-and-of-the-slots)), for all anonymous callers of one
 Bastion together: **100 requests a second with a burst of 2,000, and 36,000 an hour** (the measurement's proposal, developer/bastion.md
@@ -5337,11 +5360,13 @@ The owner's choices (c) of [Q-LIM-305](usage-and-limits.md#q-lim-305--a-bastion-
 
 *Built on 2026-11-26 by E7, the wire's part:* `subject.limits` of the check answer and `Quader-Bastion-Limits` of the marking
 (`iface.SubjectLimits`, read and written with the key percent-encoded; a marking that names limits for a subject other than a token, twice
-or malformed is refused). The member is optional on the wire, absent until E8 resolves a rule at the Bastion's place ([Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour)).
+or malformed is refused). *Built on 2026-11-26 by E8:* the check answer's `subject.limits` and the marking's `Quader-Bastion-Limits` of a
+token subject name its key and the rule the replica's index of the limits resolves at the registration's place (`bastionmain.SubjectLimits`,
+`limits.Index.ResolveBastion`), from the principal the authentication stage accepted and the installed authorization index, without a
+statement; a registration whose place the index does not hold yet names none, and the Bastion then charges by the kind rule.
 *Built on 2026-11-26 by E9a, the flood protection's part:* the per-address figures, the failed-authentication timeout, the blocks and the
 exempt networks come from the configuration (R-BAS-093) and change without a restart; the class `gui` is `guard.Page` with a bucket of its
-own per address (`bastion.requests_gui`), which no route asks until W-35's pages exist. *Not built* (package E8, the place, the subject key
-in the check answer and the marking; E9b, the budgets at the Bastion). Today a Bastion counts requests and misses per client address only,
+own per address (`bastion.requests_gui`), which no route asks until W-35's pages exist. *Not built* (E9b, the budgets at the Bastion). Today a Bastion counts requests and misses per client address only,
 and what it serves from its cache is counted against no budget.
 
 **The defaults of the flood protection and of the slots** (R-BAS-093's table, the Internet preset of R-LIM-046, the built-in configuration
@@ -5426,7 +5451,7 @@ calls yet); the counters `shared.Bytes` ([bytes.go](../../internal/bastion/share
 installation admits every forward after its slot and paces its body (`mainclient.Throughput`, `ThroughputError`, `Response.Pacing`); the
 engine paces a handover's direct read, answers the refusals (`refuseThroughput` in [respond.go](../../internal/bastion/engine/respond.go)),
 and lets neither the fill's stall bound nor the pass-through's floor count the cap's wait. The default is the built-in configuration's and
-the interim configuration's (`settings.DefaultThroughputBytesPerSecond`, `bastionmain.InterimThroughputBytesPerSecond`).
+a new registration's (`settings.DefaultThroughputBytesPerSecond`, `bastionmain.DefaultLimits` since E8, which a test holds to it).
 
 Acceptance criteria (as built):
 
@@ -5600,9 +5625,9 @@ Acceptance criteria:
 
 The wire of this section and of W-35's web interface, built by one package (E7 of [developer/bastion-limits.md](../developer/bastion-limits.md)
 together with W-35's package P5), which raises `iface.InterfaceVersion` once, from 7 to 8
-([Q-BAS-322](#q-bas-322--both-topics-raise-the-interface-version-once-to-8)). Until E8 lands the main installation sends an interim
-configuration for every registration that equals a Bastion's behaviour of today ([Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour); Q-BAS-327's built-in configuration is the one a
-Bastion falls back to, built by E9a), and the Bastion ignores what no package of its side uses yet. *Built on 2026-11-26* (E7 with W-35's P5):
+([Q-BAS-322](#q-bas-322--both-topics-raise-the-interface-version-once-to-8)). Since E8 the main installation sends each registration's
+own configuration (Q-BAS-327's built-in configuration is the one a Bastion falls back to, E9a's), and the Bastion ignores what no package
+of its side uses yet. *Built on 2026-11-26* (E7 with W-35's P5):
 `InterfaceVersion` is 8, and every member below is in [internal/bastion/iface](../../internal/bastion/iface), read and written as this
 section says; what each side does with it after E7 is said per member.
 
@@ -5656,20 +5681,20 @@ measurement sets, and the ceiling's figures are examples for the same reason)*
 - The types are `iface.Configuration`, `iface.Switches`, `iface.Limits`, `iface.PlaceTable`, `iface.Figures`, `iface.Flood`, `iface.Slots`,
   `iface.Throughput` and `iface.Ceiling` in [configuration.go](../../internal/bastion/iface/configuration.go), with `iface.FloodClass`,
   `FloodRate`, `FailedAuth`, `Blocking`, `AddressRule`, `KindRules` and `ThroughputHours` for their members.
-- *After E7:* the main installation answers `bastionmain.InterimConfiguration` with the registration's revision and switch of the handover
-  ([Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour)): mode `enforce`, preset `custom`, one rule `interim-unlimited` without a figure for every kind, the flood figures and slots of the
-  Bastion chart's defaults today, no throughput cap and no ceiling. The link refuses a handshake whose configuration `Validate` refuses and
+- *After E7:* the main installation answered `bastionmain.InterimConfiguration` ([Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour)) until E8. *After E8:* it answers the
+  registration's configuration from its snapshot (Q-BAS-440). The link refuses a handshake whose configuration `Validate` refuses and
   applies `switches.handover`. *Since E9a* the Bastion applies the whole member (R-BAS-093): the flood figures, the slots and the anonymous
-  ceiling; `mode`, `preset` and `place` wait for E9b. *Since E10* the interim configuration carries the default throughput of 200 MB/s with an
-  anonymous share of 25 % (Q-BAS-455), which the Bastion applies (R-BAS-097).
+  ceiling; `mode`, `preset` and `place` wait for E9b. *Since E10* the Bastion applies the throughput (R-BAS-097), a new registration's the
+  default of 200 MB/s with an anonymous share of 25 % (Q-BAS-455).
 
 **The subject's limits** (R-BAS-096). The check answer's `subject` gains `limits: {"key": "<limits_subject>", "rule": "<rule ID>"}` for a
 usable subject (`token`; for `anonymous` the member is absent, since the Bastion decides an anonymous caller's key and rule itself), and the
 marking gains the header `Quader-Bastion-Limits: key=<limits_subject>; rule=<rule ID>` on every answer that carries
 `Quader-Bastion-Subject: token=…`. The key is percent-encoded as `Quader-Bastion-Package` is (R-BAS-013); the rule is the rule of the
 Bastion place the main installation resolved for the caller, or the kind rule's ID where no single-caller or group rule matched. The member
-and the header are optional on the wire: until E8 resolves rules at the Bastion's place the main installation sends neither ([Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour)), and a
-marking that names limits for a subject other than a token, twice, or malformed is refused (`iface.SubjectLimits`, `ParseSubjectLimits`).
+and the header are optional on the wire: since E8 the main installation sends both for every token subject whose rule its index resolves at
+the Bastion's place, and a marking that names limits for a subject other than a token, twice, or malformed is refused (`iface.SubjectLimits`,
+`ParseSubjectLimits`).
 
 **The reporting batch** (R-BAS-016, R-LIM-045). `POST /api/v1/bastion/downloads` gains two members, always present:
 
@@ -5706,11 +5731,11 @@ marking that names limits for a subject other than a token, twice, or malformed 
 - The types are `iface.UsageReport`, `iface.UsageRow`, `iface.UsageOverflow` and `iface.ReplicaStatus` (with `CacheStatus`,
   `ThroughputStatus`, `ThroughputClasses`, `StatusBlock`) in [usage.go](../../internal/bastion/iface/usage.go); `MaxUsageRows` and
   `MaxStatusBlocks` are the bounds, and the keys of `limited` and `wouldLimit` are the figures' names (`iface.FigureNames`).
-- *After E7:* the main installation refuses a batch whose usage or status breaks a bound (`422`) and stores nothing of them (E8); the
-  Bastion sends both empty, with the lists as `[]`, and sends a batch only when it holds events, as before (E9b sends usage; the status
-  is sent by no package yet: E9a, which the plan named beside E8, built the configuration and the ceiling and left it, see
-  developer/bastion-limits.md). The intake's bound on a batch's body is still the one of events (`max_batch` times 10 KiB); E8
-  sizes it for 100,000 rows.
+- *After E7:* the main installation refuses a batch whose usage or status breaks a bound (`422`); the Bastion sends both empty, with the
+  lists as `[]`, and sends a batch only when it holds events, as before (E9b sends usage, and the status, which no package sends yet).
+  *After E8:* the main installation stores the usage rows at the place `bastion:<id>` and the status in `bastion_status`, whether or not
+  downloads are recorded, and bounds a batch's body at `max_batch` × 10 KiB + 100,000 × 640 bytes + 256 KiB, about 71 MiB with the
+  defaults ([Q-BAS-442](#q-bas-442--a-batchs-body-is-sized-for-100000-usage-rows-and-its-usage-is-stored-after-every-refusal-was-decided)).
 
 **The format table** (R-BAS-057) gains, per format:
 
@@ -5882,9 +5907,10 @@ Priority: **P1** · Covers: quader-only
 - The token reads only its own registration's catalogue: the routes take the registration from the recognition of the token, never from
   the request ([Q-BAS-350](#q-bas-350--the-catalogue-routes-answer-the-bastion-token-alone-by-the-registrations-switches)).
 
-*Built on 2026-11-26 (P5 with E7):* the switches on the wire and the routes' answers by them. Until E8 stores a configuration the main
-installation answers the interim one, whose `gui` and `docs` are off ([Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour)), so every catalogue route answers `404 not_found`.
-*Built on 2026-11-26 (W-35's P6):* at the builder: `gui` on builds the registration's catalogue, off drops it at the next run, `docs` off
+*Built on 2026-11-26 (P5 with E7):* the switches on the wire and the routes' answers by them. *Built by E8:* the switches are members of
+the registration, off for a new one, set by `PATCH /api/v1/bastions/{name}` with `switches.gui` and `switches.docs` (`endpoints:write`).
+*Built on 2026-11-26 (W-35's P6):* at the builder, which reads the
+stored switches: `gui` on builds the registration's catalogue, off drops it at the next run, `docs` off
 builds no documentation and deletes what was built (R-BAS-104, R-BAS-108; `TestR_BAS_102_TheSwitchesDecideWhatIsBuilt`). *Not built:* the
 switches on the card (E12), everything the switches start and stop at the Bastion (P7, P9).
 
@@ -5973,8 +5999,8 @@ The priority is the one of R-BAS-101 to R-BAS-103.
 
 *Built on 2026-11-26 (W-35's P6):* [builder.go](../../internal/bastionmain/catalogue/builder.go),
 [render.go](../../internal/bastionmain/catalogue/render.go), [wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go).
-Until E8 stores a registration's configuration the switches are the interim configuration's, off (Q-BAS-352): no registration is built in a
-running installation yet; the integration suite sets them (`app.Options.BastionSwitches`, tests only).
+The switches are the registration's stored ones since E8 (`PATCH /api/v1/bastions/{name}` with `switches.gui` and `switches.docs`); the
+integration suite may set them instead (`app.Options.BastionSwitches`, tests only).
 
 Acceptance criteria:
 
@@ -6437,8 +6463,8 @@ session at a Bastion, and package clients keep their tokens. [ADR-303](../decisi
 ### Q-BAS-15 · The Bastion is configured only through its chart
 
 Status: **Decided by the owner on 2026-11-02** — option (a). *Superseded by the owner on 2026-11-26 ([Q-BAS-323](#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation)) for every value the table of R-BAS-093 names: a Bastion's switches, limits, throughput and egress
-addresses come from its registration; the chart keeps the rest. Since E9a (2026-11-26) the Bastion applies the registration's configuration and
-the chart no longer holds the flood figures and the slots; until E8 lands the main installation can change only the switch `handover` of it. The
+addresses come from its registration; the chart keeps the rest. Since E8 (2026-11-26) the main installation stores and sends them, and
+since E9a the Bastion applies the registration's configuration and the chart no longer holds the flood figures and the slots. The
 switches `gui` and `docs` of W-35 are members of the same configuration (R-BAS-102).*
 
 Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
@@ -11761,6 +11787,8 @@ until E15 refuses writes at the Bastion.
 ### Q-BAS-352 · Until E8, the main installation sends an interim configuration that equals today's behaviour
 
 Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+*Ended by E8 on 2026-11-26: the main installation sends each registration's own configuration (Q-BAS-440), and
+`bastionmain.InterimConfiguration` is gone.*
 
 Context: E7 lands the wire before E8 gives a registration a configuration; E9a may apply what arrives before E8 lands.
 
@@ -11793,6 +11821,7 @@ duty. **Applied in the spec:** R-BAS-057, R-BAS-058, R-BAS-095.
 ### Q-BAS-354 · The contact headers are optional and recorded in the contact's event until E8
 
 Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+*Since E8 (2026-11-26) the contact's row keeps both values as well (migration 00147), and the registration shows them per replica.*
 
 Context: `Quader-Bastion-Edge-Limit` and `Quader-Bastion-Catalogue-Kept` report what only later packages know (the edge figure E9a renders,
 whether the catalogue is kept P7 decides); the contact's row has no columns for them and this package adds no migration.
@@ -12283,8 +12312,9 @@ got 31 to 40 answers `503 busy` after the 2 s wait (developer/bastion.md, measur
 | (c) A ceiling of 1,000 a second and 360,000 an hour | | Holds a large public audience | Ten times what one restore takes at the main installation on the measuring machine: no shield |
 
 **Choice:** (a). Where the two pull apart, the shield is chosen (R-BAS-094 gives the number). **Applied in the spec:** R-BAS-025, R-BAS-093,
-R-BAS-094, R-BAS-096; code: [builtin.go](../../internal/bastion/settings/builtin.go). Until E8 the interim configuration still sends
-2 s and no ceiling (Q-BAS-352); E8 takes these defaults for a new registration.
+R-BAS-094, R-BAS-096; code: [builtin.go](../../internal/bastion/settings/builtin.go). E8 takes these defaults for a new registration
+(`bastionmain.DefaultLimits` and the Internet preset), and a test holds the two to one another; the built-in place holds the anonymous
+parallel transfers of Q-LIM-310 (270).
 
 ### Q-BAS-449 · A limiter whose figures change is replaced under its name
 
@@ -12396,7 +12426,7 @@ use the main installation directly, and only misses cross the link, hits do not.
 
 **Choice:** (a). An administrator sets the figure per Bastion to a share of the real link (R-UI-240). **Applied in the spec:** R-BAS-093's
 table, R-BAS-097; code: [builtin.go](../../internal/bastion/settings/builtin.go) (the built-in configuration),
-[configuration.go](../../internal/bastionmain/configuration.go) (the interim configuration, which every registration gets until E8).
+[configuration.go](../../internal/bastionmain/configuration.go) (`DefaultLimits`, a new registration's since E8).
 
 ### Q-BAS-456 · A bucket counts in slices of 100 ms, and a read reserves its next bytes in the first slice with room
 
@@ -12548,6 +12578,94 @@ marker, and the refilled object would stay unprotected for up to an hour.
 
 **Choice:** (a). **Applied in the spec:** R-BAS-098; code: `forgetTouch` in [store.go](../../internal/bastion/cache/store.go), `Fill.Commit`
 in [fill.go](../../internal/bastion/cache/fill.go).
+
+### Q-BAS-440 · The configuration reaches the handshake from the replica's snapshot, in one statement of one moment
+
+Status: **Decided by the development agent on 2026-11-26** (package E8) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: Q-BAS-320 sends each rule's effective figures with the registration's revision, which a change of a rule or of a profile raises.
+If the revision and the rules were read at different moments, a handshake could carry the new revision with the old rules, and a Bastion
+that compares revisions would never apply the new ones.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The snapshot of the registrations (Q-BAS-433) holds each registration's configuration, read by one statement that aggregates the rules of the place with their profiles' figures beside the revision; reloaded by `bastion_handover`, `bastion_egress`, `bastion_configuration` and `limits`; a registration it does not hold yet read by the same statement (chosen) | One snapshot, one statement | No statement per handshake; revision and rules of one moment; a change reaches every replica within R-ARCH-018's 2 s | A change of any rule of any place reloads every registration's row (at most `bastions.max_registrations`) |
+| (b) The registration's row by the snapshot, the rules from the replica's index of the limits | Two sources | No second read of the rules | The index and the snapshot reload apart: the revision of one moment, the rules of another |
+| (c) A read per handshake | | Always current | A statement per handshake of every replica |
+
+**Choice:** (a). A row whose configuration breaks the Bastion's rules (a place without one of its kind rules) answers `500`, never a guess.
+**Applied in the spec:** R-BAS-093; code: [snapshot.go](../../internal/bastionmain/snapshot.go) (`Configuration`, `ReadConfiguration`),
+[configuration.go](../../internal/bastionmain/configuration.go).
+
+### Q-BAS-441 · A change of a rule of a Bastion's place or of a profile it names records the configuration change of each registration
+
+Status: **Decided by the development agent on 2026-11-26** (package E8) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-LIM-043 has a change of a rule of the place, or of a profile one of its rules names, reach the Bastion within about 3 s. The feed
+tells a Bastion to handshake by a `settings` entry, which `bastion.configuration.changed` yields.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The store of the limits records `bastion.configuration.changed` (part `rules` or `profile`) for each registration whose configuration the write changed, in the write's transaction (chosen) | One event per registration | The feed maps one action; the audit log names each registration a profile change reached | A change of a profile many Bastion places name writes as many events |
+| (b) The feed maps `limits.assignment.*` of a Bastion's place and every `limits.profile.updated` to `settings` | No new event | Fewer rows | Every profile change makes every Bastion handshake, and the feed reads the details of limits events |
+
+**Choice:** (a). The handover switch writes it beside its own events too (R-BAS-071). **Applied in the spec:** R-BAS-093, R-LIM-043; code:
+[store.go](../../internal/limits/store/store.go) (`bastionChanged`), [registrations.go](../../internal/bastionmain/registrations.go).
+
+### Q-BAS-442 · A batch's body is sized for 100,000 usage rows, and its usage is stored after every refusal was decided
+
+Status: **Decided by the development agent on 2026-11-26** (package E8) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: the intake's bound was `max_batch` × 10 KiB, sized for events. Q-LIM-308 allows 100,000 usage rows a batch. R-BAS-016 said a batch
+is charged by its events and its usage rows; the events' budget (`events_burst` 2,000 events in units of 100) cannot hold 100,000 rows, so a
+batch charged by its rows would never fit.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The bound is `max_batch` × 10 KiB + 100,000 × 640 bytes + 256 KiB (about 71 MiB with the defaults); the rows are not charged to the events' budget; usage and status are stored after the batch's refusals were decided, whether or not downloads are recorded (chosen) | A row of an anonymous subject is about 300 bytes, one with a repository name of 255 characters and some limit events about 600 | Every batch the interface allows fits; a batch refused and sent again is never counted twice | A Bastion's token can make the main installation decode about 71 MiB per batch (H-2354) |
+| (b) Charge the rows too | | One budget | A full batch never fits the default burst |
+| (c) A smaller bound, a full report split by the Bastion | | Less memory per request | A second rule of the interface beside Q-LIM-308 |
+
+**Choice:** (a). A row whose subject key, credential, rule or repository name does not read, or that is older than `max_age`, is dropped
+and counted, never stored, and the batch is not refused for it (Q-LIM-314). **Applied in the spec:** R-BAS-016, the wire; code:
+[bastion_downloads_api.go](../../internal/api/v1/bastion_downloads_api.go), [report.go](../../internal/bastionmain/report.go).
+
+### Q-BAS-443 · A replica's state is kept an hour after its last report, without the blocks that ended
+
+Status: **Decided by the development agent on 2026-11-26** (package E8) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: H-2283. The state a replica reports holds up to 100 blocked addresses, which are personal data; its row went with the replica's
+contact, kept 30 days, which is far longer than a block (at most 24 h, R-BAS-037) or the card's live state needs.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A report keeps only its blocks that have not ended; a row not reported again for an hour is deleted (pruned every 10 minutes by the intake), and a read leaves out every block that ended since (chosen) | A replica reports with every flush | An address stays at most as long as its block, plus an hour after the replica's last report | The card shows nothing of a replica silent for an hour |
+| (b) Keep it with the contact (30 days) | As specified first | Nothing to build | Addresses kept 30 days after their block |
+| (c) Delete a row with its last block | | Shortest | The cache and throughput state go with it |
+
+**Choice:** (a). **Applied in the spec:** R-LIM-045; [security/bastion.md](../security/bastion.md) H-2283; code:
+[report.go](../../internal/bastionmain/report.go) (`statusRetention`).
+
+### Q-BAS-444 · The API shows a registration's switches and limits as members of their own, and its patch is decided per member
+
+Status: **Decided by the development agent on 2026-11-26** (package E8) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-093 moves `handover` into the configuration's `switches`; Q-BAS-325 has `limits` changed with `limits:write` and the rest with
+`endpoints:write`, and `GET` show `limits` to a holder of `endpoints:read` or `limits:read`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The registration's API has `switches` (`handover`, `gui`, `docs`) and `limits` as in the handshake without the place, whose rules are `/limits/assignments`; `PATCH` is declared `authenticated` and the handler requires each member's capability; `GET` stays `endpoints:read`, every built-in role that holds `limits:read` holding `endpoints:read` too (chosen) | The handshake's shapes on the card | One spelling of each member; a security administrator (`endpoints:write`, no `limits:write`) changes the switches and not the limits | The declaration does not say the capabilities; the description does |
+| (b) Keep `handover` at the top | | No change of the screen | Two spellings of one switch |
+| (c) A sub-resource `/bastions/{name}/limits` | | A declaration per capability | Two `ETag`s of one revision |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-071, R-BAS-093; code: [bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go)
+(`bastionPatchAllowed`).
 
 ## What this does not cover
 
@@ -13550,5 +13668,5 @@ at the Bastion, which wait for the owner's decisions of W-34.
 *Decided on 2026-11-26:* the owner chose budgets per subject at the Bastion beside the flood protection per address
 ([usage-and-limits.md](usage-and-limits.md) Q-LIM-305, R-BAS-096, package E9b), and the flood figures per Bastion on its card (R-BAS-093); a
 Bastion for a build fleet takes the preset Partner network or a higher `authenticated` figure. The per-address flood figures stay one
-person's under the preset Internet. *Today, until E8 and E9b land:* live as described; since E9a the figures are the configuration's, and
-until E8 the interim configuration holds the figures above.
+person's under the preset Internet. *Today, until E9b lands:* live as described; since E9a the figures are the configuration's, and
+since E8 an administrator sets them on the registration.

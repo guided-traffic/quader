@@ -16,9 +16,10 @@ VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(description)::text, sqlc.arg(egress):
 -- name: BastionGet :many
 -- A registration by name. revision is the ETag (R-API-012); enabled is the principal's status; handover is the switch of the
 -- handover per blob (R-BAS-071, 00110); egress the networks the Bastion connects from (R-BAS-017, 00145), each in the text form of
--- cidr, which always names the prefix length.
+-- cidr, which always names the prefix length; gui, docs and the limits_* members the rest of its configuration (R-BAS-093, 00147).
 SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
-       b.egress::text[] AS egress
+       b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput,
+       b.limits_ceiling
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name = sqlc.arg(name)::text;
 
@@ -34,7 +35,8 @@ SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.re
 -- Keyset order by name; there are at most bastions.max_registrations of them, so the caller may pass an empty
 -- after and a generous max_rows.
 SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
-       b.egress::text[] AS egress
+       b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput,
+       b.limits_ceiling
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name > sqlc.arg(after)::text
  ORDER BY p.name
@@ -62,12 +64,84 @@ RETURNING principal_id::text AS id;
 
 -- name: BastionSnapshot :many
 -- What every replica's snapshot of the registrations holds (internal/bastionmain/snapshot.go): the switch of the handover per blob
--- (R-BAS-071) and the networks the Bastion connects from (R-BAS-017) of each registration. At most bastions.max_registrations rows,
--- read at the start, on a change of the area bastion_handover or bastion_egress and once a minute; never by a request.
-SELECT b.principal_id::text AS id, b.handover, b.egress::text[] AS egress
+-- (R-BAS-071), the networks the Bastion connects from (R-BAS-017) and the configuration the handshake sends (R-BAS-093) of each
+-- registration, with its revision and the rules of its place (R-LIM-043), each rule's profile figures as the API names them, in one
+-- statement, so that the revision and the rules it reads are of one moment (Q-BAS-320). At most bastions.max_registrations rows, read
+-- at the start, on a change of the area bastion_handover, bastion_egress, bastion_configuration or limits and once a minute; never by a
+-- request.
+SELECT b.principal_id::text AS id, p.name, p.revision, b.handover, b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode,
+       b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput, b.limits_ceiling,
+       COALESCE((SELECT jsonb_agg(jsonb_build_object(
+                    'id', a.id::text, 'whoKind', a.who_kind, 'whoRef', a.who_ref, 'profile', lp.key, 'overrides', a.overrides,
+                    'builtin', a.builtin,
+                    'figures', jsonb_build_object(
+                        'requestsPerSecond', lp.requests_per_second, 'requestsBurst', lp.requests_burst,
+                        'requestsPerHour', lp.requests_per_hour, 'cachedBytesPerSecond', lp.cached_bytes_per_second,
+                        'cachedBytesPerHour', lp.cached_bytes_per_hour, 'uncachedBytesPerSecond', lp.uncached_bytes_per_second,
+                        'uncachedBytesPerHour', lp.uncached_bytes_per_hour, 'upstreamRequestsPerHour', lp.upstream_requests_per_hour,
+                        'parallelTransfers', lp.parallel_transfers, 'bytesPerDay', lp.bytes_per_day, 'refusedPerHour', lp.refused_per_hour))
+                    ORDER BY a.id)
+                   FROM limit_assignment a JOIN limit_profile lp ON lp.id = a.profile_id
+                  WHERE a.bastion_id = b.principal_id), '[]'::jsonb)::jsonb AS rules
   FROM bastion b JOIN principal p ON p.id = b.principal_id
  WHERE p.kind = 'bastion'
  ORDER BY b.principal_id;
+
+-- name: BastionPlaceRules :many
+-- The rules of one registration's place (R-LIM-043) as the snapshot reads them, for the registration's own document and for an update
+-- that derives its preset (R-LIM-046).
+SELECT a.id::text AS id, a.who_kind, a.who_ref, lp.key AS profile, a.overrides, a.builtin,
+       jsonb_build_object(
+           'requestsPerSecond', lp.requests_per_second, 'requestsBurst', lp.requests_burst,
+           'requestsPerHour', lp.requests_per_hour, 'cachedBytesPerSecond', lp.cached_bytes_per_second,
+           'cachedBytesPerHour', lp.cached_bytes_per_hour, 'uncachedBytesPerSecond', lp.uncached_bytes_per_second,
+           'uncachedBytesPerHour', lp.uncached_bytes_per_hour, 'upstreamRequestsPerHour', lp.upstream_requests_per_hour,
+           'parallelTransfers', lp.parallel_transfers, 'bytesPerDay', lp.bytes_per_day, 'refusedPerHour', lp.refused_per_hour)::jsonb AS figures
+  FROM limit_assignment a JOIN limit_profile lp ON lp.id = a.profile_id
+ WHERE a.bastion_id = sqlc.arg(id)::text::uuid
+ ORDER BY a.id;
+
+-- name: BastionPlaceRulesOfAll :many
+-- The kind rules of every registration's place, for the list of registrations and the preset each reads (R-LIM-046).
+SELECT a.bastion_id::text AS bastion_id, a.who_ref, lp.key AS profile, a.overrides
+  FROM limit_assignment a JOIN limit_profile lp ON lp.id = a.profile_id
+ WHERE a.bastion_id IS NOT NULL AND a.who_kind = 'every'
+ ORDER BY a.bastion_id, a.who_ref;
+
+-- name: BastionSetConfiguration :many
+-- Replace the switches gui and docs and the limits of a registration (R-BAS-093); the service validated the members as a Bastion does.
+-- No row when nothing differs.
+UPDATE bastion SET gui = sqlc.arg(gui)::boolean, docs = sqlc.arg(docs)::boolean, limits_mode = sqlc.arg(limits_mode)::text,
+       limits_preset = sqlc.arg(limits_preset)::text, limits_flood = sqlc.arg(limits_flood)::text::jsonb,
+       limits_slots = sqlc.arg(limits_slots)::text::jsonb, limits_throughput = sqlc.arg(limits_throughput)::text::jsonb,
+       limits_ceiling = sqlc.arg(limits_ceiling)::text::jsonb
+ WHERE principal_id = sqlc.arg(id)::text::uuid
+   AND (gui, docs, limits_mode, limits_preset, limits_flood, limits_slots, limits_throughput, limits_ceiling) IS DISTINCT FROM
+       (sqlc.arg(gui)::boolean, sqlc.arg(docs)::boolean, sqlc.arg(limits_mode)::text, sqlc.arg(limits_preset)::text,
+        sqlc.arg(limits_flood)::text::jsonb, sqlc.arg(limits_slots)::text::jsonb, sqlc.arg(limits_throughput)::text::jsonb,
+        sqlc.arg(limits_ceiling)::text::jsonb)
+RETURNING principal_id::text AS id;
+
+-- name: BastionKindRulesInsert :exec
+-- The five kind rules of a new registration's place (R-LIM-046), built-in at their place: who_refs[i] takes the profile profiles[i].
+INSERT INTO limit_assignment (id, place_kind, bastion_id, who_kind, who_ref, profile_id, capped, builtin, note, created_by, updated_by)
+SELECT gen_random_uuid(), 'bastion', sqlc.arg(id)::text::uuid, 'every', r.who, p.id, false, true, r.note,
+       NULLIF(sqlc.arg(actor)::text, '')::uuid, NULLIF(sqlc.arg(actor)::text, '')::uuid
+  FROM (SELECT unnest(sqlc.arg(who_refs)::text[]) AS who, unnest(sqlc.arg(profiles)::text[]) AS profile,
+               unnest(sqlc.arg(notes)::text[]) AS note) r
+  JOIN limit_profile p ON p.key = r.profile;
+
+-- name: BastionKindRulesApply :many
+-- A preset's kind rules (R-LIM-046): who_refs[i] takes the profile profiles[i] without overrides. A rule that already is the one
+-- asked for is not written; the rules written are returned, so the caller records and announces only a change.
+UPDATE limit_assignment a
+   SET profile_id = p.id, overrides = '{}'::jsonb, version = a.version + 1, updated_at = now(),
+       updated_by = NULLIF(sqlc.arg(actor)::text, '')::uuid
+  FROM (SELECT unnest(sqlc.arg(who_refs)::text[]) AS who, unnest(sqlc.arg(profiles)::text[]) AS profile) r
+  JOIN limit_profile p ON p.key = r.profile
+ WHERE a.bastion_id = sqlc.arg(id)::text::uuid AND a.who_kind = 'every' AND a.who_ref = r.who
+   AND (a.profile_id <> p.id OR a.overrides <> '{}'::jsonb)
+RETURNING a.id::text AS id, a.who_ref;
 
 -- name: BastionHandoverOff :many
 -- The journal's replay of bastion.handover.disabled (R-BAS-071, R-HA-054): the member off for the registration of the entry. No row

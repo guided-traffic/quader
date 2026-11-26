@@ -153,7 +153,16 @@ export class UsageBudgets {
   protected readonly placeName = placeLabel;
 
   protected placeKey(p: LimitPlace): string {
-    return p.kind === 'instance' ? 'instance' : p.kind === 'project' ? `p:${p.project}` : `r:${p.repository}`;
+    switch (p.kind) {
+      case 'instance':
+        return 'instance';
+      case 'project':
+        return `p:${p.project}`;
+      case 'repository':
+        return `r:${p.repository}`;
+      case 'bastion':
+        return `b:${p.bastion}`;
+    }
   }
 
   protected sentence(b: UsageBudget): string {

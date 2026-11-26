@@ -7,6 +7,7 @@ package q
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -40,25 +41,34 @@ func (q *Queries) BastionCountActiveTokens(ctx context.Context, id string) (int6
 
 const bastionGet = `-- name: BastionGet :many
 SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
-       b.egress::text[] AS egress
+       b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput,
+       b.limits_ceiling
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name = $1::text
 `
 
 type BastionGetRow struct {
-	ID          string
-	Name        string
-	Enabled     bool
-	CreatedAt   pgtype.Timestamptz
-	Revision    int64
-	Description string
-	Handover    bool
-	Egress      []string
+	ID               string
+	Name             string
+	Enabled          bool
+	CreatedAt        pgtype.Timestamptz
+	Revision         int64
+	Description      string
+	Handover         bool
+	Egress           []string
+	Gui              bool
+	Docs             bool
+	LimitsMode       string
+	LimitsPreset     string
+	LimitsFlood      json.RawMessage
+	LimitsSlots      json.RawMessage
+	LimitsThroughput json.RawMessage
+	LimitsCeiling    json.RawMessage
 }
 
 // A registration by name. revision is the ETag (R-API-012); enabled is the principal's status; handover is the switch of the
 // handover per blob (R-BAS-071, 00110); egress the networks the Bastion connects from (R-BAS-017, 00145), each in the text form of
-// cidr, which always names the prefix length.
+// cidr, which always names the prefix length; gui, docs and the limits_* members the rest of its configuration (R-BAS-093, 00147).
 func (q *Queries) BastionGet(ctx context.Context, name string) ([]BastionGetRow, error) {
 	rows, err := q.db.Query(ctx, bastionGet, name)
 	if err != nil {
@@ -77,6 +87,14 @@ func (q *Queries) BastionGet(ctx context.Context, name string) ([]BastionGetRow,
 			&i.Description,
 			&i.Handover,
 			&i.Egress,
+			&i.Gui,
+			&i.Docs,
+			&i.LimitsMode,
+			&i.LimitsPreset,
+			&i.LimitsFlood,
+			&i.LimitsSlots,
+			&i.LimitsThroughput,
+			&i.LimitsCeiling,
 		); err != nil {
 			return nil, err
 		}
@@ -143,9 +161,89 @@ func (q *Queries) BastionInsert(ctx context.Context, arg BastionInsertParams) er
 	return err
 }
 
+const bastionKindRulesApply = `-- name: BastionKindRulesApply :many
+UPDATE limit_assignment a
+   SET profile_id = p.id, overrides = '{}'::jsonb, version = a.version + 1, updated_at = now(),
+       updated_by = NULLIF($1::text, '')::uuid
+  FROM (SELECT unnest($3::text[]) AS who, unnest($4::text[]) AS profile) r
+  JOIN limit_profile p ON p.key = r.profile
+ WHERE a.bastion_id = $2::text::uuid AND a.who_kind = 'every' AND a.who_ref = r.who
+   AND (a.profile_id <> p.id OR a.overrides <> '{}'::jsonb)
+RETURNING a.id::text AS id, a.who_ref
+`
+
+type BastionKindRulesApplyParams struct {
+	Actor    string
+	ID       string
+	WhoRefs  []string
+	Profiles []string
+}
+
+type BastionKindRulesApplyRow struct {
+	ID     string
+	WhoRef string
+}
+
+// A preset's kind rules (R-LIM-046): who_refs[i] takes the profile profiles[i] without overrides. A rule that already is the one
+// asked for is not written; the rules written are returned, so the caller records and announces only a change.
+func (q *Queries) BastionKindRulesApply(ctx context.Context, arg BastionKindRulesApplyParams) ([]BastionKindRulesApplyRow, error) {
+	rows, err := q.db.Query(ctx, bastionKindRulesApply,
+		arg.Actor,
+		arg.ID,
+		arg.WhoRefs,
+		arg.Profiles,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []BastionKindRulesApplyRow{}
+	for rows.Next() {
+		var i BastionKindRulesApplyRow
+		if err := rows.Scan(&i.ID, &i.WhoRef); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const bastionKindRulesInsert = `-- name: BastionKindRulesInsert :exec
+INSERT INTO limit_assignment (id, place_kind, bastion_id, who_kind, who_ref, profile_id, capped, builtin, note, created_by, updated_by)
+SELECT gen_random_uuid(), 'bastion', $1::text::uuid, 'every', r.who, p.id, false, true, r.note,
+       NULLIF($2::text, '')::uuid, NULLIF($2::text, '')::uuid
+  FROM (SELECT unnest($3::text[]) AS who, unnest($4::text[]) AS profile,
+               unnest($5::text[]) AS note) r
+  JOIN limit_profile p ON p.key = r.profile
+`
+
+type BastionKindRulesInsertParams struct {
+	ID       string
+	Actor    string
+	WhoRefs  []string
+	Profiles []string
+	Notes    []string
+}
+
+// The five kind rules of a new registration's place (R-LIM-046), built-in at their place: who_refs[i] takes the profile profiles[i].
+func (q *Queries) BastionKindRulesInsert(ctx context.Context, arg BastionKindRulesInsertParams) error {
+	_, err := q.db.Exec(ctx, bastionKindRulesInsert,
+		arg.ID,
+		arg.Actor,
+		arg.WhoRefs,
+		arg.Profiles,
+		arg.Notes,
+	)
+	return err
+}
+
 const bastionList = `-- name: BastionList :many
 SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
-       b.egress::text[] AS egress
+       b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput,
+       b.limits_ceiling
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name > $1::text
  ORDER BY p.name
@@ -158,14 +256,22 @@ type BastionListParams struct {
 }
 
 type BastionListRow struct {
-	ID          string
-	Name        string
-	Enabled     bool
-	CreatedAt   pgtype.Timestamptz
-	Revision    int64
-	Description string
-	Handover    bool
-	Egress      []string
+	ID               string
+	Name             string
+	Enabled          bool
+	CreatedAt        pgtype.Timestamptz
+	Revision         int64
+	Description      string
+	Handover         bool
+	Egress           []string
+	Gui              bool
+	Docs             bool
+	LimitsMode       string
+	LimitsPreset     string
+	LimitsFlood      json.RawMessage
+	LimitsSlots      json.RawMessage
+	LimitsThroughput json.RawMessage
+	LimitsCeiling    json.RawMessage
 }
 
 // Keyset order by name; there are at most bastions.max_registrations of them, so the caller may pass an empty
@@ -188,6 +294,14 @@ func (q *Queries) BastionList(ctx context.Context, arg BastionListParams) ([]Bas
 			&i.Description,
 			&i.Handover,
 			&i.Egress,
+			&i.Gui,
+			&i.Docs,
+			&i.LimitsMode,
+			&i.LimitsPreset,
+			&i.LimitsFlood,
+			&i.LimitsSlots,
+			&i.LimitsThroughput,
+			&i.LimitsCeiling,
 		); err != nil {
 			return nil, err
 		}
@@ -348,6 +462,156 @@ func (q *Queries) BastionLock(ctx context.Context, name string) ([]BastionLockRo
 	return items, nil
 }
 
+const bastionPlaceRules = `-- name: BastionPlaceRules :many
+SELECT a.id::text AS id, a.who_kind, a.who_ref, lp.key AS profile, a.overrides, a.builtin,
+       jsonb_build_object(
+           'requestsPerSecond', lp.requests_per_second, 'requestsBurst', lp.requests_burst,
+           'requestsPerHour', lp.requests_per_hour, 'cachedBytesPerSecond', lp.cached_bytes_per_second,
+           'cachedBytesPerHour', lp.cached_bytes_per_hour, 'uncachedBytesPerSecond', lp.uncached_bytes_per_second,
+           'uncachedBytesPerHour', lp.uncached_bytes_per_hour, 'upstreamRequestsPerHour', lp.upstream_requests_per_hour,
+           'parallelTransfers', lp.parallel_transfers, 'bytesPerDay', lp.bytes_per_day, 'refusedPerHour', lp.refused_per_hour)::jsonb AS figures
+  FROM limit_assignment a JOIN limit_profile lp ON lp.id = a.profile_id
+ WHERE a.bastion_id = $1::text::uuid
+ ORDER BY a.id
+`
+
+type BastionPlaceRulesRow struct {
+	ID        string
+	WhoKind   string
+	WhoRef    string
+	Profile   string
+	Overrides json.RawMessage
+	Builtin   bool
+	Figures   json.RawMessage
+}
+
+// The rules of one registration's place (R-LIM-043) as the snapshot reads them, for the registration's own document and for an update
+// that derives its preset (R-LIM-046).
+func (q *Queries) BastionPlaceRules(ctx context.Context, id string) ([]BastionPlaceRulesRow, error) {
+	rows, err := q.db.Query(ctx, bastionPlaceRules, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []BastionPlaceRulesRow{}
+	for rows.Next() {
+		var i BastionPlaceRulesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WhoKind,
+			&i.WhoRef,
+			&i.Profile,
+			&i.Overrides,
+			&i.Builtin,
+			&i.Figures,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const bastionPlaceRulesOfAll = `-- name: BastionPlaceRulesOfAll :many
+SELECT a.bastion_id::text AS bastion_id, a.who_ref, lp.key AS profile, a.overrides
+  FROM limit_assignment a JOIN limit_profile lp ON lp.id = a.profile_id
+ WHERE a.bastion_id IS NOT NULL AND a.who_kind = 'every'
+ ORDER BY a.bastion_id, a.who_ref
+`
+
+type BastionPlaceRulesOfAllRow struct {
+	BastionID string
+	WhoRef    string
+	Profile   string
+	Overrides json.RawMessage
+}
+
+// The kind rules of every registration's place, for the list of registrations and the preset each reads (R-LIM-046).
+func (q *Queries) BastionPlaceRulesOfAll(ctx context.Context) ([]BastionPlaceRulesOfAllRow, error) {
+	rows, err := q.db.Query(ctx, bastionPlaceRulesOfAll)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []BastionPlaceRulesOfAllRow{}
+	for rows.Next() {
+		var i BastionPlaceRulesOfAllRow
+		if err := rows.Scan(
+			&i.BastionID,
+			&i.WhoRef,
+			&i.Profile,
+			&i.Overrides,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const bastionSetConfiguration = `-- name: BastionSetConfiguration :many
+UPDATE bastion SET gui = $1::boolean, docs = $2::boolean, limits_mode = $3::text,
+       limits_preset = $4::text, limits_flood = $5::text::jsonb,
+       limits_slots = $6::text::jsonb, limits_throughput = $7::text::jsonb,
+       limits_ceiling = $8::text::jsonb
+ WHERE principal_id = $9::text::uuid
+   AND (gui, docs, limits_mode, limits_preset, limits_flood, limits_slots, limits_throughput, limits_ceiling) IS DISTINCT FROM
+       ($1::boolean, $2::boolean, $3::text, $4::text,
+        $5::text::jsonb, $6::text::jsonb, $7::text::jsonb,
+        $8::text::jsonb)
+RETURNING principal_id::text AS id
+`
+
+type BastionSetConfigurationParams struct {
+	Gui              bool
+	Docs             bool
+	LimitsMode       string
+	LimitsPreset     string
+	LimitsFlood      string
+	LimitsSlots      string
+	LimitsThroughput string
+	LimitsCeiling    string
+	ID               string
+}
+
+// Replace the switches gui and docs and the limits of a registration (R-BAS-093); the service validated the members as a Bastion does.
+// No row when nothing differs.
+func (q *Queries) BastionSetConfiguration(ctx context.Context, arg BastionSetConfigurationParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, bastionSetConfiguration,
+		arg.Gui,
+		arg.Docs,
+		arg.LimitsMode,
+		arg.LimitsPreset,
+		arg.LimitsFlood,
+		arg.LimitsSlots,
+		arg.LimitsThroughput,
+		arg.LimitsCeiling,
+		arg.ID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const bastionSetEgress = `-- name: BastionSetEgress :many
 UPDATE bastion SET egress = $1::text[]::cidr[]
  WHERE principal_id = $2::text::uuid AND egress IS DISTINCT FROM $1::text[]::cidr[]
@@ -448,21 +712,48 @@ func (q *Queries) BastionSetHandover(ctx context.Context, arg BastionSetHandover
 }
 
 const bastionSnapshot = `-- name: BastionSnapshot :many
-SELECT b.principal_id::text AS id, b.handover, b.egress::text[] AS egress
+SELECT b.principal_id::text AS id, p.name, p.revision, b.handover, b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode,
+       b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput, b.limits_ceiling,
+       COALESCE((SELECT jsonb_agg(jsonb_build_object(
+                    'id', a.id::text, 'whoKind', a.who_kind, 'whoRef', a.who_ref, 'profile', lp.key, 'overrides', a.overrides,
+                    'builtin', a.builtin,
+                    'figures', jsonb_build_object(
+                        'requestsPerSecond', lp.requests_per_second, 'requestsBurst', lp.requests_burst,
+                        'requestsPerHour', lp.requests_per_hour, 'cachedBytesPerSecond', lp.cached_bytes_per_second,
+                        'cachedBytesPerHour', lp.cached_bytes_per_hour, 'uncachedBytesPerSecond', lp.uncached_bytes_per_second,
+                        'uncachedBytesPerHour', lp.uncached_bytes_per_hour, 'upstreamRequestsPerHour', lp.upstream_requests_per_hour,
+                        'parallelTransfers', lp.parallel_transfers, 'bytesPerDay', lp.bytes_per_day, 'refusedPerHour', lp.refused_per_hour))
+                    ORDER BY a.id)
+                   FROM limit_assignment a JOIN limit_profile lp ON lp.id = a.profile_id
+                  WHERE a.bastion_id = b.principal_id), '[]'::jsonb)::jsonb AS rules
   FROM bastion b JOIN principal p ON p.id = b.principal_id
  WHERE p.kind = 'bastion'
  ORDER BY b.principal_id
 `
 
 type BastionSnapshotRow struct {
-	ID       string
-	Handover bool
-	Egress   []string
+	ID               string
+	Name             string
+	Revision         int64
+	Handover         bool
+	Egress           []string
+	Gui              bool
+	Docs             bool
+	LimitsMode       string
+	LimitsPreset     string
+	LimitsFlood      json.RawMessage
+	LimitsSlots      json.RawMessage
+	LimitsThroughput json.RawMessage
+	LimitsCeiling    json.RawMessage
+	Rules            json.RawMessage
 }
 
 // What every replica's snapshot of the registrations holds (internal/bastionmain/snapshot.go): the switch of the handover per blob
-// (R-BAS-071) and the networks the Bastion connects from (R-BAS-017) of each registration. At most bastions.max_registrations rows,
-// read at the start, on a change of the area bastion_handover or bastion_egress and once a minute; never by a request.
+// (R-BAS-071), the networks the Bastion connects from (R-BAS-017) and the configuration the handshake sends (R-BAS-093) of each
+// registration, with its revision and the rules of its place (R-LIM-043), each rule's profile figures as the API names them, in one
+// statement, so that the revision and the rules it reads are of one moment (Q-BAS-320). At most bastions.max_registrations rows, read
+// at the start, on a change of the area bastion_handover, bastion_egress, bastion_configuration or limits and once a minute; never by a
+// request.
 func (q *Queries) BastionSnapshot(ctx context.Context) ([]BastionSnapshotRow, error) {
 	rows, err := q.db.Query(ctx, bastionSnapshot)
 	if err != nil {
@@ -472,7 +763,22 @@ func (q *Queries) BastionSnapshot(ctx context.Context) ([]BastionSnapshotRow, er
 	items := []BastionSnapshotRow{}
 	for rows.Next() {
 		var i BastionSnapshotRow
-		if err := rows.Scan(&i.ID, &i.Handover, &i.Egress); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Revision,
+			&i.Handover,
+			&i.Egress,
+			&i.Gui,
+			&i.Docs,
+			&i.LimitsMode,
+			&i.LimitsPreset,
+			&i.LimitsFlood,
+			&i.LimitsSlots,
+			&i.LimitsThroughput,
+			&i.LimitsCeiling,
+			&i.Rules,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

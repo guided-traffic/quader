@@ -13,10 +13,9 @@ import (
 
 // TestR_BAS_093_AChangeOfTheRegistrationIsAppliedByTheBastion: a change of the registration made through the API raises its
 // revision, which the next handshake brings in the member configuration, and the in-process Bastion applies it without a
-// restart (R-BAS-093): quader_bastion_configuration_revision follows and the source is the main installation. Until the main
-// installation's side is built (E8) the configuration is the interim one (Q-BAS-352), its change is the switch handover, and it
-// travels with the regular handshake (5 s in this harness) instead of a settings entry of the feed, whose path the link's unit
-// test holds. About 3 to 6 s, no content.
+// restart (R-BAS-093): quader_bastion_configuration_revision follows and the source is the main installation. The change is the
+// switch handover and an anonymous flood figure of the registration's configuration (E8); it travels with the feed's settings entry or
+// at the latest with the regular handshake (5 s in this harness). About 3 to 6 s, no content.
 func TestR_BAS_093_AChangeOfTheRegistrationIsAppliedByTheBastion(t *testing.T) {
 	w := newWorld(t, worldOptions{})
 	b := w.newBastion(t, bastionOptions{}).wait()
@@ -26,7 +25,9 @@ func TestR_BAS_093_AChangeOfTheRegistrationIsAppliedByTheBastion(t *testing.T) {
 		t.Fatalf("a connected Bastion does not apply the main installation's configuration:\n%s", grepLines(text, "quader_bastion_configuration"))
 	}
 	before := metricValue(t, text, "quader_bastion_configuration_revision")
-	w.mustAPI("PATCH", "/api/v1/bastions/partners", http.StatusOK, map[string]any{"handover": true},
+	w.mustAPI("PATCH", "/api/v1/bastions/partners", http.StatusOK, map[string]any{
+		"switches": map[string]any{"handover": true}, "limits": map[string]any{"flood": map[string]any{"anonymous": map[string]any{"requestsPerSecond": 51}}},
+	},
 		"Content-Type", "application/merge-patch+json", "If-Match", "*")
 	start := time.Now()
 	testenv.WaitFor(t, "the new revision applied", 15*time.Second, func() bool {

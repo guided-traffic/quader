@@ -52,8 +52,34 @@ export function sampleBastionContact(over: Partial<BastionContact> = {}): Bastio
     release: '0.15.0',
     interfaceVersion: 1,
     baseUrl: 'https://packages.example.com',
+    edgeLimit: null,
+    catalogueKept: null,
     ...over,
   };
+}
+
+/** The limits of a new registration (R-BAS-093, R-LIM-046): the preset Internet in Enforce. */
+export function sampleBastionLimits(): Bastion['limits'] {
+  return {
+    mode: 'enforce',
+    preset: 'internet',
+    flood: {
+      anonymous: { requestsPerSecond: 50, burst: 1000, missesPerMinute: 1000 },
+      authenticated: { requestsPerSecond: 200, burst: 4000, missesPerMinute: 4000 },
+      gui: { requestsPerSecond: 20, burst: 100 },
+      failedAuth: { maxFailures: 20, windowSeconds: 600, timeoutSeconds: 900 },
+      blocking: { threshold: 3000, windowSeconds: 60, durationSeconds: 900, maxDurationSeconds: 86400 },
+      exemptNetworks: [],
+    },
+    slots: { maxConcurrent: 64, anonymousShare: 0.25, queueTimeoutMillis: 5000 },
+    throughput: { bytesPerSecond: 200000000, anonymousShare: 0.25, bytesPerHour: { anonymous: null, signedIn: null, catalogue: null } },
+    anonymousCeiling: { requestsPerSecond: 100, burst: 2000, requestsPerHour: 36000 },
+  };
+}
+
+/** The switches of a registration with the handover per blob as given (R-BAS-071). */
+export function handoverSwitches(handover: boolean): Bastion['switches'] {
+  return { handover, gui: false, docs: false };
 }
 
 export function sampleBastion(over: Partial<Bastion> = {}): Bastion {
@@ -62,7 +88,9 @@ export function sampleBastion(over: Partial<Bastion> = {}): Bastion {
     name: 'partners',
     description: 'The partner network',
     enabled: true,
-    handover: false,
+    switches: { handover: false, gui: false, docs: false },
+    limits: sampleBastionLimits(),
+    status: [],
     egress: ['198.51.100.16/28'],
     createdAt: inDays(-170),
     tokens: [sampleBastionToken()],
@@ -170,7 +198,7 @@ export class FakeBastionsApi extends BastionsApi {
     const current = this.find(name);
     if (etag !== this.etagOf(name)) throw problem(412, 'precondition_failed', { currentEtag: this.etagOf(name) });
     this.bumpRevision(name);
-    const changed = { ...current, handover };
+    const changed = { ...current, switches: { ...current.switches, handover } };
     this.bastions = this.bastions.map((b) => (b.name === name ? changed : b));
     return { value: changed, etag: this.etagOf(name) };
   }

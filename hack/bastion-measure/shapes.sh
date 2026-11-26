@@ -4,7 +4,9 @@
 #   shapes.sh stub        every client against `e4 stub`, which answers the four error shapes of R-BAS-095 (specified, not built):
 #                         503 busy with Retry-After 2, 429 rate_limited with Retry-After 2 (reads), 403 read_only (writes)
 #   shapes.sh bastion     every client, anonymous and cold, against the Bastion as built today with an anonymous limit of
-#                         1 a second and a burst of 1, and every write against it
+#                         1 a second and a burst of 1, and every write against it. The limit is the registration's flood figure
+#                         (R-BAS-093): the script sets it through the main installation's PATCH /api/v1/bastions/<name> with the
+#                         administrator's token, waits for the Bastion to apply it, and sets the figures back afterwards.
 #
 # Output: <E4>/results/shapes/<case>-<client>.txt (the client's output and exit code) and, for the stub, the requests it received.
 set -euo pipefail
@@ -94,6 +96,14 @@ c_curl() {
 
 clients=(npm nuget docker podman apt galaxy curl)
 
+# flood <requests a second> <burst>: the registration's anonymous flood figures (R-BAS-093, `limits:write`), a merge patch; the Bastion
+# applies them with its next handshake after the feed's settings entry, within a few seconds.
+flood() {
+  curl -fsS --cacert "$E4/certs/ca.crt" -X PATCH "https://localhost:$E4_MAIN_PORT/api/v1/bastions/$E4_REG" \
+    -H "Authorization: Bearer $(cat "$E4/admin-token")" -H "Content-Type: application/merge-patch+json" -H "If-Match: *" \
+    --data "{\"limits\":{\"flood\":{\"anonymous\":{\"requestsPerSecond\":$1,\"burst\":$2}}}}" >/dev/null
+}
+
 with_stub() { # with_stub <case> <stub flags...>
   local name="$1"
   shift
@@ -125,16 +135,15 @@ case "${1:-}" in
     with_stub read_only -status 403 -code read_only -retry-after "" -writes-only
     ;;
   bastion)
-    E4_BASTION_EXTRA="  limits:
-    anonymous:
-      requests_per_second: 1
-      burst: 1" hack/bastion-measure/run.sh bastion >/dev/null
+    hack/bastion-measure/run.sh bastion >/dev/null
+    flood 1 1
     sleep 20
     for c in "${clients[@]}"; do
       echo "== bastion read $c" >&2
       "c_$c" "$E4_HOST:$E4_BASTION_PORT" read > "$out/bastion-limit-$c.txt" 2>&1 || true
       sleep 2
     done
+    flood 50 1000 # the Internet preset's figures again (R-LIM-046)
     hack/bastion-measure/run.sh bastion >/dev/null
     # Today a write is refused only after the credential was checked: the reader's token.
     TOK="$(cat "$E4/client/reader-token")"

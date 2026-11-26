@@ -32,8 +32,15 @@ func (p Period) Window(now time.Time) (since time.Time, granularity string) {
 	return now.Add(-24 * time.Hour), "5m"
 }
 
-// Scope narrows a read to the rows of some repositories; empty is the instance.
-type Scope struct{ Repos []int64 }
+// Scope narrows a read to the rows of some repositories; empty is the instance. Place narrows the overview to one place key
+// (bastion:<id>), or with PlaceInstallation to the main installation's own places (R-LIM-045, R-UI-242); empty is every place.
+type Scope struct {
+	Repos []int64
+	Place string
+}
+
+// PlaceInstallation is the place filter of what the main installation served itself, every place but a Bastion's.
+const PlaceInstallation = "installation"
 
 func (s Scope) repos() []int64 {
 	if s.Repos == nil {
@@ -105,7 +112,7 @@ func (r Reader) Subjects(ctx context.Context, p Period, s Scope, kinds []limits.
 		wanted[k] = true
 	}
 	err := r.in(ctx, func(qs *q.Queries) error {
-		totals, err := qs.UsageTotals(ctx, q.UsageTotalsParams{Granularity: g, Since: ts(since), Repos: s.repos(), Kinds: ks, SubjectRef: ref})
+		totals, err := qs.UsageTotals(ctx, q.UsageTotalsParams{Granularity: g, Since: ts(since), Repos: s.repos(), Kinds: ks, SubjectRef: ref, Place: s.Place})
 		if err != nil {
 			return err
 		}
@@ -113,7 +120,7 @@ func (r Reader) Subjects(ctx context.Context, p Period, s Scope, kinds []limits.
 			u := get(t.SubjectKind, t.SubjectRef)
 			u.Requests, u.Refused, u.Cached, u.Uncached, u.Upstream = t.Requests, t.Refused, t.CachedBytes, t.UncachedBytes, t.UpstreamRequests
 		}
-		evs, err := qs.UsageEventTotals(ctx, q.UsageEventTotalsParams{Granularity: g, Since: ts(since), Repos: s.repos(), SubjectRef: ref})
+		evs, err := qs.UsageEventTotals(ctx, q.UsageEventTotalsParams{Granularity: g, Since: ts(since), Repos: s.repos(), SubjectRef: ref, Place: s.Place})
 		if err != nil {
 			return err
 		}
@@ -130,7 +137,7 @@ func (r Reader) Subjects(ctx context.Context, p Period, s Scope, kinds []limits.
 		}
 		places, err := qs.UsageByPlace(ctx, q.UsageByPlaceParams{
 			HourSince: ts(now.Add(-time.Hour)), DaySince: ts(now.Add(-24 * time.Hour)),
-			Repos: s.repos(), SubjectRef: ref,
+			Repos: s.repos(), SubjectRef: ref, Place: s.Place,
 		})
 		if err != nil {
 			return err
@@ -183,7 +190,7 @@ func (r Reader) Places(ctx context.Context, kind limits.SubjectKind, ref string,
 	err := r.in(ctx, func(qs *q.Queries) error {
 		rows, err := qs.UsageByPlace(ctx, q.UsageByPlaceParams{
 			HourSince: ts(now.Add(-time.Hour)), DaySince: ts(now.Add(-24 * time.Hour)),
-			Repos: s.repos(), SubjectRef: ref,
+			Repos: s.repos(), SubjectRef: ref, Place: s.Place,
 		})
 		for _, p := range rows {
 			if p.SubjectKind != string(kind) {

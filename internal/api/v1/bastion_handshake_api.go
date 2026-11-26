@@ -92,14 +92,13 @@ func (s *Server) BastionHandshake(w http.ResponseWriter, r *http.Request, _ gen.
 	})
 }
 
-// configuration is the registration's configuration (R-BAS-093): what Configuration answers, or, without it, the interim
-// configuration with revision 0 and the switch of the handover per blob from the replica's snapshot (R-BAS-071), which the
-// Bastion offers to take a handover by (R-BAS-072).
+// configuration is the registration's configuration (R-BAS-093): what Configuration answers; a replica without it answers 503, never
+// a configuration nobody stored.
 func (b BastionServices) configuration(r *http.Request, rec bastionmain.Recognition) (iface.Configuration, error) {
-	if b.Configuration != nil {
-		return b.Configuration(r.Context(), rec)
+	if b.Configuration == nil {
+		return iface.Configuration{}, unavailable("The configuration of the Bastion registrations")
 	}
-	return bastionmain.InterimConfiguration(0, b.Handover != nil && b.Handover.On(rec.BastionID)), nil
+	return b.Configuration(r.Context(), rec)
 }
 
 // BastionFormatTable is the handshake's format table of the formats fs (R-BAS-057, Q-BAS-170): one entry per format with

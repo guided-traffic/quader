@@ -313,6 +313,48 @@ func (e BastionHandshakeFormatRateLimitedStatus) Valid() bool {
 	}
 }
 
+// Defines values for BastionLimitsMode.
+const (
+	BastionLimitsModeAudit   BastionLimitsMode = "audit"
+	BastionLimitsModeEnforce BastionLimitsMode = "enforce"
+)
+
+// Valid indicates whether the value is a known member of the BastionLimitsMode enum.
+func (e BastionLimitsMode) Valid() bool {
+	switch e {
+	case BastionLimitsModeAudit:
+		return true
+	case BastionLimitsModeEnforce:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BastionLimitsPreset.
+const (
+	BastionLimitsPresetCustom         BastionLimitsPreset = "custom"
+	BastionLimitsPresetInternal       BastionLimitsPreset = "internal"
+	BastionLimitsPresetInternet       BastionLimitsPreset = "internet"
+	BastionLimitsPresetPartnerNetwork BastionLimitsPreset = "partnerNetwork"
+)
+
+// Valid indicates whether the value is a known member of the BastionLimitsPreset enum.
+func (e BastionLimitsPreset) Valid() bool {
+	switch e {
+	case BastionLimitsPresetCustom:
+		return true
+	case BastionLimitsPresetInternal:
+		return true
+	case BastionLimitsPresetInternet:
+		return true
+	case BastionLimitsPresetPartnerNetwork:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BastionPackageReadRead.
 const (
 	BastionPackageReadReadFull    BastionPackageReadRead = "full"
@@ -325,6 +367,48 @@ func (e BastionPackageReadRead) Valid() bool {
 	case BastionPackageReadReadFull:
 		return true
 	case BastionPackageReadReadPartial:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BastionPatchLimitsMode.
+const (
+	BastionPatchLimitsModeAudit   BastionPatchLimitsMode = "audit"
+	BastionPatchLimitsModeEnforce BastionPatchLimitsMode = "enforce"
+)
+
+// Valid indicates whether the value is a known member of the BastionPatchLimitsMode enum.
+func (e BastionPatchLimitsMode) Valid() bool {
+	switch e {
+	case BastionPatchLimitsModeAudit:
+		return true
+	case BastionPatchLimitsModeEnforce:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BastionPatchLimitsPreset.
+const (
+	BastionPatchLimitsPresetCustom         BastionPatchLimitsPreset = "custom"
+	BastionPatchLimitsPresetInternal       BastionPatchLimitsPreset = "internal"
+	BastionPatchLimitsPresetInternet       BastionPatchLimitsPreset = "internet"
+	BastionPatchLimitsPresetPartnerNetwork BastionPatchLimitsPreset = "partnerNetwork"
+)
+
+// Valid indicates whether the value is a known member of the BastionPatchLimitsPreset enum.
+func (e BastionPatchLimitsPreset) Valid() bool {
+	switch e {
+	case BastionPatchLimitsPresetCustom:
+		return true
+	case BastionPatchLimitsPresetInternal:
+		return true
+	case BastionPatchLimitsPresetInternet:
+		return true
+	case BastionPatchLimitsPresetPartnerNetwork:
 		return true
 	default:
 		return false
@@ -2245,6 +2329,21 @@ func (e LimitMode) Valid() bool {
 	case LimitModeAudit:
 		return true
 	case LimitModeEnforce:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LimitPlaceBastionKind.
+const (
+	LimitPlaceBastionKindBastion LimitPlaceBastionKind = "bastion"
+)
+
+// Valid indicates whether the value is a known member of the LimitPlaceBastionKind enum.
+func (e LimitPlaceBastionKind) Valid() bool {
+	switch e {
+	case LimitPlaceBastionKindBastion:
 		return true
 	default:
 		return false
@@ -7636,6 +7735,36 @@ func (e BastionHandshakeParamsQuaderBastionCatalogueKept) Valid() bool {
 	}
 }
 
+// Defines values for ListBastionLimitAssignmentsParamsWhoKind.
+const (
+	ListBastionLimitAssignmentsParamsWhoKindAddress        ListBastionLimitAssignmentsParamsWhoKind = "address"
+	ListBastionLimitAssignmentsParamsWhoKindCiProject      ListBastionLimitAssignmentsParamsWhoKind = "ciProject"
+	ListBastionLimitAssignmentsParamsWhoKindEvery          ListBastionLimitAssignmentsParamsWhoKind = "every"
+	ListBastionLimitAssignmentsParamsWhoKindGroup          ListBastionLimitAssignmentsParamsWhoKind = "group"
+	ListBastionLimitAssignmentsParamsWhoKindTechnicalToken ListBastionLimitAssignmentsParamsWhoKind = "technicalToken"
+	ListBastionLimitAssignmentsParamsWhoKindUser           ListBastionLimitAssignmentsParamsWhoKind = "user"
+)
+
+// Valid indicates whether the value is a known member of the ListBastionLimitAssignmentsParamsWhoKind enum.
+func (e ListBastionLimitAssignmentsParamsWhoKind) Valid() bool {
+	switch e {
+	case ListBastionLimitAssignmentsParamsWhoKindAddress:
+		return true
+	case ListBastionLimitAssignmentsParamsWhoKindCiProject:
+		return true
+	case ListBastionLimitAssignmentsParamsWhoKindEvery:
+		return true
+	case ListBastionLimitAssignmentsParamsWhoKindGroup:
+		return true
+	case ListBastionLimitAssignmentsParamsWhoKindTechnicalToken:
+		return true
+	case ListBastionLimitAssignmentsParamsWhoKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GetCiSnippetParamsFormat.
 const (
 	GetCiSnippetParamsFormatNpm   GetCiSnippetParamsFormat = "npm"
@@ -9815,15 +9944,21 @@ type Bastion struct {
 	// the Bastion counts as the Bastion's own address, with one budget and one block for all. An entry is an IPv4 or IPv6 address
 	// (read as its `/32` or `/128`) or a network in CIDR form; the answer gives each with its prefix length. Refused are more than
 	// 32, a network listed twice, a `/0` and a network with bits set beyond its prefix (`422` with a field error at the entry).
-	Egress  BastionEgress `json:"egress"`
-	Enabled bool          `json:"enabled"`
+	Egress  BastionEgress      `json:"egress"`
+	Enabled bool               `json:"enabled"`
+	Id      openapi_types.UUID `json:"id"`
 
-	// Handover The switch of the handover per blob (R-BAS-071): while it is on, the main installation may answer a forward of this
-	// Bastion for a large file with a short-lived signed link of the object store, so the Bastion reads the bytes from the
-	// store itself (R-STOR-095). Off for a new registration; changed by `PATCH` only.
-	Handover bool               `json:"handover"`
-	Id       openapi_types.UUID `json:"id"`
-	Name     string             `json:"name"`
+	// Limits The limits of the registration's configuration (R-BAS-093). The rules of the Bastion's place are read and written through
+	// `/api/v1/bastions/{name}/limits/assignments` (R-LIM-043). Every figure is held to the rules a Bastion applies it by: flood
+	// figures are positive integers, never null; a share lies in 0 to 1; a ceiling's burst only with its rate.
+	Limits BastionLimits `json:"limits"`
+	Name   string        `json:"name"`
+
+	// Status The state each replica reported with its last batch within the last hour, the newest first (R-LIM-045); a block that ended is left out (Q-BAS-443).
+	Status []BastionReplicaStatus `json:"status"`
+
+	// Switches The switches of the registration's configuration (R-BAS-093), each off for a new registration.
+	Switches BastionSwitches `json:"switches"`
 
 	// Tokens The unrevoked tokens, newest first. Neither the value nor its hash is part of it.
 	Tokens []BastionTokenSummary `json:"tokens"`
@@ -9863,6 +9998,13 @@ type BastionCataloguePublic struct {
 // BastionCataloguePublicRepositoriesClass defines model for BastionCataloguePublic.Repositories.Class.
 type BastionCataloguePublicRepositoriesClass string
 
+// BastionCeiling The requests to the main installation on behalf of all anonymous callers of the Bastion together (R-BAS-094); null is unlimited.
+type BastionCeiling struct {
+	Burst             *int64 `json:"burst"`
+	RequestsPerHour   *int64 `json:"requestsPerHour"`
+	RequestsPerSecond *int64 `json:"requestsPerSecond"`
+}
+
 // BastionCheckAnswer defines model for BastionCheckAnswer.
 type BastionCheckAnswer struct {
 	// Packages One element per requested pair, in request order; empty for a subject that is not usable (R-BAS-083).
@@ -9891,8 +10033,8 @@ type BastionCheckRequest struct {
 }
 
 // BastionConfiguration The registration's configuration (R-BAS-093, Q-BAS-320): applied whole by every replica; a figure is a positive integer
-// or `null` for unlimited. Until a registration holds one (package E8) the main installation sends an interim configuration
-// that equals a Bastion's behaviour of today.
+// or `null` for unlimited. The main installation answers it from its snapshot of the registrations: the registration's own
+// members and the rules of its place with each rule's effective figures, of one moment.
 type BastionConfiguration struct {
 	// Limits A Bastion's limits (R-BAS-093 to R-BAS-097).
 	Limits BastionConfigurationLimits `json:"limits"`
@@ -9913,33 +10055,11 @@ type BastionConfiguration struct {
 
 // BastionConfigurationLimits A Bastion's limits (R-BAS-093 to R-BAS-097).
 type BastionConfigurationLimits struct {
-	AnonymousCeiling struct {
-		Burst             *int64 `json:"burst"`
-		RequestsPerHour   *int64 `json:"requestsPerHour"`
-		RequestsPerSecond *int64 `json:"requestsPerSecond"`
-	} `json:"anonymousCeiling"`
+	// AnonymousCeiling The requests to the main installation on behalf of all anonymous callers of the Bastion together (R-BAS-094); null is unlimited.
+	AnonymousCeiling BastionCeiling `json:"anonymousCeiling"`
 
-	// Flood The flood protection per address (R-BAS-035 to R-BAS-037); never unlimited.
-	Flood struct {
-		Anonymous     BastionFloodClass `json:"anonymous"`
-		Authenticated BastionFloodClass `json:"authenticated"`
-		Blocking      struct {
-			DurationSeconds    int `json:"durationSeconds"`
-			MaxDurationSeconds int `json:"maxDurationSeconds"`
-			Threshold          int `json:"threshold"`
-			WindowSeconds      int `json:"windowSeconds"`
-		} `json:"blocking"`
-		ExemptNetworks []string `json:"exemptNetworks"`
-		FailedAuth     struct {
-			MaxFailures    int `json:"maxFailures"`
-			TimeoutSeconds int `json:"timeoutSeconds"`
-			WindowSeconds  int `json:"windowSeconds"`
-		} `json:"failedAuth"`
-		Gui struct {
-			Burst             int `json:"burst"`
-			RequestsPerSecond int `json:"requestsPerSecond"`
-		} `json:"gui"`
-	} `json:"flood"`
+	// Flood The flood protection per client address (R-BAS-035 to R-BAS-037, Q-LIM-307).
+	Flood BastionFlood                   `json:"flood"`
 	Mode  BastionConfigurationLimitsMode `json:"mode"`
 	Place struct {
 		AddressRules []struct {
@@ -9959,20 +10079,12 @@ type BastionConfigurationLimits struct {
 		Rules map[string]BastionFigures `json:"rules"`
 	} `json:"place"`
 	Preset BastionConfigurationLimitsPreset `json:"preset"`
-	Slots  struct {
-		AnonymousShare     float32 `json:"anonymousShare"`
-		MaxConcurrent      int     `json:"maxConcurrent"`
-		QueueTimeoutMillis int     `json:"queueTimeoutMillis"`
-	} `json:"slots"`
-	Throughput struct {
-		AnonymousShare float32 `json:"anonymousShare"`
-		BytesPerHour   struct {
-			Anonymous *int64 `json:"anonymous"`
-			Catalogue *int64 `json:"catalogue"`
-			SignedIn  *int64 `json:"signedIn"`
-		} `json:"bytesPerHour"`
-		BytesPerSecond *int64 `json:"bytesPerSecond"`
-	} `json:"throughput"`
+
+	// Slots The requests in flight to the main installation across the Bastion's replicas (R-BAS-025).
+	Slots BastionSlots `json:"slots"`
+
+	// Throughput The byte rate the Bastion reads at (R-BAS-097); null is unlimited.
+	Throughput BastionThroughput `json:"throughput"`
 }
 
 // BastionConfigurationLimitsMode defines model for BastionConfigurationLimits.Mode.
@@ -9984,12 +10096,18 @@ type BastionConfigurationLimitsPreset string
 // BastionContact defines model for BastionContact.
 type BastionContact struct {
 	// BaseUrl The base URL the Bastion reported; empty when it reported none.
-	BaseUrl          string    `json:"baseUrl"`
-	ClientAddress    *string   `json:"clientAddress"`
-	ContactAt        time.Time `json:"contactAt"`
-	InterfaceVersion int       `json:"interfaceVersion"`
-	Release          string    `json:"release"`
-	Replica          string    `json:"replica"`
+	BaseUrl string `json:"baseUrl"`
+
+	// CatalogueKept Whether the replica's public catalogue survives a restart (R-BAS-101); null when it reported none.
+	CatalogueKept *bool     `json:"catalogueKept"`
+	ClientAddress *string   `json:"clientAddress"`
+	ContactAt     time.Time `json:"contactAt"`
+
+	// EdgeLimit The edge figure the replica reported (`off`, `rps=<n>`, `connections=<n>` or both, R-BAS-093); null when it reported none.
+	EdgeLimit        *string `json:"edgeLimit"`
+	InterfaceVersion int     `json:"interfaceVersion"`
+	Release          string  `json:"release"`
+	Replica          string  `json:"replica"`
 }
 
 // BastionDownloadEvent defines model for BastionDownloadEvent.
@@ -10115,6 +10233,30 @@ type BastionFigures struct {
 	UpstreamRequestsPerHour *int64 `json:"upstreamRequestsPerHour"`
 }
 
+// BastionFlood The flood protection per client address (R-BAS-035 to R-BAS-037, Q-LIM-307).
+type BastionFlood struct {
+	Anonymous     BastionFloodClass `json:"anonymous"`
+	Authenticated BastionFloodClass `json:"authenticated"`
+	Blocking      struct {
+		DurationSeconds    int `json:"durationSeconds"`
+		MaxDurationSeconds int `json:"maxDurationSeconds"`
+		Threshold          int `json:"threshold"`
+		WindowSeconds      int `json:"windowSeconds"`
+	} `json:"blocking"`
+
+	// ExemptNetworks Canonical prefixes no flood figure, timeout or block applies to.
+	ExemptNetworks []string `json:"exemptNetworks"`
+	FailedAuth     struct {
+		MaxFailures    int `json:"maxFailures"`
+		TimeoutSeconds int `json:"timeoutSeconds"`
+		WindowSeconds  int `json:"windowSeconds"`
+	} `json:"failedAuth"`
+	Gui struct {
+		Burst             int `json:"burst"`
+		RequestsPerSecond int `json:"requestsPerSecond"`
+	} `json:"gui"`
+}
+
 // BastionFloodClass defines model for BastionFloodClass.
 type BastionFloodClass struct {
 	Burst             int `json:"burst"`
@@ -10139,8 +10281,8 @@ type BastionHandshake struct {
 	BoundRepository *string `json:"boundRepository,omitempty"`
 
 	// Configuration The registration's configuration (R-BAS-093, Q-BAS-320): applied whole by every replica; a figure is a positive integer
-	// or `null` for unlimited. Until a registration holds one (package E8) the main installation sends an interim configuration
-	// that equals a Bastion's behaviour of today.
+	// or `null` for unlimited. The main installation answers it from its snapshot of the registrations: the registration's own
+	// members and the rules of its place with each rule's effective figures, of one moment.
 	Configuration BastionConfiguration `json:"configuration"`
 	Feed          struct {
 		Cursor string `json:"cursor"`
@@ -10192,6 +10334,35 @@ type BastionHandshakeFormat struct {
 // BastionHandshakeFormatRateLimitedStatus The status of a Bastion's own rate-limit refusals on the format's family.
 type BastionHandshakeFormatRateLimitedStatus int
 
+// BastionLimits The limits of the registration's configuration (R-BAS-093). The rules of the Bastion's place are read and written through
+// `/api/v1/bastions/{name}/limits/assignments` (R-LIM-043). Every figure is held to the rules a Bastion applies it by: flood
+// figures are positive integers, never null; a share lies in 0 to 1; a ceiling's burst only with its rate.
+type BastionLimits struct {
+	// AnonymousCeiling The requests to the main installation on behalf of all anonymous callers of the Bastion together (R-BAS-094); null is unlimited.
+	AnonymousCeiling BastionCeiling `json:"anonymousCeiling"`
+
+	// Flood The flood protection per client address (R-BAS-035 to R-BAS-037, Q-LIM-307).
+	Flood BastionFlood `json:"flood"`
+
+	// Mode Audit or Enforce of the budgets at this Bastion (R-LIM-044); the flood protection, the ceiling, the slots and the throughput hold in both (Q-LIM-309).
+	Mode BastionLimitsMode `json:"mode"`
+
+	// Preset The preset the registration reads (R-LIM-046); `custom` once a kind rule or a flood figure differs from the preset last applied.
+	Preset BastionLimitsPreset `json:"preset"`
+
+	// Slots The requests in flight to the main installation across the Bastion's replicas (R-BAS-025).
+	Slots BastionSlots `json:"slots"`
+
+	// Throughput The byte rate the Bastion reads at (R-BAS-097); null is unlimited.
+	Throughput BastionThroughput `json:"throughput"`
+}
+
+// BastionLimitsMode Audit or Enforce of the budgets at this Bastion (R-LIM-044); the flood protection, the ceiling, the slots and the throughput hold in both (Q-LIM-309).
+type BastionLimitsMode string
+
+// BastionLimitsPreset The preset the registration reads (R-LIM-046); `custom` once a kind rule or a flood figure differs from the preset last applied.
+type BastionLimitsPreset string
+
 // BastionList defines model for BastionList.
 type BastionList struct {
 	Items []Bastion `json:"items"`
@@ -10217,8 +10388,58 @@ type BastionPatch struct {
 	Egress  *BastionEgress `json:"egress,omitempty"`
 	Enabled *bool          `json:"enabled,omitempty"`
 
-	// Handover Switches the handover per blob on or off (R-BAS-071); a `null` reads as absent and switches nothing, as for `enabled`.
-	Handover *bool `json:"handover,omitempty"`
+	// Limits `limits:write`. A merge patch of the registration's limits (R-BAS-093): a member that is absent is unchanged, a nested member
+	// merges. `preset` applies a preset first (R-LIM-046), `custom` nothing; a change of `mode` needs recent authentication.
+	Limits *struct {
+		AnonymousCeiling *map[string]interface{}   `json:"anonymousCeiling,omitempty"`
+		Flood            *map[string]interface{}   `json:"flood,omitempty"`
+		Mode             *BastionPatchLimitsMode   `json:"mode,omitempty"`
+		Preset           *BastionPatchLimitsPreset `json:"preset,omitempty"`
+		Slots            *map[string]interface{}   `json:"slots,omitempty"`
+		Throughput       *map[string]interface{}   `json:"throughput,omitempty"`
+	} `json:"limits,omitempty"`
+
+	// Switches `endpoints:write`. A switch that is absent or `null` is unchanged (R-BAS-071, R-BAS-102).
+	Switches *struct {
+		Docs     *bool `json:"docs,omitempty"`
+		Gui      *bool `json:"gui,omitempty"`
+		Handover *bool `json:"handover,omitempty"`
+	} `json:"switches,omitempty"`
+}
+
+// BastionPatchLimitsMode defines model for BastionPatch.Limits.Mode.
+type BastionPatchLimitsMode string
+
+// BastionPatchLimitsPreset defines model for BastionPatch.Limits.Preset.
+type BastionPatchLimitsPreset string
+
+// BastionReplicaStatus The state a replica reported with its last batch (R-LIM-045), the Bastion's word (H-2282).
+type BastionReplicaStatus struct {
+	Blocked int64 `json:"blocked"`
+	Blocks  []struct {
+		Address string    `json:"address"`
+		Reason  string    `json:"reason"`
+		Until   time.Time `json:"until"`
+	} `json:"blocks"`
+	Cache struct {
+		Bytes          int64 `json:"bytes"`
+		CapacityBytes  int64 `json:"capacityBytes"`
+		Evictions      int64 `json:"evictions"`
+		Hits           int64 `json:"hits"`
+		Misses         int64 `json:"misses"`
+		ProtectedBytes int64 `json:"protectedBytes"`
+	} `json:"cache"`
+	Limited    int64     `json:"limited"`
+	Replica    string    `json:"replica"`
+	ReportedAt time.Time `json:"reportedAt"`
+	Throughput struct {
+		BytesPerSecondByClass struct {
+			Anonymous int64 `json:"anonymous"`
+			Catalogue int64 `json:"catalogue"`
+			SignedIn  int64 `json:"signedIn"`
+		} `json:"bytesPerSecondByClass"`
+		Limited bool `json:"limited"`
+	} `json:"throughput"`
 }
 
 // BastionRepositoryRead defines model for BastionRepositoryRead.
@@ -10234,6 +10455,13 @@ type BastionRepositoryReadRead string
 
 // BastionRepositoryReadStatus Set with `none`: the status the caller would receive for a read of the repository.
 type BastionRepositoryReadStatus int
+
+// BastionSlots The requests in flight to the main installation across the Bastion's replicas (R-BAS-025).
+type BastionSlots struct {
+	AnonymousShare     float32 `json:"anonymousShare"`
+	MaxConcurrent      int     `json:"maxConcurrent"`
+	QueueTimeoutMillis int     `json:"queueTimeoutMillis"`
+}
 
 // BastionSubject defines model for BastionSubject.
 type BastionSubject struct {
@@ -10252,6 +10480,30 @@ type BastionSubject struct {
 
 // BastionSubjectKind defines model for BastionSubject.Kind.
 type BastionSubjectKind string
+
+// BastionSwitches The switches of the registration's configuration (R-BAS-093), each off for a new registration.
+type BastionSwitches struct {
+	// Docs The documentation of the web interface (R-BAS-102), effective only with `gui`.
+	Docs bool `json:"docs"`
+
+	// Gui The Bastion's read-only web interface (R-BAS-102); while it is off every catalogue route answers `404`.
+	Gui bool `json:"gui"`
+
+	// Handover The handover per blob (R-BAS-071): while it is on, the main installation may answer a forward of this Bastion for a large
+	// file with a short-lived signed link of the object store, so the Bastion reads the bytes from the store itself (R-STOR-095).
+	Handover bool `json:"handover"`
+}
+
+// BastionThroughput The byte rate the Bastion reads at (R-BAS-097); null is unlimited.
+type BastionThroughput struct {
+	AnonymousShare float32 `json:"anonymousShare"`
+	BytesPerHour   struct {
+		Anonymous *int64 `json:"anonymous"`
+		Catalogue *int64 `json:"catalogue"`
+		SignedIn  *int64 `json:"signedIn"`
+	} `json:"bytesPerHour"`
+	BytesPerSecond *int64 `json:"bytesPerSecond"`
+}
 
 // BastionTokenCreated A Bastion token with its value. The value is in this answer only.
 type BastionTokenCreated struct {
@@ -12616,7 +12868,7 @@ type LimitAssignment struct {
 	// In a profile's write, a figure left out is unlimited (R-LIM-031).
 	Overrides LimitFigureOverrides `json:"overrides"`
 
-	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
+	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014, R-LIM-043).
 	Place     LimitPlace `json:"place"`
 	Profile   string     `json:"profile"`
 	UpdatedAt time.Time  `json:"updatedAt"`
@@ -12664,7 +12916,7 @@ type LimitBlock struct {
 	LiftedBy *string    `json:"liftedBy"`
 	Limit    int64      `json:"limit"`
 
-	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
+	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014, R-LIM-043).
 	Place     LimitPlace `json:"place"`
 	Refused   int64      `json:"refused"`
 	StartedAt time.Time  `json:"startedAt"`
@@ -12722,7 +12974,7 @@ type LimitExplainCeilingClass string
 type LimitExplainStep struct {
 	Outcome LimitExplainStepOutcome `json:"outcome"`
 
-	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
+	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014, R-LIM-043).
 	Place LimitPlace           `json:"place"`
 	Rules *[]LimitRuleRef      `json:"rules,omitempty"`
 	Step  LimitExplainStepStep `json:"step"`
@@ -12752,7 +13004,7 @@ type LimitExplanation struct {
 	FigureSources map[string]string `json:"figureSources"`
 	Mode          LimitMode         `json:"mode"`
 
-	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
+	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014, R-LIM-043).
 	Place      LimitPlace `json:"place"`
 	Repository *string    `json:"repository"`
 
@@ -12824,10 +13076,20 @@ type LimitModePreview struct {
 	Subjects        int         `json:"subjects"`
 }
 
-// LimitPlace Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
+// LimitPlace Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014, R-LIM-043).
 type LimitPlace struct {
 	union json.RawMessage
 }
+
+// LimitPlaceBastion defines model for LimitPlaceBastion.
+type LimitPlaceBastion struct {
+	// Bastion The registration's name (R-LIM-043).
+	Bastion string                `json:"bastion"`
+	Kind    LimitPlaceBastionKind `json:"kind"`
+}
+
+// LimitPlaceBastionKind defines model for LimitPlaceBastion.Kind.
+type LimitPlaceBastionKind string
 
 // LimitPlaceInstance defines model for LimitPlaceInstance.
 type LimitPlaceInstance struct {
@@ -19504,7 +19766,7 @@ type UsageBudget struct {
 	BlockedUntil *time.Time         `json:"blockedUntil"`
 	Figures      UsageBudgetFigures `json:"figures"`
 
-	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
+	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014, R-LIM-043).
 	Place LimitPlace    `json:"place"`
 	Rule  *LimitRuleRef `json:"rule"`
 }
@@ -19768,7 +20030,7 @@ type UsageTotals struct {
 type UsageUtilisation struct {
 	Figure LimitFigureName `json:"figure"`
 
-	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
+	// Place Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014, R-LIM-043).
 	Place LimitPlace `json:"place"`
 	Ratio float32    `json:"ratio"`
 }
@@ -20959,6 +21221,30 @@ type GetBastionParams struct {
 
 // UpdateBastionParams defines parameters for UpdateBastion.
 type UpdateBastionParams struct {
+	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// ListBastionLimitAssignmentsParams defines parameters for ListBastionLimitAssignments.
+type ListBastionLimitAssignmentsParams struct {
+	// WhoKind Only rules of this kind of caller.
+	WhoKind *ListBastionLimitAssignmentsParamsWhoKind `form:"whoKind,omitempty" json:"whoKind,omitempty"`
+
+	// Profile Only rules of this profile key.
+	Profile *string `form:"profile,omitempty" json:"profile,omitempty"`
+}
+
+// ListBastionLimitAssignmentsParamsWhoKind defines parameters for ListBastionLimitAssignments.
+type ListBastionLimitAssignmentsParamsWhoKind string
+
+// DeleteBastionLimitAssignmentParams defines parameters for DeleteBastionLimitAssignment.
+type DeleteBastionLimitAssignmentParams struct {
+	// IfMatch The ETag loaded with the resource, or `*`. A `DELETE` honours it when sent and answers `412` for a stale one (R-API-012).
+	IfMatch *IfMatchOptional `json:"If-Match,omitempty"`
+}
+
+// ReplaceBastionLimitAssignmentParams defines parameters for ReplaceBastionLimitAssignment.
+type ReplaceBastionLimitAssignmentParams struct {
 	// IfMatch The ETag loaded with the resource, or `*` to overwrite deliberately (R-API-012).
 	IfMatch IfMatch `json:"If-Match"`
 }
@@ -22954,6 +23240,9 @@ type ListUsageParams struct {
 	// Project Narrow the instance's overview to the repositories of one project (Q-API-353).
 	Project *string `form:"project,omitempty" json:"project,omitempty"`
 
+	// Place `installation` for what the main installation served, `bastion:<name>` for what that Bastion served (R-LIM-045, R-UI-242); every place when absent.
+	Place *string `form:"place,omitempty" json:"place,omitempty"`
+
 	// Period hour, day (default) or 30d.
 	Period *ListUsageParamsPeriod `form:"period,omitempty" json:"period,omitempty"`
 
@@ -22998,6 +23287,9 @@ type ListUsageParamsOrder string
 type ExportUsageParams struct {
 	// Project Narrow the instance's overview to the repositories of one project (Q-API-353).
 	Project *string `form:"project,omitempty" json:"project,omitempty"`
+
+	// Place `installation` for what the main installation served, `bastion:<name>` for what that Bastion served (R-LIM-045, R-UI-242); every place when absent.
+	Place *string `form:"place,omitempty" json:"place,omitempty"`
 
 	// Period hour, day (default) or 30d.
 	Period *ExportUsageParamsPeriod `form:"period,omitempty" json:"period,omitempty"`
@@ -23331,6 +23623,12 @@ type CreateBastionJSONRequestBody = NewBastion
 
 // UpdateBastionApplicationMergePatchPlusJSONRequestBody defines body for UpdateBastion for application/merge-patch+json ContentType.
 type UpdateBastionApplicationMergePatchPlusJSONRequestBody = BastionPatch
+
+// CreateBastionLimitAssignmentJSONRequestBody defines body for CreateBastionLimitAssignment for application/json ContentType.
+type CreateBastionLimitAssignmentJSONRequestBody = LimitAssignmentWrite
+
+// ReplaceBastionLimitAssignmentJSONRequestBody defines body for ReplaceBastionLimitAssignment for application/json ContentType.
+type ReplaceBastionLimitAssignmentJSONRequestBody = LimitAssignmentWrite
 
 // CreateBastionTokenJSONRequestBody defines body for CreateBastionToken for application/json ContentType.
 type CreateBastionTokenJSONRequestBody = NewBastionToken
@@ -23828,6 +24126,32 @@ func (t *LimitPlace) FromLimitPlaceRepository(v LimitPlaceRepository) error {
 
 // MergeLimitPlaceRepository performs a merge with any union data inside the LimitPlace, using the provided LimitPlaceRepository
 func (t *LimitPlace) MergeLimitPlaceRepository(v LimitPlaceRepository) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLimitPlaceBastion returns the union data inside the LimitPlace as a LimitPlaceBastion
+func (t LimitPlace) AsLimitPlaceBastion() (LimitPlaceBastion, error) {
+	var body LimitPlaceBastion
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLimitPlaceBastion overwrites any union data inside the LimitPlace as the provided LimitPlaceBastion
+func (t *LimitPlace) FromLimitPlaceBastion(v LimitPlaceBastion) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLimitPlaceBastion performs a merge with any union data inside the LimitPlace, using the provided LimitPlaceBastion
+func (t *LimitPlace) MergeLimitPlaceBastion(v LimitPlaceBastion) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -24528,9 +24852,24 @@ type ServerInterface interface {
 	// GetBastion Read a Bastion registration
 	// (GET /api/v1/bastions/{name})
 	GetBastion(w http.ResponseWriter, r *http.Request, name string, params GetBastionParams)
-	// UpdateBastion Change or disable a Bastion registration
+	// UpdateBastion Change or disable a Bastion registration, or configure it
 	// (PATCH /api/v1/bastions/{name})
 	UpdateBastion(w http.ResponseWriter, r *http.Request, name string, params UpdateBastionParams)
+	// ListBastionLimitAssignments List the rules of a Bastion's place
+	// (GET /api/v1/bastions/{name}/limits/assignments)
+	ListBastionLimitAssignments(w http.ResponseWriter, r *http.Request, name string, params ListBastionLimitAssignmentsParams)
+	// CreateBastionLimitAssignment Create a rule at a Bastion's place
+	// (POST /api/v1/bastions/{name}/limits/assignments)
+	CreateBastionLimitAssignment(w http.ResponseWriter, r *http.Request, name string)
+	// DeleteBastionLimitAssignment Delete a rule of a Bastion's place
+	// (DELETE /api/v1/bastions/{name}/limits/assignments/{id})
+	DeleteBastionLimitAssignment(w http.ResponseWriter, r *http.Request, name string, id string, params DeleteBastionLimitAssignmentParams)
+	// GetBastionLimitAssignment Read a rule of a Bastion's place
+	// (GET /api/v1/bastions/{name}/limits/assignments/{id})
+	GetBastionLimitAssignment(w http.ResponseWriter, r *http.Request, name string, id string)
+	// ReplaceBastionLimitAssignment Replace a rule of a Bastion's place
+	// (PUT /api/v1/bastions/{name}/limits/assignments/{id})
+	ReplaceBastionLimitAssignment(w http.ResponseWriter, r *http.Request, name string, id string, params ReplaceBastionLimitAssignmentParams)
 	// CreateBastionToken Issue a Bastion token
 	// (POST /api/v1/bastions/{name}/tokens)
 	CreateBastionToken(w http.ResponseWriter, r *http.Request, name string, params CreateBastionTokenParams)
@@ -27028,6 +27367,244 @@ func (siw *ServerInterfaceWrapper) UpdateBastion(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateBastion(w, r, name, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListBastionLimitAssignments operation middleware
+func (siw *ServerInterfaceWrapper) ListBastionLimitAssignments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListBastionLimitAssignmentsParams
+
+	// ------------- Optional query parameter "whoKind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "whoKind", r.URL.Query(), &params.WhoKind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "whoKind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "whoKind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "profile" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "profile", r.URL.Query(), &params.Profile, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "profile"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "profile", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListBastionLimitAssignments(w, r, name, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateBastionLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) CreateBastionLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateBastionLimitAssignment(w, r, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteBastionLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) DeleteBastionLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteBastionLimitAssignmentParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatchOptional
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = &IfMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteBastionLimitAssignment(w, r, name, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetBastionLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) GetBastionLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetBastionLimitAssignment(w, r, name, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceBastionLimitAssignment operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceBastionLimitAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReplaceBastionLimitAssignmentParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceBastionLimitAssignment(w, r, name, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -44289,6 +44866,19 @@ func (siw *ServerInterfaceWrapper) ListUsage(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// ------------- Optional query parameter "place" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "place", r.URL.Query(), &params.Place, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "place"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "place", Err: err})
+		}
+		return
+	}
+
 	// ------------- Optional query parameter "period" -------------
 
 	err = runtime.BindQueryParameterWithOptions("form", true, false, "period", r.URL.Query(), &params.Period, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
@@ -44422,6 +45012,19 @@ func (siw *ServerInterfaceWrapper) ExportUsage(w http.ResponseWriter, r *http.Re
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "project"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "place" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "place", r.URL.Query(), &params.Place, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "place"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "place", Err: err})
 		}
 		return
 	}
@@ -46779,6 +47382,11 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/limits/assignments/{id}", wrapper.DeleteInstanceLimitAssignment)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/limits/assignments/{id}", wrapper.GetInstanceLimitAssignment)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/limits/assignments/{id}", wrapper.ReplaceInstanceLimitAssignment)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/bastions/{name}/limits/assignments", wrapper.ListBastionLimitAssignments)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/bastions/{name}/limits/assignments", wrapper.CreateBastionLimitAssignment)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/bastions/{name}/limits/assignments/{id}", wrapper.DeleteBastionLimitAssignment)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/bastions/{name}/limits/assignments/{id}", wrapper.GetBastionLimitAssignment)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/bastions/{name}/limits/assignments/{id}", wrapper.ReplaceBastionLimitAssignment)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/limits/assignments", wrapper.ListProjectLimitAssignments)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/limits/assignments", wrapper.CreateProjectLimitAssignment)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/limits/assignments/{id}", wrapper.DeleteProjectLimitAssignment)

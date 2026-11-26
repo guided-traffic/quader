@@ -14,6 +14,13 @@ package audit
 // {principalId, name}, and the replay switches the member off (internal/bastionmain/handover.go); switching it on widens and
 // carries no entry.
 
+// The configuration of a Bastion (R-BAS-093, Q-BAS-320): bastion.configuration.changed is written in the transaction of every change of
+// what the handshake's member configuration carries - a switch, the mode, the preset, the flood figures, the slots, the throughput, the
+// anonymous ceiling, a rule of the Bastion's place or the figures of a profile such a rule names - with the parts changed and, for the
+// registration's own members, their values before and after. The feed maps it to a settings entry, so every Bastion handshakes again
+// within one poll (R-BAS-015). It widens or narrows nothing a Bastion keeps of a caller's answers and carries no journal entry; a
+// switch-off of the handover keeps its own journaled event beside it.
+
 // Names of the Bastion registration events, for the producers.
 const (
 	EventBastionCreated  = "bastion.created"
@@ -24,6 +31,8 @@ const (
 
 	EventBastionHandoverEnabled  = "bastion.handover.enabled"
 	EventBastionHandoverDisabled = "bastion.handover.disabled"
+
+	EventBastionConfigurationChanged = "bastion.configuration.changed"
 )
 
 func init() {
@@ -37,4 +46,6 @@ func init() {
 	bastion(EventBastionDeleted, JournalRevocation, `{"type":"object","properties":{"tokensRevoked":{"type":"integer"}}}`)
 	bastion(EventBastionHandoverEnabled, NoJournal, `{"type":"object"}`)
 	bastion(EventBastionHandoverDisabled, JournalRevocation, `{"type":"object"}`)
+	bastion(EventBastionConfigurationChanged, NoJournal,
+		`{"type":"object","required":["parts"],"properties":{"parts":`+eventSchemaNames+`,"before":{"type":"object"},"after":{"type":"object"}}}`)
 }

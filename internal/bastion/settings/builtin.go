@@ -3,7 +3,10 @@ package settings
 import "github.com/guided-traffic/quader/internal/bastion/iface"
 
 // The rules of the built-in configuration's place: the two Bastion profiles of usage-and-limits.md R-LIM-046, with the figures
-// the measurement of 2026-11-26 proposes for them (docs/developer/bastion.md, "The proposal for the figures").
+// the measurement of 2026-11-26 proposes for them (docs/developer/bastion.md, "The proposal for the figures"), with the anonymous
+// parallel transfers of usage-and-limits.md Q-LIM-310 (270, one anonymous dotnet restore of 200 packages at once). The main installation
+// writes the same figures for a new registration, and maintest.Configuration copies them: TestR_BAS_093_ANewRegistrationIsTheBuiltInConfiguration
+// (internal/app) and TestR_BAS_093_TheTestDoubleSendsTheBuiltInConfiguration hold the three to one another.
 const (
 	BuiltinRuleAnonymous = "builtin-bastion-anonymous"
 	BuiltinRuleSignedIn  = "builtin-bastion-signed-in"
@@ -42,7 +45,7 @@ func Builtin() iface.Configuration {
 		RequestsPerSecond: figure(50), RequestsBurst: figure(1250), RequestsPerHour: figure(20000),
 		CachedBytesPerSecond: figure(100_000_000), CachedBytesPerHour: figure(30_000_000_000),
 		UncachedBytesPerSecond: figure(50_000_000), UncachedBytesPerHour: figure(9_000_000_000),
-		UpstreamRequestsPerHour: figure(5200), ParallelTransfers: figure(80), BytesPerDay: figure(220_000_000_000),
+		UpstreamRequestsPerHour: figure(5200), ParallelTransfers: figure(270), BytesPerDay: figure(220_000_000_000),
 		RefusedPerHour: figure(300),
 	}
 	signedIn := iface.Figures{

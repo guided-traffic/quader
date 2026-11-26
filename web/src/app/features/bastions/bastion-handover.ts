@@ -139,7 +139,7 @@ export class BastionHandover {
   protected readonly busy = signal(false);
   protected readonly error = signal<ApiError | null>(null);
   /** The state the server answered last; it follows the list's registration whenever that is read again. */
-  protected readonly on = linkedSignal(() => this.bastion().handover);
+  protected readonly on = linkedSignal(() => this.bastion().switches.handover);
 
   protected readonly canWrite = computed(() => this.session.has('endpoints:write'));
   protected readonly noteId = computed(() => `bastion-handover-note-${this.bastion().name}`);
@@ -159,9 +159,9 @@ export class BastionHandover {
       const name = this.bastion().name;
       const { etag } = await this.api.get(name);
       const { value } = await this.api.setHandover(name, handover, etag);
-      this.on.set(value.handover);
+      this.on.set(value.switches.handover);
       this.notifier.status(
-        value.handover
+        value.switches.handover
           ? $localize`:@@bastion.handover.on-done:Direct reads from the object store switched on.`
           : $localize`:@@bastion.handover.off-done:Direct reads from the object store switched off.`,
       );

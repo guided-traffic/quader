@@ -419,7 +419,16 @@ export function sampleExplanation(): LimitExplanation {
 }
 
 function placeKey(place: LimitPlace): string {
-  return place.kind === 'instance' ? 'instance' : place.kind === 'project' ? `project:${place.project}` : `repository:${place.repository}`;
+  switch (place.kind) {
+    case 'instance':
+      return 'instance';
+    case 'project':
+      return `project:${place.project}`;
+    case 'repository':
+      return `repository:${place.repository}`;
+    case 'bastion':
+      return `bastion:${place.bastion}`;
+  }
 }
 
 export class FakeLimitsApi extends LimitsApi {

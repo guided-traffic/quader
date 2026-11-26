@@ -199,11 +199,17 @@ func (e *env) number(sql string, args ...any) int64 {
 }
 
 // registration creates the principal and the subtype row of a Bastion registration, which bastion_contact
-// refers to (the registration service is work package 1's).
+// refers to (the registration service is work package 1's), and the five kind rules of the preset Internet at its place, which
+// the service writes with every registration and without which its configuration is no configuration (R-LIM-046).
 func (e *env) registration(name string) (id string) {
 	e.t.Helper()
 	id = e.text("INSERT INTO principal (id, kind, name) VALUES (gen_random_uuid(), 'bastion', $1) RETURNING id::text", name)
 	e.exec("INSERT INTO bastion (principal_id) VALUES ($1::uuid)", id)
+	e.exec(`INSERT INTO limit_assignment (id, place_kind, bastion_id, who_kind, who_ref, profile_id, capped, builtin)
+	        SELECT gen_random_uuid(), 'bastion', $1::uuid, 'every', r.who, p.id, false, true
+	          FROM (VALUES ('anonymous', 'bastion-anonymous'), ('user', 'bastion-signed-in'), ('technical_token', 'bastion-signed-in'),
+	                       ('ci', 'bastion-signed-in'), ('administrator', 'bastion-signed-in')) AS r (who, profile)
+	          JOIN limit_profile p ON p.key = r.profile`, id)
 	return id
 }
 
@@ -589,6 +595,11 @@ func (e *env) newSite(o siteOpts) *site {
 		Feed:         s.feed,
 		Contacts:     bastionmain.NewContacts(bastionmain.ContactOptions{DB: s.db, Audit: s.rec}),
 		Downloads:    bastionmain.NewIntake(bastionmain.IntakeOptions{DB: s.db, Audit: s.rec, MaxBatch: o.maxBatch, MaxAge: o.maxAge, Record: o.recordDownloads}),
+		// The registration's configuration as the composition root answers it for a registration its snapshot does not hold (R-BAS-093).
+		Configuration: func(ctx context.Context, rec bastionmain.Recognition) (iface.Configuration, error) {
+			c, _, err := bastionmain.ReadConfiguration(ctx, s.db, rec.BastionID)
+			return c, err
+		},
 	}
 	api := v1.New(v1.Options{
 		Document: doc, Identity: v1.Identity{Replica: name, Role: "web"}, Ready: func() bool { return true },

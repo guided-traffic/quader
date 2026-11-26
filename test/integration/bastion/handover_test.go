@@ -232,7 +232,7 @@ func TestR_BAS_070_ALargeFileIsReadFromTheObjectStore(t *testing.T) {
 	})
 	answersOf := func(p string) []answer { amu.Lock(); defer amu.Unlock(); return append([]answer(nil), answers[p]...) }
 
-	w.mustAPI("PATCH", "/api/v1/bastions/partners", http.StatusOK, map[string]any{"handover": true},
+	w.mustAPI("PATCH", "/api/v1/bastions/partners", http.StatusOK, map[string]any{"switches": map[string]any{"handover": true}},
 		"Content-Type", "application/merge-patch+json", "If-Match", "*")
 	bundle := filepath.Join(w.dir, "bastion-ca-bundle.pem")
 	front, err := os.ReadFile(w.front.caFile)
@@ -431,7 +431,7 @@ func TestR_BAS_070_ALargeFileIsReadFromTheObjectStore(t *testing.T) {
 	})
 
 	t.Run("with the switch off the main installation streams an offered forward, the handshake tells the Bastion, and the read comes as bytes from the main installation", func(t *testing.T) {
-		w.mustAPI("PATCH", "/api/v1/bastions/partners", http.StatusOK, map[string]any{"handover": false},
+		w.mustAPI("PATCH", "/api/v1/bastions/partners", http.StatusOK, map[string]any{"switches": map[string]any{"handover": false}},
 			"Content-Type", "application/merge-patch+json", "If-Match", "*")
 		// The main installation decides from its own snapshot of the switch, whatever a Bastion's last handshake said: a recognized
 		// forward that offers, sent as the Bastion sends it, is streamed once the snapshot followed (R-BAS-071, within 2 s).
@@ -573,7 +573,7 @@ func TestR_BAS_070_AnEncryptedFileIsReadFromTheObjectStoreWithItsDataKey(t *test
 	})
 	valuesOf := func(p string) []string { amu.Lock(); defer amu.Unlock(); return append([]string(nil), values[p]...) }
 
-	w.mustAPI("PATCH", "/api/v1/bastions/partners", http.StatusOK, map[string]any{"handover": true},
+	w.mustAPI("PATCH", "/api/v1/bastions/partners", http.StatusOK, map[string]any{"switches": map[string]any{"handover": true}},
 		"Content-Type", "application/merge-patch+json", "If-Match", "*")
 	bundle := filepath.Join(w.dir, "bastion-ca-bundle.pem")
 	front, err := os.ReadFile(w.front.caFile)

@@ -93,6 +93,8 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.bastion.created:Bastion registered`;
     case 'bastion.data_key.handed':
       return $localize`:@@audit.action.bastion.data_key.handed:Data key of a file handed to a Bastion`;
+    case 'bastion.configuration.changed':
+      return $localize`:@@audit.action.bastion.configuration.changed:Bastion's configuration changed`;
     case 'bastion.deleted':
       return $localize`:@@audit.action.bastion.deleted:Bastion deleted`;
     case 'bastion.disabled':

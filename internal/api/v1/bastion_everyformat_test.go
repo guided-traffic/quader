@@ -144,7 +144,12 @@ func TestR_BAS_057_TheHandshakeCarriesTheFormatTable(t *testing.T) {
 		}
 		return h
 	}
-	base := BastionServices{Feed: stillFeed{}, AnonymousReads: func(context.Context) bool { return false }, Formats: table}
+	base := BastionServices{
+		Feed: stillFeed{}, AnonymousReads: func(context.Context) bool { return false }, Formats: table,
+		Configuration: func(context.Context, bastionmain.Recognition) (iface.Configuration, error) {
+			return newConfiguration(t, 1, iface.Switches{}), nil
+		},
+	}
 	t.Run("an unbound host", func(t *testing.T) {
 		svc := base
 		svc.BoundRepository = func(*http.Request) (qname.Repo, bool, error) { return qname.Repo{}, false, nil }

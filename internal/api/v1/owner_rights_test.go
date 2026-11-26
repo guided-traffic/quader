@@ -62,6 +62,8 @@ var ownerRightsExempt = map[string]string{
 	"switchDeliveryRule":  "manage on the repository or the role admin, through the decision point with the scope (R-CUR-005, R-CUR-024)",
 	"allowStoredPackages": "manage on the repository or the role admin, through the decision point with the scope (R-CUR-005, R-CUR-025)",
 	"revokeBastionToken":  "endpoints:write or tokens:revoke through the decision point, with the scope (requireAny)",
+	"updateBastion": "limits:write for the member limits and endpoints:write for every other member through the decision point, with " +
+		"the scope (bastionPatchAllowed, Q-BAS-325)",
 	// >>> T-24 catalogue
 	"evaluateUpstreamVulnerabilities": "a question that writes nothing: read on the repository through the decision point with the scope " +
 		"(catalogueSetup, R-CUR-005)",

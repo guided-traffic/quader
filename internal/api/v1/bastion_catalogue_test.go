@@ -18,6 +18,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastionmain/catalogue"
 	"github.com/guided-traffic/quader/internal/bastionmain/catalogue/cataloguetest"
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/limits"
 )
 
 // The catalogue routes of interface version 8 (R-BAS-101 to R-BAS-103) and the handshake's configuration and contact
@@ -38,12 +39,27 @@ func catalogueSetupWith(t *testing.T, sw iface.Switches, store catalogue.Reader)
 	svc := BastionServices{
 		Feed: stillFeed{}, AnonymousReads: func(context.Context) bool { return false }, Catalogue: store,
 		Configuration: func(context.Context, bastionmain.Recognition) (iface.Configuration, error) {
-			c := bastionmain.InterimConfiguration(3, false)
-			c.Switches = sw
-			return c, nil
+			return newConfiguration(t, 3, sw), nil
 		},
 	}
 	return newSetup(t, func(o *Options) { o.Bastion = svc }, nil)
+}
+
+// newConfiguration is the configuration of a new registration (R-BAS-093, R-LIM-046): the default limits and the five kind rules of
+// the preset Internet, each rule named after its kind.
+func newConfiguration(t *testing.T, revision int64, sw iface.Switches) iface.Configuration {
+	t.Helper()
+	var rules []bastionmain.PlaceRule
+	for kind, profile := range bastionmain.Presets()[iface.PresetInternet].Kinds {
+		rules = append(rules, bastionmain.PlaceRule{
+			ID: "kind-" + kind, WhoKind: limits.WhoEvery, WhoRef: kind, Profile: profile, Builtin: true, Figures: limits.BuiltinProfiles()[profile],
+		})
+	}
+	c, err := bastionmain.Configuration(revision, sw, bastionmain.DefaultLimits(), rules)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return c
 }
 
 // asBastion serves a request as the recognized registration partners.
@@ -124,7 +140,7 @@ func TestR_BAS_102_TheCatalogueRoutesAnswerByTheSwitches(t *testing.T) {
 }
 
 // TestR_BAS_093_TheHandshakeCarriesTheConfigurationAndRecordsTheContact: the handshake answers the registration's configuration
-// (the interim one until E8, valid and with the handover's switch), and refuses a malformed contact header.
+// (a new registration's, valid and with the handover's switch), and refuses a malformed contact header.
 func TestR_BAS_093_TheHandshakeCarriesTheConfigurationAndRecordsTheContact(t *testing.T) {
 	s := catalogueSetup(t, iface.Switches{Handover: true, GUI: true})
 	w := asBastion(s, http.MethodGet, iface.PathHandshake, "", iface.HeaderEdgeLimit, "rps=100; connections=50", iface.HeaderCatalogueKept, "true")
@@ -138,8 +154,8 @@ func TestR_BAS_093_TheHandshakeCarriesTheConfigurationAndRecordsTheContact(t *te
 			t.Errorf("%s: %s answers %d", k, v, w.Code)
 		}
 	}
-	if err := bastionmain.InterimConfiguration(0, false).Validate(); err != nil {
-		t.Fatalf("the interim configuration is refused: %v", err)
+	if c := newConfiguration(t, 0, iface.Switches{}); c.Limits.Preset != iface.PresetInternet || c.Limits.Mode != iface.ModeEnforce {
+		t.Fatalf("a new registration's configuration: %+v", c.Limits)
 	}
 }
 

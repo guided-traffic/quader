@@ -240,6 +240,8 @@ export function placeText(place: LimitPlace): string {
       return $localize`:@@limits.place.project:in project ${place.project}:project:`;
     case 'repository':
       return $localize`:@@limits.place.repository:at ${place.repository}:repository:`;
+    case 'bastion':
+      return $localize`:@@limits.place.bastion:at Bastion ${place.bastion}:bastion:`;
   }
 }
 
@@ -252,6 +254,8 @@ export function placeLabel(place: LimitPlace): string {
       return $localize`:@@limits.place.project-label:Project ${place.project}:project:`;
     case 'repository':
       return place.repository;
+    case 'bastion':
+      return $localize`:@@limits.place.bastion-label:Bastion ${place.bastion}:bastion:`;
   }
 }
 

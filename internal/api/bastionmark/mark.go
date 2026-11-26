@@ -39,6 +39,10 @@ type Options struct {
 	Metrics *bastionmain.Metrics
 	// Log receives what the stage cannot say on the wire; nil discards it.
 	Log *slog.Logger
+	// Limits names what the Bastion charges a signed-in caller against at its place (R-BAS-096, Q-BAS-328): the subject's key and
+	// the rule the main installation resolved, which the marking states in Quader-Bastion-Limits beside the token subject; nil
+	// states none.
+	Limits func(ctx context.Context, p httpserver.Principal, bastionID string) *iface.SubjectLimits
 }
 
 // Marker is the Mark stage.
@@ -61,7 +65,7 @@ func (m *Marker) Stage() func(http.Handler) http.Handler {
 				next.ServeHTTP(&stripWriter{ResponseWriter: w}, r)
 				return
 			}
-			st := &state{m: m, rec: rec, subject: iface.Subject{Kind: iface.SubjectInvalid}}
+			st := &state{m: m, rec: rec, subject: iface.Subject{Kind: iface.SubjectInvalid}, ctx: r.Context()}
 			ctx, absence := bastionmain.WithAbsence(r.Context())
 			st.absence = absence
 			ctx = httpserver.WithPrincipalNote(ctx, st.noteCaller)
@@ -76,6 +80,8 @@ type state struct {
 	m       *Marker
 	rec     bastionmain.Recognition
 	absence *bastionmain.Absence
+	// ctx is the request's context, for the subject's limits (Options.Limits).
+	ctx context.Context
 
 	mu      sync.Mutex
 	subject iface.Subject // invalid until the authentication stage accepted a credential
@@ -111,6 +117,9 @@ func (s *state) noteCaller(p httpserver.Principal) {
 		sub = iface.Subject{Kind: iface.SubjectAnonymous}
 	case p.Credential.TokenID != "" && p.ID != "":
 		sub = iface.Subject{Kind: iface.SubjectToken, TokenID: p.Credential.TokenID, PrincipalID: p.ID, ExpiresAt: p.Credential.ExpiresAt}
+		if s.m.o.Limits != nil {
+			sub.Limits = s.m.o.Limits(s.ctx, p, s.rec.BastionID)
+		}
 	}
 	s.mu.Lock()
 	s.subject, s.grant = sub, p.Credential.Registry

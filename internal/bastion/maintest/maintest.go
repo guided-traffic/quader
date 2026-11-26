@@ -258,19 +258,40 @@ func (m *Main) SetHandover(on bool) { m.lock(func() { m.handover = on }) }
 // switch of the handover and may change any member; nil sends it unchanged.
 func (m *Main) SetConfiguration(f func(*iface.Configuration)) { m.lock(func() { m.configure = f }) }
 
-// Configuration is a configuration a main installation of today sends (R-BAS-093): the switch handover as given, the web
-// interface and its documentation off, one rule without a figure for every kind of caller, and the flood figures and slots
-// the Bastion chart held before they became members of the configuration. It is the main installation's interim configuration in
-// substance; this package keeps its own, since a package of the Bastion imports none of the main installation's.
+// Configuration is the configuration a main installation sends for a new registration (R-BAS-093, R-LIM-046): the Internet preset
+// with its five kind rules and the two Bastion profiles' figures, its flood figures, the slots (64, a quarter, a wait of 5 s), the
+// anonymous ceiling and the throughput of 200 MB/s with a quarter for anonymous callers, all in Enforce, the web interface and its documentation off, and the switch handover as given;
+// the revision is a new registration's, 1. It is a copy of the Bastion's built-in configuration (settings.Builtin), since this package of
+// the infrastructure layer imports none of the domain: TestR_BAS_093_TheTestDoubleSendsTheBuiltInConfiguration (internal/bastion/settings)
+// holds it to that, and TestR_BAS_093_ANewRegistrationIsTheBuiltInConfiguration (internal/app) holds the main installation's
+// bastionmain.DefaultLimits and Internet preset to it as well.
 func Configuration(handover bool) iface.Configuration {
-	const rule = "interim-unlimited"
+	figure := func(v int64) *int64 { return &v }
+	const anonymous, signedIn = "builtin-bastion-anonymous", "builtin-bastion-signed-in"
 	return iface.Configuration{
+		Revision: 1,
 		Switches: iface.Switches{Handover: handover},
 		Limits: iface.Limits{
-			Mode: iface.ModeEnforce, Preset: iface.PresetCustom,
+			Mode: iface.ModeEnforce, Preset: iface.PresetInternet,
 			Place: iface.PlaceTable{
-				Rules: map[string]iface.Figures{rule: {}}, AddressRules: []iface.AddressRule{},
-				KindRules: iface.KindRules{Anonymous: rule, User: rule, TechnicalToken: rule, CI: rule, Administrator: rule},
+				Rules: map[string]iface.Figures{
+					anonymous: {
+						RequestsPerSecond: figure(50), RequestsBurst: figure(1250), RequestsPerHour: figure(20000),
+						CachedBytesPerSecond: figure(100_000_000), CachedBytesPerHour: figure(30_000_000_000),
+						UncachedBytesPerSecond: figure(50_000_000), UncachedBytesPerHour: figure(9_000_000_000),
+						UpstreamRequestsPerHour: figure(5200), ParallelTransfers: figure(270), BytesPerDay: figure(220_000_000_000),
+						RefusedPerHour: figure(300),
+					},
+					signedIn: {
+						RequestsPerSecond: figure(200), RequestsBurst: figure(5400), RequestsPerHour: figure(100000),
+						CachedBytesPerSecond: figure(250_000_000), CachedBytesPerHour: figure(160_000_000_000),
+						UncachedBytesPerSecond: figure(125_000_000), UncachedBytesPerHour: figure(20_000_000_000),
+						UpstreamRequestsPerHour: figure(12000), ParallelTransfers: figure(340), BytesPerDay: figure(1_300_000_000_000),
+						RefusedPerHour: figure(1000),
+					},
+				},
+				AddressRules: []iface.AddressRule{},
+				KindRules:    iface.KindRules{Anonymous: anonymous, User: signedIn, TechnicalToken: signedIn, CI: signedIn, Administrator: signedIn},
 			},
 			Flood: iface.Flood{
 				Anonymous:      iface.FloodClass{RequestsPerSecond: 50, Burst: 1000, MissesPerMinute: 1000},
@@ -280,8 +301,9 @@ func Configuration(handover bool) iface.Configuration {
 				Blocking:       iface.Blocking{Threshold: 3000, WindowSeconds: 60, DurationSeconds: 900, MaxDurationSeconds: 86400},
 				ExemptNetworks: []string{},
 			},
-			Slots:      iface.Slots{MaxConcurrent: 64, AnonymousShare: 0.25, QueueTimeoutMillis: 2000},
-			Throughput: iface.Throughput{AnonymousShare: 0.25},
+			Slots:            iface.Slots{MaxConcurrent: 64, AnonymousShare: 0.25, QueueTimeoutMillis: 5000},
+			Throughput:       iface.Throughput{BytesPerSecond: figure(200_000_000), AnonymousShare: 0.25},
+			AnonymousCeiling: iface.Ceiling{RequestsPerSecond: figure(100), Burst: figure(2000), RequestsPerHour: figure(36000)},
 		},
 	}
 }

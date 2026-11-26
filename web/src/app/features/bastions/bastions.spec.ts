@@ -6,6 +6,7 @@ import { FakeDownloadLinksApi, downloadLinkSettings, linkConnection } from '../.
 import {
   BASTION_SECRET,
   FakeBastionsApi,
+  handoverSwitches,
   inDays,
   sampleBastion,
   sampleBastionContact,
@@ -458,7 +459,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
   it('R-BAS-071 on while every connection can be read: the switch and its sentence alone', async () => {
     const { root } = await renderScreen(BastionList, {
       setup: (g) => {
-        (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ handover: true })];
+        (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ switches: handoverSwitches(true) })];
       },
     });
     expect(toggle(root, 'partners')!.getAttribute('aria-checked')).toBe('true');
@@ -470,7 +471,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
       linkConnection({ name, encrypted: true, usable: false, reasons: [{ code: 'encrypted', detail: null }], ...over });
     const { root } = await renderScreen(BastionList, {
       setup: (g) => {
-        (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ handover: true })];
+        (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ switches: handoverSwitches(true) })];
         (g(DownloadLinksApi) as FakeDownloadLinksApi).current = downloadLinkSettings({
           connections: [
             linkConnection(),
@@ -539,7 +540,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     const { root } = await renderScreen(BastionList, {
       capabilities: ['endpoints:read', 'settings:read'],
       setup: (g) => {
-        (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ handover: true }), sampleBastion({ id: 'b-2', name: 'standby', handover: false })];
+        (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ switches: handoverSwitches(true) }), sampleBastion({ id: 'b-2', name: 'standby', switches: handoverSwitches(false) })];
         mixed(g(DownloadLinksApi) as FakeDownloadLinksApi);
       },
     });
@@ -557,7 +558,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     const { root } = await renderScreen(BastionList, {
       capabilities: ['endpoints:read', 'endpoints:write'],
       setup: (g) => {
-        (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ handover: true })];
+        (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ switches: handoverSwitches(true) })];
         mixed(g(DownloadLinksApi) as FakeDownloadLinksApi);
         count = counted(g(DownloadLinksApi) as FakeDownloadLinksApi);
       },
@@ -570,7 +571,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
   it('R-BAS-071 connections that cannot be read leave the switch and its sentence alone', async () => {
     const { root } = await renderScreen(BastionList, {
       setup: (g) => {
-        (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ handover: true })];
+        (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ switches: handoverSwitches(true) })];
         (g(DownloadLinksApi) as FakeDownloadLinksApi).settings = () => Promise.reject(new ApiError(503, { code: 'unavailable' }, 'req-2'));
       },
     });

@@ -270,6 +270,8 @@ SELECT b.subject_kind, b.subject_ref, b.place,
    AND (cardinality($3::bigint[]) = 0 OR b.repository_id = ANY($3::bigint[])
         OR b.via_repository_id = ANY($3::bigint[]))
    AND ($4::text = '' OR b.subject_ref = $4::text)
+   AND ($5::text = '' OR ($5::text = 'installation' AND b.place NOT LIKE 'bastion:%')
+        OR b.place = $5::text)
  GROUP BY b.subject_kind, b.subject_ref, b.place
 `
 
@@ -278,6 +280,7 @@ type UsageByPlaceParams struct {
 	DaySince   string
 	Repos      []int64
 	SubjectRef string
+	Place      string
 }
 
 type UsageByPlaceRow struct {
@@ -305,6 +308,7 @@ func (q *Queries) UsageByPlace(ctx context.Context, arg UsageByPlaceParams) ([]U
 		arg.DaySince,
 		arg.Repos,
 		arg.SubjectRef,
+		arg.Place,
 	)
 	if err != nil {
 		return nil, err
@@ -406,6 +410,8 @@ SELECT e.subject_kind, e.subject_ref, e.mode, sum(e.count)::bigint AS events, ma
  WHERE e.granularity = $1 AND e.bucket_start >= $2::text::timestamptz
    AND (cardinality($3::bigint[]) = 0 OR e.repository_id = ANY($3::bigint[]))
    AND ($4::text = '' OR e.subject_ref = $4::text)
+   AND ($5::text = '' OR ($5::text = 'installation' AND e.place NOT LIKE 'bastion:%')
+        OR e.place = $5::text)
  GROUP BY e.subject_kind, e.subject_ref, e.mode
 `
 
@@ -414,6 +420,7 @@ type UsageEventTotalsParams struct {
 	Since       string
 	Repos       []int64
 	SubjectRef  string
+	Place       string
 }
 
 type UsageEventTotalsRow struct {
@@ -431,6 +438,7 @@ func (q *Queries) UsageEventTotals(ctx context.Context, arg UsageEventTotalsPara
 		arg.Since,
 		arg.Repos,
 		arg.SubjectRef,
+		arg.Place,
 	)
 	if err != nil {
 		return nil, err
@@ -687,6 +695,8 @@ SELECT b.subject_kind, b.subject_ref,
         OR b.via_repository_id = ANY($3::bigint[]))
    AND b.subject_kind = ANY($4::text[])
    AND ($5::text = '' OR b.subject_ref = $5::text)
+   AND ($6::text = '' OR ($6::text = 'installation' AND b.place NOT LIKE 'bastion:%')
+        OR b.place = $6::text)
  GROUP BY b.subject_kind, b.subject_ref
 `
 
@@ -696,6 +706,7 @@ type UsageTotalsParams struct {
 	Repos       []int64
 	Kinds       []string
 	SubjectRef  string
+	Place       string
 }
 
 type UsageTotalsRow struct {
@@ -710,7 +721,8 @@ type UsageTotalsRow struct {
 
 // The consumption of every subject in a period and scope (R-LIM-034): one row per subject. repos empty is the instance. A
 // scope holds the rows its repositories served and the rows its virtual repositories took from a well-known repository
-// (via_repository_id, R-LIM-029, Q-LIM-63); a row matches the scope once, whichever of its two repositories is in it.
+// (via_repository_id, R-LIM-029, Q-LIM-63); a row matches the scope once, whichever of its two repositories is in it. place narrows
+// to the rows of one place key (bastion:<id>), or with 'installation' to the main installation's places (R-LIM-045, R-UI-242).
 func (q *Queries) UsageTotals(ctx context.Context, arg UsageTotalsParams) ([]UsageTotalsRow, error) {
 	rows, err := q.db.Query(ctx, usageTotals,
 		arg.Granularity,
@@ -718,6 +730,7 @@ func (q *Queries) UsageTotals(ctx context.Context, arg UsageTotalsParams) ([]Usa
 		arg.Repos,
 		arg.Kinds,
 		arg.SubjectRef,
+		arg.Place,
 	)
 	if err != nil {
 		return nil, err

@@ -221,7 +221,7 @@ func newRig(t *testing.T, fs ...formats.Format) *rig {
 	if err != nil {
 		t.Fatal(err)
 	}
-	marker := New(Options{Shapes: r.shapes, Metrics: r.metrics})
+	marker := New(Options{Shapes: r.shapes, Metrics: r.metrics, Limits: rigLimits})
 	recognize := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			switch req.Header.Get(hRecognize) {
@@ -487,6 +487,36 @@ func TestR_BAS_013_SubjectHeader(t *testing.T) {
 			t.Fatalf("%v", rec.Header())
 		}
 	})
+}
+
+// rigLimits names the subject's limits at the Bastion's place of the principal p-2 alone (R-BAS-096), as the composition root
+// resolves them from the index.
+func rigLimits(_ context.Context, p httpserver.Principal, _ string) *iface.SubjectLimits {
+	if p.ID != "p-2" {
+		return nil
+	}
+	return &iface.SubjectLimits{Key: "user:p-2", Rule: "0193a0c6-0000-7000-8000-000000000001"}
+}
+
+// TestR_BAS_096_TheMarkingNamesTheSubjectsLimits: a forward of a token subject whose limits the main installation resolves carries
+// Quader-Bastion-Limits with its key and rule beside Quader-Bastion-Subject; one whose limits it does not resolve, and an anonymous
+// caller, carry none.
+func TestR_BAS_096_TheMarkingNamesTheSubjectsLimits(t *testing.T) {
+	for cred, want := range map[string]string{
+		"token-no-expiry": "key=user%3Ap-2; rule=0193a0c6-0000-7000-8000-000000000001",
+		"token":           "",
+		"anon":            "",
+	} {
+		rec := newRig(t).do("GET", "/api/mk/web/mk-local/d/left-pad", hRecognize, "forward", hCred, cred)
+		if got := rec.Header().Get(iface.HeaderLimits); got != want {
+			t.Errorf("%s: %s %q, want %q", cred, iface.HeaderLimits, got, want)
+		}
+		if want != "" {
+			if mk := markingOf(t, rec); mk.Subject.Limits == nil || mk.Subject.Limits.Rule != "0193a0c6-0000-7000-8000-000000000001" {
+				t.Errorf("%s: the marking reads %+v", cred, mk.Subject)
+			}
+		}
+	}
 }
 
 // TestR_BAS_013_HeadersOnlyOnBastionRequests: no response to a request without a valid Bastion token carries a

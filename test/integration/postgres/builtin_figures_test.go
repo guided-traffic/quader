@@ -53,7 +53,7 @@ func TestR_HA_020_TheBuiltInFiguresStepKeepsAnAdministratorsValue(t *testing.T) 
 	// unlimited, and set Technical's refused requests to 3,000. Standard and Restricted are as the first migration wrote them.
 	mustExec(t, admin, `UPDATE quader.limit_profile SET upstream_requests_per_hour = 100, uncached_bytes_per_hour = NULL WHERE key = 'anonymous'`)
 	mustExec(t, admin, `UPDATE quader.limit_profile SET refused_per_hour = 3000 WHERE key = 'technical'`)
-	before := scalar[string](t, admin, `SELECT string_agg(key || '=' || version, ',' ORDER BY key) FROM quader.limit_profile WHERE builtin`)
+	before := scalar[string](t, admin, `SELECT string_agg(key || '=' || version, ',' ORDER BY key) FROM quader.limit_profile WHERE builtin AND NOT key LIKE 'bastion-%'`)
 
 	if _, err := postgres.Migrate(ctxT(t, 60*time.Second), cfg, opts(nil)); err != nil {
 		t.Fatalf("the steps from %s: %v", step, err)
@@ -62,7 +62,7 @@ func TestR_HA_020_TheBuiltInFiguresStepKeepsAnAdministratorsValue(t *testing.T) 
 	              COALESCE(uncached_bytes_per_second::text, 'null'), COALESCE(uncached_bytes_per_hour::text, 'null'),
 	              COALESCE(upstream_requests_per_hour::text, 'null'), COALESCE(bytes_per_day::text, 'null'),
 	              COALESCE(refused_per_hour::text, 'null'))`
-	got := scalar[string](t, admin, `SELECT string_agg(`+row+`, ' ' ORDER BY key) FROM quader.limit_profile WHERE builtin`)
+	got := scalar[string](t, admin, `SELECT string_agg(`+row+`, ' ' ORDER BY key) FROM quader.limit_profile WHERE builtin AND NOT key LIKE 'bastion-%'`)
 	want := strings.Join([]string{
 		"anonymous:100000000,30000000000,50000000,null,100,200000000000,300",
 		"restricted:100000000,50000000000,50000000,20000000000,3000,200000000000,300",
@@ -73,7 +73,7 @@ func TestR_HA_020_TheBuiltInFiguresStepKeepsAnAdministratorsValue(t *testing.T) 
 	if got != want {
 		t.Errorf("the built-in profiles' figures:\n got %s\nwant %s\n(an administrator's 100, unlimited and 3,000 kept)", got, want)
 	}
-	after := scalar[string](t, admin, `SELECT string_agg(key || '=' || version, ',' ORDER BY key) FROM quader.limit_profile WHERE builtin`)
+	after := scalar[string](t, admin, `SELECT string_agg(key || '=' || version, ',' ORDER BY key) FROM quader.limit_profile WHERE builtin AND NOT key LIKE 'bastion-%'`)
 	if !strings.HasSuffix(after, "unlimited="+versionOf(before, "unlimited")) {
 		t.Errorf("Unlimited's version moved: before %s, after %s", before, after)
 	}

@@ -104,13 +104,13 @@ func (q *Queries) DeleteLimitProjectMaximum(ctx context.Context, arg DeleteLimit
 }
 
 const insertLimitAssignment = `-- name: InsertLimitAssignment :exec
-INSERT INTO limit_assignment (id, place_kind, project_id, repository_id, who_kind, who_ref, profile_id, overrides, capped,
+INSERT INTO limit_assignment (id, place_kind, project_id, repository_id, bastion_id, who_kind, who_ref, profile_id, overrides, capped,
                               note, created_by, updated_by)
 SELECT $1::text::uuid, $2, NULLIF($3::text, '')::uuid,
-       NULLIF($4::bigint, 0), $5, $6, p.id,
-       $7::text::jsonb, $8, $9,
-       NULLIF($10::text, '')::uuid, NULLIF($10::text, '')::uuid
-  FROM limit_profile p WHERE p.key = $11
+       NULLIF($4::bigint, 0), NULLIF($5::text, '')::uuid, $6, $7, p.id,
+       $8::text::jsonb, $9, $10,
+       NULLIF($11::text, '')::uuid, NULLIF($11::text, '')::uuid
+  FROM limit_profile p WHERE p.key = $12
 `
 
 type InsertLimitAssignmentParams struct {
@@ -118,6 +118,7 @@ type InsertLimitAssignmentParams struct {
 	PlaceKind    string
 	ProjectID    string
 	RepositoryID int64
+	BastionID    string
 	WhoKind      string
 	WhoRef       string
 	Overrides    string
@@ -133,6 +134,7 @@ func (q *Queries) InsertLimitAssignment(ctx context.Context, arg InsertLimitAssi
 		arg.PlaceKind,
 		arg.ProjectID,
 		arg.RepositoryID,
+		arg.BastionID,
 		arg.WhoKind,
 		arg.WhoRef,
 		arg.Overrides,
@@ -236,6 +238,7 @@ SELECT a.id::text AS id, a.place_kind, COALESCE(a.project_id::text, '')::text AS
        COALESCE(a.repository_id, 0)::bigint AS repository_id,
        COALESCE(pr.key, rp.key, '')::text AS project_key, COALESCE(r.key, '')::text AS repo_key,
        COALESCE(r.project_id::text, '')::text AS repo_project_id,
+       COALESCE(a.bastion_id::text, '')::text AS bastion_id, COALESCE(bp.name, '')::text AS bastion_name,
        a.who_kind, a.who_ref, p.key AS profile, a.overrides, a.capped, a.builtin, a.note, a.version,
        a.created_at, COALESCE(a.created_by::text, '')::text AS created_by, a.updated_at,
        COALESCE(a.updated_by::text, '')::text AS updated_by
@@ -244,6 +247,7 @@ SELECT a.id::text AS id, a.place_kind, COALESCE(a.project_id::text, '')::text AS
   LEFT JOIN project pr ON pr.id = a.project_id
   LEFT JOIN repositories r ON r.id = a.repository_id
   LEFT JOIN project rp ON rp.id = r.project_id
+  LEFT JOIN principal bp ON bp.id = a.bastion_id
  ORDER BY a.place_kind, a.created_at, a.id
 `
 
@@ -255,6 +259,8 @@ type LimitAssignmentsRow struct {
 	ProjectKey    string
 	RepoKey       string
 	RepoProjectID string
+	BastionID     string
+	BastionName   string
 	WhoKind       string
 	WhoRef        string
 	Profile       string
@@ -270,7 +276,7 @@ type LimitAssignmentsRow struct {
 }
 
 // Every rule with the names of its place, the project's ID of a repository rule included (R-LIM-013: the index keys places
-// by name and the budget key by ID).
+// by name and the budget key by ID), and the registration of a Bastion's place (R-LIM-043).
 func (q *Queries) LimitAssignments(ctx context.Context) ([]LimitAssignmentsRow, error) {
 	rows, err := q.db.Query(ctx, limitAssignments)
 	if err != nil {
@@ -288,6 +294,8 @@ func (q *Queries) LimitAssignments(ctx context.Context) ([]LimitAssignmentsRow, 
 			&i.ProjectKey,
 			&i.RepoKey,
 			&i.RepoProjectID,
+			&i.BastionID,
+			&i.BastionName,
 			&i.WhoKind,
 			&i.WhoRef,
 			&i.Profile,
@@ -301,6 +309,41 @@ func (q *Queries) LimitAssignments(ctx context.Context) ([]LimitAssignmentsRow, 
 			&i.UpdatedAt,
 			&i.UpdatedBy,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const limitBastionsOfProfile = `-- name: LimitBastionsOfProfile :many
+SELECT DISTINCT a.bastion_id::text AS id, bp.name
+  FROM limit_assignment a
+  JOIN limit_profile p ON p.id = a.profile_id
+  JOIN principal bp ON bp.id = a.bastion_id
+ WHERE p.key = $1 AND a.bastion_id IS NOT NULL
+ ORDER BY 1
+`
+
+type LimitBastionsOfProfileRow struct {
+	ID   string
+	Name string
+}
+
+// The registrations whose place has a rule that names the profile (R-LIM-043): a change of its figures changes their configuration.
+func (q *Queries) LimitBastionsOfProfile(ctx context.Context, key string) ([]LimitBastionsOfProfileRow, error) {
+	rows, err := q.db.Query(ctx, limitBastionsOfProfile, key)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LimitBastionsOfProfileRow{}
+	for rows.Next() {
+		var i LimitBastionsOfProfileRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -26,13 +26,9 @@ func (readsEndpoints) Require(_ context.Context, c string) error {
 
 func (readsEndpoints) RequireAction(context.Context, authz.Coordinate) error { return nil }
 
-type handoverOn map[string]bool
-
-func (h handoverOn) On(id string) bool { return h[id] }
-
-// TestR_BAS_071_TheOperationsOfTheSwitchAndTheHandshake: PATCH takes handover as a boolean with endpoints:write (a caller with
-// endpoints:read is refused before the service, a string is 400, and a null reads as absent, patchEnabled); POST /api/v1/bastions
-// does not take it (400); the handshake says what the replica's snapshot says of the registration. What the service writes,
+// TestR_BAS_071_TheOperationsOfTheSwitchAndTheHandshake: PATCH takes switches.handover as a boolean with endpoints:write (a caller
+// with endpoints:read is refused before the service, a string is 400, and a null reads as absent, patchEnabled); POST
+// /api/v1/bastions does not take it (400); the handshake says what the registration's configuration says. What the service writes,
 // records and journals, and that a null switches nothing, is test/integration/bastionreg's (TestR_BAS_071_TheSwitchIsPerRegistration).
 func TestR_BAS_071_TheOperationsOfTheSwitchAndTheHandshake(t *testing.T) {
 	regs := bastionmain.NewRegistrations(bastionmain.RegistrationOptions{Max: 4}) // no database: every answer below comes before it
@@ -42,10 +38,10 @@ func TestR_BAS_071_TheOperationsOfTheSwitchAndTheHandshake(t *testing.T) {
 		return s.do(http.MethodPatch, "/api/v1/bastions/partners", body, map[string]string{"Content-Type": "application/merge-patch+json", "If-Match": `"1"`})
 	}
 	t.Run("R-BAS-071 a caller with endpoints:read is refused", func(t *testing.T) {
-		problem(t, patch(t, readsEndpoints{}, `{"handover":true}`), http.StatusForbidden, errs.CodeForbidden)
+		problem(t, patch(t, readsEndpoints{}, `{"switches":{"handover":true}}`), http.StatusForbidden, errs.CodeForbidden)
 	})
 	t.Run(`R-BAS-071 {"handover":"yes"} is refused`, func(t *testing.T) {
-		if w := patch(t, allowAll{}, `{"handover":"yes"}`); w.Code != http.StatusBadRequest {
+		if w := patch(t, allowAll{}, `{"switches":{"handover":"yes"}}`); w.Code != http.StatusBadRequest {
 			t.Fatalf("%d %s", w.Code, w.Body)
 		}
 	})
@@ -58,14 +54,19 @@ func TestR_BAS_071_TheOperationsOfTheSwitchAndTheHandshake(t *testing.T) {
 	})
 	t.Run("R-BAS-071 POST /api/v1/bastions does not take handover", func(t *testing.T) {
 		s := newSetup(t, func(o *Options) { o.Bastions, o.API.Config.MaxRequestBodyBytes = regs, config.MiB }, authed)
-		if w := s.do(http.MethodPost, "/api/v1/bastions", `{"name":"partners","handover":true}`, nil); w.Code != http.StatusBadRequest {
+		if w := s.do(http.MethodPost, "/api/v1/bastions", `{"name":"partners","switches":{"handover":true}}`, nil); w.Code != http.StatusBadRequest {
 			t.Fatalf("%d %s", w.Code, w.Body)
 		}
 	})
 	const id = "0192f1c4-0000-7000-8000-0000000000b1"
 	for _, on := range []bool{false, true} {
-		t.Run("R-BAS-071 the handshake says the snapshot's switch", func(t *testing.T) {
-			svc := BastionServices{Feed: stillFeed{}, AnonymousReads: func(context.Context) bool { return false }, Handover: handoverOn{id: on}}
+		t.Run("R-BAS-071 the handshake says the configuration's switch", func(t *testing.T) {
+			svc := BastionServices{
+				Feed: stillFeed{}, AnonymousReads: func(context.Context) bool { return false },
+				Configuration: func(context.Context, bastionmain.Recognition) (iface.Configuration, error) {
+					return newConfiguration(t, 2, iface.Switches{Handover: on}), nil
+				},
+			}
 			s := newSetup(t, func(o *Options) { o.Bastion = svc }, nil)
 			r := httptest.NewRequest(http.MethodGet, iface.PathHandshake, nil)
 			r = r.WithContext(bastionmain.WithRecognition(r.Context(), bastionmain.Recognition{

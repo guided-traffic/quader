@@ -66,7 +66,7 @@ func TestR_HA_020_TheParallelTransfersStepKeepsAnAdministratorsValue(t *testing.
 		t.Fatalf("the steps from %s: %v", step, err)
 	}
 	got := scalar[string](t, admin, `SELECT string_agg(key || '=' || COALESCE(parallel_transfers::text, 'null'), ',' ORDER BY key)
-	                                   FROM quader.limit_profile WHERE builtin`)
+	                                   FROM quader.limit_profile WHERE builtin AND NOT key LIKE 'bastion-%'`)
 	if want := "anonymous=64,restricted=64,standard=30,technical=1000,unlimited=null"; got != want {
 		t.Errorf("the built-in profiles' parallel transfers: %s, want %s (an administrator's 30 kept)", got, want)
 	}

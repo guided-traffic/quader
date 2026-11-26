@@ -11,16 +11,20 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/cache"
 	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The replica's snapshot of the Bastion registrations: what a request of a Bastion is decided on without a statement (R-ARCH-027).
-// It holds each registration's switch of the handover per blob (R-BAS-071), which the serve point and the handshake read, and the
-// networks its Bastion connects from (R-BAS-017, Q-BAS-334), which the recognition reads. A change of either member announces its
-// change area (bastion_handover, bastion_egress), every replica reads the rows again within the bound of R-ARCH-018 (2 s), and a
-// lost change is read again after [SnapshotReload].
+// It holds each registration's switch of the handover per blob (R-BAS-071), which the serve point reads, the networks its Bastion
+// connects from (R-BAS-017, Q-BAS-334), which the recognition reads, and its configuration (R-BAS-093, Q-BAS-320), which the
+// handshake answers and the intake reads a rule's figures from. A change of a member announces its change area (bastion_handover,
+// bastion_egress, bastion_configuration; a rule of a Bastion's place or a profile the area limits), every replica reads the rows
+// again within the bound of R-ARCH-018 (2 s), and a lost change is read again after [SnapshotReload]. One statement reads a
+// registration's revision with the rules of its place, so the configuration a handshake sends is of one moment.
 
 // SnapshotReload is the snapshot's safety period: a lost change is read again after it.
 const SnapshotReload = time.Minute
@@ -31,12 +35,17 @@ type SnapshotRow struct {
 	ID       string
 	Handover bool
 	Egress   []netip.Prefix
+	// Configuration is what the handshake sends (R-BAS-093); ConfigurationErr why the row's configuration could not be built, which
+	// the handshake answers instead of a guess.
+	Configuration    iface.Configuration
+	ConfigurationErr error
 }
 
 // snapshotState is one loaded set of rows, replaced whole.
 type snapshotState struct {
-	handover map[string]bool
-	egress   map[string][]netip.Prefix
+	handover      map[string]bool
+	egress        map[string][]netip.Prefix
+	configuration map[string]SnapshotRow
 }
 
 // RegistrationSnapshot is the replica's snapshot of the registrations. Before its first load, and while a load fails, it keeps what
@@ -70,10 +79,25 @@ func NewRegistrationSnapshot(db Reader, r *cache.Registry, log *slog.Logger) *Re
 		})
 		out := make([]SnapshotRow, 0, len(rows))
 		for _, row := range rows {
-			out = append(out, SnapshotRow{ID: row.ID, Handover: row.Handover, Egress: egressOf(row.Egress)})
+			out = append(out, snapshotRowOf(row))
 		}
 		return out, err
 	}, r, log)
+}
+
+// snapshotRowOf builds a registration's row of the snapshot, its configuration included.
+func snapshotRowOf(row q.BastionSnapshotRow) SnapshotRow {
+	out := SnapshotRow{ID: row.ID, Handover: row.Handover, Egress: egressOf(row.Egress)}
+	rules, err := placeRulesOf(row.Rules)
+	if err == nil {
+		l := limitsOf(limitsColumns{
+			mode: row.LimitsMode, preset: row.LimitsPreset, flood: row.LimitsFlood, slots: row.LimitsSlots,
+			throughput: row.LimitsThroughput, ceiling: row.LimitsCeiling,
+		})
+		out.Configuration, err = Configuration(row.Revision, iface.Switches{Handover: row.Handover, GUI: row.Gui, Docs: row.Docs}, l, rules)
+	}
+	out.ConfigurationErr = err
+	return out
 }
 
 // newRegistrationSnapshot is the snapshot over a load function (the tests give their own).
@@ -82,10 +106,11 @@ func newRegistrationSnapshot(load func(context.Context) ([]SnapshotRow, error), 
 		log = slog.New(slog.DiscardHandler)
 	}
 	s := &RegistrationSnapshot{load: load, log: log, kick: make(chan struct{}, 1)}
-	s.state.Store(&snapshotState{handover: map[string]bool{}, egress: map[string][]netip.Prefix{}})
+	s.state.Store(&snapshotState{handover: map[string]bool{}, egress: map[string][]netip.Prefix{}, configuration: map[string]SnapshotRow{}})
 	if r != nil {
 		cache.Register(r, "bastion_registrations", cache.Options[struct{}, struct{}]{
-			MaxEntries: 1, SafetyTTL: SnapshotReload, Areas: []string{cluster.AreaBastionHandover, cluster.AreaBastionEgress},
+			MaxEntries: 1, SafetyTTL: SnapshotReload,
+			Areas:    []string{cluster.AreaBastionHandover, cluster.AreaBastionEgress, cluster.AreaBastionConfiguration, cluster.AreaLimits},
 			OnChange: func(*cache.Cache[struct{}, struct{}], string, int, json.RawMessage) { s.Reload() },
 			OnFlush:  func(string) { s.Reload() },
 		})
@@ -125,6 +150,41 @@ func (s *RegistrationSnapshot) Egress(bastionID string) []netip.Prefix {
 		return nil
 	}
 	return s.state.Load().egress[bastionID]
+}
+
+// Configuration returns the configuration of the registration bastionID the snapshot holds (R-BAS-093): ok is false for a
+// registration the snapshot does not hold yet (created within the bound of R-ARCH-018), and err says why a held row's
+// configuration could not be built.
+func (s *RegistrationSnapshot) Configuration(bastionID string) (c iface.Configuration, ok bool, err error) {
+	if s == nil {
+		return iface.Configuration{}, false, nil
+	}
+	row, ok := s.state.Load().configuration[bastionID]
+	return row.Configuration, ok, row.ConfigurationErr
+}
+
+// RuleFigures are the effective figures of a rule of the registration bastionID's place, for the utilisation of a reported usage row
+// (R-LIM-045); false for a rule the snapshot does not hold.
+func (s *RegistrationSnapshot) RuleFigures(bastionID, rule string) (limits.Figures, bool) {
+	c, ok, err := s.Configuration(bastionID)
+	if !ok || err != nil {
+		return limits.Figures{}, false
+	}
+	f, ok := c.Limits.Place.Rules[rule]
+	if !ok {
+		return limits.Figures{}, false
+	}
+	v := func(p *int64) int64 {
+		if p == nil {
+			return 0
+		}
+		return *p
+	}
+	return limits.Figures{
+		v(f.RequestsPerSecond), v(f.RequestsBurst), v(f.RequestsPerHour), v(f.CachedBytesPerSecond), v(f.CachedBytesPerHour),
+		v(f.UncachedBytesPerSecond), v(f.UncachedBytesPerHour), v(f.UpstreamRequestsPerHour), v(f.ParallelTransfers), v(f.BytesPerDay),
+		v(f.RefusedPerHour),
+	}, true
 }
 
 // Reload asks the loop to read the rows now.
@@ -187,8 +247,12 @@ func (s *RegistrationSnapshot) refresh(ctx context.Context) {
 // set replaces the snapshot with rows, reports a registration whose handover turned on after the first load, and logs a network
 // that a load brought and that overlaps server.trusted_proxies.
 func (s *RegistrationSnapshot) set(rows []SnapshotRow) {
-	next := &snapshotState{handover: make(map[string]bool, len(rows)), egress: make(map[string][]netip.Prefix, len(rows))}
+	next := &snapshotState{
+		handover: make(map[string]bool, len(rows)), egress: make(map[string][]netip.Prefix, len(rows)),
+		configuration: make(map[string]SnapshotRow, len(rows)),
+	}
 	for _, row := range rows {
+		next.configuration[row.ID] = row
 		if row.Handover {
 			next.handover[row.ID] = true
 		}
@@ -231,4 +295,24 @@ func (s *RegistrationSnapshot) warnOverlaps(prev, next *snapshotState, first boo
 			}
 		}
 	}
+}
+
+// ReadConfiguration reads the configuration of the registration bastionID from the database (R-BAS-093): the handshake asks it for a
+// registration its replica's snapshot does not hold yet. ok is false for a registration that does not exist.
+func ReadConfiguration(ctx context.Context, db Reader, bastionID string) (c iface.Configuration, ok bool, err error) {
+	var rows []q.BastionSnapshotRow
+	if err := db.Read(ctx, func(tx q.DBTX) error {
+		var err error
+		rows, err = q.New(tx).BastionSnapshot(ctx)
+		return err
+	}); err != nil {
+		return iface.Configuration{}, false, err
+	}
+	for _, row := range rows {
+		if row.ID == bastionID {
+			r := snapshotRowOf(row)
+			return r.Configuration, true, r.ConfigurationErr
+		}
+	}
+	return iface.Configuration{}, false, nil
 }

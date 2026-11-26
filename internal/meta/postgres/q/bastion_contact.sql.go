@@ -7,13 +7,14 @@ package q
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const bastionContactList = `-- name: BastionContactList :many
 SELECT replica, contact_at, coalesce(host(client_address), '')::text AS client_address, release, interface_version,
-       base_url, coalesce(token_id::text, '')::text AS token_id
+       base_url, coalesce(token_id::text, '')::text AS token_id, edge_limit, coalesce(catalogue_kept::text, '')::text AS catalogue_kept
   FROM bastion_contact
  WHERE bastion_id = $1::text::uuid
  ORDER BY contact_at DESC, replica
@@ -27,6 +28,8 @@ type BastionContactListRow struct {
 	InterfaceVersion int32
 	BaseUrl          string
 	TokenID          string
+	EdgeLimit        string
+	CatalogueKept    string
 }
 
 // The contacts of one registration, the most recent first (the registration's document, R-BAS-004).
@@ -47,6 +50,8 @@ func (q *Queries) BastionContactList(ctx context.Context, bastionID string) ([]B
 			&i.InterfaceVersion,
 			&i.BaseUrl,
 			&i.TokenID,
+			&i.EdgeLimit,
+			&i.CatalogueKept,
 		); err != nil {
 			return nil, err
 		}
@@ -60,7 +65,8 @@ func (q *Queries) BastionContactList(ctx context.Context, bastionID string) ([]B
 
 const bastionContactListAll = `-- name: BastionContactListAll :many
 SELECT bastion_id::text AS bastion_id, replica, contact_at, coalesce(host(client_address), '')::text AS client_address,
-       release, interface_version, base_url, coalesce(token_id::text, '')::text AS token_id
+       release, interface_version, base_url, coalesce(token_id::text, '')::text AS token_id, edge_limit,
+       coalesce(catalogue_kept::text, '')::text AS catalogue_kept
   FROM bastion_contact
  ORDER BY bastion_id, contact_at DESC, replica
 `
@@ -74,6 +80,8 @@ type BastionContactListAllRow struct {
 	InterfaceVersion int32
 	BaseUrl          string
 	TokenID          string
+	EdgeLimit        string
+	CatalogueKept    string
 }
 
 // The contacts of every registration, for the list.
@@ -95,6 +103,8 @@ func (q *Queries) BastionContactListAll(ctx context.Context) ([]BastionContactLi
 			&i.InterfaceVersion,
 			&i.BaseUrl,
 			&i.TokenID,
+			&i.EdgeLimit,
+			&i.CatalogueKept,
 		); err != nil {
 			return nil, err
 		}
@@ -123,20 +133,24 @@ func (q *Queries) BastionContactPrune(ctx context.Context, olderThanSecs float64
 const bastionContactUpsert = `-- name: BastionContactUpsert :one
 
 WITH old AS (
-    SELECT client_address, release, interface_version, base_url
+    SELECT client_address, release, interface_version, base_url, edge_limit, catalogue_kept
       FROM bastion_contact
-     WHERE bastion_id = $5::text::uuid AND replica = $6::text
+     WHERE bastion_id = $7::text::uuid AND replica = $8::text
 ), up AS (
-    INSERT INTO bastion_contact AS c (bastion_id, replica, contact_at, client_address, release, interface_version, base_url, token_id)
-    VALUES ($5::text::uuid, $6::text, now(), NULLIF($1::text, '')::inet,
+    INSERT INTO bastion_contact AS c (bastion_id, replica, contact_at, client_address, release, interface_version, base_url, token_id,
+                                      edge_limit, catalogue_kept)
+    VALUES ($7::text::uuid, $8::text, now(), NULLIF($1::text, '')::inet,
             $2::text, $3::int, $4::text,
-            NULLIF($7::text, '')::uuid)
+            NULLIF($9::text, '')::uuid, $5::text,
+            NULLIF($6::text, '')::boolean)
     ON CONFLICT (bastion_id, replica) DO UPDATE
        SET contact_at = excluded.contact_at, client_address = excluded.client_address, release = excluded.release,
-           interface_version = excluded.interface_version, base_url = excluded.base_url, token_id = excluded.token_id
+           interface_version = excluded.interface_version, base_url = excluded.base_url, token_id = excluded.token_id,
+           edge_limit = excluded.edge_limit, catalogue_kept = excluded.catalogue_kept
      WHERE c.contact_at <= excluded.contact_at - interval '1 minute'
         OR c.client_address IS DISTINCT FROM excluded.client_address OR c.release <> excluded.release
         OR c.interface_version <> excluded.interface_version OR c.base_url <> excluded.base_url
+        OR c.edge_limit <> excluded.edge_limit OR c.catalogue_kept IS DISTINCT FROM excluded.catalogue_kept
     RETURNING 1
 )
 SELECT (SELECT count(*) FROM up)::bigint AS written,
@@ -144,7 +158,8 @@ SELECT (SELECT count(*) FROM up)::bigint AS written,
         OR EXISTS (SELECT 1 FROM old o
                     WHERE o.client_address IS DISTINCT FROM NULLIF($1::text, '')::inet
                        OR o.release <> $2::text OR o.interface_version <> $3::int
-                       OR o.base_url <> $4::text))::boolean AS changed
+                       OR o.base_url <> $4::text OR o.edge_limit <> $5::text
+                       OR o.catalogue_kept IS DISTINCT FROM NULLIF($6::text, '')::boolean))::boolean AS changed
 `
 
 type BastionContactUpsertParams struct {
@@ -152,6 +167,8 @@ type BastionContactUpsertParams struct {
 	Release          string
 	InterfaceVersion int32
 	BaseUrl          string
+	EdgeLimit        string
+	CatalogueKept    string
 	BastionID        string
 	Replica          string
 	TokenID          string
@@ -167,13 +184,16 @@ type BastionContactUpsertRow struct {
 // Record the contact of a replica from the handshake, at most once a minute per replica: the row is written
 // when it is new, when its last write is a minute old, or when a reported value differs. written says
 // whether a row was written; changed says whether a reported value differs from the stored row (or there was
-// none), which is the condition of the asynchronous event bastion.contact (R-BAS-010).
+// none), which is the condition of the asynchronous event bastion.contact (R-BAS-010). edge_limit is the edge figure the
+// replica reports (” for none) and catalogue_kept whether its catalogue survives a restart (NULL for none, R-BAS-093, 00147).
 func (q *Queries) BastionContactUpsert(ctx context.Context, arg BastionContactUpsertParams) (BastionContactUpsertRow, error) {
 	row := q.db.QueryRow(ctx, bastionContactUpsert,
 		arg.ClientAddress,
 		arg.Release,
 		arg.InterfaceVersion,
 		arg.BaseUrl,
+		arg.EdgeLimit,
+		arg.CatalogueKept,
 		arg.BastionID,
 		arg.Replica,
 		arg.TokenID,
@@ -211,4 +231,121 @@ func (q *Queries) BastionLastBaseURL(ctx context.Context, name string) ([]string
 		return nil, err
 	}
 	return items, nil
+}
+
+const bastionStatusList = `-- name: BastionStatusList :many
+SELECT replica, reported_at, status
+  FROM bastion_status
+ WHERE bastion_id = $1::text::uuid
+   AND reported_at >= now() - make_interval(secs => $2::float8)
+ ORDER BY reported_at DESC, replica
+`
+
+type BastionStatusListParams struct {
+	BastionID  string
+	WithinSecs float64
+}
+
+type BastionStatusListRow struct {
+	Replica    string
+	ReportedAt pgtype.Timestamptz
+	Status     json.RawMessage
+}
+
+// The states of one registration's replicas, reported within older_than_secs seconds, the newest first (R-UI-240).
+func (q *Queries) BastionStatusList(ctx context.Context, arg BastionStatusListParams) ([]BastionStatusListRow, error) {
+	rows, err := q.db.Query(ctx, bastionStatusList, arg.BastionID, arg.WithinSecs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []BastionStatusListRow{}
+	for rows.Next() {
+		var i BastionStatusListRow
+		if err := rows.Scan(&i.Replica, &i.ReportedAt, &i.Status); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const bastionStatusListAll = `-- name: BastionStatusListAll :many
+SELECT bastion_id::text AS bastion_id, replica, reported_at, status
+  FROM bastion_status
+ WHERE reported_at >= now() - make_interval(secs => $1::float8)
+ ORDER BY bastion_id, reported_at DESC, replica
+`
+
+type BastionStatusListAllRow struct {
+	BastionID  string
+	Replica    string
+	ReportedAt pgtype.Timestamptz
+	Status     json.RawMessage
+}
+
+// The same for the list of registrations.
+func (q *Queries) BastionStatusListAll(ctx context.Context, withinSecs float64) ([]BastionStatusListAllRow, error) {
+	rows, err := q.db.Query(ctx, bastionStatusListAll, withinSecs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []BastionStatusListAllRow{}
+	for rows.Next() {
+		var i BastionStatusListAllRow
+		if err := rows.Scan(
+			&i.BastionID,
+			&i.Replica,
+			&i.ReportedAt,
+			&i.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const bastionStatusPrune = `-- name: BastionStatusPrune :execrows
+DELETE FROM bastion_status WHERE reported_at < now() - make_interval(secs => $1::float8)
+`
+
+// Drop the states not reported again for older_than_secs seconds (an hour, Q-BAS-443): with them go the addresses of their blocks.
+func (q *Queries) BastionStatusPrune(ctx context.Context, olderThanSecs float64) (int64, error) {
+	result, err := q.db.Exec(ctx, bastionStatusPrune, olderThanSecs)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const bastionStatusUpsert = `-- name: BastionStatusUpsert :execrows
+INSERT INTO bastion_status AS s (bastion_id, replica, reported_at, status)
+SELECT c.bastion_id, c.replica, now(), $1::text::jsonb
+  FROM bastion_contact c
+ WHERE c.bastion_id = $2::text::uuid AND c.replica = $3::text
+ON CONFLICT (bastion_id, replica) DO UPDATE SET reported_at = excluded.reported_at, status = excluded.status
+`
+
+type BastionStatusUpsertParams struct {
+	Status    string
+	BastionID string
+	Replica   string
+}
+
+// Replace the state a replica reported with its batch (R-LIM-045, 00147). A replica without a contact row writes nothing: the row
+// goes with the contact, and a replica reports only after its handshake.
+func (q *Queries) BastionStatusUpsert(ctx context.Context, arg BastionStatusUpsertParams) (int64, error) {
+	result, err := q.db.Exec(ctx, bastionStatusUpsert, arg.Status, arg.BastionID, arg.Replica)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

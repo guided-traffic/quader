@@ -14193,8 +14193,9 @@ paths:
       tags: [bastions]
       summary: Read a Bastion registration
       description: |
-        The registration with its unrevoked tokens and the last contact of each replica (R-BAS-004, R-BAS-010). The ETag is the
-        registration's revision.
+        The registration with its unrevoked tokens, the last contact of each replica, its configuration and the state each replica
+        reported within the last hour (R-BAS-004, R-BAS-010, R-BAS-093, R-LIM-045). The ETag is the registration's revision, which a
+        change of a rule of the Bastion's place or of a profile such a rule names raises as well (Q-BAS-320).
       x-quader-permission:
         permission: endpoints:read
       parameters:
@@ -14228,17 +14229,24 @@ paths:
     patch:
       operationId: updateBastion
       tags: [bastions]
-      summary: Change or disable a Bastion registration
+      summary: Change or disable a Bastion registration, or configure it
       description: |
-        Changes the description, enables or disables the registration and switches its handover per blob (JSON merge patch). A
-        disabled registration refuses its tokens like a disabled service account's (R-AUTH-020) within the revocation bound of
-        every replica; the tokens stay unrevoked, so enabling the registration again restores them. A new description records
+        Changes the description, enables or disables the registration, its networks, its switches and its limits (JSON merge patch;
+        R-BAS-004, R-BAS-093). The handler requires `limits:write` for the member `limits` and `endpoints:write` for every other
+        member (Q-BAS-325), so the declaration is the coarse `authenticated` form; a patch of both needs both. A disabled
+        registration refuses its tokens like a disabled service account's (R-AUTH-020) within the revocation bound of every
+        replica; the tokens stay unrevoked, so enabling the registration again restores them. A new description records
         `bastion.updated`; a disable records `bastion.disabled`, journaled, so a restore to a point before it disables the
-        registration again (R-HA-054, Q-BAS-145); an enable records `bastion.enabled`. `handover` true records
-        `bastion.handover.enabled`, false `bastion.handover.disabled`, journaled, so a restore keeps the handover off; every
-        replica follows the switch within 2 seconds, and the Bastion learns it at its next handshake (R-BAS-071).
+        registration again (R-HA-054, Q-BAS-145); an enable records `bastion.enabled`. `switches.handover` true records
+        `bastion.handover.enabled`, false `bastion.handover.disabled`, journaled, so a restore keeps the handover off (R-BAS-071).
+        A change of a switch or of `limits` records `bastion.configuration.changed` with the parts changed and their values
+        before and after, and every Bastion handshakes again within one poll of the feed (about 3 s) and applies its
+        registration's configuration whole. `limits.preset` names a preset to apply in this request (R-LIM-046, Q-LIM-311): the
+        place's five kind rules, the flood figures and the mode, then the other members of the patch on top; `custom` applies
+        nothing. A change of `limits.mode` needs recent authentication (`401 reauthentication_required`, R-LIM-044). The limits
+        are held to the rules a Bastion applies them by (`422` with the member named).
       x-quader-permission:
-        permission: endpoints:write
+        authenticated: true
       x-quader-if-match: required
       parameters:
         - $ref: "#/components/parameters/IfMatch"
@@ -14594,7 +14602,11 @@ paths:
         not recorded and counts as dropped, one in the future is recorded at the time of receipt. A non-zero `dropped` records
         `bastion.downloads.dropped`. With `audit.record_downloads: false` the answer is `204` and nothing is recorded. The batch
         also carries the replica's `usage` and `status` (R-LIM-045), valid without an event; their bounds are checked (`422`
-        beyond them) and, until the main installation stores them (package E8), nothing of them is recorded.
+        beyond them). The usage rows go into the usage store at the place `bastion:<id>` through the replica's usage buffer, and
+        the status replaces the replica's row of `bastion_status`, whether or not downloads are recorded; a batch refused for its
+        events stores neither, so a batch sent again is never counted twice. The body is at most `bastions.downloads.max_batch` ×
+        10 KiB for the events, 640 bytes for each of 100,000 usage rows and 256 KiB for the rest (Q-BAS-442), about 71 MiB with
+        the defaults.
       x-quader-bastion-interface: 8
       x-quader-permission:
         bastion: true
@@ -19936,6 +19948,236 @@ paths:
           $ref: "#/components/responses/Internal"
         "503":
           $ref: "#/components/responses/Unavailable"
+  /api/v1/bastions/{name}/limits/assignments:
+    parameters:
+        - name: name
+          in: path
+          required: true
+          description: The registration name (R-BAS-004).
+          schema:
+            type: string
+            pattern: "^[a-z][a-z0-9-]{0,19}$"
+    get:
+      operationId: listBastionLimitAssignments
+      tags: [limits]
+      summary: List the rules of a Bastion's place
+      description: |
+        The rules of the Bastion's place with their effective figures (R-LIM-043, R-LIM-032): the five kind rules its preset wrote
+        and the rules an administrator added; `404` for a name that is no registration.
+      x-quader-permission:
+        permission: limits:read
+      parameters:
+        - name: whoKind
+          in: query
+          description: "Only rules of this kind of caller."
+          schema:
+            type: string
+            enum: [user, technicalToken, ciProject, address, group, every]
+        - name: profile
+          in: query
+          description: "Only rules of this profile key."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignmentList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    post:
+      operationId: createBastionLimitAssignment
+      tags: [limits]
+      summary: Create a rule at a Bastion's place
+      description: |
+        A profile with overrides for one caller at the Bastion's place (R-LIM-043, R-LIM-032): a single user, technical token or CI
+        project, an address or a range, a group, or every caller of a kind. R-LIM-016's caps do not apply. Records
+        `limits.assignment.created` with `place: bastion:<name>` and `bastion.configuration.changed`, and raises the registration's
+        revision, which reaches the Bastion within about 3 s.
+      x-quader-permission:
+        permission: limits:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LimitAssignmentWrite"
+      responses:
+        "201":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/bastions/{name}/limits/assignments/{id}:
+    parameters:
+        - name: name
+          in: path
+          required: true
+          description: The registration name (R-BAS-004).
+          schema:
+            type: string
+            pattern: "^[a-z][a-z0-9-]{0,19}$"
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+    get:
+      operationId: getBastionLimitAssignment
+      tags: [limits]
+      summary: Read a rule of a Bastion's place
+      description: |
+        One rule (R-LIM-032).
+      x-quader-permission:
+        permission: limits:read
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    put:
+      operationId: replaceBastionLimitAssignment
+      tags: [limits]
+      summary: Replace a rule of a Bastion's place
+      description: |
+        Profile, overrides and note; `who` is immutable (R-LIM-032).
+      x-quader-permission:
+        permission: limits:write
+      x-quader-if-match: required
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LimitAssignmentWrite"
+      responses:
+        "200":
+          description: The answer.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LimitAssignment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: deleteBastionLimitAssignment
+      tags: [limits]
+      summary: Delete a rule of a Bastion's place
+      description: |
+        A kind rule a preset wrote is built in at its place: `409 assignment_builtin` (R-LIM-043); change its profile instead.
+      x-quader-permission:
+        permission: limits:write
+      parameters:
+        - $ref: "#/components/parameters/IfMatchOptional"
+      responses:
+        "204":
+          description: Deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "428":
+          $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   /api/v1/projects/{projectKey}/limits/assignments:
     parameters:
         - $ref: "#/components/parameters/ProjectKey"
@@ -20946,6 +21188,11 @@ paths:
           description: "Narrow the instance's overview to the repositories of one project (Q-API-353)."
           schema:
             type: string
+        - name: place
+          in: query
+          description: "`installation` for what the main installation served, `bastion:<name>` for what that Bastion served (R-LIM-045, R-UI-242); every place when absent."
+          schema:
+            type: string
         - name: period
           in: query
           description: "hour, day (default) or 30d."
@@ -21019,6 +21266,11 @@ paths:
         - name: project
           in: query
           description: "Narrow the instance's overview to the repositories of one project (Q-API-353)."
+          schema:
+            type: string
+        - name: place
+          in: query
+          description: "`installation` for what the main installation served, `bastion:<name>` for what that Bastion served (R-LIM-045, R-UI-242); every place when absent."
           schema:
             type: string
         - name: period
@@ -30990,7 +31242,7 @@ components:
     Bastion:
       type: object
       description: A Bastion registration, a principal of the kind `bastion` (R-BAS-004).
-      required: [id, name, description, enabled, handover, egress, createdAt, tokens, contacts]
+      required: [id, name, description, enabled, switches, limits, egress, createdAt, tokens, contacts, status]
       properties:
         id:
           type: string
@@ -31004,12 +31256,15 @@ components:
           type: boolean
         egress:
           $ref: "#/components/schemas/BastionEgress"
-        handover:
-          type: boolean
-          description: |
-            The switch of the handover per blob (R-BAS-071): while it is on, the main installation may answer a forward of this
-            Bastion for a large file with a short-lived signed link of the object store, so the Bastion reads the bytes from the
-            store itself (R-STOR-095). Off for a new registration; changed by `PATCH` only.
+        switches:
+          $ref: "#/components/schemas/BastionSwitches"
+        limits:
+          $ref: "#/components/schemas/BastionLimits"
+        status:
+          type: array
+          description: The state each replica reported with its last batch within the last hour, the newest first (R-LIM-045); a block that ended is left out (Q-BAS-443).
+          items:
+            $ref: "#/components/schemas/BastionReplicaStatus"
         createdAt:
           type: string
           format: date-time
@@ -31028,7 +31283,21 @@ components:
         name: partners
         description: The partner network
         enabled: true
-        handover: false
+        switches: {handover: false, gui: false, docs: false}
+        limits:
+          mode: enforce
+          preset: internet
+          flood:
+            anonymous: {requestsPerSecond: 50, burst: 1000, missesPerMinute: 1000}
+            authenticated: {requestsPerSecond: 200, burst: 4000, missesPerMinute: 4000}
+            gui: {requestsPerSecond: 20, burst: 100}
+            failedAuth: {maxFailures: 20, windowSeconds: 600, timeoutSeconds: 900}
+            blocking: {threshold: 3000, windowSeconds: 60, durationSeconds: 900, maxDurationSeconds: 86400}
+            exemptNetworks: []
+          slots: {maxConcurrent: 64, anonymousShare: 0.25, queueTimeoutMillis: 5000}
+          throughput: {bytesPerSecond: 200000000, anonymousShare: 0.25, bytesPerHour: {anonymous: null, signedIn: null, catalogue: null}}
+          anonymousCeiling: {requestsPerSecond: 100, burst: 2000, requestsPerHour: 36000}
+        status: []
         egress: [198.51.100.20/32]
         createdAt: "2026-11-02T10:00:00Z"
         tokens:
@@ -31043,8 +31312,162 @@ components:
             contactAt: "2026-11-02T10:06:12Z"
             clientAddress: 198.51.100.20
             release: 0.15.0
-            interfaceVersion: 3
+            interfaceVersion: 8
             baseUrl: https://packages.example.com
+            edgeLimit: rps=200; connections=1000
+            catalogueKept: null
+    BastionSwitches:
+      type: object
+      description: The switches of the registration's configuration (R-BAS-093), each off for a new registration.
+      required: [handover, gui, docs]
+      properties:
+        handover:
+          type: boolean
+          description: |
+            The handover per blob (R-BAS-071): while it is on, the main installation may answer a forward of this Bastion for a large
+            file with a short-lived signed link of the object store, so the Bastion reads the bytes from the store itself (R-STOR-095).
+        gui:
+          type: boolean
+          description: The Bastion's read-only web interface (R-BAS-102); while it is off every catalogue route answers `404`.
+        docs:
+          type: boolean
+          description: The documentation of the web interface (R-BAS-102), effective only with `gui`.
+    BastionLimits:
+      type: object
+      description: |
+        The limits of the registration's configuration (R-BAS-093). The rules of the Bastion's place are read and written through
+        `/api/v1/bastions/{name}/limits/assignments` (R-LIM-043). Every figure is held to the rules a Bastion applies it by: flood
+        figures are positive integers, never null; a share lies in 0 to 1; a ceiling's burst only with its rate.
+      required: [mode, preset, flood, slots, throughput, anonymousCeiling]
+      properties:
+        mode:
+          type: string
+          enum: [audit, enforce]
+          description: Audit or Enforce of the budgets at this Bastion (R-LIM-044); the flood protection, the ceiling, the slots and the throughput hold in both (Q-LIM-309).
+        preset:
+          type: string
+          enum: [internet, partnerNetwork, internal, custom]
+          description: The preset the registration reads (R-LIM-046); `custom` once a kind rule or a flood figure differs from the preset last applied.
+        flood:
+          $ref: "#/components/schemas/BastionFlood"
+        slots:
+          $ref: "#/components/schemas/BastionSlots"
+        throughput:
+          $ref: "#/components/schemas/BastionThroughput"
+        anonymousCeiling:
+          $ref: "#/components/schemas/BastionCeiling"
+    BastionFlood:
+      type: object
+      additionalProperties: false
+      description: The flood protection per client address (R-BAS-035 to R-BAS-037, Q-LIM-307).
+      required: [anonymous, authenticated, gui, failedAuth, blocking, exemptNetworks]
+      properties:
+        anonymous:
+          $ref: "#/components/schemas/BastionFloodClass"
+        authenticated:
+          $ref: "#/components/schemas/BastionFloodClass"
+        gui:
+          type: object
+          additionalProperties: false
+          required: [requestsPerSecond, burst]
+          properties:
+            requestsPerSecond: {type: integer, minimum: 1}
+            burst: {type: integer, minimum: 1}
+        failedAuth:
+          type: object
+          additionalProperties: false
+          required: [maxFailures, windowSeconds, timeoutSeconds]
+          properties:
+            maxFailures: {type: integer, minimum: 1}
+            windowSeconds: {type: integer, minimum: 1}
+            timeoutSeconds: {type: integer, minimum: 1}
+        blocking:
+          type: object
+          additionalProperties: false
+          required: [threshold, windowSeconds, durationSeconds, maxDurationSeconds]
+          properties:
+            threshold: {type: integer, minimum: 1}
+            windowSeconds: {type: integer, minimum: 1}
+            durationSeconds: {type: integer, minimum: 1}
+            maxDurationSeconds: {type: integer, minimum: 1}
+        exemptNetworks:
+          type: array
+          description: Canonical prefixes no flood figure, timeout or block applies to.
+          items: {type: string}
+    BastionSlots:
+      type: object
+      additionalProperties: false
+      description: The requests in flight to the main installation across the Bastion's replicas (R-BAS-025).
+      required: [maxConcurrent, anonymousShare, queueTimeoutMillis]
+      properties:
+        maxConcurrent: {type: integer, minimum: 1}
+        anonymousShare: {type: number, minimum: 0, maximum: 1}
+        queueTimeoutMillis: {type: integer, minimum: 0}
+    BastionThroughput:
+      type: object
+      additionalProperties: false
+      description: The byte rate the Bastion reads at (R-BAS-097); null is unlimited.
+      required: [bytesPerSecond, anonymousShare, bytesPerHour]
+      properties:
+        bytesPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
+        anonymousShare: {type: number, minimum: 0, maximum: 1}
+        bytesPerHour:
+          type: object
+          additionalProperties: false
+          required: [anonymous, signedIn, catalogue]
+          properties:
+            anonymous: {type: [integer, "null"], format: int64, minimum: 1}
+            signedIn: {type: [integer, "null"], format: int64, minimum: 1}
+            catalogue: {type: [integer, "null"], format: int64, minimum: 1}
+    BastionCeiling:
+      type: object
+      additionalProperties: false
+      description: The requests to the main installation on behalf of all anonymous callers of the Bastion together (R-BAS-094); null is unlimited.
+      required: [requestsPerSecond, burst, requestsPerHour]
+      properties:
+        requestsPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
+        burst: {type: [integer, "null"], format: int64, minimum: 1}
+        requestsPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+    BastionReplicaStatus:
+      type: object
+      description: The state a replica reported with its last batch (R-LIM-045), the Bastion's word (H-2282).
+      required: [replica, reportedAt, cache, throughput, limited, blocked, blocks]
+      properties:
+        replica: {type: string}
+        reportedAt: {type: string, format: date-time}
+        cache:
+          type: object
+          required: [bytes, capacityBytes, hits, misses, evictions, protectedBytes]
+          properties:
+            bytes: {type: integer, format: int64}
+            capacityBytes: {type: integer, format: int64}
+            hits: {type: integer, format: int64}
+            misses: {type: integer, format: int64}
+            evictions: {type: integer, format: int64}
+            protectedBytes: {type: integer, format: int64}
+        throughput:
+          type: object
+          required: [limited, bytesPerSecondByClass]
+          properties:
+            limited: {type: boolean}
+            bytesPerSecondByClass:
+              type: object
+              required: [anonymous, signedIn, catalogue]
+              properties:
+                anonymous: {type: integer, format: int64}
+                signedIn: {type: integer, format: int64}
+                catalogue: {type: integer, format: int64}
+        limited: {type: integer, format: int64}
+        blocked: {type: integer, format: int64}
+        blocks:
+          type: array
+          items:
+            type: object
+            required: [address, until, reason]
+            properties:
+              address: {type: string}
+              until: {type: string, format: date-time}
+              reason: {type: string}
     BastionList:
       type: object
       required: [items]
@@ -31075,8 +31498,14 @@ components:
           format: date-time
     BastionContact:
       type: object
-      required: [replica, contactAt, clientAddress, release, interfaceVersion, baseUrl]
+      required: [replica, contactAt, clientAddress, release, interfaceVersion, baseUrl, edgeLimit, catalogueKept]
       properties:
+        edgeLimit:
+          type: [string, "null"]
+          description: The edge figure the replica reported (`off`, `rps=<n>`, `connections=<n>` or both, R-BAS-093); null when it reported none.
+        catalogueKept:
+          type: [boolean, "null"]
+          description: Whether the replica's public catalogue survives a restart (R-BAS-101); null when it reported none.
         replica:
           type: string
         contactAt:
@@ -31130,9 +31559,25 @@ components:
           maxLength: 1024
         enabled:
           type: boolean
-        handover:
-          type: boolean
-          description: Switches the handover per blob on or off (R-BAS-071); a `null` reads as absent and switches nothing, as for `enabled`.
+        switches:
+          type: object
+          description: "`endpoints:write`. A switch that is absent or `null` is unchanged (R-BAS-071, R-BAS-102)."
+          properties:
+            handover: {type: boolean}
+            gui: {type: boolean}
+            docs: {type: boolean}
+        limits:
+          type: object
+          description: |
+            `limits:write`. A merge patch of the registration's limits (R-BAS-093): a member that is absent is unchanged, a nested member
+            merges. `preset` applies a preset first (R-LIM-046), `custom` nothing; a change of `mode` needs recent authentication.
+          properties:
+            mode: {type: string, enum: [audit, enforce]}
+            preset: {type: string, enum: [internet, partnerNetwork, internal, custom]}
+            flood: {type: object}
+            slots: {type: object}
+            throughput: {type: object}
+            anonymousCeiling: {type: object}
         egress:
           allOf:
             - $ref: "#/components/schemas/BastionEgress"
@@ -31243,8 +31688,8 @@ components:
       additionalProperties: false
       description: |
         The registration's configuration (R-BAS-093, Q-BAS-320): applied whole by every replica; a figure is a positive integer
-        or `null` for unlimited. Until a registration holds one (package E8) the main installation sends an interim configuration
-        that equals a Bastion's behaviour of today.
+        or `null` for unlimited. The main installation answers it from its snapshot of the registrations: the registration's own
+        members and the rules of its place with each rule's effective figures, of one moment.
       required: [revision, switches, limits]
       properties:
         revision:
@@ -31314,74 +31759,13 @@ components:
                 ci: {type: string}
                 administrator: {type: string}
         flood:
-          type: object
-          additionalProperties: false
-          description: The flood protection per address (R-BAS-035 to R-BAS-037); never unlimited.
-          required: [anonymous, authenticated, gui, failedAuth, blocking, exemptNetworks]
-          properties:
-            anonymous:
-              $ref: "#/components/schemas/BastionFloodClass"
-            authenticated:
-              $ref: "#/components/schemas/BastionFloodClass"
-            gui:
-              type: object
-              additionalProperties: false
-              required: [requestsPerSecond, burst]
-              properties:
-                requestsPerSecond: {type: integer, minimum: 1}
-                burst: {type: integer, minimum: 1}
-            failedAuth:
-              type: object
-              additionalProperties: false
-              required: [maxFailures, windowSeconds, timeoutSeconds]
-              properties:
-                maxFailures: {type: integer, minimum: 1}
-                windowSeconds: {type: integer, minimum: 1}
-                timeoutSeconds: {type: integer, minimum: 1}
-            blocking:
-              type: object
-              additionalProperties: false
-              required: [threshold, windowSeconds, durationSeconds, maxDurationSeconds]
-              properties:
-                threshold: {type: integer, minimum: 1}
-                windowSeconds: {type: integer, minimum: 1}
-                durationSeconds: {type: integer, minimum: 1}
-                maxDurationSeconds: {type: integer, minimum: 1}
-            exemptNetworks:
-              type: array
-              items:
-                type: string
+          $ref: "#/components/schemas/BastionFlood"
         slots:
-          type: object
-          additionalProperties: false
-          required: [maxConcurrent, anonymousShare, queueTimeoutMillis]
-          properties:
-            maxConcurrent: {type: integer, minimum: 1}
-            anonymousShare: {type: number, minimum: 0, maximum: 1}
-            queueTimeoutMillis: {type: integer, minimum: 0}
+          $ref: "#/components/schemas/BastionSlots"
         throughput:
-          type: object
-          additionalProperties: false
-          required: [bytesPerSecond, anonymousShare, bytesPerHour]
-          properties:
-            bytesPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
-            anonymousShare: {type: number, minimum: 0, maximum: 1}
-            bytesPerHour:
-              type: object
-              additionalProperties: false
-              required: [anonymous, signedIn, catalogue]
-              properties:
-                anonymous: {type: [integer, "null"], format: int64, minimum: 1}
-                signedIn: {type: [integer, "null"], format: int64, minimum: 1}
-                catalogue: {type: [integer, "null"], format: int64, minimum: 1}
+          $ref: "#/components/schemas/BastionThroughput"
         anonymousCeiling:
-          type: object
-          additionalProperties: false
-          required: [requestsPerSecond, burst, requestsPerHour]
-          properties:
-            requestsPerSecond: {type: [integer, "null"], format: int64, minimum: 1}
-            burst: {type: [integer, "null"], format: int64, minimum: 1}
-            requestsPerHour: {type: [integer, "null"], format: int64, minimum: 1}
+          $ref: "#/components/schemas/BastionCeiling"
     BastionFloodClass:
       type: object
       additionalProperties: false
@@ -36664,12 +37048,19 @@ components:
       properties:
         kind: {type: string, enum: [repository]}
         repository: {type: string, description: "`<projectKey>/<repoKey>`."}
+    LimitPlaceBastion:
+      type: object
+      required: [kind, bastion]
+      properties:
+        kind: {type: string, enum: [bastion]}
+        bastion: {type: string, description: The registration's name (R-LIM-043).}
     LimitPlace:
-      description: Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014).
+      description: Where a rule is set and where its budget counts (R-LIM-011, R-LIM-014, R-LIM-043).
       oneOf:
         - $ref: "#/components/schemas/LimitPlaceInstance"
         - $ref: "#/components/schemas/LimitPlaceProject"
         - $ref: "#/components/schemas/LimitPlaceRepository"
+        - $ref: "#/components/schemas/LimitPlaceBastion"
     LimitWhoUser:
       type: object
       required: [kind, user]

@@ -36,7 +36,7 @@ func handoverBudget(t *testing.T, e *env) {
 	if a.Status != http.StatusCreated || bst == "" {
 		t.Fatalf("token: %d %s", a.Status, a.Body)
 	}
-	if a := e.st.Do(r, "PATCH", "/api/v1/bastions/dmz", e.tokAdmin, map[string]any{"handover": true},
+	if a := e.st.Do(r, "PATCH", "/api/v1/bastions/dmz", e.tokAdmin, map[string]any{"switches": map[string]any{"handover": true}},
 		"Content-Type", "application/merge-patch+json", "If-Match", "*"); a.Status != http.StatusOK {
 		t.Fatalf("switch on: %d %s", a.Status, a.Body)
 	}

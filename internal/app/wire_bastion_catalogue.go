@@ -129,7 +129,7 @@ func (a *App) catalogueRegistrations(ctx context.Context) ([]catalogue.Registrat
 		if err != nil {
 			return nil, err
 		}
-		sw := a.bastionSwitches(l.Name, reg.Handover)
+		sw := a.bastionSwitches(l.Name, reg.Switches)
 		r := catalogue.Registration{ID: l.ID, Name: l.Name, GUI: l.Enabled && sw.GUI, Docs: sw.Docs}
 		if r.GUI {
 			base, _, err := reported.ReportedBaseURL(ctx, l.Name)
@@ -143,10 +143,10 @@ func (a *App) catalogueRegistrations(ctx context.Context) ([]catalogue.Registrat
 	return out, nil
 }
 
-// bastionSwitches are a registration's switches gui and docs: the interim configuration's until E8 stores a configuration per
-// registration (Q-BAS-352), or the test's (Options.BastionSwitches).
-func (a *App) bastionSwitches(name string, handover bool) iface.Switches {
-	sw := iface.Switches{Handover: handover}
+// bastionSwitches are a registration's switches gui and docs: the stored ones of its configuration (R-BAS-093, R-BAS-102), or the
+// test's when it set them (Options.BastionSwitches).
+func (a *App) bastionSwitches(name string, stored iface.Switches) iface.Switches {
+	sw := stored
 	if a.o.BastionSwitches != nil {
 		o := a.o.BastionSwitches(name)
 		sw.GUI, sw.Docs = o.GUI, o.Docs

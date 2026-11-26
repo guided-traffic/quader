@@ -377,3 +377,18 @@ func init() {
 }
 
 // <<< bastion egress
+
+// >>> bastion configuration
+
+// AreaBastionConfiguration carries a change of a Bastion registration's configuration (bastion.md R-BAS-093): its switches gui and
+// docs, the mode, the preset, the flood figures, the slots, the throughput and the anonymous ceiling of its limits, and a registration
+// created or deleted. Every replica reloads its snapshot of the registrations, from which the handshake answers the configuration (a
+// change of a rule of a Bastion's place or of a profile is the area limits, which the snapshot follows too). The payload is
+// {"bastion": "<the registration's principal ID>"}. Its cluster_epoch row is seeded by 00147_bastion_configuration.
+const AreaBastionConfiguration = "bastion_configuration"
+
+func init() {
+	RegisterArea(Area{Name: AreaBastionConfiguration, Owner: "R-BAS-093", Class: ChangeArea, PayloadVersion: 1})
+}
+
+// <<< bastion configuration

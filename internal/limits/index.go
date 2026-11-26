@@ -14,6 +14,7 @@ type Index struct {
 	instance *placeRules
 	projects map[string]*placeRules     // by project key
 	repos    map[qname.Repo]*placeRules // by repository name
+	bastions map[string]*placeRules     // by registration ID (R-LIM-043)
 	maxima   map[string]*Maximum        // by project key
 	ceilings map[int64][2]*Ceiling      // anonymous, signed-in
 	settings Settings
@@ -38,7 +39,7 @@ func newPlaceRules(p Place) *placeRules {
 func NewIndex(s Snapshot) *Index {
 	x := &Index{
 		profiles: map[string]*Profile{}, instance: newPlaceRules(InstancePlace()),
-		projects: map[string]*placeRules{}, repos: map[qname.Repo]*placeRules{}, maxima: map[string]*Maximum{},
+		projects: map[string]*placeRules{}, repos: map[qname.Repo]*placeRules{}, bastions: map[string]*placeRules{}, maxima: map[string]*Maximum{},
 		ceilings: map[int64][2]*Ceiling{}, settings: s.Settings, rules: map[string]*Rule{},
 	}
 	if x.settings.Mode == "" {
@@ -111,6 +112,13 @@ func (x *Index) placeOf(p Place) *placeRules {
 			x.repos[p.Repo] = pr
 		}
 		return pr
+	case PlaceBastion:
+		pr := x.bastions[p.BastionID]
+		if pr == nil {
+			pr = newPlaceRules(p)
+			x.bastions[p.BastionID] = pr
+		}
+		return pr
 	}
 	return x.instance
 }
@@ -121,6 +129,9 @@ func (x *Index) allPlaces() []*placeRules {
 		out = append(out, p)
 	}
 	for _, p := range x.repos {
+		out = append(out, p)
+	}
+	for _, p := range x.bastions {
 		out = append(out, p)
 	}
 	return out
@@ -239,10 +250,28 @@ func (x *Index) Resolve(s Subject, repo qname.Repo, trace bool) Resolution {
 	return res
 }
 
+// ResolveBastion runs R-LIM-013 for subject s at the place of the Bastion registration bastionID alone (R-LIM-043, Q-LIM-302):
+// step 3 there, an administrator decided there too, never a fall-through to the instance. The place holds the five kind rules a
+// preset wrote, so a subject always meets one; a registration whose place the index does not hold yet resolves to no rule.
+func (x *Index) ResolveBastion(s Subject, bastionID string) Resolution {
+	var res Resolution
+	if x == nil {
+		return res
+	}
+	if pr := x.bastions[bastionID]; pr != nil && x.resolveAt(pr, s, &res, false) {
+		return res
+	}
+	res.Place = Place{Kind: PlaceBastion, BastionID: bastionID}
+	return res
+}
+
 // ResolveAt is the rule that applies now to a budget key the usage store recorded (R-LIM-034): for a repository the resolution
-// of a request to it, for a project the project's rules and then the instance's, for the instance the instance's. A place
-// whose rule went since resolves as a request would now.
+// of a request to it, for a project the project's rules and then the instance's, for the instance the instance's, for a Bastion's
+// place its own rules. A place whose rule went since resolves as a request would now.
 func (x *Index) ResolveAt(s Subject, p Place) Resolution {
+	if p.Kind == PlaceBastion {
+		return x.ResolveBastion(s, p.BastionID)
+	}
 	if p.Kind == PlaceRepository && !p.Repo.IsZero() {
 		return x.Resolve(s, p.Repo, false)
 	}
@@ -326,7 +355,7 @@ func (x *Index) apply(res *Resolution, p Place, r *Rule, s Subject) {
 		}
 	}
 	res.Figures = base
-	if r.Capped && p.Kind != PlaceInstance {
+	if r.Capped && p.Kind != PlaceInstance && p.Kind != PlaceBastion {
 		cap := x.capOf(r, p, s)
 		for i := range base {
 			v := minFigure(base[i], cap[i])

@@ -11,6 +11,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
@@ -18,14 +19,16 @@ import (
 )
 
 // The Bastion registrations and their tokens (R-BAS-004, Q-BAS-24). The declarations are in the document:
-// endpoints:read for the reads, endpoints:write for the writes, x-quader-if-match on the update, and for the
-// revocation of one token the coarse authenticated form, because the handler admits endpoints:write or
-// tokens:revoke. The rules are those of bastionmain.Registrations; the handlers decode, call it and encode.
+// endpoints:read for the reads, endpoints:write for the writes, x-quader-if-match on the update, and the coarse authenticated
+// form for the revocation of one token, because the handler admits endpoints:write or tokens:revoke, and for the update, because
+// the handler requires limits:write for the member limits and endpoints:write for every other (Q-BAS-325). The rules are those of
+// bastionmain.Registrations; the handlers decode, call it and encode.
 
-// Capabilities a Bastion registration is managed with (Q-BAS-24).
+// Capabilities a Bastion registration is managed with (Q-BAS-24, Q-BAS-325).
 const (
 	capabilityEndpointsWrite = "endpoints:write"
 	capabilityTokensRevoke   = "tokens:revoke"
+	capabilityLimitsWrite    = "limits:write"
 )
 
 // bastionsReady answers 503 and reports false when the replica has no registration service (a worker, or the
@@ -40,9 +43,17 @@ func (s *Server) bastionsReady(w http.ResponseWriter, r *http.Request) bool {
 
 func toBastion(b bastionmain.Registration) gen.Bastion {
 	out := gen.Bastion{
-		Id: uuidOf(b.ID), Name: b.Name, Description: b.Description, Enabled: b.Enabled, Handover: b.Handover,
+		Id: uuidOf(b.ID), Name: b.Name, Description: b.Description, Enabled: b.Enabled,
+		Switches: gen.BastionSwitches{Handover: b.Switches.Handover, Gui: b.Switches.GUI, Docs: b.Switches.Docs},
+		Limits:   bastionLimitsRep(b.Limits, b.Preset), Status: make([]gen.BastionReplicaStatus, 0, len(b.Status)),
 		Egress: bastionmain.EgressText(b.Egress), CreatedAt: utc(b.CreatedAt),
 		Tokens: make([]gen.BastionTokenSummary, 0, len(b.Tokens)), Contacts: make([]gen.BastionContact, 0, len(b.Contacts)),
+	}
+	for _, st := range b.Status {
+		var rep gen.BastionReplicaStatus
+		viaJSON(st.Status, &rep)
+		rep.Replica, rep.ReportedAt = st.Replica, utc(st.ReportedAt)
+		out.Status = append(out.Status, rep)
 	}
 	for _, t := range b.Tokens {
 		sum := gen.BastionTokenSummary{
@@ -54,12 +65,38 @@ func toBastion(b bastionmain.Registration) gen.Bastion {
 		out.Tokens = append(out.Tokens, sum)
 	}
 	for _, c := range b.Contacts {
-		out.Contacts = append(out.Contacts, gen.BastionContact{
+		ct := gen.BastionContact{
 			Replica: c.Replica, ContactAt: utc(c.ContactAt), ClientAddress: optString(c.ClientAddress), Release: c.Release,
-			InterfaceVersion: c.InterfaceVersion, BaseUrl: c.BaseURL,
-		})
+			InterfaceVersion: c.InterfaceVersion, BaseUrl: c.BaseURL, CatalogueKept: c.CatalogueKept,
+		}
+		if c.EdgeLimit != nil {
+			ct.EdgeLimit = refTo(c.EdgeLimit.Header())
+		}
+		out.Contacts = append(out.Contacts, ct)
 	}
 	return out
+}
+
+// bastionLimitsRep is a registration's limits as the API shows them (R-BAS-093): the members of the interface's shape, and the
+// preset the registration reads.
+func bastionLimitsRep(l bastionmain.Limits, preset iface.LimitsPreset) gen.BastionLimits {
+	out := gen.BastionLimits{Mode: gen.BastionLimitsMode(l.Mode), Preset: gen.BastionLimitsPreset(preset)}
+	viaJSON(l.Flood, &out.Flood)
+	viaJSON(l.Slots, &out.Slots)
+	viaJSON(l.Throughput, &out.Throughput)
+	viaJSON(l.AnonymousCeiling, &out.AnonymousCeiling)
+	if out.Flood.ExemptNetworks == nil {
+		out.Flood.ExemptNetworks = []string{}
+	}
+	return out
+}
+
+// viaJSON copies a value of the interface's shape into the generated type of the same shape.
+func viaJSON(from, to any) {
+	b, err := json.Marshal(from)
+	if err == nil {
+		_ = json.Unmarshal(b, to)
+	}
 }
 
 // ListBastions implements GET /api/v1/bastions.
@@ -128,7 +165,8 @@ func (s *Server) GetBastion(w http.ResponseWriter, r *http.Request, name string,
 type bastionPatchBody struct {
 	Description json.RawMessage `json:"description"`
 	Enabled     json.RawMessage `json:"enabled"`
-	Handover    json.RawMessage `json:"handover"`
+	Switches    json.RawMessage `json:"switches"`
+	Limits      json.RawMessage `json:"limits"`
 	Egress      json.RawMessage `json:"egress"`
 
 	ID        json.RawMessage `json:"id"`
@@ -136,6 +174,57 @@ type bastionPatchBody struct {
 	CreatedAt json.RawMessage `json:"createdAt"`
 	Tokens    json.RawMessage `json:"tokens"`
 	Contacts  json.RawMessage `json:"contacts"`
+	Status    json.RawMessage `json:"status"`
+}
+
+// bastionSwitchesPatch is the member switches of a merge patch.
+type bastionSwitchesPatch struct {
+	Handover json.RawMessage `json:"handover"`
+	GUI      json.RawMessage `json:"gui"`
+	Docs     json.RawMessage `json:"docs"`
+}
+
+// bastionLimitsDoc is a registration's limits as a merge patch applies to them (R-BAS-093): the members of the interface's shape.
+type bastionLimitsDoc struct {
+	Mode             iface.LimitsMode `json:"mode"`
+	Flood            iface.Flood      `json:"flood"`
+	Slots            iface.Slots      `json:"slots"`
+	Throughput       iface.Throughput `json:"throughput"`
+	AnonymousCeiling iface.Ceiling    `json:"anonymousCeiling"`
+}
+
+// bastionLimitsPatch reads the member limits of a merge patch: the preset to apply, and a function that merges the rest onto the
+// registration's limits inside the update's transaction. absent is true when the patch has no member limits.
+func bastionLimitsPatch(raw json.RawMessage) (preset *iface.LimitsPreset, merge func(bastionmain.Limits) (bastionmain.Limits, error), err error) {
+	if raw == nil || string(bytes.TrimSpace(raw)) == "null" {
+		return nil, nil, nil
+	}
+	var members map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &members); err != nil {
+		return nil, nil, malformed("/limits", "type", "the value must be an object", err)
+	}
+	if p, ok := members["preset"]; ok {
+		delete(members, "preset")
+		var name iface.LimitsPreset
+		if err := json.Unmarshal(p, &name); err != nil {
+			return nil, nil, malformed("/limits/preset", "type", "the value must be a preset's name", err)
+		}
+		if name != iface.PresetCustom {
+			preset = &name
+		}
+	}
+	rest, _ := json.Marshal(members)
+	merge = func(cur bastionmain.Limits) (bastionmain.Limits, error) {
+		doc, err := ApplyMergePatch(bastionLimitsDoc{
+			Mode: cur.Mode, Flood: cur.Flood, Slots: cur.Slots, Throughput: cur.Throughput, AnonymousCeiling: cur.AnonymousCeiling,
+		}, rest)
+		if err != nil {
+			return cur, err
+		}
+		cur.Mode, cur.Flood, cur.Slots, cur.Throughput, cur.AnonymousCeiling = doc.Mode, doc.Flood, doc.Slots, doc.Throughput, doc.AnonymousCeiling
+		return cur, nil
+	}
+	return preset, merge, nil
 }
 
 // UpdateBastion implements PATCH /api/v1/bastions/{name}.
@@ -160,17 +249,26 @@ func (s *Server) UpdateBastion(w http.ResponseWriter, r *http.Request, name stri
 		patch.Enabled, err = patchEnabled(in.Enabled, "/enabled")
 	}
 	if err == nil {
-		// The switch of the handover per blob (R-BAS-071): true or false, a null switches nothing.
-		patch.Handover, err = patchEnabled(in.Handover, "/handover")
+		// The switches (R-BAS-071, R-BAS-102): true or false, a null switches nothing.
+		err = patchSwitches(in.Switches, &patch)
 	}
 	if err == nil {
 		// The networks the Bastion connects from (R-BAS-017): the whole list, [] empties it, a null changes nothing.
 		patch.Egress, err = patchStrings(in.Egress, "/egress")
 	}
+	if err == nil {
+		// The limits (R-BAS-093): a preset to apply and a merge patch of the rest.
+		patch.Preset, patch.Limits, err = bastionLimitsPatch(in.Limits)
+	}
+	if err == nil {
+		err = s.bastionPatchAllowed(r.Context(), in, patch)
+	}
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return
 	}
+	// A change of the mode needs recent authentication (R-LIM-044), asked only when the mode would change.
+	patch.ModeChange = func() error { return s.requireRecentAuth(r) }
 	b, err := s.o.Bastions.Update(r.Context(), s.caller(r), name, patch, expectedRevision(pre))
 	if err != nil {
 		failIdentity(w, r, err)
@@ -180,7 +278,47 @@ func (s *Server) UpdateBastion(w http.ResponseWriter, r *http.Request, name stri
 	writeJSON(w, r, http.StatusOK, toBastion(b))
 }
 
-// patchEnabled reads a switch of a merge patch, enabled or handover: absent and null are unchanged, because a null must never
+// patchSwitches reads the member switches of a merge patch into the patch: absent and null are unchanged, as is every switch the
+// member leaves out or sets to null.
+func patchSwitches(raw json.RawMessage, patch *bastionmain.Patch) error {
+	if raw == nil || string(bytes.TrimSpace(raw)) == "null" {
+		return nil
+	}
+	var sw bastionSwitchesPatch
+	if err := StrictUnmarshal(raw, &sw); err != nil {
+		return err
+	}
+	var err error
+	if patch.Handover, err = patchEnabled(sw.Handover, "/switches/handover"); err != nil {
+		return err
+	}
+	if patch.GUI, err = patchEnabled(sw.GUI, "/switches/gui"); err != nil {
+		return err
+	}
+	patch.Docs, err = patchEnabled(sw.Docs, "/switches/docs")
+	return err
+}
+
+// bastionPatchAllowed holds a patch to the capabilities of Q-BAS-325: limits:write for the member limits, endpoints:write for every
+// other member a patch changes. A patch of read-only members alone needs endpoints:write, as before.
+func (s *Server) bastionPatchAllowed(ctx context.Context, in bastionPatchBody, p bastionmain.Patch) error {
+	present := func(raw json.RawMessage) bool { return raw != nil && string(bytes.TrimSpace(raw)) != "null" }
+	limitsOnly := present(in.Limits) && !present(in.Description) && !present(in.Enabled) && !present(in.Switches) && !present(in.Egress)
+	if present(in.Limits) || p.Preset != nil {
+		if ok, err := s.holds(ctx, capabilityLimitsWrite); err != nil || !ok {
+			return firstErr(err, errs.E(errs.Forbidden, errs.CodeForbidden, "The permission limits:write is required to change a Bastion's limits."))
+		}
+	}
+	if limitsOnly {
+		return nil
+	}
+	if ok, err := s.holds(ctx, capabilityEndpointsWrite); err != nil || !ok {
+		return firstErr(err, errs.E(errs.Forbidden, errs.CodeForbidden, "The permission endpoints:write is required."))
+	}
+	return nil
+}
+
+// patchEnabled reads a switch of a merge patch, enabled or a member of switches: absent and null are unchanged, because a null must never
 // switch a registration off, nor its handover on or off; any other type is refused.
 func patchEnabled(raw json.RawMessage, pointer string) (*bool, error) {
 	// A JSON null decodes into a bool as false without an error, which would switch off what the patch did not change: it is

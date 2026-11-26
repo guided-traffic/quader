@@ -642,6 +642,25 @@ list. The statements read the column as `egress::text[]` (the text form of `cidr
 canonicalizes the entries first (`ParseEgress`, Q-BAS-431), so the cast never sees one with bits beyond its prefix. No request reads the
 column: the recognition reads every replica's snapshot. Expand phase only.
 
+**00147_bastion_configuration** ([bastion.md](../spec/bastion.md) R-BAS-093, [usage-and-limits.md](../spec/usage-and-limits.md) R-LIM-043 to
+R-LIM-046; package E8): a registration's configuration. `bastion` gains `gui`, `docs`, `limits_mode`, `limits_preset` (the preset last
+applied: `internet`, `partnerNetwork` or `internal`) and the `jsonb` members `limits_flood`, `limits_slots`, `limits_throughput` and
+`limits_ceiling` in the interface's shapes, each with a new registration's value as its default (`bastionmain.DefaultLimits`, which an
+integration test compares); `bastion_revision` covers them. `limit_assignment` gains the place kind `bastion` with `bastion_id`
+(cascading with the registration), the place check `limit_assignment_place_check` and `limit_assignment_administrator_check` replace the
+first migration's unnamed checks, the unique index `limit_assignment_who` names `bastion_id`, and two triggers raise a registration's
+revision: `limit_assignment_bastion_revision` with a rule of its place, `limit_profile_bastion_revision` with the figures of a profile such
+a rule names. The two built-in profiles `bastion-anonymous` and `bastion-signed-in` and, for every registration that exists, the five kind
+rules of the preset Internet are inserted. `bastion_contact` gains `edge_limit` and `catalogue_kept`. The new transient table
+`bastion_status` (`bastion_id`, `replica`, `reported_at`, `status jsonb`) holds the state each replica reported, deleted with its contact
+(a foreign key to `bastion_contact`) and by the intake an hour after the last report ([tables_bastion.go](../../internal/meta/postgres/tables_bastion.go),
+export class `transient`: a restore brings no state back). The `cluster_epoch` row of the change area `bastion_configuration`. The
+statements: `BastionSnapshot` (one statement with each registration's rules and their profiles' figures), `BastionPlaceRules`,
+`BastionPlaceRulesOfAll`, `BastionSetConfiguration`, `BastionKindRulesInsert`, `BastionKindRulesApply` in
+[bastion_registration.sql](../../internal/meta/postgres/queries/bastion_registration.sql), `BastionStatus*` in
+[bastion_contact.sql](../../internal/meta/postgres/queries/bastion_contact.sql), `LimitBastionsOfProfile` in
+[limits.sql](../../internal/meta/postgres/queries/limits.sql). Expand phase only.
+
 ## The database's repository of the image scanning (00089)
 
 [00089_vuln_image_db_drop](../../internal/meta/postgres/migrations/00089_vuln_image_db_drop.sql) removes the private slot of the image

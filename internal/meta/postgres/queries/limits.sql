@@ -49,16 +49,26 @@ UPDATE limit_profile p
   FROM (SELECT sqlc.arg(figures)::text::jsonb AS f) x
  WHERE p.key = sqlc.arg(key) AND p.version = sqlc.arg(version);
 
+-- name: LimitBastionsOfProfile :many
+-- The registrations whose place has a rule that names the profile (R-LIM-043): a change of its figures changes their configuration.
+SELECT DISTINCT a.bastion_id::text AS id, bp.name
+  FROM limit_assignment a
+  JOIN limit_profile p ON p.id = a.profile_id
+  JOIN principal bp ON bp.id = a.bastion_id
+ WHERE p.key = sqlc.arg(key) AND a.bastion_id IS NOT NULL
+ ORDER BY 1;
+
 -- name: DeleteLimitProfile :execrows
 DELETE FROM limit_profile WHERE key = sqlc.arg(key) AND version = sqlc.arg(version) AND NOT builtin;
 
 -- name: LimitAssignments :many
 -- Every rule with the names of its place, the project's ID of a repository rule included (R-LIM-013: the index keys places
--- by name and the budget key by ID).
+-- by name and the budget key by ID), and the registration of a Bastion's place (R-LIM-043).
 SELECT a.id::text AS id, a.place_kind, COALESCE(a.project_id::text, '')::text AS project_id,
        COALESCE(a.repository_id, 0)::bigint AS repository_id,
        COALESCE(pr.key, rp.key, '')::text AS project_key, COALESCE(r.key, '')::text AS repo_key,
        COALESCE(r.project_id::text, '')::text AS repo_project_id,
+       COALESCE(a.bastion_id::text, '')::text AS bastion_id, COALESCE(bp.name, '')::text AS bastion_name,
        a.who_kind, a.who_ref, p.key AS profile, a.overrides, a.capped, a.builtin, a.note, a.version,
        a.created_at, COALESCE(a.created_by::text, '')::text AS created_by, a.updated_at,
        COALESCE(a.updated_by::text, '')::text AS updated_by
@@ -67,13 +77,14 @@ SELECT a.id::text AS id, a.place_kind, COALESCE(a.project_id::text, '')::text AS
   LEFT JOIN project pr ON pr.id = a.project_id
   LEFT JOIN repositories r ON r.id = a.repository_id
   LEFT JOIN project rp ON rp.id = r.project_id
+  LEFT JOIN principal bp ON bp.id = a.bastion_id
  ORDER BY a.place_kind, a.created_at, a.id;
 
 -- name: InsertLimitAssignment :exec
-INSERT INTO limit_assignment (id, place_kind, project_id, repository_id, who_kind, who_ref, profile_id, overrides, capped,
+INSERT INTO limit_assignment (id, place_kind, project_id, repository_id, bastion_id, who_kind, who_ref, profile_id, overrides, capped,
                               note, created_by, updated_by)
 SELECT sqlc.arg(id)::text::uuid, sqlc.arg(place_kind), NULLIF(sqlc.arg(project_id)::text, '')::uuid,
-       NULLIF(sqlc.arg(repository_id)::bigint, 0), sqlc.arg(who_kind), sqlc.arg(who_ref), p.id,
+       NULLIF(sqlc.arg(repository_id)::bigint, 0), NULLIF(sqlc.arg(bastion_id)::text, '')::uuid, sqlc.arg(who_kind), sqlc.arg(who_ref), p.id,
        sqlc.arg(overrides)::text::jsonb, sqlc.arg(capped), sqlc.arg(note),
        NULLIF(sqlc.arg(actor)::text, '')::uuid, NULLIF(sqlc.arg(actor)::text, '')::uuid
   FROM limit_profile p WHERE p.key = sqlc.arg(profile);

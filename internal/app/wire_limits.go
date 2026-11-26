@@ -132,6 +132,25 @@ func (a *App) limitsAPI() v1.LimitsServices {
 	if is := part[ciArea](a.parts).issuers; is != nil {
 		out.CI = ciIssuerNames{is}
 	}
+	if regs := a.bastionRegistrations(); regs != nil {
+		// The place of a Bastion (R-LIM-043) by its registration's name, and the name of a place the usage store recorded.
+		out.Bastion = func(ctx context.Context, name string) (string, error) {
+			reg, err := regs.Get(ctx, name)
+			return reg.ID, err
+		}
+		out.BastionName = func(ctx context.Context, id string) (string, bool) {
+			all, err := regs.List(ctx)
+			if err != nil {
+				return "", false
+			}
+			for _, reg := range all {
+				if reg.ID == id {
+					return reg.Name, true
+				}
+			}
+			return "", false
+		}
+	}
 	return out
 }
 

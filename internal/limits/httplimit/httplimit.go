@@ -46,10 +46,16 @@ func Repo(r *http.Request) qname.Repo {
 // CallerOf converts the principal of a request to the caller the limits derive the subject from (R-LIM-001). admin is
 // whether the principal holds the role admin now, whatever the token's scope (Q-LIM-18).
 func CallerOf(r *http.Request, p httpserver.Principal, admin bool) limits.Caller {
+	return CallerOfPrincipal(r.Context(), p, admin)
+}
+
+// CallerOfPrincipal is [CallerOf] for code that holds the request's context and a principal the stage accepted, not the request:
+// the check of a Bastion's caller (R-BAS-096) and its marking.
+func CallerOfPrincipal(ctx context.Context, p httpserver.Principal, admin bool) limits.Caller {
 	c := limits.Caller{
 		Kind: limits.CallerKind(p.Kind), Anonymous: p.Anonymous, PrincipalID: p.ID, SessionID: p.Credential.SessionID,
 		TokenID: p.Credential.TokenID, TechnicalTokenID: p.Credential.TechnicalTokenID, Admin: admin,
-		Client: httpserver.InfoFrom(r.Context()).Client,
+		Client: httpserver.InfoFrom(ctx).Client,
 	}
 	if c.Kind == "" && !p.Anonymous {
 		c.Kind = limits.CallerUser

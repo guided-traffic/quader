@@ -91,6 +91,8 @@ export function rulesPath(place: LimitPlace): string {
       const [project, repo] = splitRepository(place.repository);
       return `/api/v1/projects/${seg(project)}/repositories/${seg(repo)}/limits/assignments`;
     }
+    case 'bastion':
+      return `/api/v1/bastions/${seg(place.bastion)}/limits/assignments`;
   }
 }
 

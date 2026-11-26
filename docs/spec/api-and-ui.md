@@ -2473,6 +2473,8 @@ says so, and a project the caller is no member of answers 404.
 | GET, PUT, DELETE | `/api/v1/projects/{projectKey}/limits/assignments/{id}` | as above | R-LIM-032 |
 | GET, POST | `/api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments` | as above | R-LIM-032 |
 | GET, PUT, DELETE | `/api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments/{id}` | as above | R-LIM-032 |
+| GET, POST | `/api/v1/bastions/{name}/limits/assignments` | GET `limits:read`; POST `limits:write` | R-LIM-043 |
+| GET, PUT, DELETE | `/api/v1/bastions/{name}/limits/assignments/{id}` | GET `limits:read`; PUT, DELETE `limits:write` | R-LIM-043 |
 | GET, PUT | `/api/v1/projects/{projectKey}/repositories/{repoKey}/limits/ceilings` | GET `limits:read`, `repositories:read-config` or an Owner; PUT `limits:write`, `repositories:write-config` or an Owner | R-LIM-032 |
 | GET, PATCH | `/api/v1/limits/settings` | GET `limits:read`; PATCH `limits:write`, recent authentication for `mode` (R-API-007) | R-LIM-033 |
 | GET | `/api/v1/limits/mode-preview` | `limits:read` | R-LIM-033 |
@@ -2482,7 +2484,7 @@ says so, and a project the caller is no member of answers 404.
 | DELETE | `/api/v1/limits/blocks/{id}` | `limits:write`, or an Owner of the block's project | R-LIM-033 |
 | GET | `/api/v1/limits/explain` | `limits:read`, or an Owner for a repository of its project | R-LIM-035 |
 | GET | `/api/v1/limits/subjects` | `limits:read`, or an Owner with `project` | R-LIM-034 |
-| GET | `/api/v1/usage`, `/api/v1/usage/export` (`project=` narrows to one project, [Q-API-353](#q-api-353--the-instances-usage-list-narrows-to-a-project-by-a-parameter)) | `usage:read` | R-LIM-034 |
+| GET | `/api/v1/usage`, `/api/v1/usage/export` (`project=` narrows to one project, [Q-API-353](#q-api-353--the-instances-usage-list-narrows-to-a-project-by-a-parameter); `place=installation` or `bastion:<name>` to a place, [Q-LIM-313](usage-and-limits.md#q-lim-313--the-usage-overviews-place-filter-is-installation-or-bastionname)) | `usage:read` | R-LIM-034, R-LIM-045 |
 | GET | `/api/v1/usage/subjects/{kind}/{id}` | `usage:read` | R-LIM-034 |
 | GET | `/api/v1/projects/{projectKey}/usage`, `…/usage/export`, `…/usage/subjects/{kind}/{id}` | `usage:read` or an Owner | R-LIM-034 |
 | GET | `/api/v1/users/me/usage` | every signed-in user (`authenticated`) | R-LIM-034 |

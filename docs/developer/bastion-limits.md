@@ -4,7 +4,7 @@ Status: specified on 2026-11-26 (W-34; the owner's answers to the working paper 
 and E5 are **built** (the cache bounded at every commit and the bytes counted, R-BAS-089, R-BAS-090; the format's cap of the wait and the
 figures that let one normal command through, R-BAS-091, R-BAS-092, interface version 7), and so are E16, E14a (the anonymous token and
 the anonymous documents of R-BAS-094), E13 (the addresses a Bastion connects from), E7 (the shared wire, interface version 8, with
-W-35's P5) and E15 (writes refused at the Bastion in the five error shapes, R-BAS-095) and E9a (the configuration at the Bastion, the flood protection's figures from it, the anonymous ceiling) and E10 (the throughput, R-BAS-097) and E11 (the cache protects what was served twice, R-BAS-098); E4 is measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this
+W-35's P5), E15 (writes refused at the Bastion in the five error shapes, R-BAS-095), E9a (the configuration at the Bastion, the flood protection's figures from it, the anonymous ceiling), E10 (the throughput, R-BAS-097), E11 (the cache protects what was served twice, R-BAS-098) and E8 (the main installation's side); E4 is measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this
 page and the specification. Every other package is **not built**. The requirements are [bastion.md](../spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation)
 R-BAS-093 to R-BAS-099 and [its wire](../spec/bastion.md#the-interface-version-8-the-shared-wire),
 [usage-and-limits.md](../spec/usage-and-limits.md#a-bastion-as-a-place) R-LIM-043 to R-LIM-046 and
@@ -29,7 +29,7 @@ must follow, the identifiers it takes, and what its tests cost.
   header or page. Every package that touches an answer of the Bastion keeps the integration scan of R-BAS-099 green.
 - **One raise of the interface version, 7 to 8, by E7 together with W-35's P5** (Q-BAS-322). No other package changes the wire; a member a
   package needs and the wire lacks is a change of E7's work and of the specification first.
-- **Today's code** is at interface version 8 (E7): the handshake carries `configuration`, until E8 an interim one, which the Bastion applies
+- **Today's code** is at interface version 8 (E7): the handshake carries `configuration`, since E8 the registration's own, which the Bastion applies
   whole since E9a (`settings.Holder`): the flood figures, the slots and the anonymous ceiling are no chart values any more; a write is refused at
   the Bastion itself since E15 ([write.go](../../internal/bastion/engine/write.go)), every answer of its own in the format's error shape
   ([shape.go](../../internal/bastion/engine/shape.go)); the main
@@ -51,7 +51,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 | 2 | E16 | nothing of the main installation in a Bastion's answers | E2 + E3 | built |
 | 2 | E14a | anonymous requests answered without the main installation | E6 | built |
 | 2 | E13 | egress addresses on the registration | E6 | built |
-| 3 | E8 | the main installation's side | E7, W32, W36, E4 | not built |
+| 3 | E8 | the main installation's side | E7, W32, W36, E4 | built |
 | 3 | E9a | the configuration at the Bastion, flood protection, the anonymous ceiling | E7, E4 | built |
 | 3 | E10 | the throughput | E7 | built |
 | 3 | E15 | writes refused at the Bastion | E7 | built |
@@ -105,7 +105,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 
 ### E8 · The main installation's side
 
-- **Builds** migration 00148: the configuration's columns on `bastion` and the revision trigger (also on `limit_assignment` rows of a
+- **Builds** migration 00147 (renumbered at landing: W-35's P6 took 00146): the configuration's columns on `bastion` and the revision trigger (also on `limit_assignment` rows of a
   Bastion place and on a profile such a row names, Q-BAS-320); the place `bastion` with `bastion_id` in `limit_assignment`; the two Bastion
   profiles and, for every registration, the Internet kind rules (R-LIM-046); the transient table `bastion_status`; the change area
   `bastion_configuration`. The place `PlaceBastion` and its resolution in `internal/limits/index.go` and `model.go`. `PATCH
@@ -119,6 +119,46 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   `bastion_handshake_api.go`, `bastion_check_api.go`, `limits_api.go`, `usage_api.go`; `internal/limits`.
 - **Tests**: unit about 1.5 s; integration area `bastionreg` about 3 s; area `limits` about 4 s.
 - **Identifiers**: Q-BAS-323 to Q-BAS-325, Q-LIM-300 to Q-LIM-304, H-2282 to H-2284.
+- *Built on 2026-11-26.* Migration 00147 ([database.md](database.md)): the registration's `gui`, `docs`, `limits_*` members with a new
+  registration's values, the revision triggers on the registration, on a rule of its place and on a profile such a rule names, the place
+  kind `bastion` with `bastion_id`, the profiles `bastion-anonymous` and `bastion-signed-in` (the measurement's proposal with the anonymous
+  parallel transfers 270, [Q-LIM-310](../spec/usage-and-limits.md#q-lim-310--the-bastion-profiles-take-the-measurements-proposal-with-room-for-one-anonymous-restore-of-200-packages-at-once)),
+  the Internet kind rules of every registration, `bastion_contact.edge_limit` and `catalogue_kept`, the transient `bastion_status`, the
+  change area `bastion_configuration`.
+  - *The configuration:* [configuration.go](../../internal/bastionmain/configuration.go) (`Limits`, `PlaceRule`, `Presets`,
+    `DefaultLimits`, `EffectivePreset`, `Configuration`, `ValidateLimits`, `SubjectLimits`); the registration service writes the switches,
+    the limits and a preset's kind rules in `Update` and records one `bastion.configuration.changed` ([registrations.go](../../internal/bastionmain/registrations.go));
+    the snapshot of the registrations holds each registration's configuration from one statement (`BastionSnapshot`, `Configuration`,
+    `RuleFigures`, `ReadConfiguration` in [snapshot.go](../../internal/bastionmain/snapshot.go), Q-BAS-440), reloaded by the areas
+    `bastion_handover`, `bastion_egress`, `bastion_configuration` and `limits`; `InterimConfiguration` is gone, and the handshake answers
+    `503` on a replica without the configuration's service.
+  - *The place:* `limits.PlaceBastion`, `BastionPlace`, `Index.ResolveBastion` ([index.go](../../internal/limits/index.go)); the store reads
+    and writes the place and records `bastion.configuration.changed` for a rule of a Bastion's place and for each registration a profile's
+    change reaches (`bastionChanged` in [store.go](../../internal/limits/store/store.go), Q-BAS-441).
+  - *The API:* `PATCH /api/v1/bastions/{name}` with `switches` and `limits`, declared `authenticated` and decided per member
+    (`bastionPatchAllowed`, Q-BAS-325, Q-BAS-444); `GET` with `switches`, `limits`, `status` and the contacts' `edgeLimit` and
+    `catalogueKept`; `/api/v1/bastions/{name}/limits/assignments` over the handlers of the other places ([limits_api.go](../../internal/api/v1/limits_api.go)
+    `placeAt`); the usage API's `place` (`installation` or `bastion:<name>`, Q-LIM-313).
+  - *The wire's content:* the check answer's `subject.limits` and the marking's `Quader-Bastion-Limits` from
+    `App.bastionSubjectLimits` ([wire_bastion.go](../../internal/app/wire_bastion.go)), which reads no database; the intake stores the
+    usage through the replica's usage buffer and the state in `bastion_status` ([report.go](../../internal/bastionmain/report.go)), after
+    every refusal of the batch was decided, and its body bound is `max_batch` × 10 KiB + 100,000 × 640 bytes + 256 KiB, about 71 MiB
+    (Q-BAS-442, H-2354); `bastion.configuration.changed` in `feedActions` maps to `settings`.
+  - *The web client* follows the API's members (`switches.handover`, the place kind `bastion`) without a new screen: E12 builds those.
+  - *Joined with E9a and W-35's P6:* a new registration's configuration is the Bastion's built-in one (`settings.Builtin`, Q-BAS-448:
+    the slots' wait of 5 s, the ceiling) with the anonymous parallel transfers of Q-LIM-310 (270) on both sides;
+    `TestR_BAS_093_ANewRegistrationIsTheBuiltInConfiguration` ([builtin_test.go](../../internal/app/builtin_test.go), the composition
+    root, the one package that may import both sides) holds them to one another; `maintest.Configuration` is a copy of `settings.Builtin`
+    with the revision 1 of a new registration (the infrastructure layer may not import `settings`), held to it by
+    `TestR_BAS_093_TheTestDoubleSendsTheBuiltInConfiguration`, so the Bastion's tests run against what a main installation sends. The API refuses a
+    failed-authentication window above 12 hours (`MaxFailedAuthWindowSeconds`), which a Bastion would clamp. The catalogue's builder and
+    the handshake read a registration's stored `switches` (`App.bastionSwitches`; `app.Options.BastionSwitches` overrides `gui` and
+    `docs` in tests only). [shapes.sh](../../hack/bastion-measure/shapes.sh) sets the anonymous flood figure through the registration's
+    `PATCH`, since the chart no longer has it.
+  - Decisions Q-BAS-440 to Q-BAS-444, Q-LIM-310 to Q-LIM-314; gaps H-2354 and H-2355 of [security/bastion.md](../security/bastion.md);
+    H-2283 narrowed (Q-BAS-443). Tests: unit 0.4 s in `internal/bastionmain`, milliseconds in `internal/limits`, 0.1 s in
+    `internal/api/v1` and `internal/api/bastionmark`; integration `bastionreg` (two cases, about 3 s and under a second) and `limits` (one
+    case, about 4 s with the stack), rows only.
 
 ### E9a · The configuration at the Bastion, flood protection and the anonymous ceiling
 
@@ -146,9 +186,9 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   (Q-BAS-447). The defaults (Q-BAS-448): ceiling 100 a second, burst 2,000, 36,000 an hour; slots 64, 0.25 and a wait of 5 s; the reasoning
   with what each client's cold command gets is in R-BAS-094 and R-BAS-096. Decisions Q-BAS-445 to Q-BAS-449, gaps H-2356 and H-2357.
 - *What E9a left:* the status of the reporting batch (`ReplicaStatus`, which the wire's text gave to "E8 and E9a"): no package sends it yet;
-  E12's live state needs it, and E9b's flush is where it is cheapest to add. Until E8 the interim configuration holds no ceiling and a 2 s
-  wait (H-2357), and a change reaches a Bastion with its regular handshake (the `settings` entry of the feed is E8's), so the integration
-  case takes the 5 s handshake of the harness, not 3 s. `mode`, `preset` and `place` are read by nothing yet (E9b); `throughput` since E10.
+  E12's live state needs it, and E9b's flush is where it is cheapest to add (E8's intake takes it). Since E8 a registration's configuration
+  holds the ceiling and the 5 s wait (H-2357 closed), and a change reaches a Bastion through the feed's `settings` entry; the integration
+  case still takes the 5 s handshake of the harness. `mode`, `preset` and `place` are read by nothing yet (E9b); `throughput` since E10.
 
 ### E9b · Budgets on what the Bastion serves
 
@@ -177,7 +217,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   the key family `throughput`); the files the plan named changed less than planned: the client of the main installation admits and paces
   every forward in one place (`mainclient.Throughput`, `HTTPClient.Do`), so `fill.go` and `forward.go` only keep the cap's wait out of the
   stall bound and the floor, and `handover.go` paces the direct read. The default of 200 MB/s with an anonymous share of 25 % is the
-  built-in configuration's and the interim configuration's (Q-BAS-455, a revision of R-BAS-097's "unlimited").
+  built-in configuration's and, since E8, a new registration's (Q-BAS-455, a revision of R-BAS-097's "unlimited").
   A miss at the cap is refused at once with the wait until its first bytes instead of after the queue time (Q-BAS-457).
   W-35's pull has `Pacer.CatalogueReader` to call; nothing calls it yet. The replica's status in the reporting batch
   (`iface.ThroughputStatus`) is still sent by no package (E9b's flush, E12's live state). Decisions Q-BAS-455 to Q-BAS-459, gaps H-2360 and

@@ -106,6 +106,9 @@ func TestR_BAS_015_TheMappingTableOfTheFeed(t *testing.T) {
 			Action:  audit.EventSettingsAuthChanged,
 			Details: []byte(`{"before":{"newUsersExternal":false},"after":{"newUsersExternal":true}}`),
 		}, []rawEntry{{kind: iface.FeedSettings}}},
+		{"R-BAS-093 a Bastion's configuration changed: every Bastion handshakes again and drops nothing", FeedEvent{
+			Action: audit.EventBastionConfigurationChanged, Details: []byte(`{"parts":["mode"],"before":{"mode":"enforce"},"after":{"mode":"audit"}}`),
+		}, []rawEntry{{kind: iface.FeedSettings}}},
 		{"a lowered project level asks the handshake again and drops every answer", FeedEvent{
 			Action:  audit.EventProjectVisibilityChanged,
 			Details: []byte(`{"before":"public","after":"internal"}`),

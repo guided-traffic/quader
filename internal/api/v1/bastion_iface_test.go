@@ -96,6 +96,12 @@ type checkSetup struct {
 
 func newCheckSetup(t *testing.T, authn func(*http.Request) (httpserver.Principal, error)) *checkSetup {
 	t.Helper()
+	return newCheckSetupWith(t, authn, nil)
+}
+
+// newCheckSetupWith is newCheckSetup with the services edited first.
+func newCheckSetupWith(t *testing.T, authn func(*http.Request) (httpserver.Principal, error), edit func(*BastionServices)) *checkSetup {
+	t.Helper()
 	cs := &checkSetup{shapes: &fakeShapes{shapes: map[string]bastionmain.Shape{
 		"it/npm-all":     {Read: iface.ReadFull},
 		"it/npm-partner": {Read: iface.ReadNone, Status: http.StatusNotFound},
@@ -108,6 +114,9 @@ func newCheckSetup(t *testing.T, authn func(*http.Request) (httpserver.Principal
 			return authn(r)
 		},
 		Shapes: cs.shapes,
+	}
+	if edit != nil {
+		edit(&svc)
 	}
 	inner := newSetup(t, func(o *Options) {
 		o.Access, o.Bastion, o.API.Config.MaxRequestBodyBytes = beginAccess{}, svc, config.MiB

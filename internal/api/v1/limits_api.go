@@ -54,7 +54,15 @@ type LimitsServices struct {
 	// IsAdministrator reports whether a user holds the role admin now, directly or through a group (R-LIM-012), for the
 	// explanation and the usage of a subject the API names.
 	IsAdministrator func(ctx context.Context, id string, groups []string) bool
+	// Bastion returns the principal ID of a Bastion registration by name, for the rules of its place (R-LIM-043); an *errs.Error
+	// NotFound when none. BastionName names a registration by its ID, false when it is gone.
+	Bastion     func(ctx context.Context, name string) (string, error)
+	BastionName func(ctx context.Context, id string) (string, bool)
 }
+
+// placeAt addresses the place of an operation of the rules: the instance (all empty), a project, a repository of a project, or a
+// Bastion's place (R-LIM-043).
+type placeAt struct{ project, repo, bastion string }
 
 // The codes of the limits operations (R-LIM-031 to R-LIM-033).
 const (
@@ -329,9 +337,16 @@ func (s *Server) DeleteLimitProfile(w http.ResponseWriter, r *http.Request, key 
 
 // ---- rules (R-LIM-032)
 
-// limitPlace is the place an operation addresses, with its names and IDs.
-func (s *Server) limitPlace(ctx context.Context, l LimitsServices, projectKey, repoKey string) (limits.Place, repository.Repository, error) {
+// limitPlace is the place an operation addresses, with its names and IDs; a name that is no registration answers 404.
+func (s *Server) limitPlace(ctx context.Context, l LimitsServices, at placeAt) (limits.Place, repository.Repository, error) {
+	projectKey, repoKey := at.project, at.repo
 	switch {
+	case at.bastion != "":
+		if l.Bastion == nil {
+			return limits.Place{}, repository.Repository{}, unavailable("The Bastion registrations")
+		}
+		id, err := l.Bastion(ctx, at.bastion)
+		return limits.BastionPlace(id, at.bastion), repository.Repository{}, err
 	case repoKey != "":
 		repo, err := l.Repos.ByName(ctx, qname.Repo{Project: projectKey, Key: repoKey})
 		if err != nil {
@@ -361,6 +376,8 @@ func samePlace(a, b limits.Place) bool {
 		return a.ProjectID == b.ProjectID
 	case limits.PlaceRepository:
 		return a.RepoID == b.RepoID
+	case limits.PlaceBastion:
+		return a.BastionID == b.BastionID
 	}
 	return true
 }
@@ -371,6 +388,8 @@ func placeRep(p limits.Place) map[string]any {
 		return map[string]any{"kind": "project", "project": p.ProjectKey}
 	case limits.PlaceRepository:
 		return map[string]any{"kind": "repository", "repository": p.Repo.String()}
+	case limits.PlaceBastion:
+		return map[string]any{"kind": "bastion", "bastion": p.BastionName}
 	}
 	return map[string]any{"kind": "instance"}
 }
@@ -456,8 +475,8 @@ func (s *Server) whoOf(ctx context.Context, l LimitsServices, place limits.Place
 		if ref == "" {
 			return "", "", invalidWho("callerKind must be user, technicalToken, ci, anonymous or administrator.")
 		}
-		if ref == limits.EveryAdministrator && place.Kind != limits.PlaceInstance {
-			return "", "", invalidWho("Administrators are decided at the instance only.")
+		if ref == limits.EveryAdministrator && place.Kind != limits.PlaceInstance && place.Kind != limits.PlaceBastion {
+			return "", "", invalidWho("Administrators are decided at the instance and at a Bastion's place only.")
 		}
 		return limits.WhoEvery, ref, nil
 	}
@@ -556,12 +575,12 @@ func ruleNotFound() error {
 	return errs.E(errs.NotFound, errs.CodeNotFound, "No rule of this place has this ID.")
 }
 
-func (s *Server) listRulesLimit(w http.ResponseWriter, r *http.Request, projectKey, repoKey string) {
+func (s *Server) listRulesLimit(w http.ResponseWriter, r *http.Request, at placeAt) {
 	ctx := r.Context()
 	l, snap, x, err := s.snapshot(ctx)
 	var place limits.Place
 	if err == nil {
-		place, _, err = s.limitPlace(ctx, l, projectKey, repoKey)
+		place, _, err = s.limitPlace(ctx, l, at)
 	}
 	if err != nil {
 		httpserver.Problem(w, r, err)
@@ -630,12 +649,12 @@ func capCheck(ctx context.Context, l LimitsServices, x *limits.Index, rule limit
 	return nil
 }
 
-func (s *Server) createRuleLimit(w http.ResponseWriter, r *http.Request, projectKey, repoKey string) {
+func (s *Server) createRuleLimit(w http.ResponseWriter, r *http.Request, at placeAt) {
 	ctx := r.Context()
 	l, snap, x, err := s.snapshot(ctx)
 	var place limits.Place
 	if err == nil {
-		place, _, err = s.limitPlace(ctx, l, projectKey, repoKey)
+		place, _, err = s.limitPlace(ctx, l, at)
 	}
 	var in ruleWrite
 	if err == nil {
@@ -714,12 +733,12 @@ func findRule(snap limits.Snapshot, place limits.Place, id string) (limits.Rule,
 	return limits.Rule{}, false
 }
 
-func (s *Server) getRuleLimit(w http.ResponseWriter, r *http.Request, projectKey, repoKey string, id string) {
+func (s *Server) getRuleLimit(w http.ResponseWriter, r *http.Request, at placeAt, id string) {
 	ctx := r.Context()
 	l, err := s.limitsServices()
 	var place limits.Place
 	if err == nil {
-		place, _, err = s.limitPlace(ctx, l, projectKey, repoKey)
+		place, _, err = s.limitPlace(ctx, l, at)
 	}
 	if err != nil {
 		httpserver.Problem(w, r, err)
@@ -728,12 +747,12 @@ func (s *Server) getRuleLimit(w http.ResponseWriter, r *http.Request, projectKey
 	s.answerRule(w, r, l, place, id, http.StatusOK)
 }
 
-func (s *Server) replaceRuleLimit(w http.ResponseWriter, r *http.Request, projectKey, repoKey string, id string) {
+func (s *Server) replaceRuleLimit(w http.ResponseWriter, r *http.Request, at placeAt, id string) {
 	ctx := r.Context()
 	l, snap, x, err := s.snapshot(ctx)
 	var place limits.Place
 	if err == nil {
-		place, _, err = s.limitPlace(ctx, l, projectKey, repoKey)
+		place, _, err = s.limitPlace(ctx, l, at)
 	}
 	var pre Precondition
 	if err == nil {
@@ -771,12 +790,12 @@ func (s *Server) replaceRuleLimit(w http.ResponseWriter, r *http.Request, projec
 	s.answerRule(w, r, l, place, cur.ID, http.StatusOK)
 }
 
-func (s *Server) deleteRuleLimit(w http.ResponseWriter, r *http.Request, projectKey, repoKey string, id string) {
+func (s *Server) deleteRuleLimit(w http.ResponseWriter, r *http.Request, at placeAt, id string) {
 	ctx := r.Context()
 	l, snap, _, err := s.snapshot(ctx)
 	var place limits.Place
 	if err == nil {
-		place, _, err = s.limitPlace(ctx, l, projectKey, repoKey)
+		place, _, err = s.limitPlace(ctx, l, at)
 	}
 	cur, ok := findRule(snap, place, id)
 	if err == nil && !ok {
@@ -801,77 +820,103 @@ func (s *Server) deleteRuleLimit(w http.ResponseWriter, r *http.Request, project
 
 // ListInstanceLimitAssignments implements GET /api/v1/limits/assignments.
 func (s *Server) ListInstanceLimitAssignments(w http.ResponseWriter, r *http.Request, _ gen.ListInstanceLimitAssignmentsParams) {
-	s.listRulesLimit(w, r, "", "")
+	s.listRulesLimit(w, r, placeAt{})
 }
 
 // CreateInstanceLimitAssignment implements POST /api/v1/limits/assignments.
 func (s *Server) CreateInstanceLimitAssignment(w http.ResponseWriter, r *http.Request) {
-	s.createRuleLimit(w, r, "", "")
+	s.createRuleLimit(w, r, placeAt{})
 }
 
 // GetInstanceLimitAssignment implements GET /api/v1/limits/assignments/{id}.
 func (s *Server) GetInstanceLimitAssignment(w http.ResponseWriter, r *http.Request, id string) {
-	s.getRuleLimit(w, r, "", "", id)
+	s.getRuleLimit(w, r, placeAt{}, id)
 }
 
 // ReplaceInstanceLimitAssignment implements PUT /api/v1/limits/assignments/{id}.
 func (s *Server) ReplaceInstanceLimitAssignment(w http.ResponseWriter, r *http.Request, id string, _ gen.ReplaceInstanceLimitAssignmentParams) {
-	s.replaceRuleLimit(w, r, "", "", id)
+	s.replaceRuleLimit(w, r, placeAt{}, id)
 }
 
 // DeleteInstanceLimitAssignment implements DELETE /api/v1/limits/assignments/{id}.
 func (s *Server) DeleteInstanceLimitAssignment(w http.ResponseWriter, r *http.Request, id string, _ gen.DeleteInstanceLimitAssignmentParams) {
-	s.deleteRuleLimit(w, r, "", "", id)
+	s.deleteRuleLimit(w, r, placeAt{}, id)
 }
 
 // ListProjectLimitAssignments implements GET /api/v1/projects/{projectKey}/limits/assignments.
 func (s *Server) ListProjectLimitAssignments(w http.ResponseWriter, r *http.Request, projectKey string, _ gen.ListProjectLimitAssignmentsParams) {
-	s.listRulesLimit(w, r, projectKey, "")
+	s.listRulesLimit(w, r, placeAt{project: projectKey})
 }
 
 // CreateProjectLimitAssignment implements POST /api/v1/projects/{projectKey}/limits/assignments.
 func (s *Server) CreateProjectLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey string) {
-	s.createRuleLimit(w, r, projectKey, "")
+	s.createRuleLimit(w, r, placeAt{project: projectKey})
 }
 
 // GetProjectLimitAssignment implements GET /api/v1/projects/{projectKey}/limits/assignments/{id}.
 func (s *Server) GetProjectLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey string, id string) {
-	s.getRuleLimit(w, r, projectKey, "", id)
+	s.getRuleLimit(w, r, placeAt{project: projectKey}, id)
 }
 
 // ReplaceProjectLimitAssignment implements PUT /api/v1/projects/{projectKey}/limits/assignments/{id}.
 func (s *Server) ReplaceProjectLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey string, id string, _ gen.ReplaceProjectLimitAssignmentParams) {
-	s.replaceRuleLimit(w, r, projectKey, "", id)
+	s.replaceRuleLimit(w, r, placeAt{project: projectKey}, id)
 }
 
 // DeleteProjectLimitAssignment implements DELETE /api/v1/projects/{projectKey}/limits/assignments/{id}.
 func (s *Server) DeleteProjectLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey string, id string, _ gen.DeleteProjectLimitAssignmentParams) {
-	s.deleteRuleLimit(w, r, projectKey, "", id)
+	s.deleteRuleLimit(w, r, placeAt{project: projectKey}, id)
 }
 
 // ListRepositoryLimitAssignments implements GET …/repositories/{repoKey}/limits/assignments.
 func (s *Server) ListRepositoryLimitAssignments(w http.ResponseWriter, r *http.Request, projectKey, repoKey string, _ gen.ListRepositoryLimitAssignmentsParams) {
-	s.listRulesLimit(w, r, projectKey, repoKey)
+	s.listRulesLimit(w, r, placeAt{project: projectKey, repo: repoKey})
 }
 
 // CreateRepositoryLimitAssignment implements POST …/repositories/{repoKey}/limits/assignments.
 func (s *Server) CreateRepositoryLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey, repoKey string) {
-	s.createRuleLimit(w, r, projectKey, repoKey)
+	s.createRuleLimit(w, r, placeAt{project: projectKey, repo: repoKey})
 }
 
 // GetRepositoryLimitAssignment implements GET …/repositories/{repoKey}/limits/assignments/{id}.
 func (s *Server) GetRepositoryLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey, repoKey string, id string) {
-	s.getRuleLimit(w, r, projectKey, repoKey, id)
+	s.getRuleLimit(w, r, placeAt{project: projectKey, repo: repoKey}, id)
 }
 
 // ReplaceRepositoryLimitAssignment implements PUT …/repositories/{repoKey}/limits/assignments/{id}.
 func (s *Server) ReplaceRepositoryLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey, repoKey string, id string, _ gen.ReplaceRepositoryLimitAssignmentParams) {
-	s.replaceRuleLimit(w, r, projectKey, repoKey, id)
+	s.replaceRuleLimit(w, r, placeAt{project: projectKey, repo: repoKey}, id)
 }
 
 // DeleteRepositoryLimitAssignment implements DELETE …/repositories/{repoKey}/limits/assignments/{id}.
 func (s *Server) DeleteRepositoryLimitAssignment(w http.ResponseWriter, r *http.Request, projectKey, repoKey string, id string, _ gen.DeleteRepositoryLimitAssignmentParams) {
-	s.deleteRuleLimit(w, r, projectKey, repoKey, id)
+	s.deleteRuleLimit(w, r, placeAt{project: projectKey, repo: repoKey}, id)
+}
+
+// ListBastionLimitAssignments implements GET /api/v1/bastions/{name}/limits/assignments (R-LIM-043).
+func (s *Server) ListBastionLimitAssignments(w http.ResponseWriter, r *http.Request, name string, _ gen.ListBastionLimitAssignmentsParams) {
+	s.listRulesLimit(w, r, placeAt{bastion: name})
+}
+
+// CreateBastionLimitAssignment implements POST /api/v1/bastions/{name}/limits/assignments (R-LIM-043).
+func (s *Server) CreateBastionLimitAssignment(w http.ResponseWriter, r *http.Request, name string) {
+	s.createRuleLimit(w, r, placeAt{bastion: name})
+}
+
+// GetBastionLimitAssignment implements GET /api/v1/bastions/{name}/limits/assignments/{id} (R-LIM-043).
+func (s *Server) GetBastionLimitAssignment(w http.ResponseWriter, r *http.Request, name string, id string) {
+	s.getRuleLimit(w, r, placeAt{bastion: name}, id)
+}
+
+// ReplaceBastionLimitAssignment implements PUT /api/v1/bastions/{name}/limits/assignments/{id} (R-LIM-043).
+func (s *Server) ReplaceBastionLimitAssignment(w http.ResponseWriter, r *http.Request, name string, id string, _ gen.ReplaceBastionLimitAssignmentParams) {
+	s.replaceRuleLimit(w, r, placeAt{bastion: name}, id)
+}
+
+// DeleteBastionLimitAssignment implements DELETE /api/v1/bastions/{name}/limits/assignments/{id} (R-LIM-043): a kind rule a preset
+// wrote is built in at its place and answers 409 assignment_builtin.
+func (s *Server) DeleteBastionLimitAssignment(w http.ResponseWriter, r *http.Request, name string, id string, _ gen.DeleteBastionLimitAssignmentParams) {
+	s.deleteRuleLimit(w, r, placeAt{bastion: name}, id)
 }
 
 // ---- ceilings (R-LIM-015, R-LIM-032)
@@ -892,7 +937,7 @@ func (s *Server) ceilingsOf(ctx context.Context, projectKey, repoKey string) (Li
 	if err != nil {
 		return l, out, limits.Place{}, err
 	}
-	place, repo, err := s.limitPlace(ctx, l, projectKey, repoKey)
+	place, repo, err := s.limitPlace(ctx, l, placeAt{project: projectKey, repo: repoKey})
 	if err != nil {
 		return l, out, place, err
 	}
@@ -1169,7 +1214,7 @@ func (s *Server) GetLimitProjectMaximum(w http.ResponseWriter, r *http.Request, 
 	ctx := r.Context()
 	l, snap, x, err := s.snapshot(ctx)
 	if err == nil {
-		_, _, err = s.limitPlace(ctx, l, projectKey, "")
+		_, _, err = s.limitPlace(ctx, l, placeAt{project: projectKey})
 	}
 	if err != nil {
 		httpserver.Problem(w, r, err)
@@ -1202,7 +1247,7 @@ func (s *Server) SetLimitProjectMaximum(w http.ResponseWriter, r *http.Request, 
 	l, snap, _, err := s.snapshot(ctx)
 	var place limits.Place
 	if err == nil {
-		place, _, err = s.limitPlace(ctx, l, projectKey, "")
+		place, _, err = s.limitPlace(ctx, l, placeAt{project: projectKey})
 	}
 	cur, exists := findMaximum(snap, projectKey)
 	var pre Precondition

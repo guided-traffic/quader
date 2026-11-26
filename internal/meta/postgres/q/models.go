@@ -355,10 +355,18 @@ type BackupRun struct {
 }
 
 type Bastion struct {
-	PrincipalID pgtype.UUID
-	Description string
-	Handover    bool
-	Egress      []netip.Prefix
+	PrincipalID      pgtype.UUID
+	Description      string
+	Handover         bool
+	Egress           []netip.Prefix
+	Gui              bool
+	Docs             bool
+	LimitsMode       string
+	LimitsPreset     string
+	LimitsFlood      json.RawMessage
+	LimitsSlots      json.RawMessage
+	LimitsThroughput json.RawMessage
+	LimitsCeiling    json.RawMessage
 }
 
 type BastionCatalogue struct {
@@ -405,6 +413,15 @@ type BastionContact struct {
 	InterfaceVersion int32
 	BaseUrl          string
 	TokenID          pgtype.UUID
+	EdgeLimit        string
+	CatalogueKept    pgtype.Bool
+}
+
+type BastionStatus struct {
+	BastionID  pgtype.UUID
+	Replica    string
+	ReportedAt pgtype.Timestamptz
+	Status     json.RawMessage
 }
 
 type Blob struct {
@@ -876,6 +893,7 @@ type LimitAssignment struct {
 	CreatedBy    pgtype.UUID
 	UpdatedAt    pgtype.Timestamptz
 	UpdatedBy    pgtype.UUID
+	BastionID    pgtype.UUID
 }
 
 type LimitBlock struct {

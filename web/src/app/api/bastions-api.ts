@@ -62,7 +62,7 @@ export class HttpBastionsApi extends BastionsApi {
   }
 
   override async setHandover(name: string, handover: boolean, etag: string): Promise<Versioned<Bastion>> {
-    const r = await this.client.patch<Bastion>(`/api/v1/bastions/${seg(name)}`, { handover }, etag);
+    const r = await this.client.patch<Bastion>(`/api/v1/bastions/${seg(name)}`, { switches: { handover } }, etag);
     return { value: r.body, etag: r.etag ?? '' };
   }
 

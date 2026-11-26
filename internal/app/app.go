@@ -85,9 +85,9 @@ type Options struct {
 	// SkipInfrastructure starts the HTTP shell without PostgreSQL and Valkey. The
 	// shell tests use it; a production caller never sets it.
 	SkipInfrastructure bool
-	// BastionSwitches answers the switches gui and docs of a Bastion registration by its name, in place of the interim configuration
-	// whose switches are off until a registration stores a configuration of its own (bastion.md Q-BAS-352): the catalogue routes and
-	// the catalogue's builder read it. Tests only. Production passes nil.
+	// BastionSwitches answers the switches gui and docs of a Bastion registration by its name, in place of the ones its configuration
+	// stores (bastion.md R-BAS-093, R-BAS-102): the handshake, the catalogue routes and the catalogue's builder read it. Tests only.
+	// Production passes nil.
 	BastionSwitches func(name string) iface.Switches
 	// UIAssets replaces the UI build embedded in the binary (webui.Options.Assets): the build the
 	// replica serves and publishes to the shared asset store. Tests only: two replicas of one test

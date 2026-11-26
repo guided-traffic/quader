@@ -202,6 +202,10 @@ func (s *Server) checkSubject(r *http.Request, req iface.CheckRequest, addr neti
 			t := e.UTC()
 			sub.ExpiresAt = &t
 		}
+		// What the Bastion charges the caller against at its place (R-BAS-096, Q-BAS-328): the subject's key and its rule there.
+		if rec, ok := bastionmain.RecognitionFrom(r.Context()); ok && s.o.Bastion.SubjectLimits != nil {
+			sub.Limits = s.o.Bastion.SubjectLimits(cr.Context(), p, rec.BastionID)
+		}
 		return sub, p, nil
 	}
 	e, ok := errs.As(err)

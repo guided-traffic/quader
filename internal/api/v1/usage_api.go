@@ -30,9 +30,11 @@ import (
 
 // ---- the place keys of the store
 
-// placeOfKey reads a place key of the store (instance, project:<uuid>, repository:<id>) back.
+// placeOfKey reads a place key of the store (instance, project:<uuid>, repository:<id>, bastion:<uuid>) back.
 func placeOfKey(key string) limits.Place {
 	switch {
+	case strings.HasPrefix(key, limits.BastionPlaceKeyPrefix):
+		return limits.Place{Kind: limits.PlaceBastion, BastionID: strings.TrimPrefix(key, limits.BastionPlaceKeyPrefix)}
 	case strings.HasPrefix(key, "project:"):
 		return limits.Place{Kind: limits.PlaceProject, ProjectID: strings.TrimPrefix(key, "project:")}
 	case strings.HasPrefix(key, "repository:"):
@@ -55,8 +57,38 @@ func (s *Server) placeName(ctx context.Context, l LimitsServices, key string) ma
 		return map[string]any{"kind": "repository", "repository": key}
 	case limits.PlaceProject:
 		return map[string]any{"kind": "project", "project": s.projectKeyOf(ctx, l, p.ProjectID)}
+	case limits.PlaceBastion:
+		return map[string]any{"kind": "bastion", "bastion": s.bastionNameOf(ctx, l, p.BastionID)}
 	}
 	return map[string]any{"kind": "instance"}
+}
+
+// bastionNameOf names a Bastion's place by its registration's name, the key's ID for a registration that is gone.
+func (s *Server) bastionNameOf(ctx context.Context, l LimitsServices, id string) string {
+	if l.BastionName != nil {
+		if name, ok := l.BastionName(ctx, id); ok {
+			return name
+		}
+	}
+	return id
+}
+
+// usagePlace reads the place filter of the overview (R-LIM-045, R-UI-242): installation, or bastion:<name> into the place key of
+// that registration; absent is every place.
+func (s *Server) usagePlace(ctx context.Context, l LimitsServices, v *string) (string, error) {
+	switch {
+	case v == nil || *v == "":
+		return "", nil
+	case *v == usage.PlaceInstallation:
+		return usage.PlaceInstallation, nil
+	case strings.HasPrefix(*v, limits.BastionPlaceKeyPrefix) && l.Bastion != nil:
+		id, err := l.Bastion(ctx, strings.TrimPrefix(*v, limits.BastionPlaceKeyPrefix))
+		if err != nil {
+			return "", err
+		}
+		return limits.BastionPlaceKeyPrefix + id, nil
+	}
+	return "", badParam("place", "must be installation or bastion:<name>")
 }
 
 // projectKeyOf finds a project's key from its ID among the repositories (a project without repositories has no rows).
@@ -895,34 +927,42 @@ func (s *Server) projectScope(ctx context.Context, l LimitsServices, projectKey,
 
 // ListUsage implements GET /api/v1/usage.
 func (s *Server) ListUsage(w http.ResponseWriter, r *http.Request, params gen.ListUsageParams) {
-	scope, err := s.instanceScope(r, params.Project)
+	scope, err := s.instanceScope(r, params.Project, params.Place)
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return
 	}
-	s.listUsage(w, withoutQuery(r, "project"), scope)
+	s.listUsage(w, withoutQuery(withoutQuery(r, "project"), "place"), scope)
 }
 
-// instanceScope is the instance's overview, or one project's repositories with project= (Q-API-353).
-func (s *Server) instanceScope(r *http.Request, project *string) (usage.Scope, error) {
-	if project == nil || *project == "" {
+// instanceScope is the instance's overview, or one project's repositories with project= (Q-API-353), narrowed with place= to the
+// main installation's places or to one Bastion's (R-LIM-045, R-UI-242).
+func (s *Server) instanceScope(r *http.Request, project, place *string) (usage.Scope, error) {
+	if (project == nil || *project == "") && (place == nil || *place == "") {
 		return usage.Scope{}, nil
 	}
 	l, err := s.limitsServices()
 	if err != nil {
 		return usage.Scope{}, err
 	}
-	return s.projectScope(r.Context(), l, *project, "")
+	scope := usage.Scope{}
+	if project != nil && *project != "" {
+		if scope, err = s.projectScope(r.Context(), l, *project, ""); err != nil {
+			return usage.Scope{}, err
+		}
+	}
+	scope.Place, err = s.usagePlace(r.Context(), l, place)
+	return scope, err
 }
 
 // ExportUsage implements GET /api/v1/usage/export.
 func (s *Server) ExportUsage(w http.ResponseWriter, r *http.Request, params gen.ExportUsageParams) {
-	scope, err := s.instanceScope(r, params.Project)
+	scope, err := s.instanceScope(r, params.Project, params.Place)
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return
 	}
-	s.exportUsage(w, withoutQuery(r, "project"), scope)
+	s.exportUsage(w, withoutQuery(withoutQuery(r, "project"), "place"), scope)
 }
 
 // ListLimitProjects implements GET /api/v1/limits/projects (Q-API-351): per project its maximum and the number of rules at the
@@ -1158,6 +1198,8 @@ func placeOrder(key string) int {
 		return 1
 	case strings.HasPrefix(key, "repository:"):
 		return 2
+	case strings.HasPrefix(key, limits.BastionPlaceKeyPrefix):
+		return 3
 	}
 	return 0
 }
@@ -1175,6 +1217,8 @@ func (s *Server) fullPlace(ctx context.Context, l LimitsServices, key string) li
 		}
 	case limits.PlaceProject:
 		p.ProjectKey = s.projectKeyOf(ctx, l, p.ProjectID)
+	case limits.PlaceBastion:
+		p.BastionName = s.bastionNameOf(ctx, l, p.BastionID)
 	}
 	return p
 }
