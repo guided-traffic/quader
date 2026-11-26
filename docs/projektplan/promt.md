@@ -320,12 +320,16 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W30-G5 · "Used by": a version's page lists the packages that depend on its package (W-30) | R-API-086 of the plan `.dev/w30-plan.md`: a side table every format fills, the read under the reader's scope, a filter `dependsOn` of the package list; Q-API-455 to Q-API-459, Q-UI-1350 to Q-UI-1359, ADR-294, H-2220 to H-2229, migration 00139 | landed and pushed on 2026-11-26 at 10:20 |
 | W30-G6 · NuGet complete (W-30) | R-NUGET-037 to R-NUGET-039 of the plan: the install forms by package type, the icon, the licence file, the frameworks, the symbols, what a build runs, and the upload on the screen after W30-A5; Q-NUGET-155 to Q-NUGET-169, Q-UI-1360 to Q-UI-1369, ADR-293, H-2230 to H-2239 | landed and pushed on 2026-11-26 at 11:13 |
 | W31 · A download is the unit a person asked for, in the top bar's Downloads and every other place (W-31) | R-OPS-049 to R-OPS-052 and R-UI-210 to R-UI-212 rewritten; R-OPS-053 to R-OPS-055, Q-OPS-427 to Q-OPS-436, Q-UI-1380 to Q-UI-1389, Q-CUR-270 to Q-CUR-274, H-2250 to H-2259, ADR-295, migration 00140 | landed and pushed on 2026-11-26 at 12:16 |
-| W32 · The limit of parallel downloads counts transfers and says so, and the built-in figures fit a large company (W-31, the owner's decision) | R-LIM-004, R-LIM-007, R-LIM-010, R-LIM-024 rewritten; R-LIM-041, Q-LIM-293 to Q-LIM-299, Q-UI-1390 to Q-UI-1394, H-2260 to H-2264, ADR-296, migration 00141 | in work since 2026-11-26, 10:29 |
-| W33 · The audit log shows a download as one row, and keeps one event per item (W-31, the owner's second decision) | R-OPS-054, R-OPS-055, Q-OPS-437 to Q-OPS-445, Q-UI-1395 to Q-UI-1399, H-2265 to H-2269, ADR-297, migration 00142 | built at about 12:00 (one commit; migration 00142); lands after W31 and W32 |
-| W34-E1 · A Bastion's cache stays below its size between sweeps, and the bytes between a Bastion and the main installation are counted (W-34, the plan's E1 and E5; no decision needed) | R-BAS-089, R-BAS-090, Q-BAS-301 to Q-BAS-309, H-2270 to H-2274, ADR-298 | in work since 2026-11-26, 11:07 |
-| W34-E2 · A Bastion's own refusals fit the clients: the format's cap of the time to wait, and request figures that let one normal command through (W-34, the plan's E2 and E3; the Bastion interface's version rises by one) | R-BAS-091, R-BAS-092, Q-BAS-310 to Q-BAS-319, H-2275 to H-2279, ADR-299 | in work since 2026-11-26, 11:07 |
-| W36 · The built-in limit profiles' byte and upstream figures fit a large company (the owner's rule of generous defaults, applied to the figures W32 listed, H-2262) | R-LIM-010 rewritten; R-LIM-042, Q-LIM-296 to Q-LIM-299, Q-UI-1390 to Q-UI-1394, H-2263, H-2264, ADR-296, migration 00143 | in work since 2026-11-26, 11:33 |
+| W32 · The limit of parallel downloads counts transfers and says so, and the built-in figures fit a large company (W-31, the owner's decision) | R-LIM-004, R-LIM-007, R-LIM-010, R-LIM-024 rewritten; R-LIM-041, Q-LIM-293 to Q-LIM-299, Q-UI-1390 to Q-UI-1394, H-2260 to H-2264, ADR-296, migration 00141 | landed and pushed on 2026-11-26 at 13:17 |
+| W33 · The audit log shows a download as one row, and keeps one event per item (W-31, the owner's second decision) | R-OPS-054, R-OPS-055, Q-OPS-437 to Q-OPS-445, Q-UI-1395 to Q-UI-1399, H-2265 to H-2269, ADR-297, migration 00142 | landed and pushed on 2026-11-26 at 13:17 |
+| W34-E1 · A Bastion's cache stays below its size between sweeps, and the bytes between a Bastion and the main installation are counted (W-34, the plan's E1 and E5; no decision needed) | R-BAS-089, R-BAS-090, Q-BAS-301 to Q-BAS-309, H-2270 to H-2274, ADR-298 | landed and pushed on 2026-11-26 at 13:17 |
+| W34-E2 · A Bastion's own refusals fit the clients: the format's cap of the time to wait, and request figures that let one normal command through (W-34, the plan's E2 and E3; the Bastion interface's version rises by one) | R-BAS-091, R-BAS-092, Q-BAS-310 to Q-BAS-319, H-2275 to H-2279, ADR-299 | landed and pushed on 2026-11-26 at 13:17 |
+| W36 · The built-in limit profiles' byte and upstream figures fit a large company (the owner's rule of generous defaults, applied to the figures W32 listed, H-2262) | R-LIM-010 rewritten; R-LIM-042, Q-LIM-296 to Q-LIM-299, Q-UI-1390 to Q-UI-1394, H-2263, H-2264, ADR-296, migration 00143 | landed and pushed on 2026-11-26 at 13:17 |
 | W35-P3 · An anonymous visitor of a public repository sees its vulnerabilities, the open ones (W-35, the owner's g4, g5, g6; the plan's P3) | R-VULN-019, R-VULN-020, Q-VULN-158 and R-UI-057 rewritten; R-UI-224, Q-UI-1410 to Q-UI-1419, H-2300 to H-2302, ADR-301 | in work since 2026-11-26, 12:06 |
+| W35-P4 · Imprint and privacy notice, served by the installation itself from the chart's values, in both charts (W-35, the owner's f2; the plan's P4) | R-UI-225, R-UI-226, Q-UI-1420 to Q-UI-1429, R-BAS-100, Q-BAS-340 to Q-BAS-344, H-2303, H-2304, ADR-302 | in work since 2026-11-26, 12:19 |
+| W33b · The audit log shows a push and a delete as one row too, and its German columns hold their words (my decision on the owner's rule; W33's H-2269) | R-OPS-056, Q-OPS-446 to Q-OPS-452, Q-UI-1490 to Q-UI-1496, H-2341 to H-2345, migration 00144 | in work since 2026-11-26, 12:19 |
+| W34-E6 · The specification of a Bastion's limits, its configuration from the main installation, the throughput and a Bastion that names nothing of the main installation (W-34, the owner's k1 to k12 and his rule; documents only) | R-BAS-093 to R-BAS-099, R-LIM-043 to R-LIM-046, R-UI-240 to R-UI-243, Q-BAS-320 to Q-BAS-339, Q-LIM-300 to Q-LIM-309, Q-UI-1480 to Q-UI-1489, H-2280 to H-2299, ADR-300 | landed and pushed on 2026-11-26 at 13:17 |
+| F-vulnimage · The area `vulnimage` is red on main: after a client's pull of an image through a remote the version report answers "The version does not exist." (found by W35-P3 at 120d07ace) | `TestR_VULN_050_R_MAL_035_ADownloadAheadAndAClientsFillAreScannedAtOnceWithoutASchedule`: the first red commit by bisect, then the product or the test repaired, whichever is wrong; the areas `vulnimage`, `ociremote` and `proxy` whole; Q-OPS-453 to Q-OPS-455, H-2346, H-2347 if needed | in work since 2026-11-26, 13:07 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1317,6 +1321,132 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **Closed on 2026-11-26, 13:17, by W34-E6 (W-34, the owner's k1 to k12 and his rule that a Bastion discloses nothing of the
+  main installation; documents only; R-BAS-093 to R-BAS-099, R-LIM-043 to R-LIM-046, R-UI-240 to R-UI-243; Q-BAS-320
+  to Q-BAS-339, Q-LIM-300 to Q-LIM-309, Q-UI-1480 to Q-UI-1482; ADR-300; gaps H-2280 to H-2297): what the owner
+  decided for a Bastion's limits is specified, every requirement marked "Not built" with the package that builds
+  it.** A Bastion's configuration comes from its registration (R-BAS-093); what an anonymous request may cause at
+  the main installation, with the table of twelve paths today and after (R-BAS-094); writes refused by the Bastion
+  itself in four error shapes (R-BAS-095); limits at a Bastion (R-BAS-096); the throughput between the two
+  (R-BAS-097); the cache protects what was served twice (R-BAS-098); a Bastion names nothing of the main
+  installation, with the plan's fourteen places and a fifteenth the builder found: a forward relays "The upstream of
+  web/npm-remote answered 503.", which names a repository the caller did not address (`internal/proxy/classify.go`;
+  H-2295, the plan's E16). Earlier texts revised in place, each with what holds once its package lands and one
+  sentence "Today, until E… lands". The wire of interface version 8 is written (the handshake's `configuration`,
+  the check answer's `subject.limits`, `usage` and `status` on the downloads batch, the format table's `errorShape`
+  and `readWithBody`, the renamed codes); version 7 and 8 do not talk (R-BAS-009). The build plan is
+  `docs/developer/bastion-limits.md`. The count of requirements 1,339 (MVP 742, P1 558, P2 39): fourteen of the
+  fifteen are MVP because they replace behaviour of the Bastion and the limits that is in the beta, R-UI-242 (a
+  view) is P1. Gates on the commit above the stack: build, vet, generate-check, the coverage check and links (0
+  broken of 41,549), the coverage tool's and the architecture tests; no integration run, documents only. Decided by
+  me on the builder's open points: (1) the Bastion's own codes, texts and problem type are Q-BAS-321's
+  (`unavailable`, `bad_gateway`, `gateway_timeout`, `busy`, `not_found`, `read_only`, type `about:blank`), W-35's
+  packages P5 and P8 follow it; (2) "no web interface" in R-BAS-003 and Q-BAS-14 is revised by W-35's P5, not here;
+  (3) the profile figures of E8 and the ceiling's default of E9a wait for E4's measurement; (4) a blocked address
+  is kept with the contact for 30 days (H-2283), which is longer than its use: to shorten in E8, one line there.
+  What the code showed against the plans: the Bastion's reporter sends nothing while downloads are not recorded
+  (usage and status batches are specified to be sent regardless); the edge's whitelist is rendered from the
+  blocking's exempt networks and needs a key of its own; the feed is not per registration, so one change of a
+  configuration makes every replica of every Bastion handshake (bounded, noted); E7 removes the probe headers too.
+  Migration numbers after this: W33b 00144, E13 00145, W-35's P6 00146 and 00147, E8 00148.
+
+- **Closed on 2026-11-26, 13:17: five packages landed in one run of the gates, stacked above W31: W32 (its entry below), W33,
+  W34-E1, W34-E2 and W36.** The run on the stack's tip: the 13 gates, the chart's lint and tests, the architecture tests, the UI states, the renders of the limits, usage, audit, downloads and Bastion screens in English (66 render tests, 0 failed, 0 layout findings) and of limits and audit in German (8), the pictures of the profile's editor, the profiles' list and the audit log's rows looked at wide and narrow, and fourteen integration areas green (limits, audit, authz, conventions, querybudget, postgres, backup, ociremote, bastion, bastioncache, bastioniface, bastionreg, bastionsetup, bastionshared). Not in the run: the area vulnimage, which is red on main since before the stack (a builder repairs it since 13:07). The count of requirements after them 1,324 (MVP 728, P1 557, P2 39); migrations
+  00141 to 00143.
+
+- **Closed on 2026-11-26, 13:17, by W36 (the owner's rule of generous defaults; R-LIM-042; R-LIM-010 rewritten; Q-LIM-296 to
+  Q-LIM-298; gaps H-2263, H-2264, H-2262 closed; migration 00143): the built-in limit profiles' byte and upstream
+  figures fit a large company.** Decided by me on his rule ("default darf aber großzügiger sein …, wir bauen hier
+  enterprise software für große firmen") and told to him at 11:33; the figures are no estimates any more. From what
+  an act costs (a cold pull of an application image of 1 GB: 1 GB and 46 upstream requests, derived from Q-LIM-59's
+  measurement; a CUDA image 5.9 GB, from Docker Hub's tag API; a cold `npm ci` of 475 packages 0.43 GB and 950
+  upstream requests, measured from a lockfile and the local cache; NuGet's version lists kept fresh 12 revalidations
+  per package and feed an hour): Anonymous cached 20 to 100 MB/s and 10 to 30 GB/h, uncached 5 to 50 MB/s and 2 to
+  20 GB/h, upstream requests 20 to 3,000 an hour, 30 to 200 GB a day, refused 60 to 300 an hour; Restricted never
+  below Anonymous (upstream 200 to 3,000, uncached 5 to 20 GB/h); Standard upstream 2,000 to 20,000, uncached 30 to
+  100 GB/h; Technical upstream 10,000 to 100,000, uncached 100 to 500 GB/h, cached 1,000 to 3,000 GB/h, 5,000 to
+  30,000 GB a day. What each holds within an hour with a third of room: Anonymous ten cold pulls of 1 GB and twenty
+  from the cache from one address; Standard a cold install of 4,000 packages twice; Technical twenty CI jobs' cold
+  installs and a fleet's first pulls after a base image changed. No figure is unlimited by default. The migration
+  sets a figure only where the first migration's value still stands. What no profile can give: more than a public
+  registry grants (Docker Hub, read on its page: 100 pulls in six hours for an address without an account, 200 for
+  a personal account); an anonymous caller can spend a remote's quota, the remedy is an account's credentials at
+  the remote or its ceiling (H-2263, in the manual). Not verified: the upstream requests per act through Quader
+  (derived, H-2264); npm's and Galaxy's own read limits were not looked up.
+
+- **Closed on 2026-11-26, 13:17, by W34-E2 (W-34, the plan's E2 and E3; R-BAS-091, R-BAS-092; Q-BAS-310 to Q-BAS-315;
+  ADR-299; gaps H-2275 to H-2277; the Bastion interface's version 7): a Bastion's own refusals tell a NuGet or
+  Galaxy client to wait at most 30 seconds, and its built-in figures let one normal command through.** Both defects
+  reproduced first on the unchanged code: a block, a request limit and a failed-authentication timeout answered
+  `Retry-After: 900` on NuGet and Galaxy paths (their clients take at most 30 s, as the main installation tells
+  them); an anonymous `docker pull` of 40 layers was refused 18 of 48 requests, an anonymous `npm ci` of 475 packages
+  445 of 475. The cap is a fact of the format now (`RetryAfterMax`; NuGet and Galaxy 30 s, the others the true
+  wait), in the handshake's table, held by the kit for every format, one constant for both sides. The figures per
+  address: requests without a credential 10 a second and a burst of 40 to 50 and 1,000, with one 50 and 200 to 200
+  and 4,000 (the main installation's profiles Anonymous and Standard), misses a minute 30 to 1,000 and 300 to
+  4,000, the block's threshold 300 to 3,000 refusals a minute, the edge 100 requests a second and 50 at once to
+  1,000 and 256. What that loosens, said plainly: one address may cause 1,000 misses a minute at the main
+  installation instead of 30; what bounds all addresses together is still only the 16 anonymous slots of a
+  two-replica Bastion, until the ceiling for all anonymous callers (the owner's k2 = c, the plan's E9a) is built.
+  Read by the builder in HAProxy's source and the ingress's template, not measured: the edge's rate counts every
+  request, also on a kept connection, and its "connections" are requests in flight. The owner's Flux values set
+  none of the changed keys (read by me). Journeys corrected and not run: the Bastion's flood and long legs.
+
+- **Closed on 2026-11-26, 13:17, by W34-E1 (W-34, the plan's E1 and E5; R-BAS-089, R-BAS-090; Q-BAS-301 to Q-BAS-307;
+  ADR-298; gaps H-2270 to H-2274): a Bastion's cache stays below its size between two sweeps, and the bytes between
+  a Bastion and the main installation are counted.** Reproduced first: 32 objects of 64 KiB into an area of 896 KiB
+  without a sweep took it to 983,040 bytes at the fifteenth commit, on its way to 2 MiB. Now a replica keeps a
+  running estimate per area (set by every listing, raised by every commit), a commit is kept only if it leaves the
+  area within its limit, a fill without room is served to its callers and not kept, and a commit above 95 % asks
+  for a sweep at once (at most one more a second). On a shared bucket a replica sees the others' writes only at its
+  own listings and counts its commits once per replica (H-2270: the bucket can pass its size by what one replica
+  wrote beyond its share; storage, never a pod). The metrics: sweeps by what started them, fills without room, the
+  Bastion's fill bytes by source and by class (anonymous, with a credential), the main installation's bytes to each
+  Bastion by class. Open, and the owner's actual case: a churn of distinct artifacts still evicts what is used and
+  crosses the transfer network (H-2272; his k8 and k9, the plan's E10 and E11); the bytes are counted, not limited
+  (H-2273). Not verified: a real volume filling up and the eviction of a pod.
+
+- **Closed on 2026-11-26, 13:17, by W33 (W-31, the owner's second decision; R-OPS-054, R-OPS-055; Q-OPS-437 to Q-OPS-445;
+  ADR-297; gaps H-2265 to H-2269; migration 00142): the audit log shows a download as one row with its files under
+  it, and keeps one event per file served.** Stored as before, with the export and the read of single events
+  unchanged; an event carries its size, package, version and unit from now on. A row is the events of one caller for
+  one unit in one repository, each at most 60 s after the one before; whether an event begins a row depends only on
+  the minute before it, so a newer event never changes an older row and a page never cuts a download. The row says
+  when the download began and for how long, the unit with its tag, the files and bytes; opened, the first ten items
+  with the clock's time, the path, the SHA-256 to copy and the size, and "All N items". Events written before stay
+  one row each. Measured once at 3 million events: the first page 6.6 ms (the events' list 2.9 ms), the filter by
+  actor 1.2 s (the events' list 95 ms; the filter is no index condition in either). Open: two downloads of one unit
+  by one caller within a minute are one row (H-2265), a pull that pauses for more than a minute is two (H-2266), a
+  client that resolves the tag by HEAD is named by a digest (H-2267), the export has no filter for one download
+  (H-2268), pushes and deletes are still a row per file (H-2269): decided by me on the owner's rule and told to him
+  at about 12:03, the screen shows a push and a delete as one row too, stored events unchanged; the builder W33b
+  builds it, with the German column that breaks "Datei heruntergeladen" (W33 had taken its screen out of the German
+  pass, which is not to stay).
+
+- **Closed on 2026-11-26, 13:17, by W32 (W-31, the owner's decision of 10:27; R-LIM-041; R-LIM-004, R-LIM-007, R-LIM-010 and
+  R-LIM-024 rewritten; Q-LIM-293 to Q-LIM-295; gaps H-2260 to H-2262; migration 00141): the limit of parallel
+  downloads counts transfers under that name, says what one pull or install holds, and its built-in figures fit a
+  large company.** The figure is `parallelTransfers` in the API, the rules' overrides, the events and the metrics'
+  label, the problem code `too_many_parallel_transfers`, on the screens **Parallel transfers** (German
+  "Gleichzeitige Übertragungen"), without an alias; where it is set and in its refusal a sentence says that each
+  layer of an image and each package of an install is one transfer. The built-in figures, from a measurement of
+  2026-11-26 with the journeys' client images against a stub that holds every transfer half a second (written into
+  R-LIM-041; a measurement, not a test): a docker pull holds 3 at once per daemon, BuildKit 4, podman 6 per pull,
+  containerd's `ctr` as many as there are layers, npm 15, pnpm 50 to 64, Yarn 8 or 32, a `dotnet restore` one per
+  package (200 of 200), APT 1; documented and not measured: a Kubernetes node 3, helm 2, ansible-galaxy 1. Set from
+  it: Anonymous 4 to 64 (four npm installs or ten podman pulls from one address), Restricted 6 to 64 (one install of
+  any JavaScript client whole), Standard 20 to 250, Technical 50 to 1,000 (the twenty CI jobs of one token the page
+  promises: npm 300, pnpm 1,000, Yarn 640). Against a replica's slots: 1,000 is below the quarter of the default
+  endpoint's 4,096 that waiting transfers may hold. The migration renames the column and the member in every rule
+  and maximum, and sets a new figure only where the old built-in one still stands; an administrator's value stays.
+  The landing: one commit picked onto W31, the count of requirements 1,317 (MVP 724); landed with the four packages above it in one run of the gates (the entry above). Open: one Technical
+  token can take nearly all 1,024 slots of a further endpoint on one replica (H-2260); `dotnet restore` and `ctr`
+  bound themselves nowhere, their excess waits up to 10 s (H-2261); the other estimated figures that normal use in a
+  large company meets (H-2262): first of all the Anonymous profile's 20 upstream requests an hour, which refuses the
+  first pull through a remote of an image of more than about 17 layers; they are set from the same kind of
+  measurement by the builder W36, by the owner's rule of generous defaults. Not verified: the clients' numbers
+  against Quader itself; the migration on the owner's installation.
+
 - **Closed on 2026-11-26, 12:16, by W31 (W-31; R-OPS-049 to R-OPS-052 and R-UI-210 to R-UI-212 rewritten; R-OPS-053;
   Q-OPS-419 revised, Q-OPS-427 to Q-OPS-432; Q-UI-1380; ADR-295; gaps H-2250 to H-2254; migration 00140): a download
   is the unit a person asked for, in the top bar's Downloads and in a remote's failed rows.** The owner's task of
@@ -1502,7 +1632,7 @@ records the recorder that tells such a stall apart).
   defects and the counting of bytes need no decision and are built since 11:07 by two builders (W34-E1, W34-E2); the
   planner revises the plan with the owner's statement of 10:55.
 
-- **Open since 2026-11-26, 10:35, the owner's decision (W-31, the second of two): the audit log shows a download as one
+- **Closed on 2026-11-26, 13:17, by W33 (its entry above); opened at 10:35 as the owner's decision (W-31, the second of two): the audit log shows a download as one
   row and keeps one event per item.** With `audit.record_downloads` (off by default) `artifact.downloaded` is one
   event per item served, with path and SHA-256: a pull of an image writes one per manifest and layer. Put to him at
   about 10:30 with three options (store per item and group on the screen; one event per download; leave it), my
@@ -1513,7 +1643,7 @@ records the recorder that tells such a stall apart).
   other audit event written per part of one act (a push's blobs, deletes, hand-overs) and leaves refusals as single
   rows. It builds on W31's tip, which lands before it.
 
-- **Open since 2026-11-26, 10:29, the owner's decision (W-31, the first of two the sweep of W31 left to him): the limit of
+- **Closed on 2026-11-26, 13:17, by W32 (its entry above); opened at 10:29 as the owner's decision (W-31, the first of two the sweep of W31 left to him): the limit of
   parallel downloads keeps counting transfers, is named so, and the built-in figures become generous.** Put to him
   at about 10:26 with three options (count transfers and name it so; count units; both), my recommendation the
   first. His answer at 10:27: "Option A, default darf aber großzügiger sein als 2, wir bauen hier enterprise software
