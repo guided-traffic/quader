@@ -140,7 +140,7 @@ export function snippetText(id: string, reader: SnippetReader = { anonymous: fal
     // the process list while the command runs: the page says so (Q-UI-1336); the nuget.config keeps the password in the variable.
     case 'dotnet.configure.shell':
     case 'nuget.configure.cmd':
-      return text($localize`:@@setup.caption.nuget-source-argument:Takes the token only as an argument, which the process list shows; the nuget.config file keeps it in the variable.`);
+      return text($localize`:@@setup.caption.nuget-source-argument:The client takes the token only as an argument, which the process list shows; nuget.config keeps it in the variable.`);
     case 'dotnet.publish.shell':
     case 'nuget.publish.cmd':
       return text(pushArgument);

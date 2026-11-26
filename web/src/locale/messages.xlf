@@ -38815,7 +38815,7 @@
         <note category="location">src/app/features/setup/clients.ts:143</note>
       </notes>
       <segment>
-        <source>Takes the token only as an argument, which the process list shows; the nuget.config file keeps it in the variable.</source>
+        <source>The client takes the token only as an argument, which the process list shows; nuget.config keeps it in the variable.</source>
       </segment>
     </unit>
     <unit id="setup.caption.nuget-config">
