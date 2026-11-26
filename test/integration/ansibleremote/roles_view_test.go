@@ -47,6 +47,15 @@ func TestR_ANS_056_ARoleInstalledThroughARemoteReadsLikeARole(t *testing.T) {
 	if len(found) != 1 || obj(found[0])["key"] != "role/16" {
 		t.Errorf("search by the owner: %v", found)
 	}
+	// The find of the format matches the role's words as a collection's (R-ANS-057): a word that begins a word of its description and a
+	// tag, by relevance; the key has no namespace, so the namespace of its display name lists nothing.
+	byWords := listOf(e.st.Do(r, http.MethodGet, "/api/v1/packages?format=ansible&q=manag+devel&sort=relevance", e.admin, nil).JSON(t)["items"])
+	if len(byWords) != 1 || obj(byWords[0])["key"] != "role/16" {
+		t.Errorf("search by the words of the description and a tag: %v", byWords)
+	}
+	if ns := listOf(e.st.Do(r, http.MethodGet, "/api/v1/packages?format=ansible&namespace=geerlingguy", e.admin, nil).JSON(t)["items"]); len(ns) != 0 {
+		t.Errorf("the namespace of the display name: %v", ns)
+	}
 	// The search field's suggestion carries the key as well, so its link leads to the page (Q-UI-1261).
 	suggested := obj(e.st.Do(r, http.MethodGet, "/api/v1/search/suggestions?q=geerlingguy&kind=package", e.admin, nil).JSON(t)["packages"])
 	if s := listOf(suggested["items"]); len(s) != 1 || obj(s[0])["name"] != "geerlingguy.pip" || obj(s[0])["key"] != "role/16" {
