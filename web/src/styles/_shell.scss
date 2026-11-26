@@ -646,6 +646,13 @@ quader-root {
   .content :is(table, dl) a:not(.btn):not(.tab-link) {
     @include listed-link;
   }
+
+  // A link to another site with its mark stays the one unit it is everywhere (.external-link, R-UI-175), also inside a list's row: an
+  // upstream package opened in a row of the tab Upstream (R-CUR-028) put its links' row into a cell, where the listed link's
+  // inline-block stood the mark 1.5 px above the middle of its text.
+  .content :is(table, dl) a.external-link:not(.btn):not(.tab-link) {
+    display: inline-flex;
+  }
 }
 
 // The overlays stand outside quader-root: a dialog, a drawer (the filters, the top bar's downloads), a menu, a popover. Their links

@@ -3,6 +3,9 @@
 :host {
   display: block;
   margin-block-end: var(--quader-space-3);
+  // Opened in a row, the block stands in a list's cell, whose line is 16 px (the list's rule): the facts, the links' row and the README
+  // read as running text, on the page's line, as a stored version's page has them (R-UI-175: a link's mark centred on its line).
+  line-height: var(--quader-text-line);
 }
 
 .banner-warning,
