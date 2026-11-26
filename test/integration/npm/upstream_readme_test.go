@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_CUR_028_AnUpstreamPackageShowsItsReadmeReadThroughAndNotStored: the lookup of a package no client fetched answers the facts of
@@ -15,7 +16,13 @@ import (
 // further request of the upstream (the lookup handed it over), and stores nothing. A reader of the artifacts who may not read the wiki
 // gets the facts, readme false and the README call's 404, and the upstream is not asked for it. About 2 s, the stub's corpus.
 func TestR_CUR_028_AnUpstreamPackageShowsItsReadmeReadThroughAndNotStored(t *testing.T) {
-	r, rep := catalogueEnv(t, remoteOptions{Valkey: true})
+	r := newRemoteEnv(t, remoteOptions{Valkey: true})
+	// dave reads the remote's artifacts by its level internal and has no grant: the wiki is private. The levels are set before the
+	// replica starts, so that its grant index holds them.
+	r.st.Exec("UPDATE project SET visibility = 'internal' WHERE key = $1", testenv.DefaultProject)
+	r.st.Exec("UPDATE repositories SET visibility_artifacts = 'internal', visibility_wiki = 'private' WHERE key = $1", rRemote)
+	dave := r.st.Token(r.st.User("dave"), scope.Default())
+	rep := r.st.Start(t, testenv.ReplicaOptions{Name: "all-1", Role: "all", Endpoints: customersEndpoint})
 	p := upstreamPackage(t, 2)
 	lookup := upstreamPath + "/package?name=" + url.QueryEscape(p.Name)
 
@@ -47,9 +54,6 @@ func TestR_CUR_028_AnUpstreamPackageShowsItsReadmeReadThroughAndNotStored(t *tes
 		t.Errorf("R-CUR-028 the lookup and the README stored %d cache entries", n)
 	}
 
-	// dave reads the remote's artifacts by its level internal and has no grant: the wiki is private.
-	r.st.Exec("UPDATE repositories SET visibility_artifacts = 'internal', visibility_wiki = 'private' WHERE key = $1", rRemote)
-	dave := r.st.Token(r.st.User("dave"), scope.Default())
 	other := otherPackage(t, 2, p.Name)
 	before := r.upstreamDocs(other.Name)
 	a = r.st.Do(rep, http.MethodGet, upstreamPath+"/package?name="+url.QueryEscape(other.Name), dave, nil)
