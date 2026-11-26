@@ -15563,10 +15563,11 @@ export interface components {
          * @description The member `malware` of an answer that lists or shows an artifact as one unit (R-MAL-039): a package (its newest visible version),
          *     a version, an image tag, a package that depends on another (its version that does), a remote's stored version and the download
          *     that names one. A unit's parts are a version's files that Quader did not generate; an image tag's are its manifest, for an index
-         *     each platform's manifest, and each manifest's config and layers, a part that is not stored counting as unchecked. The worst part
-         *     decides (Q-MAL-128), in this order: malware (infected, not released), not checkable (unscannable or failed, not released),
-         *     unchecked, released, then a clean check that is overdue, due, under older signatures, under the signatures in use; ties go to
-         *     the higher scan pressure. Every member but the last three is that part's, as `MalwareStatus` names it (Q-API-465); `refused`
+         *     each platform's manifest, and each manifest's config and layers. The worst stored part decides (Q-MAL-128), in this order:
+         *     malware (infected, not released), not checkable (unscannable or failed, not released), unchecked, released, then a clean check
+         *     that is overdue, due, under older signatures, under the signatures in use; ties go to the higher scan pressure. A part Quader
+         *     does not hold (a platform or a layer a remote never fetched) decides nothing and is counted in `partsNotStored`; a unit none of
+         *     whose parts is stored reads `pending` (Q-MAL-134). Every member but the last four is that part's, as `MalwareStatus` names it (Q-API-465); `refused`
          *     says whether the gate refuses it in the unit's repository. Absent while the scanning is off and for a unit without a part. The
          *     answer reads it in a fixed number of statements per page, never one per row (Q-MAL-129).
          */
@@ -15622,7 +15623,7 @@ export interface components {
             downloadsSince: number | null;
             /**
              * Format: int64
-             * @description The unit's parts.
+             * @description The unit's stored parts.
              */
             files: number;
             /**
@@ -15630,11 +15631,20 @@ export interface components {
              * @description The parts checked with the signatures in use; the details say "2 of 3 under today's signatures".
              */
             currentFiles: number;
+            /**
+             * Format: int64
+             * @description The parts the unit names that Quader does not hold, so never served and never checked (Q-MAL-134): an index's platform manifests a
+             *     remote never fetched (whose configs and layers are not known until it does), a layer it never fetched; 0 for a version of any
+             *     other format.
+             */
+            partsNotStored: number;
             decidedBy: components["schemas"]["MalwareDecider"];
         };
         /** @description A part of an image its files do not list (a platform's manifest, a config, a layer) with its member `malware` (R-MAL-039). */
         MalwareImagePart: {
             sha256: string;
+            /** @description Quader holds the part's bytes; false for a part a remote never fetched, whose member reads `pending` and decides nothing (Q-MAL-134). */
+            stored: boolean;
             malware: components["schemas"]["MalwareStatus"];
         };
         /** @description Today's signatures of the malware scan (R-MAL-040). */

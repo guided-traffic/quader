@@ -28879,7 +28879,7 @@ Status: **Decided by the development agent** on 2026-11-26 — selected from the
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A file of a folder's listing carries `MalwareStatus`; a version's page carries `malwareParts`, the image's parts its `files` do not list, each with its `MalwareStatus` (chosen) | A file is a file wherever it is listed; the image's parts come with the page that shows them | One read per page; no request per part | A member that is empty for every format but OCI |
+| (a) A file of a folder's listing carries `MalwareStatus`; a version's page carries `malwareParts`, the image's parts its `files` do not list, each with its `MalwareStatus` and whether it is `stored` (chosen) | A file is a file wherever it is listed; the image's parts come with the page that shows them | One read per page; no request per part | A member that is empty for every format but OCI |
 | (b) A folder's file carries a summary of one part (the plan's D.1) | One shape for lists | — | `files: 1` and `decidedBy` itself on every row |
 | (c) The image's parts through a read of their own | — | Lean page | A request and a spinner more per page, and a statement per part or a second walk |
 
