@@ -97,7 +97,7 @@ The trailing slash is optional on every path and no route redirects: a redirect 
 
 ## The screens' publish (R-ANS-061)
 
-**Upload collection** takes three calls (Q-ANS-140): `createAnsibleUploadToken`
+**Upload collection** takes three calls (Q-ANS-140): `createUploadToken` (one for every format, `upload_tokens_api.go`)
 ([ansible_upload.go](../../internal/api/v1/ansible_upload.go)) issues the caller's personal access token of five minutes scoped to the
 repository and its deployment target; the dialog sends the archive with it to `publishPath`, the client's publish route, which the role
 `packages` serves (on `web` and `all` the same process); `getAnsibleImportTask` reads the task back on the management API. The role `api`

@@ -3985,6 +3985,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/packages/{packageId}/versions/{version}/icon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The server-generated package identifier (R-API-029). */
+                packageId: components["parameters"]["PackageId"];
+                /** @description The version string, percent-encoded. */
+                version: components["parameters"]["PackageVersionPath"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Read the icon a version's package embeds
+         * @description The picture the package of a visible version embeds (formats/nuget.md R-NUGET-038: the file the `.nuspec`'s `icon` names, at
+         *     most 1 MiB), read out of the stored package; the version's metadata says `hasIcon`. An icon is untrusted content of an uploaded
+         *     or fetched package: it is served only as a PNG or a JPEG, a type the server decides from the bytes and never from the name or
+         *     the package, and anything else (an SVG first) is a `404`, as are a version that embeds none, one that is not visible and a format
+         *     whose packages carry no icon. No address the package names (`iconUrl`) is ever fetched. The answer has `nosniff`, a CSP of
+         *     `default-src 'none'; sandbox`, `Content-Disposition: inline` and `Cache-Control: private, no-cache`: a browser keeps it for the
+         *     reader alone and asks again each time, so the read check decides every view and one reader's permission never serves another.
+         *     The `ETag` is a strong tag of the bytes; a matching `If-None-Match` is a `304` after the check.
+         */
+        get: operations["getPackageVersionIcon"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/packages/{packageId}/versions/{version}/license": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The server-generated package identifier (R-API-029). */
+                packageId: components["parameters"]["PackageId"];
+                /** @description The version string, percent-encoded. */
+                version: components["parameters"]["PackageVersionPath"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Read the licence file a version's package embeds
+         * @description The licence file of a visible version whose licence is of the type `file` (formats/nuget.md R-NUGET-038: the file the
+         *     `.nuspec`'s `license` names, at most 1 MiB), read out of the stored package; the version's metadata names it as
+         *     `licenseFile`. It is served as `text/plain; charset=utf-8`, never as markup, with `nosniff`, a CSP of `default-src 'none';
+         *     sandbox`, `Content-Disposition: inline` and `Cache-Control: private, no-cache`. A file that is not UTF-8 text, a version without
+         *     a licence file, one that is not visible and a format whose packages carry none are a `404`. It is artifacts metadata, read with
+         *     the version (no wiki). The `ETag` is a strong tag of the bytes.
+         */
+        get: operations["getPackageVersionLicense"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/packages/{packageId}/versions/{version}/contents": {
         parameters: {
             query?: never;
@@ -4116,6 +4178,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/upload-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue the short-lived token of an upload from the screen
+         * @description The screens' upload of a package (formats/ansible.md R-ANS-061, formats/nuget.md R-NUGET-006, Q-ANS-140): the management API,
+         *     where the caller's session lives, issues a personal access token of the caller for five minutes whose scope is `read` and
+         *     `deploy` on this repository and, for a virtual repository, on its deployment target, and nothing else. The browser sends the
+         *     package with it, `Authorization: Bearer <token>`, to the client's own publish route of the repository (`publishPath`: Ansible
+         *     Galaxy's collection publish, NuGet's package publish resource) and, where the format takes a symbol package, to `symbolsPath`
+         *     (NuGet's symbol publish resource); the format decides both. The role `packages` serves them with every check of the client's
+         *     publish, the shadowing probes of a first version among them (R-ARCH-001: the role `api` asks no upstream). The token is an
+         *     ordinary personal access token: it is in the caller's list of tokens until it expires, its creation is the audit event
+         *     `token.created`, and it can be revoked. A remote repository, a virtual repository without a deployment target and a repository
+         *     of a format whose packages are not uploaded on the screen answer `405 not_applicable`; the break-glass account holds no token
+         *     (`403`). Only a browser's session is answered: a caller with a token is refused `403` (a client publishes with its own token, and
+         *     a token may not mint the next one). The dialog revokes the token (`DELETE /api/v1/tokens/{id}`) once the publish answered, so
+         *     five minutes is its longest life. Needs `deploy` on the repository.
+         */
+        post: operations["createUploadToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{projectKey}/repositories/{repoKey}/client-setup": {
         parameters: {
             query?: never;
@@ -4136,7 +4235,12 @@ export interface paths {
          *     browser replaces; with `credentials=env` it holds the environment-variable reference of the
          *     client's syntax (`${QUADER_TOKEN}` for npm and Yarn, `%QUADER_TOKEN%` for `nuget.config`;
          *     the name is `ui.client_setup.token_env_var`); with `credentials=none` it holds no
-         *     authentication line. With `package` and `version` the install snippets name that version.
+         *     authentication line. With `package` and `version` the install snippets name that version; a
+         *     package spelled in another letter case than its normalized name (a NuGet ID in its declared
+         *     casing) is written as spelled. A client may answer several install snippets: each is a form of
+         *     installing the package (NuGet's .NET CLI, Paket, Cake and the directives of a script and a
+         *     file-based app; Visual Studio's PackageReference, Package Manager console and Central Package
+         *     Management), the first the default; `kind` selects the forms of a kind of package (R-NUGET-037).
          *     Values placed in shell commands are single-quoted unless they match
          *     `^[A-Za-z0-9@/._+:=-]+$`, values placed in XML are escaped. Needs `read` on the repository
          *     (`404` otherwise, like a missing repository); the publish snippets are present only when the
@@ -7224,41 +7328,6 @@ export interface paths {
          *     journaled audit event `ansible.tombstone.cleared`. Needs `manage` on the repository.
          */
         delete: operations["clearAnsibleTombstone"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/upload-tokens": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
-                projectKey: components["parameters"]["ProjectKey"];
-                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
-                repoKey: components["parameters"]["RepoKey"];
-            };
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Issue the short-lived token of an upload from the screen
-         * @description The screens' upload of a collection archive (R-ANS-061, Q-ANS-140): the management API, where the caller's session lives,
-         *     issues a personal access token of the caller for five minutes whose scope is `read` and `deploy` on this repository and, for a
-         *     virtual repository, on its deployment target, and nothing else. The browser sends the archive with it to the client's own
-         *     publish route (`publishPath`, R-ANS-008), served by the role `packages` with every check of `ansible-galaxy collection publish`,
-         *     the shadowing probes of a first version among them (R-ARCH-001: the role `api` asks no upstream). The token is an ordinary
-         *     personal access token: it is in the caller's list of tokens until it expires, its creation is the audit event
-         *     `token.created`, and it can be revoked. A remote repository, a virtual repository without a deployment target and a repository
-         *     of another format answer `405 not_applicable`; the break-glass account holds no token (`403`). Only a browser's session is
-         *     answered: a caller with a token is refused `403` (a client publishes with its own token, and a token may not mint the next one).
-         *     The dialog revokes the token (`DELETE /api/v1/tokens/{id}`) once the publish answered, so five minutes is its longest life.
-         *     Needs `deploy` on the repository.
-         */
-        post: operations["createAnsibleUploadToken"];
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -12618,8 +12687,9 @@ export interface components {
             latestVersion: string;
             /**
              * @description What `latestVersion` is in its format's words, from the format's metadata: an OCI artifact's kind (`image`, `helm-chart`,
-             *     `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041), so that a list offers the commands of its kind;
-             *     absent for a format without kinds.
+             *     `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041), a NuGet package's (`dotnet-tool`, `template`,
+             *     `msbuild-sdk`, formats/nuget.md R-NUGET-037), so that a list offers the commands of its kind; absent for a format without
+             *     kinds and for a NuGet library.
              */
             kind?: string;
             keywords: string[];
@@ -12760,8 +12830,9 @@ export interface components {
             state?: string;
             /**
              * @description With `include=kind` only, what the version is in its format's words (the member `kind` of its details): an OCI artifact's
-             *     kind (`image`, `helm-chart`, `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041); with `group=content`
-             *     the kind of the entry's leading version; absent for a format without kinds.
+             *     kind (`image`, `helm-chart`, `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041), a NuGet package's
+             *     (`dotnet-tool`, `template`, `msbuild-sdk`, formats/nuget.md R-NUGET-037); with `group=content` the kind of the entry's
+             *     leading version; absent for a format without kinds and for a NuGet library.
              */
             kind?: string;
             /** @description The keys of the repositories that hold this version and that the caller may read. */
@@ -12870,7 +12941,12 @@ export interface components {
              *     - NuGet (formats/nuget.md Q-NUGET-48): `id` (the declared casing), `listed`, `title`, `summary`, `releaseNotes`,
              *       `copyright`, `language`, `minClientVersion`, `licenseUrl`, `homepage` (the project URL), `repositoryUrl`, `authors`,
              *       `tags`, `dependencyGroups` (`targetFramework` and `dependencies` of `id` and `range`), `packageTypes`,
-             *       `requireLicenseAcceptance`, `developmentDependency`.
+             *       `requireLicenseAcceptance`, `developmentDependency`; `kind` (`dotnet-tool`, `template`, `msbuild-sdk`; absent for a
+             *       library, R-NUGET-037), `repositoryType`, `repositoryBranch`, `repositoryCommit`, `licenseFile` (the path of a licence
+             *       of the type file, served by `…/license`) and `hasIcon` (served by `…/icon`, R-NUGET-038), and what Quader read of the
+             *       package's file list (absent until it was read, R-NUGET-038, R-NUGET-039): `frameworks`, `dependencyFrameworks` (the
+             *       dependency groups' frameworks no folder names), `buildFiles`, `analyzers`, `scripts` and `contentsMore` (the names
+             *       past the bound of 20 a list).
              *     - Debian (formats/debian.md R-DEB-030, R-DEB-038): `architectures`, `coordinates` (`suite/component`), `maintainer`,
              *       `section`, `priority`, `installedSize` (KiB, as the field), `homepage`, `source`, `multiArch`, `essential`,
              *       `longDescription` (paragraphs with `text` and `verbatim`), `relations` (a field to its groups of alternatives with
@@ -16775,16 +16851,22 @@ export interface components {
                 time: string;
             }[];
         };
-        /** @description The token of one upload from the screen (R-ANS-061). */
-        AnsibleUploadToken: {
+        /** @description The token of one upload from the screen (R-ANS-061, R-NUGET-006). */
+        UploadToken: {
             /** @description The token's id; the dialog revokes it with `DELETE /api/v1/tokens/{id}` once the publish answered. */
             id: string;
             /** @description The secret, shown once; sent as `Authorization: Bearer <token>` to `publishPath`. */
             token: string;
             /** Format: date-time */
             expiresAt: string;
-            /** @description The client's publish route of the repository, relative to the server, `/api/ansible/{projectKey}/{repoKey}/v3/artifacts/collections/`. */
+            /**
+             * @description The client's publish route of the repository, relative to the server: `/api/ansible/{projectKey}/{repoKey}/v3/artifacts/collections/`
+             *     (the archive's raw body, `POST`), `/api/nuget/{projectKey}/{repoKey}/v3/package` (the `.nupkg`'s raw body, `PUT`; the answer's
+             *     `Quader-Package` and `Quader-Version` name the version).
+             */
             publishPath: string;
+            /** @description The client's symbol publish route, `/api/nuget/{projectKey}/{repoKey}/v3/symbolpackage` (the `.snupkg`'s raw body, `PUT`, after the package); null for a format without symbol packages. */
+            symbolsPath: string | null;
         };
         AnsibleImportTaskList: {
             items: components["schemas"]["AnsibleImportTask"][];
@@ -27744,6 +27826,79 @@ export interface operations {
             503: components["responses"]["Unavailable"];
         };
     };
+    getPackageVersionIcon: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An ETag the client holds; a match answers `304` (R-API-012). */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
+            path: {
+                /** @description The server-generated package identifier (R-API-029). */
+                packageId: components["parameters"]["PackageId"];
+                /** @description The version string, percent-encoded. */
+                version: components["parameters"]["PackageVersionPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The icon. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                    "image/jpeg": string;
+                };
+            };
+            304: components["responses"]["NotModified"];
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getPackageVersionLicense: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description An ETag the client holds; a match answers `304` (R-API-012). */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
+            path: {
+                /** @description The server-generated package identifier (R-API-029). */
+                packageId: components["parameters"]["PackageId"];
+                /** @description The version string, percent-encoded. */
+                version: components["parameters"]["PackageVersionPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The licence's text. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            304: components["responses"]["NotModified"];
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
     getPackageVersionContents: {
         parameters: {
             query?: {
@@ -27982,6 +28137,48 @@ export interface operations {
             503: components["responses"]["Unavailable"];
         };
     };
+    createUploadToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The token, shown once. */
+            201: {
+                headers: {
+                    /** @description `no-store`. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadToken"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The repository takes no publish from the screen (`not_applicable`). */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
     getClientSetup: {
         parameters: {
             query: {
@@ -28004,6 +28201,13 @@ export interface operations {
                 path?: string;
                 /** @description The SHA-256 of the file `path` names, in hexadecimal; the check of a download names it. Only with the path of a file. */
                 sha256?: string;
+                /**
+                 * @description The kind of package the install snippets are for, as a version's metadata names it (`kind`): NuGet's `dotnet-tool`,
+                 *     `template` and `msbuild-sdk` (formats/nuget.md R-NUGET-037). The client's install snippets of that kind are answered, none
+                 *     when it has none for the kind; without it those for a package of no kind (a NuGet library). A kind for which no snippet of
+                 *     the format differs (an OCI artifact's `image` or `helm-chart`) is a package of no kind.
+                 */
+                kind?: string;
                 /**
                  * @description An npm scope (`@team-a`); adds the scoped variant of the registry configuration. Only a client that has a scoped
                  *     variant accepts it (the npm clients); for any other client or format it answers `400 malformed_request` whose detail names `scope`
@@ -33755,48 +33959,6 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             /** @description The repository is not a local Ansible Galaxy repository (`not_applicable`). */
-            405: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            429: components["responses"]["TooManyRequests"];
-            500: components["responses"]["Internal"];
-            503: components["responses"]["Unavailable"];
-        };
-    };
-    createAnsibleUploadToken: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
-                projectKey: components["parameters"]["ProjectKey"];
-                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
-                repoKey: components["parameters"]["RepoKey"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The token, shown once. */
-            201: {
-                headers: {
-                    /** @description `no-store`. */
-                    "Cache-Control"?: string;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AnsibleUploadToken"];
-                };
-            };
-            401: components["responses"]["Unauthenticated"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            /** @description The repository takes no publish from the screen (`not_applicable`). */
             405: {
                 headers: {
                     [name: string]: unknown;

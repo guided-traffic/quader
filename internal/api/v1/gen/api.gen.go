@@ -9188,20 +9188,6 @@ type AnsibleTombstoneList struct {
 	NextCursor *string `json:"nextCursor"`
 }
 
-// AnsibleUploadToken The token of one upload from the screen (R-ANS-061).
-type AnsibleUploadToken struct {
-	ExpiresAt time.Time `json:"expiresAt"`
-
-	// Id The token's id; the dialog revokes it with `DELETE /api/v1/tokens/{id}` once the publish answered.
-	Id string `json:"id"`
-
-	// PublishPath The client's publish route of the repository, relative to the server, `/api/ansible/{projectKey}/{repoKey}/v3/artifacts/collections/`.
-	PublishPath string `json:"publishPath"`
-
-	// Token The secret, shown once; sent as `Authorization: Bearer <token>` to `publishPath`.
-	Token string `json:"token"`
-}
-
 // AppliedMigrationStep defines model for AppliedMigrationStep.
 type AppliedMigrationStep struct {
 	AppliedAt  time.Time                 `json:"appliedAt"`
@@ -18032,6 +18018,25 @@ type TokenScopePatterns struct {
 	Include *[]string `json:"include,omitempty"`
 }
 
+// UploadToken The token of one upload from the screen (R-ANS-061, R-NUGET-006).
+type UploadToken struct {
+	ExpiresAt time.Time `json:"expiresAt"`
+
+	// Id The token's id; the dialog revokes it with `DELETE /api/v1/tokens/{id}` once the publish answered.
+	Id string `json:"id"`
+
+	// PublishPath The client's publish route of the repository, relative to the server: `/api/ansible/{projectKey}/{repoKey}/v3/artifacts/collections/`
+	// (the archive's raw body, `POST`), `/api/nuget/{projectKey}/{repoKey}/v3/package` (the `.nupkg`'s raw body, `PUT`; the answer's
+	// `Quader-Package` and `Quader-Version` name the version).
+	PublishPath string `json:"publishPath"`
+
+	// SymbolsPath The client's symbol publish route, `/api/nuget/{projectKey}/{repoKey}/v3/symbolpackage` (the `.snupkg`'s raw body, `PUT`, after the package); null for a format without symbol packages.
+	SymbolsPath *string `json:"symbolsPath"`
+
+	// Token The secret, shown once; sent as `Authorization: Bearer <token>` to `publishPath`.
+	Token string `json:"token"`
+}
+
 // UpstreamAbout What the answers the lookup read tell of the package's newest version besides its versions (R-CUR-028): npm's latest dist-tag,
 // NuGet's newest registration leaf, the Galaxy's highest version. No wiki content (R-AUTHZ-034): every reader of the tab sees it.
 // Every text is the upstream's, plain and bounded; an address is an absolute http or https address. `null` where the answers tell
@@ -24286,9 +24291,6 @@ type ServerInterface interface {
 	// ClearAnsibleTombstone Clear the tombstone of a deleted version
 	// (DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/tombstones/{collection}/{version})
 	ClearAnsibleTombstone(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, collection string, version string)
-	// CreateAnsibleUploadToken Issue the short-lived token of an upload from the screen
-	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/upload-tokens)
-	CreateAnsibleUploadToken(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey)
 	// GetAttestation Quader's receipt attestation of one stored file
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/attestation)
 	GetAttestation(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params GetAttestationParams)
@@ -24535,6 +24537,9 @@ type ServerInterface interface {
 	// GetItemStats Read the download statistics of a file
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/stats)
 	GetItemStats(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params GetItemStatsParams)
+	// CreateUploadToken Issue the short-lived token of an upload from the screen
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/upload-tokens)
+	CreateUploadToken(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey)
 	// GetUpstreamCatalogue The upstream catalogue's capabilities of a remote repository
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream)
 	GetUpstreamCatalogue(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string)
@@ -32922,41 +32927,6 @@ func (siw *ServerInterfaceWrapper) ClearAnsibleTombstone(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
-// CreateAnsibleUploadToken operation middleware
-func (siw *ServerInterfaceWrapper) CreateAnsibleUploadToken(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "projectKey" -------------
-	var projectKey ProjectKey
-
-	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
-		return
-	}
-
-	// ------------- Path parameter "repoKey" -------------
-	var repoKey RepoKey
-
-	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateAnsibleUploadToken(w, r, projectKey, repoKey)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // GetAttestation operation middleware
 func (siw *ServerInterfaceWrapper) GetAttestation(w http.ResponseWriter, r *http.Request) {
 
@@ -37794,6 +37764,41 @@ func (siw *ServerInterfaceWrapper) GetItemStats(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetItemStats(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateUploadToken operation middleware
+func (siw *ServerInterfaceWrapper) CreateUploadToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateUploadToken(w, r, projectKey, repoKey)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -45428,6 +45433,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/docs", wrapper.GetPackageVersionDocs)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/docs/entries/{type}/{name}", wrapper.GetPackageVersionDocEntry)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/docs/files/{file}", wrapper.GetPackageVersionDocFile)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upload-tokens", wrapper.CreateUploadToken)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/client-setup", wrapper.GetClientSetup)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/guide", wrapper.GetRepositoryGuide)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/formats/{format}/guide", wrapper.GetFormatGuide)
@@ -45559,7 +45565,6 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/imports", wrapper.ListAnsibleImportTasks)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/tombstones", wrapper.ListAnsibleTombstones)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/tombstones/{collection}/{version}", wrapper.ClearAnsibleTombstone)
-	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/upload-tokens", wrapper.CreateAnsibleUploadToken)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/imports/{taskId}", wrapper.GetAnsibleImportTask)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures", wrapper.AddAnsibleVersionSignature)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures/{fingerprint}", wrapper.RemoveAnsibleVersionSignature)

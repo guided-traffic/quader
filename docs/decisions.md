@@ -2858,6 +2858,34 @@ belongs to the format and is regularly there is shown, and metadata that is ther
 **Consequences.** A format with READMEs implements one method; one without (OCI, Debian) implements nothing and the API answers
 `catalogue_not_offered`. Nothing is stored; the README is kept in the catalogue's per-replica cache for its period like a page.
 
+### ADR-293 · The format contract gains the kind of an install template and the reader of the files a package embeds for the screens
+
+**Status:** Decided by the development agent on 2026-11-26 — owner review at the walkthrough
+([Q-NUGET-155](spec/formats/nuget.md#q-nuget-155--the-install-forms-of-a-kind-of-package-are-the-servers-chosen-by-a-kind-the-request-names),
+[Q-NUGET-157](spec/formats/nuget.md#q-nuget-157--the-icon-and-the-licence-file-on-the-screen-come-from-two-management-operations-under-the-read-check)).
+It adds to the frozen format contract and keeps `ContractVersion` 14.
+
+**Context.** W-30's package G6 (2026-11-26): nuget.org offers eight forms of installing a library, and a .NET tool, a template and an
+MSBuild SDK are installed by other commands than a library; the screens are to show a package's icon and licence file, which only the
+stored package holds. The server owns every snippet (R-API-030), and the core reads no format's package.
+
+**Decision.**
+- `formats.SetupTemplate.Kind` names the kind of package an install template is for, as the version's metadata names it (`kind`); a
+  client may have several install templates of one kind, each a form of installing it, the first the default. The client setup takes
+  the parameter `kind`; a kind no template names is a package of no kind. A template may place the version itself
+  (`formats.SetupVersionRef` in its text, no `VersionSpec`), and `text` is a language that quotes nothing.
+- `formats.ViewEmbedder` (`ViewEmbedded`, the names `EmbeddedIcon` and `EmbeddedLicense`) is an optional interface of a `Format`, found
+  by `CapabilitiesOf` (`Capabilities.ViewEmbedder`); the host's view bridge asks it where it exists. NuGet has it. The management API
+  serves an icon only as PNG or JPEG by its bytes and a licence only as UTF-8 text.
+- `formats.ScreenPublisher` (`ScreenPublish`) is an optional interface of a `Format` (`Capabilities.ScreenPublisher`): the client's publish
+  route and, where the format takes one, its symbol package's route, which the management API's one operation `createUploadToken`
+  answers with the browser's token of five minutes (Q-NUGET-162). Ansible Galaxy and NuGet have it; the Ansible operation
+  `createAnsibleUploadToken` is gone.
+
+**Consequences.** Both are additions: a template without a kind and a format without the interface behave as before. The kit's check 8
+refuses a kind on a template that is not an install template and a template that places the version twice.
+
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -11394,10 +11422,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-NUGET
 
-129 questions on [spec/formats/nuget.md](spec/formats/nuget.md).
+130 questions on [spec/formats/nuget.md](spec/formats/nuget.md).
 
 <details>
-<summary>Q-NUGET: 129 questions</summary>
+<summary>Q-NUGET: 130 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11523,13 +11551,14 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-NUGET-140](spec/formats/nuget.md#q-nuget-140--the-deprecation-is-a-member-of-the-versions-metadata-in-the-catalog-entrys-shape) | The deprecation is a member of the version's metadata, in the catalog entry's shape | Decided by the development agent on 2026-11-26 | (a), as the plan of W-30 proposed. | — |
 | [Q-NUGET-141](spec/formats/nuget.md#q-nuget-141--a-remote-reads-a-cached-versions-deprecation-from-the-registration-it-fills) | A remote reads a cached version's deprecation from the registration it fills | Decided by the development agent on 2026-11-26 | (a) The fill of a registration index or page writes the member of the cached versions it inlines, in the fill's transaction | — |
 | [Q-NUGET-142](spec/formats/nuget.md#q-nuget-142--unlisted-and-deprecated-are-two-states-with-two-marks) | Unlisted and deprecated are two states with two marks | Decided by the development agent on 2026-11-26 | (a) Two members (`unlisted`, `deprecation`) and two marks, **Unlisted** and **Deprecated** | — |
-| [Q-NUGET-155](spec/formats/nuget.md#q-nuget-155--the-install-forms-of-a-kind-of-package-are-the-servers-chosen-by-a-kind-the-request-names) | The install forms of a kind of package are the server's, chosen by a kind the request names | Decided by the development agent on 2026-11-26 | (a), [ADR-293](#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens). | ADR-293 |
+| [Q-NUGET-155](spec/formats/nuget.md#q-nuget-155--the-install-forms-of-a-kind-of-package-are-the-servers-chosen-by-a-kind-the-request-names) | The install forms of a kind of package are the server's, chosen by a kind the request names | Decided by the development agent on 2026-11-26 | (a), [ADR-293](#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens). | [ADR-293](#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens) |
 | [Q-NUGET-156](spec/formats/nuget.md#q-nuget-156--paket-cake-nuke-a-script-and-a-file-based-app-are-forms-of-the-net-clis-tab-not-clients-of-their-own) | Paket, Cake, NUKE, a script and a file-based app are forms of the .NET CLI's tab, not clients of their own | Decided by the development agent on 2026-11-26 | (a) ([api-and-ui.md](spec/api-and-ui.md) Q-UI-1360). | — |
-| [Q-NUGET-157](spec/formats/nuget.md#q-nuget-157--the-icon-and-the-licence-file-on-the-screen-come-from-two-management-operations-under-the-read-check) | The icon and the licence file on the screen come from two management operations under the read check | Decided by the development agent on 2026-11-26 | (a), [ADR-293](#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens). | ADR-293 |
+| [Q-NUGET-157](spec/formats/nuget.md#q-nuget-157--the-icon-and-the-licence-file-on-the-screen-come-from-two-management-operations-under-the-read-check) | The icon and the licence file on the screen come from two management operations under the read check | Decided by the development agent on 2026-11-26 | (a), [ADR-293](#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens). | [ADR-293](#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens) |
 | [Q-NUGET-158](spec/formats/nuget.md#q-nuget-158--the-file-list-is-read-from-the-central-directory-at-ingestion-and-by-a-job-for-a-version-stored-before) | The file list is read from the central directory at ingestion, and by a job for a version stored before | Decided by the development agent on 2026-11-26 | (a) The ingestion and a remote's fill keep what the names say as the member `contents` of the metadata; the job `nuget-contents`, queued by the task `remote-describe`, reads it for a version stored before | — |
 | [Q-NUGET-159](spec/formats/nuget.md#q-nuget-159--what-counts-as-build-logic-an-analyzer-and-a-script) | What counts as build logic, an analyzer and a script | Decided by the development agent on 2026-11-26 | (a) The files that run by themselves: the imported `<id>` files, every `.dll` below `analyzers/`, `tools/init.ps1` and the install and uninstall scripts | — |
 | [Q-NUGET-160](spec/formats/nuget.md#q-nuget-160--symbols-are-read-from-the-versions-files-and-the-page-says-that-no-debugger-reads-them-yet) | Symbols are read from the version's files, and the page says that no debugger reads them yet | Decided by the development agent on 2026-11-26 | (a) **Symbols** with the file's name and the sentence that no debugger reads them from Quader yet, from the version's files | — |
 | [Q-NUGET-161](spec/formats/nuget.md#q-nuget-161--an-install-command-writes-the-id-in-its-declared-casing) | An install command writes the ID in its declared casing | Decided by the development agent on 2026-11-26 | (a), for every format: only NuGet's names differ from their normalized form in case. | — |
+| [Q-NUGET-162](spec/formats/nuget.md#q-nuget-162--a-package-is-uploaded-on-the-screen-by-the-protocol-push-with-the-token-every-format-takes-for-it) | A package is uploaded on the screen by the protocol push, with the token every format takes for it | Decided by the development agent on 2026-11-26 | (a), [ADR-293](#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens). | [ADR-293](#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens) |
 
 </details>
 
@@ -12528,10 +12557,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-677 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+678 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 677 questions</summary>
+<summary>Q-UI: 678 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13211,6 +13240,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1361](spec/api-and-ui.md#q-ui-1361--a-packages-own-picture-stands-before-the-heading-of-its-versions-page-and-nowhere-else) | A package's own picture stands before the heading of its version's page, and nowhere else | Decided by the development agent on 2026-11-26 | (a) 40 px before the heading of the version's page, decorative (`alt=""`: the heading names the package), gone where it does not load | — |
 | [Q-UI-1362](spec/api-and-ui.md#q-ui-1362--the-repositorys-branch-and-commit-link-only-where-the-page-knows-the-hosts-addresses) | The repository's branch and commit link only where the page knows the host's addresses | Decided by the development agent on 2026-11-26 | (a) An entry of the version's row of links after the source, "Branch main" and "Commit 4b7e2a9c1d3f": a link on an https address of GitHub, GitLab, Bitbucket and Azure DevOps (`dev.azure.com`, `*.visualstudio.com` with `/_git/`), the label and the value as text elsewhere; a commit by its first twelve characters, the whole as its title | — |
 | [Q-UI-1363](spec/api-and-ui.md#q-ui-1363--what-a-build-a-compile-or-an-install-runs-is-said-in-the-note-of-an-install-script) | What a build, a compile or an install runs is said in the note of an install script | Decided by the development agent on 2026-11-26 | (a) The same note in the same place, one per kind (build logic, analyzers, PowerShell scripts) with the format's sentence and the files in the code font | — |
+| [Q-UI-1364](spec/api-and-ui.md#q-ui-1364--upload-package-is-the-collection-uploads-frame-with-nugets-two-files-and-its-pushs-answer) | Upload package is the collection upload's frame with NuGet's two files and its push's answer | Decided by the development agent on 2026-11-26 | (a) **Upload package** where **Upload collection** stands; the same field, drop area, bar and acts; one choice of up to two files, the `.snupkg` known by its name; the bar runs again for the symbols ("The package is stored. Its symbol package follows."); the result is the version with **Open version**, and the symbols stored or refused with the error notice | — |
 | [Q-UI-1370](spec/api-and-ui.md#q-ui-1370--a-link-to-a-screen-whose-script-is-gone-loads-its-address-from-the-server-and-a-failed-navigation-is-said) | A link to a screen whose script is gone loads its address from the server, and a failed navigation is said | Decided by the development agent on 2026-11-26 | (a) The router's handler of a failed navigation: a script that could not be loaded loads the link's address from the server; every other failure is a notice with what was said | — |
 
 </details>

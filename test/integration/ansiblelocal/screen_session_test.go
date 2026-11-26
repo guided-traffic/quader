@@ -40,7 +40,7 @@ func TestR_ANS_061_TheScreensUploadWithASessionIsGuardedAsEveryManagementWrite(t
 	browser := screenUpload{e: e, api: e.api, pkg: e.pkg, hdr: []string{"Cookie", cookie, "Origin", browserOrigin, "X-CSRF-Token", csrf}}
 	archive := collectiontest.Build(spec("1.0.0"))
 	uploadTokens := func() int64 {
-		return e.st.Number(`SELECT count(*) FROM api_token WHERE description LIKE 'Upload of a collection from the screen%'`)
+		return e.st.Number(`SELECT count(*) FROM api_token WHERE description LIKE 'Upload of a package from the screen%'`)
 	}
 
 	for name, hdr := range map[string][]string{

@@ -1930,6 +1930,7 @@ type Capabilities struct {
 	ServeFacts    ServeFactsKeyer      // nil for a format whose serve check reads nothing besides the item (Q-ARCH-291)
 	ViewSizer     ViewSizer            // nil for a format whose versions are the sum of their files (ADR-177)
 	ViewEmbedder  ViewEmbedder         // nil for a format whose packages embed no file the screens show (formats/nuget.md R-NUGET-038, ADR-293)
+	ScreenPublisher ScreenPublisher    // nil for a format whose packages are not uploaded on the screen (formats/nuget.md R-NUGET-006, ADR-293)
 	ViewRanker    ViewRanker           // nil for a format whose package search ranks every match 0 (formats/ansible.md R-ANS-057, ADR-287)
 	VersionPath   VersionPather        // nil for a format whose versions have no file of their own (Q-AUTHZ-255, ADR-174)
 	SourceSpeller SourceSpeller        // nil for a format whose items have one spelling (Q-OCI-129)
@@ -1962,6 +1963,14 @@ type ViewSizer interface {
 // are untrusted: the management API serves an icon only as a PNG or a JPEG by its bytes and a licence only as UTF-8 text (ADR-293).
 type ViewEmbedder interface {
 	ViewEmbedded(ctx context.Context, ports DataPorts, v ViewVersion, file string) ([]byte, bool, error)
+}
+
+// ScreenPublisher is the optional interface of a Format whose packages a person uploads on the screen through the client's own publish
+// route (formats/ansible.md R-ANS-061, formats/nuget.md R-NUGET-006): ScreenPublish names that route and the symbols' route where the
+// format takes a symbol package, each relative to the repository's protocol base path ("" for none); the management API's
+// createUploadToken answers them with the browser's short-lived token (ADR-293).
+type ScreenPublisher interface {
+	ScreenPublish() (pkg, symbols string)
 }
 
 // ViewSize is the size of a version as a ViewSizer reports it (R-API-080, ADR-205).
@@ -2610,7 +2619,7 @@ R-ARCH-025 says which changes keep the version (Q-ARCH-280).
 **Optional behaviour.** `Format` holds what every format answers. A behaviour that only some formats have, or that
 the core cannot call yet, is an optional interface of this package, found by `CapabilitiesOf` when the format registers
 and recorded in the registry (`CapabilitiesFor`); the core never asks the format value (the architecture test allows
-that assertion in `CapabilitiesOf` alone). Today there are fourteen: `ItemsRestorer`, `RemovalLocker`, `ServeFactsKeyer` (`Capabilities.ServeFacts`, Q-ARCH-291), `ViewSizer` (`Capabilities.ViewSizer`, [ADR-177](../decisions.md#adr-177--the-format-contract-gains-the-optional-viewsizer-for-the-size-of-a-version-that-is-not-the-sum-of-its-files)), `ViewEmbedder` (`Capabilities.ViewEmbedder` with the names `EmbeddedIcon` and `EmbeddedLicense`, [ADR-293](../decisions.md#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens)) and `ViewRanker` (`Capabilities.ViewRanker`, [ADR-287](../decisions.md#adr-287--the-format-contract-gains-the-ranked-package-search-the-namespaces-of-a-formats-names-and-what-an-upstream-tells-beside-a-package)) on the format, `Discoverer`,
+that assertion in `CapabilitiesOf` alone). Today there are fifteen: `ItemsRestorer`, `RemovalLocker`, `ServeFactsKeyer` (`Capabilities.ServeFacts`, Q-ARCH-291), `ViewSizer` (`Capabilities.ViewSizer`, [ADR-177](../decisions.md#adr-177--the-format-contract-gains-the-optional-viewsizer-for-the-size-of-a-version-that-is-not-the-sum-of-its-files)), `ViewEmbedder` (`Capabilities.ViewEmbedder` with the names `EmbeddedIcon` and `EmbeddedLicense`, [ADR-293](../decisions.md#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens)), `ScreenPublisher` (`Capabilities.ScreenPublisher`, the same ADR) and `ViewRanker` (`Capabilities.ViewRanker`, [ADR-287](../decisions.md#adr-287--the-format-contract-gains-the-ranked-package-search-the-namespaces-of-a-formats-names-and-what-an-upstream-tells-beside-a-package)) on the format, `Discoverer`,
 `FillInspector`, `MirrorLister`, `Authenticator`, `Revalidator`, `FactsGate` and `NameServer` (`RemoteCaps.Names`, [ADR-172](../decisions.md#adr-172--the-format-contract-gains-the-remote-name-index-and-the-serve-facts-kinds-deb_local-and-deb_remote)) on its remote adapter (`Capabilities.Remote`, Q-ARCH-267, Q-ARCH-268, Q-ARCH-284,
 [ADR-161](../decisions.md#adr-161--the-format-contract-gains-the-registry-root-the-upstream-handshake-head-revalidation-and-upload-sessions)), and
 `VulnerabilityAdapter` on the format (`Capabilities.Vulnerability`, R-VULN-009,

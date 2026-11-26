@@ -28200,6 +28200,24 @@ Context: [formats/nuget.md](formats/nuget.md) R-NUGET-039, H-2171 (closed by it)
 
 **Choice:** (a). **Applied in the spec:** R-UI-221.
 
+### Q-UI-1364 · Upload package is the collection upload's frame with NuGet's two files and its push's answer
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below and by the dialog's states at 390 and
+1,440 px; the owner reviews it at the walkthrough.
+
+Context: [formats/nuget.md](formats/nuget.md) R-NUGET-006, Q-NUGET-162. A NuGet package comes with its symbol package where `dotnet pack`
+made one; the push answers at once and has no import log.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Upload package** where **Upload collection** stands; the same field, drop area, bar and acts; one choice of up to two files, the `.snupkg` known by its name; the bar runs again for the symbols ("The package is stored. Its symbol package follows."); the result is the version with **Open version**, and the symbols stored or refused with the error notice (chosen) | `nuget-upload-dialog.ts` | One look for every upload; the symbols are not a second dialog | Two files in one drop area |
+| (b) The package alone | | Simpler | A `.snupkg` that `dotnet nuget push` sends beside its package would need the command line |
+
+**Choice:** (a). A symbol package chosen alone is not sent: the dialog says that it follows its package. **Applied in the spec:** [formats/nuget.md](formats/nuget.md) R-NUGET-006.
+Code: [nuget-upload-dialog.ts](../../web/src/app/features/repositories/content/nuget-upload-dialog.ts), `uploadCollection` of
+[repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts). Tests: `nuget-upload-dialog.spec.ts`, the states
+`nuget-upload-*` (`make ui-states`).
+
 ## What this does not cover
 
 ### H-2221 · A Helm chart's dependencies are not matched to the charts Quader holds

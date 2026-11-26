@@ -300,6 +300,9 @@ type Capabilities struct {
 	// ViewEmbedder reads a file a version's package embeds for the screens (formats/nuget.md R-NUGET-038: an icon, a licence file); nil
 	// for a format whose packages embed none.
 	ViewEmbedder ViewEmbedder
+	// ScreenPublisher names the client's publish routes an upload on the screen sends a package to (R-ANS-061, R-NUGET-006); nil for
+	// a format whose packages are not uploaded on the screen.
+	ScreenPublisher ScreenPublisher
 	// ViewRanker ranks what the format's package search finds (R-ANS-057, ADR-287); nil for a format whose matches all rank 0.
 	ViewRanker ViewRanker
 	// VersionPath gives the path of the file that holds a version's content (Q-AUTHZ-255); nil for a format whose
@@ -356,6 +359,9 @@ func CapabilitiesOf(f Format) Capabilities {
 	}
 	if em, ok := f.(ViewEmbedder); ok {
 		c.ViewEmbedder = em
+	}
+	if sp, ok := f.(ScreenPublisher); ok {
+		c.ScreenPublisher = sp
 	}
 	if rk, ok := f.(ViewRanker); ok {
 		c.ViewRanker = rk

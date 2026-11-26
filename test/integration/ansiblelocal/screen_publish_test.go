@@ -22,7 +22,7 @@ type screenUpload struct {
 
 func (u screenUpload) mint(key string) testenv.Answer {
 	u.e.t.Helper()
-	return u.e.st.Do(u.api, "POST", "/api/v1/projects/"+project+"/repositories/"+key+"/ansible/upload-tokens", "", nil, u.hdr...)
+	return u.e.st.Do(u.api, "POST", "/api/v1/projects/"+project+"/repositories/"+key+"/upload-tokens", "", nil, u.hdr...)
 }
 
 // publish mints the token of the repository and sends the archive with it; it returns the publish's answer and the token.
@@ -90,7 +90,7 @@ func TestR_ANS_061_TheScreensPublishRunsOnTheRolesTheChartRuns(t *testing.T) {
 		t.Fatalf("the task on the role api: %d %s", task.Status, task.Body)
 	}
 	if got := e.st.Text(`SELECT a.actor_id::text || ' ' || coalesce(a.auth_method, '-') || ' ' || k.description FROM audit_event a
-	                     JOIN api_token k ON k.id = a.token_id WHERE a.action = 'package.published'`); got != e.bob.ID+" bearer Upload of a collection from the screen into it/ansible-local" {
+	                     JOIN api_token k ON k.id = a.token_id WHERE a.action = 'package.published'`); got != e.bob.ID+" bearer Upload of a package from the screen into it/ansible-local" {
 		t.Errorf("the event of the screen's publish: %q", got)
 	}
 
@@ -98,14 +98,14 @@ func TestR_ANS_061_TheScreensPublishRunsOnTheRolesTheChartRuns(t *testing.T) {
 	other := e.st.Do(e.pkg, "POST", "/api/ansible/"+project+"/ansible-other/v3/artifacts/collections/", tok, collectiontest.Build(spec("2.0.0")), "Content-Type", "application/gzip")
 	read := e.st.Do(e.pkg, "GET", "/api/ansible/"+project+"/ansible-other/", tok, nil)
 	minted := e.st.Do(e.api, "POST", "/api/v1/tokens", tok, map[string]any{"description": "next", "ttlSeconds": 3600})
-	again := e.st.Do(e.api, "POST", "/api/v1/projects/"+project+"/repositories/"+repo+"/ansible/upload-tokens", tok, nil)
+	again := e.st.Do(e.api, "POST", "/api/v1/projects/"+project+"/repositories/"+repo+"/upload-tokens", tok, nil)
 	for name, a := range map[string]testenv.Answer{"a publish elsewhere": other, "a read elsewhere": read, "a personal token": minted, "the next upload token": again} {
 		t.Logf("the upload token, %s: %d", name, a.Status)
 		if a.Status != 403 && a.Status != 404 {
 			t.Errorf("the upload token, %s: %d %s", name, a.Status, a.Body)
 		}
 	}
-	if a := e.st.Do(e.api, "POST", "/api/v1/projects/"+project+"/repositories/"+repo+"/ansible/upload-tokens", e.tokB, nil); !isProblem(a, 403, "forbidden") {
+	if a := e.st.Do(e.api, "POST", "/api/v1/projects/"+project+"/repositories/"+repo+"/upload-tokens", e.tokB, nil); !isProblem(a, 403, "forbidden") {
 		t.Errorf("a client's token asks for an upload token: %d %s", a.Status, a.Body)
 	}
 	// The dialog revokes the token once the publish answered: it is refused from then on.
@@ -125,7 +125,7 @@ func TestR_ANS_061_TheScreensPublishRunsOnTheRolesTheChartRuns(t *testing.T) {
 	if a := u.mint("files-local"); !isProblem(a, 405, "not_applicable") {
 		t.Errorf("a generic repository: %d %s", a.Status, a.Body)
 	}
-	if a := e.st.Do(e.pkg, "POST", "/api/v1/projects/"+project+"/repositories/"+repo+"/ansible/upload-tokens", "", nil, u.hdr...); a.Status != 404 {
+	if a := e.st.Do(e.pkg, "POST", "/api/v1/projects/"+project+"/repositories/"+repo+"/upload-tokens", "", nil, u.hdr...); a.Status != 404 {
 		t.Errorf("the role packages serves no management operation: %d", a.Status)
 	}
 	if e.versionRows() != 1 {

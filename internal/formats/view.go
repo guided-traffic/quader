@@ -93,6 +93,15 @@ type ViewEmbedder interface {
 	ViewEmbedded(ctx context.Context, ports DataPorts, v ViewVersion, file string) ([]byte, bool, error)
 }
 
+// ScreenPublisher is the optional interface of a Format whose packages a person may upload on the screen through the client's own
+// publish route (formats/ansible.md R-ANS-061, formats/nuget.md R-NUGET-006): ScreenPublish names that route and, where the format
+// takes a symbol package beside the package, the symbols' route, each relative to the repository's protocol base path ("" for none).
+// The management API issues the browser a short-lived token for them; the role that serves the packages runs every check of the
+// client's publish. A format without it offers no upload on the screen.
+type ScreenPublisher interface {
+	ScreenPublish() (pkg, symbols string)
+}
+
 // The names of the files a [ViewEmbedder] reads.
 const (
 	EmbeddedIcon    = "icon"

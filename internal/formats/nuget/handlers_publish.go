@@ -96,8 +96,17 @@ func (f *Format) handlePush(ctx context.Context, rq *formats.Request, w http.Res
 	if err != nil {
 		return f.commitError(ctx, rq, w, rep, st, in, sum, err)
 	}
-	w.WriteHeader(http.StatusCreated)
+	pushed(w, in)
 	return nil
+}
+
+// pushed answers a push that stored the package, or found it stored with the same bytes: 201 with an empty body (R-NUGET-006), and the
+// ID as the package declares it and the full normalized version in Quader-Package and Quader-Version, so that an upload on the screen
+// links the version it published without reading the package itself; the clients read the status alone.
+func pushed(w http.ResponseWriter, in *incoming) {
+	w.Header().Set("Quader-Package", in.declaredID)
+	w.Header().Set("Quader-Version", in.version.FullNormalized())
+	w.WriteHeader(http.StatusCreated)
 }
 
 // packagePart opens the package of a push: the first part of a multipart/form-data body,
@@ -165,7 +174,7 @@ func (f *Format) numberTaken(ctx context.Context, rq *formats.Request, w http.Re
 			return false, versionExists(in)
 		}
 		rep.writes.replayed(rq.Repo.Name.String())
-		w.WriteHeader(http.StatusCreated)
+		pushed(w, in)
 		return true, nil
 	}
 	_, err = f.tombstoneVerdict(ctx, nil, st, repo.ID, in, sha512)

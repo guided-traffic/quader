@@ -2264,7 +2264,8 @@ on the repository's page, by the client's own publish (the owner, 2026-11-25: "d
   makes the shadowing probes of a first version that the role `api` may not make (R-ARCH-001,
   [architecture.md](../architecture.md) Q-ARCH-294, Q-ARCH-301). The browser's session lives on the role `api`, and the protocol paths ignore
   a session cookie for a write. So the dialog takes three steps:
-  1. `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/upload-tokens` (`createAnsibleUploadToken`, `deploy` on the
+  1. `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/upload-tokens` (`createUploadToken`, the operation of every format whose
+     packages are uploaded on the screen, [nuget.md](nuget.md) Q-NUGET-162; `deploy` on the
      repository) issues a personal access token of the caller, for five minutes, whose scope is `read` and `deploy` on this repository and,
      for a virtual repository, on its deployment target, and nothing else. Only a browser's session is answered, with its CSRF token like
      every management write: a caller with a token is refused `403`, so that a client publishes with its own token and a token never mints
@@ -4139,7 +4140,7 @@ before it landed; the integration replicas run `web`).
 | (e) The session cookie on the protocol's publish route | One call | — | Opens the protocol paths to a browser's ambient cookie for writes, and `packages` has no session store |
 
 **Choice:** (a). **Revisit** if the owner wants no token in the page: then (d). **Applied in the spec:** R-ANS-061; the operations
-`createAnsibleUploadToken` and `getAnsibleImportTask`.
+`createUploadToken` and `getAnsibleImportTask`.
 
 ### Q-ANS-141 · The dialog reads the task through the management API, and reads a Galaxy refusal as a problem
 

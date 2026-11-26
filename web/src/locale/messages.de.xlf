@@ -26109,6 +26109,177 @@
         <target>tar-Archiv</target>
       </segment>
     </unit>
+    <unit id="nuget.upload.title">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:33,34</note>
+      </notes>
+      <segment>
+        <source>Upload package</source>
+        <target>Paket hochladen</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.repository">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:36,37</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+        <target>Repository</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.completed">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:42</note>
+      </notes>
+      <segment>
+        <source>The package is published:</source>
+        <target>Das Paket ist veröffentlicht:</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.symbols-stored">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:47,49</note>
+      </notes>
+      <segment>
+        <source>Its symbol package is stored beside it.</source>
+        <target>Sein Symbolpaket ist daneben gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.symbols-refused">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:50,51</note>
+      </notes>
+      <segment>
+        <source>Its symbol package was not stored:</source>
+        <target>Sein Symbolpaket wurde nicht gespeichert:</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.choose-other">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:70,72</note>
+      </notes>
+      <segment>
+        <source>Choose other files</source>
+        <target>Andere Dateien auswählen</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.drop">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:73,74</note>
+      </notes>
+      <segment>
+        <source>Drop the package here, with its symbol package if you have one, or</source>
+        <target>Paket hierher ziehen, mit seinem Symbolpaket, falls vorhanden, oder</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.choose">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:74,76</note>
+      </notes>
+      <segment>
+        <source>Choose files</source>
+        <target>Dateien auswählen</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.sending-symbols">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:90,92</note>
+      </notes>
+      <segment>
+        <source>The package is stored. Its symbol package follows.</source>
+        <target>Das Paket ist gespeichert. Sein Symbolpaket folgt.</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.needs-package">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:93,95</note>
+      </notes>
+      <segment>
+        <source>A symbol package follows its package: choose the .nupkg as well.</source>
+        <target>Ein Symbolpaket folgt seinem Paket: Wählen Sie auch die .nupkg aus.</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.hint">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:96,98</note>
+      </notes>
+      <segment>
+        <source> The .nupkg that dotnet pack makes, and its .snupkg. Quader reads the ID and the version from the package. </source>
+        <target>Die .nupkg, die dotnet pack erstellt, und ihre .snupkg. Quader liest die ID und die Version aus dem Paket.</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.close">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:107,108</note>
+      </notes>
+      <segment>
+        <source>Close</source>
+        <target>Schließen</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.open">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:108,110</note>
+      </notes>
+      <segment>
+        <source>Open version</source>
+        <target>Version öffnen</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.cancel">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:111,113</note>
+      </notes>
+      <segment>
+        <source>Cancel upload</source>
+        <target>Upload abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.cancel-dialog">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:113,116</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.start">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:123,125</note>
+      </notes>
+      <segment>
+        <source> Upload </source>
+        <target>Hochladen</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.progress">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:204</note>
+      </notes>
+      <segment>
+        <source>Upload progress</source>
+        <target>Fortschritt des Uploads</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.announce.refused">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:291</note>
+      </notes>
+      <segment>
+        <source>The upload was refused.</source>
+        <target>Der Upload wurde abgelehnt.</target>
+      </segment>
+    </unit>
+    <unit id="nuget.upload.announce.completed">
+      <notes>
+        <note category="location">src/app/features/repositories/content/nuget-upload-dialog.ts:301</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="id" disp="r.id"/> <ph id="1" equiv="version" disp="r.version"/> is published.</source>
+        <target><ph id="0" equiv="id" disp="r.id"/> <ph id="1" equiv="version" disp="r.version"/> ist veröffentlicht.</target>
+      </segment>
+    </unit>
     <unit id="repo.badge.disabled">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:17,20</note>
@@ -26283,7 +26454,7 @@
     </unit>
     <unit id="repo.content.sentence.remote">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:193</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:194</note>
       </notes>
       <segment>
         <source>A cache of another registry. It lists what clients have fetched through it.</source>
@@ -26292,7 +26463,7 @@
     </unit>
     <unit id="repo.content.sentence.virtual">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:195</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:196</note>
       </notes>
       <segment>
         <source>Combines other repositories behind one address. It lists what they resolve to.</source>
@@ -26301,7 +26472,7 @@
     </unit>
     <unit id="repo.content.sentence.local2">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:197</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:198</note>
       </notes>
       <segment>
         <source>Holds what is published to it.</source>
@@ -26310,7 +26481,7 @@
     </unit>
     <unit id="repo.content.files-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:312</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:313</note>
       </notes>
       <segment>
         <source>Address for downloads by path (curl, wget)</source>
@@ -26319,7 +26490,7 @@
     </unit>
     <unit id="repo.content.copy-files-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:313</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:314</note>
       </notes>
       <segment>
         <source>Copy address for downloads by path</source>
@@ -26328,7 +26499,7 @@
     </unit>
     <unit id="repo.content.more">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:326</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:327</note>
       </notes>
       <segment>
         <source>More actions</source>
@@ -26337,16 +26508,25 @@
     </unit>
     <unit id="files.trail.between">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:372</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:373</note>
       </notes>
       <segment>
         <source>Show the folders in between</source>
         <target>Die Ordner dazwischen anzeigen</target>
       </segment>
     </unit>
+    <unit id="repo.content.upload-package">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:436</note>
+      </notes>
+      <segment>
+        <source>Upload package</source>
+        <target>Paket hochladen</target>
+      </segment>
+    </unit>
     <unit id="repo.content.upload-collection">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:434</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:437</note>
       </notes>
       <segment>
         <source>Upload collection</source>
@@ -26355,7 +26535,7 @@
     </unit>
     <unit id="files.delete.progress">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:449</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:458</note>
       </notes>
       <segment>
         <source>Deleting items</source>
@@ -26364,7 +26544,7 @@
     </unit>
     <unit id="files.copy-path">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:450</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:459</note>
       </notes>
       <segment>
         <source>Copy path</source>
@@ -26373,7 +26553,7 @@
     </unit>
     <unit id="files.delete.folder-many">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:519</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:528</note>
       </notes>
       <segment>
         <source>The folder holds more than <ph id="0" equiv="limit" disp="TYPE_TO_CONFIRM_ABOVE"/> items. They are deleted for good.</source>
@@ -26382,7 +26562,7 @@
     </unit>
     <unit id="files.delete.folder">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:520</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:529</note>
       </notes>
       <segment>
         <source>The folder holds <ph id="0" equiv="count" disp="count"/> items. They are deleted for good.</source>
@@ -26391,7 +26571,7 @@
     </unit>
     <unit id="files.delete.file">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:528</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:537</note>
       </notes>
       <segment>
         <source>The file is deleted for good.</source>
@@ -26400,7 +26580,7 @@
     </unit>
     <unit id="files.delete.title">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:531</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:540</note>
       </notes>
       <segment>
         <source>Delete <ph id="0" equiv="path" disp="path"/>?</source>
@@ -26409,7 +26589,7 @@
     </unit>
     <unit id="files.delete.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:533</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:542</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -26418,8 +26598,8 @@
     </unit>
     <unit id="files.deleted">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:541</note>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:551</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:550</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:560</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="path" disp="path"/> deleted.</source>
@@ -26428,7 +26608,7 @@
     </unit>
     <unit id="files.delete.failed">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:552</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:561</note>
       </notes>
       <segment>
         <source>The deletion failed. Some items may be gone.</source>

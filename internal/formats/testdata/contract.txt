@@ -42,6 +42,7 @@ formats.Capabilities: field ImageScanned ImageScanned
 formats.Capabilities: field ItemsRestorer ItemsRestorer
 formats.Capabilities: field Remote RemoteCaps
 formats.Capabilities: field RemovalLocker RemovalLocker
+formats.Capabilities: field ScreenPublisher ScreenPublisher
 formats.Capabilities: field ServeFacts ServeFactsKeyer
 formats.Capabilities: field SignatureCoverage SignatureCoverage
 formats.Capabilities: field SourceSpeller SourceSpeller
@@ -515,6 +516,7 @@ formats.RouteKind: method String() string
 formats.RouteKind: method Valid() bool
 formats.RouteKind: method WrapsContent() bool
 formats.RouteKind: type uint8
+formats.ScreenPublisher: method ScreenPublish() (string, string)
 formats.ServeDebRemoteFacts: alias servefacts.DebRemoteFacts
 formats.ServeFacts: alias servefacts.Facts
 formats.ServeFactsKeyer: method ServeFactsKey(RepoRef, Path) ServeKey

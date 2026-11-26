@@ -11796,6 +11796,62 @@ paths:
           $ref: "#/components/responses/Internal"
         "503":
           $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/upload-tokens:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - $ref: "#/components/parameters/RepoKey"
+    post:
+      operationId: createUploadToken
+      tags: [repositories]
+      summary: Issue the short-lived token of an upload from the screen
+      description: |
+        The screens' upload of a package (formats/ansible.md R-ANS-061, formats/nuget.md R-NUGET-006, Q-ANS-140): the management API,
+        where the caller's session lives, issues a personal access token of the caller for five minutes whose scope is `read` and
+        `deploy` on this repository and, for a virtual repository, on its deployment target, and nothing else. The browser sends the
+        package with it, `Authorization: Bearer <token>`, to the client's own publish route of the repository (`publishPath`: Ansible
+        Galaxy's collection publish, NuGet's package publish resource) and, where the format takes a symbol package, to `symbolsPath`
+        (NuGet's symbol publish resource); the format decides both. The role `packages` serves them with every check of the client's
+        publish, the shadowing probes of a first version among them (R-ARCH-001: the role `api` asks no upstream). The token is an
+        ordinary personal access token: it is in the caller's list of tokens until it expires, its creation is the audit event
+        `token.created`, and it can be revoked. A remote repository, a virtual repository without a deployment target and a repository
+        of a format whose packages are not uploaded on the screen answer `405 not_applicable`; the break-glass account holds no token
+        (`403`). Only a browser's session is answered: a caller with a token is refused `403` (a client publishes with its own token, and
+        a token may not mint the next one). The dialog revokes the token (`DELETE /api/v1/tokens/{id}`) once the publish answered, so
+        five minutes is its longest life. Needs `deploy` on the repository.
+      x-quader-permission:
+        action: deploy
+        repository: path.repoKey
+        project: path.projectKey
+      responses:
+        "201":
+          description: The token, shown once.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: "`no-store`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadToken"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          description: The repository takes no publish from the screen (`not_applicable`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   /api/v1/projects/{projectKey}/repositories/{repoKey}/client-setup:
     parameters:
       - $ref: "#/components/parameters/ProjectKey"
@@ -18644,60 +18700,6 @@ paths:
           $ref: "#/components/responses/NotFound"
         "405":
           description: The repository is not a local Ansible Galaxy repository (`not_applicable`).
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/Problem"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/Internal"
-        "503":
-          $ref: "#/components/responses/Unavailable"
-  /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/upload-tokens:
-    parameters:
-      - $ref: "#/components/parameters/ProjectKey"
-      - $ref: "#/components/parameters/RepoKey"
-    post:
-      operationId: createAnsibleUploadToken
-      tags: [ansible]
-      summary: Issue the short-lived token of an upload from the screen
-      description: |
-        The screens' upload of a collection archive (R-ANS-061, Q-ANS-140): the management API, where the caller's session lives,
-        issues a personal access token of the caller for five minutes whose scope is `read` and `deploy` on this repository and, for a
-        virtual repository, on its deployment target, and nothing else. The browser sends the archive with it to the client's own
-        publish route (`publishPath`, R-ANS-008), served by the role `packages` with every check of `ansible-galaxy collection publish`,
-        the shadowing probes of a first version among them (R-ARCH-001: the role `api` asks no upstream). The token is an ordinary
-        personal access token: it is in the caller's list of tokens until it expires, its creation is the audit event
-        `token.created`, and it can be revoked. A remote repository, a virtual repository without a deployment target and a repository
-        of another format answer `405 not_applicable`; the break-glass account holds no token (`403`). Only a browser's session is
-        answered: a caller with a token is refused `403` (a client publishes with its own token, and a token may not mint the next one).
-        The dialog revokes the token (`DELETE /api/v1/tokens/{id}`) once the publish answered, so five minutes is its longest life.
-        Needs `deploy` on the repository.
-      x-quader-permission:
-        action: deploy
-        repository: path.repoKey
-        project: path.projectKey
-      responses:
-        "201":
-          description: The token, shown once.
-          headers:
-            Cache-Control:
-              schema:
-                type: string
-              description: "`no-store`."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AnsibleUploadToken"
-        "401":
-          $ref: "#/components/responses/Unauthenticated"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "405":
-          description: The repository takes no publish from the screen (`not_applicable`).
           content:
             application/problem+json:
               schema:
@@ -34829,10 +34831,10 @@ components:
               time:
                 type: string
                 format: date-time
-    AnsibleUploadToken:
+    UploadToken:
       type: object
-      required: [id, token, expiresAt, publishPath]
-      description: The token of one upload from the screen (R-ANS-061).
+      required: [id, token, expiresAt, publishPath, symbolsPath]
+      description: The token of one upload from the screen (R-ANS-061, R-NUGET-006).
       properties:
         id:
           type: string
@@ -34845,7 +34847,13 @@ components:
           format: date-time
         publishPath:
           type: string
-          description: The client's publish route of the repository, relative to the server, `/api/ansible/{projectKey}/{repoKey}/v3/artifacts/collections/`.
+          description: |
+            The client's publish route of the repository, relative to the server: `/api/ansible/{projectKey}/{repoKey}/v3/artifacts/collections/`
+            (the archive's raw body, `POST`), `/api/nuget/{projectKey}/{repoKey}/v3/package` (the `.nupkg`'s raw body, `PUT`; the answer's
+            `Quader-Package` and `Quader-Version` name the version).
+        symbolsPath:
+          type: [string, "null"]
+          description: The client's symbol publish route, `/api/nuget/{projectKey}/{repoKey}/v3/symbolpackage` (the `.snupkg`'s raw body, `PUT`, after the package); null for a format without symbol packages.
     AnsibleImportTaskList:
       type: object
       required: [items, nextCursor]

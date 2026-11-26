@@ -114,7 +114,7 @@ var managementNeeds = map[string][]Area{
 	"PUT and DELETE .../packages/{name}/deprecation (R-API-085)": {AreaManagementHost, AreaVirtualEngine},
 	// The token of the screens' upload (R-ANS-061, Q-ANS-140): the token service and the repository's deployment target, nothing of a
 	// format's host; the publish itself is the client's route on the role packages.
-	"POST .../ansible/upload-tokens (R-ANS-061)": {AreaIdentity, AreaRepository},
+	"POST .../upload-tokens (R-ANS-061, R-NUGET-006)": {AreaIdentity, AreaRepository},
 	// The import task the upload answered: the stored row of the Ansible Galaxy data port.
 	"GET .../ansible/imports/{taskId} (R-ANS-061)": {AreaFormatPorts, AreaRepository},
 }

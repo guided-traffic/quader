@@ -75,7 +75,7 @@ administrator clears its tombstone, never data or access. The replay of the clea
 
 **The screens' publish is the client's publish** (R-ANS-061, [Q-ANS-140](../spec/formats/ansible.md#q-ans-140--the-screens-publish-sends-the-archive-to-the-clients-publish-route-with-a-token-the-management-api-issues)). The role `api`, where the
 browser's session lives, issues the caller a personal access token of five minutes whose scope is `read` and `deploy` on the repository (and a
-virtual repository's deployment target) and nothing else (`createAnsibleUploadToken`, [ansible_upload.go](../../internal/api/v1/ansible_upload.go)).
+virtual repository's deployment target) and nothing else (`createUploadToken`, [upload_tokens_api.go](../../internal/api/v1/upload_tokens_api.go), the operation NuGet's upload takes as well).
 The browser sends the archive with it as `Authorization: Bearer` to the client's own publish route, which the role `packages` serves with every
 check of `ansible-galaxy collection publish`, the shadowing probes of a first version among them; `packages` sees a token, never the session,
 and `api` makes no probe and fills no cache (R-ARCH-001). The task is read back through the management API. There is no second road into the

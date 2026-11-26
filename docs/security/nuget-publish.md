@@ -35,6 +35,13 @@ what is read. An archive with another end-of-central-directory record after the 
 entry whose data `archive/zip` would read from another offset than the one the scan checked in its local header are refused like any other
 damaged archive (Q-NUGET-89; `TestR_NUGET_005_AnEndRecordAfterTheOneTheScanChoseIsRefused`). The same reader checks a package a remote caches.
 
+**A push from the screen** (**Upload package**, R-NUGET-006, Q-NUGET-162) is this push, step for step: the browser's session asks the
+management API for a personal access token of five minutes with `read` and `deploy` on the one repository (`createUploadToken`, a session
+only, with its CSRF token; a caller with a token gets none, so no token mints the next one) and puts the package with it to this route on the
+role `packages`; the dialog revokes the token once the pushes answered. The token is never shown, logged, stored in the browser or put into
+an address, and the `201` that names the version (`Quader-Package`, `Quader-Version`) holds no credential. The collection upload of
+[ansible.md](ansible.md) takes the same operation.
+
 ## A version number is taken for good
 
 A version number of a local repository is immutable for the life of the repository (Q-NUGET-6):

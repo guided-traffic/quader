@@ -178,3 +178,7 @@ func (in *incoming) isSemver2() bool {
 	}
 	return version.PackageIsSemver2(in.version, ranges...)
 }
+
+// ScreenPublish is the package publish resource an upload on the screen sends a .nupkg to, and the symbol publish resource its
+// .snupkg follows to (R-NUGET-006, R-NUGET-020), relative to the repository's protocol base path.
+func (f *Format) ScreenPublish() (pkg, symbols string) { return "v3/package", "v3/symbolpackage" }

@@ -180,3 +180,7 @@ func (f *Format) Virtual() formats.VirtualAdapter { return f.virtual }
 
 // View returns the package screens' adapter, nil until the local class provides it (R-ANS-026).
 func (f *Format) View() formats.ViewAdapter { return f.view }
+
+// ScreenPublish is the client's publish route an upload on the screen sends a collection archive to (R-ANS-061, Q-ANS-140), relative
+// to the repository's protocol base path; Galaxy has no symbol package.
+func (f *Format) ScreenPublish() (pkg, symbols string) { return "v3/artifacts/collections/", "" }

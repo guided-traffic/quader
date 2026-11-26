@@ -40,6 +40,7 @@ import { BackupsApi, HttpBackupsApi } from './backups-api';
 // <<< G2 backups
 // >>> F0 ansible
 import { AnsibleApi, HttpAnsibleApi } from './ansible-api';
+import { HttpNuGetApi, NuGetApi } from './nuget-api';
 // <<< F0 ansible
 // >>> T17 deb
 import { DebApi, HttpDebApi } from './deb-api';
@@ -128,6 +129,7 @@ export function provideApiServices(): Provider[] {
     // <<< G2 backups
     // >>> F0 ansible
     { provide: AnsibleApi, useClass: HttpAnsibleApi },
+    { provide: NuGetApi, useClass: HttpNuGetApi },
     // <<< F0 ansible
     // >>> T17 deb
     { provide: DebApi, useClass: HttpDebApi },

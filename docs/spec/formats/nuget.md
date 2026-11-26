@@ -465,7 +465,7 @@ Priority: **MVP** · Covers: PKG-NUGET-005, PKG-NUGET-006, PKG-NUGET-021, FMT-01
 Every `.nupkg` that enters a NuGet repository goes through the upload pipeline of
 [storage.md](../storage.md) (R-STOR-004, R-STOR-005: admission with the repository's maximum upload
 size, spool, one-pass SHA-256, SHA-1, MD5 and SHA-512, commit). That covers protocol push
-(R-NUGET-006), copy and move, and remote cache fills (an upload on the screen is not built, H-2233). A raw deploy is not an ingestion path of NuGet (Q-NUGET-13). The NuGet plug-in adds these steps between spooling and commit:
+(R-NUGET-006), its upload on the screen (the same push, R-NUGET-006), copy and move, and remote cache fills. A raw deploy is not an ingestion path of NuGet (Q-NUGET-13). The NuGet plug-in adds these steps between spooling and commit:
 
 1. Open the archive as ZIP within the archive limits below (400 on violation). Entries are read
    through the central directory only. An archive with an encrypted entry, a split or multi-disk
@@ -533,9 +533,8 @@ size, spool, one-pass SHA-256, SHA-1, MD5 and SHA-512, commit). That covers prot
 - Raw deploy (R-STOR-007) into a NuGet repository answers 409 before the body is read, for every
   path and file type: `PUT /files/<projectKey>/<repoKey>/...` is accepted only by a format whose protocol base path
   is `/files/{project}/{key}/` (generic, Q-ARCH-223), and the answer names the protocol path of the repository,
-  `/api/nuget/<projectKey>/<repoKey>/` (Q-NUGET-13). A package enters through the protocol push, a remote's fill, copy and move; an upload on the
-  screen is not built (H-2233). The derived files, which only the plug-in writes, are never a raw deploy's.
-- An upload on the screen is not built ([H-2233](#h-2233--a-package-cannot-be-uploaded-on-the-screen)): the UI's
+  `/api/nuget/<projectKey>/<repoKey>/` (Q-NUGET-13). A package enters through the protocol push (also from the screen, R-NUGET-006), a remote's fill, copy and move. The derived files, which only the plug-in writes, are never a raw deploy's.
+- The upload on the screen is the protocol push with a token of the session (R-NUGET-006, **Upload package**); the UI's
   deploy dialog writes `/files/`, which a NuGet repository refuses (Q-NUGET-13).
 - Copy and move (R-STOR-019, P1): the plug-in hooks copy or move the NuGet side rows in the same
   transaction. A version that the target holds with other bytes, or that is tombstoned there
@@ -681,6 +680,19 @@ API ([package publish](https://learn.microsoft.com/en-us/nuget/api/package-publi
 - The request runs the ingestion pipeline of R-NUGET-005. A body that is not
   `multipart/form-data` MAY be accepted as the raw `.nupkg`, for scripted uploads with `curl`.
 - This is an API-key endpoint (R-NUGET-012).
+- A `201` of a push that stored the package, or found it stored with the same bytes, names the ID as the package declares it in
+  `Quader-Package` and the full normalized version in `Quader-Version`, with an empty body as before; the clients read the status
+  alone ([Q-NUGET-162](#q-nuget-162--a-package-is-uploaded-on-the-screen-by-the-protocol-push-with-the-token-every-format-takes-for-it)).
+- **Upload package on the screen** (the owner's rule of 2026-11-25; nuget.org has an "Upload Package" page). A local NuGet repository,
+  or a virtual one with a deployment target, offers **Upload package** where an Ansible Galaxy repository offers **Upload collection**,
+  to whoever may deploy there, with the road of [ansible.md](ansible.md) R-ANS-061 (Q-ANS-140): the management API (role `api`) issues the
+  browser's session a token of five minutes with `read` and `deploy` on the repository (`POST …/repositories/{repoKey}/upload-tokens`,
+  `createUploadToken`, one operation for every format whose packages are uploaded on the screen, the format naming its routes,
+  `formats.ScreenPublisher`); the browser puts the chosen `.nupkg` as the raw body to `publishPath` (this push, served by the role
+  `packages` with every check of `dotnet nuget push`) and, if one was chosen, its `.snupkg` after it to `symbolsPath` (R-NUGET-020);
+  the dialog revokes the token once the pushes answered. NuGet's push has no import task: the dialog shows the version the `201` named,
+  with a link to its page, the symbol package stored or refused with the reason, or a refusal of the push with every fact of its
+  answer ([api-and-ui.md](../api-and-ui.md) Q-UI-1364). The token is never shown, logged, stored or put into an address.
 - The address is `<feed>/package` with or without one trailing slash: the clients extend the address of the service index by
   a slash before they PUT to it (Q-NUGET-66). `<feed>/symbolpackage` behaves the same (R-NUGET-020).
 - Versions are immutable for the lifetime of the repository (Q-NUGET-6). These rules hold
@@ -6022,6 +6034,23 @@ Context: R-NUGET-037; the plan's finding B.4 (3)-4: the header used the declared
 **Choice:** (a), for every format: only NuGet's names differ from their normalized form in case. **Revisit** never; a format whose
 clients compare names with case would need its names to normalize without folding.
 
+### Q-NUGET-162 · A package is uploaded on the screen by the protocol push, with the token every format takes for it
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-NUGET-006. nuget.org has an "Upload Package" page; Quader's collection upload (R-ANS-061, Q-ANS-140) issued its token through
+an operation of the Ansible format, and NuGet's push answers an empty `201`, so a dialog does not learn which version it stored.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One operation `…/upload-tokens` for every format whose packages are uploaded on the screen, the format naming its publish and symbol routes (`formats.ScreenPublisher`); the push's `201` names the version in `Quader-Package` and `Quader-Version` (chosen) | The collection upload's road, generalized | One token rule, one audit trail and one test for every format; the next format adds a method, not an operation; the dialog links the version without reading the package | The collection upload's operation is renamed |
+| (b) `…/nuget/upload-tokens` beside `…/ansible/upload-tokens` | A copy | Nothing of Ansible changes | Two operations with one rule; a third with the next format |
+| (c) The dialog reads the ID and the version out of the `.nupkg` itself | No header | — | The browser parses an untrusted archive; what it reads may differ from what the server stored |
+
+**Choice:** (a), [ADR-293](../../decisions.md#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens).
+A `.snupkg` goes after its package with the same token; one refused after a stored package leaves the package published and says why. **Revisit**
+when a format's upload needs more than its publish route (a task to follow, as Ansible's import has).
+
 ## What this does not cover
 
 ### H-2161 · A version cached by a restore alone shows its upstream's deprecation only after a registration read
@@ -6036,15 +6065,6 @@ the clients themselves see the upstream's deprecation in the registration the re
 Stage: R-NUGET-037. Paket reads its sources from `paket.dependencies` (`source <url> username: "…" password: "%VAR%"`), not from
 `nuget.config`; Set up client offers the .NET CLI's, nuget.exe's and Visual Studio's configuration only, and Paket's form says in one
 sentence where its source goes. Live for every Paket user of a repository that needs a credential.
-
-### H-2233 · A package cannot be uploaded on the screen
-
-Stage: R-NUGET-005 names the upload through the management API and the UI as a road in; it is not built for NuGet. A package enters
-through the protocol push (`dotnet nuget push`, `nuget push`, a raw `PUT` of R-NUGET-006), a remote's fill, copy and move. The pattern
-is the upload of an Ansible Galaxy collection on the screen (a short-lived upload token of the uploader for the format's own publish route,
-R-ANS-057), which had not landed when R-NUGET-037 to R-NUGET-039 did: what it takes is that operation made to serve every format with a
-publish route, the act **Upload package** where a collection's stands, one `.nupkg` and its `.snupkg`, and NuGet's answer (status and
-message, the link to the version) as the dialog's result. Live for every person without a .NET SDK at hand.
 
 ### H-1680 · A remote shows no README and no license of a package it has not cached
 

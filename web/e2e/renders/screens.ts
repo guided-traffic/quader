@@ -32,7 +32,7 @@ import {
   genericNotes,
 } from './seed';
 import { fileCommands, folderUpload, rowFileCommands } from './file-commands';
-import { gradedPackage, manyVersionsPackage } from './advisories';
+import { gradedPackage, manyVersionsPackage, zipArchive } from './advisories';
 import { malwarePackage, quarantine } from './malware';
 import { malwareWaiting, scanFailedCard, scanStatesList, scanStatesPackage } from './scan-states';
 import { trivyDatabases } from './scanners';
@@ -360,6 +360,45 @@ const userChips = async (drawer: Locator): Promise<void> => {
  * every fact of the answer (R-UI-216). The publish is answered by the walk, so the seed's repository stays as it is. The controls are found
  * by their place, so that the German pass walks it too.
  */
+/**
+ * Upload package on a local NuGet repository (R-NUGET-006, Q-UI-1364), against the profile's own server: the dialog with a package and its
+ * symbol package chosen, then the result of the real push with the upload token (the same bytes each run, which a second run's push
+ * answers as a replay), and the version's link.
+ */
+async function* nugetUpload(page: Page): AsyncGenerator<string> {
+  const act = page.locator('quader-repository-items .files-actions button');
+  if ((await act.count()) === 0) return;
+  yield '';
+  await act.click();
+  const dialog = page.locator('quader-nuget-upload-dialog');
+  await expect(dialog.locator('.target')).toBeVisible();
+  const id = 'Acme.Platform.ScreenUpload';
+  const nuspec = (types: string) =>
+    Buffer.from(
+      `<?xml version="1.0" encoding="utf-8"?><package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd"><metadata><id>${id}</id><version>1.0.0</version><authors>Platform engineering</authors><description>Uploaded on the screen.</description>${types}</metadata></package>`,
+    );
+  await dialog.locator('input[type=file]').setInputFiles([
+    {
+      name: `${id}.1.0.0.nupkg`,
+      mimeType: 'application/octet-stream',
+      buffer: zipArchive([{ name: `${id}.nuspec`, data: nuspec('') }, { name: `lib/net8.0/${id}.dll`, data: Buffer.from('MZ screen upload') }]),
+    },
+    {
+      name: `${id}.1.0.0.snupkg`,
+      mimeType: 'application/octet-stream',
+      buffer: zipArchive([
+        { name: `${id}.nuspec`, data: nuspec('<packageTypes><packageType name="SymbolsPackage" /></packageTypes>') },
+        { name: `lib/net8.0/${id}.pdb`, data: Buffer.concat([Buffer.from('BSJB'), Buffer.alloc(60)]) },
+      ]),
+    },
+  ]);
+  yield 'upload';
+  await dialog.locator('.dialog-actions .btn-confirm').click();
+  await expect(dialog.locator('[data-testid="nuget-upload-outcome"]')).toBeVisible();
+  yield 'completed';
+  await page.keyboard.press('Escape');
+}
+
 async function* collectionUpload(page: Page): AsyncGenerator<string> {
   const act = page.locator('quader-repository-items .files-actions button');
   if ((await act.count()) === 0) return;
@@ -391,7 +430,7 @@ async function* collectionUpload(page: Page): AsyncGenerator<string> {
     ],
   };
   // The three calls of the upload (R-ANS-061): the upload token, the client's publish route with it, and the task.
-  const tokens = '**/api/v1/projects/*/repositories/*/ansible/upload-tokens';
+  const tokens = '**/api/v1/projects/*/repositories/*/upload-tokens';
   const publish = '**/api/ansible/*/*/v3/artifacts/collections/';
   const tasks = '**/api/v1/projects/*/repositories/*/ansible/imports/*';
   await page.route(tokens, (r) =>
@@ -3178,6 +3217,9 @@ export const screens: readonly Screen[] = [
     expected: [{ match: /^POST \/api\/ansible\/[^/]+\/collections\/v3\/artifacts\/collections\/ answered 409$/, why: 'the refusal the walk answers' }],
     de: true,
   },
+  // NuGet's Upload package (R-NUGET-006, Q-UI-1364): the real push with the upload token, its package and its symbols.
+  // One kind of user: the first publisher owns the ID, and another's push of it is refused (R-AUTHZ-018), which is not this screen's.
+  { id: 'repository-nuget-upload', path: `${O}/repositories/nuget-internal`, kinds: ['power'], walk: nugetUpload, de: true },
   { id: 'packages', path: `${P}/packages`, kinds: all, walk: filtersOpen(packageChips) },
   { id: 'packages-other-project', path: `${O}/packages`, kinds: all, walk: filtersOpen() },
   // Finding collections as on Galaxy (R-ANS-057) and the page of a name (R-UI-220), answered in the browser (namespaces.ts): the list

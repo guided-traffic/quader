@@ -124,6 +124,13 @@ The management operations `GET /api/v1/packages/{packageId}/versions/{version}/i
 ([package_embedded_api.go](../../internal/api/v1/package_embedded_api.go)) decide what is served: a PNG or a JPEG by its bytes, UTF-8 text, with
 `nosniff`, a sandboxing CSP and `private, no-cache`.
 
+**Upload package** (R-NUGET-006, Q-NUGET-162, Q-UI-1364) is `Format.ScreenPublish` (`v3/package`, `v3/symbolpackage`), which the
+management API's `createUploadToken` ([upload_tokens_api.go](../../internal/api/v1/upload_tokens_api.go)) answers with the session's token;
+`pushed` of [handlers_publish.go](../../internal/formats/nuget/handlers_publish.go) names the version in `Quader-Package` and
+`Quader-Version`. The browser side is `NuGetApi` ([nuget-api.ts](../../web/src/app/api/nuget-api.ts)), `ScreenPublish` and
+`sendForHeaders` of [upload-transfer.ts](../../web/src/app/api/upload-transfer.ts), and
+[nuget-upload-dialog.ts](../../web/src/app/features/repositories/content/nuget-upload-dialog.ts).
+
 **The guide** is `guideSections()`, one Markdown file per section in [guide/](../../internal/formats/nuget/guide) (the same template language as npm's, over `formats.GuideData`). `Guide()` returns the sections of the classes the
 descriptor lists, so the remote and virtual text is tested (`guide_test.go` renders all three classes) and reachable the day the class registers. The troubleshooting table is checked row by row against the problem
 catalog and the status each code answers with; a code of the push that the ingestion has not registered yet is accepted with its specified status (`pendingCodes` in `guide_test.go`: delete an entry

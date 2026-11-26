@@ -55,6 +55,7 @@ import { Busy } from '../../../shared/ui/busy';
 import { QuaderDialog } from '../../../shared/ui/dialog';
 import { firstValueFrom } from 'rxjs';
 import { AnsibleUploadData, AnsibleUploadDialog } from './ansible-upload-dialog';
+import { NuGetUploadData, NuGetUploadDialog } from './nuget-upload-dialog';
 
 const SORTS: readonly ItemSort[] = ['name', '-name', 'updatedAt', '-updatedAt', 'grade', '-grade'];
 
@@ -422,23 +423,31 @@ export class RepositoryContent {
   });
 
   /**
-   * **Upload collection** in the toolbar of the collections (R-ANS-061, Q-UI-1320), where a generic repository's folder has **Upload
-   * files**: an Ansible Galaxy repository that takes a publish, local or virtual (the decision point refuses the deploy of a virtual one
+   * **Upload collection** in the toolbar of the collections (R-ANS-061, Q-UI-1320), and **Upload package** in a NuGet repository's
+   * (R-NUGET-006, Q-UI-1364), where a generic repository's folder has **Upload files**: a repository of the two that takes a publish, local or virtual (the decision point refuses the deploy of a virtual one
    * without a deployment target), for a caller who may deploy there; none in a disabled repository or a system one.
    */
   protected readonly collectionUpload = computed(() => {
     const r = this.repository();
-    if (!r || r.format !== 'ansible' || r.class === 'remote' || this.disabled() || this.systemRepo() || !valueOf(this.allowed)?.deploy) {
+    if (!r || (r.format !== 'ansible' && r.format !== 'nuget') || r.class === 'remote' || this.disabled() || this.systemRepo() || !valueOf(this.allowed)?.deploy) {
       return null;
     }
-    return { label: $localize`:@@repo.content.upload-collection:Upload collection`, icon: 'upload' };
+    return r.format === 'nuget'
+      ? { label: $localize`:@@repo.content.upload-package:Upload package`, icon: 'upload' }
+      : { label: $localize`:@@repo.content.upload-collection:Upload collection`, icon: 'upload' };
   });
 
-  /** Opens Upload collection for this repository; a collection published there reads the list again (R-UI-213). */
+  /**
+   * Opens the format's upload for this repository: Upload collection (R-ANS-061) or NuGet's Upload package (R-NUGET-006, Q-UI-1364); a
+   * package published there reads the list again (R-UI-213).
+   */
   protected async uploadCollection(): Promise<void> {
-    const data: AnsibleUploadData = { repositories: [this.ref()] };
-    const ref = this.dialog.open<AnsibleUploadDialog, AnsibleUploadData, boolean>(AnsibleUploadDialog, { data, width: '40rem', maxWidth: '95vw' });
-    if (await firstValueFrom(ref.closed)) this.revision.update((n) => n + 1);
+    const size = { width: '40rem', maxWidth: '95vw' };
+    const closed =
+      this.repository()?.format === 'nuget'
+        ? this.dialog.open<NuGetUploadDialog, NuGetUploadData, boolean>(NuGetUploadDialog, { data: { repository: this.ref() }, ...size }).closed
+        : this.dialog.open<AnsibleUploadDialog, AnsibleUploadData, boolean>(AnsibleUploadDialog, { data: { repositories: [this.ref()] }, ...size }).closed;
+    if (await firstValueFrom(closed)) this.revision.update((n) => n + 1);
   }
 
   /** A delete that runs as a job (R-UI-042), and the folder whose list reloads when it has ended. */

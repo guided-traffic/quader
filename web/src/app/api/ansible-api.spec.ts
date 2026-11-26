@@ -20,7 +20,7 @@ describe('The screens\' publish of a collection (R-ANS-061)', () => {
     const api = TestBed.runInInjectionContext(() => new HttpAnsibleApi());
     const file = new Blob(['x']);
     await expect(api.publish('web/ansible-local', file)).resolves.toMatchObject({ state: 'completed' });
-    expect(post).toHaveBeenCalledWith('/api/v1/projects/web/repositories/ansible-local/ansible/upload-tokens');
+    expect(post).toHaveBeenCalledWith('/api/v1/projects/web/repositories/ansible-local/upload-tokens');
     expect(send).toHaveBeenCalledWith('POST', '/api/ansible/web/ansible-local/v3/artifacts/collections/', file,
       { 'Content-Type': 'application/gzip', Authorization: 'Bearer qdr_pat_x' }, {});
     expect(getJson).toHaveBeenCalledWith('/api/v1/projects/web/repositories/ansible-local/ansible/imports/6f1c0000-0000-4000-8000-000000000001');

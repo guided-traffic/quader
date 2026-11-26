@@ -23,6 +23,10 @@ func TestR_ANS_061_TheScreensUploadThroughAVirtualRepositoryIsItsTargetsAndItsRe
 	api := func(repo, sub string) string {
 		return "/api/v1/projects/" + testenv.DefaultProject + "/repositories/" + repo + "/ansible/" + sub
 	}
+	// The token of an upload from the screen, the operation of every format that publishes from the screen (R-NUGET-006).
+	tokens := func(repo string) string {
+		return "/api/v1/projects/" + testenv.DefaultProject + "/repositories/" + repo + "/upload-tokens"
+	}
 	// The browser of a person: a live session as a sign-in leaves it, its cookie, its CSRF token and the endpoint's origin.
 	browser := func(u testenv.Person) []string {
 		id, secret, csrf := session.NewID(), session.NewSecret(), session.NewSecret()
@@ -34,7 +38,7 @@ func TestR_ANS_061_TheScreensUploadThroughAVirtualRepositoryIsItsTargetsAndItsRe
 	}
 	writer, plain := browser(e.writerP), browser(e.plainP)
 	upload := func(repo string, hdr []string, s collectiontest.Spec) testenv.Answer {
-		m := e.st.Do(e.rep, http.MethodPost, api(repo, "upload-tokens"), "", nil, hdr...)
+		m := e.st.Do(e.rep, http.MethodPost, tokens(repo), "", nil, hdr...)
 		if m.Status != http.StatusCreated {
 			t.Fatalf("the upload token of %s: %d %s", repo, m.Status, m.Body)
 		}
@@ -58,7 +62,7 @@ func TestR_ANS_061_TheScreensUploadThroughAVirtualRepositoryIsItsTargetsAndItsRe
 	if b := upload(rVirtual, plain, spec("other", "stuff", "77.0.0")); b.Status != http.StatusForbidden || errorCode(b) != "shadows_remote_package" {
 		t.Errorf("a name the remote member serves, without manage: %d %s", b.Status, b.Body)
 	}
-	if c := e.st.Do(e.rep, http.MethodPost, api(rNoLocal, "upload-tokens"), "", nil, writer...); c.Status != http.StatusForbidden && c.Status != http.StatusMethodNotAllowed {
+	if c := e.st.Do(e.rep, http.MethodPost, tokens(rNoLocal), "", nil, writer...); c.Status != http.StatusForbidden && c.Status != http.StatusMethodNotAllowed {
 		t.Errorf("a virtual repository without a target: %d %s", c.Status, c.Body)
 	}
 }
