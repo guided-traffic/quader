@@ -262,7 +262,7 @@ func (s *Scrubber) lookAgain(ctx context.Context, c *blob.Connection, g Gone, th
 		return ""
 	case outcomeOK:
 		r.MissingLooked++
-		if ok, werr := s.o.Ledger.Whole(ctx, g.Digest, c.ID(), blob.CopyMissing, g.StateChangedUs, g.StoredSize, ""); werr == nil && ok {
+		if ok, werr := s.o.Ledger.Whole(ctx, g.Digest, c.ID(), blob.CopyMissing, g.StateChangedUs, g.StoredSize, "", false); werr == nil && ok {
 			r.MissingFound++
 			s.o.Log.Info("the object of a copy marked missing is whole again", "connection", c.ID(), "sha256", g.Digest.Hex())
 		}
@@ -301,7 +301,7 @@ func (s *Scrubber) copy(ctx context.Context, c *blob.Connection, due Due, th *th
 			r.Corrupt++
 		}
 		s.o.Metrics.copy(c.ID(), result)
-		if s.o.Ledger.Damaged(ctx, due.Digest, cp, status) {
+		if s.o.Ledger.Damaged(ctx, due.Digest, cp, status, blob.Damage{Source: blob.DamageScrub, Reason: reasonOf(err, blob.ReasonDigest)}) {
 			s.repairCounted(ctx, c, due.Digest, th, r)
 		}
 	case outcomeError:

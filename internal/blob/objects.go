@@ -141,6 +141,11 @@ type ObjectInfo struct {
 	LastModified time.Time
 	// Metadata is the object's user metadata as Head and Get return it, nil when it has none; List leaves it nil.
 	Metadata Metadata
+	// SSE is the server-side encryption the store reports it applied to the object (x-amz-server-side-encryption: AES256, aws:kms,
+	// aws:kms:dsse), empty when it reports none; SSEKMSKeyID the KMS key it names. Head and Get fill them; List leaves them empty
+	// (R-STOR-035, Q-STOR-519).
+	SSE         string
+	SSEKMSKeyID string
 }
 
 // ByteRange selects Length bytes starting at Offset; a negative Length means

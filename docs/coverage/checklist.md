@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,385 spec requirements:
-808 cover catalog features, 577 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,388 spec requirements:
+808 cover catalog features, 580 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>577 requirements</summary>
+<summary>580 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3531,6 +3531,9 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-STOR-091 | The tests of the feature | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-106 | The copies of the installation in figures | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-107 | The storage overview | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-108 | A copy found damaged is a finding, resolved by what happens to its copy | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-109 | A connection a replica cannot reach, and a start check that fails, are intervals | P1 | [storage.md](../spec/storage.md) |
+| R-STOR-110 | What the reads and writes absorbed is counted per hour, and the history is kept bounded | P1 | [storage.md](../spec/storage.md) |
 | R-STOR-046 | Storage work per role and across replicas | MVP | [storage.md](../spec/storage.md) |
 | R-STOR-047 | Storage state in backups and restores | MVP | [storage.md](../spec/storage.md) |
 | R-VULN-014 | History and retention | MVP | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |

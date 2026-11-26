@@ -42,10 +42,12 @@ SELECT k.object_key::text AS object_key, (c.sha256 IS NOT NULL)::boolean AS has_
 -- The adoption of an object of a live blob without a copy row (R-STOR-026), in the transaction that holds the blob's mark lock
 -- (LockBlobForMark): present and not verified, or corrupt when its size is not the blob's stored size. created_at is when the store
 -- says the object was written. On an encrypted connection storage_key_id is the storage key its record names (R-STOR-087); empty is
--- NULL.
-INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, storage_key_id, state, created_at, checked_at, state_changed_at)
+-- NULL. A corrupt one names the sweep and the size as its finding's source and reason (storage.md R-STOR-108).
+INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, storage_key_id, state, created_at, checked_at, state_changed_at,
+                         damage_source, damage_reason)
 VALUES (sqlc.arg(sha256)::bytea, sqlc.arg(connection_id)::text, sqlc.arg(object_key)::text, sqlc.arg(stored_size)::bigint,
-        NULLIF(sqlc.arg(storage_key_id)::text, ''), sqlc.arg(state)::text, to_timestamp(sqlc.arg(written_unix)::float8), now(), now())
+        NULLIF(sqlc.arg(storage_key_id)::text, ''), sqlc.arg(state)::text, to_timestamp(sqlc.arg(written_unix)::float8), now(), now(),
+        CASE WHEN sqlc.arg(state)::text = 'corrupt' THEN 'sweep' END, CASE WHEN sqlc.arg(state)::text = 'corrupt' THEN 'size' END)
 ON CONFLICT DO NOTHING;
 
 -- name: SweepClaimOrphan :one

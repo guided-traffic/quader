@@ -77,11 +77,17 @@ func (s *Store) Open(ctx context.Context, d Digest, size int64, o OpenOptions) (
 	}
 	var unavailable error // the last transient failure or open circuit
 	var corrupt error     // the last copy found of another size
+	source := DamageDownload
+	if o.Range != nil {
+		source = DamageRead
+	}
+	last := "" // the connection of the last copy the read tried or left, for the count of a read no copy served
 	for _, cp := range s.conns.readOrder(copies) {
 		if cp.State != CopyPresent {
 			continue
 		}
 		c, _ := s.conns.Get(cp.Connection)
+		last = c.ID()
 		if after, rejecting := c.Rejecting(); rejecting {
 			unavailable = &circuitOpenError{retry: after}
 			continue
@@ -92,7 +98,7 @@ func (s *Store) Open(ctx context.Context, d Digest, size int64, o OpenOptions) (
 		switch {
 		case errors.Is(err, ErrNotFound):
 			s.metrics.fellOver(c.ID(), fallOverNotFound)
-			s.copyGone(ctx, d, c, cp)
+			s.copyGone(ctx, d, c, cp, Damage{Source: source, Reason: ReasonNotFound})
 			continue
 		case err != nil && (errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)) && ctx.Err() != nil:
 			undo()
@@ -102,7 +108,7 @@ func (s *Store) Open(ctx context.Context, d Digest, size int64, o OpenOptions) (
 			// marked, unless the reason is one that is not (unknown_key: the export's import can bring the key back, Q-STOR-311)
 			s.metrics.fellOver(c.ID(), fallOverRecord)
 			if reason.MarksCorrupt() {
-				s.markCopy(ctx, d, c.ID(), CopyCorrupt)
+				s.markCopy(ctx, d, c.ID(), CopyCorrupt, Damage{Source: source, Reason: string(reason)})
 				corrupt = fmt.Errorf("%w: connection %s: %w", ErrCorrupt, c.ID(), err)
 			} else {
 				unavailable = storeUnavailable(err)
@@ -114,12 +120,12 @@ func (s *Store) Open(ctx context.Context, d Digest, size int64, o OpenOptions) (
 			continue
 		}
 		if c.Encrypted() {
-			return &sealedDownload{body: body, store: s, ctx: ctx, digest: d, copy: cp, stamp: verify, undo: undo}, nil
+			return &sealedDownload{body: body, store: s, ctx: ctx, digest: d, copy: cp, stamp: verify, undo: undo, source: source}, nil
 		}
 		if info.Size >= 0 && info.Size != cp.StoredSize { // -1: the response did not say; the digest check at the end decides
 			_ = body.Close()
 			s.metrics.fellOver(c.ID(), fallOverSize)
-			s.markCopy(ctx, d, c.ID(), CopyCorrupt)
+			s.markCopy(ctx, d, c.ID(), CopyCorrupt, Damage{Source: source, Reason: ReasonSize})
 			corrupt = fmt.Errorf("%w: the object on connection %s has %d bytes, its copy row says %d", ErrCorrupt, c.ID(), info.Size, cp.StoredSize)
 			continue
 		}
@@ -135,11 +141,28 @@ func (s *Store) Open(ctx context.Context, d Digest, size int64, o OpenOptions) (
 	undo()
 	switch {
 	case unavailable != nil:
+		s.metrics.readUnavailable(readUnavailableConnection(last, copies), FailureCode(unavailable), size)
 		return nil, mapStoreErr(unavailable)
 	case corrupt != nil:
 		return nil, corrupt
 	}
+	s.metrics.readUnavailable(readUnavailableConnection(last, copies), unavailableNoCopy, size)
 	return nil, fmt.Errorf("%w: no connection of this replica holds a present copy of %s", ErrNotFound, d.Hex())
+}
+
+// unavailableNoCopy is the reason of a read that no copy served because the blob had no present copy on a connection of this replica.
+const unavailableNoCopy = "no_copy"
+
+// readUnavailableConnection is the connection a read that no copy served is counted on (R-STOR-110): the last copy it tried or left
+// for an open circuit, else the first copy of the blob, else none.
+func readUnavailableConnection(last string, copies []Copy) string {
+	switch {
+	case last != "":
+		return last
+	case len(copies) > 0:
+		return copies[0].Connection
+	}
+	return ""
 }
 
 // chargedBody gives the memory of a reader back when it is closed.
@@ -174,8 +197,8 @@ func verifyBuffer(bufferSize, hold int, size int64) int {
 // would then undo it. So the object is looked for once more on the same connection after a mark, and a copy whose object is
 // there again with its stored size is present (Q-STOR-151). Whichever order the repair and the mark take, the copy ends
 // present when the object is there: a repair after the look sets it present itself. It reports whether the copy stands marked.
-func (s *Store) copyGone(ctx context.Context, d Digest, c *Connection, cp Copy) bool {
-	if !s.markCopy(ctx, d, c.ID(), CopyMissing) {
+func (s *Store) copyGone(ctx context.Context, d Digest, c *Connection, cp Copy, dmg Damage) bool {
+	if !s.markCopy(ctx, d, c.ID(), CopyMissing, dmg) {
 		return false
 	}
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
@@ -359,7 +382,7 @@ func (v *verifyReader) finish() error {
 		v.store.stampVerified(v.ctx, v.digest, v.copy)
 		return nil
 	}
-	v.store.markCopy(v.ctx, v.digest, v.copy.Connection, CopyCorrupt)
+	v.store.markCopy(v.ctx, v.digest, v.copy.Connection, CopyCorrupt, Damage{Source: DamageDownload, Reason: ReasonDigest})
 	return fmt.Errorf("%w: read %d bytes with SHA-256 %s from connection %s, expected %d bytes with %s", ErrCorrupt, v.total, sum.Hex(),
 		v.copy.Connection, v.size, v.digest.Hex())
 }

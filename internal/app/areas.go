@@ -13,6 +13,7 @@ import (
 	"github.com/guided-traffic/quader/internal/auth/token"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/history"
 	storagekeys "github.com/guided-traffic/quader/internal/blob/keys"
 	"github.com/guided-traffic/quader/internal/cache"
 	"github.com/guided-traffic/quader/internal/cluster"
@@ -60,6 +61,7 @@ type blobArea struct {
 	store       *blob.Store
 	gc          *blob.Collector
 	storageKeys *storagekeys.Holder // the keys of the encrypted connections (wire_storage_keys.go)
+	history     *history.Recorder   // the replica's recorder of the history of the stored content (wire_blob.go)
 }
 
 // valkeyArea is the Valkey client; it never blocks on an unreachable Valkey

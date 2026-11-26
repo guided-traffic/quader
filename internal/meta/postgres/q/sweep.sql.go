@@ -104,9 +104,11 @@ func (q *Queries) DeleteCollectedCopies(ctx context.Context, arg DeleteCollected
 }
 
 const sweepAdoptCopy = `-- name: SweepAdoptCopy :execrows
-INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, storage_key_id, state, created_at, checked_at, state_changed_at)
+INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, storage_key_id, state, created_at, checked_at, state_changed_at,
+                         damage_source, damage_reason)
 VALUES ($1::bytea, $2::text, $3::text, $4::bigint,
-        NULLIF($5::text, ''), $6::text, to_timestamp($7::float8), now(), now())
+        NULLIF($5::text, ''), $6::text, to_timestamp($7::float8), now(), now(),
+        CASE WHEN $6::text = 'corrupt' THEN 'sweep' END, CASE WHEN $6::text = 'corrupt' THEN 'size' END)
 ON CONFLICT DO NOTHING
 `
 
@@ -123,7 +125,7 @@ type SweepAdoptCopyParams struct {
 // The adoption of an object of a live blob without a copy row (R-STOR-026), in the transaction that holds the blob's mark lock
 // (LockBlobForMark): present and not verified, or corrupt when its size is not the blob's stored size. created_at is when the store
 // says the object was written. On an encrypted connection storage_key_id is the storage key its record names (R-STOR-087); empty is
-// NULL.
+// NULL. A corrupt one names the sweep and the size as its finding's source and reason (storage.md R-STOR-108).
 func (q *Queries) SweepAdoptCopy(ctx context.Context, arg SweepAdoptCopyParams) (int64, error) {
 	result, err := q.db.Exec(ctx, sweepAdoptCopy,
 		arg.Sha256,

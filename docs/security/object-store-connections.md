@@ -63,6 +63,11 @@ or takeover costs the others. Encryption of the stored content is stage 2 and de
   `restore-versions` there ([ha-and-helm.md](../spec/ha-and-helm.md) R-HA-025).
 - **No guarantee rests on a conditional write** (R-STOR-035 A7): a store that ignores `If-None-Match` cannot be made to break the commit,
   the reconciliation or collection by it.
+- **What was found is kept** (R-STOR-108 to R-STOR-110). Every copy found damaged is a finding with the reader that found it and the
+  reason, resolved by what then happens to the copy (a repair, a copy found again, a deletion), never by a click; every outage a replica's
+  circuit saw and every start check that failed is an interval with a short code; what the reads and writes absorbed is counted per hour.
+  The record names connections, digests and sizes and holds no key, credential, signed link or text of the store; its gaps are H-2423 to
+  H-2430 below.
 
 ## What one store's failure or takeover costs the others
 
@@ -214,3 +219,66 @@ Component: `capacity` of a connection's element (storage.md R-STOR-050, R-STOR-1
 store's room. A store reports no capacity through S3, so the page shows the stored bytes against what the operator wrote; nothing checks the
 statement against the provider's quota or the bucket's real limit, and nothing refuses an upload when the use passes it. A wrong statement
 makes the page say "nearly full" too early or never. Live wherever `capacity` is set; dormant where it is empty, which states none.
+
+### H-2423 · A replica that dies loses up to a minute of counts
+
+Component: the recorder of the history (R-STOR-110, Q-STOR-513, [recorder.go](../../internal/blob/history/recorder.go)). Subject: the hourly
+counts of fall-overs, refused reads and uploads, failed copies and refusals of the stored format. A replica sums them in memory and writes
+them once a minute and when it stops; a replica that is killed (OOM, a node lost) loses what it counted since its last write, and an
+interval it opened stays open until the task `storage-history` ends it at the time the replica last saw it, at most ten minutes after the
+registry stopped seeing the replica. The Prometheus counters of the same events are lost with the process too. Live for every replica that
+ends without its stop; what it costs is a minute of a count on the storage page, never a finding, which the triggers write in the
+transaction of the mark.
+
+### H-2424 · An outage the breaker does not see is not recorded
+
+Component: the transition hook of the circuit breaker (R-STOR-033, R-STOR-109). Subject: the intervals `unreachable`. An interval opens
+only when a replica's circuit opens, after `circuit_breaker.failure_threshold` (5) consecutive failures; the SDK's own retries
+(`retry.max_attempts`, 5) hide a short failure inside one call. A store that drops one request in ten, or fails for a few seconds while
+little traffic runs, leaves no interval; the fall-overs and failed writes it causes are counted (R-STOR-110), and the request metrics show
+it. Live for every installation; what it costs is an outage the page does not name, while every request it failed is counted.
+
+### H-2425 · Server-side encryption is known per connection, not per object
+
+Component: `capabilities.sseApplied` (R-STOR-032, Q-STOR-519). Subject: what the storage page can say about the store's encryption of the
+objects already written. The start check reads the encryption the store applied to its probe object, which is what it applies to today's
+writes; objects written before a change of `sse_mode` or of the bucket's default keep the encryption they were written with, and nothing
+records it per object. A connection that switched from `none` to `kms` shows `aws:kms` while older objects may be unencrypted at the store.
+Live after every change of a connection's server-side encryption or of its bucket's default; dormant on a connection that never changed
+it. Quader's own encryption (R-STOR-075) is not affected: switching it on is a new connection.
+
+### H-2426 · Intervals are per replica
+
+Component: `storage_events` (R-STOR-109). Subject: whether a connection was cut off for the installation or for one replica. Each replica
+records its own intervals; the page counts the replicas recorded, not the replicas configured at the time, so an interval on two of three
+replicas reads as two replicas, and a replica that never served a request to the connection while it was down records nothing (its circuit
+never opened). Live with several replicas; dormant with one.
+
+### H-2427 · The conformance check records nothing
+
+Component: `quader admin storage check` (R-STOR-035). Subject: the history of the start checks. The command opens no database by its own
+rule, so a failure it finds is printed and not recorded; only the start checks of the replicas are (R-STOR-109). Live whenever an operator
+runs the command against a store that fails it; what it costs is a failure the page does not show, which the operator saw on the terminal.
+
+### H-2428 · Findings beyond the daily cap are counted, not listed
+
+Component: the trigger of `blob_copies` (R-STOR-108, Q-STOR-516). Subject: the list of damaged copies. Beyond 1,000 findings of a
+connection in one UTC day the trigger adds to `findings_unlisted` with the bytes and the reason, without the digest; a bucket emptied or a
+storage key destroyed on a large connection lists the first thousand copies of the day and counts the rest. The copies themselves stay
+marked, the list of damaged blobs (R-STOR-027) and the recheck still find each one, and the repairs run on all of them. Live only on a day a
+connection loses more than a thousand copies; dormant otherwise.
+
+### H-2429 · The items of a finding are read when the page asks
+
+Component: the findings as the API names their items (R-STOR-108; the reading of W-37 package P4). Subject: which artifact a damaged copy
+belonged to. A finding stores the digest, not the item; the items that reference the digest are read at request time, so an item deleted
+since is not named, and an item stored since under the same content is named although it did not exist when the copy was found. Live for
+every finding older than the last change of its items; what it costs is a name, never a digest.
+
+### H-2430 · A restore keeps the history but not the copies' states
+
+Component: the export classes of the history (R-STOR-047, Q-STOR-515) and the task's safety net (Q-STOR-518). Subject: findings that were
+open at the backup. The history is restored with its open findings, while the copy rows are not (they are transient); the restored
+installation writes its own copies, and the copies it writes as `missing` open findings of their own. Until the task `storage-history` runs
+(within an hour), a restored open finding whose copy no longer exists reads as open on the page; the task resolves it as `reconciled`.
+Live for an hour after every restore of a backup that held open findings.

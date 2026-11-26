@@ -15,8 +15,8 @@ import (
 	"github.com/guided-traffic/quader/internal/blob"
 )
 
-// errSource is a source copy that a read showed damaged: the repair marks it and tries the next source.
-type errSource struct{ status string }
+// errSource is a source copy that a read showed damaged, and why: the repair marks it and tries the next source.
+type errSource struct{ status, reason string }
 
 func (e *errSource) Error() string { return "the source copy is " + e.status }
 
@@ -76,7 +76,7 @@ func (s *Scrubber) repair(ctx context.Context, target *blob.Connection, d blob.D
 		var bad *errSource
 		switch {
 		case errors.As(err, &bad):
-			s.o.Ledger.Damaged(ctx, d, src.Copy, bad.status)
+			s.o.Ledger.Damaged(ctx, d, src.Copy, bad.status, blob.Damage{Source: blob.DamageScrub, Reason: bad.reason})
 			continue
 		case err != nil:
 			s.o.Log.Warn("the scrub could not replace a damaged copy; the reconciliation repairs it", "connection", target.ID(), "source", src.Connection,
@@ -91,7 +91,7 @@ func (s *Scrubber) repair(ctx context.Context, target *blob.Connection, d blob.D
 			s.o.Log.Warn("a replaced copy did not read back whole; it stays marked for the reconciliation", "connection", target.ID(), "sha256", d.Hex(), "error", rerr)
 			return RepairFailed, moved
 		}
-		if _, err := s.o.Ledger.Whole(ctx, d, target.ID(), tgt.State, tgt.StateChangedUs, w.stored, w.keyID); err != nil {
+		if _, err := s.o.Ledger.Whole(ctx, d, target.ID(), tgt.State, tgt.StateChangedUs, w.stored, w.keyID, true); err != nil {
 			s.o.Log.Warn("a replaced copy could not be recorded; the reconciliation records it", "connection", target.ID(), "sha256", d.Hex(), "error", err)
 			return RepairFailed, moved
 		}
@@ -118,7 +118,7 @@ type written struct {
 func (s *Scrubber) write(ctx context.Context, from *blob.Connection, src blob.Copy, target *blob.Connection, key string, d blob.Digest, th *throttle) (written, error) {
 	size, err := plainSize(from, src)
 	if err != nil {
-		return written{}, &errSource{status: blob.CopyCorrupt}
+		return written{}, &errSource{status: blob.CopyCorrupt, reason: blob.DamageReason(blob.CopyCorrupt, err, blob.ReasonSize)}
 	}
 	if target.Encrypted() {
 		return s.writeSealed(ctx, from, src, target, key, d, size, th)
@@ -130,7 +130,7 @@ func (s *Scrubber) write(ctx context.Context, from *blob.Connection, src blob.Co
 			return written{moved: int64(len(data))}, err
 		}
 		if blob.Digest(sha256.Sum256(data)) != d {
-			return written{moved: size}, &errSource{status: blob.CopyCorrupt}
+			return written{moved: size}, &errSource{status: blob.CopyCorrupt, reason: blob.ReasonDigest}
 		}
 		return written{moved: size, stored: size}, target.Objects().Put(ctx, key, bytes.NewReader(data), size, payloadChecksum(target, data, d), nil)
 	}
@@ -153,7 +153,7 @@ func (s *Scrubber) writeSealed(ctx context.Context, from *blob.Connection, src b
 	var se *blob.StreamSourceError
 	switch {
 	case errors.As(err, &se) && errors.Is(se.Err, blob.ErrStreamNotBlob):
-		return written{moved: cr.n}, &errSource{status: blob.CopyCorrupt}
+		return written{moved: cr.n}, &errSource{status: blob.CopyCorrupt, reason: blob.ReasonDigest}
 	case errors.As(err, &se):
 		return written{moved: cr.n}, sourceErr(ctx, se.Err)
 	case err != nil:
@@ -169,9 +169,9 @@ func (s *Scrubber) writeSealed(ctx context.Context, from *blob.Connection, src b
 func sourceErr(ctx context.Context, err error) error {
 	switch judge(ctx, err) {
 	case outcomeMissing:
-		return &errSource{status: blob.CopyMissing}
+		return &errSource{status: blob.CopyMissing, reason: blob.ReasonNotFound}
 	case outcomeCorrupt:
-		return &errSource{status: blob.CopyCorrupt}
+		return &errSource{status: blob.CopyCorrupt, reason: blob.DamageReason(blob.CopyCorrupt, err, blob.ReasonDigest)}
 	}
 	return err
 }
@@ -229,7 +229,7 @@ func (s *Scrubber) writeParts(ctx context.Context, from *blob.Connection, src bl
 		parts = append(parts, p)
 	}
 	if blob.Digest(whole.Sum(nil)) != d {
-		return moved, &errSource{status: blob.CopyCorrupt}
+		return moved, &errSource{status: blob.CopyCorrupt, reason: blob.ReasonDigest}
 	}
 	return moved, objects.CompleteMultipart(ctx, key, id, parts)
 }
@@ -249,7 +249,7 @@ func readSource(ctx context.Context, from *blob.Connection, src blob.Copy, d blo
 	}
 	if int64(buf.Len()) != n {
 		if rng == nil {
-			return buf.Bytes(), &errSource{status: blob.CopyCorrupt}
+			return buf.Bytes(), &errSource{status: blob.CopyCorrupt, reason: blob.ReasonDigest}
 		}
 		return buf.Bytes(), fmt.Errorf("a ranged read of the source returned %d bytes, want %d", buf.Len(), n)
 	}

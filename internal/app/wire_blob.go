@@ -10,6 +10,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/history"
 	"github.com/guided-traffic/quader/internal/blob/s3"
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/config"
@@ -55,6 +56,13 @@ func (a *App) wireBlob(ctx context.Context, keys keysArea, pg postgresArea, au a
 	}
 	bm := blob.NewMetrics(a.tele.metrics)
 	log := a.log.With("component", "blob")
+	// The history of the stored content (storage.md R-STOR-108 to R-STOR-110): this replica's recorder of what its reads and writes
+	// absorbed, of its circuits and of its start checks, started before the start checks so that a failing one is recorded.
+	hist := history.New(history.Options{Store: history.PG{DB: db}, Replica: a.id.Instance, Log: a.log.With("component", "storage-history")})
+	if err := a.startComponent(ctx, hist); err != nil {
+		return blobArea{}, err
+	}
+	bm.SetHistory(hist)
 	clients := map[string]*s3.Client{}
 	var list []*blob.Connection
 	for i, el := range resolved {
@@ -63,7 +71,7 @@ func (a *App) wireBlob(ctx context.Context, keys keysArea, pg postgresArea, au a
 			return blobArea{}, err // the error names the connection and its key: storage.connections[i] (id): ca_file
 		}
 		guard := blob.NewGuard(client, cfg.ObjectStore.CircuitBreaker, blob.WithGuardMetrics(bm), blob.WithGuardConnection(el.ID),
-			blob.WithGuardLogger(log, el.CredentialsSource))
+			blob.WithGuardLogger(log, el.CredentialsSource), blob.WithGuardTransitions(hist.Circuit))
 		clients[el.ID] = client
 		list = append(list, blob.NewConnection(el, guard))
 	}
@@ -84,7 +92,7 @@ func (a *App) wireBlob(ctx context.Context, keys keysArea, pg postgresArea, au a
 		return blobArea{}, err
 	}
 	a.objectStores.set(conns)
-	opts := blob.StartCheckOptions{Replica: a.id.Instance, HoldsCopies: store.HoldsCopies, Record: store.RecordCapabilities, Log: log}
+	opts := blob.StartCheckOptions{Replica: a.id.Instance, HoldsCopies: store.HoldsCopies, Record: store.RecordCapabilities, Log: log, Checked: hist.Checked}
 	if facts, err := db.SystemFacts(ctx); err == nil {
 		opts.Installation = facts.InstallationID
 	} else {
@@ -106,7 +114,7 @@ func (a *App) wireBlob(ctx context.Context, keys keysArea, pg postgresArea, au a
 		a.health.AddReported("objectStore", check)
 	}
 
-	area := blobArea{store: store, storageKeys: skeys}
+	area := blobArea{store: store, storageKeys: skeys, history: hist}
 	// The upload sessions (R-STOR-011): a replica that accepts uploads continues any session; the collection run of a worker
 	// expires them. A session starts on the first writable connection and stays on it (R-STOR-054).
 	svc, err := uploads.New(uploads.Options{

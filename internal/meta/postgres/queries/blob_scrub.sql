@@ -48,10 +48,12 @@ SELECT c.connection_id, c.object_key, c.stored_size, COALESCE(c.storage_key_id, 
 -- A copy marked missing or corrupt was shown whole (written again and read back by the scrub's repair, or read to its end by a
 -- recheck): it is present and verified, but only while it is still the row that was found damaged (the same state and the same
 -- time of that change), so a row that collection dropped and a commit wrote again is never taken for it. A repair on an encrypted
--- connection names the storage key it wrapped the new data key under (R-STOR-087); empty keeps the row's.
+-- connection names the storage key it wrapped the new data key under (R-STOR-087); empty keeps the row's. A repair wrote the object
+-- again and moves created_at, as every write of an object does, so its finding is resolved as rewritten and a recheck's as found
+-- again (storage.md R-STOR-108).
 UPDATE blob_copies SET state = 'present', stored_size = sqlc.arg(stored_size)::bigint,
        storage_key_id = COALESCE(NULLIF(sqlc.arg(storage_key_id)::text, ''), storage_key_id), verified_at = now(), checked_at = now(),
-       state_changed_at = now()
+       state_changed_at = now(), created_at = CASE WHEN sqlc.arg(rewritten)::boolean THEN now() ELSE created_at END
  WHERE sha256 = sqlc.arg(sha256)::bytea AND connection_id = sqlc.arg(connection_id)::text AND state = sqlc.arg(from_state)::text
    AND state IN ('missing', 'corrupt')
    AND (EXTRACT(EPOCH FROM state_changed_at) * 1000000)::bigint = sqlc.arg(state_changed_us)::bigint;

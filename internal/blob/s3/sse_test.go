@@ -131,3 +131,50 @@ func TestR_STOR_032_EveryWriteCarriesTheConnectionsEncryption(t *testing.T) {
 		})
 	}
 }
+
+// TestR_STOR_035_TheStoreAppliedEncryption: the client reads the server-side encryption the store reports for an object
+// (x-amz-server-side-encryption and its KMS key) from the answers of HeadObject and GetObject, which the start check's probe records
+// as capabilities.sseApplied (R-STOR-032, Q-STOR-519); a store that reports none gives the empty algorithm. Unit, milliseconds, a
+// fake store of a few bytes.
+func TestR_STOR_035_TheStoreAppliedEncryption(t *testing.T) {
+	ctx := context.Background()
+	for _, c := range []struct {
+		name, alg, key string
+	}{
+		{"aws:kms with its key", "aws:kms", "arn:aws:kms:eu-central-1:123456789012:key/k1"},
+		{"AES256", "AES256", ""},
+		{"none reported", "", ""},
+	} {
+		t.Run("R-STOR-035 "+c.name, func(t *testing.T) {
+			e := newEnv(t, nil)
+			e.fake.fail = func(w http.ResponseWriter, r *http.Request) bool {
+				if r.Method == http.MethodHead || r.Method == http.MethodGet {
+					if c.alg != "" {
+						w.Header().Set("x-amz-server-side-encryption", c.alg)
+					}
+					if c.key != "" {
+						w.Header().Set("x-amz-server-side-encryption-aws-kms-key-id", c.key)
+					}
+				}
+				return false
+			}
+			if err := put(e.client, "probe", []byte("0123456789"), blob.Checksum{}); err != nil {
+				t.Fatal(err)
+			}
+			info, err := e.client.Head(ctx, "probe")
+			if err != nil {
+				t.Fatal(err)
+			}
+			body, got, err := e.client.Get(ctx, "probe", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_ = body.Close()
+			for _, i := range []blob.ObjectInfo{info, got} {
+				if i.SSE != c.alg || i.SSEKMSKeyID != c.key {
+					t.Errorf("reported %q with key %q, want %q with %q", i.SSE, i.SSEKMSKeyID, c.alg, c.key)
+				}
+			}
+		})
+	}
+}

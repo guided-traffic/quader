@@ -594,7 +594,7 @@ func (s *sweep) mark(ctx context.Context, conn *Connection, it listed, stored in
 	if size, ok := sizeNow(ctx, conn, it.o.Key); !ok || size == stored {
 		return false
 	}
-	return s.r.c.markCopy(ctx, it.d, conn.ID(), CopyCorrupt)
+	return s.r.c.markCopy(ctx, it.d, conn.ID(), CopyCorrupt, Damage{Source: DamageSweep, Reason: ReasonSize})
 }
 
 // adopt records the object of a live blob that no copy row names (R-STOR-026): present and not verified, so the scrub reads it first,
@@ -694,9 +694,9 @@ func (s *sweep) claim(ctx context.Context, conn *Connection, it listed) (bool, e
 	return true, nil
 }
 
-// markCopy records evidence about one copy found by the sweep, as the store's mark does (R-STOR-055): a present copy becomes status,
-// its repair is queued, and the blob's content state follows from its copies.
-func (c *Collector) markCopy(ctx context.Context, d Digest, conn, status string) bool {
+// markCopy records evidence about one copy found by the sweep, as the store's mark does (R-STOR-055): a present copy becomes status
+// with the reader and the reason of dmg (R-STOR-108), its repair is queued, and the blob's content state follows from its copies.
+func (c *Collector) markCopy(ctx context.Context, d Digest, conn, status string, dmg Damage) bool {
 	var changed bool
 	var dm damage
 	err := c.db.InTx(ctx, func(tx meta.Tx) error {
@@ -706,7 +706,7 @@ func (c *Collector) markCopy(ctx context.Context, d Digest, conn, status string)
 		if err != nil || !found || state != "live" {
 			return err
 		}
-		if changed, err = rows.SetCopyState(ctx, tx, d, conn, CopyPresent, status); err != nil || !changed {
+		if changed, err = rows.SetCopyState(ctx, tx, d, conn, CopyPresent, status, dmg); err != nil || !changed {
 			return err
 		}
 		if err := rows.QueueCopy(ctx, tx, conn, d); err != nil {

@@ -3,9 +3,11 @@ package blob
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 	"github.com/guided-traffic/quader/internal/meta"
 )
 
@@ -161,6 +163,45 @@ func (cs *Connections) ServableOf(copies []Copy) []Copy {
 	return out
 }
 
+// Damage says which reader marked a copy missing or corrupt and why (storage.md R-STOR-108, Q-STOR-511): the mark of every reader
+// writes it onto the copy row in the statement that changes its state, and the trigger of the history records the finding with it.
+type Damage struct {
+	// Source is the reader: one of the Damage… sources.
+	Source string
+	// Reason is why: ReasonNotFound, ReasonSize, ReasonDigest, or the reason of a refusal of the stored format (blobcrypt.Reason).
+	Reason string
+}
+
+// The sources of a damage mark (storage_findings.source).
+const (
+	DamageDownload  = "download"  // a whole read through Store.Open
+	DamageRead      = "read"      // a ranged read through Store.Open
+	DamageScrub     = "scrub"     // the scrub's walk and its repair's sources (R-STOR-027)
+	DamageRecheck   = "recheck"   // the recheck of a damaged blob (Q-STOR-267)
+	DamageReconcile = "reconcile" // a source of the reconciliation's copy (R-STOR-056)
+	DamageDrain     = "drain"     // the drain's look at a survivor (R-STOR-056)
+	DamageSweep     = "sweep"     // the orphan sweep (R-STOR-026)
+)
+
+// The reasons of a damage mark that are not a refusal of the stored format.
+const (
+	ReasonNotFound = "not_found" // the store answered "no such object"
+	ReasonSize     = "size"      // the object's size is not the copy's stored size
+	ReasonDigest   = "digest"    // a read to its end had another SHA-256 or another length
+)
+
+// DamageReason is the reason of a mark with status whose evidence is err: the reason of a refusal of the stored format, not_found for
+// "no such object" or a missing copy, otherwise fallback.
+func DamageReason(status string, err error, fallback string) string {
+	if reason, ok := blobcrypt.ReasonOf(err); ok {
+		return string(reason)
+	}
+	if errors.Is(err, ErrNotFound) || status == CopyMissing {
+		return ReasonNotFound
+	}
+	return fallback
+}
+
 // damage is a change of a blob's content state that a mark caused, reported after its transaction committed.
 type damage struct {
 	blobChanged bool
@@ -200,10 +241,11 @@ func (s *Store) report(ctx context.Context, d Digest, dm damage) {
 	}
 }
 
-// markCopy records evidence about one copy (R-STOR-055): a present copy becomes missing or corrupt, the connection's repair is
-// queued (R-STOR-056), and the blob's content state follows from its copies. Only a live blob's present copy changes, so a
-// repair or a concurrent detection is not overwritten. It reports whether the copy changed.
-func (s *Store) markCopy(ctx context.Context, d Digest, conn, status string) bool {
+// markCopy records evidence about one copy (R-STOR-055): a present copy becomes missing or corrupt with the reader and the reason
+// that found it (dmg, R-STOR-108), the connection's repair is queued (R-STOR-056), and the blob's content state follows from its
+// copies. Only a live blob's present copy changes, so a repair or a concurrent detection is not overwritten. It reports whether the
+// copy changed.
+func (s *Store) markCopy(ctx context.Context, d Digest, conn, status string, dmg Damage) bool {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 	defer cancel()
 	var changed bool
@@ -214,7 +256,7 @@ func (s *Store) markCopy(ctx context.Context, d Digest, conn, status string) boo
 		if err != nil || !found || state != "live" {
 			return err
 		}
-		if changed, err = s.rows.SetCopyState(ctx, tx, d, conn, CopyPresent, status); err != nil || !changed {
+		if changed, err = s.rows.SetCopyState(ctx, tx, d, conn, CopyPresent, status, dmg); err != nil || !changed {
 			return err
 		}
 		if err := s.rows.QueueCopy(ctx, tx, conn, d); err != nil {
@@ -247,7 +289,7 @@ func (s *Store) copyBack(ctx context.Context, d Digest, conn string) bool {
 		if err != nil || !found || state != "live" {
 			return err
 		}
-		if changed, err = s.rows.SetCopyState(ctx, tx, d, conn, CopyMissing, CopyPresent); err != nil || !changed {
+		if changed, err = s.rows.SetCopyState(ctx, tx, d, conn, CopyMissing, CopyPresent, Damage{}); err != nil || !changed {
 			return err
 		}
 		dm, err = s.rederive(ctx, tx, d)

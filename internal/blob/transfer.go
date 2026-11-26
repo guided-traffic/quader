@@ -36,6 +36,7 @@ func (s *Store) writeObjects(ctx context.Context, sp *Spooled) ([]copyWrite, err
 // writeTo writes sp to need of the candidates, in their order, falling over to the next on a transient failure.
 func (s *Store) writeTo(ctx context.Context, sp *Spooled, cands []*Connection, need int) ([]copyWrite, error) {
 	if len(cands) < need {
+		s.metrics.uploadUnavailable(s.firstRejecting(), CodeCircuitOpen, sp.Size)
 		return nil, s.notEnoughConnections(nil)
 	}
 	wctx, cancel := context.WithCancel(ctx)
@@ -59,9 +60,10 @@ func (s *Store) writeTo(ctx context.Context, sp *Spooled, cands []*Connection, n
 		start()
 	}
 	var (
-		writes  []copyWrite
-		lastErr error
-		fatal   error
+		writes   []copyWrite
+		lastErr  error
+		lastConn string // the connection of the last write that fell over
+		fatal    error
 	)
 	for inflight > 0 {
 		r := <-results
@@ -70,7 +72,8 @@ func (s *Store) writeTo(ctx context.Context, sp *Spooled, cands []*Connection, n
 		case r.err == nil:
 			writes = append(writes, r.w)
 		case fallsOver(r.err):
-			lastErr = r.err
+			lastErr, lastConn = r.err, r.w.conn.ID()
+			s.metrics.writeFellOver(lastConn, FailureCode(r.err))
 			s.log.Warn("a write to a connection failed; the next writable connection takes it", "connection", r.w.conn.ID(), "sha256", sp.SHA256.Hex(), "error", r.err)
 			if fatal == nil && next < len(cands) && len(writes)+inflight < need {
 				start()
@@ -87,9 +90,21 @@ func (s *Store) writeTo(ctx context.Context, sp *Spooled, cands []*Connection, n
 	case fatal != nil:
 		return writes, mapStoreErr(fatal)
 	case len(writes) < need:
+		s.metrics.uploadUnavailable(lastConn, FailureCode(lastErr), sp.Size)
 		return writes, s.notEnoughConnections(lastErr)
 	}
 	return writes, nil
+}
+
+// firstRejecting is the first connection without drain whose circuit is open on this replica: the one an upload that found too few
+// writable connections is counted on (R-STOR-110); empty when there is none.
+func (s *Store) firstRejecting() string {
+	for _, c := range s.conns.Targets() {
+		if _, rejecting := c.Rejecting(); rejecting {
+			return c.ID()
+		}
+	}
+	return ""
 }
 
 // fallsOver reports a write failure that the next writable connection takes over (Q-STOR-229): a transient error or an open

@@ -33,8 +33,10 @@ ON CONFLICT (sha256, connection_id) DO UPDATE
 
 -- name: SetBlobCopyState :execrows
 -- Evidence about one copy (R-STOR-055): a copy in state from moves to state to; any other state is left as it is, so a repair or
--- a concurrent detection is not overwritten.
-UPDATE blob_copies SET state = sqlc.arg(to_state)::text, state_changed_at = now(), checked_at = now()
+-- a concurrent detection is not overwritten. A move to missing or corrupt names the reader that found it and why (damage_source,
+-- damage_reason, storage.md R-STOR-108); empty is none, and the trigger of 00151 records the finding.
+UPDATE blob_copies SET state = sqlc.arg(to_state)::text, state_changed_at = now(), checked_at = now(),
+       damage_source = NULLIF(sqlc.arg(damage_source)::text, ''), damage_reason = NULLIF(sqlc.arg(damage_reason)::text, '')
  WHERE sha256 = sqlc.arg(sha256)::bytea AND connection_id = sqlc.arg(connection_id)::text AND state = sqlc.arg(from_state)::text;
 
 -- name: StampBlobCopyVerified :exec

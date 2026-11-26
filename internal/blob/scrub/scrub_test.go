@@ -32,6 +32,10 @@ type fakeLedger struct {
 	damaged  []string
 	whole    []string
 	lookedAt map[string]bool
+	// marks are the marks with what they named, "<connection> <status> <source> <reason>" (R-STOR-108); rewritten says per Whole
+	// whether a repair wrote the object.
+	marks     []string
+	rewritten []bool
 }
 
 func newLedger() *fakeLedger {
@@ -64,10 +68,11 @@ func (l *fakeLedger) set(d blob.Digest, conn, from, to string) bool {
 	return false
 }
 
-func (l *fakeLedger) Damaged(_ context.Context, d blob.Digest, cp blob.Copy, status string) bool {
+func (l *fakeLedger) Damaged(_ context.Context, d blob.Digest, cp blob.Copy, status string, dmg blob.Damage) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.damaged = append(l.damaged, cp.Connection+"/"+d.Hex()[:6]+"/"+status)
+	l.marks = append(l.marks, cp.Connection+" "+status+" "+dmg.Source+" "+dmg.Reason)
 	return l.set(d, cp.Connection, blob.CopyPresent, status)
 }
 
@@ -101,10 +106,11 @@ func (l *fakeLedger) Copies(_ context.Context, d blob.Digest) ([]CopyRow, bool, 
 	return slices.Clone(cs), ok, nil
 }
 
-func (l *fakeLedger) Whole(_ context.Context, d blob.Digest, conn, from string, _, stored int64, keyID string) (bool, error) {
+func (l *fakeLedger) Whole(_ context.Context, d blob.Digest, conn, from string, _, stored int64, keyID string, rewritten bool) (bool, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.whole = append(l.whole, conn+"/"+d.Hex()[:6])
+	l.rewritten = append(l.rewritten, rewritten)
 	for i, cp := range l.copies[d] {
 		if cp.Connection == conn && cp.State == from {
 			l.copies[d][i].StoredSize = stored
@@ -222,6 +228,10 @@ func TestR_STOR_027_TheScrubReadsEveryDueCopyWhole(t *testing.T) {
 		if !slices.Contains(verified, "default/"+intact.Hex()[:6]) || !slices.Contains(verified, "secondary/"+d.Hex()[:6]) || len(verified) != 3 {
 			t.Errorf("verified = %v, want the three whole copies", verified)
 		}
+		// R-STOR-108: the mark names the scrub and the digest, and the repair records a copy written again
+		if !slices.Equal(l.marks, []string{"default corrupt scrub digest"}) || !slices.Equal(l.rewritten, []bool{true}) {
+			t.Errorf("marks = %v, rewritten = %v", l.marks, l.rewritten)
+		}
 	})
 
 	t.Run("R-STOR-027 with one connection a deleted object marks its copy missing and nothing can replace it", func(t *testing.T) {
@@ -239,6 +249,9 @@ func TestR_STOR_027_TheScrubReadsEveryDueCopyWhole(t *testing.T) {
 		}
 		if _, damaged, whole := l.recorded(); !slices.Equal(damaged, []string{"default/" + d.Hex()[:6] + "/missing"}) || len(whole) != 0 {
 			t.Errorf("damaged = %v, whole = %v", damaged, whole)
+		}
+		if !slices.Equal(l.marks, []string{"default missing scrub not_found"}) { // R-STOR-108
+			t.Errorf("marks = %v", l.marks)
 		}
 	})
 
@@ -469,6 +482,10 @@ func TestR_STOR_027_TheRecheckOfOneBlob(t *testing.T) {
 	}
 	if first.Count("put")+second.Count("put") != 0 {
 		t.Error("the recheck wrote an object")
+	}
+	// R-STOR-108: the recheck's mark names it, and the copy found whole again was not written
+	if !slices.Equal(l.marks, []string{"secondary corrupt recheck digest"}) || !slices.Equal(l.rewritten, []bool{false}) {
+		t.Errorf("marks = %v, rewritten = %v", l.marks, l.rewritten)
 	}
 	if _, err := s.Recheck(ctx, blob.Digest{1}); !errors.Is(err, ErrNoBlob) {
 		t.Errorf("err = %v, want ErrNoBlob", err)

@@ -55,11 +55,11 @@ func (s *Scrubber) recheckCopy(ctx context.Context, c *blob.Connection, d blob.D
 	case cp.State == blob.CopyPresent && out == outcomeOK:
 		err = s.o.Ledger.Verified(ctx, d, c.ID(), cp.CreatedUs)
 	case cp.State == blob.CopyPresent && out == outcomeCorrupt:
-		s.o.Ledger.Damaged(ctx, d, cp.Copy, blob.CopyCorrupt)
+		s.o.Ledger.Damaged(ctx, d, cp.Copy, blob.CopyCorrupt, blob.Damage{Source: blob.DamageRecheck, Reason: reasonOf(err, blob.ReasonDigest)})
 	case cp.State == blob.CopyPresent && out == outcomeMissing:
-		s.o.Ledger.Damaged(ctx, d, cp.Copy, blob.CopyMissing)
+		s.o.Ledger.Damaged(ctx, d, cp.Copy, blob.CopyMissing, blob.Damage{Source: blob.DamageRecheck, Reason: blob.ReasonNotFound})
 	case out == outcomeOK:
-		_, err = s.o.Ledger.Whole(ctx, d, c.ID(), cp.State, cp.StateChangedUs, cp.StoredSize, "")
+		_, err = s.o.Ledger.Whole(ctx, d, c.ID(), cp.State, cp.StateChangedUs, cp.StoredSize, "", false)
 	}
 	if err != nil && out == outcomeOK {
 		s.o.Log.Warn("the recheck could not record a whole copy", "connection", c.ID(), "sha256", d.Hex(), "error", err)

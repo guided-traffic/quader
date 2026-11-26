@@ -51,6 +51,9 @@ type Store struct {
 	DropMetadata bool
 	// CopyKeepsMetadata makes a copy keep its source's metadata when it is asked to replace it (copyReplacesMetadata: false).
 	CopyKeepsMetadata bool
+	// SSE and SSEKMSKeyID are the server-side encryption Head and Get report for every object, as a bucket's default encryption
+	// would (x-amz-server-side-encryption, R-STOR-035); empty reports none.
+	SSE, SSEKMSKeyID string
 
 	mu      sync.Mutex
 	objects map[string]*object
@@ -319,7 +322,10 @@ func (s *Store) Head(_ context.Context, key string) (blob.ObjectInfo, error) {
 	if !ok {
 		return blob.ObjectInfo{}, blob.ErrNotFound
 	}
-	return blob.ObjectInfo{Key: key, Size: int64(len(o.data)), ETag: etag(o.data), LastModified: o.modified, Metadata: cloneMeta(o.meta)}, nil
+	return blob.ObjectInfo{
+		Key: key, Size: int64(len(o.data)), ETag: etag(o.data), LastModified: o.modified, Metadata: cloneMeta(o.meta),
+		SSE: s.SSE, SSEKMSKeyID: s.SSEKMSKeyID,
+	}, nil
 }
 
 // Get implements blob.ObjectStore.
@@ -333,7 +339,10 @@ func (s *Store) Get(_ context.Context, key string, rng *blob.ByteRange) (io.Read
 	if !ok {
 		return nil, blob.ObjectInfo{}, blob.ErrNotFound
 	}
-	info := blob.ObjectInfo{Key: key, Size: int64(len(o.data)), ETag: etag(o.data), LastModified: o.modified, Metadata: cloneMeta(o.meta)}
+	info := blob.ObjectInfo{
+		Key: key, Size: int64(len(o.data)), ETag: etag(o.data), LastModified: o.modified, Metadata: cloneMeta(o.meta),
+		SSE: s.SSE, SSEKMSKeyID: s.SSEKMSKeyID,
+	}
 	if s.UnknownSize {
 		info.Size = -1
 	}

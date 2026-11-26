@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 	"github.com/guided-traffic/quader/internal/blob/blobtest"
 	"github.com/guided-traffic/quader/internal/config"
 )
@@ -44,6 +45,29 @@ func bytesOf(n int, seed byte) []byte {
 
 func newTestCopier(partSize int64) *copier {
 	return newCopier(partSize, true, newLimiter(0, time.Now), time.Now, quiet)
+}
+
+// TestR_STOR_108_TheReconciliationsMarkNamesItsReason: a failure of a source read that is evidence about the source copy carries the
+// reason its finding records (storage.md R-STOR-108): "no such object" not_found, a range the object does not have size, a stream that is
+// not the blob digest, a refusal of the stored format its reason; a transient error and unknown_key are no evidence and carry none.
+// Unit, no data.
+func TestR_STOR_108_TheReconciliationsMarkNamesItsReason(t *testing.T) {
+	for _, c := range []struct {
+		err            error
+		status, reason string
+	}{
+		{blob.ErrNotFound, blob.CopyMissing, blob.ReasonNotFound},
+		{&blob.StoreError{Op: "GetObject", Status: 416, Kind: blob.KindOther}, blob.CopyCorrupt, blob.ReasonSize},
+		{blob.ErrStreamNotBlob, blob.CopyCorrupt, blob.ReasonDigest},
+		{blobcrypt.ErrSegment, blob.CopyCorrupt, "segment"},
+		{blobcrypt.ErrUnknownKey, "", ""},
+		{&blob.StoreError{Op: "GetObject", Status: 503, Kind: blob.KindTransient}, "", ""},
+	} {
+		var se *sourceError
+		if !errors.As(sourceFailure(c.err), &se) || se.status != c.status || se.reason != c.reason {
+			t.Errorf("R-STOR-108 %v: %+v, want %q with %q", c.err, se, c.status, c.reason)
+		}
+	}
 }
 
 func TestR_STOR_056_TheStreamedCopy(t *testing.T) {

@@ -189,8 +189,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// R-UI-232, four P1 requirements of W-35, P11).
 		// 1385 since the admin area reads the storage overview and the copies in figures (R-STOR-106, R-STOR-107, two P1
 		// requirements of W-37, P1).
-		if len(m.Reqs) != 1385 || count[prioMVP] != 743 || count[prioP1] != 603 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1385 (743, 603, 39)",
+		// 1388 since Quader keeps the history of damaged copies, unreachable connections and absorbed failures (R-STOR-108 to
+		// R-STOR-110, three P1 requirements of W-37, P2).
+		if len(m.Reqs) != 1388 || count[prioMVP] != 743 || count[prioP1] != 606 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1388 (743, 606, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

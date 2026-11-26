@@ -13467,6 +13467,14 @@ owner reviews it.
 [values.schema.json](../../deploy/helm/quader/values.schema.json); test `TestR_HA_072_TheCapacityOfAConnection`
 (`test/chart/storage_test.go`).
 
+### Q-HA-506 · `storage.history.retention` has no chart line
+
+Status: **Decided by the development agent** (W-37, 2026-11-26).
+
+The retention of the history of the stored content ([storage.md](storage.md) R-STOR-110, 400 days by default, 92 days to three years) keeps
+its binary default and gets no key in the chart's values: the plain path needs none, and an operator who must set another value sets the
+variable `QUADER_STORAGE_HISTORY_RETENTION` through `extraEnv`. The chart's schema and tests are unchanged. **Applied in the spec:** R-STOR-110.
+
 ### H-37 · A database restore revives revoked credentials and removed grants
 
 Restoring PostgreSQL to time *t*, from the platform layer (R-HA-025) or from a Quader backup taken at

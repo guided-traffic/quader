@@ -330,7 +330,10 @@ func (c *Client) Head(ctx context.Context, key string) (blob.ObjectInfo, error) 
 	if err != nil {
 		return blob.ObjectInfo{}, mapError(ctx, "HeadObject", key, err)
 	}
-	return blob.ObjectInfo{Key: key, Size: sizeOf(out.ContentLength), ETag: aws.ToString(out.ETag), LastModified: aws.ToTime(out.LastModified), Metadata: lowerKeys(out.Metadata)}, nil
+	return blob.ObjectInfo{
+		Key: key, Size: sizeOf(out.ContentLength), ETag: aws.ToString(out.ETag), LastModified: aws.ToTime(out.LastModified), Metadata: lowerKeys(out.Metadata),
+		SSE: string(out.ServerSideEncryption), SSEKMSKeyID: aws.ToString(out.SSEKMSKeyId),
+	}, nil
 }
 
 // Get implements blob.ObjectStore.
@@ -349,7 +352,10 @@ func (c *Client) Get(ctx context.Context, key string, rng *blob.ByteRange) (io.R
 		cancel()
 		return nil, blob.ObjectInfo{}, mapError(ctx, "GetObject", key, err)
 	}
-	info := blob.ObjectInfo{Key: key, Size: -1, ETag: aws.ToString(out.ETag), LastModified: aws.ToTime(out.LastModified), Metadata: lowerKeys(out.Metadata)}
+	info := blob.ObjectInfo{
+		Key: key, Size: -1, ETag: aws.ToString(out.ETag), LastModified: aws.ToTime(out.LastModified), Metadata: lowerKeys(out.Metadata),
+		SSE: string(out.ServerSideEncryption), SSEKMSKeyID: aws.ToString(out.SSEKMSKeyId),
+	}
 	if rng == nil {
 		info.Size = sizeOf(out.ContentLength)
 	} else if cr := aws.ToString(out.ContentRange); cr != "" {

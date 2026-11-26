@@ -43,6 +43,7 @@ func (a *App) jobRegistry() (*jobs.Registry, error) {
 	a.registerStorageReconcile(r)
 	a.registerStorageScrub(r)
 	a.registerStorageSummary(r)
+	a.registerStorageHistory(r)
 	a.registerRepositoryJobs(r)
 	a.registerIdentityJobs(r)
 	a.registerCIJobs(r)

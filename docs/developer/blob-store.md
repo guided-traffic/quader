@@ -18,7 +18,9 @@ the verifying reader or a range.
 | [key.go](../../internal/blob/key.go) | `Digest`, `Key(prefix, digest)`, `ParseKey`, `Digests` (the four digests and the size) |
 | [objects.go](../../internal/blob/objects.go) | `ObjectStore` interface (with `Metadata` on `Put`, `CreateMultipart`, `Copy`, `Head`, `Get`; `Presign` with `PresignOptions`, answering a `Link` with its expiry), `LinkLife` (a link's life bounded by its credential, R-STOR-072), `BucketCopier` (a copy from another bucket of one endpoint), `StoreError` and its kinds, `ErrNotFound`, `ErrCircuitOpen`, `ErrCredentialExpiring` |
 | [connections.go](../../internal/blob/connections.go) | `Connection` (one element: its client, prefix, naming function `ObjectKey` and `Name` (a keyed name on an encrypted connection with keyed names), `Drain`, `Encrypted`, `KeyedNames`, `Capabilities`, `Verifies`, guarded `Presign`, `HTTPClient`, `LinkCheck` with its two parts), `Connections` (the ordered set: `List`, `Get`, `First`, `Targets`, `Writable`, `Without`, the read order); the reader `Read` and `ReadBlob` is in [sealedread.go](../../internal/blob/sealedread.go), the encrypted connection's writer and client in [sealedwrite.go](../../internal/blob/sealedwrite.go) and [sealedonly.go](../../internal/blob/sealedonly.go) ([stored-content-encryption.md](stored-content-encryption.md#package-3-encrypted-connections-as-built)) |
-| [copies.go](../../internal/blob/copies.go) | `Copy`, the copy and content states, `DeriveContentStatus`, `Store.Copies`, `ParseCopies` (the copies of an item lookup), `Store.Servable` and `Connections.ServableOf` (the same over copies read already, which the signed links choose from without a statement), the marks of a copy (`markCopy`, `copyBack`), the daily stamp, the copy and queue rows of a commit (`recordWrites`) |
+| [copies.go](../../internal/blob/copies.go) | `Copy`, the copy and content states, `DeriveContentStatus`, `Store.Copies`, `ParseCopies` (the copies of an item lookup), `Store.Servable` and `Connections.ServableOf` (the same over copies read already, which the signed links choose from without a statement), the marks of a copy (`markCopy` with its `Damage{Source, Reason}`, `copyBack`), `DamageReason`, the daily stamp, the copy and queue rows of a commit (`recordWrites`) |
+| [failurecode.go](../../internal/blob/failurecode.go) | `FailureCode`: the short code of a store's failure (`timeout`, `http_5xx`, `throttled`, `credential_rejected`, …) that the history stores instead of the store's text (Q-STOR-517) |
+| [history/recorder.go](../../internal/blob/history/recorder.go), [history/pg.go](../../internal/blob/history/pg.go), [history/task.go](../../internal/blob/history/task.go) | The history of the stored content ([below](#the-history-of-the-stored-content-r-stor-108-to-r-stor-110)): the replica's `Recorder` (counts, intervals, the flush), its `PG` store, and `RunTask` of the task `storage-history` |
 | [record.go](../../internal/blob/record.go) | `Store.RecordConnections` (first sight, fixed properties, retired ids, the bind of the migration's row), `RecordCapabilities`, `HoldsCopies`, `ForgetConnection`, `Refusal` |
 | [startcheck.go](../../internal/blob/startcheck.go) | `CheckConnection` (the start check of one connection with the marker and the capabilities), `AwaitConnections` (the first readiness of R-STOR-060), `MarkerKey` |
 | [spool.go](../../internal/blob/spool.go) | `Spool`: admission, the budget, spool files, the single hashing pass (its file written through `syncwrite.Writer`, flushed every 32 MiB, Q-STOR-486), cleanup |
@@ -737,6 +739,57 @@ rows on three connections, 315,000 queued gaps, a snapshot of 1.9 MB with 10,000
 
 The hourly run's statements together take about 5 s at this size, against about 34 s before. The generation took 110 s (the copy rows 93 s)
 and the whole run 5 minutes.
+
+## The history of the stored content (R-STOR-108 to R-STOR-110)
+
+What went wrong is recorded where it happens, in three tables of migration 00151 ([database.md](database.md), ADR-315). Nothing here reads
+it yet; the storage page's API (W-37 package P4) does.
+
+**Findings: the triggers.** A copy that becomes `missing` or `corrupt` opens a row of `storage_findings`, and the copy leaving that state
+or its row going resolves it (`rewritten`, `found_again`, `superseded`, `deleted`); the triggers of `blob_copies` do both, whatever
+statement changed the row (Q-STOR-510). The reader and the reason ride on the copy row: every mark goes through `markCopy` (or the
+collector's twin in [sweep.go](../../internal/blob/sweep.go)) with a `blob.Damage`, which `SetBlobCopyState` writes into `damage_source`
+and `damage_reason` in the same statement (Q-STOR-511). The sources and reasons per call site:
+
+| Call site | Source | Reason |
+|---|---|---|
+| `Store.Open`, a whole read ([download.go](../../internal/blob/download.go), [sealedread.go](../../internal/blob/sealedread.go)) | `download` | `not_found`, `size` (Content-Length), `digest` (the verifying reader), or the format's reason |
+| `Store.Open`, a ranged read | `read` | `not_found`, `size`, or the format's reason |
+| the scrub's walk and its repair's sources ([scrub/scrub.go](../../internal/blob/scrub/scrub.go), [scrub/repair.go](../../internal/blob/scrub/repair.go)) | `scrub` | the evidence `readWhole` returns: `not_found`, `digest`, `size`, or the format's reason |
+| the recheck ([scrub/recheck.go](../../internal/blob/scrub/recheck.go)) | `recheck` | as the scrub |
+| a source of the reconciliation's copy ([reconcile/queue.go](../../internal/blob/reconcile/queue.go)) | `reconcile` | the `sourceError`'s reason |
+| the drain's survivor ([reconcile/drain.go](../../internal/blob/reconcile/drain.go)) | `drain` | `not_found`, `size` |
+| the orphan sweep's mark and a corrupt adoption ([sweep.go](../../internal/blob/sweep.go), `SweepAdoptCopy`) | `sweep` | `size` |
+| any other statement (the restore's fix-up, a hand-written `UPDATE`) | `other` | the status |
+
+A new reader that marks a copy passes a `Damage`; a new statement that writes a damaged state without one is recorded as `other`. A repair
+that writes the object again moves `created_at` (`ScrubRecordWhole` with `rewritten`, the commit's and the reconciliation's
+`PutBlobCopy`), so its finding is `rewritten`; a copy shown whole without a write is `found_again`.
+
+**Intervals and counts: the recorder.** [wire_blob.go](../../internal/app/wire_blob.go) builds one `history.Recorder` per replica with a
+blob store and starts it before the start checks: the guards get `WithGuardTransitions(rec.Circuit)`, the start check
+`StartCheckOptions.Checked = rec.Checked`, the blob store's metrics `SetHistory(rec)` and the reconciliation's metrics too
+([wire_storage_reconcile.go](../../internal/app/wire_storage_reconcile.go)). Every counter of the history is counted in the function that
+counts its metric ([metrics.go](../../internal/blob/metrics.go): `fellOver`, `encryptedReadFailure`, `writeFellOver`, `uploadUnavailable`,
+`readUnavailable`; `failure` of [reconcile/metrics.go](../../internal/blob/reconcile/metrics.go)), so a new kind is a constant of
+`metrics.go`, a value of the check of `storage_counts.kind` and a call beside its metric. The recorder only changes memory in the request
+path; its loop writes the counts as one upsert (`HistoryAddCounts`) and the intervals (`HistoryOpenEvent`, `HistoryUpdateEvent`) once a
+minute and at once when an interval opens, and a last time at `Stop`. An interval ends after `history.Hysteresis` (60 s) of
+reachability at the time the connection became reachable.
+
+**The task.** [wire_storage_history.go](../../internal/app/wire_storage_history.go) registers `storage-history` (queue `maintenance`,
+exclusive, `37 * * * *`); `history.RunTask` deletes and resolves in pages of 10,000 rows and stores what it did as the job's result.
+
+**What it costs.** A statement per change of a copy's state (none per stamp of `verified_at`), one upsert and one update per open interval
+per replica and minute, an insert per interval; the tables hold a few rows normally, and at most about 3.2 million findings, 8 × replicas ×
+100 intervals a day and the counts of 400 days under a disaster (Q-STOR-516, an estimate).
+
+**Tests.** Unit: `TestR_STOR_108_EveryMarkCarriesItsSourceAndReason`, `TestR_STOR_110_TheStoreCountsWhatItAbsorbed`,
+`TestR_STOR_109_FailureCodesAndSteps`, `TestR_STOR_035_TheStoreAppliedEncryption` (`internal/blob`, `internal/blob/s3`),
+`TestR_STOR_108_TheReconciliationsMarkNamesItsReason` (`internal/blob/reconcile`), `TestR_STOR_109_AnOutageIsOneInterval` and
+`TestR_STOR_110_CountsAreFlushedPerHour` (`internal/blob/history`, a fake store and clock), the
+marks in the scrub's and the encrypted reads' tests. Integration (`test/integration/blob/history_test.go`):
+`TestR_STOR_108_AFindingFromMarkToRepair`, `TestR_STOR_110_TheRecordAgainstTheDatabase`, `TestR_STOR_110_TheTaskKeepsTheHistoryBounded`.
 
 ## Tests
 

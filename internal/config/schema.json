@@ -4524,6 +4524,20 @@
           },
           "type": "object"
         },
+        "history": {
+          "additionalProperties": false,
+          "properties": {
+            "retention": {
+              "default": "9600h",
+              "description": "How long the history of the stored content is kept: 400 days by default, at least 92 days so that the storage page's 90-day period always has its data, at most three years (R-STOR-110).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_STORAGE_HISTORY_RETENTION",
+              "x-quader-type": "duration"
+            }
+          },
+          "type": "object"
+        },
         "object_store": {
           "additionalProperties": false,
           "properties": {

@@ -51,6 +51,9 @@ func TestR_STOR_101_TheScrubMarksACopyWhoseRecordNamesADestroyedKey(t *testing.T
 		if !slices.Equal(damaged, []string{"archive/" + d.Hex()[:6] + "/corrupt"}) || !slices.Equal(whole, []string{"archive/" + d.Hex()[:6]}) {
 			t.Fatalf("damaged = %v, whole = %v", damaged, whole)
 		}
+		if !slices.Equal(l.marks, []string{"archive corrupt scrub destroyed_key"}) { // R-STOR-108: the format's reason rides on the mark
+			t.Errorf("marks = %v", l.marks)
+		}
 		after, _ := store.Data(cw.Key)
 		if row := l.copies[d][0]; bytes.Equal(after, before) || row.StorageKeyID != newKey || row.State != blob.CopyPresent {
 			t.Fatalf("the repair kept the old bytes or the row names %q in state %s", row.StorageKeyID, row.State)

@@ -131,7 +131,7 @@ func (rn *run) copyFromSources(ctx context.Context, b target, srcs []blob.Copy, 
 			damaged++
 			rn.log.Warn("the source of a copy is damaged; it is marked and the next source is tried", "sha256", b.digest.Hex(),
 				"source", src.Connection, "connection", dst.ID(), "status", se.status, "error", se.err)
-			rn.store.MarkCopyDamaged(ctx, b.digest, src, se.status)
+			rn.store.MarkCopyDamaged(ctx, b.digest, src, se.status, blob.Damage{Source: blob.DamageReconcile, Reason: se.reason})
 		default:
 			return err
 		}

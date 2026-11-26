@@ -177,6 +177,15 @@ func TestBlobReferenceRules(t *testing.T) {
 				t.Errorf("%s: %d foreign keys to blobs (collection would read one as a reference), %d to storage_connections", table, toBlobs, toConnections)
 			}
 		}
+		// R-STOR-108 to R-STOR-110: the history names a blob and a connection by value, and outlives a forgotten connection
+		for _, table := range []string{"storage_findings", "storage_events", "storage_counts"} {
+			refs := scalar[int](t, admin, `SELECT count(*) FROM pg_constraint
+				 WHERE contype = 'f' AND conrelid = ('quader.' || $1)::regclass
+				   AND confrelid IN ('quader.blobs'::regclass, 'quader.storage_connections'::regclass)`, table)
+			if refs != 0 {
+				t.Errorf("%s: %d foreign keys to blobs or storage_connections, want none", table, refs)
+			}
+		}
 	})
 }
 

@@ -517,15 +517,16 @@ func (q *Queries) ScrubOverdue(ctx context.Context, arg ScrubOverdueParams) (int
 const scrubRecordWhole = `-- name: ScrubRecordWhole :execrows
 UPDATE blob_copies SET state = 'present', stored_size = $1::bigint,
        storage_key_id = COALESCE(NULLIF($2::text, ''), storage_key_id), verified_at = now(), checked_at = now(),
-       state_changed_at = now()
- WHERE sha256 = $3::bytea AND connection_id = $4::text AND state = $5::text
+       state_changed_at = now(), created_at = CASE WHEN $3::boolean THEN now() ELSE created_at END
+ WHERE sha256 = $4::bytea AND connection_id = $5::text AND state = $6::text
    AND state IN ('missing', 'corrupt')
-   AND (EXTRACT(EPOCH FROM state_changed_at) * 1000000)::bigint = $6::bigint
+   AND (EXTRACT(EPOCH FROM state_changed_at) * 1000000)::bigint = $7::bigint
 `
 
 type ScrubRecordWholeParams struct {
 	StoredSize     int64
 	StorageKeyID   string
+	Rewritten      bool
 	Sha256         []byte
 	ConnectionID   string
 	FromState      string
@@ -535,11 +536,14 @@ type ScrubRecordWholeParams struct {
 // A copy marked missing or corrupt was shown whole (written again and read back by the scrub's repair, or read to its end by a
 // recheck): it is present and verified, but only while it is still the row that was found damaged (the same state and the same
 // time of that change), so a row that collection dropped and a commit wrote again is never taken for it. A repair on an encrypted
-// connection names the storage key it wrapped the new data key under (R-STOR-087); empty keeps the row's.
+// connection names the storage key it wrapped the new data key under (R-STOR-087); empty keeps the row's. A repair wrote the object
+// again and moves created_at, as every write of an object does, so its finding is resolved as rewritten and a recheck's as found
+// again (storage.md R-STOR-108).
 func (q *Queries) ScrubRecordWhole(ctx context.Context, arg ScrubRecordWholeParams) (int64, error) {
 	result, err := q.db.Exec(ctx, scrubRecordWhole,
 		arg.StoredSize,
 		arg.StorageKeyID,
+		arg.Rewritten,
 		arg.Sha256,
 		arg.ConnectionID,
 		arg.FromState,

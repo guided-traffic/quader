@@ -11,13 +11,14 @@ import "context"
 // "no such object", which marks the copy and looks for its object once more, as a read does (Q-STOR-151); CopyCorrupt when its
 // size or, read to its end, its digest was another. The connection's repair is queued and the blob's content state follows
 // from its copies (R-STOR-052, R-STOR-055). It reports whether the copy stands marked: false when it was not a live blob's
-// present copy, when the second look found the object again, or on a connection this replica does not configure.
-func (s *Store) MarkCopyDamaged(ctx context.Context, d Digest, cp Copy, status string) bool {
+// present copy, when the second look found the object again, or on a connection this replica does not configure. dmg names the
+// reader and the reason of the finding (R-STOR-108).
+func (s *Store) MarkCopyDamaged(ctx context.Context, d Digest, cp Copy, status string, dmg Damage) bool {
 	if status != CopyMissing {
-		return s.markCopy(ctx, d, cp.Connection, status)
+		return s.markCopy(ctx, d, cp.Connection, status, dmg)
 	}
 	if c, ok := s.conns.Get(cp.Connection); ok {
-		return s.copyGone(ctx, d, c, cp)
+		return s.copyGone(ctx, d, c, cp, dmg)
 	}
 	return false
 }

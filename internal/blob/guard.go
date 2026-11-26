@@ -30,6 +30,7 @@ type Guard struct {
 	log       *slog.Logger
 	conn      string // the connection's id, the label connection of the metrics and the log
 	source    string // the connection's credentials_source, named in the log line of a rejected credential
+	onChange  func(conn string, open bool, err error)
 
 	mu        sync.Mutex
 	failures  int
@@ -53,6 +54,13 @@ func WithGuardConnection(id string) GuardOption { return func(g *Guard) { g.conn
 // never a key or a secret.
 func WithGuardLogger(log *slog.Logger, credentialSource string) GuardOption {
 	return func(g *Guard) { g.log, g.source = log, credentialSource }
+}
+
+// WithGuardTransitions sets the function the Guard calls when its circuit opens (open true, with the failure that opened it) and when
+// it closes (open false, err nil): the history's record of a connection this replica could not reach (storage.md R-STOR-109). A probe
+// that fails keeps the circuit open and is no transition. f is called after the Guard's lock is released and must not block.
+func WithGuardTransitions(f func(conn string, open bool, err error)) GuardOption {
+	return func(g *Guard) { g.onChange = f }
 }
 
 // WithGuardClock replaces the clock; tests use it.
@@ -126,8 +134,9 @@ func (g *Guard) admit() (probe bool, err error) {
 	return true, nil
 }
 
-// settle records the outcome of a call that was admitted.
-func (g *Guard) settle(probe bool, err error) {
+// settle records the outcome of a call that was admitted and reports whether the circuit changed between closed and open, and to
+// which.
+func (g *Guard) settle(probe bool, err error) (changed, open bool) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if probe {
@@ -137,7 +146,7 @@ func (g *Guard) settle(probe bool, err error) {
 		// The caller gave up or its deadline ended the call: no evidence either
 		// way. A deadline that ended a call inside the transport arrives as a
 		// transient StoreError and counts.
-		return
+		return false, g.open
 	}
 	if err == nil || !countsAgainstCircuit(err) {
 		// The store answered; a 404 or another 4xx is an answer too.
@@ -145,11 +154,13 @@ func (g *Guard) settle(probe bool, err error) {
 		if g.open {
 			g.open = false
 			g.metrics.circuit(g.conn, false)
+			return true, false
 		}
-		return
+		return false, false
 	}
 	g.failures++
 	if probe || g.failures >= g.threshold {
+		changed = !g.open
 		if g.log != nil && IsCredentialRejection(err) && (probe || !g.open) {
 			var se *StoreError
 			_ = errors.As(err, &se)
@@ -160,6 +171,7 @@ func (g *Guard) settle(probe bool, err error) {
 		g.openUntil = g.now().Add(g.openFor)
 		g.metrics.circuit(g.conn, true)
 	}
+	return changed, g.open
 }
 
 // countsAgainstCircuit is whether a failed call is evidence that the store is unavailable to this replica: a transient
@@ -187,7 +199,13 @@ func (g *Guard) call(op string, f func() error) error {
 	}
 	start := g.now()
 	err = f()
-	g.settle(probe, err)
+	if changed, open := g.settle(probe, err); changed && g.onChange != nil {
+		var cause error
+		if open {
+			cause = err
+		}
+		g.onChange(g.conn, open, cause)
+	}
 	if err != nil && countsAgainstCircuit(err) {
 		// the call that opened the circuit, or the probe that kept it open, is answered with the circuit's Retry-After too
 		if after, rejecting := g.Rejecting(); rejecting {

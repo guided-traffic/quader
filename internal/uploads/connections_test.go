@@ -363,7 +363,7 @@ func (b *blobRows) PutCopy(_ context.Context, _ meta.Tx, d blob.Digest, w blob.C
 	return nil
 }
 
-func (b *blobRows) SetCopyState(context.Context, meta.Tx, blob.Digest, string, string, string) (bool, error) {
+func (b *blobRows) SetCopyState(context.Context, meta.Tx, blob.Digest, string, string, string, blob.Damage) (bool, error) {
 	return false, nil
 }
 

@@ -67,8 +67,9 @@ type Rows interface {
 	LockForMark(ctx context.Context, tx meta.Tx, d Digest) (state string, found bool, err error)
 	// PutCopy records an object a commit wrote: present, inserted or overwriting a row that is not deleting (R-STOR-053).
 	PutCopy(ctx context.Context, tx meta.Tx, d Digest, w CopyWrite) error
-	// SetCopyState moves a copy in state from to state to and reports whether it did.
-	SetCopyState(ctx context.Context, tx meta.Tx, d Digest, conn, from, to string) (bool, error)
+	// SetCopyState moves a copy in state from to state to and reports whether it did; a move to missing or corrupt names the reader
+	// and the reason in dmg (R-STOR-108), the zero Damage for any other move.
+	SetCopyState(ctx context.Context, tx meta.Tx, d Digest, conn, from, to string, dmg Damage) (bool, error)
 	// StampVerified moves a present copy's verified_at to now when it is older than interval (Q-STOR-233).
 	StampVerified(ctx context.Context, tx meta.Tx, d Digest, conn string, interval time.Duration) error
 	// QueueCopy queues a gap of a connection for the reconciliation (R-STOR-056).
@@ -198,12 +199,14 @@ func (pgRows) PutCopy(ctx context.Context, tx meta.Tx, d Digest, w CopyWrite) er
 	})
 }
 
-func (pgRows) SetCopyState(ctx context.Context, tx meta.Tx, d Digest, conn, from, to string) (bool, error) {
+func (pgRows) SetCopyState(ctx context.Context, tx meta.Tx, d Digest, conn, from, to string, dmg Damage) (bool, error) {
 	qs, err := queries(tx)
 	if err != nil {
 		return false, err
 	}
-	n, err := qs.SetBlobCopyState(ctx, q.SetBlobCopyStateParams{Sha256: d.Bytes(), ConnectionID: conn, FromState: from, ToState: to})
+	n, err := qs.SetBlobCopyState(ctx, q.SetBlobCopyStateParams{
+		Sha256: d.Bytes(), ConnectionID: conn, FromState: from, ToState: to, DamageSource: dmg.Source, DamageReason: dmg.Reason,
+	})
 	return n > 0, err
 }
 

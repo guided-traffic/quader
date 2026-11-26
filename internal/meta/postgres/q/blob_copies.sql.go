@@ -325,22 +325,28 @@ func (q *Queries) SetBlobContentStatus(ctx context.Context, arg SetBlobContentSt
 }
 
 const setBlobCopyState = `-- name: SetBlobCopyState :execrows
-UPDATE blob_copies SET state = $1::text, state_changed_at = now(), checked_at = now()
- WHERE sha256 = $2::bytea AND connection_id = $3::text AND state = $4::text
+UPDATE blob_copies SET state = $1::text, state_changed_at = now(), checked_at = now(),
+       damage_source = NULLIF($2::text, ''), damage_reason = NULLIF($3::text, '')
+ WHERE sha256 = $4::bytea AND connection_id = $5::text AND state = $6::text
 `
 
 type SetBlobCopyStateParams struct {
 	ToState      string
+	DamageSource string
+	DamageReason string
 	Sha256       []byte
 	ConnectionID string
 	FromState    string
 }
 
 // Evidence about one copy (R-STOR-055): a copy in state from moves to state to; any other state is left as it is, so a repair or
-// a concurrent detection is not overwritten.
+// a concurrent detection is not overwritten. A move to missing or corrupt names the reader that found it and why (damage_source,
+// damage_reason, storage.md R-STOR-108); empty is none, and the trigger of 00151 records the finding.
 func (q *Queries) SetBlobCopyState(ctx context.Context, arg SetBlobCopyStateParams) (int64, error) {
 	result, err := q.db.Exec(ctx, setBlobCopyState,
 		arg.ToState,
+		arg.DamageSource,
+		arg.DamageReason,
 		arg.Sha256,
 		arg.ConnectionID,
 		arg.FromState,

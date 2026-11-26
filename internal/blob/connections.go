@@ -212,8 +212,18 @@ type Capabilities struct {
 	// this connection's bucket, signed with this connection's credential, worked (the reconciliation's server-side copy,
 	// R-STOR-056). A connection on another endpoint, or one that could not be asked, is absent.
 	ServerSideCopyFrom map[string]bool `json:"serverSideCopyFrom,omitempty"`
+	// SSEApplied is the server-side encryption the store reported for the start check's probe object, the actual state of today's
+	// writes beside the configured sse_mode (R-STOR-032, Q-STOR-519); nil when the check wrote no probe it could ask about.
+	SSEApplied *SSEApplied `json:"sseApplied,omitempty"`
 	// CheckedAt is when the start check that found these ran; zero before one.
 	CheckedAt time.Time `json:"checkedAt,omitzero"`
+}
+
+// SSEApplied is the server-side encryption a store reported it applied to an object (R-STOR-032, R-STOR-035): the algorithm
+// (AES256, aws:kms, aws:kms:dsse; empty when the store reported none) and the KMS key it named. Neither is secret.
+type SSEApplied struct {
+	Algorithm string `json:"algorithm"`
+	KMSKeyID  string `json:"kmsKeyId,omitempty"`
 }
 
 // Connections is the ordered set of a replica's connections (R-STOR-050): the list order of its configuration is the write

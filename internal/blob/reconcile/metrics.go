@@ -1,8 +1,11 @@
 package reconcile
 
 import (
+	"sync/atomic"
+
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/observability"
 )
 
@@ -50,6 +53,16 @@ type Metrics struct {
 	copied      *prometheus.CounterVec
 	copiedBytes *prometheus.CounterVec
 	failures    *prometheus.CounterVec
+
+	// history counts the copies that failed in the history of the stored content (storage.md R-STOR-110), nil until SetHistory.
+	history atomic.Pointer[blob.HistorySink]
+}
+
+// SetHistory makes the recorder of the history count every failed copy as copy_failed with its reason (R-STOR-110).
+func (m *Metrics) SetHistory(h blob.HistorySink) {
+	if m != nil && h != nil {
+		m.history.Store(&h)
+	}
 }
 
 // NewMetrics registers the counters on m. It panics, like every registration in internal/observability, when called twice for
@@ -73,8 +86,12 @@ func (m *Metrics) copy(conn, mode string, bytes int64) {
 }
 
 func (m *Metrics) failure(conn, reason string) {
-	if m != nil {
-		m.failures.WithLabelValues(conn, reason).Inc()
+	if m == nil {
+		return
+	}
+	m.failures.WithLabelValues(conn, reason).Inc()
+	if h := m.history.Load(); h != nil {
+		(*h).Count(conn, blob.HistoryCopyFailed, reason, 0)
 	}
 }
 

@@ -75,6 +75,9 @@ type StartCheckOptions struct {
 	HoldsCopies func(ctx context.Context, conn string) (bool, error)
 	// Record stores what the check of a connection found (storage_connections.capabilities); nil stores nothing.
 	Record func(ctx context.Context, conn string, caps Capabilities) error
+	// Checked is told the outcome of every run of a connection's check, nil when it passed: the history's record of a start check
+	// that fails (storage.md R-STOR-109), whose step CheckStep names. A run that ctx ended is not told. It must not block.
+	Checked func(conn string, err error)
 	// Log receives the failures that are retried and a draining connection's configuration error.
 	Log *slog.Logger
 	// Await tunes the backoff of the retries.
@@ -106,11 +109,11 @@ func CheckConnection(ctx context.Context, c *Connection, peers []*Connection, o 
 		alg = ""
 	}
 	if err := startupCheck(ctx, objects, prefix, o.Replica, alg); err != nil {
-		return caps, checksumRefusal(c, err)
+		return caps, atStep(CheckStep(err), checksumRefusal(c, err))
 	}
 	if o.Installation != "" {
 		if err := checkMarker(ctx, c, o); err != nil {
-			return caps, err
+			return caps, atStep(StepMarker, err)
 		}
 	}
 	e := &ConformanceEnv{Store: objects, Opts: ConformanceOptions{Prefix: prefix, Replica: o.Replica, PayloadChecksum: alg}}
@@ -118,28 +121,29 @@ func CheckConnection(ctx context.Context, c *Connection, peers []*Connection, o 
 	if alg != "" {
 		enforced, err := probeChecksumEnforced(ctx, e)
 		if err != nil {
-			return caps, err
+			return caps, atStep(StepPayloadChecksum, err)
 		}
 		caps.PayloadChecksumEnforced = enforced
 	}
 	if c.BatchDelete() {
 		if err := checkDeleteMany(ctx, e); err != nil {
 			if fallsOver(err) {
-				return caps, err
+				return caps, atStep(StepBatchDelete, err)
 			}
-			return caps, fmt.Errorf("%s batch_delete: DeleteObjects failed; set batch_delete: false for a store without it: %w", c.Element(), err)
+			return caps, atStep(StepBatchDelete,
+				fmt.Errorf("%s batch_delete: DeleteObjects failed; set batch_delete: false for a store without it: %w", c.Element(), err))
 		}
 		caps.BatchDelete = true
 	}
-	kept, replaced, err := probeMetadata(ctx, e)
+	m, err := probeMetadata(ctx, e)
 	if err != nil {
-		return caps, err
+		return caps, atStep(StepMetadata, err)
 	}
-	caps.Metadata, caps.CopyReplacesMetadata = kept, replaced
-	if c.Encrypted() && !kept {
+	caps.Metadata, caps.CopyReplacesMetadata, caps.SSEApplied = m.kept, m.replaced, m.sse
+	if c.Encrypted() && !m.kept {
 		// the record lives in the object's metadata (R-STOR-077); without the copy that replaces it the finalize streams (Q-STOR-306)
-		return caps, fmt.Errorf("%w: connection %s: the store did not keep the metadata of the probe object; an encrypted connection keeps each object's wrapped data key there (storage.md R-STOR-077)",
-			ErrMetadataNotKept, c.ID())
+		return caps, atStep(StepMetadata, fmt.Errorf("%w: connection %s: the store did not keep the metadata of the probe object; an encrypted connection keeps each object's wrapped data key there (storage.md R-STOR-077)",
+			ErrMetadataNotKept, c.ID()))
 	}
 	for _, p := range peers {
 		if p == c || p.Encrypted() || c.Encrypted() || !sameEndpoint(c, p) {
@@ -245,40 +249,51 @@ const probeMetadataKey = "quader-probe"
 // probeMetadata writes a probe with one metadata key and reads it back, then copies the probe onto itself with another value
 // and reads object and metadata back (R-STOR-035). A copy replaces the metadata only if the object keeps its bytes: a gateway
 // is known to have lost an object's data in a copy onto itself, which no stage may build on. A refusal records the capability
-// as absent; a transient failure is returned.
-func probeMetadata(ctx context.Context, e *ConformanceEnv) (kept, replaced bool, err error) {
+// as absent; a transient failure is returned. The HeadObject of the written probe also says which server-side encryption the store
+// applied to a write of the connection (Q-STOR-519).
+func probeMetadata(ctx context.Context, e *ConformanceEnv) (metadataProbe, error) {
+	var m metadataProbe
 	key := e.Key("metadata")
 	data := payload(32)
 	if err := e.Store.Put(ctx, key, bytes.NewReader(data), int64(len(data)), probeChecksum(e.Opts.PayloadChecksum, data), Metadata{probeMetadataKey: "written"}); err != nil {
 		if fallsOver(err) {
-			return false, false, err
+			return m, err
 		}
-		return false, false, nil
+		return m, nil
 	}
 	info, err := e.Store.Head(ctx, key)
 	if err != nil {
-		return false, false, err
+		return m, err
 	}
-	kept = info.Metadata[probeMetadataKey] == "written"
+	m.kept = info.Metadata[probeMetadataKey] == "written"
+	m.sse = &SSEApplied{Algorithm: info.SSE, KMSKeyID: info.SSEKMSKeyID}
 	if err := e.Store.Copy(ctx, key, key, int64(len(data)), Metadata{probeMetadataKey: "replaced"}); err != nil {
 		if fallsOver(err) {
-			return kept, false, err
+			return m, err
 		}
-		return kept, false, nil
+		return m, nil
 	}
 	body, info, err := e.Store.Get(ctx, key, nil)
 	if err != nil {
 		if fallsOver(err) {
-			return kept, false, err
+			return m, err
 		}
-		return kept, false, nil // the copy lost the object
+		return m, nil // the copy lost the object
 	}
 	got, err := io.ReadAll(io.LimitReader(body, int64(len(data))+1))
 	_ = body.Close()
 	if err != nil {
-		return kept, false, err
+		return m, err
 	}
-	return kept, bytes.Equal(got, data) && info.Metadata[probeMetadataKey] == "replaced", nil
+	m.replaced = bytes.Equal(got, data) && info.Metadata[probeMetadataKey] == "replaced"
+	return m, nil
+}
+
+// metadataProbe is what probeMetadata found: whether the metadata was kept and a copy replaced it, and the server-side encryption the
+// store reported for the probe object (nil when it could not be asked).
+type metadataProbe struct {
+	kept, replaced bool
+	sse            *SSEApplied
 }
 
 // probePeerCopy copies a probe object of a peer's bucket, written with the peer's client, into this store's bucket with this
@@ -330,24 +345,24 @@ func checkChecksumEnforced(ctx context.Context, e *ConformanceEnv) error {
 }
 
 func checkMetadata(ctx context.Context, e *ConformanceEnv) error {
-	kept, _, err := probeMetadata(ctx, e)
+	m, err := probeMetadata(ctx, e)
 	switch {
 	case err != nil:
 		return err
-	case !kept:
+	case !m.kept:
 		return errors.New("the metadata of a write was not returned by HeadObject (metadata: false); stage 2 cannot keep its wrapped key in the object")
 	}
 	return nil
 }
 
 func checkCopyReplacesMetadata(ctx context.Context, e *ConformanceEnv) error {
-	kept, replaced, err := probeMetadata(ctx, e)
+	m, err := probeMetadata(ctx, e)
 	switch {
 	case err != nil:
 		return err
-	case !kept:
+	case !m.kept:
 		return note("skipped: the store keeps no metadata")
-	case !replaced:
+	case !m.replaced:
 		return errors.New("a copy onto itself with replaced metadata kept the old value or lost the object's bytes (copyReplacesMetadata: false)")
 	}
 	return nil
@@ -417,6 +432,9 @@ func AwaitConnections(ctx context.Context, conns *Connections, o StartCheckOptio
 			first := true
 			err := await(bg, func(ctx context.Context) error {
 				caps, err := CheckConnection(ctx, c, list, o)
+				if o.Checked != nil && (err == nil || ctx.Err() == nil) {
+					o.Checked(c.ID(), err)
+				}
 				if err == nil {
 					c.SetCapabilities(caps)
 					if o.Record != nil {
@@ -466,6 +484,43 @@ func AwaitConnections(ctx context.Context, conns *Connections, o StartCheckOptio
 			}
 		}
 	}
+}
+
+// The steps of a connection's start check, as the history records the one that failed (storage.md R-STOR-109).
+const (
+	StepProbe           = "probe"            // write, read back and delete a probe object
+	StepList            = "list"             // list the blob prefix
+	StepPartIdentity    = "part_identity"    // the part-identity check of a multipart upload (R-STOR-011)
+	StepMarker          = "marker"           // the marker of the location (R-STOR-051)
+	StepPayloadChecksum = "payload_checksum" // whether a wrong payload checksum is refused
+	StepBatchDelete     = "batch_delete"     // DeleteObjects
+	StepMetadata        = "metadata"         // whether an object's metadata is kept and a copy replaces it
+)
+
+// stepError is a failure of the start check with the step it failed in.
+type stepError struct {
+	step string
+	err  error
+}
+
+func (e *stepError) Error() string { return e.err.Error() }
+func (e *stepError) Unwrap() error { return e.err }
+
+// atStep names the step of a failure of the start check; a failure that names one already keeps it.
+func atStep(step string, err error) error {
+	if err == nil || CheckStep(err) != "" {
+		return err
+	}
+	return &stepError{step: step, err: err}
+}
+
+// CheckStep is the step a failure of the start check failed in, empty for an error that names none.
+func CheckStep(err error) string {
+	var se *stepError
+	if errors.As(err, &se) {
+		return se.step
+	}
+	return ""
 }
 
 // RecordCapabilities stores what the start check found for a connection (storage_connections.capabilities, R-STOR-035).

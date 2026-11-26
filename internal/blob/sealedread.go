@@ -171,6 +171,7 @@ type sealedDownload struct {
 	stamp  bool // a whole, verified read: its end stamps the copy verified
 	undo   func()
 	done   bool
+	source string // the source of a mark: a whole read (download) or a ranged one (read)
 }
 
 func (v *sealedDownload) Read(p []byte) (int, error) {
@@ -186,7 +187,7 @@ func (v *sealedDownload) Read(p []byte) (int, error) {
 		if reason, ok := blobcrypt.ReasonOf(err); ok {
 			v.done = true
 			if reason.MarksCorrupt() {
-				v.store.markCopy(v.ctx, v.digest, v.copy.Connection, CopyCorrupt)
+				v.store.markCopy(v.ctx, v.digest, v.copy.Connection, CopyCorrupt, Damage{Source: v.source, Reason: string(reason)})
 			}
 			return n, fmt.Errorf("%w: connection %s: %w", ErrCorrupt, v.copy.Connection, err)
 		}

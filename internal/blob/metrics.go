@@ -1,6 +1,7 @@
 package blob
 
 import (
+	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -30,12 +31,53 @@ type Metrics struct {
 	gcLastOK    *prometheus.GaugeVec // no series until a run succeeded
 	gcReleased  *prometheus.CounterVec
 
-	damaged         *prometheus.CounterVec
-	copiesDamaged   *prometheus.CounterVec
-	readsFallenOver *prometheus.CounterVec
-	sealedFailures  *prometheus.CounterVec
+	damaged            *prometheus.CounterVec
+	copiesDamaged      *prometheus.CounterVec
+	readsFallenOver    *prometheus.CounterVec
+	sealedFailures     *prometheus.CounterVec
+	writesFallenOver   *prometheus.CounterVec
+	uploadsUnavailable prometheus.Counter
+	readsUnavailable   *prometheus.CounterVec
 
 	uploadSessions *prometheus.CounterVec
+
+	// history receives what the reads and writes absorbed beside the counters (R-STOR-110): the replica's recorder of the history
+	// (internal/blob/history), nil until SetHistory.
+	history atomic.Pointer[HistorySink]
+}
+
+// HistorySink is what the history of the stored content counts per hour (storage.md R-STOR-110, Q-STOR-513): kind is one of the
+// History… kinds, reason the reason of the matching metric, bytes the bytes concerned (0 when not known). It is called in the request
+// path and must not block.
+type HistorySink interface {
+	Count(conn, kind, reason string, bytes int64)
+}
+
+// The kinds of storage_counts that the blob store counts (R-STOR-110).
+const (
+	HistoryReadFallOver         = "read_fallover"          // a read left a copy for the next (quader_storage_reads_fallen_over_total)
+	HistoryReadUnavailable      = "read_unavailable"       // no copy could serve a read (quader_storage_reads_unavailable_total)
+	HistoryWriteFallOver        = "write_fallover"         // the next connection took a write (quader_storage_writes_fallen_over_total)
+	HistoryUploadRefused        = "upload_refused"         // fewer than min_copies copies were written (quader_storage_uploads_unavailable_total)
+	HistoryCopyFailed           = "copy_failed"            // the reconciliation could not make a copy (quader_storage_reconcile_failures_total)
+	HistoryEncryptedReadRefused = "encrypted_read_refused" // a check of the stored format refused a read (quader_storage_encrypted_read_failures_total)
+)
+
+// SetHistory makes the recorder of the history count what these metrics count (R-STOR-110). A nil *Metrics records nothing.
+func (m *Metrics) SetHistory(h HistorySink) {
+	if m != nil && h != nil {
+		m.history.Store(&h)
+	}
+}
+
+// count hands one event to the history's recorder, when there is one.
+func (m *Metrics) count(conn, kind, reason string, bytes int64) {
+	if m == nil {
+		return
+	}
+	if h := m.history.Load(); h != nil {
+		(*h).Count(conn, kind, reason, bytes)
+	}
 }
 
 // NewMetrics registers the families on m. It panics, like every registration
@@ -62,6 +104,12 @@ func NewMetrics(m *observability.Metrics) *Metrics {
 		copiesDamaged:   m.NewCounterVec("quader_storage_copies_damaged_total", "Copies of blobs marked damaged by a detection, by connection and new status (R-STOR-055).", "connection", "status"),
 		readsFallenOver: m.NewCounterVec("quader_storage_reads_fallen_over_total", "Reads that left a copy for the next before their first byte, by connection and reason (R-STOR-055).", "connection", "reason"),
 		sealedFailures:  m.NewCounterVec("quader_storage_encrypted_read_failures_total", "Reads of a stored object refused by a check of the stored format, by connection and the step's reason (R-STOR-082).", "connection", "reason"),
+		writesFallenOver: m.NewCounterVec("quader_storage_writes_fallen_over_total",
+			"Writes of an upload that failed on a connection and were taken by the next writable one, by the connection that failed and the failure's code (R-STOR-053, R-STOR-110).", "connection", "reason"),
+		uploadsUnavailable: m.NewCounterVec("quader_storage_uploads_unavailable_total",
+			"Uploads refused with 503 because fewer than storage.replication.min_copies copies could be written (R-STOR-053, R-STOR-110).").WithLabelValues(),
+		readsUnavailable: m.NewCounterVec("quader_storage_reads_unavailable_total",
+			"Reads that no copy could serve, answered 503 content_unavailable, by the connection of the last copy tried (R-STOR-055, R-STOR-110).", "connection"),
 
 		uploadSessions: m.NewCounterVec("quader_storage_upload_sessions_total", "Multi-request upload sessions by how they ended: completed, aborted or expired (R-STOR-011).", "outcome"),
 	}
@@ -161,10 +209,36 @@ const (
 	fallOverRecord      = "record"      // a check of the stored format refused the object before its first byte (R-STOR-082)
 )
 
-// encryptedReadFailure counts a read refused by a check of the stored format, by its reason (R-STOR-082).
+// encryptedReadFailure counts a read refused by a check of the stored format, by its reason (R-STOR-082), and in the history.
 func (m *Metrics) encryptedReadFailure(conn, reason string) {
 	if m != nil {
 		m.sealedFailures.WithLabelValues(conn, reason).Inc()
+		m.count(conn, HistoryEncryptedReadRefused, reason, 0)
+	}
+}
+
+// writeFellOver counts a write that failed on conn with code and was taken by the next writable connection (R-STOR-053).
+func (m *Metrics) writeFellOver(conn, code string) {
+	if m != nil {
+		m.writesFallenOver.WithLabelValues(conn, code).Inc()
+		m.count(conn, HistoryWriteFallOver, code, 0)
+	}
+}
+
+// uploadUnavailable counts an upload of bytes refused because fewer than min_copies copies were written; the history names the
+// connection whose failure ended it and the failure's code (R-STOR-110).
+func (m *Metrics) uploadUnavailable(conn, code string, bytes int64) {
+	if m != nil {
+		m.uploadsUnavailable.Inc()
+		m.count(conn, HistoryUploadRefused, code, bytes)
+	}
+}
+
+// readUnavailable counts a read of bytes that no copy could serve, on the connection of the last copy tried (R-STOR-110).
+func (m *Metrics) readUnavailable(conn, code string, bytes int64) {
+	if m != nil {
+		m.readsUnavailable.WithLabelValues(conn).Inc()
+		m.count(conn, HistoryReadUnavailable, code, bytes)
 	}
 }
 
@@ -175,10 +249,11 @@ func (m *Metrics) copyDamaged(conn, status string) {
 	}
 }
 
-// fellOver counts a read that left a copy for the next (R-STOR-055).
+// fellOver counts a read that left a copy for the next (R-STOR-055), and in the history.
 func (m *Metrics) fellOver(conn, reason string) {
 	if m != nil {
 		m.readsFallenOver.WithLabelValues(conn, reason).Inc()
+		m.count(conn, HistoryReadFallOver, reason, 0)
 	}
 }
 

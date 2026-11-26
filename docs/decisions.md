@@ -3335,6 +3335,46 @@ as reversing his earlier choice, which they do not say).
 **Revisit condition:** measured scan times or statement costs at an installation's size that the defaults do not carry (W-36's
 measurement), or the owner's word on the floor.
 
+### ADR-315 · The history of the stored content lives in PostgreSQL, written where it happens
+
+**Status:** Decided by the development agent on 2026-11-26 (W-37's B.4, the owner's request of 2026-11-26 for the storage page: "ob es
+irgendwelche Probleme gibt oder gab … wo diese Fehler auftraten und wieviel Speicher betroffen war";
+[Q-STOR-510](spec/storage.md#q-stor-510--a-trigger-not-go-opens-and-resolves-findings) to
+[Q-STOR-521](spec/storage.md#q-stor-521--the-task-is-hourly-and-exclusive-and-deletes-in-batches-of-10000),
+[R-STOR-108](spec/storage.md#r-stor-108--a-copy-found-damaged-is-a-finding-resolved-by-what-happens-to-its-copy) to
+[R-STOR-110](spec/storage.md#r-stor-110--what-the-reads-and-writes-absorbed-is-counted-per-hour-and-the-history-is-kept-bounded)). It builds
+W-37's P2.
+
+**Context.** The product could tell the present state of its copies and connections, not what went wrong last month: a copy's state is
+overwritten by its repair, the reason a read of the stored format was refused and every fall-over were Prometheus counters only, an outage
+was a gauge of now, a failing start check a log line. The installation may run no Prometheus, and the product holds neither its address nor
+a permission to it.
+
+**Decision.**
+- Three tables of PostgreSQL, export class `data`: `storage_findings` (one row per copy found damaged), `storage_events` (an interval per
+  connection, kind and replica: `unreachable`, `start_check_failed`) and `storage_counts` (per UTC hour, connection, kind and reason).
+- A finding is opened and resolved by triggers of `blob_copies` on every change of `state`, whatever path made it; the reader and the
+  reason ride on the copy row, set by the one mark of every reader.
+- Each replica's recorder (`internal/blob/history`) is fed in the request path by the counters of the blob store and of the
+  reconciliation, the circuit breaker's transitions and the start check's outcomes, keeps them in memory and writes once a minute; an
+  interval opens at once and ends after 60 s of reachability.
+- The task `storage-history` deletes what is older than `storage.history.retention` (400 days by default), ends the intervals of a
+  replica that is gone and resolves the findings no copy holds any more. Caps per day keep a disaster from filling the database.
+- A failure is stored as a short code with the start check's step, never as the store's text.
+
+**Consequences.** Every replica writes a statement a minute and one per transition of a circuit; the trigger costs a statement per change
+of a copy's state, none per stamp of the scrub. The storage page (W-37's P3 and P4) reads one database the same for every replica. A
+replica that dies loses up to a minute of counts (H-2423); an outage shorter than the breaker's threshold is not recorded (H-2424); server-side
+encryption is known per connection, not per object (H-2425).
+
+**Alternatives considered.** Reading Prometheus (the product holds no address or permission, and an installation may run none); audit
+events (too coarse: `system.storage.blob_damaged` names no connection, reason or bytes, and one row per fall-over would flood an act log);
+the jobs' results (the scrub's alone, per run, gone after `jobs.retention`); opening and resolving findings in Go at the seven places that
+change copy rows (a place that forgets is a hole in the record).
+
+**Revisit condition:** a write rate of copy states at which the trigger's statements show in the commit's latency, or a page that needs a
+history per object that the hourly counts cannot give.
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -11470,10 +11510,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-HA
 
-266 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
+267 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
 
 <details>
-<summary>Q-HA: 266 questions</summary>
+<summary>Q-HA: 267 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11743,6 +11783,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-HA-496](spec/ha-and-helm.md#q-ha-496--two-processes-of-one-name-stand-side-by-side-the-rows-key-is-the-processs-uid-and-the-profile-names-its-image-scanner-after-the-unit) | Two processes of one name stand side by side: the row's key is the process's UID, and the profile names its image scanner after the unit | Decided by the development agent | (a) The profile sets `QUADER_POD_NAME=<project>-vuln-scanner-trivy` for both processes, as the chart does | — |
 | [Q-HA-497](spec/ha-and-helm.md#q-ha-497--the-drain-per-role-holds-its-p99-to-the-larger-of-the-warm-ups-and-the-post-drain-windows) | The drain per role holds its p99 to the larger of the warm-up's and the post-drain window's | Decided by the development agent on 2026-11-26 | (a) The bound is twice the larger of the warm-up's p99 and the post-drain window's (the minute after the drain window, until the load ends); each role's phase is logged | — |
 | [Q-HA-505](spec/ha-and-helm.md#q-ha-505--capacity-is-a-key-of-the-element-a-size-with-the-schemas-pattern) | Capacity is a key of the element, a size with the schema's pattern | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-106, Q-STOR-503) | (a) `capacity` in the element of `config.storage.connections`, passed through, the values file's element with `capacity: ""`; the schema allows an empty string or a whole number with a unit of `KiB` to `TiB` or `KB` to `TB`, the binary checks the bound of `1GiB` | — |
+| [Q-HA-506](spec/ha-and-helm.md#q-ha-506--storagehistoryretention-has-no-chart-line) | `storage.history.retention` has no chart line | Decided by the development agent | — | — |
 
 </details>
 
@@ -12350,10 +12391,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OPS
 
-128 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
+130 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
 
 <details>
-<summary>Q-OPS: 128 questions</summary>
+<summary>Q-OPS: 130 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12484,6 +12525,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OPS-450](spec/operations-and-observability.md#q-ops-450--a-change-of-a-format-whose-unit-is-a-file-names-its-folder) | A change of a format whose unit is a file names its folder | Decided by the development agent on 2026-11-26 | (a) The unit of a generic file's change is a folder: the folder an upload wrote it into, the folder a delete named (`<folder>/`, `/` for the root) | — |
 | [Q-OPS-451](spec/operations-and-observability.md#q-ops-451--the-filters-apply-to-a-rows-every-event-and-the-callers-name-is-part-of-its-key) | The filters apply to a row's every event, and the caller's name is part of its key | Decided by the development agent on 2026-11-26 | (a) The predecessor test and the walk apply every filter that can differ inside a key (action, prefix, category, outcome, resource, trace); the key holds the name | — |
 | [Q-OPS-452](spec/operations-and-observability.md#q-ops-452--the-filter-by-an-actors-name-is-an-index-condition) | The filter by an actor's name is an index condition | Decided by the development agent on 2026-11-26 | (a) The value is an ID when it is a UUID, a name otherwise, never both; a partial index on `(actor_name, occurred_at DESC)` | [ADR-297](#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item) |
+| [Q-OPS-470](spec/operations-and-observability.md#q-ops-470--the-task-storage-history-in-r-ops-019s-list) | The task `storage-history` in R-OPS-019's list | Decided by the development agent | — | — |
+| [Q-OPS-471](spec/operations-and-observability.md#q-ops-471--the-labels-of-the-historys-three-metrics-stay-within-r-ops-007s-set) | The labels of the history's three metrics stay within R-OPS-007's set | Decided by the development agent | — | — |
 | [Q-OPS-473](spec/operations-and-observability.md#q-ops-473--the-recheck-of-a-blob-is-an-event-of-the-registry) | The recheck of a blob is an event of the registry | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-027) | (a) `storage.blob.rechecked` in R-OPS-014's registry, category `system`, transactional, no hook, not journaled; its data the digest, the content state after the reads and each copy's connection and state | — |
 
 </details>
@@ -12998,10 +13041,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-STOR
 
-224 questions on [spec/storage.md](spec/storage.md).
+236 questions on [spec/storage.md](spec/storage.md).
 
 <details>
-<summary>Q-STOR: 224 questions</summary>
+<summary>Q-STOR: 236 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13229,6 +13272,18 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-STOR-505](spec/storage.md#q-stor-505--the-overview-derives-every-state-server-side) | The overview derives every state server-side | Decided by the development agent while building W-37's package P1 | (a) The server answers a state per tile with the figures behind it | — |
 | [Q-STOR-506](spec/storage.md#q-stor-506--the-overviews-states) | The overview's states | Decided by the development agent while building W-37's package P1 after W-37's plan (B.14) | — | — |
 | [Q-STOR-507](spec/storage.md#q-stor-507--the-overview-and-the-connections-list-read-the-snapshot-without-its-repositories) | The overview and the connections' list read the snapshot without its repositories | Decided by the development agent while building W-37's package P1, by the measurement the plan asked for | (a) The reads that do not show the repositories ask the server for the snapshot without that member (`StorageSummaryLatestFigures`); `GET /api/v1/storage/summary` reads it whole | — |
+| [Q-STOR-510](spec/storage.md#q-stor-510--a-trigger-not-go-opens-and-resolves-findings) | A trigger, not Go, opens and resolves findings | Decided by the development agent | (a) Triggers on `blob_copies` that fire on a change of `state` | [ADR-315](#adr-315--the-history-of-the-stored-content-lives-in-postgresql-written-where-it-happens) |
+| [Q-STOR-511](spec/storage.md#q-stor-511--source-and-reason-ride-on-the-copy-row) | Source and reason ride on the copy row | Decided by the development agent | — | — |
+| [Q-STOR-512](spec/storage.md#q-stor-512--three-new-metrics) | Three new metrics | Decided by the development agent | — | — |
+| [Q-STOR-513](spec/storage.md#q-stor-513--counts-are-flushed-per-minute-per-replica) | Counts are flushed per minute per replica | Decided by the development agent | — | — |
+| [Q-STOR-514](spec/storage.md#q-stor-514--the-trackers-hysteresis-is-60-s) | The tracker's hysteresis is 60 s | Decided by the development agent | — | — |
+| [Q-STOR-515](spec/storage.md#q-stor-515--the-export-class-is-data) | The export class is data | Decided by the development agent | — | — |
+| [Q-STOR-516](spec/storage.md#q-stor-516--the-caps-1000-findings-per-connection-and-day-100-intervals-per-connection-replica-and-day) | The caps: 1,000 findings per connection and day, 100 intervals per connection, replica and day | Decided by the development agent | — | — |
+| [Q-STOR-517](spec/storage.md#q-stor-517--events-store-a-code-never-the-sdks-text) | Events store a code, never the SDK's text | Decided by the development agent | — | — |
+| [Q-STOR-518](spec/storage.md#q-stor-518--the-safety-net-reconciled) | The safety net `reconciled` | Decided by the development agent | — | — |
+| [Q-STOR-519](spec/storage.md#q-stor-519--the-applied-server-side-encryption-is-the-start-checks-probe) | The applied server-side encryption is the start check's probe | Decided by the development agent | (b) The `HeadObject` the start check already sends for its metadata probe: its `x-amz-server-side-encryption` and KMS key into `capabilities.sseApplied` | — |
+| [Q-STOR-520](spec/storage.md#q-stor-520--copies-damaged-before-the-history-existed-open-their-findings-at-the-migration) | Copies damaged before the history existed open their findings at the migration | Decided by the development agent | — | — |
+| [Q-STOR-521](spec/storage.md#q-stor-521--the-task-is-hourly-and-exclusive-and-deletes-in-batches-of-10000) | The task is hourly and exclusive, and deletes in batches of 10,000 | Decided by the development agent | — | [ADR-315](#adr-315--the-history-of-the-stored-content-lives-in-postgresql-written-where-it-happens) |
 
 </details>
 

@@ -1534,6 +1534,9 @@ HTTP duration histograms use the buckets 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.
 | `quader_storage_copies` | gauge | `connection`, `state` (`present`, `missing`, `corrupt`) | Copies per connection and state, from the storage summary ([storage.md](storage.md) R-STOR-052, R-STOR-060) |
 | `quader_storage_copies_damaged_total` | counter | `connection`, `status` | Damaged copies detected (storage.md R-STOR-055, R-STOR-027) |
 | `quader_storage_reads_fallen_over_total` | counter | `connection`, `reason` | Reads that left a copy for the next (R-STOR-055) |
+| `quader_storage_reads_unavailable_total` | counter | `connection` | Reads no copy could serve, answered `503 content_unavailable`, on the connection of the last copy tried ([storage.md](storage.md) R-STOR-055, R-STOR-110; Q-OPS-471) |
+| `quader_storage_writes_fallen_over_total` | counter | `connection`, `reason` | Writes of an upload the next writable connection took, by the connection that failed and the failure's code (`timeout`, `http_5xx`, `throttled`, …; [storage.md](storage.md) R-STOR-053, R-STOR-110; Q-OPS-471) |
+| `quader_storage_uploads_unavailable_total` | counter | — | Uploads refused with `503` because fewer than `storage.replication.min_copies` copies were written ([storage.md](storage.md) R-STOR-053, R-STOR-110) |
 | `quader_storage_reconcile_queue`, `quader_storage_reconcile_queue_oldest_seconds` | gauge | `connection` | The reconciliation's queue and its oldest row, from PostgreSQL (R-STOR-056) |
 | `quader_storage_connection_filling` | gauge | `connection` | 1 while the connection is `filling`, from `storage_connections` (R-STOR-051, R-STOR-056); `QuaderStorageReplicationBacklog` leaves such a connection out ([ha-and-helm.md](ha-and-helm.md) Q-HA-393) |
 | `quader_storage_connection_backlog_blobs`, `quader_storage_connection_backlog_bytes`, `quader_storage_connection_fill_ratio` | gauge | `connection` | From the storage summary (R-STOR-056) |
@@ -3016,6 +3019,7 @@ shared key is offered again on the next scheduler tick, so it is postponed, neve
 | `scrub` | [storage.md](storage.md) R-STOR-027: reads every copy whole once per connection's period | `7 * * * *` (hourly, storage.md) |
 | `storage-reconcile` | [storage.md](storage.md) R-STOR-056: copies to the connections that lack a blob, fills, drains | `* * * * *` (every minute, storage.md) |
 | `storage-summary` | R-OPS-023 | `17 * * * *` |
+| `storage-history` | [storage.md](storage.md) R-STOR-110: deletes the history of the stored content older than `storage.history.retention`, ends the intervals of a replica that is gone, resolves the findings no copy holds; queue `maintenance`, exclusive, not mutating (Q-OPS-470) | `37 * * * *` (storage.md) |
 | `audit-retention` | R-OPS-015 and R-OPS-017: calls `audit_maintain_partitions()`, which creates partitions ahead and drops expired ones | `30 3 * * *` |
 | `webhook-retention` | R-OPS-044 and the outbox of R-OPS-035; specified, not built | `*/15 * * * *` (proposed) |
 | `support-bundle-expiry` | R-OPS-027; specified, not built | `0 4 * * *` (proposed) |
@@ -8014,6 +8018,25 @@ Context: the recheck was the one act of the storage operations without an event;
 
 **Choice:** (a). Not journaled: a recheck writes no object and grants nothing, so a restore has nothing to withdraw. **Applied in the
 spec:** R-OPS-014's table; code: [events_storage.go](../../internal/audit/events_storage.go) (`registerBlobRechecked`).
+
+### Q-OPS-470 · The task `storage-history` in R-OPS-019's list
+
+Status: **Decided by the development agent** (W-37, 2026-11-26).
+
+The history of the stored content ([storage.md](storage.md) R-STOR-108 to R-STOR-110) is kept bounded by a task of its own, `storage-history`
+(queue `maintenance`, exclusive, `37 * * * *`, [Q-STOR-521](storage.md#q-stor-521--the-task-is-hourly-and-exclusive-and-deletes-in-batches-of-10000)),
+not by the task `storage-summary`: the summary replaces a snapshot, the history deletes by age, and either can be run or switched off
+alone under `maintenance.tasks`. It writes no content and runs in read-only maintenance mode (R-OPS-024). **Applied in the spec:** R-OPS-019.
+
+### Q-OPS-471 · The labels of the history's three metrics stay within R-OPS-007's set
+
+Status: **Decided by the development agent** (W-37, 2026-11-26).
+
+`quader_storage_writes_fallen_over_total` carries `connection` (at most eight values, R-STOR-050) and `reason`, a code of
+`blob.FailureCode` (fourteen words, fixed in code; [Q-STOR-517](storage.md#q-stor-517--events-store-a-code-never-the-sdks-text));
+`quader_storage_reads_unavailable_total` carries `connection` alone; `quader_storage_uploads_unavailable_total` none, since an upload is
+refused once and the connection it is counted on in the history is a choice of that record ([Q-STOR-513](storage.md#q-stor-513--counts-are-flushed-per-minute-per-replica)).
+No label holds a digest, a key or a text of the store. **Applied in the spec:** R-OPS-007.
 
 ## What this does not cover
 

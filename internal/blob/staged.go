@@ -103,6 +103,7 @@ func (s *Store) putStaged(ctx context.Context, sp *Spooled) ([]copyWrite, error)
 		}
 	}
 	if len(others) < need {
+		s.metrics.uploadUnavailable(s.firstRejecting(), CodeCircuitOpen, sp.Size)
 		return writes, s.notEnoughConnections(nil)
 	}
 	body, _, err := c.ReadBlob(ctx, sp.SHA256, sp.Size, Copy{Connection: c.ID(), ObjectKey: first.key, StoredSize: first.storedSize}, nil, false)

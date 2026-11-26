@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -360,6 +361,14 @@ func TestR_STOR_082_ReadingFromAnEncryptedConnection(t *testing.T) {
 				}
 				if n := f.failures(t, string(m.reason)); n != 1 {
 					t.Errorf("%s counted %v times", m.reason, n)
+				}
+				// R-STOR-108: the mark names the reader and the format's reason, which the finding records
+				source := blob.DamageDownload
+				if ranged {
+					source = blob.DamageRead
+				}
+				if want := "archive corrupt " + source + " " + string(m.reason); !slices.Contains(f.db.marked(), want) {
+					t.Errorf("marks %v, want %q", f.db.marked(), want)
 				}
 			})
 		}

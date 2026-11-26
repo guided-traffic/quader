@@ -670,6 +670,19 @@ admits a `bst` token without an expiry only with `created_via` `configuration` (
 `IdentityCountActiveTokens` leaves the declared token out of the limit per principal. Expand phase only (Q-ARCH-340 keeps the phases'
 rules off: the step replaces two checks).
 
+**00151_storage_history** ([storage.md](../spec/storage.md#the-history-of-the-stored-content) R-STOR-108 to R-STOR-110, W-37 package P2;
+the plan's placeholder 00154, the number the landing gives it): the history of the stored content. `blob_copies` gains `damage_source`
+and `damage_reason`; the BEFORE trigger `blob_copies_damage_mark` clears both on a change of `state` that does not set them; the AFTER
+triggers `blob_copies_history_ins`, `_upd` (only on a change of `state`) and `_del` run `storage_copy_history()`, which opens a row of
+`storage_findings` for a copy that becomes `missing` or `corrupt` (at most 1,000 per connection and UTC day, the rest added to
+`storage_counts` as `findings_unlisted`) and resolves the open one when the copy leaves that state or its row goes. `storage_events` (an
+interval per connection, kind and replica, a partial unique index on the open one) and `storage_counts` (per UTC hour, connection, kind
+and reason). No foreign key to `blobs` or `storage_connections`; export class `data` for all three ([tables.go](../../internal/blob/tables.go)).
+The migration opens a finding for every copy damaged before it. The statements: `SetBlobCopyState` names the mark's source and reason
+([blob_copies.sql](../../internal/meta/postgres/queries/blob_copies.sql)), `SweepAdoptCopy` a corrupt adoption's, `ScrubRecordWhole`
+moves `created_at` when a repair wrote the object; the recorder's and the task's statements are in
+[storage_history.sql](../../internal/meta/postgres/queries/storage_history.sql). Expand phase only.
+
 ## The database's repository of the image scanning (00089)
 
 [00089_vuln_image_db_drop](../../internal/meta/postgres/migrations/00089_vuln_image_db_drop.sql) removes the private slot of the image

@@ -3028,6 +3028,10 @@ check moved to R-STOR-058.
   [operations-and-observability.md](operations-and-observability.md) R-OPS-014). Built with W-37's package P1:
   [storage_damaged_api.go](../../internal/api/v1/storage_damaged_api.go) (`auditRecheck`),
   [events_storage.go](../../internal/audit/events_storage.go).
+- **Findings** (R-STOR-108). Each copy the scrub, its repair's sources or the recheck marks is a finding with the source `scrub` or
+  `recheck` and the reason (`not_found`, `digest`, `size`, or the reason of a refusal of the stored format); a repair that wrote the
+  object again moves the copy's `created_at`, so its finding is resolved `rewritten`, and a copy shown whole again by a read resolves its
+  finding `found_again`.
 - **Trigger.** `POST /api/v1/system/tasks/scrub/run` with `{"connection": ""}` (optional; empty: every connection) runs the due reads; a
   connection the worker does not configure fails the job at once. Observation and stop through the job API; the job's result carries, per
   connection, `read`, `verified`, `corrupt`, `missing`, `errors`, `bytes`, `repaired`, `repairsFailed` and why its reader `ended`
@@ -3365,6 +3369,15 @@ Priority: **P1** · Covers: STOR-022
   [R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content), per connection and
   in a format of Quader's own (R-STOR-075, R-STOR-076); this mode stays possible beneath it.
 - Changing the mode affects new objects only; existing objects keep their encryption.
+- **What the store applied** ([Q-STOR-519](#q-stor-519--the-applied-server-side-encryption-is-the-start-checks-probe)). The start check
+  reads the server-side encryption the store reports for its probe object (`x-amz-server-side-encryption` and the KMS key of
+  `HeadObject`, R-STOR-035) and records it in `capabilities.sseApplied` (`{"algorithm": "AES256|aws:kms|aws:kms:dsse|", "kmsKeyId": …}`,
+  the empty algorithm when the store reports none): the actual state of today's writes beside the configured mode, a bucket default under
+  `none` included. It is known per connection and start, not per object
+  ([H-2425](../security/object-store-connections.md#h-2425--server-side-encryption-is-known-per-connection-not-per-object)). *Built* on
+  2026-11-26 (W-37 package P2: `ObjectInfo.SSE` in [objects.go](../../internal/blob/objects.go), the S3 adapter's `Head` and `Get` in
+  [client.go](../../internal/blob/s3/client.go), `probeMetadata` in [startcheck.go](../../internal/blob/startcheck.go);
+  `TestR_STOR_035_TheStoreAppliedEncryption` in `internal/blob` and `internal/blob/s3`, unit, milliseconds).
 
 Configuration (keys of a connection's element, R-STOR-050; each connection has its own mode):
 
@@ -3436,6 +3449,10 @@ storage:
       failure_threshold: 5         # default (proposed)
       open_duration: 10s           # default (proposed)
 ```
+
+- **The record of an outage** (R-STOR-109). Each transition of a connection's circuit between closed and open on a replica is told to
+  the replica's recorder of the history (`WithGuardTransitions`), which keeps the time the connection was cut off as an interval with the
+  code of the failure that opened it.
 
 Acceptance criteria:
 
@@ -3521,6 +3538,12 @@ connections agree in time or order. Operators MUST use stores that satisfy them.
   list-after-write, and reports each result; overwrite and delete visibility are reported as "strong" or "eventual (tolerated, A1)",
   never as a failure. The startup check runs the part-identity check as well, so a replica does not serve on a store that fails it. It
   changes nothing outside `_probe/` and the marker.
+- **What the history keeps of it** (R-STOR-109). Every run of a connection's start check is told to the replica's recorder
+  (`StartCheckOptions.Checked`): a failure opens an interval `start_check_failed` with the step it failed in (`probe`, `list`,
+  `part_identity`, `marker`, `payload_checksum`, `batch_delete`, `metadata`) and a short code, a pass ends it. The probe's `HeadObject`
+  also reads the server-side encryption the store applied (R-STOR-032, `capabilities.sseApplied`). The conformance check records nothing:
+  by its own rule it opens no database
+  ([H-2427](../security/object-store-connections.md#h-2427--the-conformance-check-records-nothing)).
 
 Configuration:
 
@@ -3888,6 +3911,10 @@ CREATE INDEX blob_copy_queue_due    ON blob_copy_queue (next_attempt_at);
 CREATE INDEX blob_copy_queue_oldest ON blob_copy_queue (connection_id, enqueued_at);
 ```
 
+- **Where a mark came from** (R-STOR-108, [Q-STOR-511](#q-stor-511--source-and-reason-ride-on-the-copy-row)). `blob_copies` carries
+  `damage_source` and `damage_reason`, set by the statement that moves a copy to `missing` or `corrupt` and cleared by every other change of
+  its state (the trigger `blob_copies_damage_mark`, migration 00151); the triggers `blob_copies_history_*` open and resolve the copy's
+  finding on every change of `state`, whatever statement made it.
 - **No foreign key to `blobs`** in either table: R-STOR-024 reads every single-column foreign key to `blobs` as a reference
   ([queries/blob.sql](../../internal/meta/postgres/queries/blob.sql) `BlobReferencingColumns`), so such a key would keep every blob
   forever. The rows of a blob are deleted in the transaction of collection step (6) that drops the blob row (R-STOR-057). A migration
@@ -3952,6 +3979,11 @@ Priority: **P1** · Covers: STOR-011
 - **The assumptions per connection.** R-STOR-035's assumptions hold per connection and are checked per connection; no guarantee of the
   commit, the reconciliation or collection rests on a conditional write (`If-None-Match`, `If-Match`), which some stores refuse or accept
   and ignore (R-STOR-035 A7).
+- **Counted** (R-STOR-110). A write the next writable connection takes counts
+  `quader_storage_writes_fallen_over_total{connection,reason}` (the connection that failed, the failure's code) and `write_fallover` in
+  the history; an upload refused with fewer than `min_copies` copies counts `quader_storage_uploads_unavailable_total` and
+  `upload_refused` with its bytes, on the connection whose failure ended it (the first target whose circuit is open when none could be
+  tried).
 - **Transfer.** R-STOR-006 applies per connection with that connection's `payload_checksum`, checksum modes and storage class; the
   replica's `storage.object_store.multipart.max_concurrent_parts` is shared by all its connections.
 
@@ -4022,6 +4054,12 @@ Priority: **P1** · Covers: STOR-012
   a verified read, marks it `corrupt`. Each mark counts `quader_storage_copies_damaged_total{connection,status}`, queues the copy for
   repair (R-STOR-056) and, by the derivation of R-STOR-052, changes the blob's state only when no other copy is present. A transient error
   marks nothing. Each fall-over counts `quader_storage_reads_fallen_over_total{connection,reason}`.
+- **The history beside the metrics** (R-STOR-108, R-STOR-110). Each mark names its reader (`download` for a whole read, `read` for a
+  ranged one) and its reason (`not_found`, `size`, `digest`, or the reason of a refusal of the stored format), which the copy's finding
+  records. A fall-over counts `read_fallover`, a refusal of the stored format `encrypted_read_refused` (with `unknown_key`, which marks
+  nothing), and a read that no copy served `quader_storage_reads_unavailable_total{connection}` and `read_unavailable` with its bytes, on
+  the connection of the last copy it tried; a blob that PostgreSQL already holds as missing is refused before a copy is tried and counts
+  nothing here, its finding says it.
 - **Verification as today.** A full read is verified with the hold-back of R-STOR-013 and compared with the copy's `stored_size`; a range
   is served as stored (H-11). A verified full read stamps the copy's `verified_at` and `checked_at` when `verified_at` is older than 24
   hours, so downloads of a hot blob serve as its scrub at one write per copy and day
@@ -5857,6 +5895,139 @@ Acceptance criteria:
   or a secret (unit, `internal/api/v1`, `TestR_STOR_107_TheOverview`); the totals and the list's additions against PostgreSQL
   (integration, `TestR_STOR_106_TheCopiesInFigures`).
 
+## The history of the stored content
+
+The owner (2026-11-26) wants to see on the storage page whether there are or were problems with the stored content, where and how much
+was affected, and how the availability over several connections held up. Most of that history was kept nowhere: a copy's state is
+overwritten by its repair, the format's reasons and the fall-overs were metrics only, an outage was a gauge of now. These three
+requirements record it in PostgreSQL where it happens ([ADR-315](../decisions.md#adr-315--the-history-of-the-stored-content-lives-in-postgresql-written-where-it-happens));
+the storage overview, its period and the pages that read it are R-STOR-107 and R-STOR-111.
+
+### R-STOR-108 · A copy found damaged is a finding, resolved by what happens to its copy
+Priority: **P1** · Covers: quader-only
+
+**Built** on 2026-11-26 (W-37 package P2: migration `00151_storage_history`, `Damage` and `markCopy` in
+[copies.go](../../internal/blob/copies.go), the marks of [download.go](../../internal/blob/download.go),
+[sealedread.go](../../internal/blob/sealedread.go), [sweep.go](../../internal/blob/sweep.go), the scrub
+([scrub/read.go](../../internal/blob/scrub/read.go), [scrub/repair.go](../../internal/blob/scrub/repair.go)) and the reconciliation
+([reconcile/copy.go](../../internal/blob/reconcile/copy.go), [reconcile/drain.go](../../internal/blob/reconcile/drain.go))).
+
+- **A finding per damaged copy.** `storage_findings` holds one row per copy that became `missing` or `corrupt`: digest, connection,
+  status, source, reason, stored and blob size, whether another present copy existed then (`unavailable`), when it was detected, and when
+  and how it was resolved. The triggers of `blob_copies` write it, on insert and on every change of `state`
+  ([Q-STOR-510](#q-stor-510--a-trigger-not-go-opens-and-resolves-findings)), so collection, a drain, `forget-connection`, a commit's
+  overwrite, the reconciliation, the scrub's repair, the recheck and the restore's fix-up are all seen; the scrub's stamps of
+  `verified_at` change no `state` and cost nothing.
+- **Source and reason** ([Q-STOR-511](#q-stor-511--source-and-reason-ride-on-the-copy-row)). The one mark of every reader (R-STOR-055) names
+  its reader and its reason on the copy row: sources `download` (a whole read), `read` (a ranged read), `scrub`, `recheck`, `reconcile`,
+  `drain`, `sweep`; reasons `not_found`, `size`, `digest`, or the step of the stored format that refused the object (`record`,
+  `commitment`, `segment`, `final`, `format`, `destroyed_key`, R-STOR-082). A writer that names neither is recorded as source `other` with
+  its status as the reason. Every refusal of the stored format that marks a copy is a finding with its reason; `unknown_key` marks nothing
+  and is counted (R-STOR-110).
+- **Resolved by its copy, never by a click.** The copy leaving the damaged state resolves the open finding: `deleted` when the row goes
+  or is claimed for deletion, `superseded` on a change between `missing` and `corrupt` (which opens the next), `rewritten` when the row was
+  written after the finding (`created_at`, which every write of the object moves, a scrub's repair included), `found_again` otherwise.
+- **Bounded per day** ([Q-STOR-516](#q-stor-516--the-caps-1000-findings-per-connection-and-day-100-intervals-per-connection-replica-and-day)).
+  At most 1,000 findings per connection and UTC day are listed; the rest count `findings_unlisted` with their bytes in `storage_counts`
+  ([H-2428](../security/object-store-connections.md#h-2428--findings-beyond-the-daily-cap-are-counted-not-listed)). Two transactions that
+  open the thousandth at once may list one more.
+- **Copies damaged before the history** open their findings when the migration runs, dated when their copy was marked
+  ([Q-STOR-520](#q-stor-520--copies-damaged-before-the-history-existed-open-their-findings-at-the-migration)).
+- **Nothing secret.** A finding names the connection, the digest and the sizes; no key, credential, signed link or text of the store.
+
+Acceptance criteria:
+
+- Every mark names its source and reason: a whole read of another digest and of another size, no such object on a whole and on a ranged
+  read, each refusal of the stored format on a whole and on a ranged read, the scrub's mark, its repair recorded as written again, the
+  recheck's mark (unit, `internal/blob` and `internal/blob/scrub`, the in-memory stores and the fake tables;
+  `TestR_STOR_108_EveryMarkCarriesItsSourceAndReason`, the cases of `TestR_STOR_082_ReadingFromAnEncryptedConnection`,
+  `TestR_STOR_027_TheScrubReadsEveryDueCopyWhole`, `TestR_STOR_027_TheRecheckOfOneBlob`,
+  `TestR_STOR_101_TheScrubMarksACopyWhoseRecordNamesADestroyedKey`); a source of the reconciliation names the reason of its evidence
+  (unit, `internal/blob/reconcile`; `TestR_STOR_108_TheReconciliationsMarkNamesItsReason`). The orphan sweep's and the drain's marks are
+  shown by their sources' constants only: the collector is tested against the database alone.
+- Against PostgreSQL: the scrub's mark opens a finding `scrub`/`digest` that its repair resolves `rewritten` and leaves the copy without a
+  mark; found again, superseded (with the next finding), deleted and `unavailable` follow from SQL that changes the row; 1,001 copies
+  damaged in a day list 1,000 and count one `findings_unlisted` with its bytes; the migration's backfill opens one for a copy damaged
+  before it (integration, `test/integration/blob`; `TestR_STOR_108_AFindingFromMarkToRepair`, about 1.3 s, objects of 1 KiB and 1,001 copy
+  rows without an object).
+
+### R-STOR-109 · A connection a replica cannot reach, and a start check that fails, are intervals
+Priority: **P1** · Covers: quader-only
+
+**Built** on 2026-11-26 (W-37 package P2: [history/recorder.go](../../internal/blob/history/recorder.go), the hooks
+`WithGuardTransitions` of [guard.go](../../internal/blob/guard.go) and `StartCheckOptions.Checked` of
+[startcheck.go](../../internal/blob/startcheck.go), `FailureCode` of [failurecode.go](../../internal/blob/failurecode.go)).
+
+- **Intervals per replica.** `storage_events` holds one row per interval, connection, kind and replica: `unreachable` while the
+  connection's circuit is open on that replica (R-STOR-033), `start_check_failed` while its start check fails there (R-STOR-035), with the
+  step. An interval opens at the first transition and ends once the connection has stayed reachable for 60 s
+  ([Q-STOR-514](#q-stor-514--the-trackers-hysteresis-is-60-s)): a circuit that flaps (open 10 s, a probe, open again) is one interval
+  with its occurrences counted. Whether every replica was cut off at once is told by the replicas recorded
+  ([H-2426](../security/object-store-connections.md#h-2426--intervals-are-per-replica)).
+- **A code, never the store's text** ([Q-STOR-517](#q-stor-517--events-store-a-code-never-the-sdks-text)): `timeout`, `http_5xx`,
+  `http_4xx`, `throttled`, `credential_rejected`, `access_denied`, `no_such_bucket`, `tls`, `dns`, `refused`, `network`, `circuit_open`,
+  `other`. The text of the store and the SDK, which can carry an address, a key or a request ID, stays in the log.
+- **Written by the replica's recorder** (`internal/blob/history`): one insert when an interval opens, an update each minute while it
+  lasts (`last_seen_at`) and one when it ends; a replica that stops ends its open intervals, one that starts ends what an earlier life
+  under its name left open, and the task `storage-history` ends the open intervals of a replica the registry has not seen for ten minutes,
+  at the time it last saw them. An outage shorter than the breaker's threshold is not recorded
+  ([H-2424](../security/object-store-connections.md#h-2424--an-outage-the-breaker-does-not-see-is-not-recorded)).
+- **Bounded** (Q-STOR-516): at most 100 intervals per connection, replica and UTC day; beyond that the last one counts occurrences.
+
+Acceptance criteria:
+
+- A circuit that opens, flaps for 40 s and stays closed for 60 s is one interval with three occurrences, its code and the end at the last
+  close; a start check that fails is an interval with its step, ended when it passes; a replica that stops ends its open interval (unit,
+  `internal/blob/history`, a fake store and clock; `TestR_STOR_109_AnOutageIsOneInterval`, milliseconds).
+- The codes of the store's failures and the step of a failing start check (unit, `internal/blob`;
+  `TestR_STOR_109_FailureCodesAndSteps`).
+- Against PostgreSQL: an interval inserted, taken over by a new life of its replica and ended; the 101st interval of a day counted on the
+  last (integration, `test/integration/blob`; `TestR_STOR_110_TheRecordAgainstTheDatabase`).
+
+### R-STOR-110 · What the reads and writes absorbed is counted per hour, and the history is kept bounded
+Priority: **P1** · Covers: quader-only
+
+**Built** on 2026-11-26 (W-37 package P2: `HistorySink` and the counters of [metrics.go](../../internal/blob/metrics.go), the reconciliation's
+[reconcile/metrics.go](../../internal/blob/reconcile/metrics.go), [history/recorder.go](../../internal/blob/history/recorder.go),
+[history/task.go](../../internal/blob/history/task.go), `storage.history.retention` in
+[storage_history.go](../../internal/config/storage_history.go), the wiring in [wire_blob.go](../../internal/app/wire_blob.go) and
+[wire_storage_history.go](../../internal/app/wire_storage_history.go)).
+
+- **Counts per UTC hour, connection, kind and reason** in `storage_counts`: `read_fallover` (the reasons of
+  `quader_storage_reads_fallen_over_total`), `read_unavailable`, `write_fallover`, `upload_refused`, `copy_failed` (the reasons of
+  `quader_storage_reconcile_failures_total`), `encrypted_read_refused` (the format's reasons, `unknown_key` included) and
+  `findings_unlisted` (R-STOR-108), with the bytes where they are known. Each is counted in memory in the function that counts the matching
+  metric, and flushed once a minute and when the replica stops with one upsert per replica
+  ([Q-STOR-513](#q-stor-513--counts-are-flushed-per-minute-per-replica)); two replicas' counts of one hour add up. A replica that dies
+  loses up to a minute ([H-2423](../security/object-store-connections.md#h-2423--a-replica-that-dies-loses-up-to-a-minute-of-counts)).
+- **Three new metrics** ([Q-STOR-512](#q-stor-512--three-new-metrics)): `quader_storage_writes_fallen_over_total{connection,reason}`,
+  `quader_storage_uploads_unavailable_total`, `quader_storage_reads_unavailable_total{connection}`.
+- **Kept for `storage.history.retention`**, 9600h (400 days) by default, 2208h to 26280h, with no chart line
+  ([ha-and-helm.md](ha-and-helm.md#q-ha-506--storagehistoryretention-has-no-chart-line) Q-HA-506). The hourly task `storage-history`
+  (queue `maintenance`, exclusive, `37 * * * *`; [Q-STOR-521](#q-stor-521--the-task-is-hourly-and-exclusive-and-deletes-in-batches-of-10000))
+  deletes, 10,000 rows per statement, the resolved findings detected before the retention (an open finding stays whatever its age), the
+  intervals that ended before it and the counts before it; it ends the open intervals of a replica that is gone, and resolves as
+  `reconciled` an open finding whose copy is no longer in the state it records
+  ([Q-STOR-518](#q-stor-518--the-safety-net-reconciled), [H-2430](../security/object-store-connections.md#h-2430--a-restore-keeps-the-history-but-not-the-copies-states)).
+- **Export class `data`** ([Q-STOR-515](#q-stor-515--the-export-class-is-data)): the history is kept in backups, like the audit log.
+
+Configuration:
+
+```yaml
+storage:
+  history:
+    retention: 9600h    # default: 400 days; 2208h to 26280h
+```
+
+Acceptance criteria:
+
+- Fall-overs, a read no copy served, a write the next connection took, a refused upload and a refusal of the stored format are handed to
+  the recorder beside their metrics (unit, `internal/blob`; `TestR_STOR_110_TheStoreCountsWhatItAbsorbed`); the recorder sums them per hour
+  and flushes them (unit, `internal/blob/history`; `TestR_STOR_110_CountsAreFlushedPerHour`); two replicas' flushes of one hour add up
+  (integration; `TestR_STOR_110_TheRecordAgainstTheDatabase`).
+- The task deletes by the retention and keeps an open finding, ends a dead replica's interval and resolves a stale finding `reconciled`
+  (integration, `test/integration/blob`, rows only; `TestR_STOR_110_TheTaskKeepsTheHistoryBounded`).
+
 ## Retention and cleanup
 
 Retention policies run inside Quader's job framework and delete through the normal delete path,
@@ -6458,6 +6629,7 @@ leaves for storage.
   | `upload_sessions`, `upload_session_parts`, `upload_session_tails` | `transient` | Staged bytes under `_uploads/` are not backed up; clients restart their uploads |
   | `pending_sidecars` | `transient` | Declarations waiting for a file for at most `storage.sidecars.pending_ttl` |
   | `repository_usage`, `storage_usage_totals`, `storage_usage_deltas` | `data` | Exported, then recomputed by the restore (below) |
+  | `storage_findings`, `storage_events`, `storage_counts` | `data` | The history of the stored content, most wanted after a disaster (R-STOR-108 to R-STOR-110, Q-STOR-515); the copies the restore writes as `missing` open findings of their own, and the task `storage-history` resolves the restored open findings no copy holds any more |
   | every other table of this page | `data` | Items (trashed ones included), packages, versions, properties, download statistics, property sets, retention policies, runs and run items, `retention_run_gate` (its one row), `cap_outbox` (pending cap evaluations; evaluating a group again is harmless) |
 
 - **Restore fix-ups.** In the fix-up transaction of R-BAK-022 the restore calls
@@ -11260,6 +11432,115 @@ read as `summary - 'repositories'` reads and decodes in 2.4 ms.
 
 **Choice:** (a). **Applied in the spec:** R-STOR-107; code: `LatestFigures` in [summary.go](../../internal/blob/summary/summary.go),
 `ListWithLatest` in [connections.go](../../internal/blob/summary/connections.go).
+
+### Q-STOR-510 · A trigger, not Go, opens and resolves findings
+
+Status: **Decided by the development agent** (W-37, 2026-11-26) — selected from the options below; the owner reviews it.
+
+| Option | For | Against |
+|---|---|---|
+| (a) Triggers on `blob_copies` that fire on a change of `state` (chosen) | Collection, a drain, `forget-connection`, a commit's overwrite, the reconciliation, the scrub's repair, the recheck and the restore change copy rows; none is forgotten | A trigger on the largest table; it fires only on a change of state, so the scrub's stamps cost nothing |
+| (b) Each of the seven places in Go opens and resolves | Visible in Go | A path that forgets is a hole in the record |
+
+**Choice:** (a). `rewritten` against `found_again` is decided by the row's `created_at` against the finding's time; every write of the
+object moves `created_at` (the commit's `PutBlobCopy`, the reconciliation's record, and the scrub's repair, whose `ScrubRecordWhole` now
+moves it when it wrote the object). **Applied in the spec:** R-STOR-052, R-STOR-108.
+
+### Q-STOR-511 · Source and reason ride on the copy row
+
+Status: **Decided by the development agent** (W-37, 2026-11-26).
+
+The one mark of every reader (R-STOR-055) gets a `Damage{Source, Reason}` and writes it into `damage_source` and `damage_reason` in the
+statement that changes the state; the trigger reads it. A BEFORE trigger clears both on every change of state that does not set them, so a
+copy present again carries none and a later writer that names nothing is recorded as `other`, never with a stale source. The alternative, a
+session variable read by the trigger, would be lost on a pooled connection in transaction mode (R-ARCH-019). **Applied in the spec:**
+R-STOR-052, R-STOR-055, R-STOR-108.
+
+### Q-STOR-512 · Three new metrics
+
+Status: **Decided by the development agent** (W-37, 2026-11-26).
+
+Where a count of the history had no metric, one is added, so that Prometheus and the page count the same events:
+`quader_storage_writes_fallen_over_total{connection,reason}` (the connection that failed and the failure's code),
+`quader_storage_uploads_unavailable_total` (no label: an upload is refused once) and `quader_storage_reads_unavailable_total{connection}`.
+Their labels stay within R-OPS-007's set (operations-and-observability.md Q-OPS-471). **Applied in the spec:** R-STOR-053, R-STOR-055,
+R-STOR-110.
+
+### Q-STOR-513 · Counts are flushed per minute per replica
+
+Status: **Decided by the development agent** (W-37, 2026-11-26).
+
+Each replica sums its counts in memory per UTC hour, connection, kind and reason and writes them once a minute and when it stops, with one
+upsert that adds to what the other replicas wrote; a failed write keeps them for the next. A crash loses at most a minute (H-2423); a write
+per event would put a statement into every fall-over of a read. An upload refused is counted once, on the connection whose failure ended
+it, or on the first target whose circuit is open when none could be tried; a read no copy served on the connection of the last copy it
+tried. **Applied in the spec:** R-STOR-110.
+
+### Q-STOR-514 · The tracker's hysteresis is 60 s
+
+Status: **Decided by the development agent** (W-37, 2026-11-26).
+
+An interval ends when its connection has stayed reachable for 60 s, at the time it became reachable; a transition back within the 60 s
+continues it and counts an occurrence. With the breaker's open duration of 10 s, a store that fails every probe for an hour is one
+interval, not 360. **Applied in the spec:** R-STOR-109.
+
+### Q-STOR-515 · The export class is data
+
+Status: **Decided by the development agent** (W-37, 2026-11-26).
+
+The history is kept in backups, like the audit log: it is most wanted after a disaster. A restore writes its own copies; the task's safety
+net (Q-STOR-518) resolves the restored open findings no copy holds. **Applied in the spec:** R-STOR-047, R-STOR-110.
+
+### Q-STOR-516 · The caps: 1,000 findings per connection and day, 100 intervals per connection, replica and day
+
+Status: **Decided by the development agent** (W-37, 2026-11-26).
+
+A disaster (a bucket emptied, a key destroyed) must not fill the database: beyond 1,000 findings of a connection in a UTC day the trigger
+counts `findings_unlisted` with the bytes; beyond 100 intervals of a connection and replica in a UTC day the last interval counts the
+occurrences. Worst case about 3.2 million findings at eight connections over 400 days, normally a few rows (estimate). **Applied in the
+spec:** R-STOR-108, R-STOR-109.
+
+### Q-STOR-517 · Events store a code, never the SDK's text
+
+Status: **Decided by the development agent** (W-37, 2026-11-26).
+
+`blob.FailureCode` turns a failure into a short word from the store's code and status, or from the transport's error when the request got
+no answer; the start check adds the step. The text stays in the log, which already carries it. **Applied in the spec:** R-STOR-109.
+
+### Q-STOR-518 · The safety net `reconciled`
+
+Status: **Decided by the development agent** (W-37, 2026-11-26).
+
+The task resolves as `reconciled` an open finding whose copy row is gone or not in the finding's status: a restored database, or any path
+the triggers did not see. It never deletes an open finding. **Applied in the spec:** R-STOR-110.
+
+### Q-STOR-519 · The applied server-side encryption is the start check's probe
+
+Status: **Decided by the development agent** (W-37, 2026-11-26).
+
+| Option | For | Against |
+|---|---|---|
+| (a) The configured mode only | Nothing to build | With `none` the reader cannot tell whether the bucket encrypts |
+| (b) The `HeadObject` the start check already sends for its metadata probe: its `x-amz-server-side-encryption` and KMS key into `capabilities.sseApplied` (chosen) | No request more; the actual state of today's writes | Objects written before a change keep theirs, unknown per object (H-2425) |
+| (c) Per copy, a column of `blob_copies` written at every write and scrub read | Exact per object | A column on the largest table, for a question nobody asked |
+
+**Choice:** (b). A store that reports no header records the empty algorithm. **Applied in the spec:** R-STOR-032, R-STOR-035.
+
+### Q-STOR-520 · Copies damaged before the history existed open their findings at the migration
+
+Status: **Decided by the development agent** (W-37, 2026-11-26).
+
+The migration inserts a finding (source `other`, reason the status) for every copy then `missing` or `corrupt`, dated by its
+`state_changed_at`, so that "open" is complete from the first day. **Applied in the spec:** R-STOR-108.
+
+### Q-STOR-521 · The task is hourly and exclusive, and deletes in batches of 10,000
+
+Status: **Decided by the development agent** (W-37, 2026-11-26).
+
+Task and kind `storage-history`, queue `maintenance`, exclusive, `37 * * * *` (away from the minutes of the other storage tasks); each
+statement deletes or resolves at most 10,000 rows and the run repeats it until fewer come back, so no statement holds long locks. It writes
+no content, so it runs in read-only maintenance mode too (R-OPS-024). **Applied in the spec:** R-STOR-110,
+[operations-and-observability.md](operations-and-observability.md) R-OPS-019.
 
 ## What this does not cover
 

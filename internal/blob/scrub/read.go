@@ -102,23 +102,41 @@ func judge(ctx context.Context, err error) outcome {
 	return outcomeError
 }
 
+// evidence is the error a whole read returns with outcomeCorrupt and outcomeMissing: why the copy is damaged, as its finding records it
+// (storage.md R-STOR-108).
+type evidence struct{ reason string }
+
+func (e *evidence) Error() string { return "the copy is damaged: " + e.reason }
+
+// reasonOf is the reason of a whole read's evidence, fallback when err carries none.
+func reasonOf(err error, fallback string) string {
+	var ev *evidence
+	if errors.As(err, &ev) {
+		return ev.reason
+	}
+	return fallback
+}
+
 // readWhole reads a copy to its end through its connection's reader (R-STOR-062) and judges it by its bytes alone: their number
 // against the blob's size and their SHA-256 against the blob's digest (R-STOR-027). On an encrypted connection the reader opens the
 // record bound to the digest and authenticates every segment, the final segment and the digest (steps 1 to 7 of R-STOR-077), and a
 // refusal is judged by its reason. Nothing the store says about the object (a Content-Length, an ETag, a checksum header) is taken as
 // evidence: one store has no upload checksum of its own, and the bytes are what a client would get. At most the blob's size + 1 bytes
 // are read, so a longer object is found without reading it all. It returns the outcome, the bytes read and, for outcomeError and
-// outcomeUnknownKey, the cause.
+// outcomeUnknownKey, the cause; for outcomeCorrupt and outcomeMissing an *evidence with the reason (R-STOR-108).
 func readWhole(ctx context.Context, c *blob.Connection, cp blob.Copy, d blob.Digest, th *throttle) (outcome, int64, error) {
 	size, err := plainSize(c, cp)
 	if err != nil {
-		return outcomeCorrupt, 0, err
+		return outcomeCorrupt, 0, &evidence{reason: blob.DamageReason(blob.CopyCorrupt, err, blob.ReasonSize)}
 	}
 	body, _, err := c.ReadBlob(ctx, d, size, cp, nil, true)
 	if err != nil {
 		out := judge(ctx, err)
-		if out == outcomeMissing || out == outcomeCorrupt {
-			err = nil
+		switch out {
+		case outcomeMissing:
+			err = &evidence{reason: blob.ReasonNotFound}
+		case outcomeCorrupt:
+			err = &evidence{reason: blob.DamageReason(blob.CopyCorrupt, err, blob.ReasonDigest)}
 		}
 		return out, 0, err
 	}
@@ -142,7 +160,7 @@ func readWhole(ctx context.Context, c *blob.Connection, cp blob.Copy, d blob.Dig
 		if rerr != nil {
 			switch out := judge(ctx, rerr); out {
 			case outcomeCorrupt:
-				return out, n, nil
+				return out, n, &evidence{reason: blob.DamageReason(blob.CopyCorrupt, rerr, blob.ReasonDigest)}
 			case outcomeCancelled:
 				return out, n, ctx.Err()
 			case outcomeMissing:
@@ -153,7 +171,7 @@ func readWhole(ctx context.Context, c *blob.Connection, cp blob.Copy, d blob.Dig
 		}
 	}
 	if n != size || blob.Digest(h.Sum(nil)) != d {
-		return outcomeCorrupt, n, nil
+		return outcomeCorrupt, n, &evidence{reason: blob.ReasonDigest}
 	}
 	return outcomeOK, n, nil
 }

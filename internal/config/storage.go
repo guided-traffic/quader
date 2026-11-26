@@ -26,6 +26,7 @@ type Storage struct {
 	GC               StorageGC               `yaml:"gc"`
 	Orphans          StorageOrphans          `yaml:"orphans"`
 	Scrub            StorageScrub            `yaml:"scrub"`
+	History          StorageHistory          `yaml:"history" doc:"The history of the stored content: findings, outages and counts (R-STOR-108 to R-STOR-110)."`
 }
 
 // StorageS3 is the configuration of one S3 client: the client of an object-store connection (a connection's element with the

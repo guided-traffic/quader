@@ -60,9 +60,9 @@ type Ledger interface {
 	Due(ctx context.Context, conn string, period time.Duration, cur Cursor, limit int) ([]Due, Cursor, error)
 	// Verified stamps verified_at and checked_at of the copy the read saw (its created_at in microseconds).
 	Verified(ctx context.Context, d blob.Digest, conn string, createdUs int64) error
-	// Damaged marks a present copy missing or corrupt with the mark of every reader (Store.MarkCopyDamaged, R-STOR-055) and
-	// reports whether the copy stands marked.
-	Damaged(ctx context.Context, d blob.Digest, cp blob.Copy, status string) bool
+	// Damaged marks a present copy missing or corrupt with the mark of every reader (Store.MarkCopyDamaged, R-STOR-055), naming
+	// the reader and the reason (R-STOR-108), and reports whether the copy stands marked.
+	Damaged(ctx context.Context, d blob.Digest, cp blob.Copy, status string, dmg blob.Damage) bool
 	// Missing returns up to limit copies of conn marked missing whose store last answered longer ago than interval, by digest
 	// after the given one (all of them when first is set).
 	Missing(ctx context.Context, conn string, interval time.Duration, after blob.Digest, first bool, limit int) ([]Gone, error)
@@ -72,9 +72,10 @@ type Ledger interface {
 	Copies(ctx context.Context, d blob.Digest) (copies []CopyRow, found bool, err error)
 	// Whole records that a copy found missing or corrupt was shown whole (from its state, changed at changedUs): present and
 	// verified with storedSize and, when keyID is not empty, the storage key that wrapped the data key of the object a repair wrote
-	// on an encrypted connection (empty keeps the row's); its queue row gone, the blob's state following. It reports false when the
-	// row is no longer the one found damaged.
-	Whole(ctx context.Context, d blob.Digest, conn, from string, changedUs, storedSize int64, keyID string) (bool, error)
+	// on an encrypted connection (empty keeps the row's); its queue row gone, the blob's state following. rewritten says that a
+	// repair wrote the object again, which moves the copy's created_at (its finding is resolved as rewritten, R-STOR-108). It
+	// reports false when the row is no longer the one found damaged.
+	Whole(ctx context.Context, d blob.Digest, conn, from string, changedUs, storedSize int64, keyID string, rewritten bool) (bool, error)
 }
 
 // PGLedger is the ledger over PostgreSQL and the blob store, whose mark of a damaged copy it uses.
@@ -139,8 +140,8 @@ func (l PGLedger) Verified(ctx context.Context, d blob.Digest, conn string, crea
 }
 
 // Damaged implements [Ledger].
-func (l PGLedger) Damaged(ctx context.Context, d blob.Digest, cp blob.Copy, status string) bool {
-	return l.Store.MarkCopyDamaged(ctx, d, cp, status)
+func (l PGLedger) Damaged(ctx context.Context, d blob.Digest, cp blob.Copy, status string, dmg blob.Damage) bool {
+	return l.Store.MarkCopyDamaged(ctx, d, cp, status, dmg)
 }
 
 // Missing implements [Ledger].
@@ -215,7 +216,7 @@ func (l PGLedger) Copies(ctx context.Context, d blob.Digest) ([]CopyRow, bool, e
 // Whole implements [Ledger]: one transaction holds the blob's lock of a mark (FOR NO KEY UPDATE, the blob must be live), sets
 // the copy present and verified when it is still the row found damaged, deletes its queue row and lets the blob's content
 // state follow from its copies (R-STOR-052).
-func (l PGLedger) Whole(ctx context.Context, d blob.Digest, conn, from string, changedUs, storedSize int64, keyID string) (bool, error) {
+func (l PGLedger) Whole(ctx context.Context, d blob.Digest, conn, from string, changedUs, storedSize int64, keyID string, rewritten bool) (bool, error) {
 	var changed, healed bool
 	err := l.DB.InTx(ctx, func(tx meta.Tx) error {
 		changed, healed = false, false
@@ -229,6 +230,7 @@ func (l PGLedger) Whole(ctx context.Context, d blob.Digest, conn, from string, c
 		}
 		n, err := qs.ScrubRecordWhole(ctx, q.ScrubRecordWholeParams{
 			StoredSize: storedSize, StorageKeyID: keyID, Sha256: d.Bytes(), ConnectionID: conn, FromState: from, StateChangedUs: changedUs,
+			Rewritten: rewritten,
 		})
 		if err != nil || n == 0 {
 			return err

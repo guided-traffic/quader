@@ -224,7 +224,7 @@ func TestR_STOR_027_TheScrubAgainstTheDatabase(t *testing.T) {
 		p.exec(t, `UPDATE quader.blob_copies SET state = 'missing', state_changed_at = now() - interval '1 hour'`)
 		p.exec(t, `UPDATE quader.blobs SET content_status = 'missing'`)
 		l := scrub.PGLedger{DB: p.db, Store: s}
-		if ok, err := l.Whole(ctx, d, "primary", blob.CopyMissing, 1, 1024, ""); err != nil || ok {
+		if ok, err := l.Whole(ctx, d, "primary", blob.CopyMissing, 1, 1024, "", false); err != nil || ok {
 			t.Errorf("a record with a stale identity: %v, %v", ok, err)
 		}
 		copies, err := scrubber(t, p, s).Recheck(ctx, d)

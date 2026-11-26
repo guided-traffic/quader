@@ -178,12 +178,12 @@ func (rn *run) confirmSurvivor(ctx context.Context, d blob.Digest, rows []q.Reco
 	info, err := conn.Objects().Head(ctx, sv.ObjectKey)
 	switch {
 	case errors.Is(err, blob.ErrNotFound):
-		rn.store.MarkCopyDamaged(ctx, d, sv, blob.CopyMissing)
+		rn.store.MarkCopyDamaged(ctx, d, sv, blob.CopyMissing, blob.Damage{Source: blob.DamageDrain, Reason: blob.ReasonNotFound})
 		return false
 	case err != nil:
 		return false
 	case info.Size >= 0 && info.Size != sv.StoredSize:
-		rn.store.MarkCopyDamaged(ctx, d, sv, blob.CopyCorrupt)
+		rn.store.MarkCopyDamaged(ctx, d, sv, blob.CopyCorrupt, blob.Damage{Source: blob.DamageDrain, Reason: blob.ReasonSize})
 		return false
 	}
 	return true

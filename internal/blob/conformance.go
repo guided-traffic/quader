@@ -673,17 +673,17 @@ func StartupCheck(ctx context.Context, s ObjectStore, prefix, replica string) er
 // startupCheck is StartupCheck whose probe write carries the payload checksum of algorithm.
 func startupCheck(ctx context.Context, s ObjectStore, prefix, replica, algorithm string) error {
 	if err := probe(ctx, s, prefix, replica, algorithm); err != nil {
-		return err
+		return atStep(StepProbe, err)
 	}
 	if _, err := s.List(ctx, KeyPrefix(prefix), ListOptions{Max: 1}); err != nil {
-		return fmt.Errorf("list %s: %w", KeyPrefix(prefix), err)
+		return atStep(StepList, fmt.Errorf("list %s: %w", KeyPrefix(prefix), err))
 	}
 	// A store that assembles another upload's bytes for a part it was not asked for would store a stale writer's part under the digest of the
 	// recorded ones (R-STOR-011): a replica does not serve on it.
 	e := &ConformanceEnv{Store: s, Opts: ConformanceOptions{Prefix: prefix, Replica: replica}}
 	defer e.cleanup(ctx)
 	if err := checkPartIdentity(ctx, e); err != nil {
-		return fmt.Errorf("multipart part identity: %w", err)
+		return atStep(StepPartIdentity, fmt.Errorf("multipart part identity: %w", err))
 	}
 	return nil
 }

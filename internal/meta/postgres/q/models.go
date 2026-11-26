@@ -451,6 +451,8 @@ type BlobCopy struct {
 	VerifiedAt     pgtype.Timestamptz
 	CheckedAt      pgtype.Timestamptz
 	StateChangedAt pgtype.Timestamptz
+	DamageSource   pgtype.Text
+	DamageReason   pgtype.Text
 }
 
 type BlobCopyQueue struct {
@@ -1891,6 +1893,46 @@ type StorageConnection struct {
 	PassStartedAt  pgtype.Timestamptz
 	LastFullPassAt pgtype.Timestamptz
 	KeyedNames     bool
+}
+
+type StorageCount struct {
+	Hour         pgtype.Timestamptz
+	ConnectionID string
+	Kind         string
+	Reason       string
+	Count        int64
+	Bytes        int64
+}
+
+type StorageEvent struct {
+	ID           int64
+	ConnectionID string
+	Kind         string
+	Replica      string
+	StartedAt    pgtype.Timestamptz
+	EndedAt      pgtype.Timestamptz
+	LastSeenAt   pgtype.Timestamptz
+	Code         string
+	Step         pgtype.Text
+	Occurrences  int32
+}
+
+type StorageFinding struct {
+	ID               int64
+	Sha256           []byte
+	ConnectionID     string
+	Status           string
+	Source           string
+	Reason           string
+	StoredSize       int64
+	BlobSize         int64
+	Unavailable      bool
+	DetectedAt       pgtype.Timestamptz
+	ResolvedAt       pgtype.Timestamptz
+	Resolution       pgtype.Text
+	AcknowledgedAt   pgtype.Timestamptz
+	AcknowledgedBy   pgtype.UUID
+	AcknowledgedNote pgtype.Text
 }
 
 type StorageKey struct {

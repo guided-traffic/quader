@@ -40,6 +40,9 @@ type fakeDB struct {
 	stamps int
 	// copyReads counts the statements that read a blob's copies (Q-STOR-275).
 	copyReads int
+	// marks are the moves of a copy to missing or corrupt with what the mark named: "<connection> <state> <source> <reason>"
+	// (R-STOR-108).
+	marks []string
 }
 
 type fakeRow struct {
@@ -262,12 +265,15 @@ func (f *fakeDB) PutCopy(_ context.Context, _ meta.Tx, d blob.Digest, w blob.Cop
 	return nil
 }
 
-func (f *fakeDB) SetCopyState(_ context.Context, _ meta.Tx, d blob.Digest, conn, from, to string) (bool, error) {
+func (f *fakeDB) SetCopyState(_ context.Context, _ meta.Tx, d blob.Digest, conn, from, to string, dmg blob.Damage) (bool, error) {
 	cp, ok := f.copies[d][conn]
 	if !ok || cp.State != from {
 		return false, nil
 	}
 	cp.State, cp.CheckedAt = to, f.clock()
+	if to == blob.CopyMissing || to == blob.CopyCorrupt {
+		f.marks = append(f.marks, conn+" "+to+" "+dmg.Source+" "+dmg.Reason)
+	}
 	return true, nil
 }
 

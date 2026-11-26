@@ -27,9 +27,10 @@ var errFallBack = errors.New("the server-side copy falls back to streaming")
 
 // sourceError is a failure that concerns the source copy. status is the evidence it is (blob.CopyMissing: the store answered
 // "no such object"; blob.CopyCorrupt: a size or, read to its end, a digest other than the blob's), empty when it is none (a
-// transient error); the next source is tried either way.
+// transient error); the next source is tried either way. reason is why, as the finding of the mark records it (storage.md R-STOR-108).
 type sourceError struct {
 	status string
+	reason string
 	err    error
 }
 
@@ -63,14 +64,14 @@ func sourceFailure(err error) error {
 	var se *blob.StoreError
 	switch {
 	case errors.Is(err, blob.ErrNotFound):
-		return &sourceError{status: blob.CopyMissing, err: err}
+		return &sourceError{status: blob.CopyMissing, reason: blob.ReasonNotFound, err: err}
 	case errors.As(err, &se) && se.Status == http.StatusRequestedRangeNotSatisfiable:
-		return &sourceError{status: blob.CopyCorrupt, err: err}
+		return &sourceError{status: blob.CopyCorrupt, reason: blob.ReasonSize, err: err}
 	case errors.Is(err, blob.ErrStreamNotBlob):
-		return &sourceError{status: blob.CopyCorrupt, err: err}
+		return &sourceError{status: blob.CopyCorrupt, reason: blob.ReasonDigest, err: err}
 	}
 	if reason, ok := blobcrypt.ReasonOf(err); ok && reason.MarksCorrupt() {
-		return &sourceError{status: blob.CopyCorrupt, err: err}
+		return &sourceError{status: blob.CopyCorrupt, reason: string(reason), err: err}
 	}
 	return &sourceError{err: err}
 }
@@ -160,7 +161,7 @@ func (c *copier) server(ctx context.Context, b target, src blob.Copy, srcConn, d
 	switch {
 	case err == nil:
 	case errors.Is(err, blob.ErrNotFound):
-		return made{}, &sourceError{status: blob.CopyMissing, err: err}
+		return made{}, &sourceError{status: blob.CopyMissing, reason: blob.ReasonNotFound, err: err}
 	case blob.IsTransient(err), errors.Is(err, blob.ErrCircuitOpen), ctx.Err() != nil:
 		return made{}, &targetError{err: err}
 	default:
@@ -195,7 +196,7 @@ func (c *copier) sealed(ctx context.Context, b target, src blob.Copy, srcConn, d
 	}
 	defer body.Close()
 	if !srcConn.Encrypted() && info.Size >= 0 && info.Size != src.StoredSize {
-		return made{}, &sourceError{status: blob.CopyCorrupt, err: fmt.Errorf("the object has %d bytes, its copy row %d", info.Size, src.StoredSize)}
+		return made{}, &sourceError{status: blob.CopyCorrupt, reason: blob.ReasonSize, err: fmt.Errorf("the object has %d bytes, its copy row %d", info.Size, src.StoredSize)}
 	}
 	cw, err := dst.WriteSealedStream(ctx, b.digest, b.size, &throttledReader{ctx: ctx, r: body, l: c.limit}, c.partSize)
 	var se *blob.StreamSourceError
@@ -225,7 +226,7 @@ func (c *copier) streamOne(ctx context.Context, b target, src blob.Copy, srcConn
 	}
 	defer body.Close()
 	if info.Size >= 0 && info.Size != src.StoredSize {
-		return made{}, &sourceError{status: blob.CopyCorrupt, err: fmt.Errorf("the object has %d bytes, its copy row %d", info.Size, src.StoredSize)}
+		return made{}, &sourceError{status: blob.CopyCorrupt, reason: blob.ReasonSize, err: fmt.Errorf("the object has %d bytes, its copy row %d", info.Size, src.StoredSize)}
 	}
 	buf := make([]byte, b.size)
 	r := &throttledReader{ctx: ctx, r: body, l: c.limit}
@@ -233,10 +234,10 @@ func (c *copier) streamOne(ctx context.Context, b target, src blob.Copy, srcConn
 		return made{}, sourceFailure(err)
 	}
 	if n, _ := io.ReadFull(r, make([]byte, 1)); n > 0 {
-		return made{}, &sourceError{status: blob.CopyCorrupt, err: fmt.Errorf("the object is longer than %d bytes", b.size)}
+		return made{}, &sourceError{status: blob.CopyCorrupt, reason: blob.ReasonSize, err: fmt.Errorf("the object is longer than %d bytes", b.size)}
 	}
 	if sha256.Sum256(buf) != b.digest {
-		return made{}, &sourceError{status: blob.CopyCorrupt, err: errors.New("the object's SHA-256 is not the blob's digest")}
+		return made{}, &sourceError{status: blob.CopyCorrupt, reason: blob.ReasonDigest, err: errors.New("the object's SHA-256 is not the blob's digest")}
 	}
 	key := dst.ObjectKey(b.digest)
 	if err := dst.Objects().Put(ctx, key, bytes.NewReader(buf), b.size, wholeChecksum(dst, b.digest, buf), nil); err != nil {
@@ -286,7 +287,7 @@ func (c *copier) streamParts(ctx context.Context, b target, src blob.Copy, srcCo
 		parts = append(parts, p)
 	}
 	if !bytes.Equal(whole.Sum(nil), b.digest[:]) {
-		return made{}, &sourceError{status: blob.CopyCorrupt, err: errors.New("the object's SHA-256 is not the blob's digest")}
+		return made{}, &sourceError{status: blob.CopyCorrupt, reason: blob.ReasonDigest, err: errors.New("the object's SHA-256 is not the blob's digest")}
 	}
 	if err := objects.CompleteMultipart(ctx, key, id, parts); err != nil {
 		return made{}, &targetError{err: err}
@@ -313,7 +314,7 @@ func (c *copier) readPart(ctx context.Context, b target, src blob.Copy, srcConn 
 	}
 	defer body.Close()
 	if first && info.Size >= 0 && info.Size != src.StoredSize {
-		return &sourceError{status: blob.CopyCorrupt, err: fmt.Errorf("the object has %d bytes, its copy row %d", info.Size, src.StoredSize)}
+		return &sourceError{status: blob.CopyCorrupt, reason: blob.ReasonSize, err: fmt.Errorf("the object has %d bytes, its copy row %d", info.Size, src.StoredSize)}
 	}
 	if _, err := io.ReadFull(&throttledReader{ctx: ctx, r: body, l: c.limit}, buf); err != nil {
 		return sourceFailure(err)

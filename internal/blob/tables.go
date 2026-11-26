@@ -14,4 +14,9 @@ func init() {
 	tables.Register("storage_connections", tables.Transient, tables.Options{})
 	tables.Register("blob_copies", tables.Transient, tables.Options{})
 	tables.Register("blob_copy_queue", tables.Transient, tables.Options{})
+	// The history of the stored content (00151, R-STOR-108 to R-STOR-110): kept in backups like the audit log, since it is most
+	// wanted after a disaster (Q-STOR-515); the task storage-history resolves the findings a restore's copies no longer hold.
+	tables.Register("storage_findings", tables.Data, tables.Options{})
+	tables.Register("storage_events", tables.Data, tables.Options{})
+	tables.Register("storage_counts", tables.Data, tables.Options{})
 }

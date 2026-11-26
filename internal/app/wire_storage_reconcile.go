@@ -63,8 +63,12 @@ func (a *App) wireStorageReconcile(ctx context.Context, area blobArea) error {
 	if !a.sub.JobLoops {
 		return nil
 	}
+	metrics := reconcile.NewMetrics(a.tele.metrics)
+	if area.history != nil {
+		metrics.SetHistory(area.history) // a copy that failed is counted in the history (storage.md R-STOR-110)
+	}
 	rec, err := reconcile.New(reconcile.Options{
-		Store: store, DB: a.database(), Storage: a.cfg.Storage, Metrics: reconcile.NewMetrics(a.tele.metrics), Log: log,
+		Store: store, DB: a.database(), Storage: a.cfg.Storage, Metrics: metrics, Log: log,
 		StaleAfter: a.cfg.System.HeartbeatStaleAfter, JournalDir: journal.Dir, Drained: connectionDrained(part[auditArea](a.parts).rec),
 	})
 	if err != nil {
