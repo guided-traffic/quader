@@ -418,8 +418,11 @@ func TestNuGetDeprecated_R_NUGET_036_DotnetListsTheDeprecatedPackage(t *testing.
 		"version": "1.0.0", "reasons": []string{"Legacy"}, "message": "use the successor", "alternatePackage": map[string]any{"name": "Contoso.Successor"},
 	}).want(t, "deprecate", 200)
 	proj := c.consumer("p", id, "[1.0.0]")
-	if out := c.exec("dotnet", "restore", proj, "--no-cache"); strings.Contains(strings.ToLower(out), "deprecat") {
-		t.Errorf("the restore warned of the deprecation:\n%s", out)
+	// A warning line that names the deprecation, not the word anywhere: the project's directory and the package's ID hold it.
+	for _, line := range strings.Split(c.exec("dotnet", "restore", proj, "--no-cache"), "\n") {
+		if l := strings.ToLower(line); strings.Contains(l, "warn") && strings.Contains(l, "deprecat") {
+			t.Errorf("the restore warned of the deprecation: %s", line)
+		}
 	}
 	out := c.exec("dotnet", "list", proj, "package", "--deprecated")
 	if !strings.Contains(out, id) || !strings.Contains(out, "Legacy") || !strings.Contains(out, "Contoso.Successor") {
