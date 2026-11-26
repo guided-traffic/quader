@@ -270,7 +270,9 @@ does the rest, for the protocol, raw and management deletes alike; `formats.Remo
 The locks of a push and a hard delete: the push holds the ID's folder `FOR SHARE` from its link step and takes the package row in `OnCommit`; the delete takes the
 package row first and removes the version's files through `RemoveIn`. The item store never waits inside a removing transaction for a folder it emptied: a folder
 another transaction holds is removed after the commit ([sweep.go](../../internal/items/sweep.go), Q-NUGET-88), so the two cannot wait for each other in a circle.
-`TestR_NUGET_007_APushAndAHardDeleteOfAnotherVersionNeverDeadlock` arranges the circle with a held row and reads `pg_stat_database.deadlocks` at the end.
+`TestR_NUGET_007_APushAndAHardDeleteOfAnotherVersionNeverDeadlock` arranges the circle with a held row and reads `pg_stat_database.deadlocks` at the end. Its
+replicas wait up to 30 s for a statement (`request_statement_timeout` and `lock_timeout`): the race of six pushes and six deletes queues twelve transactions
+on the one package row, which took 1.75 to 5.2 s alone on 2026-11-26, and a loaded host pushed the last pushes past the 5 s default into `503 database_timeout`.
 
 The authentication stage reads `Authorization` on a push, and `X-NuGet-ApiKey` on the routes that declare the API key (R-NUGET-012). The integration tests send a Bearer token.
 

@@ -30,10 +30,15 @@ import (
 // flushed its statistics, and PostgreSQL has counted no deadlock in the test's database.
 func TestR_NUGET_007_APushAndAHardDeleteOfAnotherVersionNeverDeadlock(t *testing.T) {
 	e := newWriteEnv(t)
-	// The requests of the test wait behind the test's own lock while it arranges the next one; a
-	// loaded runner must not turn that into the 503 of the stack's lock_timeout of 5 s.
-	const patient = "QUADER_DATABASE_SESSION_LOCK_TIMEOUT=60s"
-	a, b := e.replica("web-a", patient), e.replica("web-b", patient)
+	// The requests of the test wait behind the test's own lock while it arranges the next one, and
+	// the race queues twelve transactions on the one package row, each of which holds it for its
+	// whole commit (150 to 400 ms measured on 2026-11-26), so the last waits for the eleven before it.
+	// The test proves the order of the locks, not how long a queue of a dozen writers of one package
+	// waits: a loaded runner must turn neither into the 503 database_timeout of a request's statement
+	// past database.request_statement_timeout (5 s) nor past the stack's lock_timeout (5 s). Both are
+	// raised to the session's statement_timeout of 30 s.
+	patient := []string{"QUADER_DATABASE_SESSION_LOCK_TIMEOUT=30s", "QUADER_DATABASE_REQUEST_STATEMENT_TIMEOUT=30s"}
+	a, b := e.replica("web-a", patient...), e.replica("web-b", patient...)
 	pkg := func(v string) []byte { return nupkg(t, pkgSpec{id: "Acme.Order", version: v}) }
 	// 0.9.0 stays throughout, so no push here is the ID's first (which would ask the shadowing
 	// check again when the last version went meanwhile).
@@ -139,11 +144,11 @@ func TestR_NUGET_007_APushAndAHardDeleteOfAnotherVersionNeverDeadlock(t *testing
 }
 
 // waitLocked polls cond until it holds and fails with the backends of the database and what
-// they wait for when it does not within 30 s, half the lock_timeout the replicas of the test run
-// with.
+// they wait for when it does not within 15 s, half the time a statement of the replicas of the
+// test may wait.
 func waitLocked(t *testing.T, e *wenv, what string, cond func() bool) {
 	t.Helper()
-	for start := time.Now(); time.Since(start) < 30*time.Second; time.Sleep(20 * time.Millisecond) {
+	for start := time.Now(); time.Since(start) < 15*time.Second; time.Sleep(20 * time.Millisecond) {
 		if cond() {
 			return
 		}
@@ -159,7 +164,7 @@ func waitLocked(t *testing.T, e *wenv, what string, cond func() bool) {
 		rows = append(rows, fmt.Sprintf("%d %s/%s blocked by %s: %s", pid, typ, ev, by, query))
 		return nil
 	})
-	t.Fatalf("%s did not happen within 30s; backends:\n%s", what, strings.Join(rows, "\n"))
+	t.Fatalf("%s did not happen within 15s; backends:\n%s", what, strings.Join(rows, "\n"))
 }
 
 // deadlocks stops the replicas, ends every other backend of the stack's database (the pool of
