@@ -23,6 +23,7 @@ import { seedMalwareContent, seedMalwareVerdicts } from './malware';
 import { seedSignatures, seedSignatureSettings } from './signatures';
 import { seedScannerReplicas } from './scanners';
 import { seedBastion } from './bastions';
+import { awaitBastionCatalogue } from './bastion-gui';
 import { removeCachedSources, seedCachedVersions } from './cached';
 import { seedDebDocs } from './debdocs';
 import { seedDeprecations } from './deprecations';
@@ -79,6 +80,8 @@ export default async function setup(): Promise<void> {
     seedSignatures();
     // The remotes of public registries were offline through the seed, which so reached no public registry.
     await publicRemotesOnline(admin);
+    // The profile's Bastion mirrors the public catalogue of the seed (R-UI-230): after everything the catalogue shows.
+    await awaitBastionCatalogue(admin);
     for (const kind of ['plain', 'power', 'admin'] as const) await openRecent(browser, kind);
   } finally {
     await browser.close();

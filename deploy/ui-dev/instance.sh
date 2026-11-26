@@ -33,7 +33,8 @@
 # It sets (and exports, for docker compose and the dev server) UI_INSTANCE, UI_PROJECT, UI_STATE, UI_WEB_PORT, UI_BACKEND_PORT,
 # UI_OPS_PORT, UI_IDP_PORT, UI_PG_PORT, UI_VALKEY_PORT, UI_S3_PORT, the scanners' UI_SCAN_PORT, UI_TRIVY_PORT, UI_TRIVY_OPS_PORT and
 # UI_TRIVY_DB_OPS_PORT (19082 to 19085 in instance 1), and the malware scanning's UI_CLAMAV_PORT, UI_CLAMAV_OPS_PORT, UI_FRESHCLAM_PORT and
-# UI_FRESHCLAM_OPS_PORT (19086 to 19089 in instance 1). The names carry no QUADER_ prefix: a quader process refuses
+# UI_FRESHCLAM_OPS_PORT (19086 to 19089 in instance 1), and the profile's Bastion's UI_BASTION_PORT and UI_BASTION_OPS_PORT (19091 and 19092 in
+# instance 1). The names carry no QUADER_ prefix: a quader process refuses
 # every QUADER_ variable that is not a setting. UI_CLAIMS names another directory for the claims (a test of this file).
 
 # ui_main <checkout> prints the main checkout of the checkout's repository, and the checkout itself outside git.
@@ -186,8 +187,13 @@ ui_instance() {
   UI_CLAMAV_OPS_PORT=$((19087 + off))
   UI_FRESHCLAM_PORT=$((19088 + off))
   UI_FRESHCLAM_OPS_PORT=$((19089 + off))
+  # The profile's Bastion (deploy/ui-dev/bastion.sh): its client listener, the address its web interface and its package routes answer
+  # on (https://localhost:<port>), and its operations listener.
+  UI_BASTION_PORT=$((19091 + off))
+  UI_BASTION_OPS_PORT=$((19092 + off))
   export UI_INSTANCE UI_PROJECT UI_STATE UI_WEB_PORT UI_BACKEND_PORT UI_OPS_PORT UI_IDP_PORT UI_PG_PORT UI_VALKEY_PORT UI_S3_PORT
   export UI_SCAN_PORT UI_TRIVY_PORT UI_TRIVY_OPS_PORT UI_TRIVY_DB_OPS_PORT UI_CLAMAV_PORT UI_CLAMAV_OPS_PORT UI_FRESHCLAM_PORT UI_FRESHCLAM_OPS_PORT
+  export UI_BASTION_PORT UI_BASTION_OPS_PORT
 }
 
 # ui_release <checkout> ends the checkout's claim of UI_INSTANCE, as ui_instance set it; instance 1 has no claim.

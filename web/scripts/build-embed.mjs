@@ -11,6 +11,9 @@
 // The Bastion's build is held to its own budget and to the check of R-UI-228 over its metafile (bastion-bundle-rule.mjs): no client of
 // the management API, no session, no screen of the main installation and no dialog may put a byte into it.
 //
+// `node scripts/build-embed.mjs bastion-gui` builds and copies the Bastion's application alone, with the same checks: the UI development
+// profile's Bastion (deploy/ui-dev/bastion.sh) embeds it without the main installation's build, which its dev server serves.
+//
 // QUADER_UI_BUNDLE_MARK=1 builds the second bundle of the upgrade test across two bundles (R-HA-020, Q-HA-124): the licence
 // comments of the libraries stay in the scripts instead of going to 3rdpartylicenses.txt, which changes the bytes and so
 // the hashed name of nearly every script and leaves what the scripts do as it is. That bundle gets its notices from a
@@ -39,10 +42,16 @@ const notices = '3rdpartylicenses.txt';
 const rule = '-'.repeat(80);
 
 /** The two applications: the project, where its build lands, and the tree of the binary it is copied to. */
-const apps = [
+const allApps = [
   { project: 'web', out: join(root, 'dist', 'web'), target: join(root, '..', 'internal', 'webui', 'dist') },
   { project: 'bastion-gui', out: join(root, 'dist', 'bastion-gui'), target: join(root, '..', 'internal', 'bastion', 'gui', 'dist') },
 ];
+const only = process.argv[2];
+if (only !== undefined && only !== 'bastion-gui') {
+  console.error(`build-embed: the one argument builds the application bastion-gui alone, not "${only}"`);
+  process.exit(1);
+}
+const apps = only === undefined ? allApps : allApps.filter((a) => a.project === only);
 
 const mark = process.env['QUADER_UI_BUNDLE_MARK'] ?? '';
 if (mark !== '' && mark !== '1') {
@@ -69,8 +78,8 @@ function fail(message, lines = []) {
 
 const isDir = (p) => statSync(p).isDirectory();
 
-rmSync(join(root, 'dist'), { recursive: true, force: true });
-ng(mark === '1' ? [...release('web'), '--extract-licenses=false'] : release('web'));
+for (const app of apps) rmSync(app.out, { recursive: true, force: true });
+if (only === undefined) ng(mark === '1' ? [...release('web'), '--extract-licenses=false'] : release('web'));
 ng([...release('bastion-gui'), '--stats-json']);
 
 // R-UI-228: what the Bastion's bundle holds, read from its build's metafile.

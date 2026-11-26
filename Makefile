@@ -155,6 +155,10 @@ ui-dev-backend: ## Write .dev/ui-dev/quader.yaml again, build quader, migrate, r
 ui-dev-web: ## Angular dev server with hot reload on https://localhost:4200/ui/, everything else proxied to ui-dev-backend (after web-ci; deploy/ui-dev/web.sh)
 	deploy/ui-dev/web.sh
 
+.PHONY: ui-dev-bastion
+ui-dev-bastion: ## The profile's Bastion beside ui-dev-backend: registered as ui-dev with its web interface and docs on, on https://localhost:19091/ui/ in instance 1, in the foreground (UI_BASTION_BUILD=0 keeps the last build; deploy/ui-dev/bastion.sh)
+	deploy/ui-dev/bastion.sh
+
 .PHONY: ui-dev-down
 ui-dev-down: ## Stop the UI development services; PURGE=1 also removes their data and .dev/ui-dev (deploy/ui-dev/down.sh)
 	deploy/ui-dev/down.sh $(if $(PURGE),--purge)

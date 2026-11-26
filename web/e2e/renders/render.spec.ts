@@ -76,6 +76,9 @@ for (const screen of locale === 'de' ? screens.filter((s) => s.de) : screens) {
         document.addEventListener('DOMContentLoaded', () => {
           if (!document.querySelector('quader-root')) return;
           const style = document.createElement('style');
+          // The page's nonce, which a page served with its content security policy (the Bastion's) requires of a style (Q-UI-1447).
+          const nonce = document.querySelector('quader-root')?.getAttribute('ngcspnonce');
+          if (nonce) style.nonce = nonce;
           style.textContent = '* { scrollbar-width: none; }';
           document.head.append(style);
         });
@@ -160,7 +163,8 @@ const gets = new WeakMap<Page, number>();
 function trackRequests(page: Page): void {
   const pending = new Set<unknown>();
   open.set(page, pending);
-  const api = (url: string): boolean => /^\/(api|auth)\//.test(new URL(url).pathname);
+  // The app's API, and a Bastion's data path below its pages (R-UI-230).
+  const api = (url: string): boolean => /^\/(api|auth|ui\/data)\//.test(new URL(url).pathname);
   page.on('request', (r) => {
     // A new document: the calls of the one before it are no longer the screen's. Chromium cancels them, but a call it cancels
     // while the server still works on it got no "failed" here, and kept `settle` waiting its 15 s on every later state of a walk
@@ -405,7 +409,7 @@ function watch(page: Page, screen: Screen): { notices: string[]; list(): string[
   page.on('pageerror', (e) => seen.push(`uncaught: ${e.message.slice(0, 300)}`));
   page.on('response', (r) => {
     const url = new URL(r.url());
-    if (!/^\/(api|auth)\//.test(url.pathname) || r.status() < 400) return;
+    if (!/^\/(api|auth|ui\/data)\//.test(url.pathname) || r.status() < 400) return;
     const line = `${r.request().method()} ${url.pathname}${url.search} answered ${r.status()}`;
     if (screen.expected?.some((e) => e.match.test(line)) || NORMAL_ANSWERS.some((e) => e.test(line))) return;
     seen.push(line);

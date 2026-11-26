@@ -1429,7 +1429,7 @@ property, `chart-managed-keys.yaml`; [helm-chart.md](helm-chart.md#the-bastion-c
 ## Run the role locally
 
 The role needs a main installation that knows its token: it handshakes at start and, until that works, answers a read that needs the main installation with
-`503 unavailable`. Three ways, from the one that needs nothing to the real one.
+`503 unavailable`. Four ways, from the one that needs nothing to the real one.
 
 **1. Without a main installation (verified).** The role starts, is ready, and answers with its own problems:
 
@@ -1474,6 +1474,12 @@ configuration file, the token file and the CA file of the double into a temporar
 installation's https URL (and `bastion.main.ca_file` when its certificate is not signed by a root the machine trusts), and set `server.base_url` to the address
 clients will use for the Bastion: the handshake refuses a base URL the main installation does not honour (`quader_bastion_base_url_mismatch`). The main installation's side of the interface (the four operations, the Recognize and Mark stages) is built, so the handshake succeeds against a current release; against an
 older one the handshake fails and the role stays unreachable.
+
+**4. Beside the UI development profile (verified 2026-11-26).** `make ui-dev-bastion` does the third way for an instance of the profile:
+it registers `ui-dev` through the management API, switches its web interface and documentation on, writes the token and the configuration
+under `<state>/bastion/` and runs the replica on `https://localhost:19091` (instance 1; `+ (n - 1) * 100` in instance n), with the
+Bastion's application built into the embed tree ([web-ui.md](web-ui.md#the-profiles-bastion)). `make ui-renders` starts it beside the
+backend and renders its pages.
 
 ## The size of the public catalogue (measured 2026-11-26)
 
@@ -1906,15 +1912,20 @@ function of its options.
 | `TestR_BAS_116_TheWebInterfaceIsMountedBeforeTheEngineAndNeverReachesTheMainInstallation` ([internal/bastion/server](../../internal/bastion/server/gui_test.go)) | unit, the whole replica against `maintest` | 0.3 s | one npm package, four documents |
 | `TestR_BAS_113_TheLookupFindsAPublicPackageByItsFormatAndName` (`internal/bastion/catalogue`) | unit | 0.05 s | two packages |
 | `CheckBastionGUIImports` in `TestBastionImportAllowlist` and `TestRealTree` (`internal/archtest`) | architecture | milliseconds; the real tree with the others | — |
-| `walkWebInterface` in `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut` ([test/integration/bastion](../../test/integration/bastion/catalogue_sync_test.go)) | integration, eight addresses of the web interface through the client listener, scanned for the main installation | about 0.1 s inside the existing world (the case ran 20.6 s, measured 2026-11-26) | the case's npm package of bytes |
+| `walkWebInterface` in `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut` ([test/integration/bastion](../../test/integration/bastion/catalogue_sync_test.go)) | integration, eight addresses of the web interface through the client listener, scanned for the main installation, then the version page's download link (`downloadFromVersionPage`, R-BAS-107) without a credential | about 0.1 s inside the existing world (the case ran 20.6 s, measured 2026-11-26) | the case's npm package of bytes |
 | `TestR_BAS_116_TheEmbeddedBundleCarriesItsNotices` (`internal/bastion/gui`) | unit on the embedded build; the web job of CI sets `QUADER_UI_BUILT=1`, elsewhere skipped on the placeholder | 0.05 s | the bundle's scripts |
-| [bastion.spec.ts](../../web/src/bastion/bastion.spec.ts) (`R-UI-227 …`, `R-UI-228 …`) | Vitest, the application against the HTTP testing backend | under a second (seven cases) | answers of tens of bytes |
+| [bastion.spec.ts](../../web/src/bastion/bastion.spec.ts) (`R-UI-227 …`, `R-UI-228 …`, `R-UI-229 …`) | Vitest, the application against the HTTP testing backend | about a second (nine cases) | answers of tens of bytes |
 | `R-UI-228 the Bastion bundle check …` ([lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs)) | node:test on a metafile of its own | milliseconds | — |
 
 The application itself (`web/src/bastion`) is [web-ui.md](web-ui.md#the-bastions-application)'s. **What the web stage of CI gains:**
 `make web-embed` builds the second application (measured 2026-11-26 on the development machine: 4.5 s for both locales of the
 Bastion beside 10.8 s of the main installation's, the metafile check under a second), `make web-i18n-check` extracts it too (3.2 s),
-and `make web-test` runs its seven cases (about 1 s); `make ui-states` (the job ui-layout-fixtures) measures seven states of its pages at two widths in about 3.5 s; the renders against a running Bastion (R-UI-230) are not built yet.
+and `make web-test` runs its cases (nine, and two of `refs.spec.ts`, about 1 s); `make ui-states` (the job ui-layout-fixtures) measures seven states of its pages at two widths in about 3.5 s.
+**What the renders gain (W-35's P9b, measured 2026-11-26 on the development machine under a load of 30 to 45):** every part of the job ui-layout starts
+the profile's Bastion (`bastion.sh`: the Bastion's application alone in 6.5 s, a second binary from the build cache, the registration, the
+handshake), and the setup waits for one run of the builder after the seed and the Bastion's next round; the fourteen screens `bastion-*`
+(234 pictures in each language) rendered in 1.3 to 1.5 min with three workers, spread over the five parts by their places. Not measured: the
+same on the runner, and the seconds of the setup's wait alone.
 
 ## Tests
 

@@ -3,7 +3,8 @@
 # three widths, into .out/ui-renders with the contact sheet index.html (docs/developer/web-ui.md#renders-of-every-screen).
 #
 # Starts what is not running and stops again only what it started: the services of the UI development profile
-# (up.sh, always: it is idempotent), quader with the profile's sign-in provider (serve.sh) and the Angular dev server.
+# (up.sh, always: it is idempotent), quader with the profile's sign-in provider (serve.sh), the profile's Bastion (bastion.sh; UI_BASTION=0
+# starts none) and the Angular dev server.
 # The seed and the pictures are web/e2e/playwright.renders.config.ts; arguments go to Playwright (--grep <screen>).
 # Locally, and in the job ui-layout of Test and Release on every push (Q-ARCH-510), where the profile is the job's own.
 # Instances 2 to 8 render against an instance of their own (deploy/ui-dev/instance.sh): its containers, its quader and sign-in
@@ -76,6 +77,16 @@ if ! curl -skf -o /dev/null "https://127.0.0.1:$UI_OPS_PORT/readyz"; then
   wait_for quader 600 "https://127.0.0.1:$UI_OPS_PORT/readyz" "$backend_log" "$!"
 fi
 
+# The profile's Bastion (bastion.sh) beside quader, for the pages of its web interface (R-UI-230): registered at the instance, its
+# interface and documentation on, its catalogue built from the seed. UI_BASTION=0 starts none, and the Bastion's screens fail.
+bastion_log="$root/.out/ui-renders.bastion.log"
+if [ "${UI_BASTION:-1}" != 0 ] && ! curl -skf -o /dev/null "https://127.0.0.1:$UI_BASTION_OPS_PORT/readyz"; then
+  echo "ui-renders: starting the profile's Bastion (log: $bastion_log)"
+  deploy/ui-dev/bastion.sh > "$bastion_log" 2>&1 &
+  started+=("$!")
+  wait_for "the Bastion" 600 "https://127.0.0.1:$UI_BASTION_OPS_PORT/readyz" "$bastion_log" "$!"
+fi
+
 if ! curl -skf -o /dev/null "https://localhost:$UI_WEB_PORT/ui/"; then
   echo "ui-renders: starting the dev server in $locale (log: $web_log)"
   # web.sh execs the ng process itself, not npm around it, so that the TERM of cleanup reaches it.
@@ -92,6 +103,7 @@ fi
 
 # The renders' edge, state and database are the instance's (web/e2e/renders/paths.ts, seed.ts).
 export UI_RENDERS_EDGE="https://localhost:$UI_WEB_PORT" UI_RENDERS_STATE="$UI_STATE" UI_RENDERS_POSTGRES="$UI_PROJECT-postgres"
+export UI_RENDERS_BASTION="https://localhost:$UI_BASTION_PORT"
 cd web
 # Without arguments every screen is rendered into an empty folder; with --grep, and in a part, the other pictures stay.
 if [ "$#" -eq 0 ] && [ -z "$shard" ]; then export UI_RENDERS_CLEAN=1; fi

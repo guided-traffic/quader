@@ -161,15 +161,24 @@ export const repositories: readonly RepoSeed[] = [
     description: 'The images of image-source; a tag a client only asks about is downloaded in the background.',
     url: `${edge}/${otherProject}/${remoteSource.key}/${remoteSource.prefix}`,
   },
-  { project: otherProject, key: longDebKey, format: 'deb', class: 'local', description: 'Packages of the platform team for Debian 12 and 13.' },
+  // Public with its documentation, as the NuGet library and the collections below: the Debian, NuGet and Ansible pages of the profile's
+  // Bastion, which shows what a visitor without a session reads (R-UI-230, Q-UI-1453).
+  {
+    project: otherProject,
+    key: longDebKey,
+    format: 'deb',
+    class: 'local',
+    description: 'Packages of the platform team for Debian 12 and 13.',
+    visibility: { artifacts: 'public', wiki: 'public' },
+  },
   { project: otherProject, key: 'debian', format: 'deb', class: 'remote', description: 'deb.debian.org, cached.' },
   { project: otherProject, key: 'apt', format: 'deb', class: 'virtual', members: [longDebKey] },
-  { project: otherProject, key: 'nuget-internal', format: 'nuget', class: 'local', description: 'Shared .NET libraries.' },
+  { project: otherProject, key: 'nuget-internal', format: 'nuget', class: 'local', description: 'Shared .NET libraries.', visibility: { artifacts: 'public', wiki: 'public' } },
   // The advisory data of the profile, which reads it instead of the network (R-VULN-005, deploy/ui-dev/up.sh).
   { project: advisoryMirror.project, key: advisoryMirror.key, format: 'generic', class: 'local', description: 'Advisory data for the offline sync.' },
   { project: otherProject, key: 'nuget-org', format: 'nuget', class: 'remote' },
   { project: otherProject, key: 'nuget', format: 'nuget', class: 'virtual', members: ['nuget-internal', 'nuget-org'] },
-  { project: otherProject, key: 'collections', format: 'ansible', class: 'local', description: 'Ansible collections of the platform team.', visibility: { artifacts: 'public', wiki: 'internal' } },
+  { project: otherProject, key: 'collections', format: 'ansible', class: 'local', description: 'Ansible collections of the platform team.', visibility: { artifacts: 'public', wiki: 'public' } },
   // Open-source packages everyone reads, also without a session, checked against public advisories: the vulnerabilities a visitor
   // without a session reads (R-UI-224, advisories.ts publicPackages).
   {
@@ -441,6 +450,11 @@ export async function seedProjectsAndRepositories(admin: Api): Promise<void> {
       await expectStatus(set, [200], `downloadOnProbe of ${r.project}/${r.key}`);
     }
     if (res.status() === 409 && publicRemotes.includes(r)) await setAvailability(admin, r, 'offline');
+    if (res.status() === 409 && r.visibility) {
+      // A database of an earlier run holds the repository with another level: the seed's is set, as the Bastion's pages need it.
+      const set = await admin.patch(`/api/v1/projects/${r.project}/repositories/${r.key}`, { visibility: r.visibility }, { 'If-Match': '*' });
+      await expectStatus(set, [200], `visibility of ${r.project}/${r.key}`);
+    }
     for (const pattern of r.allowSections ?? []) {
       // A second run finds the rule: the write of an existing subject answers 200 (R-CUR-006).
       const rule = await admin.post(`/api/v1/projects/${r.project}/repositories/${r.key}/delivery-rules`, { kind: 'section', pattern, effect: 'allow' });

@@ -89,9 +89,10 @@ server:
   listen: 127.0.0.1:$UI_BACKEND_PORT
   ops_listen: 127.0.0.1:$UI_OPS_PORT
   base_url: https://localhost:$UI_WEB_PORT
-  # The base URL the render seed's Bastion dmz-berlin reported (web/e2e/renders/bastions.ts): Set up client answers a Bastion's
-  # snippets only for a base URL listed here (R-BAS-007). No request reaches it; the profile runs no Bastion.
-  additional_base_urls: ["https://packages.dmz-berlin.example.com"]
+  # The base URLs of the profile's Bastions: Set up client answers a Bastion's snippets, and the public catalogue's builder builds
+  # for a Bastion, only for a base URL listed here (R-BAS-007, R-BAS-104). The render seed's dmz-berlin (web/e2e/renders/bastions.ts)
+  # runs nowhere; the profile's Bastion ui-dev (deploy/ui-dev/bastion.sh) answers on https://localhost:$UI_BASTION_PORT.
+  additional_base_urls: ["https://packages.dmz-berlin.example.com", "https://localhost:$UI_BASTION_PORT"]
   trusted_proxies: ["127.0.0.1/32", "::1/128"]
   tls:
     certificates:

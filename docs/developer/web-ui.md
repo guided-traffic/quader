@@ -843,14 +843,41 @@ W-35's P9 (2026-11-26): the Bastion's read-only web interface for anonymous visi
 | [app.routes.ts](../../web/src/bastion/app.routes.ts) | the start, a project's packages, a package, a version, the versions' table, the legal pages, not found; the matchers of [package-matchers.ts](../../web/src/app/features/packages/package-matchers.ts) |
 | [data/http.ts](../../web/src/bastion/data/http.ts) | `BastionData` (GET below `/ui/data/v1/`), `seg` (the catalogue's spelling of a segment), `bastionDataInterceptor` (the `ApiError` of a failure, one retry of a read) |
 | [data/reads.ts](../../web/src/bastion/data/reads.ts) | `provideBastionReads`: `PackageReads`, `ClientSetupReads`, `VulnerabilityReads`, `SignatureReads`, `LegalApi`, `FormatCatalog`, `SystemClients`, `SIGNED_IN` |
+| [data/times.ts](../../web/src/bastion/data/times.ts) | `VersionTimes`: the times of a version's documents (built, checked, scanned) read from its state document and put back at their JSON pointers (Q-UI-1451) |
 | [data/formats.ts](../../web/src/bastion/data/formats.ts), [data/state.ts](../../web/src/bastion/data/state.ts) | the formats' names (Q-UI-1436); the state store (`notReady`, `off`, the legal pages read with it) |
-| [pages/](../../web/src/bastion/pages) | the start (`/ui/data/v1/projects`), a project's packages (search, sort, the view `package-table`), a package and a version (the views `package-detail-view` and `package-version-view`, never signed in, no act) |
+| [pages/](../../web/src/bastion/pages) | the start (`/ui/data/v1/projects`), a project's packages (search, sort, a tag's link as the search, the view `package-table`), a package and a version (the views `package-detail-view` and `package-version-view`, never signed in, no act, with the inputs `namespaceLinks`, `downloads`, `dependents` and `advisoryLinks` false: what the Bastion has no page or no figure for) |
 
 Commands: `npx ng build bastion-gui` (both locales; `--localize=false --stats-json` for a quick look at the metafile in
 `dist/bastion-gui/browser-stats.json`), `npx ng serve bastion-gui` (development, no backend: its reads need a Bastion), and
 `make web-embed`, which builds both applications and runs the bundle check of R-UI-228 (`scripts/bastion-bundle-rule.mjs`). The specs
 of `src/bastion` run with `make web-test` (`npx ng test web --include 'src/bastion/**/*.spec.ts'` alone), its pages' states with `make ui-states` (`bastion.states.spec.ts`, Q-UI-1442). `make web-i18n` extracts both
 applications into the one pair of translation files (Q-UI-1441).
+
+### The profile's Bastion
+
+The UI development profile runs a Bastion of its own beside an instance's quader (`make ui-dev-bastion`,
+[bastion.sh](../../deploy/ui-dev/bastion.sh); W-35's P9b): one replica of the role `bastion`, its web interface and its documentation
+switched on, serving the instance's public catalogue at `https://localhost:19091/ui/` in instance 1 and `19091 + (n - 1) * 100` in
+instance n (its operations listener one port above). Instance 1 is the main checkout's; a worktree's builder runs the Bastion of the
+instance its checkout claims. What one start does:
+
+1. builds the Bastion's application alone (`node scripts/build-embed.mjs bastion-gui`, about 7 s, with the bundle check of R-UI-228) into
+   `internal/bastion/gui/dist/<locale>` (git ignores it) and a binary of its own, `<state>/bin/quader-bastion` (`UI_BASTION_BUILD=0`
+   keeps both of the last start);
+2. registers the Bastion `ui-dev` at the instance through the management API as the break-glass account, switches `gui` and `docs` on,
+   and issues a token into `<state>/bastion/token` once; a registration that exists is kept;
+3. writes `<state>/bastion/quader.yaml` (the instance's certificate on both listeners, the instance's quader as the main installation with
+   the profile's CA, a volume cache of 1 GiB with a catalogue share of 128 MiB, a poll of 2 s, its own imprint in English and privacy
+   notice in German) and starts the replica in the foreground;
+4. starts the public catalogue's builder once, after the handshake has reported the base URL, which `server.additional_base_urls` of
+   the instance lists (`config.sh`); its triggers follow every publish after that.
+
+Nothing of it reaches an image, a chart or a release's configuration: the script, the configuration it writes and the second binary are
+the profile's. `make ui-renders` starts the Bastion with the backend unless it runs (`UI_BASTION=0` starts none), and its setup waits
+until the Bastion has mirrored a builder's run after the seed (`awaitBastionCatalogue` of
+[bastion-gui.ts](../../web/e2e/renders/bastion-gui.ts)). The Bastion's pages are screens of the render suite like any other
+(`bastion-*`, the kind `anonymous`, in the German pass too, at the Bastion's origin), so the parts of `make ui-renders SHARD=i/n` hold them
+([Q-UI-1444](../spec/api-and-ui.md#q-ui-1444--the-bastions-pages-are-rendered-against-the-profiles-bastion-in-every-part-of-the-renders)).
 
 **A view stays usable by both.** A view takes its reads from the abstract classes of `api/` and the plumbing that each application
 binds (`FormatCatalog`, `SystemClients`, `MEMORY_OWNER` of the disclosure's memory, `LegalApi`); a helper it imports lives in a module

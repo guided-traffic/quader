@@ -1,0 +1,160 @@
+import { Page, Route, expect, request } from '@playwright/test';
+import { publicGradedPackage } from './advisories';
+import { bastionEdge, locale } from './paths';
+import { Api, ansiblePackage, expectStatus, nugetPackage, otherProject, remoteImage, remoteSource } from './seed';
+import type { Screen } from './screens';
+
+/**
+ * The pages of the Bastion's web interface (R-UI-230) against the UI development profile's Bastion (deploy/ui-dev/bastion.sh): registered
+ * at the instance as ui-dev with its interface and its documentation on, serving the public catalogue the instance builds from the render
+ * seed. A visitor of a Bastion is anonymous (W-35's B.1), so every page is the kind `anonymous`, at the Bastion's own origin, in the
+ * language of the run (the Bastion serves both builds, `/ui/en/…` and `/ui/de/…`), and in the German pass too.
+ */
+
+const B = `${bastionEdge}/ui/${locale}`;
+const P = `${B}/projects/${otherProject}`;
+const pkg = (p: { readonly format: string; readonly name: string }): string => `${P}/packages/${p.format}/${p.name}`;
+const ver = (p: { readonly format: string; readonly name: string }, version: string): string => `${pkg(p)}@${version}`;
+const collection = { format: 'ansible', name: `${ansiblePackage.namespace}.${ansiblePackage.name}` } as const;
+const image = { format: 'oci', name: `${remoteSource.prefix}/${remoteImage.name}` } as const;
+/** A Debian package of the platform team's public repository, with its contents, changelog and copyright (docs on). */
+const debian = { format: 'deb', name: 'acme-agent', version: '1.3.0-1' } as const;
+
+/**
+ * A page's normal answers that are no failure: a dependency's name the catalogue does not hold answers its lookup 404 and stays text
+ * (R-UI-221), as at the main installation.
+ */
+const lookups = [{ match: /^GET \/ui\/data\/v1\/packages\/lookup\?format=[a-z]+&name=[^&\s]+ answered 404$/, why: 'a dependency the catalogue does not hold stays text' }];
+
+/** The search of a project's packages: the list as it opens, then a search by a word of one package's name. */
+async function* search(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main quader-package-table tbody tr').first()).toBeVisible();
+  yield '';
+  await page.locator('main quader-list-head input[type=search]').fill(publicGradedPackage.name.split('-')[0] ?? publicGradedPackage.name);
+  await expect(page).toHaveURL(/[?&]q=/);
+  await expect(page.locator('main quader-package-table tbody tr').first()).toBeVisible();
+  yield 'search';
+}
+
+/** The state answered as the Bastion answers it, with the fields a walk sets: a band above an old page. */
+async function* stale(page: Page): AsyncGenerator<string> {
+  const at = new Date(Date.now() - 3 * 3_600_000).toISOString();
+  await page.route('**/ui/data/v1/state', async (route: Route) => {
+    const res = await route.fetch();
+    const body = (await res.json()) as Record<string, unknown>;
+    await route.fulfill({ response: res, body: JSON.stringify({ ...body, confirmedAt: at, stale: true }) });
+  });
+  await page.reload();
+  await expect(page.locator('.stale-band')).toBeVisible();
+  yield '';
+}
+
+/** A replica without a catalogue: the state answers 503 not_ready, as the Bastion's own problem (R-BAS-117), and the page says so. */
+async function* notReady(page: Page): AsyncGenerator<string> {
+  await page.route('**/ui/data/v1/state', (route: Route) =>
+    route.fulfill({
+      status: 503,
+      headers: { 'Retry-After': '30', 'Content-Type': 'application/problem+json' },
+      body: JSON.stringify({
+        type: 'about:blank',
+        title: 'Service Unavailable',
+        status: 503,
+        detail: 'This page is not available right now. Try again in a few minutes.',
+        code: 'not_ready',
+      }),
+    }),
+  );
+  await page.reload();
+  await expect(page.locator('main .not-ready')).toBeVisible();
+  yield '';
+}
+
+const notReadyAnswer = [{ match: /^GET \/ui\/data\/v1\/state answered 503$/, why: 'the walk answers the state as a replica without a catalogue does' }];
+
+/** Every page of the Bastion's web interface the renders hold (R-UI-230), each as the anonymous visitor, in the German pass too. */
+export const bastionScreens: readonly Screen[] = [
+  { id: 'bastion-start', path: `${B}/`, kinds: ['anonymous'], de: true },
+  { id: 'bastion-packages', path: `${P}/packages`, kinds: ['anonymous'], walk: search, tables: 'quader-package-table', de: true },
+  // The versions of a package with open findings in some of them, and a version with its findings, signatures and files.
+  { id: 'bastion-package', path: pkg(publicGradedPackage), kinds: ['anonymous'], de: true },
+  {
+    id: 'bastion-version-findings',
+    path: `${ver(publicGradedPackage, publicGradedPackage.version)}?tab=vulnerabilities`,
+    kinds: ['anonymous'],
+    expected: lookups,
+    de: true,
+  },
+  // A NuGet package with its signatures (seeded by signatures.ts) and its dependency groups.
+  { id: 'bastion-version-nuget', path: ver(nugetPackage, nugetPackage.versions[1]), kinds: ['anonymous'], expected: lookups, de: true },
+  { id: 'bastion-version-deb', path: ver(debian, debian.version), kinds: ['anonymous'], expected: lookups, de: true },
+  // An image of the public remote: its tags, then a tag with its platforms and layers.
+  { id: 'bastion-image', path: pkg(image), kinds: ['anonymous'], de: true },
+  { id: 'bastion-image-version', path: ver(image, remoteImage.single), kinds: ['anonymous'], de: true },
+  // An Ansible collection opens on its documentation (docs on).
+  { id: 'bastion-collection', path: ver(collection, ansiblePackage.versions[1]), kinds: ['anonymous'], expected: lookups, de: true },
+  { id: 'bastion-imprint', path: `${B}/legal/imprint`, kinds: ['anonymous'], de: true },
+  { id: 'bastion-privacy', path: `${B}/legal/privacy`, kinds: ['anonymous'], de: true },
+  { id: 'bastion-stale', path: `${P}/packages`, kinds: ['anonymous'], walk: stale, de: true },
+  { id: 'bastion-not-ready', path: `${B}/`, kinds: ['anonymous'], walk: notReady, expected: notReadyAnswer, de: true },
+  { id: 'bastion-not-found', path: `${B}/projects/${otherProject}/nothing-here`, kinds: ['anonymous'], de: true },
+];
+
+/** The state a job ended in, after at most five minutes. */
+async function jobEnd(admin: Api, id: string): Promise<string> {
+  for (let i = 0; i < 300; i++) {
+    const read = await admin.get(`/api/v1/system/jobs/${id}`);
+    await expectStatus(read, [200], 'the run of the public catalogue');
+    const state = ((await read.json()) as { state: string }).state;
+    if (!['queued', 'running', 'cancelling'].includes(state)) return state;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  return 'not ended within five minutes';
+}
+
+/** The packages the Bastion's screens open: the setup waits until the Bastion's catalogue holds each. */
+const shown: readonly { readonly format: string; readonly name: string }[] = [publicGradedPackage, nugetPackage, debian, image, collection];
+
+/**
+ * After the seed: the public catalogue's builder runs once more (the seed's writes through the database send no signal), and the setup
+ * waits until the profile's Bastion has mirrored what that run built and holds every package its screens open. Nothing when no Bastion
+ * answers (UI_BASTION=0): its screens fail then.
+ */
+export async function awaitBastionCatalogue(admin: Api): Promise<void> {
+  const bastion = await request.newContext({ baseURL: bastionEdge, ignoreHTTPSErrors: true });
+  try {
+    const first = await bastion.get('/ui/data/v1/state').catch(() => null);
+    if (first === null) {
+      console.log(`setup: no Bastion answers at ${bastionEdge}; the Bastion's screens will fail`);
+      return;
+    }
+    // A run that is queued already (a trigger of the seed's publishes) reads everything when it starts and is waited for; one that
+    // runs already may have started before the seed's last writes, so another follows it.
+    for (let attempt = 0; ; attempt++) {
+      const run = await admin.post('/api/v1/system/tasks/bastion-catalogue/run', {});
+      await expectStatus(run, [202, 409], 'a run of the public catalogue');
+      const job = ((await run.json()) as { job: { id: string; state: string } }).job;
+      const ended = await jobEnd(admin, job.id);
+      if (ended !== 'succeeded') throw new Error(`the run of the public catalogue ended ${ended}`);
+      if (run.status() === 202 || job.state === 'queued') break;
+      if (attempt === 3) throw new Error('the public catalogue was running at every one of four starts');
+    }
+    const built = Date.now();
+    for (let i = 0; i < 120; i++) {
+      const state = await bastion.get('/ui/data/v1/state');
+      const confirmed = state.ok() ? Date.parse(((await state.json()) as { confirmedAt: string }).confirmedAt) : 0;
+      if (confirmed > built) {
+        const missing: string[] = [];
+        for (const p of shown) {
+          const found = await bastion.get(`/ui/data/v1/packages/lookup?format=${p.format}&name=${encodeURIComponent(p.name)}`);
+          if (!found.ok()) missing.push(`${p.format} ${p.name}`);
+        }
+        if (missing.length === 0) return;
+        throw new Error(`the Bastion's catalogue lacks ${missing.join(', ')} after the builder's run`);
+      }
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    throw new Error(`the Bastion at ${bastionEdge} did not confirm its catalogue within two minutes of the builder's run`);
+  } finally {
+    await bastion.dispose();
+  }
+}

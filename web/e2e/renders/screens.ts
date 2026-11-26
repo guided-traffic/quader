@@ -35,6 +35,7 @@ import {
 import { fileCommands, folderUpload, rowFileCommands } from './file-commands';
 import { gradedPackage, manyVersionsPackage, publicGradedPackage, zipArchive } from './advisories';
 import { anonymousCard, anonymousEndOfLife, anonymousFindings } from './anonymous-vulnerabilities';
+import { bastionScreens } from './bastion-gui';
 import { malwarePackage, quarantine } from './malware';
 import { malwareWaiting, scanFailedCard, scanStatesList, scanStatesPackage } from './scan-states';
 import { trivyDatabases } from './scanners';
@@ -3986,4 +3987,6 @@ export const screens: readonly Screen[] = [
     notices: [{ match: /./, why: 'the refused save, which the walk answers in the browser' }],
   },
   { id: 'admin-permission', path: editorPaths.instancePolicy, kinds: ['admin'], walk: openedAndSections, states: sections },
+  // The Bastion's web interface (R-UI-230), against the profile's Bastion.
+  ...bastionScreens,
 ];

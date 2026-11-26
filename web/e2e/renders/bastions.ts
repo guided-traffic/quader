@@ -372,7 +372,8 @@ async function answer(page: Page, frankfurtOn: boolean, connections: readonly Js
  */
 export async function* bastionsHandover(page: Page): AsyncGenerator<string> {
   await expect(page.getByRole('heading', { name: 'Bastions', level: 1 })).toBeVisible();
-  await expect(page.locator('main quader-bastion-card')).toHaveCount(1);
+  // The seed's registration; the profile's own Bastion (`make ui-dev-bastion`, registered as `ui-dev` by the render run) may stand beside it.
+  await expect(page.locator('main quader-bastion-card', { hasText: seededBastion.name })).toBeVisible();
   yield '';
   await page.route('**/api/v1/bastions', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }) }));
   await page.reload();

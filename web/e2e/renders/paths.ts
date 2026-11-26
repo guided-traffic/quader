@@ -5,6 +5,11 @@ export const root = resolve(__dirname, '..', '..', '..');
 /** The edge of the UI development profile: the dev server, which proxies everything outside /ui/ to Quader. */
 export const edge = process.env['UI_RENDERS_EDGE'] ?? 'https://localhost:4200';
 /**
+ * The profile's Bastion (deploy/ui-dev/bastion.sh): its client listener, where its web interface answers (R-UI-230); renders.sh names
+ * the instance's.
+ */
+export const bastionEdge = process.env['UI_RENDERS_BASTION'] ?? 'https://localhost:19091';
+/**
  * The generated state of the profile (deploy/ui-dev/up.sh): the break-glass password. UI_RENDERS_STATE names the state directory of
  * a stack of its own (docs/developer/web-ui.md#local-ui-development).
  */

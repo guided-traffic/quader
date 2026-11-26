@@ -30,6 +30,14 @@ export interface LayoutFinding {
  * task (no frame is painted between).
  */
 export function layoutFindings(): LayoutFinding[] {
+  // A style of the measurement carries the page's nonce: a page served with its content security policy (the Bastion's, R-BAS-117)
+  // refuses a style without it, and the measurement would see the page unchanged (Q-UI-1447).
+  const measureStyle = (): HTMLStyleElement => {
+    const style = document.createElement('style');
+    const nonce = document.querySelector('quader-root')?.getAttribute('ngcspnonce');
+    if (nonce) style.nonce = nonce;
+    return style;
+  };
   const found = new Map<string, { check: string; what: string; text: string; detail: string; count: number }>();
   const add = (check: string, el: Element, text: string, detail: string): void => {
     const what = pathOf(el);
@@ -575,7 +583,7 @@ export function layoutFindings(): LayoutFinding[] {
   // a span of the same text in the same place (an inline box of a block cell, an item of a flex or grid cell) and put back in
   // the same task. A mark of no width beside the name wrapped to its own line in a flex cell and measured a line too low.
   const MEASURED = 'data-quader-layout-name';
-  const nameStyle = document.createElement('style');
+  const nameStyle = measureStyle();
   nameStyle.textContent = `[${MEASURED}]::before { content: none !important; }`;
   document.head.append(nameStyle);
   // The span takes the pseudo-element's box as well as its text: in the shared table's blocks the name is a cell of its own, as wide as
@@ -820,7 +828,7 @@ export function layoutFindings(): LayoutFinding[] {
   // cell whose lines stay under it has them by its layout (a mark in a block under a name, a line break), not by a wrap.
   const CRAMPED_CHARS = 40;
   const CRAMPED = 'data-quader-layout-cramped';
-  const crampedStyle = document.createElement('style');
+  const crampedStyle = measureStyle();
   crampedStyle.textContent = `[${CRAMPED}], [${CRAMPED}] * { white-space: nowrap !important; }`;
   /** The content box's left and width of a cell. */
   const contentBox = (cell: Element): { left: number; width: number } => {
@@ -1154,7 +1162,7 @@ export function layoutFindings(): LayoutFinding[] {
   const SEPARATORS = ['"·"', '"/"', '"›"'];
   const SEPARATOR = 'data-quader-layout-separator';
   const STAND_IN = 'data-quader-layout-separator-span';
-  const separatorStyle = document.createElement('style');
+  const separatorStyle = measureStyle();
   separatorStyle.textContent = `[${SEPARATOR}]::before { content: none !important; }`;
   const separators = Array.from(document.querySelectorAll('.dot-before, .dot-separated > *'))
     .filter((el) => SEPARATORS.includes(getComputedStyle(el, '::before').content) && shown(el))
