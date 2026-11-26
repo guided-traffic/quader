@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph: a package file a remote repository cached has the row of its
@@ -23,10 +25,13 @@ func TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph(t *testing
 	if path == "" {
 		t.Fatal("the stable index lists no quader-hello for amd64")
 	}
+	// The management API's requests go to a replica of the role api, which serves no package protocol and builds no format host
+	// (R-ARCH-001, Q-ARCH-1070).
+	apiRep := e.st.Start(t, testenv.ReplicaOptions{Name: "api-a", Role: "api"})
 	if a := e.get(repo, path); a.Status != http.StatusOK {
 		t.Fatalf("the package file: %d", a.Status)
 	}
-	a := e.st.Do(e.r, "GET", "/api/v1/packages?format=deb&repository="+url.QueryEscape(project+"/"+repo), e.admin, nil)
+	a := e.st.Do(apiRep, "GET", "/api/v1/packages?format=deb&repository="+url.QueryEscape(project+"/"+repo), e.admin, nil)
 	items, _ := a.JSON(t)["items"].([]any)
 	if len(items) != 1 {
 		t.Fatalf("the remote lists %v", items)
@@ -36,7 +41,7 @@ func TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph(t *testing
 	version, _ := pkg["latestVersion"].(string)
 	var md map[string]any
 	eventually(t, 30*time.Second, "the control paragraph", func() bool {
-		a := e.st.Do(e.r, "GET", "/api/v1/packages/"+id+"/versions/"+url.PathEscape(version), e.admin, nil)
+		a := e.st.Do(apiRep, "GET", "/api/v1/packages/"+id+"/versions/"+url.PathEscape(version), e.admin, nil)
 		if a.Status != http.StatusOK {
 			t.Fatalf("the version: %d %s", a.Status, a.Body)
 		}
@@ -44,7 +49,7 @@ func TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph(t *testing
 		return md["maintainer"] != nil
 	})
 	// The package's description is its newest version's: the first line of the cached file's Description.
-	if p := e.st.Do(e.r, "GET", "/api/v1/packages/"+id, e.admin, nil).JSON(t); p["description"] != "prints a fixed line" {
+	if p := e.st.Do(apiRep, "GET", "/api/v1/packages/"+id, e.admin, nil).JSON(t); p["description"] != "prints a fixed line" {
 		t.Errorf("description %v, want the paragraph's first line", p["description"])
 	}
 	if md["maintainer"] != "quader test archive <debstub@quader.invalid>" {
@@ -56,7 +61,7 @@ func TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph(t *testing
 	}
 	// The job that wrote the row queued the reading of the cached file's data archive (R-DEB-039): the file list answers.
 	eventually(t, 30*time.Second, "the data archive read", func() bool {
-		a := e.st.Do(e.r, "GET", "/api/v1/packages/"+id+"/versions/"+url.PathEscape(version)+"/contents", e.admin, nil)
+		a := e.st.Do(apiRep, "GET", "/api/v1/packages/"+id+"/versions/"+url.PathEscape(version)+"/contents", e.admin, nil)
 		return a.Status == http.StatusOK && strings.Contains(string(a.Body), `"path":"/usr/bin/quader-hello"`)
 	})
 	if arch, _ := md["architectures"].([]any); len(arch) != 1 || arch[0] != "amd64" {
@@ -83,7 +88,7 @@ func TestR_DEB_037_ACachedPackageFileIsDescribedByItsControlParagraph(t *testing
 	}
 
 	// The removal of the cached file takes its row.
-	if a := e.st.Do(e.r, "DELETE", "/api/v1/projects/"+project+"/repositories/"+repo+"/items?path="+url.QueryEscape(path), e.admin, nil); a.Status >= 300 {
+	if a := e.st.Do(apiRep, "DELETE", "/api/v1/projects/"+project+"/repositories/"+repo+"/items?path="+url.QueryEscape(path), e.admin, nil); a.Status >= 300 {
 		t.Fatalf("delete the cached file: %d %s", a.Status, a.Body)
 	}
 	eventually(t, 20*time.Second, "the row to go", func() bool { return e.rows("deb_binaries", repo) == 0 })

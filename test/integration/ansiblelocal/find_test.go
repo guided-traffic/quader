@@ -43,10 +43,13 @@ func TestR_ANS_057_CollectionsAreFoundAsOnGalaxy(t *testing.T) {
 	e.collection("acme", "tools", "Tools for hosts.", "linux", "tools")
 	e.collection("acme", "net", "Manage docker networks.", "networking")
 	e.collection("other", "docker", "Run containers.", "containers")
+	// The management API's requests go to a replica of the role api, which serves no package protocol and builds no format host
+	// (R-ARCH-001, Q-ARCH-1070).
+	apiRep := e.st.Start(t, testenv.ReplicaOptions{Name: "api-a", Role: "api"})
 
 	list := func(q string) []string {
 		t.Helper()
-		a := e.st.Do(e.r, "GET", "/api/v1/packages?format=ansible&"+q, e.tokC, nil)
+		a := e.st.Do(apiRep, "GET", "/api/v1/packages?format=ansible&"+q, e.tokC, nil)
 		if a.Status != http.StatusOK {
 			t.Fatalf("%s: %d %s", q, a.Status, a.Body)
 		}
@@ -77,7 +80,7 @@ func TestR_ANS_057_CollectionsAreFoundAsOnGalaxy(t *testing.T) {
 		t.Errorf("the first page of acme by relevance: %v", got)
 	}
 
-	a := e.st.Do(e.r, "GET", "/api/v1/packages?format=ansible&namespace=acme", e.tokC, nil)
+	a := e.st.Do(apiRep, "GET", "/api/v1/packages?format=ansible&namespace=acme", e.tokC, nil)
 	first := a.JSON(t)["items"].([]any)[0].(map[string]any)
 	if kw, _ := first["keywords"].([]any); len(kw) != 1 || kw[0] != "networking" || first["signature"] != nil {
 		t.Errorf("a hit without a signature: %v", first)
@@ -95,7 +98,7 @@ func TestR_ANS_057_CollectionsAreFoundAsOnGalaxy(t *testing.T) {
 	if got := list("signed=true"); !slices.Equal(got, []string{"acme.net"}) {
 		t.Errorf("signed: %v", got)
 	}
-	a = e.st.Do(e.r, "GET", "/api/v1/packages?format=ansible&namespace=acme", e.tokC, nil)
+	a = e.st.Do(apiRep, "GET", "/api/v1/packages?format=ansible&namespace=acme", e.tokC, nil)
 	if first := a.JSON(t)["items"].([]any)[0].(map[string]any); first["signature"] != "verified_internal" {
 		t.Errorf("the badge of a verified version: %v", first)
 	}
@@ -114,10 +117,13 @@ func TestR_ANS_057_CollectionsAreFoundAsOnGalaxy(t *testing.T) {
 // claims; a caller who may read only the packages gets none of it; a text that is no namespace of the format is 404.
 func TestR_UI_220_ANamespaceSaysWhoMayPublishToAReaderOfTheConfiguration(t *testing.T) {
 	e := newEnv(t)
+	// The management API's requests go to a replica of the role api, which serves no package protocol and builds no format host
+	// (R-ARCH-001, Q-ARCH-1070).
+	apiRep := e.st.Start(t, testenv.ReplicaOptions{Name: "api-a", Role: "api"})
 	e.st.Exec(`INSERT INTO namespace_claims (repo_id, pattern, source, scope) VALUES ($1, 'acme.*', 'manual', 'members'), ($1, 'other.x', 'manual', 'global')`, e.repoID())
 	get := func(tok, q string) map[string]any {
 		t.Helper()
-		a := e.st.Do(e.r, "GET", "/api/v1/packages/namespace?"+q, tok, nil)
+		a := e.st.Do(apiRep, "GET", "/api/v1/packages/namespace?"+q, tok, nil)
 		if a.Status != http.StatusOK {
 			t.Fatalf("%s: %d %s", q, a.Status, a.Body)
 		}
@@ -140,7 +146,7 @@ func TestR_UI_220_ANamespaceSaysWhoMayPublishToAReaderOfTheConfiguration(t *test
 		t.Errorf("another project: %v", doc)
 	}
 	for _, q := range []string{"format=ansible&name=acme.tools", "format=nuget&name=acme", "format=npm&name=acme", "format=oci&name=team//app"} {
-		if a := e.st.Do(e.r, "GET", "/api/v1/packages/namespace?"+q, e.tokAdmin, nil); a.Status != http.StatusNotFound {
+		if a := e.st.Do(apiRep, "GET", "/api/v1/packages/namespace?"+q, e.tokAdmin, nil); a.Status != http.StatusNotFound {
 			t.Errorf("%s: %d %s", q, a.Status, a.Body)
 		}
 	}
@@ -167,7 +173,10 @@ func TestR_ANS_058_TheDocumentationIsSearchedAcrossCollections(t *testing.T) {
 	if a := e.publish(e.tokA, collectiontest.Build(newer), true); a.Status != http.StatusAccepted {
 		t.Fatalf("publish 2.0.0: %d %s", a.Status, a.Body)
 	}
-	a := e.st.Do(e.r, "GET", "/api/v1/search/documentation?q=mod_3", e.tokC, nil)
+	// The management API's requests go to a replica of the role api, which serves no package protocol and builds no format host
+	// (R-ARCH-001, Q-ARCH-1070).
+	apiRep := e.st.Start(t, testenv.ReplicaOptions{Name: "api-a", Role: "api"})
+	a := e.st.Do(apiRep, "GET", "/api/v1/search/documentation?q=mod_3", e.tokC, nil)
 	items, _ := a.JSON(t)["items"].([]any)
 	if a.Status != http.StatusOK || len(items) != 2 {
 		t.Fatalf("mod_3: %d %s", a.Status, a.Body)
@@ -185,47 +194,47 @@ func TestR_ANS_058_TheDocumentationIsSearchedAcrossCollections(t *testing.T) {
 	}
 	// The hit of a deprecated collection carries its deprecation, read with the entries (R-ANS-060).
 	e.st.Exec(`INSERT INTO ansible_collection_deprecations (repo_id, name, message) VALUES ($1, 'acme.tools', 'Use acme.network.')`, e.repoID())
-	dep := e.st.Do(e.r, "GET", "/api/v1/search/documentation?q=mod_3", e.tokC, nil).JSON(t)["items"].([]any)[0].(map[string]any)["deprecation"]
+	dep := e.st.Do(apiRep, "GET", "/api/v1/search/documentation?q=mod_3", e.tokC, nil).JSON(t)["items"].([]any)[0].(map[string]any)["deprecation"]
 	if d, _ := dep.(map[string]any); d["scope"] != "package" || d["message"] != "Use acme.network." {
 		t.Errorf("the deprecation of the hit's collection: %v", dep)
 	}
 	// A role's entry points are words of the role's one entry, not entries of their own: one hit, which opens the role.
-	role := e.st.Do(e.r, "GET", "/api/v1/search/documentation?q=gracefully", e.tokC, nil)
+	role := e.st.Do(apiRep, "GET", "/api/v1/search/documentation?q=gracefully", e.tokC, nil)
 	if items, _ := role.JSON(t)["items"].([]any); len(items) != 1 || items[0].(map[string]any)["type"] != "role" ||
 		items[0].(map[string]any)["name"] != "web" {
 		t.Errorf("a word of a role's entry point: %s", role.Body)
 	}
-	if a := e.st.Do(e.r, "GET", "/api/v1/search/documentation?q=zeppelin", e.tokC, nil); len(a.JSON(t)["items"].([]any)) != 0 {
+	if a := e.st.Do(apiRep, "GET", "/api/v1/search/documentation?q=zeppelin", e.tokC, nil); len(a.JSON(t)["items"].([]any)) != 0 {
 		t.Errorf("the changelog is no entry: %s", a.Body)
 	}
-	if a := e.st.Do(e.r, "GET", "/api/v1/search/documentation?q=module+checks", e.tokC, nil); len(a.JSON(t)["items"].([]any)) != 0 {
+	if a := e.st.Do(apiRep, "GET", "/api/v1/search/documentation?q=module+checks", e.tokC, nil); len(a.JSON(t)["items"].([]any)) != 0 {
 		t.Errorf("the words of 1.0.0's modules find nothing in 2.0.0: %s", a.Body)
 	}
-	page := e.st.Do(e.r, "GET", "/api/v1/search/documentation?q=mod&limit=1", e.tokC, nil)
+	page := e.st.Do(apiRep, "GET", "/api/v1/search/documentation?q=mod&limit=1", e.tokC, nil)
 	next, _ := page.JSON(t)["nextCursor"].(string)
 	if next == "" {
 		t.Fatalf("a page of one: %s", page.Body)
 	}
-	if rest := e.st.Do(e.r, "GET", "/api/v1/search/documentation?q=mod&limit=1&cursor="+next, e.tokC, nil); rest.Status != http.StatusOK ||
+	if rest := e.st.Do(apiRep, "GET", "/api/v1/search/documentation?q=mod&limit=1&cursor="+next, e.tokC, nil); rest.Status != http.StatusOK ||
 		rest.JSON(t)["items"].([]any)[0].(map[string]any)["name"] == page.JSON(t)["items"].([]any)[0].(map[string]any)["name"] {
 		t.Errorf("the second page: %d %s", rest.Status, rest.Body)
 	}
-	sug := e.st.Do(e.r, "GET", "/api/v1/search/suggestions?q=mod_3&kind=documentation", e.tokC, nil)
+	sug := e.st.Do(apiRep, "GET", "/api/v1/search/suggestions?q=mod_3&kind=documentation", e.tokC, nil)
 	if docs, _ := sug.JSON(t)["documentation"].(map[string]any); sug.Status != http.StatusOK || len(docs["items"].([]any)) != 2 || docs["more"] != false {
 		t.Errorf("the suggestions: %d %s", sug.Status, sug.Body)
 	}
 
 	outsider := e.st.Token(e.st.User("outsider"), scope.Default())
-	if l := e.st.Do(e.r, "GET", "/api/v1/packages?format=ansible", outsider, nil); len(names(t, l)) != 1 {
+	if l := e.st.Do(apiRep, "GET", "/api/v1/packages?format=ansible", outsider, nil); len(names(t, l)) != 1 {
 		t.Fatalf("the outsider reads the artifacts: %s", l.Body)
 	}
-	if a := e.st.Do(e.r, "GET", "/api/v1/search/documentation?q=mod_3", outsider, nil); a.Status != http.StatusOK || len(a.JSON(t)["items"].([]any)) != 0 {
+	if a := e.st.Do(apiRep, "GET", "/api/v1/search/documentation?q=mod_3", outsider, nil); a.Status != http.StatusOK || len(a.JSON(t)["items"].([]any)) != 0 {
 		t.Errorf("the outsider, who may not read the wiki: %d %s", a.Status, a.Body)
 	}
-	if a := e.st.Do(e.r, "GET", "/api/v1/search/suggestions?q=mod_3&kind=documentation", outsider, nil); len(a.JSON(t)["documentation"].(map[string]any)["items"].([]any)) != 0 {
+	if a := e.st.Do(apiRep, "GET", "/api/v1/search/suggestions?q=mod_3&kind=documentation", outsider, nil); len(a.JSON(t)["documentation"].(map[string]any)["items"].([]any)) != 0 {
 		t.Errorf("the outsider's suggestions: %s", a.Body)
 	}
-	if a := e.st.Do(e.r, "GET", "/api/v1/search/documentation?q=m", e.tokC, nil); a.Status != http.StatusBadRequest {
+	if a := e.st.Do(apiRep, "GET", "/api/v1/search/documentation?q=m", e.tokC, nil); a.Status != http.StatusBadRequest {
 		t.Errorf("a text of one character: %d %s", a.Status, a.Body)
 	}
 }

@@ -20,7 +20,7 @@ import (
 // annotation gives (R-OCI-039), and the word for the artifact is image (R-OCI-041). A person whose grant excludes the blobs' paths reads
 // the version, its layers and its annotations, and none of the configuration or the labels (Q-OCI-273). The package list carries the
 // annotation's description, and a second tag of the image stands as the version's other tag (R-OCI-041). One replica, one push of
-// three blobs of bytes and a second tag; about 2 s.
+// three blobs of bytes and a second tag, and a replica of the role api for the page's reads; about 3 s.
 func TestR_OCI_040_AnImagesFactsStandOnItsPageForWhoMayReadItsConfig(t *testing.T) {
 	p := newProto(t, protoOptions{replicas: 1, setup: func(p *proto) {
 		p.pathUser("noblobs", []string{"read"}, nil, []string{"**/_blobs/**"})
@@ -43,13 +43,16 @@ func TestR_OCI_040_AnImagesFactsStandOnItsPageForWhoMayReadItsConfig(t *testing.
 	want(t, p.pushImage(p.as("admin"), repoLocal, "facts/app", "1.0", img), http.StatusCreated, "")
 
 	id := view.ID("oci", "facts/app")
+	// The management API's requests go to a replica of the role api, which serves no package protocol and builds no format host
+	// (R-ARCH-001, Q-ARCH-1070).
+	apiRep := p.st.Start(t, testenv.ReplicaOptions{Name: "api-a", Role: "api"})
 	detail := func(who string) map[string]any {
 		t.Helper()
 		tok := p.admin
 		if who != "admin" {
 			tok = p.quaderToken[who]
 		}
-		a := p.st.Do(p.reps[0], http.MethodGet, "/api/v1/packages/"+id+"/versions/1.0", tok, nil)
+		a := p.st.Do(apiRep, http.MethodGet, "/api/v1/packages/"+id+"/versions/1.0", tok, nil)
 		if a.Status != http.StatusOK {
 			t.Fatalf("%s reads the version: %d %s", who, a.Status, a.Body)
 		}
@@ -93,12 +96,12 @@ func TestR_OCI_040_AnImagesFactsStandOnItsPageForWhoMayReadItsConfig(t *testing.
 
 	// R-OCI-041: the other tags of the image stand with the version.
 	want(t, p.putManifest(p.next(), p.as("admin"), repoLocal, "facts/app", "latest", manifestType, m), http.StatusCreated, "")
-	a := p.st.Do(p.reps[0], http.MethodGet, "/api/v1/packages/"+id+"/versions/1.0", p.admin, nil)
+	a := p.st.Do(apiRep, http.MethodGet, "/api/v1/packages/"+id+"/versions/1.0", p.admin, nil)
 	if aliases, _ := a.JSON(t)["aliases"].([]any); len(aliases) != 1 || aliases[0] != "latest" {
 		t.Errorf("the other tags of the image: %v", a.JSON(t)["aliases"])
 	}
 
-	list := p.st.Do(p.reps[0], http.MethodGet, "/api/v1/packages?repository="+url.QueryEscape(project+"/"+repoLocal), p.admin, nil)
+	list := p.st.Do(apiRep, http.MethodGet, "/api/v1/packages?repository="+url.QueryEscape(project+"/"+repoLocal), p.admin, nil)
 	var page struct {
 		Items []struct {
 			Name        string  `json:"name"`

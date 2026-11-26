@@ -35,38 +35,41 @@ func TestR_ANS_056_ARoleInstalledThroughARemoteReadsLikeARole(t *testing.T) {
 	eventually(t, 30*time.Second, "the README job", func() bool {
 		return e.st.Text(`SELECT readme_state FROM ansible_roles WHERE repo_id = $1 AND role_id = 16`, e.repoID(repo)) == "available"
 	})
+	// The management API's requests go to a replica of the role api, which serves no package protocol and builds no format host
+	// (R-ARCH-001, Q-ARCH-1070).
+	apiRep := e.st.Start(t, testenv.ReplicaOptions{Name: "api-a", Role: "api"})
 
-	list := e.st.Do(r, http.MethodGet, "/api/v1/packages?format=ansible", e.admin, nil)
+	list := e.st.Do(apiRep, http.MethodGet, "/api/v1/packages?format=ansible", e.admin, nil)
 	items := listOf(list.JSON(t)["items"])
 	if list.Status != http.StatusOK || len(items) != 1 || obj(items[0])["name"] != "geerlingguy.pip" ||
 		obj(items[0])["description"] != "Pip (Python package manager) for Linux." {
 		t.Fatalf("list: %d %s", list.Status, list.Body)
 	}
 	// The search finds the role by its owner, and the summary names the key its page is addressed by.
-	found := listOf(e.st.Do(r, http.MethodGet, "/api/v1/packages?format=ansible&q=geerlingguy", e.admin, nil).JSON(t)["items"])
+	found := listOf(e.st.Do(apiRep, http.MethodGet, "/api/v1/packages?format=ansible&q=geerlingguy", e.admin, nil).JSON(t)["items"])
 	if len(found) != 1 || obj(found[0])["key"] != "role/16" {
 		t.Errorf("search by the owner: %v", found)
 	}
 	// The find of the format matches the role's words as a collection's (R-ANS-057): a word that begins a word of its description and a
 	// tag, by relevance; the key has no namespace, so the namespace of its display name lists nothing.
-	byWords := listOf(e.st.Do(r, http.MethodGet, "/api/v1/packages?format=ansible&q=manag+devel&sort=relevance", e.admin, nil).JSON(t)["items"])
+	byWords := listOf(e.st.Do(apiRep, http.MethodGet, "/api/v1/packages?format=ansible&q=manag+devel&sort=relevance", e.admin, nil).JSON(t)["items"])
 	if len(byWords) != 1 || obj(byWords[0])["key"] != "role/16" {
 		t.Errorf("search by the words of the description and a tag: %v", byWords)
 	}
-	if ns := listOf(e.st.Do(r, http.MethodGet, "/api/v1/packages?format=ansible&namespace=geerlingguy", e.admin, nil).JSON(t)["items"]); len(ns) != 0 {
+	if ns := listOf(e.st.Do(apiRep, http.MethodGet, "/api/v1/packages?format=ansible&namespace=geerlingguy", e.admin, nil).JSON(t)["items"]); len(ns) != 0 {
 		t.Errorf("the namespace of the display name: %v", ns)
 	}
 	// The search field's suggestion carries the key as well, so its link leads to the page (Q-UI-1261).
-	suggested := obj(e.st.Do(r, http.MethodGet, "/api/v1/search/suggestions?q=geerlingguy&kind=package", e.admin, nil).JSON(t)["packages"])
+	suggested := obj(e.st.Do(apiRep, http.MethodGet, "/api/v1/search/suggestions?q=geerlingguy&kind=package", e.admin, nil).JSON(t)["packages"])
 	if s := listOf(suggested["items"]); len(s) != 1 || obj(s[0])["name"] != "geerlingguy.pip" || obj(s[0])["key"] != "role/16" {
 		t.Errorf("suggestion of the owner: %v", suggested)
 	}
-	lookup := e.st.Do(r, http.MethodGet, "/api/v1/packages/lookup?format=ansible&name=role/16", e.admin, nil)
+	lookup := e.st.Do(apiRep, http.MethodGet, "/api/v1/packages/lookup?format=ansible&name=role/16", e.admin, nil)
 	id, _ := lookup.JSON(t)["id"].(string)
 	if lookup.Status != http.StatusOK || id == "" {
 		t.Fatalf("lookup: %d %s", lookup.Status, lookup.Body)
 	}
-	d := e.st.Do(r, http.MethodGet, "/api/v1/packages/"+id+"/versions/2.0.0", e.admin, nil)
+	d := e.st.Do(apiRep, http.MethodGet, "/api/v1/packages/"+id+"/versions/2.0.0", e.admin, nil)
 	detail := d.JSON(t)
 	md := obj(detail["metadata"])
 	role := obj(md["role"])
@@ -82,7 +85,7 @@ func TestR_ANS_056_ARoleInstalledThroughARemoteReadsLikeARole(t *testing.T) {
 	if !slices.Equal(keywords, []string{"python", "pip", "development"}) {
 		t.Errorf("keywords = %v", keywords)
 	}
-	rd := e.st.Do(r, http.MethodGet, "/api/v1/packages/"+id+"/versions/2.0.0/readme", e.admin, nil)
+	rd := e.st.Do(apiRep, http.MethodGet, "/api/v1/packages/"+id+"/versions/2.0.0/readme", e.admin, nil)
 	html, _ := rd.JSON(t)["html"].(string)
 	if rd.Status != http.StatusOK || rd.JSON(t)["contentType"] != "text/html" || !strings.Contains(html, "Ansible Role: Pip") ||
 		!strings.Contains(html, "<table>") || !strings.Contains(html, "pip_package") {
@@ -114,7 +117,7 @@ func TestR_ANS_056_ARoleInstalledThroughARemoteReadsLikeARole(t *testing.T) {
 	// (R-CUR-014, Q-UI-1260): the details decide by role/16, not by the display name.
 	e.st.MustPutDeliveryRule(r, e.admin, repo, testenv.PackageRule("role/16", "block"))
 	eventually(t, 10*time.Second, "the rule on the version's page", func() bool {
-		held := listOf(e.st.Do(r, http.MethodGet, "/api/v1/packages/"+id+"/versions/2.0.0", e.admin, nil).JSON(t)["repositories"])
+		held := listOf(e.st.Do(apiRep, http.MethodGet, "/api/v1/packages/"+id+"/versions/2.0.0", e.admin, nil).JSON(t)["repositories"])
 		return len(held) == 1 && obj(held[0])["available"] == false && obj(held[0])["unavailableReason"] == "blocked"
 	})
 }

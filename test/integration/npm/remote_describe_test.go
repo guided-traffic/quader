@@ -51,7 +51,10 @@ func TestR_NPM_050_ACachedVersionIsDescribedByItsEntryInTheStoredDocument(t *tes
 	}
 
 	ops := r.st.Token(r.lead, scope.Default())
-	look := r.st.Do(rep, http.MethodGet, "/api/v1/packages/lookup?format=npm&name="+url.QueryEscape(p.Name), ops, nil)
+	// The management API's requests go to a replica of the role api, which serves no package protocol and builds no format host
+	// (R-ARCH-001, Q-ARCH-1070).
+	apiRep := r.st.Start(t, testenv.ReplicaOptions{Name: "api-a", Role: "api"})
+	look := r.st.Do(apiRep, http.MethodGet, "/api/v1/packages/lookup?format=npm&name="+url.QueryEscape(p.Name), ops, nil)
 	if look.Status != http.StatusOK {
 		t.Fatalf("lookup: %d %s", look.Status, look.Body)
 	}
@@ -71,7 +74,7 @@ func TestR_NPM_050_ACachedVersionIsDescribedByItsEntryInTheStoredDocument(t *tes
 		t.Errorf("licenses %v, want [MIT]", got["licenses"])
 	}
 	// The package's description is its newest version's: the one the remote cached.
-	if pkg := r.st.Do(rep, http.MethodGet, "/api/v1/packages/"+id, ops, nil).JSON(t); pkg["description"] != p.Description {
+	if pkg := r.st.Do(apiRep, http.MethodGet, "/api/v1/packages/"+id, ops, nil).JSON(t); pkg["description"] != p.Description {
 		t.Errorf("description %v, want the entry's %q", pkg["description"], p.Description)
 	}
 	md, _ := got["metadata"].(map[string]any)

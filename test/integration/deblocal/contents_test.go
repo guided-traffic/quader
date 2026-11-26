@@ -47,7 +47,10 @@ func TestR_DEB_038_039_AnUploadedPackageShowsWhatItTellsAboutItself(t *testing.T
 	e.mustUpload(e.tokA, "quader-broken_1.0_amd64.deb", broken, http.StatusCreated, []string{"stable"}, "main")
 
 	id := view.ID("deb", "quader-docs")
-	ver := e.st.Do(e.r, "GET", "/api/v1/packages/"+url.PathEscape(id)+"/versions/1.2.0-1", e.tokA, nil)
+	// The management API's requests go to a replica of the role api, which serves no package protocol and builds no format host
+	// (R-ARCH-001, Q-ARCH-1070).
+	apiRep := e.st.Start(t, testenv.ReplicaOptions{Name: "api-a", Role: "api"})
+	ver := e.st.Do(apiRep, "GET", "/api/v1/packages/"+url.PathEscape(id)+"/versions/1.2.0-1", e.tokA, nil)
 	if ver.Status != http.StatusOK {
 		t.Fatalf("the version: %d %s", ver.Status, ver.Body)
 	}
@@ -65,7 +68,7 @@ func TestR_DEB_038_039_AnUploadedPackageShowsWhatItTellsAboutItself(t *testing.T
 	path := "/api/v1/packages/" + url.PathEscape(id) + "/versions/1.2.0-1/contents"
 	var c map[string]any
 	eventually(t, 60*time.Second, "the data archive read", func() bool {
-		a := e.st.Do(e.r, "GET", path, e.tokA, nil)
+		a := e.st.Do(apiRep, "GET", path, e.tokA, nil)
 		if a.Status != http.StatusOK {
 			t.Fatalf("contents: %d %s", a.Status, a.Body)
 		}
@@ -79,16 +82,16 @@ func TestR_DEB_038_039_AnUploadedPackageShowsWhatItTellsAboutItself(t *testing.T
 	if files["total"] != float64(5) || !strings.Contains(jsonOf(t, files["items"]), `"path":"/usr/bin/quader-docs"`) {
 		t.Errorf("files %s", jsonOf(t, files))
 	}
-	filtered := e.st.Do(e.r, "GET", path+"?q=B.TXT&limit=1", e.tokA, nil).JSON(t)
+	filtered := e.st.Do(apiRep, "GET", path+"?q=B.TXT&limit=1", e.tokA, nil).JSON(t)
 	if ff, _ := filtered["files"].(map[string]any); ff["matched"] != float64(1) || !strings.Contains(jsonOf(t, ff["items"]), "b.txt") {
 		t.Errorf("filtered %s", jsonOf(t, filtered["files"]))
 	}
-	if lic := e.st.Do(e.r, "GET", "/api/v1/packages/"+url.PathEscape(id)+"/versions/1.2.0-1", e.tokA, nil).JSON(t)["licenses"]; jsonOf(t, lic) != `["Apache-2.0"]` {
+	if lic := e.st.Do(apiRep, "GET", "/api/v1/packages/"+url.PathEscape(id)+"/versions/1.2.0-1", e.tokA, nil).JSON(t)["licenses"]; jsonOf(t, lic) != `["Apache-2.0"]` {
 		t.Errorf("the version's licences %v", lic)
 	}
 
 	outsider := e.st.Token(e.st.User("outsider"), scope.Default())
-	o := e.st.Do(e.r, "GET", path, outsider, nil)
+	o := e.st.Do(apiRep, "GET", path, outsider, nil)
 	if o.Status != http.StatusOK || strings.Contains(string(o.Body), `"changelog":`) || strings.Contains(string(o.Body), `"copyright":`) ||
 		!strings.Contains(string(o.Body), "/usr/bin/quader-docs") {
 		t.Errorf("a reader without the wiki: %d %s", o.Status, o.Body)
@@ -96,7 +99,7 @@ func TestR_DEB_038_039_AnUploadedPackageShowsWhatItTellsAboutItself(t *testing.T
 
 	// Provides makes the name findable, and the source package lists its binaries.
 	for _, q := range []string{"q=quader-doc-reader", "keyword=quader-suite"} {
-		list := e.st.Do(e.r, "GET", "/api/v1/packages?format=deb&"+q, e.tokA, nil)
+		list := e.st.Do(apiRep, "GET", "/api/v1/packages?format=deb&"+q, e.tokA, nil)
 		if !strings.Contains(string(list.Body), `"name":"quader-docs"`) || strings.Contains(string(list.Body), "quader-broken") {
 			t.Errorf("%s: %s", q, list.Body)
 		}
@@ -104,12 +107,12 @@ func TestR_DEB_038_039_AnUploadedPackageShowsWhatItTellsAboutItself(t *testing.T
 
 	brokenPath := "/api/v1/packages/" + url.PathEscape(view.ID("deb", "quader-broken")) + "/versions/1.0/contents"
 	eventually(t, 60*time.Second, "the refusal", func() bool {
-		return e.st.Do(e.r, "GET", brokenPath, e.tokA, nil).JSON(t)["state"] == "unavailable"
+		return e.st.Do(apiRep, "GET", brokenPath, e.tokA, nil).JSON(t)["state"] == "unavailable"
 	})
-	if b := e.st.Do(e.r, "GET", brokenPath, e.tokAdmin, nil).JSON(t); b["reason"] != "invalid_archive" || b["detail"] == nil {
+	if b := e.st.Do(apiRep, "GET", brokenPath, e.tokAdmin, nil).JSON(t); b["reason"] != "invalid_archive" || b["detail"] == nil {
 		t.Errorf("the reason to an administrator: %v", b)
 	}
-	if b := e.st.Do(e.r, "GET", brokenPath, e.tokA, nil).JSON(t); b["reason"] != nil {
+	if b := e.st.Do(apiRep, "GET", brokenPath, e.tokA, nil).JSON(t); b["reason"] != nil {
 		t.Errorf("the reason to a writer who does not read the configuration: %v", b)
 	}
 	if a := e.st.Do(e.r, "GET", "/api/deb/"+project+"/"+repo+"/pool/q/quader-broken/quader-broken_1.0_amd64.deb", e.tokA, nil); a.Status != http.StatusOK {
@@ -118,11 +121,11 @@ func TestR_DEB_038_039_AnUploadedPackageShowsWhatItTellsAboutItself(t *testing.T
 
 	// A file stored before the reader existed has no row: the task remote-describe reads it without an upload.
 	e.st.Exec(`DELETE FROM deb_contents`)
-	if a := e.st.Do(e.r, "GET", path, e.tokA, nil).JSON(t); a["state"] != "pending" {
+	if a := e.st.Do(apiRep, "GET", path, e.tokA, nil).JSON(t); a["state"] != "pending" {
 		t.Errorf("without its row: %v", a["state"])
 	}
 	// A run the scheduler queued on the new database answers the operator's run with 409; either run reads the files.
-	if a := e.st.Do(e.r, http.MethodPost, "/api/v1/system/tasks/remote-describe/run", e.tokAdmin, nil); a.Status != http.StatusAccepted &&
+	if a := e.st.Do(apiRep, http.MethodPost, "/api/v1/system/tasks/remote-describe/run", e.tokAdmin, nil); a.Status != http.StatusAccepted &&
 		a.Status != http.StatusConflict {
 		t.Fatalf("run remote-describe: %d %s", a.Status, a.Body)
 	}

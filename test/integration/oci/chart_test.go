@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/guided-traffic/quader/test/integration/testenv"
+
 	"github.com/guided-traffic/quader/internal/packages/view"
 )
 
@@ -45,7 +47,8 @@ func chartArchive(t *testing.T, files map[string]string) []byte {
 // TestR_OCI_042_AChartsPageShowsItsFactsReadmeAndValues: a Helm chart pushed as Helm's registry client pushes one (the config Chart.yaml
 // as JSON, the content layer the package; the requests in process, no helm binary) is the kind helm-chart; its version carries the
 // chart's facts read at the push (its description fills the one the annotations leave), its README (wiki content, rendered by the
-// README renderer) and its values read from the content layer on demand. One replica, three blobs of bytes; about 2 s.
+// README renderer) and its values read from the content layer on demand, all read on a replica of the role api. Two replicas,
+// three blobs of bytes; about 3 s.
 func TestR_OCI_042_AChartsPageShowsItsFactsReadmeAndValues(t *testing.T) {
 	p := newProto(t, protoOptions{replicas: 1})
 	cfg, _ := json.Marshal(map[string]any{
@@ -67,7 +70,9 @@ func TestR_OCI_042_AChartsPageShowsItsFactsReadmeAndValues(t *testing.T) {
 	want(t, p.pushImage(p.as("admin"), repoLocal, "charts/web", "0.3.0", image{config: cfg, layers: [][]byte{content}, manifest: m}), http.StatusCreated, "")
 
 	id := view.ID("oci", "charts/web")
-	a := p.st.Do(p.reps[0], http.MethodGet, "/api/v1/packages/"+id+"/versions/0.3.0", p.admin, nil)
+	// The management operation and the screens' reads go to a replica of the role api, which serves no package protocol (R-ARCH-001).
+	apiRep := p.st.Start(t, testenv.ReplicaOptions{Name: "api-a", Role: "api"})
+	a := p.st.Do(apiRep, http.MethodGet, "/api/v1/packages/"+id+"/versions/0.3.0", p.admin, nil)
 	if a.Status != http.StatusOK {
 		t.Fatalf("the chart's version: %d %s", a.Status, a.Body)
 	}
@@ -92,25 +97,25 @@ func TestR_OCI_042_AChartsPageShowsItsFactsReadmeAndValues(t *testing.T) {
 	if dep, _ := d["deprecation"].(map[string]any); dep == nil || dep["scope"] != "version" || dep["message"] != nil {
 		t.Errorf("the chart's deprecation: %v", d["deprecation"])
 	}
-	r := p.st.Do(p.reps[0], http.MethodGet, "/api/v1/packages/"+id+"/versions/0.3.0/readme", p.admin, nil)
+	r := p.st.Do(apiRep, http.MethodGet, "/api/v1/packages/"+id+"/versions/0.3.0/readme", p.admin, nil)
 	if r.Status != http.StatusOK || !strings.Contains(r.JSON(t)["html"].(string), "<table>") {
 		t.Errorf("the README: %d %s", r.Status, r.Body)
 	}
 
 	// The lists name the kind, so that a chart's row offers Helm's commands (R-OCI-041, R-OCI-042): the package list by its latest
 	// version, the list by content with include=kind by each entry's leading version.
-	list := p.st.Do(p.reps[0], http.MethodGet, "/api/v1/packages?repository="+url.QueryEscape(project+"/"+repoLocal), p.admin, nil)
+	list := p.st.Do(apiRep, http.MethodGet, "/api/v1/packages?repository="+url.QueryEscape(project+"/"+repoLocal), p.admin, nil)
 	for _, it := range list.JSON(t)["items"].([]any) {
 		if pkg := it.(map[string]any); pkg["name"] == "charts/web" && (pkg["kind"] != "helm-chart" || pkg["deprecation"] == nil) {
 			t.Errorf("the package list's kind and deprecation of the chart: %v %v", pkg["kind"], pkg["deprecation"])
 		}
 	}
 	// The filter deprecated finds the chart by the statement OCIViewDeprecated (R-API-085).
-	deprecated := p.st.Do(p.reps[0], http.MethodGet, "/api/v1/packages?deprecated=true&repository="+url.QueryEscape(project+"/"+repoLocal), p.admin, nil)
+	deprecated := p.st.Do(apiRep, http.MethodGet, "/api/v1/packages?deprecated=true&repository="+url.QueryEscape(project+"/"+repoLocal), p.admin, nil)
 	if found, _ := deprecated.JSON(t)["items"].([]any); len(found) != 1 || found[0].(map[string]any)["name"] != "charts/web" {
 		t.Errorf("the filter deprecated: %d %s", deprecated.Status, deprecated.Body)
 	}
-	vs := p.st.Do(p.reps[0], http.MethodGet, "/api/v1/packages/"+id+"/versions?group=content&include=kind", p.admin, nil)
+	vs := p.st.Do(apiRep, http.MethodGet, "/api/v1/packages/"+id+"/versions?group=content&include=kind", p.admin, nil)
 	items, _ := vs.JSON(t)["items"].([]any)
 	if len(items) != 1 || items[0].(map[string]any)["kind"] != "helm-chart" || items[0].(map[string]any)["deprecation"] == nil {
 		t.Errorf("the list by content's kind: %d %s", vs.Status, vs.Body)

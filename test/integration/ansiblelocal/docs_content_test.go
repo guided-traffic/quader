@@ -41,15 +41,18 @@ func TestR_ANS_051_R_ANS_052_R_ANS_053_TheFragmentsTheEntryPointsAndTheChangelog
 		t.Fatalf("publish: %d %s", a.Status, a.Body)
 	}
 	p := "/api/v1/packages/" + e.packageID() + "/versions/1.1.0"
+	// The management API's requests go to a replica of the role api, which serves no package protocol and builds no format host
+	// (R-ARCH-001, Q-ARCH-1070).
+	apiRep := e.st.Start(t, testenv.ReplicaOptions{Name: "api-a", Role: "api"})
 
-	ping := e.st.Do(e.r, "GET", p+"/docs/entries/module/ping", e.tokC, nil).JSON(t)
+	ping := e.st.Do(apiRep, "GET", p+"/docs/entries/module/ping", e.tokC, nil).JSON(t)
 	opts := fmt.Sprint(ping["options"])
 	if !strings.Contains(opts, "api_url") || fmt.Sprint(ping["extendsFragments"]) != "[ansible.builtin.files]" ||
 		!strings.Contains(fmt.Sprint(ping["notes"]), "From the fragment") {
 		t.Errorf("module = %v", ping)
 	}
 
-	web := e.st.Do(e.r, "GET", p+"/docs/entries/role/web", e.tokC, nil).JSON(t)
+	web := e.st.Do(apiRep, "GET", p+"/docs/entries/role/web", e.tokC, nil).JSON(t)
 	eps, _ := web["entryPoints"].([]any)
 	if len(eps) != 2 || web["shortDescription"] != "Installs" {
 		t.Fatalf("role = %v", web)
@@ -60,12 +63,12 @@ func TestR_ANS_051_R_ANS_052_R_ANS_053_TheFragmentsTheEntryPointsAndTheChangelog
 		t.Errorf("main = %v", main)
 	}
 
-	tree := e.st.Do(e.r, "GET", p+"/docs", e.tokC, nil).JSON(t)
+	tree := e.st.Do(apiRep, "GET", p+"/docs", e.tokC, nil).JSON(t)
 	cl, _ := tree["changelog"].(map[string]any)
 	if cl["name"] != "changelog" || cl["source"] != "changelogs/changelog.yaml" || cl["format"] != "markdown" || cl["truncated"] != false {
 		t.Errorf("tree's changelog = %v", tree["changelog"])
 	}
-	file := e.st.Do(e.r, "GET", p+"/docs/files/changelog", e.tokC, nil)
+	file := e.st.Do(apiRep, "GET", p+"/docs/files/changelog", e.tokC, nil)
 	f := file.JSON(t)
 	html, _ := f["html"].(string)
 	if file.Status != 200 || f["contentType"] != "text/markdown" || strings.Index(html, "v1.1.0") > strings.Index(html, "v1.0.0") ||

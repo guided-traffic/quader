@@ -27,19 +27,22 @@ func TestR_ANS_026_ACollectionInstalledThroughARemoteIsListedAndItsDocumentation
 		t.Fatalf("archive: %d", a.Status)
 	}
 	eventually(t, 30*time.Second, "the documentation job", func() bool { return e.docsState(repo) == "available" })
+	// The management API's requests go to a replica of the role api, which serves no package protocol and builds no format host
+	// (R-ARCH-001, Q-ARCH-1070).
+	apiRep := e.st.Start(t, testenv.ReplicaOptions{Name: "api-a", Role: "api"})
 
-	list := e.st.Do(r, http.MethodGet, "/api/v1/packages?format=ansible", e.admin, nil)
+	list := e.st.Do(apiRep, http.MethodGet, "/api/v1/packages?format=ansible", e.admin, nil)
 	items := listOf(list.JSON(t)["items"])
 	if list.Status != http.StatusOK || len(items) != 1 || obj(items[0])["name"] != "acme.tools" {
 		t.Fatalf("list: %d %s", list.Status, list.Body)
 	}
-	lookup := e.st.Do(r, http.MethodGet, "/api/v1/packages/lookup?format=ansible&name=acme.tools", e.admin, nil)
+	lookup := e.st.Do(apiRep, http.MethodGet, "/api/v1/packages/lookup?format=ansible&name=acme.tools", e.admin, nil)
 	id, _ := lookup.JSON(t)["id"].(string)
 	if lookup.Status != http.StatusOK || id == "" {
 		t.Fatalf("lookup: %d %s", lookup.Status, lookup.Body)
 	}
 	p := "/api/v1/packages/" + id + "/versions/2.0.0"
-	d := e.st.Do(r, http.MethodGet, p, e.admin, nil)
+	d := e.st.Do(apiRep, http.MethodGet, p, e.admin, nil)
 	md := obj(d.JSON(t)["metadata"])
 	if d.Status != http.StatusOK || obj(md["docs"])["state"] != "available" || obj(md["docs"])["source"] != "upstream" {
 		t.Fatalf("details: %d %s", d.Status, d.Body)
@@ -55,23 +58,23 @@ func TestR_ANS_026_ACollectionInstalledThroughARemoteIsListedAndItsDocumentation
 	if files := listOf(detail["files"]); len(files) != 1 {
 		t.Errorf("files = %v", files)
 	}
-	tree := e.st.Do(r, http.MethodGet, p+"/docs", e.admin, nil)
+	tree := e.st.Do(apiRep, http.MethodGet, p+"/docs", e.admin, nil)
 	td := tree.JSON(t)
 	if tree.Status != http.StatusOK || td["state"] != "available" || td["repository"] != project+"/"+repo || len(listOf(td["groups"])) != 3 {
 		t.Fatalf("tree: %d %s", tree.Status, tree.Body)
 	}
-	entry := e.st.Do(r, http.MethodGet, p+"/docs/entries/module/ping_host", e.admin, nil)
+	entry := e.st.Do(apiRep, http.MethodGet, p+"/docs/entries/module/ping_host", e.admin, nil)
 	if entry.Status != http.StatusOK || strings.Contains(string(entry.Body), "<script") || !strings.Contains(string(entry.Body), `"hasDocs":true`) {
 		t.Errorf("entry: %d %s", entry.Status, entry.Body)
 	}
 	// R-ANS-049: the upstream's configuration of a callback's option and its version_added_collection reach the page.
-	cb := e.st.Do(r, http.MethodGet, p+"/docs/entries/callback/timer", e.admin, nil)
+	cb := e.st.Do(apiRep, http.MethodGet, p+"/docs/entries/callback/timer", e.admin, nil)
 	for _, want := range []string{`"section":"callback_timer"`, `"name":"TIMER_SORT_ORDER"`, `"versionAddedCollection":"acme.tools"`} {
 		if cb.Status != http.StatusOK || !strings.Contains(string(cb.Body), want) {
 			t.Errorf("callback lacks %s: %d %s", want, cb.Status, cb.Body)
 		}
 	}
-	file := e.st.Do(r, http.MethodGet, p+"/docs/files/README.md", e.admin, nil)
+	file := e.st.Do(apiRep, http.MethodGet, p+"/docs/files/README.md", e.admin, nil)
 	if file.Status != http.StatusOK || strings.Contains(string(file.Body), "<script") || strings.Contains(string(file.Body), "onerror") {
 		t.Errorf("file: %d %s", file.Status, file.Body)
 	}
@@ -80,7 +83,7 @@ func TestR_ANS_026_ACollectionInstalledThroughARemoteIsListedAndItsDocumentation
 	if cl := obj(td["changelog"]); cl["name"] != "changelog" || cl["source"] != "changelogs/changelog.yaml" {
 		t.Errorf("the tree's changelog = %v", td["changelog"])
 	}
-	cl := e.st.Do(r, http.MethodGet, p+"/docs/files/changelog", e.admin, nil)
+	cl := e.st.Do(apiRep, http.MethodGet, p+"/docs/files/changelog", e.admin, nil)
 	html, _ := cl.JSON(t)["html"].(string)
 	if cl.Status != http.StatusOK || !strings.Contains(html, "v2.0.0") || strings.Index(html, "v2.0.0") > strings.Index(html, "v1.0.0") {
 		t.Errorf("changelog: %d %s", cl.Status, cl.Body)
