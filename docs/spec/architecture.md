@@ -5145,7 +5145,9 @@ func (e *Error) Unwrap() error
 ```
 
 - Only an `*errs.Error` is rendered. Any other error becomes `Internal` with code `internal` and a
-  generic detail. Its cause is logged with the request ID.
+  generic detail. Its cause is logged with the request ID. An `Internal` error answers the generic detail as well, so the line of its
+  log holds its own detail (`detail`) beside its cause: an `errs.E(errs.Internal, …)` built without a cause still says in the log what
+  failed (Q-ARCH-1070).
 - Codes are listed in `internal/errs/codes.go`, the single registry from which the problem catalog
   served under `/api/v1/problems/<code>` is generated ([api-and-ui.md](api-and-ui.md)). A code is
   never reused or renamed within an API major version (R-ARCH-025).

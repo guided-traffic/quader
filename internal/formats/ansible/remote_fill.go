@@ -183,7 +183,7 @@ func commitRole(ctx context.Context, tx formats.Tx, c formats.CommitEvent, r *in
 	}
 	id, err := strconv.ParseInt(r.id, 10, 64)
 	if err != nil {
-		return errs.E(errs.Internal, errs.CodeInternal, "A role archive names no role id.")
+		return errs.E(errs.Internal, errs.CodeInternal, "A role archive names no role id.", errs.WithCause(err))
 	}
 	facts, found, err := st.Role(ctx, tx, c.Repo.ID, id)
 	if err != nil {

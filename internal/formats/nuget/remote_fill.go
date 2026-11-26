@@ -60,7 +60,7 @@ func (remoteAdapter) InspectsFill(p formats.Path) bool {
 func (remoteAdapter) InspectFill(ctx context.Context, _ formats.RemoteContext, p formats.Path, sp formats.Spooled) (*formats.Inspection, error) {
 	t, err := parseTarget(p)
 	if err != nil || t.kind != kindPackage {
-		return nil, errs.E(errs.Internal, errs.CodeInternal, "NuGet inspects the packages of a remote repository only.")
+		return nil, errs.E(errs.Internal, errs.CodeInternal, "NuGet inspects the packages of a remote repository only.", errs.WithCause(err))
 	}
 	got, err := readCached(ctx, sp)
 	if err != nil {

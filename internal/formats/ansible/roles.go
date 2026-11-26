@@ -246,7 +246,7 @@ func onRoleContent(ctx context.Context, tx formats.Tx, ev formats.FillEvent, dat
 	}
 	id, err := strconv.ParseInt(strings.TrimPrefix(data.pkg, RolePrefix), 10, 64)
 	if err != nil {
-		return errs.E(errs.Internal, errs.CodeInternal, "The content document of a role names no role id.")
+		return errs.E(errs.Internal, errs.CodeInternal, "The content document of a role names no role id.", errs.WithCause(err))
 	}
 	r := rows.RoleReadme{State: rows.RoleReadmeAbsent}
 	if data.content.HTML != "" {

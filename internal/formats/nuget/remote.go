@@ -279,7 +279,7 @@ type fillData struct {
 func (a remoteAdapter) PrepareFill(_ context.Context, rc formats.RemoteContext, p formats.Path, variant string, body io.ReaderAt, size int64) (formats.Prepared, error) {
 	t, err := parseTarget(p)
 	if err != nil || !storesVariant(variant) {
-		return formats.Prepared{}, errs.E(errs.Internal, errs.CodeInternal, "NuGet fills metadata documents of the variants doc, flat and registration only.")
+		return formats.Prepared{}, errs.E(errs.Internal, errs.CodeInternal, "NuGet fills metadata documents of the variants doc, flat and registration only.", errs.WithCause(err))
 	}
 	if size > MaxDocumentBytes {
 		return formats.Prepared{}, errs.E(errs.UpstreamFailed, errs.CodeUpstreamItemTooLarge, "The upstream document is larger than the limit of documents held in memory.")

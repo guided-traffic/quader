@@ -406,7 +406,7 @@ func (remoteAdapter) BeforeArtifact(_ context.Context, _ formats.Host, _ *format
 	}
 	sum, err := hex.DecodeString(strings.TrimPrefix(t.tail, "sha256:"))
 	if err != nil {
-		return formats.Digests{}, errs.E(errs.Internal, errs.CodeInternal, "A digest that passed its grammar does not decode.")
+		return formats.Digests{}, errs.E(errs.Internal, errs.CodeInternal, "A digest that passed its grammar does not decode.", errs.WithCause(err))
 	}
 	return formats.Digests{SHA256: sum}, nil
 }

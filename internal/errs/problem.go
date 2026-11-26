@@ -159,6 +159,11 @@ func Write(w http.ResponseWriter, r *http.Request, err error, requestID string, 
 	if e.Op != "" {
 		attrs = append(attrs, "op", e.Op)
 	}
+	// An internal error's own sentence is never answered (the client reads the generic one), so the log is the only place that holds
+	// it: an errs.E(Internal, …) built without a cause says there what failed.
+	if e.Kind == Internal && e.Detail != "" {
+		attrs = append(attrs, "detail", e.Detail)
+	}
 	if e.Err != nil {
 		attrs = append(attrs, "cause", e.Err.Error())
 	}

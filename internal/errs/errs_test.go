@@ -144,6 +144,15 @@ func TestWriteProblem(t *testing.T) {
 			t.Fatalf("detail leaked: %q", p.Detail)
 		}
 	})
+	t.Run("R-ARCH-023 an internal error without a cause logs its own sentence, which the answer never carries", func(t *testing.T) {
+		rec, _, logs := render(E(Internal, CodeInternal, "Virtual resolution is not wired on this replica."))
+		if strings.Contains(rec.Body.String(), "Virtual resolution") {
+			t.Fatalf("detail leaked: %s", rec.Body.String())
+		}
+		if !strings.Contains(logs, `"detail":"Virtual resolution is not wired on this replica."`) || !strings.Contains(logs, `"level":"ERROR"`) {
+			t.Fatalf("the log line holds no cause: %s", logs)
+		}
+	})
 	t.Run("R-ARCH-023 database_unavailable is 503 with Retry-After and no SQL", func(t *testing.T) {
 		rec, p, _ := render(E(Unavailable, CodeDatabaseUnavailable, "the database is unavailable",
 			WithRetryAfter(1500*time.Millisecond), WithCause(errors.New("dial tcp 10.0.0.1:5432: refused"))))

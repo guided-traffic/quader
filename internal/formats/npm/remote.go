@@ -117,7 +117,7 @@ func (a remoteAdapter) PrepareFill(_ context.Context, rc formats.RemoteContext, 
 	}
 	n, document, err := a.target(p)
 	if err != nil || !document || variant != documentVariant {
-		return formats.Prepared{}, errs.E(errs.Internal, errs.CodeInternal, "npm fills package documents of variant full only.")
+		return formats.Prepared{}, errs.E(errs.Internal, errs.CodeInternal, "npm fills package documents of variant full only.", errs.WithCause(err))
 	}
 	doc, err := remote.Check(io.NewSectionReader(body, 0, size), n.String())
 	if err != nil {

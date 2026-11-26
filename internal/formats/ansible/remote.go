@@ -138,7 +138,7 @@ type fillData struct {
 func (a remoteAdapter) PrepareFill(_ context.Context, rc formats.RemoteContext, p formats.Path, variant string, body io.ReaderAt, size int64) (formats.Prepared, error) {
 	t, err := parseTarget(p)
 	if err != nil || variant == "" {
-		return formats.Prepared{}, errs.E(errs.Internal, errs.CodeInternal, "The Ansible remote fills metadata documents of the paths it stores only.")
+		return formats.Prepared{}, errs.E(errs.Internal, errs.CodeInternal, "The Ansible remote fills metadata documents of the paths it stores only.", errs.WithCause(err))
 	}
 	if size > MaxDocumentBytes {
 		var cause error
