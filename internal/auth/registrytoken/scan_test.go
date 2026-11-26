@@ -168,7 +168,7 @@ func forge(t *testing.T, s *Signer, c Claims) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	signed := Prefix + b64([]byte(payloadVersion+":"+kid+":"+string(body)))
+	signed := Prefix + b64([]byte(payloadV1+":"+kid+":"+string(body)))
 	return signed + "." + b64(mac(key, signed))
 }
 

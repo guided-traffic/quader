@@ -32,7 +32,7 @@ func (e *engine) errCredentialsRequired(q *rq) *errs.Error {
 }
 
 func errUnreachable() *errs.Error {
-	return errs.E(errs.Unavailable, errs.CodeUnavailable, "This service is not available right now; try again later.", errs.WithRetryAfter(retryUnreachable))
+	return errs.E(errs.Unavailable, errs.CodeUnavailable, errs.DetailUnavailable, errs.WithRetryAfter(retryUnreachable))
 }
 
 // errReadOnly is the refusal of a write (R-BAS-095, R-BAS-099 row 1): it names no address.
@@ -100,7 +100,7 @@ func (e *engine) fail(q *rq, err error) {
 	var timeout net.Error
 	switch {
 	case errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &timeout) && timeout.Timeout()):
-		e.problem(q, errs.E(errs.UpstreamTimeout, errs.CodeGatewayTimeout, "This service did not answer in time; try again later."))
+		e.problem(q, errs.E(errs.UpstreamTimeout, errs.CodeGatewayTimeout, errs.DetailGatewayTimeout))
 	default:
 		e.problem(q, errBadGateway())
 	}
@@ -108,7 +108,7 @@ func (e *engine) fail(q *rq, err error) {
 
 // errBadGateway is the 502 of an answer the Bastion could not get or does not pass on (R-BAS-021, R-BAS-099 row 6).
 func errBadGateway() *errs.Error {
-	return errs.E(errs.UpstreamFailed, errs.CodeBadGateway, "This service could not answer; try again later.")
+	return errs.E(errs.UpstreamFailed, errs.CodeBadGateway, errs.DetailBadGateway)
 }
 
 // mainError maps the error of a request to the main installation to the Bastion's answer (R-BAS-021,

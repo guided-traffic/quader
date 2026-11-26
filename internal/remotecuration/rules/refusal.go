@@ -47,6 +47,17 @@ func (r *Refusal) Error() string {
 // Text is the answer's text (R-CUR-004): the package, the version or "any version", the repository, the reason and where to ask. It
 // names no rule's note and no other repository. base is the response base URL without a trailing slash.
 func (r *Refusal) Text(base string) string {
+	ask := base + "/ui/projects/" + url.PathEscape(r.Repo.Project) + "/repositories/" + url.PathEscape(r.Repo.Key) +
+		"/upstream?name=" + url.QueryEscape(r.Name)
+	return r.sentence(r.Repo.String()) + " Ask for it at " + ask + "."
+}
+
+// ForwardText is the answer's text for a caller of a Bastion (bastion.md R-BAS-114, Q-BAS-387): the package, the version and the
+// reason, in "this repository". The repository that holds the rules may be a member of the virtual repository the caller addressed,
+// and the page to ask on is one of this installation's web interface, which a Bastion does not serve.
+func (r *Refusal) ForwardText() string { return r.sentence("this repository") }
+
+func (r *Refusal) sentence(repo string) string {
 	v := r.Version
 	if v == "" {
 		v = "any version"
@@ -58,15 +69,14 @@ func (r *Refusal) Text(base string) string {
 	case rc.ReasonOutsideRange:
 		why = "outside the versions a rule of the repository allows."
 	}
-	ask := base + "/ui/projects/" + url.PathEscape(r.Repo.Project) + "/repositories/" + url.PathEscape(r.Repo.Key) +
-		"/upstream?name=" + url.QueryEscape(r.Name)
-	return r.Name + " " + v + " is not allowed in " + r.Repo.String() + ": " + why + " Ask for it at " + ask + "."
+	return r.Name + " " + v + " is not allowed in " + repo + ": " + why
 }
 
 // Err is the client's error of the refusal: Forbidden with the code not_allowed_in_repository and Cache-Control: no-store, the text of
-// [Refusal.Text], the refusal its cause. Each format's WriteError renders it in its client's shape.
+// [Refusal.Text] (for a caller of a Bastion [Refusal.ForwardText]), the refusal its cause. Each format's WriteError renders it in its
+// client's shape.
 func (r *Refusal) Err(base string) error {
-	return errs.E(errs.Forbidden, errs.CodeNotAllowedInRepository, r.Text(base),
+	return errs.E(errs.Forbidden, errs.CodeNotAllowedInRepository, r.Text(base), errs.WithForwardDetail(r.ForwardText()),
 		errs.WithHeader("Cache-Control", "no-store"), errs.WithCause(r))
 }
 

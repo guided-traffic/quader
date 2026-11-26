@@ -3180,6 +3180,50 @@ configuration equal to today's behaviour; until E15 the probe stays, recognized 
 Bastion's token reads what an anonymous visitor reads, in bulk (H-2305); every Bastion learns that some catalogue or configuration changed
 (H-2306); a Bastion's configuration tells its holder the rules and networks of its place (H-2307).
 
+### ADR-304 · The main installation renders a forward's problems for a caller of a Bastion, and a registry token seals what it does not need to show
+
+**Status:** Decided by the owner on 2026-11-26 (the rule: "Der Bastion verrät keine internen Informationen über die Hauptinstanz. Es ist
+davon auszugehen, das es einen Grund gibt wieso ein User auf dem Bastion landet und nicht direkt auf der Hauptinstanz."); the form by the
+development agent ([Q-BAS-385](spec/bastion.md#q-bas-385--a-forwards-text-is-chosen-at-rendering-from-what-the-error-carries) to
+[Q-BAS-389](spec/bastion.md#q-bas-389--a-system-tokens-subject-stays-readable-and-version-1-is-read-until-its-tokens-expire),
+[R-BAS-114](spec/bastion.md#r-bas-114--a-forwards-problems-name-nothing-of-the-main-installation),
+[R-BAS-115](spec/bastion.md#r-bas-115--a-registry-token-a-bastion-relays-names-nothing-of-the-main-installation)). It builds W-35's P8
+together with W-34's E17.
+
+**Context.** E16 kept the Bastion's own answers, the forwarded headers and the remote engine's failures from naming the main installation.
+What a format's handler and the core write on a forwarded route had not been read text by text (H-2295), and a registry token's payload
+was readable JSON naming the endpoint, the principal, the Quader token behind it and the ring's key ID (R-BAS-099 row 8). Reading the
+code found six texts that name a member of a virtual repository, a page of the web interface on `server.base_url` or a finding's ID, and
+texts of 5xx answers that name a replica, a store or a signing key.
+
+**Decision.**
+- A problem's text for a caller of a Bastion is chosen when it is rendered: the error carries the sentence a forward reads where its own
+  names something (`errs.WithForwardDetail`) and marks the members only the installation reads (`errs.WithInstallationExtension`);
+  `errs.ProblemFor` picks them for a recognized forward, so one error stays right for a forward and an ordinary caller at once.
+- Every status of 500 or more of a forward that is no rate limit reads the neutral text of its status, without field errors, unless its
+  error vouches for its own: a server's failure fails closed, as the header allowlist does (Q-BAS-425).
+- The refusals keep what a client acts on (the code, the reason, the advisory, the digest) and lose the link into the installation; a
+  repository that refused for a member says "this repository".
+- The registry token is issued in payload version 2: `a`, `exp` and `g` readable (and `s` on a system token), every other claim sealed with
+  AES-256-GCM under a key the ring derives, the key ID an HMAC of the ring key's ID; the verifier reads version 1 until its tokens expire.
+- The inventory lives in R-BAS-029's table of what a forward relays; the replays' scan of the area `bastion` decodes every relayed token.
+
+**Consequences.** Six places say their sentence twice; a caller of a Bastion cannot follow a link to a finding or to ask for a package,
+and reads "This service is not available right now; try again later." where the installation's own callers read why. A 4xx text added
+later passes as written until it is given its forward text (H-2323); an Ansible Galaxy role through a virtual repository still names the
+member in its ID (H-2322); the grant stays readable (H-2297). A token carries 28 bytes more (the nonce and the tag) before base64. No change of the interface or of the format
+contract, no migration.
+
+**Alternatives considered.** A neutral text by code alone (cannot tell a placeholder's `not_found` from a missing version's); the place
+that makes an error reading the forward from the context (wrong for a collapsed fetch); inventorying each 5xx text (fails open); an opaque
+reference instead of a sealed part (a lookup per request below `/v2/`); the ring's sealing of stored secrets (names the key ID in clear).
+
+**Revisit condition:** a format's client that needs a 5xx detail a forward does not read, or a web interface of the Bastion that serves
+a page the dropped links could point at.
+
+**Spec:** [bastion.md](spec/bastion.md) R-BAS-114, R-BAS-115 and the revised R-BAS-014, R-BAS-017, R-BAS-029, R-BAS-099, Q-BAS-339;
+[formats/oci.md](spec/formats/oci.md) R-OCI-005.
+
 
 ## Design invariants
 
@@ -10447,10 +10491,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-328 questions on [spec/bastion.md](spec/bastion.md).
+333 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 328 questions</summary>
+<summary>Q-BAS: 333 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10718,7 +10762,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-336](spec/bastion.md#q-bas-336--the-bastion-refuses-a-write-itself) | The Bastion refuses a write itself | Decided by the owner on 2026-11-26 | (b), the owner's decision, without the sentence where to publish. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
 | [Q-BAS-337](spec/bastion.md#q-bas-337--a-bastions-own-refusals-take-one-of-five-error-shapes-a-format-declares) | A Bastion's own refusals take one of five error shapes a format declares | Decided by the development agent on 2026-11-26 | (a); kit check 19 holds `WriteError` to the declared shape. | [ADR-303](#adr-303--the-public-catalogue-travels-on-the-bastion-interface-as-compressed-documents-under-a-change-list) |
 | [Q-BAS-338](spec/bastion.md#q-bas-338--a-bastion-reveals-nothing-of-the-main-installation) | A Bastion reveals nothing of the main installation | Decided by the owner on 2026-11-26 | the rule of R-BAS-099, for every body, header and page a Bastion answers. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
-| [Q-BAS-339](spec/bastion.md#q-bas-339--a-registry-token-reads-only-its-anonymity-its-expiry-and-its-grant) | A registry token reads only its anonymity, its expiry and its grant | Decided by the development agent on 2026-11-26 | (a) Payload version 2: `a`, `exp` and `g` readable, every other claim sealed under a key of the main installation's ring | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-BAS-339](spec/bastion.md#q-bas-339--a-registry-token-reads-only-its-anonymity-its-expiry-and-its-grant) | A registry token reads only its anonymity, its expiry and its grant | Decided by the development agent on 2026-11-26 | (a) Payload version 2: `a`, `exp` and `g` readable, every other claim sealed under a key of the main installation's ring | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it), [ADR-304](#adr-304--the-main-installation-renders-a-forwards-problems-for-a-caller-of-a-bastion-and-a-registry-token-seals-what-it-does-not-need-to-show) |
 | [Q-BAS-340](spec/bastion.md#q-bas-340--the-bastions-ui-section-holds-the-legal-texts-alone) | The Bastion's ui section holds the legal texts alone | Decided by the development agent on 2026-11-26 | (a) A section `ui` with `legal` alone, the same keys as the main installation's `ui.legal` | [ADR-302](#adr-302--imprint-and-privacy-notice-are-the-installations-own-pages-from-the-charts-markdown) |
 | [Q-BAS-341](spec/bastion.md#q-bas-341--the-bastion-renders-with-the-readme-renderer-through-a-scoped-allowance) | The Bastion renders with the README renderer through a scoped allowance | Decided by the development agent on 2026-11-26 | (a) `internal/bastion/legal` imports the renderer and `internal/legaltext` (the rule of the languages, standard library only), both allowed for that package alone | — |
 | [Q-BAS-342](spec/bastion.md#q-bas-342--the-pages-are-rendered-at-start-and-served-by-no-route-until-the-bastions-web-interface) | The pages are rendered at start and served by no route until the Bastion's web interface | Decided by the development agent on 2026-11-26 | (a) The replica renders the pages when it starts and holds them (`Server.Legal`); no route | [ADR-302](#adr-302--imprint-and-privacy-notice-are-the-installations-own-pages-from-the-charts-markdown) |
@@ -10747,7 +10791,12 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-367](spec/bastion.md#q-bas-367--a-change-list-read-from-the-start-leaves-the-deleted-paths-out) | A change list read from the start leaves the deleted paths out | Decided by the development agent on 2026-11-26 | (a) After 0, and after a reset, only live paths | — |
 | [Q-BAS-368](spec/bastion.md#q-bas-368--the-index-is-the-main-installations-list-in-pages-of-100-in-its-order) | The index is the main installation's list in pages of 100, in its order | Decided by the development agent on 2026-11-26 | (a) `GET /api/v1/packages?include=vulnerabilities` in pages of 100, sorted by name, the cursor taken out | — |
 | [Q-BAS-369](spec/bastion.md#q-bas-369--the-builder-writes-no-feed-entry-yet-a-bastion-learns-a-change-at-its-poll) | The builder writes no feed entry yet; a Bastion learns a change at its poll | Decided by the development agent on 2026-11-26 | (a), to be revisited with P7, which owns the poll. | — |
-| [Q-BAS-425](spec/bastion.md#q-bas-425--the-headers-of-a-forwarded-answer-pass-an-allowlist-and-a-formats-need-is-a-replay-header) | The headers of a forwarded answer pass an allowlist, and a format's need is a replay header | Decided by the development agent on 2026-11-26 | (a) An allowlist: the core's representation headers, the format's replay headers of the handshake's table and a fixed list of the framing, the wait, the challenge, the methods, the links, the distribution's version and `Location`; npm declares `Npm-Notice` | — |
+| [Q-BAS-385](spec/bastion.md#q-bas-385--a-forwards-text-is-chosen-at-rendering-from-what-the-error-carries) | A forward's text is chosen at rendering from what the error carries | Decided by the development agent on 2026-11-26 | (a) The error carries the text a forward reads (`errs.WithForwardDetail`) and the members only the installation reads (`errs.WithInstallationExtension`); `errs.ProblemFor` picks them for a forward | [ADR-304](#adr-304--the-main-installation-renders-a-forwards-problems-for-a-caller-of-a-bastion-and-a-registry-token-seals-what-it-does-not-need-to-show) |
+| [Q-BAS-386](spec/bastion.md#q-bas-386--every-5xx-of-a-forward-reads-the-neutral-text-of-its-status-unless-its-error-vouches-for-its-own) | Every 5xx of a forward reads the neutral text of its status, unless its error vouches for its own | Decided by the development agent on 2026-11-26 | (a) Every 5xx of a forward that is no rate limit reads the neutral text of its status and loses its field errors; an error whose text names only what the caller asked for vouches for it with `errs.WithForwardDetail` | — |
+| [Q-BAS-387](spec/bastion.md#q-bas-387--a-refusal-loses-its-link-into-the-installation-and-names-this-repository) | A refusal loses its link into the installation and names this repository | Decided by the development agent on 2026-11-26 | (a) The forward's sentence is the same without the link, the finding's ID and the page, and says "this repository" where the text named the holder | — |
+| [Q-BAS-388](spec/bastion.md#q-bas-388--the-sealed-part-of-a-registry-token-is-encrypted-under-a-key-of-the-ring-not-a-reference) | The sealed part of a registry token is encrypted under a key of the ring, not a reference | Decided by the development agent on 2026-11-26 | (a) AES-256-GCM of the sealed claims under a key derived from the ring's key with the info `quader registry token seal v2`, a random nonce, the readable part as additional data; the key ID an HMAC of the ring key's ID under its MAC key | — |
+| [Q-BAS-389](spec/bastion.md#q-bas-389--a-system-tokens-subject-stays-readable-and-version-1-is-read-until-its-tokens-expire) | A system token's subject stays readable, and version 1 is read until its tokens expire | Decided by the development agent on 2026-11-26 | (a) `s` readable on a system token beside `a`, `exp` and `g`; the verifier reads versions 1 and 2, the token service issues 2 alone | [ADR-304](#adr-304--the-main-installation-renders-a-forwards-problems-for-a-caller-of-a-bastion-and-a-registry-token-seals-what-it-does-not-need-to-show) |
+| [Q-BAS-425](spec/bastion.md#q-bas-425--the-headers-of-a-forwarded-answer-pass-an-allowlist-and-a-formats-need-is-a-replay-header) | The headers of a forwarded answer pass an allowlist, and a format's need is a replay header | Decided by the development agent on 2026-11-26 | (a) An allowlist: the core's representation headers, the format's replay headers of the handshake's table and a fixed list of the framing, the wait, the challenge, the methods, the links, the distribution's version and `Location`; npm declares `Npm-Notice` | [ADR-304](#adr-304--the-main-installation-renders-a-forwards-problems-for-a-caller-of-a-bastion-and-a-registry-token-seals-what-it-does-not-need-to-show) |
 | [Q-BAS-426](spec/bastion.md#q-bas-426--a-forward-reads-a-neutral-detail-for-every-failure-of-the-remote-engine-chosen-by-the-code-when-the-problem-is-rendered) | A forward reads a neutral detail for every failure of the remote engine, chosen by the code when the problem is rendered | Decided by the development agent on 2026-11-26 | (a), with "The package could not be fetched right now." for the failures and "The caller may not bring new content into the cache of this repository." for `populate_not_permitted`. | — |
 | [Q-BAS-427](spec/bastion.md#q-bas-427--a-location-on-another-host-is-answered-502-at-the-bastion-whatever-the-status) | A Location on another host is answered 502 at the Bastion, whatever the status | Decided by the development agent on 2026-11-26 | (a) `502` for any answer whose `Location` is neither relative nor on the Bastion's scheme, host and port; counted by the reason `foreign_location` | — |
 | [Q-BAS-428](spec/bastion.md#q-bas-428--a-forward-is-marked-on-the-requests-context-and-every-writer-of-an-error-renders-through-one-function) | A forward is marked on the request's context, and every writer of an error renders through one function | Decided by the development agent on 2026-11-26 | (a) The Recognize stage marks a forward's context (`errs.WithBastionForward`), a Bastion marks its own (`errs.WithBastionAnswer`), and `errs.ProblemFor(r, err, requestID)` applies the mark; every writer of an error to a request calls it; kit check 19 holds a format to it | — |

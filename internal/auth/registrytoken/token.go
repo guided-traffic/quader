@@ -2,9 +2,13 @@ package registrytoken
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,14 +19,22 @@ import (
 	"github.com/guided-traffic/quader/internal/secrets"
 )
 
-// The form of a registry token (R-OCI-005, ADR-163):
+// The form of a registry token (R-OCI-005, ADR-163, Q-BAS-339, Q-BAS-388):
 //
-//	payload = "1" ":" <key id> ":" <claims as JSON>
+//	payload = "2" ":" <opaque key id> ":" <readable claims as JSON> ":" <sealed claims>
 //	signed  = "qdr_rgt_" + base64url(payload)                 // RFC 4648 §5, no padding
 //	token   = signed + "." + base64url(HMAC-SHA-256(key, signed))
 //
 // The key ID stands before the claims, so the verifier finds the key and checks the MAC before it parses anything the
 // client sent; the MAC covers the exact characters the client presents, so no canonical form of the claims is needed.
+//
+// Version 2 keeps readable only what a Bastion reads without a key (bastion.md R-BAS-052, R-BAS-115): a, exp, g and, on a token of
+// a system subject, s. Every other claim (the endpoint, the principal, the Quader token behind it, the issue time, the catalog entry,
+// a scan's ID and digest, a blob's repository) is sealed: AES-256-GCM under a key derived from the ring's key with the info
+// [SealInfo], a random nonce of 12 bytes before the ciphertext, and the payload before the sealed part (its last ":" included) as
+// the additional data. The opaque key ID is the first 8 bytes, in hexadecimal, of an HMAC of [opaqueKeyIDLabel] and the key ID under
+// the MAC key, so it names no key of the ring to anyone without the ring. Version 1, "1:<key id>:<claims as JSON>", every claim
+// readable, is issued no more; the verifier reads it until the tokens issued before have expired (they live at most [MaxLifetime]).
 const (
 	// Prefix starts every registry token. It is not one of the prefixes of R-AUTH-022, so the scanner pattern there does not
 	// match a registry token and the syntax step of a quader token refuses it.
@@ -38,10 +50,16 @@ const (
 	MaxClockSkew = time.Minute
 	// KeyInfo is the HKDF info of the MAC keys (R-ARCH-021).
 	KeyInfo = "quader registry token v1"
+	// SealInfo is the HKDF info of the keys that seal the claims of payload version 2 (R-ARCH-021, Q-BAS-388).
+	SealInfo = "quader registry token seal v2"
 
-	payloadVersion = "1"
-	keySize        = sha256.Size
-	macChars       = 43 // base64url of 32 bytes without padding
+	payloadV1 = "1"
+	payloadV2 = "2"
+	keySize   = sha256.Size
+	macChars  = 43 // base64url of 32 bytes without padding
+	// opaqueKeyIDLabel and the ring's key ID are what the opaque key ID of version 2 is the HMAC of.
+	opaqueKeyIDLabel = "quader registry token key id"
+	opaqueKeyIDBytes = 8
 )
 
 // The verification errors. None of them names the reason to the client: the stage answers each with 401 invalid_token
@@ -124,6 +142,46 @@ type wireEntry struct {
 	Actions Actions `json:"a"`
 }
 
+// readableV2 are the claims of payload version 2 that stay readable: the ones a Bastion reads without a key (iface.RegistryToken*,
+// R-BAS-052). The member names are the wire's.
+type readableV2 struct {
+	Anonymous bool        `json:"a,omitempty"`
+	ExpiresAt int64       `json:"exp"`
+	Grant     []wireEntry `json:"g,omitempty"`
+	System    string      `json:"s,omitempty"`
+}
+
+// sealedV2 are the claims of payload version 2 that are sealed: everything that names the installation, the principal or its token.
+type sealedV2 struct {
+	Kind      string `json:"pk,omitempty"`
+	Principal string `json:"p,omitempty"`
+	TokenID   string `json:"t,omitempty"`
+	TokenType string `json:"tt,omitempty"`
+	TokenHash string `json:"th,omitempty"`
+	Endpoint  string `json:"e"`
+	IssuedAt  int64  `json:"iat"`
+	Catalog   bool   `json:"c,omitempty"`
+	ScanID    string `json:"sid,omitempty"`
+	Digest    string `json:"d,omitempty"`
+	Repo      string `json:"rp,omitempty"`
+}
+
+func (w wire) split() (readableV2, sealedV2) {
+	return readableV2{Anonymous: w.Anonymous, ExpiresAt: w.ExpiresAt, Grant: w.Grant, System: w.System},
+		sealedV2{
+			Kind: w.Kind, Principal: w.Principal, TokenID: w.TokenID, TokenType: w.TokenType, TokenHash: w.TokenHash,
+			Endpoint: w.Endpoint, IssuedAt: w.IssuedAt, Catalog: w.Catalog, ScanID: w.ScanID, Digest: w.Digest, Repo: w.Repo,
+		}
+}
+
+func joined(r readableV2, s sealedV2) wire {
+	return wire{
+		Anonymous: r.Anonymous, Kind: s.Kind, Principal: s.Principal, TokenID: s.TokenID, TokenType: s.TokenType,
+		TokenHash: s.TokenHash, Endpoint: s.Endpoint, IssuedAt: s.IssuedAt, ExpiresAt: r.ExpiresAt, Grant: r.Grant,
+		Catalog: s.Catalog, System: r.System, ScanID: s.ScanID, Digest: s.Digest, Repo: s.Repo,
+	}
+}
+
 // bindable reports whether a registry token may be bound to a quader token of the type: the types of R-AUTH-022 that
 // authenticate a request on the client listener. A Bastion token never does (R-BAS-005).
 func bindable(typ string) bool { return typ == "pat" || typ == "sat" || typ == "cit" }
@@ -131,8 +189,12 @@ func bindable(typ string) bool { return typ == "pat" || typ == "sat" || typ == "
 // Signer issues and verifies registry tokens with the MAC keys derived from the key ring and the configured lifetime. It is
 // immutable and safe for concurrent use.
 type Signer struct {
-	keys     *secrets.DerivedKeys
-	lifetime time.Duration
+	keys *secrets.DerivedKeys
+	// seals are the keys that seal the claims of version 2, one per key of the ring ([SealInfo]).
+	seals *secrets.DerivedKeys
+	// opaque maps the opaque key ID of version 2 to the ring's key ID, and opaqueOf the other way.
+	opaque, opaqueOf map[string]string
+	lifetime         time.Duration
 	// scanLifetime is vulnerabilities.images.pull_timeout, the bound of a scan token (Q-OCI-229); 0 issues and accepts none.
 	scanLifetime time.Duration
 	// blobLifetime is malware.read_timeout, the bound of a blob token (R-MAL-006); 0 issues and accepts none.
@@ -154,7 +216,20 @@ func NewSigner(ring *secrets.KeyRing, lifetime time.Duration) (*Signer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Signer{keys: keys, lifetime: lifetime}, nil
+	seals, err := ring.Derive(SealInfo, keySize)
+	if err != nil {
+		return nil, err
+	}
+	s := &Signer{keys: keys, seals: seals, opaque: map[string]string{}, opaqueOf: map[string]string{}, lifetime: lifetime}
+	for _, id := range ring.KeyIDs() {
+		key, _ := keys.Key(id)
+		o := hex.EncodeToString(mac(key, opaqueKeyIDLabel+" "+id)[:opaqueKeyIDBytes])
+		if _, taken := s.opaque[o]; taken {
+			return nil, fmt.Errorf("registrytoken: two keys of the ring have the opaque key ID %s", o)
+		}
+		s.opaque[o], s.opaqueOf[id] = id, o
+	}
+	return s, nil
 }
 
 // Lifetime is the configured lifetime of a registry token (oci.token_lifetime).
@@ -186,17 +261,65 @@ func (s *Signer) Issue(c Claims) (string, error) {
 	for _, e := range c.Grant.Entries {
 		w.Grant = append(w.Grant, wireEntry{Repo: e.Repo.String(), Name: e.Name, Actions: e.Actions})
 	}
-	body, err := json.Marshal(w)
+	readable, hidden := w.split()
+	open, err := json.Marshal(readable)
 	if err != nil {
 		return "", fmt.Errorf("registrytoken: %w", err)
 	}
-	payload := payloadVersion + ":" + kid + ":" + string(body)
-	signed := Prefix + base64.RawURLEncoding.EncodeToString([]byte(payload))
+	plain, err := json.Marshal(hidden)
+	if err != nil {
+		return "", fmt.Errorf("registrytoken: %w", err)
+	}
+	head := payloadV2 + ":" + s.opaqueOf[kid] + ":" + string(open) + ":"
+	sealed, err := s.seal(kid, []byte(head), plain)
+	if err != nil {
+		return "", err
+	}
+	signed := Prefix + base64.RawURLEncoding.EncodeToString(append([]byte(head), sealed...))
 	tok := signed + "." + base64.RawURLEncoding.EncodeToString(mac(key, signed))
 	if len(tok) > MaxLength {
 		return "", ErrTooLarge
 	}
 	return tok, nil
+}
+
+// seal encrypts the sealed claims of version 2 under the seal key of the ring's key kid: a random nonce, then the AES-256-GCM
+// ciphertext, with head (the payload up to the sealed part) as the additional data.
+func (s *Signer) seal(kid string, head, plain []byte) ([]byte, error) {
+	aead, err := s.aead(kid)
+	if err != nil {
+		return nil, err
+	}
+	nonce := make([]byte, aead.NonceSize(), aead.NonceSize()+len(plain)+aead.Overhead())
+	if _, err := rand.Read(nonce); err != nil {
+		return nil, fmt.Errorf("registrytoken: nonce: %w", err)
+	}
+	return aead.Seal(nonce, nonce, plain, head), nil
+}
+
+// open decrypts the sealed claims of version 2; any failure is [ErrMalformed], since the MAC verified before.
+func (s *Signer) open(kid string, head, sealed []byte) ([]byte, error) {
+	aead, err := s.aead(kid)
+	if err != nil || len(sealed) < aead.NonceSize()+aead.Overhead() {
+		return nil, ErrMalformed
+	}
+	plain, err := aead.Open(nil, sealed[:aead.NonceSize()], sealed[aead.NonceSize():], head)
+	if err != nil {
+		return nil, ErrMalformed
+	}
+	return plain, nil
+}
+
+func (s *Signer) aead(kid string) (cipher.AEAD, error) {
+	key, ok := s.seals.Key(kid)
+	if !ok {
+		return nil, ErrUnknownKey
+	}
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, fmt.Errorf("registrytoken: %w", err)
+	}
+	return cipher.NewGCM(block)
 }
 
 // Verify checks a presented registry token without any lookup (R-OCI-005): the length, the form, the named key, the MAC,
@@ -220,18 +343,40 @@ func (s *Signer) Verify(raw, endpoint string, now time.Time) (Claims, error) {
 		return Claims{}, ErrMalformed
 	}
 	ver, rest, ok1 := bytes.Cut(payload, []byte(":"))
-	kid, body, ok2 := bytes.Cut(rest, []byte(":"))
-	if !ok1 || !ok2 || string(ver) != payloadVersion || len(kid) == 0 {
+	named, body, ok2 := bytes.Cut(rest, []byte(":"))
+	if !ok1 || !ok2 || len(named) == 0 {
 		return Claims{}, ErrMalformed
 	}
-	key, known := s.keys.Key(string(kid))
+	var kid string
+	switch string(ver) {
+	case payloadV1:
+		kid = string(named)
+	case payloadV2:
+		id, known := s.opaque[string(named)]
+		if !known {
+			return Claims{}, ErrUnknownKey
+		}
+		kid = id
+	default:
+		return Claims{}, ErrMalformed
+	}
+	key, known := s.keys.Key(kid)
 	if !known {
 		return Claims{}, ErrUnknownKey
 	}
 	if !hmac.Equal(got, mac(key, raw[:len(Prefix)+len(encoded)])) {
 		return Claims{}, ErrSignature
 	}
-	c, err := decode(string(kid), body)
+	var w wire
+	if string(ver) == payloadV1 {
+		w, err = decodeV1(body)
+	} else {
+		w, err = s.decodeV2(kid, payload, body)
+	}
+	if err != nil {
+		return Claims{}, err
+	}
+	c, err := claimsOf(kid, w)
 	if err != nil {
 		return Claims{}, err
 	}
@@ -253,16 +398,51 @@ func mac(key []byte, signed string) []byte {
 	return h.Sum(nil)
 }
 
-// decode parses the authenticated claims strictly: an unknown member, trailing data or a value outside the rules is
-// malformed. A token that passed the MAC was issued by a ring holder, so a failure here is a defect or a forgery with the
-// ring (H-579), never a client mistake.
-func decode(kid string, body []byte) (Claims, error) {
+// decodeV1 parses the authenticated claims of version 1 strictly: an unknown member or trailing data is malformed. A token that
+// passed the MAC was issued by a ring holder, so a failure here and in [claimsOf] is a defect or a forgery with the ring (H-579),
+// never a client mistake.
+func decodeV1(body []byte) (wire, error) {
+	var w wire
+	if !strict(body, &w) {
+		return wire{}, ErrMalformed
+	}
+	return w, nil
+}
+
+// decodeV2 parses the authenticated claims of version 2: the readable object, ":" and the sealed part, which it opens with the
+// seal key of kid. Both are read strictly.
+func (s *Signer) decodeV2(kid string, payload, body []byte) (wire, error) {
 	dec := json.NewDecoder(bytes.NewReader(body))
 	dec.DisallowUnknownFields()
-	var w wire
-	if err := dec.Decode(&w); err != nil || dec.More() {
-		return Claims{}, ErrMalformed
+	var r readableV2
+	if err := dec.Decode(&r); err != nil {
+		return wire{}, ErrMalformed
 	}
+	rest := body[dec.InputOffset():]
+	if len(rest) < 2 || rest[0] != ':' {
+		return wire{}, ErrMalformed
+	}
+	head := payload[:len(payload)-len(rest)+1]
+	plain, err := s.open(kid, head, rest[1:])
+	if err != nil {
+		return wire{}, err
+	}
+	var h sealedV2
+	if !strict(plain, &h) {
+		return wire{}, ErrMalformed
+	}
+	return joined(r, h), nil
+}
+
+// strict decodes one JSON value into v with no unknown member and nothing after it.
+func strict(b []byte, v any) bool {
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.DisallowUnknownFields()
+	return dec.Decode(v) == nil && !dec.More()
+}
+
+// claimsOf turns the wire's claims into [Claims] and checks them; a value outside the rules is malformed.
+func claimsOf(kid string, w wire) (Claims, error) {
 	c := Claims{
 		KeyID: kid, Anonymous: w.Anonymous, PrincipalKind: w.Kind, PrincipalID: w.Principal, Endpoint: w.Endpoint,
 		IssuedAt: time.Unix(w.IssuedAt, 0), ExpiresAt: time.Unix(w.ExpiresAt, 0),

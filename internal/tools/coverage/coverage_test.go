@@ -169,8 +169,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1348 since the catalogue's wire, the meaning of gui and docs and the grammar of its document paths are built
 		// (R-BAS-101 to R-BAS-103, three P1 requirements of W-35, P5, with W-34's E7).
 		// 1353 since the main installation builds the public catalogue (R-BAS-104 to R-BAS-108, five P1 requirements of W-35, P6).
-		if len(m.Reqs) != 1353 || count[prioMVP] != 742 || count[prioP1] != 572 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1353 (742, 572, 39)",
+		// 1355 since a forward's problems and a relayed registry token name nothing of the main installation (R-BAS-114, R-BAS-115,
+		// two P1 requirements of W-35, P8, with W-34's E17).
+		if len(m.Reqs) != 1355 || count[prioMVP] != 742 || count[prioP1] != 574 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1355 (742, 574, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

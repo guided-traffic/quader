@@ -165,7 +165,7 @@ What has to be in your head:
 
 | File | Responsibility |
 |---|---|
-| [registrytoken/token.go](../../internal/auth/registrytoken/token.go) | `Signer` (`NewSigner(ring, lifetime)` derives the MAC keys from the ring with info `quader registry token v1`; `Issue`, `Verify`), `Claims`, `Binding`, the form `qdr_rgt_` + base64url(`1:<key id>:<JSON>`) + `.` + MAC, the limits (`MaxLength` 4 KiB, `MaxEntries` 16, `MaxLifetime` 1 h, `MaxClockSkew` 1 min) |
+| [registrytoken/token.go](../../internal/auth/registrytoken/token.go) | `Signer` (`NewSigner(ring, lifetime)` derives the MAC keys from the ring with info `quader registry token v1` and the sealing keys with `quader registry token seal v2`, and the opaque key IDs; `Issue` writes payload version 2, `Verify` reads 1 and 2), `Claims`, `Binding`, the form `qdr_rgt_` + base64url(`2:<opaque key id>:<readable JSON>:<sealed>`) + `.` + MAC (R-BAS-115, Q-BAS-388), the limits (`MaxLength` 4 KiB, `MaxEntries` 16, `MaxLifetime` 1 h, `MaxClockSkew` 1 min) |
 | [registrytoken/grant.go](../../internal/auth/registrytoken/grant.go) | `Actions` (`Pull`, `Push`, `Delete`), `Entry`, `Grant.Allows`, `Grant.Add`, `FullName` |
 | [registrytoken/scope.go](../../internal/auth/registrytoken/scope.go) | `ParseScopes`: the scope grammar of the distribution token protocol, 16 entries at most, unknown entries skipped, the bound host's short names, a cache view under its base repository; `RepositoryScope` for a challenge |
 | [registrytoken/challenge.go](../../internal/auth/registrytoken/challenge.go) | `TokenPath`, `Realm` (realm and service of a base URL; `("", "")` without one), `Challenge` (the `WWW-Authenticate` of R-OCI-004 step 1), `ErrorInvalidToken`, `ErrorInsufficientScope` |

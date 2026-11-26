@@ -425,10 +425,14 @@ func refusal(baseURL string, d Download, pkg, version string) error {
 		opts = append(opts, errs.WithExtension("advisory", d.Block.AdvisoryID))
 	}
 	if d.Block.FindingID != "" {
-		opts = append(opts, errs.WithExtension("findingId", d.Block.FindingID))
+		// The finding is a row of this installation: a caller of a Bastion reads the advisory, which is public, and not the finding
+		// (bastion.md R-BAS-114).
+		opts = append(opts, errs.WithInstallationExtension("findingId", d.Block.FindingID))
 	}
-	text := fmt.Sprintf("Quader blocked %s in %s: %s. Details: %s", name, d.Addressed, reasonText(d.Block, d.Ecosystem), link(baseURL, d))
-	return errs.E(errs.Forbidden, d.Block.Code(), oneLine(text), opts...)
+	text := fmt.Sprintf("Quader blocked %s in %s: %s.", name, d.Addressed, reasonText(d.Block, d.Ecosystem))
+	// A caller of a Bastion reads the sentence without the link into this installation's web interface (R-BAS-114, Q-BAS-387).
+	opts = append(opts, errs.WithForwardDetail(oneLine(text)))
+	return errs.E(errs.Forbidden, d.Block.Code(), oneLine(text+" Details: "+link(baseURL, d)), opts...)
 }
 
 func reasonText(b vuln.Block, ecosystem string) string {

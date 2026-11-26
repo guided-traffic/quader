@@ -318,9 +318,12 @@ func admitted(rq *formats.Request, fw *auditForwarder, n string) bool {
 
 // readAuditBody reads an audit body within its bounds (Q-NPM-64): maxBody bytes as sent,
 // ten times that decompressed, at most auditMaxNames names, each a list of versions.
+// key is the repository whose settings bound it, which for an audit through a virtual repository is the forwarding member: a caller
+// of a Bastion reads "this repository" instead (bastion.md R-BAS-114, Q-BAS-387).
 func readAuditBody(r *http.Request, key string, maxBody int64) (map[string][]string, error) {
-	tooLarge := errs.E(errs.TooLarge, errs.CodeNPMTooLarge, fmt.Sprintf(
-		"The audit body exceeds what %s accepts: %d bytes as sent, ten times that decompressed, %d package names.", key, maxBody, auditMaxNames))
+	const text = "The audit body exceeds what %s accepts: %d bytes as sent, ten times that decompressed, %d package names."
+	tooLarge := errs.E(errs.TooLarge, errs.CodeNPMTooLarge, fmt.Sprintf(text, key, maxBody, auditMaxNames),
+		errs.WithForwardDetail(fmt.Sprintf(text, "this repository", maxBody, auditMaxNames)))
 	if r.ContentLength > maxBody {
 		return nil, tooLarge
 	}

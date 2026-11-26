@@ -128,6 +128,12 @@ type Error struct {
 	// refusal, a serve-time check or a cache that merely does not hold the item. Only the core's lookups read
 	// it, to tell the marking of a Bastion request that a negative entry may stand for the answer (R-BAS-013).
 	Absent bool
+	// ForwardDetail, when set, is the detail a caller of a Bastion reads instead of Detail ([WithForwardDetail], bastion.md
+	// R-BAS-114): the text where it is made says what it says without the installation's own names, so one error answers a
+	// forward and an ordinary caller at once.
+	ForwardDetail string
+	// installationOnly are the extension members a caller of a Bastion does not read ([WithInstallationExtension]).
+	installationOnly map[string]bool
 	// status, when set, replaces the status of the kind. It exists for the one
 	// case the kind cannot express: a 400 that lists the offending member of an
 	// unparsable body (R-API-003).
@@ -178,6 +184,24 @@ func WithExtension(name string, value any) Option {
 			e.Extensions = map[string]any{}
 		}
 		e.Extensions[name] = value
+	}
+}
+
+// WithForwardDetail sets the detail a forward of a Bastion reads instead of the error's own ([Error.ForwardDetail], bastion.md
+// R-BAS-114, Q-BAS-385): the same sentence without what names this installation (a repository the caller did not address, a page
+// of its web interface, a host). It also vouches for a text of a 5xx that names only what the caller addressed, which a forward
+// would otherwise read as the neutral text of its status (Q-BAS-386).
+func WithForwardDetail(detail string) Option { return func(e *Error) { e.ForwardDetail = detail } }
+
+// WithInstallationExtension adds an extension member that names something of this installation only (a finding's ID): its own
+// callers read it, a caller of a Bastion does not (bastion.md R-BAS-114, Q-BAS-387).
+func WithInstallationExtension(name string, value any) Option {
+	return func(e *Error) {
+		WithExtension(name, value)(e)
+		if e.installationOnly == nil {
+			e.installationOnly = map[string]bool{}
+		}
+		e.installationOnly[name] = true
 	}
 }
 

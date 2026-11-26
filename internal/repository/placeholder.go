@@ -91,5 +91,7 @@ func PlaceholderNotFound(member qname.Repo, state wellknown.State, others int) *
 	if s == "" {
 		return nil
 	}
-	return errs.E(errs.NotFound, errs.CodeNotFound, s)
+	// A caller of a Bastion reads the one sentence of every missing resource: the member is a repository it did not address, and
+	// whether an administrator switched it on is this installation's structure (bastion.md R-BAS-114, Q-BAS-387).
+	return errs.E(errs.NotFound, errs.CodeNotFound, s, errs.WithForwardDetail(errs.DetailNotFound))
 }

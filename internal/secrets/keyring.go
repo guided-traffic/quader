@@ -346,9 +346,9 @@ func (d *DerivedKeys) LogValue() slog.Value {
 
 // Derive returns a key of size bytes for every key of the ring, derived with HKDF-SHA-256 (RFC 5869, no salt) and the
 // purpose as info, so that a purpose never uses a key of the ring directly and two purposes never share a key (R-ARCH-021:
-// the content URLs use "quader content-url v1", the registry tokens "quader registry token v1"). The active key's derivation
-// signs; every key's derivation verifies, so a rotation of the ring needs no new secret for the purpose. info must be
-// non-empty and size between 16 and 64 bytes.
+// the content URLs use "quader content-url v1", the registry tokens "quader registry token v1" and, for their sealed claims,
+// "quader registry token seal v2"). The active key's derivation signs; every key's derivation verifies, so a rotation of the ring
+// needs no new secret for the purpose. info must be non-empty and size between 16 and 64 bytes.
 func (r *KeyRing) Derive(info string, size int) (*DerivedKeys, error) {
 	if info == "" || info == fingerprintInfo {
 		return nil, fmt.Errorf("secrets: derive: the purpose %q is empty or reserved", info)

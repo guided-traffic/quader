@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,353 spec requirements:
-806 cover catalog features, 547 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,355 spec requirements:
+806 cover catalog features, 549 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>547 requirements</summary>
+<summary>549 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3208,6 +3208,8 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAS-097 | The throughput between the main installation and a Bastion | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-098 | The cache protects what was served twice | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-099 | A Bastion names nothing of the main installation | MVP | [bastion.md](../spec/bastion.md) |
+| R-BAS-114 | A forward's problems name nothing of the main installation | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-115 | A registry token a Bastion relays names nothing of the main installation | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-100 | A Bastion's own imprint and privacy notice from its chart | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-101 | The catalogue's routes: a change list, documents and the public set | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-102 | The switches gui and docs | P1 | [bastion.md](../spec/bastion.md) |

@@ -67,7 +67,7 @@ const staleRetryAfter = 2 * time.Second
 // missing resource in the same place builds that answer here as well, so the two
 // are the same bytes by construction.
 func NotFound() *errs.Error {
-	return errs.E(errs.NotFound, errs.CodeNotFound, "The resource does not exist.")
+	return errs.E(errs.NotFound, errs.CodeNotFound, errs.DetailNotFound)
 }
 
 // Unauthenticated is the 401 of R-AUTHZ-016. The challenge is the generic bearer

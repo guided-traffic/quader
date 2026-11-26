@@ -10,9 +10,11 @@
 // The package holds:
 //
 //   - the form (token.go): qdr_rgt_ + base64url(payload) + "." + base64url(HMAC-SHA-256(key, "qdr_rgt_" + base64url(payload))),
-//     the payload "1:<key id>:<JSON claims>", at most 4 KiB; [Signer] issues and verifies it;
-//   - the MAC keys ([NewSigner] in token.go): derived with HKDF-SHA-256 from every key of the stored-secret key ring with the
-//     info "quader registry token v1" (secrets.KeyRing.Derive, R-ARCH-021), the active key signing;
+//     the payload "2:<opaque key id>:<readable JSON claims>:<sealed claims>", at most 4 KiB; [Signer] issues it and verifies it and
+//     the payload "1:<key id>:<JSON claims>" of the tokens issued before (bastion.md R-BAS-115, Q-BAS-388);
+//   - the MAC keys and the sealing keys ([NewSigner] in token.go): derived with HKDF-SHA-256 from every key of the stored-secret key
+//     ring with the infos "quader registry token v1" and "quader registry token seal v2" (secrets.KeyRing.Derive, R-ARCH-021), the
+//     active key signing and sealing;
 //   - the grant (grant.go): the actions, the entries and the check the registry root's enforcement point makes;
 //   - the scope grammar of the distribution token protocol (scope.go) and the challenge of a 401 below /v2/ (challenge.go),
 //     which the registry root shares;

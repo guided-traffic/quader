@@ -75,7 +75,7 @@ func TestRegistryTokenForm(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Run("qdr_rgt_, the payload 1:<key id>:<claims>, a dot and the base64url HMAC-SHA-256 of the signed part", func(t *testing.T) {
+	t.Run("qdr_rgt_, the payload 2:<opaque key id>:<readable claims>:<sealed claims>, a dot and the base64url HMAC-SHA-256 of the signed part", func(t *testing.T) {
 		if !strings.HasPrefix(tok, Prefix) || len(tok) > MaxLength {
 			t.Fatalf("token %q", tok)
 		}
@@ -84,7 +84,7 @@ func TestRegistryTokenForm(t *testing.T) {
 			t.Fatalf("form of %q", tok)
 		}
 		payload, err := base64.RawURLEncoding.DecodeString(encoded)
-		if err != nil || !strings.HasPrefix(string(payload), "1:k1:{") {
+		if err != nil || !regexp.MustCompile(`^2:[0-9a-f]{16}:\{`).Match(payload) {
 			t.Fatalf("payload %q %v", payload, err)
 		}
 		for _, secret := range []string{"qdr_pat_x", "qdr_pat_"} {
@@ -126,8 +126,9 @@ func TestRegistryTokenForm(t *testing.T) {
 		}
 	})
 	t.Run("a token signed with another key of the same ID is refused", func(t *testing.T) {
+		// The opaque key ID of version 2 is derived from the key, so another key of the same ID does not know it.
 		other := signer(t, "k1", keyFile(t, t.TempDir(), "k1", 77))
-		if _, err := other.Verify(tok, "default", t0); !errors.Is(err, ErrSignature) {
+		if _, err := other.Verify(tok, "default", t0); !errors.Is(err, ErrUnknownKey) {
 			t.Fatalf("wrong key: %v", err)
 		}
 	})

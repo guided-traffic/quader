@@ -8,13 +8,16 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -169,6 +172,51 @@ func (r *replica) nameOfMain(res *http.Response, body []byte) string {
 	for _, n := range r.mainNames {
 		if n != "" && (strings.Contains(head.String(), n) || bytes.Contains(body, []byte(n))) {
 			return n
+		}
+	}
+	for _, tok := range registryTokenRE.FindAll(append([]byte(head.String()), body...), -1) {
+		if n := tokenNames(string(tok)); n != "" {
+			return n
+		}
+	}
+	return ""
+}
+
+// registryTokenRE finds a registry token in an answer: its prefix, its base64url payload, a dot and its MAC.
+var registryTokenRE = regexp.MustCompile(`qdr_rgt_[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+`)
+
+// opaqueKeyIDRE is the key ID of payload version 2: 8 bytes in hexadecimal, which names no key of the ring (Q-BAS-388).
+var opaqueKeyIDRE = regexp.MustCompile(`^[0-9a-f]{16}$`)
+
+// tokenNames returns what of the main installation a registry token a Bastion relays names in its readable part, "" for nothing
+// (bastion.md R-BAS-115, formats/oci.md R-OCI-005): a token of the main installation is of payload version 2, whose key ID is opaque
+// and whose readable claims are a, exp and g alone; the one token of version 1 is the Bastion's own anonymous token, whose key ID is
+// bastion and whose claims are a and exp (R-BAS-094). Anything else names the endpoint, the principal, the Quader token behind it or
+// the key of the main installation's ring.
+func tokenNames(tok string) string {
+	encoded, _, _ := strings.Cut(strings.TrimPrefix(tok, iface.RegistryTokenPrefix), ".")
+	payload, err := base64.RawURLEncoding.Strict().DecodeString(encoded)
+	if err != nil {
+		return "a registry token whose payload does not decode"
+	}
+	version, rest, _ := bytes.Cut(payload, []byte(":"))
+	kid, body, _ := bytes.Cut(rest, []byte(":"))
+	readable := map[string]json.RawMessage{}
+	dec := json.NewDecoder(bytes.NewReader(body))
+	if err := dec.Decode(&readable); err != nil {
+		return "a registry token whose readable claims do not decode"
+	}
+	allowed := map[string]bool{"a": true, "exp": true, "g": true}
+	switch {
+	case string(version) == "1" && string(kid) == "bastion":
+		allowed = map[string]bool{"a": true, "exp": true}
+	case string(version) == "2" && opaqueKeyIDRE.Match(kid):
+	default:
+		return "a registry token of payload version " + string(version) + " with the key ID " + string(kid)
+	}
+	for k := range readable {
+		if !allowed[k] {
+			return "a registry token whose readable claims name " + k
 		}
 	}
 	return ""

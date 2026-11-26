@@ -595,8 +595,11 @@ func RefusalText(artifact string, addressed qname.Repo, r Reason) string {
 }
 
 func (g *Gate) refusal(d Download, r Reason) error {
-	text := RefusalText(nameOf(d), d.Addressed.Name, r) + " Details: " + g.pageOf(d)
-	return errs.E(errs.Forbidden, errs.CodeSignatureNotVerified, oneLine(text),
+	text := RefusalText(nameOf(d), d.Addressed.Name, r)
+	// A caller of a Bastion reads the sentence without the link into this installation's web interface (bastion.md R-BAS-114,
+	// Q-BAS-387).
+	return errs.E(errs.Forbidden, errs.CodeSignatureNotVerified, oneLine(text+" Details: "+g.pageOf(d)),
+		errs.WithForwardDetail(text),
 		errs.WithHeader("Cache-Control", "no-store"), errs.WithExtension("reason", string(r)),
 		errs.WithExtension("sha256", hex.EncodeToString(d.Blob[:])))
 }
@@ -617,7 +620,10 @@ func PendingText(artifact string) string {
 }
 
 func (g *Gate) pendingError(d Download) error {
-	return errs.E(errs.Unavailable, errs.CodeSignatureCheckPending, PendingText(nameOf(d)),
+	text := PendingText(nameOf(d))
+	// The text names only the artifact the caller asked for, so a caller of a Bastion reads it as well (bastion.md R-BAS-114,
+	// Q-BAS-386).
+	return errs.E(errs.Unavailable, errs.CodeSignatureCheckPending, text, errs.WithForwardDetail(text),
 		errs.WithHeader("Cache-Control", "no-store"), errs.WithExtension("sha256", hex.EncodeToString(d.Blob[:])),
 		errs.WithRetryAfter(g.o.RetryAfter))
 }

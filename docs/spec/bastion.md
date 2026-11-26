@@ -26,7 +26,9 @@ are specified in [Limits, configuration and throughput from the main installatio
 Q-BAS-320 to Q-BAS-339) and **not built**, except the rows of R-BAS-099 that package E16 built (Q-BAS-425 to Q-BAS-428), the anonymous
 token and the anonymous documents of R-BAS-094 that package E14a built (Q-BAS-435 to Q-BAS-437), the addresses a Bastion connects
 from (R-BAS-017, the member `egress` of R-BAS-093, package E13, built on 2026-11-26 with Q-BAS-430 to Q-BAS-433) and the refusal of
-writes at the Bastion in the five error shapes (R-BAS-095, package E15, built on 2026-11-26 with Q-BAS-450 to Q-BAS-453); they revise in place R-BAS-002, R-BAS-009, R-BAS-010, R-BAS-014 to R-BAS-017, R-BAS-023,
+writes at the Bastion in the five error shapes (R-BAS-095, package E15, built on 2026-11-26 with Q-BAS-450 to Q-BAS-453), and the
+registry token's payload version 2 (row 8 of R-BAS-099, package E17, built on 2026-11-26 with W-35's P8: R-BAS-114 and R-BAS-115, the
+inventory of what a forward relays in R-BAS-029, Q-BAS-385 to Q-BAS-389); they revise in place R-BAS-002, R-BAS-009, R-BAS-010, R-BAS-014 to R-BAS-017, R-BAS-023,
 R-BAS-025, R-BAS-029, R-BAS-031, R-BAS-035 to R-BAS-038, R-BAS-046, R-BAS-051, R-BAS-052, R-BAS-054, R-BAS-058, R-BAS-059, R-BAS-071,
 R-BAS-074, Q-BAS-15, Q-BAS-21, Q-BAS-38, Q-BAS-43, Q-BAS-74, Q-BAS-88, Q-BAS-116, Q-BAS-118, Q-BAS-123, Q-BAS-315, H-388, H-1244, H-2272,
 H-2273 and H-2277, each with a marked sentence of what the code does until its package lands.
@@ -839,7 +841,9 @@ probe as the anonymous caller for routing (Q-BAS-118), the headers `Quader-Basti
 names the main installation's URL go; the main installation's refusal of a forwarded write stays as R-BAS-095's backstop with the neutral
 detail, and the forward of a path outside the package families keeps answering `404`. *Built by E15 on 2026-11-26:* the probe below,
 `bastionmain.IsProbe`, the probe's admission in `BastionRouteAuth` and the probes' replay cache at the Bastion are gone; the requirement is
-R-BAS-095's. *Revised on 2026-11-26 by E7 (interface version 8,
+R-BAS-095's. *Checked by W-35's P8 on 2026-11-26:* the Bastion's refusal and the main installation's backstop both answer
+`errs.ReadOnlyDetail`, "This address is read-only: it serves downloads and accepts no uploads.", which names no address; the paragraphs
+below that say the refusal points at the main installation describe the interface up to version 7. *Revised on 2026-11-26 by E7 (interface version 8,
 [Q-BAS-351](#q-bas-351--until-e15-a-probe-is-recognized-by-its-form-and-a-read-route-with-a-body-is-the-format-tables)):* the headers
 `Quader-Bastion-Probe` and `Quader-Bastion-Route` are gone. The Bastion forwards a request that matches a read route with a body of the
 format table (`readWithBody`, R-BAS-095) at once, with its body and the caller's credential, and probes every other request of a method
@@ -1061,7 +1065,9 @@ Priority: **MVP** · Covers: quader-only
 (`egress`, R-BAS-093, [api-and-ui.md](api-and-ui.md) R-UI-243): a recognized forward's client address and host count only when the request
 comes from an address of its own registration's list, and the configuration key `bastions.trusted_proxies` goes; the second acceptance
 criterion loses its exception, since a refusal of a write names nothing of the main installation (R-BAS-099). *Built by E16:* the
-exception is gone. *Built (package E13, 2026-11-26):* the list, its validation and its recognition as below ([Q-BAS-430](#q-bas-430--a-bastion-is-recognized-by-its-token-its-reports-about-its-callers-count-only-from-its-own-registrations-networks) to
+exception is gone. *Read by W-35's P8 on 2026-11-26, not run:* no end-to-end test runs `npm view … dist.tarball` through the Bastion or
+captures its bodies; the second criterion is held by the integration replays' scan (R-BAS-099 row 10), which since P8 also reads every
+registry token a Bastion relays (R-BAS-115). *Built (package E13, 2026-11-26):* the list, its validation and its recognition as below ([Q-BAS-430](#q-bas-430--a-bastion-is-recognized-by-its-token-its-reports-about-its-callers-count-only-from-its-own-registrations-networks) to
 [Q-BAS-433](#q-bas-433--the-networks-live-in-the-replicas-snapshot-of-the-registrations-with-a-change-area-of-their-own)).
 
 The main installation counts the real client and renders documents for the Bastion's host (owner,
@@ -1597,7 +1603,8 @@ chain's own refusals included (`errs.WithBastionAnswer`); the RateLimit policy n
 (R-BAS-099 rows 2 to 4). *Built by E7 (interface version 8):* the codes of the table below. *Built by E15:* every answer of the
 table in the shape the format table's `errorShape` declares, through one renderer ([Q-BAS-450](#q-bas-450--every-answer-of-the-bastions-own-goes-through-one-renderer-by-the-declared-shape-and-each-shape-carries-the-code)),
 with `403 read_only` for a write; before the first handshake, when no format's shape is known, problem details (H-2359). Where the
-text below says problem details, it is the shape `problem`.
+text below says problem details, it is the shape `problem`. *Completed by W-35's P8 on 2026-11-26 (R-BAS-114):* the table of what a
+forward relays below, each of its rows built.
 
 The Bastion produces only these answers itself; every other body comes from the main installation
 ([Q-BAS-39](#q-bas-39--the-bastions-own-refusals-are-problem-details)). They are problem details (RFC 9457,
@@ -1629,6 +1636,33 @@ The Bastion produces only these answers itself; every other body comes from the 
   minutes."); `Retry-After` and the `RateLimit` field's `t` carry it, but at most the longest wait the format of the request tells its
   clients (`retryAfterMaxSeconds` of the handshake's format table, R-BAS-057): NuGet and Ansible Galaxy 30 s, every other format the
   whole wait. Every other `Retry-After` of the Bastion's own (`unavailable` 30 s, `busy` 1 s) is held to the same cap.
+
+**What a forward relays** (W-35's P8, built on 2026-11-26, [R-BAS-114](#r-bas-114--a-forwards-problems-name-nothing-of-the-main-installation)).
+Every other body comes from the main installation, which renders the problems of a recognized forward for a caller of a Bastion
+(`errs.ProblemFor`, [Q-BAS-385](#q-bas-385--a-forwards-text-is-chosen-at-rendering-from-what-the-error-carries)). The texts and codes a
+format's handler or the core writes on the routes a Bastion forwards (`GET`, `HEAD` and the declared read routes with a body), read in the
+code on 2026-11-26 per format (npm, NuGet, OCI and Helm, Debian, Ansible Galaxy, the raw files of `/files/`, the ClamAV definitions); the
+rows that named something of the main installation and what a forward reads since, each with its unit test:
+
+| # | Where (formats) | Code (status) | What the installation's own callers read | What a caller of a Bastion reads |
+|---|---|---|---|---|
+| 1 | A remote's delivery rules ([refusal.go](../../internal/remotecuration/rules/refusal.go); npm, NuGet, OCI and Helm, Ansible Galaxy, `/files/` of a remote) | `not_allowed_in_repository` (403) | "left-pad 1.3.0 is not allowed in web/npm-remote: … Ask for it at https://…/ui/projects/web/repositories/npm-remote/upstream?name=left-pad.": the remote that holds the rules, through a virtual repository a member the caller did not address, and a page of the web interface | "left-pad 1.3.0 is not allowed in this repository: this repository delivers only what is allowed." (`TestR_BAS_114_ADeliveryRefusalThroughABastionNamesNoMemberAndNoPage`) |
+| 2 | The vulnerability block ([enforce.go](../../internal/vuln/enforce/enforce.go); every format whose downloads it judges) | `vulnerability_blocked`, `vulnerability_data_missing` (403) | the sentence and "Details: <`server.base_url`>/ui/vulnerabilities/findings/<id>"; the members `advisory` and `findingId` | the sentence without the link; `advisory` stays, `findingId` is left out (`TestR_BAS_114_ABlockThroughABastionNamesNoPageAndNoFindingOfTheInstallation`) |
+| 3 | The signature gate ([gate.go](../../internal/signatures/gate/gate.go)) | `signature_not_verified` (403) | the sentence and "Details: <`server.base_url`>/ui/projects/…/files/…" | the sentence without the link; `reason` and `sha256` stay (`TestR_BAS_114_ASignatureRefusalThroughABastionNamesNoPageOfTheInstallation`) |
+| 4 | The malware gate ([gate.go](../../internal/malware/gate/gate.go)) | `malware_found` (403; 404 on the ClamAV definitions) | the finding and "An instance auditor can release it on the page Malware under Security audit." | the finding alone (`TestR_BAS_114_AMalwareRefusalThroughABastionNamesNoPageOfTheInstallation`) |
+| 5 | A virtual repository whose member of the project upstream is not switched on ([placeholder.go](../../internal/repository/placeholder.go); the engine's walk of npm, Debian and Ansible Galaxy, and the walks of their own of NuGet and OCI through `formats.VirtualPlan.Unknown`) | `not_found` and each format's own not-found code (404) | "upstream/npmjs is a member of this virtual repository, but an administrator of Quader has not switched it on." | "The resource does not exist.", or the format's own not-found sentence (`TestR_BAS_114_APlaceholderThroughABastionIsTheOneNotFound`, `TestR_BAS_114_AFormatsOwnWalkThroughABastionReadsItsOwnNotFound`) |
+| 6 | npm's audit through a virtual repository ([handlers_audit.go](../../internal/formats/npm/handlers_audit.go)) | `npm_too_large` (413) | "The audit body exceeds what web/npm-remote accepts: …", the member that forwards | "… what this repository accepts: …" (`TestR_BAS_114_AnAuditBodyTooLargeThroughABastionNamesNoMember`) |
+| 7 | Every status of 500 or more that is no rate limit, in every format: "The files service is not available on this replica." (`/files/`), "The authorization state of this replica could not be confirmed; retry." (`authz_stale`), "The stored archives cannot be read on this replica." (Ansible Galaxy), Debian's `deb_upstream_signature_invalid` with field errors that name a key's fingerprint, npm's `npm_audit_unavailable` (501) naming the repository, a database's or an object store's failure | the code of each (500 to 504) | the text as written, and its field errors | the neutral text of the status, without field errors ([Q-BAS-386](#q-bas-386--every-5xx-of-a-forward-reads-the-neutral-text-of-its-status-unless-its-error-vouches-for-its-own)): 501 "This operation is not served at this address.", 502, 503 and 504 the texts of the Bastion's own (Q-BAS-321), 500 and any other "The server failed to process the request."; a failure of the remote engine keeps "The package could not be fetched right now." (R-BAS-099 row 15). `malware_check_pending` and `signature_check_pending` (503) name only the artifact the caller asked for and stay, and so does the ClamAV definitions' 503 of a rate limit (`TestR_BAS_114_AForwardReadsATextOfTheInstallationOnlyWhereTheErrorVouchesForIt`, `TestR_BAS_114_ALimitRefusalOfTheDefinitionsThroughABastionKeepsItsWait`) |
+
+Read and left as they are, since they name only what the caller addressed or sent: the decision point's `403` ("The action read is not
+permitted on <the coordinate the caller sent>") and its one `404`; every format's not-found and invalid-request sentences, which name the
+package, version or path asked for; `malware_not_checked` (the path, the addressed repository and the verdict's code); the refusals of
+the download limits (R-BAS-099 row 7: the figure, the limit and the wait, and for an upstream limit the ceiling's class of callers); the
+token service's `invalid_request` "This token service serves <host>", whose host is the response base URL's, the Bastion's; Debian's
+`deb_members_unreadable`; the extension `repositoryClass` of a `405`, which only a write reaches and a Bastion refuses before. A registry
+token a forward relays is R-BAS-115's. Not a text and left open: an Ansible Galaxy role served through a virtual repository carries the
+member's key in its ID (H-2322). Headers other than those R-BAS-099 row 5 allows never reach a caller, so NuGet's `X-NuGet-Warning`, which
+repeats the text of rows 1 to 4, is dropped as well.
 
 Acceptance criteria:
 
@@ -5597,13 +5631,18 @@ sets it, `internal/vuln/scanner/pull.go`), so row 5 does not list it; the allowl
   `content_unavailable` and the others of `errs.neutralDetail`) has the detail "The package could not be fetched right now.", and
   `populate_not_permitted` "The caller may not bring new content into the cache of this repository."; the code, the status, the headers
   and the members stay. A miss of every member of a virtual repository is the virtual engine's own `404`, which names no member. What
-  the formats' handlers write of their own is not inventoried text by text (H-2295).
+  the formats' handlers write of their own was not inventoried text by text then (H-2295); W-35's P8 inventoried it since (R-BAS-029's
+  table of what a forward relays, R-BAS-114).
 
 *Built on 2026-11-26 by E7:* rows 1 and 2, the codes (`read_only`, and the Bastion's own codes of Q-BAS-321, in `iface/problems.go` and
 the code registry of `internal/errs`), and row 8, the readers of payload version 2 (`iface.RegistryTokenAnonymous`, `RegistryTokenExpiry`,
 `RegistryTokenGrant` read versions 1 and 2, the sealed part never). *Not built* (packages E15, E17, and W-35's catalogue, as the table
 says): row 1's refusal at the Bastion, row 8 for a signed-in caller (E17 issues version 2) and row 14. Row 8 for the anonymous caller is built by E14a: its token is the Bastion's, whose payload
-names the key ID `bastion`, `a` and `exp` and nothing of the main installation (R-BAS-094).
+names the key ID `bastion`, `a` and `exp` and nothing of the main installation (R-BAS-094). *Built on 2026-11-26 by E17 with W-35's P8:*
+row 8 for a signed-in caller: the main installation issues payload version 2 alone, `a`, `exp` and `g` readable behind an opaque key ID
+and every other claim sealed ([Q-BAS-388](#q-bas-388--the-sealed-part-of-a-registry-token-is-encrypted-under-a-key-of-the-ring-not-a-reference)),
+and the replays' scan reads every token a Bastion relays (R-BAS-115). Row 1's refusal at the Bastion is E15's (R-BAS-095); row 14 stays
+W-35's catalogue's.
 
 Acceptance criteria:
 
@@ -5620,6 +5659,75 @@ Acceptance criteria:
 - Integration (every format's replay in `test/integration/bastion`, about 0 s more): the recorder scans every body and header the Bastion
   answers for the main installation's base URL and host, every `server.additional_base_urls` entry but the Bastion's, and `/api/v1/`;
   none is found. *As built:* the scan of row 10 in `replica.do`, which every replay of the area passes through.
+
+### R-BAS-114 · A forward's problems name nothing of the main installation
+Priority: **P1** · Covers: quader-only
+
+The owner's rule of R-BAS-099 for the texts and codes the main installation's formats and core write on the routes a Bastion forwards
+(W-35's P8). The main installation decides a problem's text for a caller of a Bastion when it renders the problem, never where the error
+is made, since one error can answer a forward and an ordinary caller at once (a fetch collapsed for every caller of a replica). For a
+recognized forward (`errs.WithBastionForward`, R-BAS-099 row 3) `errs.ProblemFor`
+([Q-BAS-385](#q-bas-385--a-forwards-text-is-chosen-at-rendering-from-what-the-error-carries)):
+
+- gives the problem the detail its error carries for a forward (`errs.WithForwardDetail`), where the error's own text names something of
+  the installation: a repository the caller did not address, a page of the web interface, the place to ask;
+- else the neutral detail of a failure of the remote engine (R-BAS-099 row 15);
+- else, for a status of 500 or more that is no rate limit, the neutral text of the status, and drops the field errors
+  ([Q-BAS-386](#q-bas-386--every-5xx-of-a-forward-reads-the-neutral-text-of-its-status-unless-its-error-vouches-for-its-own)): what failed
+  inside the installation is nothing a caller of a Bastion can act on, so a text written later fails closed; an error whose 5xx text
+  names only what the caller asked for vouches for it with the same option;
+- leaves out every extension member that names only the installation (`errs.WithInstallationExtension`: a finding's ID);
+- and keeps every other 4xx text, code, status, header and member.
+
+What each format and the core write, and what a caller of a Bastion reads instead, is the table of what a forward relays in
+[R-BAS-029](#r-bas-029--responses-of-the-bastions-own) ([Q-BAS-387](#q-bas-387--a-refusal-loses-its-link-into-the-installation-and-names-this-repository)).
+
+*Built on 2026-11-26 by W-35's P8:* the options in [errs.go](../../internal/errs/errs.go), the rendering in
+[problem.go](../../internal/errs/problem.go), the texts of rows 1 to 6 where they are made, and the ClamAV definitions' rate limit, which the
+endpoint answers `503`, vouched for in `clamav.Rendered`. The Bastion's own `502`, `503` and `504` read the same texts
+(`errs.DetailBadGateway`, `errs.DetailUnavailable`, `errs.DetailGatewayTimeout`).
+
+Acceptance criteria:
+
+- Unit, one case per rule and per row of R-BAS-029's table (about 0.4 s in all): `TestR_BAS_114_AForwardReadsATextOfTheInstallationOnlyWhereTheErrorVouchesForIt`
+  (`internal/errs`), and the tests the table names in `internal/remotecuration/rules`, `internal/vuln/enforce`, `internal/signatures/gate`,
+  `internal/malware/gate`, `internal/repository`, `internal/formats`, `internal/formats/npm` and `internal/formats/clamav`; each renders
+  the site's own error for an ordinary caller and for a forward.
+- Integration: the replays' scan of R-BAS-099 row 10 meets every text of them a replay reaches.
+
+### R-BAS-115 · A registry token a Bastion relays names nothing of the main installation
+Priority: **P1** · Covers: quader-only
+
+A signed-in caller's token request below `/v2/` is forwarded, and the main installation's token reaches the caller through the Bastion
+(R-BAS-052). Read in the code on 2026-11-26: the token's payload was readable JSON that named the endpoint `e`, the principal's kind and ID,
+the Quader token's ID, type and hash, the issue time, the catalog entry and the ring's key ID; it named no host (the realm and the
+`service` a client is told are the response base URL's, R-BAS-099 row 9). The main installation issues payload version 2 alone
+([formats/oci.md](formats/oci.md) R-OCI-005, [Q-BAS-339](#q-bas-339--a-registry-token-reads-only-its-anonymity-its-expiry-and-its-grant)):
+
+- readable: `a`, `exp` and `g`, the three claims a Bastion reads without a key (R-BAS-052), and on a token of a system subject `s`, which
+  no forward carries ([Q-BAS-389](#q-bas-389--a-system-tokens-subject-stays-readable-and-version-1-is-read-until-its-tokens-expire));
+- the key ID: 8 bytes of an HMAC of the ring key's ID under its MAC key, in hexadecimal, which names no key of the ring;
+- sealed: every other claim, under AES-256-GCM with a key derived from the ring's key with the info `quader registry token seal v2`
+  ([Q-BAS-388](#q-bas-388--the-sealed-part-of-a-registry-token-is-encrypted-under-a-key-of-the-ring-not-a-reference)).
+
+The verifier reads versions 1 and 2, so a token issued before stays valid until it expires (at most `oci.token_lifetime`, one hour); no
+other path of migration is needed. The Bastion's own anonymous token stays version 1 with the key ID `bastion` and the claims `a` and `exp`
+(R-BAS-094). The interface stays at version 8: its readers read both versions since E7.
+
+*Built on 2026-11-26 by E17 with W-35's P8:* [token.go](../../internal/auth/registrytoken/token.go); the replays' scan of R-BAS-099 row 10
+decodes every registry token in an answer of a Bastion.
+
+Acceptance criteria:
+
+- Unit (`internal/auth/registrytoken`, milliseconds): a token of a principal is version 2 with an opaque key ID and the readable claims
+  `a`, `exp` and `g` alone; no byte of its payload names the endpoint, the principal, the Quader token, the issue time or the key ID; two
+  tokens of the same claims seal apart, and a sealed byte changed under a valid MAC does not verify; the verifier reads the sealed claims
+  back and a token of version 1 until it expires; an anonymous token reads `a` and `exp`, a scan token keeps `s`
+  (`TestR_BAS_115_ARegistryTokenReadsOnlyItsAnonymityExpiryAndGrant`). The Bastion's readers read an issued token of version 2
+  (`TestR_BAS_052_*` of `internal/bastion/iface`).
+- Integration (area `bastion`, about 0 s more): every registry token in an answer of a replay is of version 2 with an opaque key ID and
+  the readable claims `a`, `exp` and `g`, or the Bastion's own anonymous token (`tokenNames` in the scan of `replica.do`; the docker and
+  containerd pulls of `TestR_BAS_051_R_BAS_053_ADockerAndAContainerdPullThroughABastion` relay a signed-in caller's token).
 
 ## The interface version 8: the shared wire
 
@@ -11630,7 +11738,10 @@ underlying token's ID, type and hash, and the key ID reach every caller through 
 | (c) As today | | Nothing to build | The main installation's internals in every caller's hand |
 
 **Choice:** (a). The key ID of a version-2 token is opaque (a hash of the ring's key ID), so it names no key of the ring either.
-**Applied in the spec:** R-BAS-052, R-BAS-099, [formats/oci.md](formats/oci.md) R-OCI-005.
+**Applied in the spec:** R-BAS-052, R-BAS-099, [formats/oci.md](formats/oci.md) R-OCI-005. *Built on 2026-11-26 by E17 with W-35's P8
+(R-BAS-115):* the sealed part is AES-256-GCM under a key derived from the ring, and the opaque key ID an HMAC of the ring key's ID under
+its MAC key ([Q-BAS-388](#q-bas-388--the-sealed-part-of-a-registry-token-is-encrypted-under-a-key-of-the-ring-not-a-reference)); a
+token of a system subject keeps `s` readable ([Q-BAS-389](#q-bas-389--a-system-tokens-subject-stays-readable-and-version-1-is-read-until-its-tokens-expire)).
 
 ### Q-BAS-340 · The Bastion's ui section holds the legal texts alone
 
@@ -12041,6 +12152,93 @@ label in the audit screen and its translation.
 | (b) An audit event `bastion.catalogue.changed` per run that changed something | The feed's bound | Seconds | An event per publish in the audit log of every installation with a Bastion's web interface |
 
 **Choice:** (a), to be revisited with P7, which owns the poll. **Applied in the spec:** R-BAS-101, R-BAS-105.
+
+### Q-BAS-385 · A forward's text is chosen at rendering from what the error carries
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-114. W-35's P8 found texts of the formats and the core that name a repository the caller did not address or a page of the
+installation's web interface (R-BAS-029's table of what a forward relays). Several share a generic code with texts that name nothing
+(`not_found` of a placeholder), and one error can answer a forward and an ordinary caller at once.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The error carries the text a forward reads (`errs.WithForwardDetail`) and the members only the installation reads (`errs.WithInstallationExtension`); `errs.ProblemFor` picks them for a forward (chosen) | Six places say their sentence twice | Exact per text, also under a generic code; correct for an error shared by a forward and an ordinary caller; the format's error shapes need nothing, since they render through `ProblemFor` (kit check 19) | A new 4xx text that names something passes until someone gives it its forward text (H-2323) |
+| (b) A neutral detail by code in `ProblemFor`, as Q-BAS-426 did for the remote engine | One table | Nothing at the sites | `not_found` and `forbidden` cannot be told apart from their harmless uses; a caller would lose every useful 4xx text of those codes |
+| (c) The place that makes the error reads the forward from the context, as the limits engine does (R-BAS-099 row 7) | A branch per site | No new option | Wrong for an error made once for several callers; the limits engine's refusal is made per request, a gate's or a remote's not necessarily |
+
+**Choice:** (a). **Rationale:** a sentence is best rewritten by the code that wrote it, and carrying both keeps one error right for every
+reader. The development agent would revisit it if a text is found whose forward form cannot be known where the error is made.
+**Applied in the spec:** R-BAS-029, R-BAS-114.
+
+### Q-BAS-386 · Every 5xx of a forward reads the neutral text of its status, unless its error vouches for its own
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-114. The texts of a status of 500 or more tell what failed inside the installation: "on this replica", its database, its
+object store, an upstream's document, the key that signed an upstream's release (Debian's field errors). A caller of a Bastion acts on
+the status and `Retry-After` alone.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every 5xx of a forward that is no rate limit reads the neutral text of its status and loses its field errors; an error whose text names only what the caller asked for vouches for it with `errs.WithForwardDetail` (chosen) | Fails closed, as the header allowlist (Q-BAS-425) | A text written later names nothing; the Bastion's own 502, 503 and 504 read the same sentences | The pending answers of the malware and the signature gate and the ClamAV definitions' 503 of a rate limit must vouch, which they do |
+| (b) Inventory each 5xx text and neutralize the ones that name something | As the 4xx | Each useful text stays | Every new text of a replica or a store reaches the internet until someone lists it |
+
+**Choice:** (a). The texts: 501 "This operation is not served at this address.", 502, 503 and 504 Q-BAS-321's, 500 and every other status
+"The server failed to process the request."; the remote engine's failures keep Q-BAS-426's. **Rationale:** the owner's rule is about what a
+caller may learn, and the failures of a server are where the installation's structure shows. The development agent would revisit it if a
+format's client is found that prints a 5xx detail it needs. **Applied in the spec:** R-BAS-029, R-BAS-114.
+
+### Q-BAS-387 · A refusal loses its link into the installation and names this repository
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-029's table, rows 1 to 6. The refusals of the delivery rules, the vulnerability block, the signature gate and the malware
+gate link a page of the installation's web interface (from `server.base_url`, the main installation's host, for the last three), and the
+delivery rules, a placeholder and npm's audit name the member of a virtual repository that refused.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The forward's sentence is the same without the link, the finding's ID and the page, and says "this repository" where the text named the holder (chosen) | The client still prints what was refused and why | Nothing of the installation; the code, the advisory, the reason and the digest stay, so a client acts as before | The caller cannot follow a link to ask for a package or to read a finding |
+| (b) The link on the Bastion's host | The path stays | A user of the Bastion's web interface could follow it | A Bastion serves no such page (W-35's interface shows no finding of the installation and takes no request); a dead link |
+| (c) Leave the texts | — | Nothing to build | The main installation's host and its rows reach the internet |
+
+**Choice:** (a). A placeholder's `404` reads the one sentence of every missing resource, or the format's own. **Rationale:** a caller of a
+Bastion has no account at the main installation that would let it use the page. The development agent would revisit it if W-35's
+interface gains a page where a caller asks for a package. **Applied in the spec:** R-BAS-029, R-BAS-114.
+
+### Q-BAS-388 · The sealed part of a registry token is encrypted under a key of the ring, not a reference
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-115, Q-BAS-339 left open what the sealed part is. R-OCI-005 verifies a registry token without a lookup, on every replica,
+and a token lives at most an hour.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) AES-256-GCM of the sealed claims under a key derived from the ring's key with the info `quader registry token seal v2`, a random nonce, the readable part as additional data; the key ID an HMAC of the ring key's ID under its MAC key (chosen) | Self-contained, as version 1 | No lookup and no store; a rotation of the ring rotates it; every replica opens it; the MAC still covers the whole token | 28 bytes more per token (the nonce and the tag) before base64; a holder of the ring reads the claims, as before |
+| (b) An opaque reference: a random handle, the claims kept in Valkey or PostgreSQL | The token names nothing at all | Smallest token | A lookup per request below `/v2/`, against R-OCI-005; a shared store the verifier depends on; a lost store refuses every token |
+| (c) The ring's own sealing of stored secrets (`secrets.KeyRing.Seal`) | One mechanism | Reuses code | Its form names the ring's key ID in clear and binds a database column and row, neither of which a token has |
+
+**Choice:** (a). **Rationale:** the token stays what R-OCI-005 makes it, a credential verified by the MAC alone, and what a caller reads
+shrinks to what a Bastion needs. The development agent would revisit it if a token must name nothing at all, the grant included (H-2297).
+**Applied in the spec:** R-BAS-115, [formats/oci.md](formats/oci.md) R-OCI-005.
+
+### Q-BAS-389 · A system token's subject stays readable, and version 1 is read until its tokens expire
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-115. A scan or blob token (R-OCI-037, R-MAL-006) carries the system subject `s`, which the Bastion's reader of the grant
+reads to refuse a token that reaches one manifest or blob (Q-BAS-246); the tokens issued before E17 are version 1.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `s` readable on a system token beside `a`, `exp` and `g`; the verifier reads versions 1 and 2, the token service issues 2 alone (chosen) | The reader's rule holds unchanged | `s` names a kind of token (`scan`, `blob`), nothing of the installation, and no forward carries such a token; a token issued before the upgrade stays valid for its few minutes | Two versions to read for at most an hour after an upgrade |
+| (b) `s` sealed | Fewer readable claims | — | The Bastion would read a scan token's grant as a full pull grant |
+| (c) The verifier reads version 2 alone | One version | Simplest | Every pull in progress during an upgrade fails once with `401` and asks for a new token |
+
+**Choice:** (a). **Rationale:** a token issued before an upgrade stays valid for the minutes it lives, at the cost of one branch of the
+verifier; pre-alpha needs no other path of migration. **Applied in the spec:** R-BAS-115, [formats/oci.md](formats/oci.md) R-OCI-005.
 
 ### Q-BAS-425 · The headers of a forwarded answer pass an allowlist, and a format's need is a replay header
 

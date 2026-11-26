@@ -44,8 +44,9 @@ func WithBastionAnswer(ctx context.Context) context.Context {
 
 // WithBastionForward marks the context of a forward of a Bastion that the main installation recognized (bastion.md R-BAS-099):
 // [ProblemFor] gives every problem of it the type [AboutBlank] and the status phrase as its title, leaves out the main
-// installation's requestId, and gives a failure of the remote engine a detail that names no repository and no host
-// ([neutralDetail]).
+// installation's requestId and the members of [WithInstallationExtension], and gives it the detail [forwardDetail] chooses: the
+// error's [WithForwardDetail], the neutral detail of a failure of the remote engine ([neutralDetail]) or of a status of 500 or more
+// ([statusDetail]), else its own (R-BAS-114).
 func WithBastionForward(ctx context.Context) context.Context {
 	return context.WithValue(ctx, readerKey{}, readerForward)
 }
@@ -65,6 +66,21 @@ func readerOf(ctx context.Context) reader {
 	return r
 }
 
+// The texts of a status that name no party (bastion.md R-BAS-029, Q-BAS-321): a Bastion's own answers of these statuses read
+// them, and so does a forward's problem of the status whose own text is not read through a Bastion (R-BAS-114, Q-BAS-386).
+const (
+	DetailUnavailable    = "This service is not available right now; try again later."
+	DetailBadGateway     = "This service could not answer; try again later."
+	DetailGatewayTimeout = "This service did not answer in time; try again later."
+	DetailNotServedHere  = "This operation is not served at this address."
+	// DetailInternal is the one detail of an internal error, for every caller (R-ARCH-023).
+	DetailInternal = "The server failed to process the request."
+	// DetailNotFetched is what a forward reads for a failure of the remote engine (R-BAS-099 row 15, Q-BAS-426).
+	DetailNotFetched = "The package could not be fetched right now."
+	// DetailNotFound is the sentence of the one 404 of a missing resource and of one the caller may not read (R-AUTHZ-016).
+	DetailNotFound = "The resource does not exist."
+)
+
 // neutralDetail is the detail a forward of a Bastion reads for a failure of the remote engine and its upstream clients
 // (R-REPO-029; bastion.md R-BAS-099 row 15, Q-BAS-426). Their own details name the remote repository that failed, which for a
 // caller of a virtual repository is a member it did not address, and some name an upstream's host. The code stays, and so does
@@ -76,11 +92,48 @@ func neutralDetail(code string) (string, bool) {
 		CodeUpstreamError, CodeUpstreamUnreachable, CodeUpstreamUnexpectedStatus, CodeUpstreamItemTooLarge,
 		CodeUpstreamIntegrityMismatch, CodeUpstreamDigestMissing, CodeUpstreamContentTypeBlocked, CodeTLSUntrusted,
 		CodeTooManyRedirects, CodeInsecureRedirect, CodeContentUnavailable:
-		return "The package could not be fetched right now.", true
+		return DetailNotFetched, true
 	case CodePopulateNotPermitted:
 		return "The caller may not bring new content into the cache of this repository.", true
 	}
 	return "", false
+}
+
+// statusDetail is the detail a forward reads for a problem of a status of 500 or more whose error does not vouch for its own text
+// ([WithForwardDetail]) and whose code has no neutral detail (bastion.md R-BAS-114, Q-BAS-386): such a text tells what failed inside
+// the installation (a replica, its database, its object store, an upstream's document), which a caller of a Bastion cannot act on.
+func statusDetail(status int) string {
+	switch status {
+	case http.StatusNotImplemented:
+		return DetailNotServedHere
+	case http.StatusBadGateway:
+		return DetailBadGateway
+	case http.StatusServiceUnavailable:
+		return DetailUnavailable
+	case http.StatusGatewayTimeout:
+		return DetailGatewayTimeout
+	}
+	return DetailInternal
+}
+
+// forwardDetail is the detail of e's problem for a forward of a Bastion (bastion.md R-BAS-099 rows 7 and 15, R-BAS-114): the
+// error's own forward detail where it was made, else the neutral detail of its code, else for a status of 500 or more that is no
+// rate limit the neutral detail of the status. neutral says that the detail was replaced by a text of no party, whose field errors
+// go with it.
+func forwardDetail(e *Error, status int, detail string) (text string, neutral bool) {
+	switch {
+	case e.Kind == Internal:
+		return detail, false
+	case e.ForwardDetail != "":
+		return e.ForwardDetail, false
+	}
+	if d, ok := neutralDetail(e.Code); ok {
+		return d, true
+	}
+	if status >= 500 && e.Kind != RateLimited {
+		return statusDetail(status), true
+	}
+	return detail, false
 }
 
 // Problem is the wire form: the RFC 9457 members plus the quader extensions
@@ -144,7 +197,7 @@ func ProblemOf(err error, requestID, instance string) (Problem, *Error) {
 	}
 	detail := e.Detail
 	if e.Kind == Internal {
-		detail = "The server failed to process the request."
+		detail = DetailInternal
 	}
 	return Problem{
 		Type:       ProblemTypePrefix + e.Code,
@@ -175,8 +228,18 @@ func ProblemFor(r *http.Request, err error, requestID string) (Problem, *Error) 
 	switch readerOf(ctx) {
 	case readerForward:
 		p.RequestID = ""
-		if d, ok := neutralDetail(e.Code); ok && e.Kind != Internal {
-			p.Detail = d
+		var neutral bool
+		if p.Detail, neutral = forwardDetail(e, p.Status, p.Detail); neutral {
+			p.Errors = nil
+		}
+		if len(e.installationOnly) > 0 {
+			ext := make(map[string]any, len(p.Extensions))
+			for k, v := range p.Extensions {
+				if !e.installationOnly[k] {
+					ext[k] = v
+				}
+			}
+			p.Extensions = ext
 		}
 		p.Type, p.Title = AboutBlank, http.StatusText(p.Status)
 	case readerBastion:

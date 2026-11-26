@@ -143,7 +143,8 @@ type VirtualPlan struct {
 // Unknown is the answer of a walk over the plan in which every member answered "not found": err,
 // the format's own not-found error, with the plan's NotFound as its message when there is one. The
 // kind, the code and so the status stay the format's (R-REPO-072); an error of another kind is
-// returned as it is.
+// returned as it is. A caller of a Bastion reads the format's own not-found sentence: the plan's
+// names a member it did not address (bastion.md R-BAS-114, Q-BAS-387).
 func (p *VirtualPlan) Unknown(err error) error {
 	if p == nil || p.NotFound == "" {
 		return err
@@ -152,7 +153,14 @@ func (p *VirtualPlan) Unknown(err error) error {
 	if !ok || e.Kind != errs.NotFound {
 		return err
 	}
-	return errs.E(e.Kind, e.Code, p.NotFound)
+	forward := e.ForwardDetail
+	if forward == "" {
+		forward = e.Detail
+	}
+	if forward == "" {
+		forward = errs.DetailNotFound
+	}
+	return errs.E(e.Kind, e.Code, p.NotFound, errs.WithForwardDetail(forward))
 }
 
 // ReadShape is how a caller's read of the packages of one repository is decided.

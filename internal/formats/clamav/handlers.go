@@ -82,6 +82,11 @@ func Rendered(err error) error {
 		c.Kind = errs.NotFound
 	case errs.RateLimited:
 		c.Kind = errs.Unavailable
+		if c.ForwardDetail == "" {
+			// The refusal of a limit names the caller's own wait, which a caller of a Bastion reads too; as a 503 it would read the
+			// neutral text of the status instead (bastion.md R-BAS-114, Q-BAS-386).
+			c.ForwardDetail = c.Detail
+		}
 	case errs.Unauthenticated:
 		c.Challenge = challenge
 	}

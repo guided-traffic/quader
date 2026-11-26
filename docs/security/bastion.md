@@ -436,7 +436,7 @@ probes' admission; a write costs the Bastion its request limit and nothing of th
 | A cap on the bytes between the two (built, E10) | The Bastion paces every body it reads, from the main installation and from the object store, to its registration's throughput, 200 MB/s by default with a quarter for anonymous callers, so a flood of distinct artifacts fills neither the transfer network nor the store's egress beyond it; a Bastion that was taken over ignores its own cap ([H-2289](#h-2289--a-bastion-that-was-taken-over-ignores-its-throughput-cap)); without Valkey each replica holds its share ([H-2360](#h-2360--without-valkey-the-throughputs-replicas-hold-their-shares-as-bastionreplicas-says)); the hourly volume refuses the next miss, not a running transfer ([H-2361](#h-2361--the-throughputs-hourly-volume-is-checked-when-a-miss-is-admitted-not-while-it-reads)) | R-BAS-097, Q-BAS-455 |
 | The Bastion reports usage and state | The main installation stores what a Bastion says it served; it is the Bastion's word ([H-2282](#h-2282--the-usage-and-the-state-a-bastion-reports-are-its-word)) | R-BAS-016, R-LIM-045 |
 | Egress addresses per registration (built, E13) | A Bastion token makes its forwarded client address count only from its own registration's addresses, no longer from any address of one list for all registrations ([who may speak as a Bastion](#who-may-speak-as-a-bastion)) | R-BAS-017, Q-BAS-334 |
-| Nothing names the main installation | No host, base URL, request ID, rule, place, internal repository name or version in a Bastion's answers; what remains tells that an installation stands behind it, not which ([H-2294](#h-2294--a-bastions-answers-still-tell-that-an-installation-stands-behind-it)) | R-BAS-099 |
+| Nothing names the main installation | No host, base URL, request ID, rule, place, internal repository name or version in a Bastion's answers; what remains tells that an installation stands behind it, not which ([H-2294](#h-2294--a-bastions-answers-still-tell-that-an-installation-stands-behind-it)). *Since W-35's P8 with E17:* the problems the main installation renders for a forward carry their forward texts, every 5xx of a forward the neutral text of its status, and a registry token names only its anonymity, expiry and grant ([H-2297](#h-2297--a-registry-tokens-readable-grant-tells-its-holder-which-of-the-names-it-asked-for-it-may-pull), [H-2322](#h-2322--an-ansible-galaxy-role-served-through-a-virtual-repository-names-the-member-in-its-id), [H-2323](#h-2323--a-4xx-text-written-later-reaches-a-forward-as-written-until-it-is-given-its-forward-text)) | R-BAS-099, R-BAS-114, R-BAS-115 |
 
 ## The public catalogue and the configuration on the wire
 
@@ -473,7 +473,7 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
 not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285, H-2289 to H-2297,
 H-2348 to H-2351, H-2354, H-2355 (H-2291, H-2348 and H-2349 are E13's, built; H-2281 to H-2283, H-2354 and H-2355 E8's, live); so are the gaps of the public catalogue's wire (W-35, interface version 8),
 H-2305 to H-2307, and of its builder (W-35's P6), H-2308 to H-2314; so are the gaps of the packages built since: H-2356 and H-2357
-(E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11);
+(E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11), H-2322 and H-2323 (W-35's P8 with E17);
 those of a Bastion's budgets are on [usage-and-limits.md](usage-and-limits.md#what-this-does-not-cover) (H-2284, H-2286 to H-2288). Numbers
 marked [derived] are calculated from the defaults, not measured.
 
@@ -861,14 +861,17 @@ and that a main installation stands behind it.
 
 ### H-2295 · Problem texts the main installation relays are inventoried only in part
 
-Stage: R-BAS-099 rows 7 and 15 (package E16, W-35's P8). Subject: the texts of the main installation's problems a forward relays. Closed
-by E16 for the remote engine: a forward reads "The package could not be fetched right now." for every code of the remote engine and its
-upstream clients, whatever text made it ([Q-BAS-426](../spec/bastion.md#q-bas-426--a-forward-reads-a-neutral-detail-for-every-failure-of-the-remote-engine-chosen-by-the-code-when-the-problem-is-rendered)),
-and kit check 19 holds every format's error shape to the rendering that applies it. Live: a text a format's handler writes under another
-code, or a handler that copies a remote's detail into an error of its own code, is passed on as written; whether one names an upstream's
-address or another internal repository is not verified text by text. A writer of errors that renders a request's problem with
-`errs.ProblemOf` instead of `errs.ProblemFor` would bypass the rule; none outside the formats exists today, and the formats are held by
-the kit. What closes it: P8's inventory, and the integration scan of R-BAS-099 for the texts its replays meet.
+Stage: R-BAS-099 rows 7 and 15 (package E16), R-BAS-114 (W-35's P8). Subject: the texts of the main installation's problems a forward
+relays. Closed by E16 for the remote engine: a forward reads "The package could not be fetched right now." for every code of the remote
+engine and its upstream clients, whatever text made it ([Q-BAS-426](../spec/bastion.md#q-bas-426--a-forward-reads-a-neutral-detail-for-every-failure-of-the-remote-engine-chosen-by-the-code-when-the-problem-is-rendered)),
+and kit check 19 holds every format's error shape to the rendering that applies it. Closed by P8 for the rest as it stood on
+2026-11-26: every text of the formats and the core on a forwarded route was read, the six that named a member, a page of the web
+interface or a finding carry their forward text (R-BAS-029's table of what a forward relays), and every status of 500 or more that is
+no rate limit reads the neutral text of its status unless its error vouches for its own, so a server's failure fails closed
+([Q-BAS-386](../spec/bastion.md#q-bas-386--every-5xx-of-a-forward-reads-the-neutral-text-of-its-status-unless-its-error-vouches-for-its-own)).
+What stays live is a 4xx text written after P8 ([H-2323](#h-2323--a-4xx-text-written-later-reaches-a-forward-as-written-until-it-is-given-its-forward-text)),
+and a writer of errors that renders a request's problem with `errs.ProblemOf` instead of `errs.ProblemFor`, which would bypass the rule;
+none outside the formats exists today, and the formats are held by the kit.
 
 ### H-2296 · An administrator's or an author's words in content are passed on
 
@@ -879,10 +882,30 @@ keeps the authors' links); what an installation keeps out of its public content 
 
 ### H-2297 · A registry token's readable grant tells its holder which of the names it asked for it may pull
 
-Stage: R-OCI-005's payload version 2, Q-BAS-339 (package E17). Subject: a caller with a registry token, about its own grant. Live today and
-after E17: the grant `g` stays readable, so a caller learns which of the repositories and images it asked for the token service granted,
-which a pull with the token tells as well. Every other claim is sealed by E17; until then the payload names the endpoint, the principal and
-the underlying token (R-BAS-099 row 8).
+Stage: R-OCI-005's payload version 2, Q-BAS-339, R-BAS-115 (package E17, built on 2026-11-26 with W-35's P8). Subject: a caller with a
+registry token, about its own grant. Live: the grant `g` stays readable, so a caller learns which of the repositories and images it asked
+for the token service granted, which a pull with the token tells as well; the Bastion reads it to bound what a token's answer opens
+(Q-BAS-246). Every other claim is sealed under a key of the ring and the key ID is opaque
+([Q-BAS-388](../spec/bastion.md#q-bas-388--the-sealed-part-of-a-registry-token-is-encrypted-under-a-key-of-the-ring-not-a-reference)); a
+token of version 1, every claim readable, issued before the upgrade, is accepted until it expires, at most `oci.token_lifetime` later.
+
+### H-2322 · An Ansible Galaxy role served through a virtual repository names the member in its ID
+
+Stage: R-ANS-022's roles of a virtual repository (`encodeRoleID` in
+[virtual_roles.go](../../internal/formats/ansible/virtual_roles.go)), R-BAS-099 (W-35's P8, found and not fixed). Subject: a caller of a
+Bastion that searches or reads roles through a virtual Ansible repository. Live wherever a virtual Ansible repository has a remote member
+that serves the v1 role API: the ID of every role in a search, a lookup and a version list, and the role URLs in them, are
+`<member key>-<upstream's id>`, so the answer names the key of a member the caller did not address. It is a body of `200`, not a problem,
+so R-BAS-114's rendering does not reach it. What would close it: an ID the virtual repository can map back without naming the member, for
+example a short keyed hash of the member's key; the virtual role code and its tests change, nothing else.
+
+### H-2323 · A 4xx text written later reaches a forward as written until it is given its forward text
+
+Stage: R-BAS-114 (W-35's P8). Subject: the problems of a status below 500 that the main installation's formats and core write on the
+routes a Bastion forwards. Live by design: a 4xx keeps its own text for a caller of a Bastion, because the client needs it (the package
+and version that were not found or refused), so a text added after P8 that names a member, a page or an identifier of the installation
+reaches the internet until it is given `errs.WithForwardDetail`. What holds it: the replays' scan of R-BAS-099 row 10 for the texts a
+replay meets, and the review of a new text against R-BAS-029's table; no test fails for a text no replay reaches.
 
 ### H-2350 · Anyone can mint an anonymous registry token of a Bastion
 

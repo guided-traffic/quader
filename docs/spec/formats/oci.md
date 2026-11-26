@@ -263,8 +263,14 @@ claims and rules of its own (R-OCI-037); every rule of this requirement holds fo
   [Q-BAS-339](../bastion.md#q-bas-339--a-registry-token-reads-only-its-anonymity-its-expiry-and-its-grant)):* payload version 2,
   `2:<opaque key id>:<readable claims>:<sealed claims>`, keeps `a`, `exp` and `g` readable and seals every other claim (the endpoint, the
   principal, the underlying token's ID, type and hash) under a key derived from the same ring, so a caller, and a Bastion it passes
-  through, reads nothing of the main installation beyond its own grant and expiry; the verifier reads versions 1 and 2. *Today, until
-  E17 of [developer/bastion-limits.md](../../developer/bastion-limits.md) lands:* version 1, every claim readable.
+  through, reads nothing of the main installation beyond its own grant and expiry; the verifier reads versions 1 and 2. *Built on
+  2026-11-26 by E17 of [developer/bastion-limits.md](../../developer/bastion-limits.md) with W-35's P8 ([bastion.md](../bastion.md)
+  R-BAS-115):* the token service issues version 2 alone. The readable claims are `a`, `exp`, `g` and, on a scan or blob token, `s`; the
+  opaque key ID is the first 8 bytes, in hexadecimal, of an HMAC of the ring key's ID under its MAC key; the sealed part is a random nonce
+  of 12 bytes and the AES-256-GCM ciphertext of every other claim under a key derived with the info `quader registry token seal v2`, with
+  the payload before it as additional data ([Q-BAS-388](../bastion.md#q-bas-388--the-sealed-part-of-a-registry-token-is-encrypted-under-a-key-of-the-ring-not-a-reference),
+  [Q-BAS-389](../bastion.md#q-bas-389--a-system-tokens-subject-stays-readable-and-version-1-is-read-until-its-tokens-expire)). A token of
+  version 1 issued before is verified until it expires.
 - **Lifetime.** `oci.token_lifetime` (# default (proposed) `300s`, range 60 s to 3600 s), never beyond the expiry of the token
   that authenticated the request. `expires_in` says it.
 - **Verification** happens in the authentication stage (R-AUTH-001) and never touches PostgreSQL on its own: the MAC with the

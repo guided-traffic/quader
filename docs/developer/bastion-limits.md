@@ -4,7 +4,7 @@ Status: specified on 2026-11-26 (W-34; the owner's answers to the working paper 
 and E5 are **built** (the cache bounded at every commit and the bytes counted, R-BAS-089, R-BAS-090; the format's cap of the wait and the
 figures that let one normal command through, R-BAS-091, R-BAS-092, interface version 7), and so are E16, E14a (the anonymous token and
 the anonymous documents of R-BAS-094), E13 (the addresses a Bastion connects from), E7 (the shared wire, interface version 8, with
-W-35's P5), E15 (writes refused at the Bastion in the five error shapes, R-BAS-095), E9a (the configuration at the Bastion, the flood protection's figures from it, the anonymous ceiling), E10 (the throughput, R-BAS-097), E11 (the cache protects what was served twice, R-BAS-098) and E8 (the main installation's side); E4 is measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this
+W-35's P5), E15 (writes refused at the Bastion in the five error shapes, R-BAS-095), E9a (the configuration at the Bastion, the flood protection's figures from it, the anonymous ceiling), E10 (the throughput, R-BAS-097), E11 (the cache protects what was served twice, R-BAS-098) E8 (the main installation's side) and E17 (the registry token's payload version 2, with W-35's P8, R-BAS-115); E4 is measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this
 page and the specification. Every other package is **not built**. The requirements are [bastion.md](../spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation)
 R-BAS-093 to R-BAS-099 and [its wire](../spec/bastion.md#the-interface-version-8-the-shared-wire),
 [usage-and-limits.md](../spec/usage-and-limits.md#a-bastion-as-a-place) R-LIM-043 to R-LIM-046 and
@@ -57,7 +57,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 | 3 | E15 | writes refused at the Bastion | E7 | built |
 | 4 | E9b | budgets on what the Bastion serves | E9a, E8 | not built |
 | 4 | E11 | the cache protects what was served twice | E1 (may take any free place from wave 2 on) | built |
-| 4 | E17 | the registry token's payload version 2 | E7 | not built |
+| 4 | E17 | the registry token's payload version 2 | E7 | built (with W-35's P8) |
 | 4 | E12 | the screens | E8, E10, E13 | not built |
 
 ### E4 · The measurement, run once
@@ -334,8 +334,14 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 - **Follows** E7.
 - **Tests**: unit; the existing docker and containerd replays pass unchanged.
 - **Identifiers**: Q-BAS-339, H-2297.
+- *Built on 2026-11-26, as one package with W-35's P8* (R-BAS-114, R-BAS-115). As planned, and beyond it: the sealed part is AES-256-GCM
+  under a key derived with the info `quader registry token seal v2`, the opaque key ID an HMAC of the ring key's ID under its MAC key
+  (Q-BAS-388); a scan or blob token keeps `s` readable and the verifier reads version 1 until its tokens expire (Q-BAS-389); the
+  replays' scan of `test/integration/bastion` decodes every registry token a Bastion relays. Tests:
+  `TestR_BAS_115_ARegistryTokenReadsOnlyItsAnonymityExpiryAndGrant` (unit, milliseconds) and the scan (about 0 s more). The identifiers
+  of the joint package are W-35's (R-BAS-114, R-BAS-115, Q-BAS-385 to Q-BAS-389, H-2322, H-2323, ADR-304); H-2297 is updated.
 
-H-2298 and H-2299 are spare.
+H-2298 and H-2299 are spare and stay unused.
 
 ## What every package follows
 

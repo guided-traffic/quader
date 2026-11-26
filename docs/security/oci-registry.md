@@ -39,8 +39,10 @@ name a realm of its choosing for itself; the documentation calls that mode devel
 
 ## The registry token
 
-A registry token is `qdr_rgt_` + base64url(`1:<key id>:<claims as JSON>`) + `.` + base64url(HMAC-SHA-256(key, the part before the dot)),
-at most 4 KiB ([token.go](../../internal/auth/registrytoken/token.go)). The claims are:
+A registry token is `qdr_rgt_` + base64url(`2:<opaque key id>:<readable claims as JSON>:<sealed claims>`) + `.` +
+base64url(HMAC-SHA-256(key, the part before the dot)), at most 4 KiB ([token.go](../../internal/auth/registrytoken/token.go)); the
+readable claims are the anonymity, the expiry and the grant, every other claim is sealed (see [Keys](#keys)). A token of version 1,
+`1:<key id>:<claims as JSON>` with every claim readable, issued before version 2, is verified until it expires. The claims are:
 
 | Claim | Content | Why |
 |---|---|---|
@@ -65,6 +67,13 @@ The MAC key is derived with HKDF-SHA-256 from each key of the stored-secret key 
 (`secrets.KeyRing.Derive` in [keyring.go](../../internal/secrets/keyring.go), `NewSigner` in [token.go](../../internal/auth/registrytoken/token.go)).
 The key files themselves never leave the `secrets` package, and no other purpose shares the derived key (the fingerprints use `quader
 fingerprint v1`). The active key's derivation signs; every key's derivation verifies.
+
+Since payload version 2 ([bastion.md](../spec/bastion.md) R-BAS-115, Q-BAS-388) a second key is derived from each key of the ring with
+the info `quader registry token seal v2`: it seals, with AES-256-GCM and a random nonce, every claim but the anonymity `a`, the expiry
+`exp`, the grant `g` and a system token's subject `s`, so a caller, and a Bastion its token passes through, reads neither the endpoint,
+the principal nor the Quader token behind it. The token names its key by an opaque ID, an HMAC of the ring key's ID under its MAC key, so
+the ring's key IDs do not reach a caller either. Whoever holds the ring reads every claim, as before. The grant stays readable
+([H-2297](bastion.md#h-2297--a-registry-tokens-readable-grant-tells-its-holder-which-of-the-names-it-asked-for-it-may-pull)).
 
 A rotation of the ring (R-ARCH-021) therefore needs nothing of its own: during step 1 (the new key in every ring, not active) nothing
 changes; after step 2 (the new key active) new tokens name the new key and old ones verify until they expire; after step 4 (the old key
