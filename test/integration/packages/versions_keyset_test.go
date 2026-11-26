@@ -77,7 +77,7 @@ func TestR_API_010_APageOfVersionsReadsNoVersionPastItsLimit(t *testing.T) {
 		"any_file": "'{deb}'", "document": "'{oci}'", "withheld": "'{}'", "formats": "'{npm}'", "has_repos": "true", "repos": "'{" + repo + "}'",
 		"name_prefix": "''", "exact_name": "''", "exact_format": "''", "whole": "'{" + repo + "}'", "rows": "'{}'", "q": "''",
 		"q_ids": "'{}'", "keyword": "''", "keyword_ids": "'{}'", "has_from": "false", "created_from": "''", "has_to": "false",
-		"created_to": "''", "has_after": "false", "sort": "'name'", "descending": "false", "after_time": "''", "after_name": "''",
+		"created_to": "''", "deprecated": "false", "deprecated_ids": "'{}'", "has_after": "false", "sort": "'name'", "descending": "false", "after_time": "''", "after_name": "''",
 		"after_format": "''", "max_rows": "51",
 	})
 	if loops := e.st.SubPlanLoops(list); loops > 51 {
