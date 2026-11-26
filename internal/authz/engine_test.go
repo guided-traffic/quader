@@ -127,6 +127,36 @@ func TestR_AUTHZ_028_IndexFollowsTheChangeLog(t *testing.T) {
 		waitFor(t, "the flushed build", func() bool { return e.Epoch() == 2 })
 	})
 
+	t.Run("R-AUTHZ-028 an index ahead of the poll is built once, not on every look", func(t *testing.T) {
+		f := newFixture().repo("npm-internal", "local", "npm", "")
+		f.s.Label = label(1, 1, 1000)
+		e, src, ch := startedEngine(t, f, nil)
+		builds := func() int { src.mu.Lock(); defer src.mu.Unlock(); return src.builds }
+		// The replica's own commit raises authz to 2 and announces it at once; the poll still holds 1.
+		ahead := *f
+		ahead.s.Label = label(2, 1, 1000)
+		src.set(ahead.s)
+		b0 := builds()
+		ch.apply(AreaAuthz)
+		waitFor(t, "the message build", func() bool { return e.Epoch() == 2 })
+		time.Sleep(10 * watchInterval)
+		if n := builds() - b0; n != 1 {
+			t.Fatalf("%d builds while the index was ahead of the poll for %s, want the message's one", n, 10*watchInterval)
+		}
+		// The poll catches up: the index is confirmed without a build.
+		ch.poll(ahead.s.Label)
+		time.Sleep(4 * watchInterval)
+		if n := builds() - b0; n != 1 || !e.confirmed(e.Index()) {
+			t.Fatalf("after the poll caught up: %d builds, confirmed %v", n, e.confirmed(e.Index()))
+		}
+		// The same epoch with another changed_at is a reused epoch (a failover lost the index's commit): the poll's build runs.
+		reused := *f
+		reused.s.Label = label(2, 1, 2000)
+		src.set(reused.s)
+		ch.poll(reused.s.Label)
+		waitFor(t, "the build of the reused epoch", func() bool { return e.Index().label.Equal(reused.s.Label) })
+	})
+
 	t.Run("R-AUTHZ-028 a reused epoch with another changed_at is not the same label", func(t *testing.T) {
 		a, b := label(7, 1, 1000), label(7, 1, 1001)
 		if a.Equal(b) || !a.Equal(a) {

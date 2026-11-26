@@ -2817,7 +2817,12 @@ table and `LISTEN/NOTIFY` on a dedicated connection per replica; both are gone (
   and the index depends on both areas. The payload names the changed object's type and ID, never a
   grant. A rollback leaves neither an epoch nor a message.
 - **When a replica rebuilds.**
-  - The change-log poll applies an epoch of `authz` or `repo_config` higher than the index's.
+  - The change-log poll applies an epoch of `authz` or `repo_config` higher than the index's. An index *ahead* of the poll is not
+    rebuilt for it: after this replica's own commit (or a message) its build may read epochs the poll has not applied yet, and until
+    the poll catches up a build would read the same epochs again, or lower ones, which are never installed. Such an index is still
+    confirmed only by its own build's start until the poll applies its label (below), so the skipped builds cannot let a decision rest
+    on an index older than confirmation allows: while the poll fails, its staleness grows as any other index's. An epoch equal to the
+    index's with another `changed_at` is a reused epoch (below) and is built.
   - The poll flushes either area. Causes: a gap in the log, an unknown payload version, or an epoch
     that went backwards after a failover or a restore (R-ARCH-018,
     [ha-and-helm.md](ha-and-helm.md) R-HA-004). After a flush the next build is installed whatever
@@ -3056,6 +3061,9 @@ reaches replicas A and B directly where a criterion names them):
   request on B is answered `authz_stale`.
 - Start-up with `authz.cache.max_staleness: 2s` and `cluster.epoch_poll_interval: 1s` exits
   non-zero and names `authz.cache.max_staleness`.
+- An index built from a message ahead of the poll is built once while the poll lags (ten looks of the watch loop), is confirmed
+  without a build when the poll catches up, and is built again when the poll applies its epoch with another `changed_at`
+  (`TestR_AUTHZ_028_IndexFollowsTheChangeLog`, unit, the engine's fake store).
 
 ### R-AUTHZ-032 · Seeing one's own permission change on any replica
 Priority: **MVP** · Covers: quader-only

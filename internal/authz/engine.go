@@ -319,8 +319,8 @@ func (e *Engine) buildOnce(trigger string, read Label) {
 	defer e.building.Store(false)
 	switch {
 	case e.flush.Load():
-	case trigger == TriggerPoll && e.labelMatchesChanges(e.cur.Load()):
-		return // a request for a state that an earlier build already installed
+	case trigger == TriggerPoll && !e.behindChanges(e.cur.Load()):
+		return // a request for a state that an earlier build already installed, or one the index is ahead of
 	case trigger == TriggerMessage && e.cur.Load() != nil && read.Equal(e.cur.Load().label):
 		return // the index is the state the database had when the message arrived
 	}
@@ -399,6 +399,23 @@ func (e *Engine) labelMatchesChanges(idx *Index) bool {
 	return true
 }
 
+// behindChanges reports whether the poll applied a state the index does not hold, for the areas this replica follows: an epoch
+// above the index's, or the index's epoch with another changed_at (a reused epoch, R-AUTHZ-028). An index ahead of the poll, built
+// from a message after this replica's own commit, is not behind: a build would read the same epochs again (or lower ones, which install
+// refuses) until the poll catches up. Confirmation stays labelMatchesChanges: an index ahead is confirmed only by its own build's start
+// until the poll applies its label, so skipping these builds never lets a decision rest on an index older than confirmation allows.
+func (e *Engine) behindChanges(idx *Index) bool {
+	if idx == nil {
+		return true
+	}
+	l, ak, rk := e.appliedLabel()
+	behind := func(applied, held int64, appliedAt, heldAt time.Time) bool {
+		return applied > held || (applied == held && !appliedAt.Equal(heldAt))
+	}
+	return ak && behind(l.AuthzEpoch, idx.label.AuthzEpoch, l.AuthzAt, idx.label.AuthzAt) ||
+		rk && behind(l.RepoEpoch, idx.label.RepoEpoch, l.RepoAt, idx.label.RepoAt)
+}
+
 // confirmed implements "Confirmation and staleness" of R-AUTHZ-028: the index is
 // confirmed at the start of its own build, or at the start of the last poll that
 // found the epochs and their changed_at equal to its label. A replica whose
@@ -427,8 +444,8 @@ func (e *Engine) stalenessSeconds() float64 {
 }
 
 // watchLoop compares the epochs the poll applied with the index and requests a
-// build when they differ, and starts the safety rebuild (R-AUTHZ-028 "When a
-// replica rebuilds"). It reads memory only.
+// build when the index is behind them, and starts the safety rebuild (R-AUTHZ-028
+// "When a replica rebuilds"). It reads memory only.
 func (e *Engine) watchLoop() {
 	defer e.wg.Done()
 	t := time.NewTicker(watchInterval)
@@ -446,7 +463,7 @@ func (e *Engine) watchLoop() {
 			continue
 		}
 		switch {
-		case !e.labelMatchesChanges(idx):
+		case e.behindChanges(idx):
 			e.requestBuild(TriggerPoll)
 		case time.Since(idx.started) > jittered:
 			e.requestBuild(TriggerSafety)
