@@ -332,16 +332,19 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | F-vulnimage · The area `vulnimage` is red on main: after a client's pull of an image through a remote the version report answers "The version does not exist." (found by W35-P3 at 120d07ace) | `TestR_VULN_050_R_MAL_035_ADownloadAheadAndAClientsFillAreScannedAtOnceWithoutASchedule`: the first red commit by bisect, then the product or the test repaired, whichever is wrong; the areas `vulnimage`, `ociremote` and `proxy` whole; Q-OPS-453 to Q-OPS-455, H-2346, H-2347 if needed | landed and pushed on 2026-11-26 at 16:43 |
 | W34-E16 · Nothing of the main installation in a Bastion's answers (W-34, the owner's rule; the plan's E16; no change of the interface) | R-BAS-099's rows 1 to 7, 9, 10 and 15: the write refusal's text, the Bastion's own texts, the problem type `about:blank`, the policy names, an allow-list of a forward's headers, a `Location` only when relative or on the Bastion's host, the main installation's refusals without its request ID, link and place, the challenges, "no main host in any byte" in every format's replay, the relayed upstream text; Q-BAS-425 to Q-BAS-429, H-2294 to H-2296; brief `.dev/briefs/e16.md` | landed and pushed on 2026-11-26 at 15:06 |
 | W34-E4 · Measurement: what one normal command of each format's client costs through a cold and a warm Bastion, the overflow attack on a cache of 2 GiB, the main installation's latency per check, what each client prints for a refusal (W-34, the plan's E4; a measurement, no product code) | numbers on `docs/developer/bastion.md`, scripts under `hack/bastion-measure/`; feeds E8's profile figures and E9a's ceiling; brief `.dev/briefs/e4.md` | landed and pushed on 2026-11-26 at 16:43 |
-| W35-P1 · Measurement: the size of a Bastion's public catalogue and what its sync costs (W-35, the plan's P1; a measurement, no product code) | counts and bytes per document kind and format, the dedupe ratio, the builder's time, the sync's bytes; sets the defaults of the catalogue's share and the reconciliation interval; scripts under `hack/bastion-catalogue-measure/`; brief `.dev/briefs/p1.md` | in work since 2026-11-26, 13:20 |
-| W35-P2 · The package screens split into read-only views and acts (W-35, the owner's g3; the plan's P2; web only, no visible change) | R-UI-223: the reading parts of the package, version, list, documentation and vulnerability screens of every format take what they show through inputs and abstract reads and import no session, no API client, no dialog and no act, held by a lint rule; renders before and after compared; Q-UI-1400 to Q-UI-1409; base 0cc459377 (above W35-P3 and W35-P4); brief `.dev/briefs/p2.md` | built at 14:44, stacked above W34-E4, waits for its gate run (1,024 px and German renders are the gate run's) |
-| W34-E13 · The addresses a Bastion connects from belong to its registration (W-34, the owner's k12 = a; the plan's E13, with the card's field of R-UI-243 so that the removed configuration key has its place on a screen) | migration 00145; recognition of a forward per registration; `bastions.trusted_proxies` removed; the API member; the card's field with the warning of Q-UI-1482; Q-BAS-430 to Q-BAS-434, Q-UI-1483 to Q-UI-1485, H-2291, H-2348, H-2349; brief `.dev/briefs/e13.md` | built at 14:50, stacked above W35-P2, waits for its gate run; the owner's Flux values set the removed key (the change is prepared in his checkout, to push when the release is out) |
+| W35-P1 · Measurement: the size of a Bastion's public catalogue and what its sync costs (W-35, the plan's P1; a measurement, no product code) | counts and bytes per document kind and format, the dedupe ratio, the builder's time, the sync's bytes; sets the defaults of the catalogue's share and the reconciliation interval; scripts under `hack/bastion-catalogue-measure/`; brief `.dev/briefs/p1.md` | landed and pushed on 2026-11-26 at 16:43 |
+| W35-P2 · The package screens split into read-only views and acts (W-35, the owner's g3; the plan's P2; web only, no visible change) | R-UI-223: the reading parts of the package, version, list, documentation and vulnerability screens of every format take what they show through inputs and abstract reads and import no session, no API client, no dialog and no act, held by a lint rule; renders before and after compared; Q-UI-1400 to Q-UI-1409; base 0cc459377 (above W35-P3 and W35-P4); brief `.dev/briefs/p2.md` | landed and pushed on 2026-11-26 at 16:43 |
+| W34-E13 · The addresses a Bastion connects from belong to its registration (W-34, the owner's k12 = a; the plan's E13, with the card's field of R-UI-243 so that the removed configuration key has its place on a screen) | migration 00145; recognition of a forward per registration; `bastions.trusted_proxies` removed; the API member; the card's field with the warning of Q-UI-1482; Q-BAS-430 to Q-BAS-434, Q-UI-1483 to Q-UI-1485, H-2291, H-2348, H-2349; brief `.dev/briefs/e13.md` | landed and pushed on 2026-11-26 at 16:43 |
 | W34-E14a · Anonymous requests a Bastion answers without the main installation (W-34, the owner's k2 = c, items 2 and 3; the plan's E14a; no change of the interface) | R-BAS-094's rows of the anonymous registry token (answered by the Bastion itself, Q-BAS-335) and of anonymous copies (kept for the metadata period without a conditional request per use); Q-BAS-435 to Q-BAS-439, H-2292, H-2350, H-2351; base 7a70f0cd4 (above W34-E16); brief `.dev/briefs/e14a.md` | landed and pushed on 2026-11-26 at 16:43 |
-| W34-E7 with W35-P5 · The shared wire between Bastion and main installation, interface version 8 (W-34's E7 and W-35's P5 in one raise; started before W35-P1's numbers, whose bounds are constants and no shape of the wire) | the handshake's `configuration`, `subject.limits` in the check's answer, `usage` and `status` on the downloads intake, the format facts `errorShape` and `readWithBody`, the Bastion's own codes renamed (Q-BAS-321), the probe headers removed, the contact's two headers, the readers of registry-token payload 2, the catalogue's routes, types and path grammar, `gui` and `docs`; R-BAS-101 to R-BAS-103, Q-BAS-345 to Q-BAS-354, H-2280, H-2281, H-2305 to H-2307, ADR-303; base 4e8b4265b; brief `.dev/briefs/e7p5.md` | built at 15:40, stacked above W35-P1, waits for its gate run |
-| B-1126 · Five small findings of 2026-11-26, one commit each (the batch, started while every other package waits for the shared wire) | a Debian package of more than 10,000 files gets no contents (the job fails on `deb_contents_files_check`), with the same bound read in every format; a Bastion's cache whose documents' share leaves no room for an artifact is refused at start (H-2352); an image is scanned after its layers are there, not a delay after its manifest (Q-VULN-282, Q-VULN-283); a replica no longer rebuilds its grant index every 50 ms while ahead of its poll (R-AUTHZ-028); the Bastion's revocation test waits for its state; base b54399183; brief `.dev/briefs/batch-a.md` | built at 15:54, stacked above W34-E7, waits for its gate run |
+| W34-E7 with W35-P5 · The shared wire between Bastion and main installation, interface version 8 (W-34's E7 and W-35's P5 in one raise; started before W35-P1's numbers, whose bounds are constants and no shape of the wire) | the handshake's `configuration`, `subject.limits` in the check's answer, `usage` and `status` on the downloads intake, the format facts `errorShape` and `readWithBody`, the Bastion's own codes renamed (Q-BAS-321), the probe headers removed, the contact's two headers, the readers of registry-token payload 2, the catalogue's routes, types and path grammar, `gui` and `docs`; R-BAS-101 to R-BAS-103, Q-BAS-345 to Q-BAS-354, H-2280, H-2281, H-2305 to H-2307, ADR-303; base 4e8b4265b; brief `.dev/briefs/e7p5.md` | landed and pushed on 2026-11-26 at 17:47 |
+| B-1126 · Five small findings of 2026-11-26, one commit each (the batch, started while every other package waits for the shared wire) | a Debian package of more than 10,000 files gets no contents (the job fails on `deb_contents_files_check`), with the same bound read in every format; a Bastion's cache whose documents' share leaves no room for an artifact is refused at start (H-2352); an image is scanned after its layers are there, not a delay after its manifest (Q-VULN-282, Q-VULN-283); a replica no longer rebuilds its grant index every 50 ms while ahead of its poll (R-AUTHZ-028); the Bastion's revocation test waits for its state; base b54399183; brief `.dev/briefs/batch-a.md` | landed and pushed on 2026-11-26 at 17:47 |
 | W34-E8 · A Bastion's limits and configuration at the main installation (W-34, the owner's k1 to k12; the plan's E8) | the configuration on the registration and its revision, the place `bastion` and its rules, the two built-in Bastion profiles from W34-E4's measurement, presets, `bastion_status`, the API split by permission, the handshake's configuration from a snapshot (the interim configuration removed), the subject's limits in the check, usage and status taken in; Q-BAS-323 to Q-BAS-325, Q-BAS-440 to Q-BAS-444, Q-LIM-300 to Q-LIM-304, Q-LIM-310 to Q-LIM-314, H-2282 to H-2284, H-2354, H-2355; migration 00146; base b270b49e2; brief `.dev/briefs/e8.md` | in work since 2026-11-26, 15:39 |
-| W34-E9a · A Bastion applies its configuration, protects itself from floods and bounds what all anonymous callers together cause at the main installation (W-34, the owner's k1 and k2 = c; the plan's E9a) | the configuration applied whole, a stored and a built-in one that fails closed, the slots resized, the anonymous ceiling counting the background refresh, the flood class `gui`, the edge's own keys in the chart; defaults from W34-E4's measurement; Q-BAS-326, Q-BAS-327, Q-BAS-445 to Q-BAS-449, Q-LIM-307, H-2285, H-2356, H-2357; base b270b49e2; brief `.dev/briefs/e9a.md` | in work since 2026-11-26, 15:39 |
+| W34-E9a · A Bastion applies its configuration, protects itself from floods and bounds what all anonymous callers together cause at the main installation (W-34, the owner's k1 and k2 = c; the plan's E9a) | the configuration applied whole, a stored and a built-in one that fails closed, the slots resized, the anonymous ceiling counting the background refresh, the flood class `gui`, the edge's own keys in the chart; defaults from W34-E4's measurement; Q-BAS-326, Q-BAS-327, Q-BAS-445 to Q-BAS-449, Q-LIM-307, H-2285, H-2356, H-2357; base b270b49e2; brief `.dev/briefs/e9a.md` | built at 16:46, stacked above W34-E15, waits for its gate run |
 | W35-P6 · The public catalogue's builder at the main installation (W-35, the owner's g1 to g13; the plan's P6, with W35-P1's findings) | the documents per registration whose GUI is on, stripped of internal identities, naming nothing of the main installation, without times of building or checking (state documents instead), compressed, reconciled by fingerprints; the worker job, the routes served; R-BAS-104 to R-BAS-108, Q-BAS-355 to Q-BAS-369, H-2308 to H-2314; migration 00147 (00148 if needed); base b270b49e2; brief `.dev/briefs/p6.md` | in work since 2026-11-26, 15:39 |
-| W34-E15 · A Bastion refuses every write itself, in the error shape each format's client reads (W-34, the owner's k3 and his rule that a Bastion has no writing API; the plan's E15) | the probe and its admission deleted; `read_only` in the five shapes of Q-BAS-337 without asking the main installation; the kit's duty that a format renders its shape; Galaxy's refusals in its own `errors` list and one run of ansible-galaxy 2.17 against a 429 in that shape (exit 1, not 250); Q-BAS-336, Q-BAS-337, Q-BAS-450 to Q-BAS-454, H-2293, H-2358, H-2359; base 40146348e; brief `.dev/briefs/e15.md` | in work since 2026-11-26, 15:54 |
+| W34-E15 · A Bastion refuses every write itself, in the error shape each format's client reads (W-34, the owner's k3 and his rule that a Bastion has no writing API; the plan's E15) | the probe and its admission deleted; `read_only` in the five shapes of Q-BAS-337 without asking the main installation; the kit's duty that a format renders its shape; Galaxy's refusals in its own `errors` list and one run of ansible-galaxy 2.17 against a 429 in that shape (exit 1, not 250); Q-BAS-336, Q-BAS-337, Q-BAS-450 to Q-BAS-454, H-2293, H-2358, H-2359; base 40146348e; brief `.dev/briefs/e15.md` | landed and pushed on 2026-11-26 at 17:47 |
+| W34-E10 · The throughput between the main installation and a Bastion is capped (W-34, the owner's wish of 2026-11-26 and his k8; the plan's E10) | one pacing reader on every body the Bastion reads, two buckets (the total and the anonymous share), shared through Valkey, the catalogue below client misses; default decided by me against R-BAS-097's "unlimited": 200 MB/s with an anonymous share of 25 % (Q-BAS-455, from W34-E4's measurement); Q-BAS-331, Q-BAS-332, Q-BAS-455 to Q-BAS-459, H-2289, H-2360, H-2361; base 56f565e9a; brief `.dev/briefs/e10.md` | in work since 2026-11-26, 16:48 |
+| W34-E11 · A Bastion's cache protects what was served twice from a flood of distinct artifacts (W-34, the owner's case and his k9; the plan's E11) | the protected marker and the sweep's order for the volume, the bucket and the encrypted layout, the protected share bounded; the flood of W34-E4 run again with a warm `npm ci` beside it, before and after; Q-BAS-333, Q-BAS-460 to Q-BAS-464, H-2290, H-2362, H-2363; base 56f565e9a; brief `.dev/briefs/e11.md` | in work since 2026-11-26, 16:48 |
+| CI-layout · The job UI layout checks fits its time again, by rendering the screens in parallel shards (found at 17:00: cancelled by its timeout of 75 minutes in every run since 08:00) | a matrix of shards balanced by measured time, a new screen in a shard without a list, the fixtures' and dialog states' checks once, `make ui-renders` with a shard argument, the docs' times and cost; brief `.dev/briefs/ci-layout.md` | in work since 2026-11-26, 17:06 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1096,6 +1099,25 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **Read on 2026-11-26 from 17:00 (the pipeline window): the runs of the day's pushes, the nightly, and the owner's installation
+  after v0.154.0.** (1) `UI layout checks` was cancelled by its timeout of 75 minutes in every Test and Release run since 08:00
+  (seven runs); its duration grew from 60 minutes on 2026-11-25 19:00 to 74 on 2026-11-26 07:29 with every landed UI package; the render
+  pass never finished, so no layout finding of the day's runs was seen in CI (the landings rendered their screens locally). Builder
+  CI-layout since 17:06: the render pass in parallel shards that stay within their time as screens are added, not a larger timeout. (2)
+  `integration (shard b)` red in every run since W31 (12:16): `TestR_REPO_077_AnAccountTheConfigurationDeclares` of the area `upstream`
+  wrote a finished download by SQL without the columns `unit` and `parts` that W31's migration 00140 made required; my W31 gate run did
+  not list the area. Repaired in a commit of its own on the stack (the area green locally), lands with the next landing. (3) The
+  nightly of 10:50 (UTC): `e2e (drain-roles)` held every command and transfer (0 failures) but the p99 of npm documents during the
+  evictions was 269 ms against twice the warm-up's 115 ms (R-HA-059, a tail-latency gate of the nightly: a finding, not a blocker; the
+  run before passed); `Vulnerability scanning performance` V-4, the evaluation added to a publish's commit, p99 5.177 ms against its
+  target of 5.000 ms (median 1.45 ms; a finding). Both for the batch of findings, with a recurrence read first. (4) The owner's
+  installation: v0.154.0 rolled out at 17:04 (both releases upgraded, migration to schema 145, no error of the main installation in ten
+  minutes); the values had lost `bastions.trusted_proxies` at 16:45, before the release that refuses it. His Bastion is refused at every
+  handshake (`401`, the main installation sees no credential): the database `quader2` holds no registration of a Bastion and no contact,
+  since the installation was started afresh on 2026-11-24; his act, open since then: register the Bastion under Admin area › Bastions,
+  issue its token and put it into `apps/quader/bastion/s-quader-bastion-token.unenc.yml` with the `sops` command of the README; I do not
+  sign in there.
+
 - **Closed on 2026-11-26, 16:43: the two tests of the area `vulnimage` that failed on a loaded machine wait for what the
   product delivers in the background; no regression of the product, no commit made them red.** Found by W35-P3 at
   120d07ace and in my gate run after it. (1) `TestR_VULN_050_R_MAL_035…` asked for the version report of an image
@@ -1355,6 +1377,185 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 17:47, by W34-E15 (W-34, the owner's k3 and his rule that a Bastion has no writing API; R-BAS-095
+  built, R-BAS-014 and Q-BAS-351 superseded; Q-BAS-450 to Q-BAS-453; gaps H-2293 live, H-2358, H-2359; no
+  migration, the interface stays at 8): a Bastion refuses every upload itself, without asking the main installation,
+  and answers each client in the error format it reads.** A method other than GET, HEAD and OPTIONS on a route that
+  is not a declared read with a body gets `403 read_only` with R-BAS-099's sentence, after the request limit and
+  before the body or the credential is read (Q-BAS-452); the anonymous `POST /v2/_token` is answered before it. The
+  probe is gone with its replay cache, its kind of the main installation's request metric and its admission at the
+  main installation; the main installation's own refusal of a forwarded write stays as a backstop. Every answer of
+  the Bastion's own (the write refusal, the guard's 429, busy, unavailable, 502 and 504, the 401) goes through one
+  renderer in the five shapes (Q-BAS-450), and the format contract's kit holds every format's refusal to its
+  declared shape. Ansible Galaxy answers a rate limit 503 (Q-BAS-451, its own entry above, with the measured run of
+  ansible-galaxy 2.17.14: a 429 crashed it with exit 250, a 503 gave a readable message and exit 1). A write with an
+  unreadable credential gets 403 and counts no failed authentication. The landing: one commit picked above B-1126;
+  the same run as W34-E7's (two entries below). Tests: the write refused in the shape (0.03 s, a 1 MiB body nobody reads), each shape renders, the kit's
+  duty, the area's write test smaller (one Bastion, no loop of 1,000 writes). Open: a 502 on a cached Galaxy read
+  crashes ansible-galaxy the same way (H-2358; the builder's proposal: gateway failures 503 on Galaxy's routes
+  too); before its first handshake a replica has no format table and answers in problem details (H-2359; keep the
+  last table with the stored configuration). Not verified: the journeys, corrected by reading
+  (`ansible_limits_test.go` now expects 503: to run once in the next Ansible set); ansible-core 2.21 (same code by
+  its source).
+
+- **Closed on 2026-11-26, 17:47, by B-1126 (five small findings of the day, one commit each; Q-VULN-282, Q-VULN-283; R-DEB-039,
+  R-BAS-031, R-AUTHZ-028, R-VULN-034, R-VULN-042, R-VULN-050 and R-MAL-035 amended; no migration).** (1) A Debian
+  package whose data archive holds nothing but directories got no contents and failed the reading at every retry:
+  the reader kept no list, wrote JSON `null`, and the table's check refused it. My statement to the owner at 15:15
+  that a package of more than 10,000 files gets no contents was wrong: the builder read a package of 10,050 files
+  fine (10,000 kept, every entry counted); the render seed's failing package is one of directories only. The writer
+  always writes an array; R-DEB-039 says what a package beyond the bound shows (the first 10,000 entries and the
+  true count; only the walk's bound of 200,000 refuses); every other format's bound read in code, none has the
+  defect. (2) A Bastion whose cache leaves less room beside the documents' share than one largest object is
+  refused at `helm install` (the chart's validation) and at start, naming the three sizes (R-BAS-031); W34-E4
+  had measured that a cache of 2 GiB with the default share of 2 GiB keeps no artifact. (3) An image a slow
+  download or a large pull is still storing is put off for one scan delay while a blob it names is missing and
+  its manifest is under 30 minutes old (`blobs_pending`, no attempt spent, Q-VULN-282), so its first scan comes at
+  most one scan delay after its last layer instead of failing with `layer_missing` and waiting a minute; the
+  malware check needs nothing, it checks each blob at its commit (Q-VULN-283). (4) A replica that learned of a
+  permission change from its own commit no longer rebuilds its grant index every 50 ms until its poll catches up
+  (11 builds in 500 ms before, 1 after; an index ahead of its poll is confirmed by its own build until the poll
+  catches up, so nothing reads staler than R-AUTHZ-028 allows; written into it). (5) The Bastion's revocation
+  test waits until each replica admits anonymous reads before warming them (one replica answered 401 for 868 ms
+  after the change; R-BAS-015 allows the old state for that window). The landing: five commits picked above
+  W34-E7; the same run as W34-E7's (the entry below). Tests added: four unit tests (milliseconds to 0.8 s), the image test with blobs that come late
+  (about 8 s to 13.5 s in its area), a chart test's case. Open: the renders' seed waits for three of its five
+  Debian packages' contents, so a failure like (1) does not show in the seed (for the next package under `web/`);
+  waking the scan at the last layer's commit instead of a delay after it, not built (a query on every layer's
+  commit). Not verified: that every path that stores a manifest records its blob edges (push, download ahead and
+  a client's fill shown; the mirror pass inferred).
+
+- **Closed on 2026-11-26, 17:47, by W34-E7 with W35-P5 (W-34's E7 and W-35's P5 in one raise; R-BAS-101 to R-BAS-103 new;
+  the wire's part of R-BAS-009, R-BAS-010, R-BAS-014, R-BAS-029, R-BAS-051, R-BAS-057, R-BAS-058, R-BAS-093,
+  R-BAS-095, R-BAS-096 and R-BAS-099 built; Q-BAS-14 superseded with the owner's sentence, Q-BAS-337 amended to five
+  shapes; Q-BAS-345 to Q-BAS-354; ADR-303; gaps H-2280, H-2281 updated, H-2305 to H-2307; no migration): a Bastion
+  and the main installation speak interface version 8, which carries a Bastion's configuration, its limits and
+  reports, and the public catalogue of its web interface.** One commit (a split would leave one that the
+  interface's guard refuses). The handshake carries `configuration` (its `switches` hold the handover's, `gui` and
+  `docs`; until W34-E8 the main installation sends an interim configuration equal to today's behaviour,
+  Q-BAS-352, which E8 removes); the check's answer may carry `subject.limits`; the downloads intake takes `usage`
+  and `status`, a batch without downloads included; every format declares its `errorShape` and `readWithBody`, held
+  by the format contract's kit. Five shapes, not four: Ansible gets `galaxy` (Galaxy's own `errors` list), because
+  W34-E4 measured that ansible-galaxy reads no problem details and today's Bastion crashes it with a 429 on the
+  version list (exit 250); the client-by-client table of what each prints is in R-BAS-095. The Bastion's own codes
+  are `read_only`, `not_found`, `unavailable`, `bad_gateway`, `gateway_timeout`, `busy` (Q-BAS-321) everywhere, chart
+  rules, manual and journeys included. The probe headers are gone: the main installation recognizes a probe by its
+  form (a writing method, no body, no credential) and refuses every probe at the route match (Q-BAS-351); the probe
+  itself goes with E15. The contact may carry `Quader-Bastion-Edge-Limit` and `Quader-Bastion-Catalogue-Kept`. The
+  registry token's readers read payload versions 1 and 2. The catalogue's wire: a change list, a single document
+  (gzip), a batch read of documents (one JSON line per document then its compressed bytes, at most 5,000 paths and
+  8 MiB compressed, Q-BAS-347), the public set; `SHA256` and `Size` are of the raw bytes (Q-BAS-346); the path
+  grammar with a round-trip parser that refuses dot segments and encoded slashes, packages named by their
+  catalogue identifier (npm scopes hold `/`), generic files' folders, files and set-up commands, and state documents
+  for the times W35-P1 measured must stay out of the documents (R-BAS-103 makes that the builder's duty); the
+  routes answer 404 while `gui` is off and documentation paths only while `docs` is on, and an empty catalogue
+  until W35-P6. Bounds as constants in `internal/bastion/cataloguebounds` (a page of 5,000 changes, 10,000 at most;
+  16 MiB raw per document). The feed's `catalogue` entry names no registration and `bastion.configuration.changed`
+  stays an unscoped settings entry: every replica of every Bastion asks again, bounded by registrations times
+  replicas, and a Bastion learns that another changed (H-2306). The landing: one commit picked above W35-P1, with
+  W34-E13's egress joined into the same recognition (`Probe` by form and `FromEgress` side by side) and the
+  handshake's handover read from E13's snapshot; the count of requirements 1,348 (MVP 742, P1 567); one run of the gates for the seven commits stacked (W34-E7 with W35-P5, the five of B-1126, W34-E15): the 13 gates, the chart's lint and tests, the architecture tests, the UI states, the renders of the Bastion card and the Debian pages (26 render tests, 0 failed, 0 layout findings), and 24 of 25 integration areas green (the six Bastion areas, conventions, authz, coordination, vulnimage, ociremote, deblocal, debremote, ansiblelocal, ansibleremote, npm, ocilocal, endpoints, apikey, files, limits, querybudget, postgres, backup); in nuget TestR_NUGET_007_APushAndAHardDeleteOfAnotherVersionNeverDeadlock had four of its racing pushes answered 503 database_timeout while the machine was loaded, passed three of three alone; none of the seven touches a NuGet push or delete: for the batch of findings. Tests
+  added: seven unit tests of the wire's types and grammar (0.13 s), unit tests of the routes by the switches, the
+  token's second payload, the router's match of a read with a body, two defects of the kit; no CI leg gains
+  measurable time. Open: for E15, delete the probe and its admission, render the five shapes, and run
+  ansible-galaxy 2.17 once against a 429 in the `galaxy` shape (exit 1, not 250: the cause of the 250 is not
+  established); the intake's body bound was sized for events and E8 sizes it for usage rows. Not verified: no
+  client against the probe recognized by its form or npm's three audit routes with a body (unit and integration
+  only); the kind cluster.
+
+- **Decided by me on 2026-11-26, 16:48, on the owner's two rules together (generous figures for a large company; the transfer
+  network protected out of the box), told to him for objection: the throughput between the main installation and a Bastion is capped by
+  default at 200 MB/s, of which anonymous callers' misses may take a quarter (50 MB/s); R-BAS-097 said unlimited.** From W34-E4's
+  measurement: a flood of distinct artifacts drew 34 to 52 MB/s (peaks 67 to 80) from the main installation; a cold 1 GiB image came at
+  23 to 51 MB/s. Only misses cross the link, hits do not; a Bastion serves the internet, its internal users use the main installation
+  directly; 200 MB/s carries a cold image of 5.9 GB in 30 s. An administrator sets the figure per Bastion to a share of the real link
+  (the card). Built by W34-E10 (Q-BAS-455).
+
+- **Decided by W34-E15 and taken by me, told to the owner for objection: Ansible Galaxy answers a rate limit 503 instead of 429, at a
+  Bastion and at the main installation (Q-BAS-451).** Measured with ansible-galaxy 2.17.14 against the bytes the Bastion renders: a 429
+  on the version list ends in "Unexpected Exception … 'results'", exit 250; a 503 with the same body in a readable message with the
+  code, exit 1. From the client's source: it retries 429, 502 and 520, and for a cached read it writes an empty cache entry before the
+  request, which the retry then reads; no body can repair that, only a status the client does not retry. A 502 on such a read has the
+  same crash (H-2358, read from the source, not run). ClamAV's definitions answer 503 already.
+
+- **Closed on 2026-11-26, 16:43, by W35-P1 (W-35, the plan's P1; a measurement run once, no product code, no test): how
+  large a Bastion's public catalogue grows, how far its documents deduplicate, and what building and syncing it
+  costs, are measured and written on `docs/developer/bastion.md`; "mirrored whole" holds.** A builder's own
+  instance with the render seed and a generated set (scripts under `hack/bastion-catalogue-measure/`), the machine's
+  load 32 to 56 on 20 cores. Measured: 543 public packages with 2,670 versions are 37,376 documents, 159.2 MiB raw
+  and 44.7 MiB gzip; Ansible documentation entries are 63 % of the bytes; per version (gzip, mean) npm 5.0 KiB,
+  NuGet 4.2, Debian 4.9, an image 12.2, Ansible 70.4; the largest document an image's vulnerabilities (560 KiB raw
+  for 640 findings). The finding that changes the design: the documents carry the time of their building or
+  checking (`builtAt`, `checkedAt`, `syncedAt`, `scannedAt`), so 14,200 Ansible entries were 14,200 distinct
+  documents (1,264 without those fields, 11.2 to 1) and every one of 1,400 npm vulnerabilities documents changed
+  between two passes with nothing published (0 of 17,530 without them). Rendering one registration one request at
+  a time took 1,362 s and 1,695 s (36 and 45 ms a document); one changed version 0.8 to 2.1 s in the median.
+  Derived: at 100,000 public versions 1.38 GiB gzip as served, 0.59 GiB deduplicated; a full build 14 to 17.5 hours
+  for one worker; the churn of rewritten vulnerabilities documents about 2.3 GiB a day against 19 MiB of real
+  changes (1 % of versions a day assumed); fetching 36,043 documents one at a time is 12 minutes of round trips at
+  20 ms. Decided by me from it and given to the wire's builder at 14:58, before the interface version is raised:
+  a batch read of documents, documents stored and sent compressed, a change-list page of 5,000 (10,000 at most)
+  and 16 MiB raw per document as constants, paths for generic files in the grammar (they were missing), and no
+  time of building or checking in a document: those go into a small state document with a path of its own. The
+  builder's proposals for the later packages stand on the page as derived: the catalogue's share of a Bastion's
+  storage 4 GiB of compressed bytes (about 290,000 versions as served), reconciliation by fingerprints every hour,
+  about eight workers for a full build. Landed with the gate run of the packages above (documents and scripts).
+  Not measured: the builder's own path in process (it does not exist yet), an image's rescan (no scanner in the
+  profile; the findings were written by SQL as a scan leaves them), NuGet findings, a large chart or ClamAV set,
+  the signing documents, a real transfer, the stripping of internal names. Found beside it, for the batch: in the
+  render seed the job `deb-contents` failed on `deb_contents_files_check` for the seed's package of 10,050 files.
+
+- **Closed on 2026-11-26, 16:43, by W34-E13 (W-34, the owner's k12 = a, Q-BAS-334; R-BAS-017 and the member `egress` of
+  R-BAS-093 built, R-UI-243 built; Q-BAS-430 to Q-BAS-433, Q-UI-1483, Q-UI-1484; gaps H-2291 narrowed, H-2348,
+  H-2349; migration 00145): each Bastion's card lists the addresses it connects from, and the main installation
+  believes the callers a Bastion reports only from these.** The registration holds at most 32 networks
+  (`bastion.egress`, part of the revision); `bastions.trusted_proxies` is gone from the configuration, without an
+  alias. A Bastion is still recognized by its token (Q-BAS-430): from an address outside its registration's
+  networks its request is its request, but the caller's address it reports does not count, neither on a forward
+  nor in a check (Q-BAS-432), and the request's log line says `bastion_egress: "unlisted"`; with an empty list every
+  caller of that Bastion counts as the Bastion's own address in limits, blocks and the audit log, which the card
+  says. The networks live in each replica's snapshot of the registrations (no query per request) and a change
+  reaches a replica within the change log's bound. The API carries `egress` on the read, the create and the merge
+  patch (`endpoints:write`), a change is audited with the list before and after. The card: the warning of an empty
+  list, per contact address outside the list "The last contact came from X, which is not listed." with **Add X**
+  (one request), a field per network; English and German; renders of the card at three widths in both schemes
+  looked at by the builder (a warning's icon and a field 107 px too wide at 390 px corrected). The landing: one
+  commit picked above W35-P2; landed with W34-E14a in its run of the gates (the entry below). Tests added: four unit tests (milliseconds), one integration case in
+  `bastionreg` (1.8 s), four Vitest cases. For the owner's installation: its Flux values set the removed key, and
+  the configuration refuses an unknown key, and Flux takes every release, so I pushed the values without the key
+  before this landing (16:45; the version running before tolerates its absence); the pod network 10.252.0.0/16 is
+  to be entered on the Bastion's card by him (I do not sign in there). My statement to him at 15:15 that until then
+  his Bastion's callers count as its address was wrong for his installation: `server.trusted_proxies` there trusts
+  the whole pod network, the Bastion's pods included, so caller and host are believed through it, and the card's
+  list only removes its warning. Open:
+  a change of the list is not journaled, so a restore brings a removed network back (H-2348; the builder's
+  proposal: replay narrowings as the handover's switch does, a small package); the administrator's command line
+  has no flag for the list. Not verified: the journeys of the Bastion, corrected by reading (`registerBastion` posts
+  the pod network; `deploy/dev/values-bastion.yaml` lost the key): the sets `bastion` and `oci` are to be run once.
+
+- **Closed on 2026-11-26, 16:43, by W35-P2 (W-35, the owner's g3; R-UI-223; Q-UI-1400 to Q-UI-1406; web only, no migration):
+  the package, version, documentation and vulnerability screens are built from views that read without a session
+  and act nowhere, so that the Bastion's application can show the same pages.** The views live in one directory,
+  `web/src/app/views/` (`packages`, `vulnerabilities`, `signatures`); they take what they show through inputs and
+  through abstract reads (`PackageReads` with `ClientSetupReads`, `VulnerabilityReads`, `SignatureReads`, which the
+  HTTP classes extend; `provideViewReads()`); a download link takes "signed in" as an optional token. The acts stay
+  on the main installation's pages: the deprecation menu and its notice are projected into the version's view, the
+  acts nested deeper (the signature gate's release and withdraw, a role's Upload collection, the Import log tab)
+  sit in declared places a page fills, and a place that is not filled leaves no element. A lint rule
+  (`web/scripts/views-rule.mjs`) refuses a view that imports the session, the API client, a dialog, an API class
+  or a module that imports one of them. No visible change: every Vitest spec passes with its expectations
+  untouched (imports and providers changed); renders before and after at 1,440 and 390 px, both schemes: a full
+  pass of 2,468 pictures and a pass of 744 run back to back on one stack, every difference looked at was the
+  wording of a relative time; one defect found by reading and repaired in the commit (a file's page lacked the
+  gate's act, so an administrator's Release was missing there). The bundle: initial 217.12 to 217.75 kB transfer,
+  the version page's chunk 52.69 to 53.12 kB. The landing: one commit picked above W34-E4, the count of
+  requirements 1,345 (MVP 742, P1 564); landed with W34-E14a in its run of the gates (the entry below). Tests added: two cases of the lint rule (under 1 ms). Open, for the
+  package that builds the Bastion's application (the plan's P9): what a view still reaches through others
+  (`FormatCatalog` to the repositories' API, `SystemClients` to the upstream API and the session, the disclosure's
+  memory to the session, the error notice's limit words to a dialog, pure functions imported from API modules); the
+  gate's "released by" reaches the view and is stripped by the catalogue's builder (P6). Against the brief: the
+  package list's view is its table alone (filters, saved views and "recently opened" are the main installation's).
 
 - **Closed on 2026-11-26, 16:43, by W34-E4 (W-34, the plan's E4; a measurement run once, no product code, no test): what
   one normal command of every client costs through a Bastion, what a flood of distinct artifacts does to it, and
