@@ -2260,20 +2260,34 @@ Priority: **P1** · Covers: PKG-ANSIBLE-004
 On Galaxy and on a private hub a person uploads a collection's archive on a namespace's page and watches its import; in Quader the same is done
 on the repository's page, by the client's own publish (the owner, 2026-11-25: "die Galaxy vollständig und ebenbürdig zu ersetzen").
 
-- **The operation.** `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections` (`publishAnsibleCollection`) takes the
-  archive as its body (`application/gzip`, the optional `sha256` in the query) and hands the request to the route of the client's publish
-  (R-ANS-008) through the dispatcher, with the caller's principal and every check of that route
-  ([Q-ANS-140](#q-ans-140--the-screens-publish-is-a-management-operation-that-the-dispatcher-hands-to-the-clients-publish-route)): the
-  coarse `deploy` on the repository, the read-only maintenance mode, the repository's state and format, the deployment target of a virtual
-  repository (R-ANS-024), the name and the version of `MANIFEST.json` (never the file's name, [Q-ANS-142](#q-ans-142--the-name-and-the-version-come-from-the-manifest-and-the-file-name-is-not-compared)),
-  `deploy` on that collection, the ownership of its namespace, the shadowing check of a first version, immutability and tombstones, and the size
-  bounds (`ansible.max_archive_bytes`, the repository's and the system's upload limit; a declared length above them is refused before the body
-  is read).
-- **The answer** is `201` with the import task the publish made, read from the repository that holds it (the deployment target of a virtual
-  one): `completed` with its messages (the warnings of R-ANS-062 among them), or `failed` with the reason an archive that is no collection archive
-  was refused for. A publish refused before the archive was read is the management API's problem document with the code of the refusal
-  ([Q-ANS-141](#q-ans-141--the-screens-publish-answers-the-import-task-and-a-refusal-in-the-management-apis-shape)). A remote repository and a
-  repository of another format answer `405 not_applicable`; a virtual repository without a deployment target is refused `deploy` (403).
+- **The road** ([Q-ANS-140](#q-ans-140--the-screens-publish-sends-the-archive-to-the-clients-publish-route-with-a-token-the-management-api-issues)). The publish is the client's own route (R-ANS-008), served by the role `packages`, which
+  makes the shadowing probes of a first version that the role `api` may not make (R-ARCH-001,
+  [architecture.md](../architecture.md) Q-ARCH-294, Q-ARCH-301). The browser's session lives on the role `api`, and the protocol paths ignore
+  a session cookie for a write. So the dialog takes three steps:
+  1. `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/upload-tokens` (`createAnsibleUploadToken`, `deploy` on the
+     repository; with a session it needs the session's CSRF token like every management write) issues a personal access token of the caller,
+     for five minutes, whose scope is `read` and `deploy` on this repository and, for a virtual repository, on its deployment target, and
+     nothing else. It answers the token, its expiry and `publishPath`, the client's publish route of the repository. The token is an ordinary
+     token: `token.created` is its audit event, it is in the caller's list of tokens until it expires (created via `ui`), and it can be revoked.
+  2. The archive goes as the raw body (`application/gzip`) to `publishPath` with `Authorization: Bearer <token>`: every check of
+     `ansible-galaxy collection publish` applies, the coarse `deploy`, the read-only maintenance mode, the repository's state and format, the
+     deployment target of a virtual repository (R-ANS-024), the name and the version of `MANIFEST.json` (never the file's name,
+     [Q-ANS-142](#q-ans-142--the-name-and-the-version-come-from-the-manifest-and-the-file-name-is-not-compared)), `deploy` on that collection, the
+     ownership of its namespace, the shadowing check with its probes, immutability and tombstones, and the size bounds
+     (`ansible.max_archive_bytes`, the repository's and the system's upload limit; a declared length above them is refused before the body is
+     read). The event `package.published` names the caller and the upload token.
+  3. `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/imports/{taskId}` (`getAnsibleImportTask`, `read`; a virtual
+     repository reads its deployment target's) reads the task the publish answered: `completed` with its messages (the warnings of R-ANS-062
+     among them), or `failed` with the reason an archive that is no collection archive was refused for
+     ([Q-ANS-141](#q-ans-141--the-dialog-reads-the-task-through-the-management-api-and-reads-a-galaxy-refusal-as-a-problem)).
+- **Refusals.** A publish refused before the archive was read answers in the Galaxy error shape; the dialog reads its first error as the problem
+  of the management API's code (`version_exists` is `ansible_version_exists`) and keeps every other fact of the answer. A remote repository, a
+  virtual repository without a deployment target and a repository of another format issue no token (`405 not_applicable`, or the decision
+  point's `403` for a virtual repository without a target); the break-glass account holds no token.
+- **An installation with split roles** (the chart: the management API on `api`, the protocols on `packages`): step 1 and step 3 reach `api`,
+  step 2 reaches `packages` through the edge's path rules, all on the origin of the page. A single replica of the role `web` or `all` serves
+  the three. The UI of an endpoint whose surface holds no `packages` family has no publish route on its origin
+  ([H-2182](#h-2182--the-screens-upload-needs-the-packages-family-on-the-uis-own-endpoint)).
 - **The act.** **Upload collection** stands in the toolbar of the collections of a local repository and of a virtual one, where a generic
   repository's folder has **Upload files**, for a caller the page's batched check allows `deploy` there; a reader, a remote repository, a
   disabled one and a system one show none ([Q-UI-1320](../api-and-ui.md#q-ui-1320--upload-collection-stands-in-the-toolbar-of-the-collections-where-upload-files-stands)).
@@ -2287,8 +2301,8 @@ on the repository's page, by the client's own publish (the owner, 2026-11-25: "d
   dialog says that Quader reads the archive. The answer's task is shown as the tab Import log shows a task (its state, its time, a failed task's
   reason and code, its messages with their levels), and a completed one leads to the version's page with **Open version**
   ([Q-UI-1322](../api-and-ui.md#q-ui-1322--a-completed-upload-shows-its-import-log-and-leads-to-the-versions-page-on-a-press)). A refusal is the
-  shared error notice with every fact of the answer (R-UI-216), and the file stays chosen. The task is final when the answer comes
-  (Q-ANS-8), so the dialog reads nothing again.
+  shared error notice with every fact of the answer (R-UI-216), and the file stays chosen. The task is final when the publish answers
+  (Q-ANS-8), so the dialog reads it once and not again.
 - **Untrusted.** The browser reads nothing of the archive but its name and size; the server decides everything (R-ANS-010, R-ANS-031).
 - **A repository whose signature gate is on** ([signatures.md](../signatures.md) R-SIG-061): the gate acts at download and never refuses an upload
   (Q-SIG-79), so the version is stored and its page says that it is refused to readers until it is signed (R-SIG-074). The dialog takes no
@@ -2320,20 +2334,23 @@ Galaxy's upload and import log, element by element, and what Quader shows of eac
 
 Acceptance criteria:
 
-- `TestR_ANS_061_TheScreensPublishRunsTheClientsPublishAndAnswersTheTask` (integration `ansiblelocal`, about 3 s with the stack's start,
-  archives under a kilobyte): the operation stores the version with the task of the client's publish and answers it with R-ANS-062's warning;
-  the event names the caller; the client downloads what the screen published; an archive that is no collection is a failed task; other bytes of
-  a stored version, a wrong `sha256`, a reader and a generic repository are refused in the management API's shape and store nothing.
-- `TestR_ANS_061_TheScreensPublishThroughAVirtualRepositoryIsItsTargetsAndItsRefusalsAreTheClients` (integration `ansiblevirtual`, about 3 s
-  with the stub): the version is stored in the deployment target and the answered task is the target's; a first publish of a name a remote
-  member serves is refused `shadows_remote_package` without manage; a virtual repository without a target is refused.
-- `TestR_ANS_061_TheScreensPublishWithASessionIsGuardedAsEveryManagementWrite` (integration `ansiblelocal`, about 3 s with the stack's start,
-  archives under a kilobyte and one body of 1 MiB and one byte): a session's upload without the CSRF token, with a wrong one or from a
-  foreign origin is `403 csrf_failed` and stores nothing; with the token it publishes and the event names the session's user with no token
-  and the method `session`; the session cookie on the Galaxy publish route is `401` with the Basic challenge; a body above
-  `ansible.max_archive_bytes` is `413` on both roads; the read-only maintenance mode refuses both with `503` and `Retry-After`
-  ([docs/security/ansible.md](../../security/ansible.md#what-the-management-api-adds)).
-- `TestR_ANS_061_TheHandoffRunsTheRouteWithEveryCheckAndReturnsItsRefusals` (unit, the dispatcher, milliseconds).
+- `TestR_ANS_061_TheScreensPublishRunsOnTheRolesTheChartRuns` (integration `ansiblelocal`, about 3 s with the stack's start, archives under
+  a kilobyte; a replica of the role `api` and one of the role `packages`, the guard of the split roles): the token is issued on `api`, a
+  personal access token of five minutes whose scope names the repository only, answered with `no-store`; the publish with it on `packages`
+  stores the version, its task with R-ANS-062's warning is read on `api`, and the event names the caller and the upload token; the token is
+  refused on another repository; an archive that is no collection is a failed task; a reader and a generic repository get no token; `packages`
+  serves no management operation.
+- `TestR_ANS_061_TheScreensUploadWithASessionIsGuardedAsEveryManagementWrite` (integration `ansiblelocal`, about 3 s with the stack's start,
+  archives under a kilobyte and one body of 1 MiB and one byte; the split roles): the session's request for the token without the CSRF token,
+  with a wrong one or from a foreign origin is `403 csrf_failed` and issues no token; with it the session gets a token created via the UI and
+  the publish names the session's user; the session cookie on the Galaxy publish route is `401` with the Basic challenge; a body above
+  `ansible.max_archive_bytes` is `413` with the upload token as with the client's; the read-only maintenance mode refuses the publish and the
+  token ([docs/security/ansible.md](../../security/ansible.md#what-the-management-api-adds)).
+- `TestR_ANS_061_TheScreensUploadThroughAVirtualRepositoryIsItsTargetsAndItsRefusalsAreTheClients` (integration `ansiblevirtual`, about 3 s
+  with the stub): the token of a virtual repository covers its deployment target, the version is stored there and the task is read through
+  the virtual repository; a first publish of a name a remote member serves is refused `shadows_remote_package` without manage; a virtual
+  repository without a target issues no token.
+- The client of the three steps and the reading of a Galaxy refusal (`ansible-api.spec.ts`, unit, milliseconds).
 - The dialog's unit tests (`ansible-upload-dialog.spec.ts`), the act on the repository's page (`repository-content.spec.ts`) and on a role's
   page (`ansible-role.spec.ts`); the dialog's states without a stack (`ansible-upload.states.spec.ts`, `make ui-states`).
 
@@ -4096,29 +4113,36 @@ Status: **Decided by the development agent** on 2026-11-26 — selected from the
 
 **Choice:** (a). **Applied in the spec:** R-ANS-047; ADR-287.
 
-### Q-ANS-140 · The screens' publish is a management operation that the dispatcher hands to the client's publish route
+### Q-ANS-140 · The screens' publish sends the archive to the client's publish route with a token the management API issues
 
 Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough. Context: the package A5 of W-30
-asked for an upload on the screen that runs the same handler as the Galaxy route with the session's principal and the same checks. The session
-cookie is accepted below `/api/<format>/` for reads only (R-AUTH-001 item 3).
+asked for an upload on the screen that runs the same checks as the Galaxy route with the reader's principal. The chart runs the management
+API on the role `api` and the protocols on the role `packages` (R-ARCH-001); `api` builds no format host and asks no upstream, and the
+shadowing probes of a first version are `packages`' ([architecture.md](../architecture.md) Q-ARCH-294; Q-ARCH-301: an operation that
+needs the remote engine "belongs on `packages` or on a `worker`, not on `api`"). `packages` holds no session store, and the protocol paths
+ignore a session cookie for a write (R-AUTH-001 item 3). The first build of this package handed a management request to the publish route
+in process; on a replica of the role `api` it answered `503`, because the dispatcher it needs exists only on the filling roles (found
+before it landed; the integration replicas run `web`).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A management operation whose handler hands the request to the format's route through the dispatcher (`Dispatcher.Handoff`), which returns a refusal instead of writing it in the protocol's shape (chosen) | One road: the coarse check, the maintenance mode, the repository's checks, the deploy target and the handler are the protocol path's | No check can drift between the client's and the screen's publish; the session and its CSRF token stay on the management API | The dispatcher gains a method the management API calls |
-| (b) Accept the session cookie for a `POST` below `/api/ansible/` | The dialog posts to the Galaxy route | No new operation | A browser's ambient cookie would authorize writes on a protocol path, which the stage's rule keeps out; the answer is in the Galaxy shape |
-| (c) A second handler in the management API that calls the format's `Inspect` and commit | — | Independent of the dispatcher | Two roads into the commit, whose checks would have to be kept equal by hand |
+| (a) `api` issues the caller a token of five minutes for this repository; the browser publishes with it on the client's route, `packages` serves it (chosen) | Three calls: the token, the publish, the task | Every check, the shadowing probes included, is the client's on the role that may make them; no role gains a part; the session stays on `api`, `packages` sees a token, as the owner's trust cut has it (ADR-155) | A short-lived credential in the page's memory; it is in the caller's token list until it expires; the page's endpoint must serve the `packages` family (H-2182) |
+| (b) The management operation hands the request to the publish route in process (the first build) | One call | One road in code | Works on `web` and `all` only; on `api` there is no dispatcher |
+| (c) Build the format host and the remote engine on `api` | One call | Works everywhere | `api` would fill caches and ask upstreams, against Q-ARCH-294; with the read-only view only, the shadowing check of every first version a remote could serve fails closed |
+| (d) `api` stores the archive and a job on a `worker` publishes it | The task becomes waiting and running | No credential in the browser | A new job kind, task states and a schema change; a publish is no longer processed in the request (Q-ANS-8) |
+| (e) The session cookie on the protocol's publish route | One call | — | Opens the protocol paths to a browser's ambient cookie for writes, and `packages` has no session store |
 
-**Choice:** (a). The route is found by the format's own `Match` of the client's method and path, so the operation names no route of the format.
-**Applied in the spec:** R-ANS-061.
+**Choice:** (a). **Revisit** if the owner wants no token in the page: then (d). **Applied in the spec:** R-ANS-061; the operations
+`createAnsibleUploadToken` and `getAnsibleImportTask`.
 
-### Q-ANS-141 · The screens' publish answers the import task, and a refusal in the management API's shape
+### Q-ANS-141 · The dialog reads the task through the management API, and reads a Galaxy refusal as a problem
 
 Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `201` with the task, read from the repository that holds it; a refusal before the archive was read is a problem document (chosen) | The dialog has the log in the answer | One request; the error notice reads the problem as every screen does (R-UI-216) | The handler reads the task's id from the route's `202` body |
-| (b) `202` with the task's address, as the client gets it | The dialog reads the task in a second request | The client's answer unchanged | A second read of a task that is final when it is created (Q-ANS-8) |
+| (a) The task by `GET …/ansible/imports/{taskId}` with the session; a refusal of the publish route, in the Galaxy shape, read as a problem with the management API's code (chosen) | One shape for the screens | The error notice reads every failure as R-UI-216 says; the task is the management API's `AnsibleImportTask` the tab Import log reads | The client maps the Galaxy codes that carry the prefix `ansible_` |
+| (b) The task at the Galaxy task address with the upload token | No new operation | — | A second shape of the task in the browser, and the token used past its purpose |
 
 **Choice:** (a). **Applied in the spec:** R-ANS-061.
 
@@ -4181,6 +4205,13 @@ detached signature of `MANIFEST.json` is posted with the operation of R-SIG-031.
 **Choice:** (a). **Revisit** with a screen for posting a signature to a version (H-2180). **Applied in the spec:** R-ANS-061.
 
 ## What this does not cover
+
+### H-2182 · The screen's upload needs the packages family on the UI's own endpoint
+
+Stage: the screens' publish (R-ANS-061, Q-ANS-140). The browser sends the archive to the client's publish route on the origin of the page. An
+endpoint whose surface holds the `ui` and `api` families but not `packages` (R-EP-005) answers that route `404`, so the upload fails there
+with the notice of a missing page; the default endpoint holds every family. Live only on an installation that serves the UI on an endpoint of
+its own without the protocols. What makes it real: an administration host apart from the clients' host.
 
 ### H-2180 · A signature cannot be given on the screen
 

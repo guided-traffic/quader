@@ -4,6 +4,7 @@ package ansiblevirtual
 
 import (
 	"net/http"
+	"path"
 	"strings"
 	"testing"
 
@@ -11,32 +12,42 @@ import (
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-// TestR_ANS_061_TheScreensPublishThroughAVirtualRepositoryIsItsTargetsAndItsRefusalsAreTheClients: the screens' upload on a virtual
-// repository stores the version in the deployment target and answers the target's task; a first publish of a name a remote member serves
-// is refused without manage, as the client's is (R-REPO-048), in the management API's shape; a virtual repository without a target takes
-// none (R-ANS-061, R-ANS-024). Integration, archives under a kilobyte, about two seconds with the stub.
-func TestR_ANS_061_TheScreensPublishThroughAVirtualRepositoryIsItsTargetsAndItsRefusalsAreTheClients(t *testing.T) {
+// TestR_ANS_061_TheScreensUploadThroughAVirtualRepositoryIsItsTargetsAndItsRefusalsAreTheClients: the upload token of a virtual
+// repository names the virtual repository and its deployment target; the publish with it stores the version in the target, the task
+// is read through the virtual repository; a first publish of a name a remote member serves is refused without manage, as the
+// client's is (R-REPO-048); a virtual repository without a target issues no token (R-ANS-061, R-ANS-024). Integration, archives under
+// a kilobyte, about two seconds with the stub.
+func TestR_ANS_061_TheScreensUploadThroughAVirtualRepositoryIsItsTargetsAndItsRefusalsAreTheClients(t *testing.T) {
 	e := newEnv(t, options{})
-	post := func(repo, token string, s collectiontest.Spec) testenv.Answer {
-		return e.st.Do(e.rep, http.MethodPost, "/api/v1/projects/"+testenv.DefaultProject+"/repositories/"+repo+"/ansible/collections", token,
-			collectiontest.Build(s), "Content-Type", "application/gzip")
+	api := func(repo, sub string) string {
+		return "/api/v1/projects/" + testenv.DefaultProject + "/repositories/" + repo + "/ansible/" + sub
 	}
-	a := post(rVirtual, e.writer, spec("mine", "tools", "1.0.0"))
-	if a.Status != http.StatusCreated || a.JSON(t)["state"] != "completed" {
+	upload := func(repo, token string, s collectiontest.Spec) testenv.Answer {
+		m := e.st.Do(e.rep, http.MethodPost, api(repo, "upload-tokens"), token, nil)
+		if m.Status != http.StatusCreated {
+			t.Fatalf("the upload token of %s: %d %s", repo, m.Status, m.Body)
+		}
+		doc := m.JSON(t)
+		tok, _ := doc["token"].(string)
+		p, _ := doc["publishPath"].(string)
+		return e.st.Do(e.rep, http.MethodPost, p, tok, collectiontest.Build(s), "Content-Type", "application/gzip")
+	}
+	a := upload(rVirtual, e.writer, spec("mine", "tools", "1.0.0"))
+	if a.Status != http.StatusAccepted {
 		t.Fatalf("publish: %d %s", a.Status, a.Body)
 	}
-	if n := e.st.Number(`SELECT count(*) FROM ansible_import_tasks k JOIN repositories r ON r.id = k.repo_id WHERE r.key = $1 AND k.id::text = $2`,
-		rLocal, a.JSON(t)["id"]); n != 1 {
-		t.Errorf("the answered task is not the target's: %d", n)
+	addr, _ := a.JSON(t)["task"].(string)
+	task := e.st.Do(e.rep, http.MethodGet, api(rVirtual, "imports/"+path.Base(strings.TrimSuffix(addr, "/"))), e.writer, nil)
+	if task.Status != http.StatusOK || task.JSON(t)["state"] != "completed" {
+		t.Fatalf("the task through the virtual repository: %d %s", task.Status, task.Body)
 	}
 	if n := e.st.Number(`SELECT count(*) FROM ansible_collection_versions v JOIN repositories r ON r.id = v.repo_id WHERE r.key = $1 AND v.name = 'mine.tools'`, rLocal); n != 1 {
 		t.Errorf("%d rows in %s", n, rLocal)
 	}
-	if b := post(rVirtual, e.plain, spec("other", "stuff", "77.0.0")); b.Status != http.StatusForbidden ||
-		!strings.Contains(b.Header.Get("Content-Type"), "problem+json") || !strings.Contains(string(b.Body), `"code":"shadows_remote_package"`) {
+	if b := upload(rVirtual, e.plain, spec("other", "stuff", "77.0.0")); b.Status != http.StatusForbidden || errorCode(b) != "shadows_remote_package" {
 		t.Errorf("a name the remote member serves, without manage: %d %s", b.Status, b.Body)
 	}
-	if c := post(rNoLocal, e.writer, spec("mine", "tools", "1.1.0")); c.Status != http.StatusForbidden {
+	if c := e.st.Do(e.rep, http.MethodPost, api(rNoLocal, "upload-tokens"), e.writer, nil); c.Status != http.StatusForbidden && c.Status != http.StatusMethodNotAllowed {
 		t.Errorf("a virtual repository without a target: %d %s", c.Status, c.Body)
 	}
 }

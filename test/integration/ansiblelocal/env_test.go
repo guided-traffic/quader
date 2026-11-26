@@ -39,6 +39,8 @@ type env struct {
 	// r is the first replica, rs all of them; every replica runs every role.
 	r  *testenv.Replica
 	rs []*testenv.Replica
+	// api and pkg are replicas of the roles api and packages when envOpts.split asked for them, nil otherwise.
+	api, pkg *testenv.Replica
 
 	alice, bob, carol testenv.Person
 	tokA, tokB, tokC  string
@@ -54,6 +56,9 @@ type envOpts struct {
 	seed func(e *env)
 	// env are settings of every replica beside the stack's own (QUADER_…=value).
 	env []string
+	// split starts a replica of the role api (e.api) and one of the role packages (e.pkg) beside the others: the roles the chart
+	// serves the management API and the package protocols by (R-ARCH-001).
+	split bool
 }
 
 func newEnv(t *testing.T) *env { return newEnvOpts(t, envOpts{}) }
@@ -84,6 +89,10 @@ func newEnvOpts(t *testing.T, o envOpts) *env {
 		e.rs = append(e.rs, st.Start(t, testenv.ReplicaOptions{Name: fmt.Sprintf("web-%d", i), Role: "all"}))
 	}
 	e.r = e.rs[0]
+	if o.split {
+		e.api = st.Start(t, testenv.ReplicaOptions{Name: "api-a", Role: "api"})
+		e.pkg = st.Start(t, testenv.ReplicaOptions{Name: "packages-a", Role: "packages"})
+	}
 	return e
 }
 

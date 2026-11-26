@@ -15,6 +15,7 @@ import { AnsibleUploadData, AnsibleUploadDialog } from './ansible-upload-dialog'
 const REPOSITORY = 'platform-engineering/ansible-collections-release-candidates';
 const FILE = 'platform_engineering-kubernetes_infrastructure_operators-18.6.0-rc.12.tar.gz';
 const AT = '2026-11-26T09:41:07Z';
+const PUBLISH_PATH = ['', 'api', 'ansible', 'platform-engineering', 'ansible-collections-release-candidates', 'v3', 'artifacts', 'collections', ''].join('/');
 
 const completed = importTask({
   namespace: 'platform_engineering',
@@ -45,7 +46,8 @@ const failed = importTask({
 
 const refusal = (status: number, code: string, detail: string): ApiError =>
   new ApiError(status, { code, status, detail, requestId: REQUEST_ID }, REQUEST_ID, null, {
-    call: { method: 'POST', path: `/api/v1/projects/platform-engineering/repositories/ansible-collections-release-candidates/ansible/collections` },
+    // The client's publish route, as the server's publishPath names it (the screens build no protocol address, R-ARCH-007).
+    call: { method: 'POST', path: PUBLISH_PATH },
   });
 
 /** Opens the dialog with the repositories given, the fake's publish set by `answer`, and a file chosen when `file` is set. */

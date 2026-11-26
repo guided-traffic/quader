@@ -7197,7 +7197,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections": {
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/upload-tokens": {
         parameters: {
             query?: never;
             header?: never;
@@ -7212,19 +7212,46 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Publish a collection archive from the screen
-         * @description The screens' upload of a collection archive (R-ANS-061, Q-ANS-140): the body is the archive as `ansible-galaxy collection build`
-         *     made it, and the request is served by the handler of the client's publish (`POST v3/artifacts/collections/`, R-ANS-008) with
-         *     the caller's principal and every check of that route: the coarse `deploy` on the repository, the read-only maintenance mode,
-         *     the name and the version the archive's `MANIFEST.json` declares (never the file's name), `deploy` on that collection, the
-         *     ownership of its namespace, the shadowing check of a first version, immutability and tombstones, and the size bounds
-         *     (`ansible.max_archive_bytes`, the repository's and the system's upload limit). A virtual repository hands the archive to its
-         *     deployment target (R-ANS-024). The answer is the import task the publish made, `completed` with its messages (the warnings of
-         *     R-ANS-062 among them) or `failed` with the reason an archive that is no collection archive was refused for; a publish refused
-         *     before the archive was read (no permission, a claimed namespace, a stored or tombstoned version, too large, a wrong `sha256`)
-         *     is an error and makes no task. A remote repository and a repository of another format answer `405 not_applicable`.
+         * Issue the short-lived token of an upload from the screen
+         * @description The screens' upload of a collection archive (R-ANS-061, Q-ANS-140): the management API, where the caller's session lives,
+         *     issues a personal access token of the caller for five minutes whose scope is `read` and `deploy` on this repository and, for a
+         *     virtual repository, on its deployment target, and nothing else. The browser sends the archive with it to the client's own
+         *     publish route (`publishPath`, R-ANS-008), served by the role `packages` with every check of `ansible-galaxy collection publish`,
+         *     the shadowing probes of a first version among them (R-ARCH-001: the role `api` asks no upstream). The token is an ordinary
+         *     personal access token: it is in the caller's list of tokens until it expires, its creation is the audit event
+         *     `token.created`, and it can be revoked. A remote repository, a virtual repository without a deployment target and a repository
+         *     of another format answer `405 not_applicable`; the break-glass account holds no token (`403`). Needs `deploy` on the
+         *     repository.
          */
-        post: operations["publishAnsibleCollection"];
+        post: operations["createAnsibleUploadToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/imports/{taskId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                /** @description The id of the import task, the last segment of the address a publish answered. */
+                taskId: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Read one import task of an Ansible Galaxy repository
+         * @description One import task of a publish (R-ANS-009), as the list answers it; a virtual repository reads its deployment target's. The
+         *     screens' upload reads the task of its publish here (R-ANS-061). Needs `read` on the repository.
+         */
+        get: operations["getAnsibleImportTask"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -16683,6 +16710,15 @@ export interface components {
                 /** Format: date-time */
                 time: string;
             }[];
+        };
+        /** @description The token of one upload from the screen (R-ANS-061). */
+        AnsibleUploadToken: {
+            /** @description The secret, shown once; sent as `Authorization: Bearer <token>` to `publishPath`. */
+            token: string;
+            /** Format: date-time */
+            expiresAt: string;
+            /** @description The client's publish route of the repository, relative to the server, `/api/ansible/{projectKey}/{repoKey}/v3/artifacts/collections/`. */
+            publishPath: string;
         };
         AnsibleImportTaskList: {
             items: components["schemas"]["AnsibleImportTask"][];
@@ -33606,12 +33642,9 @@ export interface operations {
             503: components["responses"]["Unavailable"];
         };
     };
-    publishAnsibleCollection: {
+    createAnsibleUploadToken: {
         parameters: {
-            query?: {
-                /** @description The hex SHA-256 of the archive; a body of another digest is refused with `400 ansible_sha256_mismatch` and nothing is stored. */
-                sha256?: string;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
@@ -33621,14 +33654,54 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/gzip": string;
-            };
-        };
+        requestBody?: never;
         responses: {
-            /** @description The import task of the publish, final when it is answered. */
+            /** @description The token, shown once. */
             201: {
+                headers: {
+                    /** @description `no-store`. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnsibleUploadToken"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The repository takes no publish from the screen (`not_applicable`). */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getAnsibleImportTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+                /** @description The id of the import task, the last segment of the address a publish answered. */
+                taskId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The task. */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -33649,8 +33722,6 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

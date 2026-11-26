@@ -303,9 +303,6 @@ type Options struct {
 	DebKeys DebKeyStore
 	// Ansible is the data port's management group behind the Ansible Galaxy operations (ansible_stub.go); nil answers them with 503.
 	Ansible AnsibleStore
-	// Routes hands a request of the management API to a format's route (the format dispatcher; ansible_publish.go); nil answers the
-	// screens' publish of a collection with 503.
-	Routes RouteHandoff
 	// DebContents is the Debian data port's reads of what the reader of a package file's data archive kept (deb_contents.go,
 	// R-DEB-039); nil answers the operation with 503.
 	DebContents DebContentsStore

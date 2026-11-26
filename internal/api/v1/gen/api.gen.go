@@ -9188,6 +9188,17 @@ type AnsibleTombstoneList struct {
 	NextCursor *string `json:"nextCursor"`
 }
 
+// AnsibleUploadToken The token of one upload from the screen (R-ANS-061).
+type AnsibleUploadToken struct {
+	ExpiresAt time.Time `json:"expiresAt"`
+
+	// PublishPath The client's publish route of the repository, relative to the server, `/api/ansible/{projectKey}/{repoKey}/v3/artifacts/collections/`.
+	PublishPath string `json:"publishPath"`
+
+	// Token The secret, shown once; sent as `Authorization: Bearer <token>` to `publishPath`.
+	Token string `json:"token"`
+}
+
 // AppliedMigrationStep defines model for AppliedMigrationStep.
 type AppliedMigrationStep struct {
 	AppliedAt  time.Time                 `json:"appliedAt"`
@@ -21106,12 +21117,6 @@ type ReplaceRepositoryParams struct {
 	IfMatch IfMatch `json:"If-Match"`
 }
 
-// PublishAnsibleCollectionParams defines parameters for PublishAnsibleCollection.
-type PublishAnsibleCollectionParams struct {
-	// Sha256 The hex SHA-256 of the archive; a body of another digest is refused with `400 ansible_sha256_mismatch` and nothing is stored.
-	Sha256 *string `form:"sha256,omitempty" json:"sha256,omitempty"`
-}
-
 // ListAnsibleImportTasksParams defines parameters for ListAnsibleImportTasks.
 type ListAnsibleImportTasksParams struct {
 	// State Only the tasks in this state.
@@ -24172,9 +24177,6 @@ type ServerInterface interface {
 	// ReplaceRepository Replace a repository configuration
 	// (PUT /api/v1/projects/{projectKey}/repositories/{repoKey})
 	ReplaceRepository(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params ReplaceRepositoryParams)
-	// PublishAnsibleCollection Publish a collection archive from the screen
-	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections)
-	PublishAnsibleCollection(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params PublishAnsibleCollectionParams)
 	// AddAnsibleVersionSignature Add a detached signature to a version of a local Ansible Galaxy repository
 	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures)
 	AddAnsibleVersionSignature(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, collection string, version string)
@@ -24184,12 +24186,18 @@ type ServerInterface interface {
 	// ListAnsibleImportTasks List the import tasks of an Ansible Galaxy repository
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/imports)
 	ListAnsibleImportTasks(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params ListAnsibleImportTasksParams)
+	// GetAnsibleImportTask Read one import task of an Ansible Galaxy repository
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/imports/{taskId})
+	GetAnsibleImportTask(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, taskId openapi_types.UUID)
 	// ListAnsibleTombstones List the tombstones of an Ansible Galaxy repository
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/tombstones)
 	ListAnsibleTombstones(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params ListAnsibleTombstonesParams)
 	// ClearAnsibleTombstone Clear the tombstone of a deleted version
 	// (DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/tombstones/{collection}/{version})
 	ClearAnsibleTombstone(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, collection string, version string)
+	// CreateAnsibleUploadToken Issue the short-lived token of an upload from the screen
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/upload-tokens)
+	CreateAnsibleUploadToken(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey)
 	// GetAttestation Quader's receipt attestation of one stored file
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/attestation)
 	GetAttestation(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, params GetAttestationParams)
@@ -32271,57 +32279,6 @@ func (siw *ServerInterfaceWrapper) ReplaceRepository(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
-// PublishAnsibleCollection operation middleware
-func (siw *ServerInterfaceWrapper) PublishAnsibleCollection(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "projectKey" -------------
-	var projectKey ProjectKey
-
-	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
-		return
-	}
-
-	// ------------- Path parameter "repoKey" -------------
-	var repoKey RepoKey
-
-	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
-		return
-	}
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params PublishAnsibleCollectionParams
-
-	// ------------- Optional query parameter "sha256" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "sha256", r.URL.Query(), &params.Sha256, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "sha256"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sha256", Err: err})
-		}
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PublishAnsibleCollection(w, r, projectKey, repoKey, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // AddAnsibleVersionSignature operation middleware
 func (siw *ServerInterfaceWrapper) AddAnsibleVersionSignature(w http.ResponseWriter, r *http.Request) {
 
@@ -32540,6 +32497,50 @@ func (siw *ServerInterfaceWrapper) ListAnsibleImportTasks(w http.ResponseWriter,
 	handler.ServeHTTP(w, r)
 }
 
+// GetAnsibleImportTask operation middleware
+func (siw *ServerInterfaceWrapper) GetAnsibleImportTask(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "taskId" -------------
+	var taskId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "taskId", r.PathValue("taskId"), &taskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "taskId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAnsibleImportTask(w, r, projectKey, repoKey, taskId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListAnsibleTombstones operation middleware
 func (siw *ServerInterfaceWrapper) ListAnsibleTombstones(w http.ResponseWriter, r *http.Request) {
 
@@ -32648,6 +32649,41 @@ func (siw *ServerInterfaceWrapper) ClearAnsibleTombstone(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ClearAnsibleTombstone(w, r, projectKey, repoKey, collection, version)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateAnsibleUploadToken operation middleware
+func (siw *ServerInterfaceWrapper) CreateAnsibleUploadToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey RepoKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateAnsibleUploadToken(w, r, projectKey, repoKey)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -45243,7 +45279,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/imports", wrapper.ListAnsibleImportTasks)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/tombstones", wrapper.ListAnsibleTombstones)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/tombstones/{collection}/{version}", wrapper.ClearAnsibleTombstone)
-	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections", wrapper.PublishAnsibleCollection)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/upload-tokens", wrapper.CreateAnsibleUploadToken)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/imports/{taskId}", wrapper.GetAnsibleImportTask)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures", wrapper.AddAnsibleVersionSignature)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures/{fingerprint}", wrapper.RemoveAnsibleVersionSignature)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/search/suggestions", wrapper.GetSearchSuggestions)

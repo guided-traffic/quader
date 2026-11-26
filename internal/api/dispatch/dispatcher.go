@@ -263,8 +263,6 @@ type routed struct {
 	// EndpointFacts.BoundRepo and, non-zero, EndpointFacts.Bound, so a format and the host's link builder read the address the way the
 	// match and the enforcement point did, and never from the raw binding.
 	boundRepo qname.Repo
-	// handoff marks a request of the management API that a route serves (Handoff): it keeps the operation's label.
-	handoff bool
 }
 
 // serveRoute is the request path of R-ARCH-011 from the label of the matched route on: the Bastion's marking, the coarse
@@ -275,7 +273,7 @@ func (d *Dispatcher) serveRoute(w http.ResponseWriter, r *http.Request, f format
 	id := string(f.Descriptor().ID)
 	fail := func(err error) { f.WriteError(w, r, err) }
 	ctx := r.Context()
-	if d.o.Label != nil && !m.handoff {
+	if d.o.Label != nil {
 		d.o.Label(ctx, route.Name)
 	}
 	// The Bastion marking stage learns the route here (R-BAS-013, R-BAS-014): it may refuse a write probe

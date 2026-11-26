@@ -97,20 +97,21 @@ The trailing slash is optional on every path and no route redirects: a redirect 
 
 ## The screens' publish (R-ANS-061)
 
-**Upload collection** on a repository's page posts the archive to `publishAnsibleCollection`
-([ansible_publish.go](../../internal/api/v1/ansible_publish.go)), which hands the request to the route `ansible.collection.publish` through
-`Dispatcher.Handoff` ([handoff.go](../../internal/api/dispatch/handoff.go), Q-ANS-140): the dispatcher's `serveRoute` with a format whose
-`WriteError` keeps the refusal, so every check of the protocol path runs and a refusal comes back to the management API as an error. The
-handler reads the body as the scripted raw-body publish, answers `202` with the task's address; the operation takes the id from it and answers
-the task from the repository that holds it (`ansibleTarget` with the virtual repository's deployment target). The option `Routes` of the
-management API is the dispatcher ([wire_ansible.go](../../internal/app/wire_ansible.go) `routeHandoff`). The dialog is
+**Upload collection** takes three calls (Q-ANS-140): `createAnsibleUploadToken`
+([ansible_upload.go](../../internal/api/v1/ansible_upload.go)) issues the caller's personal access token of five minutes scoped to the
+repository and its deployment target; the dialog sends the archive with it to `publishPath`, the client's publish route, which the role
+`packages` serves (on `web` and `all` the same process); `getAnsibleImportTask` reads the task back on the management API. The role `api`
+builds no format host and makes no shadowing probe (R-ARCH-001, Q-ARCH-294), which is why the publish is not run there. The client of the
+three calls is `HttpAnsibleApi.publish` ([ansible-api.ts](../../web/src/app/api/ansible-api.ts)), whose `galaxyFailure` reads a refusal of the
+route, in the Galaxy shape, as a problem with the management API's code. The dialog is
 [ansible-upload-dialog.ts](../../web/src/app/features/repositories/content/ansible-upload-dialog.ts); it sends the file through the
 XHR-based client the deploy dialog uses ([upload-transfer.ts](../../web/src/app/api/upload-transfer.ts)) and shows the task with the view
 the tab Import log uses ([ansible-import-task.ts](../../web/src/app/features/packages/ansible-import-task.ts)). A page that names no repository (a
 role's, a namespace's) opens it through `collectionUpload` ([ansible-upload-targets.ts](../../web/src/app/features/repositories/content/ansible-upload-targets.ts)),
-which lists the Ansible Galaxy repositories of the page's scope the reader may deploy into. Tests: unit
-[handoff_test.go](../../internal/api/dispatch/handoff_test.go); integration `ansiblelocal` and `ansiblevirtual` `screen_publish_test.go`;
-the dialog's unit tests and its states (`ansible-upload.states.spec.ts`, `make ui-states`).
+which lists the Ansible Galaxy repositories of the page's scope the reader may deploy into. Tests: integration `ansiblelocal`
+`screen_publish_test.go` and `screen_session_test.go` on a replica of the role `api` and one of the role `packages` (the guard of the split
+roles), `ansiblevirtual` `screen_publish_test.go`; the unit tests of the client and the dialog, and the dialog's states
+(`ansible-upload.states.spec.ts`, `make ui-states`).
 
 ## Signatures a client posts (signatures.md R-SIG-031)
 

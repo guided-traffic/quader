@@ -73,26 +73,31 @@ administrator clears its tombstone, never data or access. The replay of the clea
 
 ## What the management API adds
 
-**The screens' publish is the client's publish** (R-ANS-061, [Q-ANS-140](../spec/formats/ansible.md#q-ans-140--the-screens-publish-is-a-management-operation-that-the-dispatcher-hands-to-the-clients-publish-route)).
-`POST …/repositories/{repoKey}/ansible/collections` of the management API ([ansible_publish.go](../../internal/api/v1/ansible_publish.go)) hands its
-request to the route of `ansible-galaxy collection publish` through the dispatcher (`Dispatcher.Handoff`,
-[handoff.go](../../internal/api/dispatch/handoff.go)), which runs every check of the protocol path with the caller's principal: the coarse `deploy`, the
-read-only maintenance mode, the repository's state and format, a virtual repository's deployment target, and then the handler with the archive's
-identity, ownership, shadowing, immutability and bounds. There is no second road into the commit. The archive is the body as it is: the browser
-reads nothing of it but its name and size, and the file name is not compared with the manifest
-([Q-ANS-142](../spec/formats/ansible.md#q-ans-142--the-name-and-the-version-come-from-the-manifest-and-the-file-name-is-not-compared)).
+**The screens' publish is the client's publish** (R-ANS-061, [Q-ANS-140](../spec/formats/ansible.md#q-ans-140--the-screens-publish-sends-the-archive-to-the-clients-publish-route-with-a-token-the-management-api-issues)). The role `api`, where the
+browser's session lives, issues the caller a personal access token of five minutes whose scope is `read` and `deploy` on the repository (and a
+virtual repository's deployment target) and nothing else (`createAnsibleUploadToken`, [ansible_upload.go](../../internal/api/v1/ansible_upload.go)).
+The browser sends the archive with it as `Authorization: Bearer` to the client's own publish route, which the role `packages` serves with every
+check of `ansible-galaxy collection publish`, the shadowing probes of a first version among them; `packages` sees a token, never the session,
+and `api` makes no probe and fills no cache (R-ARCH-001). The task is read back through the management API. There is no second road into the
+commit. The archive is the body as it is: the browser reads nothing of it but its name and size, and the file name is not compared with the
+manifest ([Q-ANS-142](../spec/formats/ansible.md#q-ans-142--the-name-and-the-version-come-from-the-manifest-and-the-file-name-is-not-compared)).
 
-**How the screen's upload is protected.** The browser reaches the publish only through the management API, never through the protocol path:
+**How the screen's upload is protected.**
 
 | What the request carries | Answer | Where it is decided |
 |---|---|---|
-| The session cookie without the CSRF token, with a wrong token, or with an `Origin` that is not the endpoint's | `403 csrf_failed` in the management API's problem shape; nothing stored, no task | The authentication stage ([stage.go](../../internal/auth/stage.go) `bySession`, `CheckCSRF`), before the router, the operation's permission and the handler; no handler runs, so the archive is not read |
-| The session cookie and its token | The publish; the event `package.published` names the session's user, with no token and the method `session` | The operation, then the client's publish route through `Dispatcher.Handoff` |
-| The session cookie, with or without its token, on the Galaxy route `POST …/v3/artifacts/collections/` | `401` with the Basic challenge, as before the screen's upload existed: the cookie is no credential for a write below `/api/<format>/` (`sessionAllowed`), so the caller is anonymous and the coarse `deploy` refuses it | The authentication stage and the dispatcher's coarse check |
-| A body above `ansible.max_archive_bytes` | `413 payload_too_large`, as on the client's route; a declared length is refused before the body is read | The handler's spool, reached by both roads |
-| Any write while the installation is in read-only maintenance | `503` with `Retry-After`, as on the client's route | The management API's write gate and the dispatcher's (`Writes`), both on the screen's road |
+| The session cookie without the CSRF token, with a wrong token, or with an `Origin` that is not the endpoint's, asking for the upload token | `403 csrf_failed` in the management API's problem shape; no token is issued | The authentication stage ([stage.go](../../internal/auth/stage.go) `bySession`, `CheckCSRF`) on the role `api`, before the router and the operation |
+| The session with its CSRF token | A token of the caller for five minutes, scoped to the repository, created via `ui`, the audit event `token.created`; answered with `no-store` | The operation's `deploy` check, then the token service |
+| The upload token on the publish route | The publish; the event `package.published` names the caller and the upload token | The role `packages`: the client's publish route with every check |
+| The upload token on another repository | Refused by the token's scope | The decision point |
+| The session cookie, with or without its CSRF token, on the Galaxy route `POST …/v3/artifacts/collections/` | `401` with the Basic challenge, as before the screen's upload existed: the cookie is no credential for a write below `/api/<format>/` (`sessionAllowed`) | The authentication stage and the dispatcher's coarse check |
+| A body above `ansible.max_archive_bytes` | `413`, as for the client's token; a declared length is refused before the body is read | The handler's spool |
+| Any of it while the installation is in read-only maintenance | `503` with `Retry-After` for the token and for the publish | The management API's write gate and the dispatcher's |
 
-Proven by `TestR_ANS_061_TheScreensPublishWithASessionIsGuardedAsEveryManagementWrite` (integration `ansiblelocal`).
+The token is a credential in the page's memory for at most five minutes; it can do nothing but read and publish into the one repository, and
+it is in the caller's list of tokens, where the caller can revoke it, until it expires. Proven by
+`TestR_ANS_061_TheScreensPublishRunsOnTheRolesTheChartRuns` and `TestR_ANS_061_TheScreensUploadWithASessionIsGuardedAsEveryManagementWrite`
+(integration `ansiblelocal`, a replica of the role `api` and one of the role `packages`).
 
 The import tasks are read with `read` on the repository, the tombstones are listed and cleared with `manage`. A task names the collection and the version and
 nothing else of the archive; its id is a random UUID. A virtual repository shows its deployment target's tasks only to a caller who may read the virtual
@@ -107,6 +112,7 @@ audit event `package.metadata_changed`; the collection document carries the flag
 ## What this does not cover
 
 - [H-2180](../spec/formats/ansible.md#h-2180--a-signature-cannot-be-given-on-the-screen) - a signature cannot be given on the screen; a version uploaded into a gated repository is refused to readers until one is posted through the API.
+- [H-2182](../spec/formats/ansible.md#h-2182--the-screens-upload-needs-the-packages-family-on-the-uis-own-endpoint) - the screen's upload needs the packages family on the UI's own endpoint.
 - [H-2181](../spec/formats/ansible.md#h-2181--a-refusal-of-the-archives-identity-comes-after-its-bytes-were-sent) - a refusal of the archive's identity comes after its bytes were sent.
 
 - [H-841](../spec/formats/ansible.md#h-841--collections-are-not-evaluated-for-vulnerabilities) - collections are not evaluated for vulnerabilities (no OSV ecosystem).

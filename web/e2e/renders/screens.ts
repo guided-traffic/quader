@@ -373,45 +373,42 @@ async function* collectionUpload(page: Page): AsyncGenerator<string> {
   });
   yield 'upload';
   const at = '2026-11-26T09:41:07Z';
-  const route = '**/api/v1/projects/*/repositories/*/ansible/collections';
-  await page.route(route, (r) =>
-    r.fulfill({
-      status: 201,
-      json: {
-        id: '6f1c0000-0000-4000-8000-0000000000a1',
-        state: 'completed',
-        namespace: 'acme',
-        name: 'platform_kubernetes_infrastructure',
-        version: '2.4.0-rc.3',
-        createdAt: at,
-        finishedAt: at,
-        error: null,
-        messages: [
-          { level: 'INFO', message: 'Collection acme.platform_kubernetes_infrastructure 2.4.0-rc.3 stored (sha256 d3499c41a2b7…)', time: at },
-          { level: 'WARNING', message: 'No changelog found: the collection has none of changelogs/changelog.yaml, CHANGELOG.md or CHANGELOG.rst, at its root or in docs/.', time: at },
-          { level: 'WARNING', message: 'No licence named: collection_info has neither license nor license_file.', time: at },
-        ],
-      },
-    }),
+  const id = '6f1c0000-0000-4000-8000-0000000000a1';
+  const task = {
+    id,
+    state: 'completed',
+    namespace: 'acme',
+    name: 'platform_kubernetes_infrastructure',
+    version: '2.4.0-rc.3',
+    createdAt: at,
+    finishedAt: at,
+    error: null,
+    messages: [
+      { level: 'INFO', message: 'Collection acme.platform_kubernetes_infrastructure 2.4.0-rc.3 stored (sha256 d3499c41a2b7…)', time: at },
+      { level: 'WARNING', message: 'No changelog found: the collection has none of changelogs/changelog.yaml, CHANGELOG.md or CHANGELOG.rst, at its root or in docs/.', time: at },
+      { level: 'WARNING', message: 'No licence named: collection_info has neither license nor license_file.', time: at },
+    ],
+  };
+  // The three calls of the upload (R-ANS-061): the upload token, the client's publish route with it, and the task.
+  const tokens = '**/api/v1/projects/*/repositories/*/ansible/upload-tokens';
+  const publish = '**/api/ansible/*/*/v3/artifacts/collections/';
+  const tasks = '**/api/v1/projects/*/repositories/*/ansible/imports/*';
+  await page.route(tokens, (r) =>
+    r.fulfill({ status: 201, json: { token: 'qdr_pat_render', expiresAt: at, publishPath: '/api/ansible/platform/collections/v3/artifacts/collections/' } }),
   );
+  await page.route(publish, (r) => r.fulfill({ status: 202, json: { task: `https://quader.example/api/ansible/platform/collections/v3/imports/collections/${id}/` } }));
+  await page.route(tasks, (r) => r.fulfill({ status: 200, json: task }));
   await dialog.locator('.dialog-actions .btn-confirm').click();
   await expect(dialog.locator('[data-testid="ansible-upload-outcome"]')).toBeVisible();
   yield 'completed';
-  await page.unroute(route);
+  await page.unroute(publish);
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
-  await page.route(route, (r) =>
+  await page.route(publish, (r) =>
     r.fulfill({
       status: 409,
-      contentType: 'application/problem+json',
-      body: JSON.stringify({
-        type: '/api/v1/problems/ansible_version_exists',
-        title: 'Collection version exists',
-        status: 409,
-        code: 'ansible_version_exists',
-        detail: 'acme.platform 1.2.0 is stored with other bytes; publish the changed collection under a new version.',
-        requestId: '7f3c9a2e5b8d4f1a6c0e9b3d7a5f2c8e',
-      }),
+      headers: { 'X-Request-Id': '7f3c9a2e5b8d4f1a6c0e9b3d7a5f2c8e' },
+      json: { errors: [{ status: '409', code: 'version_exists', title: 'Conflict.', detail: 'acme.platform 1.2.0 is stored with other bytes; publish the changed collection under a new version.' }] },
     }),
   );
   await act.click();
@@ -419,7 +416,9 @@ async function* collectionUpload(page: Page): AsyncGenerator<string> {
   await dialog.locator('.dialog-actions .btn-confirm').click();
   await expect(dialog.locator('quader-error-notice')).toBeVisible();
   yield 'refused';
-  await page.unroute(route);
+  await page.unroute(publish);
+  await page.unroute(tokens);
+  await page.unroute(tasks);
 }
 
 /**
@@ -3168,7 +3167,7 @@ export const screens: readonly Screen[] = [
     kinds: owners,
     walk: collectionUpload,
     notices: [{ match: /./, why: 'the refusal of a stored version, which the walk answers in the browser (R-ANS-061, R-UI-216)' }],
-    expected: [{ match: /^POST \/api\/v1\/projects\/[^/]+\/repositories\/collections\/ansible\/collections answered 409$/, why: 'the refusal the walk answers' }],
+    expected: [{ match: /^POST \/api\/ansible\/[^/]+\/collections\/v3\/artifacts\/collections\/ answered 409$/, why: 'the refusal the walk answers' }],
     de: true,
   },
   { id: 'packages', path: `${P}/packages`, kinds: all, walk: filtersOpen(packageChips) },
