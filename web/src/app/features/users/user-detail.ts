@@ -101,7 +101,9 @@ export class UserDetail {
     { id: 'created', label: $localize`:@@user.session.created:Created`, width: '11rem' },
     { id: 'lastSeen', label: $localize`:@@user.session.last-seen:Last seen`, width: '11rem' },
     { id: 'address', label: $localize`:@@user.session.address:Address`, width: '7rem' },
-    { id: 'agent', label: $localize`:@@user.session.agent:Browser` },
+    // The least width holds a word of a user agent up to 16 characters ("Safari/537.36"): a narrower column broke it inside itself,
+    // by the width the times beside it happened to take (the runner's layout check, 2026-11-26); below the budget the rows stack.
+    { id: 'agent', label: $localize`:@@user.session.agent:Browser`, width: '10rem' },
   ];
   protected readonly sessionError = signal<ApiError | null>(null);
 
