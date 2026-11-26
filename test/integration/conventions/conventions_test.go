@@ -55,7 +55,8 @@ func text(t *testing.T, conn *pgx.Conn, sql string) string {
 // What the purge does with the rows is TestR_REPO_067_ThePurgeOfARetiredRepository's (area upstream).
 var (
 	purged = []string{
-		"ansible_collection_versions", "ansible_doc_fetches", "ansible_import_tasks", "ansible_roles", "ansible_tombstones", "ansible_upstream_versions",
+		"ansible_collection_deprecations", "ansible_collection_versions", "ansible_doc_fetches", "ansible_import_tasks", "ansible_roles",
+		"ansible_tombstones", "ansible_upstream_versions",
 		"ansible_version_docs", "deb_binaries", "deb_remote_files", "deb_remote_indexes", "deb_remote_releases", "deb_suites", "deb_tombstones",
 		"items", "mirror_pending", "mirror_state", "npm_packages", "npm_remote_packages", "npm_tombstones", "nuget_symbol_file",
 		"nuget_tombstone", "nuget_version", "oci_manifests", "oci_tombstones", "packages", "remote_cache_entries", "remote_download",

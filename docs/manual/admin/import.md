@@ -108,7 +108,7 @@ While it runs, the command prints one line per package to the error output. At t
 ```text
 conflict @acme/ui@1.0.0: version_exists the target holds the version with sha512:09f42ffd7d1156f8, the source with sha512:51ffab7e2337e4a4
 failed left-pad: source_error the source holds no version of the package
-not kept @acme/forms: deprecation of 0.9.0 (Quader has no way to set a deprecation yet)
+not kept @acme/forms: deprecation of 0.9.0 (the import does not carry a deprecation; set it on the version's page)
 3 packages, 41 imported, 2 skipped, 1 conflict; 2 packages need a look
 ```
 

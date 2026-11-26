@@ -127,7 +127,11 @@ func (s *Store) ViewSummaries(_ context.Context, ids []int64) ([]rows.ViewSummar
 		if d == "" {
 			d = sum
 		}
-		out = append(out, rows.ViewSummary{VersionID: r.in.VersionID, Description: d, Tags: tags})
+		var m struct {
+			Deprecation json.RawMessage `json:"deprecation"`
+		}
+		_ = json.Unmarshal(r.in.Metadata, &m)
+		out = append(out, rows.ViewSummary{VersionID: r.in.VersionID, Description: d, Tags: tags, Listed: r.listed, Deprecation: m.Deprecation})
 	}
 	return out, nil
 }
@@ -143,6 +147,25 @@ func (s *Store) ViewDetails(_ context.Context, ids []int64, withReadme bool) ([]
 			s.view.mu.Unlock()
 		}
 		out = append(out, d)
+	}
+	return out, nil
+}
+
+// ViewDeprecated returns at most limit ids of versions of the repositories whose metadata carries a deprecation, in version id order.
+func (s *Store) ViewDeprecated(_ context.Context, repos []string, limit int) ([]int64, error) {
+	s.view.mu.Lock()
+	defer s.view.mu.Unlock()
+	var out []int64
+	for _, r := range s.view.rows {
+		if len(out) >= max(limit, 0) {
+			break
+		}
+		var m struct {
+			Deprecation json.RawMessage `json:"deprecation"`
+		}
+		if s.inRepos(repos, r.in.RepoID) && json.Unmarshal(r.in.Metadata, &m) == nil && len(m.Deprecation) > 0 && string(m.Deprecation) != "null" {
+			out = append(out, r.in.VersionID)
+		}
 	}
 	return out, nil
 }

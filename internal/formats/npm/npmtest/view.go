@@ -33,7 +33,7 @@ func (s *Store) ViewSummaries(_ context.Context, ids []int64) ([]rows.ViewSummar
 	for _, id := range ids {
 		if _, v := s.versionByID(id); v != nil {
 			desc, kw := summaryOf(v.manifest)
-			out = append(out, rows.ViewSummary{VersionID: id, Description: desc, Keywords: kw})
+			out = append(out, rows.ViewSummary{VersionID: id, Description: desc, Keywords: kw, Deprecated: v.deprecated})
 		}
 	}
 	return out, nil
@@ -46,6 +46,23 @@ func summaryOf(manifest []byte) (string, []string) {
 	}
 	_ = json.Unmarshal(manifest, &m)
 	return m.Description, m.Keywords
+}
+
+// ViewDeprecated lists the versions of the repositories that carry a deprecation message (R-API-085).
+func (s *Store) ViewDeprecated(_ context.Context, repos []string, limit int) ([]int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []int64
+	for _, p := range s.byID {
+		for _, v := range p.versions {
+			if v.deprecated != "" && len(out) < limit {
+				out = append(out, v.id)
+			}
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i] < out[j] })
+	_ = repos // the twin holds one installation's repositories by id; the view intersects with the scope
+	return out, nil
 }
 
 // ViewDetails reads the stored facts of the versions; the README only when asked.

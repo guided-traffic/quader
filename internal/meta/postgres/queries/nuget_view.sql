@@ -4,10 +4,13 @@
 -- invisible to every NuGet read (R-NUGET-005), so each statement joins package_versions.
 
 -- name: NuGetViewSummaries :many
--- The description (the summary when there is none) and the tags of the given versions.
+-- The description (the summary when there is none) and the tags of the given versions, their deprecation (R-NUGET-036) and their
+-- listing state.
 SELECT nv.version_id,
        COALESCE(NULLIF(btrim(nv.metadata ->> 'description'), ''), btrim(nv.metadata ->> 'summary'), '')::text AS description,
-       CASE WHEN jsonb_typeof(nv.metadata -> 'tags') = 'array' THEN (nv.metadata -> 'tags')::text ELSE '[]' END::text AS tags
+       CASE WHEN jsonb_typeof(nv.metadata -> 'tags') = 'array' THEN (nv.metadata -> 'tags')::text ELSE '[]' END::text AS tags,
+       CASE WHEN jsonb_typeof(nv.metadata -> 'deprecation') = 'object' THEN (nv.metadata -> 'deprecation')::text ELSE '' END::text AS deprecation,
+       nv.listed
   FROM nuget_version nv
   JOIN package_versions pv ON pv.id = nv.version_id
  WHERE nv.version_id = ANY(sqlc.arg(ids)::bigint[])
@@ -47,6 +50,20 @@ SELECT nv.version_id
          AND position(lower(sqlc.arg(text)::text) in lower(COALESCE(NULLIF(btrim(nv.metadata ->> 'description'), ''), nv.metadata ->> 'summary', ''))) > 0)
      OR (sqlc.arg(keyword)::text <> '' AND jsonb_typeof(nv.metadata -> 'tags') = 'array'
          AND (nv.metadata -> 'tags') @> to_jsonb(sqlc.arg(keyword)::text)))
+ ORDER BY nv.version_id
+ LIMIT sqlc.arg(max_rows)::int;
+
+-- name: NuGetViewDeprecated :many
+-- The versions of the given repositories (qualified names) that carry a deprecation (R-NUGET-036), at most max_rows; the caller
+-- intersects them with what the subject may read.
+SELECT nv.version_id
+  FROM nuget_version nv
+  JOIN package_versions pv ON pv.id = nv.version_id
+  JOIN packages p ON p.id = pv.package_id
+  JOIN repositories r ON r.id = p.repo_id
+  JOIN project rp ON rp.id = r.project_id
+ WHERE pv.trashed_at IS NULL AND jsonb_typeof(nv.metadata -> 'deprecation') = 'object'
+   AND (rp.key || '/' || r.key) = ANY(sqlc.arg(repos)::text[])
  ORDER BY nv.version_id
  LIMIT sqlc.arg(max_rows)::int;
 

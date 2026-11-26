@@ -35,7 +35,7 @@ func NewViewAdapters(fs []formats.Format, ports formats.DataPorts) *ViewAdapters
 	for _, f := range fs {
 		if a := f.View(); a != nil {
 			id := string(f.Descriptor().ID)
-			b := viewBridge{a: a, ports: ports, fetch: f.Descriptor().VersionFetch}
+			b := viewBridge{a: a, ports: ports, fetch: f.Descriptor().VersionFetch, dep: formats.CapabilitiesOf(f).Deprecations}
 			v.bridges[id] = b
 			v.by[id] = b
 			if z := formats.CapabilitiesOf(f).ViewSizer; z != nil {
@@ -81,6 +81,17 @@ type viewBridge struct {
 	a     formats.ViewAdapter
 	ports formats.DataPorts
 	fetch formats.VersionFetch
+	// dep finds the deprecated versions of a format that has them (formats.DeprecationFinder); nil for one that has none.
+	dep formats.DeprecationFinder
+}
+
+// Deprecated asks the format for its stored versions that are deprecated (R-API-085); a format without them has none.
+func (b viewBridge) Deprecated(ctx context.Context, repos []string, limit int) ([]int64, error) {
+	if b.dep == nil {
+		return nil, nil
+	}
+	ids, err := b.dep.DeprecatedVersions(ctx, b.ports, repos, limit)
+	return toInt64(ids), err
 }
 
 // Fetch is the format's rule of what a fetch of one of its versions is (R-API-079), by the name the statements read.
@@ -154,7 +165,8 @@ func (b viewBridge) Describe(ctx context.Context, vs []view.Version, want view.F
 	out := make(map[int64]view.Data, len(got))
 	for id, d := range got {
 		out[int64(id)] = view.Data{
-			Description: d.Description, Keywords: d.Keywords, Licenses: d.Licenses, HasReadme: d.HasReadme,
+			Description: d.Description, Keywords: d.Keywords, Deprecation: deprecationOf(d.Deprecation), Unlisted: d.Unlisted,
+			Licenses: d.Licenses, HasReadme: d.HasReadme,
 			Metadata: d.Metadata, WikiMetadata: d.WikiMetadata, ContentMetadata: d.ContentMetadata, ContentPaths: d.ContentPaths,
 			Readme: d.Readme, ReadmeFile: d.ReadmeFile, ReadmeHTML: d.ReadmeHTML,
 		}
@@ -170,6 +182,18 @@ func (b viewBridge) Find(ctx context.Context, f view.Find, limit int) ([]int64, 
 func (b viewBridge) Withheld(ctx context.Context, repos []string) ([]int64, error) {
 	ids, err := b.a.Withheld(ctx, b.ports, repos)
 	return toInt64(ids), err
+}
+
+// deprecationOf is a format's deprecation in the terms of the read model.
+func deprecationOf(d *formats.Deprecation) *view.Deprecation {
+	if d == nil {
+		return nil
+	}
+	out := &view.Deprecation{Package: d.Package, Message: d.Message, Reasons: d.Reasons}
+	if a := d.Alternate; a != nil {
+		out.Alternate = &view.Alternate{Package: a.Package, Range: a.Range}
+	}
+	return out
 }
 
 func toInt64(in []formats.VersionID) []int64 {

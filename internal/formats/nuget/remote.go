@@ -14,6 +14,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats/nuget/id"
 	"github.com/guided-traffic/quader/internal/formats/nuget/registration"
 	"github.com/guided-traffic/quader/internal/formats/nuget/remote"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
 	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
@@ -261,7 +262,13 @@ func (remoteAdapter) ExpectsType(p formats.Path, mediaType string) bool {
 }
 
 // fillData is what PrepareFill hands OnFill.
-type fillData struct{ kind docKind }
+// fillData is what PrepareFill checked of a document for OnFill: its kind and, for a registration index or page, the ID and the
+// deprecation of each version it inlines (R-NUGET-036).
+type fillData struct {
+	kind docKind
+	id   string
+	deps map[string]*rows.Deprecation
+}
 
 // PrepareFill checks a fetched metadata document before anything is stored, outside every
 // transaction (R-ARCH-019): an upstream document that is not the document its path promises is
@@ -281,69 +288,75 @@ func (a remoteAdapter) PrepareFill(_ context.Context, rc formats.RemoteContext, 
 	if err != nil {
 		return formats.Prepared{}, errs.E(errs.Internal, errs.CodeInternal, "The fetched document cannot be read.", errs.WithCause(err))
 	}
-	out := formats.Prepared{Data: fillData{kind: t.kind}}
+	data := fillData{kind: t.kind, id: t.id}
+	var maps []formats.URLMapping
+	var leaves []remote.Leaf
 	switch t.kind {
 	case kindDiscovery:
 		_, err = remote.ParseDiscovery(doc)
 	case kindVersions:
 		_, err = remote.VersionList(doc, MaxDocumentBytes)
 	case kindRegIndex:
-		out.Mappings, err = a.indexMappings(rc, t, doc)
+		maps, leaves, err = a.indexMappings(rc, t, doc)
+		data.deps = upstreamDeprecations(t.id, leaves)
 	case kindRegPage:
-		out.Mappings, err = a.pageMappings(rc, t, doc)
+		maps, leaves, err = a.pageMappings(rc, t, doc)
+		data.deps = upstreamDeprecations(t.id, leaves)
 	default:
 		err = errs.E(errs.Internal, errs.CodeInternal, "NuGet fills metadata documents only.")
 	}
-	return out, err
+	return formats.Prepared{Data: data, Mappings: maps}, err
 }
 
-func (a remoteAdapter) indexMappings(rc formats.RemoteContext, t target, doc []byte) ([]formats.URLMapping, error) {
+func (a remoteAdapter) indexMappings(rc formats.RemoteContext, t target, doc []byte) ([]formats.URLMapping, []remote.Leaf, error) {
 	idx, err := remote.ParseIndex(doc, MaxDocumentBytes)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	d, err := discovery(rc)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var maps []formats.URLMapping
+	var leaves []remote.Leaf
 	for _, pg := range idx.Pages {
 		if pg.Inline {
 			maps = append(maps, packageMappings(d, t.id, pg.Leaves)...)
+			leaves = append(leaves, pg.Leaves...)
 			continue
 		}
 		lo, ok1 := urlForm(pg.Lower)
 		hi, ok2 := urlForm(pg.Upper)
 		if !ok1 || !ok2 {
-			return nil, errs.E(errs.UpstreamFailed, errs.CodeNuGetInvalidUpstreamDocument,
+			return nil, nil, errs.E(errs.UpstreamFailed, errs.CodeNuGetInvalidUpstreamDocument,
 				"A page of the upstream's registration index has bounds that are no versions.")
 		}
 		want, err := upstreamURL(d, target{kind: kindRegPage, id: t.id, lower: lo, upper: hi})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		got, err := remote.ContentURL(pg.ID)
 		if err != nil {
-			return nil, errs.E(errs.UpstreamFailed, errs.CodeNuGetInvalidUpstreamDocument,
+			return nil, nil, errs.E(errs.UpstreamFailed, errs.CodeNuGetInvalidUpstreamDocument,
 				"A page of the upstream's registration index names an address that cannot be used: "+err.Error())
 		}
 		if got.String() != want.String() {
 			maps = append(maps, formats.URLMapping{Path: formats.Path{Path: RegistrationPagePath(t.id, lo, hi)}, Upstream: got.String()})
 		}
 	}
-	return maps, nil
+	return maps, leaves, nil
 }
 
-func (a remoteAdapter) pageMappings(rc formats.RemoteContext, t target, doc []byte) ([]formats.URLMapping, error) {
+func (a remoteAdapter) pageMappings(rc formats.RemoteContext, t target, doc []byte) ([]formats.URLMapping, []remote.Leaf, error) {
 	leaves, err := remote.ParsePage(doc, MaxDocumentBytes)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	d, err := discovery(rc)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return packageMappings(d, t.id, leaves), nil
+	return packageMappings(d, t.id, leaves), leaves, nil
 }
 
 // packageMappings records the package content address a leaf names where it is not the address
@@ -373,14 +386,25 @@ func packageMappings(d *remote.Discovery, lowerID string, leaves []remote.Leaf) 
 // OnFill runs in the transaction that upserts the document's cache entry. NuGet keeps no rows
 // of a metadata document: the documents are served from the stored bytes. What it does is the
 // early eviction of the merged documents of virtual repositories that contain the package
-// (R-REPO-020); nothing depends on the signal for correctness.
-func (remoteAdapter) OnFill(_ context.Context, _ formats.Tx, ev formats.FillEvent) (formats.FillDecision, error) {
+// (R-REPO-020), on which nothing depends for correctness, and the deprecation of each cached
+// version a registration document names, written into its row so that the screens show what the
+// upstream states (R-NUGET-036); a document older than the stored one changes no row.
+func (remoteAdapter) OnFill(ctx context.Context, tx formats.Tx, ev formats.FillEvent) (formats.FillDecision, error) {
 	t, err := parseTarget(ev.Path)
 	if err != nil {
 		return formats.FillByFetchTime, err
 	}
 	if t.kind == kindDiscovery {
 		return formats.FillByFetchTime, nil
+	}
+	if data, ok := ev.Prepared.Data.(fillData); ok && len(data.deps) > 0 && (ev.StoredAt.IsZero() || !ev.StoredAt.After(ev.FetchedAt)) {
+		st, err := storeOf(ev.Data)
+		if err != nil {
+			return formats.FillByFetchTime, err
+		}
+		if err := st.SetRemoteDeprecations(ctx, tx, ev.Repo.ID, data.id, data.deps); err != nil {
+			return formats.FillByFetchTime, err
+		}
 	}
 	return formats.FillByFetchTime, ev.Packages.Notify(catalog.MetadataChangedArea, catalog.PackageChanged(ev.Repo.ID, t.id))
 }

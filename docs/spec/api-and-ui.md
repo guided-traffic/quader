@@ -2558,6 +2558,76 @@ Acceptance criteria:
   R-API-012 pass.
 - The `auditor` reads the list (200) and gets 403 on `setRegistryPresets`; a `repository-admin` replaces it (200).
 
+### R-API-085 · A deprecated version or package is marked alike in every format that has it
+Priority: **P1** · Covers: PKG-NPM-020
+
+The owner's rules (2026-11-19 and 2026-11-25): what is decided at one format holds for every format that has the same thing, and metadata
+that is there is used and shown. npm, NuGet and Ansible Galaxy each have a deprecation; only npm's reached a screen, and only its version's
+page (W-30, G4). One state, one look, one operation
+([Q-API-440](#q-api-440--deprecation-is-a-member-of-the-views-summary-and-the-format-decides-the-write),
+[ADR-286](../decisions.md#adr-286--deprecation-is-one-state-of-the-format-contract-set-through-one-management-operation-and-decided-by-the-format)):
+
+| Format | What is deprecated | Read from | Set by | Served to clients as | What the clients do with it |
+|---|---|---|---|---|---|
+| npm | one version, with a message (at most 1,024 characters) | `npm_versions.deprecated`: a local publisher's, a remote's upstream's from the stored package document (R-NPM-050) | the operation below; `npm deprecate` itself is not built ([H-2160](formats/npm.md#h-2160--npm-deprecate-is-not-built-the-management-operation-sets-an-npm-deprecation)) | `versions[v].deprecated` of the package document | `npm install` prints `npm warn deprecated <name>@<version>: <message>`; a range picks a version that is not deprecated where one satisfies it; `npm view` shows `DEPRECATED` |
+| NuGet | one version, with reasons (`Legacy`, `CriticalBugs`, `Other`), an optional message and an optional alternate package | the member `deprecation` of `nuget_version.metadata`: a local version's set below, a remote's cached version's from its upstream's registration ([R-NUGET-036](formats/nuget.md#r-nuget-036--a-version-is-deprecated-with-reasons-a-message-and-an-alternate-package)) | the operation below | `deprecation` of the registration's catalog entry and of a search result | `dotnet list package --deprecated` lists it with its reasons and alternative; Visual Studio marks it and links the alternate; a restore warns of nothing; the message is shown by no client |
+| Ansible Galaxy | the whole collection, every version of it | `ansible_collection_deprecations`: a local collection's set below, a remote's from its upstream's collection document ([R-ANS-060](formats/ansible.md#r-ans-060--a-collection-is-deprecated-as-a-whole)) | the operation below | `deprecated: true` of the collection document | no release of `ansible-galaxy` reads it: a deprecated collection installs as any other, without a warning |
+| OCI | an image: none in the format. A Helm chart says `deprecated: true` in its `Chart.yaml`, set by pushing it | — | — | — | `helm install` and `helm upgrade` warn; not marked in Quader's lists yet ([H-2165](#h-2165--a-helm-charts-deprecation-is-not-marked-in-the-lists)) |
+| Debian | none: a transitional package says it in its description, a convention | — | — | — | — |
+| generic files, ClamAV definitions | none | — | — | — | — |
+
+NuGet's **unlisted** is not a deprecation: an unlisted version is hidden from search and still restored by its exact number, a deprecated
+one is found, restored and marked ([Q-NUGET-142](formats/nuget.md#q-nuget-142--unlisted-and-deprecated-are-two-states-with-two-marks)). Both
+are shown, each with its own word.
+
+**The API.**
+- `deprecation` (`PackageDeprecation`: `scope` `version` or `package`, `message`, `reasons`, `alternatePackage` with `name`, `range` and,
+  on a version's details, `packageId` where the caller may read a version of it) is a member of a version's details, of every entry of the
+  version list and of a package of the list, which carries its latest version's
+  ([Q-API-441](#q-api-441--a-package-is-shown-deprecated-when-its-latest-version-is-and-the-filter-asks-the-same)); `unlisted: true` of a
+  version that is unlisted. Both are read with the summary of the format's view (`ViewData`), so a list pays no read of the details.
+  npm's message is no longer the metadata member `deprecated`.
+- A suggestion of the search field carries `deprecated: true` when the package's latest version in the repository it is placed in is
+  deprecated, for a repository the caller reads whole ([Q-API-443](#q-api-443--a-suggestion-is-marked-for-a-repository-the-caller-reads-whole)).
+- `GET /api/v1/packages?deprecated=true` keeps the packages whose latest visible version is deprecated, in every format that has it.
+- `PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/packages/{packageName}/deprecation` sets a deprecation, or changes it, and
+  answers the one the subject holds now; `DELETE` of the same path (`?version=` for a format that deprecates versions) clears it
+  ([Q-API-442](#q-api-442--one-operation-on-a-repositorys-package-the-format-decides-the-subject)). The format decides as its own
+  protocol write does: deploy on the package, and npm's and NuGet's ownership of the name; the lock of the package; a version or a
+  collection the caller may not read answered as missing (404); what its protocol cannot carry refused with `422 validation_failed`
+  and the reason (a version for Ansible Galaxy, reasons for npm, no reason for NuGet, an alternate package's range that is no NuGet range);
+  the rows, the package's revision and the audit event in one transaction: `npm.deprecate` for npm, `package.metadata_changed` with the
+  change `deprecate` or `undeprecate` for NuGet and Ansible Galaxy. A remote repository shows its upstream's state and a virtual one its
+  members': both answer `409 not_applicable`, as a format without deprecation does. A repeat changes nothing and records nothing.
+
+**The screens** ([Q-UI-1300](#q-ui-1300--one-mark-deprecated-is-a-warning-badge-unlisted-a-plain-one)):
+- The version's page says it in a banner above its tabs: **Deprecated.**, for a collection "Every version of this collection is
+  deprecated.", the message as text (never markup; an address in it stays text), NuGet's reasons in words and **Use instead** with the
+  alternate package, a link where the reader may read it and its range unless it is `*`. An unlisted version keeps its banner.
+- The mark **Deprecated** (a warning badge, the message as its title) and **Unlisted** stand beside the version in the table of
+  versions, in the switch of the version's head, in the opened row of a repository's content, beside the package in a repository's
+  package list, the product's list **Packages**, the search's hits and suggestions, and on the tab **Upstream** of a remote, where the
+  catalogue's hit and an opened package's version rows carry the upstream's flags.
+- The act ([Q-UI-1301](#q-ui-1301--deprecating-is-an-act-in-the-menu-of-the-versions-head-with-a-small-dialog)): a menu at the end of
+  the version's head, for a reader who may deploy the package in a local repository that holds the version: **Deprecate version**
+  (npm, NuGet) or **Deprecate collection** (Ansible Galaxy), which opens a small dialog of what the format carries; on a deprecated
+  version **Change deprecation** and **Undo deprecation**. The page, its switch and its package's row show the new state at once (R-UI-213).
+- The filter **State: Deprecated only** in the drawer of the list **Packages** ([Q-UI-1302](#q-ui-1302--the-filter-deprecated-stands-in-the-drawer-of-the-list-packages)).
+
+Acceptance criteria:
+
+- Unit (`internal/packages/view`, `TestR_API_085_TheVersionListMarksDeprecatedAndUnlistedVersionsInOneSummaryRead`, milliseconds): a page
+  of the version list carries each version's deprecation and unlisted mark from one summary read.
+- Unit (`npm`, `nuget`, `ansible`, milliseconds): what each format carries and refuses (`TestR_NPM_018_ADeprecationCarriesAMessageOnly`,
+  `TestR_NUGET_036_…`, `TestR_ANS_060_…`).
+- Integration (`npm`, `TestR_API_085_AnNPMVersionIsDeprecatedThroughTheManagementAPIAndServed`; `nuget`,
+  `TestR_NUGET_036_ALocalVersionIsDeprecatedThroughTheManagementAPIAndServed`; `ansiblelocal`,
+  `TestR_ANS_060_ACollectionIsDeprecatedThroughTheManagementAPIAndServed`; about a second each): the write, the refusals, the served
+  document, the version list, the filter, the suggestion, the clear.
+- Web unit (`deprecation-mark.spec.ts`, `deprecation-dialog.spec.ts`, `package-version.spec.ts`, `package-list.spec.ts`): the marks, the
+  dialog per format, the banner, the act and its refusal, the filter.
+- The renders `deprecation-*` and `ui-states` of the dialog and its refusal (light and dark, 390, 1,024 and 1,440 px, English and German).
+
 ### R-API-058 · Operations that serve wiki content
 Priority: **MVP** · Covers: quader-only
 
@@ -26050,6 +26120,110 @@ latest version has one rule across classes. **Applied in the spec:** R-API-029, 
 `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit` (area `ociremote`), `TestR_HA_020_ThePrereleaseStepRefillsTheRowsWhoseAnswerChanged`
 (area `postgres`).
 
+### Q-API-440 · Deprecation is a member of the view's summary, and the format decides the write
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: npm, NuGet and Ansible Galaxy each have a deprecation, of a version or of a whole package, and it must be marked in every list
+and set where the protocol carries it (R-API-085). npm's message reached its version's page as a member of the format's metadata, which
+a list never reads.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `ViewData.Deprecation` and `Unlisted`, read with the summary; two optional interfaces, `DeprecationFinder` for the filter and `Deprecator` for the write; the management operation builds a request of the format and the format decides as its own protocol write does (chosen) | The format contract carries the state; the core reads it as it reads a description | Every list marks it at the cost of the summary read it makes anyway; npm's ownership, NuGet's, the lock, the revision and the audit event stay the format's; a new format adds two methods | The contract grows by two interfaces (an addition, `ContractVersion` stays) |
+| (b) A column `deprecated` on the generic version rows, written by the core | One place | The filter is a column | The formats keep their own state for their documents (npm's `deprecated`, NuGet's registration, the collection document): two places to keep equal, and the core would decide a format's rules |
+| (c) A metadata member per format, as npm's was | No contract change | — | Lists never read the details; every screen learns each format's member |
+
+**Choice:** (a). **Rationale:** the state stays where the format serves it from, and the core gets one shape for the screens. Revisit when a
+format needs a deprecation the summary cannot read cheaply. **Applied in the spec:** R-API-085,
+[architecture.md](architecture.md) R-ARCH-008 (the contract blocks), ADR-286. Code: `internal/formats/deprecation.go`,
+`internal/api/v1/deprecation_api.go`.
+
+### Q-API-441 · A package is shown deprecated when its latest version is, and the filter asks the same
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: npm and NuGet deprecate versions, so a package may have deprecated and current versions at once (`npm deprecate pkg@"<2"`); a
+list row names the package and its latest version.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The row carries its latest version's deprecation, and `deprecated=true` keeps the packages whose latest visible version is deprecated (chosen) | The mark belongs to what the row names | npm's and nuget.org's pages call a package deprecated by the version they show; an Ansible collection is the same either way; the statement picks the latest by the order the view uses (release, pre-release, unranked; the stored key) | A package with an old deprecated line is not "deprecated" in the list; its table of versions says it |
+| (b) A package is deprecated when every visible version is | One rule without the latest | A package deprecated whole is found | A row whose latest is deprecated and an older one is not shows no mark, though its page says it |
+| (c) A package with any deprecated version | Simplest statement | — | Most of npm's popular packages have an old deprecated version: the filter finds everything |
+
+**Choice:** (a). **Rationale:** the mark and the filter say the same thing about the same version, and the version is the one the row
+shows. The filter's statement takes the deprecated versions from the formats (`DeprecationFinder`, bounded as a search is, 100,000) and
+keeps a package whose latest visible version is among them; a row whose key is not filled yet counts as unranked. **Applied in the
+spec:** R-API-085, `PackageViewList` in `package_view.sql`.
+
+### Q-API-442 · One operation on a repository's package; the format decides the subject
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `PUT`/`DELETE …/repositories/{repoKey}/packages/{packageName}/deprecation`, the version in the body or the query; the format refuses a version it cannot carry, or its absence (chosen) | One shape for every format | The repository is the one whose rows change (a deprecation of a local repository's copy); the path is the one of the owners of a name; an Ansible collection takes no version | A client must know whether to send a version; the refusal says it |
+| (b) `…/packages/{packageId}/versions/{version}/deprecation` | The version's own address | — | The package id spans repositories, so the repository is a parameter anyway; a collection would need a second path |
+| (c) The formats' own protocol writes only (`npm deprecate`) | No new operation | — | NuGet and Ansible Galaxy have no client command for it; the screen needs one |
+
+**Choice:** (a). **Rationale:** the change is of a local repository's rows, decided by the format; a remote shows its upstream's state and
+a virtual one its members', so both answer `409 not_applicable`. **Applied in the spec:** R-API-085, `api/openapi.yaml`.
+
+### Q-API-443 · A suggestion is marked for a repository the caller reads whole
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the suggestions are read without the aggregation of the list (R-API-062), a package placed in one repository; a repository the
+caller reads in part is decided on the package alone.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) For the suggestions placed in a repository the caller reads whole, the latest version's candidates (`PackageViewLatest`) and the formats' summaries, one statement and one read per format (chosen) | The list's rule on the shown suggestions only | At most ten packages; no version a caller may not read is consulted | A suggestion in a repository read in part carries no mark |
+| (b) The list's statement for the suggestions | Every scope | — | The aggregation R-API-062 avoids |
+
+**Choice:** (a). **Applied in the spec:** R-API-085, `view.Service.Suggest`.
+
+### Q-UI-1300 · One mark: Deprecated is a warning badge, Unlisted a plain one
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the tab Upstream showed a plain badge "Deprecated" for npm; Ansible's documentation a warning badge for a deprecated option;
+the version page a warning banner. R-API-085 asks for one look wherever a deprecated version or package is listed or named.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One component, `quader-deprecation-mark`: **Deprecated** as the warning badge with the icon `warning` and the message as its title, **Unlisted** as a plain badge with the icon `visibility_off` (chosen) | The banner's colour in every list | A warning reads as one; the documentation's deprecated option already looks so; the upstream's flags take it too | The tab Upstream's other flags stay plain badges beside it |
+| (b) The plain badge everywhere | As the tab Upstream had it | — | A deprecation reads like "Pre-release" |
+
+**Choice:** (a). The version page keeps its banner, which says the message, the reasons and the alternate; the head shows no badge beside
+it. **Applied in the spec:** R-API-085.
+
+### Q-UI-1301 · Deprecating is an act in the menu of the version's head, with a small dialog
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A menu (`more_vert`) at the end of the head for a reader who may deploy in a local repository that holds the version: **Deprecate version**, or **Deprecate collection**; a dialog of what the format carries (npm a message, NuGet reasons, a message and an alternate, Ansible a message for Quader's pages) with a sentence of what the clients do; **Change deprecation** and **Undo deprecation** on a deprecated version, the undo without a dialog (chosen) | A repository's acts are a menu at its head's end | Simple by default: nothing on the page for a reader who may not; the act and its words follow the format; the refusal is shown in the dialog whole | One more menu in the head |
+| (b) A section **Deprecation** in the tab Details | Always visible | — | An expert setting in the main flow |
+
+**Choice:** (a). **Applied in the spec:** R-API-085. Code: `features/packages/deprecation-dialog.ts`, `package-version.html`.
+
+### Q-UI-1302 · The filter "deprecated" stands in the drawer of the list Packages
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the plan's search of Ansible collections wants it (W-30 A3); the list **Packages** has a drawer of filters, a repository's
+package list has its filter field only.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A category **State** with **Deprecated only** in the drawer of **Packages**, a chip **State: Deprecated** while it is set, kept in a saved view (chosen) | The list that filters | Every format with a deprecation at once; a repository's packages by the drawer's repository filter | A repository's own list has no drawer to hold it |
+| (b) A drawer for a repository's list | — | — | A second drawer for one checkbox |
+
+**Choice:** (a). **Applied in the spec:** R-API-085.
+
 ### Q-UI-1090 · A tab strip takes its tabs closer before it scrolls
 
 Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
@@ -27494,3 +27668,17 @@ owner whether it is regularly present.
 
 A version older than the ten newest is reached through the table of every version (`…/-/versions`), not through the switch; the switch
 has no search (Q-UI-1243).
+
+### H-2165 · A Helm chart's deprecation is not marked in the lists
+
+Stage: R-API-085. A Helm chart pushed to an OCI repository says `deprecated: true` in its `Chart.yaml`; the package that reads a chart's
+facts marks it on the chart's page (its gap H-2117) and was not on `main` when the deprecation was built, so the lists, the switch and the
+tab Upstream do not mark a deprecated chart. Live for every deprecated chart; what closes it is a `DeprecationFinder` and the summary member
+of OCI's view for a chart, read from where that package stores the chart's facts.
+
+### H-2166 · Which copy of a latest version the list reads is not defined
+
+Stage: R-API-085. When two repositories of the scope hold the latest version of a package and only one of them marks it deprecated (a
+copy from a deprecated local repository into another, a remote whose upstream deprecated a version that a local repository holds too), the
+list's row and its filter read one of the two rows, which one is not defined; the version's page reads the copy that was stored first.
+Live only for such a pair; it decides a mark, not a permission.

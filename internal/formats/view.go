@@ -168,7 +168,7 @@ type ViewVersion struct {
 type ViewFields uint8
 
 const (
-	// ViewSummary is the description and the keywords.
+	// ViewSummary is the description, the keywords, the deprecation and whether the version is unlisted.
 	ViewSummary ViewFields = 1 << iota
 	// ViewDetails adds the licenses, whether a README exists and the metadata.
 	ViewDetails
@@ -186,6 +186,12 @@ func (f ViewFields) Has(o ViewFields) bool { return f&o == o }
 type ViewData struct {
 	Description string
 	Keywords    []string
+	// Deprecation is the version's deprecation, its own or its package's (R-API-085); nil when it is not deprecated. It is read with
+	// ViewSummary, so that every list marks it.
+	Deprecation *Deprecation
+	// Unlisted says that the format hides the version from its search while it still serves it by its exact number (NuGet's unlist,
+	// R-NUGET-006); read with ViewSummary.
+	Unlisted bool
 	// Licenses are the declared SPDX identifiers or the expression; nil for none.
 	Licenses  []string
 	HasReadme bool

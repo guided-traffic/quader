@@ -28,6 +28,9 @@ var ownerRightsExempt = map[string]string{
 		"decision point with the scope, and the owner path for a token that does not inherit only where its scope lists manage on " +
 		"the name (scopeReachesName, Q-AUTHZ-240)",
 	"removePackageOwner": "as addPackageOwner",
+	"setPackageDeprecation": "the format decides deploy on the package with the request's subject and scope through the decision point, " +
+		"and npm's and NuGet's ownership of the name, as a protocol write of its own does (R-API-085)",
+	"clearPackageDeprecation": "as setPackageDeprecation",
 	"cancelJob": "settings:write through the decision point, with the scope; the starter's path admits a session and an " +
 		"inheriting token only (mayCancel, Q-API-215)",
 	"checkPermissions":                         "computes the answers for the presenting credential, its scope included; writes nothing",

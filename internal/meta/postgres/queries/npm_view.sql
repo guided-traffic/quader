@@ -3,12 +3,27 @@
 -- counts (package_view.sql); these answer what only the npm tables hold.
 
 -- name: NPMViewSummaries :many
--- The description and the keywords of the manifests of the given versions.
+-- The description and the keywords of the manifests of the given versions, and their deprecation message (R-API-085).
 SELECT nv.version_id,
        COALESCE(nv.manifest ->> 'description', '')::text AS description,
-       CASE WHEN jsonb_typeof(nv.manifest -> 'keywords') = 'array' THEN (nv.manifest -> 'keywords')::text ELSE '[]' END::text AS keywords
+       CASE WHEN jsonb_typeof(nv.manifest -> 'keywords') = 'array' THEN (nv.manifest -> 'keywords')::text ELSE '[]' END::text AS keywords,
+       COALESCE(nv.deprecated, '')::text AS deprecated
   FROM npm_versions nv
  WHERE nv.version_id = ANY(sqlc.arg(ids)::bigint[]);
+
+-- name: NPMViewDeprecated :many
+-- The versions of the given repositories (qualified names) that carry a deprecation message (R-API-085), at most max_rows; the caller
+-- intersects them with what the subject may read.
+SELECT nv.version_id
+  FROM npm_versions nv
+  JOIN package_versions pv ON pv.id = nv.version_id
+  JOIN packages p ON p.id = pv.package_id
+  JOIN repositories r ON r.id = p.repo_id
+  JOIN project rp ON rp.id = r.project_id
+ WHERE pv.trashed_at IS NULL AND COALESCE(nv.deprecated, '') <> ''
+   AND (rp.key || '/' || r.key) = ANY(sqlc.arg(repos)::text[])
+ ORDER BY nv.version_id
+ LIMIT sqlc.arg(max_rows)::int;
 
 -- name: NPMViewDetails :many
 -- The manifest, the deprecation, the README (when asked) and the dist-tags of the

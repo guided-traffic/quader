@@ -53,15 +53,37 @@ SELECT repo_id, name, version, sort_key, item_id, sha256, size, requires_ansible
 SELECT count(*)::bigint FROM ansible_collection_versions WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text;
 
 -- name: AnsibleCollectionSummary :one
--- What the collection document shows: the first and the newest publish, and the newest version by precedence.
+-- What the collection document shows: the first and the newest publish, the newest version by precedence, and whether the collection
+-- is deprecated (R-ANS-060).
 SELECT count(*)::bigint AS versions,
        COALESCE((extract(epoch FROM min(published_at)) * 1000000)::bigint, 0)::bigint AS created_us,
        COALESCE((extract(epoch FROM max(published_at)) * 1000000)::bigint, 0)::bigint AS updated_us,
        COALESCE((SELECT v.version FROM ansible_collection_versions v
                   WHERE v.repo_id = sqlc.arg(repo_id)::bigint AND v.name = sqlc.arg(name)::text
-                  ORDER BY v.sort_key DESC LIMIT 1), '')::text AS highest
+                  ORDER BY v.sort_key DESC LIMIT 1), '')::text AS highest,
+       EXISTS (SELECT 1 FROM ansible_collection_deprecations d
+                WHERE d.repo_id = sqlc.arg(repo_id)::bigint AND d.name = sqlc.arg(name)::text)::boolean AS deprecated
   FROM ansible_collection_versions
  WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text;
+
+-- name: AnsibleCollectionDeprecation :many
+-- The deprecation of a collection of a repository (R-ANS-060); no row when it is not deprecated.
+SELECT COALESCE(deprecated_by, '')::text AS deprecated_by, COALESCE(message, '')::text AS message, deprecated_at
+  FROM ansible_collection_deprecations
+ WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text;
+
+-- name: AnsibleSetCollectionDeprecation :execrows
+-- Deprecates a collection of a repository, or changes the message of its deprecation; a row that holds that message already is not
+-- touched, so the count says whether anything changed.
+INSERT INTO ansible_collection_deprecations (repo_id, name, deprecated_by, message)
+VALUES (sqlc.arg(repo_id)::bigint, sqlc.arg(name)::text, NULLIF(sqlc.arg(deprecated_by)::text, ''), NULLIF(sqlc.arg(message)::text, ''))
+ON CONFLICT (repo_id, name) DO UPDATE
+   SET message = EXCLUDED.message, deprecated_by = EXCLUDED.deprecated_by, deprecated_at = now()
+ WHERE ansible_collection_deprecations.message IS DISTINCT FROM EXCLUDED.message;
+
+-- name: AnsibleClearCollectionDeprecation :execrows
+-- Clears the deprecation of a collection of a repository; the count says whether it was deprecated.
+DELETE FROM ansible_collection_deprecations WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text;
 
 -- name: AnsibleDeleteVersion :many
 -- Deletes the row of a version and returns what it held; none when the row is gone already (the cascade of a permanent delete).
@@ -147,12 +169,26 @@ SELECT r.id, (p.key || '/' || r.key)::text AS ref
  WHERE r.id = sqlc.arg(repo_id)::bigint AND r.format = 'ansible' AND r.class = 'local';
 
 -- name: AnsibleViewRows :many
--- The rows the package screens read for the given generic versions (R-ANS-026).
-SELECT pv.id AS version_id, v.name, v.version, v.requires_ansible, v.dependencies, v.collection_info, v.sha256, v.size, v.published_at
+-- The rows the package screens read for the given generic versions (R-ANS-026), with the deprecation of their collection (R-ANS-060).
+SELECT pv.id AS version_id, v.name, v.version, v.requires_ansible, v.dependencies, v.collection_info, v.sha256, v.size, v.published_at,
+       (d.repo_id IS NOT NULL)::boolean AS deprecated, COALESCE(d.message, '')::text AS deprecation_message
   FROM package_versions pv
   JOIN packages pk ON pk.id = pv.package_id
   JOIN ansible_collection_versions v ON v.repo_id = pk.repo_id AND v.name = pk.name AND v.version = pv.version
+  LEFT JOIN ansible_collection_deprecations d ON d.repo_id = pk.repo_id AND d.name = pk.name
  WHERE pv.id = ANY(sqlc.arg(ids)::bigint[]);
+
+-- name: AnsibleViewDeprecated :many
+-- The generic versions of the repositories (by key) whose collection is deprecated (R-ANS-060), at most row_limit.
+SELECT pv.id AS version_id
+  FROM ansible_collection_deprecations d
+  JOIN repositories r ON r.id = d.repo_id
+  JOIN project p ON p.id = r.project_id
+  JOIN packages pk ON pk.repo_id = d.repo_id AND pk.name = d.name
+  JOIN package_versions pv ON pv.package_id = pk.id AND pv.trashed_at IS NULL
+ WHERE (p.key || '/' || r.key) = ANY(sqlc.arg(repos)::text[])
+ ORDER BY pv.id
+ LIMIT sqlc.arg(row_limit)::int;
 
 -- name: AnsibleViewFind :many
 -- The generic versions of the repositories (by key) whose description contains the text or whose tags contain the keyword.

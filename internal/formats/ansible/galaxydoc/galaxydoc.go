@@ -197,7 +197,7 @@ func RenderRoot(v1 bool) []byte {
 
 // RenderCollection renders the collection document (R-ANS-004).
 func RenderCollection(c CollectionSummary, a Addr) []byte {
-	o := newObj().put("href", a.Collection(c.Namespace, c.Name)).put("namespace", c.Namespace).put("name", c.Name).put("deprecated", false).
+	o := newObj().put("href", a.Collection(c.Namespace, c.Name)).put("namespace", c.Namespace).put("name", c.Name).put("deprecated", c.Deprecated).
 		put("versions_url", a.Versions(c.Namespace, c.Name))
 	if c.HighestVersion == "" {
 		o.raw("highest_version", []byte("null"))

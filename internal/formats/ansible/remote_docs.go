@@ -28,6 +28,8 @@ type upstreamCollection struct {
 	} `json:"highest_version"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
+	// Deprecated is the upstream's flag of the collection as a whole (R-ANS-060).
+	Deprecated bool `json:"deprecated"`
 }
 
 // parseUpstreamCollection reads a collection document an upstream sent into the summary the collection document is rendered from.
@@ -41,6 +43,7 @@ func parseUpstreamCollection(doc []byte) (rows.CollectionSummary, error) {
 	}
 	s := rows.CollectionSummary{
 		Namespace: strings.ToLower(u.Namespace), Name: strings.ToLower(u.Name), CreatedAt: parseTime(u.CreatedAt), UpdatedAt: parseTime(u.UpdatedAt),
+		Deprecated: u.Deprecated,
 	}
 	if u.HighestVersion != nil {
 		s.HighestVersion = u.HighestVersion.Version

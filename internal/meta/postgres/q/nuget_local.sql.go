@@ -367,6 +367,29 @@ func (q *Queries) NuGetServeState(ctx context.Context, arg NuGetServeStateParams
 	return i, err
 }
 
+const nuGetSetDeprecation = `-- name: NuGetSetDeprecation :execrows
+UPDATE nuget_version
+   SET metadata = CASE WHEN $1::text = '' THEN metadata - 'deprecation'
+                       ELSE jsonb_set(metadata, '{deprecation}', $1::text::jsonb) END
+ WHERE version_id = $2::bigint
+   AND (metadata -> 'deprecation') IS DISTINCT FROM NULLIF($1::text, '')::jsonb
+`
+
+type NuGetSetDeprecationParams struct {
+	Deprecation string
+	VersionID   int64
+}
+
+// Sets the deprecation of a version (R-NUGET-036), or removes it when deprecation is empty. A version that holds that deprecation
+// already is not touched, so the count says whether anything changed. The caller bumps the package revision in the same transaction.
+func (q *Queries) NuGetSetDeprecation(ctx context.Context, arg NuGetSetDeprecationParams) (int64, error) {
+	result, err := q.db.Exec(ctx, nuGetSetDeprecation, arg.Deprecation, arg.VersionID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const nuGetSetListed = `-- name: NuGetSetListed :execrows
 UPDATE nuget_version
    SET listed = $1::boolean
@@ -384,6 +407,39 @@ type NuGetSetListedParams struct {
 // the package revision in the same transaction.
 func (q *Queries) NuGetSetListed(ctx context.Context, arg NuGetSetListedParams) (int64, error) {
 	result, err := q.db.Exec(ctx, nuGetSetListed, arg.Listed, arg.VersionID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const nuGetSetRemoteDeprecations = `-- name: NuGetSetRemoteDeprecations :execrows
+UPDATE nuget_version nv
+   SET metadata = CASE WHEN d.deprecation = '' THEN nv.metadata - 'deprecation'
+                       ELSE jsonb_set(nv.metadata, '{deprecation}', d.deprecation::jsonb) END
+  FROM (SELECT unnest($3::text[]) AS lower_version, unnest($4::text[]) AS deprecation) AS d,
+       package_versions pv
+ WHERE nv.repository_id = $1::bigint AND nv.lower_id = $2::text
+   AND pv.id = nv.version_id AND pv.version = d.lower_version
+   AND (nv.metadata -> 'deprecation') IS DISTINCT FROM NULLIF(d.deprecation, '')::jsonb
+`
+
+type NuGetSetRemoteDeprecationsParams struct {
+	RepositoryID int64
+	LowerID      string
+	Versions     []string
+	Deprecations []string
+}
+
+// Writes the deprecation the upstream's registration states of each cached version of an ID that the document names (R-NUGET-036):
+// versions[i] takes deprecations[i], an empty one removes it. A version the remote does not hold is not named by a row and is skipped.
+func (q *Queries) NuGetSetRemoteDeprecations(ctx context.Context, arg NuGetSetRemoteDeprecationsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, nuGetSetRemoteDeprecations,
+		arg.RepositoryID,
+		arg.LowerID,
+		arg.Versions,
+		arg.Deprecations,
+	)
 	if err != nil {
 		return 0, err
 	}

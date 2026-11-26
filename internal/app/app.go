@@ -626,6 +626,8 @@ func (a *App) startClient() error {
 			Backup: a.backupAPI(),
 			// The signing keys of the Debian repositories (wire_formats.go).
 			DebKeys: a.debKeyStore(), Ansible: a.ansibleStore(), DebContents: a.debContentsStore(), Reindexers: a.reindexers(),
+			// The deprecation of a version or a package, written by its format through the format host (R-API-085).
+			Deprecation: v1.DeprecationServices{Host: func() formats.Host { h, _ := a.host.get(); return h }},
 			// The banner and the read-only maintenance mode (R-OPS-024, R-OPS-025).
 			SystemState: part[infra](a.parts).sys,
 			// The download limits and the usage overview (wire_limits.go).

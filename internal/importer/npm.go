@@ -211,7 +211,7 @@ func (NPM) Plan(ctx context.Context, src *SourceClient, name string) (*Plan, err
 	sort.Strings(deprecated)
 	sort.Strings(attested)
 	if len(deprecated) > 0 {
-		p.NotKept = append(p.NotKept, "deprecation of "+strings.Join(deprecated, ", ")+" (Quader has no way to set a deprecation yet)")
+		p.NotKept = append(p.NotKept, "deprecation of "+strings.Join(deprecated, ", ")+" (the import does not carry a deprecation; set it on the version's page)")
 	}
 	if len(attested) > 0 {
 		p.NotKept = append(p.NotKept, "provenance attestations of "+strings.Join(attested, ", "))

@@ -53,6 +53,15 @@ type CollectionSummary struct {
 	// HighestVersion is the newest version by precedence, "" when none is listed.
 	HighestVersion       string
 	CreatedAt, UpdatedAt time.Time
+	// Deprecated says that the collection is deprecated as a whole (R-ANS-060): the collection document's member deprecated.
+	Deprecated bool
+}
+
+// CollectionDeprecation is the deprecation of a collection of a repository (R-ANS-060): who set it ("" for a remote's upstream) and the
+// message Quader's screens show ("" for none).
+type CollectionDeprecation struct {
+	By, Message string
+	At          time.Time
 }
 
 // VersionRow is a row of ansible_collection_versions: the metadata of one stored version of a local repository (R-ANS-011).
@@ -171,12 +180,15 @@ type ArchiveRef struct {
 	Size   int64
 }
 
-// ViewSummary is what the package list shows of a version: the description and the tags.
+// ViewSummary is what the package list shows of a version: the description and the tags, and whether its collection is deprecated
+// with the message of that deprecation (R-ANS-060).
 type ViewSummary struct {
 	// VersionID is the id of the generic version row the screens key by.
 	VersionID                  int64
 	Name, Version, Description string
 	Tags                       []string
+	Deprecated                 bool
+	DeprecationMessage         string
 }
 
 // ViewDetail is what the version screen shows: the stored metadata and, when asked for, the README.

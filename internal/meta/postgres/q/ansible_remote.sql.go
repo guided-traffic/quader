@@ -39,6 +39,24 @@ func (q *Queries) AnsibleRepositoryRef(ctx context.Context, repoID int64) ([]str
 	return items, nil
 }
 
+const ansibleSetUpstreamDeprecated = `-- name: AnsibleSetUpstreamDeprecated :exec
+INSERT INTO ansible_collection_deprecations (repo_id, name)
+VALUES ($1::bigint, $2::text)
+ON CONFLICT (repo_id, name) DO NOTHING
+`
+
+type AnsibleSetUpstreamDeprecatedParams struct {
+	RepoID int64
+	Name   string
+}
+
+// Records that a remote's upstream marks a collection deprecated (R-ANS-060): the flag of its collection document, without a principal
+// and a message. A row that exists stays.
+func (q *Queries) AnsibleSetUpstreamDeprecated(ctx context.Context, arg AnsibleSetUpstreamDeprecatedParams) error {
+	_, err := q.db.Exec(ctx, ansibleSetUpstreamDeprecated, arg.RepoID, arg.Name)
+	return err
+}
+
 const ansibleUpstreamByName = `-- name: AnsibleUpstreamByName :many
 SELECT name, version, sha256, size, requires_ansible, recorded_at
   FROM ansible_upstream_versions
@@ -229,6 +247,19 @@ func (q *Queries) AnsibleUpstreamRecord(ctx context.Context, arg AnsibleUpstream
 		arg.Requires,
 	)
 	return err
+}
+
+const backupAnsibleDeleteCollectionDeprecations = `-- name: BackupAnsibleDeleteCollectionDeprecations :execrows
+DELETE FROM ansible_collection_deprecations WHERE repo_id = $1::bigint
+`
+
+// The upstream's deprecations of one remote repository's collections (R-BAK-008): they go with its stored collection documents.
+func (q *Queries) BackupAnsibleDeleteCollectionDeprecations(ctx context.Context, repoID int64) (int64, error) {
+	result, err := q.db.Exec(ctx, backupAnsibleDeleteCollectionDeprecations, repoID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const backupAnsibleDeleteUpstreamVersions = `-- name: BackupAnsibleDeleteUpstreamVersions :execrows

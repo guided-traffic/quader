@@ -23,6 +23,8 @@ type viewPort interface {
 	ViewDetails(ctx context.Context, ids []int64, withReadme bool) ([]rows.ViewDetail, error)
 	ViewFind(ctx context.Context, repos []string, text, keyword string, limit int) ([]int64, error)
 	ViewWithheld(ctx context.Context, repos []string) ([]int64, error)
+	// ViewDeprecated returns the ids of at most limit versions of the repositories that carry a deprecation message (R-API-085).
+	ViewDeprecated(ctx context.Context, repos []string, limit int) ([]int64, error)
 	ViewStored(ctx context.Context, repoID int64, name string, remote bool, limit int, tags bool) ([]string, map[string]string, error)
 }
 
@@ -153,7 +155,7 @@ func (viewAdapter) Describe(ctx context.Context, ports formats.DataPorts, vs []f
 			return nil, err
 		}
 		for _, s := range ss {
-			out[formats.VersionID(s.VersionID)] = formats.ViewData{Description: s.Description, Keywords: s.Keywords}
+			out[formats.VersionID(s.VersionID)] = formats.ViewData{Description: s.Description, Keywords: s.Keywords, Deprecation: deprecationOf(s.Deprecated)}
 		}
 		return out, nil
 	}
@@ -229,10 +231,16 @@ func describeManifest(d rows.ViewDetail, visible func(string) bool) (formats.Vie
 	if s := urlOf(m.Bugs); s != "" {
 		md["bugsUrl"] = s
 	}
-	if d.Deprecated != "" {
-		md["deprecated"] = d.Deprecated
-	}
+	data.Deprecation = deprecationOf(d.Deprecated)
 	return data, nil
+}
+
+// deprecationOf is a version's deprecation message as the screens take it (R-API-085); nil for none.
+func deprecationOf(msg string) *formats.Deprecation {
+	if msg == "" {
+		return nil
+	}
+	return &formats.Deprecation{Message: msg}
 }
 
 // visibleTags keeps the dist-tags whose version the caller may read: a tag that

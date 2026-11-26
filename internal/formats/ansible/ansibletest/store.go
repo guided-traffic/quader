@@ -38,6 +38,8 @@ type Store struct {
 	packaged map[roleKey]bool
 	// Changelogs are the changelogs put per version, a nil value for a version recorded as having none (R-ANS-053).
 	Changelogs map[string]*rows.DocChangelog
+	// deprecations are the deprecated collections (R-ANS-060), keyed by repository and name.
+	deprecations map[key]rows.CollectionDeprecation
 }
 
 type key struct {
@@ -115,7 +117,11 @@ func (s *Store) Collection(_ context.Context, repoID int64, name string) (rows.C
 		return rows.CollectionSummary{}, false, nil
 	}
 	ns, n, _ := collection.SplitName(name)
-	c := rows.CollectionSummary{Namespace: ns, Name: n, CollectionID: rows.CollectionUUID(repoID, name), HighestVersion: all[0].Version, CreatedAt: all[0].PublishedAt, UpdatedAt: all[0].PublishedAt}
+	_, deprecated := s.deprecations[key{repo: repoID, name: name}]
+	c := rows.CollectionSummary{
+		Namespace: ns, Name: n, CollectionID: rows.CollectionUUID(repoID, name), HighestVersion: all[0].Version, CreatedAt: all[0].PublishedAt,
+		UpdatedAt: all[0].PublishedAt, Deprecated: deprecated,
+	}
 	for _, v := range all {
 		if v.PublishedAt.Before(c.CreatedAt) {
 			c.CreatedAt = v.PublishedAt

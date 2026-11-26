@@ -168,7 +168,15 @@ on `packages_name_words`, without A's rows), each at most `SuggestCandidates` (2
 document, `ReadScope.MayRead(repo, name, "")`, and the repository's patterns, `Topology.Admits` (Q-API-275). A package held by several
 repositories is one `Suggestion`, in the first readable repository by qualified name; its rank is computed on the name
 (`suggestionRank`), and the API builds the query (`SuggestQuery`: the text, the bounds, the tsquery) from
-[search_match.go](../../internal/api/v1/search_match.go).
+[search_match.go](../../internal/api/v1/search_match.go). `markDeprecated` then marks the shown suggestions placed in a repository read whole
+whose latest version is deprecated: one `PackageViewLatest` for them and one summary read per format (R-API-085, Q-API-443).
+
+**Deprecation** (R-API-085). The summary of a version (`Data.Deprecation`, `Data.Unlisted`) carries it, so the list's rows (their latest
+version's), every page of the version list (`fillFromMetadata` reads the summary always and the details only for `include=digest|state`)
+and a version's details carry it at no read of their own. The filter `deprecated=true` asks the formats for their deprecated versions
+(`Adapter.Deprecated`, the bridge of `formats.DeprecationFinder`, bounded as a search is) and `PackageViewList` keeps a package whose latest
+visible version is among them, picked by an aggregate that runs only with the filter. The write is not the view's: the management operation
+([deprecation_api.go](../../internal/api/v1/deprecation_api.go)) builds a request of the format and hands it to `formats.Deprecator`.
 
 Two facts that are easy to get wrong: a Go `nil` slice reaches the driver as `NULL`, and `x = ANY(NULL)` under a `NOT` drops every row, so `keys` and `ids` in
 [service.go](../../internal/packages/view/service.go) turn them into empty arrays; and `ReadAll` is only returned when nothing narrows (no pattern in the

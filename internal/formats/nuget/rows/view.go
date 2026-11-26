@@ -11,6 +11,10 @@ type ViewSummary struct {
 	Description string
 	// Tags are the tags of the .nuspec, split on white space.
 	Tags []string
+	// Deprecation is the member deprecation of the metadata as stored, nil for none (R-NUGET-036).
+	Deprecation []byte
+	// Listed is the listing state (R-NUGET-006).
+	Listed bool
 }
 
 // ViewDetail is what the version screen reads of one version.

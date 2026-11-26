@@ -48,7 +48,9 @@ func (s *Store) ViewSummaries(ctx context.Context, ids []int64) ([]rows.ViewSumm
 			if json.Unmarshal([]byte(r.Tags), &tags) != nil {
 				tags = nil
 			}
-			out = append(out, rows.ViewSummary{VersionID: r.VersionID, Description: r.Description, Tags: nonEmpty(tags)})
+			out = append(out, rows.ViewSummary{
+				VersionID: r.VersionID, Description: r.Description, Tags: nonEmpty(tags), Listed: r.Listed, Deprecation: []byte(r.Deprecation),
+			})
 		}
 		return nil
 	})
@@ -64,6 +66,20 @@ func nonEmpty(in []string) []string {
 		}
 	}
 	return out
+}
+
+// ViewDeprecated returns the ids of at most limit versions of the repositories that carry a deprecation (R-NUGET-036).
+func (s *Store) ViewDeprecated(ctx context.Context, repos []string, limit int) ([]int64, error) {
+	var out []int64
+	err := s.o.DB.InTx(ctx, func(tx meta.Tx) error {
+		qs, err := queries(tx)
+		if err != nil {
+			return err
+		}
+		out, err = qs.NuGetViewDeprecated(ctx, q.NuGetViewDeprecatedParams{Repos: repos, MaxRows: int32(min(limit, 1<<20))}) //nolint:gosec // bounded above
+		return err
+	})
+	return out, err
 }
 
 // ViewDetails reads the metadata of the given versions and, when withReadme is set, the

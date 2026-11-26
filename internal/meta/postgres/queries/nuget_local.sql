@@ -106,6 +106,27 @@ SELECT nv.version_id, nv.listed
    AND pv.version = sqlc.arg(lower_version)::text
    AND pv.trashed_at IS NULL;
 
+-- name: NuGetSetDeprecation :execrows
+-- Sets the deprecation of a version (R-NUGET-036), or removes it when deprecation is empty. A version that holds that deprecation
+-- already is not touched, so the count says whether anything changed. The caller bumps the package revision in the same transaction.
+UPDATE nuget_version
+   SET metadata = CASE WHEN sqlc.arg(deprecation)::text = '' THEN metadata - 'deprecation'
+                       ELSE jsonb_set(metadata, '{deprecation}', sqlc.arg(deprecation)::text::jsonb) END
+ WHERE version_id = sqlc.arg(version_id)::bigint
+   AND (metadata -> 'deprecation') IS DISTINCT FROM NULLIF(sqlc.arg(deprecation)::text, '')::jsonb;
+
+-- name: NuGetSetRemoteDeprecations :execrows
+-- Writes the deprecation the upstream's registration states of each cached version of an ID that the document names (R-NUGET-036):
+-- versions[i] takes deprecations[i], an empty one removes it. A version the remote does not hold is not named by a row and is skipped.
+UPDATE nuget_version nv
+   SET metadata = CASE WHEN d.deprecation = '' THEN nv.metadata - 'deprecation'
+                       ELSE jsonb_set(nv.metadata, '{deprecation}', d.deprecation::jsonb) END
+  FROM (SELECT unnest(sqlc.arg(versions)::text[]) AS lower_version, unnest(sqlc.arg(deprecations)::text[]) AS deprecation) AS d,
+       package_versions pv
+ WHERE nv.repository_id = sqlc.arg(repository_id)::bigint AND nv.lower_id = sqlc.arg(lower_id)::text
+   AND pv.id = nv.version_id AND pv.version = d.lower_version
+   AND (nv.metadata -> 'deprecation') IS DISTINCT FROM NULLIF(d.deprecation, '')::jsonb;
+
 -- name: NuGetSetListed :execrows
 -- Unlists or relists a version (R-NUGET-007). A version that is in the state asked for
 -- already is not touched, so the count says whether anything changed. The caller bumps

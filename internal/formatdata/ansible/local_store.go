@@ -257,7 +257,7 @@ func (s localStore) Collection(ctx context.Context, repoID int64, name string) (
 		ns, n, _ := collection.SplitName(name)
 		out = rows.CollectionSummary{
 			Namespace: ns, Name: n, CollectionID: rows.CollectionUUID(repoID, name), HighestVersion: r.Highest,
-			CreatedAt: time.UnixMicro(r.CreatedUs).UTC(), UpdatedAt: time.UnixMicro(r.UpdatedUs).UTC(),
+			CreatedAt: time.UnixMicro(r.CreatedUs).UTC(), UpdatedAt: time.UnixMicro(r.UpdatedUs).UTC(), Deprecated: r.Deprecated,
 		}
 		found = true
 		return nil

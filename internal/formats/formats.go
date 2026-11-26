@@ -306,6 +306,11 @@ type Capabilities struct {
 	// AttestationReferrer stores Quader's receipt attestation among an artifact's referrers on the format's own wire (signatures.md
 	// R-SIG-054); nil for a format whose attestations the API alone serves.
 	AttestationReferrer AttestationReferrer
+	// Deprecations finds the stored versions that are deprecated (R-API-085); nil for a format whose versions never are.
+	Deprecations DeprecationFinder
+	// Deprecator sets and clears a deprecation in a local repository (R-API-085); nil for a format whose protocol carries none
+	// that Quader sets.
+	Deprecator Deprecator
 }
 
 // VersionPather is the optional interface of a format whose versions each have one file that holds their content: npm's
@@ -352,6 +357,12 @@ func CapabilitiesOf(f Format) Capabilities {
 	}
 	if ar, ok := f.(AttestationReferrer); ok {
 		c.AttestationReferrer = ar
+	}
+	if df, ok := f.(DeprecationFinder); ok {
+		c.Deprecations = df
+	}
+	if dp, ok := f.(Deprecator); ok {
+		c.Deprecator = dp
 	}
 	if ra := f.Remote(); ra != nil {
 		c.Remote.Discovery, _ = ra.(Discoverer)

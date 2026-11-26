@@ -296,6 +296,8 @@ type Filter struct {
 	NamePrefix  string
 	CreatedFrom *time.Time
 	CreatedTo   *time.Time
+	// Deprecated keeps the packages whose latest visible version is deprecated (R-API-085).
+	Deprecated bool
 }
 
 // Order is the sort of the list: name, createdAt or updatedAt.
@@ -388,6 +390,12 @@ func (s *Service) List(ctx context.Context, sc Scope, f Filter, o Order, after *
 			return nil, err
 		}
 	}
+	var depIDs []int64
+	if f.Deprecated {
+		if depIDs, err = s.deprecated(ctx, formats, sc.topo.Texts(universe)); err != nil {
+			return nil, err
+		}
+	}
 	withheld, err := s.withheld(ctx, sc, formats, universe)
 	if err != nil {
 		return nil, err
@@ -396,7 +404,7 @@ func (s *Service) List(ctx context.Context, sc Scope, f Filter, o Order, after *
 		Sort: o.Sort, Descending: o.Desc, MaxRows: rows32(limit + 1),
 		Withheld: ids(withheld), Formats: keys(formats), HasRepos: f.HasRepositories, Repos: ids(repos),
 		NamePrefix: f.NamePrefix, Whole: ids(sc.whole), Rows: keys(sc.rows),
-		Q: f.Q, QIds: ids(qIDs), Keyword: f.Keyword, KeywordIds: ids(kwIDs),
+		Q: f.Q, QIds: ids(qIDs), Keyword: f.Keyword, KeywordIds: ids(kwIDs), Deprecated: f.Deprecated, DeprecatedIds: ids(depIDs),
 		HasFrom: f.CreatedFrom != nil, CreatedFrom: stamp(f.CreatedFrom),
 		HasTo: f.CreatedTo != nil, CreatedTo: stamp(f.CreatedTo),
 	}
@@ -420,7 +428,7 @@ func (s *Service) Package(ctx context.Context, sc Scope, format, name string) (P
 	p := q.PackageViewListParams{
 		Sort: "name", MaxRows: 1, Withheld: ids(withheld), Formats: []string{format},
 		ExactFormat: format, ExactName: name, Whole: ids(sc.whole), Rows: keys(sc.rows),
-		Repos: []int64{}, QIds: []int64{}, KeywordIds: []int64{},
+		Repos: []int64{}, QIds: []int64{}, KeywordIds: []int64{}, DeprecatedIds: []int64{},
 	}
 	ps, err := s.packages(ctx, sc, p, withheld, false, nil)
 	if err != nil || len(ps) == 0 {
@@ -460,6 +468,27 @@ func (s *Service) find(ctx context.Context, formats []string, f Find) ([]int64, 
 	}
 	if len(ids) > s.maxMatches {
 		return nil, tooBroad("The search term")
+	}
+	return ids, nil
+}
+
+// deprecated asks the adapters of the formats for the stored versions they call deprecated (R-API-085), bounded as a search is: the
+// statement keeps a package whose latest visible version is among them.
+func (s *Service) deprecated(ctx context.Context, formats []string, repos []string) ([]int64, error) {
+	var ids []int64
+	for _, fm := range formats {
+		a, ok := s.adapters.For(fm)
+		if !ok {
+			continue
+		}
+		got, err := a.Deprecated(ctx, repos, s.maxMatches)
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, got...)
+	}
+	if len(ids) > s.maxMatches {
+		return nil, tooBroad("The filter deprecated")
 	}
 	return ids, nil
 }
@@ -553,7 +582,7 @@ func (s *Service) packages(ctx context.Context, sc Scope, p q.PackageViewListPar
 	}
 	for i := range pkgs {
 		if d, ok := data[latests[i].row.VersionID]; ok {
-			pkgs[i].Keywords = d.Keywords
+			pkgs[i].Keywords, pkgs[i].Deprecation = d.Keywords, d.Deprecation
 			if kind, ok := d.Metadata["kind"].(string); ok {
 				pkgs[i].Kind = kind
 			}
@@ -870,10 +899,8 @@ func (s *Service) Versions(ctx context.Context, sc Scope, format, name string, f
 	if err := s.adapterSizes(ctx, sc, a, format, groupOf, out); err != nil {
 		return nil, true, err
 	}
-	if f.WithDigest || f.WithState || f.WithKind {
-		if err := s.fillFromMetadata(ctx, sc, a, format, groupOf, out, f); err != nil {
-			return nil, true, err
-		}
+	if err := s.fillFromMetadata(ctx, sc, a, format, groupOf, out, f); err != nil {
+		return nil, true, err
 	}
 	return out, true, nil
 }
@@ -1272,10 +1299,11 @@ func sizeOf(n Size) (*int64, bool) {
 	return &b, n.Partial
 }
 
-// fillFromMetadata sets the digest, the state and the kind of the listed versions from the format's metadata (the members `digest`,
-// `state` and `kind` of Describe's details, R-UI-052, R-UI-194, R-OCI-041): the adapter is asked once for the page, after the cut; a
-// version absent from the answer, or a format whose metadata has no such member, has none. Only a caller that asks pays for the read
-// (VersionFilter.WithDigest, VersionFilter.WithState, VersionFilter.WithKind).
+// fillFromMetadata sets the deprecation and the unlisted mark of the listed versions from the format's summary (R-API-085), and their
+// digest, state and kind from the format's metadata (the members `digest`, `state` and `kind` of Describe's details, R-UI-052,
+// R-UI-194, R-OCI-041): the adapter is asked once for the page, after the cut; a version absent from the answer, or a format whose
+// metadata has no such member, has none. The details are read only for a caller that asks for them (VersionFilter.WithDigest,
+// VersionFilter.WithState, VersionFilter.WithKind); the summary always.
 func (s *Service) fillFromMetadata(ctx context.Context, sc Scope, a Adapter, format string, groupOf map[string]versionGroup, page []VersionSummary, f VersionFilter) error {
 	if len(page) == 0 {
 		return nil
@@ -1285,11 +1313,16 @@ func (s *Service) fillFromMetadata(ctx context.Context, sc Scope, a Adapter, for
 		pri := groupOf[v.Version].primary()
 		vs = append(vs, Version{ID: pri.VersionID, Format: format, Repo: sc.topo.Name(pri.RepoID).String(), Package: pri.Name, Version: v.Version})
 	}
-	got, err := a.Describe(ctx, vs, FieldDetails, func(version string) bool { _, ok := groupOf[version]; return ok })
+	fields := FieldSummary
+	if f.WithDigest || f.WithState {
+		fields |= FieldDetails
+	}
+	got, err := a.Describe(ctx, vs, fields, func(version string) bool { _, ok := groupOf[version]; return ok })
 	if err != nil {
 		return err
 	}
 	for i, v := range vs {
+		page[i].Deprecation, page[i].Unlisted = got[v.ID].Deprecation, got[v.ID].Unlisted
 		md := got[v.ID].Metadata
 		if digest, ok := md["digest"].(string); ok && f.WithDigest {
 			page[i].Digest = digest
@@ -1362,6 +1395,7 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 		return VersionDetail{}, false, err
 	}
 	if data, ok := got[pri.VersionID]; ok {
+		d.Deprecation, d.Unlisted = data.Deprecation, data.Unlisted
 		// The README and the members of the metadata that are wiki content go to a caller who may read the wiki of the repository
 		// the version was read from; the artifacts level alone does not give them (R-AUTHZ-034, R-API-058).
 		wiki := sc.MayReadWiki(sc.topo.Name(pri.RepoID), name, version)

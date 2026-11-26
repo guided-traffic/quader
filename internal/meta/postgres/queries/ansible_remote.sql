@@ -47,6 +47,17 @@ SELECT (p.key || '/' || r.key)::text AS ref
   JOIN project p ON p.id = r.project_id
  WHERE r.id = sqlc.arg(repo_id)::bigint;
 
+-- name: AnsibleSetUpstreamDeprecated :exec
+-- Records that a remote's upstream marks a collection deprecated (R-ANS-060): the flag of its collection document, without a principal
+-- and a message. A row that exists stays.
+INSERT INTO ansible_collection_deprecations (repo_id, name)
+VALUES (sqlc.arg(repo_id)::bigint, sqlc.arg(name)::text)
+ON CONFLICT (repo_id, name) DO NOTHING;
+
+-- name: BackupAnsibleDeleteCollectionDeprecations :execrows
+-- The upstream's deprecations of one remote repository's collections (R-BAK-008): they go with its stored collection documents.
+DELETE FROM ansible_collection_deprecations WHERE repo_id = sqlc.arg(repo_id)::bigint;
+
 -- name: BackupAnsibleDeleteUpstreamVersions :execrows
 -- The recorded digests of one remote repository (R-BAK-008): they go with its cache entries and cached items.
 DELETE FROM ansible_upstream_versions WHERE repo_id = sqlc.arg(repo_id)::bigint;

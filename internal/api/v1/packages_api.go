@@ -186,7 +186,7 @@ func summaryOf(p view.Package) gen.PackageSummary {
 	out := gen.PackageSummary{
 		Id: p.ID, Format: p.Format, Name: p.Name, Key: &p.Key, Description: p.Description, LatestVersion: p.LatestVersion,
 		Keywords: p.Keywords, Repositories: repoTexts(p.Repositories), CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
-		VersionCount: p.VersionCount, DownloadCount: p.DownloadCount,
+		VersionCount: p.VersionCount, DownloadCount: p.DownloadCount, Deprecation: deprecationRep(p.Deprecation),
 	}
 	if p.Kind != "" {
 		kind := p.Kind
@@ -226,6 +226,13 @@ func packageFilter(lq ListQuery) (view.Filter, error) {
 	if reps, ok := lq.Filter["repository"]; ok {
 		f.Repositories, f.HasRepositories = repoFilter(splitValues(reps)), true
 	}
+	switch raw := lq.First("deprecated"); raw {
+	case "", "false":
+	case "true":
+		f.Deprecated = true
+	default:
+		return f, badParam("deprecated", "must be true or false")
+	}
 	for _, p := range []struct {
 		name string
 		to   **time.Time
@@ -249,7 +256,7 @@ func (s *Server) ListPackages(w http.ResponseWriter, r *http.Request, _ gen.List
 		return
 	}
 	lq, err := ParseList(r, ListSpec{
-		Filters:     []string{"format", "project", "repository", "q", "namePrefix", "keyword", "createdFrom", "createdTo", "include"},
+		Filters:     []string{"format", "project", "repository", "q", "namePrefix", "keyword", "createdFrom", "createdTo", "include", "deprecated"},
 		Sorts:       []string{"name", "createdAt", "updatedAt"},
 		DefaultSort: "name",
 	}, s.o.API.Config)
@@ -450,7 +457,7 @@ func versionSummaryOf(v view.VersionSummary, sig *gen.SignatureStatus) gen.Packa
 	summary := gen.PackageVersionSummary{
 		Version: v.Version, Prerelease: v.Prerelease, PublishedAt: v.PublishedAt, SizeBytes: v.SizeBytes, SizePartial: v.SizePartial,
 		Repositories: repoTexts(v.Repositories), DownloadCount: v.DownloadCount, LastDownloadedAt: v.LastDownloadedAt,
-		Signatures: sig,
+		Signatures: sig, Deprecation: deprecationRep(v.Deprecation), Unlisted: unlistedRep(v.Unlisted),
 	}
 	if v.Digest != "" {
 		digest := v.Digest
@@ -499,6 +506,10 @@ func (s *Server) GetPackageVersion(w http.ResponseWriter, r *http.Request, id ge
 	}
 	base := httpserver.InfoFrom(ctx).BaseURL
 	out := versionOf(base, d)
+	if err := linkAlternate(ctx, ps, sc, format, out.Deprecation); err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
 	if err := addAvailable(ctx, ps.Reader, d, &out); err != nil {
 		httpserver.Problem(w, r, err)
 		return
@@ -627,6 +638,7 @@ func versionOf(base string, d view.VersionDetail) gen.PackageVersion {
 		PackageId: d.PackageID, Format: d.Format, Name: d.Name, Version: d.Version, Prerelease: d.Prerelease,
 		PublishedAt: d.PublishedAt, Licenses: d.Licenses, SizeBytes: d.SizeBytes, SizePartial: d.SizePartial, DownloadCount: d.DownloadCount,
 		LastDownloadedAt: d.LastDownloadedAt, HasReadme: d.HasReadme, Metadata: metadataOf(d.Metadata),
+		Deprecation: deprecationRep(d.Deprecation), Unlisted: unlistedRep(d.Unlisted),
 		Repositories: make([]gen.PackageVersionRepository, 0, len(d.Repositories)),
 		Files:        make([]gen.PackageFile, 0, len(d.Files)),
 	}

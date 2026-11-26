@@ -322,7 +322,7 @@ func (n *NuGet) Plan(ctx context.Context, src *SourceClient, name string) (*Plan
 	sortVersions(p.Versions)
 	if len(deprecated) > 0 {
 		sort.Strings(deprecated)
-		p.NotKept = append(p.NotKept, "deprecation of "+strings.Join(deprecated, ", ")+" (Quader stores no deprecation of a local NuGet package)")
+		p.NotKept = append(p.NotKept, "deprecation of "+strings.Join(deprecated, ", ")+" (the import does not carry a deprecation; set it on the version's page)")
 	}
 	return p, nil
 }

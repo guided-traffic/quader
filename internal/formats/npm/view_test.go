@@ -82,8 +82,9 @@ func TestR_API_029_NPMMetadataMembers(t *testing.T) {
 	if md["homepage"] != "https://example.com/rich" || md["repositoryUrl"] != "git+https://example.com/rich.git" || md["bugsUrl"] != "https://example.com/rich/issues" {
 		t.Errorf("urls %v", md)
 	}
-	if md["deprecated"] != "use something else" {
-		t.Errorf("deprecated %v", md["deprecated"])
+	// The deprecation is the version's own member (R-API-085), not one of its metadata.
+	if data.Deprecation == nil || data.Deprecation.Message != "use something else" || md["deprecated"] != nil {
+		t.Errorf("deprecation %+v, metadata member %v", data.Deprecation, md["deprecated"])
 	}
 	// A dist-tag that names a version the caller may not read is not shown.
 	if tags := md["distTags"].(map[string]string); len(tags) != 2 || tags["latest"] != "1.0.0" || tags["old"] != "0.1.0" {
@@ -155,6 +156,11 @@ func (f *fakeViewPort) ViewDetails(_ context.Context, ids []int64, withReadme bo
 func (f *fakeViewPort) ViewFind(_ context.Context, _ []string, text, keyword string, limit int) ([]int64, error) {
 	f.text, f.kw, f.limit = text, keyword, limit
 	return []int64{4, 5}, nil
+}
+
+func (f *fakeViewPort) ViewDeprecated(_ context.Context, _ []string, limit int) ([]int64, error) {
+	f.limit = limit
+	return []int64{9}, nil
 }
 
 func (f *fakeViewPort) ViewWithheld(context.Context, []string) ([]int64, error) {

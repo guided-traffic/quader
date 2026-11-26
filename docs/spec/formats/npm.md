@@ -1146,9 +1146,11 @@ as `PUT {name}` without a `.tgz` attachment, with `versions[v].deprecated` set
 - Permission per R-AUTHZ-007: `deploy` and ownership (Q-NPM-9). Virtual repositories route
   to the deployment target; remote repositories answer 405.
 - The message appears in full, abbreviated and single-version documents.
-- Until deprecation is built, such a `PUT` answers 404 `not_found` as R-NPM-043 prescribes for an
+- Until this `PUT` is built, it answers 404 `not_found` as R-NPM-043 prescribes for an
   unimplemented `PUT`, so `npm deprecate` fails at once; a 501 would be retried by npm's fetch layer
-  for 70 seconds (Q-NPM-49).
+  for 70 seconds (Q-NPM-49). The state it would write is set through the management operation of
+  [api-and-ui.md](../api-and-ui.md) R-API-085, decided as this write would be (deploy and ownership), with the
+  event `npm.deprecate` ([Q-NPM-95](#q-npm-95--the-management-operation-sets-an-npm-deprecation-npm-deprecate-stays-unbuilt-for-now)).
 
 Acceptance criteria:
 
@@ -2349,8 +2351,8 @@ pre-release is a version with a pre-release tag. The `metadata` of a version hol
 only where the member is of the documented type: `distTags` (the package's tags, limited to versions the caller
 may read), `dependencies`, `devDependencies`, `peerDependencies`, `optionalDependencies` and `engines` (name to
 string), `authors` (the `author` and the `contributors` as `Name <email> (url)`), `homepage`, `repositoryUrl` (the
-`repository` string or its `url`), `bugsUrl` (the `bugs` string or its `url`) and `deprecated` (the stored
-deprecation message). `licenses` is the `license` member (an SPDX expression, or the `type` of a legacy object) and
+`repository` string or its `url`) and `bugsUrl` (the `bugs` string or its `url`); the stored deprecation message is the
+version's `deprecation` with the summary, not a member of the metadata (api-and-ui.md R-API-085). `licenses` is the `license` member (an SPDX expression, or the `type` of a legacy object) and
 the `type`s of the legacy `licenses` list; `description` and `keywords` are the manifest's, the keywords
 without blanks and non-string entries. `q` matches a description case-insensitively as a substring and `keyword` a
 keyword exactly. A version tombstoned and not removed (a restore's replay, R-NPM-047) is withheld and appears
@@ -5397,7 +5399,28 @@ tasks. Code: [remotedescribe.go](../../../internal/packages/remotedescribe/remot
 [formatdata/npm/describe.go](../../../internal/formatdata/npm/describe.go) and
 [formatdata/deb/describe.go](../../../internal/formatdata/deb/describe.go), [wire_remote_describe.go](../../../internal/app/wire_remote_describe.go).
 
+### Q-NPM-95 · The management operation sets an npm deprecation; `npm deprecate` stays unbuilt for now
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-API-085 sets a deprecation of every format through one management operation and the version's page. npm's own client writes it
+with `npm deprecate` (R-NPM-018, P1), which answers 404 until it is built; the plan of W-30 took it for built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The management operation writes the state R-NPM-018 describes (`npm_versions.deprecated`, the revision, `modified_at`, `npm.deprecate`), decided as `npm deprecate` would be (deploy and the ownership of the name, Q-NPM-9); the protocol's `PUT` stays the 404 of R-NPM-043 (chosen) | One write for the screen and the API now | The document serves the message at once and `npm install` warns; the protocol write, with its `_rev` and its ranges, is its own package of work | A person who runs `npm deprecate` is refused and must use the page ([H-2160](#h-2160--npm-deprecate-is-not-built-the-management-operation-sets-an-npm-deprecation)) |
+| (b) Build `npm deprecate` in the same change | The client's own way | — | The `_rev` check needs the publish scanner to keep `_rev`, and the e2e matrix's case changes from refused to accepted, a leg this package cannot run |
+
+**Choice:** (a). **Revisit** when R-NPM-018 is built: it calls the same store write (`Store.SetDeprecated`) per changed version.
+**Applied in the spec:** R-NPM-018, [api-and-ui.md](../api-and-ui.md) R-API-085.
+
 ## What this does not cover
+
+### H-2160 · `npm deprecate` is not built; the management operation sets an npm deprecation
+
+Stage: R-NPM-018, R-API-085. `npm deprecate` answers 404 as R-NPM-043 prescribes for an unimplemented `PUT`; an npm version is deprecated
+on its page in Quader or through `PUT …/packages/{name}/deprecation`, which writes what `npm deprecate` would. Live for every publisher who
+uses the npm client to deprecate; the message, once set, is served to every npm client.
 
 
 ### H-31 · Trusted publishing widens the set of credentials that can publish

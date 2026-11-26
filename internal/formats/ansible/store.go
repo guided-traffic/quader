@@ -26,6 +26,23 @@ type Store interface {
 	RemoteStore
 	DocsStore
 	RoleStore
+	DeprecationStore
+}
+
+// DeprecationStore keeps the deprecation of a collection (R-ANS-060, the table ansible_collection_deprecations of migration
+// 00137_ansible_collection_deprecations): a local repository's, set through the management operation, and a remote's, its upstream's
+// flag.
+type DeprecationStore interface {
+	// CollectionDeprecation reads, in tx, the deprecation of a collection; found is false when it is not deprecated.
+	CollectionDeprecation(ctx context.Context, tx formats.Tx, repoID int64, name string) (rows.CollectionDeprecation, bool, error)
+	// SetCollectionDeprecation deprecates a local collection with the message d holds, changes the message, or clears the deprecation
+	// (d nil), and records package.metadata_changed with the change deprecate or undeprecate. It reports whether anything changed: a
+	// collection in that state already changes nothing and records nothing. The caller raises the package revision in the same
+	// transaction.
+	SetCollectionDeprecation(ctx context.Context, tx formats.Tx, repoID int64, name string, d *rows.CollectionDeprecation, a rows.Audit) (changed bool, err error)
+	// SetUpstreamDeprecated records, in the transaction of a remote's fill of a collection document, the document's flag: a row for a
+	// deprecated collection, none for one that is not. It records no event: the remote shows its upstream's state.
+	SetUpstreamDeprecated(ctx context.Context, tx formats.Tx, repoID int64, name string, deprecated bool) error
 }
 
 // LocalStore is the part of the data port the local class writes and reads (R-ANS-008 to R-ANS-012).
@@ -83,6 +100,8 @@ type ViewStore interface {
 	// ViewRoles reads the facts of the roles of the given generic versions (R-ANS-056) and, with readme, the README HTML; a version of
 	// a role without facts, and a version of a collection, is absent.
 	ViewRoles(ctx context.Context, ids []int64, readme bool) ([]rows.RoleView, error)
+	// ViewDeprecated lists at most limit generic versions of the repositories (by key) whose collection is deprecated (R-ANS-060).
+	ViewDeprecated(ctx context.Context, repos []string, limit int) ([]int64, error)
 }
 
 // RemoteStore is the part of the data port the remote class writes and reads (R-ANS-018).

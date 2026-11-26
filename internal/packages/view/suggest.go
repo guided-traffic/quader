@@ -45,6 +45,9 @@ type Suggestion struct {
 	Repo qname.Repo
 	// Rank is 0 for a name equal to the text, 1 for a name that starts with it, 2 for a match by words.
 	Rank int
+	// Deprecated says that the latest version of the package in Repo is deprecated (R-API-085), as a row of the list marks it. It is
+	// read for a repository the caller reads whole; one it reads in part decides on the package alone and marks nothing.
+	Deprecated bool
 }
 
 // candidate is one row of the package statements.
@@ -151,7 +154,74 @@ func (s *Service) Suggest(ctx context.Context, rs authz.ReadScope, topo Topology
 		return cmp.Or(cmp.Compare(a.Rank, b.Rank), strings.Compare(a.Key, b.Key), strings.Compare(a.Format, b.Format))
 	})
 	more := len(out) > sq.Limit
-	return out[:min(sq.Limit, len(out))], more, nil
+	out = out[:min(sq.Limit, len(out))]
+	if err := s.markDeprecated(ctx, topo, out, whole, withheld); err != nil {
+		return nil, false, err
+	}
+	return out, more, nil
+}
+
+// markDeprecated marks the suggestions whose package's latest version in the repository they are placed in is deprecated (R-API-085):
+// the candidates of the latest version by the stored sort key (PackageViewLatest) for the suggestions placed in a repository the caller
+// reads whole, the latest of them by latestOf, and the formats' summaries of those versions. It reads nothing for an answer without such
+// a suggestion.
+func (s *Service) markDeprecated(ctx context.Context, topo Topology, out []Suggestion, whole map[int64]bool, withheld []int64) error {
+	var pkgs []string
+	var repos []int64
+	for _, sg := range out {
+		if id := topo.ID(sg.Repo); whole[id] {
+			pkgs = append(pkgs, sg.Format+"\x1f"+sg.Key)
+			repos = append(repos, id)
+		}
+	}
+	if len(pkgs) == 0 {
+		return nil
+	}
+	var rows []q.PackageViewLatestRow
+	if err := s.read(ctx, func(qs *q.Queries) (err error) {
+		rows, err = qs.PackageViewLatest(ctx, q.PackageViewLatestParams{
+			Withheld: ids(withheld), Whole: ids(repos), Rows: []string{}, Packages: pkgs, Scope: ids(repos), HasRepos: true, Repos: ids(repos),
+		})
+		return err
+	}); err != nil {
+		return err
+	}
+	byPkg := map[string][]q.PackageViewVersionsRow{}
+	for _, r := range rows {
+		k := r.Format + "\x1f" + r.Name + "\x1f" + topo.Name(r.RepoID).String()
+		byPkg[k] = append(byPkg[k], q.PackageViewVersionsRow{
+			VersionID: r.VersionID, Format: r.Format, Name: r.Name, Version: r.Version, CreatedAt: r.CreatedAt, RepoID: r.RepoID,
+		})
+	}
+	latest := make([]int64, len(out))
+	byFormat := map[string][]Version{}
+	for i, sg := range out {
+		a, ok := s.adapters.For(sg.Format)
+		if !ok {
+			continue
+		}
+		l, ok := latestOf(a, byPkg[sg.Format+"\x1f"+sg.Key+"\x1f"+sg.Repo.String()])
+		if !ok {
+			continue
+		}
+		latest[i] = l.VersionID
+		byFormat[sg.Format] = append(byFormat[sg.Format], Version{ID: l.VersionID, Format: l.Format, Repo: sg.Repo.String(), Package: l.Name, Version: l.Version})
+	}
+	deprecated := map[int64]bool{}
+	for format, vs := range byFormat {
+		a, _ := s.adapters.For(format)
+		got, err := a.Describe(ctx, vs, FieldSummary, func(string) bool { return true })
+		if err != nil {
+			return err
+		}
+		for id, d := range got {
+			deprecated[id] = d.Deprecation != nil
+		}
+	}
+	for i := range out {
+		out[i].Deprecated = latest[i] != 0 && deprecated[latest[i]]
+	}
+	return nil
 }
 
 // suggestionRank is the rank of a package name (R-API-062): 0 equal to the text, 1 starts with it, 2 a match by words. It is

@@ -72,13 +72,15 @@ type Store struct {
 	signatures map[string][]byte
 
 	// Published, Retries, Mismatches and TagChanges log what was written, in order.
-	Published   []rows.PublishInput
-	Retries     []rows.RetryInput
-	Mismatches  []rows.MismatchInput
-	TagChanges  []string
-	Tombstones  []rows.TombstoneInput
-	Cleared     []string
-	FoldClashes int
+	Published  []rows.PublishInput
+	Retries    []rows.RetryInput
+	Mismatches []rows.MismatchInput
+	TagChanges []string
+	Tombstones []rows.TombstoneInput
+	// Deprecations log the changes of a version's deprecation (R-NPM-018).
+	Deprecations []rows.DeprecateInput
+	Cleared      []string
+	FoldClashes  int
 	// Fills logs the documents ApplyFill recorded, in order.
 	Fills       []rows.RemoteFill
 	remote      map[string]*remoteRec
@@ -191,6 +193,31 @@ func (s *Store) SetTag(_ context.Context, _ formats.Tx, in rows.SetTagInput) err
 	defer s.mu.Unlock()
 	s.setTags(in.PackageID, in.Tags, in.At)
 	s.TagChanges = append(s.TagChanges, "set "+in.Tag)
+	return nil
+}
+
+// Deprecated reads the deprecation message of a version.
+func (s *Store) Deprecated(_ context.Context, _ formats.Tx, versionID int64) (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, v := s.versionByID(versionID); v != nil {
+		return v.deprecated, nil
+	}
+	return "", nil
+}
+
+// SetDeprecated stores a version's deprecation message and moves modified_at, as the statement does (R-NPM-018).
+func (s *Store) SetDeprecated(_ context.Context, _ formats.Tx, in rows.DeprecateInput) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p, v := s.versionByID(in.VersionID)
+	if v == nil {
+		return errs.E(errs.Internal, errs.CodeInternal, "npmtest: the version is missing")
+	}
+	v.deprecated = in.Message
+	p.modifiedAt = laterOf(p.modifiedAt.Add(time.Millisecond), in.At)
+	s.revs[p.id]++
+	s.Deprecations = append(s.Deprecations, in)
 	return nil
 }
 

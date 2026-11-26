@@ -261,6 +261,36 @@ func (s *Store) SetTag(ctx context.Context, tx meta.Tx, in rows.SetTagInput) err
 		map[string]any{"package": in.Name, "tag": in.Tag, "version": in.Version, "previous": in.Previous}, "", nil)
 }
 
+// Deprecated reads the deprecation message of a version of a locked package.
+func (s *Store) Deprecated(ctx context.Context, tx meta.Tx, versionID int64) (string, error) {
+	qs, err := queries(tx)
+	if err != nil {
+		return "", err
+	}
+	rs, err := qs.NPMVersionDeprecated(ctx, versionID)
+	if err != nil || len(rs) == 0 {
+		return "", err
+	}
+	return rs[0], nil
+}
+
+// SetDeprecated stores a version's deprecation and records npm.deprecate with the message ("" when it was cleared).
+func (s *Store) SetDeprecated(ctx context.Context, tx meta.Tx, in rows.DeprecateInput) error {
+	qs, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	n, err := qs.NPMSetDeprecated(ctx, q.NPMSetDeprecatedParams{VersionID: in.VersionID, Message: in.Message, At: stamp(in.At), PackageID: in.PackageID})
+	if err != nil {
+		return err
+	}
+	if n != 1 {
+		return errs.E(errs.Internal, errs.CodeInternal, "The npm row of the version or of its package is missing.")
+	}
+	return s.record(ctx, tx, audit.EventNPMDeprecate, in.Audit, in.Name,
+		map[string]any{"package": in.Name, "version": in.Version, "message": in.Message}, "", nil)
+}
+
 // DeleteTag stores the dist-tags a removal of a tag produced.
 func (s *Store) DeleteTag(ctx context.Context, tx meta.Tx, in rows.DeleteTagInput) error {
 	qs, err := queries(tx)

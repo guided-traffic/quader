@@ -77,6 +77,8 @@ type Store struct {
 	Tombstones []rows.TombstoneInput
 	Promoted   []rows.ReservedInput
 	Listings   []rows.ListingInput
+	// Deprecations log the changes of a local version's deprecation (R-NUGET-036).
+	Deprecations []rows.DeprecationInput
 	// SymbolJobs logs the symbol packages recorded, each of which enqueues its indexing job
 	// in the database store (Q-NUGET-11).
 	SymbolJobs []rows.SymbolPackageInput
@@ -319,6 +321,76 @@ func (s *Store) SetListed(_ context.Context, tx formats.Tx, in rows.ListingInput
 		s.Listings = s.Listings[:len(s.Listings)-1]
 	})
 	return true, nil
+}
+
+// SetDeprecation sets or clears the member deprecation of a version's metadata (R-NUGET-036).
+func (s *Store) SetDeprecation(_ context.Context, tx formats.Tx, in rows.DeprecationInput) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rec, ok := s.byID[in.VersionID]
+	if !ok {
+		return false, nil
+	}
+	before := rec.in.Metadata
+	after, changed := withDeprecation(before, in.Deprecation)
+	if !changed {
+		return false, nil
+	}
+	s.setMetadata(rec, after)
+	s.Deprecations = append(s.Deprecations, in)
+	undo(tx, func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		s.setMetadata(rec, before)
+		s.Deprecations = s.Deprecations[:len(s.Deprecations)-1]
+	})
+	return true, nil
+}
+
+// SetRemoteDeprecations writes the deprecations of the cached versions a registration document names.
+func (s *Store) SetRemoteDeprecations(_ context.Context, _ formats.Tx, repoID int64, lowerID string, deps map[string]*rows.Deprecation) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for v, d := range deps {
+		if rec, ok := s.versions[vkey{repoID, lowerID, v}]; ok {
+			if after, changed := withDeprecation(rec.in.Metadata, d); changed {
+				s.setMetadata(rec, after)
+			}
+		}
+	}
+	return nil
+}
+
+// setMetadata replaces the stored metadata of a version, in the version and in the view; the caller holds the lock.
+func (s *Store) setMetadata(rec *verRec, md []byte) {
+	rec.in.Metadata = md
+	s.view.mu.Lock()
+	defer s.view.mu.Unlock()
+	for i := range s.view.rows {
+		if s.view.rows[i].in.VersionID == rec.in.VersionID {
+			s.view.rows[i].in.Metadata = md
+		}
+	}
+}
+
+// withDeprecation is the metadata with its member deprecation set to d, or removed for nil, and whether it changed.
+func withDeprecation(md []byte, d *rows.Deprecation) ([]byte, bool) {
+	m := map[string]json.RawMessage{}
+	_ = json.Unmarshal(md, &m)
+	var want json.RawMessage
+	if d != nil {
+		want, _ = json.Marshal(d)
+	}
+	if bytes.Equal(m["deprecation"], want) {
+		return md, false
+	}
+	if want == nil {
+		delete(m, "deprecation")
+	} else {
+		m["deprecation"] = want
+	}
+	out, _ := json.Marshal(m)
+	return out, true
 }
 
 // ServeState reads what a GET of a file of a version decides on.

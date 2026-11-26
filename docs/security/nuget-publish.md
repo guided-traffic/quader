@@ -102,7 +102,10 @@ state of the package until the symbol server (R-NUGET-021) ships. The symbol pus
 ## What the audit and the journal record
 
 The events are written in the transaction of the change, so no change exists without its record (R-OPS-015): `package.published` with the file list and the
-outcome of the namespace claim, `package.deleted`, `package.metadata_changed` with `change` of `unlist` or `relist`, the security event
+outcome of the namespace claim, `package.deleted`, `package.metadata_changed` with `change` of `unlist`, `relist`, `deprecate` or
+`undeprecate` (the deprecation of R-NUGET-036, set through the management operation of R-API-085 and decided as a relist is: deploy on the
+version's `.nupkg` and the ownership of the ID; its message, at most 1,024 characters, and its reasons and alternate package are in the
+event and in the registration, and the screens show the message as text), the security event
 `repository.remote_package_shadowed` for a first version published on the strength of `manage` over a package a remote member serves, and, from the item
 store, `artifact.deployed` for the `.nupkg` and for the generated `.nuspec` and `artifact.deleted` for each removed file. The two package events
 carry the journal entry of R-NUGET-033, `{"repository": <id>, "id": <lower id>, "version": <URL form>, "sha512": <hex>}`: identifiers and a digest, no token, no

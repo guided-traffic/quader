@@ -4,7 +4,8 @@ Status: built (M2): the publish, the unpublish and the dist-tags of a local npm 
 its tombstones, the remote class with its document checks, takedown marks and tarball digests, the merge of a virtual repository, the
 audit forward of R-NPM-038, and the journal entry a restore replays. The local audit (mode `local`, M4b) is on
 [vulnerability-scanning.md](vulnerability-scanning.md#client-audits), the mirror passes of a remote (phase 6b) on [mirror.md](mirror.md).
-Not built: the trusted-publishing exchange of R-NPM-022 and deprecation (R-NPM-018). The registry signatures, the keys and the
+Not built: the trusted-publishing exchange of R-NPM-022 and the protocol write of `npm deprecate` (R-NPM-018); a deprecation is set through
+the management operation of R-API-085 ([below](#deprecation)). The registry signatures, the keys and the
 attestations of an npm repository are built ([below](#provenance-and-registry-signatures)).
 
 This page describes what a caller can do to an npm repository through the protocol, what an upstream registry can make Quader store and
@@ -42,6 +43,16 @@ A `PUT {name}` whose body carries no attachment is no publish: after steps 1 to 
 of `npm owner`) is 400 `npm_bad_publish`, because maintainer lists are not supported and ownership is managed in Quader; a body with
 `versions` (`npm deprecate`, R-NPM-018, P1) is 404 "Deprecating a version is not available yet", the answer R-NPM-043 prescribes for an
 unimplemented `PUT`, which npm does not retry.
+
+### Deprecation
+
+The management operation `PUT …/repositories/{repoKey}/packages/{name}/deprecation` (R-API-085) sets the message npm's documents serve as
+`versions[v].deprecated`. It is decided by the format as `npm deprecate` would be: deploy on the package document's path and the ownership
+of the name ([deprecation.go](../../internal/formats/npm/deprecation.go) `Deprecate`, `claim` with `opDeprecate`), on the index of the
+request; a holder of deploy who does not own a claimed name is refused 403, and a version the caller's grants hide is answered as one
+that is not published. The message is publisher text: at most 1,024 characters, written to the audit event `npm.deprecate` within that
+bound, served to npm clients as they serve any manifest member, and shown by the screens as text, never as markup. A remote repository's
+messages are its upstream's and cannot be set (409).
 
 Steps 9 and 10 run outside any transaction and are decided again at step 11; the check inside the transaction is the one that protects
 the repository. Unlike a NuGet push, an npm publish names its package in the URL, so the permission on the name and the ownership are

@@ -568,6 +568,7 @@ Metadata extracted from the `.nuspec` into `nuget_version.metadata`:
 | `repository` | `repository` element: `type`, `url`, `branch`, `commit` | UI |
 | `dependencyGroups` | `dependencies/group` with `targetFramework` (verbatim) and each `dependency` `id` and `version` (verbatim range); a flat `dependencies` list becomes one group without `targetFramework` | registration |
 | `packageTypes` | `packageTypes/packageType` `name` and `version`; none declared means `Dependency` | search filter, symbol checks |
+| `deprecation` | not of the `.nuspec`: `reasons`, `message`, `alternatePackage` (`id`, `range`), set through the management operation or taken from a remote's upstream registration (R-NUGET-036) | registration, search, UI |
 
 Storage layout. Canonical paths inside a NuGet repository, as seen through `/files/<projectKey>/<repoKey>/`;
 the bytes live once in the blob store under their content address (INV-4).
@@ -593,7 +594,7 @@ R-STOR-003 in [storage.md](../storage.md). NuGet fills them as follows and adds 
 |---|---|
 | `packages.name` | `lower_id` |
 | `packages.display_name` | ID casing of the first stored version |
-| `packages.rev_seq` | incremented in every transaction that changes the package's core or NuGet side rows: ingestion, unlist, relist, hard delete, trash restore, copy, move, remote cache fill, reindex (R-ARCH-009, R-ARCH-012) |
+| `packages.rev_seq` | incremented in every transaction that changes the package's core or NuGet side rows: ingestion, unlist, relist, deprecation (R-NUGET-036), hard delete, trash restore, copy, move, remote cache fill, reindex (R-ARCH-009, R-ARCH-012) |
 | `package_versions.version` | URL form |
 | `package_versions.display_version` | full normalized version |
 | `package_versions.lead_item_id` | the `.nupkg` item |
@@ -2740,6 +2741,45 @@ Acceptance criteria:
   a refused `2.0.0` is absent from the version list, the registration and the search.
 - End-to-end (the leg `nuget`, about 10 s): with `version Acme.Core@1.1.0 allow`, a project referencing `Acme.Core` `[1.0,2.0)` restores
   1.1.0 from the stub's versions.
+
+### R-NUGET-036 · A version is deprecated with reasons, a message and an alternate package
+Priority: **P1** · Covers: quader-only
+
+A NuGet version is deprecated by the member `deprecation` of its catalog entry: `reasons` (at least one of `Legacy`, `CriticalBugs`,
+`Other`), an optional `message` and an optional `alternatePackage` with its `id` and `range` (`*` for any version)
+([registration](https://learn.microsoft.com/en-us/nuget/api/registration-base-url-resource), "Package deprecation"). nuget.org sets it on its
+web site; no client command does. The general rule is [api-and-ui.md](../api-and-ui.md) R-API-085.
+
+- **Stored** as the member `deprecation` of `nuget_version.metadata`, in the catalog entry's shape
+  ([Q-NUGET-140](#q-nuget-140--the-deprecation-is-a-member-of-the-versions-metadata-in-the-catalog-entrys-shape)): it is no member of the
+  `.nuspec`. A local version's is set and cleared through the management operation of R-API-085 (deploy on the version's `.nupkg` and the
+  ownership of the ID, decided as a relist is, R-NUGET-007), which raises the package's revision and records `package.metadata_changed`
+  with the change `deprecate` or `undeprecate` and the reasons, the message and the alternate package. The reasons are written in
+  nuget.org's spelling whatever case was sent; an alternate package's range is `*` when none is given, because `dotnet list package`
+  and Visual Studio format the range and fail without one (from their source: `VersionRangeFormatter.Format` of a null range).
+- **Served** in the catalog entry of the registration index, its pages and leaves, in every hive, and in a search result that names the
+  version, as nuget.org's are; a virtual repository passes its member's through the merge (R-NUGET-018). The index inlines its pages up to
+  the paging threshold, and `dotnet list package --deprecated` reads only inlined entries and pages it fetches, never a leaf.
+- **A remote's cached version** keeps the deprecation its upstream's registration states: each fill of a registration index or page writes
+  the member of every cached version the document inlines, and clears it where the document names the version without one; a document
+  older than the stored one changes nothing ([Q-NUGET-141](#q-nuget-141--a-remote-reads-a-cached-versions-deprecation-from-the-registration-it-fills)).
+  A version that only a restore cached, which reads no registration, shows none until a registration read passes through the remote
+  ([H-2161](#h-2161--a-version-cached-by-a-restore-alone-shows-its-upstreams-deprecation-only-after-a-registration-read)).
+- **Unlisted is not deprecated** ([Q-NUGET-142](#q-nuget-142--unlisted-and-deprecated-are-two-states-with-two-marks)): the screens mark each
+  with its own word, and a version may be both.
+- **What the clients do** (read from their source, not run): `dotnet list package --deprecated` reads the registration of every source,
+  takes the entry of the resolved version and prints its reasons verbatim and the alternative as `<id> <range>` (`*` printed as `>= 0.0.0`),
+  never the message; `dotnet package search --verbosity detailed` shows the message; Visual Studio's details pane shows "Deprecated" with a
+  sentence per reason and the alternate package as a link, its list a warning icon, its version list "(Deprecated)"; no client shows the
+  message; `nuget.exe` shows nothing; a restore and `dotnet add package` warn of nothing.
+
+Acceptance criteria:
+
+- Unit (`nuget`, milliseconds): `TestR_NUGET_036_ADeprecationHoldsWhatTheCatalogEntryCarries`,
+  `TestR_NUGET_036_TheRegistrationAndTheSearchServeAStoredVersionsDeprecation`, `TestR_NUGET_036_ARemoteKeepsTheDeprecationItsUpstreamStates`.
+- Integration (`nuget`, `TestR_NUGET_036_ALocalVersionIsDeprecatedThroughTheManagementAPIAndServed`, about one second).
+- End-to-end (the leg `nuget`, written, about 5 s, constant): `dotnet list package --deprecated` names a deprecated local version with its
+  reason and alternative (`TestNuGetDeprecated_R_NUGET_036_DotnetListsTheDeprecatedPackage`).
 
 ## Deferred
 
@@ -5718,7 +5758,54 @@ show their README. **Applied in the spec:** R-NUGET-024, R-NUGET-015's rewriting
 [handlers_embedded.go](../../../internal/formats/nuget/handlers_embedded.go). Tests: `TestR_NUGET_024_ARemoteServes…`, `TestR_NUGET_024_AVirtualServes…` in
 [embedded_test.go](../../../internal/formats/nuget/embedded_test.go).
 
+### Q-NUGET-140 · The deprecation is a member of the version's metadata, in the catalog entry's shape
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The member `deprecation` of `nuget_version.metadata` (chosen) | No migration | The registration, the search and the view read the row they read anyway; a virtual repository's merge carries it in the entry's metadata; a remote's cached version takes the same member | The metadata is no longer only what the `.nuspec` says |
+| (b) A table of its own | Clean separation | — | One more join in every document; a migration |
+
+**Choice:** (a), as the plan of W-30 proposed. **Applied in the spec:** R-NUGET-036, R-NUGET-005 (the member).
+
+### Q-NUGET-141 · A remote reads a cached version's deprecation from the registration it fills
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a remote's cached version is described by its `.nuspec` (origin `cache`); its deprecation lives in the upstream's registration,
+which a restore never reads (it uses the flat container).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The fill of a registration index or page writes the member of the cached versions it inlines, in the fill's transaction (chosen) | The document's facts at the time it is stored | No request of its own; a later change of the upstream reaches the rows with the next fill; an older document changes nothing | A version that only a restore cached waits for a registration read (H-2161) |
+| (b) A job per cached version that fetches its registration | Every cached version | — | One upstream request per version, for a fact most versions do not have |
+| (c) Read the stored registration when a screen asks | Always current | — | A list reads a blob per package |
+
+**Choice:** (a). **Revisit** when the owner finds a cached version that a client restored and is not marked.
+
+### Q-NUGET-142 · Unlisted and deprecated are two states with two marks
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: an unlisted version is hidden from search and Visual Studio's version list and still restored by its exact number (and by a
+floating range); a deprecated version is found, restored and marked. nuget.org has both, and a version may be both.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Two members (`unlisted`, `deprecation`) and two marks, **Unlisted** and **Deprecated** (chosen) | As the protocol has them | A reader learns which: hidden, or not to be used | Two badges on a version that is both |
+| (b) One mark | Fewer badges | — | It says a hidden version is not to be used, and a deprecated one is hidden; both false |
+
+**Choice:** (a). **Applied in the spec:** R-NUGET-036, [api-and-ui.md](../api-and-ui.md) R-API-085.
+
 ## What this does not cover
+
+### H-2161 · A version cached by a restore alone shows its upstream's deprecation only after a registration read
+
+Stage: R-NUGET-036. A remote writes a cached version's deprecation from the registration documents it fills; `dotnet restore` reads the
+flat container only, so a version that only restores fetched carries no deprecation on Quader's screens until Visual Studio, `dotnet list
+package`, `dotnet add package` or a mirror pass reads its registration through the remote. Live for every remote that only restores use;
+the clients themselves see the upstream's deprecation in the registration the remote serves.
 
 ### H-1680 · A remote shows no README and no license of a package it has not cached
 

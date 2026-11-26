@@ -448,6 +448,39 @@ func (q *Queries) NPMReadTags(ctx context.Context, packageID int64) ([]string, e
 	return items, nil
 }
 
+const nPMSetDeprecated = `-- name: NPMSetDeprecated :execrows
+WITH v AS (
+  UPDATE npm_versions SET deprecated = NULLIF($3::text, '')
+   WHERE version_id = $4::bigint
+  RETURNING version_id
+)
+UPDATE npm_packages
+   SET modified_at = greatest(modified_at + interval '1 millisecond', $1::text::timestamptz)
+ WHERE package_id = $2::bigint AND EXISTS (SELECT 1 FROM v)
+`
+
+type NPMSetDeprecatedParams struct {
+	At        string
+	PackageID int64
+	Message   string
+	VersionID int64
+}
+
+// Sets the deprecation message of a version of a locked package, or clears it with an empty message, and moves the package's
+// modified_at forward as NPMSetTags does, so that the document tells its clients it changed (R-NPM-012, R-NPM-018).
+func (q *Queries) NPMSetDeprecated(ctx context.Context, arg NPMSetDeprecatedParams) (int64, error) {
+	result, err := q.db.Exec(ctx, nPMSetDeprecated,
+		arg.At,
+		arg.PackageID,
+		arg.Message,
+		arg.VersionID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const nPMSetTags = `-- name: NPMSetTags :execrows
 UPDATE npm_packages
    SET dist_tags = $1::text::jsonb,
@@ -490,6 +523,33 @@ func (q *Queries) NPMTombstoned(ctx context.Context, arg NPMTombstonedParams) (b
 	var tombstoned bool
 	err := row.Scan(&tombstoned)
 	return tombstoned, err
+}
+
+const nPMVersionDeprecated = `-- name: NPMVersionDeprecated :many
+SELECT COALESCE(deprecated, '')::text AS deprecated
+  FROM npm_versions
+ WHERE version_id = $1::bigint
+`
+
+// The deprecation message of a version of a locked package ("" for none), read before it changes (R-NPM-018, R-API-085).
+func (q *Queries) NPMVersionDeprecated(ctx context.Context, versionID int64) ([]string, error) {
+	rows, err := q.db.Query(ctx, nPMVersionDeprecated, versionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var deprecated string
+		if err := rows.Scan(&deprecated); err != nil {
+			return nil, err
+		}
+		items = append(items, deprecated)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const nPMVersionFacts = `-- name: NPMVersionFacts :many

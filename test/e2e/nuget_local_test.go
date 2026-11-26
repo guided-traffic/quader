@@ -400,3 +400,29 @@ func TestNuGetUnlistRelistDelete(t *testing.T) {
 		c.mustPush("push 1.2.0", "dotnet", "nuget", "push", file, "--source", hard, "--api-key", "az")
 	})
 }
+
+// TestNuGetDeprecated_R_NUGET_036_DotnetListsTheDeprecatedPackage: a version deprecated through the management operation (R-API-085) is what
+// `dotnet list package --deprecated` reads from the registration: the project's reference is listed with its reason and its
+// alternative, and the restore before it succeeded without a warning. One push, one restore, one list: about five seconds, the leg's
+// own constant.
+func TestNuGetDeprecated_R_NUGET_036_DotnetListsTheDeprecatedPackage(t *testing.T) {
+	fx := nugetFx(t)
+	auth := nugetFeed(t, "localhost", nugetAuthKey)
+	id := fx.pkgID("Deprecated")
+	c := fx.client(t, 0, "deprecated")
+	c.config(auth, true)
+	file := c.place(id, "1.0.0", fx.nugetPack(t, id, "1.0.0", "deprecated 1.0.0"))
+	c.mustPush("push", "dotnet", "nuget", "push", file, "--source", auth, "--api-key", "az")
+	op := "/api/v1/projects/" + strings.Replace(repoRef(nugetAuthKey), "/", "/repositories/", 1) + "/packages/" + id + "/deprecation"
+	fx.adm.do(http.MethodPut, op, map[string]any{
+		"version": "1.0.0", "reasons": []string{"Legacy"}, "message": "use the successor", "alternatePackage": map[string]any{"name": "Contoso.Successor"},
+	}).want(t, "deprecate", 200)
+	proj := c.consumer("p", id, "[1.0.0]")
+	if out := c.exec("dotnet", "restore", proj, "--no-cache"); strings.Contains(strings.ToLower(out), "deprecat") {
+		t.Errorf("the restore warned of the deprecation:\n%s", out)
+	}
+	out := c.exec("dotnet", "list", proj, "package", "--deprecated")
+	if !strings.Contains(out, id) || !strings.Contains(out, "Legacy") || !strings.Contains(out, "Contoso.Successor") {
+		t.Fatalf("dotnet list package --deprecated does not name the version, its reason and its alternative:\n%s", out)
+	}
+}

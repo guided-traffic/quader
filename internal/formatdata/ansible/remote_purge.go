@@ -56,6 +56,10 @@ func PurgeRemoteCaches(ctx context.Context, db meta.Runner, erase EraseFunc) err
 			if _, err = qs.BackupAnsibleDeleteUpstreamVersions(ctx, r.id); err != nil {
 				return err
 			}
+			// The upstream's deprecations of the collections were read from the stored collection documents (R-ANS-060).
+			if _, err = qs.BackupAnsibleDeleteCollectionDeprecations(ctx, r.id); err != nil {
+				return err
+			}
 			// The documentation rows are derived from the stored documents that went (R-ANS-044), the facts of the roles as well (R-ANS-056).
 			if _, err = qs.AnsibleDocsPurgeVersions(ctx, r.id); err != nil {
 				return err

@@ -308,6 +308,9 @@ type Options struct {
 	DebContents DebContentsStore
 	// Reindexers are the formats with a job-built index by format ID (reindex.go); a format not listed answers the reindex with 405.
 	Reindexers map[string]Reindexer
+	// Deprecation holds what the deprecation of a version or a package needs (deprecation_api.go, R-API-085); without its host the
+	// operation answers 503.
+	Deprecation DeprecationServices
 	// <<< T-17 deb
 
 	// >>> upstream

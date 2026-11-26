@@ -24,6 +24,14 @@ type AnsibleChangelog struct {
 	ReadAt    pgtype.Timestamptz
 }
 
+type AnsibleCollectionDeprecation struct {
+	RepoID       int64
+	Name         string
+	DeprecatedAt pgtype.Timestamptz
+	DeprecatedBy pgtype.Text
+	Message      pgtype.Text
+}
+
 type AnsibleCollectionVersion struct {
 	RepoID          int64
 	Name            string

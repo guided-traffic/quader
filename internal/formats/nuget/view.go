@@ -30,6 +30,8 @@ type viewPort interface {
 	// ViewStored lists the versions a repository serves of an ID, in the URL form: newest
 	// arrival first for a local repository, newest published first for a remote one.
 	ViewStored(ctx context.Context, repoID int64, lowerID string, remote bool, limit int) ([]string, error)
+	// ViewDeprecated returns the ids of at most limit versions of the repositories that carry a deprecation (R-NUGET-036).
+	ViewDeprecated(ctx context.Context, repos []string, limit int) ([]int64, error)
 }
 
 // View returns the format's part of the package screens (R-API-029, Q-NUGET-48).
@@ -144,7 +146,9 @@ func (viewAdapter) Describe(ctx context.Context, ports formats.DataPorts, vs []f
 			return nil, err
 		}
 		for _, s := range ss {
-			out[formats.VersionID(s.VersionID)] = formats.ViewData{Description: s.Description, Keywords: s.Tags}
+			out[formats.VersionID(s.VersionID)] = formats.ViewData{
+				Description: s.Description, Keywords: s.Tags, Deprecation: deprecationOf(s.Deprecation), Unlisted: !s.Listed,
+			}
 		}
 		return out, nil
 	}
@@ -184,6 +188,24 @@ type metadataView struct {
 	Types        json.RawMessage `json:"packageTypes"`
 	Acceptance   json.RawMessage `json:"requireLicenseAcceptance"`
 	DevDep       json.RawMessage `json:"developmentDependency"`
+	Deprecation  json.RawMessage `json:"deprecation"`
+}
+
+// deprecationOf reads the member deprecation of a version's metadata (R-NUGET-036); nil for none, and for one that is not the
+// registration's shape.
+func deprecationOf(raw []byte) *formats.Deprecation {
+	if len(raw) == 0 {
+		return nil
+	}
+	var d rows.Deprecation
+	if json.Unmarshal(raw, &d) != nil || len(d.Reasons) == 0 && d.Message == "" && d.AlternatePackage == nil {
+		return nil
+	}
+	out := &formats.Deprecation{Message: strings.TrimSpace(d.Message), Reasons: d.Reasons}
+	if a := d.AlternatePackage; a != nil && a.ID != "" {
+		out.Alternate = &formats.DeprecationAlternate{Package: a.ID, Range: a.Range}
+	}
+	return out
 }
 
 // describeMetadata turns the stored metadata of a version into the view data of Q-NUGET-48.
@@ -200,6 +222,8 @@ func describeMetadata(d rows.ViewDetail) (formats.ViewData, error) {
 		Readme:      d.Readme,
 		ReadmeFile:  d.ReadmeFile,
 		Metadata:    map[string]any{"listed": d.Listed},
+		Deprecation: deprecationOf(m.Deprecation),
+		Unlisted:    !d.Listed,
 	}
 	md := data.Metadata
 	if d.DeclaredID != "" {

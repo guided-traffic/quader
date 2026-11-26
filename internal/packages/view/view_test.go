@@ -185,6 +185,7 @@ func (fakeAdapter) Find(context.Context, Find, int) ([]int64, error) { return ni
 func (fakeAdapter) Withheld(context.Context, []string) ([]int64, error) {
 	return nil, nil
 }
+func (fakeAdapter) Deprecated(context.Context, []string, int) ([]int64, error) { return nil, nil }
 func (fakeAdapter) Fetch() FetchRule { return FetchLeadFile }
 
 // digestAdapter is a format whose version metadata has a `digest` member (an OCI tag), for all versions but the one named none.
@@ -200,8 +201,39 @@ func (d digestAdapter) Describe(_ context.Context, vs []Version, want Fields, _ 
 		if v.Version != "none" {
 			out[v.ID] = Data{Metadata: map[string]any{"digest": "sha256:" + v.Version, "state": "in_use"}}
 		}
+		if v.Version == "old" {
+			out[v.ID] = Data{Deprecation: &Deprecation{Message: "use 2"}, Unlisted: true}
+		}
 	}
 	return out, nil
+}
+
+// TestR_API_085_TheVersionListMarksDeprecatedAndUnlistedVersionsInOneSummaryRead: every page of the version list carries each
+// version's deprecation and unlisted mark from the format's summary, read once for the page and without the details nobody asked for.
+func TestR_API_085_TheVersionListMarksDeprecatedAndUnlistedVersionsInOneSummaryRead(t *testing.T) {
+	var asked []Fields
+	a := digestAdapter{asked: &asked}
+	repo := repoOf("nuget-a", repository.Local)
+	s := &Service{}
+	sc := Scope{topo: NewTopology([]repository.Repository{repo})}
+	rows := rowsOf("old", "new")
+	groupOf := map[string]versionGroup{
+		"old": {version: "old", rows: rows[:1]},
+		"new": {version: "new", rows: rows[1:2]},
+	}
+	page := []VersionSummary{{Version: "old"}, {Version: "new"}}
+	if err := s.fillFromMetadata(context.Background(), sc, a, "nuget", groupOf, page, VersionFilter{}); err != nil {
+		t.Fatal(err)
+	}
+	if d := page[0].Deprecation; d == nil || d.Message != "use 2" || !page[0].Unlisted || page[1].Deprecation != nil || page[1].Unlisted {
+		t.Errorf("marks = %+v", page)
+	}
+	if page[1].Digest != "" {
+		t.Errorf("a digest nobody asked for: %+v", page[1])
+	}
+	if len(asked) != 1 || asked[0] != FieldSummary {
+		t.Errorf("the adapter was asked %v, want the summary once", asked)
+	}
 }
 
 // TestR_UI_052_DigestsComeFromTheFormatsMetadataInOneRead: the list of an OCI tag's versions shows the digest of the format's
@@ -224,8 +256,8 @@ func TestR_UI_052_DigestsComeFromTheFormatsMetadataInOneRead(t *testing.T) {
 	if page[0].Digest != "sha256:1.0.0" || page[1].Digest != "" || page[0].State != "" {
 		t.Errorf("digests = %+v", page)
 	}
-	if len(asked) != 1 || asked[0] != FieldDetails {
-		t.Errorf("the adapter was asked %v, want the details once", asked)
+	if len(asked) != 1 || asked[0] != FieldSummary|FieldDetails {
+		t.Errorf("the adapter was asked %v, want the summary and the details once", asked)
 	}
 }
 

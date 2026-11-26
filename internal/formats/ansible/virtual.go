@@ -248,30 +248,37 @@ func (a virtualAdapter) mergeVersions(ctx context.Context, rq *formats.Request, 
 	return doc, nil
 }
 
-// timesDoc is the merged collection document: only the times are merged.
+// timesDoc is the merged collection document: the times are merged, and the collection is deprecated when the first member that holds
+// it says so (R-ANS-060), the member whose versions come first (R-ANS-022).
 type timesDoc struct {
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	Deprecated bool      `json:"deprecated"`
 }
 
 // mergeTimes merges the collection documents of the members: the earliest creation and the latest update (R-ANS-022).
 func mergeTimes(parts []formats.MemberDocument) ([]byte, error) {
 	var ts []merge.Times
+	deprecated := false
 	for _, d := range parts {
 		if len(d.Doc) == 0 {
 			continue
 		}
 		var t struct {
-			CreatedAt string `json:"created_at"`
-			UpdatedAt string `json:"updated_at"`
+			CreatedAt  string `json:"created_at"`
+			UpdatedAt  string `json:"updated_at"`
+			Deprecated bool   `json:"deprecated"`
 		}
 		if err := json.Unmarshal(d.Doc, &t); err != nil {
 			return nil, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "A member's collection document is not a document the registry reads.", errs.WithCause(err))
 		}
+		if len(ts) == 0 {
+			deprecated = t.Deprecated
+		}
 		ts = append(ts, merge.Times{CreatedAt: parseDocTime(t.CreatedAt), UpdatedAt: parseDocTime(t.UpdatedAt)})
 	}
 	c := merge.MergeCollection(nil, ts)
-	doc, err := json.Marshal(timesDoc{CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt})
+	doc, err := json.Marshal(timesDoc{CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt, Deprecated: deprecated})
 	return doc, wrapInternal(err)
 }
 

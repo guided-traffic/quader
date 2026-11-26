@@ -1927,6 +1927,8 @@ type Capabilities struct {
 	SourceSpeller SourceSpeller        // nil for a format whose items have one spelling (Q-OCI-129)
 	SignatureCoverage SignatureCoverage // nil for a format whose signatures cover the artifact itself (signatures.md R-SIG-030)
 	AttestationReferrer AttestationReferrer // nil for a format whose attestations the API alone serves (signatures.md R-SIG-054)
+	Deprecations  DeprecationFinder    // nil for a format whose versions are never deprecated (api-and-ui.md R-API-085, ADR-286)
+	Deprecator    Deprecator           // nil for a format whose protocol carries no deprecation Quader sets (R-API-085, ADR-286)
 }
 
 // SourceSpeller is the optional interface of a Format whose items have more than one canonical spelling in a repository (OCI on a Docker Hub
@@ -1951,6 +1953,58 @@ type ViewSize struct {
 	Bytes   int64 // not below zero; 0 when Unknown
 	Partial bool  // Bytes counts only the parts the repository holds: the platforms of an image index a client fetched (Q-OCI-221)
 	Unknown bool  // no part of the size is known: an image index none of whose platforms is held; the screens show no number
+}
+
+// Deprecation is a version's or a package's deprecation as its format records it (api-and-ui.md R-API-085, ADR-286): Package for one
+// of the whole package (an Ansible collection), a plain-text Message, NuGet's Reasons and Alternate package; empty where the format
+// carries none. ViewData.Deprecation carries it with the summary, so that every list marks it.
+type Deprecation struct {
+	Package   bool
+	Message   string
+	Reasons   []string
+	Alternate *DeprecationAlternate
+}
+
+// DeprecationAlternate is the package a deprecation names in its place and the range of its versions ("" for any).
+type DeprecationAlternate struct {
+	Package string
+	Range   string
+}
+
+// MaxDeprecationMessage bounds a deprecation's message, in characters: npm's limit, for every format that carries one.
+const MaxDeprecationMessage = 1024
+
+// DeprecationSubject is what a format deprecates: DeprecateVersion (npm, NuGet) or DeprecatePackage (an Ansible collection).
+type DeprecationSubject string
+
+const (
+	DeprecateVersion DeprecationSubject = "version"
+	DeprecatePackage DeprecationSubject = "package"
+)
+
+// DeprecationFinder is the optional interface of a Format whose versions can be deprecated: the package list's filter deprecated asks it
+// for the stored versions that are, at most limit+1, by their own deprecation or their package's; the core intersects them with what the
+// caller may read (R-API-085).
+type DeprecationFinder interface {
+	DeprecatedVersions(ctx context.Context, ports DataPorts, repos []string, limit int) ([]VersionID, error)
+}
+
+// Deprecator is the optional interface of a Format whose protocol carries a deprecation that Quader sets in a local repository
+// (R-API-085, ADR-286). The management operation builds a Request for the repository and the caller, with the format host as Host, and
+// the format decides the rest as a protocol write of its own does: the subject, what its protocol carries (a refusal of kind Unprocessable
+// says why, kind Unprocessable), deploy and its ownership rule, the lock, the rows, the revision and the audit event in one Host.Write. It returns the
+// deprecation the subject holds afterwards and whether the request changed it.
+type Deprecator interface {
+	DeprecationSubject() DeprecationSubject
+	Deprecate(ctx context.Context, rq *Request, d DeprecationChange) (held *Deprecation, changed bool, err error)
+}
+
+// DeprecationChange is one change: the package as the caller named it, the version ("" for a format that deprecates packages), the
+// deprecation to hold afterwards, nil to clear it.
+type DeprecationChange struct {
+	Package     string
+	Version     string
+	Deprecation *Deprecation
 }
 
 // VersionPather gives the canonical path of the file that holds a version's content (npm's tarball, NuGet's .nupkg) for
@@ -2152,6 +2206,8 @@ type (
 	ViewData struct {
 		Description string
 		Keywords    []string
+		Deprecation *Deprecation // the version's own or its package's, with the summary (R-API-085); nil for none
+		Unlisted    bool         // the format hides the version from its search and serves it by its number (NuGet, R-NUGET-006)
 		Licenses    []string
 		HasReadme   bool
 		WikiMetadata []string // the members of Metadata that are wiki content; the core drops them, and the README, for a caller who may not read the wiki (R-API-058)
@@ -2168,7 +2224,7 @@ type (
 )
 
 const (
-	ViewSummary ViewFields = 1 << iota // description and keywords
+	ViewSummary ViewFields = 1 << iota // description, keywords, the deprecation and whether the version is unlisted
 	ViewDetails                        // adds the licenses, whether a README exists and the metadata
 	ViewReadme                         // adds the README text and its file name
 	ViewFacts                          // with ViewDetails, what only the version's own page shows (an image's configuration, ADR-284)

@@ -38,6 +38,23 @@ type Metadata struct {
 	// PackageTypes are the declared types; none declared is absent, and the package then
 	// has the type Dependency (nuget_version.package_types holds it lowercased).
 	PackageTypes []PackageType `json:"packageTypes,omitempty"`
+	// Deprecation is not of the .nuspec: the deprecation of the version, set through the management operation for a local version
+	// and taken from the upstream's registration for a remote's cached one (R-NUGET-036), in the registration's shape.
+	Deprecation *Deprecation `json:"deprecation,omitempty"`
+}
+
+// Deprecation is a version's deprecation in the shape of the registration's catalog entry (R-NUGET-036): at least one reason, an
+// optional message and an optional alternate package, whose range is "*" when any version will do.
+type Deprecation struct {
+	Reasons          []string          `json:"reasons"`
+	Message          string            `json:"message,omitempty"`
+	AlternatePackage *AlternatePackage `json:"alternatePackage,omitempty"`
+}
+
+// AlternatePackage is the package a deprecation names in its place.
+type AlternatePackage struct {
+	ID    string `json:"id"`
+	Range string `json:"range"`
 }
 
 // License is the license element of the .nuspec.

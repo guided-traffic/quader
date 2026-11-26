@@ -71,6 +71,8 @@ type metadata struct {
 	IconURL    string `json:"iconUrl"`
 	LicenseURL string `json:"licenseUrl"`
 	ProjectURL string `json:"projectUrl"`
+	// Deprecation is the stored version's own (R-NUGET-036).
+	Deprecation json.RawMessage `json:"deprecation"`
 }
 
 // words reads a member that is a list of strings or one string.
@@ -162,6 +164,9 @@ func Render(feed string, semVer2 bool, total int, hits []rows.SearchHit) ([]byte
 			r.Versions = append(r.Versions, versionRef{ID: hive + h.LowerID + "/" + v.LowerVersion + ".json", Version: v.FullVersion, Downloads: v.Downloads})
 			r.TotalDownloads += v.Downloads
 		}
+		// The deprecation of the version the result names (R-NUGET-036), as nuget.org's search answers it: a stored version's own,
+		// or what an upstream's result said of it.
+		r.Deprecation = present(md.Deprecation)
 		if fw := h.Latest.Forwarded; fw != nil {
 			owners, verified := append([]string{}, fw.Owners...), fw.Verified
 			r.Owners, r.Verified, r.TotalDownloads = &owners, &verified, fw.TotalDownloads

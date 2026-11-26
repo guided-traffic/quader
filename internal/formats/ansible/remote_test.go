@@ -152,14 +152,18 @@ func TestR_ANS_017_AVersionDocumentIsCheckedBeforeItIsStored(t *testing.T) {
 func TestR_ANS_017_ACollectionDocumentMustBeThePathsCollection(t *testing.T) {
 	a := remoteAdapter{f: New()}
 	tgt := target{kind: kindCollection, ns: "acme", name: "tools"}
-	if err := a.checkCollection([]byte(`{"namespace":"Acme","name":"Tools","highest_version":null}`), tgt); err != nil {
-		t.Errorf("a name in another case: %v", err)
+	if dep, err := a.checkCollection([]byte(`{"namespace":"Acme","name":"Tools","highest_version":null}`), tgt); err != nil || dep {
+		t.Errorf("a name in another case: %v (deprecated %v)", err, dep)
 	}
-	if err := a.checkCollection([]byte(`{"namespace":"acme","name":"base"}`), tgt); err == nil || !strings.Contains(err.Error(), "identity_mismatch") {
+	if _, err := a.checkCollection([]byte(`{"namespace":"acme","name":"base"}`), tgt); err == nil || !strings.Contains(err.Error(), "identity_mismatch") {
 		t.Errorf("another collection: %v", err)
 	}
-	if err := a.checkCollection([]byte(`{}`), tgt); err == nil {
+	if _, err := a.checkCollection([]byte(`{}`), tgt); err == nil {
 		t.Error("a document without a name")
+	}
+	// R-ANS-060: the upstream's flag of the collection is read with the document, for the screens of the remote.
+	if dep, err := a.checkCollection([]byte(`{"namespace":"acme","name":"tools","deprecated":true}`), tgt); err != nil || !dep {
+		t.Errorf("the upstream's deprecation: %v (deprecated %v)", err, dep)
 	}
 }
 

@@ -16,7 +16,9 @@ import "github.com/guided-traffic/quader/internal/backup/tables"
 func init() {
 	// ansible_version_signatures (00096_signature_wire, R-SIG-031) is data as well: the signatures a client posted for a version go
 	// with the version and are not made again.
-	for _, t := range []string{"ansible_collection_versions", "ansible_tombstones", "ansible_import_tasks", "ansible_version_signatures"} {
+	// ansible_collection_deprecations (00137_ansible_collection_deprecations, R-ANS-060) is data: a local collection's deprecation is
+	// the publisher's word, and a remote's rows go with its cache (PurgeRemoteCaches).
+	for _, t := range []string{"ansible_collection_versions", "ansible_tombstones", "ansible_import_tasks", "ansible_version_signatures", "ansible_collection_deprecations"} {
 		tables.Register(t, tables.Data, tables.Options{})
 	}
 }

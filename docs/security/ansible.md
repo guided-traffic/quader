@@ -77,6 +77,12 @@ The import tasks are read with `read` on the repository, the tombstones are list
 nothing else of the archive; its id is a random UUID. A virtual repository shows its deployment target's tasks only to a caller who may read the virtual
 repository. Tasks are deleted after `ansible.import_task_keep` by a task that touches no version.
 
+A collection is deprecated as a whole through `PUT …/packages/{collection}/deprecation` (R-ANS-060, R-API-085), decided by the format as a
+publish into the collection is: deploy on the collection document's path and the ownership of the collection, on the request's index
+([deprecation.go](../../internal/formats/ansible/deprecation.go)); a collection none of whose versions the caller may read is answered as
+missing. The message, at most 1,024 characters of publisher text, is kept for Quader's screens, which show it as text, and is in the
+audit event `package.metadata_changed`; the collection document carries the flag alone. A remote's flag is its upstream's and cannot be set.
+
 ## What this does not cover
 
 - [H-841](../spec/formats/ansible.md#h-841--collections-are-not-evaluated-for-vulnerabilities) - collections are not evaluated for vulnerabilities (no OSV ecosystem).

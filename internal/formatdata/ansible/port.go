@@ -59,6 +59,7 @@ type Store struct {
 	viewStore
 	docsStore
 	roleStore
+	deprecationStore
 }
 
 // New creates the store.
@@ -70,7 +71,10 @@ func New(o Options) (*Store, error) {
 		return nil, errs.E(errs.Internal, errs.CodeInternal, "ansible: the data port needs an audit recorder")
 	}
 	g := &group{o: o}
-	return &Store{o: o, localStore: localStore{g}, remoteStore: remoteStore{g}, viewStore: viewStore{g}, docsStore: docsStore{g}, roleStore: roleStore{g}}, nil
+	return &Store{
+		o: o, localStore: localStore{g}, remoteStore: remoteStore{g}, viewStore: viewStore{g}, docsStore: docsStore{g}, roleStore: roleStore{g},
+		deprecationStore: deprecationStore{g},
+	}, nil
 }
 
 // group is what every group of the port shares: the options. A group embeds a pointer to it, so the composition is one value.

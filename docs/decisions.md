@@ -2780,6 +2780,33 @@ command.
 theirs has a prefix, no README of theirs is HTML, none renames a package). The conformance kit's writer and the test fakes implement the
 new method.
 
+### ADR-286 · Deprecation is one state of the format contract, set through one management operation and decided by the format
+
+**Status:** Decided by the development agent on 2026-11-26 — owner review at the walkthrough
+([R-API-085](spec/api-and-ui.md#r-api-085--a-deprecated-version-or-package-is-marked-alike-in-every-format-that-has-it),
+[Q-API-440](spec/api-and-ui.md#q-api-440--deprecation-is-a-member-of-the-views-summary-and-the-format-decides-the-write)). It adds to
+the frozen format contract and keeps `ContractVersion` 14: two optional interfaces that `CapabilitiesOf` finds and two fields of
+`ViewData`.
+
+**Context.** npm, NuGet and Ansible Galaxy each have a deprecation, of a version (npm, NuGet) or of a whole package (an Ansible
+collection), with a message, NuGet's reasons and an alternate package; only npm's reached a screen, as a member of its metadata, and only on
+the version's page (W-30, G4). The owner's rule: a property decided at one format holds for every format that has it, and metadata that is
+there is shown.
+
+**Decision.**
+- `ViewData` carries `Deprecation` and `Unlisted` with the summary, so the package list, the table of versions, the switch and the
+  suggestions mark a version without reading its details; the core reads them as it reads the description.
+- `DeprecationFinder` gives the package list's filter `deprecated` the stored versions that are deprecated, as `Find` gives a search's.
+- `Deprecator` is the write: the management operation `PUT`/`DELETE …/packages/{name}/deprecation` builds a request of the format for
+  the repository and the caller, with the format host as `Host`, and the format decides what it deprecates, what its protocol carries,
+  deploy and its ownership rule, and writes rows, revision and audit event in one `Host.Write`, as its own protocol writes do. The API
+  checks only the class (a remote shows its upstream's state, a virtual its members') and whether the format has a `Deprecator`.
+
+**Consequences.** A format that gains a deprecation adds the two methods and its summary member; nothing in the core changes. A
+deprecation set on the screen is served to the format's clients at once (npm's document, NuGet's registration and search, the collection
+document). OCI images, Debian packages and generic files have none; a Helm chart's `deprecated` of its `Chart.yaml` joins as a
+`DeprecationFinder` without a `Deprecator`, since it is set by pushing the chart.
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -9072,10 +9099,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 <!-- coverage-gen:begin decisions -->
 ### Q-ANS
 
-94 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
+96 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-ANS: 94 questions</summary>
+<summary>Q-ANS: 96 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9173,15 +9200,17 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ANS-113](spec/formats/ansible.md#q-ans-113--a-role-cached-before-is-named-by-its-next-lookup-and-no-pass-fills-it) | A role cached before is named by its next lookup, and no pass fills it | Decided by the development agent on 2026-11-25 | (a) No pass: an archive filled again records its package, the next lookup of a role writes its facts, renames its package and queues its README | — |
 | [Q-ANS-114](spec/formats/ansible.md#q-ans-114--a-roles-install-snippets-are-its-own-and-name-it-by-its-display-name) | A role's install snippets are its own and name it by its display name | Decided by the development agent on 2026-11-25 | (a) An install template declares the package names it is for (`Packages`, a prefix of the normalized name); for a package it claims, the unprefixed install templates are left out and the package is written by its display name, read in the caller's scope | [ADR-285](#adr-285--a-package-can-be-renamed-on-the-screens-take-an-upstreams-html-readme-and-have-install-snippets-of-its-own) |
 | [Q-ANS-115](spec/formats/ansible.md#q-ans-115--a-role-is-looked-up-in-the-tab-upstream-by-the-name-the-rules-see) | A role is looked up in the tab Upstream by the name the rules see | Decided by the development agent on 2026-11-25 | (a) The catalogue's lookup of `role/<id>` lists every version of the role's list, newest first by its date, and a download from the tab names the version's archive | — |
+| [Q-ANS-130](spec/formats/ansible.md#q-ans-130--a-collections-deprecation-carries-a-message-for-quaders-screens-only) | A collection's deprecation carries a message for Quader's screens only | Decided by the development agent on 2026-11-26 | (a) An optional message, kept with the row and shown on Quader's pages; the document carries the flag | — |
+| [Q-ANS-131](spec/formats/ansible.md#q-ans-131--a-remote-takes-its-upstreams-flag-from-the-collection-document-it-fills-a-virtual-its-first-members) | A remote takes its upstream's flag from the collection document it fills, a virtual its first member's | Decided by the development agent on 2026-11-26 | (a) The fill of a collection document records the flag in the same table, without a principal; a virtual repository's merged document takes the flag of the first member that holds the collection, the member whose versions come first (R-ANS-022) | — |
 
 </details>
 
 ### Q-API
 
-161 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
+165 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-API: 161 questions</summary>
+<summary>Q-API: 165 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9346,6 +9375,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-API-433](spec/api-and-ui.md#q-api-433--a-format-says-which-of-its-versions-is-a-pre-release-where-it-says-its-order) | A format says which of its versions is a pre-release where it says its order | Decided by the development agent on 2026-11-25 | (a) `ViewAdapter.Prerelease(version) bool` beside `Compare` and `SortKey`; the exposure adapter loses `Prerelease`, and `Register` composes the catalog's `Versioning` of the exposure adapter's ranges and the view adapter's answer, a string the view adapter does not rank being no version; a format whose rules narrow versions needs a view adapter; contract version 13 | [ADR-282](#adr-282--a-format-says-which-of-its-versions-is-a-pre-release-in-its-view-adapter) |
 | [Q-API-434](spec/api-and-ui.md#q-api-434--a-format-whose-ecosystem-has-no-pre-release-calls-no-version-one) | A format whose ecosystem has no pre-release calls no version one | Decided by the development agent on 2026-11-25 | (a) Both answer false for every version; their kit fixtures say why (`NoPrereleases`) | — |
 | [Q-API-435](spec/api-and-ui.md#q-api-435--a-remotes-tag-entries-carry-whether-the-tag-is-a-pre-release-and-the-latest-tag-is-read-by-two-indexes) | A remote's tag entries carry whether the tag is a pre-release, and the latest tag is read by two indexes | Decided by the development agent on 2026-11-25 | (a) `oci_tag_prerelease(tag)`, the format's rule in SQL, a stored generated column `tag_prerelease` beside `tag_sort_key`, two partial indexes of the releases and the pre-releases of a name's tags, and `PackageViewLatest` reads the first entry of each; migration 00126 clears the key and the flag of the stored rows whose answer changes, and the background migration `version_sort_key` fills them again | [ADR-282](#adr-282--a-format-says-which-of-its-versions-is-a-pre-release-in-its-view-adapter) |
+| [Q-API-440](spec/api-and-ui.md#q-api-440--deprecation-is-a-member-of-the-views-summary-and-the-format-decides-the-write) | Deprecation is a member of the view's summary, and the format decides the write | Decided by the development agent on 2026-11-26 | (a) `ViewData.Deprecation` and `Unlisted`, read with the summary; two optional interfaces, `DeprecationFinder` for the filter and `Deprecator` for the write; the management operation builds a request of the format and the format decides as its own protocol write does | [ADR-286](#adr-286--deprecation-is-one-state-of-the-format-contract-set-through-one-management-operation-and-decided-by-the-format) |
+| [Q-API-441](spec/api-and-ui.md#q-api-441--a-package-is-shown-deprecated-when-its-latest-version-is-and-the-filter-asks-the-same) | A package is shown deprecated when its latest version is, and the filter asks the same | Decided by the development agent on 2026-11-26 | (a) The row carries its latest version's deprecation, and `deprecated=true` keeps the packages whose latest visible version is deprecated | — |
+| [Q-API-442](spec/api-and-ui.md#q-api-442--one-operation-on-a-repositorys-package-the-format-decides-the-subject) | One operation on a repository's package; the format decides the subject | Decided by the development agent on 2026-11-26 | (a) `PUT`/`DELETE …/repositories/{repoKey}/packages/{packageName}/deprecation`, the version in the body or the query; the format refuses a version it cannot carry, or its absence | — |
+| [Q-API-443](spec/api-and-ui.md#q-api-443--a-suggestion-is-marked-for-a-repository-the-caller-reads-whole) | A suggestion is marked for a repository the caller reads whole | Decided by the development agent on 2026-11-26 | (a) For the suggestions placed in a repository the caller reads whole, the latest version's candidates (`PackageViewLatest`) and the formats' summaries, one statement and one read per format | — |
 
 </details>
 
@@ -11173,10 +11206,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-NPM
 
-90 questions on [spec/formats/npm.md](spec/formats/npm.md).
+91 questions on [spec/formats/npm.md](spec/formats/npm.md).
 
 <details>
-<summary>Q-NPM: 90 questions</summary>
+<summary>Q-NPM: 91 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11270,15 +11303,16 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-NPM-90](spec/formats/npm.md#q-npm-90--npm-view-of-a-version-is-no-probe-the-rule-fires-for-tools-that-ask-the-version-document) | `npm view` of a version is no probe; the rule fires for tools that ask the version document | Decided by the development agent | (a) As built: the version document and a `HEAD` of the tarball are the probes; the specification and the manual say that npm's own commands send none | — |
 | [Q-NPM-91](spec/formats/npm.md#q-npm-91--a-version-a-remote-cached-is-described-by-a-job-from-its-entry-in-the-stored-document-and-one-read-of-its-tarball) | A version a remote cached is described by a job from its entry in the stored document and one read of its tarball | Decided by the development agent | (c) A job queued by the tarball's commit and by a fill that replaces the stored document reads the entry and, once, the tarball | — |
 | [Q-NPM-92](spec/formats/npm.md#q-npm-92--what-a-remote-cached-before-its-description-existed-is-described-by-a-maintenance-task-a-starting-worker-queues) | What a remote cached before its description existed is described by a maintenance task a starting worker queues | Decided by the development agent | (c) A maintenance task (R-OPS-019) that a starting worker queues while something is left, daily by the scheduler and by an operator through the tasks API | — |
+| [Q-NPM-95](spec/formats/npm.md#q-npm-95--the-management-operation-sets-an-npm-deprecation-npm-deprecate-stays-unbuilt-for-now) | The management operation sets an npm deprecation; `npm deprecate` stays unbuilt for now | Decided by the development agent on 2026-11-26 | (a) The management operation writes the state R-NPM-018 describes (`npm_versions.deprecated`, the revision, `modified_at`, `npm.deprecate`), decided as `npm deprecate` would be (deploy and the ownership of the name, Q-NPM-9); the protocol's `PUT` stays the 404 of R-NPM-043 | — |
 
 </details>
 
 ### Q-NUGET
 
-119 questions on [spec/formats/nuget.md](spec/formats/nuget.md).
+122 questions on [spec/formats/nuget.md](spec/formats/nuget.md).
 
 <details>
-<summary>Q-NUGET: 119 questions</summary>
+<summary>Q-NUGET: 122 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11401,6 +11435,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-NUGET-135](spec/formats/nuget.md#q-nuget-135--an-embedded-file-is-read-out-of-the-stored-package-when-a-client-asks-for-it) | An embedded file is read out of the stored package when a client asks for it | Decided by the development agent | (a) Read the file out of the stored `.nupkg` per request through the one reader of a stored package (`nupkg.Open` in the data port), what the `.nuspec` names from `nuget_version.metadata`; no item | — |
 | [Q-NUGET-136](spec/formats/nuget.md#q-nuget-136--an-embedded-file-is-content-of-its-package-the-checks-of-its-download-decide-and-its-routes-are-metadata-routes) | An embedded file is content of its package: the checks of its download decide, and its routes are Metadata routes | Decided by the development agent | (a) Each read decides the checks of a download of the `.nupkg` (`ItemStore.Check`), and the three routes are `Metadata` routes | — |
 | [Q-NUGET-137](spec/formats/nuget.md#q-nuget-137--a-remote-serves-the-embedded-files-of-the-packages-its-cache-holds-and-a-virtual-repository-those-of-its-first-member-that-holds-the-package) | A remote serves the embedded files of the packages its cache holds, and a virtual repository those of its first member that holds the package | Decided by the development agent | (a) A remote reads the files out of the `.nupkg` its cache holds, a version it has not cached is a 404 and starts no fetch, the upstream's `iconUrl` stays; a virtual repository asks its members for the `.nupkg` in resolution order and answers with the first that holds it | — |
+| [Q-NUGET-140](spec/formats/nuget.md#q-nuget-140--the-deprecation-is-a-member-of-the-versions-metadata-in-the-catalog-entrys-shape) | The deprecation is a member of the version's metadata, in the catalog entry's shape | Decided by the development agent on 2026-11-26 | (a), as the plan of W-30 proposed. | — |
+| [Q-NUGET-141](spec/formats/nuget.md#q-nuget-141--a-remote-reads-a-cached-versions-deprecation-from-the-registration-it-fills) | A remote reads a cached version's deprecation from the registration it fills | Decided by the development agent on 2026-11-26 | (a) The fill of a registration index or page writes the member of the cached versions it inlines, in the fill's transaction | — |
+| [Q-NUGET-142](spec/formats/nuget.md#q-nuget-142--unlisted-and-deprecated-are-two-states-with-two-marks) | Unlisted and deprecated are two states with two marks | Decided by the development agent on 2026-11-26 | (a) Two members (`unlisted`, `deprecation`) and two marks, **Unlisted** and **Deprecated** | — |
 
 </details>
 
@@ -12399,10 +12436,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-640 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+643 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 640 questions</summary>
+<summary>Q-UI: 643 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13046,6 +13083,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1271](spec/api-and-ui.md#q-ui-1271--the-source-package-of-a-debian-version-links-to-the-package-list-of-its-binaries) | The source package of a Debian version links to the package list of its binaries | Decided by the development agent on 2026-11-26 | (a) A link to the package list filtered by the keyword, which Debian answers with the source package; the filter's chip says "Source package" while the list shows Debian alone | — |
 | [Q-UI-1272](spec/api-and-ui.md#q-ui-1272--a-debian-packages-changelog-is-a-tab-its-copyright-a-fold-its-files-a-section-of-files) | A Debian package's changelog is a tab, its copyright a fold, its files a section of Files | Decided by the development agent on 2026-11-26 | (a) A tab **Changelog** after Details; the copyright file a closed fold under Package details (its licence stands on the facts line); the installed files a section under the package files of **Files**: the first 100, a filter on the path, "Show more" by 500, an architecture choice when the version has several | — |
 | [Q-UI-1280](spec/api-and-ui.md#q-ui-1280--a-roles-entry-points-are-sections-of-its-page-before-its-readme-and-the-changelog-is-a-file-of-documentation-with-a-head) | A role's entry points are sections of its page before its README, and the changelog is a file of Documentation with a head | Decided by the development agent on 2026-11-26 | (a) One section per entry point (heading "Entry point main", the short description, "added in", the prose, **Parameters** with the same two-column table, Notes, Requirements, Attributes, See also, Authors), then **README**; the changelog a file **Changelog** after the other files of Documentation, its page headed **Changelog** with the member it was read from and a note of its own when cut | — |
+| [Q-UI-1300](spec/api-and-ui.md#q-ui-1300--one-mark-deprecated-is-a-warning-badge-unlisted-a-plain-one) | One mark: Deprecated is a warning badge, Unlisted a plain one | Decided by the development agent on 2026-11-26 | (a) One component, `quader-deprecation-mark`: **Deprecated** as the warning badge with the icon `warning` and the message as its title, **Unlisted** as a plain badge with the icon `visibility_off` | — |
+| [Q-UI-1301](spec/api-and-ui.md#q-ui-1301--deprecating-is-an-act-in-the-menu-of-the-versions-head-with-a-small-dialog) | Deprecating is an act in the menu of the version's head, with a small dialog | Decided by the development agent on 2026-11-26 | (a) A menu (`more_vert`) at the end of the head for a reader who may deploy in a local repository that holds the version: **Deprecate version**, or **Deprecate collection**; a dialog of what the format carries (npm a message, NuGet reasons, a message and an alternate, Ansible a message for Quader's pages) with a sentence of what the clients do; **Change deprecation** and **Undo deprecation** on a deprecated version, the undo without a dialog | — |
+| [Q-UI-1302](spec/api-and-ui.md#q-ui-1302--the-filter-deprecated-stands-in-the-drawer-of-the-list-packages) | The filter "deprecated" stands in the drawer of the list Packages | Decided by the development agent on 2026-11-26 | (a) A category **State** with **Deprecated only** in the drawer of **Packages**, a chip **State: Deprecated** while it is set, kept in a saved view | — |
 
 </details>
 

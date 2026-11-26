@@ -331,7 +331,7 @@ func (a *Ansible) notKept(ctx context.Context, src *SourceClient, root, ns, coll
 		Deprecated bool `json:"deprecated"`
 	}
 	if ok, err := src.GetJSON(ctx, collectionURL(root, ns, coll), "application/json", galaxyDocLimit, &c); err == nil && ok && c.Deprecated {
-		p.NotKept = append(p.NotKept, "deprecation flag of the collection (Quader stores none for a local collection)")
+		p.NotKept = append(p.NotKept, "deprecation flag of the collection (the import does not carry it; set it on the collection's page)")
 	}
 	a.mu.Lock()
 	done := a.rolesDone

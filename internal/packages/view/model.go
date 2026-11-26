@@ -25,6 +25,9 @@ type Adapter interface {
 	Find(ctx context.Context, f Find, limit int) ([]int64, error)
 	// Withheld returns the ids of stored versions the format does not serve.
 	Withheld(ctx context.Context, repos []string) ([]int64, error)
+	// Deprecated returns the ids of at most limit+1 stored versions in the repositories that are deprecated (R-API-085); none for a
+	// format whose versions never are. The view intersects them with what the caller may read.
+	Deprecated(ctx context.Context, repos []string, limit int) ([]int64, error)
 	// Fetch is the format's rule of which downloads are fetches of a version (R-API-079, formats.VersionFetch).
 	Fetch() FetchRule
 }
@@ -87,6 +90,10 @@ const (
 type Data struct {
 	Description string
 	Keywords    []string
+	// Deprecation and Unlisted are read with the summary (formats.ViewData): a version's deprecation, its own or its package's, and
+	// whether the format hides it from its search (R-API-085).
+	Deprecation *Deprecation
+	Unlisted    bool
 	Licenses    []string
 	HasReadme   bool
 	Metadata    map[string]any
@@ -101,6 +108,21 @@ type Data struct {
 	ReadmeFile      string
 	// ReadmeHTML: Readme is an upstream's HTML, sanitized and not rendered (R-ANS-039).
 	ReadmeHTML bool
+}
+
+// Deprecation is a version's or a package's deprecation (R-API-085, formats.Deprecation): Package says that the whole package is
+// deprecated; Message is plain text; Reasons and Alternate are the format's, empty where it has none.
+type Deprecation struct {
+	Package   bool
+	Message   string
+	Reasons   []string
+	Alternate *Alternate
+}
+
+// Alternate is the package a deprecation names in its place, and the range of its versions ("" for any).
+type Alternate struct {
+	Package string
+	Range   string
 }
 
 // Find is a search the adapter answers: one of Text and Keyword is set.
@@ -130,6 +152,8 @@ type Package struct {
 	UpdatedAt     time.Time
 	VersionCount  int64
 	DownloadCount int64
+	// Deprecation is the deprecation of the package's latest version, which the row names (R-API-085); nil when it is not deprecated.
+	Deprecation *Deprecation
 }
 
 // VersionSummary is one entry of the version list.
@@ -162,6 +186,9 @@ type VersionSummary struct {
 	// most 100; AliasesMore says that it has more. Nil outside that list.
 	Aliases     []string
 	AliasesMore bool
+	// Deprecation and Unlisted are the version's, read from the format's summary of the repository its row was read from (R-API-085).
+	Deprecation *Deprecation
+	Unlisted    bool
 }
 
 // RepositoryEntry is a repository that holds a version.
@@ -201,6 +228,9 @@ type VersionDetail struct {
 	// 100, for a format whose version is fetched as its document; AliasesMore says the content has more. Nil for any other format.
 	Aliases      []string
 	AliasesMore  bool
+	// Deprecation and Unlisted are the version's in the repository the metadata was read from (R-API-085).
+	Deprecation  *Deprecation
+	Unlisted     bool
 	Repositories []RepositoryEntry
 	Files        []File
 	// Repo is the repository the files and the metadata were read from: the one

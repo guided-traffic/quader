@@ -304,6 +304,63 @@ func (s *Store) SetListed(ctx context.Context, tx meta.Tx, in rows.ListingInput)
 		map[string]any{"package": in.LowerID, "version": in.LowerVersion, "change": change}, nil)
 }
 
+// SetDeprecation sets or clears a local version's deprecation and records package.metadata_changed (R-NUGET-036).
+func (s *Store) SetDeprecation(ctx context.Context, tx meta.Tx, in rows.DeprecationInput) (bool, error) {
+	qs, err := queries(tx)
+	if err != nil {
+		return false, err
+	}
+	raw := ""
+	details := map[string]any{"package": in.LowerID, "version": in.LowerVersion, "change": audit.ChangeUndeprecate}
+	if d := in.Deprecation; d != nil {
+		b, err := json.Marshal(d)
+		if err != nil {
+			return false, err
+		}
+		raw = string(b)
+		details["change"], details["reasons"] = audit.ChangeDeprecate, d.Reasons
+		if d.Message != "" {
+			details["message"] = d.Message
+		}
+		if a := d.AlternatePackage; a != nil {
+			details["alternatePackage"] = map[string]any{"id": a.ID, "range": a.Range}
+		}
+	}
+	n, err := qs.NuGetSetDeprecation(ctx, q.NuGetSetDeprecationParams{Deprecation: raw, VersionID: in.VersionID})
+	if err != nil || n == 0 {
+		return false, err
+	}
+	return true, s.record(ctx, tx, audit.EventPackageMetadataChanged, in.Audit, in.LowerID, in.LowerVersion, details, nil)
+}
+
+// SetRemoteDeprecations writes the deprecations a remote's registration document states of its cached versions (R-NUGET-036).
+func (s *Store) SetRemoteDeprecations(ctx context.Context, tx meta.Tx, repoID int64, lowerID string, deps map[string]*rows.Deprecation) error {
+	if len(deps) == 0 {
+		return nil
+	}
+	qs, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	versions := make([]string, 0, len(deps))
+	raws := make([]string, 0, len(deps))
+	for v, d := range deps {
+		raw := ""
+		if d != nil {
+			b, err := json.Marshal(d)
+			if err != nil {
+				return err
+			}
+			raw = string(b)
+		}
+		versions, raws = append(versions, v), append(raws, raw)
+	}
+	_, err = qs.NuGetSetRemoteDeprecations(ctx, q.NuGetSetRemoteDeprecationsParams{
+		Versions: versions, Deprecations: raws, RepositoryID: repoID, LowerID: lowerID,
+	})
+	return err
+}
+
 // ServeState reads what a GET of a file of a version decides on.
 func (s *Store) ServeState(ctx context.Context, repoID int64, lowerID, lowerVersion string) (rows.ServeState, error) {
 	var out rows.ServeState

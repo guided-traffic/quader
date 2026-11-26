@@ -150,7 +150,7 @@ func (viewAdapter) Describe(ctx context.Context, ports formats.DataPorts, vs []f
 			return nil, err
 		}
 		for _, s := range ss {
-			out[formats.VersionID(s.VersionID)] = formats.ViewData{Description: s.Description, Keywords: s.Tags}
+			out[formats.VersionID(s.VersionID)] = formats.ViewData{Description: s.Description, Keywords: s.Tags, Deprecation: deprecationOf(s)}
 		}
 		return out, nil
 	}
@@ -196,6 +196,15 @@ func describe(d rows.ViewDetail) formats.ViewData {
 	}
 	return formats.ViewData{
 		Description: d.Description, Keywords: d.Tags, Licenses: info.License, HasReadme: info.Readme != "",
-		Metadata: md, Readme: d.Readme, ReadmeFile: d.ReadmeFile,
+		Metadata: md, Readme: d.Readme, ReadmeFile: d.ReadmeFile, Deprecation: deprecationOf(d.ViewSummary),
 	}
+}
+
+// deprecationOf is the deprecation of a version's collection (R-ANS-060): the collection as a whole, with the message a local
+// repository's publisher gave; nil when it is not deprecated.
+func deprecationOf(s rows.ViewSummary) *formats.Deprecation {
+	if !s.Deprecated {
+		return nil
+	}
+	return &formats.Deprecation{Package: true, Message: s.DeprecationMessage}
 }

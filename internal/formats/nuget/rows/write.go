@@ -50,6 +50,14 @@ type ListingInput struct {
 	Audit                 Audit
 }
 
+// DeprecationInput is a change of a local version's deprecation (R-NUGET-036): Deprecation is the member to store, nil to clear it.
+type DeprecationInput struct {
+	VersionID             int64
+	LowerID, LowerVersion string
+	Deprecation           *Deprecation
+	Audit                 Audit
+}
+
 // ServeState is what a GET of a stored file of a version decides on (R-NUGET-007):
 // whether the version is stored, listed or not, and whether its number is tombstoned.
 type ServeState struct {

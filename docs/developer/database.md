@@ -838,6 +838,19 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
+## A collection's deprecation (00137)
+
+[00137_ansible_collection_deprecations](../../internal/meta/postgres/migrations/00137_ansible_collection_deprecations.sql) adds
+`ansible_collection_deprecations`, one row per deprecated collection of a repository ([formats/ansible.md](../spec/formats/ansible.md)
+R-ANS-060, [api-and-ui.md](../spec/api-and-ui.md) R-API-085): a local repository's row is set and cleared through the management operation,
+with the principal who set it and an optional message of at most 1,024 characters; a remote repository's row is its upstream's flag, written
+by the fill of the collection document, without either. No row is a collection that is not deprecated. The key is `(repo_id, name)`, a
+foreign key to `repositories` with `ON DELETE CASCADE`. Export class `data` ([tables.go](../../internal/formatdata/ansible/tables.go)); a
+restore without the remote caches deletes the remotes' rows with the caches. A remote's rows are content, so `upstream_repository_purge` is
+replaced again, the body of 00134 with the delete of `ansible_collection_deprecations`. Expand phase only. The statements are in
+[ansible_local.sql](../../internal/meta/postgres/queries/ansible_local.sql) and
+[ansible_remote.sql](../../internal/meta/postgres/queries/ansible_remote.sql).
+
 ## The changelog of a collection version (00136)
 
 [00136_ansible_changelogs](../../internal/meta/postgres/migrations/00136_ansible_changelogs.sql) adds `ansible_changelogs`, the changelog of

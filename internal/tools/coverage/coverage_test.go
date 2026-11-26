@@ -129,8 +129,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1296 since a role read through a remote reads like a role (R-ANS-056, one P1 requirement of W-30).
 		// 1299 since the generator reads what the documentation site shows: fragments, a role's argument specs, the changelog
 		// (R-ANS-051 to R-ANS-053, three P1 requirements of W-30).
-		if len(m.Reqs) != 1299 || count[prioMVP] != 721 || count[prioP1] != 539 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1299 (721, 539, 39)",
+		// 1302 since deprecation is a property of every format that has it (R-API-085, R-NUGET-036, R-ANS-060, three P1 requirements of
+		// W-30).
+		if len(m.Reqs) != 1302 || count[prioMVP] != 721 || count[prioP1] != 542 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1302 (721, 542, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

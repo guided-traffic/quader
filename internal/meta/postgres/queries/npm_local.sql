@@ -24,6 +24,24 @@ SELECT dist_tags::text AS dist_tags
  WHERE package_id = sqlc.arg(package_id)::bigint
    FOR UPDATE;
 
+-- name: NPMVersionDeprecated :many
+-- The deprecation message of a version of a locked package ("" for none), read before it changes (R-NPM-018, R-API-085).
+SELECT COALESCE(deprecated, '')::text AS deprecated
+  FROM npm_versions
+ WHERE version_id = sqlc.arg(version_id)::bigint;
+
+-- name: NPMSetDeprecated :execrows
+-- Sets the deprecation message of a version of a locked package, or clears it with an empty message, and moves the package's
+-- modified_at forward as NPMSetTags does, so that the document tells its clients it changed (R-NPM-012, R-NPM-018).
+WITH v AS (
+  UPDATE npm_versions SET deprecated = NULLIF(sqlc.arg(message)::text, '')
+   WHERE version_id = sqlc.arg(version_id)::bigint
+  RETURNING version_id
+)
+UPDATE npm_packages
+   SET modified_at = greatest(modified_at + interval '1 millisecond', sqlc.arg(at)::text::timestamptz)
+ WHERE package_id = sqlc.arg(package_id)::bigint AND EXISTS (SELECT 1 FROM v);
+
 -- name: NPMSetTags :execrows
 -- Stores the dist-tags a change produced. modified_at moves forward by at least a
 -- millisecond, so two changes in one clock tick still tell a client the document

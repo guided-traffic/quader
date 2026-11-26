@@ -84,8 +84,9 @@ func TestR_NPM_050_ACachedVersionIsDescribedByItsEntryInTheStoredDocument(t *tes
 			t.Errorf("dependency %s is %v, want %q", name, deps[name], rng)
 		}
 	}
-	if md["deprecated"] != v.Deprecated {
-		t.Errorf("deprecated %v, want %q", md["deprecated"], v.Deprecated)
+	// The upstream's deprecation is the version's own member (R-API-085), not one of its metadata.
+	if dep, _ := got["deprecation"].(map[string]any); dep["message"] != v.Deprecated || dep["scope"] != "version" || md["deprecated"] != nil {
+		t.Errorf("deprecation %v, want the message %q", got["deprecation"], v.Deprecated)
 	}
 	if got["hasReadme"] != true {
 		t.Errorf("hasReadme %v, want true: the cached tarball holds README.md", got["hasReadme"])

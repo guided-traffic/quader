@@ -321,7 +321,11 @@ func (s *Server) suggestPackages(ctx context.Context, acc *edge.Access, sr sugge
 	}
 	out := &gen.PackageSuggestions{Items: make([]gen.PackageSuggestion, 0, len(got)), More: more}
 	for _, p := range got {
-		out.Items = append(out.Items, gen.PackageSuggestion{Id: p.ID, Format: p.Format, Name: p.Name, Key: &p.Key, Project: p.Repo.Project, Repository: p.Repo.Key})
+		sg := gen.PackageSuggestion{Id: p.ID, Format: p.Format, Name: p.Name, Key: &p.Key, Project: p.Repo.Project, Repository: p.Repo.Key}
+		if p.Deprecated {
+			sg.Deprecated = &p.Deprecated
+		}
+		out.Items = append(out.Items, sg)
 	}
 	return out, nil
 }

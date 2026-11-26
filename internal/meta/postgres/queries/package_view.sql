@@ -25,7 +25,10 @@
 -- createdAt or updatedAt; the tie-breakers are name and format, in the direction of
 -- the sort. q_ids and keyword_ids are the versions whose description or keywords the
 -- format matched (a package matches when one of its visible versions is among them). The text matches the name and the display
--- name (an Ansible role's <owner>.<name> for its package role/<id>, R-ANS-056).
+-- name (an Ansible role's <owner>.<name> for its package role/<id>, R-ANS-056). deprecated keeps the packages whose latest
+-- visible version is among deprecated_ids, the versions the formats call deprecated (R-API-085): the latest by the rule of latestOf, a
+-- release before a pre-release before a version the format does not rank, the highest key first and among unranked ones the newest;
+-- a row whose key is not filled yet counts as unranked. The aggregate that picks it reads nothing without the filter.
 -- exact_name, when set, restricts the rows to one package. Names are ordered bytewise
 -- (collation C), so the order does not depend on the database's locale and the keyset
 -- comparison of a cursor means the same on every replica.
@@ -35,7 +38,8 @@
 -- the package that were downloaded, each counted once per visible version that holds its bytes, so a remote's tags are not read a
 -- second time. The downloads of a package outside the page are never read.
 WITH vis AS (
-  SELECT pv.id AS vid, pv.version, pv.created_at, (p.name COLLATE "C")::text AS name, p.display_name, r.format
+  SELECT pv.id AS vid, pv.version, pv.created_at, (p.name COLLATE "C")::text AS name, p.display_name, r.format, pv.sort_key,
+         COALESCE(pv.prerelease, false) AS prerelease
     FROM package_version_listing pv
     JOIN packages p ON p.id = pv.package_id
     JOIN repositories r ON r.id = p.repo_id
@@ -58,6 +62,12 @@ WITH vis AS (
      AND (sqlc.arg(keyword)::text = '' OR bool_or(v.vid = ANY(sqlc.arg(keyword_ids)::bigint[])))
      AND (NOT sqlc.arg(has_from)::boolean OR min(v.created_at) >= NULLIF(sqlc.arg(created_from)::text, '')::timestamptz)
      AND (NOT sqlc.arg(has_to)::boolean OR min(v.created_at) < NULLIF(sqlc.arg(created_to)::text, '')::timestamptz)
+     AND (NOT sqlc.arg(deprecated)::boolean
+          OR (array_agg(v.vid ORDER BY CASE WHEN v.sort_key >= '\x01'::bytea AND NOT v.prerelease THEN 0
+                                            WHEN v.sort_key >= '\x01'::bytea THEN 1 ELSE 2 END,
+                                       CASE WHEN v.sort_key >= '\x01'::bytea THEN v.sort_key END DESC NULLS LAST,
+                                       v.created_at DESC, v.version DESC)
+                FILTER (WHERE sqlc.arg(deprecated)::boolean))[1] = ANY(sqlc.arg(deprecated_ids)::bigint[]))
 ), page AS (
   SELECT g.format, g.name, g.display_name, g.created_at, g.updated_at, g.version_count
     FROM grouped g

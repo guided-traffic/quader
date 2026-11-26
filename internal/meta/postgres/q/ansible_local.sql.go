@@ -9,6 +9,8 @@ import (
 	"context"
 	"encoding/json"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const ansibleArchivesAfter = `-- name: AnsibleArchivesAfter :many
@@ -82,13 +84,71 @@ func (q *Queries) AnsibleBumpPackage(ctx context.Context, arg AnsibleBumpPackage
 	return result.RowsAffected(), nil
 }
 
+const ansibleClearCollectionDeprecation = `-- name: AnsibleClearCollectionDeprecation :execrows
+DELETE FROM ansible_collection_deprecations WHERE repo_id = $1::bigint AND name = $2::text
+`
+
+type AnsibleClearCollectionDeprecationParams struct {
+	RepoID int64
+	Name   string
+}
+
+// Clears the deprecation of a collection of a repository; the count says whether it was deprecated.
+func (q *Queries) AnsibleClearCollectionDeprecation(ctx context.Context, arg AnsibleClearCollectionDeprecationParams) (int64, error) {
+	result, err := q.db.Exec(ctx, ansibleClearCollectionDeprecation, arg.RepoID, arg.Name)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const ansibleCollectionDeprecation = `-- name: AnsibleCollectionDeprecation :many
+SELECT COALESCE(deprecated_by, '')::text AS deprecated_by, COALESCE(message, '')::text AS message, deprecated_at
+  FROM ansible_collection_deprecations
+ WHERE repo_id = $1::bigint AND name = $2::text
+`
+
+type AnsibleCollectionDeprecationParams struct {
+	RepoID int64
+	Name   string
+}
+
+type AnsibleCollectionDeprecationRow struct {
+	DeprecatedBy string
+	Message      string
+	DeprecatedAt pgtype.Timestamptz
+}
+
+// The deprecation of a collection of a repository (R-ANS-060); no row when it is not deprecated.
+func (q *Queries) AnsibleCollectionDeprecation(ctx context.Context, arg AnsibleCollectionDeprecationParams) ([]AnsibleCollectionDeprecationRow, error) {
+	rows, err := q.db.Query(ctx, ansibleCollectionDeprecation, arg.RepoID, arg.Name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AnsibleCollectionDeprecationRow{}
+	for rows.Next() {
+		var i AnsibleCollectionDeprecationRow
+		if err := rows.Scan(&i.DeprecatedBy, &i.Message, &i.DeprecatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const ansibleCollectionSummary = `-- name: AnsibleCollectionSummary :one
 SELECT count(*)::bigint AS versions,
        COALESCE((extract(epoch FROM min(published_at)) * 1000000)::bigint, 0)::bigint AS created_us,
        COALESCE((extract(epoch FROM max(published_at)) * 1000000)::bigint, 0)::bigint AS updated_us,
        COALESCE((SELECT v.version FROM ansible_collection_versions v
                   WHERE v.repo_id = $1::bigint AND v.name = $2::text
-                  ORDER BY v.sort_key DESC LIMIT 1), '')::text AS highest
+                  ORDER BY v.sort_key DESC LIMIT 1), '')::text AS highest,
+       EXISTS (SELECT 1 FROM ansible_collection_deprecations d
+                WHERE d.repo_id = $1::bigint AND d.name = $2::text)::boolean AS deprecated
   FROM ansible_collection_versions
  WHERE repo_id = $1::bigint AND name = $2::text
 `
@@ -99,13 +159,15 @@ type AnsibleCollectionSummaryParams struct {
 }
 
 type AnsibleCollectionSummaryRow struct {
-	Versions  int64
-	CreatedUs int64
-	UpdatedUs int64
-	Highest   string
+	Versions   int64
+	CreatedUs  int64
+	UpdatedUs  int64
+	Highest    string
+	Deprecated bool
 }
 
-// What the collection document shows: the first and the newest publish, and the newest version by precedence.
+// What the collection document shows: the first and the newest publish, the newest version by precedence, and whether the collection
+// is deprecated (R-ANS-060).
 func (q *Queries) AnsibleCollectionSummary(ctx context.Context, arg AnsibleCollectionSummaryParams) (AnsibleCollectionSummaryRow, error) {
 	row := q.db.QueryRow(ctx, ansibleCollectionSummary, arg.RepoID, arg.Name)
 	var i AnsibleCollectionSummaryRow
@@ -114,6 +176,7 @@ func (q *Queries) AnsibleCollectionSummary(ctx context.Context, arg AnsibleColle
 		&i.CreatedUs,
 		&i.UpdatedUs,
 		&i.Highest,
+		&i.Deprecated,
 	)
 	return i, err
 }
@@ -808,6 +871,36 @@ func (q *Queries) AnsibleRewriteVersion(ctx context.Context, arg AnsibleRewriteV
 	return result.RowsAffected(), nil
 }
 
+const ansibleSetCollectionDeprecation = `-- name: AnsibleSetCollectionDeprecation :execrows
+INSERT INTO ansible_collection_deprecations (repo_id, name, deprecated_by, message)
+VALUES ($1::bigint, $2::text, NULLIF($3::text, ''), NULLIF($4::text, ''))
+ON CONFLICT (repo_id, name) DO UPDATE
+   SET message = EXCLUDED.message, deprecated_by = EXCLUDED.deprecated_by, deprecated_at = now()
+ WHERE ansible_collection_deprecations.message IS DISTINCT FROM EXCLUDED.message
+`
+
+type AnsibleSetCollectionDeprecationParams struct {
+	RepoID       int64
+	Name         string
+	DeprecatedBy string
+	Message      string
+}
+
+// Deprecates a collection of a repository, or changes the message of its deprecation; a row that holds that message already is not
+// touched, so the count says whether anything changed.
+func (q *Queries) AnsibleSetCollectionDeprecation(ctx context.Context, arg AnsibleSetCollectionDeprecationParams) (int64, error) {
+	result, err := q.db.Exec(ctx, ansibleSetCollectionDeprecation,
+		arg.RepoID,
+		arg.Name,
+		arg.DeprecatedBy,
+		arg.Message,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const ansibleSweepTasks = `-- name: AnsibleSweepTasks :execrows
 DELETE FROM ansible_import_tasks WHERE created_at < now() - make_interval(secs => $1::double precision)
 `
@@ -909,6 +1002,44 @@ func (q *Queries) AnsibleVersionSignatures(ctx context.Context, arg AnsibleVersi
 	return items, nil
 }
 
+const ansibleViewDeprecated = `-- name: AnsibleViewDeprecated :many
+SELECT pv.id AS version_id
+  FROM ansible_collection_deprecations d
+  JOIN repositories r ON r.id = d.repo_id
+  JOIN project p ON p.id = r.project_id
+  JOIN packages pk ON pk.repo_id = d.repo_id AND pk.name = d.name
+  JOIN package_versions pv ON pv.package_id = pk.id AND pv.trashed_at IS NULL
+ WHERE (p.key || '/' || r.key) = ANY($1::text[])
+ ORDER BY pv.id
+ LIMIT $2::int
+`
+
+type AnsibleViewDeprecatedParams struct {
+	Repos    []string
+	RowLimit int32
+}
+
+// The generic versions of the repositories (by key) whose collection is deprecated (R-ANS-060), at most row_limit.
+func (q *Queries) AnsibleViewDeprecated(ctx context.Context, arg AnsibleViewDeprecatedParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, ansibleViewDeprecated, arg.Repos, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var version_id int64
+		if err := rows.Scan(&version_id); err != nil {
+			return nil, err
+		}
+		items = append(items, version_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const ansibleViewFind = `-- name: AnsibleViewFind :many
 SELECT pv.id AS version_id
   FROM ansible_collection_versions v
@@ -957,26 +1088,30 @@ func (q *Queries) AnsibleViewFind(ctx context.Context, arg AnsibleViewFindParams
 }
 
 const ansibleViewRows = `-- name: AnsibleViewRows :many
-SELECT pv.id AS version_id, v.name, v.version, v.requires_ansible, v.dependencies, v.collection_info, v.sha256, v.size, v.published_at
+SELECT pv.id AS version_id, v.name, v.version, v.requires_ansible, v.dependencies, v.collection_info, v.sha256, v.size, v.published_at,
+       (d.repo_id IS NOT NULL)::boolean AS deprecated, COALESCE(d.message, '')::text AS deprecation_message
   FROM package_versions pv
   JOIN packages pk ON pk.id = pv.package_id
   JOIN ansible_collection_versions v ON v.repo_id = pk.repo_id AND v.name = pk.name AND v.version = pv.version
+  LEFT JOIN ansible_collection_deprecations d ON d.repo_id = pk.repo_id AND d.name = pk.name
  WHERE pv.id = ANY($1::bigint[])
 `
 
 type AnsibleViewRowsRow struct {
-	VersionID       int64
-	Name            string
-	Version         string
-	RequiresAnsible string
-	Dependencies    json.RawMessage
-	CollectionInfo  json.RawMessage
-	Sha256          []byte
-	Size            int64
-	PublishedAt     time.Time
+	VersionID          int64
+	Name               string
+	Version            string
+	RequiresAnsible    string
+	Dependencies       json.RawMessage
+	CollectionInfo     json.RawMessage
+	Sha256             []byte
+	Size               int64
+	PublishedAt        time.Time
+	Deprecated         bool
+	DeprecationMessage string
 }
 
-// The rows the package screens read for the given generic versions (R-ANS-026).
+// The rows the package screens read for the given generic versions (R-ANS-026), with the deprecation of their collection (R-ANS-060).
 func (q *Queries) AnsibleViewRows(ctx context.Context, ids []int64) ([]AnsibleViewRowsRow, error) {
 	rows, err := q.db.Query(ctx, ansibleViewRows, ids)
 	if err != nil {
@@ -996,6 +1131,8 @@ func (q *Queries) AnsibleViewRows(ctx context.Context, ids []int64) ([]AnsibleVi
 			&i.Sha256,
 			&i.Size,
 			&i.PublishedAt,
+			&i.Deprecated,
+			&i.DeprecationMessage,
 		); err != nil {
 			return nil, err
 		}

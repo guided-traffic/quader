@@ -9,6 +9,46 @@ import (
 	"context"
 )
 
+const nuGetViewDeprecated = `-- name: NuGetViewDeprecated :many
+SELECT nv.version_id
+  FROM nuget_version nv
+  JOIN package_versions pv ON pv.id = nv.version_id
+  JOIN packages p ON p.id = pv.package_id
+  JOIN repositories r ON r.id = p.repo_id
+  JOIN project rp ON rp.id = r.project_id
+ WHERE pv.trashed_at IS NULL AND jsonb_typeof(nv.metadata -> 'deprecation') = 'object'
+   AND (rp.key || '/' || r.key) = ANY($1::text[])
+ ORDER BY nv.version_id
+ LIMIT $2::int
+`
+
+type NuGetViewDeprecatedParams struct {
+	Repos   []string
+	MaxRows int32
+}
+
+// The versions of the given repositories (qualified names) that carry a deprecation (R-NUGET-036), at most max_rows; the caller
+// intersects them with what the subject may read.
+func (q *Queries) NuGetViewDeprecated(ctx context.Context, arg NuGetViewDeprecatedParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, nuGetViewDeprecated, arg.Repos, arg.MaxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var version_id int64
+		if err := rows.Scan(&version_id); err != nil {
+			return nil, err
+		}
+		items = append(items, version_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const nuGetViewDetails = `-- name: NuGetViewDetails :many
 SELECT nv.version_id,
        nv.metadata::text AS metadata,
@@ -196,7 +236,9 @@ const nuGetViewSummaries = `-- name: NuGetViewSummaries :many
 
 SELECT nv.version_id,
        COALESCE(NULLIF(btrim(nv.metadata ->> 'description'), ''), btrim(nv.metadata ->> 'summary'), '')::text AS description,
-       CASE WHEN jsonb_typeof(nv.metadata -> 'tags') = 'array' THEN (nv.metadata -> 'tags')::text ELSE '[]' END::text AS tags
+       CASE WHEN jsonb_typeof(nv.metadata -> 'tags') = 'array' THEN (nv.metadata -> 'tags')::text ELSE '[]' END::text AS tags,
+       CASE WHEN jsonb_typeof(nv.metadata -> 'deprecation') = 'object' THEN (nv.metadata -> 'deprecation')::text ELSE '' END::text AS deprecation,
+       nv.listed
   FROM nuget_version nv
   JOIN package_versions pv ON pv.id = nv.version_id
  WHERE nv.version_id = ANY($1::bigint[])
@@ -207,13 +249,16 @@ type NuGetViewSummariesRow struct {
 	VersionID   int64
 	Description string
 	Tags        string
+	Deprecation string
+	Listed      bool
 }
 
 // The NuGet side of the package view (R-API-029, R-EP-016): the statements behind
 // internal/formatdata/nuget/view.go. The generic rows answer names, versions and counts
 // (package_view.sql); these answer what only the NuGet tables hold. A trashed version is
 // invisible to every NuGet read (R-NUGET-005), so each statement joins package_versions.
-// The description (the summary when there is none) and the tags of the given versions.
+// The description (the summary when there is none) and the tags of the given versions, their deprecation (R-NUGET-036) and their
+// listing state.
 func (q *Queries) NuGetViewSummaries(ctx context.Context, ids []int64) ([]NuGetViewSummariesRow, error) {
 	rows, err := q.db.Query(ctx, nuGetViewSummaries, ids)
 	if err != nil {
@@ -223,7 +268,13 @@ func (q *Queries) NuGetViewSummaries(ctx context.Context, ids []int64) ([]NuGetV
 	items := []NuGetViewSummariesRow{}
 	for rows.Next() {
 		var i NuGetViewSummariesRow
-		if err := rows.Scan(&i.VersionID, &i.Description, &i.Tags); err != nil {
+		if err := rows.Scan(
+			&i.VersionID,
+			&i.Description,
+			&i.Tags,
+			&i.Deprecation,
+			&i.Listed,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

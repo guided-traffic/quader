@@ -9,6 +9,46 @@ import (
 	"context"
 )
 
+const nPMViewDeprecated = `-- name: NPMViewDeprecated :many
+SELECT nv.version_id
+  FROM npm_versions nv
+  JOIN package_versions pv ON pv.id = nv.version_id
+  JOIN packages p ON p.id = pv.package_id
+  JOIN repositories r ON r.id = p.repo_id
+  JOIN project rp ON rp.id = r.project_id
+ WHERE pv.trashed_at IS NULL AND COALESCE(nv.deprecated, '') <> ''
+   AND (rp.key || '/' || r.key) = ANY($1::text[])
+ ORDER BY nv.version_id
+ LIMIT $2::int
+`
+
+type NPMViewDeprecatedParams struct {
+	Repos   []string
+	MaxRows int32
+}
+
+// The versions of the given repositories (qualified names) that carry a deprecation message (R-API-085), at most max_rows; the caller
+// intersects them with what the subject may read.
+func (q *Queries) NPMViewDeprecated(ctx context.Context, arg NPMViewDeprecatedParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, nPMViewDeprecated, arg.Repos, arg.MaxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var version_id int64
+		if err := rows.Scan(&version_id); err != nil {
+			return nil, err
+		}
+		items = append(items, version_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const nPMViewDetails = `-- name: NPMViewDetails :many
 SELECT nv.version_id,
        nv.manifest::text AS manifest,
@@ -224,7 +264,8 @@ const nPMViewSummaries = `-- name: NPMViewSummaries :many
 
 SELECT nv.version_id,
        COALESCE(nv.manifest ->> 'description', '')::text AS description,
-       CASE WHEN jsonb_typeof(nv.manifest -> 'keywords') = 'array' THEN (nv.manifest -> 'keywords')::text ELSE '[]' END::text AS keywords
+       CASE WHEN jsonb_typeof(nv.manifest -> 'keywords') = 'array' THEN (nv.manifest -> 'keywords')::text ELSE '[]' END::text AS keywords,
+       COALESCE(nv.deprecated, '')::text AS deprecated
   FROM npm_versions nv
  WHERE nv.version_id = ANY($1::bigint[])
 `
@@ -233,12 +274,13 @@ type NPMViewSummariesRow struct {
 	VersionID   int64
 	Description string
 	Keywords    string
+	Deprecated  string
 }
 
 // The npm side of the package view (R-API-029): the statements behind
 // internal/formatdata/npm/view.go. The generic rows answer names, versions and
 // counts (package_view.sql); these answer what only the npm tables hold.
-// The description and the keywords of the manifests of the given versions.
+// The description and the keywords of the manifests of the given versions, and their deprecation message (R-API-085).
 func (q *Queries) NPMViewSummaries(ctx context.Context, ids []int64) ([]NPMViewSummariesRow, error) {
 	rows, err := q.db.Query(ctx, nPMViewSummaries, ids)
 	if err != nil {
@@ -248,7 +290,12 @@ func (q *Queries) NPMViewSummaries(ctx context.Context, ids []int64) ([]NPMViewS
 	items := []NPMViewSummariesRow{}
 	for rows.Next() {
 		var i NPMViewSummariesRow
-		if err := rows.Scan(&i.VersionID, &i.Description, &i.Keywords); err != nil {
+		if err := rows.Scan(
+			&i.VersionID,
+			&i.Description,
+			&i.Keywords,
+			&i.Deprecated,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

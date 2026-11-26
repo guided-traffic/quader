@@ -34,6 +34,9 @@ var ifMatchExempt = map[string]string{
 	// R-SIG-047: the certificate binds to the one pending key it was issued for, checked against that key's stored public key; a
 	// second upload finds no pending key (409 signing_no_pending_key).
 	"uploadSigningCertificate": "binds the certificate to the one pending key, compared with its public key (R-SIG-047)",
+	// R-API-085: a deprecation is one state of one version or package; a repeat changes nothing and the last write wins, as npm
+	// deprecate's write of the same message does.
+	"setPackageDeprecation": "sets one state of one version or package; the last write wins and a repeat changes nothing (R-API-085)",
 }
 
 // ifMatchOnReplace are the PUT operations that create a resource where none exists and replace it where one does (Q-API-354):

@@ -62,6 +62,14 @@ type Store interface {
 	// listed already, or unlisted already, changes nothing and records nothing. The caller
 	// raises the package revision in the same transaction.
 	SetListed(ctx context.Context, tx formats.Tx, in rows.ListingInput) (changed bool, err error)
+	// SetDeprecation sets or clears the deprecation of a local version (R-NUGET-036) and records package.metadata_changed with the
+	// change deprecate or undeprecate. It reports whether anything changed: a version that holds that deprecation already changes
+	// nothing and records nothing. The caller raises the package revision in the same transaction.
+	SetDeprecation(ctx context.Context, tx formats.Tx, in rows.DeprecationInput) (changed bool, err error)
+	// SetRemoteDeprecations writes, in the transaction of a remote's fill of a registration document, the deprecation the document
+	// states of each version of the ID it names, nil for none (R-NUGET-036); a version the remote does not hold is skipped. It records
+	// nothing: the remote shows its upstream's state.
+	SetRemoteDeprecations(ctx context.Context, tx formats.Tx, repoID int64, lowerID string, deps map[string]*rows.Deprecation) error
 	// ServeState reads, outside a transaction and in one statement, what a GET of a file
 	// of a version decides on: stored or not, listed or not, tombstoned or not
 	// (R-NUGET-007).

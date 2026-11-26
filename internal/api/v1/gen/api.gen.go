@@ -2914,6 +2914,24 @@ func (e PackageChangelogFile) Valid() bool {
 	}
 }
 
+// Defines values for PackageDeprecationScope.
+const (
+	PackageDeprecationScopePackage PackageDeprecationScope = "package"
+	PackageDeprecationScopeVersion PackageDeprecationScope = "version"
+)
+
+// Valid indicates whether the value is a known member of the PackageDeprecationScope enum.
+func (e PackageDeprecationScope) Valid() bool {
+	switch e {
+	case PackageDeprecationScopePackage:
+		return true
+	case PackageDeprecationScopeVersion:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PackageDocChangelogHeadName.
 const (
 	Changelog PackageDocChangelogHeadName = "changelog"
@@ -13274,6 +13292,63 @@ type PackageCopyright struct {
 	Truncated bool   `json:"truncated"`
 }
 
+// PackageDeprecation A deprecation as the package's format records it (R-API-085): what the publisher, or the upstream of a remote repository, said
+// is no longer to be used. A member the format does not carry is absent.
+type PackageDeprecation struct {
+	// AlternatePackage The package to use instead (NuGet's `alternatePackage`).
+	AlternatePackage *PackageDeprecationAlternate `json:"alternatePackage,omitempty"`
+
+	// Message The publisher's text, plain text; the screens never render it as markup.
+	Message *string `json:"message,omitempty"`
+
+	// Reasons NuGet's reasons (`Legacy`, `CriticalBugs`, `Other`), in the order given.
+	Reasons *[]string `json:"reasons,omitempty"`
+
+	// Scope `version` for a deprecation of the one version (npm, NuGet), `package` for one of the whole package, which every version of it
+	// shares (an Ansible Galaxy collection).
+	Scope PackageDeprecationScope `json:"scope"`
+}
+
+// PackageDeprecationScope `version` for a deprecation of the one version (npm, NuGet), `package` for one of the whole package, which every version of it
+// shares (an Ansible Galaxy collection).
+type PackageDeprecationScope string
+
+// PackageDeprecationAlternate The package to use instead (NuGet's `alternatePackage`).
+type PackageDeprecationAlternate struct {
+	Name string `json:"name"`
+
+	// PackageId On a version's details only: the identifier of the package of `GET /api/v1/packages/{packageId}` when the caller may read
+	// a version of it, so that a screen links to it; absent otherwise.
+	PackageId *string `json:"packageId,omitempty"`
+
+	// Range The range of its versions; absent or `*` for any.
+	Range *string `json:"range,omitempty"`
+}
+
+// PackageDeprecationAlternateInput NuGet only, the package to use instead.
+type PackageDeprecationAlternateInput struct {
+	Name string `json:"name"`
+
+	// Range A NuGet version range; `*` when absent.
+	Range *string `json:"range,omitempty"`
+}
+
+// PackageDeprecationInput A deprecation to set (R-API-085). The format refuses with `422` what its protocol cannot carry: `version` for Ansible Galaxy,
+// `reasons` and `alternatePackage` for npm and Ansible Galaxy.
+type PackageDeprecationInput struct {
+	// AlternatePackage NuGet only, the package to use instead.
+	AlternatePackage *PackageDeprecationAlternateInput `json:"alternatePackage,omitempty"`
+
+	// Message Plain text; required for npm, optional for NuGet and Ansible Galaxy.
+	Message *string `json:"message,omitempty"`
+
+	// Reasons NuGet only, at least one of `Legacy`, `CriticalBugs`, `Other`, each once.
+	Reasons *[]string `json:"reasons,omitempty"`
+
+	// Version The version, required for npm and NuGet.
+	Version *string `json:"version,omitempty"`
+}
+
 // PackageDocAttribute defines model for PackageDocAttribute.
 type PackageDocAttribute struct {
 	Description *[]string `json:"description,omitempty"`
@@ -13698,7 +13773,10 @@ type PackageReadmeContentType string
 
 // PackageSuggestion defines model for PackageSuggestion.
 type PackageSuggestion struct {
-	Format string `json:"format"`
+	// Deprecated `true` when the package's latest version in `repository` is deprecated (R-API-085), for a repository the caller reads whole;
+	// absent otherwise.
+	Deprecated *bool  `json:"deprecated,omitempty"`
+	Format     string `json:"format"`
 
 	// Id The identifier of `GET /api/v1/packages/{packageId}`.
 	Id string `json:"id"`
@@ -13732,6 +13810,9 @@ type PackageSuggestions struct {
 type PackageSummary struct {
 	// CreatedAt When the first visible version was published.
 	CreatedAt time.Time `json:"createdAt"`
+
+	// Deprecation The deprecation of `latestVersion` (R-API-085); absent when it is not deprecated.
+	Deprecation *PackageDeprecation `json:"deprecation,omitempty"`
 
 	// Description The description of the latest version.
 	Description *string `json:"description"`
@@ -13785,6 +13866,10 @@ type PackageVersion struct {
 	// AliasesMore With `aliases`, it names 100 versions and the content has more.
 	AliasesMore *bool `json:"aliasesMore,omitempty"`
 
+	// Deprecation The version's deprecation, its own or its package's, in the repository its metadata was read from (R-API-085); absent when it
+	// is not deprecated. `alternatePackage.packageId` names the alternate package where the caller may read it.
+	Deprecation *PackageDeprecation `json:"deprecation,omitempty"`
+
 	// DownloadCount How often clients fetched the version, as in the version list (R-API-079).
 	DownloadCount int64         `json:"downloadCount"`
 	Files         []PackageFile `json:"files"`
@@ -13802,8 +13887,8 @@ type PackageVersion struct {
 	// Metadata Format-specific, owned by the format page. For npm the members the UI reads are
 	// `distTags` (tag to version), `dependencies`, `devDependencies`, `peerDependencies` and
 	// `optionalDependencies` (name to range), `authors` (strings), `homepage`, `repositoryUrl`
-	// and `bugsUrl` (strings as the package declares them), `engines` (name to range) and
-	// `deprecated` (string or null). For Ansible Galaxy collections `docs` announces the documentation (R-ANS-036, Q-API-263): it is
+	// and `bugsUrl` (strings as the package declares them) and `engines` (name to range); the deprecation is `deprecation`
+	// of the version, not a member of the metadata (R-API-085). For Ansible Galaxy collections `docs` announces the documentation (R-ANS-036, Q-API-263): it is
 	// wiki content and absent for a caller who may not read the wiki of the repository. For an OCI tag (formats/oci.md R-OCI-031,
 	// R-OCI-039 to R-OCI-041): `digest`, `mediaType`, `size`, `artifactType`, `kind`, `platforms`, `attestations`, the facts of
 	// the annotations (`description`, `title`, `homepage`, `documentationUrl`, `repositoryUrl`, `revision`, `created`,
@@ -13830,15 +13915,18 @@ type PackageVersion struct {
 	SizeBytes *int64 `json:"sizeBytes"`
 
 	// SizePartial As in the version list (R-API-080) - `sizeBytes` counts only the parts of the version the repository holds.
-	SizePartial bool   `json:"sizePartial"`
-	Version     string `json:"version"`
+	SizePartial bool `json:"sizePartial"`
+
+	// Unlisted As in the version list (R-NUGET-006); absent for a version that is not unlisted.
+	Unlisted *bool  `json:"unlisted,omitempty"`
+	Version  string `json:"version"`
 }
 
 // PackageVersion_Metadata Format-specific, owned by the format page. For npm the members the UI reads are
 // `distTags` (tag to version), `dependencies`, `devDependencies`, `peerDependencies` and
 // `optionalDependencies` (name to range), `authors` (strings), `homepage`, `repositoryUrl`
-// and `bugsUrl` (strings as the package declares them), `engines` (name to range) and
-// `deprecated` (string or null). For Ansible Galaxy collections `docs` announces the documentation (R-ANS-036, Q-API-263): it is
+// and `bugsUrl` (strings as the package declares them) and `engines` (name to range); the deprecation is `deprecation`
+// of the version, not a member of the metadata (R-API-085). For Ansible Galaxy collections `docs` announces the documentation (R-ANS-036, Q-API-263): it is
 // wiki content and absent for a caller who may not read the wiki of the repository. For an OCI tag (formats/oci.md R-OCI-031,
 // R-OCI-039 to R-OCI-041): `digest`, `mediaType`, `size`, `artifactType`, `kind`, `platforms`, `attestations`, the facts of
 // the annotations (`description`, `title`, `homepage`, `documentationUrl`, `repositoryUrl`, `revision`, `created`,
@@ -13949,6 +14037,9 @@ type PackageVersionSummary struct {
 	// AliasesMore With `group=content` only, `aliases` names 100 versions and the content has more.
 	AliasesMore *bool `json:"aliasesMore,omitempty"`
 
+	// Deprecation The version's deprecation, its own or its package's (R-API-085); absent when it is not deprecated.
+	Deprecation *PackageDeprecation `json:"deprecation,omitempty"`
+
 	// Digest With `include=digest`, the version's content digest from the format's metadata (an OCI tag - `sha256:` and the hex digest
 	// of its manifest); absent for a format without one. With `group=content`, always the entry's content (an image's manifest
 	// digest) where the format's version names one.
@@ -13999,8 +14090,12 @@ type PackageVersionSummary struct {
 	// State With `include=state` only, the version's state from the format's metadata (the member `state` of its details): for the
 	// ClamAV definitions `in_use`, `previous`, `superseded` or `files_removed` (R-CLAMAV-003, R-UI-194); absent for a format
 	// without one.
-	State   *string `json:"state,omitempty"`
-	Version string  `json:"version"`
+	State *string `json:"state,omitempty"`
+
+	// Unlisted `true` for a version the format hides from its search while it still serves it by its exact number (NuGet's unlist,
+	// R-NUGET-006); absent otherwise. It is not a deprecation.
+	Unlisted *bool  `json:"unlisted,omitempty"`
+	Version  string `json:"version"`
 }
 
 // PatternLists The include and exclude globs of one dimension of a resource set (R-AUTHZ-005). An empty include list is unrestricted.
@@ -20094,6 +20189,10 @@ type ListPackagesParams struct {
 	NamePrefix *string `form:"namePrefix,omitempty" json:"namePrefix,omitempty"`
 	Keyword    *string `form:"keyword,omitempty" json:"keyword,omitempty"`
 
+	// Deprecated `true` keeps the packages whose latest visible version is deprecated (R-API-085): its own deprecation or its package's
+	// (an Ansible Galaxy collection). `false` is no filter.
+	Deprecated *bool `form:"deprecated,omitempty" json:"deprecated,omitempty"`
+
 	// Include `vulnerabilities`: also answer the grade of each entry's latest version (`vulnerabilityGrade`, R-VULN-039).
 	Include *[]ListPackagesParamsInclude `form:"include,omitempty" json:"include,omitempty"`
 
@@ -20908,6 +21007,12 @@ type ReplaceLimitCeilingsParams struct {
 type RunRepositoryMirrorParams struct {
 	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// ClearPackageDeprecationParams defines parameters for ClearPackageDeprecation.
+type ClearPackageDeprecationParams struct {
+	// Version The version, for a format that deprecates versions.
+	Version *string `form:"version,omitempty" json:"version,omitempty"`
 }
 
 // AddPackageOwnerParams defines parameters for AddPackageOwner.
@@ -22178,6 +22283,9 @@ type RunRepositoryMirrorJSONRequestBody = MirrorRunRequest
 
 // MoveRepositoryJSONRequestBody defines body for MoveRepository for application/json ContentType.
 type MoveRepositoryJSONRequestBody = MoveRepositoryRequest
+
+// SetPackageDeprecationJSONRequestBody defines body for SetPackageDeprecation for application/json ContentType.
+type SetPackageDeprecationJSONRequestBody = PackageDeprecationInput
 
 // AddPackageOwnerJSONRequestBody defines body for AddPackageOwner for application/json ContentType.
 type AddPackageOwnerJSONRequestBody = PackageOwnerInput
@@ -23744,6 +23852,12 @@ type ServerInterface interface {
 	// MoveRepository Move a repository to another project
 	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/move)
 	MoveRepository(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey)
+	// ClearPackageDeprecation Undo the deprecation of a version or a package
+	// (DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/packages/{packageName}/deprecation)
+	ClearPackageDeprecation(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, packageName string, params ClearPackageDeprecationParams)
+	// SetPackageDeprecation Deprecate a version or a package
+	// (PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/packages/{packageName}/deprecation)
+	SetPackageDeprecation(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, packageName string)
 	// GetPackageOwners Read the owners of a package name
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/packages/{packageName}/owners)
 	GetPackageOwners(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, packageName string)
@@ -28145,6 +28259,19 @@ func (siw *ServerInterfaceWrapper) ListPackages(w http.ResponseWriter, r *http.R
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "keyword"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "keyword", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "deprecated" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "deprecated", r.URL.Query(), &params.Deprecated, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "deprecated"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "deprecated", Err: err})
 		}
 		return
 	}
@@ -35197,6 +35324,110 @@ func (siw *ServerInterfaceWrapper) MoveRepository(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.MoveRepository(w, r, projectKey, repoKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ClearPackageDeprecation operation middleware
+func (siw *ServerInterfaceWrapper) ClearPackageDeprecation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "packageName" -------------
+	var packageName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "packageName", r.PathValue("packageName"), &packageName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "packageName", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ClearPackageDeprecationParams
+
+	// ------------- Optional query parameter "version" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "version", r.URL.Query(), &params.Version, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "version"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ClearPackageDeprecation(w, r, projectKey, repoKey, packageName, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetPackageDeprecation operation middleware
+func (siw *ServerInterfaceWrapper) SetPackageDeprecation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "packageName" -------------
+	var packageName string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "packageName", r.PathValue("packageName"), &packageName, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "packageName", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetPackageDeprecation(w, r, projectKey, repoKey, packageName)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -44096,6 +44327,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/claims", wrapper.GetRepositoryClaims)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/claims", wrapper.PutRepositoryClaims)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/resolution", wrapper.GetRepositoryResolution)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/packages/{packageName}/deprecation", wrapper.ClearPackageDeprecation)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/packages/{packageName}/deprecation", wrapper.SetPackageDeprecation)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/packages/{packageName}/owners", wrapper.GetPackageOwners)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/packages/{packageName}/owners", wrapper.AddPackageOwner)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/packages/{packageName}/owners/{owner}", wrapper.RemovePackageOwner)

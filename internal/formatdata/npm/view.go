@@ -38,7 +38,7 @@ func (s *Store) ViewSummaries(ctx context.Context, ids []int64) ([]rows.ViewSumm
 			if err := json.Unmarshal([]byte(r.Keywords), &kw); err != nil {
 				kw = nil
 			}
-			out = append(out, rows.ViewSummary{VersionID: r.VersionID, Description: r.Description, Keywords: nonEmpty(kw)})
+			out = append(out, rows.ViewSummary{VersionID: r.VersionID, Description: r.Description, Keywords: nonEmpty(kw), Deprecated: r.Deprecated})
 		}
 		return nil
 	})
@@ -208,6 +208,20 @@ func (s *Store) ViewFind(ctx context.Context, repos []string, text, keyword stri
 			return err
 		}
 		out, err = qs.NPMViewFind(ctx, q.NPMViewFindParams{Repos: repos, Text: text, Keyword: keyword, MaxRows: int32(min(max(limit, 0), math.MaxInt32))})
+		return err
+	})
+	return out, err
+}
+
+// ViewDeprecated returns the ids of at most limit versions of the repositories that carry a deprecation message (R-API-085).
+func (s *Store) ViewDeprecated(ctx context.Context, repos []string, limit int) ([]int64, error) {
+	var out []int64
+	err := s.o.DB.InTx(ctx, func(tx meta.Tx) error {
+		qs, err := queries(tx)
+		if err != nil {
+			return err
+		}
+		out, err = qs.NPMViewDeprecated(ctx, q.NPMViewDeprecatedParams{Repos: repos, MaxRows: int32(min(limit, 1<<20))}) //nolint:gosec // bounded above
 		return err
 	})
 	return out, err

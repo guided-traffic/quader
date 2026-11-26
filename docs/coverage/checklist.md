@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,299 spec requirements:
-795 cover catalog features, 504 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,302 spec requirements:
+796 cover catalog features, 506 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -1787,7 +1787,7 @@ Catalog page: [formats/npm.md](../features/formats/npm.md) · specified by prior
 | PKG-NPM-017 | Deploy a package tarball through the UI or generic upload | P1 | specified | [R-NPM-036](../spec/formats/npm.md) |
 | PKG-NPM-018 | Reject uploads whose path does not match the package | P1 | specified | [R-NPM-036](../spec/formats/npm.md) |
 | PKG-NPM-019 | Unpublish | MVP | specified | [R-AUTHZ-007](../spec/authorization.md), [R-NPM-017](../spec/formats/npm.md) |
-| PKG-NPM-020 | Deprecate and undeprecate | P1 | specified | [R-NPM-018](../spec/formats/npm.md) |
+| PKG-NPM-020 | Deprecate and undeprecate | P1 | specified | [R-API-085](../spec/api-and-ui.md), [R-NPM-018](../spec/formats/npm.md) |
 | PKG-NPM-021 | Dist-tag management | MVP | specified | [R-AUTHZ-007](../spec/authorization.md), [R-NPM-016](../spec/formats/npm.md) |
 | PKG-NPM-022 | Maintainer list changes | P2 | open | – |
 | PKG-NPM-023 | Staged publishing | Later | open | – |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>504 requirements</summary>
+<summary>506 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3225,6 +3225,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-ANS-051 | Fragments of the same collection are merged | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-052 | A role's argument specs | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-053 | The changelog of a version | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
+| R-ANS-060 | A collection is deprecated as a whole | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-CLAMAV-001 | The format `clamav` and its descriptor | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-CLAMAV-002 | Packages, versions and the layout | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-CLAMAV-003 | What a version shows | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
@@ -3262,6 +3263,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-NUGET-033 | NuGet data in backups and restores | MVP | [formats/nuget.md](../spec/formats/nuget.md) |
 | R-NUGET-034 | NuGet documents on an endpoint with exposure rules | MVP | [formats/nuget.md](../spec/formats/nuget.md) |
 | R-NUGET-035 | The upstream catalogue and the delivery rules of a NuGet remote | P1 | [formats/nuget.md](../spec/formats/nuget.md) |
+| R-NUGET-036 | A version is deprecated with reasons, a message and an alternate package | P1 | [formats/nuget.md](../spec/formats/nuget.md) |
 | R-OCI-026 | Mirror settings of an OCI remote | P1 | [formats/oci.md](../spec/formats/oci.md) |
 | R-OCI-032 | OCI on n replicas, without Valkey and during a drain | P1 | [formats/oci.md](../spec/formats/oci.md) |
 | R-OCI-033 | OCI data in backups and restores | P1 | [formats/oci.md](../spec/formats/oci.md) |

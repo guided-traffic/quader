@@ -121,6 +121,19 @@ type SetTagInput struct {
 	Audit Audit
 }
 
+// DeprecateInput records a change of a version's deprecation (R-NPM-018, R-API-085): Message "" clears it.
+type DeprecateInput struct {
+	RepoID    int64
+	PackageID int64
+	VersionID int64
+	Name      string
+	Version   string
+	Message   string
+	// At is PostgreSQL's clock read after the row lock.
+	At    time.Time
+	Audit Audit
+}
+
 // DeleteTagInput records the removal of a dist-tag other than latest.
 type DeleteTagInput struct {
 	RepoID    int64

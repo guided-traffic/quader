@@ -128,6 +128,8 @@ type fillData struct {
 	// roles are the facts of the roles of a lookup (R-ANS-056); content is the README of a role's content document.
 	roles   []rows.Role
 	content *roleContent
+	// deprecated is the flag of a collection document (R-ANS-060).
+	deprecated bool
 }
 
 // PrepareFill checks a fetched metadata document before anything is stored, outside every transaction (R-ARCH-019): an upstream
@@ -160,7 +162,7 @@ func (a remoteAdapter) PrepareFill(_ context.Context, rc formats.RemoteContext, 
 	case kindRoot:
 		_, err = parseDiscovery(doc)
 	case kindCollection:
-		err = a.checkCollection(doc, t)
+		data.deprecated, err = a.checkCollection(doc, t)
 	case kindVersions:
 		if _, ok := parseOffsetVariant(variant); !ok {
 			err = errs.E(errs.Internal, errs.CodeInternal, "The version list of a collection is stored in pages with the variant offset=<n>.")
@@ -209,16 +211,16 @@ func (a remoteAdapter) PrepareFill(_ context.Context, rc formats.RemoteContext, 
 	return out, err
 }
 
-func (remoteAdapter) checkCollection(doc []byte, t target) error {
+func (remoteAdapter) checkCollection(doc []byte, t target) (deprecated bool, err error) {
 	s, err := parseUpstreamCollection(doc)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if s.Namespace != t.ns || s.Name != t.name {
-		return errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed,
+		return false, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed,
 			"The upstream answered the collection "+t.ns+"."+t.name+" with the document of "+s.Namespace+"."+s.Name+" (identity_mismatch).")
 	}
-	return nil
+	return s.Deprecated, nil
 }
 
 // checkVersion validates a version document before anything is stored (R-ANS-017): the identity in the document is the path's, the
@@ -319,6 +321,16 @@ func (a remoteAdapter) OnFill(ctx context.Context, tx formats.Tx, ev formats.Fil
 			return formats.FillByFetchTime, err
 		}
 		if err := queueDocs(ctx, tx, st, ev.Repo.ID, data, had && prev.SHA256 != data.announced.SHA256); err != nil {
+			return formats.FillByFetchTime, err
+		}
+	}
+	if data.kind == kindCollection {
+		// The upstream's flag of the collection, for the screens of the remote (R-ANS-060); the document itself is served as stored.
+		st, ok := ev.Data.(Store)
+		if !ok {
+			return formats.FillByFetchTime, errs.E(errs.Internal, errs.CodeInternal, "The Ansible data port is not bound.")
+		}
+		if err := st.SetUpstreamDeprecated(ctx, tx, ev.Repo.ID, data.pkg, data.deprecated); err != nil {
 			return formats.FillByFetchTime, err
 		}
 	}

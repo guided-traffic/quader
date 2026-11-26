@@ -4,11 +4,12 @@ package rows
 // screens show of a version beyond the generic rows. The format reads them through
 // its port and turns them into formats.ViewData.
 
-// ViewSummary is the description and the keywords of a version's manifest.
+// ViewSummary is the description and the keywords of a version's manifest, and its deprecation message ("" for none, R-API-085).
 type ViewSummary struct {
 	VersionID   int64
 	Description string
 	Keywords    []string
+	Deprecated  string
 }
 
 // ViewDetail is a version as the details page shows it. Readme and ReadmeFilename

@@ -29,6 +29,10 @@ type Metadata struct {
 	MinClientVersion         string `json:"minClientVersion"`
 
 	DependencyGroups []DependencyGroup `json:"dependencyGroups"`
+
+	// Deprecation is the version's deprecation in the catalog entry's shape (R-NUGET-036), written as it is; nil when the row has
+	// none.
+	Deprecation json.RawMessage `json:"deprecation"`
 }
 
 // License is the license key: Type is "expression" or "file".

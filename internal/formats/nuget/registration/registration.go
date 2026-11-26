@@ -396,8 +396,16 @@ func (d Doc) entry(v rows.RegistrationVersion) (entry, error) {
 		}
 		e.DependencyGroups = append(e.DependencyGroups, dg)
 	}
+	// A stored version's own deprecation (R-NUGET-036): a local version's, set through the management operation, and a remote's cached
+	// version's, taken from its upstream's registration. The upstream's member of a document passed through comes after and wins.
+	if dep := bytes.TrimSpace(m.Deprecation); len(dep) > 0 && string(dep) != "null" {
+		e.Deprecation = dep
+	}
 	if x, ok := d.Extras[v.LowerVersion]; ok {
-		e.Deprecation, e.Vulnerabilities, e.other = x.Deprecation, x.Vulnerabilities, x.Other
+		if x.Deprecation != nil {
+			e.Deprecation = x.Deprecation
+		}
+		e.Vulnerabilities, e.other = x.Vulnerabilities, x.Other
 	}
 	return e, nil
 }

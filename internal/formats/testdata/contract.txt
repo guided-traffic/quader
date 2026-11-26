@@ -36,6 +36,8 @@ formats.CacheStatus: field Stale bool
 formats.CacheStatus: field Stored bool
 formats.CacheStatus: field TTL time.Duration
 formats.Capabilities: field AttestationReferrer AttestationReferrer
+formats.Capabilities: field Deprecations DeprecationFinder
+formats.Capabilities: field Deprecator Deprecator
 formats.Capabilities: field ImageScanned ImageScanned
 formats.Capabilities: field ItemsRestorer ItemsRestorer
 formats.Capabilities: field Remote RemoteCaps
@@ -101,6 +103,19 @@ formats.CredentialExchanger: method ExchangeRequest(context.Context, RemoteConte
 formats.CredentialExchanger: method ReadExchange(context.Context, RemoteContext, int, []byte) (string, time.Duration, error)
 formats.Currency: type uint8
 formats.DataPorts: method FormatData(ID) any
+formats.Deprecation: field Alternate *DeprecationAlternate
+formats.Deprecation: field Message string
+formats.Deprecation: field Package bool
+formats.Deprecation: field Reasons []string
+formats.DeprecationAlternate: field Package string
+formats.DeprecationAlternate: field Range string
+formats.DeprecationChange: field Deprecation *Deprecation
+formats.DeprecationChange: field Package string
+formats.DeprecationChange: field Version string
+formats.DeprecationFinder: method DeprecatedVersions(context.Context, DataPorts, []string, int) ([]VersionID, error)
+formats.DeprecationSubject: type string
+formats.Deprecator: method Deprecate(context.Context, *Request, DeprecationChange) (*Deprecation, bool, error)
+formats.Deprecator: method DeprecationSubject() DeprecationSubject
 formats.Descriptor: embedded catalog.Facts
 formats.Descriptor: field Catalogue CatalogueDeclaration
 formats.Descriptor: field Clients []Client
@@ -641,6 +656,7 @@ formats.ViewAdapter: method Stored(context.Context, DataPorts, StoredQuery) (Sto
 formats.ViewAdapter: method Withheld(context.Context, DataPorts, []string) ([]VersionID, error)
 formats.ViewData: field ContentMetadata []string
 formats.ViewData: field ContentPaths []string
+formats.ViewData: field Deprecation *Deprecation
 formats.ViewData: field Description string
 formats.ViewData: field HasReadme bool
 formats.ViewData: field Keywords []string
@@ -649,6 +665,7 @@ formats.ViewData: field Metadata map[string]any
 formats.ViewData: field Readme string
 formats.ViewData: field ReadmeFile string
 formats.ViewData: field ReadmeHTML bool
+formats.ViewData: field Unlisted bool
 formats.ViewData: field WikiMetadata []string
 formats.ViewFields: method Has(ViewFields) bool
 formats.ViewFields: type uint8
@@ -741,6 +758,8 @@ formats.Content: value PathKind = iota + 1 (place 0 of its group)
 formats.ContractVersion: value = 14
 formats.Current: value Currency = iota + 1 (place 0 of its group)
 formats.Delete: value = (repeated, place 4 of its group)
+formats.DeprecatePackage: value DeprecationSubject = "package"
+formats.DeprecateVersion: value DeprecationSubject = "version"
 formats.Download: value RouteKind = iota + 1 (place 0 of its group)
 formats.ErrOffline: value = errors.New("formats: the remote repository may not contact its upstream")
 formats.FetchAnyFile: value = (repeated, place 2 of its group)
@@ -773,6 +792,7 @@ formats.KindOther: value = catalog.KindOther
 formats.KindSearch: value = catalog.KindSearch
 formats.KindWrite: value = catalog.KindWrite
 formats.Local: value = catalog.Local
+formats.MaxDeprecationMessage: value = 1024
 formats.MaxProbeFiles: value = 1000
 formats.MaxSignatureRaw: value = 256 << 10
 formats.Merge: value = (repeated, place 1 of its group)

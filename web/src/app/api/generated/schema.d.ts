@@ -3759,7 +3759,8 @@ export interface paths {
          *     the creation time of the first visible version. `sort` takes one field, a leading `-` sorts
          *     descending; the default is `name`. An anonymous caller sees what a `public` level admits.
          *     The filter runs in SQL. A sort field or filter this document does not list answers
-         *     `400 malformed_request`. `include=vulnerabilities` adds `vulnerabilityGrade` to each entry, for a signed-in caller of an
+         *     `400 malformed_request`. `deprecated=true` keeps the packages whose latest visible version is deprecated, and each entry
+         *     carries the deprecation of its latest version (R-API-085). `include=vulnerabilities` adds `vulnerabilityGrade` to each entry, for a signed-in caller of an
          *     installation that scans: the grade of the entry's `latestVersion` over the repositories the filter names (a virtual repository
          *     expanded to its members), from the open findings the caller can read, in a fixed number of statements per page (R-VULN-038,
          *     R-VULN-039, R-UI-052).
@@ -4735,6 +4736,53 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/packages/{packageName}/deprecation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                repoKey: string;
+                /** @description The package name as one path segment, percent-encoded (`@acme%2Ffrontend`); the format normalizes it with its name rule. */
+                packageName: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Deprecate a version or a package
+         * @description Marks a version or a whole package of a local repository deprecated, with a message, or changes the message (R-API-085). The
+         *     format decides what it deprecates and what its protocol carries: npm and NuGet deprecate one version (`version` is required),
+         *     an Ansible Galaxy collection is deprecated as a whole (`version` is refused). npm carries a message only (at most 1,024
+         *     characters, required); NuGet carries `reasons` (`Legacy`, `CriticalBugs`, `Other`, at least one), an optional message and an
+         *     optional `alternatePackage` (its range `*` when none is given); Ansible Galaxy carries the flag, and the message is shown on
+         *     Quader's screens only, since the collection document has no member for it. A member the format cannot carry answers `422`
+         *     with the reason. The format serves the result to its clients at once: npm's package document (`versions[v].deprecated`),
+         *     NuGet's registration and search (`deprecation`), the collection document and the search of Ansible Galaxy (`deprecated`).
+         *
+         *     Needs `deploy` on the package in the repository, and for npm the ownership of the name (R-AUTHZ-018), decided by the format
+         *     as a protocol write of its own is; a caller who may not is refused with `403` whether or not the package exists (R-AUTHZ-016),
+         *     and a version or a package the caller may not read is answered as one that does not exist (`404`).
+         *     A remote repository shows its upstream's deprecation and a virtual one its members': both answer `409 not_applicable`, and so
+         *     does a format without deprecation (OCI, Debian, generic files). The change, the package's new revision and the audit event
+         *     (`npm.deprecate`, or `package.metadata_changed` with the change `deprecate`) commit together. Repeating the request changes
+         *     nothing and answers the same.
+         */
+        put: operations["setPackageDeprecation"];
+        post?: never;
+        /**
+         * Undo the deprecation of a version or a package
+         * @description Clears the deprecation of a version (npm, NuGet: `version` is required) or of a whole package (Ansible Galaxy: `version` is
+         *     refused) of a local repository (R-API-085), decided and recorded as setting it is. A version or a package that is not
+         *     deprecated answers `204` as well and changes nothing.
+         */
+        delete: operations["clearPackageDeprecation"];
         options?: never;
         head?: never;
         patch?: never;
@@ -12366,6 +12414,55 @@ export interface components {
              *     them (R-VULN-038).
              */
             vulnerabilityGrade?: components["schemas"]["VulnerabilityGrade"];
+            /** @description The deprecation of `latestVersion` (R-API-085); absent when it is not deprecated. */
+            deprecation?: components["schemas"]["PackageDeprecation"];
+        };
+        /**
+         * @description A deprecation as the package's format records it (R-API-085): what the publisher, or the upstream of a remote repository, said
+         *     is no longer to be used. A member the format does not carry is absent.
+         */
+        PackageDeprecation: {
+            /**
+             * @description `version` for a deprecation of the one version (npm, NuGet), `package` for one of the whole package, which every version of it
+             *     shares (an Ansible Galaxy collection).
+             * @enum {string}
+             */
+            scope: "version" | "package";
+            /** @description The publisher's text, plain text; the screens never render it as markup. */
+            message?: string;
+            /** @description NuGet's reasons (`Legacy`, `CriticalBugs`, `Other`), in the order given. */
+            reasons?: string[];
+            alternatePackage?: components["schemas"]["PackageDeprecationAlternate"];
+        };
+        /** @description The package to use instead (NuGet's `alternatePackage`). */
+        PackageDeprecationAlternate: {
+            name: string;
+            /** @description The range of its versions; absent or `*` for any. */
+            range?: string;
+            /**
+             * @description On a version's details only: the identifier of the package of `GET /api/v1/packages/{packageId}` when the caller may read
+             *     a version of it, so that a screen links to it; absent otherwise.
+             */
+            packageId?: string;
+        };
+        /**
+         * @description A deprecation to set (R-API-085). The format refuses with `422` what its protocol cannot carry: `version` for Ansible Galaxy,
+         *     `reasons` and `alternatePackage` for npm and Ansible Galaxy.
+         */
+        PackageDeprecationInput: {
+            /** @description The version, required for npm and NuGet. */
+            version?: string;
+            /** @description Plain text; required for npm, optional for NuGet and Ansible Galaxy. */
+            message?: string;
+            /** @description NuGet only, at least one of `Legacy`, `CriticalBugs`, `Other`, each once. */
+            reasons?: string[];
+            alternatePackage?: components["schemas"]["PackageDeprecationAlternateInput"];
+        };
+        /** @description NuGet only, the package to use instead. */
+        PackageDeprecationAlternateInput: {
+            name: string;
+            /** @description A NuGet version range; `*` when absent. */
+            range?: string;
         };
         PackageList: {
             items: components["schemas"]["PackageSummary"][];
@@ -12404,6 +12501,13 @@ export interface components {
             /** @description With `group=content` only, `aliases` names 100 versions and the content has more. */
             aliasesMore?: boolean;
             signatures?: components["schemas"]["SignatureStatus"];
+            /** @description The version's deprecation, its own or its package's (R-API-085); absent when it is not deprecated. */
+            deprecation?: components["schemas"]["PackageDeprecation"];
+            /**
+             * @description `true` for a version the format hides from its search while it still serves it by its exact number (NuGet's unlist,
+             *     R-NUGET-006); absent otherwise. It is not a deprecation.
+             */
+            unlisted?: boolean;
             /**
              * @description With `include=state` only, the version's state from the format's metadata (the member `state` of its details): for the
              *     ClamAV definitions `in_use`, `previous`, `superseded` or `files_removed` (R-CLAMAV-003, R-UI-194); absent for a format
@@ -12509,8 +12613,8 @@ export interface components {
              * @description Format-specific, owned by the format page. For npm the members the UI reads are
              *     `distTags` (tag to version), `dependencies`, `devDependencies`, `peerDependencies` and
              *     `optionalDependencies` (name to range), `authors` (strings), `homepage`, `repositoryUrl`
-             *     and `bugsUrl` (strings as the package declares them), `engines` (name to range) and
-             *     `deprecated` (string or null). For Ansible Galaxy collections `docs` announces the documentation (R-ANS-036, Q-API-263): it is
+             *     and `bugsUrl` (strings as the package declares them) and `engines` (name to range); the deprecation is `deprecation`
+             *     of the version, not a member of the metadata (R-API-085). For Ansible Galaxy collections `docs` announces the documentation (R-ANS-036, Q-API-263): it is
              *     wiki content and absent for a caller who may not read the wiki of the repository. For an OCI tag (formats/oci.md R-OCI-031,
              *     R-OCI-039 to R-OCI-041): `digest`, `mediaType`, `size`, `artifactType`, `kind`, `platforms`, `attestations`, the facts of
              *     the annotations (`description`, `title`, `homepage`, `documentationUrl`, `repositoryUrl`, `revision`, `created`,
@@ -12526,6 +12630,13 @@ export interface components {
             repositories: components["schemas"]["PackageVersionRepository"][];
             files: components["schemas"]["PackageFile"][];
             signatures?: components["schemas"]["SignatureStatus"];
+            /**
+             * @description The version's deprecation, its own or its package's, in the repository its metadata was read from (R-API-085); absent when it
+             *     is not deprecated. `alternatePackage.packageId` names the alternate package where the caller may read it.
+             */
+            deprecation?: components["schemas"]["PackageDeprecation"];
+            /** @description As in the version list (R-NUGET-006); absent for a version that is not unlisted. */
+            unlisted?: boolean;
         };
         PackageReadme: {
             /**
@@ -16661,6 +16772,11 @@ export interface components {
              *     reads (R-API-062).
              */
             repository: string;
+            /**
+             * @description `true` when the package's latest version in `repository` is deprecated (R-API-085), for a repository the caller reads whole;
+             *     absent otherwise.
+             */
+            deprecated?: boolean;
         };
         ProjectSuggestions: {
             items: components["schemas"]["ProjectSuggestion"][];
@@ -26733,6 +26849,11 @@ export interface operations {
                 q?: string;
                 namePrefix?: string;
                 keyword?: string;
+                /**
+                 * @description `true` keeps the packages whose latest visible version is deprecated (R-API-085): its own deprecation or its package's
+                 *     (an Ansible Galaxy collection). `false` is no filter.
+                 */
+                deprecated?: boolean;
                 /** @description `vulnerabilities`: also answer the grade of each entry's latest version (`vulnerabilityGrade`, R-VULN-039). */
                 include?: "vulnerabilities"[];
                 /** @description Inclusive lower bound of the creation time of the first visible version. */
@@ -28599,6 +28720,109 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthenticated"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    setPackageDeprecation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                repoKey: string;
+                /** @description The package name as one path segment, percent-encoded (`@acme%2Ffrontend`); the format normalizes it with its name rule. */
+                packageName: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "version": "2.1.0",
+                 *       "reasons": [
+                 *         "Legacy"
+                 *       ],
+                 *       "message": "Use Acme.Http 3 instead; this line gets no fixes.",
+                 *       "alternatePackage": {
+                 *         "name": "Acme.Http",
+                 *         "range": "[3.0.0, )"
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["PackageDeprecationInput"];
+            };
+        };
+        responses: {
+            /** @description The deprecation the version or the package holds now. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "scope": "version",
+                     *       "reasons": [
+                     *         "Legacy"
+                     *       ],
+                     *       "message": "Use Acme.Http 3 instead; this line gets no fixes.",
+                     *       "alternatePackage": {
+                     *         "name": "Acme.Http",
+                     *         "range": "[3.0.0, )"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["PackageDeprecation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    clearPackageDeprecation: {
+        parameters: {
+            query?: {
+                /** @description The version, for a format that deprecates versions. */
+                version?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                repoKey: string;
+                /** @description The package name as one path segment, percent-encoded (`@acme%2Ffrontend`); the format normalizes it with its name rule. */
+                packageName: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The version or the package is not deprecated. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

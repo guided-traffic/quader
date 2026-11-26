@@ -262,7 +262,9 @@ func (f *Format) virtualCollection(ctx context.Context, rq *formats.Request, w h
 		}
 	}
 	c := merge.MergeCollection(all, times)
-	sum := galaxydoc.CollectionSummary{Namespace: ns, Name: name, HighestVersion: c.HighestVersion, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt}
+	sum := galaxydoc.CollectionSummary{
+		Namespace: ns, Name: name, HighestVersion: c.HighestVersion, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt, Deprecated: t.Deprecated,
+	}
 	return writeDocument(rq, w, galaxydoc.RenderCollection(sum, addrOf(rq)))
 }
 

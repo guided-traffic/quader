@@ -225,7 +225,7 @@ the public Galaxy:
 
 | Operation | Path | Output |
 |---|---|---|
-| Get collection | `v3/collections/<ns>/<name>/` | `href`, `namespace`, `name`, `deprecated` (false), `versions_url`, `highest_version{href,version}`, `created_at`, `updated_at` |
+| Get collection | `v3/collections/<ns>/<name>/` | `href`, `namespace`, `name`, `deprecated` (R-ANS-060), `versions_url`, `highest_version{href,version}`, `created_at`, `updated_at` |
 | List collection versions | `v3/collections/<ns>/<name>/versions/?limit=&offset=` | `meta.count`, `links{first,previous,next,last}`, `data[]{version,href,created_at,updated_at,requires_ansible,marks}` newest first |
 | Get collection version | `v3/collections/<ns>/<name>/versions/<version>/` | the version document below |
 
@@ -251,7 +251,7 @@ the public Galaxy:
   archive its cache holds, the virtual repository of the archive its resolution would serve first from what its members store; an archive
   not stored yet is judged at its download alone.
 - **Local class.** The documents are computed from the rows of R-ANS-011 on every request, with no rendition cache ([Q-ANS-35](#q-ans-35--a-document-is-computed-per-request-and-its-validator-is-a-digest-of-its-bytes));
-  `created_at` is the publish time on the database clock and `updated_at` the newest version's; `deprecated` is always false.
+  `created_at` is the publish time on the database clock and `updated_at` the newest version's; `deprecated` is true while the collection is deprecated (R-ANS-060).
 - **Remote class** and **virtual class**: R-ANS-017 and R-ANS-022.
 - `ETag`: a computed or rewritten document carries a weak `ETag`, a digest of its bytes (they hold the serving address and every row it
   shows), and answers `If-None-Match` with 304; the client ignores it, other tools do not (Q-ANS-35).
@@ -2012,6 +2012,38 @@ Acceptance criteria:
   2 Markdown, 3 reStructuredText); none is cut, the largest changelog.yaml is 240 KB.
 - The renders `ansible-doc-changelog` and `ansible-doc-changelog-md`.
 
+### R-ANS-060 · A collection is deprecated as a whole
+Priority: **P1** · Covers: quader-only
+
+A collection of Ansible Galaxy is deprecated as a whole, every version of it: the member `deprecated` of its collection document, which
+galaxy_ng keeps per collection without a message and sets by a `PATCH` of that document (pulp_ansible `AnsibleCollectionDeprecated`,
+source). The general rule is [api-and-ui.md](../api-and-ui.md) R-API-085.
+
+- **A local repository's collection** is deprecated, its message changed and its deprecation cleared through the management operation of
+  R-API-085, decided as a publish into the collection is: deploy on the collection and its ownership, the package's lock, a collection none
+  of whose versions the caller may read answered as missing. A version is refused (`422`): Galaxy has no deprecation of one version. The
+  row of `ansible_collection_deprecations` (migration 00137) holds who set it and an optional message, which only Quader's screens show
+  ([Q-ANS-130](#q-ans-130--a-collections-deprecation-carries-a-message-for-quaders-screens-only)); the package's revision is raised, so
+  the collection document's validator changes, and `package.metadata_changed` is recorded with the collection as the package, no
+  version, the change `deprecate` or `undeprecate` and the message.
+- **Served** as `deprecated: true` in the collection document of the local repository, and of a virtual repository whose first member that
+  holds the collection is deprecated ([Q-ANS-131](#q-ans-131--a-remote-takes-its-upstreams-flag-from-the-collection-document-it-fills-a-virtual-its-first-members)).
+  Quader serves no search of collections (`ansible-galaxy` has no collection search); the screens' list filters by it (R-API-085).
+- **A remote's collection** shows its upstream's flag: the fill of the collection document records it, and a document that says it is not
+  deprecated clears it; the document a remote serves carries the upstream's flag
+  ([H-2162](#h-2162--a-remote-knows-its-upstreams-deprecation-only-from-a-collection-document-it-fetched)).
+- **What the client does**: no release of `ansible-core` (2.15 to the development branch, `lib/ansible/galaxy/` and `cli/galaxy.py`,
+  source) reads the member: `ansible-galaxy collection install`, `download` and `list` install and list a deprecated collection as any
+  other, without a warning. Galaxy's own pages say "This collection has been deprecated." and its search leaves deprecated collections out;
+  Quader's version page says it in its banner and its lists mark it.
+
+Acceptance criteria:
+
+- Unit (`ansible`, milliseconds): `TestR_ANS_060_ACollectionIsDeprecatedAsAWhole`,
+  `TestR_ANS_060_TheCollectionDocumentCarriesTheFlagAndAVirtualTakesItsFirstMembers`, and the upstream's flag in
+  `TestR_ANS_017_ACollectionDocumentMustBeThePathsCollection`.
+- Integration (`ansiblelocal`, `TestR_ANS_060_ACollectionIsDeprecatedThroughTheManagementAPIAndServed`, about one second).
+
 ## Roles through a remote
 
 ### R-ANS-056 · A role read through a remote reads like a role, and `role search` passes through
@@ -3713,6 +3745,51 @@ makes it real: a person who allows such a version and wonders why no client gets
 Stage: the trail above a package's and a version's page (R-UI-002), which takes the address's name: for a role it reads `role/16` while the
 title reads `geerlingguy.pip` ([api-and-ui.md](../api-and-ui.md) Q-UI-1261). The trail is built from the route alone and reads no package.
 Live for every role a remote cached. What makes it real: a person who reads the trail rather than the title.
+
+### Q-ANS-130 · A collection's deprecation carries a message for Quader's screens only
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Galaxy's collection document carries the flag alone; npm's and NuGet's deprecations carry a message that says what to use instead.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An optional message, kept with the row and shown on Quader's pages; the document carries the flag (chosen) | The same dialog as the other formats | A reader on the screen learns why and what to use; the protocol stays Galaxy's | A client never sees the message |
+| (b) No message | Exactly Galaxy | — | A deprecation without a word of why on the one place that can show it |
+
+**Choice:** (a). The dialog says that `ansible-galaxy` shows nothing. **Applied in the spec:** R-ANS-060.
+
+### Q-ANS-131 · A remote takes its upstream's flag from the collection document it fills, a virtual its first member's
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The fill of a collection document records the flag in the same table, without a principal; a virtual repository's merged document takes the flag of the first member that holds the collection, the member whose versions come first (R-ANS-022) (chosen) | The upstream's word, kept as the document is | The screens read one table for both classes; a restore without the remote caches drops the remote's rows with them | Known only once the document was fetched (H-2162) |
+| (b) Any member that marks it deprecated | — | — | A local collection someone keeps current reads deprecated because a remote's upstream gave up its own |
+
+**Choice:** (a). **Applied in the spec:** R-ANS-060, R-ANS-022.
+
+## What this does not cover
+
+### H-2162 · A remote knows its upstream's deprecation only from a collection document it fetched
+
+Stage: R-ANS-060. A remote records the upstream's flag when it fills the collection document. `ansible-galaxy collection install` asks for
+that document only with its cache on (the default; `--no-cache` skips it), and a mirror pass does not read it; a collection installed
+otherwise shows no deprecation on the remote's screens until the document is fetched through the remote. Live for remotes used with
+`--no-cache` or filled by a mirror alone.
+
+### H-2163 · Galaxy's PATCH of a collection document is not served
+
+Stage: R-ANS-060. galaxy_ng deprecates a collection by `PATCH …/collections/index/<ns>/<name>/` with `{"deprecated": true}`. Quader serves
+no such write: a tool that deprecates through Galaxy's API gets 404 or 405 and must use the management operation of R-API-085. No
+`ansible-galaxy` command sends it. Live for automation written against galaxy_ng's API.
+
+### H-2164 · A role read through a remote is not marked deprecated
+
+Stage: R-ANS-060. Roles read through a remote are another package of W-30 (A4), not on `main` when the deprecation was built; Galaxy's
+role document carries no deprecation the screens read, and none is shown. Open until the roles' package lands and says whether its
+upstream carries one.
 
 ### H-2100 · A link to an option of another entry is checked against the tree, not against that entry's options
 

@@ -20,10 +20,13 @@ const (
 	EventPackageMetadataChanged = "package.metadata_changed"
 )
 
-// The values of the change member of package.metadata_changed that NuGet writes (R-NUGET-007).
+// The values of the change member of package.metadata_changed: NuGet's unlist and relist (R-NUGET-007), and the deprecation of a
+// version or a package that NuGet and Ansible Galaxy write (R-API-085, R-NUGET-036, R-ANS-060).
 const (
-	ChangeUnlist = "unlist"
-	ChangeRelist = "relist"
+	ChangeUnlist      = "unlist"
+	ChangeRelist      = "relist"
+	ChangeDeprecate   = "deprecate"
+	ChangeUndeprecate = "undeprecate"
 )
 
 func init() {
@@ -50,12 +53,18 @@ func init() {
 			`"package":{"type":"string"},"version":{"type":"string"}},` +
 			`"required":["package","version"],"additionalProperties":false}`,
 	})
-	// A version was unlisted or relisted: change is "unlist" or "relist".
+	// A version was unlisted or relisted (change "unlist" or "relist"), or a version or a whole package (an Ansible collection, no
+	// version) was deprecated or its deprecation cleared ("deprecate", "undeprecate"): a deprecation carries what the format holds of
+	// it, NuGet's reasons and alternate package and the publisher's message, bounded as the operation bounds it (R-API-085).
 	Register(EventType{
 		Name: EventPackageMetadataChanged, Category: CategoryContent, Mode: Transactional, Webhook: true,
 		Schema: `{"type":"object","properties":{` +
 			`"package":{"type":"string"},"version":{"type":"string"},` +
-			`"change":{"type":"string","enum":["unlist","relist"]}},` +
-			`"required":["package","version","change"],"additionalProperties":false}`,
+			`"change":{"type":"string","enum":["unlist","relist","deprecate","undeprecate"]},` +
+			`"reasons":{"type":"array","maxItems":3,"items":{"type":"string","enum":["Legacy","CriticalBugs","Other"]}},` +
+			`"message":{"type":"string","maxLength":1024},` +
+			`"alternatePackage":{"type":"object","properties":{"id":{"type":"string","maxLength":100},"range":{"type":"string","maxLength":256}},` +
+			`"required":["id"],"additionalProperties":false}},` +
+			`"required":["package","change"],"additionalProperties":false}`,
 	})
 }

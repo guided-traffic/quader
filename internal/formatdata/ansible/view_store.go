@@ -58,6 +58,7 @@ func (s viewStore) viewRows(ctx context.Context, ids []int64) ([]rows.ViewDetail
 			d.Name, d.Version, d.RequiresAnsible, d.CollectionInfo, d.SHA256, d.Size, d.PublishedAt =
 				r.Name, r.Version, r.RequiresAnsible, r.CollectionInfo, digestOf(r.Sha256), r.Size, r.PublishedAt.UTC()
 			d.Description, d.Tags = descriptionOf(r.CollectionInfo)
+			d.Deprecated, d.DeprecationMessage = r.Deprecated, r.DeprecationMessage
 			_ = json.Unmarshal(r.Dependencies, &d.Dependencies) //nolint:errcheck // a column this package wrote
 			out = append(out, d)
 		}

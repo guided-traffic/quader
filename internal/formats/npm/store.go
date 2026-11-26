@@ -56,6 +56,11 @@ type Store interface {
 	// npm.dist_tag.set and npm.dist_tag.delete (R-NPM-016).
 	SetTag(ctx context.Context, tx formats.Tx, in rows.SetTagInput) error
 	DeleteTag(ctx context.Context, tx formats.Tx, in rows.DeleteTagInput) error
+	// Deprecated reads the deprecation message of a version of a locked package, "" for none.
+	Deprecated(ctx context.Context, tx formats.Tx, versionID int64) (string, error)
+	// SetDeprecated stores the deprecation message of a version, or clears it ("" message), moves the package's modified_at and
+	// records npm.deprecate (R-NPM-018, R-API-085).
+	SetDeprecated(ctx context.Context, tx formats.Tx, in rows.DeprecateInput) error
 	// Tombstone writes the tombstone of a live version, stores the dist-tags the
 	// package holds without it and records npm.unpublish with its journal entry
 	// (R-NPM-008, R-NPM-016, R-NPM-017). It returns the integrity of the version.
