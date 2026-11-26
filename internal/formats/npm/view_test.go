@@ -92,6 +92,35 @@ func TestR_API_029_NPMMetadataMembers(t *testing.T) {
 	}
 }
 
+// The facts of the section "Package details" (R-UI-221): what Quader read of the tarball, the types, the publisher, the bundled
+// dependencies (a list, or true for every dependency) and the optional peers; a member of another type is left out.
+func TestR_UI_221_NPMPackageDetailsFacts(t *testing.T) {
+	d := detail(`{"name":"p","version":"1.0.0","typings":"index.d.ts","_npmUser":{"name":"ada"},"dependencies":{"b":"1","a":"2"},
+		"bundledDependencies":true,"peerDependenciesMeta":{"react-dom":{"optional":true},"react":{"optional":false},"x":3}}`, "", nil)
+	d.FileCount, d.UnpackedSize, d.HasInstallScript = 12, 4096, true
+	data, err := describeManifest(d, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	md := data.Metadata
+	if md["fileCount"] != int64(12) || md["unpackedSize"] != int64(4096) || md["hasInstallScript"] != true {
+		t.Errorf("the tarball's facts %v", md)
+	}
+	if md["types"] != "index.d.ts" || md["publisher"] != "ada" {
+		t.Errorf("types and publisher %v", md)
+	}
+	if got := md["bundleDependencies"].([]string); !slices.Equal(got, []string{"a", "b"}) {
+		t.Errorf("bundled %v", got)
+	}
+	if got := md["optionalPeers"].([]string); !slices.Equal(got, []string{"react-dom"}) {
+		t.Errorf("optional peers %v", got)
+	}
+	data, _ = describeManifest(detail(`{"bundleDependencies":["lit"],"types":5,"_npmUser":"ada","peerDependenciesMeta":[]}`, "", nil), nil)
+	if got, _ := data.Metadata["bundleDependencies"].([]string); !slices.Equal(got, []string{"lit"}) || len(data.Metadata) != 1 {
+		t.Errorf("%v", data.Metadata)
+	}
+}
+
 func TestR_API_029_NPMDistTagsNameVisibleVersionsOnly(t *testing.T) {
 	d := detail(`{"name":"p","version":"1.0.0"}`, "", map[string]string{"latest": "1.0.0", "next": "2.0.0-beta.1"})
 	seen := map[string]bool{"1.0.0": true}

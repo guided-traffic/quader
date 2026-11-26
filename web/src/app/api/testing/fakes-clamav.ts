@@ -73,6 +73,7 @@ function versionOf(v: FixtureVersion): PackageVersion & { readme: null } {
     prerelease: false,
     publishedAt: iso(v.days),
     licenses: [],
+    keywords: [],
     sizeBytes: removed ? 0 : 63_018_446,
     sizePartial: false,
     downloadCount: 3,

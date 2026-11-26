@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -191,6 +192,12 @@ type manifestView struct {
 	Homepage     json.RawMessage `json:"homepage"`
 	Repository   json.RawMessage `json:"repository"`
 	Bugs         json.RawMessage `json:"bugs"`
+	Types        json.RawMessage `json:"types"`
+	Typings      json.RawMessage `json:"typings"`
+	NpmUser      json.RawMessage `json:"_npmUser"`
+	BundleDeps   json.RawMessage `json:"bundleDependencies"`
+	BundledDeps  json.RawMessage `json:"bundledDependencies"`
+	PeerMeta     json.RawMessage `json:"peerDependenciesMeta"`
 }
 
 func describeManifest(d rows.ViewDetail, visible func(string) bool) (formats.ViewData, error) {
@@ -231,6 +238,7 @@ func describeManifest(d rows.ViewDetail, visible func(string) bool) (formats.Vie
 	if s := urlOf(m.Bugs); s != "" {
 		md["bugsUrl"] = s
 	}
+	addFacts(md, m, d)
 	data.Deprecation = deprecationOf(d.Deprecated)
 	return data, nil
 }
@@ -241,6 +249,89 @@ func deprecationOf(msg string) *formats.Deprecation {
 		return nil
 	}
 	return &formats.Deprecation{Message: msg}
+}
+
+// addFacts adds the facts of the section "Package details" (R-UI-221): what Quader read of the tarball (its file count, its unpacked
+// size and whether it runs an install script, R-NPM-007), the types it declares, its publisher (`_npmUser`), the dependencies it bundles
+// and the peers it marks optional. A member of an unexpected type is left out.
+func addFacts(md map[string]any, m manifestView, d rows.ViewDetail) {
+	if d.FileCount > 0 {
+		md["fileCount"] = d.FileCount
+	}
+	if d.UnpackedSize > 0 {
+		md["unpackedSize"] = d.UnpackedSize
+	}
+	if d.HasInstallScript {
+		md["hasInstallScript"] = true
+	}
+	if s := firstText(m.Types, m.Typings); s != "" {
+		md["types"] = s
+	}
+	var user struct {
+		Name json.RawMessage `json:"name"`
+	}
+	if json.Unmarshal(m.NpmUser, &user) == nil {
+		if s := text(user.Name); s != "" {
+			md["publisher"] = s
+		}
+	}
+	if b := bundled(m.BundleDeps, m.BundledDeps, m.Deps); len(b) > 0 {
+		md["bundleDependencies"] = b
+	}
+	if p := optionalPeers(m.PeerMeta); len(p) > 0 {
+		md["optionalPeers"] = p
+	}
+}
+
+func firstText(raws ...json.RawMessage) string {
+	for _, r := range raws {
+		if s := text(r); s != "" {
+			return s
+		}
+	}
+	return ""
+}
+
+// bundled reads bundleDependencies (or its old spelling bundledDependencies): a list of names, or `true` for every dependency.
+func bundled(raws ...json.RawMessage) []string {
+	deps := raws[len(raws)-1]
+	for _, raw := range raws[:len(raws)-1] {
+		var all bool
+		if json.Unmarshal(raw, &all) == nil {
+			if !all {
+				continue
+			}
+			names := make([]string, 0)
+			for k := range stringMap(deps) {
+				names = append(names, k)
+			}
+			sort.Strings(names)
+			return names
+		}
+		if list := stringList(raw); len(list) > 0 {
+			return list
+		}
+	}
+	return nil
+}
+
+// optionalPeers lists the peers peerDependenciesMeta marks optional, sorted.
+func optionalPeers(raw json.RawMessage) []string {
+	var meta map[string]json.RawMessage
+	if json.Unmarshal(raw, &meta) != nil {
+		return nil
+	}
+	var out []string
+	for name, entry := range meta {
+		var m struct {
+			Optional bool `json:"optional"`
+		}
+		if json.Unmarshal(entry, &m) == nil && m.Optional {
+			out = append(out, name)
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 // visibleTags keeps the dist-tags whose version the caller may read: a tag that

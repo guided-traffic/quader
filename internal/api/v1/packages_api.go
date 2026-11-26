@@ -701,7 +701,7 @@ func servesVersion(ctx context.Context, reader repository.Reader, repo repositor
 func versionOf(base string, d view.VersionDetail) gen.PackageVersion {
 	out := gen.PackageVersion{
 		PackageId: d.PackageID, Format: d.Format, Name: d.Name, Version: d.Version, Prerelease: d.Prerelease,
-		PublishedAt: d.PublishedAt, Licenses: d.Licenses, SizeBytes: d.SizeBytes, SizePartial: d.SizePartial, DownloadCount: d.DownloadCount,
+		PublishedAt: d.PublishedAt, Licenses: d.Licenses, Keywords: d.Keywords, SizeBytes: d.SizeBytes, SizePartial: d.SizePartial, DownloadCount: d.DownloadCount,
 		LastDownloadedAt: d.LastDownloadedAt, HasReadme: d.HasReadme, Metadata: metadataOf(d.Metadata),
 		Deprecation: deprecationRep(d.Deprecation), Unlisted: unlistedRep(d.Unlisted),
 		Repositories: make([]gen.PackageVersionRepository, 0, len(d.Repositories)),

@@ -21,6 +21,11 @@ type ViewDetail struct {
 	HasReadme      bool
 	Readme         string
 	ReadmeFilename string
+	// FileCount, UnpackedSize and HasInstallScript are what Quader read of the
+	// version's tarball (R-NPM-007; for a version a remote cached, R-NPM-050).
+	FileCount        int64
+	UnpackedSize     int64
+	HasInstallScript bool
 	// DistTags are the dist-tags of the package the version belongs to, in that
 	// repository.
 	DistTags map[string]string

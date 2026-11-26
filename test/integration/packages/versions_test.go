@@ -166,7 +166,7 @@ func TestR_API_029_VersionDetails(t *testing.T) {
 		Extra: map[string]any{
 			"dependencies": map[string]string{"lit": "^3.1.0"}, "devDependencies": map[string]string{"vitest": "^2"},
 			"peerDependencies": map[string]string{"react": ">=18"}, "optionalDependencies": map[string]string{"fsevents": "^2"},
-			"engines": map[string]string{"node": ">=20"}, "homepage": "https://example.com/rich",
+			"engines": map[string]string{"node": ">=20"}, "homepage": "https://example.com/rich", "keywords": []string{"ui", "rich"},
 			"author":     map[string]string{"name": "Ada", "email": "ada@example.com", "url": "https://example.com/ada"},
 			"repository": map[string]string{"type": "git", "url": "git+https://example.com/rich.git"},
 			"bugs":       map[string]string{"url": "https://example.com/rich/issues"},
@@ -187,7 +187,15 @@ func TestR_API_029_VersionDetails(t *testing.T) {
 	if !slices.Equal(toStrings(v["licenses"]), []string{"Apache-2.0"}) || num(v["sizeBytes"]) <= 0 || num(v["downloadCount"]) != 0 {
 		t.Errorf("licenses %v size %v downloads %v", v["licenses"], v["sizeBytes"], v["downloadCount"])
 	}
+	// The keywords of the version (R-UI-221), and the facts of its section Package details: what Quader read of the tarball and the
+	// publisher.
+	if !slices.Equal(toStrings(v["keywords"]), []string{"ui", "rich"}) {
+		t.Errorf("keywords %v", v["keywords"])
+	}
 	md := v["metadata"].(map[string]any)
+	if num(md["fileCount"]) < 1 || num(md["unpackedSize"]) <= 0 || md["publisher"] == nil || md["publisher"] == "" {
+		t.Errorf("the tarball's facts %v %v, publisher %v", md["fileCount"], md["unpackedSize"], md["publisher"])
+	}
 	if got := md["dependencies"].(map[string]any)["lit"]; got != "^3.1.0" {
 		t.Errorf("dependencies %v", md["dependencies"])
 	}

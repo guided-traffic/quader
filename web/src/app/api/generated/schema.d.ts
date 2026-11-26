@@ -12669,6 +12669,12 @@ export interface components {
             /** @description SPDX identifiers or the license expression the package declares; empty when it declares none. */
             licenses: string[];
             /**
+             * @description The keywords or tags the version declares, as the format calls them (npm's `keywords`, NuGet's `tags`, an Ansible
+             *     collection's `tags`; R-UI-221): the screens show them as links to the packages with the same keyword. Empty for a version
+             *     that declares none and for a format without them (OCI, Debian, generic files).
+             */
+            keywords: string[];
+            /**
              * Format: int64
              * @description As in the version list (R-API-080) - the size of the version's files, summed; for an OCI tag the size of its image; `null` when it is not known.
              */
@@ -12696,17 +12702,32 @@ export interface components {
             /** @description With `aliases`, it names 100 versions and the content has more. */
             aliasesMore?: boolean;
             /**
-             * @description Format-specific, owned by the format page. For npm the members the UI reads are
-             *     `distTags` (tag to version), `dependencies`, `devDependencies`, `peerDependencies` and
-             *     `optionalDependencies` (name to range), `authors` (strings), `homepage`, `repositoryUrl`
-             *     and `bugsUrl` (strings as the package declares them) and `engines` (name to range); the deprecation is `deprecation`
-             *     of the version, not a member of the metadata (R-API-085). For Ansible Galaxy collections `docs` announces the documentation (R-ANS-036, Q-API-263): it is
-             *     wiki content and absent for a caller who may not read the wiki of the repository. For an OCI tag (formats/oci.md R-OCI-031,
-             *     R-OCI-039 to R-OCI-041): `digest`, `mediaType`, `size`, `artifactType`, `kind`, `platforms`, `attestations`, the facts of
-             *     the annotations (`description`, `title`, `homepage`, `documentationUrl`, `repositoryUrl`, `revision`, `created`,
-             *     `imageVersion`, `vendor`, `authors`, `baseName`, `baseDigest`), `blobs` (each held image manifest's config and layers), and
-             *     `configs` and `labeled` (the configurations and the facts of the labels), which are content of the config blobs and absent
-             *     for a caller who may not read them (Q-OCI-273). A member that does not apply is absent.
+             * @description Format-specific, owned by the format page; a member that does not apply is absent, and every value is text a publisher or
+             *     an upstream wrote. The screens show them in the blocks of R-UI-221. A deprecation is `deprecation` of the version, not a
+             *     member of the metadata (R-API-085). The members per format:
+             *     - npm (formats/npm.md R-API-029, R-NPM-007, R-NPM-050): `distTags` (tag to version), `dependencies`, `devDependencies`,
+             *       `peerDependencies`, `optionalDependencies` and `engines` (name to range), `bundleDependencies` and `optionalPeers`
+             *       (names), `authors` (strings), `homepage`, `repositoryUrl` and `bugsUrl` (as the package declares them), `types`,
+             *       `publisher` (`_npmUser`), and what Quader read of the tarball: `fileCount`, `unpackedSize`, `hasInstallScript`.
+             *     - NuGet (formats/nuget.md Q-NUGET-48): `id` (the declared casing), `listed`, `title`, `summary`, `releaseNotes`,
+             *       `copyright`, `language`, `minClientVersion`, `licenseUrl`, `homepage` (the project URL), `repositoryUrl`, `authors`,
+             *       `tags`, `dependencyGroups` (`targetFramework` and `dependencies` of `id` and `range`), `packageTypes`,
+             *       `requireLicenseAcceptance`, `developmentDependency`.
+             *     - Debian (formats/debian.md R-DEB-030, R-DEB-038): `architectures`, `coordinates` (`suite/component`), `maintainer`,
+             *       `section`, `priority`, `installedSize` (KiB, as the field), `homepage`, `source`, `multiArch`, `essential`,
+             *       `longDescription` (paragraphs with `text` and `verbatim`), `relations` (a field to its groups of alternatives with
+             *       `name`, `arch`, `op`, `version`, `architectures`, `profiles`) and `relationsText` (a field the server could not parse).
+             *     - Ansible Galaxy (formats/ansible.md R-ANS-026, R-ANS-056): `sha256`, `requiresAnsible`, `dependencies` (collection to
+             *       range), `authors`, `repositoryUrl`, `homepage`, `documentationUrl`, `bugsUrl`, `docs` (the documentation's announcement,
+             *       wiki content, absent for a caller who may not read the wiki of the repository, R-ANS-036, Q-API-263), and a role's
+             *       `role`.
+             *     - OCI (formats/oci.md R-OCI-031, R-OCI-039 to R-OCI-042): `digest`, `mediaType`, `size`, `artifactType`, `kind`,
+             *       `platforms`, `attestations`, the facts of the annotations (`description`, `title`, `homepage`, `documentationUrl`,
+             *       `repositoryUrl`, `revision`, `created`, `imageVersion`, `vendor`, `authors`, `baseName`, `baseDigest`), `blobs` (each held
+             *       image manifest's config and layers), and `configs` and `labeled` (the configurations and the facts of the labels), which
+             *       are content of the config blobs and absent for a caller who may not read them (Q-OCI-273); a Helm chart's `chartFiles`.
+             *     - ClamAV definitions (R-CLAMAV-003, R-UI-194): `database`, `version`, `state`, `storedAt`, `file`, `filesRemovedAt` and
+             *       the facts of the container's header (`builtAt`, `buildTimeText`, `signatures`, `functionalityLevel`, `builder`, …).
              */
             metadata: {
                 docs?: components["schemas"]["PackageVersionDocs"];
@@ -18229,6 +18250,10 @@ export interface components {
             unpackedSize: number | null;
             /** @description deprecated, yanked, unlisted, prerelease, vulnerable. */
             flags: string[];
+            /**
+             * @description What the version is built for, in the format's words: an image's platforms (`linux/amd64`, `linux/arm/v7`), a Debian
+             *     package's architectures (`amd64`, `all`, as its index names them); empty for a format without them.
+             */
             platforms: string[];
             digest: string | null;
             delivery: components["schemas"]["DeliveryDecision"];
@@ -27327,6 +27352,10 @@ export interface operations {
                      *       "licenses": [
                      *         "MIT"
                      *       ],
+                     *       "keywords": [
+                     *         "ui",
+                     *         "web-components"
+                     *       ],
                      *       "sizeBytes": 48213,
                      *       "sizePartial": false,
                      *       "downloadCount": 410,
@@ -27339,7 +27368,10 @@ export interface operations {
                      *         "dependencies": {
                      *           "lit": "^3.1.0"
                      *         },
-                     *         "homepage": "https://example.com/team-a/ui"
+                     *         "homepage": "https://example.com/team-a/ui",
+                     *         "fileCount": 12,
+                     *         "unpackedSize": 204800,
+                     *         "publisher": "ada"
                      *       },
                      *       "repositories": [
                      *         {

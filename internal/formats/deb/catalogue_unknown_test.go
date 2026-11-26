@@ -6,8 +6,11 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
@@ -67,5 +70,31 @@ func TestR_CUR_007_ADebianLevelTheUpstreamDoesNotHaveIsUnknown(t *testing.T) {
 				t.Fatalf("unknown %v, done %v, reads %d; want unknown %v, %d reads", p.Unknown != nil, p.Done, u.reads, c.unknown, c.reads)
 			}
 		})
+	}
+}
+
+// idUpstream is the upstream of a remote repository with an id, which the catalogue's reads of the parsed indexes take.
+type idUpstream struct{ *releases }
+
+func (idUpstream) RepositoryID() int64 { return 1 }
+
+// TestR_UI_221_TheCatalogueNamesArchitecturesInDebiansWords: a version of the tab Upstream lists its architectures as the index names
+// them (`amd64`), not as an image's platform (`linux/amd64`), the word of every other Debian screen (Q-UI-1310). Milliseconds, the
+// eight paragraphs of the catalogue's recorded index.
+func TestR_UI_221_TheCatalogueNamesArchitecturesInDebiansWords(t *testing.T) {
+	twin, err := newCatalogueTwin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := New()
+	f.Bind(formattest.NewHost(f, formattest.HostOptions{Class: formats.Remote, Data: twin, Resolver: noShadow{}}), nil, nil)
+	info, err := remoteAdapter{f: f}.Package(context.Background(), idUpstream{&releases{}}, "docker-secrets-engine", discover.VersionsRequest{Limit: 10})
+	if err != nil || len(info.Versions) == 0 {
+		t.Fatalf("%v %+v", err, info)
+	}
+	for _, v := range info.Versions {
+		if !slices.Equal(v.Platforms, []string{"amd64"}) {
+			t.Fatalf("%s lists %v, want [amd64]", v.Version, v.Platforms)
+		}
 	}
 }

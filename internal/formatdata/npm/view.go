@@ -82,6 +82,7 @@ func (s *Store) ViewDetails(ctx context.Context, ids []int64, withReadme bool) (
 			out = append(out, rows.ViewDetail{
 				VersionID: r.VersionID, Manifest: []byte(r.Manifest), Deprecated: r.Deprecated,
 				HasReadme: r.HasReadme, Readme: r.Readme, ReadmeFilename: r.ReadmeFilename, DistTags: tags,
+				FileCount: int64(r.FileCount), UnpackedSize: r.UnpackedSize, HasInstallScript: r.HasInstallScript,
 			})
 			blobs = append(blobs, blobRef{sha256: r.Sha256, size: r.Size})
 			docs = append(docs, blobRef{sha256: r.DocSha256, size: r.DocSize})

@@ -57,6 +57,9 @@ SELECT nv.version_id,
         OR (r.class = 'remote' AND COALESCE(nv.readme_filename, '') <> ''))::boolean AS has_readme,
        CASE WHEN $1::boolean THEN COALESCE(nv.readme, '') ELSE '' END::text AS readme,
        COALESCE(nv.readme_filename, '')::text AS readme_filename,
+       nv.file_count,
+       nv.unpacked_size,
+       nv.has_install_script,
        COALESCE(np.dist_tags, '{}'::jsonb)::text AS dist_tags,
        COALESCE(i.blob_sha256, ''::bytea)::bytea AS sha256,
        COALESCE(i.size, 0)::bigint AS size,
@@ -82,21 +85,25 @@ type NPMViewDetailsParams struct {
 }
 
 type NPMViewDetailsRow struct {
-	VersionID      int64
-	Manifest       string
-	Deprecated     string
-	HasReadme      bool
-	Readme         string
-	ReadmeFilename string
-	DistTags       string
-	Sha256         []byte
-	Size           int64
-	DocSha256      []byte
-	DocSize        int64
+	VersionID        int64
+	Manifest         string
+	Deprecated       string
+	HasReadme        bool
+	Readme           string
+	ReadmeFilename   string
+	FileCount        int32
+	UnpackedSize     int64
+	HasInstallScript bool
+	DistTags         string
+	Sha256           []byte
+	Size             int64
+	DocSha256        []byte
+	DocSize          int64
 }
 
-// The manifest, the deprecation, the README (when asked) and the dist-tags of the
-// package row of each given version, with the blob of its tarball. A published
+// The manifest, the deprecation, the README (when asked), the facts Quader read of
+// the tarball (its file count, unpacked size and install script, R-NPM-007) and the
+// dist-tags of the package row of each given version, with the blob of its tarball. A published
 // version has a README when its text is stored; a version a remote cached when the
 // read of its tarball named one, whose text is read from the tarball (R-NPM-051).
 func (q *Queries) NPMViewDetails(ctx context.Context, arg NPMViewDetailsParams) ([]NPMViewDetailsRow, error) {
@@ -115,6 +122,9 @@ func (q *Queries) NPMViewDetails(ctx context.Context, arg NPMViewDetailsParams) 
 			&i.HasReadme,
 			&i.Readme,
 			&i.ReadmeFilename,
+			&i.FileCount,
+			&i.UnpackedSize,
+			&i.HasInstallScript,
 			&i.DistTags,
 			&i.Sha256,
 			&i.Size,

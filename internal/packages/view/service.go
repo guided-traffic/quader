@@ -1407,7 +1407,7 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 		PackageID: ID(format, name), Format: format, Name: pri.DisplayName, Version: version,
 		Prerelease: a.Prerelease(version), PublishedAt: g.published,
 		SizeBytes: &files, DownloadCount: g.downloads(), LastDownloadedAt: g.lastDownload(), Repo: sc.topo.Name(pri.RepoID),
-		Licenses: []string{}, Metadata: map[string]any{},
+		Licenses: []string{}, Keywords: []string{}, Metadata: map[string]any{},
 	}
 	earliest := map[int64]time.Time{}
 	var held []int64
@@ -1459,6 +1459,9 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 		d.HasReadme = data.HasReadme && wiki
 		if data.Licenses != nil {
 			d.Licenses = data.Licenses
+		}
+		if data.Keywords != nil {
+			d.Keywords = data.Keywords
 		}
 		if data.Metadata != nil {
 			d.Metadata = readableMetadata(ctx, sc, sc.topo.Name(pri.RepoID), name, version, data, wiki)

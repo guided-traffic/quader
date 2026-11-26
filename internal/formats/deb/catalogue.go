@@ -308,7 +308,7 @@ func (a remoteAdapter) Package(ctx context.Context, u discover.Upstream, name st
 			byVersion[e.Version] = f
 			order = append(order, e.Version)
 		}
-		if p := "linux/" + e.Architecture; !containsString(f.Platforms, p) {
+		if p := e.Architecture; !containsString(f.Platforms, p) {
 			f.Platforms = append(f.Platforms, p)
 		}
 	}

@@ -26,8 +26,9 @@ SELECT nv.version_id
  LIMIT sqlc.arg(max_rows)::int;
 
 -- name: NPMViewDetails :many
--- The manifest, the deprecation, the README (when asked) and the dist-tags of the
--- package row of each given version, with the blob of its tarball. A published
+-- The manifest, the deprecation, the README (when asked), the facts Quader read of
+-- the tarball (its file count, unpacked size and install script, R-NPM-007) and the
+-- dist-tags of the package row of each given version, with the blob of its tarball. A published
 -- version has a README when its text is stored; a version a remote cached when the
 -- read of its tarball named one, whose text is read from the tarball (R-NPM-051).
 SELECT nv.version_id,
@@ -37,6 +38,9 @@ SELECT nv.version_id,
         OR (r.class = 'remote' AND COALESCE(nv.readme_filename, '') <> ''))::boolean AS has_readme,
        CASE WHEN sqlc.arg(with_readme)::boolean THEN COALESCE(nv.readme, '') ELSE '' END::text AS readme,
        COALESCE(nv.readme_filename, '')::text AS readme_filename,
+       nv.file_count,
+       nv.unpacked_size,
+       nv.has_install_script,
        COALESCE(np.dist_tags, '{}'::jsonb)::text AS dist_tags,
        COALESCE(i.blob_sha256, ''::bytea)::bytea AS sha256,
        COALESCE(i.size, 0)::bigint AS size,

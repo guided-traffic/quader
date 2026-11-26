@@ -234,6 +234,9 @@ type VersionDetail struct {
 	Prerelease  bool
 	PublishedAt time.Time
 	Licenses    []string
+	// Keywords are the keywords or tags the version declares (npm's keywords, NuGet's tags, an Ansible collection's tags; R-UI-221),
+	// empty for a format without them.
+	Keywords []string
 	// SizeBytes and SizePartial are as in VersionSummary (R-API-080).
 	SizeBytes     *int64
 	SizePartial   bool
