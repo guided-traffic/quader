@@ -173,7 +173,7 @@ func TestBastionLong_R_BAS_049_AnonymousMissFlood(t *testing.T) {
 		}
 	}
 	t.Logf("%d anonymous requests in %s: statuses %v (Bastion's 429 %v, ingress %d); %d reached the main installation; at most %d in flight",
-		res.sent, res.took.Round(time.Second), res.codes, res.problemCode, res.edge429, len(toMain), atomic.LoadInt64(&inflightMax))
+		res.sent, res.took.Round(time.Second), res.codes, res.bastionCode, res.edge429, len(toMain), atomic.LoadInt64(&inflightMax))
 	budget := 1000 // limits.misses.anonymous_per_minute (R-BAS-092), cluster-wide with Valkey
 	minutes := int(res.took/time.Minute) + 1
 	if len(toMain) > budget*minutes+2 {

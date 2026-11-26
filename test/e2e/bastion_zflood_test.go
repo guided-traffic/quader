@@ -34,11 +34,14 @@ func (s *basSite) floodClient(t testing.TB, conns int) *http.Client {
 }
 
 type floodResult struct {
-	sent        int
-	codes       map[int]int
-	edge429     int // a 429 that is no problem document: HAProxy Ingress answered
-	problem429  int // a 429 of the Bastion
-	problemCode map[string]int
+	sent  int
+	codes map[int]int
+	// edge429 is a 429 whose body carries no code of the Bastion: HAProxy Ingress answered.
+	edge429 int
+	// bastion429 is a 429 of the Bastion, whose body carries its code in the error shape of the request's format (R-BAS-095):
+	// problem details or npm's {"error","code"} on the paths the floods use, both with the member code.
+	bastion429  int
+	bastionCode map[string]int
 	took        time.Duration
 }
 
@@ -46,7 +49,7 @@ type floodResult struct {
 func (s *basSite) flood(t testing.TB, n, workers, ratePerSecond int, path func(i int) string, tokenOf func(i int) string) floodResult {
 	t.Helper()
 	c := s.floodClient(t, workers)
-	res := floodResult{codes: map[int]int{}, problemCode: map[string]int{}}
+	res := floodResult{codes: map[int]int{}, bastionCode: map[string]int{}}
 	var mu sync.Mutex
 	var next atomic.Int64
 	start := time.Now()
@@ -73,9 +76,9 @@ func (s *basSite) flood(t testing.TB, n, workers, ratePerSecond int, path func(i
 				if tk := tokenOf(i); tk != "" {
 					req.Header.Set("Authorization", "Bearer "+tk)
 				}
-				code, ctype, body := 0, "", ""
+				code, body := 0, ""
 				if resp, err := c.Do(req); err == nil {
-					code, ctype = resp.StatusCode, resp.Header.Get("Content-Type")
+					code = resp.StatusCode
 					b, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 					body = string(b)
 					resp.Body.Close()
@@ -84,9 +87,10 @@ func (s *basSite) flood(t testing.TB, n, workers, ratePerSecond int, path func(i
 				res.sent++
 				res.codes[code]++
 				if code == 429 {
-					if strings.Contains(ctype, "problem+json") {
-						res.problem429++
-						res.problemCode[codeOf(body)]++
+					// The Bastion's own answer is known by its code, not by a content type: npm's shape is application/json.
+					if bc := codeOf(body); bc != "" {
+						res.bastion429++
+						res.bastionCode[bc]++
 					} else {
 						res.edge429++
 					}
@@ -124,7 +128,7 @@ func TestBastion_R_BAS_049_EdgeLimit(t *testing.T) {
 	res := site.flood(t, 20000, 300, 0, func(int) string { return doc }, func(int) string { return env.full.Token })
 	reached := requestsReached(t, site) - before
 	t.Logf("%d requests in %s: statuses %v, %d from the ingress, %d from the Bastion %v; %v requests reached the Bastion",
-		res.sent, res.took.Round(time.Millisecond), res.codes, res.edge429, res.problem429, res.problemCode, reached)
+		res.sent, res.took.Round(time.Millisecond), res.codes, res.edge429, res.bastion429, res.bastionCode, reached)
 	if res.edge429 == 0 {
 		t.Errorf("the ingress refused nothing of %d requests in %s", res.sent, res.took.Round(time.Second))
 	}
@@ -158,7 +162,7 @@ func TestBastion_R_BAS_049_FloodingAddress(t *testing.T) {
 	}
 	blocksBefore := basSum(t, site, "quader_bastion_blocks_total")
 	res := site.flood(t, 6000, 50, 900, func(int) string { return doc }, func(int) string { return "" })
-	t.Logf("%d requests in %s: statuses %v, codes of the Bastion's 429 %v, %d from the ingress", res.sent, res.took.Round(time.Millisecond), res.codes, res.problemCode, res.edge429)
+	t.Logf("%d requests in %s: statuses %v, codes of the Bastion's 429 %v, %d from the ingress", res.sent, res.took.Round(time.Millisecond), res.codes, res.bastionCode, res.edge429)
 	waitFor(t, "the address to be blocked", 30*time.Second, time.Second, func() bool {
 		return basSum(t, site, "quader_bastion_blocks_total") > blocksBefore
 	})
