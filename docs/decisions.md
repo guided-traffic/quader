@@ -10290,10 +10290,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-241 questions on [spec/bastion.md](spec/bastion.md).
+245 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 241 questions</summary>
+<summary>Q-BAS: 245 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10538,6 +10538,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-307](spec/bastion.md#q-bas-307--the-class-of-a-fills-bytes-is-the-class-of-the-request-that-started-it) | The class of a fill's bytes is the class of the request that started it | Decided by the builder of W-34's package E5 (2026-11-26), which needs no decision of the owner | (a) The class of the request that started the fill, the class of its slot | [ADR-298](#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted) |
 | [Q-BAS-310](spec/bastion.md#q-bas-310--the-longest-wait-a-formats-client-is-told-is-a-fact-of-the-format-zero-tells-the-true-wait) | The longest wait a format's client is told is a fact of the format; zero tells the true wait | Decided by the development agent on 2026-11-26 | (a) A member of `catalog.BastionFacts`, 0 for the true wait; the handshake's table carries it; kit check 19 holds `WriteError` to it for every format | [ADR-299](#adr-299--the-longest-wait-a-formats-client-is-told-is-a-fact-of-the-format) |
 | [Q-BAS-311](spec/bastion.md#q-bas-311--a-refusal-of-the-bastions-guard-names-its-wait-in-words-and-rounds-it-once) | A refusal of the Bastion's guard names its wait in words and rounds it once | Decided by the development agent on 2026-11-26 | (a), in `refuseVerdict` of [request.go](../internal/bastion/engine/request.go) (`oneWait`, `refusalDetail`): a block says requests from the address are refused for a while, a failed-authentication timeout that a credential the Bastion cannot check now is refused, every other refusal that there were too many requests; each ends with "Try again in <wait>.". | [ADR-299](#adr-299--the-longest-wait-a-formats-client-is-told-is-a-fact-of-the-format) |
+| [Q-BAS-312](spec/bastion.md#q-bas-312--the-bastions-request-figures-are-the-main-installations-profiles-anonymous-and-standard) | The Bastion's request figures are the main installation's profiles Anonymous and Standard | Decided by the development agent on 2026-11-26 | (a) The request figures of the profiles Anonymous (50/s, 1,000) and Standard (200/s, 4,000) | — |
+| [Q-BAS-313](spec/bastion.md#q-bas-313--the-miss-figures-hold-in-a-minute-what-the-request-burst-holds-at-once) | The miss figures hold in a minute what the request burst holds at once | Decided by the development agent on 2026-11-26 | (a) The burst of the class per minute: 1,000 anonymously, 4,000 with a credential | — |
+| [Q-BAS-314](spec/bastion.md#q-bas-314--the-block-threshold-is-the-anonymous-classs-minute-3000-refusals) | The block threshold is the anonymous class's minute: 3,000 refusals | Decided by the development agent on 2026-11-26 | (a) 3,000 a minute, what the anonymous class admits in a minute | — |
+| [Q-BAS-315](spec/bastion.md#q-bas-315--the-edge-defaults-hold-the-fastest-normal-command-1000-requests-a-second-and-256-in-flight) | The edge defaults hold the fastest normal command: 1,000 requests a second and 256 in flight | Decided by the development agent on 2026-11-26 | (a) 1,000 a second and 256 in flight | — |
 
 </details>
 

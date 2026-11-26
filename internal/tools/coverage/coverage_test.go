@@ -153,8 +153,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// E5).
 		// 1322 since a Bastion's own refusals tell a format's client the longest wait the format declares (R-BAS-091, one MVP
 		// requirement of W-34, E2).
-		if len(m.Reqs) != 1322 || count[prioMVP] != 726 || count[prioP1] != 557 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1322 (726, 557, 39)",
+		// 1323 since the Bastion's built-in figures hold one normal command of every client (R-BAS-092, one MVP requirement of
+		// W-34, E3).
+		if len(m.Reqs) != 1323 || count[prioMVP] != 727 || count[prioP1] != 557 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1323 (727, 557, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

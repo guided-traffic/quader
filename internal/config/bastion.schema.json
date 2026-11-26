@@ -98,7 +98,7 @@
               "x-quader-type": "duration"
             },
             "threshold": {
-              "default": 300,
+              "default": 3000,
               "description": "Refusals of R-BAS-035 and R-BAS-036 per window that block an address.",
               "minimum": 1,
               "type": "integer",
@@ -388,13 +388,13 @@
               "additionalProperties": false,
               "properties": {
                 "burst": {
-                  "default": 40,
+                  "default": 1000,
                   "minimum": 1,
                   "type": "integer",
                   "x-quader-env": "QUADER_BASTION_LIMITS_ANONYMOUS_BURST"
                 },
                 "requests_per_second": {
-                  "default": 10,
+                  "default": 50,
                   "minimum": 1,
                   "type": "integer",
                   "x-quader-env": "QUADER_BASTION_LIMITS_ANONYMOUS_REQUESTS_PER_SECOND"
@@ -406,13 +406,13 @@
               "additionalProperties": false,
               "properties": {
                 "burst": {
-                  "default": 200,
+                  "default": 4000,
                   "minimum": 1,
                   "type": "integer",
                   "x-quader-env": "QUADER_BASTION_LIMITS_AUTHENTICATED_BURST"
                 },
                 "requests_per_second": {
-                  "default": 50,
+                  "default": 200,
                   "minimum": 1,
                   "type": "integer",
                   "x-quader-env": "QUADER_BASTION_LIMITS_AUTHENTICATED_REQUESTS_PER_SECOND"
@@ -424,13 +424,13 @@
               "additionalProperties": false,
               "properties": {
                 "anonymous_per_minute": {
-                  "default": 30,
+                  "default": 1000,
                   "minimum": 1,
                   "type": "integer",
                   "x-quader-env": "QUADER_BASTION_LIMITS_MISSES_ANONYMOUS_PER_MINUTE"
                 },
                 "authenticated_per_minute": {
-                  "default": 300,
+                  "default": 4000,
                   "minimum": 1,
                   "type": "integer",
                   "x-quader-env": "QUADER_BASTION_LIMITS_MISSES_AUTHENTICATED_PER_MINUTE"

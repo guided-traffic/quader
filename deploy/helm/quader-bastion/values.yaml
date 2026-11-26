@@ -126,20 +126,20 @@ config:
           role_arn: ""                  # example: arn:aws:iam::123456789012:role/quader-bastion
     limits:
       authenticated:
-        requests_per_second: 50         # per address
-        burst: 200
+        requests_per_second: 200        # per address
+        burst: 4000
       anonymous:
-        requests_per_second: 10         # per address
-        burst: 40
+        requests_per_second: 50         # per address
+        burst: 1000
       misses:
-        authenticated_per_minute: 300   # per address
-        anonymous_per_minute: 30        # per address
+        authenticated_per_minute: 4000  # per address
+        anonymous_per_minute: 1000      # per address
     failed_auth:
       max_failures: 20
       window: 10m
       timeout: 15m
     blocking:
-      threshold: 300                    # refusals per window
+      threshold: 3000                   # refusals per window
       window: 1m
       duration: 15m
       max_duration: 24h
@@ -292,10 +292,10 @@ ingress:
     verify: true                        # the controller verifies the pods' certificate against caSecret
     caSecret: ""                        # empty = the listener's Secret (tls.existingSecret or <fullname>-tls), which must carry ca.crt
 
-edgeLimit:                              # stage 1 of the blocking
+edgeLimit:                              # stage 1 of the blocking; HAProxy Ingress counts HTTP requests, also on a kept-alive connection
   enabled: true
-  requestsPerSecond: 100                # per address; above config.bastion.limits.authenticated.requests_per_second
-  connections: 50                       # per address
+  requestsPerSecond: 1000               # per address, in the last second, no burst; above config.bastion.limits.authenticated.requests_per_second
+  connections: 256                      # per address: requests in flight at once
 
 # ── Network policy: ingress rules only, each rule with its port ─────────────
 # No egress value exists: the chart renders no egress rule; the Bastion pods' egress is the cluster's own policy.

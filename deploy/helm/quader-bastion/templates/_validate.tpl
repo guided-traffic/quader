@@ -157,7 +157,7 @@ generated schema of the role bastion (docs/developer/helm-chart.md, Bastion char
 
 {{- /* The edge limit is wider than the Bastion's own (R-BAS-038). */ -}}
 {{- if $v.edgeLimit.enabled -}}
-{{- $own := dig "bastion" "limits" "authenticated" "requests_per_second" 50 $cfg -}}
+{{- $own := dig "bastion" "limits" "authenticated" "requests_per_second" 200 $cfg -}}
 {{- if le (float64 $v.edgeLimit.requestsPerSecond) (float64 $own) -}}
 {{- fail (printf "quader-bastion: edgeLimit.requestsPerSecond (%v) must be above config.bastion.limits.authenticated.requests_per_second (%v): the Bastion's own stage, which knows credentials and misses, decides first and the ingress only cuts what would overload the Bastion itself" $v.edgeLimit.requestsPerSecond $own) -}}
 {{- end -}}

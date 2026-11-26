@@ -155,7 +155,7 @@ func TestR_BAS_045_RequiredValuesRenderTheResources(t *testing.T) {
 			}
 		}
 		a := bstIngressAnnotations(t, bstRequired())
-		if a[hp+"limit-rps"] != "100" || a[hp+"limit-connections"] != "50" {
+		if a[hp+"limit-rps"] != "1000" || a[hp+"limit-connections"] != "256" {
 			t.Errorf("edge-limit annotations = %v", a)
 		}
 	})
@@ -569,15 +569,15 @@ func TestR_BAS_038_EdgeLimitIsWiderThanTheBastionsOwn(t *testing.T) {
 			"edgeLimit.requestsPerSecond", "config.bastion.limits.authenticated.requests_per_second")
 	})
 	t.Run("the authenticated limit itself is refused, one above it passes", func(t *testing.T) {
-		bstFails(t, bstRequired(), []string{"config.bastion.limits.authenticated.requests_per_second=100"}, "edgeLimit.requestsPerSecond")
-		a := bstIngressAnnotations(t, bstRequired(), "config.bastion.limits.authenticated.requests_per_second=99")
-		if a[hp+"limit-rps"] != "100" {
+		bstFails(t, bstRequired(), []string{"config.bastion.limits.authenticated.requests_per_second=1000"}, "edgeLimit.requestsPerSecond")
+		a := bstIngressAnnotations(t, bstRequired(), "config.bastion.limits.authenticated.requests_per_second=999")
+		if a[hp+"limit-rps"] != "1000" {
 			t.Errorf("annotations = %v", a)
 		}
 	})
 	t.Run("the limits are annotations, the whitelist is blocking.exempt_cidrs", func(t *testing.T) {
 		a := bstIngressAnnotations(t, []string{bastionSet("persistent-routed")})
-		if a[hp+"limit-rps"] != "100" || a[hp+"limit-connections"] != "50" || a[hp+"limit-whitelist"] != "198.51.100.0/24,203.0.113.7/32" {
+		if a[hp+"limit-rps"] != "1000" || a[hp+"limit-connections"] != "256" || a[hp+"limit-whitelist"] != "198.51.100.0/24,203.0.113.7/32" {
 			t.Errorf("annotations = %v", a)
 		}
 		none := bstIngressAnnotations(t, bstRequired())

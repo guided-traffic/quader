@@ -47,7 +47,7 @@ type basLoad struct {
 const basColdMarker = "-lc-"
 
 // basLoopPause is the pause after a command of each loop. A client address that sends more than the Bastion's
-// limits.authenticated.requests_per_second (50, burst 200, R-BAS-035) is answered 429 rate_limited and its client retries after 10 s and 60 s:
+// limits.authenticated.requests_per_second (50, burst 200 when the pauses were set; 200, burst 4,000 since R-BAS-092) is answered 429 rate_limited and its client retries after 10 s and 60 s:
 // back to back, an `npm ci` of 20 tarballs from the cluster's fast clients is 200 requests a second and tests the limiter, not the fault.
 // The pauses keep each loop's address at about 20 requests a second, the pace of a CI fleet's runner.
 var basLoopPause = map[string]time.Duration{"npm ci": 2 * time.Second, "dotnet restore": 2 * time.Second, "npm cold": time.Second}

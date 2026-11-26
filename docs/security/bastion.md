@@ -157,6 +157,17 @@ Without Valkey every counter and block holds per replica at the configured value
   collect the refusals that block (Q-BAS-127; before, at 330 misses a minute against 300 no miss was admitted from the second minute and the
   address was blocked for 15 minutes, doubling to 24 hours, with its hits, which cut off every partner behind a shared address). A flood of several
   times the limit still reaches the threshold.
+- **The defaults and what a flood can still do** (R-BAS-092, set from the measurement of real clients so that one normal command, and two
+  at once from one address, never meet them). Anonymous: 50 requests a second with a burst of 1,000 and 1,000 misses a minute; with a
+  credential: 200 a second with a burst of 4,000 and 4,000 misses a minute; a block after 3,000 refusals a minute; at the ingress
+  1,000 HTTP requests a second and 256 in flight. One address is admitted at most 4,000 anonymous requests in its first minute and 3,000 in
+  each further, sends at most 1,000 anonymous misses a minute toward the main installation, and is blocked within about four seconds when it
+  floods at the ingress's 1,000 a second. A thousand addresses are not bounded by these figures, which are per address: by count they could
+  send 3,000,000 anonymous requests and 1,000,000 misses a minute (600,000 and 30,000 before). What bounds them is the Bastion's capacity
+  (`server.max_in_flight` per replica, hits served from the cache), the network provider (H-382), and toward the main installation the
+  concurrency budget, which lets at most 16 anonymous requests of a Bastion of two replicas reach it at once and answers the rest
+  `503 bastion_busy` after 2 s; each forward is charged to its caller at the main installation (R-BAS-017). Raising the per-address figures
+  therefore widened what one address can do, not what the main installation receives from many.
 - The address the guard counts is only the client's when the chart's `config.server.trusted_proxies` names the ingress controller's pods; the
   chart refuses a render without it while its Ingress is on (Q-BAS-130). Before, every caller shared the controller's address by default: one
   client's bad tokens put every unverified credential into the timeout and a flood blocked the Bastion for everyone.
@@ -519,7 +530,13 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
   size asks for costs a listing of the area, at most one a second per replica (live under a sustained churn; a load on the bucket);
 - [H-2272](../spec/bastion.md#h-2272--a-churn-of-distinct-artifacts-still-evicts-the-working-set-and-crosses-the-transfer-network): a churn
   of distinct artifacts still evicts the working set and crosses the transfer network (live wherever a caller can read more distinct content
-  than the cache holds; the owner's case of W-34, whose remedies wait for his decisions).
+  than the cache holds; the owner's case of W-34, whose remedies wait for his decisions);
+- [H-2276](../spec/bastion.md#h-2276--the-busiest-second-of-an-npm-ci-and-the-requests-in-flight-of-a-large-dotnet-restore-are-not-measured):
+  the edge's defaults are set from averages; a large `dotnet restore` on Linux may hold more requests in flight than `edgeLimit.connections`
+  (live, a refusal of a legitimate client, not a weakness against a flood);
+- [H-2277](../spec/bastion.md#h-2277--many-clients-with-credentials-behind-one-address-are-held-to-one-persons-figures):
+  many clients with credentials behind one address are held to one person's figures, and the remedy, `exempt_cidrs`, takes every limit off
+  that address.
 
 This page does not describe the main installation's own mechanisms that the Bastion relies on (the decision point, token
 validation, the revocation journal); their pages and gaps are linked above.

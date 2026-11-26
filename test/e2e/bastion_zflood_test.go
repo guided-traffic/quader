@@ -112,7 +112,8 @@ func requestsReached(t testing.TB, s *basSite) float64 {
 
 // TestBastion_R_BAS_049_EdgeLimit (R-BAS-038): 20,000 requests from one address within about 10 s are partly refused by the
 // ingress (a 429 that is no document of the Bastion, and no request at the Bastion), and the replicas stay below their in-flight
-// limit.
+// limit. The flood runs on 300 connections, more than the chart's default edgeLimit.connections of 256 requests in flight, so the
+// ingress refuses whether or not this machine reaches edgeLimit.requestsPerSecond (1,000 a second, R-BAS-092).
 func TestBastion_R_BAS_049_EdgeLimit(t *testing.T) {
 	env := basFx(t)
 	site := env.vol
@@ -120,7 +121,7 @@ func TestBastion_R_BAS_049_EdgeLimit(t *testing.T) {
 	site.get(t, env.full.Token, doc).want(t, "the Bastion serves before the flood", 200)
 	before := requestsReached(t, site)
 	shedBefore := basSum(t, site, "quader_http_requests_shed_total")
-	res := site.flood(t, 20000, 200, 0, func(int) string { return doc }, func(int) string { return env.full.Token })
+	res := site.flood(t, 20000, 300, 0, func(int) string { return doc }, func(int) string { return env.full.Token })
 	reached := requestsReached(t, site) - before
 	t.Logf("%d requests in %s: statuses %v, %d from the ingress, %d from the Bastion %v; %v requests reached the Bastion",
 		res.sent, res.took.Round(time.Millisecond), res.codes, res.edge429, res.problem429, res.problemCode, reached)
@@ -140,8 +141,10 @@ func TestBastion_R_BAS_049_EdgeLimit(t *testing.T) {
 	}
 }
 
-// TestBastion_R_BAS_049_FloodingAddress (R-BAS-037): an address that sends 2,000 requests a minute is blocked on both replicas
-// (the block list is shared through Valkey) and answers 429 address_blocked; another address is unaffected.
+// TestBastion_R_BAS_049_FloodingAddress (R-BAS-037): an address that sends 6,000 anonymous requests at up to 900 a second, below
+// the ingress's 1,000 and far above the anonymous 50 a second with a burst of 1,000 (R-BAS-092), collects the 3,000 refusals of a
+// minute that block it, is blocked on both replicas (the block list is shared through Valkey) and answers 429 address_blocked;
+// another address is unaffected.
 func TestBastion_R_BAS_049_FloodingAddress(t *testing.T) {
 	env := basFx(t)
 	site := env.bkt
@@ -154,7 +157,7 @@ func TestBastion_R_BAS_049_FloodingAddress(t *testing.T) {
 		t.Fatalf("another address before the flood: %s, want 200", got)
 	}
 	blocksBefore := basSum(t, site, "quader_bastion_blocks_total")
-	res := site.flood(t, 2000, 20, 80, func(int) string { return doc }, func(int) string { return env.full.Token })
+	res := site.flood(t, 6000, 50, 900, func(int) string { return doc }, func(int) string { return "" })
 	t.Logf("%d requests in %s: statuses %v, codes of the Bastion's 429 %v, %d from the ingress", res.sent, res.took.Round(time.Millisecond), res.codes, res.problemCode, res.edge429)
 	waitFor(t, "the address to be blocked", 30*time.Second, time.Second, func() bool {
 		return basSum(t, site, "quader_bastion_blocks_total") > blocksBefore

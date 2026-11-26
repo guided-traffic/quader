@@ -61,8 +61,9 @@ type rig struct {
 	st  *shared.State
 }
 
-// defaults are the defaults of R-BAS-035 to R-BAS-037.
-func defaults() Options {
+// figures are the figures the tests of R-BAS-035 to R-BAS-037 count against: small ones, so that a test counts in milliseconds
+// (they were the defaults before R-BAS-092). The built-in defaults are held by TestR_BAS_092_TheDefaultsHoldOneNormalCommandOfEveryClient.
+func figures() Options {
 	return Options{
 		Limits: config.BastionLimits{
 			Authenticated: config.BastionLimitAuthenticated{RequestsPerSecond: 50, Burst: 200},
@@ -83,7 +84,7 @@ func newRig(t *testing.T, replicas int, mutate func(*Options)) *rig {
 	if err != nil {
 		t.Fatal(err)
 	}
-	o := defaults()
+	o := figures()
 	o.State, o.Metrics, o.Now = shared.NewLocal(replicas, clk.now), m, clk.now
 	if mutate != nil {
 		mutate(&o)

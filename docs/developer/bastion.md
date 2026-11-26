@@ -350,6 +350,12 @@ admits the request (Q-BAS-94). `exempt_cidrs` are parsed at `guard.New`; a bad e
   address for `duration`, doubled for each earlier block within 24 h, up to `max_duration`. The decision is serialized in the process **per address**
   ([keyedlock.go](../../internal/bastion/guard/keyedlock.go): a lock that exists only while somebody holds or waits for it, so the Valkey round
   trips of one address's decision hold no other address back, Q-BAS-128); across replicas two blocks can race, and the later one raises the level.
+- The built-in figures (R-BAS-092) are set from the measurement of real clients of usage-and-limits.md Q-LIM-59 and are held by
+  `TestR_BAS_092_TheDefaultsHoldOneNormalCommandOfEveryClient` ([defaults_test.go](../../internal/bastion/guard/defaults_test.go)), which
+  reads them through the configuration's loader and plays each measured command against a cold Bastion; the other tests of the guard count
+  against small figures of their own (`figures` in [guard_test.go](../../internal/bastion/guard/guard_test.go)) so that they run in
+  milliseconds. A change of a default changes the configuration's tag, the chart's `values.yaml` (and `make generate` for the schemas), the
+  spec's R-BAS-035, R-BAS-037, R-BAS-038, R-BAS-046 and R-BAS-092, and the manual's table under "Limits and blocking".
 - `failed_auth.window` is 1 s to 12 h, the range of the limiters; the configuration refuses a longer one (`shared.MaxWindow` and the `max=12h` of
   [bastion_role.go](../../internal/config/bastion_role.go) are the same number, and `TestR_BAS_036_TheConfigurationAcceptsExactlyTheWindowsTheLimiterCounts` ties them).
 - IPv6 counts as its /64, an IPv4-mapped address as the IPv4 address (`AddressKey`).

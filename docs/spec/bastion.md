@@ -88,8 +88,9 @@ Conventions on this page:
 | HAProxy Ingress v0.16.3, the controller of the local profile, reads `limit-rps`, `limit-connections`, `limit-whitelist` (backend scope; HTTP answer `429`), `balance-algorithm`, `assign-backend-server-id`, `config-backend` and `secure-backends`, `secure-sni`, `secure-verify-ca-secret` as annotations with the prefix `haproxy-ingress.github.io/`; it has no key for `hash-type`, so consistent hashing is a `config-backend` snippet, which the controller accepts unless `--disable-config-keywords` forbids it. | `docs/content/en/docs/configuration/keys.md` and `command-line.md`, `rootfs/etc/templates/haproxy/haproxy.tmpl`, `pkg/converters/ingress/annotations/backend.go` and `pkg/converters/ingress/types/annotations.go` of `jcmoraisjr/haproxy-ingress` at the tag `v0.16.3` (`DEV_HAPROXY_INGRESS_IMAGE` in `tools/versions.env`), fetched with `gh api` on 2026-11-03; [Q-BAS-56](#q-bas-56--haproxy-ingress-annotations-as-verified-against-the-controller-of-the-local-profile) |
 
 Not verified on this page, and this is the gap: how the controller behaves when it runs (a flood refused with `429`, a path
-pinned to one pod, what `limit-rps` counts for a keep-alive connection) is read from its documentation and templates, not
-observed; the e2e suite does that (R-BAS-049). Whether `dotnet restore` sends every request of one restore with the same credential through one source is assumed from the
+pinned to one pod) is read from its documentation and templates, not observed; the e2e suite does that (R-BAS-049). What
+`limit-rps` counts on a kept-alive connection, every HTTP request, is read from the template and HAProxy's source (R-BAS-038),
+not measured. Whether `dotnet restore` sends every request of one restore with the same credential through one source is assumed from the
 NuGet client's source-credential model and is checked by the e2e suite (R-BAS-049).
 
 </details>
@@ -1832,14 +1833,17 @@ Quader's knowledge of credentials and misses:
 ```yaml
 bastion:
   limits:
-    authenticated: {requests_per_second: 50, burst: 200}   # default (proposed), per address
-    anonymous: {requests_per_second: 10, burst: 40}        # default (proposed), per address
+    authenticated: {requests_per_second: 200, burst: 4000}  # default, per address (R-BAS-092)
+    anonymous: {requests_per_second: 50, burst: 1000}       # default, per address (R-BAS-092)
     misses:
-      authenticated_per_minute: 300     # default (proposed), per address
-      anonymous_per_minute: 30          # default (proposed), per address
+      authenticated_per_minute: 4000    # default, per address (R-BAS-092)
+      anonymous_per_minute: 1000        # default, per address (R-BAS-092)
 ```
 
-Acceptance criteria:
+The defaults are set from a measurement of real clients so that one normal command of every client passes them (R-BAS-092).
+
+Acceptance criteria, held at small figures so that a test counts in milliseconds (anonymous 10 a second with a burst of 40,
+with a credential 50 and 200, misses 300 and 30 a minute, the defaults before R-BAS-092); the rules are the same at any figures:
 
 - 1,000 anonymous requests from one address within 10 s are admitted at most 140 times (burst 40 plus 10 per second); a second
   address is not slowed down.
@@ -1887,7 +1891,10 @@ Priority: **MVP** · Covers: quader-only
   to `bastion.blocking.max_duration` ([Q-BAS-37](#q-bas-37--one-refusal-threshold-blocks-an-address-with-doubling-durations)).
 - Blocking is the answer to a flood and not to a client slightly over its limit: only a request or miss beyond the limit is a
   refusal and a refusal consumes nothing (Q-BAS-127), so a client at 110 % of its limit collects a tenth of its requests as
-  refusals, and the default threshold of 300 a minute is reached by an address that sends several times its limit.
+  refusals, and the default threshold of 3,000 refusals a minute is reached only by an address that sends, after its burst, at
+  least twice the anonymous rate (6,000 a minute against 3,000 admitted) or 1.25 times the rate with a credential (15,000 against
+  12,000); one that floods at the ingress's 1,000 a second is blocked within about four seconds
+  ([Q-BAS-314](#q-bas-314--the-block-threshold-is-the-anonymous-classs-minute-3000-refusals)).
 - A blocked address answers `429 address_blocked` with `Retry-After` at step 2 of R-BAS-018, before any further work, and its
   requests are not logged one by one (a counter and one log line per block).
 - With Valkey the block list is shared: a block set by one replica holds on every replica at its next request. Without Valkey
@@ -1899,7 +1906,7 @@ Priority: **MVP** · Covers: quader-only
 ```yaml
 bastion:
   blocking:
-    threshold: 300                      # default (proposed): refusals per window
+    threshold: 3000                     # default (R-BAS-092): refusals per window
     window: 1m                          # default (proposed)
     duration: 15m                       # default (proposed)
     max_duration: 24h                   # default (proposed)
@@ -1908,10 +1915,13 @@ bastion:
 
 Acceptance criteria:
 
-- An address sending 2,000 anonymous requests within a minute is blocked on every replica (with Valkey) within the minute,
-  answers `429 address_blocked` for 15 minutes, and a second flood after the block yields 30 minutes.
-- An address that sends 3,000 anonymous misses in 30 seconds is blocked, whereas an address that sends 330 misses a minute
-  with a credential is not (Q-BAS-127).
+- At the defaults, in the e2e cluster: an address sending 6,000 anonymous requests at up to 900 a second is blocked on every
+  replica (with Valkey) within the minute and answers `429 address_blocked` (`TestBastion_R_BAS_049_FloodingAddress`); at the
+  defaults, in a unit test: an address sending 1,000 anonymous requests a second is blocked within ten seconds
+  (`TestR_BAS_092_TheDefaultsHoldOneNormalCommandOfEveryClient`).
+- At the small figures of R-BAS-035's criteria (threshold 300): a block lasts 15 minutes and a second flood after it yields 30
+  minutes; an address that sends 3,000 anonymous misses in 30 seconds is blocked, whereas an address that sends 330 misses a
+  minute with a credential is not (Q-BAS-127).
 
 ### R-BAS-038 · The coarse per-address limit at HAProxy Ingress
 Priority: **MVP** · Covers: quader-only
@@ -1928,6 +1938,18 @@ Priority: **MVP** · Covers: quader-only
   except for the addresses of `limit-whitelist`. There is no burst: a client whose rate is above the per-second value is
   refused while it stays above. The address is the TCP peer's, so behind a load balancer that does not pass the client
   address on, all callers share one budget (H-432).
+- **What it counts is HTTP requests, not connections** (read on 2026-11-26 for R-BAS-092,
+  [Q-BAS-315](#q-bas-315--the-edge-defaults-hold-the-fastest-normal-command-1000-requests-a-second-and-256-in-flight)): the template of
+  v0.16.3 tracks the address with `http-request track-sc1 src` in the backend of an HTTP Ingress, and HAProxy 2.8 (the image's base,
+  `haproxy:2.8.31-alpine`) starts the counters of a tracked entry for every stream it tracks (`stream_start_counters` in
+  `include/haproxy/stream.h`: `conn_cur` and `conn_rate` count one per tracking), and every request of a kept-alive connection is a
+  stream of its own. So `edgeLimit.requestsPerSecond` is HTTP requests of the address in the last second, kept-alive or not, and
+  `edgeLimit.connections` its requests in flight at once. HAProxy's own documentation still says "connections" for these counters;
+  the code counts what is tracked. Read, not measured on a running controller (the e2e flood of R-BAS-049 refuses at the edge
+  either way). One `npm ci` of 475 packages over 15 kept-alive connections is 475 counted requests in 2.5 s (about 190 a second):
+  the former default of 100 refused it at the ingress.
+- The defaults, 1,000 requests a second and 256 in flight, hold the fastest normal command of the measurement and two of them
+  from one address (R-BAS-092).
 - Volumetric attacks on bandwidth are the network provider's, not the Bastion's (H-382).
 
 Acceptance criteria:
@@ -1935,6 +1957,57 @@ Acceptance criteria:
 - `helm template` with `edgeLimit.requestsPerSecond: 50` and the default authenticated limit fails and names both values.
 - In the e2e cluster, 20,000 requests from one address within 10 s are partly refused by the ingress (`429` without a request
   log line at the Bastion) and the Bastion's replicas stay below their in-flight limit.
+
+### R-BAS-092 · The built-in figures hold one normal command of every client
+Priority: **MVP** · Covers: quader-only
+
+The owner's decision 18 for the main installation ([usage-and-limits.md](usage-and-limits.md) Q-LIM-59: request figures that normal use
+never meets, set from a measurement of real clients), applied to the Bastion's own figures of R-BAS-035, R-BAS-037 and R-BAS-038. Found by
+the planner of the owner's task W-34: one anonymous `docker pull` of an image of 40 layers is 48 requests within 0.28 s, and docker does not
+retry a `429`; the burst of 40 refused it at the Bastion, and its 48 misses on a cold Bastion met the 30 misses a minute
+(`TestR_BAS_092_TheDefaultsHoldOneNormalCommandOfEveryClient` on the former figures: 18 of 48 requests refused; `npm ci` of 475 packages
+with a credential 175 of 475). The Bastion faces the internet and bears its traffic alone, so it keeps refusing and blocking an address that
+floods ([Q-BAS-312](#q-bas-312--the-bastions-request-figures-are-the-main-installations-profiles-anonymous-and-standard) to
+[Q-BAS-315](#q-bas-315--the-edge-defaults-hold-the-fastest-normal-command-1000-requests-a-second-and-256-in-flight)).
+
+What one normal command needs (Q-LIM-59's measurement on the kind cluster, and the clients' documented concurrency):
+
+| Command | Requests | In | At once |
+|---|---|---|---|
+| `docker pull`, an image of 40 layers | 48 (39 in its busiest second) | 0.28 s | 3 downloads (`max-concurrent-downloads`) |
+| `podman pull`, an image of 40 layers | 44 | 0.48 s | [not verified] |
+| `npm ci`, a lockfile of 475 packages | 475 | 2.5 s | up to 15 connections |
+| `dotnet restore`, N packages over F feeds | about F + N × (F + 1) | seconds | unbounded on Linux (`maxHttpRequestsPerSource` is `Int32.MaxValue` there, 16 on macOS, by NuGet's documentation) |
+| `apt-get update` and `install` of N packages | 10 to 15, then N | seconds | up to 10 pipelined on a connection |
+| `ansible-galaxy collection install` of C collections | about 4 C | tens of seconds | one after the other |
+
+On a cold Bastion every one of these requests is a miss as well.
+
+| Figure | Before | Now | Why | One address, a minute, now (before) | A thousand addresses, a minute |
+|---|---|---|---|---|---|
+| `limits.anonymous` | 10/s, burst 40 | 50/s, burst 1,000 | the main installation's profile Anonymous: two installs of 475 packages, or ten pulls of 40 layers, at once | 4,000 in the first minute, 3,000 in each further (640, 600) | 3,000,000 (600,000) at the Bastion's own stage; hits are served from the cache, everything else is bounded by the replicas' `server.max_in_flight` (1,024 each) and the network (H-382) |
+| `limits.authenticated` | 50/s, burst 200 | 200/s, burst 4,000 | the main installation's profile Standard: an install of up to 4,000 packages at once | 16,000 in the first minute, 12,000 in each further (3,200, 3,000) | as above; a credential the Bastion holds no answer for costs a check, an invalid one the failed-authentication timeout (R-BAS-036, unchanged) |
+| `limits.misses.anonymous_per_minute` | 30 | 1,000 | on a cold Bastion every request is a miss: a minute holds what the anonymous burst holds at once | 1,000 requests to the main installation (30) | 1,000,000 by count (30,000), but the main installation is reached through the 16 anonymous slots of a Bastion of two replicas (R-BAS-025, unchanged): the 17th waits 2 s and is answered `503 bastion_busy`, and each forward is charged to its caller's own budget at the main installation (R-BAS-017) |
+| `limits.misses.authenticated_per_minute` | 300 | 4,000 | as above, the burst with a credential | 4,000 (300) | bounded by the 64 slots of the budget (`bastion.main.max_concurrent`), as above |
+| `blocking.threshold` | 300 | 3,000 | the anonymous class's minute: an address is blocked only once it was refused as many requests in a minute as the class admits in one | blocked when it sends, after its burst, 6,000 anonymous (900) or 15,000 with a credential (3,300) requests a minute; within about 4 s at 1,000 a second | each address on its own, as before; a flood spread thin enough stays below every per-address figure (H-382, H-455) |
+| `edgeLimit.requestsPerSecond` | 100 | 1,000 | HAProxy Ingress counts HTTP requests also on a kept-alive connection (R-BAS-038): an `npm ci` is about 190 a second, two at once from one address about 380 | at most 60,000 reach the Bastion's own stage (6,000) | per address only, as before |
+| `edgeLimit.connections` | 50 | 256 | requests in flight of one address: `npm ci`'s 15 and docker's 3 fit either; a `dotnet restore` on Linux has no bound of its own (H-2276) | 256 at once (50), a quarter of one replica's `server.max_in_flight` | per address only, as before |
+
+- The failed-authentication timeout (20 failures in 10 minutes, then 15 minutes) and the block's durations (15 minutes, doubling to
+  24 hours) are unchanged: a normal command does not fail its sign-in, and a flood is blocked as long as before.
+- Without Valkey each replica holds the rate and the burst divided by `bastion.replicas` (R-ARCH-034); with two replicas an anonymous burst
+  is 500 per replica, which still holds two installs of 475 packages spread over both replicas.
+- What the figures leave refused: many clients with credentials behind one address beyond the burst of 4,000, twenty CI jobs of one
+  address at once for example (H-2277); `bastion.blocking.exempt_cidrs` exempts such an address.
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/guard`, milliseconds, no data): at the built-in figures, read through the configuration's loader, every
+  command of the first table passes a cold Bastion from one address without a refusal of a request or a miss, two installs of 475 packages
+  at once and ten pulls in a row anonymously included, and an address that sends 1,000 anonymous requests a second is blocked within ten
+  seconds (`TestR_BAS_092_TheDefaultsHoldOneNormalCommandOfEveryClient`).
+- Unit (`internal/config`) and the chart test (`test/chart`): the defaults of the configuration and of the chart's values are the ones
+  of the second table, and the chart renders `limit-rps: "1000"` and `limit-connections: "256"`.
 
 ## Audit, observability, lifecycle
 
@@ -2404,20 +2477,20 @@ config:
           role_arn: ""                  # example: arn:aws:iam::123456789012:role/quader-bastion
     limits:
       authenticated:
-        requests_per_second: 50         # per address
-        burst: 200
+        requests_per_second: 200        # per address
+        burst: 4000
       anonymous:
-        requests_per_second: 10         # per address
-        burst: 40
+        requests_per_second: 50         # per address
+        burst: 1000
       misses:
-        authenticated_per_minute: 300   # per address
-        anonymous_per_minute: 30        # per address
+        authenticated_per_minute: 4000  # per address
+        anonymous_per_minute: 1000      # per address
     failed_auth:
       max_failures: 20
       window: 10m
       timeout: 15m
     blocking:
-      threshold: 300                    # refusals per window
+      threshold: 3000                   # refusals per window
       window: 1m
       duration: 15m
       max_duration: 24h
@@ -2570,10 +2643,10 @@ ingress:
     verify: true                        # the controller verifies the pods' certificate against caSecret
     caSecret: ""                        # empty = the listener's Secret (tls.existingSecret or <fullname>-tls), which must carry ca.crt
 
-edgeLimit:                              # stage 1 of the blocking
+edgeLimit:                              # stage 1 of the blocking; HAProxy Ingress counts HTTP requests, also on a kept-alive connection
   enabled: true
-  requestsPerSecond: 100                # per address; above config.bastion.limits.authenticated.requests_per_second
-  connections: 50                       # per address
+  requestsPerSecond: 1000               # per address, in the last second, no burst; above config.bastion.limits.authenticated.requests_per_second
+  connections: 256                      # per address: requests in flight at once
 
 # ── Network policy: ingress rules only, each rule with its port ─────────────
 # No egress value exists: the chart renders no egress rule; the Bastion pods' egress is the cluster's own policy.
@@ -9632,6 +9705,90 @@ refused, every other refusal that there were too many requests; each ends with "
 **Rationale:** the answer a person reads must carry what the capped header no longer does. The development agent would revisit it if a
 client is found that reads the problem body's members.
 
+### Q-BAS-312 · The Bastion's request figures are the main installation's profiles Anonymous and Standard
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's decision 18 (usage-and-limits.md Q-LIM-59) set the main installation's request figures from a measurement so that
+normal use never meets them, and his rule of 2026-11-26: built-in defaults are generous and derived from what real clients do, for large
+companies. The Bastion's figures (10 a second with a burst of 40 anonymously, 50 and 200 with a credential) were estimates from before the
+measurement and refuse one anonymous `docker pull` of 40 layers and one `npm ci` of 475 packages with a credential (R-BAS-092). The Bastion
+counts per address, not per subject: an address can be a NAT of several people.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The request figures of the profiles Anonymous (50/s, 1,000) and Standard (200/s, 4,000) (chosen) | The Bastion admits from one address what the main installation admits from one caller | Q-LIM-59's normal use holds, with its room for two commands at once; one rule for both doors; the windows are 20 s, as at the main installation | One address may send 1,000 anonymous requests at once |
+| (b) The smallest figures that hold one command (burst 50 anonymously, 500 with a credential) | Tight | Least room for a flood | A NAT of two people, or a second command, is refused; docker exits at the first `429` |
+| (c) The profile Technical with a credential (1,000/s, 20,000) | Room for a CI fleet behind one address | — | Five times Standard for any credential from the internet, valid or not; an address is not a system |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-035, R-BAS-046, R-BAS-092; code: the defaults of `config.BastionLimitAuthenticated` and
+`config.BastionLimitAnonymous`, the chart's values.
+
+**Rationale:** the measurement gives the commands and the profiles give their room; the Bastion's own figures exist to stop a flood, which
+they still do within seconds (Q-BAS-314). The development agent would revisit them with the measurement of a Bastion per format (W-34's E4).
+
+### Q-BAS-313 · The miss figures hold in a minute what the request burst holds at once
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: on a cold Bastion every request of a command is a miss; a cold pull of 40 layers is 48 misses within 0.3 s, which met the 30
+anonymous misses a minute. The misses are what costs the main installation; they are bounded there per caller as well (R-BAS-017) and per
+Bastion by the slots (R-BAS-025).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The burst of the class per minute: 1,000 anonymously, 4,000 with a credential (chosen) | A command the request figures admit is not refused for being cold | One rule; a cold cache refuses nothing a warm one serves | One address can send 1,000 anonymous misses a minute to the slots |
+| (b) One command per minute: 500 and 1,000 | Tighter | Less load from one address | Two installs at once on a cold Bastion are refused |
+| (c) The rate per minute: 3,000 and 12,000 | As wide as the requests | — | The minute of misses is the main installation's load; the slots already decide what reaches it |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-035, R-BAS-046, R-BAS-092; code: the defaults of `config.BastionMisses`.
+
+**Rationale:** what is refused as a miss and served as a hit is a refusal of whoever comes first after a restart or an eviction. The
+development agent would revisit it if a measurement shows that the slots let a thousand addresses load the main installation more than its
+own per-caller figures do.
+
+### Q-BAS-314 · The block threshold is the anonymous class's minute: 3,000 refusals
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a block follows refusals (R-BAS-037), and with the figures of Q-BAS-312 a client over its figure collects more refusals per
+second than before: three anonymous installs of 475 packages at once from one NAT collect about 300 in 2.5 s, which the former threshold of
+300 a minute turned into a block of 15 minutes. A block is the answer to a flood, never to normal use (Q-BAS-127).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) 3,000 a minute, what the anonymous class admits in a minute (chosen) | Blocked at twice the anonymous rate sustained, or 1.25 times the rate with a credential | A NAT over its figure is refused and not blocked; a flood at the ingress's 1,000 a second is blocked in about 4 s | A flood just below twice the rate is refused, not blocked |
+| (b) Keep 300 | — | Blocks sooner | Three commands at once block an office for 15 minutes |
+| (c) A threshold per class | Two values | Exact per class | One more key for one rule; the refusals of an address mix both classes |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-037, R-BAS-046, R-BAS-092; code: the default of `config.BastionBlocking.Threshold`.
+
+**Rationale:** a refused request costs the Bastion one counter; a block saves it nothing for an address that is refused cheaply anyway, and
+costs an office its access. The development agent would revisit it if refusals themselves are shown to load a replica.
+
+### Q-BAS-315 · The edge defaults hold the fastest normal command: 1,000 requests a second and 256 in flight
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: HAProxy Ingress's `limit-rps` counts HTTP requests also on a kept-alive connection and has no burst (R-BAS-038, read from the
+template of v0.16.3 and HAProxy 2.8's source on 2026-11-26; a measurement on the kind cluster was not run: the cluster is shared with the
+other builders of the day, and the reading leaves no doubt the measurement would settle). An `npm ci` of 475 packages is about 190 requests
+a second, so the default of 100 refused it at the ingress before the Bastion saw it. The chart requires the value above the Bastion's own
+rate with a credential (now 200).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) 1,000 a second and 256 in flight (chosen) | The anonymous burst can arrive within a second; a quarter of one replica's `server.max_in_flight` | Two `npm ci` at once (about 380 a second) and a pull pass; the edge still cuts a flood at 1,000 a second per address | A single address may hold 256 of a replica's 1,024 requests in flight |
+| (b) 400 a second, 100 in flight | Just above two commands | Tighter | The busiest second of an `npm ci` is not measured; a `dotnet restore` on Linux is not bounded by its client |
+| (c) Turn the edge limit off by default | The Bastion's own stage only | Nothing to tune | The Bastion pays for every request of a flood; the owner chose two stages (Q-BAS-16) |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-038, R-BAS-046, R-BAS-092; code: the chart's `edgeLimit` and the fallback of its check in
+`_validate.tpl`.
+
+**Rationale:** the edge exists to cut what would overload the Bastion itself; a figure a normal command meets makes it a limit of its own,
+with no burst and no `Retry-After`. The development agent would revisit it with a measurement of the busiest second of `npm ci` and of the
+requests in flight of a large `dotnet restore` (H-2276).
+
 ## What this does not cover
 
 ### H-382 · A volumetric attack on bandwidth is not absorbed by the Bastion
@@ -10193,8 +10350,8 @@ and the token, its anonymous `HEAD` of the tag while the main installation admit
 [H-1420](#h-1420--while-the-main-installation-admits-anonymous-reads-a-clients-first-head-of-a-tag-without-a-credential-is-forwarded-on-every-pull),
 and the forwarded `HEAD` of the tag, which has no entry because Docker never `GET`s it), Podman 5.8.9 2 (the token and a check, or the tag's
 forward), containerd 2.3.4 through crictl 5 to 6 (two probes, two tokens, a check per token), instead of 13 to 19 before. The miss limit of
-one address (300 a minute) is then reached at about 75 Docker pulls, 150 Podman pulls or 50 to 60 containerd pulls a minute instead of 16 to
-23. What makes it real: many nodes behind one address pulling at once (a rollout through a NAT), which reaches the miss limit
+one address (4,000 a minute with a credential since R-BAS-092, 300 before) is then reached at about 1,000 Docker pulls, 2,000 Podman pulls or 650 to 800 containerd pulls a minute (at 300: 75, 150 and 50 to 60, instead of 16 to
+23). What makes it real: many nodes behind one address pulling at once (a rollout through a NAT), which reaches the miss limit
 (`429 TOOMANYREQUESTS`, which clients retry), or a main installation for which these requests matter. What would close more, outside the
 design of R-BAS-080 to R-BAS-088: keeping a `204 read-with-body` probe answer of `POST /v2/_token` as the `403` and `404` probe answers
 are kept (one request less per Docker pull, two per containerd pull), closing H-1420 (one less per Docker pull while anonymous reads are on),
@@ -10565,3 +10722,26 @@ NuGet client blocked for 15 minutes reads `Retry-After: 30` and `t=900`. A Basti
 sides differ in `t`. No client of either format reads the RateLimit fields (formats/nuget.md R-NUGET-032 lists what the NuGet clients
 read), so nothing waits longer for it. What makes it real: a client of either format that starts to read `t`. What would close it: the
 format's `WriteError` rewriting the `t` of the fields it finds to its cap, or the stage setting them through the format's facts.
+
+### H-2276 · The busiest second of an `npm ci` and the requests in flight of a large `dotnet restore` are not measured
+
+Stage: R-BAS-038, the edge's `edgeLimit.requestsPerSecond` and `edgeLimit.connections`. Subject: one address's normal command, refused by
+the ingress with a `429` that carries no `Retry-After`.
+
+Live on every Bastion with `edgeLimit.enabled` (the default). The defaults of R-BAS-092 hold the commands of the measurement by their
+averages: `npm ci` of 475 packages is about 190 requests a second over 2.5 s, its busiest second not recorded; a `dotnet restore` on Linux
+sends with no bound of its own (`maxHttpRequestsPerSource` is `Int32.MaxValue` there, by NuGet's documentation), so a solution with
+hundreds of packages may hold more than 256 requests in flight from one address. Neither was run through a Bastion. What makes it real: a
+large restore from one address, or several commands of one NAT at once above 1,000 requests a second. The value of either key can be
+raised per installation; what would close it is the measurement of W-34's package E4, written on developer/bastion.md.
+
+### H-2277 · Many clients with credentials behind one address are held to one person's figures
+
+Stage: R-BAS-035, the Bastion's own stage, which counts per client address (R-BAS-019). Subject: callers behind one NAT or one CI egress.
+
+Live on every Bastion. The figures with a credential are the main installation's profile Standard, one person's: 200 a second with a burst
+of 4,000 and 4,000 misses a minute. Twenty CI jobs that each install 475 packages at once from one egress address (9,500 requests) are
+refused beyond the burst, and docker exits at the first `429`; the main installation, which counts per subject, would admit them under
+the profile Technical. What makes it real: a company that reaches a Bastion from one egress address for its build fleet. The address can be
+listed in `bastion.blocking.exempt_cidrs`, which exempts it from every limit, timeout and block; what would close it is limits by subject
+at the Bastion, which wait for the owner's decisions of W-34.

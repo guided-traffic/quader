@@ -150,22 +150,27 @@ type BastionLimits struct {
 }
 
 // BastionLimitAuthenticated is the token-bucket limit (R-ARCH-034) of requests with a credential: a sustained
-// rate and a burst.
+// rate and a burst. The defaults are the request figures of the main installation's profile Standard (R-BAS-092,
+// usage-and-limits.md Q-LIM-59): an install of up to 4,000 packages at once, 200 a second sustained.
 type BastionLimitAuthenticated struct {
-	RequestsPerSecond int `yaml:"requests_per_second" default:"50" validate:"min=1"`
-	Burst             int `yaml:"burst" default:"200" validate:"min=1"`
+	RequestsPerSecond int `yaml:"requests_per_second" default:"200" validate:"min=1"`
+	Burst             int `yaml:"burst" default:"4000" validate:"min=1"`
 }
 
-// BastionLimitAnonymous is the limit of requests without a credential.
+// BastionLimitAnonymous is the limit of requests without a credential. The defaults are the request figures of the main
+// installation's profile Anonymous (R-BAS-092): two installs of 475 packages, or ten pulls of 40 layers, at once, 50 a
+// second sustained.
 type BastionLimitAnonymous struct {
-	RequestsPerSecond int `yaml:"requests_per_second" default:"10" validate:"min=1"`
-	Burst             int `yaml:"burst" default:"40" validate:"min=1"`
+	RequestsPerSecond int `yaml:"requests_per_second" default:"50" validate:"min=1"`
+	Burst             int `yaml:"burst" default:"1000" validate:"min=1"`
 }
 
-// BastionMisses limits the requests that need the main installation, per address and minute (R-BAS-035).
+// BastionMisses limits the requests that need the main installation, per address and minute (R-BAS-035). On a cold
+// Bastion every request is a miss, so the defaults hold in a minute what the request burst of the class holds at once
+// (R-BAS-092, Q-BAS-313).
 type BastionMisses struct {
-	AuthenticatedPerMinute int `yaml:"authenticated_per_minute" default:"300" validate:"min=1"`
-	AnonymousPerMinute     int `yaml:"anonymous_per_minute" default:"30" validate:"min=1"`
+	AuthenticatedPerMinute int `yaml:"authenticated_per_minute" default:"4000" validate:"min=1"`
+	AnonymousPerMinute     int `yaml:"anonymous_per_minute" default:"1000" validate:"min=1"`
 }
 
 // BastionFailedAuth is the failed-authentication timeout (R-BAS-036).
@@ -177,7 +182,7 @@ type BastionFailedAuth struct {
 
 // BastionBlocking is the blocking of flooding addresses (R-BAS-037).
 type BastionBlocking struct {
-	Threshold   int           `yaml:"threshold" default:"300" validate:"min=1" doc:"Refusals of R-BAS-035 and R-BAS-036 per window that block an address."`
+	Threshold   int           `yaml:"threshold" default:"3000" validate:"min=1" doc:"Refusals of R-BAS-035 and R-BAS-036 per window that block an address."`
 	Window      time.Duration `yaml:"window" default:"1m" validate:"min=1s,max=1h"`
 	Duration    time.Duration `yaml:"duration" default:"15m" validate:"min=1s,max=24h"`
 	MaxDuration time.Duration `yaml:"max_duration" default:"24h" validate:"min=1s,max=720h" doc:"Each further block within 24 h doubles the duration up to this (R-BAS-037)."`
