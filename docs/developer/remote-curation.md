@@ -196,6 +196,7 @@ Tests and what they cost (each run once):
 | kit check 22's README case of npm, NuGet and Ansible Galaxy (R-CUR-028) | unit | milliseconds per format | npm `left-pad-readme.json` 5 KB; NuGet `newtonsoft.json-13.0.4-readme.md` 2 KB; Ansible `gal-docs-blob.json` 0.5 KB |
 | `TestR_CUR_028_TheReadmeCall` (`internal/remotecuration/catalogue`), `TestR_CUR_028_TheReadmeOfANuGetPackageIsAskedWhereTheTemplateNamesIt`, `TestR_CUR_028_AGalaxysFactsAndReadmes`, `TestR_CUR_028_AnAddressIsALinkOnlyForHTTPAndHTTPS`, `TestR_CUR_028_TheFactsOfAnUpstreamPackageAreTheSchemas` | unit | milliseconds to microseconds | a few hundred bytes; the engine's test builds one README of 1 MiB in memory to hold the bound |
 | `TestR_CUR_028_AnUpstreamPackageShowsItsReadmeReadThroughAndNotStored` (area `npm`) | integration | about 2 s | the stub's corpus |
+| `TestR_CUR_028_ACollectionsReadmeIsReadThroughItsDocsBlobAndSanitized` (area `ansibleremote`) | integration | about 1 s | the stub's corpus |
 | the lookup's short description in `TestR_DEB_036_TheCatalogueSearchesTheIndexesTheRemoteParsed` (area `debremote`) | integration | one lookup more, milliseconds | unchanged |
 | `upstream-docs.spec.ts` | Vitest | about 1 s | canned answers |
 

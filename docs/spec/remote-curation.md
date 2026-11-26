@@ -2067,6 +2067,9 @@ Acceptance criteria:
 - Integration (area `npm`, `TestR_CUR_028_AnUpstreamPackageShowsItsReadmeReadThroughAndNotStored`, about 2 s, the stub's corpus): the
   lookup answers the facts and `readme: true`; the README answers at no further request of the stub and stores nothing; a reader of the
   artifacts without the wiki gets the facts, `readme: false` and `404`, and the stub is not asked for it.
+- Integration (area `ansibleremote`, `TestR_CUR_028_ACollectionsReadmeIsReadThroughItsDocsBlobAndSanitized`, about 1 s, the stub's
+  corpus): the lookup names the highest version's facts; the README of a version is read through its docs-blob once for two calls, without
+  the stub's script, and no cache entry and no documentation row is written.
 - Web unit (`upstream-docs.spec.ts`, about 1 s): the facts line, a link only for http and https, the README read once per package and
   version, folded in a row, a reader without the wiki, an unreachable host, a rate limit, a failure, the budget, OCI and Debian.
 - Renders (`repository-npm-upstream-readme`, `repository-nuget-upstream-readme`, `repository-ansible-upstream-readme`, in German too).
